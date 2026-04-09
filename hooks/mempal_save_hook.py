@@ -6,6 +6,7 @@ saves them directly to ChromaDB, then triggers a git sync.
 
 No blocking. No AI interruption. Fully automatic.
 """
+
 import sys
 import json
 import os
@@ -14,11 +15,11 @@ import subprocess
 import hashlib
 
 # ── Config ────────────────────────────────────────────────────────────────────
-SAVE_INTERVAL = 3           # exchanges between auto-saves (was 15)
+SAVE_INTERVAL = 3  # exchanges between auto-saves (was 15)
 MEMPALACE_SRC = os.path.expanduser("~/projects/mempalace")
-SYNC_SCRIPT   = os.path.expanduser("~/.mempalace/SyncMemories.ps1")
-STATE_DIR     = os.path.expanduser("~/.mempalace/hook_state")
-LOG_FILE      = os.path.join(STATE_DIR, "hook.log")
+SYNC_SCRIPT = os.path.expanduser("~/.mempalace/SyncMemories.ps1")
+STATE_DIR = os.path.expanduser("~/.mempalace/hook_state")
+LOG_FILE = os.path.join(STATE_DIR, "hook.log")
 
 os.makedirs(STATE_DIR, exist_ok=True)
 
@@ -30,6 +31,7 @@ def log(msg):
 
 
 # ── Transcript parsing ────────────────────────────────────────────────────────
+
 
 def read_transcript(transcript_path):
     """Extract human-readable text from a Claude Code JSONL transcript."""
@@ -95,6 +97,7 @@ def count_user_exchanges(transcript_path):
 
 # ── Palace save ───────────────────────────────────────────────────────────────
 
+
 def save_to_palace(memories, session_id):
     """Save extracted memories directly to ChromaDB. Returns count saved."""
     try:
@@ -122,13 +125,15 @@ def save_to_palace(memories, session_id):
             collection.add(
                 ids=[doc_id],
                 documents=[content],
-                metadatas=[{
-                    "wing": "sessions",
-                    "room": mem_type,   # decision / preference / milestone / problem / emotional
-                    "source": f"hook:{session_id[:12]}",
-                    "added_by": "auto_hook",
-                    "timestamp": datetime.datetime.now().isoformat(),
-                }],
+                metadatas=[
+                    {
+                        "wing": "sessions",
+                        "room": mem_type,  # decision / preference / milestone / problem / emotional
+                        "source": f"hook:{session_id[:12]}",
+                        "added_by": "auto_hook",
+                        "timestamp": datetime.datetime.now().isoformat(),
+                    }
+                ],
             )
             saved += 1
 
@@ -139,6 +144,7 @@ def save_to_palace(memories, session_id):
 
 
 # ── Git sync ──────────────────────────────────────────────────────────────────
+
 
 def trigger_git_sync():
     """Fire the sync script in the background — non-blocking."""
@@ -157,9 +163,9 @@ def trigger_git_sync():
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 data = json.load(sys.stdin)
-session_id        = data.get("session_id", "unknown")
-transcript_path   = data.get("transcript_path", "")
-stop_hook_active  = data.get("stop_hook_active", False)
+session_id = data.get("session_id", "unknown")
+transcript_path = data.get("transcript_path", "")
+stop_hook_active = data.get("stop_hook_active", False)
 
 if stop_hook_active:
     print("{}")
@@ -197,17 +203,22 @@ try:
         memories = extract_memories(text, min_confidence=0.4)
         if memories:
             saved = save_to_palace(memories, session_id)
-            log(f"Session {session_id[:8]}: {exchange_count} exchanges | "
+            log(
+                f"Session {session_id[:8]}: {exchange_count} exchanges | "
                 f"extracted {len(memories)} memories | saved {saved} new | "
-                f"types: {set(m['memory_type'] for m in memories)}")
+                f"types: {set(m['memory_type'] for m in memories)}"
+            )
             trigger_git_sync()
         else:
-            log(f"Session {session_id[:8]}: {exchange_count} exchanges | no memories matched patterns")
+            log(
+                f"Session {session_id[:8]}: {exchange_count} exchanges | no memories matched patterns"
+            )
     else:
         log(f"Session {session_id[:8]}: no transcript content")
 except Exception as e:
     log(f"Hook error: {e}")
     import traceback
+
     log(traceback.format_exc())
 
 # Never block — always let the conversation continue

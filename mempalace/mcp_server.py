@@ -20,6 +20,7 @@ Tools (write):
 # Issue #225: save real stdout BEFORE any other import so chatter from
 # chromadb/posthog/etc cannot corrupt the JSON-RPC wire on stdout.
 import sys
+
 _real_stdout = sys.stdout
 sys.stdout = sys.stderr
 
@@ -34,13 +35,12 @@ from datetime import datetime  # noqa: E402
 import chromadb  # noqa: E402
 
 from .config import DRAWER_HNSW_METADATA, MempalaceConfig  # noqa: E402
-from .version import __version__
-from .searcher import search_memories
-from .palace_graph import traverse, find_tunnels, graph_stats
-from .knowledge_graph import KnowledgeGraph
-from .hybrid_searcher import HybridSearcher
-from .drawer_trust import DrawerTrust
-from . import contradiction_detector as _cd
+from .version import __version__  # noqa: E402
+from .palace_graph import traverse, find_tunnels, graph_stats  # noqa: E402
+from .knowledge_graph import KnowledgeGraph  # noqa: E402
+from .hybrid_searcher import HybridSearcher  # noqa: E402
+from .drawer_trust import DrawerTrust  # noqa: E402
+from . import contradiction_detector as _cd  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(message)s", stream=sys.stderr)
 logger = logging.getLogger("mempalace_mcp")
@@ -219,9 +219,13 @@ def tool_get_taxonomy():
     return {"taxonomy": taxonomy}
 
 
-def tool_search(query: str, limit: int = 5, wing: str = None, room: str = None, min_similarity: float = 0.0):
+def tool_search(
+    query: str, limit: int = 5, wing: str = None, room: str = None, min_similarity: float = 0.0
+):
     """Hybrid search tool handler."""
-    return _hybrid.search(query, wing=wing, room=room, n_results=limit, min_similarity=min_similarity)
+    return _hybrid.search(
+        query, wing=wing, room=room, n_results=limit, min_similarity=min_similarity
+    )
 
 
 def tool_check_duplicate(content: str, threshold: float = 0.9):
@@ -330,7 +334,7 @@ def tool_add_drawer(
         conn = sqlite3.connect(_hybrid.kg_path)
         conn.execute(
             "INSERT OR REPLACE INTO drawers_fts (drawer_id, content, wing, room) VALUES (?, ?, ?, ?)",
-            (drawer_id, content, wing, room)
+            (drawer_id, content, wing, room),
         )
         conn.commit()
         conn.close()
@@ -428,13 +432,15 @@ def tool_resolve_contest(drawer_id: str, winner_id: str, resolution_note: str = 
     loser_id = drawer_id if winner_id != drawer_id else winner_id
 
     _trust.update_status(
-        loser_id, "superseded",
+        loser_id,
+        "superseded",
         superseded_by=winner_id,
         reason=f"manual resolution: {resolution_note}",
         changed_by="user",
     )
     _trust.update_status(
-        winner_id, "current",
+        winner_id,
+        "current",
         reason=f"manual resolution winner: {resolution_note}",
         changed_by="user",
     )
@@ -822,7 +828,10 @@ TOOLS = {
             "type": "object",
             "properties": {
                 "drawer_id": {"type": "string", "description": "Drawer ID to challenge"},
-                "reason": {"type": "string", "description": "Why you think this is wrong (optional)"},
+                "reason": {
+                    "type": "string",
+                    "description": "Why you think this is wrong (optional)",
+                },
             },
             "required": ["drawer_id"],
         },
@@ -839,8 +848,14 @@ TOOLS = {
             "type": "object",
             "properties": {
                 "drawer_id": {"type": "string", "description": "Drawer ID that is contested"},
-                "winner_id": {"type": "string", "description": "Drawer ID of the correct/current version"},
-                "resolution_note": {"type": "string", "description": "Why this one wins (optional)"},
+                "winner_id": {
+                    "type": "string",
+                    "description": "Drawer ID of the correct/current version",
+                },
+                "resolution_note": {
+                    "type": "string",
+                    "description": "Why this one wins (optional)",
+                },
             },
             "required": ["drawer_id", "winner_id"],
         },

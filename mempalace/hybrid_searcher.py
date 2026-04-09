@@ -28,17 +28,21 @@ _HIDDEN_STATUSES: Set[str] = {"superseded", "historical"}
 
 logger = logging.getLogger("mempalace.hybrid")
 
+
 class HybridSearcher:
     """
     Orchestrates fused retrieval across Vector and Lexical data stores.
     """
-    def __init__(self, palace_path: Optional[str] = None, kg_path: Optional[str] = None, k: int = 60):
+
+    def __init__(
+        self, palace_path: Optional[str] = None, kg_path: Optional[str] = None, k: int = 60
+    ):
         cfg = MempalaceConfig()
         self.palace_path = palace_path or cfg.palace_path
         self.kg_path = kg_path or Path(self.palace_path).parent / "knowledge_graph.sqlite3"
         self.k = k
         self.collection_name = cfg.collection_name
-        
+
         # Persistent clients
         self.chroma_client = chromadb.PersistentClient(path=self.palace_path)
         try:
@@ -47,27 +51,29 @@ class HybridSearcher:
             logger.error(f"Failed to load Chroma collection '{self.collection_name}': {e}")
             raise
 
-    def _fts_search(self, query: str, wing: Optional[str] = None, room: Optional[str] = None, limit: int = 50) -> List[str]:
+    def _fts_search(
+        self, query: str, wing: Optional[str] = None, room: Optional[str] = None, limit: int = 50
+    ) -> List[str]:
         """
         Executes a lexical search against the SQLite FTS5 virtual table.
         Quotes the query to handle special characters (hyphens, dots) as literals.
         """
         conn = sqlite3.connect(self.kg_path)
-        
+
         # Build query with optional wing/room scoping
         sql = "SELECT drawer_id FROM drawers_fts WHERE content MATCH ?"
         params = [f'"{query}"']
-        
+
         if wing:
             sql += " AND wing = ?"
             params.append(wing)
         if room:
             sql += " AND room = ?"
             params.append(room)
-            
+
         sql += " LIMIT ?"
         params.append(limit)
-        
+
         results = []
         try:
             for row in conn.execute(sql, params).fetchall():
@@ -79,7 +85,9 @@ class HybridSearcher:
             conn.close()
         return results
 
-    def _vector_search(self, query: str, wing: Optional[str] = None, room: Optional[str] = None, limit: int = 50) -> List[str]:
+    def _vector_search(
+        self, query: str, wing: Optional[str] = None, room: Optional[str] = None, limit: int = 50
+    ) -> List[str]:
         """
         Executes a semantic search against ChromaDB.
         """
@@ -90,13 +98,13 @@ class HybridSearcher:
             where = {"wing": wing}
         elif room:
             where = {"room": room}
-            
+
         try:
             results = self.collection.query(
                 query_texts=[query],
                 n_results=limit,
                 where=where if where else None,
-                include=["ids"]
+                include=["ids"],
             )
             return results["ids"][0] if results["ids"] else []
         except Exception as e:
@@ -116,7 +124,9 @@ class HybridSearcher:
                 drawer_ids,
             ).fetchall()
             conn.close()
-            return {r["drawer_id"]: {"status": r["status"], "confidence": r["confidence"]} for r in rows}
+            return {
+                r["drawer_id"]: {"status": r["status"], "confidence": r["confidence"]} for r in rows
+            }
         except Exception as e:
             logger.warning(f"Trust map fetch failed: {e}")
             return {}

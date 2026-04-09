@@ -32,28 +32,29 @@ import json
 import logging
 import urllib.request
 import urllib.error
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional
 
 logger = logging.getLogger("mempalace.llm")
 
 # ── Default URLs ──────────────────────────────────────────────────────────────
 BACKEND_DEFAULTS: Dict[str, Dict[str, str]] = {
-    "ollama":    {"url": "http://localhost:11434", "model": "gemma2:2b"},
-    "lmstudio":  {"url": "http://localhost:1234",  "model": ""},
-    "vllm":      {"url": "http://localhost:8000",  "model": ""},
-    "custom":    {"url": "",                        "model": ""},
+    "ollama": {"url": "http://localhost:11434", "model": "gemma2:2b"},
+    "lmstudio": {"url": "http://localhost:1234", "model": ""},
+    "vllm": {"url": "http://localhost:8000", "model": ""},
+    "custom": {"url": "", "model": ""},
 }
 
 BACKEND_LABELS = {
-    "none":     "None (disabled) — no conflict detection, saves instantly",
-    "ollama":   "Ollama          — local, easy setup: ollama pull gemma2",
+    "none": "None (disabled) — no conflict detection, saves instantly",
+    "ollama": "Ollama          — local, easy setup: ollama pull gemma2",
     "lmstudio": "LM Studio       — local GUI with model browser",
-    "vllm":     "vLLM            — local, fast, needs GPU (WSL/Linux)",
-    "custom":   "Custom          — any OpenAI-compatible endpoint",
+    "vllm": "vLLM            — local, fast, needs GPU (WSL/Linux)",
+    "custom": "Custom          — any OpenAI-compatible endpoint",
 }
 
 
 # ── Base class ────────────────────────────────────────────────────────────────
+
 
 class LLMBackend:
     """Abstract LLM backend. Subclasses implement _do_chat."""
@@ -75,6 +76,7 @@ class LLMBackend:
 
 class NullBackend(LLMBackend):
     """No-op backend — contradiction detection disabled."""
+
     name = "none"
 
     def chat(self, messages, max_tokens=512):
@@ -89,11 +91,18 @@ class NullBackend(LLMBackend):
 
 # ── OpenAI-compatible backend (vLLM, LM Studio, Ollama ≥0.1.14, custom) ──────
 
+
 class OpenAICompatBackend(LLMBackend):
     """Any OpenAI /v1/chat/completions compatible endpoint."""
 
-    def __init__(self, url: str, model: str, api_key: Optional[str] = None,
-                 timeout: int = 60, name: str = "openai_compat"):
+    def __init__(
+        self,
+        url: str,
+        model: str,
+        api_key: Optional[str] = None,
+        timeout: int = 60,
+        name: str = "openai_compat",
+    ):
         self.base_url = url.rstrip("/")
         self.endpoint = f"{self.base_url}/v1/chat/completions"
         self.model = model
@@ -102,20 +111,20 @@ class OpenAICompatBackend(LLMBackend):
         self.name = name
 
     def chat(self, messages: List[Dict], max_tokens: int = 512) -> Optional[str]:
-        payload = json.dumps({
-            "model": self.model,
-            "messages": messages,
-            "max_tokens": max_tokens,
-            "temperature": 0.1,
-        }).encode("utf-8")
+        payload = json.dumps(
+            {
+                "model": self.model,
+                "messages": messages,
+                "max_tokens": max_tokens,
+                "temperature": 0.1,
+            }
+        ).encode("utf-8")
 
         headers = {"Content-Type": "application/json"}
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
 
-        req = urllib.request.Request(
-            self.endpoint, data=payload, headers=headers, method="POST"
-        )
+        req = urllib.request.Request(self.endpoint, data=payload, headers=headers, method="POST")
         try:
             with urllib.request.urlopen(req, timeout=self.timeout) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
@@ -141,12 +150,15 @@ class OpenAICompatBackend(LLMBackend):
 
 # ── Ollama native backend (fallback for pre-0.1.14) ──────────────────────────
 
+
 class OllamaBackend(LLMBackend):
     """Ollama using /api/chat (messages format, supported since v0.1.14)."""
+
     name = "ollama"
 
-    def __init__(self, url: str = "http://localhost:11434", model: str = "gemma2:2b",
-                 timeout: int = 120):
+    def __init__(
+        self, url: str = "http://localhost:11434", model: str = "gemma2:2b", timeout: int = 120
+    ):
         self.base_url = url.rstrip("/")
         self.model = model
         self.timeout = timeout
@@ -160,15 +172,19 @@ class OllamaBackend(LLMBackend):
             return result
 
         # Fall back to native /api/chat
-        payload = json.dumps({
-            "model": self.model,
-            "messages": messages,
-            "stream": False,
-            "options": {"num_predict": max_tokens, "temperature": 0.1},
-        }).encode("utf-8")
+        payload = json.dumps(
+            {
+                "model": self.model,
+                "messages": messages,
+                "stream": False,
+                "options": {"num_predict": max_tokens, "temperature": 0.1},
+            }
+        ).encode("utf-8")
         req = urllib.request.Request(
-            f"{self.base_url}/api/chat", data=payload,
-            headers={"Content-Type": "application/json"}, method="POST",
+            f"{self.base_url}/api/chat",
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST",
         )
         try:
             with urllib.request.urlopen(req, timeout=self.timeout) as resp:
@@ -191,6 +207,7 @@ class OllamaBackend(LLMBackend):
 
 # ── Factory ───────────────────────────────────────────────────────────────────
 
+
 def get_backend(config=None) -> LLMBackend:
     """
     Build an LLMBackend from config. Pass a MempalaceConfig instance or None.
@@ -198,6 +215,7 @@ def get_backend(config=None) -> LLMBackend:
     """
     if config is None:
         from .config import MempalaceConfig
+
         config = MempalaceConfig()
 
     llm_cfg = config.llm  # dict: {backend, url, model, api_key}
@@ -207,7 +225,7 @@ def get_backend(config=None) -> LLMBackend:
         return NullBackend()
 
     defaults = BACKEND_DEFAULTS.get(backend_name, {})
-    url   = llm_cfg.get("url")   or defaults.get("url", "")
+    url = llm_cfg.get("url") or defaults.get("url", "")
     model = llm_cfg.get("model") or defaults.get("model", "")
     api_key = llm_cfg.get("api_key") or None
 

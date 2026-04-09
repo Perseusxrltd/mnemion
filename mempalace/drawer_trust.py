@@ -25,14 +25,14 @@ from typing import Optional, List, Dict, Any
 logger = logging.getLogger("mempalace.trust")
 
 # ── Status constants ──────────────────────────────────────────────────────────
-STATUS_CURRENT    = "current"
+STATUS_CURRENT = "current"
 STATUS_SUPERSEDED = "superseded"
-STATUS_CONTESTED  = "contested"
-STATUS_HISTORICAL = "historical"   # soft-deleted: never hard-removed
+STATUS_CONTESTED = "contested"
+STATUS_HISTORICAL = "historical"  # soft-deleted: never hard-removed
 
-CONFLICT_DIRECT      = "direct_contradiction"
-CONFLICT_TEMPORAL    = "temporal_update"
-CONFLICT_PARTIAL     = "partial_overlap"
+CONFLICT_DIRECT = "direct_contradiction"
+CONFLICT_TEMPORAL = "temporal_update"
+CONFLICT_PARTIAL = "partial_overlap"
 
 SCHEMA = """
 -- Primary trust record per drawer
@@ -98,6 +98,7 @@ class DrawerTrust:
 
     def __init__(self, db_path: Optional[str] = None):
         from .config import MempalaceConfig
+
         cfg = MempalaceConfig()
         palace_parent = Path(cfg.palace_path).parent
         self.db_path = db_path or str(palace_parent / "knowledge_graph.sqlite3")
@@ -139,7 +140,9 @@ class DrawerTrust:
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
                 (drawer_id, STATUS_CURRENT, confidence, valid_from, now, now, wing, room),
             )
-            self._log_history(conn, drawer_id, None, STATUS_CURRENT, None, confidence, "created", "system")
+            self._log_history(
+                conn, drawer_id, None, STATUS_CURRENT, None, confidence, "created", "system"
+            )
             conn.commit()
             return {"drawer_id": drawer_id, "status": STATUS_CURRENT, "confidence": confidence}
         finally:
@@ -187,7 +190,14 @@ class DrawerTrust:
                 (new_status, new_conf, superseded_by, valid_to, now, drawer_id),
             )
             self._log_history(
-                conn, drawer_id, old_status, new_status, old_confidence, new_conf, reason, changed_by
+                conn,
+                drawer_id,
+                old_status,
+                new_status,
+                old_confidence,
+                new_conf,
+                reason,
+                changed_by,
             )
             conn.commit()
             return {
@@ -342,14 +352,14 @@ class DrawerTrust:
         conn = self._connect()
         try:
             counts = dict(
-                conn.execute(
-                    "SELECT status, COUNT(*) FROM drawer_trust GROUP BY status"
-                ).fetchall()
+                conn.execute("SELECT status, COUNT(*) FROM drawer_trust GROUP BY status").fetchall()
             )
             conflicts = conn.execute(
                 "SELECT resolved, COUNT(*) FROM drawer_conflicts GROUP BY resolved"
             ).fetchall()
-            conflict_counts = {f"conflicts_{'resolved' if r else 'pending'}": c for r, c in conflicts}
+            conflict_counts = {
+                f"conflicts_{'resolved' if r else 'pending'}": c for r, c in conflicts
+            }
             avg_conf = conn.execute(
                 "SELECT AVG(confidence) FROM drawer_trust WHERE status='current'"
             ).fetchone()[0]
@@ -378,5 +388,14 @@ class DrawerTrust:
             """INSERT INTO drawer_trust_history
                (drawer_id, old_status, new_status, old_confidence, new_confidence, reason, changed_by, changed_at)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-            (drawer_id, old_status, new_status, old_confidence, new_confidence, reason, changed_by, self._now()),
+            (
+                drawer_id,
+                old_status,
+                new_status,
+                old_confidence,
+                new_confidence,
+                reason,
+                changed_by,
+                self._now(),
+            ),
         )

@@ -137,8 +137,9 @@ class MempalaceConfig:
         """
         return self._file_config.get("llm", {"backend": "none"})
 
-    def save_llm_config(self, backend: str, url: str = "", model: str = "",
-                        api_key: str = "") -> None:
+    def save_llm_config(
+        self, backend: str, url: str = "", model: str = "", api_key: str = ""
+    ) -> None:
         """Persist LLM configuration to config.json."""
         self._config_dir.mkdir(parents=True, exist_ok=True)
         config = {}
@@ -149,10 +150,10 @@ class MempalaceConfig:
             except (json.JSONDecodeError, OSError):
                 pass
         config["llm"] = {
-            "backend":  backend,
-            "url":      url,
-            "model":    model,
-            "api_key":  api_key or None,
+            "backend": backend,
+            "url": url,
+            "model": model,
+            "api_key": api_key or None,
         }
         with open(self._config_file, "w") as f:
             json.dump(config, f, indent=2)

@@ -30,14 +30,14 @@ from typing import Optional, List, Dict, Any
 logger = logging.getLogger("mempalace.contradiction")
 
 # ── Configuration ─────────────────────────────────────────────────────────────
-STAGE1_THRESHOLD = 0.80    # auto-resolve if LLM confidence ≥ this
-CANDIDATES_K     = 2       # candidates to check per new drawer
-MAX_TOKENS_S1    = 512
-MAX_TOKENS_S2    = 768
+STAGE1_THRESHOLD = 0.80  # auto-resolve if LLM confidence ≥ this
+CANDIDATES_K = 2  # candidates to check per new drawer
+MAX_TOKENS_S1 = 512
+MAX_TOKENS_S2 = 768
 
 # ── Rate limiting (keeps background LLM pressure anecdotal) ──────────────────
-INTER_REQUEST_SLEEP  = 5.0   # seconds between each LLM call within a thread
-GLOBAL_COOLDOWN_SEC  = 120   # minimum seconds between any two detection runs
+INTER_REQUEST_SLEEP = 5.0  # seconds between each LLM call within a thread
+GLOBAL_COOLDOWN_SEC = 120  # minimum seconds between any two detection runs
 
 _last_detection_time: float = 0.0
 _rate_lock = threading.Lock()
@@ -91,9 +91,11 @@ Which memory is more accurate? Respond with JSON only."""
 
 # ── LLM helpers ───────────────────────────────────────────────────────────────
 
+
 def _get_backend():
     """Lazy-load the configured LLM backend."""
     from .llm_backend import get_backend
+
     return get_backend()
 
 
@@ -113,11 +115,14 @@ def stage1_check(new_text: str, candidate: Dict[str, Any]) -> Optional[Dict]:
     backend = _get_backend()
     messages = [
         {"role": "system", "content": STAGE1_SYSTEM},
-        {"role": "user", "content": STAGE1_USER.format(
-            id_a=candidate["id"],
-            text_a=candidate["text"][:1200],
-            text_b=new_text[:1200],
-        )},
+        {
+            "role": "user",
+            "content": STAGE1_USER.format(
+                id_a=candidate["id"],
+                text_a=candidate["text"][:1200],
+                text_b=new_text[:1200],
+            ),
+        },
     ]
     raw = backend.chat(messages, MAX_TOKENS_S1)
     result = _parse_llm_json(raw)
@@ -126,19 +131,27 @@ def stage1_check(new_text: str, candidate: Dict[str, Any]) -> Optional[Dict]:
     return result
 
 
-def stage2_resolve(new_text: str, candidate: Dict[str, Any],
-                   context_snippets: List[str]) -> Optional[Dict]:
+def stage2_resolve(
+    new_text: str, candidate: Dict[str, Any], context_snippets: List[str]
+) -> Optional[Dict]:
     """Stage 2 deep resolve with enriched palace context."""
     backend = _get_backend()
-    context = "\n---\n".join(context_snippets[:5]) if context_snippets else "(no additional context found)"
+    context = (
+        "\n---\n".join(context_snippets[:5])
+        if context_snippets
+        else "(no additional context found)"
+    )
     messages = [
         {"role": "system", "content": STAGE2_SYSTEM},
-        {"role": "user", "content": STAGE2_USER.format(
-            id_a=candidate["id"],
-            text_a=candidate["text"][:1200],
-            text_b=new_text[:1200],
-            context=context[:2000],
-        )},
+        {
+            "role": "user",
+            "content": STAGE2_USER.format(
+                id_a=candidate["id"],
+                text_a=candidate["text"][:1200],
+                text_b=new_text[:1200],
+                context=context[:2000],
+            ),
+        },
     ]
     raw = backend.chat(messages, MAX_TOKENS_S2)
     result = _parse_llm_json(raw)
@@ -148,51 +161,72 @@ def stage2_resolve(new_text: str, candidate: Dict[str, Any],
     return result
 
 
-def _apply_resolution(trust, new_drawer_id: str, candidate_id: str,
-                      result: Dict, conflict_id: str, stage: int):
+def _apply_resolution(
+    trust, new_drawer_id: str, candidate_id: str, result: Dict, conflict_id: str, stage: int
+):
     """Apply the LLM's verdict to the trust tables."""
     conflict_type = result.get("conflict_type", "none")
-    winner        = result.get("winner", "none")
-    confidence    = result.get("confidence", 0.0)
-    reason        = result.get("reason", "")
-    note          = result.get("resolution_note", reason)
+    winner = result.get("winner", "none")
+    reason = result.get("reason", "")
+    note = result.get("resolution_note", reason)
 
     if conflict_type == "none" or winner == "none":
         trust.resolve_conflict(conflict_id, "llm_no_conflict", note)
         return
 
-    from .drawer_trust import STATUS_SUPERSEDED, STATUS_CURRENT, STATUS_CONTESTED
+    from .drawer_trust import STATUS_SUPERSEDED, STATUS_CONTESTED
 
     if winner == "b":
         trust.update_status(
-            candidate_id, STATUS_SUPERSEDED,
+            candidate_id,
+            STATUS_SUPERSEDED,
             confidence=max(0.1, trust.get(candidate_id)["confidence"] - 0.3),
             superseded_by=new_drawer_id,
-            reason=f"stage{stage}: {reason}", changed_by="llm",
+            reason=f"stage{stage}: {reason}",
+            changed_by="llm",
         )
         trust.resolve_conflict(conflict_id, new_drawer_id, note)
         logger.info(f"[trust] {candidate_id} → superseded by {new_drawer_id} (stage {stage})")
 
     elif winner == "a":
         trust.update_status(
-            new_drawer_id, STATUS_SUPERSEDED,
+            new_drawer_id,
+            STATUS_SUPERSEDED,
             confidence=0.3,
             superseded_by=candidate_id,
-            reason=f"stage{stage}: lost to existing — {reason}", changed_by="llm",
+            reason=f"stage{stage}: lost to existing — {reason}",
+            changed_by="llm",
         )
         trust.resolve_conflict(conflict_id, candidate_id, note)
-        logger.info(f"[trust] {new_drawer_id} → superseded by existing {candidate_id} (stage {stage})")
+        logger.info(
+            f"[trust] {new_drawer_id} → superseded by existing {candidate_id} (stage {stage})"
+        )
 
     else:
-        trust.update_status(candidate_id, STATUS_CONTESTED,
-                            reason=f"stage{stage}: ambiguous conflict", changed_by="llm")
-        trust.update_status(new_drawer_id, STATUS_CONTESTED,
-                            reason=f"stage{stage}: ambiguous conflict", changed_by="llm")
+        trust.update_status(
+            candidate_id,
+            STATUS_CONTESTED,
+            reason=f"stage{stage}: ambiguous conflict",
+            changed_by="llm",
+        )
+        trust.update_status(
+            new_drawer_id,
+            STATUS_CONTESTED,
+            reason=f"stage{stage}: ambiguous conflict",
+            changed_by="llm",
+        )
         logger.info(f"[trust] Both contested: {candidate_id} <-> {new_drawer_id}")
 
 
-def run_detection_thread(new_drawer_id: str, new_text: str, wing: str, room: str,
-                         candidates: List[Dict[str, Any]], trust, hybrid_searcher):
+def run_detection_thread(
+    new_drawer_id: str,
+    new_text: str,
+    wing: str,
+    room: str,
+    candidates: List[Dict[str, Any]],
+    trust,
+    hybrid_searcher,
+):
     """
     Background thread: Stage 1 → optionally Stage 2 per candidate.
     Throttled: global cooldown + inter-request sleep keep LLM pressure minimal.
@@ -201,6 +235,7 @@ def run_detection_thread(new_drawer_id: str, new_text: str, wing: str, room: str
 
     # Skip entirely if no LLM configured
     from .llm_backend import NullBackend
+
     if isinstance(_get_backend(), NullBackend):
         return
 
@@ -226,9 +261,7 @@ def run_detection_thread(new_drawer_id: str, new_text: str, wing: str, room: str
                 continue
 
             conf = s1.get("confidence", 0.0)
-            conflict_id = trust.record_conflict(
-                candidate["id"], new_drawer_id, conflict_type, conf
-            )
+            conflict_id = trust.record_conflict(candidate["id"], new_drawer_id, conflict_type, conf)
 
             if conf >= STAGE1_THRESHOLD:
                 s1["stage"] = 1
@@ -248,32 +281,46 @@ def run_detection_thread(new_drawer_id: str, new_text: str, wing: str, room: str
 
                 s2 = stage2_resolve(new_text, candidate, context_snippets)
                 if s2:
-                    _apply_resolution(trust, new_drawer_id, candidate["id"], s2, conflict_id, stage=2)
+                    _apply_resolution(
+                        trust, new_drawer_id, candidate["id"], s2, conflict_id, stage=2
+                    )
                 else:
                     from .drawer_trust import STATUS_CONTESTED
-                    trust.update_status(new_drawer_id, STATUS_CONTESTED,
-                                        reason="stage2 unavailable", changed_by="system")
+
+                    trust.update_status(
+                        new_drawer_id,
+                        STATUS_CONTESTED,
+                        reason="stage2 unavailable",
+                        changed_by="system",
+                    )
 
         except Exception as e:
             logger.error(f"Contradiction detection error for {candidate.get('id')}: {e}")
 
 
-def spawn_detection(new_drawer_id: str, new_text: str, wing: str, room: str,
-                    trust, hybrid_searcher, k: int = CANDIDATES_K):
+def spawn_detection(
+    new_drawer_id: str,
+    new_text: str,
+    wing: str,
+    room: str,
+    trust,
+    hybrid_searcher,
+    k: int = CANDIDATES_K,
+):
     """
     Entry point from tool_add_drawer.
     Returns immediately — detection happens in a daemon thread.
     """
     # Fast-path: skip thread spawn if LLM is disabled
     from .llm_backend import NullBackend
+
     if isinstance(_get_backend(), NullBackend):
         return
 
     try:
         results = hybrid_searcher.search(new_text, wing=wing, n_results=k + 1)
         candidates = [
-            {"id": r["id"], "text": r["text"]}
-            for r in results if r["id"] != new_drawer_id
+            {"id": r["id"], "text": r["text"]} for r in results if r["id"] != new_drawer_id
         ][:k]
     except Exception as e:
         logger.warning(f"Candidate search failed: {e}")

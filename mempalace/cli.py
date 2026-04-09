@@ -279,7 +279,7 @@ def cmd_llm(args):
 
 def _cmd_llm_setup(config, BACKEND_DEFAULTS, BACKEND_LABELS):
     """Interactive LLM backend wizard."""
-    from .llm_backend import get_backend, NullBackend
+    from .llm_backend import get_backend
 
     print("\n  MemPalace — LLM Backend Setup")
     print("  " + "-" * 45)
@@ -312,7 +312,7 @@ def _cmd_llm_setup(config, BACKEND_DEFAULTS, BACKEND_LABELS):
         return
 
     defaults = BACKEND_DEFAULTS.get(backend_name, {})
-    default_url   = config.llm.get("url")   or defaults.get("url", "")
+    default_url = config.llm.get("url") or defaults.get("url", "")
     default_model = config.llm.get("model") or defaults.get("model", "")
 
     print()
@@ -339,7 +339,7 @@ def _cmd_llm_setup(config, BACKEND_DEFAULTS, BACKEND_LABELS):
         )
         if result:
             print(f"  Model response: {result.strip()[:80]}")
-        print(f"\n  Saved to ~/.mempalace/config.json")
+        print("\n  Saved to ~/.mempalace/config.json")
         print(f"  Backend: {backend_name}  url={url}  model={model}\n")
     else:
         print("UNREACHABLE")
@@ -621,9 +621,9 @@ def main():
         help="Configure LLM backend for contradiction detection (ollama, lmstudio, vllm, custom, none)",
     )
     llm_sub = p_llm.add_subparsers(dest="llm_action")
-    llm_sub.add_parser("setup",  help="Interactive wizard to choose and configure a backend")
+    llm_sub.add_parser("setup", help="Interactive wizard to choose and configure a backend")
     llm_sub.add_parser("status", help="Show current backend config and ping the endpoint")
-    llm_sub.add_parser("test",   help="Send a test prompt and verify the backend responds")
+    llm_sub.add_parser("test", help="Send a test prompt and verify the backend responds")
 
     # repair
     sub.add_parser(

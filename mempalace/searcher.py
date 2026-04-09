@@ -18,7 +18,14 @@ class SearchError(Exception):
     """Raised when search cannot proceed (e.g. no palace found)."""
 
 
-def search(query: str, palace_path: str, wing: str = None, room: str = None, n_results: int = 5, min_similarity: float = 0.0):
+def search(
+    query: str,
+    palace_path: str,
+    wing: str = None,
+    room: str = None,
+    n_results: int = 5,
+    min_similarity: float = 0.0,
+):
     """
     Search the palace. Returns verbatim drawer content.
     Optionally filter by wing (project) or room (aspect).
@@ -99,7 +106,11 @@ def search(query: str, palace_path: str, wing: str = None, room: str = None, n_r
 
 
 def search_memories(
-    query: str, palace_path: str, wing: str = None, room: str = None, n_results: int = 5,
+    query: str,
+    palace_path: str,
+    wing: str = None,
+    room: str = None,
+    n_results: int = 5,
     min_similarity: float = 0.0,
 ) -> dict:
     """
