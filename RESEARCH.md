@@ -77,10 +77,10 @@ any → historical       (drawer deleted — ghost record for audit)
 
 **Implementation details:**
 - Runs in daemon threads — save call returns immediately, detection happens in background
-- vLLM endpoint: `http://172.25.105.117:8000/v1/chat/completions` (local, no cloud)
-- Model: Gemma 4 4B FP8 (quantized, runs on consumer GPU)
+- LLM backend is pluggable — Ollama, LM Studio, vLLM, or any OpenAI-compatible endpoint (configured via `mempalace llm setup`, no hardcoded URLs)
 - Stage 1 prompt budget: 512 tokens; Stage 2: 768 tokens
-- `max_model_len=8192` (set in `run_vllm.sh`)
+- Detection is throttled: 2-minute global cooldown, 5s inter-request sleep, `nice -n 19` / `ionice -c 3` to stay anecdotal on system load
+- Disable entirely with `mempalace llm setup → None` for zero-overhead saves
 
 ### Trust-Aware Search
 

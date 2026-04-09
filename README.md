@@ -18,7 +18,7 @@ This is a specialized distribution of MemPalace maintained by **PerseusXR**. It 
 
 <br>
 
-[What We Added](#what-perseusxr-added) · [Quick Start](#quick-start) · [MCP Tools](#mcp-tools) · [Auto-Save Hooks](#auto-save-hooks) · [Palace Sync](#palace-sync) · [Benchmarks](#benchmarks) · [Architecture](#architecture)
+[What We Added](#what-perseusxr-added) · [Quick Start](#quick-start) · [MCP Tools](#mcp-tools) · [Auto-Save Hooks](#auto-save-hooks) · [Palace Sync](#palace-sync) · [Benchmarks](#benchmarks) · [Architecture](#architecture) · [Changelog](#changelog)
 
 </div>
 
@@ -61,7 +61,7 @@ any → historical       (drawer deleted — ghost record remains for audit)
 
 Save speed: unchanged (detection is async, daemon threads). Fetch speed: improved (superseded memories excluded by default, confidence weights scores).
 
-Uses a local vLLM-served model. No cloud calls, no API key.
+Works with any local LLM — configure once with `mempalace llm setup` (Ollama, LM Studio, vLLM, or any OpenAI-compatible endpoint). No cloud calls, no API key. Disable entirely for zero-overhead saves.
 
 ### 3. AI-Independent Auto-Save Hook (`hooks/mempal_save_hook.py`)
 
@@ -172,7 +172,7 @@ The MCP server exposes 24 tools across four categories.
 | `mempalace_list_rooms` | Rooms within a wing |
 | `mempalace_get_taxonomy` | Full wing → room → count tree |
 | `mempalace_get_aaak_spec` | Get the AAAK compressed memory dialect spec |
-| `mempalace_search` | Hybrid search (vector + lexical RRF). Filters out superseded memories. Flags contested with ⚠ |
+| `mempalace_search` | Hybrid search (vector + lexical RRF). Filters out superseded memories. Flags contested with ⚠. Optional `min_similarity` threshold. |
 | `mempalace_check_duplicate` | Check if content already exists before filing |
 
 ### Write
@@ -323,14 +323,42 @@ The upstream project's **96.6% R@5 on LongMemEval** (raw mode) is real and indep
 
 ---
 
+## Changelog
+
+### v3.2.0 — Community Fixes
+
+Eight upstream bugs fixed, sourced from the milla-jovovich/mempalace community:
+
+| Fix | Impact |
+|-----|--------|
+| Widen chromadb to `<2.0` | Python 3.14 compatibility |
+| Add `hnsw:space=cosine` on all collection creates | Similarity scores were negative L2 values, not cosine. All new palaces fixed automatically. Existing palaces benefit after `mempalace repair`. |
+| Guard `results["documents"][0]` on empty queries | ChromaDB 1.x returns `{documents:[]}` on empty results; was crashing with `IndexError` |
+| Redirect `sys.stdout → sys.stderr` at MCP import | chromadb/posthog startup chatter was corrupting the JSON-RPC wire, causing `Unexpected token` errors in clients |
+| Paginate taxonomy/list tools | Palaces with >10k drawers were silently truncated at 10k; now pages through all drawers |
+| Drop `wait_for_previous` arg | Gemini MCP clients inject this undocumented arg; was crashing with `TypeError` |
+| `min_similarity` on `mempalace_search` | Results below threshold are omitted — gives agents a clean "nothing found" signal instead of returning negative-score noise |
+| `CODE_KEYWORDS` blocklist in entity detector | Rust types, React, framework names (String, Vec, Debug, React...) were being detected as entities during `mempalace init` |
+
+### v3.1.0 — Trust Layer + LLM Backend
+
+- Memory trust lifecycle: `current → superseded | contested → historical`
+- Two-stage background contradiction detection (Stage 1: fast LLM judge; Stage 2: palace-context enriched)
+- Pluggable LLM backend: Ollama, LM Studio, vLLM, custom OpenAI-compatible, or none — configure with `mempalace llm setup`
+- Resource-throttled detection: `nice -n 19`, `ionice -c 3`, 2-minute global cooldown, 5s inter-request sleep
+- One-shot Windows installer (`sync/install_windows.ps1`) — sets up hooks, Task Scheduler, optional vLLM auto-start
+- 5 new trust MCP tools: `trust_stats`, `verify`, `challenge`, `get_contested`, `resolve_contest`
+
+---
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
 
 <!-- Link Definitions -->
-[version-shield]: https://img.shields.io/badge/version-3.1.0-4dc9f6?style=flat-square&labelColor=0a0e14
+[version-shield]: https://img.shields.io/badge/version-3.2.0-4dc9f6?style=flat-square&labelColor=0a0e14
 [release-link]: https://github.com/Perseusxrltd/mempalace/releases
-[python-shield]: https://img.shields.io/badge/python-3.9+-7dd8f8?style=flat-square&labelColor=0a0e14&logo=python&logoColor=7dd8f8
+[python-shield]: https://img.shields.io/badge/python-3.9--3.14-7dd8f8?style=flat-square&labelColor=0a0e14&logo=python&logoColor=7dd8f8
 [python-link]: https://www.python.org/
 [license-shield]: https://img.shields.io/badge/license-MIT-b0e8ff?style=flat-square&labelColor=0a0e14
 [license-link]: https://github.com/Perseusxrltd/mempalace/blob/main/LICENSE
