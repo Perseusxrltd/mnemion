@@ -47,9 +47,9 @@ class HybridSearcher:
         self.chroma_client = chromadb.PersistentClient(path=self.palace_path)
         try:
             self.collection = self.chroma_client.get_collection(self.collection_name)
-        except Exception as e:
-            logger.error(f"Failed to load Chroma collection '{self.collection_name}': {e}")
-            raise
+        except Exception:
+            # Palace not yet initialized — search will return empty results.
+            self.collection = None
 
     def _fts_search(
         self, query: str, wing: Optional[str] = None, room: Optional[str] = None, limit: int = 50
@@ -99,6 +99,8 @@ class HybridSearcher:
         elif room:
             where = {"room": room}
 
+        if self.collection is None:
+            return []
         try:
             results = self.collection.query(
                 query_texts=[query],
@@ -145,6 +147,8 @@ class HybridSearcher:
         Superseded and historical drawers are filtered out by default.
         Contested drawers are included but flagged with a warning marker.
         """
+        if self.collection is None:
+            return []
         # 1. Gather candidates from both engines (fetch more to allow for trust filtering)
         fetch_limit = max(50, n_results * 10)
         vector_ids = self._vector_search(query, wing, room, limit=fetch_limit)
