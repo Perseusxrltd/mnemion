@@ -18,7 +18,7 @@ class SearchError(Exception):
     """Raised when search cannot proceed (e.g. no palace found)."""
 
 
-def search(query: str, palace_path: str, wing: str = None, room: str = None, n_results: int = 5):
+def search(query: str, palace_path: str, wing: str = None, room: str = None, n_results: int = 5, min_similarity: float = 0.0):
     """
     Search the palace. Returns verbatim drawer content.
     Optionally filter by wing (project) or room (aspect).
@@ -55,13 +55,14 @@ def search(query: str, palace_path: str, wing: str = None, room: str = None, n_r
         print(f"\n  Search error: {e}")
         raise SearchError(f"Search error: {e}") from e
 
+    # ChromaDB 1.x may return {documents: []}; guard before [0]. Issue #195.
+    if not results.get("documents") or not results["documents"][0]:
+        print(f'\n  No results found for: "{query}"')
+        return
+
     docs = results["documents"][0]
     metas = results["metadatas"][0]
     dists = results["distances"][0]
-
-    if not docs:
-        print(f'\n  No results found for: "{query}"')
-        return
 
     print(f"\n{'=' * 60}")
     print(f'  Results for: "{query}"')
@@ -71,13 +72,17 @@ def search(query: str, palace_path: str, wing: str = None, room: str = None, n_r
         print(f"  Room: {room}")
     print(f"{'=' * 60}\n")
 
-    for i, (doc, meta, dist) in enumerate(zip(docs, metas, dists), 1):
+    displayed = 0
+    for doc, meta, dist in zip(docs, metas, dists):
         similarity = round(1 - dist, 3)
+        if similarity < min_similarity:
+            continue
+        displayed += 1
         source = Path(meta.get("source_file", "?")).name
         wing_name = meta.get("wing", "?")
         room_name = meta.get("room", "?")
 
-        print(f"  [{i}] {wing_name} / {room_name}")
+        print(f"  [{displayed}] {wing_name} / {room_name}")
         print(f"      Source: {source}")
         print(f"      Match:  {similarity}")
         print()
@@ -87,11 +92,15 @@ def search(query: str, palace_path: str, wing: str = None, room: str = None, n_r
         print()
         print(f"  {'─' * 56}")
 
+    if displayed == 0:
+        print(f'\n  No results above similarity threshold ({min_similarity}) for: "{query}"')
+
     print()
 
 
 def search_memories(
-    query: str, palace_path: str, wing: str = None, room: str = None, n_results: int = 5
+    query: str, palace_path: str, wing: str = None, room: str = None, n_results: int = 5,
+    min_similarity: float = 0.0,
 ) -> dict:
     """
     Programmatic search — returns a dict instead of printing.
@@ -129,19 +138,30 @@ def search_memories(
     except Exception as e:
         return {"error": f"Search error: {e}"}
 
+    # ChromaDB 1.x may return {documents: []}; guard before [0]. Issue #195.
+    if not results.get("documents") or not results["documents"][0]:
+        return {
+            "query": query,
+            "filters": {"wing": wing, "room": room},
+            "results": [],
+        }
+
     docs = results["documents"][0]
     metas = results["metadatas"][0]
     dists = results["distances"][0]
 
     hits = []
     for doc, meta, dist in zip(docs, metas, dists):
+        similarity = round(1 - dist, 3)
+        if similarity < min_similarity:
+            continue
         hits.append(
             {
                 "text": doc,
                 "wing": meta.get("wing", "unknown"),
                 "room": meta.get("room", "unknown"),
                 "source_file": Path(meta.get("source_file", "?")).name,
-                "similarity": round(1 - dist, 3),
+                "similarity": similarity,
             }
         )
 

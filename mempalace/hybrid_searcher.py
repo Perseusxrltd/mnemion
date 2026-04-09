@@ -128,6 +128,7 @@ class HybridSearcher:
         room: Optional[str] = None,
         n_results: int = 5,
         include_superseded: bool = False,
+        min_similarity: float = 0.0,
     ) -> List[Dict[str, Any]]:
         """
         Performs a hybrid search and returns fused, hydrated results.
@@ -183,6 +184,8 @@ class HybridSearcher:
 
         hits = []
         for doc_id, score, status, confidence in top_entries:
+            if min_similarity > 0.0 and score < min_similarity:
+                continue
             if doc_id in doc_map:
                 doc, meta = doc_map[doc_id]
                 hit = {

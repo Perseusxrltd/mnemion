@@ -17,6 +17,8 @@ from collections import defaultdict
 
 import chromadb
 
+from .config import DRAWER_HNSW_METADATA
+
 READABLE_EXTENSIONS = {
     ".txt",
     ".md",
@@ -399,7 +401,7 @@ def get_collection(palace_path: str):
     try:
         return client.get_collection("mempalace_drawers")
     except Exception:
-        return client.create_collection("mempalace_drawers")
+        return client.create_collection("mempalace_drawers", metadata=DRAWER_HNSW_METADATA)
 
 
 def file_already_mined(collection, source_file: str) -> bool:

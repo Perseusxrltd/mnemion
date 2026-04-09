@@ -395,6 +395,40 @@ STOPWORDS = {
     "inference",
 }
 
+# Programming-specific terms that get misdetected as entities when scanning
+# code files. Applied in extract_candidates() alongside STOPWORDS. Issue #348.
+CODE_KEYWORDS = {
+    # Rust types, traits, derive macros
+    "string", "vec", "option", "result", "bool", "usize", "isize", "u8", "u16",
+    "u32", "u64", "u128", "i8", "i16", "i32", "i64", "i128", "f32", "f64",
+    "debug", "clone", "copy", "send", "sync", "sized", "default", "display",
+    "serialize", "deserialize", "hash", "eq", "ord", "partialord", "partialeq",
+    "into", "from", "asref", "asmut", "iterator", "drop",
+    # JS/TS/React
+    "react", "vue", "angular", "node", "component", "props", "state", "effect",
+    "context", "ref", "memo", "callback", "reducer", "dispatch", "store",
+    "router", "route", "middleware", "handler", "controller", "service",
+    "promise", "async", "await", "observable", "subject",
+    # Python frameworks
+    "django", "flask", "fastapi", "pytest", "pydantic", "sqlalchemy",
+    "celery", "redis", "numpy", "pandas", "scipy", "sklearn",
+    # Go
+    "goroutine", "channel", "defer", "interface", "struct", "func",
+    # General programming patterns
+    "tree", "graph", "queue", "stack", "heap", "node", "edge", "vertex",
+    "builder", "factory", "singleton", "observer", "adapter", "decorator",
+    "proxy", "facade", "strategy", "command", "visitor", "iterator",
+    # Language/runtime names (when used as identifiers)
+    "rust", "python", "kotlin", "swift", "golang", "typescript", "javascript",
+    "java", "scala", "haskell", "elixir", "clojure", "ocaml", "fsharp",
+    # Build tools and frameworks
+    "cargo", "tauri", "electron", "webpack", "vite", "rollup", "esbuild",
+    "docker", "kubernetes", "terraform", "ansible", "cmake", "gradle", "maven",
+    # HTTP/API terms
+    "get", "post", "put", "patch", "delete", "request", "response",
+    "headers", "payload", "endpoint", "webhook", "socket", "stream",
+}
+
 # For entity detection — prose only, no code files
 # Code files have too many capitalized names (classes, functions) that aren't entities
 PROSE_EXTENSIONS = {
@@ -450,7 +484,8 @@ def extract_candidates(text: str) -> dict:
 
     counts = defaultdict(int)
     for word in raw:
-        if word.lower() not in STOPWORDS and len(word) > 1:
+        lower = word.lower()
+        if lower not in STOPWORDS and lower not in CODE_KEYWORDS and len(word) > 1:
             counts[word] += 1
 
     # Also find multi-word proper nouns (e.g. "Memory Palace", "Claude Code")

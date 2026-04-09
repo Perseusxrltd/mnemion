@@ -17,18 +17,23 @@ Tools (write):
   mempalace_delete_drawer   — remove a drawer by ID
 """
 
-import argparse
-import os
+# Issue #225: save real stdout BEFORE any other import so chatter from
+# chromadb/posthog/etc cannot corrupt the JSON-RPC wire on stdout.
 import sys
-import json
-import logging
-import hashlib
-import sqlite3
-from datetime import datetime
+_real_stdout = sys.stdout
+sys.stdout = sys.stderr
 
-import chromadb
+import argparse  # noqa: E402
+import os  # noqa: E402
+import json  # noqa: E402
+import logging  # noqa: E402
+import hashlib  # noqa: E402
+import sqlite3  # noqa: E402
+from datetime import datetime  # noqa: E402
 
-from .config import MempalaceConfig
+import chromadb  # noqa: E402
+
+from .config import DRAWER_HNSW_METADATA, MempalaceConfig  # noqa: E402
 from .version import __version__
 from .searcher import search_memories
 from .palace_graph import traverse, find_tunnels, graph_stats
@@ -82,7 +87,10 @@ def _get_collection(create=False):
         if _client_cache is None:
             _client_cache = chromadb.PersistentClient(path=_config.palace_path)
         if create:
-            _collection_cache = _client_cache.get_or_create_collection(_config.collection_name)
+            # Issue #218: cosine required so similarity = 1 - distance is meaningful.
+            _collection_cache = _client_cache.get_or_create_collection(
+                _config.collection_name, metadata=DRAWER_HNSW_METADATA
+            )
         elif _collection_cache is None:
             _collection_cache = _client_cache.get_collection(_config.collection_name)
         return _collection_cache
@@ -100,6 +108,26 @@ def _no_palace():
 # ==================== READ TOOLS ====================
 
 
+def _iter_all_metadatas(col, where=None):
+    """Yield every drawer's metadata, paginating so palaces with >10k drawers
+    don't silently truncate. Logs and re-raises on error so callers never
+    receive partial data presented as a full result. Issue #171."""
+    PAGE, offset = 10000, 0
+    try:
+        while True:
+            kwargs = {"include": ["metadatas"], "limit": PAGE, "offset": offset}
+            if where:
+                kwargs["where"] = where
+            metas = col.get(**kwargs).get("metadatas") or []
+            yield from (m for m in metas if m is not None)
+            if len(metas) < PAGE:
+                return
+            offset += PAGE
+    except Exception as e:
+        logger.error("metadata iteration failed at offset %d: %s", offset, e)
+        raise
+
+
 def tool_status():
     col = _get_collection()
     if not col:
@@ -107,15 +135,11 @@ def tool_status():
     count = col.count()
     wings = {}
     rooms = {}
-    try:
-        all_meta = col.get(include=["metadatas"], limit=10000)["metadatas"]
-        for m in all_meta:
-            w = m.get("wing", "unknown")
-            r = m.get("room", "unknown")
-            wings[w] = wings.get(w, 0) + 1
-            rooms[r] = rooms.get(r, 0) + 1
-    except Exception:
-        pass
+    for m in _iter_all_metadatas(col):
+        w = m.get("wing", "unknown")
+        r = m.get("room", "unknown")
+        wings[w] = wings.get(w, 0) + 1
+        rooms[r] = rooms.get(r, 0) + 1
     return {
         "total_drawers": count,
         "wings": wings,
@@ -164,13 +188,9 @@ def tool_list_wings():
     if not col:
         return _no_palace()
     wings = {}
-    try:
-        all_meta = col.get(include=["metadatas"], limit=10000)["metadatas"]
-        for m in all_meta:
-            w = m.get("wing", "unknown")
-            wings[w] = wings.get(w, 0) + 1
-    except Exception:
-        pass
+    for m in _iter_all_metadatas(col):
+        w = m.get("wing", "unknown")
+        wings[w] = wings.get(w, 0) + 1
     return {"wings": wings}
 
 
@@ -179,16 +199,9 @@ def tool_list_rooms(wing: str = None):
     if not col:
         return _no_palace()
     rooms = {}
-    try:
-        kwargs = {"include": ["metadatas"], "limit": 10000}
-        if wing:
-            kwargs["where"] = {"wing": wing}
-        all_meta = col.get(**kwargs)["metadatas"]
-        for m in all_meta:
-            r = m.get("room", "unknown")
-            rooms[r] = rooms.get(r, 0) + 1
-    except Exception:
-        pass
+    for m in _iter_all_metadatas(col, where={"wing": wing} if wing else None):
+        r = m.get("room", "unknown")
+        rooms[r] = rooms.get(r, 0) + 1
     return {"wing": wing or "all", "rooms": rooms}
 
 
@@ -197,22 +210,18 @@ def tool_get_taxonomy():
     if not col:
         return _no_palace()
     taxonomy = {}
-    try:
-        all_meta = col.get(include=["metadatas"], limit=10000)["metadatas"]
-        for m in all_meta:
-            w = m.get("wing", "unknown")
-            r = m.get("room", "unknown")
-            if w not in taxonomy:
-                taxonomy[w] = {}
-            taxonomy[w][r] = taxonomy[w].get(r, 0) + 1
-    except Exception:
-        pass
+    for m in _iter_all_metadatas(col):
+        w = m.get("wing", "unknown")
+        r = m.get("room", "unknown")
+        if w not in taxonomy:
+            taxonomy[w] = {}
+        taxonomy[w][r] = taxonomy[w].get(r, 0) + 1
     return {"taxonomy": taxonomy}
 
 
-def tool_search(query: str, limit: int = 5, wing: str = None, room: str = None):
+def tool_search(query: str, limit: int = 5, wing: str = None, room: str = None, min_similarity: float = 0.0):
     """Hybrid search tool handler."""
-    return _hybrid.search(query, wing=wing, room=room, n_results=limit)
+    return _hybrid.search(query, wing=wing, room=room, n_results=limit, min_similarity=min_similarity)
 
 
 def tool_check_duplicate(content: str, threshold: float = 0.9):
@@ -735,6 +744,10 @@ TOOLS = {
                 "limit": {"type": "integer", "description": "Max results (default 5)"},
                 "wing": {"type": "string", "description": "Filter by wing (optional)"},
                 "room": {"type": "string", "description": "Filter by room (optional)"},
+                "min_similarity": {
+                    "type": "number",
+                    "description": "Minimum similarity threshold 0-1 (default 0.0, discards negative scores). Raise to 0.1+ for stricter filtering.",
+                },
             },
             "required": ["query"],
         },
@@ -925,6 +938,7 @@ def handle_request(request):
             elif declared_type == "number" and not isinstance(value, (int, float)):
                 tool_args[key] = float(value)
         try:
+            tool_args.pop("wait_for_previous", None)
             result = TOOLS[tool_name]["handler"](**tool_args)
             return {
                 "jsonrpc": "2.0",
@@ -959,8 +973,8 @@ def main():
             request = json.loads(line)
             response = handle_request(request)
             if response is not None:
-                sys.stdout.write(json.dumps(response) + "\n")
-                sys.stdout.flush()
+                _real_stdout.write(json.dumps(response) + "\n")
+                _real_stdout.flush()
         except KeyboardInterrupt:
             break
         except Exception as e:
