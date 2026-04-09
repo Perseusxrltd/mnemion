@@ -17,6 +17,9 @@ Commands:
     mempalace wake-up                     Show L0 + L1 wake-up context
     mempalace wake-up --wing my_app       Wake-up for a specific project
     mempalace status                      Show what's been filed
+    mempalace llm setup                   Configure LLM backend (ollama/lmstudio/vllm/custom/none)
+    mempalace llm status                  Show current LLM config and ping the endpoint
+    mempalace llm test                    Send a test prompt to verify the backend
 
 Examples:
     mempalace init ~/projects/my_app
@@ -224,6 +227,124 @@ def cmd_repair(args):
     print(f"\n  Repair complete. {filed} drawers rebuilt.")
     print(f"  Backup saved at {backup_path}")
     print(f"\n{'=' * 55}\n")
+
+
+def cmd_llm(args):
+    """LLM backend management: setup, status, test."""
+    from .config import MempalaceConfig
+    from .llm_backend import get_backend, BACKEND_DEFAULTS, BACKEND_LABELS, NullBackend
+
+    config = MempalaceConfig()
+
+    if args.llm_action == "status":
+        llm_cfg = config.llm
+        backend_name = llm_cfg.get("backend", "none")
+        print(f"\n  LLM backend: {backend_name}")
+        backend = get_backend(config)
+        print(f"  Details:     {backend.info()}")
+        if isinstance(backend, NullBackend):
+            print("  Status:      disabled — contradiction detection off")
+            print("\n  Run 'mempalace llm setup' to configure a backend.\n")
+        else:
+            print("  Pinging...", end=" ", flush=True)
+            if backend.ping():
+                print("OK")
+            else:
+                print("UNREACHABLE")
+                print(f"  Check that {llm_cfg.get('url', '?')} is running.\n")
+
+    elif args.llm_action == "test":
+        backend = get_backend(config)
+        if isinstance(backend, NullBackend):
+            print("\n  No LLM configured. Run: mempalace llm setup\n")
+            return
+        print(f"\n  Testing {backend.info()} ...")
+        messages = [
+            {"role": "system", "content": "You are a helpful assistant. Be brief."},
+            {"role": "user", "content": "Say exactly: MEMPALACE_OK"},
+        ]
+        result = backend.chat(messages, max_tokens=20)
+        if result:
+            print(f"  Response: {result}")
+            print("  Test PASSED\n")
+        else:
+            print("  Test FAILED — no response. Check the backend is running.\n")
+
+    elif args.llm_action == "setup":
+        _cmd_llm_setup(config, BACKEND_DEFAULTS, BACKEND_LABELS)
+
+    else:
+        print("\n  Usage: mempalace llm <setup|status|test>\n")
+
+
+def _cmd_llm_setup(config, BACKEND_DEFAULTS, BACKEND_LABELS):
+    """Interactive LLM backend wizard."""
+    from .llm_backend import get_backend, NullBackend
+
+    print("\n  MemPalace — LLM Backend Setup")
+    print("  " + "-" * 45)
+    print("  The LLM backend powers contradiction detection.")
+    print("  It runs in the background and is optional.\n")
+
+    ordered = ["none", "ollama", "lmstudio", "vllm", "custom"]
+    for i, key in enumerate(ordered, 1):
+        marker = "  "
+        if config.llm.get("backend", "none") == key:
+            marker = "* "  # mark current
+        print(f"  {marker}{i}. {BACKEND_LABELS[key]}")
+
+    print()
+    raw = input("  Choose [1-5] (Enter = keep current): ").strip()
+    if not raw:
+        print("  No change.\n")
+        return
+
+    try:
+        idx = int(raw) - 1
+        backend_name = ordered[idx]
+    except (ValueError, IndexError):
+        print("  Invalid choice.\n")
+        return
+
+    if backend_name == "none":
+        config.save_llm_config("none")
+        print("  LLM disabled. Contradiction detection will be skipped.\n")
+        return
+
+    defaults = BACKEND_DEFAULTS.get(backend_name, {})
+    default_url   = config.llm.get("url")   or defaults.get("url", "")
+    default_model = config.llm.get("model") or defaults.get("model", "")
+
+    print()
+    url_prompt = f"  Base URL [{default_url}]: "
+    url = input(url_prompt).strip() or default_url
+
+    model_hint = "(leave blank for LM Studio auto-select)" if backend_name == "lmstudio" else ""
+    model_prompt = f"  Model name [{default_model}] {model_hint}: "
+    model = input(model_prompt).strip() or default_model
+
+    api_key = ""
+    if backend_name == "custom":
+        api_key = input("  API key (leave blank if none): ").strip()
+
+    # Test before saving
+    print("\n  Testing connection...", end=" ", flush=True)
+    config.save_llm_config(backend_name, url=url, model=model, api_key=api_key)
+    backend = get_backend(config)
+
+    if backend.ping():
+        print("OK")
+        result = backend.chat(
+            [{"role": "user", "content": "Reply with exactly: OK"}], max_tokens=10
+        )
+        if result:
+            print(f"  Model response: {result.strip()[:80]}")
+        print(f"\n  Saved to ~/.mempalace/config.json")
+        print(f"  Backend: {backend_name}  url={url}  model={model}\n")
+    else:
+        print("UNREACHABLE")
+        print(f"  Could not reach {url}")
+        print("  Config saved anyway — fix the URL or start your LLM server, then re-run setup.\n")
 
 
 def cmd_hook(args):
@@ -494,6 +615,16 @@ def main():
     for instr_name in ["init", "search", "mine", "help", "status"]:
         instructions_sub.add_parser(instr_name, help=f"Output {instr_name} instructions")
 
+    # llm
+    p_llm = sub.add_parser(
+        "llm",
+        help="Configure LLM backend for contradiction detection (ollama, lmstudio, vllm, custom, none)",
+    )
+    llm_sub = p_llm.add_subparsers(dest="llm_action")
+    llm_sub.add_parser("setup",  help="Interactive wizard to choose and configure a backend")
+    llm_sub.add_parser("status", help="Show current backend config and ping the endpoint")
+    llm_sub.add_parser("test",   help="Send a test prompt and verify the backend responds")
+
     # repair
     sub.add_parser(
         "repair",
@@ -510,6 +641,13 @@ def main():
         return
 
     # Handle two-level subcommands
+    if args.command == "llm":
+        if not getattr(args, "llm_action", None):
+            p_llm.print_help()
+            return
+        cmd_llm(args)
+        return
+
     if args.command == "hook":
         if not getattr(args, "hook_action", None):
             p_hook.print_help()
@@ -535,6 +673,7 @@ def main():
         "wake-up": cmd_wakeup,
         "repair": cmd_repair,
         "status": cmd_status,
+        "llm": cmd_llm,
     }
     dispatch[args.command](args)
 

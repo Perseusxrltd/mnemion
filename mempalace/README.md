@@ -19,6 +19,7 @@ The Python package that powers MemPalace. All modules, all logic.
 | `palace_graph.py` | Room-based navigation graph — BFS traversal, tunnel detection across wings |
 | `drawer_trust.py` | **Memory Trust Layer** — SQLite trust records per drawer; status lifecycle (current→superseded\|contested→historical); confidence scoring; conflict registry; append-only audit trail |
 | `contradiction_detector.py` | **Two-stage conflict detection** — Stage 1: fast vLLM judge (auto-resolves at ≥0.8 confidence); Stage 2: palace-context enriched resolve for ambiguous cases; runs in daemon threads, never blocks saves |
+| `llm_backend.py` | **Pluggable LLM backend** — abstract adapter supporting ollama, lmstudio, vllm, custom OpenAI-compatible endpoints, or none. Configured via `mempalace llm setup`. |
 | `mcp_server.py` | MCP server — 24 tools, AAAK auto-teach, Palace Protocol, agent diary, trust management |
 | `general_extractor.py` | Pattern-based extraction — classifies text into 5 memory types (decision, preference, milestone, problem, emotional) without any LLM |
 | `onboarding.py` | Guided first-run setup — asks about people/projects, generates AAAK bootstrap + wing config |

@@ -123,6 +123,36 @@ class MempalaceConfig:
         """Mapping of hall names to keyword lists."""
         return self._file_config.get("hall_keywords", DEFAULT_HALL_KEYWORDS)
 
+    @property
+    def llm(self):
+        """LLM backend configuration dict.
+
+        Keys: backend, url, model, api_key
+        backend choices: none | ollama | lmstudio | vllm | custom
+        """
+        return self._file_config.get("llm", {"backend": "none"})
+
+    def save_llm_config(self, backend: str, url: str = "", model: str = "",
+                        api_key: str = "") -> None:
+        """Persist LLM configuration to config.json."""
+        self._config_dir.mkdir(parents=True, exist_ok=True)
+        config = {}
+        if self._config_file.exists():
+            try:
+                with open(self._config_file, "r") as f:
+                    config = json.load(f)
+            except (json.JSONDecodeError, OSError):
+                pass
+        config["llm"] = {
+            "backend":  backend,
+            "url":      url,
+            "model":    model,
+            "api_key":  api_key or None,
+        }
+        with open(self._config_file, "w") as f:
+            json.dump(config, f, indent=2)
+        self._file_config = config
+
     def init(self):
         """Create config directory and write default config.json if it doesn't exist."""
         self._config_dir.mkdir(parents=True, exist_ok=True)

@@ -126,21 +126,36 @@ claude mcp add mempalace -- python -m mempalace.mcp_server
 py sync/backfill_trust.py
 ```
 
-### vLLM (contradiction detection — optional but recommended)
+### LLM backend (contradiction detection — optional)
 
-Contradiction detection requires a locally running vLLM instance. On WSL Ubuntu:
+Contradiction detection works with any local LLM. Configure it interactively:
 
 ```bash
-# Copy and start
-cp sync/run_vllm.sh ~/run_vllm.sh
-bash ~/run_vllm.sh &
-
-# Check it loaded (~60 seconds)
-tail -f ~/vllm.log
-# Look for: "Uvicorn running on http://0.0.0.0:8000"
+mempalace llm setup
 ```
 
-The Windows installer registers this as a Task Scheduler task that starts on login automatically.
+```
+  1. None (disabled)    — no conflict detection, saves instantly
+  2. Ollama             — local, easy: ollama pull gemma2
+  3. LM Studio          — local GUI with model browser
+  4. vLLM               — local, fast, needs GPU (WSL/Linux)
+  5. Custom             — any OpenAI-compatible endpoint
+```
+
+Check and test at any time:
+```bash
+mempalace llm status   # show config + ping
+mempalace llm test     # send a test prompt
+```
+
+**vLLM on WSL** (for GPU users):
+```bash
+cp sync/run_vllm.sh ~/run_vllm.sh
+bash ~/run_vllm.sh &
+# ~60s to load, then: mempalace llm setup → choose vllm → http://localhost:8000
+```
+
+The Windows installer registers vLLM as a Task Scheduler task that starts on login.
 
 ---
 
