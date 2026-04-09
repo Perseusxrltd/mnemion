@@ -102,13 +102,14 @@ class HybridSearcher:
         if self.collection is None:
             return []
         try:
+            # chromadb 1.x: ids are always returned; "ids" is not a valid include item
             results = self.collection.query(
                 query_texts=[query],
                 n_results=limit,
                 where=where if where else None,
-                include=["ids"],
+                include=[],
             )
-            return results["ids"][0] if results["ids"] else []
+            return results["ids"][0] if results.get("ids") else []
         except Exception as e:
             logger.error(f"Semantic search failed: {e}")
             return []

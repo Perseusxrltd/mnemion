@@ -223,9 +223,14 @@ def tool_search(
     query: str, limit: int = 5, wing: str = None, room: str = None, min_similarity: float = 0.0
 ):
     """Hybrid search tool handler."""
-    return _hybrid.search(
+    hits = _hybrid.search(
         query, wing=wing, room=room, n_results=limit, min_similarity=min_similarity
     )
+    return {
+        "query": query,
+        "filters": {"wing": wing, "room": room},
+        "results": hits,
+    }
 
 
 def tool_check_duplicate(content: str, threshold: float = 0.9):
