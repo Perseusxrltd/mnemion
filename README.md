@@ -2,7 +2,7 @@
 
 <img src="assets/mempalace_logo.png" alt="MemPalace" width="280">
 
-# MemPalace (High-Fidelity Hybrid Fork)
+# MemPalace (PerseusXR High-Fidelity Distribution)
 
 ### Augmented with Hybrid Lexical-Semantic Retrieval (RRF)
 
