@@ -602,7 +602,7 @@ def tool_diary_read(agent_name: str, last_n: int = 10):
 
 TOOLS = {
     "mempalace_status": {
-        "description": "Palace overview — total drawers, wing and room counts",
+        "description": "CALL THIS FIRST at every session start. Returns your behavioral protocol, AAAK memory dialect spec, and palace overview (wings, rooms, drawer counts). Required for correct operation — the protocol tells you when and how to use all other tools.",
         "input_schema": {"type": "object", "properties": {}},
         "handler": tool_status,
     },
@@ -632,7 +632,7 @@ TOOLS = {
         "handler": tool_get_aaak_spec,
     },
     "mempalace_kg_query": {
-        "description": "Query the knowledge graph for an entity's relationships. Returns typed facts with temporal validity. E.g. 'Max' → child_of Alice, loves chess, does swimming. Filter by date with as_of to see what was true at a point in time.",
+        "description": "Query the knowledge graph for an entity's relationships. Use BEFORE answering questions about specific people, projects, or things — get typed facts with temporal validity. E.g. 'Max' → child_of Alice, loves chess. Filter by date with as_of to see what was true at a point in time.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -747,7 +747,7 @@ TOOLS = {
         "handler": tool_graph_stats,
     },
     "mempalace_search": {
-        "description": "Hybrid search (vector + lexical). Returns verbatim drawer content with similarity scores.",
+        "description": "Hybrid search (vector + lexical) across all memories. Use BEFORE answering any question about past events, people, projects, or facts — verify from the palace, don't guess. Returns verbatim drawer content with similarity scores.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -780,7 +780,7 @@ TOOLS = {
         "handler": tool_check_duplicate,
     },
     "mempalace_add_drawer": {
-        "description": "File verbatim content into the palace. Checks for duplicates and indexes in both stores.",
+        "description": "Save a new memory to the palace. Call when you learn a new fact, the user shares something important, or something changes. Content is stored verbatim — never summarize, preserve exact words. Checks for duplicates automatically.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -867,7 +867,7 @@ TOOLS = {
         "handler": tool_resolve_contest,
     },
     "mempalace_diary_write": {
-        "description": "Write to your personal agent diary in AAAK format. Your observations, thoughts, what you worked on, what matters. Each agent has their own diary with full history. Write in AAAK for compression — e.g. 'SESSION:2026-04-04|built.palace.graph+diary.tools|ALC.req:agent.diaries.in.aaak|★★★'. Use entity codes from the AAAK spec.",
+        "description": "Write to your agent diary. Call AT END OF EVERY SESSION with your name and a summary of what happened, what you learned, what matters. Each agent has their own diary wing. Write in AAAK format for compression — e.g. 'SESSION:2026-04-04|built.palace.graph+diary.tools|★★★'. Use entity codes from the AAAK spec.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -920,12 +920,49 @@ def handle_request(request):
             "id": req_id,
             "result": {
                 "protocolVersion": "2024-11-05",
-                "capabilities": {"tools": {}},
+                "capabilities": {"tools": {}, "prompts": {}},
                 "serverInfo": {"name": "mempalace", "version": __version__},
             },
         }
     elif method == "notifications/initialized":
         return None
+    elif method == "prompts/list":
+        return {
+            "jsonrpc": "2.0",
+            "id": req_id,
+            "result": {
+                "prompts": [
+                    {
+                        "name": "mempalace_protocol",
+                        "description": "The MemPalace memory protocol — behavioral rules for any AI using this palace. Request this at session start if you did not call mempalace_status yet.",
+                    }
+                ]
+            },
+        }
+    elif method == "prompts/get":
+        prompt_name = params.get("name", "")
+        if prompt_name == "mempalace_protocol":
+            return {
+                "jsonrpc": "2.0",
+                "id": req_id,
+                "result": {
+                    "description": "MemPalace behavioral protocol",
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": {
+                                "type": "text",
+                                "text": PALACE_PROTOCOL + "\n\n" + AAAK_SPEC,
+                            },
+                        }
+                    ],
+                },
+            }
+        return {
+            "jsonrpc": "2.0",
+            "id": req_id,
+            "error": {"code": -32602, "message": f"Unknown prompt: {prompt_name}"},
+        }
     elif method == "tools/list":
         return {
             "jsonrpc": "2.0",
