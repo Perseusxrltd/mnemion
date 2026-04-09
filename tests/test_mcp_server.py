@@ -12,9 +12,19 @@ import json
 def _patch_mcp_server(monkeypatch, config, kg):
     """Patch the mcp_server module globals to use test fixtures."""
     from mempalace import mcp_server
+    from mempalace.hybrid_searcher import HybridSearcher
+    from mempalace.drawer_trust import DrawerTrust
+    import os
 
     monkeypatch.setattr(mcp_server, "_config", config)
     monkeypatch.setattr(mcp_server, "_kg", kg)
+    # _hybrid and _trust are module-level globals init'd at import time;
+    # they must point to the test palace/db, not the session temp dir.
+    kg_path = os.path.join(os.path.dirname(config.palace_path), "test_kg.sqlite3")
+    monkeypatch.setattr(
+        mcp_server, "_hybrid", HybridSearcher(palace_path=config.palace_path, kg_path=kg_path)
+    )
+    monkeypatch.setattr(mcp_server, "_trust", DrawerTrust(db_path=kg_path))
 
 
 def _get_collection(palace_path, create=False):

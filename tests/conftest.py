@@ -30,7 +30,7 @@ os.environ["HOMEPATH"] = os.path.splitdrive(_session_tmp)[1] or _session_tmp
 import chromadb  # noqa: E402
 import pytest  # noqa: E402
 
-from mempalace.config import MempalaceConfig  # noqa: E402
+from mempalace.config import DRAWER_HNSW_METADATA, MempalaceConfig  # noqa: E402
 from mempalace.knowledge_graph import KnowledgeGraph  # noqa: E402
 
 
@@ -101,7 +101,7 @@ def config(tmp_dir, palace_path):
 def collection(palace_path):
     """A ChromaDB collection pre-seeded in the temp palace."""
     client = chromadb.PersistentClient(path=palace_path)
-    col = client.get_or_create_collection("mempalace_drawers")
+    col = client.get_or_create_collection("mempalace_drawers", metadata=DRAWER_HNSW_METADATA)
     yield col
     client.delete_collection("mempalace_drawers")
     del client
