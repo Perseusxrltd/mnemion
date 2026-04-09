@@ -2,7 +2,7 @@
 """
 MemPalace MCP Server — read/write palace access for AI agents
 ================================================================
-Install: claude mcp add mempalace -- python -m mempalace.mcp_server
+Install: claude mcp add mempalace -- python -m mempalace.mcp_server [--palace /path/to/palace]
 
 Tools (read):
   mempalace_status          — total drawers, wing/room breakdown
@@ -17,12 +17,16 @@ Tools (write):
   mempalace_delete_drawer   — remove a drawer by ID
 """
 
+import argparse
+import os
 import sys
 import json
 import logging
 import hashlib
 import sqlite3
 from datetime import datetime
+
+import chromadb
 
 from .config import MempalaceConfig
 from .version import __version__
@@ -31,24 +35,53 @@ from .palace_graph import traverse, find_tunnels, graph_stats
 from .knowledge_graph import KnowledgeGraph
 from .hybrid_searcher import HybridSearcher
 
-_kg = KnowledgeGraph()
-_hybrid = HybridSearcher()
-
-import chromadb
-
 logging.basicConfig(level=logging.INFO, format="%(message)s", stream=sys.stderr)
 logger = logging.getLogger("mempalace_mcp")
 
+
+def _parse_args():
+    parser = argparse.ArgumentParser(description="MemPalace MCP Server")
+    parser.add_argument(
+        "--palace",
+        metavar="PATH",
+        help="Path to the palace directory (overrides config file and env var)",
+    )
+    args, _ = parser.parse_known_args()
+    return args
+
+
+_args = _parse_args()
+
+if _args.palace:
+    os.environ["MEMPALACE_PALACE_PATH"] = os.path.abspath(_args.palace)
+
 _config = MempalaceConfig()
+
+# Hybrid Searcher and KG initialization with support for custom palace paths
+if _args.palace:
+    kg_path = os.path.join(os.path.dirname(_config.palace_path), "knowledge_graph.sqlite3")
+    _kg = KnowledgeGraph(db_path=kg_path)
+    _hybrid = HybridSearcher(palace_path=_config.palace_path, kg_path=kg_path)
+else:
+    _kg = KnowledgeGraph()
+    _hybrid = HybridSearcher()
+
+
+_client_cache = None
+_collection_cache = None
 
 
 def _get_collection(create=False):
-    """Return the ChromaDB collection, or None on failure."""
+    """Return the ChromaDB collection, caching the client between calls."""
+    global _client_cache, _collection_cache
     try:
-        client = chromadb.PersistentClient(path=_config.palace_path)
+        if _client_cache is None:
+            _client_cache = chromadb.PersistentClient(path=_config.palace_path)
         if create:
-            return client.get_or_create_collection(_config.collection_name)
-        return client.get_collection(_config.collection_name)
+            _collection_cache = _client_cache.get_or_create_collection(_config.collection_name)
+        elif _collection_cache is None:
+            _collection_cache = _client_cache.get_collection(_config.collection_name)
+        return _collection_cache
     except Exception:
         return None
 
@@ -253,20 +286,19 @@ def tool_add_drawer(
     if not col:
         return _no_palace()
 
-    # Duplicate check
-    dup = tool_check_duplicate(content, threshold=0.9)
-    if dup.get("is_duplicate"):
-        return {
-            "success": False,
-            "reason": "duplicate",
-            "matches": dup["matches"],
-        }
+    drawer_id = f"drawer_{wing}_{room}_{hashlib.md5(content.encode()).hexdigest()[:16]}"
 
-    drawer_id = f"drawer_{wing}_{room}_{hashlib.md5((content[:100] + datetime.now().isoformat()).encode()).hexdigest()[:16]}"
+    # Idempotency: if the deterministic ID already exists, return success as a no-op.
+    try:
+        existing = col.get(ids=[drawer_id])
+        if existing and existing["ids"]:
+            return {"success": True, "reason": "already_exists", "drawer_id": drawer_id}
+    except Exception:
+        pass
 
     try:
-        # 1. Add to ChromaDB (Semantic)
-        col.add(
+        # 1. Add to ChromaDB (Semantic) using upsert for idempotency
+        col.upsert(
             ids=[drawer_id],
             documents=[content],
             metadatas=[
@@ -284,7 +316,7 @@ def tool_add_drawer(
         # 2. Add to SQLite FTS5 (Lexical Mirror)
         conn = sqlite3.connect(_hybrid.kg_path)
         conn.execute(
-            "INSERT INTO drawers_fts (drawer_id, content, wing, room) VALUES (?, ?, ?, ?)",
+            "INSERT OR REPLACE INTO drawers_fts (drawer_id, content, wing, room) VALUES (?, ?, ?, ?)",
             (drawer_id, content, wing, room)
         )
         conn.commit()
@@ -603,7 +635,7 @@ TOOLS = {
         "handler": tool_graph_stats,
     },
     "mempalace_search": {
-        "description": "Semantic search. Returns verbatim drawer content with similarity scores.",
+        "description": "Hybrid search (vector + lexical). Returns verbatim drawer content with similarity scores.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -632,7 +664,7 @@ TOOLS = {
         "handler": tool_check_duplicate,
     },
     "mempalace_add_drawer": {
-        "description": "File verbatim content into the palace. Checks for duplicates first.",
+        "description": "File verbatim content into the palace. Checks for duplicates and indexes in both stores.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -653,7 +685,7 @@ TOOLS = {
         "handler": tool_add_drawer,
     },
     "mempalace_delete_drawer": {
-        "description": "Delete a drawer by ID. Irreversible.",
+        "description": "Delete a drawer by ID from both stores. Irreversible.",
         "input_schema": {
             "type": "object",
             "properties": {
