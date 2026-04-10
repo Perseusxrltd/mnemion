@@ -1,0 +1,183 @@
+#!/usr/bin/env python3
+"""
+searcher.py — Find anything. Exact words.
+
+Semantic search against the palace.
+Returns verbatim text — the actual words, never summaries.
+"""
+
+import logging
+from pathlib import Path
+
+import chromadb
+
+logger = logging.getLogger("mnemion_mcp")
+
+
+class SearchError(Exception):
+    """Raised when search cannot proceed (e.g. no palace found)."""
+
+
+def search(
+    query: str,
+    palace_path: str,
+    wing: str = None,
+    room: str = None,
+    n_results: int = 5,
+    min_similarity: float = 0.0,
+):
+    """
+    Search the palace. Returns verbatim drawer content.
+    Optionally filter by wing (project) or room (aspect).
+    """
+    try:
+        client = chromadb.PersistentClient(path=palace_path)
+        col = client.get_collection("mnemion_drawers")
+    except Exception:
+        print(f"\n  No palace found at {palace_path}")
+        print("  Run: mnemion init <dir> then mnemion mine <dir>")
+        raise SearchError(f"No palace found at {palace_path}")
+
+    # Build where filter
+    where = {}
+    if wing and room:
+        where = {"$and": [{"wing": wing}, {"room": room}]}
+    elif wing:
+        where = {"wing": wing}
+    elif room:
+        where = {"room": room}
+
+    try:
+        kwargs = {
+            "query_texts": [query],
+            "n_results": n_results,
+            "include": ["documents", "metadatas", "distances"],
+        }
+        if where:
+            kwargs["where"] = where
+
+        results = col.query(**kwargs)
+
+    except Exception as e:
+        print(f"\n  Search error: {e}")
+        raise SearchError(f"Search error: {e}") from e
+
+    # ChromaDB 1.x may return {documents: []}; guard before [0]. Issue #195.
+    if not results.get("documents") or not results["documents"][0]:
+        print(f'\n  No results found for: "{query}"')
+        return
+
+    docs = results["documents"][0]
+    metas = results["metadatas"][0]
+    dists = results["distances"][0]
+
+    print(f"\n{'=' * 60}")
+    print(f'  Results for: "{query}"')
+    if wing:
+        print(f"  Wing: {wing}")
+    if room:
+        print(f"  Room: {room}")
+    print(f"{'=' * 60}\n")
+
+    displayed = 0
+    for doc, meta, dist in zip(docs, metas, dists):
+        similarity = round(1 - dist, 3)
+        if similarity < min_similarity:
+            continue
+        displayed += 1
+        source = Path(meta.get("source_file", "?")).name
+        wing_name = meta.get("wing", "?")
+        room_name = meta.get("room", "?")
+
+        print(f"  [{displayed}] {wing_name} / {room_name}")
+        print(f"      Source: {source}")
+        print(f"      Match:  {similarity}")
+        print()
+        # Print the verbatim text, indented
+        for line in doc.strip().split("\n"):
+            print(f"      {line}")
+        print()
+        print(f"  {'─' * 56}")
+
+    if displayed == 0:
+        print(f'\n  No results above similarity threshold ({min_similarity}) for: "{query}"')
+
+    print()
+
+
+def search_memories(
+    query: str,
+    palace_path: str,
+    wing: str = None,
+    room: str = None,
+    n_results: int = 5,
+    min_similarity: float = 0.0,
+) -> dict:
+    """
+    Programmatic search — returns a dict instead of printing.
+    Used by the MCP server and other callers that need data.
+    """
+    try:
+        client = chromadb.PersistentClient(path=palace_path)
+        col = client.get_collection("mnemion_drawers")
+    except Exception as e:
+        logger.error("No palace found at %s: %s", palace_path, e)
+        return {
+            "error": "No palace found",
+            "hint": "Run: mnemion init <dir> && mnemion mine <dir>",
+        }
+
+    # Build where filter
+    where = {}
+    if wing and room:
+        where = {"$and": [{"wing": wing}, {"room": room}]}
+    elif wing:
+        where = {"wing": wing}
+    elif room:
+        where = {"room": room}
+
+    try:
+        kwargs = {
+            "query_texts": [query],
+            "n_results": n_results,
+            "include": ["documents", "metadatas", "distances"],
+        }
+        if where:
+            kwargs["where"] = where
+
+        results = col.query(**kwargs)
+    except Exception as e:
+        return {"error": f"Search error: {e}"}
+
+    # ChromaDB 1.x may return {documents: []}; guard before [0]. Issue #195.
+    if not results.get("documents") or not results["documents"][0]:
+        return {
+            "query": query,
+            "filters": {"wing": wing, "room": room},
+            "results": [],
+        }
+
+    docs = results["documents"][0]
+    metas = results["metadatas"][0]
+    dists = results["distances"][0]
+
+    hits = []
+    for doc, meta, dist in zip(docs, metas, dists):
+        similarity = round(1 - dist, 3)
+        if similarity < min_similarity:
+            continue
+        hits.append(
+            {
+                "text": doc,
+                "wing": meta.get("wing", "unknown"),
+                "room": meta.get("room", "unknown"),
+                "source_file": Path(meta.get("source_file", "?")).name,
+                "similarity": similarity,
+            }
+        )
+
+    return {
+        "query": query,
+        "filters": {"wing": wing, "room": room},
+        "results": hits,
+    }

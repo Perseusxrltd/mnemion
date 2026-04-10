@@ -1,4 +1,4 @@
-# MemPalace Sync & Setup
+# Mnemion Sync & Setup
 
 ## One-Shot Windows Install
 
@@ -36,13 +36,13 @@ The SQLite-heavy files (`*.sqlite3`, `palace/`) are in `.gitignore`. Only the po
 ### 1. Copy the sync script
 
 ```powershell
-Copy-Item sync/SyncMemories.ps1 $env:USERPROFILE\.mempalace\SyncMemories.ps1
+Copy-Item sync/SyncMemories.ps1 $env:USERPROFILE\.mnemion\SyncMemories.ps1
 ```
 
 ### 2. Initialize your memory git repo
 
 ```powershell
-cd $env:USERPROFILE\.mempalace
+cd $env:USERPROFILE\.mnemion
 git init
 git remote add origin https://github.com/YOUR_USERNAME/personal-ai-memories.git
 ```
@@ -53,19 +53,19 @@ Open PowerShell as Administrator:
 
 ```powershell
 $action  = New-ScheduledTaskAction -Execute "powershell.exe" `
-    -Argument "-NonInteractive -WindowStyle Hidden -File $env:USERPROFILE\.mempalace\SyncMemories.ps1"
+    -Argument "-NonInteractive -WindowStyle Hidden -File $env:USERPROFILE\.mnemion\SyncMemories.ps1"
 $trigger = New-ScheduledTaskTrigger -RepetitionInterval (New-TimeSpan -Hours 1) -Once -At (Get-Date)
 $settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Minutes 5) `
     -StartWhenAvailable -RunOnlyIfNetworkAvailable
-Register-ScheduledTask -TaskName "MemPalaceMemorySync" -Action $action `
+Register-ScheduledTask -TaskName "MnemionMemorySync" -Action $action `
     -Trigger $trigger -Settings $settings -RunLevel Highest -Force
 ```
 
 ### 4. Verify
 
 ```powershell
-Start-ScheduledTask -TaskName "MemPalaceMemorySync"
-cat $env:USERPROFILE\.mempalace\archive\drawers_export.json | python3 -c "import sys,json; d=json.load(sys.stdin); print(f'{len(d)} drawers exported')"
+Start-ScheduledTask -TaskName "MnemionMemorySync"
+cat $env:USERPROFILE\.mnemion\archive\drawers_export.json | python3 -c "import sys,json; d=json.load(sys.stdin); print(f'{len(d)} drawers exported')"
 ```
 
 ---
@@ -74,11 +74,11 @@ cat $env:USERPROFILE\.mempalace\archive\drawers_export.json | python3 -c "import
 
 ```bash
 # Copy script
-cp sync/SyncMemories.sh ~/.mempalace/SyncMemories.sh
-chmod +x ~/.mempalace/SyncMemories.sh
+cp sync/SyncMemories.sh ~/.mnemion/SyncMemories.sh
+chmod +x ~/.mnemion/SyncMemories.sh
 
 # Add to crontab (every hour)
-(crontab -l 2>/dev/null; echo "0 * * * * ~/.mempalace/SyncMemories.sh >> ~/.mempalace/sync.log 2>&1") | crontab -
+(crontab -l 2>/dev/null; echo "0 * * * * ~/.mnemion/SyncMemories.sh >> ~/.mnemion/sync.log 2>&1") | crontab -
 ```
 
 ---
@@ -87,14 +87,14 @@ chmod +x ~/.mempalace/SyncMemories.sh
 
 ```bash
 # 1. Clone your memory repo
-git clone https://github.com/YOUR_USERNAME/personal-ai-memories.git ~/.mempalace
+git clone https://github.com/YOUR_USERNAME/personal-ai-memories.git ~/.mnemion
 
 # 2. Rebuild the palace from the JSON export
-cd ~/.mempalace
-py -m mempalace mine archive/drawers_export.json
+cd ~/.mnemion
+py -m mnemion mine archive/drawers_export.json
 
 # 3. Backfill trust records for all restored drawers
-py ~/.mempalace/backfill_trust.py
+py ~/.mnemion/backfill_trust.py
 ```
 
 That's it. The full palace is rebuilt from the exported JSON.
@@ -103,7 +103,7 @@ That's it. The full palace is rebuilt from the exported JSON.
 
 ## .gitignore
 
-The `~/.mempalace/.gitignore` should contain:
+The `~/.mnemion/.gitignore` should contain:
 
 ```gitignore
 palace/

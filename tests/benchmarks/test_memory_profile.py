@@ -41,7 +41,7 @@ class TestSearchMemoryProfile:
         palace_path = str(tmp_path / "palace")
         gen.populate_palace_directly(palace_path, n_drawers=1_000, include_needles=False)
 
-        from mempalace.searcher import search_memories
+        from mnemion.searcher import search_memories
 
         n_calls = 200
         check_interval = 50
@@ -78,16 +78,16 @@ class TestToolStatusMemoryProfile:
         palace_path = str(tmp_path / "palace")
         gen.populate_palace_directly(palace_path, n_drawers=2_000, include_needles=False)
 
-        from mempalace.config import MempalaceConfig
-        from mempalace.knowledge_graph import KnowledgeGraph
-        import mempalace.mcp_server as mcp_mod
+        from mnemion.config import MempalaceConfig
+        from mnemion.knowledge_graph import KnowledgeGraph
+        import mnemion.mcp_server as mcp_mod
 
         cfg = MempalaceConfig(config_dir=str(tmp_path / "cfg"))
         monkeypatch.setattr(cfg, "_file_config", {"palace_path": palace_path})
         monkeypatch.setattr(mcp_mod, "_config", cfg)
         monkeypatch.setattr(mcp_mod, "_kg", KnowledgeGraph(db_path=str(tmp_path / "kg.sqlite3")))
 
-        from mempalace.mcp_server import tool_status
+        from mnemion.mcp_server import tool_status
 
         n_calls = 50
         rss_readings = []
@@ -120,7 +120,7 @@ class TestLayer1MemoryProfile:
         palace_path = str(tmp_path / "palace")
         gen.populate_palace_directly(palace_path, n_drawers=2_000, include_needles=False)
 
-        from mempalace.layers import Layer1
+        from mnemion.layers import Layer1
 
         layer = Layer1(palace_path=palace_path)
 
@@ -154,7 +154,7 @@ class TestHeapSnapshot:
         palace_path = str(tmp_path / "palace")
         gen.populate_palace_directly(palace_path, n_drawers=1_000, include_needles=False)
 
-        from mempalace.searcher import search_memories
+        from mnemion.searcher import search_memories
 
         tracemalloc.start()
         snap_before = tracemalloc.take_snapshot()

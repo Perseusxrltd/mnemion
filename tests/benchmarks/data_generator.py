@@ -1,5 +1,5 @@
 """
-Deterministic data factory for MemPalace scale benchmarks.
+Deterministic data factory for Mnemion scale benchmarks.
 
 Generates realistic project files, conversations, and KG triples at
 configurable scale levels. All randomness uses seeded RNG for reproducibility.
@@ -348,7 +348,7 @@ class PalaceDataGenerator:
 
     def generate_project_tree(self, base_path, wing=None, rooms=None, n_files=50):
         """
-        Write realistic project files + mempalace.yaml to base_path.
+        Write realistic project files + mnemion.yaml to base_path.
 
         Returns the project path suitable for passing to mine().
         """
@@ -357,9 +357,9 @@ class PalaceDataGenerator:
         wing = wing or self.rng.choice(self.wings)
         rooms = rooms or self.rooms_by_wing.get(wing, ["general"])
 
-        # Write mempalace.yaml
+        # Write mnemion.yaml
         room_defs = [{"name": r, "description": f"{r} code and docs"} for r in rooms]
-        with open(base / "mempalace.yaml", "w") as f:
+        with open(base / "mnemion.yaml", "w") as f:
             yaml.dump({"wing": wing, "rooms": room_defs}, f)
 
         # Write files distributed across room directories
@@ -413,7 +413,7 @@ class PalaceDataGenerator:
         n_drawers = n_drawers or self.cfg["drawers"]
         os.makedirs(palace_path, exist_ok=True)
         client = chromadb.PersistentClient(path=palace_path)
-        col = client.get_or_create_collection("mempalace_drawers")
+        col = client.get_or_create_collection("mnemion_drawers")
 
         batch_size = 500
         docs = []

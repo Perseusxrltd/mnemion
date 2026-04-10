@@ -29,7 +29,7 @@ class TestFilteredVsUnfilteredRecall:
             palace_path, n_drawers=n_drawers, include_needles=True
         )
 
-        from mempalace.searcher import search_memories
+        from mnemion.searcher import search_memories
 
         n_queries = min(10, len(needle_info))
         unfiltered_hits = 0
@@ -87,7 +87,7 @@ class TestFilterLatencyBenefit:
         palace_path = str(tmp_path / "palace")
         gen.populate_palace_directly(palace_path, n_drawers=5_000, include_needles=False)
 
-        from mempalace.searcher import search_memories
+        from mnemion.searcher import search_memories
 
         wing = gen.wings[0]
         room = gen.rooms_by_wing[wing][0]
@@ -147,7 +147,7 @@ class TestBoostAtIncreasingScale:
                 palace_path, n_drawers=size, include_needles=True
             )
 
-            from mempalace.searcher import search_memories
+            from mnemion.searcher import search_memories
 
             n_queries = min(8, len(needle_info))
             unfiltered_hits = 0

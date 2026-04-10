@@ -6,7 +6,7 @@ from pathlib import Path
 # Add project root to path for local imports
 sys.path.append(str(Path(__file__).parent.parent))
 
-from mempalace.hybrid_searcher import HybridSearcher
+from mnemion.hybrid_searcher import HybridSearcher
 
 
 def run_benchmark():

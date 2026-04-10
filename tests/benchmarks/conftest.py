@@ -55,7 +55,7 @@ def config_dir(tmp_path):
     """Isolated config directory for monkeypatching MempalaceConfig."""
     d = tmp_path / "config"
     d.mkdir()
-    config = {"palace_path": str(tmp_path / "palace"), "collection_name": "mempalace_drawers"}
+    config = {"palace_path": str(tmp_path / "palace"), "collection_name": "mnemion_drawers"}
     with open(d / "config.json", "w") as f:
         json.dump(config, f)
     return str(d)
@@ -129,7 +129,7 @@ def pytest_terminal_summary(terminalreporter, config):
     }
 
     # Read results from the temp file written by record_metric()
-    results_file = os.path.join(tempfile.gettempdir(), "mempalace_bench_results.json")
+    results_file = os.path.join(tempfile.gettempdir(), "mnemion_bench_results.json")
     if os.path.exists(results_file):
         try:
             with open(results_file) as f:

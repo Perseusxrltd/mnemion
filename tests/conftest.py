@@ -1,11 +1,11 @@
 """
-conftest.py — Shared fixtures for MemPalace tests.
+conftest.py — Shared fixtures for Mnemion tests.
 
 Provides isolated palace and knowledge graph instances so tests never
 touch the user's real data or leak temp files on failure.
 
 HOME is redirected to a temp directory at module load time — before any
-mempalace imports — so that module-level initialisations (e.g.
+mnemion imports — so that module-level initialisations (e.g.
 ``_kg = KnowledgeGraph()`` in mcp_server) write to a throwaway location
 instead of the real user profile.
 """
@@ -14,9 +14,9 @@ import os
 import shutil
 import tempfile
 
-# ── Isolate HOME before any mempalace imports ──────────────────────────
+# ── Isolate HOME before any mnemion imports ──────────────────────────
 _original_env = {}
-_session_tmp = tempfile.mkdtemp(prefix="mempalace_session_")
+_session_tmp = tempfile.mkdtemp(prefix="mnemion_session_")
 
 for _var in ("HOME", "USERPROFILE", "HOMEDRIVE", "HOMEPATH"):
     _original_env[_var] = os.environ.get(_var)
@@ -26,12 +26,12 @@ os.environ["USERPROFILE"] = _session_tmp
 os.environ["HOMEDRIVE"] = os.path.splitdrive(_session_tmp)[0] or "C:"
 os.environ["HOMEPATH"] = os.path.splitdrive(_session_tmp)[1] or _session_tmp
 
-# Now it is safe to import mempalace modules that trigger initialisation.
+# Now it is safe to import mnemion modules that trigger initialisation.
 import chromadb  # noqa: E402
 import pytest  # noqa: E402
 
-from mempalace.config import DRAWER_HNSW_METADATA, MempalaceConfig  # noqa: E402
-from mempalace.knowledge_graph import KnowledgeGraph  # noqa: E402
+from mnemion.config import DRAWER_HNSW_METADATA, MempalaceConfig  # noqa: E402
+from mnemion.knowledge_graph import KnowledgeGraph  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
@@ -40,7 +40,7 @@ def _reset_mcp_cache():
 
     def _clear_cache():
         try:
-            from mempalace import mcp_server
+            from mnemion import mcp_server
 
             mcp_server._client_cache = None
             mcp_server._collection_cache = None
@@ -72,7 +72,7 @@ def _isolate_home():
 @pytest.fixture
 def tmp_dir():
     """Create and auto-cleanup a temporary directory."""
-    d = tempfile.mkdtemp(prefix="mempalace_test_")
+    d = tempfile.mkdtemp(prefix="mnemion_test_")
     yield d
     shutil.rmtree(d, ignore_errors=True)
 
@@ -101,9 +101,9 @@ def config(tmp_dir, palace_path):
 def collection(palace_path):
     """A ChromaDB collection pre-seeded in the temp palace."""
     client = chromadb.PersistentClient(path=palace_path)
-    col = client.get_or_create_collection("mempalace_drawers", metadata=DRAWER_HNSW_METADATA)
+    col = client.get_or_create_collection("mnemion_drawers", metadata=DRAWER_HNSW_METADATA)
     yield col
-    client.delete_collection("mempalace_drawers")
+    client.delete_collection("mnemion_drawers")
     del client
 
 

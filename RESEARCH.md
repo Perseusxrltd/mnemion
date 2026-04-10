@@ -1,6 +1,6 @@
-# PerseusXR Research Notes — MemPalace High-Fidelity Distribution
+# PerseusXR Research Notes — Mnemion High-Fidelity Distribution
 
-This document records the engineering decisions and empirical findings behind the PerseusXR fork of MemPalace.
+This document records the engineering decisions and empirical findings behind the PerseusXR fork of Mnemion.
 
 ---
 
@@ -77,10 +77,10 @@ any → historical       (drawer deleted — ghost record for audit)
 
 **Implementation details:**
 - Runs in daemon threads — save call returns immediately, detection happens in background
-- LLM backend is pluggable — Ollama, LM Studio, vLLM, or any OpenAI-compatible endpoint (configured via `mempalace llm setup`, no hardcoded URLs)
+- LLM backend is pluggable — Ollama, LM Studio, vLLM, or any OpenAI-compatible endpoint (configured via `mnemion llm setup`, no hardcoded URLs)
 - Stage 1 prompt budget: 512 tokens; Stage 2: 768 tokens
 - Detection is throttled: 2-minute global cooldown, 5s inter-request sleep, `nice -n 19` / `ionice -c 3` to stay anecdotal on system load
-- Disable entirely with `mempalace llm setup → None` for zero-overhead saves
+- Disable entirely with `mnemion llm setup → None` for zero-overhead saves
 
 ### Trust-Aware Search
 
@@ -104,11 +104,11 @@ drawer_trust_history -- append-only audit trail of every state change
 
 | Tool | Purpose |
 |------|---------|
-| `mempalace_trust_stats` | Trust layer overview — counts by status, avg confidence, pending conflicts |
-| `mempalace_verify` | Confirm a drawer is accurate (+0.05 confidence) |
-| `mempalace_challenge` | Flag a drawer as suspect (−0.1 confidence, marks contested) |
-| `mempalace_get_contested` | List unresolved contested memories for review |
-| `mempalace_resolve_contest` | Manually pick the winner of a conflict |
+| `mnemion_trust_stats` | Trust layer overview — counts by status, avg confidence, pending conflicts |
+| `mnemion_verify` | Confirm a drawer is accurate (+0.05 confidence) |
+| `mnemion_challenge` | Flag a drawer as suspect (−0.1 confidence, marks contested) |
+| `mnemion_get_contested` | List unresolved contested memories for review |
+| `mnemion_resolve_contest` | Manually pick the winner of a conflict |
 
 ---
 
@@ -122,7 +122,7 @@ The original save hook works by nudging the AI at intervals, asking it to save t
 
 ### Solution
 
-A Python hook (`hooks/mempal_save_hook.py`) that:
+A Python hook (`hooks/mnemion_save_hook.py`) that:
 1. Runs on every `Stop` event (after each assistant response)
 2. Reads the transcript directly
 3. Extracts memories using `general_extractor.py` (pattern-based, no LLM)
@@ -170,7 +170,7 @@ A daemon watcher thread checks every 30s. If `_last_chat_time` exceeds `idle_tim
 
 ### Key design decision: process independence
 
-`DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP` (Windows) ensures the vLLM server is not a child of the Python process — it's an independent OS-level process. When mempalace exits (or the MCP server restarts), the server keeps running. Only `backend.stop()` or a manual kill terminates it.
+`DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP` (Windows) ensures the vLLM server is not a child of the Python process — it's an independent OS-level process. When mnemion exits (or the MCP server restarts), the server keeps running. Only `backend.stop()` or a manual kill terminates it.
 
 This matters for the auto-stop feature: the server is shared state across all processes using the palace.
 
@@ -180,7 +180,7 @@ This matters for the auto-stop feature: the server is shared state across all pr
 
 ### Problem
 
-Storage is not memory. An AI connected to a MemPalace MCP server has 24 tools available — but without explicit instructions, it will not call them. The behavioral gap between "having tools" and "using tools correctly" is the real problem for AI memory systems.
+Storage is not memory. An AI connected to a Mnemion MCP server has 24 tools available — but without explicit instructions, it will not call them. The behavioral gap between "having tools" and "using tools correctly" is the real problem for AI memory systems.
 
 Specifically: the palace's behavioral protocol (when to call `status`, when to search, when to save, when to write the diary) was only returned *inside* the `tool_status` result — a circular dependency where the AI needed to already know to call the tool before it could receive the instruction to call the tool.
 
@@ -191,15 +191,15 @@ Each layer solves the bootstrap independently. A client needs only one to work c
 **Layer 1 — MCP tool descriptions (universal)**
 
 Every MCP client reads tool descriptions before taking any action. We changed:
-- `mempalace_status` → "CALL THIS FIRST at every session start. Returns your behavioral protocol, AAAK memory dialect spec, and palace overview."
-- `mempalace_search` → "Use BEFORE answering any question about past events, people, projects — verify, don't guess."
-- `mempalace_add_drawer` → "Call when you learn a new fact or something changes."
-- `mempalace_diary_write` → "Call AT END OF EVERY SESSION."
-- `mempalace_kg_query` → "Use BEFORE answering questions about specific entities."
+- `mnemion_status` → "CALL THIS FIRST at every session start. Returns your behavioral protocol, AAAK memory dialect spec, and palace overview."
+- `mnemion_search` → "Use BEFORE answering any question about past events, people, projects — verify, don't guess."
+- `mnemion_add_drawer` → "Call when you learn a new fact or something changes."
+- `mnemion_diary_write` → "Call AT END OF EVERY SESSION."
+- `mnemion_kg_query` → "Use BEFORE answering questions about specific entities."
 
 **Layer 2 — MCP `prompts` capability**
 
-The MCP protocol supports a `prompts` capability. We register a named prompt `mempalace_protocol` that returns the full behavioral rules + AAAK spec as an injectable message. Clients that support `prompts/get` receive the complete protocol before any tool call.
+The MCP protocol supports a `prompts` capability. We register a named prompt `mnemion_protocol` that returns the full behavioral rules + AAAK spec as an injectable message. Clients that support `prompts/get` receive the complete protocol before any tool call.
 
 **Layer 3 — `SYSTEM_PROMPT.md`**
 

@@ -174,16 +174,16 @@ def retrieve_for_item(item, top_k=10, mode="raw"):
     if not corpus:
         return 0.0, {"error": "empty corpus"}
 
-    tmpdir = tempfile.mkdtemp(prefix="mempal_convomem_")
+    tmpdir = tempfile.mkdtemp(prefix="mnemion_convomem_")
     palace_path = os.path.join(tmpdir, "palace")
 
     try:
         client = chromadb.PersistentClient(path=palace_path)
-        collection = client.create_collection("mempal_drawers")
+        collection = client.create_collection("mnemion_drawers")
 
         # Optionally compress
         if mode == "aaak":
-            from mempalace.dialect import Dialect
+            from mnemion.dialect import Dialect
 
             dialect = Dialect()
             docs = [dialect.compress(doc) for doc in corpus]

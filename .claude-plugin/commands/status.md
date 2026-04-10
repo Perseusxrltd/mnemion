@@ -3,4 +3,4 @@ description: Show the current state of your memory palace — wings, rooms, draw
 allowed-tools: Bash, Read
 ---
 
-Invoke the generic mempalace skill (using the Skill tool) with the `status` command, then follow its instructions.
+Invoke the generic mnemion skill (using the Skill tool) with the `status` command, then follow its instructions.

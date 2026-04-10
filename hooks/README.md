@@ -1,12 +1,12 @@
-# MemPalace Hooks — Auto-Save for Terminal AI Tools
+# Mnemion Hooks — Auto-Save for Terminal AI Tools
 
-These hooks make MemPalace save automatically. Two modes available: AI-assisted (original) and direct Python extraction (new, recommended).
+These hooks make Mnemion save automatically. Two modes available: AI-assisted (original) and direct Python extraction (new, recommended).
 
 ---
 
 ## Hook Comparison
 
-| | `mempal_save_hook.sh` | `mempal_save_hook.py` |
+| | `mnemion_save_hook.sh` | `mnemion_save_hook.py` |
 |---|---|---|
 | **Method** | Blocks AI, asks it to save | Extracts directly, never blocks |
 | **Requires AI cooperation** | Yes | No |
@@ -21,7 +21,7 @@ Use the Python hook for always-on extraction, and the shell hook when you want t
 
 ## Hook 1 — Python Direct Extraction (Recommended)
 
-**`mempal_save_hook.py`** — extracts memories from the transcript without AI involvement.
+**`mnemion_save_hook.py`** — extracts memories from the transcript without AI involvement.
 
 ### What it does
 
@@ -43,7 +43,7 @@ Add to `.claude/settings.local.json`:
       "matcher": "*",
       "hooks": [{
         "type": "command",
-        "command": "python3 /absolute/path/to/hooks/mempal_save_hook.py",
+        "command": "python3 /absolute/path/to/hooks/mnemion_save_hook.py",
         "timeout": 15
       }]
     }]
@@ -53,12 +53,12 @@ Add to `.claude/settings.local.json`:
 
 ### Configuration
 
-Edit the top of `mempal_save_hook.py`:
+Edit the top of `mnemion_save_hook.py`:
 
 ```python
 SAVE_INTERVAL = 3           # exchanges between auto-saves
-MEMPALACE_SRC = "~/projects/mempalace"   # path to this repo
-SYNC_SCRIPT   = "~/.mempalace/SyncMemories.ps1"   # auto-sync script (optional)
+MNEMION_SRC = "~/projects/mnemion"   # path to this repo
+SYNC_SCRIPT   = "~/.mnemion/SyncMemories.ps1"   # auto-sync script (optional)
 ```
 
 Set `SYNC_SCRIPT = ""` to disable git sync (saves only, no push).
@@ -77,7 +77,7 @@ Set `SYNC_SCRIPT = ""` to disable git sync (saves only, no push).
 
 ## Hook 2 — AI-Assisted Save (Shell, Original)
 
-**`mempal_save_hook.sh`** — blocks the AI every N messages and asks it to file memories.
+**`mnemion_save_hook.sh`** — blocks the AI every N messages and asks it to file memories.
 
 | Hook | When It Fires | What Happens |
 |------|--------------|-------------|
@@ -93,14 +93,14 @@ Set `SYNC_SCRIPT = ""` to disable git sync (saves only, no push).
       "matcher": "*",
       "hooks": [{
         "type": "command",
-        "command": "/absolute/path/to/hooks/mempal_save_hook.sh",
+        "command": "/absolute/path/to/hooks/mnemion_save_hook.sh",
         "timeout": 30
       }]
     }],
     "PreCompact": [{
       "hooks": [{
         "type": "command",
-        "command": "/absolute/path/to/hooks/mempal_precompact_hook.sh",
+        "command": "/absolute/path/to/hooks/mnemion_precompact_hook.sh",
         "timeout": 30
       }]
     }]
@@ -110,7 +110,7 @@ Set `SYNC_SCRIPT = ""` to disable git sync (saves only, no push).
 
 Make them executable:
 ```bash
-chmod +x hooks/mempal_save_hook.sh hooks/mempal_precompact_hook.sh
+chmod +x hooks/mnemion_save_hook.sh hooks/mnemion_precompact_hook.sh
 ```
 
 ### Install — Codex CLI (OpenAI)
@@ -121,12 +121,12 @@ Add to `.codex/hooks.json`:
 {
   "Stop": [{
     "type": "command",
-    "command": "/absolute/path/to/hooks/mempal_save_hook.sh",
+    "command": "/absolute/path/to/hooks/mnemion_save_hook.sh",
     "timeout": 30
   }],
   "PreCompact": [{
     "type": "command",
-    "command": "/absolute/path/to/hooks/mempal_precompact_hook.sh",
+    "command": "/absolute/path/to/hooks/mnemion_precompact_hook.sh",
     "timeout": 30
   }]
 }
@@ -134,9 +134,9 @@ Add to `.codex/hooks.json`:
 
 ### Configuration
 
-Edit `mempal_save_hook.sh` to change:
+Edit `mnemion_save_hook.sh` to change:
 - **`SAVE_INTERVAL=15`** — messages between saves
-- **`MEMPAL_DIR`** — set to a conversations directory to auto-run `mempalace mine` on each trigger
+- **`MNEMION_DIR`** — set to a conversations directory to auto-run `mnemion mine` on each trigger
 
 ---
 
@@ -144,7 +144,7 @@ Edit `mempal_save_hook.sh` to change:
 
 Check the hook log:
 ```bash
-cat ~/.mempalace/hook_state/hook.log
+cat ~/.mnemion/hook_state/hook.log
 ```
 
 Example Python hook output:
@@ -167,14 +167,14 @@ Run the Python hook on `Stop` (always-on, low friction) and the shell PreCompact
       "matcher": "*",
       "hooks": [{
         "type": "command",
-        "command": "python3 /path/to/hooks/mempal_save_hook.py",
+        "command": "python3 /path/to/hooks/mnemion_save_hook.py",
         "timeout": 15
       }]
     }],
     "PreCompact": [{
       "hooks": [{
         "type": "command",
-        "command": "/path/to/hooks/mempal_precompact_hook.sh",
+        "command": "/path/to/hooks/mnemion_precompact_hook.sh",
         "timeout": 30
       }]
     }]

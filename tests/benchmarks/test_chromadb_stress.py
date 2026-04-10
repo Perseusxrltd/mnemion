@@ -1,7 +1,7 @@
 """
 ChromaDB stress tests — find the breaking point.
 
-Tests the raw ChromaDB patterns used by mempalace to determine:
+Tests the raw ChromaDB patterns used by mnemion to determine:
   - At what collection size does col.get(include=["metadatas"]) become dangerous?
   - How does query latency degrade as collection grows?
   - How much faster is batched insertion vs sequential?
@@ -51,7 +51,7 @@ class TestGetAllMetadatasOOM:
         gen.populate_palace_directly(palace_path, n_drawers=n_drawers, include_needles=False)
 
         client = chromadb.PersistentClient(path=palace_path)
-        col = client.get_collection("mempalace_drawers")
+        col = client.get_collection("mnemion_drawers")
 
         rss_before = _get_rss_mb()
         start = time.perf_counter()
@@ -79,7 +79,7 @@ class TestQueryDegradation:
         gen.populate_palace_directly(palace_path, n_drawers=n_drawers, include_needles=False)
 
         client = chromadb.PersistentClient(path=palace_path)
-        col = client.get_collection("mempalace_drawers")
+        col = client.get_collection("mnemion_drawers")
 
         queries = [
             "authentication middleware optimization",
@@ -120,7 +120,7 @@ class TestBulkInsertPerformance:
         palace_seq = str(tmp_path / "seq")
         os.makedirs(palace_seq)
         client_seq = chromadb.PersistentClient(path=palace_seq)
-        col_seq = client_seq.get_or_create_collection("mempalace_drawers")
+        col_seq = client_seq.get_or_create_collection("mnemion_drawers")
 
         start = time.perf_counter()
         for i, content in enumerate(contents):
@@ -135,7 +135,7 @@ class TestBulkInsertPerformance:
         palace_batch = str(tmp_path / "batch")
         os.makedirs(palace_batch)
         client_batch = chromadb.PersistentClient(path=palace_batch)
-        col_batch = client_batch.get_or_create_collection("mempalace_drawers")
+        col_batch = client_batch.get_or_create_collection("mnemion_drawers")
 
         batch_size = 100
         start = time.perf_counter()
@@ -176,7 +176,7 @@ class TestMaxCollectionSize:
         palace_path = str(tmp_path / "palace")
         os.makedirs(palace_path)
         client = chromadb.PersistentClient(path=palace_path)
-        col = client.get_or_create_collection("mempalace_drawers")
+        col = client.get_or_create_collection("mnemion_drawers")
 
         batch_size = 500
         batch_times = []

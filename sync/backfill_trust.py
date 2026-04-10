@@ -3,17 +3,17 @@
 backfill_trust.py — Assign default trust records to all existing drawers.
 Run once after deploying the trust layer.
 
-Usage:  py C:/Users/jorqu/.mempalace/backfill_trust.py
+Usage:  py C:/Users/jorqu/.mnemion/backfill_trust.py
 """
 
 import sys
 import os
 
-sys.path.insert(0, os.path.expanduser("~/projects/mempalace"))
+sys.path.insert(0, os.path.expanduser("~/projects/mnemion"))
 
 import chromadb
-from mempalace.config import MempalaceConfig
-from mempalace.drawer_trust import DrawerTrust
+from mnemion.config import MempalaceConfig
+from mnemion.drawer_trust import DrawerTrust
 
 config = MempalaceConfig()
 client = chromadb.PersistentClient(path=config.palace_path)

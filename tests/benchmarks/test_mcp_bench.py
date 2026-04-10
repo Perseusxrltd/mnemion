@@ -31,14 +31,14 @@ def _make_palace(tmp_path, n_drawers, scale="small"):
 
 def _patch_mcp_config(monkeypatch, palace_path, tmp_path):
     """Monkeypatch mcp_server._config and _kg to point at test dirs."""
-    from mempalace.config import MempalaceConfig
-    from mempalace.knowledge_graph import KnowledgeGraph
+    from mnemion.config import MempalaceConfig
+    from mnemion.knowledge_graph import KnowledgeGraph
 
     cfg = MempalaceConfig(config_dir=str(tmp_path / "cfg"))
     # Override palace_path directly on the object
     monkeypatch.setattr(cfg, "_file_config", {"palace_path": palace_path})
 
-    import mempalace.mcp_server as mcp_mod
+    import mnemion.mcp_server as mcp_mod
 
     monkeypatch.setattr(mcp_mod, "_config", cfg)
     monkeypatch.setattr(mcp_mod, "_kg", KnowledgeGraph(db_path=str(tmp_path / "kg.sqlite3")))
@@ -77,7 +77,7 @@ class TestToolStatusOOM:
         palace_path = _make_palace(tmp_path, n_drawers)
         _patch_mcp_config(monkeypatch, palace_path, tmp_path)
 
-        from mempalace.mcp_server import tool_status
+        from mnemion.mcp_server import tool_status
 
         rss_before = _get_rss_mb()
         result = tool_status()
@@ -95,7 +95,7 @@ class TestToolStatusOOM:
         palace_path = _make_palace(tmp_path, n_drawers)
         _patch_mcp_config(monkeypatch, palace_path, tmp_path)
 
-        from mempalace.mcp_server import tool_status
+        from mnemion.mcp_server import tool_status
 
         # Warm up
         tool_status()
@@ -117,7 +117,7 @@ class TestToolListWingsUnbounded:
         palace_path = _make_palace(tmp_path, n_drawers)
         _patch_mcp_config(monkeypatch, palace_path, tmp_path)
 
-        from mempalace.mcp_server import tool_list_wings
+        from mnemion.mcp_server import tool_list_wings
 
         start = time.perf_counter()
         result = tool_list_wings()
@@ -136,7 +136,7 @@ class TestToolGetTaxonomyUnbounded:
         palace_path = _make_palace(tmp_path, n_drawers)
         _patch_mcp_config(monkeypatch, palace_path, tmp_path)
 
-        from mempalace.mcp_server import tool_get_taxonomy
+        from mnemion.mcp_server import tool_get_taxonomy
 
         start = time.perf_counter()
         result = tool_get_taxonomy()
@@ -155,7 +155,7 @@ class TestClientReinstantiation:
         palace_path = _make_palace(tmp_path, 500)
         _patch_mcp_config(monkeypatch, palace_path, tmp_path)
 
-        from mempalace.mcp_server import _get_collection
+        from mnemion.mcp_server import _get_collection
 
         n_calls = 50
 
@@ -168,7 +168,7 @@ class TestClientReinstantiation:
 
         # Measure cached client (what it should be)
         client = chromadb.PersistentClient(path=palace_path)
-        cached_col = client.get_collection("mempalace_drawers")
+        cached_col = client.get_collection("mnemion_drawers")
         start = time.perf_counter()
         for _ in range(n_calls):
             _ = cached_col.count()
@@ -191,7 +191,7 @@ class TestToolSearchLatency:
         palace_path = _make_palace(tmp_path, n_drawers)
         _patch_mcp_config(monkeypatch, palace_path, tmp_path)
 
-        from mempalace.mcp_server import tool_search
+        from mnemion.mcp_server import tool_search
 
         queries = ["authentication middleware", "database migration", "error handling"]
         latencies = []
@@ -215,7 +215,7 @@ class TestDuplicateCheckCost:
         palace_path = _make_palace(tmp_path, n_drawers)
         _patch_mcp_config(monkeypatch, palace_path, tmp_path)
 
-        from mempalace.mcp_server import tool_check_duplicate
+        from mnemion.mcp_server import tool_check_duplicate
 
         test_content = "This is unique test content for duplicate checking benchmark."
         start = time.perf_counter()

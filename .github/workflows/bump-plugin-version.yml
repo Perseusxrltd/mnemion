@@ -14,13 +14,13 @@ jobs:
 
       - name: Bump patch version
         run: |
-          CURRENT=$(python3 -c "exec(open('mempalace/version.py').read()); print(__version__)")
+          CURRENT=$(python3 -c "exec(open('mnemion/version.py').read()); print(__version__)")
           IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
           PATCH=$((PATCH + 1))
           NEW="${MAJOR}.${MINOR}.${PATCH}"
-          echo "__version__ = \"${NEW}\"" > mempalace/version.py
+          echo "__version__ = \"${NEW}\"" > mnemion/version.py
           # Prepend docstring
-          sed -i '1i"""Single source of truth for the MemPalace package version."""\n' mempalace/version.py
+          sed -i '1i"""Single source of truth for the Mnemion package version."""\n' mnemion/version.py
           echo "version=$NEW" >> "$GITHUB_OUTPUT"
         id: version
 
@@ -44,7 +44,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add mempalace/version.py .claude-plugin/plugin.json .claude-plugin/marketplace.json .codex-plugin/plugin.json pyproject.toml
+          git add mnemion/version.py .claude-plugin/plugin.json .claude-plugin/marketplace.json .codex-plugin/plugin.json pyproject.toml
           if ! git diff --staged --quiet; then
             git commit -m "chore: bump version to ${{ steps.version.outputs.version }}"
             git push

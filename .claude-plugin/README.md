@@ -1,4 +1,4 @@
-# MemPalace Claude Code Plugin
+# Mnemion Claude Code Plugin
 
 A Claude Code plugin that gives your AI a persistent memory system. Mine projects and conversations into a searchable palace backed by ChromaDB, with 19 MCP tools, auto-save hooks, and 5 guided skills.
 
@@ -11,14 +11,14 @@ A Claude Code plugin that gives your AI a persistent memory system. Mine project
 ### Claude Code Marketplace
 
 ```bash
-claude plugin marketplace add milla-jovovich/mempalace
-claude plugin install --scope user mempalace
+claude plugin marketplace add milla-jovovich/mnemion
+claude plugin install --scope user mnemion
 ```
 
 ### Local Clone
 
 ```bash
-claude plugin add /path/to/mempalace
+claude plugin add /path/to/mnemion
 ```
 
 ## Post-Install Setup
@@ -26,31 +26,31 @@ claude plugin add /path/to/mempalace
 After installing the plugin, run the init command to complete setup (pip install, MCP configuration, etc.):
 
 ```
-/mempalace:init
+/mnemion:init
 ```
 
 ## Available Slash Commands
 
 | Command | Description |
 |---------|-------------|
-| `/mempalace:help` | Show available tools, skills, and architecture |
-| `/mempalace:init` | Set up MemPalace -- install, configure MCP, onboard |
-| `/mempalace:search` | Search your memories across the palace |
-| `/mempalace:mine` | Mine projects and conversations into the palace |
-| `/mempalace:status` | Show palace overview -- wings, rooms, drawer counts |
+| `/mnemion:help` | Show available tools, skills, and architecture |
+| `/mnemion:init` | Set up Mnemion -- install, configure MCP, onboard |
+| `/mnemion:search` | Search your memories across the palace |
+| `/mnemion:mine` | Mine projects and conversations into the palace |
+| `/mnemion:status` | Show palace overview -- wings, rooms, drawer counts |
 
 ## Hooks
 
-MemPalace registers two hooks that run automatically:
+Mnemion registers two hooks that run automatically:
 
 - **Stop** -- Saves conversation context every 15 messages.
 - **PreCompact** -- Preserves important memories before context compaction.
 
-Set the `MEMPAL_DIR` environment variable to a directory path to automatically run `mempalace mine` on that directory during each save trigger.
+Set the `MNEMION_DIR` environment variable to a directory path to automatically run `mnemion mine` on that directory during each save trigger.
 
 ## MCP Server
 
-The plugin automatically configures a local MCP server with 19 tools for storing, searching, and managing memories. No manual MCP setup is required -- `/mempalace:init` handles everything.
+The plugin automatically configures a local MCP server with 19 tools for storing, searching, and managing memories. No manual MCP setup is required -- `/mnemion:init` handles everything.
 
 ## Full Documentation
 

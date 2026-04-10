@@ -1,5 +1,5 @@
 #!/bin/bash
-# MemPalace vLLM startup script
+# Mnemion vLLM startup script
 # Serves Gemma 4 locally for contradiction detection — no cloud, no API key.
 #
 # IMPORTANT: This script hardcodes PATH because WSL often inherits a broken

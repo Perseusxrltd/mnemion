@@ -1,12 +1,12 @@
 {
-  "name": "mempalace",
-  "version": "3.2.9",
+  "name": "mnemion",
+  "version": "3.2.8",
   "description": "Give your AI a memory — mine projects and conversations into a searchable palace. 19 MCP tools, auto-save hooks, and guided setup.",
   "author": {
     "name": "milla-jovovich"
   },
-  "homepage": "https://github.com/milla-jovovich/mempalace",
-  "repository": "https://github.com/milla-jovovich/mempalace",
+  "homepage": "https://github.com/Perseusxrltd/mnemion",
+  "repository": "https://github.com/Perseusxrltd/mnemion",
   "license": "MIT",
   "keywords": [
     "memory",
@@ -20,16 +20,16 @@
   "skills": "./skills/",
   "hooks": "./hooks.json",
   "mcpServers": {
-    "mempalace": {
+    "mnemion": {
       "command": "python3",
       "args": [
         "-m",
-        "mempalace.mcp_server"
+        "mnemion.mcp_server"
       ]
     }
   },
   "interface": {
-    "displayName": "MemPalace",
+    "displayName": "Mnemion",
     "shortDescription": "AI memory system for Codex",
     "longDescription": "Give your AI a persistent memory — mine projects and conversations into a searchable palace backed by ChromaDB, with 19 MCP tools, auto-save hooks, and guided skills.",
     "developerName": "milla-jovovich",
@@ -39,9 +39,9 @@
       "Read",
       "Write"
     ],
-    "websiteURL": "https://github.com/milla-jovovich/mempalace",
-    "privacyPolicyURL": "https://github.com/milla-jovovich/mempalace",
-    "termsOfServiceURL": "https://github.com/milla-jovovich/mempalace",
+    "websiteURL": "https://github.com/Perseusxrltd/mnemion",
+    "privacyPolicyURL": "https://github.com/Perseusxrltd/mnemion",
+    "termsOfServiceURL": "https://github.com/Perseusxrltd/mnemion",
     "defaultPrompt": [
       "Search my memories for recent decisions",
       "Mine this project into my memory palace",

@@ -27,7 +27,7 @@ class TestSearchLatencyVsSize:
         palace_path = str(tmp_path / "palace")
         gen.populate_palace_directly(palace_path, n_drawers=n_drawers, include_needles=False)
 
-        from mempalace.searcher import search_memories
+        from mnemion.searcher import search_memories
 
         queries = [
             "authentication middleware",
@@ -70,7 +70,7 @@ class TestSearchRecallAtScale:
             palace_path, n_drawers=n_drawers, include_needles=True
         )
 
-        from mempalace.searcher import search_memories
+        from mnemion.searcher import search_memories
 
         hits_at_5 = 0
         hits_at_10 = 0
@@ -111,7 +111,7 @@ class TestSearchFilteredVsUnfiltered:
             palace_path, n_drawers=2_000, include_needles=True
         )
 
-        from mempalace.searcher import search_memories
+        from mnemion.searcher import search_memories
 
         filtered_latencies = []
         unfiltered_latencies = []
@@ -166,7 +166,7 @@ class TestConcurrentSearch:
         palace_path = str(tmp_path / "palace")
         gen.populate_palace_directly(palace_path, n_drawers=2_000, include_needles=False)
 
-        from mempalace.searcher import search_memories
+        from mnemion.searcher import search_memories
 
         queries = [
             "authentication",
@@ -220,7 +220,7 @@ class TestSearchNResultsScaling:
         palace_path = str(tmp_path / "palace")
         gen.populate_palace_directly(palace_path, n_drawers=2_000, include_needles=False)
 
-        from mempalace.searcher import search_memories
+        from mnemion.searcher import search_memories
 
         latencies = []
         for _ in range(5):

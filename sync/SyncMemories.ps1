@@ -1,17 +1,17 @@
-# MemPalace Auto-Sync Script
+# Mnemion Auto-Sync Script
 # Exports drawer content as portable JSON, then git commits + pushes.
 # Run on a schedule (Task Scheduler) — recommended: every 1 hour.
 #
 # Setup:
-#   1. Copy this file to your ~/.mempalace/ directory
+#   1. Copy this file to your ~/.mnemion/ directory
 #   2. Edit $mempalDir and $repoDir below
 #   3. Schedule via Task Scheduler (see sync/README.md)
 #
-# On a new machine: git clone <repo> → py -m mempalace mine ./archive/drawers_export.json
+# On a new machine: git clone <repo> → py -m mnemion mine ./archive/drawers_export.json
 
 param(
-    [string]$MempalDir = "$env:USERPROFILE\.mempalace",
-    [string]$MempalaceSrc = "$env:USERPROFILE\projects\mempalace"
+    [string]$MempalDir = "$env:USERPROFILE\.mnemion",
+    [string]$MempalaceSrc = "$env:USERPROFILE\projects\mnemion"
 )
 
 $exportDir  = Join-Path $MempalDir "archive"
@@ -28,7 +28,7 @@ $exportScript = @"
 import sys, json, os
 sys.path.insert(0, r'$MempalaceSrc')
 import chromadb
-from mempalace.config import MempalaceConfig
+from mnemion.config import MempalaceConfig
 
 config = MempalaceConfig()
 try:

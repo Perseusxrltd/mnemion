@@ -45,14 +45,14 @@ class TestMineThroughput:
         )
         palace_path = str(tmp_path / "palace")
 
-        from mempalace.miner import mine
+        from mnemion.miner import mine
 
         start = time.perf_counter()
         mine(project_path, palace_path)
         elapsed = time.perf_counter() - start
 
         client = chromadb.PersistentClient(path=palace_path)
-        col = client.get_collection("mempalace_drawers")
+        col = client.get_collection("mnemion_drawers")
         drawer_count = col.count()
 
         files_per_sec = files_written / max(elapsed, 0.001)
@@ -73,7 +73,7 @@ class TestMineThroughput:
         )
         palace_path = str(tmp_path / "palace")
 
-        from mempalace.miner import mine
+        from mnemion.miner import mine
 
         rss_samples = []
         stop_sampling = threading.Event()
@@ -105,7 +105,7 @@ class TestChunkThroughput:
     @pytest.mark.parametrize("content_size_kb", [1, 10, 100])
     def test_chunk_text_throughput(self, content_size_kb):
         """Measure chunk_text speed for different content sizes."""
-        from mempalace.miner import chunk_text
+        from mnemion.miner import chunk_text
 
         gen = PalaceDataGenerator(seed=42)
         # Generate content of target size
@@ -143,12 +143,12 @@ class TestReingestSkipOverhead:
         )
         palace_path = str(tmp_path / "palace")
 
-        from mempalace.miner import mine
+        from mnemion.miner import mine
 
         # First mine
         mine(project_path, palace_path)
         client = chromadb.PersistentClient(path=palace_path)
-        col = client.get_collection("mempalace_drawers")
+        col = client.get_collection("mnemion_drawers")
         initial_count = col.count()
 
         # Re-mine (all files should be skipped)

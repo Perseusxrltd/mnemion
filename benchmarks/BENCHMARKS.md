@@ -527,8 +527,8 @@ All raw results are committed:
 | `results_diary_haiku_rerank_full500.jsonl` | diary+rerank | 98.2% | 65% cache, partial |
 | `results_aaak_full500.jsonl` | aaak | 84.2% | Compressed sessions |
 | `results_rooms_full500.jsonl` | rooms | 89.4% | Session rooms |
-| `results_mempal_hybrid_v4_llmrerank_session_20260325_0930.jsonl` | hybrid_v4+rerank | 100% | Haiku, 500/500 |
-| `results_mempal_hybrid_v4_llmrerank_session_20260325_1054.jsonl` | hybrid_v4+rerank | 100% | Sonnet, LME 500/500 |
+| `results_mnemion_hybrid_v4_llmrerank_session_20260325_0930.jsonl` | hybrid_v4+rerank | 100% | Haiku, 500/500 |
+| `results_mnemion_hybrid_v4_llmrerank_session_20260325_1054.jsonl` | hybrid_v4+rerank | 100% | Sonnet, LME 500/500 |
 | `results_locomo_hybrid_llmrerank_session_top50_20260325_1056.json` | locomo hybrid+rerank | 100% | Sonnet, 1986/1986 |
 | `results_lme_hybrid_v4_held_out_450_20260326_0010.json` | hybrid_v4 held-out | 98.4% R@5 | Clean — 450 unseen questions |
 | `results_locomo_hybrid_session_top10_*.json` | locomo hybrid_v5 | 88.9% R@10 | Honest — top-10, no rerank |

@@ -46,7 +46,7 @@ class TestWakeUpCost:
         with open(identity_path, "w") as f:
             f.write("I am a test AI. Traits: precise, fast.\n")
 
-        from mempalace.layers import MemoryStack
+        from mnemion.layers import MemoryStack
 
         stack = MemoryStack(palace_path=palace_path, identity_path=identity_path)
 
@@ -75,7 +75,7 @@ class TestLayer1UnboundedFetch:
         palace_path = str(tmp_path / "palace")
         gen.populate_palace_directly(palace_path, n_drawers=n_drawers, include_needles=False)
 
-        from mempalace.layers import Layer1
+        from mnemion.layers import Layer1
 
         layer = Layer1(palace_path=palace_path)
 
@@ -97,7 +97,7 @@ class TestLayer1UnboundedFetch:
         palace_path = str(tmp_path / "palace")
         gen.populate_palace_directly(palace_path, n_drawers=2_000, include_needles=False)
 
-        from mempalace.layers import Layer1
+        from mnemion.layers import Layer1
 
         wing = gen.wings[0]
 
@@ -138,7 +138,7 @@ class TestWakeUpTokenBudget:
         with open(identity_path, "w") as f:
             f.write("I am a benchmark AI.\n")
 
-        from mempalace.layers import MemoryStack
+        from mnemion.layers import MemoryStack
 
         stack = MemoryStack(palace_path=palace_path, identity_path=identity_path)
         text = stack.wake_up()
@@ -163,7 +163,7 @@ class TestLayer2Retrieval:
         palace_path = str(tmp_path / "palace")
         gen.populate_palace_directly(palace_path, n_drawers=2_000, include_needles=False)
 
-        from mempalace.layers import Layer2
+        from mnemion.layers import Layer2
 
         layer = Layer2(palace_path=palace_path)
         wing = gen.wings[0]
@@ -193,7 +193,7 @@ class TestLayer3Search:
         with open(identity_path, "w") as f:
             f.write("I am a benchmark AI.\n")
 
-        from mempalace.layers import MemoryStack
+        from mnemion.layers import MemoryStack
 
         stack = MemoryStack(palace_path=palace_path, identity_path=identity_path)
 

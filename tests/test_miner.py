@@ -6,7 +6,7 @@ from pathlib import Path
 import chromadb
 import yaml
 
-from mempalace.miner import mine, scan_project
+from mnemion.miner import mine, scan_project
 
 
 def write_file(path: Path, content: str):
@@ -28,7 +28,7 @@ def test_project_mining():
         write_file(
             project_root / "backend" / "app.py", "def main():\n    print('hello world')\n" * 20
         )
-        with open(project_root / "mempalace.yaml", "w") as f:
+        with open(project_root / "mnemion.yaml", "w") as f:
             yaml.dump(
                 {
                     "wing": "test_project",
@@ -44,7 +44,7 @@ def test_project_mining():
         mine(str(project_root), str(palace_path))
 
         client = chromadb.PersistentClient(path=str(palace_path))
-        col = client.get_collection("mempalace_drawers")
+        col = client.get_collection("mnemion_drawers")
         assert col.count() > 0
     finally:
         shutil.rmtree(tmpdir)

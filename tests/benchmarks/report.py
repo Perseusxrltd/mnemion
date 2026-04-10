@@ -10,7 +10,7 @@ import os
 import tempfile
 
 
-RESULTS_FILE = os.path.join(tempfile.gettempdir(), "mempalace_bench_results.json")
+RESULTS_FILE = os.path.join(tempfile.gettempdir(), "mnemion_bench_results.json")
 
 
 def record_metric(category: str, metric: str, value):

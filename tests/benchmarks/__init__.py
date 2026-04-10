@@ -1,1 +1,1 @@
-# MemPalace scale benchmark suite
+# Mnemion scale benchmark suite

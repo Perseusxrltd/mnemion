@@ -4,7 +4,7 @@ test_searcher.py — Tests for the programmatic search_memories API.
 Tests the library-facing search interface (not the CLI print variant).
 """
 
-from mempalace.searcher import search_memories
+from mnemion.searcher import search_memories
 
 
 class TestSearchMemories:

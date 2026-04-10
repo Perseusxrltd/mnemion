@@ -1,10 +1,10 @@
-# MemPalace Scale Benchmark Suite
+# Mnemion Scale Benchmark Suite
 
-106 tests that benchmark mempalace at scale to validate real-world performance limits.
+106 tests that benchmark mnemion at scale to validate real-world performance limits.
 
 ## Why
 
-MemPalace has strong academic scores (96.6% R@5 on LongMemEval) but no empirical data on how it behaves at scale. Key unknowns:
+Mnemion has strong academic scores (96.6% R@5 on LongMemEval) but no empirical data on how it behaves at scale. Key unknowns:
 
 - `tool_status()` loads ALL metadata into memory — at what palace size does this OOM?
 - `PersistentClient` is re-instantiated on every MCP call — what's the overhead?
@@ -80,7 +80,7 @@ tests/benchmarks/
 
 `PalaceDataGenerator(seed=42, scale="small")` produces deterministic, realistic test data:
 
-- **`generate_project_tree()`** — writes real files + `mempalace.yaml` for `mine()` to ingest
+- **`generate_project_tree()`** — writes real files + `mnemion.yaml` for `mine()` to ingest
 - **`populate_palace_directly()`** — bypasses mining, inserts directly into ChromaDB (10-100x faster for search/MCP benchmarks)
 - **`generate_kg_triples()`** — entity-relationship triples with temporal validity
 - **`generate_search_queries()`** — queries with known-good answers for recall measurement

@@ -1,7 +1,7 @@
 import os
 import json
 import tempfile
-from mempalace.normalize import normalize
+from mnemion.normalize import normalize
 
 
 def test_plain_text():

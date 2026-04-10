@@ -1,9 +1,9 @@
 {
-  "mempalace": {
+  "mnemion": {
     "command": "python3",
     "args": [
       "-m",
-      "mempalace.mcp_server"
+      "mnemion.mcp_server"
     ]
   }
 }

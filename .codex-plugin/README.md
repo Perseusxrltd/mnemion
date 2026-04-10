@@ -1,4 +1,4 @@
-# MemPalace - Codex CLI Plugin
+# Mnemion - Codex CLI Plugin
 
 Give your AI a persistent memory -- mine projects and conversations into a searchable palace backed by ChromaDB, with 19 MCP tools, auto-save hooks, and guided skills.
 
@@ -6,7 +6,7 @@ Give your AI a persistent memory -- mine projects and conversations into a searc
 
 - Python 3.9+
 - Codex CLI installed and configured
-- `pip install mempalace`
+- `pip install mnemion`
 
 ## Installation
 
@@ -32,11 +32,11 @@ codex /init
 
 ### Git Install
 
-1. Clone the MemPalace repository:
+1. Clone the Mnemion repository:
 
 ```bash
-git clone https://github.com/milla-jovovich/mempalace.git
-cd mempalace
+git clone https://github.com/Perseusxrltd/mnemion.git
+cd mnemion
 ```
 
 2. Install the Python package:
@@ -67,9 +67,9 @@ codex /init
 
 The plugin includes auto-save hooks that run on session stop (every 15 messages) and before context compaction, automatically preserving conversation context into your palace.
 
-Set the `MEMPAL_DIR` environment variable to a directory path to automatically run `mempalace mine` on that directory during each save trigger.
+Set the `MNEMION_DIR` environment variable to a directory path to automatically run `mnemion mine` on that directory during each save trigger.
 
 ## Support
 
-- Repository: https://github.com/milla-jovovich/mempalace
-- Issues: https://github.com/milla-jovovich/mempalace/issues
+- Repository: https://github.com/Perseusxrltd/mnemion
+- Issues: https://github.com/Perseusxrltd/mnemion/issues

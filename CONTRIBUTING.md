@@ -1,12 +1,12 @@
-# Contributing to MemPalace
+# Contributing to Mnemion
 
-Thanks for wanting to help. MemPalace is open source and we welcome contributions of all sizes — from typo fixes to new features.
+Thanks for wanting to help. Mnemion is open source and we welcome contributions of all sizes — from typo fixes to new features.
 
 ## Getting Started
 
 ```bash
-git clone https://github.com/milla-jovovich/mempalace.git
-cd mempalace
+git clone https://github.com/Perseusxrltd/mnemion.git
+cd mnemion
 pip install -e ".[dev]"    # installs with dev dependencies (pytest, build, twine)
 ```
 
@@ -33,7 +33,7 @@ See [benchmarks/README.md](benchmarks/README.md) for data download instructions 
 ## Project Structure
 
 ```
-mempalace/          ← core package (see mempalace/README.md for module guide)
+mnemion/          ← core package (see mnemion/README.md for module guide)
 benchmarks/         ← reproducible benchmark runners
 hooks/              ← Claude Code auto-save hooks (shell + Python)
 sync/               ← palace backup and portability scripts
@@ -65,7 +65,7 @@ assets/             ← logo + brand
 
 ## Good First Issues
 
-Check the [Issues](https://github.com/milla-jovovich/mempalace/issues) tab. Great starting points:
+Check the [Issues](https://github.com/Perseusxrltd/mnemion/issues) tab. Great starting points:
 
 - **New chat formats**: Add import support for Cursor, Copilot, or other AI tool exports
 - **Room detection**: Improve pattern matching in `room_detector_local.py`

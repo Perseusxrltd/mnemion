@@ -25,7 +25,7 @@ class TestTripleInsertionRate:
             n_entities=min(n_triples // 2, 200), n_triples=n_triples
         )
 
-        from mempalace.knowledge_graph import KnowledgeGraph
+        from mnemion.knowledge_graph import KnowledgeGraph
 
         kg = KnowledgeGraph(db_path=str(tmp_path / "kg.sqlite3"))
 
@@ -51,7 +51,7 @@ class TestQueryEntityLatency:
 
     def test_query_latency_vs_relationships(self, tmp_path):
         """Create entities with 10, 50, 100 relationships and measure query time."""
-        from mempalace.knowledge_graph import KnowledgeGraph
+        from mnemion.knowledge_graph import KnowledgeGraph
 
         kg = KnowledgeGraph(db_path=str(tmp_path / "kg.sqlite3"))
 
@@ -86,7 +86,7 @@ class TestTimelinePerformance:
 
     @pytest.mark.parametrize("n_triples", [200, 1_000, 5_000])
     def test_timeline_latency(self, n_triples, tmp_path):
-        from mempalace.knowledge_graph import KnowledgeGraph
+        from mnemion.knowledge_graph import KnowledgeGraph
 
         gen = PalaceDataGenerator(seed=42)
         entities, triples = gen.generate_kg_triples(
@@ -117,7 +117,7 @@ class TestTemporalQueryAccuracy:
 
     def test_as_of_filtering(self, tmp_path):
         """Insert triples with known temporal ranges, verify as_of queries."""
-        from mempalace.knowledge_graph import KnowledgeGraph
+        from mnemion.knowledge_graph import KnowledgeGraph
 
         kg = KnowledgeGraph(db_path=str(tmp_path / "kg.sqlite3"))
 
@@ -163,7 +163,7 @@ class TestSQLiteConcurrentAccess:
 
     def test_concurrent_writers(self, tmp_path):
         """N threads writing triples simultaneously — count lock failures."""
-        from mempalace.knowledge_graph import KnowledgeGraph
+        from mnemion.knowledge_graph import KnowledgeGraph
 
         kg = KnowledgeGraph(db_path=str(tmp_path / "kg.sqlite3"))
 
@@ -212,7 +212,7 @@ class TestSQLiteConcurrentAccess:
 
     def test_concurrent_read_write(self, tmp_path):
         """Readers and writers running simultaneously."""
-        from mempalace.knowledge_graph import KnowledgeGraph
+        from mnemion.knowledge_graph import KnowledgeGraph
 
         kg = KnowledgeGraph(db_path=str(tmp_path / "kg.sqlite3"))
 
@@ -266,7 +266,7 @@ class TestKGStats:
 
     @pytest.mark.parametrize("n_triples", [200, 1_000, 5_000])
     def test_stats_latency(self, n_triples, tmp_path):
-        from mempalace.knowledge_graph import KnowledgeGraph
+        from mnemion.knowledge_graph import KnowledgeGraph
 
         gen = PalaceDataGenerator(seed=42)
         entities, triples = gen.generate_kg_triples(

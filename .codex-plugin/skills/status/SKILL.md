@@ -1,13 +1,13 @@
 ---
 name: status
-description: Show MemPalace status — room counts, storage usage, and palace health.
+description: Show Mnemion status — room counts, storage usage, and palace health.
 allowed-tools: Bash, Read
 ---
 
-# MemPalace Status
+# Mnemion Status
 
 Run the following command and follow the returned instructions step by step:
 
 ```bash
-mempalace instructions status
+mnemion instructions status
 ```

@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 from unittest.mock import patch
 
-from mempalace.hooks_cli import (
+from mnemion.hooks_cli import (
     SAVE_INTERVAL,
     STOP_BLOCK_REASON,
     PRECOMPACT_BLOCK_REASON,
@@ -106,9 +106,9 @@ def _capture_hook_output(hook_fn, data, harness="claude-code", state_dir=None):
     import io
 
     buf = io.StringIO()
-    patches = [patch("mempalace.hooks_cli._output", side_effect=lambda d: buf.write(json.dumps(d)))]
+    patches = [patch("mnemion.hooks_cli._output", side_effect=lambda d: buf.write(json.dumps(d)))]
     if state_dir:
-        patches.append(patch("mempalace.hooks_cli.STATE_DIR", state_dir))
+        patches.append(patch("mnemion.hooks_cli.STATE_DIR", state_dir))
     with contextlib.ExitStack() as stack:
         for p in patches:
             stack.enter_context(p)
@@ -117,7 +117,7 @@ def _capture_hook_output(hook_fn, data, harness="claude-code", state_dir=None):
 
 
 def test_stop_hook_passthrough_when_active(tmp_path):
-    with patch("mempalace.hooks_cli.STATE_DIR", tmp_path):
+    with patch("mnemion.hooks_cli.STATE_DIR", tmp_path):
         result = _capture_hook_output(
             hook_stop,
             {"session_id": "test", "stop_hook_active": True, "transcript_path": ""},
@@ -127,7 +127,7 @@ def test_stop_hook_passthrough_when_active(tmp_path):
 
 
 def test_stop_hook_passthrough_when_active_string(tmp_path):
-    with patch("mempalace.hooks_cli.STATE_DIR", tmp_path):
+    with patch("mnemion.hooks_cli.STATE_DIR", tmp_path):
         result = _capture_hook_output(
             hook_stop,
             {"session_id": "test", "stop_hook_active": "true", "transcript_path": ""},

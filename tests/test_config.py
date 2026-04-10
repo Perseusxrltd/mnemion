@@ -1,13 +1,13 @@
 import os
 import json
 import tempfile
-from mempalace.config import MempalaceConfig
+from mnemion.config import MempalaceConfig
 
 
 def test_default_config():
     cfg = MempalaceConfig(config_dir=tempfile.mkdtemp())
     assert "palace" in cfg.palace_path
-    assert cfg.collection_name == "mempalace_drawers"
+    assert cfg.collection_name == "mnemion_drawers"
 
 
 def test_config_from_file():
@@ -19,10 +19,10 @@ def test_config_from_file():
 
 
 def test_env_override():
-    os.environ["MEMPALACE_PALACE_PATH"] = "/env/palace"
+    os.environ["MNEMION_PALACE_PATH"] = "/env/palace"
     cfg = MempalaceConfig(config_dir=tempfile.mkdtemp())
     assert cfg.palace_path == "/env/palace"
-    del os.environ["MEMPALACE_PALACE_PATH"]
+    del os.environ["MNEMION_PALACE_PATH"]
 
 
 def test_init():

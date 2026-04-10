@@ -1,20 +1,20 @@
 ---
-title: "MemPalace (High-Fidelity Hybrid Fork)"
+title: "Mnemion (High-Fidelity Hybrid Fork)"
 category: "Tool"
 status: "active"
 version: "3.2.7"
 summary: "Production-grade AI memory palace: hybrid retrieval, trust lifecycle, intelligent LLM lifecycle, and behavioral protocol bootstrap for any AI system."
-description: "PerseusXR's high-fidelity distribution of MemPalace. Adds hybrid lexical-semantic retrieval (RRF), a human-like memory trust lifecycle with background contradiction detection, an intelligent LLM lifecycle manager (auto-start/stop/restart for local models), and a multi-layer behavioral protocol bootstrap so any AI system connecting via MCP knows how and when to use its memory. 17,000+ drawers in production."
+description: "PerseusXR's high-fidelity distribution of Mnemion. Adds hybrid lexical-semantic retrieval (RRF), a human-like memory trust lifecycle with background contradiction detection, an intelligent LLM lifecycle manager (auto-start/stop/restart for local models), and a multi-layer behavioral protocol bootstrap so any AI system connecting via MCP knows how and when to use its memory. 17,000+ drawers in production."
 tags: ["AI", "Memory", "RAG", "Hybrid-Search", "Information-Retrieval", "Python", "Local-First", "MCP", "Knowledge-Graph", "Trust-Layer"]
-source_url: "https://github.com/Perseusxrltd/mempalace"
-demo_url: "https://www.molthub.info/artifacts/mempalace-highfidelity-hybrid-fork"
+source_url: "https://github.com/Perseusxrltd/mnemion"
+demo_url: "https://www.molthub.info/artifacts/mnemion-highfidelity-hybrid-fork"
 collaboration_open: true
 skills_needed: ["Python", "SQLite", "Information Retrieval", "ChromaDB", "RRF", "MCP"]
 help_wanted: "Seeking maintainers for GraphRAG contextual expansion and CRDT-based cross-machine sync."
 latest_milestone: "Behavioral Protocol Bootstrap + ManagedBackend LLM Lifecycle (April 2026)"
 ---
 
-# MemPalace: High-Fidelity Hybrid Fork
+# Mnemion: High-Fidelity Hybrid Fork
 
 Production-grade AI memory palace. Beyond vector search — a full memory infrastructure with trust, lifecycle, and behavioral protocol.
 
@@ -43,7 +43,7 @@ Tested on a 17,000+ drawer production palace, 15-target Gold Standard:
 - **Behavioral protocol bootstrap**: multi-layer system so any AI connecting via MCP
   *instinctively knows* when, where, and how to use its memory:
   - MCP `prompts` capability: protocol injected automatically for supporting clients
-  - Directive tool descriptions: `mempalace_status` says "CALL THIS FIRST"
+  - Directive tool descriptions: `mnemion_status` says "CALL THIS FIRST"
   - `SYSTEM_PROMPT.md`: copy-paste template for CLAUDE.md, .cursorrules, ChatGPT, Gemini
 
 ## 🛠️ Technical Stack
@@ -54,5 +54,5 @@ Tested on a 17,000+ drawer production palace, 15-target Gold Standard:
 
 ## 🤖 Agent Operating Protocol
 Install the MCP server, then copy `SYSTEM_PROMPT.md` into your AI's system instructions.
-The AI will automatically: call `mempalace_status` on startup, search before answering,
-save new facts via `mempalace_add_drawer`, and write a diary entry at session end.
+The AI will automatically: call `mnemion_status` on startup, search before answering,
+save new facts via `mnemion_add_drawer`, and write a diary entry at session end.
