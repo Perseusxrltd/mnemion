@@ -93,6 +93,20 @@ class MempalaceConfig:
                     self._file_config = json.load(f)
             except (json.JSONDecodeError, OSError):
                 self._file_config = {}
+        elif config_dir is None:
+            # First run after rename from mempalace → mnemion.
+            # Migrate LLM config and palace_path from the old ~/.mempalace/config.json
+            # so existing setups don't silently lose their LLM backend.
+            _legacy = Path(os.path.expanduser("~/.mempalace")) / "config.json"
+            if _legacy.exists():
+                try:
+                    with open(_legacy, "r") as f:
+                        _old = json.load(f)
+                    for key in ("llm", "palace_path", "collection_name", "people_map"):
+                        if key in _old:
+                            self._file_config[key] = _old[key]
+                except (json.JSONDecodeError, OSError):
+                    pass
 
     @property
     def palace_path(self):
@@ -149,7 +163,7 @@ class MempalaceConfig:
         model: str = "",
         api_key: str = "",
         start_script: str = "",
-        startup_timeout: int = 90,
+        startup_timeout: int = 300,
         idle_timeout: int = 300,
         wsl_distro: str = "Ubuntu",
     ) -> None:

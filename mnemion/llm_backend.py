@@ -247,7 +247,7 @@ class ManagedBackend(OpenAICompatBackend):
         timeout: int = 60,
         name: str = "vllm",
         start_script: str = "",
-        startup_timeout: int = 90,
+        startup_timeout: int = 300,
         idle_timeout: int = 300,
         wsl_distro: str = "Ubuntu",
     ):
@@ -447,7 +447,7 @@ def get_backend(config=None) -> LLMBackend:
 
     if backend_name in ("lmstudio", "vllm", "custom"):
         start_script = llm_cfg.get("start_script", "")
-        startup_timeout = int(llm_cfg.get("startup_timeout", 90))
+        startup_timeout = int(llm_cfg.get("startup_timeout", 300))
         idle_timeout = int(llm_cfg.get("idle_timeout", 300))
         wsl_distro = llm_cfg.get("wsl_distro", "Ubuntu")
         if start_script:
