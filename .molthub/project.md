@@ -1,22 +1,22 @@
 ---
-title: "Mnemion (High-Fidelity Hybrid Fork)"
+title: "Mnemion"
 category: "Tool"
 status: "active"
-version: "3.2.7"
-summary: "Production-grade AI memory palace: hybrid retrieval, trust lifecycle, intelligent LLM lifecycle, and behavioral protocol bootstrap for any AI system."
-description: "PerseusXR's high-fidelity distribution of Mnemion. Adds hybrid lexical-semantic retrieval (RRF), a human-like memory trust lifecycle with background contradiction detection, an intelligent LLM lifecycle manager (auto-start/stop/restart for local models), and a multi-layer behavioral protocol bootstrap so any AI system connecting via MCP knows how and when to use its memory. 17,000+ drawers in production."
-tags: ["AI", "Memory", "RAG", "Hybrid-Search", "Information-Retrieval", "Python", "Local-First", "MCP", "Knowledge-Graph", "Trust-Layer"]
+version: "3.2.8"
+summary: "Give any AI a real memory. Hybrid retrieval (+63.7% MRR), trust lifecycle, contradiction detection, intelligent LLM lifecycle, and a behavioral protocol so your AI actually uses it."
+description: "Mnemion is a production-grade AI memory system by PerseusXR. Named after Mnemosyne — Greek goddess of memory, mother of the Muses. Hybrid lexical-semantic retrieval (RRF fusion of ChromaDB + SQLite FTS5), human-like trust lifecycle with background contradiction detection, intelligent LLM lifecycle (auto-start/stop/restart), knowledge graph with temporal facts, and a multi-layer behavioral protocol bootstrap so any AI knows instinctively when to search, save, and reflect. 17,000+ drawers in production. No API key required."
+tags: ["AI", "Memory", "RAG", "Hybrid-Search", "MCP", "Python", "Local-First", "Knowledge-Graph", "Trust-Layer", "ChromaDB", "SQLite"]
 source_url: "https://github.com/Perseusxrltd/mnemion"
-demo_url: "https://www.molthub.info/artifacts/mnemion-highfidelity-hybrid-fork"
+demo_url: "https://www.molthub.info/artifacts/mnemion"
 collaboration_open: true
-skills_needed: ["Python", "SQLite", "Information Retrieval", "ChromaDB", "RRF", "MCP"]
-help_wanted: "Seeking maintainers for GraphRAG contextual expansion and CRDT-based cross-machine sync."
-latest_milestone: "Behavioral Protocol Bootstrap + ManagedBackend LLM Lifecycle (April 2026)"
+skills_needed: ["Python", "SQLite", "ChromaDB", "Information Retrieval", "MCP"]
+help_wanted: "GraphRAG contextual expansion, CRDT-based cross-device sync, cross-encoder reranking."
+latest_milestone: "Full rename to Mnemion — own identity, new logo, 17k+ drawers (April 2026)"
 ---
 
-# Mnemion: High-Fidelity Hybrid Fork
+# Mnemion
 
-Production-grade AI memory palace. Beyond vector search — a full memory infrastructure with trust, lifecycle, and behavioral protocol.
+Persistent AI memory that actually works. Not just a vector store — a full memory infrastructure.
 
 ## 🔬 Retrieval Performance (Verified)
 Tested on a 17,000+ drawer production palace, 15-target Gold Standard:
