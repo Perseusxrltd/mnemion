@@ -22,6 +22,8 @@ Commands:
     mnemion llm test                    Send a test prompt to verify the backend
     mnemion llm start                   Start the LLM server (requires start_script in config)
     mnemion llm stop                    Stop the LLM server
+    mnemion librarian                   Run daily background tidy-up (contradiction scan + re-classification + KG)
+    mnemion librarian --status          Show librarian state and pending count
 
 Examples:
     mnemion init ~/projects/my_app
@@ -423,6 +425,23 @@ def _cmd_llm_setup(config, BACKEND_DEFAULTS, BACKEND_LABELS):
         print("  Config saved anyway — fix the URL or start your LLM server, then re-run setup.\n")
 
 
+def cmd_librarian(args):
+    """Daily background palace tidy-up via local LLM."""
+    import json
+    from .librarian import run_librarian, show_status
+
+    if getattr(args, "status", False):
+        show_status()
+        return
+
+    stats = run_librarian(
+        limit=getattr(args, "limit", 50),
+        wing=getattr(args, "wing", None),
+        dry_run=getattr(args, "dry_run", False),
+    )
+    print(json.dumps(stats, indent=2))
+
+
 def cmd_hook(args):
     """Run hook logic: reads JSON from stdin, outputs JSON to stdout."""
     from .hooks_cli import run_hook
@@ -709,6 +728,22 @@ def main():
         help="Rebuild palace vector index from stored data (fixes segfaults after corruption)",
     )
 
+    # librarian
+    p_librarian = sub.add_parser(
+        "librarian",
+        help="Background tidy-up: contradiction scan, room re-classification, KG extraction",
+    )
+    p_librarian.add_argument(
+        "--limit", type=int, default=50, help="Max drawers to process per run (default: 50)"
+    )
+    p_librarian.add_argument("--wing", default=None, help="Limit to one wing")
+    p_librarian.add_argument(
+        "--dry-run", action="store_true", help="Preview what would be done without writing"
+    )
+    p_librarian.add_argument(
+        "--status", action="store_true", help="Show librarian state and pending count"
+    )
+
     # status
     sub.add_parser("status", help="Show what's been filed")
 
@@ -752,6 +787,7 @@ def main():
         "repair": cmd_repair,
         "status": cmd_status,
         "llm": cmd_llm,
+        "librarian": cmd_librarian,
     }
     dispatch[args.command](args)
 
