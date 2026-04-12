@@ -402,6 +402,18 @@ The "how does the AI know to use it" problem, solved at every layer:
 - **`SYSTEM_PROMPT.md`**: copy-paste template for all major AI platforms — Claude Code `CLAUDE.md`, Cursor `.cursorrules`, Claude.ai Projects, ChatGPT Custom Instructions, Gemini, OpenAI-compatible APIs.
 - **`~/.claude/CLAUDE.md` support**: Claude Code reads this file at every session start, before any tool is available — the most reliable bootstrap for Claude Code users.
 
+### v3.2.22 — Entity Detection Quality, Search Ranking, Makefile
+
+- **Entity detector — stopword expansion** (`entity_detector.py`): ~120 additional generic words added to `STOPWORDS` covering status adjectives (`current`, `verified`, `pending`, `active`…), common tech/business nouns (`stage`, `trust`, `hybrid`, `call`, `notes`, `auto`…), and adjective-nouns that appear capitalised in project docs (`lexical`, `semantic`, `abstract`…). Directly addresses reported false positives.
+- **Entity detector — frequency threshold**: minimum occurrence count raised 3 → 5; words that appear fewer than 5 times no longer become candidates, reducing sentence-start capitalisation noise.
+- **Entity detector — uncertain list filter**: zero-signal uncertain entries (frequency-only, confidence < 0.3) are now filtered out before presentation. The uncertain cap is also tightened from 8 → 6.
+- **Search ranking — keyword FTS fallback** (`hybrid_searcher.py`): `_fts_search` previously ran only a strict phrase-match (whole query in double-quotes). For conversational or multi-word queries the phrase never matched anything, leaving ranking entirely to vector search and pulling broad overview docs ahead of specific operational ones. Now runs a second tokenised keyword pass (stop-words stripped, AND-of-terms) and merges candidates before RRF fusion. Phrase results retain positional priority.
+- **Makefile**: new top-level `Makefile` with `install`, `test`, `test-fast`, `lint`, `format`, and `clean` targets. All test targets invoke `$(VENV_PY) -m pytest` so pytest always runs in the project venv — fixes the `ConftestImportFailure: No module named 'chromadb'` error caused by using a system-level `pytest` binary.
+
+### v3.2.20 / v3.2.21 — Version bump only
+
+Automated version bumps. No code changes.
+
 ### v3.2.19 — Upstream Cherry-Picks: BLOB Compat, KG Thread Safety, Security Hardening
 
 - **ChromaDB BLOB migration** (`chroma_compat.py`): upgrading from chromadb 0.6.x to 1.5.x left BLOB-typed `seq_id` fields that crash the Rust compactor on startup. New `fix_blob_seq_ids()` patches the existing `chroma.sqlite3` in-place before `PersistentClient()` is called. Called from `miner.py`, `hybrid_searcher.py`, and `mcp_server.py`. No-op on clean installs.
@@ -481,7 +493,7 @@ Eight upstream bugs fixed, sourced from the milla-jovovich/mnemion community:
 MIT — see [LICENSE](LICENSE).
 
 <!-- Link Definitions -->
-[version-shield]: https://img.shields.io/badge/version-3.2.19-4dc9f6?style=flat-square&labelColor=0a0e14
+[version-shield]: https://img.shields.io/badge/version-3.2.22-4dc9f6?style=flat-square&labelColor=0a0e14
 [release-link]: https://github.com/Perseusxrltd/mnemion/releases
 [python-shield]: https://img.shields.io/badge/python-3.9--3.14-7dd8f8?style=flat-square&labelColor=0a0e14&logo=python&logoColor=7dd8f8
 [python-link]: https://www.python.org/

@@ -15,6 +15,7 @@ Algorithm:
 """
 
 import logging
+import re
 import sqlite3
 from collections import defaultdict
 from pathlib import Path
@@ -27,6 +28,126 @@ from .config import MempalaceConfig
 _HIDDEN_STATUSES: Set[str] = {"superseded", "historical"}
 
 logger = logging.getLogger("mnemion.hybrid")
+
+# English stop words to strip before building a keyword FTS query.  Short list
+# focused on words that add noise to FTS5 token matching without helping rank.
+_FTS_STOPWORDS: Set[str] = {
+    "a",
+    "an",
+    "the",
+    "and",
+    "or",
+    "but",
+    "in",
+    "on",
+    "at",
+    "to",
+    "for",
+    "of",
+    "with",
+    "by",
+    "from",
+    "as",
+    "is",
+    "was",
+    "are",
+    "were",
+    "be",
+    "been",
+    "being",
+    "have",
+    "has",
+    "had",
+    "do",
+    "does",
+    "did",
+    "will",
+    "would",
+    "could",
+    "should",
+    "may",
+    "might",
+    "must",
+    "shall",
+    "can",
+    "this",
+    "that",
+    "these",
+    "those",
+    "it",
+    "its",
+    "they",
+    "them",
+    "their",
+    "we",
+    "our",
+    "you",
+    "your",
+    "i",
+    "my",
+    "me",
+    "he",
+    "she",
+    "his",
+    "her",
+    "who",
+    "what",
+    "when",
+    "where",
+    "why",
+    "how",
+    "which",
+    "if",
+    "then",
+    "so",
+    "not",
+    "no",
+    "yes",
+    "also",
+    "just",
+    "very",
+    "really",
+    "still",
+    "even",
+    "only",
+    "now",
+    "here",
+    "there",
+    "too",
+    "up",
+    "out",
+    "about",
+    "like",
+    "after",
+    "before",
+    "next",
+    "some",
+    "any",
+    "all",
+    "each",
+    "more",
+}
+
+
+def _fts_keyword_tokens(query: str) -> List[str]:
+    """
+    Split a natural-language query into FTS5-safe tokens suitable for an
+    AND-of-terms keyword search.  Strips punctuation, removes stop words, and
+    dedups while preserving order.  Returns an empty list when the query
+    reduces to nothing useful (e.g. pure stop-word sentence).
+    """
+    # Strip FTS5-special characters (double-quotes, parentheses, hyphens
+    # when used as operators, asterisks) to avoid syntax errors.
+    clean = re.sub(r'["\(\)\*\+\-]', " ", query)
+    tokens = re.findall(r"\b[A-Za-z0-9_]{2,}\b", clean)
+    seen: set = set()
+    result = []
+    for t in tokens:
+        lower = t.lower()
+        if lower not in _FTS_STOPWORDS and lower not in seen:
+            seen.add(lower)
+            result.append(t)
+    return result
 
 
 class HybridSearcher:
@@ -54,41 +175,70 @@ class HybridSearcher:
             # Palace not yet initialized — search will return empty results.
             self.collection = None
 
-    def _fts_search(
-        self, query: str, wing: Optional[str] = None, room: Optional[str] = None, limit: int = 50
+    def _fts_run(
+        self,
+        fts_query: str,
+        wing: Optional[str],
+        room: Optional[str],
+        limit: int,
     ) -> List[str]:
-        """
-        Executes a lexical search against the SQLite FTS5 virtual table.
-        Quotes the query to handle special characters (hyphens, dots) as literals.
-        """
+        """Execute a single raw FTS5 MATCH query and return drawer_ids."""
         conn = sqlite3.connect(self.kg_path, timeout=10)
-
-        # Build query with optional wing/room scoping.
-        # Wrap in double-quotes for phrase search; escape embedded quotes by doubling them.
-        escaped = query.replace('"', '""')
         sql = "SELECT drawer_id FROM drawers_fts WHERE content MATCH ?"
-        params = [f'"{escaped}"']
-
+        params: List[Any] = [fts_query]
         if wing:
             sql += " AND wing = ?"
             params.append(wing)
         if room:
             sql += " AND room = ?"
             params.append(room)
-
         sql += " LIMIT ?"
         params.append(limit)
-
-        results = []
+        results: List[str] = []
         try:
             for row in conn.execute(sql, params).fetchall():
                 results.append(row[0])
         except sqlite3.OperationalError as e:
-            # Common if the FTS table hasn't been initialized or query syntax is invalid
-            logger.warning(f"Lexical search failed for query '{query}': {e}")
+            logger.warning(f"FTS query failed ({fts_query!r}): {e}")
         finally:
             conn.close()
         return results
+
+    def _fts_search(
+        self, query: str, wing: Optional[str] = None, room: Optional[str] = None, limit: int = 50
+    ) -> List[str]:
+        """
+        Lexical search against the SQLite FTS5 virtual table.
+
+        Runs two passes and merges results:
+        1. Phrase search — the entire query wrapped in double-quotes.  Precise
+           but only fires when the literal phrase appears in a document.
+        2. Keyword search — significant tokens (stop-words stripped) joined as
+           an FTS5 AND-of-terms query.  Fires on natural-language questions and
+           conversational queries where phrase match rarely helps.
+
+        Phase-match hits are returned first (higher positional priority in RRF),
+        followed by keyword-only hits, deduplicated.
+        """
+        # Pass 1: phrase match
+        escaped = query.replace('"', '""')
+        phrase_ids = self._fts_run(f'"{escaped}"', wing, room, limit)
+
+        # Pass 2: keyword match — skip if query is very short (phrase already covers it)
+        keyword_ids: List[str] = []
+        tokens = _fts_keyword_tokens(query)
+        if len(tokens) >= 2:  # need at least 2 tokens for a useful keyword query
+            kw_query = " ".join(tokens)
+            keyword_ids = self._fts_run(kw_query, wing, room, limit)
+
+        # Merge preserving phrase-first order, dedup
+        seen: Set[str] = set()
+        merged: List[str] = []
+        for doc_id in phrase_ids + keyword_ids:
+            if doc_id not in seen:
+                seen.add(doc_id)
+                merged.append(doc_id)
+        return merged[:limit]
 
     def _vector_search(
         self, query: str, wing: Optional[str] = None, room: Optional[str] = None, limit: int = 50
