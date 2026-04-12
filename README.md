@@ -20,7 +20,7 @@ Inspired by the original [mempalace](https://github.com/milla-jovovich/mempalace
 
 <br>
 
-[Architecture](#architecture-layers) · [Quick Start](#quick-start) · [MCP Tools](#mcp-tools) · [System Prompt](#behavioral-protocol-bootstrap-system_promptmd--mcp-prompts) · [Auto-Save Hooks](#auto-save-hooks) · [Palace Sync](#palace-sync) · [Benchmarks](#benchmarks) · [Architecture](#architecture) · [Changelog](#changelog)
+[Architecture](#architecture-layers) · [Quick Start](#quick-start) · [MCP Tools](#mcp-tools) · [System Prompt](#behavioral-protocol-bootstrap-system_promptmd--mcp-prompts) · [Auto-Save Hooks](#auto-save-hooks) · [Librarian](#6-librarian--daily-background-tidy-up-librarianpy) · [Palace Sync](#palace-sync) · [Benchmarks](#benchmarks) · [Changelog](#changelog)
 
 </div>
 
@@ -104,7 +104,34 @@ The original hook asks the AI to save memories at intervals — which means it d
 
 Covers: decisions, preferences, milestones, problems, emotional notes.
 
-### 4. Palace Sync (`sync/SyncMemories.ps1`)
+### 6. Librarian — Daily Background Tidy-Up (`librarian.py`)
+
+Even with contradiction detection running per-save, a palace accumulates noise over time: misclassified rooms, redundant drawers, entity facts buried in prose but never extracted into the knowledge graph. The Librarian runs as a daily background job that reviews every drawer that has never been verified or challenged.
+
+For each drawer it performs three tasks using the configured local LLM:
+
+| Task | What it does |
+|------|-------------|
+| **Contradiction scan** | Checks the drawer against similar palace content for conflicts; flags contested if found |
+| **Room re-classification** | Suggests a better wing/room if the current taxonomy is wrong; moves silently |
+| **KG triple extraction** | Pulls structured facts (subject → predicate → object) from the drawer's text and adds them to the knowledge graph |
+
+The Librarian is cursor-based — it saves its position to `~/.mnemion/librarian_state.json` and resumes where it left off. It processes one drawer at a time with an 8-second inter-request sleep to stay polite to the local GPU. At 3 AM via Windows Task Scheduler (or cron) it's invisible during working hours.
+
+```bash
+# Run manually
+mnemion librarian
+
+# Dry-run — shows what would change without writing
+mnemion librarian --dry-run
+
+# Schedule daily 3 AM run (Windows)
+powershell -ExecutionPolicy Bypass -File scripts/setup_librarian_scheduler.ps1
+```
+
+Requires the LLM backend to be configured (`mnemion llm setup`). Without it, the Librarian skips LLM tasks and only runs room re-classification using the local rule-based detector.
+
+### 7. Palace Sync (`sync/SyncMemories.ps1`)
 
 The ChromaDB palace is ~860MB — too large for git. The sync system:
 
@@ -375,6 +402,44 @@ The "how does the AI know to use it" problem, solved at every layer:
 - **`SYSTEM_PROMPT.md`**: copy-paste template for all major AI platforms — Claude Code `CLAUDE.md`, Cursor `.cursorrules`, Claude.ai Projects, ChatGPT Custom Instructions, Gemini, OpenAI-compatible APIs.
 - **`~/.claude/CLAUDE.md` support**: Claude Code reads this file at every session start, before any tool is available — the most reliable bootstrap for Claude Code users.
 
+### v3.2.19 — Upstream Cherry-Picks: BLOB Compat, KG Thread Safety, Security Hardening
+
+- **ChromaDB BLOB migration** (`chroma_compat.py`): upgrading from chromadb 0.6.x to 1.5.x left BLOB-typed `seq_id` fields that crash the Rust compactor on startup. New `fix_blob_seq_ids()` patches the existing `chroma.sqlite3` in-place before `PersistentClient()` is called. Called from `miner.py`, `hybrid_searcher.py`, and `mcp_server.py`. No-op on clean installs.
+- **Knowledge graph thread safety**: `add_entity`, `add_triple`, and `invalidate` are now protected by a `threading.Lock`. Prevents data races when the Librarian daemon and the main thread write to the KG concurrently.
+- **MCP argument whitelisting**: undeclared keys are stripped from tool args before dispatch — prevents audit-trail spoofing by injected `wait_for_previous` or other rogue parameters.
+- **Parameter clamping**: `limit` (≤50), `max_hops` (≤10), `last_n` (≤100) are clamped before queries to prevent resource abuse.
+- **Epsilon mtime comparison** (`miner.py`): float equality `==` for file mtimes could miss identical values due to float representation; replaced with `abs(a - b) < 0.001`.
+- **`--source` tilde expansion** (`cli.py`): `~/...` and relative paths now correctly resolved via `expanduser().resolve()`.
+
+### v3.2.18 — Headless / CI Safety
+
+- `mnemion init` no longer raises `EOFError` when stdin is not a terminal (CI pipelines, agent harnesses, pipes). `entity_detector.py` and `room_detector_local.py` now check `sys.stdin.isatty()` and auto-accept in non-interactive environments.
+- `__main__.py` now reconfigures `stdout`/`stderr` to UTF-8 at startup on Windows, preventing `UnicodeEncodeError` from Unicode characters in palace output.
+
+### v3.2.17 — Bug Audit: Trust NullRef + FTS5 Escaping + BLOB Crash
+
+- **`contradiction_detector.py`**: `trust.get(candidate_id)["confidence"]` crashed with `TypeError: 'NoneType' is not subscriptable` for drawers with no trust record. Fixed to `(trust.get(candidate_id) or {}).get("confidence", 1.0)`.
+- **`hybrid_searcher.py`**: FTS5 phrase queries now escape embedded `"` characters (doubled) — prevents `sqlite3.OperationalError` on queries containing quotes. `sqlite3.connect()` timeout set to 10s in `_fts_search` and `_get_trust_map`.
+- **`mcp_server.py`**: None checks on trust records in `tool_verify_drawer`, `tool_challenge_drawer`, `tool_resolve_contest` — changed `if not rec:` to `if rec is None:` to correctly handle zero-confidence records. Error handling upgraded to `logger.exception()` in 5 places for full stack traces in logs.
+
+### v3.2.15 — Librarian: Daily Background Palace Tidy-Up
+
+New `mnemion librarian` command — a cursor-based background agent that tidy-ups the palace nightly using the configured local LLM:
+
+- **Contradiction scan** on unreviewed drawers (verifications=0, challenges=0)
+- **Room re-classification** — moves misclassified drawers to the correct wing/room silently
+- **KG triple extraction** — pulls structured facts from drawer text and writes them to the knowledge graph
+- 8-second inter-request sleep; resumes from cursor on next run
+- `--dry-run` flag to preview changes without writing
+- `scripts/setup_librarian_scheduler.ps1` registers a daily 3 AM Windows Task Scheduler job
+
+### v3.2.9 — Project Renamed: mempalace → Mnemion
+
+- Package, CLI command, MCP server name, and all internal references renamed from `mempalace` to `mnemion`
+- Auto-migration: on first startup, existing `~/.mempalace/` config is detected and migrated to `~/.mnemion/` with confirmation prompt
+- `startup_timeout` default raised from 90s → 300s to handle cold GPU start
+- WSL `start_script` now strips CRLF from the script path before execution
+
 ### v3.2.5 — Intelligent LLM Lifecycle (`ManagedBackend`)
 
 Local LLM management should be transparent — configure once, never think about it again:
@@ -416,7 +481,7 @@ Eight upstream bugs fixed, sourced from the milla-jovovich/mnemion community:
 MIT — see [LICENSE](LICENSE).
 
 <!-- Link Definitions -->
-[version-shield]: https://img.shields.io/badge/version-3.2.7-4dc9f6?style=flat-square&labelColor=0a0e14
+[version-shield]: https://img.shields.io/badge/version-3.2.19-4dc9f6?style=flat-square&labelColor=0a0e14
 [release-link]: https://github.com/Perseusxrltd/mnemion/releases
 [python-shield]: https://img.shields.io/badge/python-3.9--3.14-7dd8f8?style=flat-square&labelColor=0a0e14&logo=python&logoColor=7dd8f8
 [python-link]: https://www.python.org/
