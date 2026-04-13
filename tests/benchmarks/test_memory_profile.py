@@ -12,7 +12,7 @@ import tracemalloc
 
 import pytest
 
-from tests.benchmarks.data_generator import PalaceDataGenerator
+from tests.benchmarks.data_generator import AnaktoronDataGenerator
 from tests.benchmarks.report import record_metric
 
 
@@ -37,9 +37,9 @@ class TestSearchMemoryProfile:
 
     def test_search_rss_growth(self, tmp_path):
         """Issue 200 searches and track RSS every 50 calls."""
-        gen = PalaceDataGenerator(seed=42, scale="small")
-        palace_path = str(tmp_path / "palace")
-        gen.populate_palace_directly(palace_path, n_drawers=1_000, include_needles=False)
+        gen = AnaktoronDataGenerator(seed=42, scale="small")
+        anaktoron_path = str(tmp_path / "anaktoron")
+        gen.populate_anaktoron_directly(anaktoron_path, n_drawers=1_000, include_needles=False)
 
         from mnemion.searcher import search_memories
 
@@ -51,7 +51,7 @@ class TestSearchMemoryProfile:
 
         for i in range(n_calls):
             q = queries[i % len(queries)]
-            search_memories(q, palace_path=palace_path, n_results=5)
+            search_memories(q, anaktoron_path=anaktoron_path, n_results=5)
             if (i + 1) % check_interval == 0:
                 rss_readings.append((f"after_{i + 1}", _get_rss_mb()))
 
@@ -74,16 +74,16 @@ class TestToolStatusMemoryProfile:
 
     def test_tool_status_repeated_calls(self, tmp_path, monkeypatch):
         """tool_status loads ALL metadata each call — does it leak?"""
-        gen = PalaceDataGenerator(seed=42, scale="small")
-        palace_path = str(tmp_path / "palace")
-        gen.populate_palace_directly(palace_path, n_drawers=2_000, include_needles=False)
+        gen = AnaktoronDataGenerator(seed=42, scale="small")
+        anaktoron_path = str(tmp_path / "anaktoron")
+        gen.populate_anaktoron_directly(anaktoron_path, n_drawers=2_000, include_needles=False)
 
-        from mnemion.config import MempalaceConfig
+        from mnemion.config import MnemionConfig
         from mnemion.knowledge_graph import KnowledgeGraph
         import mnemion.mcp_server as mcp_mod
 
-        cfg = MempalaceConfig(config_dir=str(tmp_path / "cfg"))
-        monkeypatch.setattr(cfg, "_file_config", {"palace_path": palace_path})
+        cfg = MnemionConfig(config_dir=str(tmp_path / "cfg"))
+        monkeypatch.setattr(cfg, "_file_config", {"anaktoron_path": anaktoron_path})
         monkeypatch.setattr(mcp_mod, "_config", cfg)
         monkeypatch.setattr(mcp_mod, "_kg", KnowledgeGraph(db_path=str(tmp_path / "kg.sqlite3")))
 
@@ -107,7 +107,7 @@ class TestToolStatusMemoryProfile:
         record_metric("memory_tool_status", "rss_end_mb", round(end_rss, 2))
         record_metric("memory_tool_status", "rss_growth_mb", round(growth, 2))
         record_metric("memory_tool_status", "n_calls", n_calls)
-        record_metric("memory_tool_status", "palace_size", 2_000)
+        record_metric("memory_tool_status", "anaktoron_size", 2_000)
 
 
 @pytest.mark.benchmark
@@ -116,13 +116,13 @@ class TestLayer1MemoryProfile:
 
     def test_layer1_repeated_generate(self, tmp_path):
         """Layer1 fetches all drawers for scoring. Track memory over repeats."""
-        gen = PalaceDataGenerator(seed=42, scale="small")
-        palace_path = str(tmp_path / "palace")
-        gen.populate_palace_directly(palace_path, n_drawers=2_000, include_needles=False)
+        gen = AnaktoronDataGenerator(seed=42, scale="small")
+        anaktoron_path = str(tmp_path / "anaktoron")
+        gen.populate_anaktoron_directly(anaktoron_path, n_drawers=2_000, include_needles=False)
 
         from mnemion.layers import Layer1
 
-        layer = Layer1(palace_path=palace_path)
+        layer = Layer1(anaktoron_path=anaktoron_path)
 
         n_calls = 30
         rss_readings = []
@@ -150,9 +150,9 @@ class TestHeapSnapshot:
 
     def test_search_heap_top_allocators(self, tmp_path):
         """Identify which code paths allocate the most memory during search."""
-        gen = PalaceDataGenerator(seed=42, scale="small")
-        palace_path = str(tmp_path / "palace")
-        gen.populate_palace_directly(palace_path, n_drawers=1_000, include_needles=False)
+        gen = AnaktoronDataGenerator(seed=42, scale="small")
+        anaktoron_path = str(tmp_path / "anaktoron")
+        gen.populate_anaktoron_directly(anaktoron_path, n_drawers=1_000, include_needles=False)
 
         from mnemion.searcher import search_memories
 
@@ -160,7 +160,7 @@ class TestHeapSnapshot:
         snap_before = tracemalloc.take_snapshot()
 
         for i in range(100):
-            search_memories("test query", palace_path=palace_path, n_results=5)
+            search_memories("test query", anaktoron_path=anaktoron_path, n_results=5)
 
         snap_after = tracemalloc.take_snapshot()
         tracemalloc.stop()

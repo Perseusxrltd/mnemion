@@ -10,7 +10,7 @@ import time
 
 import pytest
 
-from tests.benchmarks.data_generator import PalaceDataGenerator
+from tests.benchmarks.data_generator import AnaktoronDataGenerator
 from tests.benchmarks.report import record_metric
 
 
@@ -20,7 +20,7 @@ class TestTripleInsertionRate:
 
     @pytest.mark.parametrize("n_triples", [200, 1_000, 5_000])
     def test_insertion_throughput(self, n_triples, tmp_path):
-        gen = PalaceDataGenerator(seed=42, scale="small")
+        gen = AnaktoronDataGenerator(seed=42, scale="small")
         entities, triples = gen.generate_kg_triples(
             n_entities=min(n_triples // 2, 200), n_triples=n_triples
         )
@@ -88,7 +88,7 @@ class TestTimelinePerformance:
     def test_timeline_latency(self, n_triples, tmp_path):
         from mnemion.knowledge_graph import KnowledgeGraph
 
-        gen = PalaceDataGenerator(seed=42)
+        gen = AnaktoronDataGenerator(seed=42)
         entities, triples = gen.generate_kg_triples(
             n_entities=min(n_triples // 2, 200), n_triples=n_triples
         )
@@ -133,7 +133,7 @@ class TestTemporalQueryAccuracy:
         kg.add_triple("Alice", "works_on", "ProjectB", valid_from="2024-07-01")
 
         # Add noise triples
-        gen = PalaceDataGenerator(seed=42)
+        gen = AnaktoronDataGenerator(seed=42)
         entities, triples = gen.generate_kg_triples(n_entities=50, n_triples=500)
         for name, etype in entities:
             kg.add_entity(name, etype)
@@ -268,7 +268,7 @@ class TestKGStats:
     def test_stats_latency(self, n_triples, tmp_path):
         from mnemion.knowledge_graph import KnowledgeGraph
 
-        gen = PalaceDataGenerator(seed=42)
+        gen = AnaktoronDataGenerator(seed=42)
         entities, triples = gen.generate_kg_triples(
             n_entities=min(n_triples // 2, 200), n_triples=n_triples
         )

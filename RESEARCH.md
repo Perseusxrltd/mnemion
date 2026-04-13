@@ -22,7 +22,7 @@ In high-entropy technical environments, vector-only retrieval exhibits a "Vector
 
 **Latency overhead** — RRF fusion adds <5ms to retrieval. The FTS5 write is synchronous and adds <1ms to save.
 
-### Benchmark (4,344-drawer production palace, 15-target Gold Standard)
+### Benchmark (4,344-drawer production Anaktoron, 15-target Gold Standard)
 
 | Metric | Vector Only | Hybrid RRF | Delta |
 |--------|-------------|------------|-------|
@@ -71,7 +71,7 @@ any → historical       (drawer deleted — ghost record for audit)
 - If confidence < 0.8 → escalate to Stage 2
 
 **Stage 2 — Context-Enriched Resolve (ambiguous cases only)**
-- Pull 3 additional palace context snippets for each conflicting drawer
+- Pull 3 additional Anaktoron context snippets for each conflicting drawer
 - Second LLM pass with enriched context
 - Resolves or marks both as `contested` if still ambiguous
 
@@ -116,7 +116,7 @@ drawer_trust_history -- append-only audit trail of every state change
 
 ### Problem
 
-The original save hook works by nudging the AI at intervals, asking it to save to the palace. This has two failure modes:
+The original save hook works by nudging the AI at intervals, asking it to save to the Anaktoron. This has two failure modes:
 1. The AI may not cooperate (ignores the instruction, or the block gets swallowed)
 2. The AI interrupts the conversation, which creates friction
 
@@ -132,15 +132,15 @@ A Python hook (`hooks/mnemion_save_hook.py`) that:
 
 Result: fully automatic, zero-interruption, AI-independent memory extraction.
 
-The pattern-based extractor covers: decisions, preferences, milestones, problems, emotional notes. For richer LLM-powered extraction from historical logs, use `llm_miner.py`.
+The pattern-based extractor covers: decisions, preferences, milestones, problems, emotional notes. For richer extraction from historical logs, use `convo_miner.py`.
 
 ---
 
-## Contribution 4: LLM History Mining (`llm_miner.py`)
+## Contribution 4: LLM History Mining
 
-A standalone script that processes all historical AI conversation logs (Claude JSONL, Gemini JSON, Codex session files) through a local LLM (vLLM/Ollama) to extract structured memories and file them into the palace.
+Historical AI conversation logs (Claude JSONL, Gemini JSON, Codex session files) can be processed through `convo_miner.py` to extract structured memories and file them into the Anaktoron.
 
-Used to bootstrap a palace from months of prior conversation history. Not a real-time tool — run once, or periodically on new log dumps.
+Used to bootstrap an Anaktoron from months of prior conversation history.
 
 Output: `distilled` wing, rooms: `decision | preference | project_fact | tech_fact | milestone | personal`.
 
@@ -172,7 +172,7 @@ A daemon watcher thread checks every 30s. If `_last_chat_time` exceeds `idle_tim
 
 `DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP` (Windows) ensures the vLLM server is not a child of the Python process — it's an independent OS-level process. When mnemion exits (or the MCP server restarts), the server keeps running. Only `backend.stop()` or a manual kill terminates it.
 
-This matters for the auto-stop feature: the server is shared state across all processes using the palace.
+This matters for the auto-stop feature: the server is shared state across all processes using the Anaktoron.
 
 ---
 
@@ -180,9 +180,9 @@ This matters for the auto-stop feature: the server is shared state across all pr
 
 ### Problem
 
-Storage is not memory. An AI connected to a Mnemion MCP server has 24 tools available — but without explicit instructions, it will not call them. The behavioral gap between "having tools" and "using tools correctly" is the real problem for AI memory systems.
+Storage is not memory. An AI connected to a Mnemion MCP server has 25 tools available — but without explicit instructions, it will not call them. The behavioral gap between "having tools" and "using tools correctly" is the real problem for AI memory systems.
 
-Specifically: the palace's behavioral protocol (when to call `status`, when to search, when to save, when to write the diary) was only returned *inside* the `tool_status` result — a circular dependency where the AI needed to already know to call the tool before it could receive the instruction to call the tool.
+Specifically: the Anaktoron's behavioral protocol (when to call `status`, when to search, when to save, when to write the diary) was only returned *inside* the `tool_status` result — a circular dependency where the AI needed to already know to call the tool before it could receive the instruction to call the tool.
 
 ### Solution: three independent layers
 
@@ -191,7 +191,7 @@ Each layer solves the bootstrap independently. A client needs only one to work c
 **Layer 1 — MCP tool descriptions (universal)**
 
 Every MCP client reads tool descriptions before taking any action. We changed:
-- `mnemion_status` → "CALL THIS FIRST at every session start. Returns your behavioral protocol, AAAK memory dialect spec, and palace overview."
+- `mnemion_status` → "CALL THIS FIRST at every session start. Returns your behavioral protocol, AAAK memory dialect spec, and Anaktoron overview."
 - `mnemion_search` → "Use BEFORE answering any question about past events, people, projects — verify, don't guess."
 - `mnemion_add_drawer` → "Call when you learn a new fact or something changes."
 - `mnemion_diary_write` → "Call AT END OF EVERY SESSION."
@@ -213,3 +213,46 @@ A copy-paste template for every major AI platform:
 ### Why CLAUDE.md is the most reliable layer for Claude Code
 
 Claude Code reads `~/.claude/CLAUDE.md` before any conversation starts — before tools are listed, before MCP servers connect. This means the protocol is injected even in sessions where something goes wrong with the MCP connection. It's the only truly zero-dependency bootstrap path for Claude Code.
+
+---
+
+## Contribution 7: LeWorldModel (LeWM) Integration — Self-Organizing World Model (v3.4)
+
+### Problem: Embedding Collapse (The "Blob" Effect)
+
+In production memory Anaktorons with high-density technical logs or repetitive chat histories, embeddings tend to cluster tightly together. This "Embedding Collapse" makes semantic search imprecise, as the database cannot effectively differentiate between similar but distinct memories.
+
+### Implementation: SIGReg Latent Grooming
+
+1. **SIGReg (Sketched Isotropic Gaussian Regularization)**: During ingestion (`add_drawer`), we calculate the **Epps-Pulley test statistic** on random projections of the current embedding cluster.
+2. **LatentAdapter**: A linear projection initialized to identity, trained with a three-term loss: semantic preservation (MSE vs original), diversity (cosine similarity penalty), and SIGReg (Gaussian normality).
+3. **Gradient-based Grooming**: Over 10 iterations, the adapter pushes embeddings apart on the manifold while preserving semantic structure.
+
+**A/B Benchmark (2,000-drawer test Anaktoron, 20 planted needles):**
+
+| Pipeline | Recall@5 | Recall@10 | MRR | Latency |
+|----------|----------|-----------|-----|----------|
+| Raw ChromaDB | 0.600 | 0.600 | 0.600 | 96ms |
+| **SIGReg Groomed** | **1.000** | **1.000** | **1.000** | 99ms |
+
+*Reproduce: `python tests/benchmarks/bench_ab_test.py`*
+
+Latent diversity metric (separate test, highly similar technical files):
+- **Ungroomed similarity**: 0.9899
+- **Groomed similarity**: 0.8647
+- **Improvement**: +12.6% increase in latent diversity
+
+### Predictive Context (JEPA)
+
+Mnemion v3.3 includes a session-aware predictor inspired by JEPA principles.
+
+1. **Latent Trajectory Tracking**: A `SessionTracker` records the sequence of embeddings accessed during a chat session.
+2. **LSTM Predictor**: A single-layer LSTM trained on session embedding sequences to predict the next latent state. Weights are loaded once at init and cached.
+3. **Proactive Retrieval**: The `mnemion_predict_next` MCP tool allows AI agents to anticipate the next relevant Room or Topic, pre-fetching context before an explicit search is triggered.
+
+### Latent Space Diagnostics
+
+Diagnostic suite (`benchmarks/latent_health.py`) to quantify the physical structure of the memory Anaktoron:
+- **Cosine Similarity Stats**: Measures latent density and cluster health.
+- **Normality Stats**: Measures Skewness and Kurtosis relative to an ideal Gaussian distribution.
+- **Spreading Score**: Validates the effectiveness of the grooming logic.

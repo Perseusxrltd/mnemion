@@ -138,11 +138,11 @@ All the v1 keyword re-ranking applied on top of fixes 1 and 2.
 | **Hybrid v2 w=0.30** | 98.4% | 99.0% | 0.934 | +1.8pp / +0.8pp / +0.045 |
 | **Hybrid v2 + LLM rerank** | 98.8% | 99.0% | 0.966 | +2.2pp / +0.8pp / +0.077 |
 | **Hybrid v3 + LLM rerank** | 99.4% | 99.6% | 0.975 | +2.8pp / +1.4pp / +0.086 |
-| **Palace + LLM rerank** | **99.4%** | **99.4%** | **0.973** | **+2.8pp / +1.2pp / +0.084** |
+| **Anaktoron + LLM rerank** | **99.4%** | **99.4%** | **0.973** | **+2.8pp / +1.2pp / +0.084** |
 | **Diary + LLM rerank (65% cache)** | 98.2% | 98.4% | 0.956 | +1.6pp / +0.2pp / +0.067 |
 
 **+2.8 percentage points at R@5 vs raw** = 14 more questions answered correctly out of 500.
-**Both v3 and palace reach 99.4% R@5** — two independent architectures converging on the same ceiling.
+**Both v3 and Anaktoron reach 99.4% R@5** — two independent architectures converging on the same ceiling.
 **Only 3 misses remain** across both top modes.
 
 **Diary result (98.2%) is with 65% cache coverage only** — 35% of sessions had no diary context. Full-coverage result pending (cache building overnight). The partial result shows the diary layer can introduce noise when only partially applied; full coverage result expected to be ≥99.4%.
@@ -205,10 +205,10 @@ mkdir -p /tmp/longmemeval-data
 curl -fsSL -o /tmp/longmemeval-data/longmemeval_s_cleaned.json \
   https://huggingface.co/datasets/xiaowu0162/longmemeval-cleaned/resolve/main/longmemeval_s_cleaned.json
 
-# Run palace + LLM rerank (requires API key)
+# Run Anaktoron + LLM rerank (requires API key)
 export ANTHROPIC_API_KEY=sk-ant-...  # or use --llm-key flag
 python benchmarks/longmemeval_bench.py /tmp/longmemeval-data/longmemeval_s_cleaned.json \
-  --mode palace --llm-rerank --out benchmarks/results_palace_llmrerank_full500.jsonl
+  --mode Anaktoron --llm-rerank --out benchmarks/results_palace_llmrerank_full500.jsonl
 
 # Run hybrid v3 + LLM rerank (requires API key)
 python benchmarks/longmemeval_bench.py /tmp/longmemeval-data/longmemeval_s_cleaned.json \
@@ -246,19 +246,19 @@ python benchmarks/longmemeval_bench.py /tmp/longmemeval-data/longmemeval_s_clean
 **Run time:**
 - hybrid_v2 (local): ~200s for full 500 on Apple Silicon
 - hybrid_v2 + LLM rerank: ~620s (~10 min) — adds ~0.8s per question for Haiku API call
-- palace (local): ~280s — slightly slower due to two-pass hall navigation
-- palace + LLM rerank: ~700s (~12 min)
+- Anaktoron (local): ~280s — slightly slower due to two-pass hall navigation
+- Anaktoron + LLM rerank: ~700s (~12 min)
 
 ---
 
-## How Palace Mode Works (`--mode palace`)
+## How Anaktoron Mode Works (`--mode Anaktoron`)
 
-Palace mode is a structural upgrade that uses the full MemPal hall/wing/closet/drawer architecture for retrieval. Instead of searching everything flat, it navigates into the most likely hall first, then falls back to the full haystack with hall-aware scoring.
+Anaktoron mode is a structural upgrade that uses the full Mnemion hall/wing/closet/drawer architecture for retrieval. Instead of searching everything flat, it navigates into the most likely hall first, then falls back to the full haystack with hall-aware scoring.
 
-### The Palace Structure
+### The Anaktoron Structure
 
 ```
-PALACE
+ANAKTORON
   └── HALL (content type: preferences / facts / events / assistant_advice / general)
         └── CLOSET (user turns per session — the primary index)
               └── DRAWER (assistant turns — opened on demand for assistant-reference questions)
@@ -304,11 +304,11 @@ Same as hybrid_v3: 16 regex patterns extract preference expressions from user tu
 
 ## How Diary Mode Works (`--mode diary`)
 
-Diary mode is palace mode + an LLM topic layer added at ingest time. It addresses the vocabulary gap that embeddings can't bridge — where the question uses completely different words than the session.
+Diary mode is Anaktoron mode + an LLM topic layer added at ingest time. It addresses the vocabulary gap that embeddings can't bridge — where the question uses completely different words than the session.
 
 ### The Problem It Solves
 
-Palace mode still misses questions like: *"Where do I take yoga classes?"* when the relevant session only says *"I went this morning, my instructor was great."* No keyword overlap, no semantic bridge. The embedding sees "yoga classes" vs "went this morning" — too different.
+Anaktoron mode still misses questions like: *"Where do I take yoga classes?"* when the relevant session only says *"I went this morning, my instructor was great."* No keyword overlap, no semantic bridge. The embedding sees "yoga classes" vs "went this morning" — too different.
 
 ### How It Works
 
@@ -342,7 +342,7 @@ python benchmarks/longmemeval_bench.py ... --mode diary --diary-cache benchmarks
 python benchmarks/longmemeval_bench.py ... --mode diary --diary-cache benchmarks/diary_cache_haiku.json
 ```
 
-The `--skip-precompute` flag skips pre-computation and uses the cache as-is, falling back to pure palace for uncached sessions.
+The `--skip-precompute` flag skips pre-computation and uses the cache as-is, falling back to pure Anaktoron for uncached sessions.
 
 ### LLM Rerank compatibility
 
@@ -357,7 +357,7 @@ python benchmarks/longmemeval_bench.py /tmp/longmemeval-data/longmemeval_s_clean
 
 ### Note on Cache Coverage
 
-The partial-coverage run (65% cache, 35% fell back to palace) gave R@5=98.2% — lower than palace+rerank at 99.4%. Partial diary coverage introduces vocabulary-bridging docs for some sessions but not others, creating retrieval asymmetry. Full-coverage result (100% sessions with diary topics) is expected to equal or beat 99.4%.
+The partial-coverage run (65% cache, 35% fell back to Anaktoron) gave R@5=98.2% — lower than Anaktoron+rerank at 99.4%. Partial diary coverage introduces vocabulary-bridging docs for some sessions but not others, creating retrieval asymmetry. Full-coverage result (100% sessions with diary topics) is expected to equal or beat 99.4%.
 
 ---
 
@@ -517,8 +517,8 @@ benchmarks/
   results_hybrid_v2_full500_merged.jsonl       — hybrid v2 results (R@5=98.4%)
   results_hybrid_v2_llmrerank_full500.jsonl    — hybrid v2 + LLM rerank (R@5=98.8%)
   results_hybrid_v3_llmrerank_full500.jsonl    — hybrid v3 + LLM rerank (R@5=99.4%, NDCG=0.975) ← CURRENT BEST (tied)
-  results_palace_full500.jsonl                 — palace mode (R@5=97.2%, no rerank)
-  results_palace_llmrerank_full500.jsonl       — palace + LLM rerank (R@5=99.4%, NDCG=0.973) ← CURRENT BEST (tied)
+  results_palace_full500.jsonl                 — Anaktoron mode (R@5=97.2%, no rerank)
+  results_palace_llmrerank_full500.jsonl       — Anaktoron + LLM rerank (R@5=99.4%, NDCG=0.973) ← CURRENT BEST (tied)
   results_diary_haiku_rerank_full500.jsonl     — diary + LLM rerank, 65% cache (R@5=98.2%) ← partial, full pending
   diary_cache_haiku.json                       — pre-computed Haiku topics for 3977+ sessions (building to 19195)
   NOTES_FOR_MILLA.md                           — Ben's full analysis + paper discussion
@@ -539,7 +539,7 @@ Larger candidate pool gives keyword re-ranking more to work with. If the answer 
 Global assistant indexing dilutes the semantic signal — every session's assistant text competes with every other. Two-pass is surgical: use user turns to find the right session first, then use full text only within that session. Tested both approaches; two-pass wins.
 
 **Why no LLM calls?**
-The whole MemPal pitch is "no API key, no cloud." Hybrid and hybrid_v2 maintain this. Everything is local string matching and date arithmetic.
+The whole Mnemion pitch is "no API key, no cloud." Hybrid and hybrid_v2 maintain this. Everything is local string matching and date arithmetic.
 
 **Why only 40% temporal boost (not 100%)?**
 Temporal proximity is a strong signal but not definitive. A 40% maximum reduction means semantically excellent matches can't be completely overridden by date proximity alone. It's a hint, not a rule.

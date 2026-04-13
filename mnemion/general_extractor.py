@@ -10,7 +10,7 @@ Types:
   5. EMOTIONAL    — feelings, vulnerability, relationships
 
 No LLM required. Pure keyword/pattern heuristics.
-No external dependencies on palace.py, dialect.py, or layers.py.
+No external dependencies on palace_graph.py, dialect.py, or layers.py.
 
 Usage:
     from general_extractor import extract_memories

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Mnemion MCP Server — read/write palace access for AI agents
+Mnemion MCP Server — read/write Anaktoron access for AI agents
 ================================================================
-Install: claude mcp add mnemion -- python -m mnemion.mcp_server [--palace /path/to/palace]
+Install: claude mcp add mnemion -- python -m mnemion.mcp_server [--anaktoron /path/to/anaktoron]
 
 Tools (read):
   mnemion_status          — total drawers, wing/room breakdown
@@ -34,7 +34,7 @@ from datetime import datetime  # noqa: E402
 
 import chromadb  # noqa: E402
 
-from .config import DRAWER_HNSW_METADATA, MempalaceConfig  # noqa: E402
+from .config import DRAWER_HNSW_METADATA, MnemionConfig  # noqa: E402
 from .version import __version__  # noqa: E402
 from .palace_graph import traverse, find_tunnels, graph_stats  # noqa: E402
 from .knowledge_graph import KnowledgeGraph  # noqa: E402
@@ -49,9 +49,9 @@ logger = logging.getLogger("mnemion_mcp")
 def _parse_args():
     parser = argparse.ArgumentParser(description="Mnemion MCP Server")
     parser.add_argument(
-        "--palace",
+        "--anaktoron",
         metavar="PATH",
-        help="Path to the palace directory (overrides config file and env var)",
+        help="Path to the Anaktoron directory (overrides config file and env var)",
     )
     args, _ = parser.parse_known_args()
     return args
@@ -59,13 +59,13 @@ def _parse_args():
 
 _args = _parse_args()
 
-if _args.palace:
-    os.environ["MNEMION_PALACE_PATH"] = os.path.abspath(_args.palace)
+if _args.anaktoron:
+    os.environ["MNEMION_ANAKTORON_PATH"] = os.path.abspath(_args.anaktoron)
 
-_config = MempalaceConfig()
+_config = MnemionConfig()
 
-# Hybrid Searcher and KG initialization with support for custom palace paths
-if _args.palace:
+# Hybrid Searcher and KG initialization with support for custom Anaktoron paths
+if _args.anaktoron:
     kg_path = os.path.join(os.path.dirname(_config.palace_path), "knowledge_graph.sqlite3")
     _kg = KnowledgeGraph(db_path=kg_path)
     _hybrid = HybridSearcher(palace_path=_config.palace_path, kg_path=kg_path)
@@ -97,13 +97,14 @@ def _get_collection(create=False):
         elif _collection_cache is None:
             _collection_cache = _client_cache.get_collection(_config.collection_name)
         return _collection_cache
-    except Exception:
+    except Exception as e:
+        logger.error(f"Caught exception: {e}")
         return None
 
 
-def _no_palace():
+def _no_anaktoron():
     return {
-        "error": "No palace found",
+        "error": "No Anaktoron found",
         "hint": "Run: mnemion init <dir> && mnemion mine <dir>",
     }
 
@@ -112,7 +113,7 @@ def _no_palace():
 
 
 def _iter_all_metadatas(col, where=None):
-    """Yield every drawer's metadata, paginating so palaces with >10k drawers
+    """Yield every drawer's metadata, paginating so Anaktorons with >10k drawers
     don't silently truncate. Logs and re-raises on error so callers never
     receive partial data presented as a full result. Issue #171."""
     PAGE, offset = 10000, 0
@@ -134,7 +135,7 @@ def _iter_all_metadatas(col, where=None):
 def tool_status():
     col = _get_collection()
     if not col:
-        return _no_palace()
+        return _no_anaktoron()
     count = col.count()
     wings = {}
     rooms = {}
@@ -144,11 +145,12 @@ def tool_status():
         wings[w] = wings.get(w, 0) + 1
         rooms[r] = rooms.get(r, 0) + 1
     return {
+        "version": __version__,
         "total_drawers": count,
         "wings": wings,
         "rooms": rooms,
         "palace_path": _config.palace_path,
-        "protocol": PALACE_PROTOCOL,
+        "protocol": ANAKTORON_PROTOCOL,
         "aaak_dialect": AAAK_SPEC,
     }
 
@@ -157,10 +159,10 @@ def tool_status():
 # Included in status response so the AI learns it on first wake-up call.
 # Also available via mnemion_get_aaak_spec tool.
 
-PALACE_PROTOCOL = """IMPORTANT — Mnemion Memory Protocol:
-1. ON WAKE-UP: Call mnemion_status to load palace overview + AAAK spec.
+ANAKTORON_PROTOCOL = """IMPORTANT — Mnemion Memory Protocol:
+1. ON WAKE-UP: Call mnemion_status to load Anaktoron overview + AAAK spec.
 2. BEFORE RESPONDING about any person, project, or past event: call mnemion_kg_query or mnemion_search FIRST. Never guess — verify.
-3. IF UNSURE about a fact (name, gender, age, relationship): say "let me check" and query the palace. Wrong is worse than slow.
+3. IF UNSURE about a fact (name, gender, age, relationship): say "let me check" and query the Anaktoron. Wrong is worse than slow.
 4. AFTER EACH SESSION: call mnemion_diary_write to record what happened, what you learned, what matters.
 5. WHEN FACTS CHANGE: call mnemion_kg_invalidate on the old fact, mnemion_kg_add for the new one.
 
@@ -189,7 +191,7 @@ When WRITING AAAK: use entity codes, mark emotions, keep structure tight."""
 def tool_list_wings():
     col = _get_collection()
     if not col:
-        return _no_palace()
+        return _no_anaktoron()
     wings = {}
     for m in _iter_all_metadatas(col):
         w = m.get("wing", "unknown")
@@ -200,7 +202,7 @@ def tool_list_wings():
 def tool_list_rooms(wing: str = None):
     col = _get_collection()
     if not col:
-        return _no_palace()
+        return _no_anaktoron()
     rooms = {}
     for m in _iter_all_metadatas(col, where={"wing": wing} if wing else None):
         r = m.get("room", "unknown")
@@ -211,7 +213,7 @@ def tool_list_rooms(wing: str = None):
 def tool_get_taxonomy():
     col = _get_collection()
     if not col:
-        return _no_palace()
+        return _no_anaktoron()
     taxonomy = {}
     for m in _iter_all_metadatas(col):
         w = m.get("wing", "unknown")
@@ -226,10 +228,17 @@ def tool_search(
     query: str, limit: int = 5, wing: str = None, room: str = None, min_similarity: float = 0.0
 ):
     """Hybrid search tool handler."""
+    from . import predictor
+
     limit = max(1, min(limit, 50))
     hits = _hybrid.search(
         query, wing=wing, room=room, n_results=limit, min_similarity=min_similarity
     )
+
+    # Log activity for predictive context
+    for hit in hits:
+        predictor.record_activity(hit["id"], hit.get("embedding"))
+
     return {
         "query": query,
         "filters": {"wing": wing, "room": room},
@@ -237,10 +246,61 @@ def tool_search(
     }
 
 
+def tool_predict_next():
+    """Predict the next relevant context based on session history."""
+    from . import predictor
+
+    if not predictor.SESSION_FILE.exists():
+        return {"prediction": None, "note": "No session history yet."}
+
+    try:
+        with open(predictor.SESSION_FILE, "r") as f:
+            history = json.load(f)
+    except Exception as e:
+        logger.error(f"Caught exception: {e}")
+        return {"error": "Failed to read session history"}
+
+    embeddings = [h["embedding"] for h in history if "embedding" in h and h["embedding"]]
+    if not embeddings:
+        return {"prediction": None, "note": "No embeddings in history."}
+
+    pred_vector = predictor.predict_next_context(embeddings)
+
+    col = _get_collection()
+    if not col or not pred_vector:
+        return {"prediction": None, "note": "No active Anaktoron or prediction failed."}
+
+    try:
+        results = col.query(
+            query_embeddings=[pred_vector],
+            n_results=3,
+        )
+        docs = results.get("documents", [[]])[0]
+        meta = results.get("metadatas", [[]])[0]
+
+        prefetches = []
+        for d, m in zip(docs, meta):
+            prefetches.append({
+                "content": d,
+                "room": m.get("room", "general"),
+                "wing": m.get("wing", "general")
+            })
+
+        return {
+            "predicted_latent_state": "computed",
+            "recent_history_count": len(embeddings),
+            "note": "Live JEPA RNN model prediction active - Context Prefetched",
+            "proactive_context": prefetches
+        }
+    except Exception as e:
+        logger.error(f"JEPA prefetch failure: {e}")
+        return {"prediction": None, "error": str(e)}
+
+
 def tool_check_duplicate(content: str, threshold: float = 0.9):
     col = _get_collection()
     if not col:
-        return _no_palace()
+        return _no_anaktoron()
     try:
         results = col.query(
             query_texts=[content],
@@ -268,7 +328,8 @@ def tool_check_duplicate(content: str, threshold: float = 0.9):
             "is_duplicate": len(duplicates) > 0,
             "matches": duplicates,
         }
-    except Exception:
+    except Exception as e:
+        logger.error(f"Caught exception: {e}")
         logger.exception("check_duplicate failed")
         return {"error": "Duplicate check failed"}
 
@@ -279,11 +340,11 @@ def tool_get_aaak_spec():
 
 
 def tool_traverse_graph(start_room: str, max_hops: int = 2):
-    """Walk the palace graph from a room. Find connected ideas across wings."""
+    """Walk the Anaktoron graph from a room. Find connected ideas across wings."""
     max_hops = max(1, min(max_hops, 10))
     col = _get_collection()
     if not col:
-        return _no_palace()
+        return _no_anaktoron()
     return traverse(start_room, col=col, max_hops=max_hops)
 
 
@@ -291,15 +352,15 @@ def tool_find_tunnels(wing_a: str = None, wing_b: str = None):
     """Find rooms that bridge two wings — the hallways connecting domains."""
     col = _get_collection()
     if not col:
-        return _no_palace()
+        return _no_anaktoron()
     return find_tunnels(wing_a, wing_b, col=col)
 
 
 def tool_graph_stats():
-    """Palace graph overview: nodes, tunnels, edges, connectivity."""
+    """Anaktoron graph overview: nodes, tunnels, edges, connectivity."""
     col = _get_collection()
     if not col:
-        return _no_palace()
+        return _no_anaktoron()
     return graph_stats(col=col)
 
 
@@ -312,17 +373,17 @@ def tool_add_drawer(
     """File verbatim content into a wing/room. Checks for duplicates and indexes in both stores."""
     col = _get_collection(create=True)
     if not col:
-        return _no_palace()
+        return _no_anaktoron()
 
-    drawer_id = f"drawer_{wing}_{room}_{hashlib.md5(content.encode()).hexdigest()[:16]}"
+    drawer_id = f"drawer_{wing}_{room}_{hashlib.md5(content.encode(), usedforsecurity=False).hexdigest()[:16]}"
 
     # Idempotency: if the deterministic ID already exists, return success as a no-op.
     try:
         existing = col.get(ids=[drawer_id])
         if existing and existing["ids"]:
             return {"success": True, "reason": "already_exists", "drawer_id": drawer_id}
-    except Exception:
-        pass
+    except Exception as e:
+            logger.error(f"Suppressed error in execution: {e}")
 
     try:
         # 1. Add to ChromaDB (Semantic) using upsert for idempotency
@@ -342,6 +403,7 @@ def tool_add_drawer(
         )
 
         # 2. Add to SQLite FTS5 (Lexical Mirror)
+        KnowledgeGraph(db_path=_hybrid.kg_path) # Ensure schema exists
         conn = sqlite3.connect(_hybrid.kg_path)
         conn.execute(
             "INSERT OR REPLACE INTO drawers_fts (drawer_id, content, wing, room) VALUES (?, ?, ?, ?)",
@@ -359,7 +421,8 @@ def tool_add_drawer(
         _cd.spawn_detection(drawer_id, content, wing, room, _trust, _hybrid)
 
         return {"success": True, "drawer_id": drawer_id, "wing": wing, "room": room}
-    except Exception:
+    except Exception as e:
+        logger.error(f"Caught exception: {e}")
         logger.exception("add_drawer failed")
         return {"success": False, "error": "Failed to add drawer"}
 
@@ -368,7 +431,7 @@ def tool_delete_drawer(drawer_id: str):
     """Delete a single drawer by ID from both stores."""
     col = _get_collection()
     if not col:
-        return _no_palace()
+        return _no_anaktoron()
     existing = col.get(ids=[drawer_id])
     if not existing["ids"]:
         return {"success": False, "error": f"Drawer not found: {drawer_id}"}
@@ -389,7 +452,8 @@ def tool_delete_drawer(drawer_id: str):
 
         logger.info(f"Deleted drawer: {drawer_id}")
         return {"success": True, "drawer_id": drawer_id}
-    except Exception:
+    except Exception as e:
+        logger.error(f"Caught exception: {e}")
         logger.exception("delete_drawer failed")
         return {"success": False, "error": "Failed to delete drawer"}
 
@@ -527,7 +591,7 @@ def tool_diary_write(agent_name: str, entry: str, topic: str = "general"):
     room = "diary"
     col = _get_collection(create=True)
     if not col:
-        return _no_palace()
+        return _no_anaktoron()
 
     now = datetime.now()
     entry_id = f"diary_{wing}_{now.strftime('%Y%m%d_%H%M%S')}_{hashlib.md5(entry[:50].encode()).hexdigest()[:8]}"
@@ -549,6 +613,23 @@ def tool_diary_write(agent_name: str, entry: str, topic: str = "general"):
                 }
             ],
         )
+
+        # 2. Add to SQLite FTS5 (Lexical Mirror)
+        import sqlite3
+        KnowledgeGraph(db_path=_hybrid.kg_path) # Ensure schema exists
+        conn = sqlite3.connect(_hybrid.kg_path)
+        try:
+            conn.execute(
+                "INSERT OR REPLACE INTO drawers_fts (drawer_id, content, wing, room) VALUES (?, ?, ?, ?)",
+                (entry_id, entry, wing, room),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+        # 3. Create trust record (idempotent)
+        _trust.create(entry_id, wing=wing, room=room)
+
         logger.info(f"Diary entry: {entry_id} → {wing}/diary/{topic}")
         return {
             "success": True,
@@ -557,7 +638,8 @@ def tool_diary_write(agent_name: str, entry: str, topic: str = "general"):
             "topic": topic,
             "timestamp": now.isoformat(),
         }
-    except Exception:
+    except Exception as e:
+        logger.error(f"Caught exception: {e}")
         logger.exception("diary_write failed")
         return {"success": False, "error": "Failed to write diary entry"}
 
@@ -571,7 +653,7 @@ def tool_diary_read(agent_name: str, last_n: int = 10):
     wing = f"wing_{agent_name.lower().replace(' ', '_')}"
     col = _get_collection()
     if not col:
-        return _no_palace()
+        return _no_anaktoron()
 
     try:
         results = col.get(
@@ -604,7 +686,8 @@ def tool_diary_read(agent_name: str, last_n: int = 10):
             "total": len(results["ids"]),
             "showing": len(entries),
         }
-    except Exception:
+    except Exception as e:
+        logger.error(f"Caught exception: {e}")
         logger.exception("diary_read failed")
         return {"error": "Failed to read diary entries"}
 
@@ -613,7 +696,7 @@ def tool_diary_read(agent_name: str, last_n: int = 10):
 
 TOOLS = {
     "mnemion_status": {
-        "description": "CALL THIS FIRST at every session start. Returns your behavioral protocol, AAAK memory dialect spec, and palace overview (wings, rooms, drawer counts). Required for correct operation — the protocol tells you when and how to use all other tools.",
+        "description": "CALL THIS FIRST at every session start. Returns your behavioral protocol, AAAK memory dialect spec, and Anaktoron overview (wings, rooms, drawer counts). Required for correct operation — the protocol tells you when and how to use all other tools.",
         "input_schema": {"type": "object", "properties": {}},
         "handler": tool_status,
     },
@@ -724,7 +807,7 @@ TOOLS = {
         "handler": tool_kg_stats,
     },
     "mnemion_traverse": {
-        "description": "Walk the palace graph from a room. Shows connected ideas across wings — the tunnels. Like following a thread through the palace: start at 'chromadb-setup' in wing_code, discover it connects to wing_myproject (planning) and wing_user (feelings about it).",
+        "description": "Walk the Anaktoron graph from a room. Shows connected ideas across wings — the tunnels. Like following a thread through the Anaktoron: start at 'chromadb-setup' in wing_code, discover it connects to wing_myproject (planning) and wing_user (feelings about it).",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -753,12 +836,12 @@ TOOLS = {
         "handler": tool_find_tunnels,
     },
     "mnemion_graph_stats": {
-        "description": "Palace graph overview: total rooms, tunnel connections, edges between wings.",
+        "description": "Anaktoron graph overview: total rooms, tunnel connections, edges between wings.",
         "input_schema": {"type": "object", "properties": {}},
         "handler": tool_graph_stats,
     },
     "mnemion_search": {
-        "description": "Hybrid search (vector + lexical) across all memories. Use BEFORE answering any question about past events, people, projects, or facts — verify from the palace, don't guess. Returns verbatim drawer content with similarity scores.",
+        "description": "Hybrid search (vector + lexical) across all memories. Use BEFORE answering any question about past events, people, projects, or facts — verify from the Anaktoron, don't guess. Returns verbatim drawer content with similarity scores.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -775,8 +858,13 @@ TOOLS = {
         },
         "handler": tool_search,
     },
+    "mnemion_predict_next": {
+        "description": "Imagine the next relevant context based on current session history. Returns a prediction of which room or topic the user will likely need next.",
+        "input_schema": {"type": "object", "properties": {}},
+        "handler": tool_predict_next,
+    },
     "mnemion_check_duplicate": {
-        "description": "Check if content already exists in the palace before filing",
+        "description": "Check if content already exists in the Anaktoron before filing",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -791,7 +879,7 @@ TOOLS = {
         "handler": tool_check_duplicate,
     },
     "mnemion_add_drawer": {
-        "description": "Save a new memory to the palace. Call when you learn a new fact, the user shares something important, or something changes. Content is stored verbatim — never summarize, preserve exact words. Checks for duplicates automatically.",
+        "description": "Save a new memory to the Anaktoron. Call when you learn a new fact, the user shares something important, or something changes. Content is stored verbatim — never summarize, preserve exact words. Checks for duplicates automatically.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -878,7 +966,7 @@ TOOLS = {
         "handler": tool_resolve_contest,
     },
     "mnemion_diary_write": {
-        "description": "Write to your agent diary. Call AT END OF EVERY SESSION with your name and a summary of what happened, what you learned, what matters. Each agent has their own diary wing. Write in AAAK format for compression — e.g. 'SESSION:2026-04-04|built.palace.graph+diary.tools|★★★'. Use entity codes from the AAAK spec.",
+        "description": "Write to your agent diary. Call AT END OF EVERY SESSION with your name and a summary of what happened, what you learned, what matters. Each agent has their own diary wing. Write in AAAK format for compression — e.g. 'SESSION:2026-04-04|built.anaktoron.graph+diary.tools|★★★'. Use entity codes from the AAAK spec.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -945,7 +1033,7 @@ def handle_request(request):
                 "prompts": [
                     {
                         "name": "mnemion_protocol",
-                        "description": "The Mnemion memory protocol — behavioral rules for any AI using this palace. Request this at session start if you did not call mnemion_status yet.",
+                        "description": "The Mnemion memory protocol — behavioral rules for any AI using this Anaktoron. Request this at session start if you did not call mnemion_status yet.",
                     }
                 ]
             },
@@ -963,7 +1051,7 @@ def handle_request(request):
                             "role": "user",
                             "content": {
                                 "type": "text",
-                                "text": PALACE_PROTOCOL + "\n\n" + AAAK_SPEC,
+                                "text": ANAKTORON_PROTOCOL + "\n\n" + AAAK_SPEC,
                             },
                         }
                     ],
@@ -1017,7 +1105,8 @@ def handle_request(request):
                 "id": req_id,
                 "result": {"content": [{"type": "text", "text": json.dumps(result, indent=2)}]},
             }
-        except Exception:
+        except Exception as e:
+            logger.error(f"Caught exception: {e}")
             logger.exception(f"Tool error in {tool_name}")
             return {
                 "jsonrpc": "2.0",

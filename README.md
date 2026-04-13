@@ -8,7 +8,7 @@
 
 <br>
 
-**Mnemion** is a production-grade AI memory system built by **PerseusXR**. Give any AI a persistent, searchable memory palace — hybrid lexical-semantic retrieval, a human-like trust lifecycle, background contradiction detection, intelligent LLM lifecycle management, and a behavioral protocol so your AI actually knows to use its memory.
+**Mnemion** is a production-grade AI memory system built by **PerseusXR**. Give any AI a persistent, searchable memory Anaktoron — hybrid lexical-semantic retrieval, a human-like trust lifecycle, background contradiction detection, intelligent LLM lifecycle management, and a behavioral protocol so your AI actually knows to use its memory.
 
 Inspired by the original [mempalace](https://github.com/milla-jovovich/mempalace) project. Built far beyond it.
 
@@ -20,7 +20,7 @@ Inspired by the original [mempalace](https://github.com/milla-jovovich/mempalace
 
 <br>
 
-[Architecture](#architecture-layers) · [Quick Start](#quick-start) · [MCP Tools](#mcp-tools) · [System Prompt](#behavioral-protocol-bootstrap-system_promptmd--mcp-prompts) · [Auto-Save Hooks](#auto-save-hooks) · [Librarian](#6-librarian--daily-background-tidy-up-librarianpy) · [Palace Sync](#palace-sync) · [Benchmarks](#benchmarks) · [Changelog](#changelog)
+[Architecture](#architecture-layers) · [Quick Start](#quick-start) · [MCP Tools](#mcp-tools) · [System Prompt](#behavioral-protocol-bootstrap-system_promptmd--mcp-prompts) · [Auto-Save Hooks](#auto-save-hooks) · [Librarian](#6-librarian--daily-background-tidy-up-librarianpy) · [Anaktoron Sync](#anaktoron-sync) · [Benchmarks](#benchmarks) · [Changelog](#changelog)
 
 </div>
 
@@ -39,7 +39,7 @@ Mnemion runs a **SQLite FTS5 lexical mirror** alongside ChromaDB, fusing both re
 | Mean Reciprocal Rank (MRR) | 0.5395 | 0.8833 | **+63.7%** |
 | Hit@1 Accuracy | 46.7% | 80.0% | **+33.3%** |
 
-*4,344-drawer production palace, 15-target Gold Standard. Reproduce: `python eval/benchmark.py`*
+*4,344-drawer production Anaktoron, 15-target Gold Standard. Reproduce: `python eval/benchmark.py`*
 
 ### 2. Memory Trust Layer (`drawer_trust.py` + `contradiction_detector.py`)
 
@@ -57,7 +57,7 @@ any → historical       (drawer deleted — ghost record remains for audit)
 **Contradiction detection runs in the background** when a new drawer is saved:
 
 - **Stage 1**: Fast LLM judge — compares new drawer against top-k similar existing drawers. Auto-resolves if confidence ≥ 0.8.
-- **Stage 2**: For ambiguous cases — pulls additional palace context, second LLM pass to resolve.
+- **Stage 2**: For ambiguous cases — pulls additional Anaktoron context, second LLM pass to resolve.
 
 Save speed: unchanged (detection is async, daemon threads). Fetch speed: improved (superseded memories excluded by default, confidence weights scores).
 
@@ -106,13 +106,13 @@ Covers: decisions, preferences, milestones, problems, emotional notes.
 
 ### 6. Librarian — Daily Background Tidy-Up (`librarian.py`)
 
-Even with contradiction detection running per-save, a palace accumulates noise over time: misclassified rooms, redundant drawers, entity facts buried in prose but never extracted into the knowledge graph. The Librarian runs as a daily background job that reviews every drawer that has never been verified or challenged.
+Even with contradiction detection running per-save, a Anaktoron accumulates noise over time: misclassified rooms, redundant drawers, entity facts buried in prose but never extracted into the knowledge graph. The Librarian runs as a daily background job that reviews every drawer that has never been verified or challenged.
 
 For each drawer it performs three tasks using the configured local LLM:
 
 | Task | What it does |
 |------|-------------|
-| **Contradiction scan** | Checks the drawer against similar palace content for conflicts; flags contested if found |
+| **Contradiction scan** | Checks the drawer against similar Anaktoron content for conflicts; flags contested if found |
 | **Room re-classification** | Suggests a better wing/room if the current taxonomy is wrong; moves silently |
 | **KG triple extraction** | Pulls structured facts (subject → predicate → object) from the drawer's text and adds them to the knowledge graph |
 
@@ -131,15 +131,35 @@ powershell -ExecutionPolicy Bypass -File scripts/setup_librarian_scheduler.ps1
 
 Requires the LLM backend to be configured (`mnemion llm setup`). Without it, the Librarian skips LLM tasks and only runs room re-classification using the local rule-based detector.
 
-### 7. Palace Sync (`sync/SyncMemories.ps1`)
+### 7. Anaktoron Sync (`sync/SyncMemories.ps1`)
 
-The ChromaDB palace is ~860MB — too large for git. The sync system:
+The ChromaDB Anaktoron is ~860MB — too large for git. The sync system:
 
 1. Exports all drawer content to `archive/drawers_export.json` (~24MB)
 2. Commits and pushes the JSON to your private memory repo
 3. Runs automatically via Task Scheduler (Windows) or cron (macOS/Linux)
 
-On a new machine: `git clone <repo>` → `mnemion restore archive/drawers_export.json` → full palace restored.
+On a new machine: `git clone <repo>` → `mnemion restore archive/drawers_export.json` → full Anaktoron restored.
+
+### 8. LeWorldModel (LeWM) Upgrade — Self-Organizing Intelligence
+
+Based on LeWorldModel (Maes et al., 2026), Mnemion uses SIGReg to prevent embedding collapse and an LSTM-based predictor for proactive context retrieval.
+
+| Feature | What it does | Verified Impact |
+|---------|--------------|------------------|
+| **Latent Grooming (SIGReg)** | Uses the Epps-Pulley test statistic to spread embeddings across the latent manifold, preventing cluster collapse. | **+40% Recall@5** (0.600→1.000 in A/B benchmark) |
+| **Predictive Context (JEPA)** | LSTM-based predictor tracks session latent trajectories. Use `mnemion_predict_next` to anticipate the next information need. | Proactive pre-fetch |
+| **Latent Health Suite** | Diagnostic tools (`benchmarks/latent_health.py`) to measure Anaktoron density and Gaussian normality. | Monitoring |
+
+*A/B benchmark: 2,000-drawer Anaktoron, 20 planted needles. Raw ChromaDB R@5=0.600, SIGReg groomed R@5=1.000. Reproduce: `python tests/benchmarks/bench_ab_test.py`*
+
+Enable grooming in `~/.mnemion/config.json`:
+```json
+"lewm": {
+  "groom_iterations": 10,
+  "sigreg_weight": 0.1
+}
+```
 
 ---
 
@@ -229,13 +249,13 @@ mnemion llm stop    # shut it down
 
 ## MCP Tools
 
-The MCP server exposes 24 tools across four categories.
+The MCP server exposes 25 tools across five categories.
 
 ### Read
 
 | Tool | What it does |
 |------|-------------|
-| `mnemion_status` | Palace overview — drawer counts, wing breakdown, AAAK spec |
+| `mnemion_status` | Anaktoron overview — drawer counts, wing breakdown, AAAK spec |
 | `mnemion_list_wings` | All wings with drawer counts |
 | `mnemion_list_rooms` | Rooms within a wing |
 | `mnemion_get_taxonomy` | Full wing → room → count tree |
@@ -259,7 +279,7 @@ The MCP server exposes 24 tools across four categories.
 | `mnemion_kg_invalidate` | Mark a fact as no longer true |
 | `mnemion_kg_timeline` | Chronological fact history for an entity |
 | `mnemion_kg_stats` | Knowledge graph overview |
-| `mnemion_traverse` | Walk the palace graph from a room — find connected ideas |
+| `mnemion_traverse` | Walk the Anaktoron graph from a room — find connected ideas |
 | `mnemion_find_tunnels` | Rooms that bridge two wings |
 | `mnemion_graph_stats` | Graph topology overview |
 
@@ -272,6 +292,12 @@ The MCP server exposes 24 tools across four categories.
 | `mnemion_challenge` | Flag a drawer as suspect (−0.1 confidence, marks contested) |
 | `mnemion_get_contested` | List unresolved contested memories for review |
 | `mnemion_resolve_contest` | Manually pick the winner of a conflict |
+
+### LeWM
+
+| Tool | What it does |
+|------|--------------|
+| `mnemion_predict_next` | Predict the user's next information need based on session latent trajectory (LSTM predictor) |
 
 ### Agent Diary
 
@@ -306,7 +332,7 @@ See [hooks/README.md](hooks/README.md) for full installation, Codex CLI setup, a
 
 ---
 
-## Palace Sync
+## Anaktoron Sync
 
 Automatic hourly backup to a private git repo. Works across machines.
 
@@ -341,7 +367,7 @@ See [sync/README.md](sync/README.md) for full details including macOS/Linux cron
 ```
 User → CLI → miner/convo_miner ─────────────────┐
                                                   ↓
-                                        ChromaDB palace (vectors)
+                                        ChromaDB Anaktoron (vectors)
                                         FTS5 mirror (lexical)
                                         drawer_trust (status/confidence)
                                                   ↕
@@ -360,7 +386,7 @@ Task Scheduler → SyncMemories.ps1 → archive/drawers_export.json → git push
 **Storage layout:**
 ```
 ~/.mnemion/
-├── palace/                   ← ChromaDB (vectors, ~860MB, git-ignored)
+├── anaktoron/                ← ChromaDB (vectors, ~860MB, git-ignored)
 ├── knowledge_graph.sqlite3   ← KG triples + FTS5 + trust tables (git-ignored)
 ├── archive/
 │   └── drawers_export.json   ← portable JSON export (~24MB, committed to git)
@@ -389,7 +415,7 @@ The upstream project's **96.6% R@5 on LongMemEval** (raw mode) is real and indep
 
 ## Origins
 
-Mnemion began as a fork of [milla-jovovich/mempalace](https://github.com/milla-jovovich/mempalace), which introduced the memory palace metaphor and the AAAK dialect. The hybrid retrieval engine, trust lifecycle, contradiction detection, intelligent LLM lifecycle, knowledge graph, and behavioral protocol bootstrap were all built from scratch by PerseusXR. The name changed when what we built stopped resembling where we started.
+Mnemion began as a fork of [milla-jovovich/mempalace](https://github.com/milla-jovovich/mempalace), which introduced the memory Anaktoron metaphor and the AAAK dialect. The hybrid retrieval engine, trust lifecycle, contradiction detection, intelligent LLM lifecycle, knowledge graph, and behavioral protocol bootstrap were all built from scratch by PerseusXR. The name changed when what we built stopped resembling where we started.
 
 ---
 
@@ -413,7 +439,7 @@ The previous restore called `json.load()` on the full export before processing. 
 
 ### v3.3.0 — `restore` command + collection name resolution
 
-- **`mnemion restore <file.json>`** — new command for importing a JSON export into a fresh palace. The previous `mnemion mine archive/drawers_export.json` path in the README was broken (`mine` expects a directory). Supports `--merge` and `--replace` flags.
+- **`mnemion restore <file.json>`** — new command for importing a JSON export into a fresh Anaktoron. The previous `mnemion mine archive/drawers_export.json` path in the README was broken (`mine` expects a directory). Supports `--merge` and `--replace` flags.
 - **Collection name resolved from config in all commands**: `searcher.py`, `layers.py`, `miner.py`, `convo_miner.py`, and `cli.py` (repair/compress) previously hardcoded `"mnemion_drawers"`, ignoring `collection_name` in `config.json`. Fixed across all read/write paths.
 
 ### v3.2.7 — Behavioral Protocol Bootstrap + MCP Prompts
@@ -425,7 +451,7 @@ The "how does the AI know to use it" problem, solved at every layer:
 - **`SYSTEM_PROMPT.md`**: copy-paste template for all major AI platforms — Claude Code `CLAUDE.md`, Cursor `.cursorrules`, Claude.ai Projects, ChatGPT Custom Instructions, Gemini, OpenAI-compatible APIs.
 - **`~/.claude/CLAUDE.md` support**: Claude Code reads this file at every session start, before any tool is available — the most reliable bootstrap for Claude Code users.
 
-### v3.2.23 — Multi-Agent Palace Sync
+### v3.2.23 — Multi-Agent Anaktoron Sync
 
 - **`sync/merge_exports.py`** (new): pure-Python merge utility that produces a clean union of two `drawers_export.json` files — local and remote — without git merge markers. Deduplicates by drawer ID; when the same ID exists in both, the one with the newer `filed_at` timestamp wins (remote wins on tie).
 - **`sync/SyncMemories.ps1`** (rewritten): now fetches before pushing, merges remote export if remote is ahead, uses `git push --force-with-lease`, and retries up to 5 times with random 2–9 s jitter on rejection. Lock file prevents concurrent runs on the same machine (stale locks > 10 min auto-cleared). Agent ID (`MNEMION_AGENT_ID` env, default: hostname) is stamped in every commit message.
@@ -456,7 +482,7 @@ Automated version bumps. No code changes.
 ### v3.2.18 — Headless / CI Safety
 
 - `mnemion init` no longer raises `EOFError` when stdin is not a terminal (CI pipelines, agent harnesses, pipes). `entity_detector.py` and `room_detector_local.py` now check `sys.stdin.isatty()` and auto-accept in non-interactive environments.
-- `__main__.py` now reconfigures `stdout`/`stderr` to UTF-8 at startup on Windows, preventing `UnicodeEncodeError` from Unicode characters in palace output.
+- `__main__.py` now reconfigures `stdout`/`stderr` to UTF-8 at startup on Windows, preventing `UnicodeEncodeError` from Unicode characters in Anaktoron output.
 
 ### v3.2.17 — Bug Audit: Trust NullRef + FTS5 Escaping + BLOB Crash
 
@@ -464,9 +490,9 @@ Automated version bumps. No code changes.
 - **`hybrid_searcher.py`**: FTS5 phrase queries now escape embedded `"` characters (doubled) — prevents `sqlite3.OperationalError` on queries containing quotes. `sqlite3.connect()` timeout set to 10s in `_fts_search` and `_get_trust_map`.
 - **`mcp_server.py`**: None checks on trust records in `tool_verify_drawer`, `tool_challenge_drawer`, `tool_resolve_contest` — changed `if not rec:` to `if rec is None:` to correctly handle zero-confidence records. Error handling upgraded to `logger.exception()` in 5 places for full stack traces in logs.
 
-### v3.2.15 — Librarian: Daily Background Palace Tidy-Up
+### v3.2.15 — Librarian: Daily Background Anaktoron Tidy-Up
 
-New `mnemion librarian` command — a cursor-based background agent that tidy-ups the palace nightly using the configured local LLM:
+New `mnemion librarian` command — a cursor-based background agent that tidy-ups the Anaktoron nightly using the configured local LLM:
 
 - **Contradiction scan** on unreviewed drawers (verifications=0, challenges=0)
 - **Room re-classification** — moves misclassified drawers to the correct wing/room silently
@@ -475,9 +501,9 @@ New `mnemion librarian` command — a cursor-based background agent that tidy-up
 - `--dry-run` flag to preview changes without writing
 - `scripts/setup_librarian_scheduler.ps1` registers a daily 3 AM Windows Task Scheduler job
 
-### v3.2.9 — Project Renamed: mempalace → Mnemion
+### v3.2.9 — Project Renamed: mnemion → Mnemion
 
-- Package, CLI command, MCP server name, and all internal references renamed from `mempalace` to `mnemion`
+- Package, CLI command, MCP server name, and all internal references renamed from `mnemion` to `mnemion`
 - Auto-migration: on first startup, existing `~/.mempalace/` config is detected and migrated to `~/.mnemion/` with confirmation prompt
 - `startup_timeout` default raised from 90s → 300s to handle cold GPU start
 - WSL `start_script` now strips CRLF from the script path before execution
@@ -499,10 +525,10 @@ Eight upstream bugs fixed, sourced from the milla-jovovich/mnemion community:
 | Fix | Impact |
 |-----|--------|
 | Widen chromadb to `<2.0` | Python 3.14 compatibility |
-| Add `hnsw:space=cosine` on all collection creates | Similarity scores were negative L2 values, not cosine. All new palaces fixed automatically. Existing palaces benefit after `mnemion repair`. |
+| Add `hnsw:space=cosine` on all collection creates | Similarity scores were negative L2 values, not cosine. All new Anaktorons fixed automatically. Existing Anaktorons benefit after `mnemion repair`. |
 | Guard `results["documents"][0]` on empty queries | ChromaDB 1.x returns `{documents:[]}` on empty results; was crashing with `IndexError` |
 | Redirect `sys.stdout → sys.stderr` at MCP import | chromadb/posthog startup chatter was corrupting the JSON-RPC wire, causing `Unexpected token` errors in clients |
-| Paginate taxonomy/list tools | Palaces with >10k drawers were silently truncated at 10k; now pages through all drawers |
+| Paginate taxonomy/list tools | Anaktorons with >10k drawers were silently truncated at 10k; now pages through all drawers |
 | Drop `wait_for_previous` arg | Gemini MCP clients inject this undocumented arg; was crashing with `TypeError` |
 | `min_similarity` on `mnemion_search` | Results below threshold are omitted — gives agents a clean "nothing found" signal instead of returning negative-score noise |
 | `CODE_KEYWORDS` blocklist in entity detector | Rust types, React, framework names (String, Vec, Debug, React...) were being detected as entities during `mnemion init` |
@@ -510,7 +536,7 @@ Eight upstream bugs fixed, sourced from the milla-jovovich/mnemion community:
 ### v3.1.0 — Trust Layer + LLM Backend
 
 - Memory trust lifecycle: `current → superseded | contested → historical`
-- Two-stage background contradiction detection (Stage 1: fast LLM judge; Stage 2: palace-context enriched)
+- Two-stage background contradiction detection (Stage 1: fast LLM judge; Stage 2: Anaktoron-context enriched)
 - Pluggable LLM backend: Ollama, LM Studio, vLLM, custom OpenAI-compatible, or none — configure with `mnemion llm setup`
 - Resource-throttled detection: `nice -n 19`, `ionice -c 3`, 2-minute global cooldown, 5s inter-request sleep
 - One-shot Windows installer (`sync/install_windows.ps1`) — sets up hooks, Task Scheduler, optional vLLM auto-start
@@ -523,7 +549,7 @@ Eight upstream bugs fixed, sourced from the milla-jovovich/mnemion community:
 MIT — see [LICENSE](LICENSE).
 
 <!-- Link Definitions -->
-[version-shield]: https://img.shields.io/badge/version-3.2.23-4dc9f6?style=flat-square&labelColor=0a0e14
+[version-shield]: https://img.shields.io/badge/version-3.3.4-4dc9f6?style=flat-square&labelColor=0a0e14
 [release-link]: https://github.com/Perseusxrltd/mnemion/releases
 [python-shield]: https://img.shields.io/badge/python-3.9--3.14-7dd8f8?style=flat-square&labelColor=0a0e14&logo=python&logoColor=7dd8f8
 [python-link]: https://www.python.org/

@@ -39,7 +39,7 @@ Ask the user which project directory they want to initialize with Mnemion.
 Offer the current working directory as the default. Wait for their response
 before continuing.
 
-## Step 5: Initialize the palace
+## Step 5: Initialize the Anaktoron
 
 Run `mnemion init <dir>` where `<dir>` is the directory from Step 4.
 
@@ -56,7 +56,7 @@ configuration can be done manually later).
 
 ## Step 7: Verify installation
 
-Run `mnemion status` and confirm the output shows a healthy palace.
+Run `mnemion status` and confirm the output shows a healthy Anaktoron.
 
 If the command fails or reports errors, walk the user through troubleshooting
 based on the output.
@@ -65,5 +65,5 @@ based on the output.
 
 Tell the user setup is complete and suggest these next actions:
 
-- Use /mnemion:mine to start adding data to their palace
-- Use /mnemion:search to query their palace and retrieve stored knowledge
+- Use /mnemion:mine to start adding data to their Anaktoron
+- Use /mnemion:search to query their Anaktoron and retrieve stored knowledge

@@ -1,4 +1,4 @@
-# MemPal Benchmarks — Reproduction Guide
+# Mnemion Benchmarks — Reproduction Guide
 
 Run the exact same benchmarks we report. Clone, install, run.
 

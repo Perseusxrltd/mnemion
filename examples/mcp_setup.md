@@ -18,9 +18,9 @@ claude mcp add mnemion -- python -m mnemion.mcp_server
 
 The server exposes the full Mnemion MCP toolset. Common entry points include:
 
-- **mnemion_status** — palace stats (wings, rooms, drawer counts)
+- **mnemion_status** — Anaktoron stats (wings, rooms, drawer counts)
 - **mnemion_search** — semantic search across all memories
-- **mnemion_list_wings** — list all projects in the palace
+- **mnemion_list_wings** — list all projects in the Anaktoron
 
 ## Usage in Claude Code
 

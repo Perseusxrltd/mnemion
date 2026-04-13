@@ -18,9 +18,9 @@ The Python package that powers Mnemion. All modules, all logic.
 | `knowledge_graph.py` | Temporal entity-relationship graph — SQLite, time-filtered queries, fact invalidation |
 | `palace_graph.py` | Room-based navigation graph — BFS traversal, tunnel detection across wings |
 | `drawer_trust.py` | **Memory Trust Layer** — SQLite trust records per drawer; status lifecycle (current→superseded\|contested→historical); confidence scoring; conflict registry; append-only audit trail |
-| `contradiction_detector.py` | **Two-stage conflict detection** — Stage 1: fast LLM judge (auto-resolves at ≥0.8 confidence); Stage 2: palace-context enriched resolve for ambiguous cases; runs in daemon threads, never blocks saves |
+| `contradiction_detector.py` | **Two-stage conflict detection** — Stage 1: fast LLM judge (auto-resolves at ≥0.8 confidence); Stage 2: Anaktoron-context enriched resolve for ambiguous cases; runs in daemon threads, never blocks saves |
 | `llm_backend.py` | **Pluggable LLM backend** — abstract adapter supporting ollama, lmstudio, vllm, custom OpenAI-compatible endpoints, or none. Configured via `mnemion llm setup`. |
-| `mcp_server.py` | MCP server — 24 tools, AAAK auto-teach, Palace Protocol, agent diary, trust management |
+| `mcp_server.py` | MCP server — 25 tools, AAAK auto-teach, Anaktoron Protocol, agent diary, trust management, LeWM predict |
 | `general_extractor.py` | Pattern-based extraction — classifies text into 5 memory types (decision, preference, milestone, problem, emotional) without any LLM |
 | `onboarding.py` | Guided first-run setup — asks about people/projects, generates AAAK bootstrap + wing config |
 | `entity_registry.py` | Entity code registry — maps names to AAAK codes, handles ambiguous names |
@@ -32,7 +32,7 @@ The Python package that powers Mnemion. All modules, all logic.
 ## Architecture
 
 ```
-User → CLI → miner/convo_miner → ChromaDB (palace)
+User → CLI → miner/convo_miner → ChromaDB (Anaktoron)
                                        ↕
                               knowledge_graph (SQLite)
                               drawer_trust    (SQLite, same DB)
@@ -66,7 +66,7 @@ Search excludes `superseded` and `historical` by default; `contested` drawers su
 
 ```
 ~/.mnemion/
-├── palace/                  ← ChromaDB vector store
+├── anaktoron/               ← ChromaDB vector store
 │   └── chroma.sqlite3
 ├── knowledge_graph.sqlite3  ← KG triples + FTS5 mirror + trust tables
 │   ├── triple (entity→rel→entity, bitemporal)

@@ -2,8 +2,14 @@
 """
 searcher.py — Find anything. Exact words.
 
-Semantic search against the palace.
+Semantic search against the Anaktoron.
 Returns verbatim text — the actual words, never summaries.
+
+.. deprecated::
+    This module performs pure vector search only. For production retrieval
+    (hybrid vector+FTS, trust filtering, KG injection), use
+    ``hybrid_searcher.HybridSearcher`` instead. This module is retained
+    for backward compatibility and legacy tests.
 """
 
 import logging
@@ -11,13 +17,13 @@ from pathlib import Path
 
 import chromadb
 
-from .config import MempalaceConfig
+from .config import MnemionConfig
 
 logger = logging.getLogger("mnemion_mcp")
 
 
 class SearchError(Exception):
-    """Raised when search cannot proceed (e.g. no palace found)."""
+    """Raised when search cannot proceed (e.g. no Anaktoron found)."""
 
 
 def search(
@@ -30,17 +36,17 @@ def search(
     collection_name: str = None,
 ):
     """
-    Search the palace. Returns verbatim drawer content.
+    Search the Anaktoron. Returns verbatim drawer content.
     Optionally filter by wing (project) or room (aspect).
     """
-    col_name = collection_name or MempalaceConfig().collection_name
+    col_name = collection_name or MnemionConfig().collection_name
     try:
         client = chromadb.PersistentClient(path=palace_path)
         col = client.get_collection(col_name)
     except Exception:
-        print(f"\n  No palace found at {palace_path}")
+        print(f"\n  No Anaktoron found at {palace_path}")
         print("  Run: mnemion init <dir> then mnemion mine <dir>")
-        raise SearchError(f"No palace found at {palace_path}")
+        raise SearchError(f"No Anaktoron found at {palace_path}")
 
     # Build where filter
     where = {}
@@ -122,14 +128,14 @@ def search_memories(
     Programmatic search — returns a dict instead of printing.
     Used by the MCP server and other callers that need data.
     """
-    col_name = collection_name or MempalaceConfig().collection_name
+    col_name = collection_name or MnemionConfig().collection_name
     try:
         client = chromadb.PersistentClient(path=palace_path)
         col = client.get_collection(col_name)
     except Exception as e:
-        logger.error("No palace found at %s: %s", palace_path, e)
+        logger.error("No Anaktoron found at %s: %s", palace_path, e)
         return {
-            "error": "No palace found",
+            "error": "No Anaktoron found",
             "hint": "Run: mnemion init <dir> && mnemion mine <dir>",
         }
 

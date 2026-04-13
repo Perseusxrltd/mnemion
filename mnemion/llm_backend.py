@@ -426,7 +426,7 @@ class ManagedBackend(OpenAICompatBackend):
 
 def get_backend(config=None) -> LLMBackend:
     """
-    Build an LLMBackend from config. Pass a MempalaceConfig instance or None.
+    Build an LLMBackend from config. Pass a MnemionConfig instance or None.
     Returns NullBackend if no LLM is configured.
     Returns ManagedBackend when a start_script is present (enables auto-start/stop).
     """

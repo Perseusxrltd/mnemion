@@ -2,7 +2,7 @@
 Search performance benchmarks.
 
 Measures query latency, recall@k, and concurrent search behavior
-as palace size grows. Uses planted needles for recall measurement.
+as Anaktoron size grows. Uses planted needles for recall measurement.
 """
 
 import time
@@ -10,22 +10,22 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import pytest
 
-from tests.benchmarks.data_generator import PalaceDataGenerator
+from tests.benchmarks.data_generator import AnaktoronDataGenerator
 from tests.benchmarks.report import record_metric
 
 
 @pytest.mark.benchmark
 class TestSearchLatencyVsSize:
-    """Query latency scaling as palace grows."""
+    """Query latency scaling as Anaktoron grows."""
 
     SIZES = [500, 1_000, 2_500, 5_000]
 
     @pytest.mark.parametrize("n_drawers", SIZES)
     def test_search_latency_curve(self, n_drawers, tmp_path, bench_scale):
-        """Measure average search latency at different palace sizes."""
-        gen = PalaceDataGenerator(seed=42, scale=bench_scale)
-        palace_path = str(tmp_path / "palace")
-        gen.populate_palace_directly(palace_path, n_drawers=n_drawers, include_needles=False)
+        """Measure average search latency at different Anaktoron sizes."""
+        gen = AnaktoronDataGenerator(seed=42, scale=bench_scale)
+        anaktoron_path = str(tmp_path / "anaktoron")
+        gen.populate_anaktoron_directly(anaktoron_path, n_drawers=n_drawers, include_needles=False)
 
         from mnemion.searcher import search_memories
 
@@ -40,7 +40,7 @@ class TestSearchLatencyVsSize:
         latencies = []
         for q in queries:
             start = time.perf_counter()
-            result = search_memories(q, palace_path=palace_path, n_results=5)
+            result = search_memories(q, anaktoron_path=anaktoron_path, n_results=5)
             elapsed_ms = (time.perf_counter() - start) * 1000
             latencies.append(elapsed_ms)
             assert "error" not in result
@@ -57,17 +57,17 @@ class TestSearchLatencyVsSize:
 
 @pytest.mark.benchmark
 class TestSearchRecallAtScale:
-    """Planted needle recall — does accuracy degrade as palace grows?"""
+    """Planted needle recall — does accuracy degrade as Anaktoron grows?"""
 
     SIZES = [500, 1_000, 2_500, 5_000]
 
     @pytest.mark.parametrize("n_drawers", SIZES)
     def test_recall_at_k(self, n_drawers, tmp_path, bench_scale):
         """Recall@5 and Recall@10 using planted needles."""
-        gen = PalaceDataGenerator(seed=42, scale=bench_scale)
-        palace_path = str(tmp_path / "palace")
-        _, _, needle_info = gen.populate_palace_directly(
-            palace_path, n_drawers=n_drawers, include_needles=True
+        gen = AnaktoronDataGenerator(seed=42, scale=bench_scale)
+        anaktoron_path = str(tmp_path / "anaktoron")
+        _, _, needle_info = gen.populate_anaktoron_directly(
+            anaktoron_path, n_drawers=n_drawers, include_needles=True
         )
 
         from mnemion.searcher import search_memories
@@ -77,7 +77,7 @@ class TestSearchRecallAtScale:
         total_needle_queries = min(10, len(needle_info))
 
         for needle in needle_info[:total_needle_queries]:
-            result = search_memories(needle["query"], palace_path=palace_path, n_results=10)
+            result = search_memories(needle["query"], anaktoron_path=anaktoron_path, n_results=10)
             if "error" in result:
                 continue
 
@@ -105,10 +105,10 @@ class TestSearchFilteredVsUnfiltered:
 
     def test_filter_impact(self, tmp_path, bench_scale):
         """Measure latency and recall difference with wing filtering."""
-        gen = PalaceDataGenerator(seed=42, scale=bench_scale)
-        palace_path = str(tmp_path / "palace")
-        _, _, needle_info = gen.populate_palace_directly(
-            palace_path, n_drawers=2_000, include_needles=True
+        gen = AnaktoronDataGenerator(seed=42, scale=bench_scale)
+        anaktoron_path = str(tmp_path / "anaktoron")
+        _, _, needle_info = gen.populate_anaktoron_directly(
+            anaktoron_path, n_drawers=2_000, include_needles=True
         )
 
         from mnemion.searcher import search_memories
@@ -123,7 +123,7 @@ class TestSearchFilteredVsUnfiltered:
             # Unfiltered
             start = time.perf_counter()
             result_unfiltered = search_memories(
-                needle["query"], palace_path=palace_path, n_results=5
+                needle["query"], anaktoron_path=anaktoron_path, n_results=5
             )
             unfiltered_latencies.append((time.perf_counter() - start) * 1000)
             if any("NEEDLE_" in h["text"] for h in result_unfiltered.get("results", [])[:5]):
@@ -133,7 +133,7 @@ class TestSearchFilteredVsUnfiltered:
             start = time.perf_counter()
             result_filtered = search_memories(
                 needle["query"],
-                palace_path=palace_path,
+                anaktoron_path=anaktoron_path,
                 wing=needle["wing"],
                 n_results=5,
             )
@@ -162,9 +162,9 @@ class TestConcurrentSearch:
 
     def test_concurrent_queries(self, tmp_path):
         """Issue N simultaneous queries and measure p50/p95/p99."""
-        gen = PalaceDataGenerator(seed=42, scale="small")
-        palace_path = str(tmp_path / "palace")
-        gen.populate_palace_directly(palace_path, n_drawers=2_000, include_needles=False)
+        gen = AnaktoronDataGenerator(seed=42, scale="small")
+        anaktoron_path = str(tmp_path / "anaktoron")
+        gen.populate_anaktoron_directly(anaktoron_path, n_drawers=2_000, include_needles=False)
 
         from mnemion.searcher import search_memories
 
@@ -183,7 +183,7 @@ class TestConcurrentSearch:
 
         def run_search(query):
             start = time.perf_counter()
-            result = search_memories(query, palace_path=palace_path, n_results=5)
+            result = search_memories(query, anaktoron_path=anaktoron_path, n_results=5)
             elapsed = (time.perf_counter() - start) * 1000
             return elapsed, "error" not in result
 
@@ -216,9 +216,9 @@ class TestSearchNResultsScaling:
 
     @pytest.mark.parametrize("n_results", [1, 5, 10, 25, 50])
     def test_n_results_latency(self, n_results, tmp_path):
-        gen = PalaceDataGenerator(seed=42, scale="small")
-        palace_path = str(tmp_path / "palace")
-        gen.populate_palace_directly(palace_path, n_drawers=2_000, include_needles=False)
+        gen = AnaktoronDataGenerator(seed=42, scale="small")
+        anaktoron_path = str(tmp_path / "anaktoron")
+        gen.populate_anaktoron_directly(anaktoron_path, n_drawers=2_000, include_needles=False)
 
         from mnemion.searcher import search_memories
 
@@ -226,7 +226,7 @@ class TestSearchNResultsScaling:
         for _ in range(5):
             start = time.perf_counter()
             search_memories(
-                "authentication middleware", palace_path=palace_path, n_results=n_results
+                "authentication middleware", anaktoron_path=anaktoron_path, n_results=n_results
             )
             latencies.append((time.perf_counter() - start) * 1000)
 

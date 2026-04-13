@@ -1,7 +1,7 @@
 """
 conftest.py — Shared fixtures for Mnemion tests.
 
-Provides isolated palace and knowledge graph instances so tests never
+Provides isolated Anaktoron and knowledge graph instances so tests never
 touch the user's real data or leak temp files on failure.
 
 HOME is redirected to a temp directory at module load time — before any
@@ -30,7 +30,7 @@ os.environ["HOMEPATH"] = os.path.splitdrive(_session_tmp)[1] or _session_tmp
 import chromadb  # noqa: E402
 import pytest  # noqa: E402
 
-from mnemion.config import DRAWER_HNSW_METADATA, MempalaceConfig  # noqa: E402
+from mnemion.config import DRAWER_HNSW_METADATA, MnemionConfig  # noqa: E402
 from mnemion.knowledge_graph import KnowledgeGraph  # noqa: E402
 
 
@@ -78,29 +78,36 @@ def tmp_dir():
 
 
 @pytest.fixture
-def palace_path(tmp_dir):
-    """Path to an empty palace directory inside tmp_dir."""
-    p = os.path.join(tmp_dir, "palace")
+def anaktoron_path(tmp_dir):
+    """Path to an empty Anaktoron directory inside tmp_dir."""
+    p = os.path.join(tmp_dir, "anaktoron")
     os.makedirs(p)
     return p
 
 
+# Backward compat alias so existing tests using palace_path still pass
 @pytest.fixture
-def config(tmp_dir, palace_path):
-    """A MempalaceConfig pointing at the temp palace."""
+def palace_path(anaktoron_path):
+    """Alias for anaktoron_path — backward compat."""
+    return anaktoron_path
+
+
+@pytest.fixture
+def config(tmp_dir, anaktoron_path):
+    """A MnemionConfig pointing at the temp Anaktoron."""
     cfg_dir = os.path.join(tmp_dir, "config")
     os.makedirs(cfg_dir)
     import json
 
     with open(os.path.join(cfg_dir, "config.json"), "w") as f:
-        json.dump({"palace_path": palace_path}, f)
-    return MempalaceConfig(config_dir=cfg_dir)
+        json.dump({"anaktoron_path": anaktoron_path}, f)
+    return MnemionConfig(config_dir=cfg_dir)
 
 
 @pytest.fixture
-def collection(palace_path):
-    """A ChromaDB collection pre-seeded in the temp palace."""
-    client = chromadb.PersistentClient(path=palace_path)
+def collection(anaktoron_path):
+    """A ChromaDB collection pre-seeded in the temp Anaktoron."""
+    client = chromadb.PersistentClient(path=anaktoron_path)
     col = client.get_or_create_collection("mnemion_drawers", metadata=DRAWER_HNSW_METADATA)
     yield col
     client.delete_collection("mnemion_drawers")

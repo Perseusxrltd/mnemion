@@ -8,7 +8,7 @@ Evaluates MemPal's retrieval against the LoCoMo benchmark.
 
 For each conversation:
 1. Ingest all sessions into a fresh MemPal palace
-2. For each QA pair, query the palace
+2. For each QA pair, query the Anaktoron
 3. Score retrieval recall (did we find the evidence dialog?)
 4. Score F1 (optional, if --llm is provided)
 
@@ -156,7 +156,7 @@ def build_corpus_from_sessions(sessions, granularity="dialog"):
     granularity:
         'dialog'  — one doc per dialog turn (matches evidence format D1:3)
         'session' — one doc per session (all dialog text joined)
-        'rooms'   — one doc per session using pre-computed summary (palace room label)
+        'rooms'   — one doc per session using pre-computed summary (Anaktoron room label)
     """
     corpus = []
     corpus_ids = []
@@ -373,7 +373,7 @@ def _name_boost(names, doc_text):
 
 # Room taxonomy for LoCoMo-style personal conversations.
 # Broad enough to cover common life topics, specific enough to discriminate.
-PALACE_ROOMS = [
+ANAKTORON_ROOMS = [
     "identity_sexuality",  # gender identity, LGBTQ, self-discovery
     "career_education",  # jobs, research, school, studying, counseling
     "relationships_romance",  # dating, partners, romantic feelings
@@ -390,7 +390,7 @@ PALACE_ROOMS = [
     "general",  # catch-all for mixed/unclear sessions
 ]
 
-_PALACE_ROOM_LIST = "\n".join(f"  - {r}" for r in PALACE_ROOMS)
+_PALACE_ROOM_LIST = "\n".join(f"  - {r}" for r in ANAKTORON_ROOMS)
 
 
 def _llm_call(prompt, api_key, model="claude-haiku-4-5-20251001", max_tokens=32):
@@ -421,7 +421,7 @@ def _llm_call(prompt, api_key, model="claude-haiku-4-5-20251001", max_tokens=32)
 
 
 def _assign_room(session_text, api_key, model="claude-haiku-4-5-20251001"):
-    """Ask LLM to assign a session to a palace room. Returns room name."""
+    """Ask LLM to assign a session to a Anaktoron room. Returns room name."""
     snippet = session_text[:600].replace("\n", " ")
     prompt = (
         f"Read this conversation and assign it to exactly one room from the list below.\n"
@@ -432,12 +432,12 @@ def _assign_room(session_text, api_key, model="claude-haiku-4-5-20251001"):
     raw = _llm_call(prompt, api_key, model=model, max_tokens=20)
     # Normalize: find the closest matching room name
     raw_lower = raw.lower().strip()
-    for room in PALACE_ROOMS:
+    for room in ANAKTORON_ROOMS:
         if room in raw_lower or raw_lower in room:
             return room
     # Partial match on first word
     first_word = raw_lower.split("_")[0].split()[0] if raw_lower else ""
-    for room in PALACE_ROOMS:
+    for room in ANAKTORON_ROOMS:
         if first_word and first_word in room:
             return room
     return "general"
@@ -454,7 +454,7 @@ def _route_question(question, api_key, model="claude-haiku-4-5-20251001"):
     raw = _llm_call(prompt, api_key, model=model, max_tokens=40)
     raw_lower = raw.lower()
     found = []
-    for room in PALACE_ROOMS:
+    for room in ANAKTORON_ROOMS:
         if room in raw_lower:
             found.append(room)
         if len(found) >= 2:
@@ -463,19 +463,19 @@ def _route_question(question, api_key, model="claude-haiku-4-5-20251001"):
         # fallback: partial word match
         for part in re.split(r"[,\s]+", raw_lower):
             part = part.strip("_").strip()
-            for room in PALACE_ROOMS:
+            for room in ANAKTORON_ROOMS:
                 if part and part in room and room not in found:
                     found.append(room)
                 if len(found) >= 2:
                     break
-    return found or PALACE_ROOMS  # if routing fails, search everywhere
+    return found or ANAKTORON_ROOMS  # if routing fails, search everywhere
 
 
-def palace_assign_rooms(sessions, sample_id, api_key, cache, model="claude-haiku-4-5-20251001"):
+def anaktoron_assign_rooms(sessions, sample_id, api_key, cache, model="claude-haiku-4-5-20251001"):
     """
-    Assign each session to a palace room. Uses cache to avoid re-calling LLM.
+    Assign each session to a Anaktoron room. Uses cache to avoid re-calling LLM.
 
-    cache: dict loaded from palace_cache file, mutated in place.
+    cache: dict loaded from anaktoron_cache file, mutated in place.
     Returns dict: session_id → room_name
     """
     assignments = {}
@@ -622,8 +622,8 @@ def run_benchmark(
     llm_key="",
     llm_model="claude-sonnet-4-6",
     hybrid_weight=0.30,
-    palace_cache_file=None,
-    palace_model="claude-haiku-4-5-20251001",
+    anaktoron_cache_file=None,
+    anaktoron_model="claude-haiku-4-5-20251001",
     embed_model="default",
 ):
     """Run LoCoMo retrieval benchmark."""
@@ -634,23 +634,23 @@ def run_benchmark(
         data = data[:limit]
 
     api_key = ""
-    if llm_rerank_enabled or mode == "palace":
+    if llm_rerank_enabled or mode == "anaktoron":
         api_key = _load_api_key(llm_key)
         if not api_key:
             print(f"ERROR: --mode {mode} requires an API key (--llm-key or ANTHROPIC_API_KEY).")
             sys.exit(1)
 
-    # Palace mode: load or create room assignment cache
-    palace_cache = {}
-    _palace_cache_path = None
-    if mode == "palace":
-        _palace_cache_path = palace_cache_file or str(
-            Path(__file__).parent / "palace_cache_locomo.json"
+    # Anaktoron mode: load or create room assignment cache
+    anaktoron_cache = {}
+    _anaktoron_cache_path = None
+    if mode == "anaktoron":
+        _anaktoron_cache_path = anaktoron_cache_file or str(
+            Path(__file__).parent / "anaktoron_cache_locomo.json"
         )
-        if Path(_palace_cache_path).exists():
-            with open(_palace_cache_path) as f:
-                palace_cache = json.load(f)
-            print(f"  Palace cache: {len(palace_cache)} room assignments loaded")
+        if Path(_anaktoron_cache_path).exists():
+            with open(_anaktoron_cache_path) as f:
+                anaktoron_cache = json.load(f)
+            print(f"  Anaktoron cache: {len(anaktoron_cache)} room assignments loaded")
 
     rerank_label = f" + LLM re-rank ({llm_model.split('-')[1]})" if llm_rerank_enabled else ""
 
@@ -682,16 +682,16 @@ def run_benchmark(
             sessions, granularity=granularity
         )
 
-        # Palace mode: assign each session to a room via LLM
+        # Anaktoron mode: assign each session to a room via LLM
         room_assignments = {}
-        if mode == "palace":
-            room_assignments = palace_assign_rooms(
-                sessions, sample_id, api_key, palace_cache, model=palace_model
+        if mode == "anaktoron":
+            room_assignments = anaktoron_assign_rooms(
+                sessions, sample_id, api_key, anaktoron_cache, model=anaktoron_model
             )
             # Persist updated cache after each conversation
-            if _palace_cache_path:
-                with open(_palace_cache_path, "w") as f:
-                    json.dump(palace_cache, f, indent=2)
+            if _anaktoron_cache_path:
+                with open(_anaktoron_cache_path, "w") as f:
+                    json.dump(anaktoron_cache, f, indent=2)
             rooms_summary = {}
             for sid, room in room_assignments.items():
                 rooms_summary[room] = rooms_summary.get(room, 0) + 1
@@ -707,10 +707,10 @@ def run_benchmark(
             )
 
         tmpdir = tempfile.mkdtemp(prefix="mnemion_locomo_")
-        palace_path = os.path.join(tmpdir, "palace")
+        anaktoron_path = os.path.join(tmpdir, "anaktoron")
 
         try:
-            client = chromadb.PersistentClient(path=palace_path)
+            client = chromadb.PersistentClient(path=anaktoron_path)
             collection = client.create_collection("mnemion_drawers")
 
             if mode == "aaak":
@@ -745,14 +745,14 @@ def run_benchmark(
                 evidence = qa.get("evidence", [])
 
                 # Extract names + predicate keywords once (used by hybrid, rooms, palace)
-                names = _person_names(question) if mode in ("hybrid", "rooms", "palace") else []
+                names = _person_names(question) if mode in ("hybrid", "rooms", "anaktoron") else []
                 name_words = {n.lower() for n in names}
-                all_kws = _kw(question) if mode in ("hybrid", "rooms", "palace") else []
+                all_kws = _kw(question) if mode in ("hybrid", "rooms", "anaktoron") else []
                 predicate_kws = [w for w in all_kws if w not in name_words]
-                quoted = _quoted_phrases(question) if mode in ("hybrid", "rooms", "palace") else []
+                quoted = _quoted_phrases(question) if mode in ("hybrid", "rooms", "anaktoron") else []
 
-                if mode == "palace":
-                    # ── True palace navigation ────────────────────────────────
+                if mode == "anaktoron":
+                    # ── True Anaktoron navigation ────────────────────────────────
                     # Route using conversation-specific room summaries.
                     # This ensures the same vocabulary used at INDEX TIME (session
                     # summaries) is also used at QUERY TIME — no global taxonomy mismatch.
@@ -824,7 +824,7 @@ def run_benchmark(
                     retrieved_docs = [x[2] for x in scored[:top_k]]
 
                 elif mode == "rooms":
-                    # ── Two-stage palace navigation ──────────────────────────────
+                    # ── Two-stage Anaktoron navigation ──────────────────────────────
                     # Stage 1: route via session summaries to find relevant rooms.
                     #   Score each session's summary by predicate keyword overlap.
                     #   Keep top third of sessions (or at least top_k sessions).
@@ -1003,17 +1003,17 @@ if __name__ == "__main__":
     parser.add_argument("--top-k", type=int, default=50, help="Top-k retrieval (default: 50)")
     parser.add_argument(
         "--mode",
-        choices=["raw", "aaak", "hybrid", "rooms", "palace"],
+        choices=["raw", "aaak", "hybrid", "rooms", "anaktoron"],
         default="raw",
-        help="Retrieval mode: raw, hybrid (v5), rooms (keyword routing), palace (LLM room assignment)",
+        help="Retrieval mode: raw, hybrid (v5), rooms (keyword routing), anaktoron (LLM room assignment)",
     )
     parser.add_argument(
-        "--palace-cache", default=None, help="Path to palace room assignment cache JSON"
+        "--anaktoron-cache", default=None, help="Path to Anaktoron room assignment cache JSON"
     )
     parser.add_argument(
-        "--palace-model",
+        "--anaktoron-model",
         default="claude-haiku-4-5-20251001",
-        help="Model for palace room assignment (default: haiku)",
+        help="Model for Anaktoron room assignment (default: haiku)",
     )
     parser.add_argument(
         "--granularity",
@@ -1063,7 +1063,7 @@ if __name__ == "__main__":
         args.llm_key,
         args.llm_model,
         args.hybrid_weight,
-        palace_cache_file=args.palace_cache,
-        palace_model=args.palace_model,
+        anaktoron_cache_file=args.anaktoron_cache,
+        anaktoron_model=args.anaktoron_model,
         embed_model=args.embed_model,
     )

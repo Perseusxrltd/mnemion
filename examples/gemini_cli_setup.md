@@ -25,10 +25,10 @@ python3 -m venv .venv
 
 ## 2. Initialization
 
-Set up your "Palace" (the database) and configure your identity.
+Set up your "Anaktoron" (the database) and configure your identity.
 
 ```bash
-# Initialize the palace in the current directory
+# Initialize the Anaktoron in the current directory
 .venv/bin/python3 -m mnemion init .
 ```
 

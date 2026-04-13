@@ -1,12 +1,12 @@
 ---
 name: mnemion
-description: Mnemion — mine projects and conversations into a searchable memory palace. Use when asked about mnemion, memory palace, mining memories, searching memories, or palace setup.
+description: Mnemion — mine projects and conversations into a searchable memory Anaktoron. Use when asked about mnemion, memory Anaktoron, mining memories, searching memories, or Anaktoron setup.
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
 # Mnemion
 
-A searchable memory palace for AI — mine projects and conversations, then search them semantically.
+A searchable memory Anaktoron for AI — mine projects and conversations, then search them semantically.
 
 ## Prerequisites
 

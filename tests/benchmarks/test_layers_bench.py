@@ -9,7 +9,7 @@ import time
 
 import pytest
 
-from tests.benchmarks.data_generator import PalaceDataGenerator
+from tests.benchmarks.data_generator import AnaktoronDataGenerator
 from tests.benchmarks.report import record_metric
 
 
@@ -30,16 +30,16 @@ def _get_rss_mb():
 
 @pytest.mark.benchmark
 class TestWakeUpCost:
-    """Measure wake_up() time (L0 + L1) at different palace sizes."""
+    """Measure wake_up() time (L0 + L1) at different Anaktoron sizes."""
 
     SIZES = [500, 1_000, 2_500, 5_000]
 
     @pytest.mark.parametrize("n_drawers", SIZES)
     def test_wakeup_latency(self, n_drawers, tmp_path, bench_scale):
-        """L0+L1 generation time grows with palace size because L1 fetches all."""
-        gen = PalaceDataGenerator(seed=42, scale=bench_scale)
-        palace_path = str(tmp_path / "palace")
-        gen.populate_palace_directly(palace_path, n_drawers=n_drawers, include_needles=False)
+        """L0+L1 generation time grows with Anaktoron size because L1 fetches all."""
+        gen = AnaktoronDataGenerator(seed=42, scale=bench_scale)
+        anaktoron_path = str(tmp_path / "anaktoron")
+        gen.populate_anaktoron_directly(anaktoron_path, n_drawers=n_drawers, include_needles=False)
 
         # Create identity file
         identity_path = str(tmp_path / "identity.txt")
@@ -48,7 +48,7 @@ class TestWakeUpCost:
 
         from mnemion.layers import MemoryStack
 
-        stack = MemoryStack(palace_path=palace_path, identity_path=identity_path)
+        stack = MemoryStack(anaktoron_path=anaktoron_path, identity_path=identity_path)
 
         latencies = []
         for _ in range(5):
@@ -71,13 +71,13 @@ class TestLayer1UnboundedFetch:
     @pytest.mark.parametrize("n_drawers", SIZES)
     def test_layer1_rss_growth(self, n_drawers, tmp_path):
         """Track RSS from Layer1 fetching all drawers at different sizes."""
-        gen = PalaceDataGenerator(seed=42, scale="small")
-        palace_path = str(tmp_path / "palace")
-        gen.populate_palace_directly(palace_path, n_drawers=n_drawers, include_needles=False)
+        gen = AnaktoronDataGenerator(seed=42, scale="small")
+        anaktoron_path = str(tmp_path / "anaktoron")
+        gen.populate_anaktoron_directly(anaktoron_path, n_drawers=n_drawers, include_needles=False)
 
         from mnemion.layers import Layer1
 
-        layer = Layer1(palace_path=palace_path)
+        layer = Layer1(anaktoron_path=anaktoron_path)
 
         rss_before = _get_rss_mb()
         start = time.perf_counter()
@@ -93,22 +93,22 @@ class TestLayer1UnboundedFetch:
 
     def test_layer1_wing_filtered(self, tmp_path):
         """Wing-filtered Layer1 should fetch fewer drawers."""
-        gen = PalaceDataGenerator(seed=42, scale="small")
-        palace_path = str(tmp_path / "palace")
-        gen.populate_palace_directly(palace_path, n_drawers=2_000, include_needles=False)
+        gen = AnaktoronDataGenerator(seed=42, scale="small")
+        anaktoron_path = str(tmp_path / "anaktoron")
+        gen.populate_anaktoron_directly(anaktoron_path, n_drawers=2_000, include_needles=False)
 
         from mnemion.layers import Layer1
 
         wing = gen.wings[0]
 
         # Unfiltered
-        layer_all = Layer1(palace_path=palace_path)
+        layer_all = Layer1(anaktoron_path=anaktoron_path)
         start = time.perf_counter()
         layer_all.generate()
         unfiltered_ms = (time.perf_counter() - start) * 1000
 
         # Wing-filtered
-        layer_wing = Layer1(palace_path=palace_path, wing=wing)
+        layer_wing = Layer1(anaktoron_path=anaktoron_path, wing=wing)
         start = time.perf_counter()
         layer_wing.generate()
         filtered_ms = (time.perf_counter() - start) * 1000
@@ -123,16 +123,16 @@ class TestLayer1UnboundedFetch:
 
 @pytest.mark.benchmark
 class TestWakeUpTokenBudget:
-    """Verify L0+L1 stays within token budget even at large palace sizes."""
+    """Verify L0+L1 stays within token budget even at large Anaktoron sizes."""
 
     SIZES = [500, 1_000, 2_500, 5_000]
 
     @pytest.mark.parametrize("n_drawers", SIZES)
     def test_token_budget(self, n_drawers, tmp_path):
         """L1 has MAX_CHARS=3200 cap. Verify it holds at scale."""
-        gen = PalaceDataGenerator(seed=42, scale="small")
-        palace_path = str(tmp_path / "palace")
-        gen.populate_palace_directly(palace_path, n_drawers=n_drawers, include_needles=False)
+        gen = AnaktoronDataGenerator(seed=42, scale="small")
+        anaktoron_path = str(tmp_path / "anaktoron")
+        gen.populate_anaktoron_directly(anaktoron_path, n_drawers=n_drawers, include_needles=False)
 
         identity_path = str(tmp_path / "identity.txt")
         with open(identity_path, "w") as f:
@@ -140,7 +140,7 @@ class TestWakeUpTokenBudget:
 
         from mnemion.layers import MemoryStack
 
-        stack = MemoryStack(palace_path=palace_path, identity_path=identity_path)
+        stack = MemoryStack(anaktoron_path=anaktoron_path, identity_path=identity_path)
         text = stack.wake_up()
         token_estimate = len(text) // 4
 
@@ -159,13 +159,13 @@ class TestLayer2Retrieval:
 
     def test_layer2_latency(self, tmp_path, bench_scale):
         """L2 retrieval with wing filter at scale."""
-        gen = PalaceDataGenerator(seed=42, scale=bench_scale)
-        palace_path = str(tmp_path / "palace")
-        gen.populate_palace_directly(palace_path, n_drawers=2_000, include_needles=False)
+        gen = AnaktoronDataGenerator(seed=42, scale=bench_scale)
+        anaktoron_path = str(tmp_path / "anaktoron")
+        gen.populate_anaktoron_directly(anaktoron_path, n_drawers=2_000, include_needles=False)
 
         from mnemion.layers import Layer2
 
-        layer = Layer2(palace_path=palace_path)
+        layer = Layer2(anaktoron_path=anaktoron_path)
         wing = gen.wings[0]
 
         latencies = []
@@ -185,9 +185,9 @@ class TestLayer3Search:
 
     def test_layer3_latency(self, tmp_path, bench_scale):
         """L3 search latency through MemoryStack."""
-        gen = PalaceDataGenerator(seed=42, scale=bench_scale)
-        palace_path = str(tmp_path / "palace")
-        gen.populate_palace_directly(palace_path, n_drawers=2_000, include_needles=False)
+        gen = AnaktoronDataGenerator(seed=42, scale=bench_scale)
+        anaktoron_path = str(tmp_path / "anaktoron")
+        gen.populate_anaktoron_directly(anaktoron_path, n_drawers=2_000, include_needles=False)
 
         identity_path = str(tmp_path / "identity.txt")
         with open(identity_path, "w") as f:
@@ -195,7 +195,7 @@ class TestLayer3Search:
 
         from mnemion.layers import MemoryStack
 
-        stack = MemoryStack(palace_path=palace_path, identity_path=identity_path)
+        stack = MemoryStack(anaktoron_path=anaktoron_path, identity_path=identity_path)
 
         queries = ["authentication", "database", "deployment", "testing", "monitoring"]
         latencies = []

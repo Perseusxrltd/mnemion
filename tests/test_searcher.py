@@ -30,7 +30,7 @@ class TestSearchMemories:
         result = search_memories("code", palace_path, n_results=2)
         assert len(result["results"]) <= 2
 
-    def test_no_palace_returns_error(self, tmp_path):
+    def test_no_anaktoron_returns_error(self, tmp_path):
         result = search_memories("anything", str(tmp_path / "missing"))
         assert "error" in result
 

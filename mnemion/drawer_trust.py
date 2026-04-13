@@ -100,8 +100,8 @@ class DrawerTrust:
         from .config import MempalaceConfig
 
         cfg = MempalaceConfig()
-        palace_parent = Path(cfg.palace_path).parent
-        self.db_path = db_path or str(palace_parent / "knowledge_graph.sqlite3")
+        anaktoron_parent = Path(cfg.palace_path).parent
+        self.db_path = db_path or str(anaktoron_parent / "knowledge_graph.sqlite3")
         self._init_schema()
 
     def _connect(self):
@@ -262,7 +262,7 @@ class DrawerTrust:
     ) -> str:
         """Record a detected conflict between two drawers. Returns conflict_id."""
         raw = f"{drawer_id_a}:{drawer_id_b}:{conflict_type}"
-        conflict_id = "cf_" + hashlib.sha1(raw.encode()).hexdigest()[:16]
+        conflict_id = "cf_" + hashlib.sha1(raw.encode(), usedforsecurity=False).hexdigest()[:16]
         conn = self._connect()
         try:
             conn.execute(

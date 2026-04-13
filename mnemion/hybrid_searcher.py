@@ -14,6 +14,7 @@ Algorithm:
     where k is a smoothing constant (default 60).
 """
 
+import hashlib
 import logging
 import re
 import sqlite3
@@ -22,7 +23,7 @@ from pathlib import Path
 from typing import List, Dict, Optional, Any, Set
 
 import chromadb
-from .config import MempalaceConfig
+from .config import MnemionConfig
 
 # Statuses excluded from search by default
 _HIDDEN_STATUSES: Set[str] = {"superseded", "historical"}
@@ -158,7 +159,7 @@ class HybridSearcher:
     def __init__(
         self, palace_path: Optional[str] = None, kg_path: Optional[str] = None, k: int = 60
     ):
-        cfg = MempalaceConfig()
+        cfg = MnemionConfig()
         self.palace_path = palace_path or cfg.palace_path
         self.kg_path = kg_path or Path(self.palace_path).parent / "knowledge_graph.sqlite3"
         self.k = k
@@ -172,7 +173,7 @@ class HybridSearcher:
         try:
             self.collection = self.chroma_client.get_collection(self.collection_name)
         except Exception:
-            # Palace not yet initialized — search will return empty results.
+            # Anaktoron not yet initialized — search will return empty results.
             self.collection = None
 
     def _fts_run(
@@ -305,6 +306,43 @@ class HybridSearcher:
         """
         if self.collection is None:
             return []
+            
+        # -- ACTIVE FIX: Temporal Knowledge Graph Injection --
+        kg_hits = []
+        try:
+            from .knowledge_graph import KnowledgeGraph
+            kg = KnowledgeGraph(self.kg_path)
+            
+            # Simple lightweight heuristic extraction (capitalized terms > 2 chars)
+            tokens = re.findall(r'\b[A-Z][a-z]+\b', query)
+            distinct_entities = set(t for t in tokens if len(t) > 2)
+            
+            for ent in distinct_entities:
+                triples = kg.query_entity(ent, direction="both")
+                
+                # Format valid triples into synthetic RAG hits
+                for t in triples:
+                    if t.get("current", False):
+                        fact_str = f"[TEMPORAL GRAPH DATA]: {t['subject']} {t['predicate'].replace('_', ' ')} {t['object']}."
+                        if t.get("valid_from"):
+                            fact_str += f" (Valid from: {t['valid_from']})"
+                        
+                        kg_hits.append({
+                            "id": f"kg_{hashlib.md5(fact_str.encode()).hexdigest()[:16]}",
+                            "text": fact_str,
+                            "wing": "temporal_graph",
+                            "room": "fact",
+                            "source": "knowledge_graph.sqlite3",
+                            "score": 1.0,  # Max score for strict graph facts
+                            "trust_status": "current",
+                            "confidence": t.get("confidence", 1.0),
+                            "embedding": None
+                        })
+        except Exception as e:
+            logger.debug(f"KG Injection failed non-fatally: {e}")
+            
+        kg_hits = kg_hits[:3] # Cap to top 3 pristine facts
+
         # 1. Gather candidates from both engines (fetch more to allow for trust filtering)
         fetch_limit = max(50, n_results * 10)
         vector_ids = self._vector_search(query, wing, room, limit=fetch_limit)
@@ -346,10 +384,12 @@ class HybridSearcher:
 
         # 5. Hydrate from the verbatim document store
         final_ids = [item[0] for item in top_entries]
-        data = self.collection.get(ids=final_ids, include=["documents", "metadatas"])
+        data = self.collection.get(ids=final_ids, include=["documents", "metadatas", "embeddings"])
+        _embs = data.get("embeddings")
+        embeddings = _embs if _embs is not None else [None] * len(data["ids"])
         doc_map = {
-            idx: (doc, meta)
-            for idx, doc, meta in zip(data["ids"], data["documents"], data["metadatas"])
+            idx: (doc, meta, emb)
+            for idx, doc, meta, emb in zip(data["ids"], data["documents"], data["metadatas"], embeddings)
         }
 
         hits = []
@@ -357,7 +397,7 @@ class HybridSearcher:
             if min_similarity > 0.0 and score < min_similarity:
                 continue
             if doc_id in doc_map:
-                doc, meta = doc_map[doc_id]
+                doc, meta, emb = doc_map[doc_id]
                 hit = {
                     "id": doc_id,
                     "text": doc,
@@ -367,9 +407,10 @@ class HybridSearcher:
                     "score": round(score, 6),
                     "trust_status": status,
                     "confidence": round(confidence, 3),
+                    "embedding": emb.tolist() if hasattr(emb, "tolist") else emb,
                 }
                 if status == "contested":
                     hit["warning"] = "⚠ This memory is contested — accuracy uncertain"
                 hits.append(hit)
 
-        return hits
+        return kg_hits + hits

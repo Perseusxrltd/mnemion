@@ -36,7 +36,7 @@ See [benchmarks/README.md](benchmarks/README.md) for data download instructions 
 mnemion/          ← core package (see mnemion/README.md for module guide)
 benchmarks/         ← reproducible benchmark runners
 hooks/              ← Claude Code auto-save hooks (shell + Python)
-sync/               ← palace backup and portability scripts
+sync/               ← Anaktoron backup and portability scripts
 examples/           ← usage examples
 tests/              ← test suite
 assets/             ← logo + brand
@@ -82,10 +82,10 @@ If you're planning a significant change, open an issue first to discuss the appr
 - **Verbatim first**: Never summarize user content. Store exact words.
 - **Local first**: Everything runs on the user's machine. No cloud dependencies.
 - **Zero API by default**: Core features must work without any API key.
-- **Palace structure matters**: Wings, halls, and rooms aren't cosmetic — they drive real retrieval improvements. Respect the hierarchy.
+- **Anaktoron structure matters**: Wings, halls, and rooms aren't cosmetic — they drive real retrieval improvements. Respect the hierarchy.
 - **Never hard-delete memories**: Trust layer uses soft-invalidation (status transitions), not deletion. Audit trails are append-only.
 - **Save can be slow, fetch must be fast**: Trust resolution and contradiction detection happen in background threads at save time. Search reads pre-computed trust state — no LLM calls on the fetch path.
-- **Trust is optional**: The trust layer degrades gracefully — drawers without trust records are treated as `current`. This ensures backwards compatibility with existing palaces.
+- **Trust is optional**: The trust layer degrades gracefully — drawers without trust records are treated as `current`. This ensures backwards compatibility with existing Anaktorons.
 
 ## Community
 

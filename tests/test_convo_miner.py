@@ -12,10 +12,10 @@ def test_convo_mining():
             "> What is memory?\nMemory is persistence.\n\n> Why does it matter?\nIt enables continuity.\n\n> How do we build it?\nWith structured storage.\n"
         )
 
-    palace_path = os.path.join(tmpdir, "palace")
-    mine_convos(tmpdir, palace_path, wing="test_convos")
+    anaktoron_path = os.path.join(tmpdir, "anaktoron")
+    mine_convos(tmpdir, anaktoron_path, wing="test_convos")
 
-    client = chromadb.PersistentClient(path=palace_path)
+    client = chromadb.PersistentClient(path=anaktoron_path)
     col = client.get_collection("mnemion_drawers")
     assert col.count() >= 2
 
@@ -23,4 +23,4 @@ def test_convo_mining():
     results = col.query(query_texts=["memory persistence"], n_results=1)
     assert len(results["documents"][0]) > 0
 
-    shutil.rmtree(tmpdir)
+    shutil.rmtree(tmpdir, ignore_errors=True)

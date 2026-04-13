@@ -11,15 +11,15 @@ AI memory system. Store everything, find anything. Local, free, no API key.
 | /mnemion:init      | Install and set up Mnemion   |
 | /mnemion:search    | Search your memories           |
 | /mnemion:mine      | Mine projects and conversations|
-| /mnemion:status    | Palace overview and stats      |
+| /mnemion:status    | Anaktoron overview and stats      |
 | /mnemion:help      | This help message              |
 
 ---
 
 ## MCP Tools (19)
 
-### Palace (read)
-- mnemion_status -- Palace status and stats
+### Anaktoron (read)
+- mnemion_status -- Anaktoron status and stats
 - mnemion_list_wings -- List all wings
 - mnemion_list_rooms -- List rooms in a wing
 - mnemion_get_taxonomy -- Get the full taxonomy tree
@@ -27,7 +27,7 @@ AI memory system. Store everything, find anything. Local, free, no API key.
 - mnemion_check_duplicate -- Check if a memory already exists
 - mnemion_get_aaak_spec -- Get the AAAK specification
 
-### Palace (write)
+### Anaktoron (write)
 - mnemion_add_drawer -- Add a new memory (drawer)
 - mnemion_delete_drawer -- Delete a memory (drawer)
 
@@ -39,7 +39,7 @@ AI memory system. Store everything, find anything. Local, free, no API key.
 - mnemion_kg_stats -- Knowledge graph statistics
 
 ### Navigation
-- mnemion_traverse -- Traverse the palace structure
+- mnemion_traverse -- Traverse the Anaktoron structure
 - mnemion_find_tunnels -- Find cross-wing connections
 - mnemion_graph_stats -- Graph connectivity statistics
 
@@ -51,14 +51,14 @@ AI memory system. Store everything, find anything. Local, free, no API key.
 
 ## CLI Commands
 
-    mnemion init <dir>                  Initialize a new palace
+    mnemion init <dir>                  Initialize a new Anaktoron
     mnemion mine <dir>                  Mine a project (default mode)
     mnemion mine <dir> --mode convos    Mine conversation exports
     mnemion search "query"              Search your memories
     mnemion split <dir>                 Split large transcript files
-    mnemion wake-up                     Load palace into context
-    mnemion compress                    Compress palace storage
-    mnemion status                      Show palace status
+    mnemion wake-up                     Load Anaktoron into context
+    mnemion compress                    Compress Anaktoron storage
+    mnemion status                      Show Anaktoron status
     mnemion repair                      Rebuild vector index
     mnemion hook run                    Run hook logic (for harness integration)
     mnemion instructions <name>         Output skill instructions
@@ -93,13 +93,13 @@ Hooks read JSON from stdin and output JSON to stdout. They can be invoked via:
     Halls connect rooms within a wing.
     Tunnels connect rooms across wings.
 
-The palace is stored locally using ChromaDB for vector search and SQLite for
+The Anaktoron is stored locally using ChromaDB for vector search and SQLite for
 metadata. No cloud services or API keys required.
 
 ---
 
 ## Getting Started
 
-1. /mnemion:init -- Set up your palace
+1. /mnemion:init -- Set up your Anaktoron
 2. /mnemion:mine -- Mine a project or conversation
 3. /mnemion:search -- Find what you stored

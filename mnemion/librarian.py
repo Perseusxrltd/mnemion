@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mnemion/librarian.py — Daily background palace tidy-up.
+mnemion/librarian.py — Daily background Anaktoron tidy-up.
 
 The Librarian runs once a day (typically overnight) and processes drawers
 that were never reviewed by the local LLM — because vLLM was down at save
@@ -137,8 +137,8 @@ def _get_drawer_text(collection, drawer_id: str) -> Optional[str]:
         result = collection.get(ids=[drawer_id], include=["documents"])
         if result["ids"]:
             return result["documents"][0]
-    except Exception:
-        pass
+    except Exception as e:
+                logger.error(f"Suppressed error in execution: {e}")
     return None
 
 
@@ -219,7 +219,8 @@ def run_librarian(
     client = chromadb.PersistentClient(path=palace_path)
     try:
         collection = client.get_collection(cfg.collection_name)
-    except Exception:
+    except Exception as e:
+        logger.error(f"Caught exception: {e}")
         return {"skipped": True, "reason": f"Collection '{cfg.collection_name}' not found"}
 
     state = _load_state()
@@ -227,7 +228,7 @@ def run_librarian(
 
     drawers = _find_unprocessed(kg_path, limit, wing, cursor_ts)
     if not drawers:
-        logger.info("Librarian: nothing to process — palace is tidy.")
+        logger.info("Librarian: nothing to process — Anaktoron is tidy.")
         return {"processed": 0, "note": "nothing to do"}
 
     logger.info(f"Librarian: processing {len(drawers)} drawers (dry_run={dry_run})")
@@ -290,12 +291,27 @@ def run_librarian(
             new_room = _suggest_room(backend, text, current_room)
             if new_room and not dry_run:
                 conn = sqlite3.connect(kg_path)
-                conn.execute(
-                    "UPDATE drawer_trust SET room = ?, updated_at = ? WHERE drawer_id = ?",
-                    (new_room, datetime.now(timezone.utc).isoformat(), drawer_id),
-                )
-                conn.commit()
-                conn.close()
+                try:
+                    conn.execute(
+                        "UPDATE drawer_trust SET room = ?, updated_at = ? WHERE drawer_id = ?",
+                        (new_room, datetime.now(timezone.utc).isoformat(), drawer_id),
+                    )
+                    conn.execute(
+                        "UPDATE drawers_fts SET room = ? WHERE drawer_id = ?",
+                        (new_room, drawer_id),
+                    )
+                    conn.commit()
+                finally:
+                    conn.close()
+
+                # Sync Fix: Push metadata to ChromaDB Vector Store
+                try:
+                    c_metadata = collection.get(ids=[drawer_id])["metadatas"][0]
+                    c_metadata["room"] = new_room
+                    collection.update(ids=[drawer_id], metadatas=[c_metadata])
+                except Exception as e:
+                    logger.error(f"Failed to sync re-classification to Chroma: {e}")
+                
                 stats["reclassified"] += 1
                 logger.info(f"  reclassified {drawer_id[:16]}: general → {new_room}")
 
@@ -312,8 +328,21 @@ def run_librarian(
                             source_closet=drawer_id,
                         )
                         stats["kg_triples_added"] += 1
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.error(f"Suppressed error in execution: {e}")
+
+            # ── Task 4: Entity learning ───────────────────────────────────────
+            if not dry_run:
+                try:
+                    from .entity_registry import EntityRegistry
+                    registry = EntityRegistry.load()
+                    new_entities = registry.learn_from_text(text)
+                    if new_entities:
+                        logger.info(
+                            f"  learned {len(new_entities)} entities from {drawer_id[:16]}"
+                        )
+                except Exception as e:
+                    logger.debug(f"Entity learning skipped: {e}")
 
             # ── Mark as verified (won't be picked up next run) ───────────────
             if not dry_run:

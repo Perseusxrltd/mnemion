@@ -175,10 +175,10 @@ def retrieve_for_item(item, top_k=10, mode="raw"):
         return 0.0, {"error": "empty corpus"}
 
     tmpdir = tempfile.mkdtemp(prefix="mnemion_convomem_")
-    palace_path = os.path.join(tmpdir, "palace")
+    anaktoron_path = os.path.join(tmpdir, "anaktoron")
 
     try:
-        client = chromadb.PersistentClient(path=palace_path)
+        client = chromadb.PersistentClient(path=anaktoron_path)
         collection = client.create_collection("mnemion_drawers")
 
         # Optionally compress

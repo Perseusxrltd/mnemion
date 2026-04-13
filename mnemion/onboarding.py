@@ -202,7 +202,7 @@ def _ask_wings(mode: str) -> list:
     defaults = DEFAULT_WINGS[mode]
     _hr()
     print(f"""
-  Wings are the top-level categories in your memory palace.
+  Wings are the top-level categories in your memory Anaktoron.
 
   Suggested wings for {mode} mode:
     {", ".join(defaults)}
@@ -235,7 +235,8 @@ def _auto_detect(directory: str, known_people: list) -> list:
             if e["name"].lower() not in known_names and e["confidence"] >= 0.7
         ]
         return new_people
-    except Exception:
+    except Exception as e:
+        print(f"Caught exception: {e}")
         return []
 
 
@@ -314,7 +315,7 @@ def _generate_aaak_bootstrap(
 
     (mnemion_dir / "aaak_entities.md").write_text("\n".join(registry_lines))
 
-    # Critical facts bootstrap (pre-palace — before any mining)
+    # Critical facts bootstrap (pre-Anaktoron — before any mining)
     facts_lines = [
         "# Critical Facts (bootstrap — will be enriched after mining)",
         "",
@@ -351,7 +352,7 @@ def _generate_aaak_bootstrap(
 
     facts_lines.extend(
         [
-            "## Palace",
+            "## Anaktoron",
             f"Wings: {', '.join(wings)}",
             f"Mode: {mode}",
             "",

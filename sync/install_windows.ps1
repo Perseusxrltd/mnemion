@@ -7,9 +7,9 @@
     Sets up the full Mnemion stack:
       1. Creates ~/.mnemion directory structure
       2. Installs the Python auto-save hook into Claude Code
-      3. Schedules hourly palace sync (SyncMemories.ps1)
+      3. Schedules hourly Anaktoron sync (SyncMemories.ps1)
       4. Optionally registers vLLM auto-start on login
-      5. Runs trust backfill if a palace already exists
+      5. Runs trust backfill if a Anaktoron already exists
 
     Safe to re-run -- all steps are idempotent.
 
@@ -62,7 +62,7 @@ Write-Host ""
 Write-Host "Mnemion Windows Setup" -ForegroundColor White
 Write-Host "-----------------------" -ForegroundColor White
 Write-Host "Repo:   $RepoRoot"
-Write-Host "Palace: $MempalDir"
+Write-Host "Anaktoron: $MempalDir"
 Write-Host ""
 
 # ---------------------------------------------------------------------------
@@ -175,7 +175,7 @@ if ($SkipHook) {
 # ---------------------------------------------------------------------------
 # Step 3: Task Scheduler -- hourly sync
 # ---------------------------------------------------------------------------
-Write-Step "Registering hourly palace sync task"
+Write-Step "Registering hourly Anaktoron sync task"
 
 try {
     if (Get-ScheduledTask -TaskName "MnemionSync" -ErrorAction SilentlyContinue) {
@@ -225,11 +225,11 @@ if ($SkipVllm) {
 # ---------------------------------------------------------------------------
 # Step 5: Trust backfill (if palace exists)
 # ---------------------------------------------------------------------------
-Write-Step "Checking for existing palace"
+Write-Step "Checking for existing Anaktoron"
 
 $palaceDb = "$MempalDir\palace\chroma.sqlite3"
 if (-not (Test-Path $palaceDb)) {
-    Write-Skip "No palace at $palaceDb -- backfill skipped (run after mnemion mine)"
+    Write-Skip "No Anaktoron at $palaceDb -- backfill skipped (run after mnemion mine)"
 } elseif (Test-Path $backfillDst) {
     Write-Host "   Running trust backfill..." -ForegroundColor DarkCyan
     $out = py $backfillDst 2>&1

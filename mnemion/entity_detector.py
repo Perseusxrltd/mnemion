@@ -840,7 +840,7 @@ def extract_candidates(text: str) -> dict:
         if lower not in STOPWORDS and lower not in CODE_KEYWORDS and len(word) > 1:
             counts[word] += 1
 
-    # Also find multi-word proper nouns (e.g. "Memory Palace", "Claude Code")
+    # Also find multi-word proper nouns (e.g. "Claude Code", "Claude Code")
     multi = re.findall(r"\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\b", text)
     for phrase in multi:
         if not any(w.lower() in STOPWORDS for w in phrase.split()):

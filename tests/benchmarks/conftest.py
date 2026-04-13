@@ -37,9 +37,9 @@ def bench_report_path(request):
 
 
 @pytest.fixture
-def palace_dir(tmp_path):
-    """Isolated palace directory for a single test."""
-    p = tmp_path / "palace"
+def anaktoron_dir(tmp_path):
+    """Isolated Anaktoron directory for a single test."""
+    p = tmp_path / "anaktoron"
     p.mkdir()
     return str(p)
 
@@ -52,10 +52,10 @@ def kg_db(tmp_path):
 
 @pytest.fixture
 def config_dir(tmp_path):
-    """Isolated config directory for monkeypatching MempalaceConfig."""
+    """Isolated config directory for monkeypatching MnemionConfig."""
     d = tmp_path / "config"
     d.mkdir()
-    config = {"palace_path": str(tmp_path / "palace"), "collection_name": "mnemion_drawers"}
+    config = {"anaktoron_path": str(tmp_path / "anaktoron"), "collection_name": "mnemion_drawers"}
     with open(d / "config.json", "w") as f:
         json.dump(config, f)
     return str(d)

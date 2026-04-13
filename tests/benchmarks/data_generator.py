@@ -231,7 +231,7 @@ PREDICATES = [
 ]
 
 
-class PalaceDataGenerator:
+class AnaktoronDataGenerator:
     """Generate deterministic, realistic test data at configurable scale."""
 
     def __init__(self, seed=42, scale="small"):
@@ -399,20 +399,20 @@ class PalaceDataGenerator:
 
         return str(base), wing
 
-    # ── Direct palace population (bypasses mining for speed) ─────────────
+    # ── Direct Anaktoron population (bypasses mining for speed) ─────────────
 
-    def populate_palace_directly(self, palace_path, n_drawers=None, include_needles=True):
+    def populate_anaktoron_directly(self, anaktoron_path, n_drawers=None, include_needles=True):
         """
         Insert drawers directly into ChromaDB, bypassing the mining pipeline.
 
         Much faster than mining for benchmarks that only care about
-        search/MCP behavior on a pre-populated palace.
+        search/MCP behavior on a pre-populated Anaktoron.
 
         Returns (client, collection, needle_info).
         """
         n_drawers = n_drawers or self.cfg["drawers"]
-        os.makedirs(palace_path, exist_ok=True)
-        client = chromadb.PersistentClient(path=palace_path)
+        os.makedirs(anaktoron_path, exist_ok=True)
+        client = chromadb.PersistentClient(path=anaktoron_path)
         col = client.get_or_create_collection("mnemion_drawers")
 
         batch_size = 500

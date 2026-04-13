@@ -1,6 +1,6 @@
-# Mnemion Sync — Multi-Agent Palace Backup & Sync
+# Mnemion Sync — Multi-Agent Anaktoron Backup & Sync
 
-The palace (ChromaDB vector store) is too large for git (~860 MB). The sync
+The Anaktoron (ChromaDB vector store) is too large for git (~860 MB). The sync
 system exports a portable JSON snapshot and commits that instead.  Multiple
 agents on different machines can each run the sync script and share the same
 memory automatically — no human coordination needed.
@@ -12,7 +12,7 @@ memory automatically — no human coordination needed.
 Every hour (or on your schedule):
 
 1. **Export** — all non-session drawers are exported from the local ChromaDB
-   palace → `archive/drawers_export.json` (stable-sorted, human-readable JSON)
+   Anaktoron → `archive/drawers_export.json` (stable-sorted, human-readable JSON)
 2. **Fetch** — `git fetch` peeks at the remote without touching your working tree
 3. **Merge** — if the remote is ahead (another agent pushed), `merge_exports.py`
    produces a clean union of both export files:
@@ -39,7 +39,7 @@ Set `MNEMION_AGENT_ID` to a meaningful name for each machine/agent.
 
 ### Known limitation — v1
 
-Drawer **deletions** do not propagate.  A drawer deleted from one agent's palace
+Drawer **deletions** do not propagate.  A drawer deleted from one agent's Anaktoron
 will be re-added after the next merge from another agent that still has it.
 Deletion sync requires tombstone records and is planned for a future version.
 
@@ -152,7 +152,7 @@ You should see output like:
 # 1. Clone your memory repo
 git clone https://github.com/YOUR_USERNAME/personal-ai-memories.git ~/.mnemion
 
-# 2. Rebuild the palace from the JSON export
+# 2. Rebuild the Anaktoron from the JSON export
 cd ~/.mnemion
 python3 -m mnemion mine archive/drawers_export.json
 
@@ -167,7 +167,7 @@ python3 ~/.mnemion/backfill_trust.py
 `~/.mnemion/.gitignore` should contain:
 
 ```gitignore
-palace/
+anaktoron/
 cursor_scraped/
 hook_state/
 *.sqlite3

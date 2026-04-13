@@ -3,14 +3,14 @@
 contradiction_detector.py — Two-Stage Conflict Detection for Mnemion
 =======================================================================
 
-Stage 1 — Quick LLM judge (single prompt, no palace context)
+Stage 1 — Quick LLM judge (single prompt, no Anaktoron context)
   • Compares new drawer text against top-k similar existing drawers
   • LLM outputs: conflict_type, confidence, winner, reason
   • If confidence ≥ STAGE1_THRESHOLD → auto-resolve
   • Otherwise → Stage 2
 
-Stage 2 — Deep resolve with palace context
-  • Pulls additional palace context for both drawers (semantic search)
+Stage 2 — Deep resolve with Anaktoron context
+  • Pulls additional Anaktoron context for both drawers (semantic search)
   • Second LLM pass with enriched context
   • Resolves based on that + records outcome
 
@@ -75,7 +75,7 @@ A potential conflict between two memories is ambiguous. Use the provided context
 Respond ONLY with valid JSON, no markdown:
 {"conflict_type": "<type>", "confidence": <0.0-1.0>, "winner": "<a|b|none>", "reason": "<one sentence>", "resolution_note": "<brief explanation using context>"}"""
 
-STAGE2_USER = """Two memories may conflict. Additional palace context is provided to help you decide.
+STAGE2_USER = """Two memories may conflict. Additional Anaktoron context is provided to help you decide.
 
 MEMORY_A (existing, id={id_a}):
 {text_a}
@@ -83,7 +83,7 @@ MEMORY_A (existing, id={id_a}):
 MEMORY_B (new):
 {text_b}
 
-RELATED CONTEXT FROM PALACE:
+RELATED CONTEXT FROM ANAKTORON:
 {context}
 
 Which memory is more accurate? Respond with JSON only."""
@@ -134,7 +134,7 @@ def stage1_check(new_text: str, candidate: Dict[str, Any]) -> Optional[Dict]:
 def stage2_resolve(
     new_text: str, candidate: Dict[str, Any], context_snippets: List[str]
 ) -> Optional[Dict]:
-    """Stage 2 deep resolve with enriched palace context."""
+    """Stage 2 deep resolve with enriched Anaktoron context."""
     backend = _get_backend()
     context = (
         "\n---\n".join(context_snippets[:5])

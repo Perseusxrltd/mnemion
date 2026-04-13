@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-convo_miner.py — Mine conversations into the palace.
+convo_miner.py — Mine conversations into the Anaktoron.
 
 Ingests chat exports (Claude Code, ChatGPT, Slack, plain text transcripts).
-Normalizes format, chunks by exchange pair (Q+A = one unit), files to palace.
+Normalizes format, chunks by exchange pair (Q+A = one unit), files to Anaktoron.
 
-Same palace as project mining. Different ingest strategy.
+Same Anaktoron as project mining. Different ingest strategy.
 """
 
 import os
@@ -16,6 +16,9 @@ from datetime import datetime
 from collections import defaultdict
 
 import chromadb
+import sqlite3
+from .drawer_trust import DrawerTrust
+from .knowledge_graph import KnowledgeGraph
 
 from .config import DRAWER_HNSW_METADATA
 from .normalize import normalize
@@ -208,7 +211,7 @@ def detect_convo_room(content: str) -> str:
 
 
 # =============================================================================
-# PALACE OPERATIONS
+# ANAKTORON OPERATIONS
 # =============================================================================
 
 
@@ -266,7 +269,7 @@ def mine_convos(
     dry_run: bool = False,
     extract_mode: str = "exchange",
 ):
-    """Mine a directory of conversation files into the palace.
+    """Mine a directory of conversation files into the Anaktoron.
 
     extract_mode:
         "exchange" — default exchange-pair chunking (Q+A = one unit)
@@ -378,6 +381,24 @@ def mine_convos(
                         }
                     ],
                 )
+                
+                # 2. Add to SQLite FTS5 (Lexical Mirror)
+                kg_path = str(Path(palace_path).parent / "knowledge_graph.sqlite3")
+                KnowledgeGraph(kg_path) # Ensure schema exists
+                conn = sqlite3.connect(kg_path)
+                try:
+                    conn.execute(
+                        "INSERT OR REPLACE INTO drawers_fts (drawer_id, content, wing, room) VALUES (?, ?, ?, ?)",
+                        (drawer_id, chunk["content"], wing, chunk_room),
+                    )
+                    conn.commit()
+                finally:
+                    conn.close()
+
+                # 3. Create trust record (idempotent)
+                trust_db = DrawerTrust(kg_path)
+                trust_db.create(drawer_id, wing=wing, room=chunk_room)
+
                 drawers_added += 1
             except Exception as e:
                 if "already exists" not in str(e).lower():
@@ -401,7 +422,7 @@ def mine_convos(
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python convo_miner.py <convo_dir> [--palace PATH] [--limit N] [--dry-run]")
+        print("Usage: python convo_miner.py <convo_dir> [--anaktoron PATH] [--limit N] [--dry-run]")
         sys.exit(1)
     from .config import MempalaceConfig
 

@@ -1,5 +1,5 @@
 ---
-description: Set up Mnemion — install the package, initialize a palace, configure MCP server, and verify everything works.
+description: Set up Mnemion — install the package, initialize a Anaktoron, configure MCP server, and verify everything works.
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 

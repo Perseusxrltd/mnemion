@@ -13,7 +13,7 @@ import time
 import chromadb
 import pytest
 
-from tests.benchmarks.data_generator import PalaceDataGenerator
+from tests.benchmarks.data_generator import AnaktoronDataGenerator
 from tests.benchmarks.report import record_metric
 
 
@@ -39,19 +39,19 @@ class TestMineThroughput:
     @pytest.mark.parametrize("n_files", [20, 50, 100])
     def test_mine_files_per_second(self, n_files, tmp_path, bench_scale):
         """End-to-end mining throughput: generate files, mine, count drawers."""
-        gen = PalaceDataGenerator(seed=42, scale=bench_scale)
+        gen = AnaktoronDataGenerator(seed=42, scale=bench_scale)
         project_path, wing, rooms, files_written = gen.generate_project_tree(
             tmp_path / "project", n_files=n_files
         )
-        palace_path = str(tmp_path / "palace")
+        anaktoron_path = str(tmp_path / "anaktoron")
 
         from mnemion.miner import mine
 
         start = time.perf_counter()
-        mine(project_path, palace_path)
+        mine(project_path, anaktoron_path)
         elapsed = time.perf_counter() - start
 
-        client = chromadb.PersistentClient(path=palace_path)
+        client = chromadb.PersistentClient(path=anaktoron_path)
         col = client.get_collection("mnemion_drawers")
         drawer_count = col.count()
 
@@ -67,11 +67,11 @@ class TestMineThroughput:
         """Track peak RSS during a mining run."""
         import threading
 
-        gen = PalaceDataGenerator(seed=42, scale=bench_scale)
+        gen = AnaktoronDataGenerator(seed=42, scale=bench_scale)
         project_path, wing, rooms, files_written = gen.generate_project_tree(
             tmp_path / "project", n_files=100
         )
-        palace_path = str(tmp_path / "palace")
+        anaktoron_path = str(tmp_path / "anaktoron")
 
         from mnemion.miner import mine
 
@@ -87,7 +87,7 @@ class TestMineThroughput:
         sampler.start()
 
         rss_before = _get_rss_mb()
-        mine(project_path, palace_path)
+        mine(project_path, anaktoron_path)
         stop_sampling.set()
         sampler.join(timeout=1)
 
@@ -107,7 +107,7 @@ class TestChunkThroughput:
         """Measure chunk_text speed for different content sizes."""
         from mnemion.miner import chunk_text
 
-        gen = PalaceDataGenerator(seed=42)
+        gen = AnaktoronDataGenerator(seed=42)
         # Generate content of target size
         content = gen._random_text(content_size_kb * 500, content_size_kb * 1200)
         # Pad to approximate target KB
@@ -137,23 +137,23 @@ class TestReingestSkipOverhead:
 
     def test_skip_check_cost(self, tmp_path):
         """Mine files, then re-mine — measure cost of skip checks."""
-        gen = PalaceDataGenerator(seed=42, scale="small")
+        gen = AnaktoronDataGenerator(seed=42, scale="small")
         project_path, wing, rooms, files_written = gen.generate_project_tree(
             tmp_path / "project", n_files=50
         )
-        palace_path = str(tmp_path / "palace")
+        anaktoron_path = str(tmp_path / "anaktoron")
 
         from mnemion.miner import mine
 
         # First mine
-        mine(project_path, palace_path)
-        client = chromadb.PersistentClient(path=palace_path)
+        mine(project_path, anaktoron_path)
+        client = chromadb.PersistentClient(path=anaktoron_path)
         col = client.get_collection("mnemion_drawers")
         initial_count = col.count()
 
         # Re-mine (all files should be skipped)
         start = time.perf_counter()
-        mine(project_path, palace_path)
+        mine(project_path, anaktoron_path)
         skip_elapsed = time.perf_counter() - start
 
         # Verify no new drawers added

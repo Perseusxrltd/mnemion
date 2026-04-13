@@ -95,10 +95,10 @@ def count_user_exchanges(transcript_path):
     return count
 
 
-# ── Palace save ───────────────────────────────────────────────────────────────
+# ── Anaktoron save ───────────────────────────────────────────────────────────────
 
 
-def save_to_palace(memories, session_id):
+def save_to_anaktoron(memories, session_id):
     """Save extracted memories directly to ChromaDB. Returns count saved."""
     try:
         if MNEMION_SRC not in sys.path:
@@ -107,7 +107,7 @@ def save_to_palace(memories, session_id):
         from mnemion.config import MempalaceConfig
 
         config = MempalaceConfig()
-        client = chromadb.PersistentClient(path=config.palace_path)
+        client = chromadb.PersistentClient(path=config.anaktoron_path)
         collection = client.get_or_create_collection(config.collection_name)
 
         saved = 0
@@ -139,7 +139,7 @@ def save_to_palace(memories, session_id):
 
         return saved
     except Exception as e:
-        log(f"Palace save error: {e}")
+        log(f"Anaktoron save error: {e}")
         return 0
 
 
@@ -202,7 +202,7 @@ try:
     if text:
         memories = extract_memories(text, min_confidence=0.4)
         if memories:
-            saved = save_to_palace(memories, session_id)
+            saved = save_to_anaktoron(memories, session_id)
             log(
                 f"Session {session_id[:8]}: {exchange_count} exchanges | "
                 f"extracted {len(memories)} memories | saved {saved} new | "

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-spellcheck.py — Spell-correct user messages before palace filing.
+spellcheck.py — Spell-correct user messages before Anaktoron filing.
 
 Preserves:
   - Technical terms (words with digits, hyphens, underscores)
@@ -119,9 +119,10 @@ def _load_known_names() -> set:
 
         reg = EntityRegistry.load()
         names = set()
-        for entity in reg._data.get("entities", {}).values():
-            names.add(entity.get("canonical", "").lower())
-            for alias in entity.get("aliases", []):
+        # The registry schema uses "people" not "entities"
+        for name, info in reg._data.get("people", {}).items():
+            names.add(name.lower())
+            for alias in info.get("aliases", []):
                 names.add(alias.lower())
         return names
     except Exception:
@@ -251,7 +252,7 @@ if __name__ == "__main__":
         "isn't there meny diferent benchmarks tesing questions?",
         "also can you pleese spell chekc my questions befroe storing",
         "it's realy hard for me to writte coherently at 3am",
-        "Mempalace cant be fine-tunned if you alredy kno the question",
+        "Mnemion cant be fine-tunned if you alredy kno the question",
         # Should NOT change these:
         "ChromaDB bge-large-en-v1.5 NDCG@10 R@5",
         "Riley picked up Sam from school",

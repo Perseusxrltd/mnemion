@@ -1,5 +1,5 @@
 ---
-description: Show the current state of your memory palace — wings, rooms, drawer counts, and suggestions.
+description: Show the current state of your memory Anaktoron — wings, rooms, drawer counts, and suggestions.
 allowed-tools: Bash, Read
 ---
 

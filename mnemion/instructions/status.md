@@ -1,17 +1,17 @@
 # Mnemion Status
 
-Display the current state of the user's memory palace.
+Display the current state of the user's memory Anaktoron.
 
-## Step 1: Gather Palace Status
+## Step 1: Gather Anaktoron Status
 
 Check if MCP tools are available (look for mnemion_status in available tools).
 
-- If MCP is available: Call the mnemion_status tool to retrieve palace state.
+- If MCP is available: Call the mnemion_status tool to retrieve Anaktoron state.
 - If MCP is not available: Run the CLI command: mnemion status
 
 ## Step 2: Display Wing/Room/Drawer Counts
 
-Present the palace structure counts clearly:
+Present the Anaktoron structure counts clearly:
 - Number of wings
 - Number of rooms
 - Number of drawers
@@ -27,18 +27,18 @@ If MCP tools are available, also call:
 - mnemion_graph_stats -- for connectivity information (connected components,
   average connections per entity)
 
-Present these alongside the palace counts in a unified summary.
+Present these alongside the Anaktoron counts in a unified summary.
 
 ## Step 4: Suggest Next Actions
 
 Based on the current state, suggest one relevant action:
 
-- Empty palace (zero memories): Suggest "Try /mnemion:mine to add data from
+- Empty Anaktoron (zero memories): Suggest "Try /mnemion:mine to add data from
   files, URLs, or text."
 - Has data but no knowledge graph (memories exist but KG stats show zero
   triples): Suggest "Consider adding knowledge graph triples for richer
   queries."
-- Healthy palace (has memories and KG data): Suggest "Use /mnemion:search to
+- Healthy Anaktoron (has memories and KG data): Suggest "Use /mnemion:search to
   query your memories."
 
 ## Output Style

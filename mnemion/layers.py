@@ -6,7 +6,7 @@ layers.py — 4-Layer Memory Stack for mnemion
 Load only what you need, when you need it.
 
     Layer 0: Identity       (~100 tokens)   — Always loaded. "Who am I?"
-    Layer 1: Essential Story (~500-800)      — Always loaded. Top moments from the palace.
+    Layer 1: Essential Story (~500-800)      — Always loaded. Top moments from the Anaktoron.
     Layer 2: On-Demand      (~200-500 each)  — Loaded when a topic/wing comes up.
     Layer 3: Deep Search    (unlimited)      — Full ChromaDB semantic search.
 
@@ -23,7 +23,7 @@ from collections import defaultdict
 
 import chromadb
 
-from .config import MempalaceConfig
+from .config import MnemionConfig
 
 
 # ---------------------------------------------------------------------------
@@ -67,14 +67,14 @@ class Layer0:
 
 
 # ---------------------------------------------------------------------------
-# Layer 1 — Essential Story (auto-generated from palace)
+# Layer 1 — Essential Story (auto-generated from Anaktoron)
 # ---------------------------------------------------------------------------
 
 
 class Layer1:
     """
     ~500-800 tokens. Always loaded.
-    Auto-generated from the highest-weight / most-recent drawers in the palace.
+    Auto-generated from the highest-weight / most-recent drawers in the Anaktoron.
     Groups by room, picks the top N moments, compresses to a compact summary.
     """
 
@@ -82,7 +82,7 @@ class Layer1:
     MAX_CHARS = 3200  # hard cap on total L1 text (~800 tokens)
 
     def __init__(self, palace_path: str = None, wing: str = None):
-        cfg = MempalaceConfig()
+        cfg = MnemionConfig()
         self.palace_path = palace_path or cfg.palace_path
         self.collection_name = cfg.collection_name
         self.wing = wing
@@ -93,7 +93,7 @@ class Layer1:
             client = chromadb.PersistentClient(path=self.palace_path)
             col = client.get_collection(self.collection_name)
         except Exception:
-            return "## L1 — No palace found. Run: mnemion mine <dir>"
+            return "## L1 — No Anaktoron found. Run: mnemion mine <dir>"
 
         # Fetch all drawers in batches to avoid SQLite variable limit (~999)
         _BATCH = 500
@@ -189,7 +189,7 @@ class Layer2:
     """
 
     def __init__(self, palace_path: str = None):
-        cfg = MempalaceConfig()
+        cfg = MnemionConfig()
         self.palace_path = palace_path or cfg.palace_path
         self.collection_name = cfg.collection_name
 
@@ -199,7 +199,7 @@ class Layer2:
             client = chromadb.PersistentClient(path=self.palace_path)
             col = client.get_collection(self.collection_name)
         except Exception:
-            return "No palace found."
+            return "No Anaktoron found."
 
         where = {}
         if wing and room:
@@ -249,12 +249,12 @@ class Layer2:
 
 class Layer3:
     """
-    Unlimited depth. Semantic search against the full palace.
+    Unlimited depth. Semantic search against the full Anaktoron.
     Reuses searcher.py logic against mnemion_drawers.
     """
 
     def __init__(self, palace_path: str = None):
-        cfg = MempalaceConfig()
+        cfg = MnemionConfig()
         self.palace_path = palace_path or cfg.palace_path
         self.collection_name = cfg.collection_name
 
@@ -264,7 +264,7 @@ class Layer3:
             client = chromadb.PersistentClient(path=self.palace_path)
             col = client.get_collection(self.collection_name)
         except Exception:
-            return "No palace found."
+            return "No Anaktoron found."
 
         where = {}
         if wing and room:
@@ -374,7 +374,7 @@ class Layer3:
 
 class MemoryStack:
     """
-    The full 4-layer stack. One class, one palace, everything works.
+    The full 4-layer stack. One class, one Anaktoron, everything works.
 
         stack = MemoryStack()
         print(stack.wake_up())                # L0 + L1 (~600-900 tokens)
@@ -383,7 +383,7 @@ class MemoryStack:
     """
 
     def __init__(self, palace_path: str = None, identity_path: str = None):
-        cfg = MempalaceConfig()
+        cfg = MnemionConfig()
         self.palace_path = palace_path or cfg.palace_path
         self.identity_path = identity_path or os.path.expanduser("~/.mnemion/identity.txt")
 
@@ -431,7 +431,7 @@ class MemoryStack:
                 "tokens": self.l0.token_estimate(),
             },
             "L1_essential": {
-                "description": "Auto-generated from top palace drawers",
+                "description": "Auto-generated from top Anaktoron drawers",
             },
             "L2_on_demand": {
                 "description": "Wing/room filtered retrieval",
@@ -444,7 +444,7 @@ class MemoryStack:
         # Count drawers
         try:
             client = chromadb.PersistentClient(path=self.palace_path)
-            col = client.get_collection(self.collection_name)
+            col = client.get_collection(MnemionConfig().collection_name)
             count = col.count()
             result["total_drawers"] = count
         except Exception:

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Example: mine a project folder into the palace."""
+"""Example: mine a project folder into the Anaktoron."""
 
 import sys
 

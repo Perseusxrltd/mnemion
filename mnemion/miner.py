@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-miner.py — Files everything into the palace.
+miner.py — Files everything into the Anaktoron.
 
 Reads mnemion.yaml from the project directory to know the wing + rooms.
 Routes each file to the right room based on content.
@@ -16,6 +16,12 @@ from datetime import datetime
 from collections import defaultdict
 
 import chromadb
+import logging
+import sqlite3
+from .drawer_trust import DrawerTrust
+from .knowledge_graph import KnowledgeGraph
+
+logger = logging.getLogger("mnemion_miner")
 
 from .config import DRAWER_HNSW_METADATA
 
@@ -102,7 +108,8 @@ class GitignoreMatcher:
 
         try:
             lines = gitignore_path.read_text(encoding="utf-8", errors="replace").splitlines()
-        except Exception:
+        except Exception as e:
+            logger.error(f"Caught exception: {e}")
             return None
 
         rules = []
@@ -391,7 +398,7 @@ def chunk_text(content: str, source_file: str) -> list:
 
 
 # =============================================================================
-# PALACE — ChromaDB operations
+# ANAKTORON — ChromaDB operations
 # =============================================================================
 
 
@@ -405,7 +412,8 @@ def get_collection(palace_path: str, collection_name: str = None):
     client = chromadb.PersistentClient(path=palace_path)
     try:
         return client.get_collection(col_name)
-    except Exception:
+    except Exception as e:
+        logger.error(f"Caught exception: {e}")
         return client.create_collection(col_name, metadata=DRAWER_HNSW_METADATA)
 
 
@@ -426,15 +434,24 @@ def file_already_mined(collection, source_file: str) -> bool:
             return False
         current_mtime = os.path.getmtime(source_file)
         return abs(float(stored_mtime) - current_mtime) < 0.001
-    except Exception:
+    except Exception as e:
+        logger.error(f"Caught exception: {e}")
         return False
 
 
 def add_drawer(
     collection, wing: str, room: str, content: str, source_file: str, chunk_index: int, agent: str
 ):
-    """Add one drawer to the palace."""
+    """Add one drawer to the Anaktoron with optional LeWM Latent Grooming (SIGReg)."""
+    from .config import MempalaceConfig
+
+    cfg = MempalaceConfig()
+    lewm_cfg = cfg._file_config.get("lewm", {})
+    groom_iterations = lewm_cfg.get("groom_iterations", 0)
+    sigreg_weight = lewm_cfg.get("sigreg_weight", 0.1)
+
     drawer_id = f"drawer_{wing}_{room}_{hashlib.md5((source_file + str(chunk_index)).encode(), usedforsecurity=False).hexdigest()[:16]}"
+
     try:
         metadata = {
             "wing": wing,
@@ -449,13 +466,79 @@ def add_drawer(
             metadata["source_mtime"] = os.path.getmtime(source_file)
         except OSError:
             pass
-        collection.upsert(
-            documents=[content],
-            ids=[drawer_id],
-            metadatas=[metadata],
-        )
+
+        final_embedding = None
+        if groom_iterations > 0:
+            try:
+                import torch
+                from . import lewm
+
+                # 1. Generate initial embedding
+                try:
+                    from sentence_transformers import SentenceTransformer
+                    model = SentenceTransformer('all-MiniLM-L6-v2')
+                    emb = model.encode([content])[0].tolist()
+                except Exception as e:
+                    logger.error(f"Caught exception: {e}")
+                    # Fallback to deterministic synthetic embedding if transformers are unavailable
+                    torch.manual_seed(int(hashlib.md5(content.encode()).hexdigest(), 16) % 10**8)
+                    base = torch.ones(384) * 0.1
+                    noise = torch.randn(384) * 0.01
+                    emb = (base + noise).tolist()
+
+                # 2. Fetch latent context from existing wing/room
+                try:
+                    cluster = collection.get(where={"wing": wing}, include=["embeddings"], limit=50)
+                    if cluster["embeddings"] is not None and len(cluster["embeddings"]) > 0:
+                        all_embs = cluster["embeddings"] + [emb]
+                        adapter_path = Path(cfg.anaktoron_path) / "adapter.pt"
+                        groomed_cluster = lewm.groom_embeddings(
+                            all_embs,
+                            iterations=groom_iterations,
+                            sigreg_weight=sigreg_weight,
+                            model_path=str(adapter_path)
+                        )
+                        final_embedding = groomed_cluster[-1]
+                    else:
+                        final_embedding = emb
+                except Exception as e:
+                    logger.error(f"Caught exception: {e}")
+                    final_embedding = emb
+            except ImportError:
+                pass  # torch/lewm not installed — skip grooming
+            except Exception as e:
+                logger.error(f"Suppressed error in execution: {e}")
+
+        upsert_kwargs = {
+            "documents": [content],
+            "ids": [drawer_id],
+            "metadatas": [metadata],
+        }
+        if final_embedding is not None:
+            upsert_kwargs["embeddings"] = [final_embedding]
+
+        collection.upsert(**upsert_kwargs)
+
+        # 2. Add to SQLite FTS5 (Lexical Mirror)
+        kg_path = str(Path(cfg.anaktoron_path).parent / "knowledge_graph.sqlite3")
+        KnowledgeGraph(kg_path) # Ensure schema exists
+        conn = sqlite3.connect(kg_path)
+        try:
+            conn.execute(
+                "INSERT OR REPLACE INTO drawers_fts (drawer_id, content, wing, room) VALUES (?, ?, ?, ?)",
+                (drawer_id, content, wing, room),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+        # 3. Create trust record (idempotent)
+        trust_db = DrawerTrust(kg_path)
+        trust_db.create(drawer_id, wing=wing, room=room)
+
         return True
-    except Exception:
+    except Exception as e:
+        logger.error(f"Caught exception: {e}")
         raise
 
 
@@ -588,7 +671,7 @@ def mine(
     respect_gitignore: bool = True,
     include_ignored: list = None,
 ):
-    """Mine a project directory into the palace."""
+    """Mine a project directory into the Anaktoron."""
 
     project_path = Path(project_dir).expanduser().resolve()
     config = load_config(project_dir)
@@ -610,7 +693,7 @@ def mine(
     print(f"  Wing:    {wing}")
     print(f"  Rooms:   {', '.join(r['name'] for r in rooms)}")
     print(f"  Files:   {len(files)}")
-    print(f"  Palace:  {palace_path}")
+    print(f"  Anaktoron:  {palace_path}")
     if dry_run:
         print("  DRY RUN — nothing will be filed")
     if not respect_gitignore:
@@ -664,21 +747,32 @@ def mine(
 
 
 def status(palace_path: str):
-    """Show what's been filed in the palace."""
+    """Show what's been filed in the Anaktoron."""
     from .config import MempalaceConfig
 
     col_name = MempalaceConfig().collection_name
     try:
         client = chromadb.PersistentClient(path=palace_path)
         col = client.get_collection(col_name)
-    except Exception:
-        print(f"\n  No palace found at {palace_path}")
+    except Exception as e:
+        logger.error(f"Caught exception: {e}")
+        print(f"\n  No Anaktoron found at {palace_path}")
         print("  Run: mnemion init <dir> then mnemion mine <dir>")
         return
 
-    # Count by wing and room
-    r = col.get(limit=10000, include=["metadatas"])
-    metas = r["metadatas"]
+    # Count by wing and room — paginate to avoid truncation on large Anaktorons
+    _PAGE = 10000
+    metas = []
+    offset = 0
+    while True:
+        batch = col.get(limit=_PAGE, offset=offset, include=["metadatas"])
+        batch_metas = batch.get("metadatas", [])
+        if not batch_metas:
+            break
+        metas.extend(batch_metas)
+        offset += len(batch_metas)
+        if len(batch_metas) < _PAGE:
+            break
 
     wing_rooms = defaultdict(lambda: defaultdict(int))
     for m in metas:

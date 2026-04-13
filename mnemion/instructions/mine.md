@@ -24,7 +24,7 @@ Mines code files, documentation, and notes from a project directory.
 
     mnemion mine <dir> --mode convos
 
-Mines conversation exports from Claude, ChatGPT, or Slack into the palace.
+Mines conversation exports from Claude, ChatGPT, or Slack into the Anaktoron.
 
 ### General extraction (auto-classify)
 
@@ -60,5 +60,5 @@ completion, summarize the results including:
 
 After mining completes, suggest the user try:
 - /mnemion:search -- search the newly mined content
-- /mnemion:status -- check the current state of their palace
+- /mnemion:status -- check the current state of their Anaktoron
 - Mine more data from additional sources

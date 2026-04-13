@@ -40,14 +40,14 @@ def test_project_mining():
                 f,
             )
 
-        palace_path = project_root / "palace"
-        mine(str(project_root), str(palace_path))
+        anaktoron_path = project_root / "anaktoron"
+        mine(str(project_root), str(anaktoron_path))
 
-        client = chromadb.PersistentClient(path=str(palace_path))
+        client = chromadb.PersistentClient(path=str(anaktoron_path))
         col = client.get_collection("mnemion_drawers")
         assert col.count() > 0
     finally:
-        shutil.rmtree(tmpdir)
+        shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 def test_scan_project_respects_gitignore():
@@ -62,7 +62,7 @@ def test_scan_project_respects_gitignore():
 
         assert scanned_files(project_root) == ["src/app.py"]
     finally:
-        shutil.rmtree(tmpdir)
+        shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 def test_scan_project_respects_nested_gitignore():
@@ -78,7 +78,7 @@ def test_scan_project_respects_nested_gitignore():
 
         assert scanned_files(project_root) == ["subrepo/src/main.py"]
     finally:
-        shutil.rmtree(tmpdir)
+        shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 def test_scan_project_allows_nested_gitignore_override():
@@ -93,7 +93,7 @@ def test_scan_project_allows_nested_gitignore_override():
 
         assert scanned_files(project_root) == ["subrepo/keep.csv"]
     finally:
-        shutil.rmtree(tmpdir)
+        shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 def test_scan_project_allows_gitignore_negation_when_parent_dir_is_visible():
@@ -107,7 +107,7 @@ def test_scan_project_allows_gitignore_negation_when_parent_dir_is_visible():
 
         assert scanned_files(project_root) == ["generated/keep.py"]
     finally:
-        shutil.rmtree(tmpdir)
+        shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 def test_scan_project_does_not_reinclude_file_from_ignored_directory():
@@ -121,7 +121,7 @@ def test_scan_project_does_not_reinclude_file_from_ignored_directory():
 
         assert scanned_files(project_root) == []
     finally:
-        shutil.rmtree(tmpdir)
+        shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 def test_scan_project_can_disable_gitignore():
@@ -134,7 +134,7 @@ def test_scan_project_can_disable_gitignore():
 
         assert scanned_files(project_root, respect_gitignore=False) == ["data/stuff.csv"]
     finally:
-        shutil.rmtree(tmpdir)
+        shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 def test_scan_project_can_include_ignored_directory():
@@ -147,7 +147,7 @@ def test_scan_project_can_include_ignored_directory():
 
         assert scanned_files(project_root, include_ignored=["docs"]) == ["docs/guide.md"]
     finally:
-        shutil.rmtree(tmpdir)
+        shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 def test_scan_project_can_include_specific_ignored_file():
@@ -163,7 +163,7 @@ def test_scan_project_can_include_specific_ignored_file():
             "generated/keep.py"
         ]
     finally:
-        shutil.rmtree(tmpdir)
+        shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 def test_scan_project_can_include_exact_file_without_known_extension():
@@ -176,7 +176,7 @@ def test_scan_project_can_include_exact_file_without_known_extension():
 
         assert scanned_files(project_root, include_ignored=["README"]) == ["README"]
     finally:
-        shutil.rmtree(tmpdir)
+        shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 def test_scan_project_include_override_beats_skip_dirs():
@@ -192,7 +192,7 @@ def test_scan_project_include_override_beats_skip_dirs():
             include_ignored=[".pytest_cache"],
         ) == [".pytest_cache/cache.py"]
     finally:
-        shutil.rmtree(tmpdir)
+        shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 def test_scan_project_skip_dirs_still_apply_without_override():
@@ -205,4 +205,4 @@ def test_scan_project_skip_dirs_still_apply_without_override():
 
         assert scanned_files(project_root, respect_gitignore=False) == ["main.py"]
     finally:
-        shutil.rmtree(tmpdir)
+        shutil.rmtree(tmpdir, ignore_errors=True)

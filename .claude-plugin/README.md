@@ -1,6 +1,6 @@
 # Mnemion Claude Code Plugin
 
-A Claude Code plugin that gives your AI a persistent memory system. Mine projects and conversations into a searchable palace backed by ChromaDB, with 19 MCP tools, auto-save hooks, and 5 guided skills.
+A Claude Code plugin that gives your AI a persistent memory system. Mine projects and conversations into a searchable Anaktoron backed by ChromaDB, with 19 MCP tools, auto-save hooks, and 5 guided skills.
 
 ## Prerequisites
 
@@ -35,9 +35,9 @@ After installing the plugin, run the init command to complete setup (pip install
 |---------|-------------|
 | `/mnemion:help` | Show available tools, skills, and architecture |
 | `/mnemion:init` | Set up Mnemion -- install, configure MCP, onboard |
-| `/mnemion:search` | Search your memories across the palace |
-| `/mnemion:mine` | Mine projects and conversations into the palace |
-| `/mnemion:status` | Show palace overview -- wings, rooms, drawer counts |
+| `/mnemion:search` | Search your memories across the Anaktoron |
+| `/mnemion:mine` | Mine projects and conversations into the Anaktoron |
+| `/mnemion:status` | Show Anaktoron overview -- wings, rooms, drawer counts |
 
 ## Hooks
 

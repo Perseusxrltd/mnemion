@@ -1,7 +1,7 @@
 """
 Recall threshold test — find the per-bucket size where retrieval breaks.
 
-The palace_boost tests showed room-filtered recall of 1.0, but only because
+The anaktoron_boost tests showed room-filtered recall of 1.0, but only because
 each room had ~333 drawers. This test concentrates ALL drawers into a single
 wing+room to find the actual embedding model limit.
 """
@@ -13,7 +13,7 @@ from datetime import datetime
 import chromadb
 import pytest
 
-from tests.benchmarks.data_generator import PalaceDataGenerator
+from tests.benchmarks.data_generator import AnaktoronDataGenerator
 from tests.benchmarks.report import record_metric
 
 
@@ -44,11 +44,11 @@ NEEDLE_QUERIES = [
 ]
 
 
-def _populate_single_room(palace_path, n_drawers, n_needles=10):
+def _populate_single_room(anaktoron_path, n_drawers, n_needles=10):
     """Pack all drawers into one wing+room, plant needles, return queries."""
-    gen = PalaceDataGenerator(seed=42, scale="small")
-    os.makedirs(palace_path, exist_ok=True)
-    client = chromadb.PersistentClient(path=palace_path)
+    gen = AnaktoronDataGenerator(seed=42, scale="small")
+    os.makedirs(anaktoron_path, exist_ok=True)
+    client = chromadb.PersistentClient(path=anaktoron_path)
     col = client.get_or_create_collection("mnemion_drawers")
 
     batch_size = 500
@@ -113,8 +113,8 @@ class TestRecallThresholdSingleRoom:
     @pytest.mark.parametrize("n_drawers", SIZES)
     def test_single_room_recall(self, n_drawers, tmp_path):
         """Recall@5 and @10 with all drawers in one bucket."""
-        palace_path = str(tmp_path / "palace")
-        _populate_single_room(palace_path, n_drawers, n_needles=10)
+        anaktoron_path = str(tmp_path / "anaktoron")
+        _populate_single_room(anaktoron_path, n_drawers, n_needles=10)
 
         from mnemion.searcher import search_memories
 
@@ -125,7 +125,7 @@ class TestRecallThresholdSingleRoom:
         for i, query in enumerate(NEEDLE_QUERIES):
             result = search_memories(
                 query,
-                palace_path=palace_path,
+                anaktoron_path=anaktoron_path,
                 wing="concentrated",
                 room="single_room",
                 n_results=10,
@@ -153,8 +153,8 @@ class TestRecallThresholdSingleRoom:
     @pytest.mark.parametrize("n_drawers", SIZES)
     def test_single_room_no_filter_recall(self, n_drawers, tmp_path):
         """Same test but WITHOUT wing/room filter — pure unfiltered search."""
-        palace_path = str(tmp_path / "palace")
-        _populate_single_room(palace_path, n_drawers, n_needles=10)
+        anaktoron_path = str(tmp_path / "anaktoron")
+        _populate_single_room(anaktoron_path, n_drawers, n_needles=10)
 
         from mnemion.searcher import search_memories
 
@@ -163,7 +163,7 @@ class TestRecallThresholdSingleRoom:
         n_queries = len(NEEDLE_QUERIES)
 
         for i, query in enumerate(NEEDLE_QUERIES):
-            result = search_memories(query, palace_path=palace_path, n_results=10)
+            result = search_memories(query, anaktoron_path=anaktoron_path, n_results=10)
             if "error" in result:
                 continue
 

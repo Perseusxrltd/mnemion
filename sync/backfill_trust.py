@@ -12,11 +12,11 @@ import os
 sys.path.insert(0, os.path.expanduser("~/projects/mnemion"))
 
 import chromadb
-from mnemion.config import MempalaceConfig
+from mnemion.config import MnemionConfig
 from mnemion.drawer_trust import DrawerTrust
 
-config = MempalaceConfig()
-client = chromadb.PersistentClient(path=config.palace_path)
+config = MnemionConfig()
+client = chromadb.PersistentClient(path=config.anaktoron_path)
 
 try:
     col = client.get_collection(config.collection_name)
@@ -24,7 +24,7 @@ except Exception as e:
     print(f"Failed to open collection: {e}")
     sys.exit(1)
 
-print(f"Palace: {config.palace_path}")
+print(f"Anaktoron: {config.anaktoron_path}")
 total = col.count()
 print(f"Total drawers: {total}")
 

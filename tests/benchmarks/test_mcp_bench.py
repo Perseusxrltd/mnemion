@@ -14,29 +14,29 @@ import time
 import chromadb
 import pytest
 
-from tests.benchmarks.data_generator import PalaceDataGenerator
+from tests.benchmarks.data_generator import AnaktoronDataGenerator
 from tests.benchmarks.report import record_metric
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────
 
 
-def _make_palace(tmp_path, n_drawers, scale="small"):
-    """Create a palace with exactly n_drawers, return palace_path."""
-    gen = PalaceDataGenerator(seed=42, scale=scale)
-    palace_path = str(tmp_path / "palace")
-    gen.populate_palace_directly(palace_path, n_drawers=n_drawers, include_needles=False)
-    return palace_path
+def _make_anaktoron(tmp_path, n_drawers, scale="small"):
+    """Create a palace with exactly n_drawers, return anaktoron_path."""
+    gen = AnaktoronDataGenerator(seed=42, scale=scale)
+    anaktoron_path = str(tmp_path / "anaktoron")
+    gen.populate_anaktoron_directly(anaktoron_path, n_drawers=n_drawers, include_needles=False)
+    return anaktoron_path
 
 
-def _patch_mcp_config(monkeypatch, palace_path, tmp_path):
+def _patch_mcp_config(monkeypatch, anaktoron_path, tmp_path):
     """Monkeypatch mcp_server._config and _kg to point at test dirs."""
-    from mnemion.config import MempalaceConfig
+    from mnemion.config import MnemionConfig
     from mnemion.knowledge_graph import KnowledgeGraph
 
-    cfg = MempalaceConfig(config_dir=str(tmp_path / "cfg"))
-    # Override palace_path directly on the object
-    monkeypatch.setattr(cfg, "_file_config", {"palace_path": palace_path})
+    cfg = MnemionConfig(config_dir=str(tmp_path / "cfg"))
+    # Override anaktoron_path directly on the object
+    monkeypatch.setattr(cfg, "_file_config", {"anaktoron_path": anaktoron_path})
 
     import mnemion.mcp_server as mcp_mod
 
@@ -73,9 +73,9 @@ class TestToolStatusOOM:
 
     @pytest.mark.parametrize("n_drawers", SIZES)
     def test_tool_status_rss_growth(self, n_drawers, tmp_path, monkeypatch):
-        """Measure RSS growth from tool_status at different palace sizes."""
-        palace_path = _make_palace(tmp_path, n_drawers)
-        _patch_mcp_config(monkeypatch, palace_path, tmp_path)
+        """Measure RSS growth from tool_status at different Anaktoron sizes."""
+        anaktoron_path = _make_anaktoron(tmp_path, n_drawers)
+        _patch_mcp_config(monkeypatch, anaktoron_path, tmp_path)
 
         from mnemion.mcp_server import tool_status
 
@@ -91,9 +91,9 @@ class TestToolStatusOOM:
 
     @pytest.mark.parametrize("n_drawers", SIZES)
     def test_tool_status_latency(self, n_drawers, tmp_path, monkeypatch):
-        """Measure tool_status response time at different palace sizes."""
-        palace_path = _make_palace(tmp_path, n_drawers)
-        _patch_mcp_config(monkeypatch, palace_path, tmp_path)
+        """Measure tool_status response time at different Anaktoron sizes."""
+        anaktoron_path = _make_anaktoron(tmp_path, n_drawers)
+        _patch_mcp_config(monkeypatch, anaktoron_path, tmp_path)
 
         from mnemion.mcp_server import tool_status
 
@@ -114,8 +114,8 @@ class TestToolListWingsUnbounded:
 
     @pytest.mark.parametrize("n_drawers", [500, 1_000, 2_500, 5_000])
     def test_list_wings_latency(self, n_drawers, tmp_path, monkeypatch):
-        palace_path = _make_palace(tmp_path, n_drawers)
-        _patch_mcp_config(monkeypatch, palace_path, tmp_path)
+        anaktoron_path = _make_anaktoron(tmp_path, n_drawers)
+        _patch_mcp_config(monkeypatch, anaktoron_path, tmp_path)
 
         from mnemion.mcp_server import tool_list_wings
 
@@ -133,8 +133,8 @@ class TestToolGetTaxonomyUnbounded:
 
     @pytest.mark.parametrize("n_drawers", [500, 1_000, 2_500, 5_000])
     def test_get_taxonomy_latency(self, n_drawers, tmp_path, monkeypatch):
-        palace_path = _make_palace(tmp_path, n_drawers)
-        _patch_mcp_config(monkeypatch, palace_path, tmp_path)
+        anaktoron_path = _make_anaktoron(tmp_path, n_drawers)
+        _patch_mcp_config(monkeypatch, anaktoron_path, tmp_path)
 
         from mnemion.mcp_server import tool_get_taxonomy
 
@@ -152,8 +152,8 @@ class TestClientReinstantiation:
 
     def test_reinstantiation_overhead(self, tmp_path, monkeypatch):
         """Measure cost of 50 _get_collection() calls vs a cached client."""
-        palace_path = _make_palace(tmp_path, 500)
-        _patch_mcp_config(monkeypatch, palace_path, tmp_path)
+        anaktoron_path = _make_anaktoron(tmp_path, 500)
+        _patch_mcp_config(monkeypatch, anaktoron_path, tmp_path)
 
         from mnemion.mcp_server import _get_collection
 
@@ -167,7 +167,7 @@ class TestClientReinstantiation:
         uncached_ms = (time.perf_counter() - start) * 1000
 
         # Measure cached client (what it should be)
-        client = chromadb.PersistentClient(path=palace_path)
+        client = chromadb.PersistentClient(path=anaktoron_path)
         cached_col = client.get_collection("mnemion_drawers")
         start = time.perf_counter()
         for _ in range(n_calls):
@@ -188,8 +188,8 @@ class TestToolSearchLatency:
 
     @pytest.mark.parametrize("n_drawers", [500, 1_000, 2_500, 5_000])
     def test_search_latency(self, n_drawers, tmp_path, monkeypatch):
-        palace_path = _make_palace(tmp_path, n_drawers)
-        _patch_mcp_config(monkeypatch, palace_path, tmp_path)
+        anaktoron_path = _make_anaktoron(tmp_path, n_drawers)
+        _patch_mcp_config(monkeypatch, anaktoron_path, tmp_path)
 
         from mnemion.mcp_server import tool_search
 
@@ -212,8 +212,8 @@ class TestDuplicateCheckCost:
 
     @pytest.mark.parametrize("n_drawers", [500, 1_000, 2_500])
     def test_duplicate_check_latency(self, n_drawers, tmp_path, monkeypatch):
-        palace_path = _make_palace(tmp_path, n_drawers)
-        _patch_mcp_config(monkeypatch, palace_path, tmp_path)
+        anaktoron_path = _make_anaktoron(tmp_path, n_drawers)
+        _patch_mcp_config(monkeypatch, anaktoron_path, tmp_path)
 
         from mnemion.mcp_server import tool_check_duplicate
 

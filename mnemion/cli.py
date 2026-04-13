@@ -6,15 +6,15 @@ Two ways to ingest:
   Projects:      mnemion mine ~/projects/my_app          (code, docs, notes)
   Conversations: mnemion mine ~/chats/ --mode convos     (Claude, ChatGPT, Slack)
 
-Same palace. Same search. Different ingest strategies.
+Same Anaktoron. Same search. Different ingest strategies.
 
 Commands:
     mnemion init <dir>                  Detect rooms from folder structure
     mnemion split <dir>                 Split concatenated mega-files into per-session files
     mnemion mine <dir>                  Mine project files (default)
     mnemion mine <dir> --mode convos    Mine conversation exports
-    mnemion restore <file.json>         Import a JSON export into the palace (new machine setup)
-    mnemion restore <file.json> --merge Add to an existing palace without wiping it
+    mnemion restore <file.json>         Import a JSON export into the Anaktoron (new machine setup)
+    mnemion restore <file.json> --merge Add to an existing Anaktoron without wiping it
     mnemion search "query"              Find anything, exact words
     mnemion wake-up                     Show L0 + L1 wake-up context
     mnemion wake-up --wing my_app       Wake-up for a specific project
@@ -40,7 +40,7 @@ import sys
 import argparse
 from pathlib import Path
 
-from .config import MempalaceConfig
+from .config import MnemionConfig
 
 
 def cmd_init(args):
@@ -69,11 +69,11 @@ def cmd_init(args):
 
     # Pass 2: detect rooms from folder structure
     detect_rooms_local(project_dir=args.dir, yes=getattr(args, "yes", False))
-    MempalaceConfig().init()
+    MnemionConfig().init()
 
 
 def cmd_mine(args):
-    palace_path = os.path.expanduser(args.palace) if args.palace else MempalaceConfig().palace_path
+    anaktoron_path = os.path.expanduser(args.palace) if args.palace else MnemionConfig().anaktoron_path
     include_ignored = []
     for raw in args.include_ignored or []:
         include_ignored.extend(part.strip() for part in raw.split(",") if part.strip())
@@ -83,7 +83,7 @@ def cmd_mine(args):
 
         mine_convos(
             convo_dir=args.dir,
-            palace_path=palace_path,
+            palace_path=anaktoron_path,
             wing=args.wing,
             agent=args.agent,
             limit=args.limit,
@@ -95,7 +95,7 @@ def cmd_mine(args):
 
         mine(
             project_dir=args.dir,
-            palace_path=palace_path,
+            palace_path=anaktoron_path,
             wing_override=args.wing,
             agent=args.agent,
             limit=args.limit,
@@ -106,18 +106,37 @@ def cmd_mine(args):
 
 
 def cmd_search(args):
-    from .searcher import search, SearchError
+    from .hybrid_searcher import HybridSearcher
+    from .config import MnemionConfig
 
-    palace_path = os.path.expanduser(args.palace) if args.palace else MempalaceConfig().palace_path
+    anaktoron_path = os.path.expanduser(args.palace) if args.palace else MnemionConfig().anaktoron_path
+    
     try:
-        search(
+        hs = HybridSearcher(palace_path=anaktoron_path)
+        hits = hs.search(
             query=args.query,
-            palace_path=palace_path,
             wing=args.wing,
             room=args.room,
             n_results=args.results,
+            min_similarity=0.0
         )
-    except SearchError:
+        
+        if not hits:
+            print("No results found.")
+            return
+
+        print(f"\nFound {len(hits)} results for '{args.query}'\n" + "="*50)
+        for i, hit in enumerate(hits, 1):
+            w = hit.get('wing', 'unknown')
+            r = hit.get('room', 'unknown')
+            t = hit.get('type', 'vector')
+            print(f"\n[{i}] {w}/{r}  (source: {t})")
+            print(f"ID: {hit['id']}")
+            print("-" * 50)
+            print(f"{hit.get('text', '')}\n")
+            
+    except Exception as e:
+        print(f"Search failed: {e}")
         sys.exit(1)
 
 
@@ -125,8 +144,8 @@ def cmd_wakeup(args):
     """Show L0 (identity) + L1 (essential story) — the wake-up context."""
     from .layers import MemoryStack
 
-    palace_path = os.path.expanduser(args.palace) if args.palace else MempalaceConfig().palace_path
-    stack = MemoryStack(palace_path=palace_path)
+    anaktoron_path = os.path.expanduser(args.palace) if args.palace else MnemionConfig().anaktoron_path
+    stack = MemoryStack(palace_path=anaktoron_path)
 
     text = stack.wake_up(wing=args.wing)
     tokens = len(text) // 4
@@ -161,38 +180,38 @@ def cmd_split(args):
 def cmd_status(args):
     from .miner import status
 
-    palace_path = os.path.expanduser(args.palace) if args.palace else MempalaceConfig().palace_path
-    status(palace_path=palace_path)
+    anaktoron_path = os.path.expanduser(args.palace) if args.palace else MnemionConfig().anaktoron_path
+    status(palace_path=anaktoron_path)
 
 
 def cmd_repair(args):
-    """Rebuild palace vector index from SQLite metadata."""
+    """Rebuild Anaktoron vector index from SQLite metadata."""
     import chromadb
     import shutil
 
-    cfg = MempalaceConfig()
-    palace_path = os.path.expanduser(args.palace) if args.palace else cfg.palace_path
+    cfg = MnemionConfig()
+    anaktoron_path = os.path.expanduser(args.palace) if args.palace else cfg.anaktoron_path
     col_name = cfg.collection_name
 
-    if not os.path.isdir(palace_path):
-        print(f"\n  No palace found at {palace_path}")
+    if not os.path.isdir(anaktoron_path):
+        print(f"\n  No Anaktoron found at {anaktoron_path}")
         return
 
     print(f"\n{'=' * 55}")
     print("  Mnemion Repair")
     print(f"{'=' * 55}\n")
-    print(f"  Palace:     {palace_path}")
+    print(f"  Anaktoron: {anaktoron_path}")
     print(f"  Collection: {col_name}")
 
     # Try to read existing drawers
     try:
-        client = chromadb.PersistentClient(path=palace_path)
+        client = chromadb.PersistentClient(path=anaktoron_path)
         col = client.get_collection(col_name)
         total = col.count()
         print(f"  Drawers found: {total}")
     except Exception as e:
-        print(f"  Error reading palace: {e}")
-        print("  Cannot recover — palace may need to be re-mined from source files.")
+        print(f"  Error reading Anaktoron: {e}")
+        print("  Cannot recover — Anaktoron may need to be re-mined from source files.")
         return
 
     if total == 0:
@@ -215,11 +234,11 @@ def cmd_repair(args):
     print(f"  Extracted {len(all_ids)} drawers")
 
     # Backup and rebuild
-    backup_path = palace_path + ".backup"
+    backup_path = anaktoron_path + ".backup"
     if os.path.exists(backup_path):
         shutil.rmtree(backup_path)
     print(f"  Backing up to {backup_path}...")
-    shutil.copytree(palace_path, backup_path)
+    shutil.copytree(anaktoron_path, backup_path)
 
     print("  Rebuilding collection...")
     client.delete_collection(col_name)
@@ -304,14 +323,14 @@ def _stream_json_array(filepath, read_size=524288):
 
 
 def cmd_restore(args):
-    """Import a JSON export (archive/drawers_export.json) into the local palace."""
+    """Import a JSON export (archive/drawers_export.json) into the local Anaktoron."""
     import gc
     import chromadb
     from pathlib import Path
-    from .config import MempalaceConfig, DRAWER_HNSW_METADATA
+    from .config import MnemionConfig, DRAWER_HNSW_METADATA
 
-    cfg = MempalaceConfig()
-    palace_path = os.path.expanduser(args.palace) if args.palace else cfg.palace_path
+    cfg = MnemionConfig()
+    anaktoron_path = os.path.expanduser(args.palace) if args.palace else cfg.anaktoron_path
     col_name = cfg.collection_name
     json_file = args.file
     batch_size = args.batch_size
@@ -325,7 +344,7 @@ def cmd_restore(args):
     print("  Mnemion Restore", flush=True)
     print(f"{'=' * 55}\n", flush=True)
     print(f"  Source:     {json_file} ({file_mb:.1f} MB)", flush=True)
-    print(f"  Palace:     {palace_path}", flush=True)
+    print(f"  Anaktoron: {anaktoron_path}", flush=True)
     print(f"  Collection: {col_name}", flush=True)
     print(f"  Batch size: {batch_size}", flush=True)
 
@@ -334,19 +353,19 @@ def cmd_restore(args):
     total = _count_json_objects(json_file)
     print(f"{total}", flush=True)
 
-    Path(palace_path).mkdir(parents=True, exist_ok=True)
-    client = chromadb.PersistentClient(path=palace_path)
+    Path(anaktoron_path).mkdir(parents=True, exist_ok=True)
+    client = chromadb.PersistentClient(path=anaktoron_path)
 
     try:
         col = client.get_or_create_collection(col_name, metadata=DRAWER_HNSW_METADATA)
     except Exception as e:
-        print(f"  Error opening palace: {e}\n", flush=True)
+        print(f"  Error opening Anaktoron: {e}\n", flush=True)
         sys.exit(1)
 
     existing = col.count()
     if existing > 0 and not args.merge and not args.replace:
-        print(f"\n  Palace already has {existing} drawers.")
-        print("  Use --merge to add to an existing palace, or --replace to overwrite.\n")
+        print(f"\n  Anaktoron already has {existing} drawers.")
+        print("  Use --merge to add to an existing Anaktoron, or --replace to overwrite.\n")
         sys.exit(1)
 
     if args.replace and existing > 0:
@@ -404,10 +423,10 @@ def cmd_restore(args):
 
 def cmd_llm(args):
     """LLM backend management: setup, status, test."""
-    from .config import MempalaceConfig
+    from .config import MnemionConfig
     from .llm_backend import get_backend, BACKEND_DEFAULTS, BACKEND_LABELS, NullBackend
 
-    config = MempalaceConfig()
+    config = MnemionConfig()
 
     if args.llm_action == "status":
         llm_cfg = config.llm
@@ -595,7 +614,7 @@ def _cmd_llm_setup(config, BACKEND_DEFAULTS, BACKEND_LABELS):
 
 
 def cmd_librarian(args):
-    """Daily background palace tidy-up via local LLM."""
+    """Daily background Anaktoron tidy-up via local LLM."""
     import json
     from .librarian import run_librarian, show_status
 
@@ -630,14 +649,14 @@ def cmd_compress(args):
     import chromadb
     from .dialect import Dialect
 
-    cfg = MempalaceConfig()
-    palace_path = os.path.expanduser(args.palace) if args.palace else cfg.palace_path
+    cfg = MnemionConfig()
+    anaktoron_path = os.path.expanduser(args.palace) if args.palace else cfg.anaktoron_path
     col_name = cfg.collection_name
 
     # Load dialect (with optional entity config)
     config_path = args.config
     if not config_path:
-        for candidate in ["entities.json", os.path.join(palace_path, "entities.json")]:
+        for candidate in ["entities.json", os.path.join(anaktoron_path, "entities.json")]:
             if os.path.exists(candidate):
                 config_path = candidate
                 break
@@ -648,12 +667,12 @@ def cmd_compress(args):
     else:
         dialect = Dialect()
 
-    # Connect to palace
+    # Connect to Anaktoron
     try:
-        client = chromadb.PersistentClient(path=palace_path)
+        client = chromadb.PersistentClient(path=anaktoron_path)
         col = client.get_collection(col_name)
     except Exception:
-        print(f"\n  No palace found at {palace_path}")
+        print(f"\n  No Anaktoron found at {anaktoron_path}")
         print("  Run: mnemion init <dir> then mnemion mine <dir>")
         sys.exit(1)
 
@@ -755,9 +774,9 @@ def main():
         epilog=__doc__,
     )
     parser.add_argument(
-        "--palace",
+        "--palace",  # kept for backward compat; controls anaktoron_path
         default=None,
-        help="Where the palace lives (default: from ~/.mnemion/config.json or ~/.mnemion/palace)",
+        help="Where the Anaktoron lives (default: from ~/.mnemion/config.json or ~/.mnemion/anaktoron)",
     )
 
     sub = parser.add_subparsers(dest="command")
@@ -770,7 +789,7 @@ def main():
     )
 
     # mine
-    p_mine = sub.add_parser("mine", help="Mine files into the palace")
+    p_mine = sub.add_parser("mine", help="Mine files into the Anaktoron")
     p_mine.add_argument("dir", help="Directory to mine")
     p_mine.add_argument(
         "--mode",
@@ -896,7 +915,7 @@ def main():
     # restore
     p_restore = sub.add_parser(
         "restore",
-        help="Import a JSON export (archive/drawers_export.json) into the local palace",
+        help="Import a JSON export (archive/drawers_export.json) into the local Anaktoron",
     )
     p_restore.add_argument(
         "file", help="Path to the JSON export file (e.g. archive/drawers_export.json)"
@@ -904,12 +923,12 @@ def main():
     p_restore.add_argument(
         "--merge",
         action="store_true",
-        help="Add imported drawers to an existing palace (default: abort if palace not empty)",
+        help="Add imported drawers to an existing Anaktoron (default: abort if Anaktoron not empty)",
     )
     p_restore.add_argument(
         "--replace",
         action="store_true",
-        help="Wipe the existing palace and restore from the export",
+        help="Wipe the existing Anaktoron and restore from the export",
     )
     p_restore.add_argument(
         "--batch-size",
@@ -922,7 +941,7 @@ def main():
     # repair
     sub.add_parser(
         "repair",
-        help="Rebuild palace vector index from stored data (fixes segfaults after corruption)",
+        help="Rebuild Anaktoron vector index from stored data (fixes segfaults after corruption)",
     )
 
     # librarian

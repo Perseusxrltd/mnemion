@@ -8,7 +8,10 @@ import json
 import os
 from pathlib import Path
 
-DEFAULT_PALACE_PATH = os.path.expanduser("~/.mnemion/palace")
+DEFAULT_ANAKTORON_PATH = os.path.expanduser("~/.mnemion/anaktoron")
+
+# Backward compat alias — old code may reference this constant
+DEFAULT_PALACE_PATH = DEFAULT_ANAKTORON_PATH
 DEFAULT_COLLECTION_NAME = "mnemion_drawers"
 
 # hnsw:space=cosine is required because searcher.py computes
@@ -67,7 +70,7 @@ DEFAULT_HALL_KEYWORDS = {
 }
 
 
-class MempalaceConfig:
+class MnemionConfig:
     """Configuration manager for Mnemion.
 
     Load order: env vars > config file > defaults.
@@ -95,7 +98,7 @@ class MempalaceConfig:
                 self._file_config = {}
         elif config_dir is None:
             # First run after rename from mempalace → mnemion.
-            # Migrate LLM config and palace_path from the old ~/.mempalace/config.json
+            # Migrate LLM config and anaktoron_path from the old ~/.mempalace/config.json
             # so existing setups don't silently lose their LLM backend.
             _legacy = Path(os.path.expanduser("~/.mempalace")) / "config.json"
             if _legacy.exists():
@@ -109,17 +112,28 @@ class MempalaceConfig:
                     pass
 
     @property
-    def palace_path(self):
-        """Path to the memory palace data directory."""
-        # Check new env var first, then legacy mempalace env vars for backward compat
+    def anaktoron_path(self):
+        """Path to the Anaktoron data directory."""
+        # Check new env var first, then legacy env vars for backward compat
         env_val = (
-            os.environ.get("MNEMION_PALACE_PATH")
+            os.environ.get("MNEMION_ANAKTORON_PATH")
+            or os.environ.get("MNEMION_PALACE_PATH")
             or os.environ.get("MEMPALACE_PALACE_PATH")
             or os.environ.get("MEMPAL_PALACE_PATH")
         )
         if env_val:
             return env_val
-        return self._file_config.get("palace_path", DEFAULT_PALACE_PATH)
+        # Accept both new key and legacy key in config.json
+        return self._file_config.get(
+            "anaktoron_path",
+            self._file_config.get("palace_path", DEFAULT_ANAKTORON_PATH),
+        )
+
+    # Backward compat alias so existing code referencing .palace_path still works
+    @property
+    def palace_path(self):
+        """Deprecated alias for anaktoron_path."""
+        return self.anaktoron_path
 
     @property
     def collection_name(self):
@@ -198,7 +212,7 @@ class MempalaceConfig:
         self._config_dir.mkdir(parents=True, exist_ok=True)
         if not self._config_file.exists():
             default_config = {
-                "palace_path": DEFAULT_PALACE_PATH,
+                "anaktoron_path": DEFAULT_ANAKTORON_PATH,
                 "collection_name": DEFAULT_COLLECTION_NAME,
                 "topic_wings": DEFAULT_TOPIC_WINGS,
                 "hall_keywords": DEFAULT_HALL_KEYWORDS,
@@ -217,3 +231,6 @@ class MempalaceConfig:
         with open(self._people_map_file, "w") as f:
             json.dump(people_map, f, indent=2)
         return self._people_map_file
+
+# Backward compatibility alias — old code/plugins may import MempalaceConfig
+MempalaceConfig = MnemionConfig

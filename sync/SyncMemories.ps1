@@ -1,6 +1,6 @@
 # Mnemion Multi-Agent Sync  -  Windows (PowerShell)
 # ===================================================
-# Exports the local palace to JSON, merges with remote if needed, commits,
+# Exports the local Anaktoron to JSON, merges with remote if needed, commits,
 # and pushes.  Safe for concurrent use by multiple agents on different machines.
 #
 # How it works:
@@ -42,6 +42,7 @@ $MaxRetries  = 5
 $ExportDir   = Join-Path $RepoDir "archive"
 $ExportFile  = Join-Path $ExportDir "drawers_export.json"
 $RemoteFile  = Join-Path $ExportDir ".drawers_remote_tmp.json"
+$KgExportFile = Join-Path $ExportDir "knowledge_graph.sql"
 $LockFile    = Join-Path $RepoDir ".sync_lock"
 
 # Locate merge_exports.py: prefer source repo, fall back to same dir as this script
@@ -111,14 +112,14 @@ if r'$SrcDir':
     sys.path.insert(0, r'$SrcDir')
 import chromadb
 from mnemion.chroma_compat import fix_blob_seq_ids
-from mnemion.config import MempalaceConfig
+from mnemion.config import MnemionConfig
 
 BATCH = 2000  # stay under SQLite SQLITE_MAX_VARIABLE_NUMBER on any version
 
-config = MempalaceConfig()
-fix_blob_seq_ids(config.palace_path)
+config = MnemionConfig()
+fix_blob_seq_ids(config.anaktoron_path)
 try:
-    client = chromadb.PersistentClient(path=config.palace_path)
+    client = chromadb.PersistentClient(path=config.anaktoron_path)
     col    = client.get_collection(config.collection_name)
     drawers = []
     offset  = 0
@@ -139,6 +140,19 @@ try:
     with open(out, 'w', encoding='utf-8') as f:
         json.dump(sorted(drawers, key=lambda d: d['id']), f, ensure_ascii=False, indent=2)
     print(f'{len(drawers)} drawers exported')
+    
+    # Active Fix: Dump Knowledge Graph logic synchronously 
+    import sqlite3, os
+    from pathlib import Path
+    kg_path = Path(config.palace_path).parent / 'knowledge_graph.sqlite3'
+    if kg_path.exists():
+        kg_out = r'$KgExportFile'.replace('\\\\', '/').replace('\\', '/')
+        conn = sqlite3.connect(kg_path)
+        with open(kg_out, 'w', encoding='utf-8') as f:
+            for line in conn.iterdump():
+                f.write(f"{line}\n")
+        conn.close()
+        print('Knowledge Graph / Trust data dumped')
 except Exception as e:
     print(f'Export error: {e}', file=sys.stderr)
     sys.exit(1)
@@ -197,6 +211,37 @@ for ($attempt = 1; $attempt -le $MaxRetries; $attempt++) {
         } else {
             Write-Log "Remote has no export yet  -  skipping merge"
             Remove-Item $RemoteFile -Force -ErrorAction SilentlyContinue
+        }
+
+        # ACTIVE FIX: Sync the Trust & Knowledge Graph SQLite Table
+        $KgRemoteFile = Join-Path $ExportDir ".kg_remote_tmp.sql"
+        git show "${remoteRef}:archive/knowledge_graph.sql" > $KgRemoteFile 2>&1
+        if ($LASTEXITCODE -eq 0 -and (Test-Path $KgRemoteFile)) {
+            Write-Log "Trust Graph Remote File Found. Merging SQL dumps natively..."
+            $mergeKGSql = @"
+import sqlite3, sys
+from pathlib import Path
+from mnemion.config import MnemionConfig
+
+try:
+    config = MnemionConfig()
+    kg_path = Path(config.palace_path).parent / 'knowledge_graph.sqlite3'
+    if kg_path.exists():
+        conn = sqlite3.connect(kg_path)
+        with open(r'$KgRemoteFile'.replace('\\\\', '/').replace('\\', '/'), 'r', encoding='utf-8') as f:
+            sql_script = f.read()
+        sql_script = sql_script.replace('INSERT INTO', 'INSERT OR REPLACE INTO')
+        conn.executescript(sql_script)
+        conn.commit()
+        conn.close()
+except Exception as e:
+    print(f'KG Merge exception: {e}')
+"@
+            py -c $mergeKGSql 2>&1 | Out-Null
+            Remove-Item $KgRemoteFile -Force -ErrorAction SilentlyContinue
+            
+            # Re-dump the now successfully unified graph so it is staged 
+            py -c "import sqlite3; from mnemion.config import MnemionConfig; from pathlib import Path; p=Path(MnemionConfig().palace_path).parent/'knowledge_graph.sqlite3'; c=sqlite3.connect(p); f=open(r'$KgExportFile'.replace('\\\\','/'), 'w', encoding='utf-8'); [f.write(l+'\n') for l in c.iterdump()]; c.close()" 2>&1 | Out-Null
         }
     }
 

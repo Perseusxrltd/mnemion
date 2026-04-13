@@ -2,7 +2,7 @@
 palace_graph.py — Graph traversal layer for Mnemion
 ======================================================
 
-Builds a navigable graph from the palace structure:
+Builds a navigable graph from the Anaktoron structure:
   - Nodes = rooms (named ideas)
   - Edges = shared rooms across wings (tunnels)
   - Edge types = halls (the corridors)
@@ -16,23 +16,24 @@ No external graph DB needed — built from ChromaDB metadata.
 """
 
 from collections import defaultdict, Counter
-from .config import MempalaceConfig
+from .config import MnemionConfig
 
 import chromadb
 
 
 def _get_collection(config=None):
-    config = config or MempalaceConfig()
+    config = config or MnemionConfig()
     try:
         client = chromadb.PersistentClient(path=config.palace_path)
         return client.get_collection(config.collection_name)
-    except Exception:
+    except Exception as e:
+        print(f"Caught exception: {e}")
         return None
 
 
 def build_graph(col=None, config=None):
     """
-    Build the palace graph from ChromaDB metadata.
+    Build the Anaktoron graph from ChromaDB metadata.
 
     Returns:
         nodes: dict of {room: {wings: set, halls: set, count: int}}
@@ -72,7 +73,8 @@ def build_graph(col=None, config=None):
         if len(wings) >= 2:
             for i, wa in enumerate(wings):
                 for wb in wings[i + 1 :]:
-                    for hall in data["halls"]:
+                    halls = data["halls"] if data["halls"] else [""]
+                    for hall in halls:
                         edges.append(
                             {
                                 "room": room,
@@ -191,7 +193,7 @@ def find_tunnels(wing_a: str = None, wing_b: str = None, col=None, config=None):
 
 
 def graph_stats(col=None, config=None):
-    """Summary statistics about the palace graph."""
+    """Summary statistics about the Anaktoron graph."""
     nodes, edges = build_graph(col, config)
 
     tunnel_rooms = sum(1 for n in nodes.values() if len(n["wings"]) >= 2)

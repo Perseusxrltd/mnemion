@@ -2,7 +2,7 @@
 test_mcp_server.py — Tests for the MCP server tool handlers and dispatch.
 
 Tests each tool handler directly (unit-level) and the handle_request
-dispatch layer (integration-level). Uses isolated palace + KG fixtures
+dispatch layer (integration-level). Uses isolated Anaktoron + KG fixtures
 via monkeypatch to avoid touching real data.
 """
 
@@ -19,7 +19,7 @@ def _patch_mcp_server(monkeypatch, config, kg):
     monkeypatch.setattr(mcp_server, "_config", config)
     monkeypatch.setattr(mcp_server, "_kg", kg)
     # _hybrid and _trust are module-level globals init'd at import time;
-    # they must point to the test palace/db, not the session temp dir.
+    # they must point to the test Anaktoron/db, not the session temp dir.
     kg_path = os.path.join(os.path.dirname(config.palace_path), "test_kg.sqlite3")
     monkeypatch.setattr(
         mcp_server, "_hybrid", HybridSearcher(palace_path=config.palace_path, kg_path=kg_path)
@@ -28,7 +28,7 @@ def _patch_mcp_server(monkeypatch, config, kg):
 
 
 def _get_collection(palace_path, create=False):
-    """Helper to get collection from test palace.
+    """Helper to get collection from test Anaktoron.
 
     Returns (client, collection) so callers can clean up the client
     when they are done.
@@ -111,7 +111,7 @@ class TestHandleRequest:
 
 
 class TestReadTools:
-    def test_status_empty_palace(self, monkeypatch, config, palace_path, kg):
+    def test_status_empty_anaktoron(self, monkeypatch, config, palace_path, kg):
         _patch_mcp_server(monkeypatch, config, kg)
         _client, _col = _get_collection(palace_path, create=True)
         del _client
@@ -164,7 +164,7 @@ class TestReadTools:
         assert result["taxonomy"]["project"]["frontend"] == 1
         assert result["taxonomy"]["notes"]["planning"] == 1
 
-    def test_no_palace_returns_error(self, monkeypatch, config, kg):
+    def test_no_anaktoron_returns_error(self, monkeypatch, config, kg):
         _patch_mcp_server(monkeypatch, config, kg)
         from mnemion.mcp_server import tool_status
 

@@ -15,7 +15,7 @@ original verbatim content (drawers). The 96.6% benchmark score is from raw mode,
 not AAAK mode.
 
 Adapted for mnemion: works standalone on plain text and ChromaDB drawers.
-No dependency on palace.py or layers.py.
+No dependency on palace_graph.py or layers.py.
 
 FORMAT:
   Header:   FILE_NUM|PRIMARY_ENTITY|DATE|TITLE

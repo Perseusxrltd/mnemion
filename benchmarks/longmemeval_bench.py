@@ -7,8 +7,8 @@ Evaluates MemPal's retrieval against the LongMemEval benchmark.
 No modifications to LongMemEval's code required.
 
 For each of the 500 questions:
-1. Ingest all haystack sessions into a fresh MemPal palace
-2. Query the palace with the question
+1. Ingest all haystack sessions into a fresh Mnemion Anaktoron
+2. Query the Anaktoron with the question
 3. Score retrieval against ground-truth answer sessions
 
 Outputs:
@@ -162,7 +162,7 @@ def _fresh_collection(name="mnemion_drawers"):
 
 def build_palace_and_retrieve(entry, granularity="session", n_results=50):
     """
-    Build a fresh MemPal palace from haystack sessions, then retrieve.
+    Build a fresh Mnemion Anaktoron from haystack sessions, then retrieve.
 
     Args:
         entry: One LongMemEval question entry
@@ -1805,10 +1805,10 @@ def build_palace_and_retrieve_hybrid_v4(
 
 
 # =============================================================================
-# PALACE MODE — Hall classification + drawer indexing + hall-boosted retrieval
+# ANAKTORON MODE — Hall classification + drawer indexing + hall-boosted retrieval
 # =============================================================================
 
-# Hall names mirror the MemPal palace taxonomy
+# Hall names mirror the Mnemion Anaktoron taxonomy
 HALL_PREFERENCES = "hall_preferences"
 HALL_FACTS = "hall_facts"
 HALL_EVENTS = "hall_events"
@@ -1818,7 +1818,7 @@ HALL_GENERAL = "hall_general"
 
 def classify_session_hall(session):
     """
-    Assign a session to a palace hall based on its content.
+    Assign a session to a Anaktoron hall based on its content.
 
     Heuristics (checked in priority order):
       hall_preferences  — user expresses preferences, concerns, ongoing struggles
@@ -1917,7 +1917,7 @@ def classify_session_hall(session):
 
 def classify_question_hall(question):
     """
-    Infer which palace hall a question is asking about.
+    Infer which Anaktoron hall a question is asking about.
 
     Returns a list of halls in priority order (first = most likely).
     """
@@ -2001,13 +2001,13 @@ def build_palace_and_retrieve_palace(
     entry, granularity="session", n_results=50, hybrid_weight=0.30
 ):
     """
-    Palace-mode retrieval: navigate by hall first, fall back to full search.
+    Anaktoron-mode retrieval: navigate by hall first, fall back to full search.
 
-    The palace insight: don't search everything flat. Enter through the right
+    The Anaktoron insight: don't search everything flat. Enter through the right
     hall — a smaller, more focused subset — and get a tight answer fast.
     Only widen to the full haystack if the hall search doesn't yield confidence.
 
-    PALACE
+    ANAKTORON
       └── HALL (classified per session: preferences / facts / events / assistant / general)
             └── CLOSET (user turns per session — what the user said)
                   └── DRAWER (assistant turns — only opened for assistant-reference questions)
@@ -2155,7 +2155,7 @@ def build_palace_and_retrieve_palace(
         return unique[:10]
 
     # -------------------------------------------------------------------------
-    # Build palace — classify sessions into halls, build per-hall closets
+    # Build Anaktoron — classify sessions into halls, build per-hall closets
     # -------------------------------------------------------------------------
     sessions = entry["haystack_sessions"]
     session_ids = entry["haystack_session_ids"]
@@ -2452,9 +2452,9 @@ def build_palace_and_retrieve_diary(
     diary_model="claude-haiku-4-5-20251001",
 ):
     """
-    Diary mode: palace retrieval + LLM topic layer at ingest.
+    Diary mode: Anaktoron retrieval + LLM topic layer at ingest.
 
-    On top of palace mode's hall/closet/drawer navigation, diary mode adds:
+    On top of Anaktoron mode's hall/closet/drawer navigation, diary mode adds:
 
     DIARY LAYER (per session, computed once and cached):
       - Haiku reads the session → extracts 2-5 specific topics + a summary
@@ -2564,7 +2564,7 @@ def build_palace_and_retrieve_diary(
                 return extractor(m)
         return None
 
-    # Preference extraction (same 16 patterns as v3/palace)
+    # Preference extraction (same 16 patterns as v3/anaktoron)
     PREF_PATTERNS = [
         r"i(?:'ve been| have been) having (?:trouble|issues?|problems?) with ([^,\.!?]{5,80})",
         r"i(?:'ve been| have been) feeling ([^,\.!?]{5,60})",
@@ -2654,7 +2654,7 @@ def build_palace_and_retrieve_diary(
                     }
                 )
 
-        # PREFERENCE WING (same as v3/palace)
+        # PREFERENCE WING (same as v3/anaktoron)
         prefs = extract_preferences(session)
         if prefs:
             pref_doc = "User has mentioned: " + "; ".join(prefs)
@@ -2664,7 +2664,7 @@ def build_palace_and_retrieve_diary(
     if not corpus_user:
         return [], corpus_user, corpus_ids, corpus_timestamps
 
-    # Hall navigation (same as palace)
+    # Hall navigation (same as anaktoron)
     target_halls = classify_question_hall(question)
     primary_hall = target_halls[0]
     query_keywords = extract_keywords(question)
@@ -3089,7 +3089,7 @@ def run_benchmark(
             rankings, corpus, corpus_ids, corpus_timestamps = build_palace_and_retrieve_hybrid_v4(
                 entry, granularity=granularity, hybrid_weight=hybrid_weight
             )
-        elif mode == "palace":
+        elif mode == "anaktoron":
             rankings, corpus, corpus_ids, corpus_timestamps = build_palace_and_retrieve_palace(
                 entry, granularity=granularity, hybrid_weight=hybrid_weight
             )
@@ -3117,9 +3117,9 @@ def run_benchmark(
             print(f"  [{i + 1:4}/{len(data)}] {qid[:30]:30} SKIP (empty corpus)")
             continue
 
-        # Optional LLM re-ranking pass (larger pool for v3/palace to catch rank-11-12 misses)
+        # Optional LLM re-ranking pass (larger pool for v3/anaktoron to catch rank-11-12 misses)
         if llm_rerank_enabled:
-            rerank_pool = 20 if mode in ("hybrid_v3", "hybrid_v4", "palace") else 10
+            rerank_pool = 20 if mode in ("hybrid_v3", "hybrid_v4", "anaktoron") else 10
             rankings = llm_rerank(
                 question, rankings, corpus, corpus_ids, api_key, top_k=rerank_pool, model=llm_model
             )
@@ -3261,7 +3261,7 @@ if __name__ == "__main__":
             "hybrid_v2",
             "hybrid_v3",
             "hybrid_v4",
-            "palace",
+            "anaktoron",
             "diary",
             "full",
         ],
@@ -3311,7 +3311,7 @@ if __name__ == "__main__":
         action="store_true",
         default=False,
         help="Skip diary pre-computation for sessions not in cache. "
-        "Uses cache as-is; uncached sessions fall back to palace-only retrieval.",
+        "Uses cache as-is; uncached sessions fall back to anaktoron-only retrieval.",
     )
     parser.add_argument(
         "--embed-model",

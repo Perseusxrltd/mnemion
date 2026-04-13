@@ -13,7 +13,7 @@ import time
 import chromadb
 import pytest
 
-from tests.benchmarks.data_generator import PalaceDataGenerator
+from tests.benchmarks.data_generator import AnaktoronDataGenerator
 from tests.benchmarks.report import record_metric
 
 
@@ -46,11 +46,11 @@ class TestGetAllMetadatasOOM:
     @pytest.mark.parametrize("n_drawers", SIZES)
     def test_get_all_metadatas_rss(self, n_drawers, tmp_path, bench_scale):
         """RSS growth from fetching all metadata at once."""
-        gen = PalaceDataGenerator(seed=42, scale=bench_scale)
-        palace_path = str(tmp_path / "palace")
-        gen.populate_palace_directly(palace_path, n_drawers=n_drawers, include_needles=False)
+        gen = AnaktoronDataGenerator(seed=42, scale=bench_scale)
+        anaktoron_path = str(tmp_path / "anaktoron")
+        gen.populate_anaktoron_directly(anaktoron_path, n_drawers=n_drawers, include_needles=False)
 
-        client = chromadb.PersistentClient(path=palace_path)
+        client = chromadb.PersistentClient(path=anaktoron_path)
         col = client.get_collection("mnemion_drawers")
 
         rss_before = _get_rss_mb()
@@ -74,11 +74,11 @@ class TestQueryDegradation:
 
     @pytest.mark.parametrize("n_drawers", SIZES)
     def test_query_latency_at_size(self, n_drawers, tmp_path, bench_scale):
-        gen = PalaceDataGenerator(seed=42, scale=bench_scale)
-        palace_path = str(tmp_path / "palace")
-        gen.populate_palace_directly(palace_path, n_drawers=n_drawers, include_needles=False)
+        gen = AnaktoronDataGenerator(seed=42, scale=bench_scale)
+        anaktoron_path = str(tmp_path / "anaktoron")
+        gen.populate_anaktoron_directly(anaktoron_path, n_drawers=n_drawers, include_needles=False)
 
-        client = chromadb.PersistentClient(path=palace_path)
+        client = chromadb.PersistentClient(path=anaktoron_path)
         col = client.get_collection("mnemion_drawers")
 
         queries = [
@@ -111,15 +111,15 @@ class TestBulkInsertPerformance:
     def test_sequential_vs_batched(self, tmp_path):
         """The current miner uses single-document add(). How much faster is batching?"""
         n_docs = 500
-        gen = PalaceDataGenerator(seed=42)
+        gen = AnaktoronDataGenerator(seed=42)
 
         # Generate content
         contents = [gen._random_text(400, 800) for _ in range(n_docs)]
 
         # Sequential insertion (mimics add_drawer pattern)
-        palace_seq = str(tmp_path / "seq")
-        os.makedirs(palace_seq)
-        client_seq = chromadb.PersistentClient(path=palace_seq)
+        store_seq = str(tmp_path / "seq")
+        os.makedirs(store_seq)
+        client_seq = chromadb.PersistentClient(path=store_seq)
         col_seq = client_seq.get_or_create_collection("mnemion_drawers")
 
         start = time.perf_counter()
@@ -132,9 +132,9 @@ class TestBulkInsertPerformance:
         sequential_ms = (time.perf_counter() - start) * 1000
 
         # Batched insertion
-        palace_batch = str(tmp_path / "batch")
-        os.makedirs(palace_batch)
-        client_batch = chromadb.PersistentClient(path=palace_batch)
+        store_batch = str(tmp_path / "batch")
+        os.makedirs(store_batch)
+        client_batch = chromadb.PersistentClient(path=store_batch)
         col_batch = client_batch.get_or_create_collection("mnemion_drawers")
 
         batch_size = 100
@@ -169,13 +169,13 @@ class TestMaxCollectionSize:
 
     def test_incremental_growth(self, tmp_path, bench_scale):
         """Add drawers in batches, measure latency per batch."""
-        gen = PalaceDataGenerator(seed=42, scale=bench_scale)
+        gen = AnaktoronDataGenerator(seed=42, scale=bench_scale)
         cfg = gen.cfg
         target = min(cfg["drawers"], 10_000)  # cap at 10K for this test
 
-        palace_path = str(tmp_path / "palace")
-        os.makedirs(palace_path)
-        client = chromadb.PersistentClient(path=palace_path)
+        anaktoron_path = str(tmp_path / "anaktoron")
+        os.makedirs(anaktoron_path)
+        client = chromadb.PersistentClient(path=anaktoron_path)
         col = client.get_or_create_collection("mnemion_drawers")
 
         batch_size = 500
