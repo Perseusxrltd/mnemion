@@ -239,10 +239,73 @@ def cmd_repair(args):
     print(f"\n{'=' * 55}\n")
 
 
+def _count_json_objects(filepath):
+    """Fast byte scan to count top-level objects in the export.
+
+    Each drawer has exactly one top-level ``"id":`` key. Keys inside
+    JSON string values are escaped (``\\\"``), so searching for the
+    literal byte sequence ``b'"id":'`` reliably counts only top-level
+    drawer entries.
+    """
+    count = 0
+    with open(filepath, "rb") as f:
+        for chunk in iter(lambda: f.read(65536), b""):
+            count += chunk.count(b'"id":')
+    return count
+
+
+def _stream_json_array(filepath, read_size=524288):
+    """Yield objects from a top-level JSON array one at a time.
+
+    Uses ``json.JSONDecoder.raw_decode()`` with a rolling file buffer so
+    only a single object (plus a small read-ahead) is in memory at once —
+    regardless of how large the overall file is.
+    """
+    import json
+
+    decoder = json.JSONDecoder()
+    buf = ""
+
+    with open(filepath, "r", encoding="utf-8") as f:
+        # Advance to the opening bracket
+        while "[" not in buf:
+            chunk = f.read(read_size)
+            if not chunk:
+                return
+            buf += chunk
+        buf = buf[buf.index("[") + 1 :]
+
+        while True:
+            # Drop separators between elements
+            buf = buf.lstrip(" \t\r\n,")
+
+            # Refill when the buffer is running low
+            if len(buf) < read_size // 4:
+                chunk = f.read(read_size)
+                if chunk:
+                    buf += chunk
+
+            # End of array or empty file
+            if not buf or buf[0] == "]":
+                break
+
+            # Decode one object; read more if it is incomplete
+            while True:
+                try:
+                    obj, end = decoder.raw_decode(buf)
+                    yield obj
+                    buf = buf[end:]
+                    break
+                except json.JSONDecodeError:
+                    chunk = f.read(read_size)
+                    if not chunk:
+                        return  # Truncated file
+                    buf += chunk
+
+
 def cmd_restore(args):
     """Import a JSON export (archive/drawers_export.json) into the local palace."""
     import gc
-    import json
     import chromadb
     from pathlib import Path
     from .config import MempalaceConfig, DRAWER_HNSW_METADATA
@@ -264,18 +327,12 @@ def cmd_restore(args):
     print(f"  Source:     {json_file} ({file_mb:.1f} MB)", flush=True)
     print(f"  Palace:     {palace_path}", flush=True)
     print(f"  Collection: {col_name}", flush=True)
-    print(f"  Batch size: {batch_size}\n", flush=True)
+    print(f"  Batch size: {batch_size}", flush=True)
 
-    print("  Loading export into memory...", flush=True)
-    with open(json_file, "r", encoding="utf-8") as f:
-        drawers = json.load(f)
-
-    if not isinstance(drawers, list):
-        print("  Error: expected a JSON array of drawer objects.\n", flush=True)
-        sys.exit(1)
-
-    total = len(drawers)
-    print(f"  {total} drawers loaded.\n", flush=True)
+    # Fast pre-count (byte scan, no JSON parsing) so we can show %
+    print("  Counting drawers ...", end=" ", flush=True)
+    total = _count_json_objects(json_file)
+    print(f"{total}", flush=True)
 
     Path(palace_path).mkdir(parents=True, exist_ok=True)
     client = chromadb.PersistentClient(path=palace_path)
@@ -288,47 +345,53 @@ def cmd_restore(args):
 
     existing = col.count()
     if existing > 0 and not args.merge and not args.replace:
-        print(f"  Palace already has {existing} drawers.")
+        print(f"\n  Palace already has {existing} drawers.")
         print("  Use --merge to add to an existing palace, or --replace to overwrite.\n")
         sys.exit(1)
 
     if args.replace and existing > 0:
-        print(f"  Replacing {existing} existing drawers...", flush=True)
+        print(f"\n  Replacing {existing} existing drawers...", flush=True)
         client.delete_collection(col_name)
         col = client.create_collection(col_name, metadata=DRAWER_HNSW_METADATA)
 
+    print("  Streaming restore started ...\n", flush=True)
+
     filed = 0
     skipped = 0
+    batch = []
 
-    for i in range(0, total, batch_size):
-        batch = drawers[i : i + batch_size]
-        ids = [d["id"] for d in batch]
-        docs = [d["content"] for d in batch]
+    def _flush(b):
+        nonlocal filed, skipped
+        ids = [d["id"] for d in b]
+        docs = [d["content"] for d in b]
         clean_metas = [
             {
                 k: v
                 for k, v in (d.get("meta") or {}).items()
                 if isinstance(v, (str, int, float, bool))
             }
-            for d in batch
+            for d in b
         ]
         try:
             col.upsert(ids=ids, documents=docs, metadatas=clean_metas)
-            filed += len(batch)
-            pct = filed * 100 // total
-            print(f"  [{pct:3d}%] {filed}/{total} ...", flush=True)
+            filed += len(b)
+            pct = filed * 100 // total if total else 0
+            print(f"  [{pct:3d}%] {filed}/{total}", flush=True)
         except Exception as e:
-            print(f"  Error at offset {i}: {e}", flush=True)
-            skipped += len(batch)
+            print(f"  Error at {filed}: {e}", flush=True)
+            skipped += len(b)
         finally:
-            # Free the batch from the in-memory list so GC can reclaim it
-            for j in range(i, min(i + batch_size, total)):
-                drawers[j] = None
-            del batch, ids, docs, clean_metas
+            del ids, docs, clean_metas
             gc.collect()
 
-    del drawers
-    gc.collect()
+    for drawer in _stream_json_array(json_file):
+        batch.append(drawer)
+        if len(batch) >= batch_size:
+            _flush(batch)
+            batch = []
+
+    if batch:
+        _flush(batch)
 
     print(
         f"\n  Done. {filed} drawers restored" + (f", {skipped} skipped." if skipped else "."),
