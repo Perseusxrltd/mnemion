@@ -1,6 +1,6 @@
 [project]
 name = "mnemion"
-version = "3.3.4"
+version = "3.3.5"
 description = "Mnemion — persistent AI memory with hybrid retrieval, trust lifecycle, and behavioral protocol. No API key required."
 readme = "README.md"
 requires-python = ">=3.9"
