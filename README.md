@@ -139,7 +139,7 @@ The ChromaDB palace is ~860MB — too large for git. The sync system:
 2. Commits and pushes the JSON to your private memory repo
 3. Runs automatically via Task Scheduler (Windows) or cron (macOS/Linux)
 
-On a new machine: `git clone <repo>` → `mnemion mine archive/drawers_export.json` → full palace restored.
+On a new machine: `git clone <repo>` → `mnemion restore archive/drawers_export.json` → full palace restored.
 
 ---
 
@@ -326,9 +326,11 @@ Register-ScheduledTask -TaskName "MnemionMemorySync" -Action $action -Trigger $t
 ```bash
 git clone https://github.com/YOUR_USERNAME/personal-ai-memories ~/.mnemion
 cd ~/.mnemion
-py -m mnemion mine archive/drawers_export.json
+py -m mnemion restore archive/drawers_export.json
 py ~/.mnemion/backfill_trust.py
 ```
+
+> **Large archives (>10k drawers):** restore computes embeddings for every drawer. If the process is killed (OOM), reduce the batch size: `mnemion restore archive/drawers_export.json --batch-size 20`
 
 See [sync/README.md](sync/README.md) for full details including macOS/Linux cron setup.
 
@@ -392,6 +394,19 @@ Mnemion began as a fork of [milla-jovovich/mempalace](https://github.com/milla-j
 ---
 
 ## Changelog
+
+### v3.3.2 — Restore: OOM fix, progress output, --batch-size
+
+- **Restore batch size reduced from 500 → 50** (default). ChromaDB embeds every document on write; large batches on big archives (33k+ drawers, 22k chars average) caused SIGKILL from OOM on memory-constrained hosts.
+- **`--batch-size` flag**: operators can tune further — `mnemion restore archive/drawers_export.json --batch-size 20` for very tight environments.
+- **Memory freed per batch**: processed entries are cleared from the in-memory list and `gc.collect()` is called after every ChromaDB write, so peak memory is bounded to one batch at a time instead of the full export.
+- **All output flushed**: `flush=True` on every `print()` so progress is visible before any OOM event.
+- **Progress shows `%` + file size**: agents can now see `[35%] 11700/33433 ...` and know it's still running.
+
+### v3.3.0 — `restore` command + collection name resolution
+
+- **`mnemion restore <file.json>`** — new command for importing a JSON export into a fresh palace. The previous `mnemion mine archive/drawers_export.json` path in the README was broken (`mine` expects a directory). Supports `--merge` and `--replace` flags.
+- **Collection name resolved from config in all commands**: `searcher.py`, `layers.py`, `miner.py`, `convo_miner.py`, and `cli.py` (repair/compress) previously hardcoded `"mnemion_drawers"`, ignoring `collection_name` in `config.json`. Fixed across all read/write paths.
 
 ### v3.2.7 — Behavioral Protocol Bootstrap + MCP Prompts
 
