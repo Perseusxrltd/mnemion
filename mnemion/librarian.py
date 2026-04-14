@@ -138,7 +138,7 @@ def _get_drawer_text(collection, drawer_id: str) -> Optional[str]:
         if result["ids"]:
             return result["documents"][0]
     except Exception as e:
-                logger.error(f"Suppressed error in execution: {e}")
+        logger.error(f"Suppressed error in execution: {e}")
     return None
 
 
@@ -311,7 +311,7 @@ def run_librarian(
                     collection.update(ids=[drawer_id], metadatas=[c_metadata])
                 except Exception as e:
                     logger.error(f"Failed to sync re-classification to Chroma: {e}")
-                
+
                 stats["reclassified"] += 1
                 logger.info(f"  reclassified {drawer_id[:16]}: general → {new_room}")
 
@@ -335,12 +335,11 @@ def run_librarian(
             if not dry_run:
                 try:
                     from .entity_registry import EntityRegistry
+
                     registry = EntityRegistry.load()
                     new_entities = registry.learn_from_text(text)
                     if new_entities:
-                        logger.info(
-                            f"  learned {len(new_entities)} entities from {drawer_id[:16]}"
-                        )
+                        logger.info(f"  learned {len(new_entities)} entities from {drawer_id[:16]}")
                 except Exception as e:
                     logger.debug(f"Entity learning skipped: {e}")
 

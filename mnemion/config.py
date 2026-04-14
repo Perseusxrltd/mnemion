@@ -232,5 +232,6 @@ class MnemionConfig:
             json.dump(people_map, f, indent=2)
         return self._people_map_file
 
+
 # Backward compatibility alias — old code/plugins may import MempalaceConfig
 MempalaceConfig = MnemionConfig

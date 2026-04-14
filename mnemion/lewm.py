@@ -1,6 +1,7 @@
 try:
     import torch
     import torch.nn.functional as F
+
     TORCH_AVAILABLE = True
 except ImportError:
     TORCH_AVAILABLE = False
@@ -62,7 +63,9 @@ class _SIGReg(torch.nn.Module if TORCH_AVAILABLE else object):
 SIGReg = _SIGReg
 
 
-def groom_embeddings(embeddings, iterations=10, lr=0.01, sigreg_weight=0.1, dim=384, model_path=None):
+def groom_embeddings(
+    embeddings, iterations=10, lr=0.01, sigreg_weight=0.1, dim=384, model_path=None
+):
     """
     Trains a lightweight Latent Adapter dynamically in the background to separate
     dense representations across the manifold without destroying baseline semantics.

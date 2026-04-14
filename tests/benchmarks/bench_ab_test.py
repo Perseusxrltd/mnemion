@@ -16,7 +16,6 @@ Methodology:
 Run:  python tests/benchmarks/bench_ab_test.py
 """
 
-import hashlib
 import os
 import shutil
 import sys
@@ -51,9 +50,7 @@ def run_pipeline_a(anaktoron_path, queries):
     results = {"recall@5": [], "recall@10": [], "mrr": [], "latency_ms": []}
     for q in queries:
         start = time.perf_counter()
-        result = search_memories(
-            q["query"], anaktoron_path, n_results=10, collection_name=col_name
-        )
+        result = search_memories(q["query"], anaktoron_path, n_results=10, collection_name=col_name)
         elapsed = (time.perf_counter() - start) * 1000
 
         texts = [h["text"] for h in result.get("results", [])]
@@ -69,6 +66,7 @@ def run_pipeline_b(anaktoron_path, queries):
     """Pipeline B: SIGReg-groomed embeddings, then raw ChromaDB search."""
     try:
         from mnemion.lewm import groom_embeddings, TORCH_AVAILABLE
+
         if not TORCH_AVAILABLE:
             return None
     except ImportError:
@@ -89,7 +87,9 @@ def run_pipeline_b(anaktoron_path, queries):
     # Groom with production settings
     groomed = groom_embeddings(
         [e if isinstance(e, list) else e.tolist() for e in embeddings],
-        iterations=10, lr=0.01, sigreg_weight=0.1
+        iterations=10,
+        lr=0.01,
+        sigreg_weight=0.1,
     )
 
     # Create a parallel groomed collection
@@ -118,8 +118,7 @@ def run_pipeline_b(anaktoron_path, queries):
     for q in queries:
         start = time.perf_counter()
         result = search_memories(
-            q["query"], anaktoron_path, n_results=10,
-            collection_name="mnemion_drawers_groomed"
+            q["query"], anaktoron_path, n_results=10, collection_name="mnemion_drawers_groomed"
         )
         elapsed = (time.perf_counter() - start) * 1000
 
@@ -143,8 +142,12 @@ def run_pipeline_c(anaktoron_path, queries):
         searcher.collection = searcher.chroma_client.get_collection("mnemion_drawers")
     except Exception as e:
         print(f"       Could not load collection: {e}")
-        return {"recall@5": [0]*len(queries), "recall@10": [0]*len(queries),
-                "mrr": [0]*len(queries), "latency_ms": [0]*len(queries)}
+        return {
+            "recall@5": [0] * len(queries),
+            "recall@10": [0] * len(queries),
+            "mrr": [0] * len(queries),
+            "latency_ms": [0] * len(queries),
+        }
 
     results = {"recall@5": [], "recall@10": [], "mrr": [], "latency_ms": []}
     for q in queries:
@@ -217,7 +220,7 @@ def main():
         print("=" * 72)
         print()
         print(f"  {'Pipeline':30s}  {'R@5':>6s}  {'R@10':>6s}  {'MRR':>6s}  {'Latency':>10s}")
-        print(f"  {'-'*30}  {'-'*6}  {'-'*6}  {'-'*6}  {'-'*10}")
+        print(f"  {'-' * 30}  {'-' * 6}  {'-' * 6}  {'-' * 6}  {'-' * 10}")
         print_results("A) Raw ChromaDB", results_a)
         print_results("B) SIGReg Groomed", results_b)
         print_results("C) Hybrid (V+FTS+Trust)", results_c)
@@ -231,22 +234,24 @@ def main():
             if abs(delta_r5) < 0.001:
                 print("    -> Grooming had NO measurable impact on recall.")
             elif delta_r5 > 0:
-                print(f"    -> Grooming IMPROVED recall by {delta_r5*100:.1f}%")
+                print(f"    -> Grooming IMPROVED recall by {delta_r5 * 100:.1f}%")
             else:
-                print(f"    -> Grooming HURT recall by {abs(delta_r5)*100:.1f}%")
+                print(f"    -> Grooming HURT recall by {abs(delta_r5) * 100:.1f}%")
 
         delta_hybrid = _avg(results_c["recall@5"]) - _avg(results_a["recall@5"])
         print(f"    Hybrid vs raw:           R@5 delta = {delta_hybrid:+.3f}")
         if abs(delta_hybrid) < 0.001:
             print("    -> Hybrid search had NO measurable impact on recall.")
         elif delta_hybrid > 0:
-            print(f"    -> Hybrid search IMPROVED recall by {delta_hybrid*100:.1f}%")
+            print(f"    -> Hybrid search IMPROVED recall by {delta_hybrid * 100:.1f}%")
         else:
-            print(f"    -> Hybrid search HURT recall by {abs(delta_hybrid)*100:.1f}%")
+            print(f"    -> Hybrid search HURT recall by {abs(delta_hybrid) * 100:.1f}%")
 
         lat_a = _avg(results_a["latency_ms"])
         lat_c = _avg(results_c["latency_ms"])
-        print(f"    Latency cost of hybrid:  {lat_c:.1f}ms vs {lat_a:.1f}ms ({lat_c/max(lat_a,0.1):.1f}x)")
+        print(
+            f"    Latency cost of hybrid:  {lat_c:.1f}ms vs {lat_a:.1f}ms ({lat_c / max(lat_a, 0.1):.1f}x)"
+        )
 
         print()
         print("=" * 72)

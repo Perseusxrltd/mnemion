@@ -7,12 +7,14 @@ import numpy as np
 from mnemion.lewm import groom_embeddings
 from mnemion.predictor import predict_next_context
 
+
 def generate_synthetic_cluster(N=20, D=384, seed=42):
     """Generates a collapsed cluster typical of similar technical logs."""
     torch.manual_seed(seed)
     base = torch.ones(1, D) * 0.1
     noise = torch.randn(N, D) * 0.01
-    return (base + noise)
+    return base + noise
+
 
 def calculate_stats(z):
     """Calculate health metrics for a latent space."""
@@ -31,10 +33,11 @@ def calculate_stats(z):
     kurts = []
     for i in range(100):
         p = proj[:, i]
-        kurt = ((p - p.mean())**4).mean() / (p.std()**4 + 1e-6) - 3.0
+        kurt = ((p - p.mean()) ** 4).mean() / (p.std() ** 4 + 1e-6) - 3.0
         kurts.append(kurt.abs().item())
 
     return avg_sim, std_sim, np.mean(kurts)
+
 
 def run_benchmark():
     print("=======================================================")
@@ -75,7 +78,7 @@ def run_benchmark():
     # --- PHASE 2: INGESTION COST ---
 
     print("\n--- 2. PERFORMANCE OVERHEAD ---")
-    print(f"  SIGReg Grooming Latency: {groom_time/N:.2f}ms per drawer")
+    print(f"  SIGReg Grooming Latency: {groom_time / N:.2f}ms per drawer")
     print(f"  Total cluster time:      {groom_time:.2f}ms")
     print("  Status: NEGLEGIBLE (Parallelizable in background)")
 
@@ -97,6 +100,7 @@ def run_benchmark():
     print("\n=======================================================")
     print("   BENCHMARK COMPLETE: MNEMION v3.4 IS THE WINNER      ")
     print("=======================================================")
+
 
 if __name__ == "__main__":
     run_benchmark()

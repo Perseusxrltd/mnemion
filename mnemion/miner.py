@@ -20,10 +20,9 @@ import logging
 import sqlite3
 from .drawer_trust import DrawerTrust
 from .knowledge_graph import KnowledgeGraph
+from .config import DRAWER_HNSW_METADATA
 
 logger = logging.getLogger("mnemion_miner")
-
-from .config import DRAWER_HNSW_METADATA
 
 READABLE_EXTENSIONS = {
     ".txt",
@@ -476,7 +475,8 @@ def add_drawer(
                 # 1. Generate initial embedding
                 try:
                     from sentence_transformers import SentenceTransformer
-                    model = SentenceTransformer('all-MiniLM-L6-v2')
+
+                    model = SentenceTransformer("all-MiniLM-L6-v2")
                     emb = model.encode([content])[0].tolist()
                 except Exception as e:
                     logger.error(f"Caught exception: {e}")
@@ -496,7 +496,7 @@ def add_drawer(
                             all_embs,
                             iterations=groom_iterations,
                             sigreg_weight=sigreg_weight,
-                            model_path=str(adapter_path)
+                            model_path=str(adapter_path),
                         )
                         final_embedding = groomed_cluster[-1]
                     else:
@@ -521,7 +521,7 @@ def add_drawer(
 
         # 2. Add to SQLite FTS5 (Lexical Mirror)
         kg_path = str(Path(cfg.anaktoron_path).parent / "knowledge_graph.sqlite3")
-        KnowledgeGraph(kg_path) # Ensure schema exists
+        KnowledgeGraph(kg_path)  # Ensure schema exists
         conn = sqlite3.connect(kg_path)
         try:
             conn.execute(

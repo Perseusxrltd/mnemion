@@ -280,17 +280,15 @@ def tool_predict_next():
 
         prefetches = []
         for d, m in zip(docs, meta):
-            prefetches.append({
-                "content": d,
-                "room": m.get("room", "general"),
-                "wing": m.get("wing", "general")
-            })
+            prefetches.append(
+                {"content": d, "room": m.get("room", "general"), "wing": m.get("wing", "general")}
+            )
 
         return {
             "predicted_latent_state": "computed",
             "recent_history_count": len(embeddings),
             "note": "Live JEPA RNN model prediction active - Context Prefetched",
-            "proactive_context": prefetches
+            "proactive_context": prefetches,
         }
     except Exception as e:
         logger.error(f"JEPA prefetch failure: {e}")
@@ -383,7 +381,7 @@ def tool_add_drawer(
         if existing and existing["ids"]:
             return {"success": True, "reason": "already_exists", "drawer_id": drawer_id}
     except Exception as e:
-            logger.error(f"Suppressed error in execution: {e}")
+        logger.error(f"Suppressed error in execution: {e}")
 
     try:
         # 1. Add to ChromaDB (Semantic) using upsert for idempotency
@@ -403,7 +401,7 @@ def tool_add_drawer(
         )
 
         # 2. Add to SQLite FTS5 (Lexical Mirror)
-        KnowledgeGraph(db_path=_hybrid.kg_path) # Ensure schema exists
+        KnowledgeGraph(db_path=_hybrid.kg_path)  # Ensure schema exists
         conn = sqlite3.connect(_hybrid.kg_path)
         conn.execute(
             "INSERT OR REPLACE INTO drawers_fts (drawer_id, content, wing, room) VALUES (?, ?, ?, ?)",
@@ -616,7 +614,8 @@ def tool_diary_write(agent_name: str, entry: str, topic: str = "general"):
 
         # 2. Add to SQLite FTS5 (Lexical Mirror)
         import sqlite3
-        KnowledgeGraph(db_path=_hybrid.kg_path) # Ensure schema exists
+
+        KnowledgeGraph(db_path=_hybrid.kg_path)  # Ensure schema exists
         conn = sqlite3.connect(_hybrid.kg_path)
         try:
             conn.execute(

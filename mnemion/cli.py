@@ -73,7 +73,9 @@ def cmd_init(args):
 
 
 def cmd_mine(args):
-    anaktoron_path = os.path.expanduser(args.palace) if args.palace else MnemionConfig().anaktoron_path
+    anaktoron_path = (
+        os.path.expanduser(args.palace) if args.palace else MnemionConfig().anaktoron_path
+    )
     include_ignored = []
     for raw in args.include_ignored or []:
         include_ignored.extend(part.strip() for part in raw.split(",") if part.strip())
@@ -109,8 +111,10 @@ def cmd_search(args):
     from .hybrid_searcher import HybridSearcher
     from .config import MnemionConfig
 
-    anaktoron_path = os.path.expanduser(args.palace) if args.palace else MnemionConfig().anaktoron_path
-    
+    anaktoron_path = (
+        os.path.expanduser(args.palace) if args.palace else MnemionConfig().anaktoron_path
+    )
+
     try:
         hs = HybridSearcher(palace_path=anaktoron_path)
         hits = hs.search(
@@ -118,23 +122,23 @@ def cmd_search(args):
             wing=args.wing,
             room=args.room,
             n_results=args.results,
-            min_similarity=0.0
+            min_similarity=0.0,
         )
-        
+
         if not hits:
             print("No results found.")
             return
 
-        print(f"\nFound {len(hits)} results for '{args.query}'\n" + "="*50)
+        print(f"\nFound {len(hits)} results for '{args.query}'\n" + "=" * 50)
         for i, hit in enumerate(hits, 1):
-            w = hit.get('wing', 'unknown')
-            r = hit.get('room', 'unknown')
-            t = hit.get('type', 'vector')
+            w = hit.get("wing", "unknown")
+            r = hit.get("room", "unknown")
+            t = hit.get("type", "vector")
             print(f"\n[{i}] {w}/{r}  (source: {t})")
             print(f"ID: {hit['id']}")
             print("-" * 50)
             print(f"{hit.get('text', '')}\n")
-            
+
     except Exception as e:
         print(f"Search failed: {e}")
         sys.exit(1)
@@ -144,7 +148,9 @@ def cmd_wakeup(args):
     """Show L0 (identity) + L1 (essential story) — the wake-up context."""
     from .layers import MemoryStack
 
-    anaktoron_path = os.path.expanduser(args.palace) if args.palace else MnemionConfig().anaktoron_path
+    anaktoron_path = (
+        os.path.expanduser(args.palace) if args.palace else MnemionConfig().anaktoron_path
+    )
     stack = MemoryStack(palace_path=anaktoron_path)
 
     text = stack.wake_up(wing=args.wing)
@@ -180,7 +186,9 @@ def cmd_split(args):
 def cmd_status(args):
     from .miner import status
 
-    anaktoron_path = os.path.expanduser(args.palace) if args.palace else MnemionConfig().anaktoron_path
+    anaktoron_path = (
+        os.path.expanduser(args.palace) if args.palace else MnemionConfig().anaktoron_path
+    )
     status(palace_path=anaktoron_path)
 
 

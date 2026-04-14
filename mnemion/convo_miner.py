@@ -381,10 +381,10 @@ def mine_convos(
                         }
                     ],
                 )
-                
+
                 # 2. Add to SQLite FTS5 (Lexical Mirror)
                 kg_path = str(Path(palace_path).parent / "knowledge_graph.sqlite3")
-                KnowledgeGraph(kg_path) # Ensure schema exists
+                KnowledgeGraph(kg_path)  # Ensure schema exists
                 conn = sqlite3.connect(kg_path)
                 try:
                     conn.execute(

@@ -38,9 +38,7 @@ def _get_jepa_predictor():
         jepa_path = Path(os.path.expanduser("~/.mnemion/jepa_predictor.pt"))
         if jepa_path.exists():
             try:
-                _JEPA_MODEL_CACHE.load_state_dict(
-                    torch.load(jepa_path, map_location=device)
-                )
+                _JEPA_MODEL_CACHE.load_state_dict(torch.load(jepa_path, map_location=device))
             except Exception:
                 pass
         _JEPA_WEIGHTS_LOADED = True
@@ -59,10 +57,7 @@ def record_activity(drawer_id, embedding=None):
             except Exception:
                 pass
 
-        entry = {
-            "id": drawer_id,
-            "timestamp": datetime.now().isoformat()
-        }
+        entry = {"id": drawer_id, "timestamp": datetime.now().isoformat()}
         if embedding is not None:
             entry["embedding"] = embedding
 

@@ -4,8 +4,10 @@ import torch.nn.functional as F
 import numpy as np
 
 from mnemion.config import MnemionConfig
+
 PALACE_PATH = MnemionConfig().anaktoron_path
 COLLECTION_NAME = "mnemion_drawers"
+
 
 def run_health_check(wing_name="wing_stress"):
     print(f"--- Mnemion Latent Health Check [{wing_name}] ---")
@@ -18,25 +20,24 @@ def run_health_check(wing_name="wing_stress"):
         return
 
     # 1. Fetch all embeddings for the wing
-    results = col.get(
-        where={"wing": wing_name},
-        include=["embeddings", "metadatas", "documents"]
-    )
+    results = col.get(where={"wing": wing_name}, include=["embeddings", "metadatas", "documents"])
 
     embeddings = results.get("embeddings")
     if embeddings is None or len(embeddings) < 2:
-        print(f"Insufficient data in wing '{wing_name}' (count: {len(embeddings) if embeddings is not None else 0})")
+        print(
+            f"Insufficient data in wing '{wing_name}' (count: {len(embeddings) if embeddings is not None else 0})"
+        )
         return
 
     print(f"Drawer IDs: {results.get('ids')}")
-    z = torch.tensor(embeddings, dtype=torch.float32) # (N, D)
+    z = torch.tensor(embeddings, dtype=torch.float32)  # (N, D)
     N, D = z.shape
     print(f"Found {N} memories in '{wing_name}' (Embedding Dim: {D})")
 
     # 2. Calculate Cosine Similarity Distribution
     # Normalize for cosine similarity
     z_norm = F.normalize(z, p=2, dim=1)
-    sim_matrix = torch.mm(z_norm, z_norm.t()) # (N, N)
+    sim_matrix = torch.mm(z_norm, z_norm.t())  # (N, N)
 
     # Exclude diagonal
     mask = ~torch.eye(N, dtype=torch.bool)
@@ -98,12 +99,13 @@ def run_health_check(wing_name="wing_stress"):
         # Generate what the raw embeddings would look like (Ungroomed)
         raw_embs = []
         import hashlib
+
         contents = [
             "The concept of A is closely related to the logic of B.",
             "The concept of A is mostly related to the logic of B.",
             "The concept of A is strictly related to the logic of B.",
             "The concept of A is highly related to the logic of B.",
-            "The concept of A is deeply related to the logic of B."
+            "The concept of A is deeply related to the logic of B.",
         ]
         for content in contents:
             torch.manual_seed(int(hashlib.md5(content.encode()).hexdigest(), 16) % 10**8)
@@ -126,6 +128,7 @@ def run_health_check(wing_name="wing_stress"):
             print(f"  RESULT: Latent space spread improved by {improvement:.4f}%")
         else:
             print("  RESULT: No improvement detected in spreading logic.")
+
 
 if __name__ == "__main__":
     run_health_check()

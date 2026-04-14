@@ -749,7 +749,9 @@ def run_benchmark(
                 name_words = {n.lower() for n in names}
                 all_kws = _kw(question) if mode in ("hybrid", "rooms", "anaktoron") else []
                 predicate_kws = [w for w in all_kws if w not in name_words]
-                quoted = _quoted_phrases(question) if mode in ("hybrid", "rooms", "anaktoron") else []
+                quoted = (
+                    _quoted_phrases(question) if mode in ("hybrid", "rooms", "anaktoron") else []
+                )
 
                 if mode == "anaktoron":
                     # ── True Anaktoron navigation ────────────────────────────────

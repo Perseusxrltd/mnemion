@@ -71,8 +71,12 @@ class TestFilteredVsUnfilteredRecall:
         boost_room = recall_room - recall_none
 
         record_metric("anaktoron_boost", f"recall_unfiltered_at_{n_drawers}", round(recall_none, 3))
-        record_metric("anaktoron_boost", f"recall_wing_filtered_at_{n_drawers}", round(recall_wing, 3))
-        record_metric("anaktoron_boost", f"recall_room_filtered_at_{n_drawers}", round(recall_room, 3))
+        record_metric(
+            "anaktoron_boost", f"recall_wing_filtered_at_{n_drawers}", round(recall_wing, 3)
+        )
+        record_metric(
+            "anaktoron_boost", f"recall_room_filtered_at_{n_drawers}", round(recall_room, 3)
+        )
         record_metric("anaktoron_boost", f"wing_boost_at_{n_drawers}", round(boost_wing, 3))
         record_metric("anaktoron_boost", f"room_boost_at_{n_drawers}", round(boost_room, 3))
 
@@ -154,7 +158,9 @@ class TestBoostAtIncreasingScale:
             filtered_hits = 0
 
             for needle in needle_info[:n_queries]:
-                result = search_memories(needle["query"], anaktoron_path=anaktoron_path, n_results=5)
+                result = search_memories(
+                    needle["query"], anaktoron_path=anaktoron_path, n_results=5
+                )
                 if any("NEEDLE_" in h["text"] for h in result.get("results", [])[:5]):
                     unfiltered_hits += 1
 
