@@ -2,7 +2,7 @@
 title: "Mnemion"
 category: "Tool"
 status: "active"
-version: "3.4.7"
+version: "3.4.8"
 summary: "Frontier AI memory. Hybrid retrieval (MRR 0.54→0.88), Trust Lifecycle, SIGReg Latent Grooming (+40% Recall@5), and JEPA Predictive Context."
 description: "Mnemion is a production-grade AI memory system by PerseusXR. Named after Mnemosyne — Greek goddess of memory, mother of the Muses. Featuring Hybrid lexical-semantic retrieval, a human-like Trust Lifecycle, and SIGReg (Sketched Isotropic Gaussian Regularization) latent grooming that prevents embedding collapse and delivers a verified +40% Recall@5 improvement over raw vector search. An LSTM-based JEPA-style predictor enables session-aware proactive retrieval. No API key required."
 tags: ["AI", "Memory", "RAG", "Hybrid-Search", "MCP", "LeWorldModel", "JEPA", "SIGReg", "ChromaDB", "SQLite"]

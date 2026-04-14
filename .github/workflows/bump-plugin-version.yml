@@ -40,12 +40,16 @@ jobs:
         run: |
           sed -i "s/^version = \".*\"/version = \"${{ steps.version.outputs.version }}\"/" pyproject.toml
 
+      - name: Sync molthub project.md
+        run: |
+          sed -i "s/^version: \".*\"/version: \"${{ steps.version.outputs.version }}\"/" .molthub/project.md
+
       - name: Commit and push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add mnemion/version.py .claude-plugin/plugin.json .claude-plugin/marketplace.json .codex-plugin/plugin.json pyproject.toml
+          git add mnemion/version.py .claude-plugin/plugin.json .claude-plugin/marketplace.json .codex-plugin/plugin.json pyproject.toml .molthub/project.md
           if ! git diff --staged --quiet; then
-            git commit -m "chore: bump version to ${{ steps.version.outputs.version }}"
+            git commit -m "chore: bump version to ${{ steps.version.outputs.version }} [skip ci]"
             git push
           fi
