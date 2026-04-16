@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Settings, Server, Database, Brain, CheckCircle, AlertCircle, Save, ExternalLink } from 'lucide-react'
+import { Settings, Server, Database, Brain, CheckCircle, AlertCircle, Save, ExternalLink, Download, FolderOpen } from 'lucide-react'
 import { api } from '../api/client'
 
 function Section({ title, icon: Icon, children }: { title: string; icon: any; children: React.ReactNode }) {
@@ -167,6 +167,31 @@ export default function SettingsView() {
               <ExternalLink size={11} /> OpenAPI docs
             </a>
           </div>
+        </div>
+      </Section>
+
+      <Section title="Obsidian Vault Export" icon={FolderOpen}>
+        <p className="text-xs text-muted mb-4">
+          Export your entire Anaktoron as Obsidian-compatible Markdown files with YAML frontmatter.
+          Open the resulting folder as a vault in Obsidian to browse your memories visually.
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <a
+            href={api.exportVaultUrl()}
+            download
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            style={{ background: 'var(--accent)', color: 'white' }}
+          >
+            <Download size={14} /> Export full vault
+          </a>
+          <div className="text-xs text-muted self-center">
+            Downloads as <code className="bg-raised px-1 rounded">mnemion_vault.zip</code>
+          </div>
+        </div>
+        <div className="mt-3 text-xs text-faint">
+          Each drawer becomes a <code className="bg-raised px-1 rounded">.md</code> file with YAML frontmatter
+          (wing, room, agent, trust_status, confidence).
+          Wikilinks <code className="bg-raised px-1 rounded">[[entity]]</code> from Knowledge Graph entries are preserved.
         </div>
       </Section>
 

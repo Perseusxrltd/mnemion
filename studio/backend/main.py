@@ -480,6 +480,76 @@ def _trust_history(drawer_id: str):
         return []
 
 
+# ── Vault export (Obsidian-compatible) ───────────────────────────────────────
+
+@app.get("/api/export/vault")
+def export_vault(wing: Optional[str] = Query(None)):
+    """Export drawers as Obsidian-compatible Markdown files in a ZIP archive."""
+    import io as _io
+    import zipfile
+    import re
+    from fastapi.responses import StreamingResponse
+
+    buf = _io.BytesIO()
+    total = 0
+
+    try:
+        PAGE = 500
+        offset = 0
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            while True:
+                try:
+                    res = _col.get(
+                        limit=PAGE,
+                        offset=offset,
+                        where={"wing": wing} if wing else None,
+                        include=["metadatas", "documents"],
+                    )
+                except Exception:
+                    break
+                if not res or not res.get("ids"):
+                    break
+                ids = res["ids"]
+                metas = res.get("metadatas") or [{}] * len(ids)
+                docs = res.get("documents") or [""] * len(ids)
+                for did, meta, doc in zip(ids, metas, docs):
+                    meta = meta or {}
+                    w = meta.get("wing", "unknown")
+                    r = meta.get("room", "misc")
+                    # Build YAML frontmatter
+                    fm_lines = ["---"]
+                    fm_lines.append(f'id: "{did}"')
+                    fm_lines.append(f'wing: "{w}"')
+                    fm_lines.append(f'room: "{r}"')
+                    for k in ("agent", "session_id", "trust_status", "created_at"):
+                        if meta.get(k):
+                            fm_lines.append(f'{k}: "{meta[k]}"')
+                    if meta.get("confidence") is not None:
+                        fm_lines.append(f'confidence: {meta["confidence"]}')
+                    fm_lines.append("---")
+                    fm_lines.append("")
+                    fm_lines.append(doc or "")
+                    content = "\n".join(fm_lines)
+                    # Safe filename: wing/room/short-id.md
+                    safe_id = re.sub(r'[^\w\-]', '_', did[:32])
+                    path = f"{w}/{r}/{safe_id}.md"
+                    zf.writestr(path, content)
+                    total += 1
+                if len(ids) < PAGE:
+                    break
+                offset += PAGE
+
+        buf.seek(0)
+        fname = f"mnemion_vault{'_' + wing if wing else ''}.zip"
+        return StreamingResponse(
+            buf,
+            media_type="application/zip",
+            headers={"Content-Disposition": f'attachment; filename="{fname}"'},
+        )
+    except Exception as exc:
+        raise HTTPException(500, str(exc))
+
+
 # ── Entry point ───────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":

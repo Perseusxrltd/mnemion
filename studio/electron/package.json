@@ -1,0 +1,70 @@
+{
+  "name": "mnemion-studio",
+  "version": "1.0.0",
+  "description": "Mnemion Studio — Obsidian-style memory palace desktop app",
+  "main": "dist/main.js",
+  "type": "module",
+  "scripts": {
+    "dev": "electron .",
+    "build": "tsc -p tsconfig.json",
+    "pack": "npm run build && electron-builder --dir",
+    "dist": "npm run build && electron-builder"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.0",
+    "typescript": "^5.6.0",
+    "@types/node": "^22.0.0"
+  },
+  "build": {
+    "appId": "com.perseusxr.mnemion-studio",
+    "productName": "Mnemion Studio",
+    "copyright": "Copyright © 2025 Quentin Jorquera",
+    "directories": {
+      "output": "../../dist-electron"
+    },
+    "files": [
+      "dist/**",
+      "!dist/*.map"
+    ],
+    "extraResources": [
+      {
+        "from": "../../dist-backend/backend",
+        "to": "backend",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "../frontend/dist",
+        "to": "frontend/dist",
+        "filter": ["**/*"]
+      }
+    ],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] }
+      ],
+      "icon": "../frontend/public/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "../frontend/public/icon.ico",
+      "uninstallerIcon": "../frontend/public/icon.ico",
+      "installerHeaderIcon": "../frontend/public/icon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Mnemion Studio"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "../frontend/public/icon.icns",
+      "category": "public.app-category.productivity"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "../frontend/public/icon.png",
+      "category": "Office"
+    }
+  }
+}

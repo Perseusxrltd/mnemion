@@ -1,9 +1,11 @@
 import type { AgentsResponse, DrawerDetail, DrawerSummary, KGGraph, Status, Taxonomy, TrustStats } from '../types'
 
-const BASE = '/api'
-
+// In Electron (file:// origin) the backend runs on localhost:7891
+const ELECTRON_ORIGIN = 'http://127.0.0.1:7891'
+const isElectron = typeof window !== 'undefined' && window.location.protocol === 'file:'
 async function get<T>(path: string, params?: Record<string, string | number>): Promise<T> {
-  const url = new URL(BASE + path, window.location.origin)
+  const base = isElectron ? `${ELECTRON_ORIGIN}/api${path}` : `/api${path}`
+  const url = new URL(base, isElectron ? undefined : window.location.origin)
   if (params) {
     for (const [k, v] of Object.entries(params)) {
       if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, String(v))
@@ -14,13 +16,17 @@ async function get<T>(path: string, params?: Record<string, string | number>): P
   return res.json()
 }
 
+function apiUrl(path: string): string {
+  return isElectron ? `${ELECTRON_ORIGIN}/api${path}` : `/api${path}`
+}
+
 async function del(path: string): Promise<void> {
-  const res = await fetch(BASE + path, { method: 'DELETE' })
+  const res = await fetch(apiUrl(path), { method: 'DELETE' })
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
 }
 
 async function post<T>(path: string, body?: unknown): Promise<T> {
-  const res = await fetch(BASE + path, {
+  const res = await fetch(apiUrl(path), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: body ? JSON.stringify(body) : undefined,
@@ -30,7 +36,7 @@ async function post<T>(path: string, body?: unknown): Promise<T> {
 }
 
 async function put<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(BASE + path, {
+  const res = await fetch(apiUrl(path), {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -92,4 +98,15 @@ export const api = {
 
   updateLLM: (body: { backend: string; url?: string; model?: string; api_key?: string }) =>
     put('/config/llm', body),
+
+  // Alias for RightSidebar / drawer detail
+  getDrawer: (id: string): Promise<DrawerDetail> => get(`/drawer/${encodeURIComponent(id)}`),
+
+  // Vault export — download as zip
+  exportVaultUrl: (wing?: string) => {
+    const origin = isElectron ? ELECTRON_ORIGIN : window.location.origin
+    const url = new URL('/api/export/vault', origin)
+    if (wing) url.searchParams.set('wing', wing)
+    return url.toString()
+  },
 }

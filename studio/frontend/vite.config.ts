@@ -10,5 +10,9 @@ export default defineConfig({
       '/ws': { target: 'ws://127.0.0.1:7891', ws: true },
     },
   },
-  build: { outDir: 'dist' },
+  build: {
+    outDir: 'dist',
+    // Relative base so Electron can load from file://
+    base: process.env.ELECTRON_BUILD ? './' : '/',
+  },
 })
