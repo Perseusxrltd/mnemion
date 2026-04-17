@@ -6,6 +6,7 @@ import Browser from './views/Browser'
 import SearchView from './views/SearchView'
 import DrawerDetail from './views/DrawerDetail'
 import AgentsView from './views/AgentsView'
+import ConnectorsView from './views/ConnectorsView'
 import SettingsView from './views/SettingsView'
 
 // Electron loads the app from file:// — HashRouter required for routing to work.
@@ -26,6 +27,7 @@ export default function App() {
           <Route path="/drawer/*" element={<DrawerDetail />} />
           <Route path="/search" element={<SearchView />} />
           <Route path="/agents" element={<AgentsView />} />
+          <Route path="/connect" element={<ConnectorsView />} />
           <Route path="/settings" element={<SettingsView />} />
         </Route>
       </Routes>

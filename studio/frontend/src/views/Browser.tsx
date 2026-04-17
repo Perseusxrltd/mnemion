@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ChevronRight, FileText, Clock, User, ArrowRight } from 'lucide-react'
-import { ChevronLeft, ChevronRight as CR } from 'lucide-react'
+import { ChevronLeft, ChevronRight, FileText, Clock, User, ArrowRight } from 'lucide-react'
 import { api } from '../api/client'
 import { wingColor, type DrawerSummary } from '../types'
 import TrustBadge from '../components/TrustBadge'
@@ -174,7 +173,7 @@ export default function Browser() {
     enabled: !!wing, // only fetch when a wing is selected
   })
 
-  const drawers: DrawerSummary[] = (data as any)?.drawers ?? []
+  const drawers: DrawerSummary[] = data?.drawers ?? []
   const hasMore = drawers.length === PAGE
   const color = wing ? wingColor(wing) : '#7f6df2'
 
@@ -291,7 +290,7 @@ export default function Browser() {
             onMouseEnter={e => !e.currentTarget.disabled && (e.currentTarget.style.color = 'var(--text-normal)')}
             onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
           >
-            Next <CR size={12} />
+            Next <ChevronRight size={12} />
           </button>
         </div>
       )}

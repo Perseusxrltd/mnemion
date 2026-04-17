@@ -16,7 +16,24 @@ import hashlib
 
 # ── Config ────────────────────────────────────────────────────────────────────
 SAVE_INTERVAL = 3  # exchanges between auto-saves (was 15)
-MNEMION_SRC = os.path.expanduser("~/projects/mnemion")
+
+
+def _discover_mnemion_src():
+    """Locate the mnemion package so hooks work regardless of clone location.
+
+    Priority: $MNEMION_SRC env var → installed package → ~/projects/mnemion fallback.
+    """
+    env = os.environ.get("MNEMION_SRC")
+    if env and os.path.isdir(os.path.join(env, "mnemion")):
+        return env
+    try:
+        import mnemion  # noqa: F401 — just to resolve __file__
+        return os.path.dirname(os.path.dirname(os.path.abspath(mnemion.__file__)))
+    except Exception:
+        return os.path.expanduser("~/projects/mnemion")
+
+
+MNEMION_SRC = _discover_mnemion_src()
 SYNC_SCRIPT = os.path.expanduser("~/.mnemion/SyncMemories.ps1")
 STATE_DIR = os.path.expanduser("~/.mnemion/hook_state")
 LOG_FILE = os.path.join(STATE_DIR, "hook.log")

@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Settings, Server, Database, Brain, CheckCircle, AlertCircle, Save, ExternalLink, Download, FolderOpen } from 'lucide-react'
 import { api } from '../api/client'
+import type { StudioConfig } from '../types'
 
 function Section({ title, icon: Icon, children }: { title: string; icon: any; children: React.ReactNode }) {
   return (
@@ -35,20 +36,27 @@ function Field({ label, value, mono = false }: { label: string; value: string; m
 
 export default function SettingsView() {
   const qc = useQueryClient()
-  const { data: config, isLoading } = useQuery({ queryKey: ['config'], queryFn: api.config }) as { data: any; isLoading: boolean }
+  const { data: config, isLoading } = useQuery<StudioConfig>({
+    queryKey: ['config'],
+    queryFn: api.config,
+  })
 
   const [llmBackend, setLlmBackend] = useState('')
   const [llmUrl, setLlmUrl] = useState('')
   const [llmModel, setLlmModel] = useState('')
   const [llmKey, setLlmKey] = useState('')
   const [saved, setSaved] = useState(false)
+  const [hydrated, setHydrated] = useState(false)
 
-  // Populate once config loads
-  if (config && !llmBackend) {
-    setLlmBackend(config.llm?.backend ?? 'none')
-    setLlmUrl(config.llm?.url ?? '')
-    setLlmModel(config.llm?.model ?? '')
-  }
+  // Populate once config loads (don't clobber user edits)
+  useEffect(() => {
+    if (config && !hydrated) {
+      setLlmBackend(config.llm?.backend ?? 'none')
+      setLlmUrl(config.llm?.url ?? '')
+      setLlmModel(config.llm?.model ?? '')
+      setHydrated(true)
+    }
+  }, [config, hydrated])
 
   const saveMut = useMutation({
     mutationFn: () => api.updateLLM({ backend: llmBackend, url: llmUrl, model: llmModel, api_key: llmKey }),
@@ -156,7 +164,11 @@ export default function SettingsView() {
       <Section title="Studio" icon={Server}>
         <div className="space-y-2 text-xs text-muted">
           <Field label="Backend port" value="7891" mono />
-          <Field label="Frontend port" value="5173" mono />
+          <Field
+            label="Frontend"
+            value={typeof window !== 'undefined' ? window.location.host : ''}
+            mono
+          />
           <div className="pt-2">
             <a
               href="/api/docs"

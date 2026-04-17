@@ -135,7 +135,7 @@ def run_pipeline_c(anaktoron_path, queries):
     """Pipeline C: Full hybrid search (vector + FTS + trust + KG)."""
     from mnemion.hybrid_searcher import HybridSearcher
 
-    searcher = HybridSearcher(palace_path=anaktoron_path)
+    searcher = HybridSearcher(anaktoron_path=anaktoron_path)
     # Override collection name to match benchmark data (config may point elsewhere)
     searcher.collection_name = "mnemion_drawers"
     try:

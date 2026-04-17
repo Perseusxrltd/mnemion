@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { Bot, Clock, Activity, Wifi, WifiOff, RefreshCw } from 'lucide-react'
+import { Bot, Clock, Activity, Wifi, WifiOff, RefreshCw, Sparkles, Code2, MousePointer2, MessageSquare } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { api } from '../api/client'
 
 function timeSince(isoStr: string): string {
@@ -19,20 +20,19 @@ function isActive(isoStr: string): boolean {
   return diff < 5 * 60 * 1000 // 5 minutes
 }
 
-const AGENT_ICONS: Record<string, string> = {
-  claude: '🤖',
-  gemini: '✨',
-  gpt: '🟢',
-  codex: '💻',
-  cursor: '⌨️',
-  default: '🔷',
-}
+const AGENT_ICON_MAP: [string, LucideIcon][] = [
+  ['claude',  Bot],
+  ['gemini',  Sparkles],
+  ['gpt',     MessageSquare],
+  ['codex',   Code2],
+  ['cursor',  MousePointer2],
+]
 
-function agentEmoji(name: string): string {
-  for (const [k, v] of Object.entries(AGENT_ICONS)) {
-    if (name.toLowerCase().includes(k)) return v
-  }
-  return AGENT_ICONS.default
+function AgentIcon({ name, size = 18, color }: { name: string; size?: number; color?: string }) {
+  const n = name.toLowerCase()
+  const match = AGENT_ICON_MAP.find(([k]) => n.includes(k))
+  const Icon = match ? match[1] : Bot
+  return <Icon size={size} color={color} />
 }
 
 export default function AgentsView() {
@@ -112,7 +112,6 @@ export default function AgentsView() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           {activity.map(a => {
             const active = isActive(a.last_seen)
-            const emoji = agentEmoji(a.agent)
             return (
               <div
                 key={a.agent}
@@ -120,9 +119,9 @@ export default function AgentsView() {
                 style={{ background: 'var(--surface)', border: `1px solid ${active ? 'rgba(16,185,129,0.3)' : 'var(--border)'}` }}
               >
                 <div className="relative flex-shrink-0">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center text-xl"
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center"
                     style={{ background: active ? 'rgba(16,185,129,0.12)' : 'var(--raised)' }}>
-                    {emoji}
+                    <AgentIcon name={a.agent} size={18} color={active ? '#30d158' : '#666'} />
                   </div>
                   <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 ${active ? 'bg-emerald-400' : 'bg-zinc-600'}`}
                     style={{ borderColor: 'var(--surface)' }} />

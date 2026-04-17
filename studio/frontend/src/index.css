@@ -2,93 +2,117 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Obsidian Design System ───────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════
+   Mnemion Studio — Obsidian-Inspired Design System
+   Research-grounded: Linear timing, Obsidian palette, Raycast interactions
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Design tokens ────────────────────────────────────────────────────────── */
 
 :root {
-  /* Core backgrounds */
-  --background-primary:         #202020;
-  --background-secondary:       #161616;
-  --background-primary-alt:     #1e1e1e;
-  --background-secondary-alt:   #1a1a1a;
-  --background-modifier-border: #333333;
-  --background-modifier-form-field: #252525;
-  --background-modifier-hover:  rgba(255, 255, 255, 0.06);
-  --background-modifier-active: rgba(255, 255, 255, 0.10);
-  --background-modifier-error:  rgba(255, 69, 58, 0.15);
-  --background-modifier-success:rgba(48, 209, 88, 0.15);
-  --background-modifier-box-shadow: rgba(0,0,0,0.3);
+  /* ── 5-level elevation surface system (dark mode) ──
+     Each level is ~5-8% lighter in luminance than the one below.
+     Elevation communicates containment, not decoration.
+     Never use pure #000 — it creates excessive contrast.          */
+  --surface-deep:    #111111;  /* below-the-fold: scrollable list bg     */
+  --surface-base:    #161616;  /* primary surface: sidebars, ribbon       */
+  --surface-raised:  #202020;  /* main content panes                      */
+  --surface-overlay: #252525;  /* cards, inline containers, hover targets */
+  --surface-float:   #2e2e2e;  /* modals, dropdowns, tooltips             */
 
-  /* Text */
-  --text-normal:     #dcddde;
-  --text-muted:      #999999;
-  --text-faint:      #555555;
-  --text-on-accent:  #ffffff;
-  --text-error:      #ff453a;
-  --text-accent:     #7f6df2;
-  --text-accent-hover: #9d8ff9;
-  --text-selection:  rgba(127, 109, 242, 0.25);
+  /* Aliases used by legacy code */
+  --bg:      var(--surface-raised);
+  --sidebar: var(--surface-base);
+  --surface: var(--surface-overlay);
+  --raised:  var(--surface-float);
 
-  /* Interactive */
-  --interactive-normal:       #2e2e2e;
-  --interactive-hover:        #383838;
+  /* ── Border ── */
+  --border-subtle:   rgba(255,255,255,0.06);
+  --border-default:  #2e2e2e;
+  --border-strong:   #3d3d3d;
+  --border:          var(--border-default);
+  --background-modifier-border: var(--border-default);
+
+  /* ── Text ── */
+  --text-normal:  #dcddde;   /* 90% — no pure white, avoids eye strain   */
+  --text-muted:   #999999;   /* 60% — sidebar items, labels, timestamps  */
+  --text-faint:   #555555;   /* 35% — placeholders, dividers, secondary  */
+  --text-accent:  #7f6df2;   /* accent: links, wikilinks, active states  */
+  --text-error:   #ff453a;
+  --text-success: #30d158;
+  --text:         var(--text-normal);
+  --muted:        var(--text-muted);
+  --faint:        var(--text-faint);
+
+  /* ── Accent (Obsidian purple) ── */
   --interactive-accent:       #7f6df2;
-  --interactive-accent-hover: #8875f5;
-  --interactive-success:      #30d158;
+  --interactive-accent-hover: #8f7ef5;
+  --accent:       var(--interactive-accent);
+  --accent-light: #9d8ff9;
 
-  /* Tab & pane chrome */
-  --tab-background-active:    #202020;
-  --tab-background-inactive:  #161616;
-  --tab-radius:               6px;
-  --tab-height:               32px;
+  /* ── Interactive states ── */
+  --interactive-normal:    var(--surface-float);
+  --interactive-hover:     #363636;
+  --interactive-active:    rgba(127, 109, 242, 0.14);
 
-  /* Ribbon */
-  --ribbon-background:        #161616;
-  --ribbon-background-hovered:#2a2a2a;
+  /* ── Backgrounds (Obsidian naming compat) ── */
+  --background-primary:           var(--surface-raised);
+  --background-secondary:         var(--surface-base);
+  --background-primary-alt:       var(--surface-overlay);
+  --background-secondary-alt:     #1a1a1a;
+  --background-modifier-form-field: #1e1e1e;
+  --background-modifier-hover:    rgba(255,255,255,0.05);
+  --background-modifier-active:   rgba(127,109,242,0.12);
+  --background-modifier-error:    rgba(255,69,58,0.12);
+  --background-modifier-success:  rgba(48,209,88,0.12);
+
+  /* ── Command palette ── */
+  --prompt-background:  #1a1a1a;
+  --prompt-border:      #3a3a3a;
+  --prompt-shadow:      0 20px 60px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.05);
+
+  /* ── Ribbon ── */
+  --ribbon-background:        var(--surface-base);
+  --ribbon-background-hovered:#252525;
   --ribbon-width:             44px;
 
-  /* Status bar */
-  --status-bar-background:    #161616;
-  --status-bar-border-color:  #333333;
+  /* ── Status bar ── */
+  --status-bar-background:    var(--surface-base);
+  --status-bar-border:        var(--border-default);
 
-  /* Prompt (command palette) */
-  --prompt-background:        #1e1e1e;
-  --prompt-border-color:      #444444;
-  --prompt-shadow:            0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06);
+  /* ── Tab bar ── */
+  --tab-background-active:    var(--surface-raised);
+  --tab-background-inactive:  var(--surface-base);
+  --tab-height:               32px;
 
-  /* Headings */
-  --h1-color: #e8e8e8;
-  --h2-color: #d0d0d0;
-  --h3-color: #b8b8b8;
+  /* ── Timing — research-grounded
+     Hover: ≤50ms, Modal: 120ms, Sidebar: 180ms              */
+  --duration-instant:  0ms;
+  --duration-hover:    50ms;
+  --duration-fast:     120ms;
+  --duration-medium:   180ms;
+  --duration-slow:     250ms;
+  --ease-out:   cubic-bezier(0, 0, 0.2, 1);
+  --ease-in:    cubic-bezier(0.4, 0, 1, 1);
+  --ease-inout: cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* Radius */
+  /* ── Typography ── */
+  --font-text: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+  --font-ui-smaller: 11px;
+  --font-ui-small:   13px;
+  --font-ui-medium:  15px;
+
+  /* ── Radius ── */
   --radius-s:  4px;
   --radius-m:  8px;
   --radius-l:  12px;
   --radius-xl: 16px;
-
-  /* Font */
-  --font-ui-smaller: 11px;
-  --font-ui-small:   13px;
-  --font-ui-medium:  15px;
-  --font-text:       -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
-  --font-monospace:  'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
-
-  /* ── Aliases (used by existing views) ────────────────────────────────── */
-  --bg:          var(--background-primary);
-  --sidebar:     var(--background-secondary);
-  --surface:     #242424;
-  --raised:      var(--interactive-normal);
-  --border:      var(--background-modifier-border);
-  --text:        var(--text-normal);
-  --muted:       var(--text-muted);
-  --faint:       var(--text-faint);
-  --accent:      var(--interactive-accent);
-  --accent-light:#9d8ff9;
 }
 
-/* ── Reset & base ─────────────────────────────────────────────────────────── */
+/* ── Reset ────────────────────────────────────────────────────────────────── */
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body, #root {
   height: 100%;
@@ -96,7 +120,7 @@ html, body, #root {
 }
 
 body {
-  background: var(--background-primary);
+  background: var(--surface-raised);
   color: var(--text-normal);
   font-family: var(--font-text);
   font-size: 14px;
@@ -107,65 +131,39 @@ body {
 
 /* ── Scrollbar ────────────────────────────────────────────────────────────── */
 
-::-webkit-scrollbar         { width: 6px; height: 6px; }
+::-webkit-scrollbar         { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track   { background: transparent; }
-::-webkit-scrollbar-thumb   { background: #3a3a3a; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #4a4a4a; }
+::-webkit-scrollbar-thumb   { background: #333; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #444; }
 
 /* ── Focus ring ───────────────────────────────────────────────────────────── */
 
-:focus-visible { outline: 2px solid var(--interactive-accent); outline-offset: 2px; }
-
-/* ── Typography in content panes ─────────────────────────────────────────── */
-
-.markdown-preview-view {
-  font-family: var(--font-text);
-  font-size: 15px;
-  line-height: 1.8;
-  color: var(--text-normal);
+:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-s);
 }
 
-.markdown-preview-view h1 { color: var(--h1-color); font-size: 1.6em; font-weight: 700; margin-bottom: 0.5em; }
-.markdown-preview-view h2 { color: var(--h2-color); font-size: 1.3em; font-weight: 600; margin-bottom: 0.4em; }
-.markdown-preview-view h3 { color: var(--h3-color); font-size: 1.1em; font-weight: 600; margin-bottom: 0.3em; }
+/* ── Wikilinks ────────────────────────────────────────────────────────────── */
 
-.markdown-preview-view a {
-  color: var(--text-accent);
-  text-decoration: none;
-}
-.markdown-preview-view a:hover {
-  text-decoration: underline;
-  color: var(--text-accent-hover);
-}
-
-/* Wikilink [[...]] */
 .wikilink {
   color: var(--text-accent);
-  background: rgba(127,109,242,0.12);
+  background: rgba(127,109,242,0.1);
   padding: 0 3px;
   border-radius: 3px;
   cursor: pointer;
   text-decoration: none;
+  transition: background var(--duration-hover) var(--ease-out);
 }
-.wikilink:hover { background: rgba(127,109,242,0.22); }
+.wikilink:hover { background: rgba(127,109,242,0.2); }
 
-/* Inline code */
-.markdown-preview-view code {
-  font-family: var(--font-monospace);
-  font-size: 0.88em;
-  background: rgba(255,255,255,0.08);
-  padding: 1px 5px;
-  border-radius: 4px;
-  color: #e0d2ff;
-}
-
-/* ── Drawer content ───────────────────────────────────────────────────────── */
+/* ── Drawer content (monospace prose) ────────────────────────────────────── */
 
 .drawer-content {
-  font-family: var(--font-monospace);
+  font-family: var(--font-mono);
   font-size: 12.5px;
   line-height: 1.75;
-  color: #c9c9c9;
+  color: #c8c8c8;
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -173,10 +171,47 @@ body {
 /* ── Search highlight ─────────────────────────────────────────────────────── */
 
 mark {
-  background: rgba(127, 109, 242, 0.3);
+  background: rgba(127, 109, 242, 0.28);
   color: #c4b5fd;
   border-radius: 2px;
   padding: 0 1px;
+}
+
+/* ── Navigation / hover rows ─────────────────────────────────────────────── */
+/* Research says: hover ≤50ms. Use opacity on a pseudo-element for GPU.     */
+
+.hover-row {
+  position: relative;
+  transition: color var(--duration-hover) var(--ease-out);
+}
+.hover-row::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-s);
+  background: rgba(255,255,255,0.05);
+  opacity: 0;
+  transition: opacity var(--duration-hover) var(--ease-out);
+  pointer-events: none;
+}
+.hover-row:hover::before { opacity: 1; }
+
+/* ── Sidebar active item — left border stripe ─────────────────────────────── */
+/* Obsidian/Linear pattern: accent left border = unambiguous selection cue   */
+
+.nav-item-active {
+  position: relative;
+  color: var(--text-normal) !important;
+}
+.nav-item-active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--interactive-accent);
 }
 
 /* ── Wing color pills ─────────────────────────────────────────────────────── */
@@ -192,99 +227,84 @@ mark {
   letter-spacing: 0.02em;
 }
 
-/* ── Nav item active state ────────────────────────────────────────────────── */
-
-.nav-item-active {
-  background: var(--background-modifier-active);
-  color: var(--text-normal);
-}
-
-/* ── Hover rows ───────────────────────────────────────────────────────────── */
-
-.hover-row { transition: background 0.1s; }
-.hover-row:hover { background: var(--background-modifier-hover); }
-
 /* ── Tree indentation ─────────────────────────────────────────────────────── */
 
 .tree-indent {
-  border-left: 1px solid var(--background-modifier-border);
-  margin-left: 8px;
+  border-left: 1px solid var(--border-default);
+  margin-left: 7px;
   padding-left: 8px;
 }
 
-/* ── Animations ───────────────────────────────────────────────────────────── */
+/* ── Command palette ─────────────────────────────────────────────────────── */
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.fade-in { animation: fadeIn 0.12s ease-out; }
-
-@keyframes slideDown {
-  from { opacity: 0; transform: translateY(-8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.slide-down { animation: slideDown 0.15s ease-out; }
-
-@keyframes pulse-slow {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.4; }
-}
-.pulse-slow { animation: pulse-slow 2s infinite; }
-
-@keyframes shimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position:  200% 0; }
-}
-.shimmer {
-  background: linear-gradient(
-    90deg,
-    var(--interactive-normal) 25%,
-    var(--interactive-hover) 50%,
-    var(--interactive-normal) 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.4s infinite;
+.prompt-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 80px;
+  z-index: 1000;
+  backdrop-filter: blur(6px);
 }
 
-/* ── Sigma / Graph ────────────────────────────────────────────────────────── */
+.prompt-modal {
+  width: 560px;
+  max-height: 440px;
+  border-radius: var(--radius-l);
+  background: var(--prompt-background);
+  border: 1px solid var(--prompt-border);
+  box-shadow: var(--prompt-shadow);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
 
-.sigma-container { width: 100%; height: 100%; }
-
-/* ── Tabs ─────────────────────────────────────────────────────────────────── */
-
-.obs-tab {
+.prompt-input-wrap {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 0 14px;
-  height: var(--tab-height);
-  font-size: 13px;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.prompt-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 15px;
+  color: var(--text-normal);
+  font-family: var(--font-text);
+}
+
+.prompt-results { flex: 1; overflow-y: auto; padding: 6px; }
+
+.prompt-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: var(--radius-m);
   cursor: pointer;
-  border-right: 1px solid var(--background-modifier-border);
-  transition: background 0.1s, color 0.1s;
-  user-select: none;
-  white-space: nowrap;
-  color: var(--text-muted);
-  background: var(--tab-background-inactive);
+  font-size: 13px;
+  color: var(--text-normal);
+  transition: background var(--duration-hover) var(--ease-out);
 }
-.obs-tab:hover { background: var(--background-modifier-hover); color: var(--text-normal); }
-.obs-tab.active { background: var(--tab-background-active); color: var(--text-normal); border-bottom: 2px solid var(--interactive-accent); }
-
-/* ── Status bar ───────────────────────────────────────────────────────────── */
-
-.status-bar {
-  height: 22px;
-  display: flex;
-  align-items: center;
-  padding: 0 12px;
-  gap: 16px;
-  font-size: 11px;
-  color: var(--text-muted);
-  background: var(--status-bar-background);
-  border-top: 1px solid var(--status-bar-border-color);
-  flex-shrink: 0;
-  user-select: none;
+.prompt-item:hover, .prompt-item.selected {
+  background: rgba(255,255,255,0.07);
+}
+.prompt-item-icon  { color: var(--text-muted); flex-shrink: 0; }
+.prompt-item-label { flex: 1; }
+.prompt-item-sub   { font-size: 11px; color: var(--text-faint); }
+.prompt-section-header {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-faint);
+  padding: 8px 10px 4px;
 }
 
 /* ── Ribbon ───────────────────────────────────────────────────────────────── */
@@ -293,7 +313,7 @@ mark {
   width: var(--ribbon-width);
   flex-shrink: 0;
   background: var(--ribbon-background);
-  border-right: 1px solid var(--background-modifier-border);
+  border-right: 1px solid var(--border-default);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -311,107 +331,208 @@ mark {
   border-radius: var(--radius-m);
   color: var(--text-muted);
   cursor: pointer;
-  transition: background 0.1s, color 0.1s;
+  transition:
+    color      var(--duration-hover) var(--ease-out),
+    background var(--duration-hover) var(--ease-out);
+  /* No background by default — avoids repaints on hover */
 }
-.ribbon-icon:hover { background: var(--ribbon-background-hovered); color: var(--text-normal); }
-.ribbon-icon.active { color: var(--interactive-accent); background: rgba(127,109,242,0.12); }
-
-/* ── Command palette overlay ─────────────────────────────────────────────── */
-
-.prompt-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding-top: 80px;
-  z-index: 1000;
-  backdrop-filter: blur(4px);
+.ribbon-icon:hover {
+  background: var(--ribbon-background-hovered);
+  color: var(--text-normal);
+}
+.ribbon-icon.active {
+  color: var(--interactive-accent);
+  background: rgba(127,109,242,0.12);
 }
 
-.prompt-modal {
-  width: 560px;
-  max-height: 440px;
-  border-radius: var(--radius-l);
-  background: var(--prompt-background);
-  border: 1px solid var(--prompt-border-color);
-  box-shadow: var(--prompt-shadow);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
+/* ── Status bar ───────────────────────────────────────────────────────────── */
 
-.prompt-input-wrap {
+.status-bar {
+  height: 22px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--background-modifier-border);
+  padding: 0 12px;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--status-bar-background);
+  border-top: 1px solid var(--status-bar-border);
+  flex-shrink: 0;
+  user-select: none;
+  letter-spacing: 0.01em;
 }
 
-.prompt-input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  outline: none;
-  font-size: 15px;
-  color: var(--text-normal);
-  font-family: var(--font-text);
-}
-
-.prompt-results {
-  flex: 1;
-  overflow-y: auto;
-  padding: 6px;
-}
-
-.prompt-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  border-radius: var(--radius-m);
-  cursor: pointer;
-  font-size: 13px;
-  color: var(--text-normal);
-  transition: background 0.08s;
-}
-.prompt-item:hover, .prompt-item.selected { background: var(--background-modifier-active); }
-.prompt-item-icon { color: var(--text-muted); flex-shrink: 0; }
-.prompt-item-label { flex: 1; }
-.prompt-item-sub { font-size: 11px; color: var(--text-faint); }
-
-.prompt-section-header {
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-faint);
-  padding: 8px 10px 4px;
-}
-
-/* ── Properties panel ─────────────────────────────────────────────────────── */
+/* ── Property panel ───────────────────────────────────────────────────────── */
 
 .property-row {
   display: flex;
   align-items: baseline;
   gap: 8px;
   padding: 5px 0;
-  border-bottom: 1px solid var(--background-modifier-border);
+  border-bottom: 1px solid var(--border-subtle);
   font-size: 12px;
 }
-.property-key   { color: var(--text-muted); width: 80px; flex-shrink: 0; }
-.property-value { color: var(--text-normal); word-break: break-all; }
+.property-key   { color: var(--text-faint); width: 72px; flex-shrink: 0; font-size: 11px; }
+.property-value { color: var(--text-muted);  word-break: break-all; }
 
-/* ── Pane resize handle ───────────────────────────────────────────────────── */
+/* ── Tabs ─────────────────────────────────────────────────────────────────── */
+
+.obs-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+  height: var(--tab-height);
+  font-size: 13px;
+  cursor: pointer;
+  border-right: 1px solid var(--border-default);
+  transition:
+    color      var(--duration-hover) var(--ease-out),
+    background var(--duration-hover) var(--ease-out);
+  user-select: none;
+  white-space: nowrap;
+  color: var(--text-muted);
+  background: var(--tab-background-inactive);
+}
+.obs-tab:hover  { background: rgba(255,255,255,0.04); color: var(--text-normal); }
+.obs-tab.active { background: var(--tab-background-active); color: var(--text-normal); box-shadow: inset 0 -2px 0 var(--interactive-accent); }
+
+/* ── Animations ───────────────────────────────────────────────────────────── */
+
+/* Research: enter with ease-out (fast arrival), leave with ease-in (fast exit) */
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px) scale(0.99); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+.fade-in { animation: fadeIn var(--duration-fast) var(--ease-out); }
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-6px) scale(0.99); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+.slide-down { animation: slideDown var(--duration-fast) var(--ease-out); }
+
+/* Scale-in for modals — 0.97 → 1 (subtle, per research: ≤0.95 looks dramatic) */
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.scale-in { animation: scaleIn var(--duration-fast) var(--ease-out); }
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+.pulse-slow { animation: pulse-slow 2s infinite; }
+
+/* Shimmer skeleton — only opacity/transform (GPU-safe) */
+@keyframes shimmer {
+  0%   { opacity: 0.4; }
+  50%  { opacity: 0.7; }
+  100% { opacity: 0.4; }
+}
+.shimmer {
+  background: var(--surface-overlay);
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+/* ── Sigma / Graph ────────────────────────────────────────────────────────── */
+
+.sigma-container { width: 100%; height: 100%; }
+
+/* ── Utility: pane divider ────────────────────────────────────────────────── */
 
 .pane-divider {
   width: 1px;
-  background: var(--background-modifier-border);
+  background: var(--border-default);
   flex-shrink: 0;
-  cursor: col-resize;
-  transition: background 0.15s;
-  position: relative;
+  transition: background var(--duration-hover) var(--ease-out);
 }
-.pane-divider:hover, .pane-divider.dragging { background: var(--interactive-accent); width: 2px; }
+.pane-divider:hover { background: var(--interactive-accent); }
+
+/* ── Keyboard key badge ───────────────────────────────────────────────────── */
+
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 4px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  background: var(--surface-overlay);
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+/* ── Sidebar active nav item ──────────────────────────────────────────────── */
+
+.sidebar-item {
+  position: relative;
+  border-radius: var(--radius-s);
+  transition: color var(--duration-hover) var(--ease-out);
+  padding-left: 8px;
+}
+.sidebar-item:hover { color: var(--text-normal); }
+.sidebar-item.active {
+  color: var(--text-normal);
+  background: rgba(127,109,242,0.1);
+}
+.sidebar-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--interactive-accent);
+}
+
+/* ── Input base style ─────────────────────────────────────────────────────── */
+
+.obs-input {
+  width: 100%;
+  background: var(--background-modifier-form-field);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-m);
+  color: var(--text-normal);
+  outline: none;
+  transition: border-color var(--duration-hover) var(--ease-out);
+}
+.obs-input:focus { border-color: var(--interactive-accent); }
+.obs-input::placeholder { color: var(--text-faint); }
+
+/* ── Button base ──────────────────────────────────────────────────────────── */
+
+.btn-ghost {
+  color: var(--text-muted);
+  border-radius: var(--radius-m);
+  transition: color var(--duration-hover) var(--ease-out), background var(--duration-hover) var(--ease-out);
+}
+.btn-ghost:hover { color: var(--text-normal); background: rgba(255,255,255,0.06); }
+
+.btn-accent {
+  background: var(--interactive-accent);
+  color: white;
+  border-radius: var(--radius-m);
+  font-weight: 500;
+  transition: background var(--duration-hover) var(--ease-out);
+}
+.btn-accent:hover:not(:disabled) { background: var(--interactive-accent-hover); }
+.btn-accent:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── Responsive: prefers-reduced-motion ──────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

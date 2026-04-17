@@ -8,7 +8,7 @@ echo.
 echo  🏛️  Mnemion Studio
 echo  ─────────────────────────────────────
 echo  Backend :  http://127.0.0.1:7891
-echo  Frontend:  http://localhost:5173
+echo  Frontend:  http://localhost:5173  (Vite will bump if busy — check terminal)
 echo  API docs:  http://127.0.0.1:7891/api/docs
 echo  ─────────────────────────────────────
 echo.

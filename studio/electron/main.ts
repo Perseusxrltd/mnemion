@@ -52,6 +52,18 @@ function stopBackend() {
 
 // ── Wait for backend to be ready ──────────────────────────────────────────────
 
+async function findDevPort(ports: number[]): Promise<number | null> {
+  for (const p of ports) {
+    try {
+      const res = await fetch(`http://localhost:${p}`)
+      if (res.ok || res.status < 500) return p
+    } catch {
+      // port not listening
+    }
+  }
+  return null
+}
+
 async function waitForBackend(url: string, maxMs = 15_000): Promise<void> {
   const deadline = Date.now() + maxMs
   while (Date.now() < deadline) {
@@ -98,7 +110,14 @@ async function createWindow() {
   mainWindow.on('closed', () => { mainWindow = null })
 
   if (isDev) {
-    mainWindow.loadURL('http://localhost:5173')
+    // Vite may bump the port if 5173 is busy. Probe 5173→5179 in order.
+    const devPort = process.env.VITE_DEV_PORT ?? (await findDevPort([5173, 5174, 5175, 5176, 5177, 5178, 5179]))
+    if (devPort) {
+      console.log('[main] Loading dev frontend on port', devPort)
+      mainWindow.loadURL(`http://localhost:${devPort}`)
+    } else {
+      console.error('[main] No Vite dev server found on ports 5173–5179')
+    }
     mainWindow.webContents.openDevTools()
   } else {
     // Wait for backend to be alive, then load app

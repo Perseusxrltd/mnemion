@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { X, Plus, AlertCircle } from 'lucide-react'
 import { api } from '../api/client'
+import { useToast } from './ToastProvider'
 
 interface Props {
   open: boolean
@@ -13,6 +14,7 @@ interface Props {
 
 export default function DrawerCreateModal({ open, defaultWing = '', defaultRoom = '', onClose, onCreated }: Props) {
   const qc = useQueryClient()
+  const toast = useToast()
   const [wing, setWing] = useState(defaultWing)
   const [room, setRoom] = useState(defaultRoom)
   const [content, setContent] = useState('')
@@ -32,10 +34,16 @@ export default function DrawerCreateModal({ open, defaultWing = '', defaultRoom 
     mutationFn: () => api.createDrawer({ wing: wing.trim(), room: room.trim(), content: content.trim() }),
     onSuccess: (data: any) => {
       qc.invalidateQueries({ queryKey: ['drawers'] })
+      qc.invalidateQueries({ queryKey: ['drawers-recent'] })
       qc.invalidateQueries({ queryKey: ['status'] })
       qc.invalidateQueries({ queryKey: ['taxonomy'] })
-      onCreated?.(data?.id ?? '')
+      const newId = data?.drawer_id ?? data?.id ?? ''
+      toast.success(data?.reason === 'already_exists' ? 'Drawer already exists' : 'Drawer created')
+      onCreated?.(newId)
       onClose()
+    },
+    onError: (err: any) => {
+      toast.error(err?.message ?? 'Failed to create drawer')
     },
   })
 

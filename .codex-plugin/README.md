@@ -1,6 +1,6 @@
 # Mnemion - Codex CLI Plugin
 
-Give your AI a persistent memory -- mine projects and conversations into a searchable Anaktoron backed by ChromaDB, with 19 MCP tools, auto-save hooks, and guided skills.
+Give your AI a persistent memory -- mine projects and conversations into a searchable Anaktoron backed by ChromaDB, with 25 MCP tools, auto-save hooks, and guided skills.
 
 ## Prerequisites
 

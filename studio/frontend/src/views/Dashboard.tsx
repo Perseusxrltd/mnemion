@@ -1,9 +1,22 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { Database, Network, Layers, Bot, AlertTriangle, CheckCircle, Clock } from 'lucide-react'
+import { Database, Network, Layers, Bot, AlertTriangle, CheckCircle, Clock, Plus, FileText } from 'lucide-react'
 import { api } from '../api/client'
 import { wingColor } from '../types'
 import TrustBadge from '../components/TrustBadge'
+import WingBadge from '../components/WingBadge'
+import { useLayoutCtx } from '../components/Layout'
+
+function timeSince(isoStr: string): string {
+  if (!isoStr) return ''
+  const diff = Date.now() - new Date(isoStr).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  return `${Math.floor(hrs / 24)}d ago`
+}
 
 // ── Skeleton ──────────────────────────────────────────────────────────────────
 
@@ -64,6 +77,7 @@ function StatCard({ icon: Icon, label, value, sub, color = '#7f6df2', onClick, l
 
 export default function Dashboard() {
   const navigate = useNavigate()
+  const { openCreateDrawer } = useLayoutCtx()
   const { data: status, isLoading: statusLoading } = useQuery({
     queryKey: ['status'],
     queryFn: api.status,
@@ -73,6 +87,10 @@ export default function Dashboard() {
     queryFn: api.trustStats,
   })
   const { data: agents } = useQuery({ queryKey: ['agents'], queryFn: api.agents })
+  const { data: recent } = useQuery({
+    queryKey: ['drawers-recent'],
+    queryFn: () => api.recentDrawers(7),
+  })
 
   const topWings = status
     ? Object.entries(status.wings).sort((a, b) => b[1] - a[1]).slice(0, 8)
@@ -91,11 +109,23 @@ export default function Dashboard() {
   return (
     <div className="flex-1 overflow-y-auto p-6 space-y-6">
       {/* Header */}
-      <div className="fade-in">
-        <h1 className="text-xl font-semibold tracking-tight">Overview</h1>
-        <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
-          Anaktoron status and memory health at a glance.
-        </p>
+      <div className="flex items-start justify-between fade-in">
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight">Overview</h1>
+          <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
+            Anaktoron status and memory health at a glance.
+          </p>
+        </div>
+        <button
+          onClick={() => openCreateDrawer()}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+          style={{ background: 'rgba(127,109,242,0.15)', color: '#9d8ff9', border: '1px solid rgba(127,109,242,0.25)' }}
+          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(127,109,242,0.25)')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'rgba(127,109,242,0.15)')}
+          title="New drawer (C)"
+        >
+          <Plus size={12} /> New Drawer
+        </button>
       </div>
 
       {/* Stat cards */}
@@ -123,6 +153,49 @@ export default function Dashboard() {
           color="#30d158" onClick={() => navigate('/settings')}
         />
       </div>
+
+      {/* Recently Added drawers */}
+      {recent?.drawers && recent.drawers.length > 0 && (
+        <div
+          className="rounded-xl p-5 fade-in"
+          style={{ background: 'var(--surface)', border: '1px solid var(--background-modifier-border)' }}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold">Recently Added</h2>
+            <button
+              onClick={() => navigate('/browse')}
+              className="text-xs transition-colors"
+              style={{ color: 'var(--text-muted)' }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'var(--interactive-accent)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+            >
+              Browse all →
+            </button>
+          </div>
+          <div className="space-y-1">
+            {recent.drawers.map(d => (
+              <button
+                key={d.id}
+                onClick={() => navigate(`/drawer/${encodeURIComponent(d.id)}`)}
+                className="flex items-start gap-3 w-full px-2 py-2 rounded-lg transition-colors hover-row text-left"
+              >
+                <FileText size={12} className="flex-shrink-0 mt-0.5" style={{ color: 'var(--text-faint)' }} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <WingBadge wing={d.wing} room={d.room} />
+                    <span className="text-[10px]" style={{ color: 'var(--text-faint)' }}>
+                      {timeSince(d.timestamp)}
+                    </span>
+                  </div>
+                  <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>
+                    {d.preview || '—'}
+                  </p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Wings breakdown */}

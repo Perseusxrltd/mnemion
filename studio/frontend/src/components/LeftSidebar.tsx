@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink, useNavigate, useLocation, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronDown, ChevronRight, FileText, Plus } from 'lucide-react'
 import { api } from '../api/client'
 import { wingColor } from '../types'
-import DrawerCreateModal from './DrawerCreateModal'
+import { useLayoutCtx } from './Layout'
 
 function WingEntry({
   wing,
@@ -18,6 +18,10 @@ function WingEntry({
   const navigate = useNavigate()
   const location = useLocation()
   const [open, setOpen] = useState(isCurrentWing)
+  // Auto-expand when the URL points to this wing (e.g. deep-link reload)
+  useEffect(() => {
+    if (isCurrentWing) setOpen(true)
+  }, [isCurrentWing])
   const color = wingColor(wing)
   const total = Object.values(rooms).reduce((s, n) => s + n, 0)
   const roomList = Object.entries(rooms).sort((a, b) => b[1] - a[1])
@@ -78,7 +82,7 @@ export default function LeftSidebar({ width = 260 }: { width?: number }) {
   const navigate = useNavigate()
   const { wing: currentWing } = useParams<{ wing?: string }>()
   const [vaultOpen, setVaultOpen] = useState(true)
-  const [createOpen, setCreateOpen] = useState(false)
+  const { openCreateDrawer } = useLayoutCtx()
 
   const { data: taxonomy } = useQuery({
     queryKey: ['taxonomy'],
@@ -100,16 +104,15 @@ export default function LeftSidebar({ width = 260 }: { width?: number }) {
   )
 
   return (
-    <>
-      <div
-        className="flex flex-col h-full overflow-hidden"
-        style={{
-          width,
-          flexShrink: 0,
-          background: 'var(--background-secondary)',
-          borderRight: '1px solid var(--background-modifier-border)',
-        }}
-      >
+    <div
+      className="flex flex-col h-full overflow-hidden"
+      style={{
+        width,
+        flexShrink: 0,
+        background: 'var(--background-secondary)',
+        borderRight: '1px solid var(--background-modifier-border)',
+      }}
+    >
         {/* Vault header */}
         <div
           className="flex items-center gap-2 px-3 py-2.5 border-b"
@@ -133,7 +136,7 @@ export default function LeftSidebar({ width = 260 }: { width?: number }) {
         {/* New Drawer button */}
         <div className="px-2 pt-2">
           <button
-            onClick={() => setCreateOpen(true)}
+            onClick={() => openCreateDrawer(currentWing ?? '')}
             className="flex items-center gap-1.5 w-full px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
             style={{
               background: 'rgba(127,109,242,0.12)',
@@ -180,7 +183,7 @@ export default function LeftSidebar({ width = 260 }: { width?: number }) {
                 <div className="px-3 py-4 text-center text-[12px]" style={{ color: 'var(--text-faint)' }}>
                   No wings yet.<br />
                   <button
-                    onClick={() => setCreateOpen(true)}
+                    onClick={() => openCreateDrawer()}
                     className="mt-1 underline"
                     style={{ color: 'var(--interactive-accent)' }}
                   >
@@ -208,14 +211,6 @@ export default function LeftSidebar({ width = 260 }: { width?: number }) {
             ? `${status.total_drawers.toLocaleString()} drawers · ${status.wing_count} wings`
             : 'Connecting…'}
         </div>
-      </div>
-
-      <DrawerCreateModal
-        open={createOpen}
-        defaultWing={currentWing ?? ''}
-        onClose={() => setCreateOpen(false)}
-        onCreated={id => id && navigate(`/drawer/${encodeURIComponent(id)}`)}
-      />
-    </>
+    </div>
   )
 }

@@ -27,7 +27,7 @@ sys.stdout = io.StringIO()
 import chromadb  # noqa: E402
 sys.stdout = _saved_stdout
 
-from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -37,6 +37,7 @@ from mnemion.hybrid_searcher import HybridSearcher
 from mnemion.knowledge_graph import KnowledgeGraph
 from mnemion.trust_lifecycle import DrawerTrust
 from mnemion.version import __version__
+from . import connectors as _connectors
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s  %(name)s  %(message)s")
 logger = logging.getLogger("studio")
@@ -47,7 +48,7 @@ app = FastAPI(title="Mnemion Studio", version=__version__, docs_url="/api/docs")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"],
+    allow_origin_regex=r"^(http://(localhost|127\.0\.0\.1)(:\d+)?|file://.*)$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -193,7 +194,7 @@ def list_drawers(
                 "room": meta.get("room", "unknown"),
                 "source": meta.get("source_file", ""),
                 "added_by": meta.get("added_by", ""),
-                "timestamp": meta.get("timestamp", ""),
+                "timestamp": meta.get("filed_at") or meta.get("timestamp", ""),
                 "preview": doc[:280] + ("…" if len(doc) > 280 else ""),
                 "char_count": len(doc),
                 "trust": _trust_summary(trust),
@@ -216,7 +217,17 @@ def get_drawer(drawer_id: str):
     # Related drawers via hybrid search (exclude self)
     try:
         related_hits = _hybrid.search(doc[:400], n_results=6)
-        related = [h for h in related_hits if h["id"] != drawer_id][:5]
+        related = [
+            {
+                "id": h["id"],
+                "wing": h.get("wing", "unknown"),
+                "room": h.get("room", "unknown"),
+                "content": h.get("text", ""),
+                "similarity": round(h.get("score", 0), 4),
+            }
+            for h in related_hits
+            if h["id"] != drawer_id
+        ][:5]
     except Exception:
         related = []
 
@@ -226,7 +237,7 @@ def get_drawer(drawer_id: str):
         "room": meta.get("room", "unknown"),
         "source": meta.get("source_file", ""),
         "added_by": meta.get("added_by", ""),
-        "timestamp": meta.get("timestamp", ""),
+        "timestamp": meta.get("filed_at") or meta.get("timestamp", ""),
         "content": doc,
         "char_count": len(doc),
         "trust": _trust.get(drawer_id),
@@ -256,7 +267,6 @@ def delete_drawer(drawer_id: str):
 
 @app.post("/api/drawer")
 def create_drawer(body: DrawerCreate):
-    import hashlib
     from mnemion.mcp_server import tool_add_drawer
     result = tool_add_drawer(
         wing=body.wing,
@@ -270,6 +280,40 @@ def create_drawer(body: DrawerCreate):
 
 # ── Search ────────────────────────────────────────────────────────────────────
 
+@app.get("/api/drawers/recent")
+def get_recent_drawers(limit: int = Query(7, ge=1, le=20)):
+    """Return the most recently added drawers, sorted by timestamp desc."""
+    col = _get_collection()
+    total = col.count()
+    if total == 0:
+        return {"drawers": []}
+    # Sample last batch (ChromaDB insertion order ≈ chronological)
+    sample_size = min(500, total)
+    offset = max(0, total - sample_size)
+    result = col.get(
+        include=["metadatas", "documents"],
+        limit=sample_size,
+        offset=offset,
+    )
+    items = []
+    for did, meta, doc in zip(
+        result.get("ids") or [],
+        result.get("metadatas") or [],
+        result.get("documents") or [],
+    ):
+        m = meta or {}
+        items.append({
+            "id": did,
+            "wing": m.get("wing", "unknown"),
+            "room": m.get("room", "unknown"),
+            "timestamp": m.get("filed_at") or m.get("timestamp", ""),
+            "added_by": m.get("added_by", ""),
+            "preview": (doc or "")[:120],
+        })
+    items.sort(key=lambda x: x["timestamp"] or "", reverse=True)
+    return {"drawers": items[:limit]}
+
+
 @app.get("/api/search")
 def search(
     q: str = Query(..., min_length=1),
@@ -279,7 +323,20 @@ def search(
     min_similarity: float = Query(0.0, ge=0.0, le=1.0),
 ):
     hits = _hybrid.search(q, wing=wing, room=room, n_results=limit, min_similarity=min_similarity)
-    return {"query": q, "count": len(hits), "results": hits}
+    # Transform for frontend: rename 'text'→'content', add similarity alias
+    results = [
+        {
+            "id": h["id"],
+            "wing": h.get("wing", "unknown"),
+            "room": h.get("room", "unknown"),
+            "content": h.get("text", ""),
+            "score": h.get("score", 0),
+            "similarity": round(h.get("score", 0), 4),
+            "trust_status": h.get("trust_status"),
+        }
+        for h in hits
+    ]
+    return {"query": q, "count": len(results), "results": results}
 
 
 # ── Knowledge graph ───────────────────────────────────────────────────────────
@@ -389,7 +446,7 @@ def get_agents():
     try:
         for m in _iter_metadatas(col, where={"wing": "sessions"}):
             by = m.get("added_by") or "unknown"
-            ts = m.get("timestamp") or ""
+            ts = m.get("filed_at") or m.get("timestamp") or ""
             call_counts[by] = call_counts.get(by, 0) + 1
             if ts > last_seen.get(by, ""):
                 last_seen[by] = ts
@@ -426,33 +483,6 @@ def update_llm_config(body: LLMConfig):
     return {"success": True, "llm": _config.llm}
 
 
-# ── WebSocket (live drawer feed) ──────────────────────────────────────────────
-
-_ws_clients: list[WebSocket] = []
-
-
-@app.websocket("/ws")
-async def websocket_endpoint(ws: WebSocket):
-    await ws.accept()
-    _ws_clients.append(ws)
-    try:
-        while True:
-            await ws.receive_text()  # keep alive
-    except WebSocketDisconnect:
-        _ws_clients.remove(ws)
-
-
-async def broadcast(event: dict):
-    dead = []
-    for ws in _ws_clients:
-        try:
-            await ws.send_json(event)
-        except Exception:
-            dead.append(ws)
-    for ws in dead:
-        _ws_clients.remove(ws)
-
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _trust_summary(rec):
@@ -480,26 +510,76 @@ def _trust_history(drawer_id: str):
         return []
 
 
+# ── Agent connectors ──────────────────────────────────────────────────────────
+
+@app.get("/api/connectors")
+def list_connectors():
+    """Detect installed MCP-capable AI clients and whether Mnemion is wired in."""
+    return {
+        "connectors": _connectors.detect_all(),
+        "python_cmd": _connectors.PYTHON_CMD,
+        "python_args": _connectors.PYTHON_ARGS,
+    }
+
+
+@app.get("/api/connectors/{conn_id}")
+def get_connector(conn_id: str):
+    c = _connectors.get(conn_id)
+    if not c:
+        raise HTTPException(404, f"Unknown connector: {conn_id}")
+    return {**_connectors.detect(c), "snippet": _connectors.snippet(c)}
+
+
+@app.post("/api/connectors/{conn_id}/install")
+def install_connector(conn_id: str):
+    c = _connectors.get(conn_id)
+    if not c:
+        raise HTTPException(404, f"Unknown connector: {conn_id}")
+    result = _connectors.install(c)
+    if not result.get("success"):
+        raise HTTPException(500, result.get("error", "install failed"))
+    return result
+
+
+@app.post("/api/connectors/{conn_id}/uninstall")
+def uninstall_connector(conn_id: str):
+    c = _connectors.get(conn_id)
+    if not c:
+        raise HTTPException(404, f"Unknown connector: {conn_id}")
+    result = _connectors.uninstall(c)
+    if not result.get("success"):
+        raise HTTPException(500, result.get("error", "uninstall failed"))
+    return result
+
+
 # ── Vault export (Obsidian-compatible) ───────────────────────────────────────
 
 @app.get("/api/export/vault")
 def export_vault(wing: Optional[str] = Query(None)):
-    """Export drawers as Obsidian-compatible Markdown files in a ZIP archive."""
-    import io as _io
+    """Export drawers as Obsidian-compatible Markdown files in a streamed ZIP archive."""
+    import tempfile
     import zipfile
     import re
-    from fastapi.responses import StreamingResponse
+    import os as _os
+    from fastapi.responses import FileResponse
+    from starlette.background import BackgroundTask
 
-    buf = _io.BytesIO()
-    total = 0
+    # Write to a temp file (not BytesIO) so large vaults don't blow up memory.
+    # The temp file is unlinked after the response finishes streaming.
+    tmp = tempfile.NamedTemporaryFile(
+        prefix="mnemion_vault_", suffix=".zip", delete=False
+    )
+    tmp_path = tmp.name
+    tmp.close()
 
     try:
+        col = _get_collection()
         PAGE = 500
         offset = 0
-        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        with zipfile.ZipFile(tmp_path, "w", zipfile.ZIP_DEFLATED) as zf:
             while True:
                 try:
-                    res = _col.get(
+                    res = col.get(
                         limit=PAGE,
                         offset=offset,
                         where={"wing": wing} if wing else None,
@@ -516,12 +596,11 @@ def export_vault(wing: Optional[str] = Query(None)):
                     meta = meta or {}
                     w = meta.get("wing", "unknown")
                     r = meta.get("room", "misc")
-                    # Build YAML frontmatter
                     fm_lines = ["---"]
                     fm_lines.append(f'id: "{did}"')
                     fm_lines.append(f'wing: "{w}"')
                     fm_lines.append(f'room: "{r}"')
-                    for k in ("agent", "session_id", "trust_status", "created_at"):
+                    for k in ("agent", "session_id", "trust_status", "created_at", "filed_at"):
                         if meta.get(k):
                             fm_lines.append(f'{k}: "{meta[k]}"')
                     if meta.get("confidence") is not None:
@@ -530,23 +609,28 @@ def export_vault(wing: Optional[str] = Query(None)):
                     fm_lines.append("")
                     fm_lines.append(doc or "")
                     content = "\n".join(fm_lines)
-                    # Safe filename: wing/room/short-id.md
                     safe_id = re.sub(r'[^\w\-]', '_', did[:32])
                     path = f"{w}/{r}/{safe_id}.md"
                     zf.writestr(path, content)
-                    total += 1
                 if len(ids) < PAGE:
                     break
                 offset += PAGE
 
-        buf.seek(0)
         fname = f"mnemion_vault{'_' + wing if wing else ''}.zip"
-        return StreamingResponse(
-            buf,
+
+        def _cleanup(path: str):
+            try: _os.unlink(path)
+            except OSError: pass
+
+        return FileResponse(
+            tmp_path,
             media_type="application/zip",
-            headers={"Content-Disposition": f'attachment; filename="{fname}"'},
+            filename=fname,
+            background=BackgroundTask(_cleanup, tmp_path),
         )
     except Exception as exc:
+        try: _os.unlink(tmp_path)
+        except OSError: pass
         raise HTTPException(500, str(exc))
 
 

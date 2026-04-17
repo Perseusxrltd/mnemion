@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Network, FolderOpen, Search,
-  Bot, Settings, FileText, ArrowRight, Command,
+  Bot, Plug, Settings, FileText, ArrowRight, Command,
 } from 'lucide-react'
 import { api } from '../api/client'
 
@@ -20,6 +20,7 @@ const NAV_ITEMS = (navigate: (p: string) => void): PaletteItem[] => [
   { id: 'nav-browse',    label: 'Browse Drawers',   sub: 'All wings & rooms',     icon: <FolderOpen size={14} />,      action: () => navigate('/browse') },
   { id: 'nav-search',    label: 'Search',           sub: 'Full-text & semantic',  icon: <Search size={14} />,          action: () => navigate('/search') },
   { id: 'nav-agents',    label: 'Agents',           sub: 'Connected agents',      icon: <Bot size={14} />,             action: () => navigate('/agents') },
+  { id: 'nav-connect',   label: 'Connect Agents',   sub: 'One-click MCP setup',   icon: <Plug size={14} />,            action: () => navigate('/connect') },
   { id: 'nav-settings',  label: 'Settings',         sub: 'LLM & backend config',  icon: <Settings size={14} />,        action: () => navigate('/settings') },
 ]
 
@@ -60,13 +61,19 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
     searchTimer.current = setTimeout(async () => {
       try {
         const res = await api.search({ q: query, limit: 8 })
-        const items: PaletteItem[] = (res.results ?? []).map((hit: any) => ({
-          id: `drawer-${hit.id}`,
-          label: hit.content?.slice(0, 60) + (hit.content?.length > 60 ? '…' : '') || hit.id,
-          sub: `${hit.wing} / ${hit.room}`,
-          icon: <FileText size={14} />,
-          action: () => navigate(`/drawer/${encodeURIComponent(hit.id)}`),
-        }))
+        const items: PaletteItem[] = (res.results ?? []).map((hit: any) => {
+          const content = typeof hit.content === 'string' ? hit.content : ''
+          const label = content
+            ? content.slice(0, 60) + (content.length > 60 ? '…' : '')
+            : hit.id
+          return {
+            id: `drawer-${hit.id}`,
+            label,
+            sub: `${hit.wing} / ${hit.room}`,
+            icon: <FileText size={14} />,
+            action: () => navigate(`/drawer/${encodeURIComponent(hit.id)}`),
+          }
+        })
         setSearchResults(items)
       } catch {
         setSearchResults([])

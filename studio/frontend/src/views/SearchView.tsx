@@ -1,22 +1,40 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Search, X, SlidersHorizontal, Clock, FileText } from 'lucide-react'
+import { Search, X, SlidersHorizontal, Clock, FileText, AlertTriangle } from 'lucide-react'
 import { api } from '../api/client'
 import type { SearchHit } from '../types'
 import WingBadge from '../components/WingBadge'
-import TrustBadge from '../components/TrustBadge'
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
 
 function highlight(text: string, query: string): string {
-  if (!query.trim()) return text
-  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  return text.replace(new RegExp(`(${escaped})`, 'gi'), '<mark>$1</mark>')
+  const safe = escapeHtml(text)
+  if (!query.trim()) return safe
+  const escapedQ = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return safe.replace(new RegExp(`(${escapeHtml(escapedQ)})`, 'gi'), '<mark>$1</mark>')
+}
+
+/** Parse inline operators from the raw query string. */
+function parseQuery(raw: string): { q: string; parsedWing: string; parsedRoom: string } {
+  let q = raw
+  let parsedWing = ''
+  let parsedRoom = ''
+  q = q.replace(/\bwing:(\S+)/gi, (_, w) => { parsedWing = w; return '' })
+  q = q.replace(/\broom:(\S+)/gi, (_, r) => { parsedRoom = r; return '' })
+  return { q: q.trim(), parsedWing, parsedRoom }
 }
 
 export default function SearchView() {
   const [params, setParams] = useSearchParams()
   const navigate = useNavigate()
   const [q, setQ] = useState(params.get('q') ?? '')
-  const [results, setResults] = useState<any[]>([])
+  const [results, setResults] = useState<SearchHit[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showFilters, setShowFilters] = useState(false)
@@ -32,10 +50,20 @@ export default function SearchView() {
   }, [])
 
   async function doSearch(query: string) {
-    if (!query.trim()) { setResults([]); return }
+    const { q: parsedQ, parsedWing, parsedRoom } = parseQuery(query)
+    const effectiveWing = parsedWing || wingFilter
+    // Auto-surface the parsed wing filter in the UI
+    if (parsedWing) { setWingFilter(parsedWing); setShowFilters(true) }
+
+    if (!parsedQ) { setResults([]); return }
     setLoading(true); setError('')
     try {
-      const res = await api.search({ q: query, wing: wingFilter || undefined, limit: 30 })
+      const res = await api.search({
+        q: parsedQ,
+        wing: effectiveWing || undefined,
+        room: parsedRoom || undefined,
+        limit: 30,
+      })
       setResults(res.results)
       const updated = [query, ...history.filter(h => h !== query)].slice(0, 10)
       setHistory(updated)
@@ -182,6 +210,8 @@ export default function SearchView() {
               const sim = hit.similarity ?? hit.score ?? 0
               const simPct = Math.round(sim * 100)
               const preview = (hit.content ?? '').slice(0, 400)
+              const { q: parsedQ } = parseQuery(q)
+              const contested = hit.trust_status === 'contested'
               return (
                 <button
                   key={hit.id}
@@ -196,13 +226,19 @@ export default function SearchView() {
                       {simPct > 0 && (
                         <span className="text-[10px] font-mono px-1.5 py-0.5 rounded"
                           style={{ background: 'rgba(124,106,247,0.12)', color: '#9d8ff9' }}>
-                          {simPct}% match
+                          {simPct}%
+                        </span>
+                      )}
+                      {contested && (
+                        <span className="flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded"
+                          style={{ background: 'rgba(249,115,22,0.12)', color: '#f97316' }}>
+                          <AlertTriangle size={9} /> contested
                         </span>
                       )}
                     </div>
                     <p
                       className="text-sm text-white/75 leading-relaxed line-clamp-3"
-                      dangerouslySetInnerHTML={{ __html: highlight(preview, q) }}
+                      dangerouslySetInnerHTML={{ __html: highlight(preview, parsedQ) }}
                     />
                   </div>
                 </button>
@@ -214,9 +250,20 @@ export default function SearchView() {
         {/* Empty */}
         {!loading && q && results.length === 0 && !error && (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
-            <Search size={28} className="text-faint" />
-            <div className="text-muted text-sm">No results for "{q}"</div>
-            <div className="text-xs text-faint">Try a different query or remove wing filters</div>
+            <Search size={28} style={{ color: 'var(--text-faint)' }} />
+            <div className="text-sm" style={{ color: 'var(--text-muted)' }}>No results for "{q}"</div>
+            <div className="text-xs" style={{ color: 'var(--text-faint)' }}>Try a different query or clear wing filters</div>
+          </div>
+        )}
+
+        {/* No query, no history */}
+        {!q && history.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-16 gap-3">
+            <Search size={28} style={{ color: 'var(--text-faint)' }} />
+            <div className="text-sm" style={{ color: 'var(--text-muted)' }}>Search across all drawers</div>
+            <div className="text-xs" style={{ color: 'var(--text-faint)' }}>
+              Hybrid semantic + keyword — try a concept, phrase, or topic
+            </div>
           </div>
         )}
       </div>

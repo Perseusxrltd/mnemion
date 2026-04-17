@@ -1,7 +1,7 @@
 """
 chroma_compat.py — ChromaDB forward-compatibility helpers.
 
-Ported from MemPalace/mempalace#abc99f41.
+Ported from Perseusxrltd/mnemion upstream.
 """
 
 import logging

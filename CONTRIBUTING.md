@@ -69,7 +69,7 @@ Check the [Issues](https://github.com/Perseusxrltd/mnemion/issues) tab. Great st
 
 - **New chat formats**: Add import support for Cursor, Copilot, or other AI tool exports
 - **Room detection**: Improve pattern matching in `room_detector_local.py`
-- **Tests**: Increase coverage — especially for `knowledge_graph.py`, `drawer_trust.py`, `palace_graph.py`
+- **Tests**: Increase coverage — especially for `predictor.py`, `entity_registry.py`, `onboarding.py`, `spellcheck.py`, `anaktoron_graph.py`
 - **Entity detection**: Better name disambiguation in `entity_detector.py`
 - **Trust UI**: A simple CLI command to review and resolve contested memories
 - **macOS sync**: A `SyncMemories.sh` equivalent of the PowerShell sync script

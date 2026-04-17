@@ -1,4 +1,4 @@
-import type { AgentsResponse, DrawerDetail, DrawerSummary, KGGraph, Status, Taxonomy, TrustStats } from '../types'
+import type { AgentsResponse, ConnectorStatus, DrawerDetail, DrawerSummary, KGGraph, RecentDrawer, SearchHit, Status, StudioConfig, Taxonomy, TrustStats } from '../types'
 
 // In Electron (file:// origin) the backend runs on localhost:7891
 const ELECTRON_ORIGIN = 'http://127.0.0.1:7891'
@@ -73,7 +73,7 @@ export const api = {
     room?: string
     limit?: number
     min_similarity?: number
-  }): Promise<{ query: string; count: number; results: DrawerSummary[] }> =>
+  }): Promise<{ query: string; count: number; results: SearchHit[] }> =>
     get('/search', params as Record<string, string | number>),
 
   kgGraph: (limitNodes?: number): Promise<KGGraph> =>
@@ -92,15 +92,27 @@ export const api = {
   challengeDrawer: (id: string, reason?: string) =>
     post(`/trust/${encodeURIComponent(id)}/challenge${reason ? `?reason=${encodeURIComponent(reason)}` : ''}`),
 
+  recentDrawers: (limit?: number): Promise<{ drawers: RecentDrawer[] }> =>
+    get('/drawers/recent', limit ? { limit } : undefined),
+
   agents: (): Promise<AgentsResponse> => get('/agents'),
 
-  config: () => get('/config'),
+  connectors: (): Promise<{ connectors: ConnectorStatus[]; python_cmd: string; python_args: string[] }> =>
+    get('/connectors'),
+
+  connector: (id: string): Promise<ConnectorStatus> =>
+    get(`/connectors/${encodeURIComponent(id)}`),
+
+  installConnector: (id: string): Promise<{ success: boolean; config_path: string; backup_path?: string; note?: string }> =>
+    post(`/connectors/${encodeURIComponent(id)}/install`),
+
+  uninstallConnector: (id: string): Promise<{ success: boolean; backup_path?: string }> =>
+    post(`/connectors/${encodeURIComponent(id)}/uninstall`),
+
+  config: (): Promise<StudioConfig> => get('/config'),
 
   updateLLM: (body: { backend: string; url?: string; model?: string; api_key?: string }) =>
     put('/config/llm', body),
-
-  // Alias for RightSidebar / drawer detail
-  getDrawer: (id: string): Promise<DrawerDetail> => get(`/drawer/${encodeURIComponent(id)}`),
 
   // Vault export — download as zip
   exportVaultUrl: (wing?: string) => {

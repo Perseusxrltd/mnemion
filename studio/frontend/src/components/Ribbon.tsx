@@ -1,15 +1,16 @@
 import { useNavigate, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Network, FolderOpen, Search, Bot, Settings } from 'lucide-react'
+import { LayoutDashboard, Network, FolderOpen, Search, Bot, Plug, Settings } from 'lucide-react'
 
 const ITEMS = [
-  { to: '/dashboard', icon: LayoutDashboard, title: 'Dashboard' },
-  { to: '/graph',     icon: Network,         title: 'Graph' },
-  { to: '/browse',    icon: FolderOpen,      title: 'Browse' },
-  { to: '/search',    icon: Search,          title: 'Search' },
-  { to: '/agents',    icon: Bot,             title: 'Agents' },
+  { to: '/dashboard', icon: LayoutDashboard, title: 'Dashboard  [G D]' },
+  { to: '/graph',     icon: Network,         title: 'Graph  [G G]' },
+  { to: '/browse',    icon: FolderOpen,      title: 'Browse  [G B]' },
+  { to: '/search',    icon: Search,          title: 'Search  [G S]' },
+  { to: '/agents',    icon: Bot,             title: 'Agents  [G A]' },
+  { to: '/connect',   icon: Plug,            title: 'Connect agents  [G C]' },
 ]
 
-export default function Ribbon({ onSearch }: { onSearch?: () => void }) {
+export default function Ribbon({ onSearch: _onSearch }: { onSearch?: () => void }) {
   const navigate = useNavigate()
   const { pathname } = useLocation()
 
@@ -29,10 +30,7 @@ export default function Ribbon({ onSearch }: { onSearch?: () => void }) {
             key={to}
             className={`ribbon-icon ${active ? 'active' : ''}`}
             title={title}
-            onClick={() => {
-              if (to === '/search' && onSearch) { onSearch(); return }
-              navigate(to)
-            }}
+            onClick={() => navigate(to)}
           >
             <Icon size={18} />
           </button>

@@ -85,7 +85,7 @@ def cmd_mine(args):
 
         mine_convos(
             convo_dir=args.dir,
-            palace_path=anaktoron_path,
+            anaktoron_path=anaktoron_path,
             wing=args.wing,
             agent=args.agent,
             limit=args.limit,
@@ -97,7 +97,7 @@ def cmd_mine(args):
 
         mine(
             project_dir=args.dir,
-            palace_path=anaktoron_path,
+            anaktoron_path=anaktoron_path,
             wing_override=args.wing,
             agent=args.agent,
             limit=args.limit,
@@ -116,7 +116,7 @@ def cmd_search(args):
     )
 
     try:
-        hs = HybridSearcher(palace_path=anaktoron_path)
+        hs = HybridSearcher(anaktoron_path=anaktoron_path)
         hits = hs.search(
             query=args.query,
             wing=args.wing,
@@ -151,7 +151,7 @@ def cmd_wakeup(args):
     anaktoron_path = (
         os.path.expanduser(args.palace) if args.palace else MnemionConfig().anaktoron_path
     )
-    stack = MemoryStack(palace_path=anaktoron_path)
+    stack = MemoryStack(anaktoron_path=anaktoron_path)
 
     text = stack.wake_up(wing=args.wing)
     tokens = len(text) // 4
@@ -189,7 +189,7 @@ def cmd_status(args):
     anaktoron_path = (
         os.path.expanduser(args.palace) if args.palace else MnemionConfig().anaktoron_path
     )
-    status(palace_path=anaktoron_path)
+    status(anaktoron_path=anaktoron_path)
 
 
 def cmd_repair(args):

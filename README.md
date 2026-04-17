@@ -20,7 +20,7 @@ Inspired by the original mempal project. Built far beyond it.
 
 <br>
 
-[Architecture](#architecture-layers) · [Quick Start](#quick-start) · [MCP Tools](#mcp-tools) · [System Prompt](#behavioral-protocol-bootstrap-system_promptmd--mcp-prompts) · [Auto-Save Hooks](#auto-save-hooks) · [Librarian](#6-librarian--daily-background-tidy-up-librarianpy) · [Anaktoron Sync](#anaktoron-sync) · [Benchmarks](#benchmarks) · [Changelog](#changelog)
+[Architecture](#architecture-layers) · [Quick Start](#quick-start) · [MCP Tools](#mcp-tools) · [Studio](#studio--connect-agents) · [System Prompt](#behavioral-protocol-bootstrap-system_promptmd--mcp-prompts) · [Auto-Save Hooks](#auto-save-hooks) · [Librarian](#6-librarian--daily-background-tidy-up-librarianpy) · [Anaktoron Sync](#anaktoron-sync) · [Benchmarks](#benchmarks) · [Changelog](#changelog)
 
 </div>
 
@@ -180,6 +180,8 @@ Then add the MCP server:
 ```bash
 claude mcp add mnemion -- python -m mnemion.mcp_server
 ```
+
+**Or use Studio's one-click connector** (Claude Code, Claude Desktop, Cursor, Codex, Gemini CLI, Windsurf, Zed — see [Studio → Connect Agents](#studio--connect-agents)).
 
 Then copy the behavioral protocol into your AI's system instructions so it knows to use its memory:
 ```bash
@@ -362,6 +364,37 @@ See [sync/README.md](sync/README.md) for full details including macOS/Linux cron
 
 ---
 
+## Studio — Connect Agents
+
+Mnemion Studio is a local web dashboard that visualises your Anaktoron and — as of v3.5.0 — wires Mnemion into every MCP-capable AI client on your system with one click.
+
+```bash
+pip install -e ".[studio]"
+uvicorn studio.backend.main:app --port 7891
+cd studio/frontend && npm install && npm run dev
+```
+
+Open **http://localhost:5173** (Vite may bump the port if busy) and navigate to **Connect Agents** (or press `G C`). Studio scans for known clients, shows which ones are already connected, and installs Mnemion into the ones that aren't:
+
+| Client | Vendor | Format |
+|---|---|---|
+| Claude Code | Anthropic | `~/.claude.json` |
+| Claude Code (project) | Anthropic | `./.mcp.json` |
+| Claude Desktop | Anthropic | platform-specific |
+| Cursor | Cursor | `~/.cursor/mcp.json` |
+| Windsurf | Codeium | `~/.codeium/windsurf/mcp_config.json` |
+| Codex CLI | OpenAI | `~/.codex/config.toml` (TOML) |
+| Gemini CLI | Google | `~/.gemini/settings.json` |
+| Zed | Zed Industries | `~/.config/zed/settings.json` |
+
+Legacy `mempalace` entries are detected and auto-replaced. Every install writes a timestamped backup to `.mnemion_backups/` next to the config. The installed command uses the absolute path of the Python interpreter that Studio itself is running in, so there are no PATH surprises.
+
+Any client not in the list (OpenClaw, Nemoclaw, Hermes, Cline, custom agents…) can connect using the universal JSON snippet shown at the bottom of the Connect view.
+
+See [`studio/README.md`](studio/README.md) for the full view tour.
+
+---
+
 ## Architecture
 
 ```
@@ -420,6 +453,90 @@ Mnemion began as a fork of mempalace, which introduced the memory Anaktoron meta
 ---
 
 ## Changelog
+
+### v3.5.0 — Studio: Connect Agents + systematic bug fixes
+
+#### Studio — one-click MCP setup for eight AI clients
+Studio now ships a **Connect Agents** view (`/connect`, `G C`) that detects installed MCP clients and wires Mnemion into each one's config — safely, with timestamped backups. Supports JSON configs (Claude Code, Claude Desktop, Cursor, Windsurf, Gemini CLI, Zed) and TOML (OpenAI Codex). Detects and replaces legacy `mempalace` references. The installed command uses the absolute path of Studio's own Python interpreter (`sys.executable`), so no PATH-resolution surprises. Any unlisted client (OpenClaw, Nemoclaw, Hermes, Cline, custom agents) can copy the universal JSON snippet. New module: `studio/backend/connectors.py`. New endpoints: `GET/POST /api/connectors[/{id}][/install|/uninstall]`.
+
+#### Studio — graph hover highlight (Obsidian-style)
+Hovering a node in the Memory Graph now dims non-neighbours and brightens adjacent edges. Wing Map and Knowledge Graph both use Sigma.js `nodeReducer`/`edgeReducer` via a `<HoverHighlight />` component that lives inside the SigmaContainer. ForceAtlas2 is imported statically (the previous dynamic `import()` caused 2–5s Vite compilation delays on first use).
+
+#### Studio — Dashboard recent drawers + quick capture
+Dashboard now shows the 7 most recently added drawers (new `GET /api/drawers/recent` endpoint, sorts by `filed_at`). A **+ New Drawer** button in the header opens the create modal via `LayoutContext`, deduplicating state across `LeftSidebar` and `Dashboard`.
+
+#### Studio — search `wing:`/`room:` operators + trust badges
+Typing `wing:legal tax` in the search box parses out the wing filter and searches "tax" within legal. The wing pill is auto-surfaced in the UI. Results with `trust_status: contested` are flagged with an orange warning badge. `api.search()` now typed as `Promise<{ results: SearchHit[] }>` — the previous `DrawerSummary[]` typing hid a systematic field mismatch (see below).
+
+#### Studio — critical bug fixes
+Every one of these silently broke a user-visible feature before v3.5.0:
+
+- **Timestamp field mismatch** — all Python writers save `filed_at`, all Studio readers queried `timestamp`. Result: every drawer's "Created" row blank, Recently Added sort order random, Agent activity last-seen never populated. Fixed across four readers in `main.py` with `meta.get("filed_at") or meta.get("timestamp", "")`.
+- **DrawerCreateModal didn't navigate** — backend returns `drawer_id`, frontend read `data?.id`. User saw a toast but never reached the new drawer. Now reads `data?.drawer_id ?? data?.id`.
+- **Search result previews empty** — `hybrid_searcher` returns `text`, Studio rendered `content`. Backend now maps `text → content` in `/api/search` and `/api/drawer/*.related` before returning to clients.
+- **Vault export crashed on click** — `_col.get(...)` referenced an undefined global. Now uses `_get_collection()` and streams the ZIP via `FileResponse` with a temp file (bounded memory regardless of vault size) instead of materialising the whole archive in a `BytesIO`.
+- **CORS rejected non-5173 ports** — tightened to an origin regex allowing any localhost port plus `file://` (Electron).
+- **CommandPalette rendered literal "undefined"** when a search hit had no content — operator-precedence bug in a chained `+ ... || hit.id` fallback.
+- **Hardcoded port 5173** in SettingsView, Electron dev mode, and `start.bat` — SettingsView now shows `window.location.host`, Electron probes 5173–5179 via `findDevPort()`, `start.bat` notes Vite may bump.
+- **`~/projects/mnemion` hardcoded in `hooks/mnemion_save_hook.py`** — replaced with `_discover_mnemion_src()` (env var → installed package → legacy fallback).
+- **`setState` during render** in `SettingsView` LLM hydration — now `useEffect` with a `hydrated` flag so user edits aren't clobbered.
+- **`LeftSidebar` wing didn't auto-expand on deep-link reload** — `useState(isCurrentWing)` only read the initial value; added a `useEffect` that expands when `isCurrentWing` becomes true.
+- **`useState<any[]>`, `as any` casts, unused `import hashlib`, duplicate `ChevronRight` import** — various type-safety cleanups. New typed shapes: `StudioConfig`, `LLMConfig`, `RecentDrawer`, `ConnectorStatus`, `SearchHit.trust_status`.
+
+#### Studio — resilience
+- **`<ErrorBoundary>`** wraps `<Outlet />` in Layout so one bad render shows a retry button instead of blanking the shell.
+- **Dead code removed**: `RightSidebar.tsx` (162 lines, never imported), `/ws` WebSocket stub + `broadcast()` (never called from anywhere), `api.getDrawer` alias.
+
+#### Studio — UX consistency
+- Shortcut modal now reflects only wired shortcuts (removed the advertised-but-never-bound `Ctrl+C` and `Backspace` chords); added `G C → Connect Agents`.
+- Command Palette now navigates to Connect.
+
+### v3.4.x — LeWM, Entity Registry, Plugins, Anaktoron Rename
+
+#### Palace → Anaktoron rename
+All internal references to "palace" renamed to "anaktoron". Storage path: `~/.mempalace/palace` → `~/.mnemion/anaktoron`. Config class: `MempalaceConfig` → `MnemionConfig`. MCP server arg: `--palace` → `--anaktoron`. Env var: `MNEMION_ANAKTORON_PATH` (legacy `MNEMION_PALACE_PATH` still accepted). Config file key: `anaktoron_path` (legacy `palace_path` still accepted).
+
+#### LeWM — Latent Embedding Weight Manifold (`lewm.py`, optional `pip install mnemion[lewm]`)
+- **`SIGReg`**: Sketch Isotropic Gaussian Regularizer — measures embedding distribution deviation from isotropic Gaussian using the Epps-Pulley test statistic. Verified **+40% Recall@5** improvement (0.600 → 1.000) in A/B benchmark on a 2,000-drawer test Anaktoron.
+- **`groom_embeddings()`**: lightweight `LatentAdapter` (identity-initialized linear layer) trained in the background during ingestion — spreads embeddings across the latent manifold without destroying semantic structure. Contrastive preservation + diversity penalty + SIGReg loss. Safe to call without torch: returns embeddings unchanged.
+
+#### JEPA Predictor (`predictor.py`, requires `mnemion[lewm]`)
+- **`predict_next_context()`**: LSTM-based next-context predictor. Maintains a singleton model, fine-tunes online from session history, predicts the next embedding for pre-fetch or room suggestion. Exposed as `mnemion_predict_next` MCP tool.
+- **`record_activity()`**: thread-safe session history log at `~/.mnemion/session_history.json`.
+
+#### Personal Entity Registry (`entity_registry.py`)
+- Persistent registry at `~/.mnemion/entity_registry.json` — three priority sources: onboarding > learned > wiki.
+- Wikipedia disambiguation via REST API: detects person/place/concept for unknown capitalized words, caches results, flags words that are also common English (e.g. "Grace", "Max", "May").
+- Context-pattern disambiguation: 14 person-context vs. 9 concept-context patterns decide "Riley said" (person) from "if you ever" (adverb).
+- `learn_from_text()`: discovers entity candidates from session text at configurable confidence threshold.
+
+#### Interactive Onboarding (`onboarding.py`)
+- Guided first-run: mode (work/personal/combo), people + nicknames, projects, wings. Auto-detects additional names from project files; warns about ambiguous names.
+- Generates `~/.mnemion/aaak_entities.md` + `~/.mnemion/critical_facts.md` so the AI knows the user's world from session one.
+
+#### Multi-format Chat Normalizer (`normalize.py`)
+- Converts any chat export to Mnemion transcript format (`>` markers). No API key, fully local.
+- Supports: Claude Code JSONL, OpenAI Codex CLI JSONL, Claude.ai JSON (flat + privacy export), ChatGPT `conversations.json` (mapping tree), Slack JSON, plain text (pass-through).
+
+#### AAAK Dialect Compression (`dialect.py`)
+- **`mnemion compress [--wing W] [--dry-run]`**: compresses drawers using AAAK notation (~30x token reduction). Stores in a separate `mnemion_compressed` collection.
+
+#### Spellcheck (`spellcheck.py`)
+- Corrects typos in user messages before Anaktoron filing. Preserves technical terms, CamelCase, URLs, known entity names. Optional dep: `autocorrect`.
+
+#### Unified Hook Dispatcher (`hooks_cli.py`)
+- **`mnemion hook run --hook <name> --harness <claude-code|codex>`**: Python hook dispatcher replacing standalone shell scripts.
+- `stop`: blocks every 15 exchanges for auto-save. `precompact`: always blocks with comprehensive save. `session-start`: initializes tracking.
+- `MNEMION_DIR` env triggers background `mnemion mine` on stop, synchronous on precompact. Path-traversal-safe session ID sanitization.
+
+#### Instructions CLI (`instructions_cli.py`)
+- **`mnemion instructions <name>`**: prints skill instructions from `mnemion/instructions/`. Available: `init`, `mine`, `search`, `status`, `help`.
+
+#### Claude Code Plugin (`.claude-plugin/`)
+- First-class Claude Code plugin: `plugin.json`, `marketplace.json`, 5 slash commands (`/mnemion:init`, `/mnemion:mine`, `/mnemion:search`, `/mnemion:status`, `/mnemion:help`), stop + precompact hooks, MCP server registration.
+
+#### Codex Plugin (`.codex-plugin/`)
+- First-class OpenAI Codex CLI plugin: `plugin.json`, 5 skills (`/init`, `/mine`, `/search`, `/status`, `/help`), stop hook, MCP server registration. `.agents/plugins/marketplace.json` for local marketplace discovery.
 
 ### v3.3.5 — Restore: streaming JSON, O(batch) peak memory
 

@@ -48,6 +48,7 @@ export interface SearchHit {
   content: string
   score?: number
   similarity?: number
+  trust_status?: 'current' | 'superseded' | 'contested' | 'historical' | string
 }
 
 export interface Taxonomy {
@@ -92,6 +93,47 @@ export interface HeartbeatEntry {
   last_call: string
   last_tool: string
   call_count: number
+}
+
+export interface ConnectorStatus {
+  id: string
+  name: string
+  vendor: string
+  category: 'cli' | 'app' | 'ide' | string
+  description: string
+  doc_url: string
+  install_note: string
+  config_path: string
+  format: 'json' | 'toml' | string
+  installed: boolean
+  mnemion_configured: boolean
+  other_mcp_servers: string[]
+  legacy_detected: boolean
+  error: string | null
+  snippet?: string
+}
+
+export interface LLMConfig {
+  backend: string
+  url?: string
+  model?: string
+  api_key?: string | null
+}
+
+export interface StudioConfig {
+  anaktoron_path: string
+  collection_name: string
+  llm: LLMConfig
+  topic_wings: string[]
+}
+
+export interface RecentDrawer {
+  id: string
+  wing: string
+  room: string
+  timestamp: string
+  added_by: string
+  preview: string
 }
 
 export interface TrustStats {

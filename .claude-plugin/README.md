@@ -1,6 +1,6 @@
 # Mnemion Claude Code Plugin
 
-A Claude Code plugin that gives your AI a persistent memory system. Mine projects and conversations into a searchable Anaktoron backed by ChromaDB, with 19 MCP tools, auto-save hooks, and 5 guided skills.
+A Claude Code plugin that gives your AI a persistent memory system. Mine projects and conversations into a searchable Anaktoron backed by ChromaDB, with 25 MCP tools, auto-save hooks, and 5 guided skills.
 
 ## Prerequisites
 
@@ -11,7 +11,7 @@ A Claude Code plugin that gives your AI a persistent memory system. Mine project
 ### Claude Code Marketplace
 
 ```bash
-claude plugin marketplace add milla-jovovich/mnemion
+claude plugin marketplace add Perseusxrltd/mnemion
 claude plugin install --scope user mnemion
 ```
 
