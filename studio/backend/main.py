@@ -10,34 +10,31 @@ Usage:
     uvicorn studio.backend.main:app --reload --port 7891
 """
 
+import io
 import json
 import logging
 import os
 import sqlite3
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
 # Suppress chromadb/posthog stdout noise before importing
-import io
-
 _saved_stdout = sys.stdout
 sys.stdout = io.StringIO()
 import chromadb  # noqa: E402
 sys.stdout = _saved_stdout
 
-from fastapi import FastAPI, HTTPException, Query
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from fastapi import FastAPI, HTTPException, Query  # noqa: E402
+from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
+from pydantic import BaseModel  # noqa: E402
 
-from mnemion.config import DRAWER_HNSW_METADATA, MnemionConfig
-from mnemion.hybrid_searcher import HybridSearcher
-from mnemion.knowledge_graph import KnowledgeGraph
-from mnemion.trust_lifecycle import DrawerTrust
-from mnemion.version import __version__
-from . import connectors as _connectors
+from mnemion.config import DRAWER_HNSW_METADATA, MnemionConfig  # noqa: E402
+from mnemion.hybrid_searcher import HybridSearcher  # noqa: E402
+from mnemion.knowledge_graph import KnowledgeGraph  # noqa: E402
+from mnemion.trust_lifecycle import DrawerTrust  # noqa: E402
+from mnemion.version import __version__  # noqa: E402
+from . import connectors as _connectors  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s  %(name)s  %(message)s")
 logger = logging.getLogger("studio")
@@ -211,7 +208,6 @@ def get_drawer(drawer_id: str):
         raise HTTPException(404, "Drawer not found")
     meta = result["metadatas"][0] or {}
     doc = result["documents"][0] or ""
-    trust = _trust.get(drawer_id)
     trust_history = _trust_history(drawer_id)
 
     # Related drawers via hybrid search (exclude self)
@@ -619,8 +615,10 @@ def export_vault(wing: Optional[str] = Query(None)):
         fname = f"mnemion_vault{'_' + wing if wing else ''}.zip"
 
         def _cleanup(path: str):
-            try: _os.unlink(path)
-            except OSError: pass
+            try:
+                _os.unlink(path)
+            except OSError:
+                pass
 
         return FileResponse(
             tmp_path,
@@ -629,8 +627,10 @@ def export_vault(wing: Optional[str] = Query(None)):
             background=BackgroundTask(_cleanup, tmp_path),
         )
     except Exception as exc:
-        try: _os.unlink(tmp_path)
-        except OSError: pass
+        try:
+            _os.unlink(tmp_path)
+        except OSError:
+            pass
         raise HTTPException(500, str(exc))
 
 

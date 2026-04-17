@@ -53,12 +53,22 @@ function stopBackend() {
 // ── Wait for backend to be ready ──────────────────────────────────────────────
 
 async function findDevPort(ports: number[]): Promise<number | null> {
+  // Probe each port and only accept one that looks like a Vite dev server —
+  // a random HTTP service on the same port (notebook, other dev server, …)
+  // must NOT be picked. Vite's index.html embeds `/@vite/client` and
+  // `/@react-refresh` as <script type="module"> sources.
   for (const p of ports) {
     try {
-      const res = await fetch(`http://localhost:${p}`)
-      if (res.ok || res.status < 500) return p
+      const res = await fetch(`http://localhost:${p}/`, {
+        headers: { Accept: 'text/html' },
+      })
+      if (!res.ok) continue
+      const body = await res.text()
+      if (body.includes('/@vite/client') || body.includes('/@react-refresh')) {
+        return p
+      }
     } catch {
-      // port not listening
+      // port not listening or refused
     }
   }
   return null
