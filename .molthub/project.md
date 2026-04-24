@@ -11,7 +11,7 @@ demo_url: "https://www.molthub.info/artifacts/mnemion"
 collaboration_open: true
 skills_needed: ["Python", "SQLite", "ChromaDB", "Information Retrieval", "MCP", "PyTorch"]
 help_wanted: "GraphRAG contextual expansion, CRDT-based cross-device sync, cross-encoder reranking, LeWM online fine-tuning pipeline."
-latest_milestone: "v3.4.x — SIGReg/JEPA, entity registry, multi-format normalizer, Claude Code + Codex plugins, Palace→Anaktoron rename (April 2026)"
+latest_milestone: "v3.5.0 — Studio Connect Agents, reproducible CI gates, Electron security refresh, local API token hardening, plugin MCP schema cleanup (April 2026)"
 ---
 
 # Mnemion
@@ -38,7 +38,7 @@ Persistent AI memory that actually works. Not just a vector store — a full sel
 - LSTM-based predictor tracks latent trajectories to anticipate the user's next information needs
 - Exposed via `mnemion_predict_next` MCP tool
 
-### Memory Trust Layer (drawer_trust.py)
+### Memory Trust Layer (`trust_lifecycle.py`)
 - Every drawer has a trust record: `current → superseded | contested → historical`
 - Background contradiction detection: Stage 1 fast LLM judge, Stage 2 Anaktoron-context enriched
 - 5 trust MCP tools: verify, challenge, get_contested, resolve_contest, trust_stats
@@ -89,16 +89,22 @@ Persistent AI memory that actually works. Not just a vector store — a full sel
 - Available: `init`, `mine`, `search`, `status`, `help`.
 
 ### Claude Code Plugin (`.claude-plugin/`)
-- `plugin.json` + `marketplace.json`: registers Mnemion as a Claude Code plugin (v3.4.9).
+- `plugin.json` + `marketplace.json`: registers Mnemion as a Claude Code plugin (v3.5.0).
 - Skills: `mnemion/SKILL.md` (unified skill prompt). Commands: `help`, `init`, `mine`, `search`, `status`.
 - Hooks: `mnemion-stop-hook.sh` + `mnemion-precompact-hook.sh`.
 - MCP server: `python3 -m mnemion.mcp_server`.
 
 ### Codex Plugin (`.codex-plugin/`)
-- `plugin.json`: registers Mnemion as an OpenAI Codex CLI plugin (v3.4.9).
+- `plugin.json`: registers Mnemion as an OpenAI Codex CLI plugin (v3.5.0).
 - Skills: per-skill `SKILL.md` files for `init`, `mine`, `search`, `status`, `help`.
 - Hooks: `hooks.json` + `mnemion-hook.sh`. MCP server: `python3 -m mnemion.mcp_server`.
 - `.agents/plugins/marketplace.json`: local marketplace manifest pointing at `.codex-plugin/`.
+
+### Studio + Local Runtime Hardening (`studio/`)
+- FastAPI backend + React/Vite frontend for visualising the Anaktoron, browsing/searching drawers, exporting vaults, and connecting MCP-capable clients.
+- Connect Agents installs Mnemion into Claude Code, Claude Desktop, Cursor, Windsurf, Gemini CLI, Zed, and Codex CLI with timestamped config backups.
+- CORS is restricted to expected local dev/Electron origins. Optional `MNEMION_STUDIO_TOKEN` requires `X-Mnemion-Studio-Token` for all mutating `/api` requests.
+- Electron packaging has a committed `package-lock.json`, current secure major dependencies (`electron` 41, `electron-builder` 26), and audited build gates.
 
 ### Intelligent LLM Lifecycle (`llm_backend.py` — `ManagedBackend`)
 - Auto-start on demand (WSL or native), auto-stop after idle timeout, auto-restart on 3 failures.
@@ -113,7 +119,7 @@ Persistent AI memory that actually works. Not just a vector store — a full sel
 - `SyncMemories.ps1` / `SyncMemories.sh`: fetch-before-push, merge remote export, `git push --force-with-lease`, 5 retries with random 2–9s jitter, lock file (stale > 10 min auto-cleared).
 - `merge_exports.py`: pure-Python merge of two `drawers_export.json` files — deduplicates by ID, newer `filed_at` wins.
 
-## MCP Tools (25 tools across 5 categories)
+## MCP Tools (25 tools across 6 categories)
 
 ### Read
 `mnemion_status` · `mnemion_list_wings` · `mnemion_list_rooms` · `mnemion_get_taxonomy` · `mnemion_get_aaak_spec` · `mnemion_search` · `mnemion_check_duplicate`
@@ -126,6 +132,9 @@ Persistent AI memory that actually works. Not just a vector store — a full sel
 
 ### Trust
 `mnemion_trust_stats` · `mnemion_verify` · `mnemion_challenge` · `mnemion_get_contested` · `mnemion_resolve_contest`
+
+### LeWM
+`mnemion_predict_next`
 
 ### Agent Diary
 `mnemion_diary_write` · `mnemion_diary_read`
@@ -151,8 +160,10 @@ mnemion repair                             Rebuild vector index
 - **Languages:** Python 3.9+
 - **Database:** SQLite 3.x (FTS5 + KG triples + trust tables)
 - **Vector Store:** ChromaDB (Local Persistent, `~/.mnemion/anaktoron/`)
+- **Studio:** FastAPI, React 18, Vite 6, Electron 41
 - **Optimization:** PyTorch (SIGReg & JEPA Predictor) — optional dep `mnemion[lewm]`
-- **Protocol:** Model Context Protocol (MCP) — 25 tools across 5 categories
+- **Protocol:** Model Context Protocol (MCP) — 25 tools across 6 categories
+- **Reproducibility:** `uv.lock`, frontend `package-lock.json`, Electron `package-lock.json`, Ruff format/check, npm audit gates
 - **Optional:** `autocorrect` (spellcheck)
 
 ## Agent Operating Protocol

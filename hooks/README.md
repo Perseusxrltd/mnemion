@@ -53,12 +53,17 @@ Add to `.claude/settings.local.json`:
 
 ### Configuration
 
-Edit the top of `mnemion_save_hook.py`:
+The hook discovers the Mnemion package in this order: `MNEMION_SRC` env var, installed package location, then the legacy `~/projects/mnemion` fallback. Set `MNEMION_SRC` only when you want to force a specific clone:
+
+```bash
+export MNEMION_SRC=/absolute/path/to/mnemion
+```
+
+Edit the top of `mnemion_save_hook.py` only for local policy changes:
 
 ```python
-SAVE_INTERVAL = 3           # exchanges between auto-saves
-MNEMION_SRC = "~/projects/mnemion"   # path to this repo
-SYNC_SCRIPT   = "~/.mnemion/SyncMemories.ps1"   # auto-sync script (optional)
+SAVE_INTERVAL = 3
+SYNC_SCRIPT = "~/.mnemion/SyncMemories.ps1"
 ```
 
 Set `SYNC_SCRIPT = ""` to disable git sync (saves only, no push).

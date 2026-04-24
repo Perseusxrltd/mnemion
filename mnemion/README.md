@@ -17,7 +17,7 @@ The Python package that powers Mnemion. All modules, all logic.
 | `dialect.py` | AAAK compression — entity codes, emotion markers |
 | `knowledge_graph.py` | Temporal entity-relationship graph — SQLite, time-filtered queries, fact invalidation |
 | `anaktoron_graph.py` | Room-based navigation graph — BFS traversal, tunnel detection across wings |
-| `drawer_trust.py` | **Memory Trust Layer** — SQLite trust records per drawer; status lifecycle (current→superseded\|contested→historical); confidence scoring; conflict registry; append-only audit trail |
+| `trust_lifecycle.py` | **Memory Trust Layer** — SQLite trust records per drawer; status lifecycle (current→superseded\|contested→historical); confidence scoring; conflict registry; append-only audit trail |
 | `contradiction_detector.py` | **Two-stage conflict detection** — Stage 1: fast LLM judge (auto-resolves at ≥0.8 confidence); Stage 2: Anaktoron-context enriched resolve for ambiguous cases; runs in daemon threads, never blocks saves |
 | `llm_backend.py` | **Pluggable LLM backend** — abstract adapter supporting ollama, lmstudio, vllm, custom OpenAI-compatible endpoints, or none. Configured via `mnemion llm setup`. |
 | `mcp_server.py` | MCP server — 25 tools, AAAK auto-teach, Anaktoron Protocol, agent diary, trust management, LeWM predict |

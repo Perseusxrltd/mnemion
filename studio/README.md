@@ -27,14 +27,14 @@ Then open **http://localhost:5173** — or whichever port Vite picked if 5173 wa
 
 **Backend (FastAPI):**
 ```bash
-pip install -e ".[studio]"
-uvicorn studio.backend.main:app --host 127.0.0.1 --port 7891 --reload
+uv sync --extra studio
+uv run uvicorn studio.backend.main:app --host 127.0.0.1 --port 7891 --reload
 ```
 
 **Frontend (Vite + React):**
 ```bash
 cd studio/frontend
-npm install
+npm ci
 npm run dev
 ```
 
@@ -80,7 +80,7 @@ studio/
 ├── electron/           Desktop packaging (probes Vite port at 5173–5179)
 └── frontend/
     └── src/
-        ├── views/        Dashboard, GraphView, Browser, Search, DrawerDetail,
+        ├── views/        Lazy-loaded Dashboard, GraphView, Browser, Search, DrawerDetail,
         │                 Agents, ConnectorsView, Settings
         ├── components/   Layout, Ribbon, LeftSidebar, StatusBar, ErrorBoundary,
         │                 CommandPalette, ShortcutModal, DrawerCreateModal,
@@ -89,7 +89,31 @@ studio/
 ```
 
 **Backend port:** 7891  
-**Frontend port:** 5173 by default — Vite auto-bumps to 5174/5175/… if busy. CORS allows any `localhost`/`127.0.0.1` port plus `file://` (Electron).
+**Frontend port:** 5173 by default — Vite auto-bumps to 5174/5175/… if busy. CORS allows only the expected local dev surface: `localhost`/`127.0.0.1` ports 5173-5179 and 7891, plus `file://`/`null` for Electron.
+
+## Local API security
+
+Read-only `GET` endpoints stay open for the local dashboard. If `MNEMION_STUDIO_TOKEN` is set, every mutating `/api` request (`POST`, `PUT`, `PATCH`, `DELETE`) must include:
+
+```http
+X-Mnemion-Studio-Token: <token>
+```
+
+Packaged Electron generates or inherits this token, passes it to the backend process as `MNEMION_STUDIO_TOKEN`, and exposes it to the frontend through the preload bridge. Browser-only development can leave the env var unset, or set it and provide the same header from local tooling.
+
+## Build checks
+
+```bash
+cd studio/frontend
+npm ci
+npm run build
+npm audit --audit-level=high
+
+cd ../electron
+npm ci
+npm run build
+npm audit --audit-level=high
+```
 
 ## Agent heartbeats
 
@@ -108,7 +132,7 @@ Studio reads these to show live connection status in the **Agents** view. Set `M
 
 ## API surface
 
-All endpoints under `/api`; typed client in `frontend/src/api/client.ts`.
+All endpoints under `/api`; typed client in `frontend/src/api/client.ts`. Mutating endpoints require `X-Mnemion-Studio-Token` when `MNEMION_STUDIO_TOKEN` is configured.
 
 - **Drawers:** `/status`, `/taxonomy`, `/drawers`, `/drawers/recent`, `/drawer/{id}` (GET/DELETE/POST)
 - **Search:** `/search?q=...&wing=...&room=...&limit=...`

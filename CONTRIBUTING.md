@@ -7,16 +7,40 @@ Thanks for wanting to help. Mnemion is open source and we welcome contributions 
 ```bash
 git clone https://github.com/Perseusxrltd/mnemion.git
 cd mnemion
-pip install -e ".[dev]"    # installs with dev dependencies (pytest, build, twine)
+python -m pip install uv
+uv sync --group dev
 ```
 
 ## Running Tests
 
 ```bash
-pytest tests/ -v
+uv lock --check
+uvx ruff check .
+uvx ruff format --check .
+uv run pytest tests/ -v --ignore=tests/benchmarks --cov=mnemion --cov-report=term-missing --cov-fail-under=30
 ```
 
 All tests must pass before submitting a PR. Tests should run without API keys or network access.
+
+## Studio and Electron Checks
+
+```bash
+cd studio/frontend
+npm ci
+npm run build
+npm audit --audit-level=high
+
+cd ../electron
+npm ci
+npm run build
+npm audit --audit-level=high
+```
+
+On Linux/WSL, also validate tracked shell scripts:
+
+```bash
+git ls-files '*.sh' | xargs -r bash -n
+```
 
 ## Running Benchmarks
 
@@ -47,7 +71,7 @@ assets/             ← logo + brand
 1. Fork the repo and create a feature branch: `git checkout -b feat/my-thing`
 2. Write your code
 3. Add or update tests if applicable
-4. Run `pytest tests/ -v` — everything must pass
+4. Run the Python, shell, frontend, and Electron checks above — everything must pass
 5. Commit with a clear message following [conventional commits](https://www.conventionalcommits.org/):
    - `feat: add Notion export format`
    - `fix: handle empty transcript files`
@@ -61,7 +85,7 @@ assets/             ← logo + brand
 - **Naming**: `snake_case` for functions/variables, `PascalCase` for classes
 - **Docstrings**: on all modules and public functions
 - **Type hints**: where they improve readability
-- **Dependencies**: minimize. ChromaDB + PyYAML only. Don't add new deps without discussion.
+- **Dependencies**: minimize runtime dependencies. Keep Python 3.9+ compatibility, update lockfiles intentionally, and don't add new runtime deps without discussion.
 
 ## Good First Issues
 

@@ -3,6 +3,9 @@
 ## How to test
 
 ## Checklist
-- [ ] Tests pass (`python -m pytest tests/ -v`)
+- [ ] Python gates pass (`uv lock --check`, `uvx ruff check .`, `uvx ruff format --check .`, pytest)
+- [ ] Tracked shell scripts pass `bash -n`
+- [ ] Studio frontend passes `npm ci`, `npm run build`, and `npm audit --audit-level=high`
+- [ ] Electron passes `npm ci`, `npm run build`, and `npm audit --audit-level=high`
 - [ ] No hardcoded paths
-- [ ] Linter passes (`ruff check .`)
+- [ ] Lockfiles were updated intentionally

@@ -41,7 +41,7 @@ Mnemion runs a **SQLite FTS5 lexical mirror** alongside ChromaDB, fusing both re
 
 *4,344-drawer production Anaktoron, 15-target Gold Standard. Reproduce: `python eval/benchmark.py`*
 
-### 2. Memory Trust Layer (`drawer_trust.py` + `contradiction_detector.py`)
+### 2. Memory Trust Layer (`trust_lifecycle.py` + `contradiction_detector.py`)
 
 Human memory has a lifecycle — beliefs get superseded, contradicted, verified. Without this, an AI memory system accumulates conflicting facts indefinitely.
 
@@ -251,7 +251,7 @@ mnemion llm stop    # shut it down
 
 ## MCP Tools
 
-The MCP server exposes 25 tools across five categories.
+The MCP server exposes 25 tools across six categories.
 
 ### Read
 
@@ -369,9 +369,9 @@ See [sync/README.md](sync/README.md) for full details including macOS/Linux cron
 Mnemion Studio is a local web dashboard that visualises your Anaktoron and — as of v3.5.0 — wires Mnemion into every MCP-capable AI client on your system with one click.
 
 ```bash
-pip install -e ".[studio]"
-uvicorn studio.backend.main:app --port 7891
-cd studio/frontend && npm install && npm run dev
+uv sync --extra studio
+uv run uvicorn studio.backend.main:app --port 7891
+cd studio/frontend && npm ci && npm run dev
 ```
 
 Open **http://localhost:5173** (Vite may bump the port if busy) and navigate to **Connect Agents** (or press `G C`). Studio scans for known clients, shows which ones are already connected, and installs Mnemion into the ones that aren't:
@@ -390,6 +390,8 @@ Open **http://localhost:5173** (Vite may bump the port if busy) and navigate to 
 Legacy `mempalace` entries are detected and auto-replaced. Every install writes a timestamped backup to `.mnemion_backups/` next to the config. The installed command uses the absolute path of the Python interpreter that Studio itself is running in, so there are no PATH surprises.
 
 Any client not in the list (OpenClaw, Nemoclaw, Hermes, Cline, custom agents…) can connect using the universal JSON snippet shown at the bottom of the Connect view.
+
+Studio's local API is intentionally narrow: CORS allows the Vite dev ports (`localhost`/`127.0.0.1` 5173-5179), the backend docs port 7891, and Electron's `file://`/`null` origins. If `MNEMION_STUDIO_TOKEN` is set, every mutating `/api` request must send `X-Mnemion-Studio-Token`; packaged Electron generates the token and forwards it through the preload bridge automatically.
 
 See [`studio/README.md`](studio/README.md) for the full view tour.
 
@@ -456,6 +458,18 @@ Mnemion began as a fork of mempalace, which introduced the memory Anaktoron meta
 
 ### v3.5.0 — Studio: Connect Agents + systematic bug fixes
 
+#### Repo stabilization — reproducible quality gates
+- Added lockfile-backed verification for Python (`uv.lock`), Studio frontend (`npm ci`), and Electron (`package-lock.json`).
+- CI now checks `uv lock --check`, Ruff lint/format, tracked shell scripts with `bash -n`, frontend build/audit, and Electron build/audit.
+- `.coverage` is no longer tracked, generated caches are ignored, and `.gitattributes` pins LF line endings for source, docs, lockfiles, and shell scripts.
+- Preserved Python 3.9+ support with an `onnxruntime==1.20.1` constraint for Python `<3.11`.
+
+#### Studio — local API hardening and build hygiene
+- `MNEMION_STUDIO_TOKEN` now protects mutating Studio API calls when configured; callers must send `X-Mnemion-Studio-Token` on `POST`, `PUT`, `PATCH`, and `DELETE` requests under `/api`.
+- Packaged Electron generates or inherits the Studio token, passes it to the backend process, and exposes it to the renderer through a minimal preload IPC bridge.
+- Electron moved to the current secure major line (`electron` 41 / `electron-builder` 26) and now has an audited lockfile.
+- Studio routes are lazy-loaded so the initial Vite bundle no longer pulls in the graph view.
+
 #### Studio — one-click MCP setup for eight AI clients
 Studio now ships a **Connect Agents** view (`/connect`, `G C`) that detects installed MCP clients and wires Mnemion into each one's config — safely, with timestamped backups. Supports JSON configs (Claude Code, Claude Desktop, Cursor, Windsurf, Gemini CLI, Zed) and TOML (OpenAI Codex). Detects and replaces legacy `mempalace` references. The installed command uses the absolute path of Studio's own Python interpreter (`sys.executable`), so no PATH-resolution surprises. Any unlisted client (OpenClaw, Nemoclaw, Hermes, Cline, custom agents) can copy the universal JSON snippet. New module: `studio/backend/connectors.py`. New endpoints: `GET/POST /api/connectors[/{id}][/install|/uninstall]`.
 
@@ -475,7 +489,7 @@ Every one of these silently broke a user-visible feature before v3.5.0:
 - **DrawerCreateModal didn't navigate** — backend returns `drawer_id`, frontend read `data?.id`. User saw a toast but never reached the new drawer. Now reads `data?.drawer_id ?? data?.id`.
 - **Search result previews empty** — `hybrid_searcher` returns `text`, Studio rendered `content`. Backend now maps `text → content` in `/api/search` and `/api/drawer/*.related` before returning to clients.
 - **Vault export crashed on click** — `_col.get(...)` referenced an undefined global. Now uses `_get_collection()` and streams the ZIP via `FileResponse` with a temp file (bounded memory regardless of vault size) instead of materialising the whole archive in a `BytesIO`.
-- **CORS rejected non-5173 ports** — tightened to an origin regex allowing any localhost port plus `file://` (Electron).
+- **CORS rejected valid dev/Electron origins** — tightened to the expected local surface: `localhost`/`127.0.0.1` ports 5173-5179 and 7891, plus `file://`/`null` for Electron.
 - **CommandPalette rendered literal "undefined"** when a search hit had no content — operator-precedence bug in a chained `+ ... || hit.id` fallback.
 - **Hardcoded port 5173** in SettingsView, Electron dev mode, and `start.bat` — SettingsView now shows `window.location.host`, Electron probes 5173–5179 via `findDevPort()`, `start.bat` notes Vite may bump.
 - **`~/projects/mnemion` hardcoded in `hooks/mnemion_save_hook.py`** — replaced with `_discover_mnemion_src()` (env var → installed package → legacy fallback).
@@ -591,7 +605,7 @@ Automated version bumps. No code changes.
 
 - **ChromaDB BLOB migration** (`chroma_compat.py`): upgrading from chromadb 0.6.x to 1.5.x left BLOB-typed `seq_id` fields that crash the Rust compactor on startup. New `fix_blob_seq_ids()` patches the existing `chroma.sqlite3` in-place before `PersistentClient()` is called. Called from `miner.py`, `hybrid_searcher.py`, and `mcp_server.py`. No-op on clean installs.
 - **Knowledge graph thread safety**: `add_entity`, `add_triple`, and `invalidate` are now protected by a `threading.Lock`. Prevents data races when the Librarian daemon and the main thread write to the KG concurrently.
-- **MCP argument whitelisting**: undeclared keys are stripped from tool args before dispatch — prevents audit-trail spoofing by injected `wait_for_previous` or other rogue parameters.
+- **MCP argument whitelisting**: undeclared keys are stripped from tool args before dispatch, and public `mnemion_add_drawer` no longer exposes `added_by` — prevents audit-trail spoofing by injected `wait_for_previous`, `added_by`, or other rogue parameters.
 - **Parameter clamping**: `limit` (≤50), `max_hops` (≤10), `last_n` (≤100) are clamped before queries to prevent resource abuse.
 - **Epsilon mtime comparison** (`miner.py`): float equality `==` for file mtimes could miss identical values due to float representation; replaced with `abs(a - b) < 0.001`.
 - **`--source` tilde expansion** (`cli.py`): `~/...` and relative paths now correctly resolved via `expanduser().resolve()`.
