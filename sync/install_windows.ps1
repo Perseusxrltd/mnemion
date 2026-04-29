@@ -16,6 +16,27 @@
 .PARAMETER MnemionSrc
     Path to this repo. Auto-detected from script location.
 
+.PARAMETER MnemionDir
+    Path to the private memory git repo. Defaults to ~/.mnemion.
+
+.PARAMETER MemoryRepoUrl
+    Optional git remote URL for the private memory repo.
+
+.PARAMETER MemoryBranch
+    Optional git branch to use for memory sync.
+
+.PARAMETER AgentId
+    Optional display name stamped into sync commit messages.
+
+.PARAMETER SyncTaskName
+    Windows Task Scheduler task name for hourly sync.
+
+.PARAMETER SyncIntervalHours
+    Number of hours between scheduled sync runs.
+
+.PARAMETER SkipSync
+    Skip git repo setup and Task Scheduler sync registration.
+
 .PARAMETER SkipVllm
     Skip the vLLM Task Scheduler setup.
 
@@ -24,11 +45,19 @@
 
 .EXAMPLE
     powershell -ExecutionPolicy Bypass -File sync\install_windows.ps1
-    powershell -ExecutionPolicy Bypass -File sync\install_windows.ps1 -SkipVllm
+    powershell -ExecutionPolicy Bypass -File sync\install_windows.ps1 -MemoryRepoUrl https://github.com/OWNER/PRIVATE-MEMORY-REPO.git -AgentId laptop
+    powershell -ExecutionPolicy Bypass -File sync\install_windows.ps1 -SkipVllm -SkipSync
 #>
 
 param(
     [string]$MnemionSrc = "",
+    [string]$MnemionDir = "",
+    [string]$MemoryRepoUrl = "",
+    [string]$MemoryBranch = "",
+    [string]$AgentId = "",
+    [string]$SyncTaskName = "MnemionSync",
+    [int]$SyncIntervalHours = 1,
+    [switch]$SkipSync,
     [switch]$SkipVllm,
     [switch]$SkipHook
 )
@@ -49,7 +78,9 @@ if (-not (Test-Path "$RepoRoot\mnemion\mcp_server.py")) {
     if (Test-Path "$check\mnemion\mcp_server.py") { $RepoRoot = $check }
 }
 
-$MnemionDir     = "$env:USERPROFILE\.mnemion"
+if ([string]::IsNullOrWhiteSpace($MnemionDir)) {
+    $MnemionDir = "$env:USERPROFILE\.mnemion"
+}
 $ClaudeSettings = "$env:USERPROFILE\.claude\settings.local.json"
 $WslUser       = $env:USERNAME
 
@@ -57,6 +88,48 @@ function Write-Step([string]$msg) { Write-Host "`n>> $msg" -ForegroundColor Cyan
 function Write-Ok([string]$msg)   { Write-Host "   OK   $msg" -ForegroundColor Green }
 function Write-Skip([string]$msg) { Write-Host "   --   $msg" -ForegroundColor DarkGray }
 function Write-Warn([string]$msg) { Write-Host "   WARN $msg" -ForegroundColor Yellow }
+
+function Remove-LegacySyncTasks {
+    try {
+        $legacyTasks = Get-ScheduledTask -ErrorAction SilentlyContinue | Where-Object {
+            ($_.Actions | Where-Object {
+                $_.Execute -like "*powershell*" -and $_.Arguments -like "*.mempalace*SyncMemories.ps1*"
+            })
+        }
+        foreach ($task in $legacyTasks) {
+            Unregister-ScheduledTask -TaskName $task.TaskName -TaskPath $task.TaskPath -Confirm:$false
+            Write-Ok "Removed legacy sync task '$($task.TaskName)'"
+        }
+    } catch {
+        Write-Warn "Could not remove legacy sync task(s): $_"
+    }
+}
+
+function ConvertTo-PlainHashtable($InputObject) {
+    if ($null -eq $InputObject) { return $null }
+    if ($InputObject -is [System.Collections.IDictionary]) {
+        $hash = @{}
+        foreach ($key in $InputObject.Keys) {
+            $hash[$key] = ConvertTo-PlainHashtable $InputObject[$key]
+        }
+        return $hash
+    }
+    if ($InputObject -is [System.Collections.IEnumerable] -and $InputObject -isnot [string]) {
+        $items = @()
+        foreach ($item in $InputObject) {
+            $items += ConvertTo-PlainHashtable $item
+        }
+        return $items
+    }
+    if ($InputObject -is [pscustomobject]) {
+        $hash = @{}
+        foreach ($property in $InputObject.PSObject.Properties) {
+            $hash[$property.Name] = ConvertTo-PlainHashtable $property.Value
+        }
+        return $hash
+    }
+    return $InputObject
+}
 
 Write-Host ""
 Write-Host "Mnemion Windows Setup" -ForegroundColor White
@@ -107,6 +180,89 @@ if (Test-Path $backfillSrc) {
     Write-Ok "Copied backfill_trust.py"
 }
 
+# ---------------------------------------------------------------------------
+# Step 2: Memory git repo
+# ---------------------------------------------------------------------------
+Write-Step "Configuring private memory git repo"
+
+if ($SkipSync) {
+    Write-Skip "Memory git repo setup (-SkipSync passed)"
+} elseif (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+    Write-Warn "git was not found on PATH; configure $MnemionDir manually before sync can push"
+} else {
+    if (-not (Test-Path "$MnemionDir\.git")) {
+        Push-Location $MnemionDir
+        git init | Out-Null
+        Pop-Location
+        Write-Ok "Initialized git repo at $MnemionDir"
+    } else {
+        Write-Ok "Git repo exists at $MnemionDir"
+    }
+
+    if ($MemoryBranch) {
+        Push-Location $MnemionDir
+        $currentBranch = git rev-parse --abbrev-ref HEAD 2>$null
+        if ($currentBranch -ne $MemoryBranch) {
+            git checkout $MemoryBranch *> $null
+            if ($LASTEXITCODE -ne 0) {
+                git checkout -B $MemoryBranch *> $null
+            }
+        }
+        Pop-Location
+        Write-Ok "Using memory branch '$MemoryBranch'"
+    }
+
+    Push-Location $MnemionDir
+    $existingOrigin = git remote get-url origin 2>$null
+    $hasOrigin = ($LASTEXITCODE -eq 0)
+    if ($MemoryRepoUrl) {
+        if ($hasOrigin) {
+            if ($existingOrigin -ne $MemoryRepoUrl) {
+                git remote set-url origin $MemoryRepoUrl
+                Write-Ok "Updated origin remote"
+            } else {
+                Write-Ok "Origin remote already configured"
+            }
+        } else {
+            git remote add origin $MemoryRepoUrl
+            Write-Ok "Added origin remote"
+        }
+    } elseif (-not $hasOrigin) {
+        Write-Warn "No origin remote configured; re-run with -MemoryRepoUrl <git-url> or add one manually"
+    } else {
+        Write-Ok "Origin remote already configured"
+    }
+    Pop-Location
+
+    $memoryIgnoreRules = @(
+        "anaktoron/",
+        "cursor_scraped/",
+        "hook_state/",
+        "hooks/",
+        "heartbeats/",
+        "config.json",
+        "session_history.json",
+        "jepa_predictor.pt",
+        "archive/knowledge_graph.sql",
+        "*.sqlite3",
+        "*.sqlite3-wal",
+        "*.sqlite3-shm",
+        "*.log",
+        ".sync_lock",
+        ".drawers_remote_tmp.json",
+        "!SyncMemories.ps1",
+        "!SyncMemories.sh"
+    )
+    $memoryGitignore = Join-Path $MnemionDir ".gitignore"
+    $existingIgnore = if (Test-Path $memoryGitignore) { Get-Content $memoryGitignore } else { @() }
+    foreach ($rule in $memoryIgnoreRules) {
+        if ($existingIgnore -notcontains $rule) {
+            Add-Content -Path $memoryGitignore -Value $rule
+        }
+    }
+    Write-Ok "Memory repo .gitignore is configured"
+}
+
 # Copy run_vllm.sh to WSL via Python (avoids bash PATH issues)
 $vllmSrc = "$RepoRoot\sync\run_vllm.sh"
 if ((Test-Path $vllmSrc) -and (-not $SkipVllm)) {
@@ -127,7 +283,7 @@ if ((Test-Path $vllmSrc) -and (-not $SkipVllm)) {
 }
 
 # ---------------------------------------------------------------------------
-# Step 2: Claude Code auto-save hook
+# Step 3: Claude Code auto-save hook
 # ---------------------------------------------------------------------------
 Write-Step "Installing Claude Code auto-save hook"
 
@@ -145,7 +301,7 @@ if ($SkipHook) {
     if (Test-Path $ClaudeSettings) {
         try {
             $raw = Get-Content $ClaudeSettings -Raw -Encoding UTF8
-            $settings = $raw | ConvertFrom-Json -AsHashtable
+            $settings = ConvertTo-PlainHashtable ($raw | ConvertFrom-Json)
         } catch {
             $settings = @{}
         }
@@ -153,6 +309,28 @@ if ($SkipHook) {
 
     if (-not $settings.ContainsKey("hooks")) { $settings["hooks"] = @{} }
     if (-not $settings["hooks"].ContainsKey("Stop")) { $settings["hooks"]["Stop"] = @() }
+
+    $filteredStopHooks = @()
+    $removedLegacyHook = $false
+    foreach ($entry in @($settings["hooks"]["Stop"])) {
+        $entryHooks = if ($entry.ContainsKey("hooks")) { @($entry["hooks"]) } else { @() }
+        $hasLegacyHook = $false
+        foreach ($hook in $entryHooks) {
+            $command = if ($hook.ContainsKey("command")) { [string]$hook["command"] } else { "" }
+            if ($command -like "*mempalace*" -or $command -like "*mempal_save_hook*") {
+                $hasLegacyHook = $true
+            }
+        }
+        if ($hasLegacyHook) {
+            $removedLegacyHook = $true
+        } else {
+            $filteredStopHooks += $entry
+        }
+    }
+    $settings["hooks"]["Stop"] = $filteredStopHooks
+    if ($removedLegacyHook) {
+        Write-Ok "Removed legacy mempalace auto-save hook from $ClaudeSettings"
+    }
 
     $alreadyIn = $settings["hooks"]["Stop"] | Where-Object {
         $_.hooks | Where-Object { $_.command -like "*mnemion_save_hook*" }
@@ -173,30 +351,45 @@ if ($SkipHook) {
 }
 
 # ---------------------------------------------------------------------------
-# Step 3: Task Scheduler -- hourly sync
+# Step 4: Task Scheduler -- hourly sync
 # ---------------------------------------------------------------------------
 Write-Step "Registering hourly Anaktoron sync task"
 
-try {
-    if (Get-ScheduledTask -TaskName "MnemionSync" -ErrorAction SilentlyContinue) {
-        Write-Ok "Task 'MnemionSync' already registered"
-    } else {
-        $action = New-ScheduledTaskAction -Execute "powershell.exe" `
-            -Argument "-NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$MnemionDir\SyncMemories.ps1`""
-        $trigger = New-ScheduledTaskTrigger -RepetitionInterval (New-TimeSpan -Hours 1) -Once -At (Get-Date)
-        $ts = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Minutes 5) `
-            -StartWhenAvailable -RunOnlyIfNetworkAvailable
-        Register-ScheduledTask -TaskName "MnemionSync" `
+if ($SkipSync) {
+    Write-Skip "Hourly sync task (-SkipSync passed)"
+} else {
+    $syncArgs = "-NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$MnemionDir\SyncMemories.ps1`" -MnemionDir `"$MnemionDir`" -MnemionSrc `"$RepoRoot`""
+    if ($MemoryBranch) { $syncArgs += " -Branch `"$MemoryBranch`"" }
+    if ($AgentId) { $syncArgs += " -AgentId `"$AgentId`"" }
+    $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument $syncArgs
+    $trigger = New-ScheduledTaskTrigger -RepetitionInterval (New-TimeSpan -Hours $SyncIntervalHours) -Once -At (Get-Date)
+    $ts = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Minutes 5) `
+        -StartWhenAvailable -RunOnlyIfNetworkAvailable
+    $registeredSyncTask = $false
+    try {
+        Register-ScheduledTask -TaskName $SyncTaskName `
             -Action $action -Trigger $trigger -Settings $ts -RunLevel Highest -Force | Out-Null
-        Write-Ok "Task 'MnemionSync' registered (runs every hour)"
+        Write-Ok "Task '$SyncTaskName' registered/updated (runs every $SyncIntervalHours hour(s))"
+        $registeredSyncTask = $true
+    } catch {
+        Write-Warn "Could not register elevated sync task; trying current-user task"
+        try {
+            Register-ScheduledTask -TaskName $SyncTaskName `
+                -Action $action -Trigger $trigger -Settings $ts -Force | Out-Null
+            Write-Ok "Task '$SyncTaskName' registered/updated for current user (runs every $SyncIntervalHours hour(s))"
+            $registeredSyncTask = $true
+        } catch {
+            Write-Warn "Could not register sync task: $_"
+            Write-Warn "Or manually: Task Scheduler > Create Task > Action: powershell.exe -File `"$MnemionDir\SyncMemories.ps1`""
+        }
     }
-} catch {
-    Write-Warn "Task Scheduler requires Administrator -- re-run: Start-Process powershell -Verb RunAs"
-    Write-Warn "Or manually: Task Scheduler > Create Task > Action: powershell.exe -File `"$MnemionDir\SyncMemories.ps1`""
+    if ($registeredSyncTask) {
+        Remove-LegacySyncTasks
+    }
 }
 
 # ---------------------------------------------------------------------------
-# Step 4: Task Scheduler -- vLLM at login
+# Step 5: Task Scheduler -- vLLM at login
 # ---------------------------------------------------------------------------
 Write-Step "Registering vLLM startup task"
 
@@ -223,7 +416,7 @@ if ($SkipVllm) {
 }
 
 # ---------------------------------------------------------------------------
-# Step 5: Trust backfill (if Anaktoron exists)
+# Step 6: Trust backfill (if Anaktoron exists)
 # ---------------------------------------------------------------------------
 Write-Step "Checking for existing Anaktoron"
 

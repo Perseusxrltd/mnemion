@@ -22,15 +22,19 @@
 #   MNEMION_BRANCH      -  git branch to sync (default: auto-detected, fallback: main)
 #   MNEMION_REPO_DIR    -  override repo dir (default: ~/.mnemion)
 #   MNEMION_SOURCE_DIR  -  path to mnemion package (default: next to this script's parent)
+#   MNEMION_SYNC_KG     -  set to 1/true/yes to also sync knowledge_graph.sql (can be very large)
 
 param(
     [string]$MnemionDir    = "",
-    [string]$MnemionSrc = ""
+    [string]$MnemionSrc = "",
+    [string]$AgentId = "",
+    [string]$Branch = ""
 )
 
 # -- Configuration ------------------------------------------------------------
 
-$AgentId   = if ($env:MNEMION_AGENT_ID)  { $env:MNEMION_AGENT_ID }  else { $env:COMPUTERNAME }
+$AgentId   = if ($AgentId) { $AgentId } elseif ($env:MNEMION_AGENT_ID) { $env:MNEMION_AGENT_ID } else { $env:COMPUTERNAME }
+$BranchOverride = if ($Branch) { $Branch } elseif ($env:MNEMION_BRANCH) { $env:MNEMION_BRANCH } else { "" }
 $RepoDir   = if ($env:MNEMION_REPO_DIR)  { $env:MNEMION_REPO_DIR }  elseif ($MnemionDir) { $MnemionDir } else { "$env:USERPROFILE\.mnemion" }
 $SrcDir    = if ($env:MNEMION_SOURCE_DIR){ $env:MNEMION_SOURCE_DIR } elseif ($MnemionSrc) { $MnemionSrc } else {
     # Auto-detect: this script lives in ~/.mnemion; the package is in the repo next to projects
@@ -44,6 +48,7 @@ $ExportFile  = Join-Path $ExportDir "drawers_export.json"
 $RemoteFile  = Join-Path $ExportDir ".drawers_remote_tmp.json"
 $KgExportFile = Join-Path $ExportDir "knowledge_graph.sql"
 $LockFile    = Join-Path $RepoDir ".sync_lock"
+$SyncKnowledgeGraph = $env:MNEMION_SYNC_KG -in @("1", "true", "yes")
 
 # Locate merge_exports.py: prefer source repo, fall back to same dir as this script
 $MergeScript = ""
@@ -96,10 +101,13 @@ if (-not (Test-Path (Join-Path $RepoDir ".git"))) {
 
 Set-Location $RepoDir
 New-Item -ItemType Directory -Force -Path $ExportDir | Out-Null
+if (-not $SyncKnowledgeGraph -and (Test-Path $KgExportFile)) {
+    Remove-Item $KgExportFile -Force
+}
 
 # -- Detect branch ------------------------------------------------------------
 
-$Branch = if ($env:MNEMION_BRANCH) { $env:MNEMION_BRANCH } else {
+$Branch = if ($BranchOverride) { $BranchOverride } else {
     $b = git rev-parse --abbrev-ref HEAD 2>$null
     if ([string]::IsNullOrEmpty($b) -or $b -eq "HEAD") { "main" } else { $b }
 }
@@ -139,16 +147,16 @@ try:
         json.dump(sorted(drawers, key=lambda d: d['id']), f, ensure_ascii=False, indent=2)
     print(f'{len(drawers)} drawers exported')
     
-    # Active Fix: Dump Knowledge Graph logic synchronously 
+    sync_kg = r'$SyncKnowledgeGraph'.lower() == 'true'
     import sqlite3, os
     from pathlib import Path
     kg_path = Path(config.anaktoron_path).parent / 'knowledge_graph.sqlite3'
-    if kg_path.exists():
+    if sync_kg and kg_path.exists():
         kg_out = r'$KgExportFile'.replace('\\\\', '/').replace('\\', '/')
         conn = sqlite3.connect(kg_path)
         with open(kg_out, 'w', encoding='utf-8') as f:
             for line in conn.iterdump():
-                f.write(f"{line}\n")
+                f.write(line + '\n')
         conn.close()
         print('Knowledge Graph / Trust data dumped')
 except Exception as e:
@@ -211,10 +219,12 @@ for ($attempt = 1; $attempt -le $MaxRetries; $attempt++) {
             Remove-Item $RemoteFile -Force -ErrorAction SilentlyContinue
         }
 
-        # ACTIVE FIX: Sync the Trust & Knowledge Graph SQLite Table
+        # Optional: sync the Trust & Knowledge Graph SQLite table.
         $KgRemoteFile = Join-Path $ExportDir ".kg_remote_tmp.sql"
-        git show "${remoteRef}:archive/knowledge_graph.sql" > $KgRemoteFile 2>&1
-        if ($LASTEXITCODE -eq 0 -and (Test-Path $KgRemoteFile)) {
+        if ($SyncKnowledgeGraph) {
+            git show "${remoteRef}:archive/knowledge_graph.sql" > $KgRemoteFile 2>&1
+        }
+        if ($SyncKnowledgeGraph -and $LASTEXITCODE -eq 0 -and (Test-Path $KgRemoteFile)) {
             Write-Log "Trust Graph Remote File Found. Merging SQL dumps natively..."
             $mergeKGSql = @"
 import sqlite3, sys
@@ -243,11 +253,24 @@ except Exception as e:
         }
     }
 
-    # -- Stage -----------------------------------------------------------------
-    git add .
+    # -- Stage only portable sync artifacts ------------------------------------
+    $syncArtifacts = @(
+        "archive/drawers_export.json",
+        ".gitignore",
+        "SyncMemories.ps1",
+        "SyncMemories.sh",
+        "merge_exports.py",
+        "backfill_trust.py"
+    )
+    if ($SyncKnowledgeGraph) { $syncArtifacts += "archive/knowledge_graph.sql" }
+    foreach ($artifact in $syncArtifacts) {
+        if (Test-Path $artifact) {
+            git add -- $artifact
+        }
+    }
 
-    $staged = (git status --porcelain).Trim()
-    if ([string]::IsNullOrEmpty($staged)) {
+    git diff --cached --quiet
+    if ($LASTEXITCODE -eq 0) {
         Write-Log "No changes to sync."
         Release-Lock; exit 0
     }

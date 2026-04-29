@@ -24,6 +24,7 @@
 #   MNEMION_REPO_DIR    — override repo dir (default: ~/.mnemion)
 #   MNEMION_SOURCE_DIR  — path to mnemion package (default: auto-detected)
 #   MNEMION_PYTHON      — python binary to use (default: python3 or python)
+#   MNEMION_SYNC_KG     — set to 1/true/yes to also sync knowledge_graph.sql (can be very large)
 
 set -euo pipefail
 
@@ -31,6 +32,7 @@ set -euo pipefail
 
 AGENT_ID="${MNEMION_AGENT_ID:-$(hostname)}"
 REPO_DIR="${MNEMION_REPO_DIR:-$HOME/.mnemion}"
+SYNC_KG="${MNEMION_SYNC_KG:-0}"
 MAX_RETRIES=5
 
 # Detect python binary
@@ -77,6 +79,12 @@ KG_EXPORT_FILE="$EXPORT_DIR/knowledge_graph.sql"
 KG_REMOTE_FILE="$EXPORT_DIR/.kg_remote_tmp.sql"
 LOCK_FILE="$REPO_DIR/.sync_lock"
 
+SYNC_KG_NORMALIZED="$(printf '%s' "$SYNC_KG" | tr '[:upper:]' '[:lower:]')"
+case "$SYNC_KG_NORMALIZED" in
+    1|true|yes) SYNC_KG_ENABLED=1 ;;
+    *) SYNC_KG_ENABLED=0 ;;
+esac
+
 log() { echo "$(date '+%Y-%m-%d %H:%M:%S') [$AGENT_ID] $*"; }
 
 # ── Lock ──────────────────────────────────────────────────────────────────────
@@ -110,6 +118,9 @@ fi
 
 cd "$REPO_DIR"
 mkdir -p "$EXPORT_DIR"
+if [ "$SYNC_KG_ENABLED" -ne 1 ]; then
+    rm -f "$KG_EXPORT_FILE"
+fi
 
 # ── Detect branch ─────────────────────────────────────────────────────────────
 
@@ -153,10 +164,11 @@ try:
         json.dump(sorted(drawers, key=lambda d: d['id']), f, ensure_ascii=False, indent=2)
     print(f'{len(drawers)} drawers exported')
     
+    sync_kg = "$SYNC_KG_ENABLED" == "1"
     import sqlite3, os
     from pathlib import Path
     kg_path = Path(config.anaktoron_path).parent / 'knowledge_graph.sqlite3'
-    if kg_path.exists():
+    if sync_kg and kg_path.exists():
         conn = sqlite3.connect(kg_path)
         with open("$KG_EXPORT_FILE", 'w', encoding='utf-8') as f:
             for line in conn.iterdump():
@@ -218,8 +230,8 @@ for attempt in $(seq 1 "$MAX_RETRIES"); do
         fi
         rm -f "$REMOTE_FILE"
 
-        # ACTIVE FIX: Sync the Trust & Knowledge Graph SQLite Table
-        if git show "origin/$BRANCH:archive/knowledge_graph.sql" > "$KG_REMOTE_FILE" 2>/dev/null; then
+        # Optional: sync the Trust & Knowledge Graph SQLite table.
+        if [ "$SYNC_KG_ENABLED" -eq 1 ] && git show "origin/$BRANCH:archive/knowledge_graph.sql" > "$KG_REMOTE_FILE" 2>/dev/null; then
             log "Trust Graph Remote File Found. Merging SQL dumps natively..."
             "$PYTHON" - <<PYEOF2
 import sqlite3, sys
@@ -246,8 +258,23 @@ PYEOF2
         fi
     fi
 
-    # ── Stage ────────────────────────────────────────────────────────────────
-    git add .
+    # ── Stage only portable sync artifacts ──────────────────────────────────
+    sync_artifacts=(
+        "archive/drawers_export.json"
+        ".gitignore"
+        "SyncMemories.ps1"
+        "SyncMemories.sh"
+        "merge_exports.py"
+        "backfill_trust.py"
+    )
+    if [ "$SYNC_KG_ENABLED" -eq 1 ]; then
+        sync_artifacts+=("archive/knowledge_graph.sql")
+    fi
+    for artifact in "${sync_artifacts[@]}"; do
+        if [ -e "$artifact" ]; then
+            git add -- "$artifact"
+        fi
+    done
 
     if git diff --staged --quiet; then
         log "No changes to sync."

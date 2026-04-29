@@ -3,13 +3,15 @@
 backfill_trust.py — Assign default trust records to all existing drawers.
 Run once after deploying the trust layer.
 
-Usage:  py C:/Users/jorqu/.mnemion/backfill_trust.py
+Usage:  py ~/.mnemion/backfill_trust.py
 """
 
 import sys
 import os
 
-sys.path.insert(0, os.path.expanduser("~/projects/mnemion"))
+source_dir = os.environ.get("MNEMION_SOURCE_DIR", os.path.expanduser("~/projects/mnemion"))
+if os.path.isdir(source_dir):
+    sys.path.insert(0, source_dir)
 
 from mnemion.chroma_compat import make_persistent_client  # noqa: E402
 from mnemion.config import MnemionConfig  # noqa: E402

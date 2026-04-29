@@ -31,8 +31,8 @@ same machine.  Stale locks (> 10 minutes old) are cleaned up automatically.
 ### Commit messages are traceable
 
 ```
-sync: 2026-04-13 14:32:10 [openclaw-prod] 1582 drawers
-sync: 2026-04-13 14:35:01 [jorqu-windows] 1596 drawers
+sync: 2026-04-13 14:32:10 [laptop] 1582 drawers
+sync: 2026-04-13 14:35:01 [workstation] 1596 drawers
 ```
 
 Set `MNEMION_AGENT_ID` to a meaningful name for each machine/agent.
@@ -50,11 +50,15 @@ Deletion sync requires tombstone records and is planned for a future version.
 ### One-Shot Windows Install
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File sync\install_windows.ps1
+powershell -ExecutionPolicy Bypass -File sync\install_windows.ps1 `
+    -MemoryRepoUrl https://github.com/OWNER/PRIVATE-MEMORY-REPO.git `
+    -MemoryBranch main `
+    -AgentId laptop
 ```
 
 Installs everything: hooks, hourly sync task, vLLM auto-start, trust backfill.
-Skip optional parts: `install_windows.ps1 -SkipVllm` / `-SkipHook`
+Skip optional parts: `install_windows.ps1 -SkipVllm` / `-SkipHook` / `-SkipSync`.
+The memory repo URL, branch, repo path, task name, interval, and agent ID are all parameters.
 
 ---
 
@@ -66,14 +70,14 @@ Skip optional parts: `install_windows.ps1 -SkipVllm` / `-SkipHook`
 # Windows
 cd $env:USERPROFILE\.mnemion
 git init
-git remote add origin https://github.com/YOUR_USERNAME/personal-ai-memories.git
+git remote add origin https://github.com/OWNER/PRIVATE-MEMORY-REPO.git
 ```
 
 ```bash
 # Linux / macOS
 cd ~/.mnemion
 git init
-git remote add origin https://github.com/YOUR_USERNAME/personal-ai-memories.git
+git remote add origin https://github.com/OWNER/PRIVATE-MEMORY-REPO.git
 ```
 
 ### 2. Copy the sync script and set your agent ID
@@ -88,7 +92,7 @@ $env:MNEMION_AGENT_ID = "my-machine-name"   # put this in your profile
 ```bash
 cp sync/SyncMemories.sh ~/.mnemion/SyncMemories.sh
 chmod +x ~/.mnemion/SyncMemories.sh
-export MNEMION_AGENT_ID="openclaw-prod"   # put this in ~/.bashrc or ~/.zshrc
+export MNEMION_AGENT_ID="laptop"   # put this in ~/.bashrc or ~/.zshrc
 ```
 
 ### 3. Schedule the sync
@@ -110,7 +114,7 @@ Register-ScheduledTask -TaskName "MnemionMemorySync" `
 **Linux / macOS — cron:**
 ```bash
 # Every hour at :00
-(crontab -l 2>/dev/null; echo "0 * * * * MNEMION_AGENT_ID=openclaw-prod ~/.mnemion/SyncMemories.sh >> ~/.mnemion/sync.log 2>&1") | crontab -
+(crontab -l 2>/dev/null; echo "0 * * * * MNEMION_AGENT_ID=laptop ~/.mnemion/SyncMemories.sh >> ~/.mnemion/sync.log 2>&1") | crontab -
 ```
 
 ### 4. Verify
@@ -143,6 +147,7 @@ You should see output like:
 | `MNEMION_REPO_DIR`     | `~/.mnemion`         | Path to the memory git repo                  |
 | `MNEMION_SOURCE_DIR`   | auto-detected        | Path to the mnemion package (for imports)    |
 | `MNEMION_PYTHON`       | `python3`            | Python binary (Linux/Mac only)               |
+| `MNEMION_SYNC_KG`      | unset                | Set to `1` to also sync `knowledge_graph.sql`; this can be hundreds of MB and is off by default |
 
 ---
 
@@ -150,11 +155,11 @@ You should see output like:
 
 ```bash
 # 1. Clone your memory repo
-git clone https://github.com/YOUR_USERNAME/personal-ai-memories.git ~/.mnemion
+git clone https://github.com/OWNER/PRIVATE-MEMORY-REPO.git ~/.mnemion
 
 # 2. Rebuild the Anaktoron from the JSON export
 cd ~/.mnemion
-python3 -m mnemion mine archive/drawers_export.json
+python3 -m mnemion restore archive/drawers_export.json
 
 # 3. Backfill trust records for all restored drawers
 python3 ~/.mnemion/backfill_trust.py
@@ -170,6 +175,12 @@ python3 ~/.mnemion/backfill_trust.py
 anaktoron/
 cursor_scraped/
 hook_state/
+hooks/
+heartbeats/
+config.json
+session_history.json
+jepa_predictor.pt
+archive/knowledge_graph.sql
 *.sqlite3
 *.sqlite3-wal
 *.sqlite3-shm

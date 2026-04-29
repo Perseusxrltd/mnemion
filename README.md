@@ -374,19 +374,17 @@ Automatic hourly backup to a private git repo. Works across machines.
 
 **Setup (Windows):**
 ```powershell
-# Copy sync script
-Copy-Item sync/SyncMemories.ps1 $env:USERPROFILE\.mnemion\
-
-# Schedule hourly sync
-$action  = New-ScheduledTaskAction -Execute "powershell.exe" `
-    -Argument "-NonInteractive -WindowStyle Hidden -File $env:USERPROFILE\.mnemion\SyncMemories.ps1"
-$trigger = New-ScheduledTaskTrigger -RepetitionInterval (New-TimeSpan -Hours 1) -Once -At (Get-Date)
-Register-ScheduledTask -TaskName "MnemionMemorySync" -Action $action -Trigger $trigger -RunLevel Highest -Force
+powershell -ExecutionPolicy Bypass -File sync\install_windows.ps1 `
+    -MemoryRepoUrl https://github.com/OWNER/PRIVATE-MEMORY-REPO.git `
+    -MemoryBranch main `
+    -AgentId laptop
 ```
+
+The memory repo URL, branch, local repo path, task name, sync interval, and agent ID are installer parameters. Omit `-MemoryRepoUrl` if you prefer to add the git remote manually.
 
 **Restore on new machine:**
 ```bash
-git clone https://github.com/YOUR_USERNAME/personal-ai-memories ~/.mnemion
+git clone https://github.com/OWNER/PRIVATE-MEMORY-REPO.git ~/.mnemion
 cd ~/.mnemion
 py -m mnemion restore archive/drawers_export.json
 py ~/.mnemion/backfill_trust.py
