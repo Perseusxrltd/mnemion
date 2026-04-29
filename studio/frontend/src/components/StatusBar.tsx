@@ -30,6 +30,12 @@ export default function StatusBar() {
             <span>{status.total_drawers.toLocaleString()} drawers</span>
             <span style={{ color: 'var(--text-faint)' }}>·</span>
             <span>{status.wing_count} wings</span>
+            {status.vector_disabled && (
+              <>
+                <span style={{ color: 'var(--text-faint)' }}>·</span>
+                <span style={{ color: '#f97316' }}>Vector repair needed</span>
+              </>
+            )}
           </>
         )}
       </div>

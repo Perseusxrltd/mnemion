@@ -4,6 +4,12 @@
 
 ---
 
+## Integrity Note
+
+This file is a historical progression log. Use it with the reproduction guide in `benchmarks/README.md` and the policy in `docs/BENCHMARK_INTEGRITY.md`. Retrieval recall, QA accuracy, MRR, Hit@1, Recall@5, and NDCG are separate metrics; only compare systems on the same dataset split, top-k, and metric. Local A/B experiments are not external benchmark claims.
+
+---
+
 ## The Core Finding
 
 Every competitive memory system uses an LLM to manage memory:

@@ -154,6 +154,54 @@ export default function Dashboard() {
         />
       </div>
 
+      {status?.health && (
+        <div
+          className="rounded-xl p-5 fade-in"
+          style={{
+            background: status.vector_disabled ? 'rgba(249,115,22,0.08)' : 'var(--surface)',
+            border: `1px solid ${status.vector_disabled ? 'rgba(249,115,22,0.35)' : 'var(--background-modifier-border)'}`,
+          }}
+        >
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                {status.vector_disabled ? (
+                  <AlertTriangle size={15} style={{ color: '#f97316' }} />
+                ) : (
+                  <CheckCircle size={15} style={{ color: '#30d158' }} />
+                )}
+                <h2 className="text-sm font-semibold">Anaktoron Health</h2>
+              </div>
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                {status.health.message || 'Storage health probe completed.'}
+              </p>
+            </div>
+            <div className="grid grid-cols-3 gap-3 text-right min-w-[260px]">
+              <div>
+                <div className="text-[10px] uppercase font-semibold" style={{ color: 'var(--text-faint)' }}>SQLite</div>
+                <div className="text-sm font-mono">{status.health.sqlite_count?.toLocaleString() ?? '—'}</div>
+              </div>
+              <div>
+                <div className="text-[10px] uppercase font-semibold" style={{ color: 'var(--text-faint)' }}>HNSW</div>
+                <div className="text-sm font-mono">{status.health.hnsw_count?.toLocaleString() ?? '—'}</div>
+              </div>
+              <div>
+                <div className="text-[10px] uppercase font-semibold" style={{ color: 'var(--text-faint)' }}>Gap</div>
+                <div className="text-sm font-mono">{status.health.divergence?.toLocaleString() ?? '—'}</div>
+              </div>
+            </div>
+          </div>
+          {status.vector_disabled && status.repair_command && (
+            <div
+              className="mt-3 px-3 py-2 rounded-lg text-xs font-mono"
+              style={{ background: 'var(--raised)', color: '#f97316', border: '1px solid rgba(249,115,22,0.25)' }}
+            >
+              {status.repair_command}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Recently Added drawers */}
       {recent?.drawers && recent.drawers.length > 0 && (
         <div

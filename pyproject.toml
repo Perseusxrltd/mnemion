@@ -41,6 +41,8 @@ Repository = "https://github.com/Perseusxrltd/mnemion"
 [project.scripts]
 mnemion = "mnemion.cli:main"
 
+[project.entry-points."mnemion.sources"]
+
 [project.optional-dependencies]
 dev = [
     "fastapi[standard]>=0.115.0",
@@ -94,7 +96,7 @@ markers = [
 source = ["mnemion"]
 
 [tool.coverage.report]
-fail_under = 30
+fail_under = 40
 show_missing = true
 exclude_lines = [
     "if __name__",

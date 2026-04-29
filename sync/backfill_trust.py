@@ -13,12 +13,14 @@ source_dir = os.environ.get("MNEMION_SOURCE_DIR", os.path.expanduser("~/projects
 if os.path.isdir(source_dir):
     sys.path.insert(0, source_dir)
 
-import chromadb
-from mnemion.config import MnemionConfig
-from mnemion.trust_lifecycle import DrawerTrust
+from mnemion.chroma_compat import make_persistent_client  # noqa: E402
+from mnemion.config import MnemionConfig  # noqa: E402
+from mnemion.trust_lifecycle import DrawerTrust  # noqa: E402
 
 config = MnemionConfig()
-client = chromadb.PersistentClient(path=config.anaktoron_path)
+client = make_persistent_client(
+    config.anaktoron_path, vector_safe=True, collection_name=config.collection_name
+)
 
 try:
     col = client.get_collection(config.collection_name)

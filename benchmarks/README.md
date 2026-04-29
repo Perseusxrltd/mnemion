@@ -2,6 +2,8 @@
 
 Run the exact same benchmarks we report. Clone, install, run.
 
+Benchmark claims are metric-specific. Do not compare a Recall@5 retrieval score against QA accuracy, MRR, or Hit@1. Treat local A/B tests as local A/B tests unless the same public dataset, split, top-k, and metric are used. See `docs/BENCHMARK_INTEGRITY.md`.
+
 ## Setup
 
 ```bash

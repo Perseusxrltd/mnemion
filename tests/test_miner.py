@@ -3,9 +3,9 @@ import shutil
 import tempfile
 from pathlib import Path
 
-import chromadb
 import yaml
 
+from mnemion.chroma_compat import make_persistent_client
 from mnemion.miner import mine, scan_project
 
 
@@ -43,7 +43,7 @@ def test_project_mining():
         anaktoron_path = project_root / "anaktoron"
         mine(str(project_root), str(anaktoron_path))
 
-        client = chromadb.PersistentClient(path=str(anaktoron_path))
+        client = make_persistent_client(str(anaktoron_path))
         col = client.get_collection("mnemion_drawers")
         assert col.count() > 0
     finally:

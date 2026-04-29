@@ -15,7 +15,6 @@ from pathlib import Path
 from datetime import datetime
 from collections import defaultdict
 
-import chromadb
 import logging
 import sqlite3
 from .trust_lifecycle import DrawerTrust
@@ -52,6 +51,7 @@ SKIP_DIRS = {
     "node_modules",
     "__pycache__",
     ".venv",
+    ".mnemion",
     "venv",
     "env",
     "dist",
@@ -76,6 +76,8 @@ SKIP_DIRS = {
 SKIP_FILENAMES = {
     "mnemion.yaml",
     "mnemion.yml",
+    "entities.json",
+    "origin.json",
     ".gitignore",
     "package-lock.json",
 }
@@ -395,18 +397,19 @@ def chunk_text(content: str, source_file: str) -> list:
 
 
 def get_collection(anaktoron_path: str, collection_name: str = None):
-    from .chroma_compat import fix_blob_seq_ids
+    from .chroma_compat import make_persistent_client, pin_hnsw_threads
     from .config import MnemionConfig
 
     col_name = collection_name or MnemionConfig().collection_name
     os.makedirs(anaktoron_path, exist_ok=True)
-    fix_blob_seq_ids(anaktoron_path)
-    client = chromadb.PersistentClient(path=anaktoron_path)
+    client = make_persistent_client(anaktoron_path)
     try:
-        return client.get_collection(col_name)
+        col = client.get_collection(col_name)
     except Exception as e:
         logger.error(f"Caught exception: {e}")
-        return client.create_collection(col_name, metadata=DRAWER_HNSW_METADATA)
+        col = client.create_collection(col_name, metadata=DRAWER_HNSW_METADATA)
+    pin_hnsw_threads(col)
+    return col
 
 
 def file_already_mined(collection, source_file: str) -> bool:
@@ -741,12 +744,14 @@ def mine(
 
 def status(anaktoron_path: str):
     """Show what's been filed in the Anaktoron."""
+    from .chroma_compat import make_persistent_client, pin_hnsw_threads
     from .config import MnemionConfig
 
     col_name = MnemionConfig().collection_name
     try:
-        client = chromadb.PersistentClient(path=anaktoron_path)
+        client = make_persistent_client(anaktoron_path)
         col = client.get_collection(col_name)
+        pin_hnsw_threads(col)
     except Exception as e:
         logger.error(f"Caught exception: {e}")
         print(f"\n  No Anaktoron found at {anaktoron_path}")

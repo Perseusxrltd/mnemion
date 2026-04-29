@@ -26,6 +26,24 @@ Inspired by the original mempal project. Built far beyond it.
 
 ---
 
+## Storage Reliability
+
+Mnemion includes repair-first storage hygiene for existing and large Anaktorons:
+
+- Safe ChromaDB BLOB migration that only normalizes legacy `embeddings.seq_id` rows and never mutates `max_seq_id`.
+- HNSW guard metadata on new collections: cosine space, single-threaded HNSW writes, and large batch/sync thresholds.
+- Pure SQLite/HNSW status probing before Chroma opens unsafe vector segments.
+- Vector-disabled MCP/Studio fallback when divergence is detected, with lexical search fallback where available.
+- `mnemion repair --mode status|scan|prune|rebuild|max-seq-id` with backups and truncation guards.
+
+Existing users should start with:
+
+```bash
+mnemion repair --mode status
+```
+
+See [docs/REPAIR.md](docs/REPAIR.md) for migration and repair steps.
+
 ## Architecture Layers
 
 ### 1. Hybrid Lexical-Semantic Retrieval (`hybrid_searcher.py`)
@@ -251,7 +269,7 @@ mnemion llm stop    # shut it down
 
 ## MCP Tools
 
-The MCP server exposes 25 tools across six categories.
+The MCP server exposes read, write, trust, graph, diary, and maintenance tools. See [docs/MCP_TOOLS.md](docs/MCP_TOOLS.md) for the full operational surface.
 
 ### Read
 
@@ -261,15 +279,18 @@ The MCP server exposes 25 tools across six categories.
 | `mnemion_list_wings` | All wings with drawer counts |
 | `mnemion_list_rooms` | Rooms within a wing |
 | `mnemion_get_taxonomy` | Full wing → room → count tree |
+| `mnemion_get_drawer` | Fetch one drawer with metadata and trust record |
+| `mnemion_list_drawers` | List drawers with filters and pagination |
 | `mnemion_get_aaak_spec` | Get the AAAK compressed memory dialect spec |
 | `mnemion_search` | Hybrid search (vector + lexical RRF). Filters out superseded memories. Flags contested with ⚠. Optional `min_similarity` threshold. |
-| `mnemion_check_duplicate` | Check if content already exists before filing |
+| `mnemion_check_duplicate` | Check if content already exists before filing; reports vector-disabled limitation when needed |
 
 ### Write
 
 | Tool | What it does |
 |------|-------------|
 | `mnemion_add_drawer` | File content into a wing/room. Creates trust record + spawns background contradiction detection |
+| `mnemion_update_drawer` | Metadata-only move or trust-aware superseding content update |
 | `mnemion_delete_drawer` | Soft-delete a drawer (trust record marked `historical`, never hard-removed) |
 
 ### Knowledge Graph
@@ -284,6 +305,10 @@ The MCP server exposes 25 tools across six categories.
 | `mnemion_traverse` | Walk the Anaktoron graph from a room — find connected ideas |
 | `mnemion_find_tunnels` | Rooms that bridge two wings |
 | `mnemion_graph_stats` | Graph topology overview |
+| `mnemion_create_tunnel` | Create an explicit tunnel between two wing/room locations |
+| `mnemion_list_tunnels` | List explicit tunnels |
+| `mnemion_delete_tunnel` | Delete an explicit tunnel |
+| `mnemion_follow_tunnels` | Follow tunnels from a wing/room |
 
 ### Trust
 
@@ -307,6 +332,15 @@ The MCP server exposes 25 tools across six categories.
 |------|-------------|
 | `mnemion_diary_write` | Write a diary entry in AAAK format — agent's personal journal |
 | `mnemion_diary_read` | Read recent diary entries |
+
+### Maintenance
+
+| Tool | What it does |
+|------|-------------|
+| `mnemion_reconnect` | Clear cached Chroma handles after CLI, Studio, or sync writes |
+| `mnemion_hook_settings` | Read/update hook silent-save and desktop-toast settings |
+| `mnemion_memories_filed_away` | Check latest hook checkpoint status |
+| `mnemion_repair_status` | Read-only storage health check without opening the vector segment |
 
 ---
 
@@ -432,17 +466,17 @@ Task Scheduler → SyncMemories.ps1 → archive/drawers_export.json → git push
 
 ## Benchmarks
 
-Benchmarks and a full reproduction suite are in `/benchmarks` and `/eval`.
+Benchmarks and reproduction commands are in `/benchmarks` and `/eval`. Treat headline numbers as metric-specific: retrieval recall, QA accuracy, MRR, Hit@1, Recall@5, and NDCG are not interchangeable. Toy/local A/B tests are labeled separately from reproducible benchmark results.
 
 ```bash
 # Reproduce the RRF benchmark
 python eval/benchmark.py
 
-# Full LongMemEval benchmark (500 questions)
+# Full LongMemEval benchmark (500 questions; requires dataset download)
 python benchmarks/longmemeval_bench.py /path/to/longmemeval_s_cleaned.json
 ```
 
-The upstream project's **96.6% R@5 on LongMemEval** (raw mode) is real and independently reproduced. AAAK mode trades ~12 points of recall for token density — use raw mode for maximum accuracy.
+The historical **96.6% R@5 on LongMemEval** raw-mode result is a retrieval benchmark claim, not a general QA-accuracy claim. See `benchmarks/README.md`, `benchmarks/BENCHMARKS.md`, and [docs/BENCHMARK_INTEGRITY.md](docs/BENCHMARK_INTEGRITY.md) for commands, caveats, and result interpretation.
 
 ---
 
@@ -453,6 +487,15 @@ Mnemion began as a fork of mempalace, which introduced the memory Anaktoron meta
 ---
 
 ## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for the current unreleased reliability upgrade notes.
+
+### Unreleased — Reliability edge upgrade
+
+- Added storage health checks, HNSW divergence fallback, and `mnemion repair --mode status|scan|prune|rebuild|max-seq-id`.
+- Expanded MCP with drawer management, explicit tunnels, reconnect, hook settings, checkpoint, and repair status tools.
+- Added normalizer support for Gemini JSONL, improved Claude Code tool context, Slack speaker IDs, and source adapter scaffolding.
+- Added Studio Anaktoron health surfacing and benchmark integrity documentation.
 
 ### v3.5.0 — Studio: Connect Agents + systematic bug fixes
 

@@ -17,30 +17,53 @@ Tools (write):
   mnemion_delete_drawer   — remove a drawer by ID
 """
 
-# Issue #225: save real stdout BEFORE any other import so chatter from
-# chromadb/posthog/etc cannot corrupt the JSON-RPC wire on stdout.
+# Save real stdout before any heavy import, then redirect fd 1 to stderr so
+# native/library writes cannot corrupt the JSON-RPC wire on stdout.
+import os
 import sys
 
-_real_stdout = sys.stdout
+_real_stdout_fd = os.dup(1)
+_real_stdout = os.fdopen(_real_stdout_fd, "w", buffering=1, encoding=sys.stdout.encoding or "utf-8")
+os.dup2(2, 1)
 sys.stdout = sys.stderr
 
 import argparse  # noqa: E402
-import os  # noqa: E402
 import json  # noqa: E402
 import logging  # noqa: E402
 import hashlib  # noqa: E402
 import sqlite3  # noqa: E402
 from datetime import datetime, timezone  # noqa: E402
 
-import chromadb  # noqa: E402
-
-from .config import DRAWER_HNSW_METADATA, MnemionConfig  # noqa: E402
+from .config import (  # noqa: E402
+    DRAWER_HNSW_METADATA,
+    MnemionConfig,
+    sanitize_content,
+    sanitize_kg_value,
+    sanitize_name,
+)
 from .version import __version__  # noqa: E402
-from .anaktoron_graph import traverse, find_tunnels, graph_stats  # noqa: E402
+from .anaktoron_graph import (  # noqa: E402
+    create_tunnel,
+    delete_tunnel,
+    find_tunnels,
+    follow_tunnels,
+    graph_stats,
+    list_explicit_tunnels,
+    traverse,
+)
+from .chroma_compat import (  # noqa: E402
+    close_chroma_handles,
+    db_stat,
+    hnsw_capacity_status,
+    make_persistent_client,
+    pin_hnsw_threads,
+    sqlite_metadata_summary,
+)
 from .knowledge_graph import KnowledgeGraph  # noqa: E402
 from .hybrid_searcher import HybridSearcher  # noqa: E402
 from .trust_lifecycle import DrawerTrust  # noqa: E402
 from . import contradiction_detector as _cd  # noqa: E402
+from .query_sanitizer import sanitize_query  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(message)s", stream=sys.stderr)
 logger = logging.getLogger("mnemion_mcp")
@@ -64,38 +87,66 @@ if _args.anaktoron:
 
 _config = MnemionConfig()
 
-# Hybrid Searcher and KG initialization with support for custom Anaktoron paths
-if _args.anaktoron:
-    kg_path = os.path.join(os.path.dirname(_config.anaktoron_path), "knowledge_graph.sqlite3")
-    _kg = KnowledgeGraph(db_path=kg_path)
-    _hybrid = HybridSearcher(anaktoron_path=_config.anaktoron_path, kg_path=kg_path)
-    _trust = DrawerTrust(db_path=kg_path)
-else:
-    _kg = KnowledgeGraph()
-    _hybrid = HybridSearcher()
-    _trust = DrawerTrust()
+_kg_path = os.path.join(os.path.dirname(_config.anaktoron_path), "knowledge_graph.sqlite3")
+_vector_health = hnsw_capacity_status(_config.anaktoron_path, _config.collection_name)
+_vector_disabled = bool(_vector_health.get("diverged"))
+
+_kg = KnowledgeGraph(db_path=_kg_path) if _args.anaktoron else KnowledgeGraph()
+_trust = DrawerTrust(db_path=_kg_path) if _args.anaktoron else DrawerTrust()
+_hybrid = HybridSearcher(
+    anaktoron_path=_config.anaktoron_path,
+    kg_path=_kg_path,
+    vector_disabled=_vector_disabled,
+    vector_disabled_reason=_vector_health.get("message", ""),
+)
 
 
 _client_cache = None
 _collection_cache = None
+_client_cache_stat = (0, 0.0)
+
+
+def _refresh_vector_disabled_flag():
+    global _vector_health, _vector_disabled, _hybrid
+    _vector_health = hnsw_capacity_status(_config.anaktoron_path, _config.collection_name)
+    _vector_disabled = bool(_vector_health.get("diverged"))
+    _hybrid = HybridSearcher(
+        anaktoron_path=_config.anaktoron_path,
+        kg_path=_kg_path,
+        vector_disabled=_vector_disabled,
+        vector_disabled_reason=_vector_health.get("message", ""),
+    )
+    return _vector_health
 
 
 def _get_collection(create=False):
     """Return the ChromaDB collection, caching the client between calls."""
-    global _client_cache, _collection_cache
+    global _client_cache, _collection_cache, _client_cache_stat
     try:
-        if _client_cache is None:
-            from .chroma_compat import fix_blob_seq_ids
-
-            fix_blob_seq_ids(_config.anaktoron_path)
-            _client_cache = chromadb.PersistentClient(path=_config.anaktoron_path)
+        if _vector_disabled:
+            return None
+        current_stat = db_stat(_config.anaktoron_path)
+        if _client_cache is None or (
+            _client_cache_stat != (0, 0.0)
+            and current_stat != (0, 0.0)
+            and abs(current_stat[1] - _client_cache_stat[1]) > 0.01
+        ):
+            _client_cache = make_persistent_client(
+                _config.anaktoron_path,
+                vector_safe=True,
+                collection_name=_config.collection_name,
+            )
+            _collection_cache = None
+            _client_cache_stat = db_stat(_config.anaktoron_path)
         if create:
             # Issue #218: cosine required so similarity = 1 - distance is meaningful.
             _collection_cache = _client_cache.get_or_create_collection(
                 _config.collection_name, metadata=DRAWER_HNSW_METADATA
             )
+            pin_hnsw_threads(_collection_cache)
         elif _collection_cache is None:
             _collection_cache = _client_cache.get_collection(_config.collection_name)
+            pin_hnsw_threads(_collection_cache)
         return _collection_cache
     except Exception as e:
         logger.error(f"Caught exception: {e}")
@@ -103,10 +154,85 @@ def _get_collection(create=False):
 
 
 def _no_anaktoron():
+    if _vector_disabled:
+        return {
+            "error": "Vector search disabled",
+            "hint": "Run: mnemion repair --mode status, then mnemion repair --mode rebuild if divergence is confirmed",
+            "health": _vector_health,
+        }
     return {
         "error": "No Anaktoron found",
         "hint": "Run: mnemion init <dir> && mnemion mine <dir>",
     }
+
+
+_WAL_REDACT_KEYS = {
+    "content",
+    "text",
+    "query",
+    "entry",
+    "object",
+    "label",
+    "reason",
+    "resolution_note",
+    "note",
+    "description",
+    "source_file",
+    "file_path",
+    "path",
+}
+
+
+def _wal_redacted_value(value):
+    raw = "" if value is None else str(value)
+    return {
+        "redacted": True,
+        "type": type(value).__name__,
+        "length": len(raw),
+        "sha256": hashlib.sha256(raw.encode("utf-8", errors="replace")).hexdigest()[:16],
+    }
+
+
+def _redact_for_wal(value):
+    if isinstance(value, dict):
+        return {
+            key: (_wal_redacted_value(val) if key in _WAL_REDACT_KEYS else _redact_for_wal(val))
+            for key, val in value.items()
+        }
+    if isinstance(value, list):
+        return [_redact_for_wal(item) for item in value]
+    return value
+
+
+def _write_wal(tool_name: str, args: dict) -> None:
+    try:
+        wal_dir = os.path.expanduser("~/.mnemion/wal")
+        os.makedirs(wal_dir, exist_ok=True)
+        record = {
+            "tool": tool_name,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "args": _redact_for_wal(args),
+        }
+        with open(os.path.join(wal_dir, "write_log.jsonl"), "a", encoding="utf-8") as f:
+            f.write(json.dumps(record, sort_keys=True) + "\n")
+    except Exception:
+        logger.debug("WAL write failed", exc_info=True)
+
+
+def _sync_fts(drawer_id: str, content: str, wing: str, room: str) -> None:
+    KnowledgeGraph(db_path=_hybrid.kg_path)  # Ensure schema exists
+    with sqlite3.connect(_hybrid.kg_path) as conn:
+        conn.execute(
+            "INSERT OR REPLACE INTO drawers_fts (drawer_id, content, wing, room) VALUES (?, ?, ?, ?)",
+            (drawer_id, content, wing, room),
+        )
+        conn.commit()
+
+
+def _delete_fts(drawer_id: str) -> None:
+    with sqlite3.connect(_hybrid.kg_path) as conn:
+        conn.execute("DELETE FROM drawers_fts WHERE drawer_id = ?", (drawer_id,))
+        conn.commit()
 
 
 # ==================== READ TOOLS ====================
@@ -134,6 +260,25 @@ def _iter_all_metadatas(col, where=None):
 
 def tool_status():
     col = _get_collection()
+    if _vector_disabled:
+        summary = sqlite_metadata_summary(
+            _config.anaktoron_path, _config.collection_name, kg_path=_kg_path
+        )
+        return {
+            "version": __version__,
+            "total_drawers": summary["total_drawers"] or _vector_health.get("sqlite_count") or 0,
+            "wing_count": summary["wing_count"],
+            "room_count": summary["room_count"],
+            "wings": summary["wings"],
+            "rooms": summary["rooms"],
+            "metadata_unavailable": summary["metadata_unavailable"],
+            "metadata_message": summary["metadata_message"],
+            "anaktoron_path": _config.anaktoron_path,
+            "protocol": ANAKTORON_PROTOCOL,
+            "aaak_dialect": AAAK_SPEC,
+            "health": _vector_health,
+            "vector_disabled": True,
+        }
     if not col:
         return _no_anaktoron()
     count = col.count()
@@ -152,6 +297,8 @@ def tool_status():
         "anaktoron_path": _config.anaktoron_path,
         "protocol": ANAKTORON_PROTOCOL,
         "aaak_dialect": AAAK_SPEC,
+        "health": _vector_health,
+        "vector_disabled": _vector_disabled,
     }
 
 
@@ -230,9 +377,11 @@ def tool_search(
     """Hybrid search tool handler."""
     from . import predictor
 
+    query_info = sanitize_query(query)
+    clean_query = query_info["clean_query"]
     limit = max(1, min(limit, 50))
     hits = _hybrid.search(
-        query, wing=wing, room=room, n_results=limit, min_similarity=min_similarity
+        clean_query, wing=wing, room=room, n_results=limit, min_similarity=min_similarity
     )
 
     # Log activity for predictive context
@@ -240,9 +389,12 @@ def tool_search(
         predictor.record_activity(hit["id"], hit.get("embedding"))
 
     return {
-        "query": query,
+        "query": clean_query,
+        "query_sanitizer": query_info,
         "filters": {"wing": wing, "room": room},
         "results": hits,
+        "vector_disabled": _vector_disabled,
+        "health": _vector_health if _vector_disabled else None,
     }
 
 
@@ -296,6 +448,13 @@ def tool_predict_next():
 
 
 def tool_check_duplicate(content: str, threshold: float = 0.9):
+    if _vector_disabled:
+        return {
+            "is_duplicate": None,
+            "matches": [],
+            "warning": "Vector duplicate detection is disabled because the HNSW index is diverged. Run `mnemion repair --mode status`.",
+            "health": _vector_health,
+        }
     col = _get_collection()
     if not col:
         return _no_anaktoron()
@@ -362,6 +521,272 @@ def tool_graph_stats():
     return graph_stats(col=col)
 
 
+def tool_get_drawer(drawer_id: str):
+    col = _get_collection()
+    if not col:
+        return _no_anaktoron()
+    data = col.get(ids=[drawer_id], include=["documents", "metadatas"])
+    if not data.get("ids"):
+        return {"error": f"Drawer not found: {drawer_id}"}
+    return {
+        "drawer_id": drawer_id,
+        "content": data.get("documents", [""])[0],
+        "metadata": data.get("metadatas", [{}])[0] or {},
+        "trust": _trust.get(drawer_id),
+    }
+
+
+def tool_list_drawers(wing: str = None, room: str = None, limit: int = 50, offset: int = 0):
+    col = _get_collection()
+    if not col:
+        return _no_anaktoron()
+    limit = max(1, min(limit, 200))
+    offset = max(0, offset)
+    where = None
+    if wing and room:
+        where = {"$and": [{"wing": wing}, {"room": room}]}
+    elif wing:
+        where = {"wing": wing}
+    elif room:
+        where = {"room": room}
+    data = col.get(
+        include=["documents", "metadatas"],
+        where=where,
+        limit=limit,
+        offset=offset,
+    )
+    drawers = []
+    for drawer_id, content, meta in zip(
+        data.get("ids", []), data.get("documents", []), data.get("metadatas", [])
+    ):
+        drawers.append(
+            {
+                "drawer_id": drawer_id,
+                "content": content,
+                "metadata": meta or {},
+                "trust": _trust.get(drawer_id),
+            }
+        )
+    return {"drawers": drawers, "limit": limit, "offset": offset}
+
+
+def tool_update_drawer(
+    drawer_id: str,
+    content: str = None,
+    wing: str = None,
+    room: str = None,
+):
+    _write_wal(
+        "mnemion_update_drawer",
+        {"drawer_id": drawer_id, "content": content, "wing": wing, "room": room},
+    )
+    col = _get_collection(create=True)
+    if not col:
+        return _no_anaktoron()
+    existing = col.get(ids=[drawer_id], include=["documents", "metadatas"])
+    if not existing.get("ids"):
+        return {"success": False, "error": f"Drawer not found: {drawer_id}"}
+    old_content = existing["documents"][0]
+    old_meta = existing["metadatas"][0] or {}
+    new_wing = sanitize_name(wing or old_meta.get("wing", "general"), "wing")
+    new_room = sanitize_name(room or old_meta.get("room", "general"), "room")
+
+    if content is not None and content.strip() != old_content:
+        new_content = sanitize_content(content)
+        new_id = f"drawer_{new_wing}_{new_room}_{hashlib.md5(new_content.encode(), usedforsecurity=False).hexdigest()[:16]}"
+        meta = dict(old_meta)
+        meta.update(
+            {
+                "wing": new_wing,
+                "room": new_room,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "supersedes": drawer_id,
+                "added_by": "mcp",
+            }
+        )
+        inserted_chroma = False
+        synced_fts = False
+        created_trust = False
+        rollback_errors = []
+        try:
+            col.upsert(ids=[new_id], documents=[new_content], metadatas=[meta])
+            inserted_chroma = True
+            _sync_fts(new_id, new_content, new_wing, new_room)
+            synced_fts = True
+            _trust.create(new_id, wing=new_wing, room=new_room)
+            created_trust = True
+            trust_result = _trust.update_status(
+                drawer_id,
+                "superseded",
+                superseded_by=new_id,
+                reason="drawer content updated",
+                changed_by="mcp",
+            )
+            if isinstance(trust_result, dict) and trust_result.get("error"):
+                raise RuntimeError(trust_result["error"])
+        except Exception as exc:
+            if inserted_chroma:
+                try:
+                    col.delete(ids=[new_id])
+                except Exception as rollback_exc:
+                    rollback_errors.append(f"chroma: {rollback_exc}")
+            if synced_fts:
+                try:
+                    _delete_fts(new_id)
+                except Exception as rollback_exc:
+                    rollback_errors.append(f"fts: {rollback_exc}")
+            if created_trust:
+                try:
+                    _trust.update_status(
+                        new_id,
+                        "historical",
+                        reason="rollback after failed drawer update",
+                        changed_by="mcp",
+                    )
+                except Exception as rollback_exc:
+                    rollback_errors.append(f"trust: {rollback_exc}")
+            return {
+                "success": False,
+                "error": f"Failed to update drawer safely: {exc}",
+                "rollback_errors": rollback_errors,
+            }
+        _cd.spawn_detection(new_id, new_content, new_wing, new_room, _trust, _hybrid)
+        return {
+            "success": True,
+            "drawer_id": new_id,
+            "superseded": drawer_id,
+            "wing": new_wing,
+            "room": new_room,
+        }
+
+    meta = dict(old_meta)
+    meta.update(
+        {
+            "wing": new_wing,
+            "room": new_room,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+    )
+    col.upsert(ids=[drawer_id], documents=[old_content], metadatas=[meta])
+    _sync_fts(drawer_id, old_content, new_wing, new_room)
+    try:
+        with sqlite3.connect(_trust.db_path) as conn:
+            now = datetime.now(timezone.utc).isoformat()
+            conn.execute(
+                "UPDATE drawer_trust SET wing=?, room=?, updated_at=? WHERE drawer_id=?",
+                (new_wing, new_room, now, drawer_id),
+            )
+            conn.execute(
+                """INSERT INTO drawer_trust_history
+                   (drawer_id, old_status, new_status, old_confidence, new_confidence, reason, changed_by, changed_at)
+                   SELECT drawer_id, status, status, confidence, confidence, ?, 'mcp', ?
+                   FROM drawer_trust WHERE drawer_id=?""",
+                ("drawer metadata updated", now, drawer_id),
+            )
+            conn.commit()
+    except Exception:
+        logger.debug("Trust location update failed for %s", drawer_id, exc_info=True)
+    return {"success": True, "drawer_id": drawer_id, "wing": new_wing, "room": new_room}
+
+
+def tool_create_tunnel(
+    source_wing: str,
+    source_room: str,
+    target_wing: str,
+    target_room: str,
+    label: str = "",
+    source_drawer_id: str = "",
+    target_drawer_id: str = "",
+):
+    _write_wal(
+        "mnemion_create_tunnel",
+        {
+            "source_wing": source_wing,
+            "source_room": source_room,
+            "target_wing": target_wing,
+            "target_room": target_room,
+            "label": label,
+        },
+    )
+    tunnel = create_tunnel(
+        sanitize_name(source_wing, "source_wing"),
+        sanitize_name(source_room, "source_room"),
+        sanitize_name(target_wing, "target_wing"),
+        sanitize_name(target_room, "target_room"),
+        label=sanitize_kg_value(label, "label") if label else "",
+        source_drawer_id=source_drawer_id or "",
+        target_drawer_id=target_drawer_id or "",
+        config=_config,
+    )
+    return {"success": True, "tunnel": tunnel}
+
+
+def tool_list_tunnels(wing: str = None):
+    return {
+        "tunnels": list_explicit_tunnels(
+            sanitize_name(wing, "wing") if wing else None, config=_config
+        )
+    }
+
+
+def tool_delete_tunnel(tunnel_id: str):
+    _write_wal("mnemion_delete_tunnel", {"tunnel_id": tunnel_id})
+    return delete_tunnel(sanitize_name(tunnel_id, "tunnel_id"), config=_config)
+
+
+def tool_follow_tunnels(wing: str, room: str):
+    return follow_tunnels(sanitize_name(wing, "wing"), sanitize_name(room, "room"), config=_config)
+
+
+def tool_reconnect():
+    global _client_cache, _collection_cache, _client_cache_stat, _kg, _trust
+    close_chroma_handles()
+    _client_cache = None
+    _collection_cache = None
+    _client_cache_stat = (0, 0.0)
+    _kg = KnowledgeGraph(db_path=_kg_path)
+    _trust = DrawerTrust(db_path=_kg_path)
+    health = _refresh_vector_disabled_flag()
+    return {"success": True, "health": health, "vector_disabled": _vector_disabled}
+
+
+def tool_hook_settings(silent_save: bool = None, desktop_toast: bool = None):
+    changed = {}
+    if silent_save is not None:
+        changed.update(_config.set_hook_setting("hook_silent_save", bool(silent_save)))
+    if desktop_toast is not None:
+        changed.update(_config.set_hook_setting("hook_desktop_toast", bool(desktop_toast)))
+    return {
+        "success": True,
+        "changed": changed,
+        "settings": {
+            "silent_save": _config.hook_silent_save,
+            "desktop_toast": _config.hook_desktop_toast,
+        },
+    }
+
+
+def tool_memories_filed_away():
+    state_dir = os.path.expanduser("~/.mnemion/hook_state")
+    checkpoint = os.path.join(state_dir, "last_checkpoint")
+    exists = os.path.exists(checkpoint)
+    return {
+        "checkpoint_exists": exists,
+        "checkpoint_path": checkpoint,
+        "modified_at": datetime.fromtimestamp(
+            os.path.getmtime(checkpoint), timezone.utc
+        ).isoformat()
+        if exists
+        else None,
+    }
+
+
+def tool_repair_status():
+    from .repair import status
+
+    return status(_config.anaktoron_path, _config.collection_name)
+
+
 # ==================== WRITE TOOLS ====================
 
 
@@ -369,6 +794,10 @@ def tool_add_drawer(
     wing: str, room: str, content: str, source_file: str = None, added_by: str = "mcp"
 ):
     """File verbatim content into a wing/room. Checks for duplicates and indexes in both stores."""
+    wing = sanitize_name(wing, "wing")
+    room = sanitize_name(room, "room")
+    content = sanitize_content(content)
+    _write_wal("mnemion_add_drawer", {"wing": wing, "room": room, "content": content})
     col = _get_collection(create=True)
     if not col:
         return _no_anaktoron()
@@ -401,14 +830,7 @@ def tool_add_drawer(
         )
 
         # 2. Add to SQLite FTS5 (Lexical Mirror)
-        KnowledgeGraph(db_path=_hybrid.kg_path)  # Ensure schema exists
-        conn = sqlite3.connect(_hybrid.kg_path)
-        conn.execute(
-            "INSERT OR REPLACE INTO drawers_fts (drawer_id, content, wing, room) VALUES (?, ?, ?, ?)",
-            (drawer_id, content, wing, room),
-        )
-        conn.commit()
-        conn.close()
+        _sync_fts(drawer_id, content, wing, room)
 
         logger.info(f"Filed drawer: {drawer_id} → {wing}/{room}")
 
@@ -427,6 +849,7 @@ def tool_add_drawer(
 
 def tool_delete_drawer(drawer_id: str):
     """Delete a single drawer by ID from both stores."""
+    _write_wal("mnemion_delete_drawer", {"drawer_id": drawer_id})
     col = _get_collection()
     if not col:
         return _no_anaktoron()
@@ -438,10 +861,7 @@ def tool_delete_drawer(drawer_id: str):
         col.delete(ids=[drawer_id])
 
         # 2. Delete from FTS5
-        conn = sqlite3.connect(_hybrid.kg_path)
-        conn.execute("DELETE FROM drawers_fts WHERE drawer_id = ?", (drawer_id,))
-        conn.commit()
-        conn.close()
+        _delete_fts(drawer_id)
 
         # 3. Soft-delete from trust layer (mark historical instead of hard-removing)
         trust_rec = _trust.get(drawer_id)
@@ -466,6 +886,7 @@ def tool_trust_stats():
 
 def tool_verify_drawer(drawer_id: str):
     """Mark a drawer as verified — bumps confidence by 0.05, max 1.0."""
+    _write_wal("mnemion_verify", {"drawer_id": drawer_id})
     rec = _trust.get(drawer_id)
     if rec is None:
         return {"error": f"No trust record for {drawer_id}"}
@@ -474,6 +895,7 @@ def tool_verify_drawer(drawer_id: str):
 
 def tool_challenge_drawer(drawer_id: str, reason: str = ""):
     """Challenge a drawer's accuracy — lowers confidence by 0.1, min 0.1."""
+    _write_wal("mnemion_challenge", {"drawer_id": drawer_id, "reason": reason})
     rec = _trust.get(drawer_id)
     if rec is None:
         return {"error": f"No trust record for {drawer_id}"}
@@ -495,6 +917,10 @@ def tool_resolve_contest(drawer_id: str, winner_id: str, resolution_note: str = 
     winner_id: the drawer_id that wins (the correct/current version).
     The other one is marked superseded.
     """
+    _write_wal(
+        "mnemion_resolve_contest",
+        {"drawer_id": drawer_id, "winner_id": winner_id, "resolution_note": resolution_note},
+    )
     # Determine the loser — it's whichever of the pair is NOT the winner.
     # Both drawer_id and winner_id must be valid trust records.
     if drawer_id == winner_id:
@@ -547,6 +973,13 @@ def tool_kg_add(
     subject: str, predicate: str, object: str, valid_from: str = None, source_closet: str = None
 ):
     """Add a relationship to the knowledge graph."""
+    subject = sanitize_kg_value(subject, "subject")
+    predicate = sanitize_name(predicate, "predicate")
+    object = sanitize_kg_value(object, "object")
+    _write_wal(
+        "mnemion_kg_add",
+        {"subject": subject, "predicate": predicate, "object": object},
+    )
     triple_id = _kg.add_triple(
         subject, predicate, object, valid_from=valid_from, source_closet=source_closet
     )
@@ -555,6 +988,13 @@ def tool_kg_add(
 
 def tool_kg_invalidate(subject: str, predicate: str, object: str, ended: str = None):
     """Mark a fact as no longer true (set end date)."""
+    subject = sanitize_kg_value(subject, "subject")
+    predicate = sanitize_name(predicate, "predicate")
+    object = sanitize_kg_value(object, "object")
+    _write_wal(
+        "mnemion_kg_invalidate",
+        {"subject": subject, "predicate": predicate, "object": object, "ended": ended},
+    )
     _kg.invalidate(subject, predicate, object, ended=ended)
     return {
         "success": True,
@@ -585,7 +1025,12 @@ def tool_diary_write(agent_name: str, entry: str, topic: str = "general"):
     This is the agent's personal journal — observations, thoughts,
     what it worked on, what it noticed, what it thinks matters.
     """
-    wing = f"wing_{agent_name.lower().replace(' ', '_')}"
+    display_agent_name = sanitize_name(agent_name, "agent_name")
+    agent_name = display_agent_name.lower().replace(" ", "_")
+    topic = sanitize_name(topic, "topic")
+    entry = sanitize_content(entry, "entry")
+    _write_wal("mnemion_diary_write", {"agent_name": agent_name, "entry": entry, "topic": topic})
+    wing = f"wing_{agent_name}"
     room = "diary"
     col = _get_collection(create=True)
     if not col:
@@ -605,7 +1050,7 @@ def tool_diary_write(agent_name: str, entry: str, topic: str = "general"):
                     "hall": "hall_diary",
                     "topic": topic,
                     "type": "diary_entry",
-                    "agent": agent_name,
+                    "agent": display_agent_name,
                     "filed_at": now.isoformat(),
                     "date": now.strftime("%Y-%m-%d"),
                 }
@@ -633,7 +1078,7 @@ def tool_diary_write(agent_name: str, entry: str, topic: str = "general"):
         return {
             "success": True,
             "entry_id": entry_id,
-            "agent": agent_name,
+            "agent": display_agent_name,
             "topic": topic,
             "timestamp": now.isoformat(),
         }
@@ -718,6 +1163,42 @@ TOOLS = {
         "description": "Full taxonomy: wing → room → drawer count",
         "input_schema": {"type": "object", "properties": {}},
         "handler": tool_get_taxonomy,
+    },
+    "mnemion_get_drawer": {
+        "description": "Fetch one drawer by ID, including verbatim content, metadata, and trust record.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"drawer_id": {"type": "string", "description": "Drawer ID"}},
+            "required": ["drawer_id"],
+        },
+        "handler": tool_get_drawer,
+    },
+    "mnemion_list_drawers": {
+        "description": "List drawers with optional wing/room filters and pagination.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "wing": {"type": "string", "description": "Filter by wing"},
+                "room": {"type": "string", "description": "Filter by room"},
+                "limit": {"type": "integer", "description": "Max rows, default 50"},
+                "offset": {"type": "integer", "description": "Pagination offset"},
+            },
+        },
+        "handler": tool_list_drawers,
+    },
+    "mnemion_update_drawer": {
+        "description": "Update a drawer. Content changes create a superseding drawer; metadata-only moves update Chroma, FTS, and trust location.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "drawer_id": {"type": "string", "description": "Drawer ID to update"},
+                "content": {"type": "string", "description": "Replacement content, optional"},
+                "wing": {"type": "string", "description": "New wing, optional"},
+                "room": {"type": "string", "description": "New room, optional"},
+            },
+            "required": ["drawer_id"],
+        },
+        "handler": tool_update_drawer,
     },
     "mnemion_get_aaak_spec": {
         "description": "Get the AAAK dialect specification — the compressed memory format Mnemion uses. Call this if you need to read or write AAAK-compressed memories.",
@@ -839,6 +1320,49 @@ TOOLS = {
         "input_schema": {"type": "object", "properties": {}},
         "handler": tool_graph_stats,
     },
+    "mnemion_create_tunnel": {
+        "description": "Create an explicit tunnel between two Anaktoron wing/room locations.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "source_wing": {"type": "string"},
+                "source_room": {"type": "string"},
+                "target_wing": {"type": "string"},
+                "target_room": {"type": "string"},
+                "label": {"type": "string"},
+                "source_drawer_id": {"type": "string"},
+                "target_drawer_id": {"type": "string"},
+            },
+            "required": ["source_wing", "source_room", "target_wing", "target_room"],
+        },
+        "handler": tool_create_tunnel,
+    },
+    "mnemion_list_tunnels": {
+        "description": "List explicit tunnels, optionally filtered by wing.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"wing": {"type": "string", "description": "Optional wing filter"}},
+        },
+        "handler": tool_list_tunnels,
+    },
+    "mnemion_delete_tunnel": {
+        "description": "Delete an explicit tunnel by ID.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"tunnel_id": {"type": "string"}},
+            "required": ["tunnel_id"],
+        },
+        "handler": tool_delete_tunnel,
+    },
+    "mnemion_follow_tunnels": {
+        "description": "Follow explicit tunnels from a wing/room location.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"wing": {"type": "string"}, "room": {"type": "string"}},
+            "required": ["wing", "room"],
+        },
+        "handler": tool_follow_tunnels,
+    },
     "mnemion_search": {
         "description": "Hybrid search (vector + lexical) across all memories. Use BEFORE answering any question about past events, people, projects, or facts — verify from the Anaktoron, don't guess. Returns verbatim drawer content with similarity scores.",
         "input_schema": {
@@ -876,6 +1400,32 @@ TOOLS = {
             "required": ["content"],
         },
         "handler": tool_check_duplicate,
+    },
+    "mnemion_reconnect": {
+        "description": "Clear cached Chroma clients/collections after external CLI, Studio, or sync writes.",
+        "input_schema": {"type": "object", "properties": {}},
+        "handler": tool_reconnect,
+    },
+    "mnemion_hook_settings": {
+        "description": "Read or update Mnemion hook settings for silent save and desktop toast behavior.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "silent_save": {"type": "boolean"},
+                "desktop_toast": {"type": "boolean"},
+            },
+        },
+        "handler": tool_hook_settings,
+    },
+    "mnemion_memories_filed_away": {
+        "description": "Return latest hook checkpoint status so agents can verify save hooks persisted memory.",
+        "input_schema": {"type": "object", "properties": {}},
+        "handler": tool_memories_filed_away,
+    },
+    "mnemion_repair_status": {
+        "description": "Read-only Anaktoron repair/health status without loading the vector segment.",
+        "input_schema": {"type": "object", "properties": {}},
+        "handler": tool_repair_status,
     },
     "mnemion_add_drawer": {
         "description": "Save a new memory to the Anaktoron. Call when you learn a new fact, the user shares something important, or something changes. Content is stored verbatim — never summarize, preserve exact words. Checks for duplicates automatically.",

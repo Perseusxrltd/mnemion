@@ -1,4 +1,4 @@
-import type { AgentsResponse, ConnectorStatus, DrawerDetail, DrawerSummary, KGGraph, RecentDrawer, SearchHit, Status, StudioConfig, Taxonomy, TrustStats } from '../types'
+import type { AgentsResponse, ConnectorStatus, DrawerDetail, DrawerSummary, KGGraph, RecentDrawer, RepairStatus, SearchHit, Status, StudioConfig, Taxonomy, TrustStats } from '../types'
 
 declare global {
   interface Window {
@@ -77,6 +77,8 @@ async function put<T>(path: string, body: unknown): Promise<T> {
 
 export const api = {
   status: (): Promise<Status> => get('/status'),
+
+  repairStatus: (): Promise<RepairStatus> => get('/repair/status'),
 
   taxonomy: (): Promise<Taxonomy> => get('/taxonomy'),
 

@@ -90,3 +90,113 @@ def test_cors_preflight_does_not_require_token(monkeypatch):
 
     assert response.status_code == 200
     assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
+
+
+def test_status_exposes_vector_disabled_health(monkeypatch):
+    from studio.backend import main
+
+    monkeypatch.setattr(
+        main,
+        "hnsw_capacity_status",
+        lambda *_args, **_kwargs: {
+            "status": "diverged",
+            "sqlite_count": 2501,
+            "hnsw_count": 1,
+            "divergence": 2500,
+            "diverged": True,
+            "message": "repair needed",
+        },
+    )
+    monkeypatch.setattr(
+        main,
+        "sqlite_metadata_summary",
+        lambda *_args, **_kwargs: {
+            "total_drawers": 2501,
+            "wing_count": 1,
+            "room_count": 1,
+            "wings": {"ops": 2501},
+            "rooms": {"repair": 2501},
+            "metadata_unavailable": False,
+            "metadata_message": "from sqlite",
+        },
+    )
+    client = TestClient(app)
+
+    response = client.get("/api/status")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["vector_disabled"] is True
+    assert payload["health"]["status"] == "diverged"
+    assert payload["wing_count"] == 1
+    assert payload["wings"] == {"ops": 2501}
+    assert payload["repair_command"] == "mnemion repair --mode rebuild"
+
+
+def test_status_recomputes_health_and_does_not_reuse_stale_divergence(monkeypatch):
+    from studio.backend import main
+
+    states = [
+        {
+            "status": "diverged",
+            "sqlite_count": 3,
+            "hnsw_count": 1,
+            "divergence": 2,
+            "diverged": True,
+            "message": "repair needed",
+        },
+        {
+            "status": "ok",
+            "sqlite_count": 3,
+            "hnsw_count": 3,
+            "divergence": 0,
+            "diverged": False,
+            "message": "ok",
+        },
+    ]
+
+    def next_health(*_args, **_kwargs):
+        return (
+            states.pop(0)
+            if states
+            else {
+                "status": "ok",
+                "sqlite_count": 3,
+                "hnsw_count": 3,
+                "divergence": 0,
+                "diverged": False,
+                "message": "ok",
+            }
+        )
+
+    class FakeCollection:
+        def count(self):
+            return 3
+
+        def get(self, **kwargs):
+            return {
+                "ids": ["a", "b", "c"],
+                "metadatas": [
+                    {"wing": "ops", "room": "repair"},
+                    {"wing": "ops", "room": "repair"},
+                    {"wing": "notes", "room": "planning"},
+                ],
+            }
+
+    class FakeClient:
+        def get_collection(self, _name):
+            return FakeCollection()
+
+    monkeypatch.setattr(main, "hnsw_capacity_status", next_health)
+    monkeypatch.setattr(main, "make_persistent_client", lambda *_args, **_kwargs: FakeClient())
+    monkeypatch.setattr(main, "_collection", None)
+    monkeypatch.setattr(main, "_chroma_client", None)
+    client = TestClient(app)
+
+    first = client.get("/api/status").json()
+    second = client.get("/api/status").json()
+
+    assert first["vector_disabled"] is True
+    assert second["vector_disabled"] is False
+    assert second["health"]["status"] == "ok"
+    assert second["wing_count"] == 2

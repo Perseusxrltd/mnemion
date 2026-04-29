@@ -118,16 +118,14 @@ $exportScript = @"
 import sys, json
 if r'$SrcDir':
     sys.path.insert(0, r'$SrcDir')
-import chromadb
-from mnemion.chroma_compat import fix_blob_seq_ids
+from mnemion.chroma_compat import make_persistent_client
 from mnemion.config import MnemionConfig
 
 BATCH = 2000  # stay under SQLite SQLITE_MAX_VARIABLE_NUMBER on any version
 
 config = MnemionConfig()
-fix_blob_seq_ids(config.anaktoron_path)
 try:
-    client = chromadb.PersistentClient(path=config.anaktoron_path)
+    client = make_persistent_client(config.anaktoron_path, vector_safe=True, collection_name=config.collection_name)
     col    = client.get_collection(config.collection_name)
     drawers = []
     offset  = 0

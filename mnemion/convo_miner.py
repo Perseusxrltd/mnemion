@@ -15,7 +15,6 @@ from pathlib import Path
 from datetime import datetime
 from collections import defaultdict
 
-import chromadb
 import sqlite3
 from .trust_lifecycle import DrawerTrust
 from .knowledge_graph import KnowledgeGraph
@@ -216,15 +215,18 @@ def detect_convo_room(content: str) -> str:
 
 
 def get_collection(anaktoron_path: str, collection_name: str = None):
+    from .chroma_compat import make_persistent_client, pin_hnsw_threads
     from .config import MnemionConfig
 
     col_name = collection_name or MnemionConfig().collection_name
     os.makedirs(anaktoron_path, exist_ok=True)
-    client = chromadb.PersistentClient(path=anaktoron_path)
+    client = make_persistent_client(anaktoron_path)
     try:
-        return client.get_collection(col_name)
+        col = client.get_collection(col_name)
     except Exception:
-        return client.create_collection(col_name, metadata=DRAWER_HNSW_METADATA)
+        col = client.create_collection(col_name, metadata=DRAWER_HNSW_METADATA)
+    pin_hnsw_threads(col)
+    return col
 
 
 def file_already_mined(collection, source_file: str) -> bool:

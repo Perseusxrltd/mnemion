@@ -16,8 +16,11 @@ No API key. No internet. Everything local.
 
 import json
 import os
+import re
 from pathlib import Path
 from typing import Optional
+
+MAX_FILE_SIZE_BYTES = 500 * 1024 * 1024
 
 
 def normalize(filepath: str) -> str:
@@ -26,6 +29,8 @@ def normalize(filepath: str) -> str:
     Plain text files pass through unchanged.
     """
     try:
+        if os.path.getsize(filepath) > MAX_FILE_SIZE_BYTES:
+            raise ValueError(f"{filepath} is too large to normalize safely (>500 MB)")
         with open(filepath, "r", encoding="utf-8", errors="replace") as f:
             content = f.read()
     except OSError as e:
@@ -52,6 +57,10 @@ def normalize(filepath: str) -> str:
 def _try_normalize_json(content: str) -> Optional[str]:
     """Try all known JSON chat schemas."""
 
+    normalized = _try_gemini_jsonl(content)
+    if normalized:
+        return normalized
+
     normalized = _try_claude_code_jsonl(content)
     if normalized:
         return normalized
@@ -73,10 +82,41 @@ def _try_normalize_json(content: str) -> Optional[str]:
     return None
 
 
+def _try_gemini_jsonl(content: str) -> Optional[str]:
+    """Gemini CLI JSONL sessions with a session_metadata sentinel."""
+    lines = [line.strip() for line in content.strip().split("\n") if line.strip()]
+    messages = []
+    seen_metadata = False
+    for line in lines:
+        try:
+            entry = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(entry, dict):
+            continue
+        entry_type = entry.get("type", "")
+        if entry_type == "session_metadata":
+            seen_metadata = True
+            continue
+        if not seen_metadata or entry_type == "message_update":
+            continue
+        if entry_type not in {"user", "gemini"}:
+            continue
+        text = _extract_content(entry.get("message", {}).get("content", entry.get("content", "")))
+        if not text:
+            continue
+        role = "user" if entry_type == "user" else "assistant"
+        messages.append((role, text))
+    if seen_metadata and len(messages) >= 2:
+        return _messages_to_transcript(messages)
+    return None
+
+
 def _try_claude_code_jsonl(content: str) -> Optional[str]:
     """Claude Code JSONL sessions."""
     lines = [line.strip() for line in content.strip().split("\n") if line.strip()]
     messages = []
+    tool_names: dict[str, str] = {}
     for line in lines:
         try:
             entry = json.loads(line)
@@ -87,11 +127,21 @@ def _try_claude_code_jsonl(content: str) -> Optional[str]:
         msg_type = entry.get("type", "")
         message = entry.get("message", {})
         if msg_type in ("human", "user"):
-            text = _extract_content(message.get("content", ""))
+            content_blocks = message.get("content", "")
+            text = _extract_claude_code_content(content_blocks, tool_names=tool_names)
             if text:
-                messages.append(("user", text))
+                if _is_tool_result_only(content_blocks):
+                    if messages and messages[-1][0] == "assistant":
+                        prev_role, prev_text = messages[-1]
+                        messages[-1] = (prev_role, prev_text.rstrip() + "\n\n" + text)
+                    continue
+                if text.startswith("Tool result") and messages and messages[-1][0] == "assistant":
+                    prev_role, prev_text = messages[-1]
+                    messages[-1] = (prev_role, prev_text.rstrip() + "\n\n" + text)
+                else:
+                    messages.append(("user", text))
         elif msg_type == "assistant":
-            text = _extract_content(message.get("content", ""))
+            text = _extract_claude_code_content(message.get("content", ""), tool_names=tool_names)
             if text:
                 messages.append(("assistant", text))
     if len(messages) >= 2:
@@ -245,7 +295,7 @@ def _try_slack_json(data) -> Optional[str]:
     for item in data:
         if not isinstance(item, dict) or item.get("type") != "message":
             continue
-        user_id = item.get("user", item.get("username", ""))
+        user_id = _sanitize_speaker_id(item.get("user", item.get("username", "")))
         text = item.get("text", "").strip()
         if not text or not user_id:
             continue
@@ -258,9 +308,12 @@ def _try_slack_json(data) -> Optional[str]:
             else:
                 seen_users[user_id] = "user"
         last_role = seen_users[user_id]
-        messages.append((seen_users[user_id], text))
+        messages.append((seen_users[user_id], f"[{user_id}] {text}"))
     if len(messages) >= 2:
-        return _messages_to_transcript(messages)
+        return (
+            _messages_to_transcript(messages)
+            + "\nSlack provenance: user/assistant roles are positional; original speaker IDs are preserved in brackets.\n"
+        )
     return None
 
 
@@ -273,12 +326,141 @@ def _extract_content(content) -> str:
         for item in content:
             if isinstance(item, str):
                 parts.append(item)
-            elif isinstance(item, dict) and item.get("type") == "text":
+            elif isinstance(item, dict) and (item.get("type") == "text" or "text" in item):
                 parts.append(item.get("text", ""))
         return " ".join(parts).strip()
     if isinstance(content, dict):
         return content.get("text", "").strip()
     return ""
+
+
+def _is_tool_result_only(content) -> bool:
+    if not isinstance(content, list):
+        return False
+    saw_tool_result = False
+    for item in content:
+        if isinstance(item, dict) and item.get("type") == "tool_result":
+            saw_tool_result = True
+            continue
+        if isinstance(item, str) and not item.strip():
+            continue
+        return False
+    return saw_tool_result
+
+
+def _extract_claude_code_content(content, tool_names: Optional[dict[str, str]] = None) -> str:
+    if isinstance(content, str):
+        return _strip_noise(content)
+    if not isinstance(content, list):
+        return _extract_content(content)
+    tool_names = tool_names if tool_names is not None else {}
+    parts = []
+    for item in content:
+        if isinstance(item, str):
+            parts.append(_strip_noise(item))
+        elif isinstance(item, dict):
+            kind = item.get("type")
+            if kind == "text":
+                parts.append(_strip_noise(item.get("text", "")))
+            elif kind == "tool_use":
+                tool_id = item.get("id")
+                tool_name = item.get("name") or item.get("tool_name") or "tool"
+                tool_names["__last__"] = str(tool_name)
+                if tool_id:
+                    tool_names[str(tool_id)] = str(tool_name)
+                parts.append(_format_tool_use(item))
+            elif kind == "tool_result":
+                formatted = _format_tool_result(item, tool_names=tool_names)
+                if formatted:
+                    parts.append(formatted)
+    return "\n".join(p for p in parts if p).strip()
+
+
+def _format_tool_use(item: dict) -> str:
+    name = item.get("name") or item.get("tool_name") or "tool"
+    data = item.get("input") or {}
+    if name == "Bash":
+        detail = data.get("command", "")
+    elif name == "Read":
+        path = data.get("file_path") or data.get("path") or ""
+        rng = ""
+        if data.get("offset") is not None or data.get("limit") is not None:
+            rng = f" offset={data.get('offset', 0)} limit={data.get('limit')}"
+        detail = f"{path}{rng}".strip()
+    elif name in {"Grep", "Glob"}:
+        detail = data.get("pattern", "")
+    elif name in {"Edit", "Write"}:
+        detail = data.get("file_path") or data.get("path") or ""
+    else:
+        detail = " ".join(f"{k}={v}" for k, v in sorted(data.items())[:4])
+    return f"Tool use: {name} {detail}".strip()
+
+
+def _cap_head_tail(text: str, max_chars: int = 4000) -> str:
+    if len(text) <= max_chars:
+        return text
+    head_len = max_chars // 2 - 200
+    tail_len = max_chars // 2 - 200
+    head = text[:head_len].rstrip()
+    tail = text[-tail_len:].lstrip()
+    return f"{head}\n...[tool result truncated]...\n{tail}"
+
+
+def _cap_match_lines(text: str, visible_each_side: int = 20) -> str:
+    lines = text.splitlines()
+    cap = visible_each_side * 2
+    if len(lines) <= cap:
+        return text
+    omitted = len(lines) - cap
+    return "\n".join(
+        lines[:visible_each_side]
+        + [f"...[{omitted} matches omitted]..."]
+        + lines[-visible_each_side:]
+    )
+
+
+def _format_tool_result(item: dict, tool_names: Optional[dict[str, str]] = None) -> str:
+    tool_use_id = item.get("tool_use_id") or item.get("id")
+    tool_name = ""
+    if tool_use_id and tool_names:
+        tool_name = tool_names.get(str(tool_use_id), "")
+    tool_name = tool_name or item.get("name") or item.get("tool_name")
+    if not tool_name and tool_names:
+        tool_name = tool_names.get("__last__")
+    tool_name = tool_name or "tool"
+    if tool_name in {"Read", "Edit", "Write"}:
+        return ""
+    content = item.get("content", "")
+    text = _extract_content(content) if not isinstance(content, str) else content
+    text = _strip_noise(text).strip()
+    if not text:
+        return ""
+    if tool_name in {"Grep", "Glob"}:
+        text = _cap_match_lines(text)
+    else:
+        text = _cap_head_tail(text)
+    return f"Tool result ({tool_name}):\n{text}"
+
+
+_NOISE_LINES = (
+    re.compile(r"^\s*Mnemion auto-save checkpoint\b.*$", re.IGNORECASE),
+    re.compile(r"^\s*MemPalace auto-save checkpoint\b.*$", re.IGNORECASE),
+    re.compile(r"^\s*Claude Code system prompt\b.*$", re.IGNORECASE),
+)
+
+
+def _strip_noise(text: str) -> str:
+    lines = []
+    for line in str(text).splitlines():
+        if any(pattern.match(line) for pattern in _NOISE_LINES):
+            continue
+        lines.append(line)
+    return "\n".join(lines).strip()
+
+
+def _sanitize_speaker_id(value: str) -> str:
+    cleaned = re.sub(r"[\x00-\x1f\x7f\]\[]", "_", str(value).strip())
+    return cleaned[:80] or "unknown"
 
 
 def _messages_to_transcript(messages: list, spellcheck: bool = True) -> str:

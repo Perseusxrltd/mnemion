@@ -35,6 +35,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
+from .chroma_compat import make_persistent_client
+
 logger = logging.getLogger("mnemion.librarian")
 
 INTER_REQUEST_SLEEP = 8.0  # seconds between LLM calls — lower GPU pressure
@@ -196,7 +198,6 @@ def run_librarian(
     from .hybrid_searcher import HybridSearcher
     from .trust_lifecycle import DrawerTrust
     from .knowledge_graph import KnowledgeGraph
-    import chromadb
 
     cfg = MnemionConfig()
     backend = get_backend(cfg)
@@ -216,7 +217,11 @@ def run_librarian(
     kg = KnowledgeGraph(kg_path)
     hybrid = HybridSearcher(anaktoron_path=anaktoron_path, kg_path=kg_path)
 
-    client = chromadb.PersistentClient(path=anaktoron_path)
+    client = make_persistent_client(
+        anaktoron_path,
+        vector_safe=True,
+        collection_name=cfg.collection_name,
+    )
     try:
         collection = client.get_collection(cfg.collection_name)
     except Exception as e:

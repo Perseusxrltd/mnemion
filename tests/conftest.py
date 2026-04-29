@@ -27,7 +27,6 @@ os.environ["HOMEDRIVE"] = os.path.splitdrive(_session_tmp)[0] or "C:"
 os.environ["HOMEPATH"] = os.path.splitdrive(_session_tmp)[1] or _session_tmp
 
 # Now it is safe to import mnemion modules that trigger initialisation.
-import chromadb  # noqa: E402
 import pytest  # noqa: E402
 
 from mnemion.config import DRAWER_HNSW_METADATA, MnemionConfig  # noqa: E402
@@ -100,8 +99,11 @@ def config(tmp_dir, anaktoron_path):
 @pytest.fixture
 def collection(anaktoron_path):
     """A ChromaDB collection pre-seeded in the temp Anaktoron."""
-    client = chromadb.PersistentClient(path=anaktoron_path)
+    from mnemion.chroma_compat import make_persistent_client, pin_hnsw_threads
+
+    client = make_persistent_client(anaktoron_path)
     col = client.get_or_create_collection("mnemion_drawers", metadata=DRAWER_HNSW_METADATA)
+    pin_hnsw_threads(col)
     yield col
     client.delete_collection("mnemion_drawers")
     del client

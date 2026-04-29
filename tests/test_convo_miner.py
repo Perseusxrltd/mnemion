@@ -1,8 +1,8 @@
 import os
 import tempfile
 import shutil
-import chromadb
 from mnemion.convo_miner import mine_convos
+from mnemion.chroma_compat import make_persistent_client
 
 
 def test_convo_mining():
@@ -15,7 +15,7 @@ def test_convo_mining():
     anaktoron_path = os.path.join(tmpdir, "anaktoron")
     mine_convos(tmpdir, anaktoron_path, wing="test_convos")
 
-    client = chromadb.PersistentClient(path=anaktoron_path)
+    client = make_persistent_client(anaktoron_path)
     col = client.get_collection("mnemion_drawers")
     assert col.count() >= 2
 

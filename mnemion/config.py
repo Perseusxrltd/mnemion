@@ -11,10 +11,64 @@ from pathlib import Path
 DEFAULT_ANAKTORON_PATH = os.path.expanduser("~/.mnemion/anaktoron")
 DEFAULT_COLLECTION_NAME = "mnemion_drawers"
 
-# hnsw:space=cosine is required because searcher.py computes
-# similarity = 1 - distance, which only yields a meaningful score in [0, 1]
-# when the underlying distance is cosine. Issue #218.
-DRAWER_HNSW_METADATA = {"hnsw:space": "cosine"}
+# hnsw:space=cosine is required because searcher.py computes similarity =
+# 1 - distance, which only yields a meaningful score in [0, 1] when the
+# underlying distance is cosine. The larger batch/sync thresholds prevent
+# pathological link_lists.bin growth during large Anaktoron rebuilds.
+DRAWER_HNSW_METADATA = {
+    "hnsw:space": "cosine",
+    "hnsw:num_threads": 1,
+    "hnsw:batch_size": 50_000,
+    "hnsw:sync_threshold": 50_000,
+}
+
+MAX_NAME_LENGTH = 128
+MAX_CONTENT_LENGTH = 100_000
+
+
+def sanitize_name(value: str, field_name: str = "name") -> str:
+    """Return a safe wing/room/tool name for local storage boundaries."""
+    if value is None:
+        raise ValueError(f"{field_name} is required")
+    cleaned = str(value).strip()
+    if not cleaned:
+        raise ValueError(f"{field_name} must not be empty")
+    if len(cleaned) > MAX_NAME_LENGTH:
+        raise ValueError(f"{field_name} is too long")
+    if "\x00" in cleaned or "\n" in cleaned or "\r" in cleaned:
+        raise ValueError(f"{field_name} contains control characters")
+    if "/" in cleaned or "\\" in cleaned or ".." in cleaned:
+        raise ValueError(f"{field_name} must not contain path separators")
+    return cleaned
+
+
+def sanitize_kg_value(value: str, field_name: str = "value") -> str:
+    """Return a bounded KG value while allowing ordinary prose-like labels."""
+    if value is None:
+        raise ValueError(f"{field_name} is required")
+    cleaned = str(value).strip()
+    if not cleaned:
+        raise ValueError(f"{field_name} must not be empty")
+    if len(cleaned) > MAX_CONTENT_LENGTH:
+        raise ValueError(f"{field_name} is too long")
+    if "\x00" in cleaned:
+        raise ValueError(f"{field_name} contains a null byte")
+    return cleaned
+
+
+def sanitize_content(value: str, field_name: str = "content") -> str:
+    """Return bounded verbatim drawer content for MCP writes."""
+    if value is None:
+        raise ValueError(f"{field_name} is required")
+    cleaned = str(value).strip()
+    if not cleaned:
+        raise ValueError(f"{field_name} must not be empty")
+    if len(cleaned) > MAX_CONTENT_LENGTH:
+        raise ValueError(f"{field_name} is too long")
+    if "\x00" in cleaned:
+        raise ValueError(f"{field_name} contains a null byte")
+    return cleaned
+
 
 DEFAULT_TOPIC_WINGS = [
     "emotions",
@@ -150,6 +204,25 @@ class MnemionConfig:
         """
         return self._file_config.get("llm", {"backend": "none"})
 
+    @property
+    def hook_silent_save(self) -> bool:
+        return bool(self._file_config.get("hook_silent_save", False))
+
+    @property
+    def hook_desktop_toast(self) -> bool:
+        return bool(self._file_config.get("hook_desktop_toast", True))
+
+    def set_hook_setting(self, key: str, value: bool) -> dict:
+        if key not in {"hook_silent_save", "hook_desktop_toast"}:
+            raise ValueError(f"Unsupported hook setting: {key}")
+        self._config_dir.mkdir(parents=True, exist_ok=True)
+        config = dict(self._file_config)
+        config[key] = bool(value)
+        with open(self._config_file, "w") as f:
+            json.dump(config, f, indent=2)
+        self._file_config = config
+        return {key: bool(value)}
+
     def save_llm_config(
         self,
         backend: str,
@@ -196,6 +269,8 @@ class MnemionConfig:
                 "collection_name": DEFAULT_COLLECTION_NAME,
                 "topic_wings": DEFAULT_TOPIC_WINGS,
                 "hall_keywords": DEFAULT_HALL_KEYWORDS,
+                "hook_silent_save": False,
+                "hook_desktop_toast": True,
             }
             with open(self._config_file, "w") as f:
                 json.dump(default_config, f, indent=2)

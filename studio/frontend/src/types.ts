@@ -7,6 +7,35 @@ export interface Status {
   rooms: Record<string, number>
   anaktoron_path: string
   collection_name: string
+  health?: AnaktoronHealth
+  vector_disabled?: boolean
+  repair_command?: string
+  metadata_unavailable?: boolean
+  metadata_message?: string
+}
+
+export interface AnaktoronHealth {
+  segment_id: string | null
+  sqlite_count: number | null
+  hnsw_count: number | null
+  divergence: number | null
+  diverged: boolean
+  status: 'ok' | 'diverged' | 'unknown' | string
+  message: string
+}
+
+export interface RepairStatus {
+  anaktoron_path: string
+  collection: string
+  drawers: AnaktoronHealth
+  vector_disabled: boolean
+  repair_command: string
+  wing_count?: number
+  room_count?: number
+  wings?: Record<string, number>
+  rooms?: Record<string, number>
+  metadata_unavailable?: boolean
+  metadata_message?: string
 }
 
 export interface TrustSummary {

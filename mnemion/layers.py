@@ -21,9 +21,8 @@ import sys
 from pathlib import Path
 from collections import defaultdict
 
-import chromadb
-
 from .config import MnemionConfig
+from .chroma_compat import make_persistent_client
 
 
 # ---------------------------------------------------------------------------
@@ -90,7 +89,11 @@ class Layer1:
     def generate(self) -> str:
         """Pull top drawers from ChromaDB and format as compact L1 text."""
         try:
-            client = chromadb.PersistentClient(path=self.anaktoron_path)
+            client = make_persistent_client(
+                self.anaktoron_path,
+                vector_safe=True,
+                collection_name=self.collection_name,
+            )
             col = client.get_collection(self.collection_name)
         except Exception:
             return "## L1 — No Anaktoron found. Run: mnemion mine <dir>"
@@ -196,7 +199,11 @@ class Layer2:
     def retrieve(self, wing: str = None, room: str = None, n_results: int = 10) -> str:
         """Retrieve drawers filtered by wing and/or room."""
         try:
-            client = chromadb.PersistentClient(path=self.anaktoron_path)
+            client = make_persistent_client(
+                self.anaktoron_path,
+                vector_safe=True,
+                collection_name=self.collection_name,
+            )
             col = client.get_collection(self.collection_name)
         except Exception:
             return "No Anaktoron found."
@@ -261,7 +268,11 @@ class Layer3:
     def search(self, query: str, wing: str = None, room: str = None, n_results: int = 5) -> str:
         """Semantic search, returns compact result text."""
         try:
-            client = chromadb.PersistentClient(path=self.anaktoron_path)
+            client = make_persistent_client(
+                self.anaktoron_path,
+                vector_safe=True,
+                collection_name=self.collection_name,
+            )
             col = client.get_collection(self.collection_name)
         except Exception:
             return "No Anaktoron found."
@@ -318,7 +329,11 @@ class Layer3:
     ) -> list:
         """Return raw dicts instead of formatted text."""
         try:
-            client = chromadb.PersistentClient(path=self.anaktoron_path)
+            client = make_persistent_client(
+                self.anaktoron_path,
+                vector_safe=True,
+                collection_name=self.collection_name,
+            )
             col = client.get_collection(self.collection_name)
         except Exception:
             return []
@@ -443,8 +458,13 @@ class MemoryStack:
 
         # Count drawers
         try:
-            client = chromadb.PersistentClient(path=self.anaktoron_path)
-            col = client.get_collection(MnemionConfig().collection_name)
+            collection_name = MnemionConfig().collection_name
+            client = make_persistent_client(
+                self.anaktoron_path,
+                vector_safe=True,
+                collection_name=collection_name,
+            )
+            col = client.get_collection(collection_name)
             count = col.count()
             result["total_drawers"] = count
         except Exception:

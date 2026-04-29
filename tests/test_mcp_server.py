@@ -7,6 +7,9 @@ via monkeypatch to avoid touching real data.
 """
 
 import json
+import hashlib
+import sqlite3
+from pathlib import Path
 
 
 def _patch_mcp_server(monkeypatch, config, kg):
@@ -25,6 +28,8 @@ def _patch_mcp_server(monkeypatch, config, kg):
         mcp_server, "_hybrid", HybridSearcher(anaktoron_path=config.anaktoron_path, kg_path=kg_path)
     )
     monkeypatch.setattr(mcp_server, "_trust", DrawerTrust(db_path=kg_path))
+    monkeypatch.setattr(mcp_server, "_vector_disabled", False)
+    monkeypatch.setattr(mcp_server, "_vector_health", {"status": "ok", "diverged": False})
 
 
 def _get_collection(anaktoron_path, create=False):
@@ -33,11 +38,14 @@ def _get_collection(anaktoron_path, create=False):
     Returns (client, collection) so callers can clean up the client
     when they are done.
     """
-    import chromadb
+    from mnemion.chroma_compat import make_persistent_client
+    from mnemion.config import DRAWER_HNSW_METADATA
 
-    client = chromadb.PersistentClient(path=anaktoron_path)
+    client = make_persistent_client(anaktoron_path)
     if create:
-        return client, client.get_or_create_collection("mnemion_drawers")
+        return client, client.get_or_create_collection(
+            "mnemion_drawers", metadata=DRAWER_HNSW_METADATA
+        )
     return client, client.get_collection("mnemion_drawers")
 
 
@@ -68,6 +76,10 @@ class TestHandleRequest:
         assert "mnemion_search" in names
         assert "mnemion_add_drawer" in names
         assert "mnemion_kg_add" in names
+        assert "mnemion_get_drawer" in names
+        assert "mnemion_update_drawer" in names
+        assert "mnemion_create_tunnel" in names
+        assert "mnemion_reconnect" in names
 
     def test_unknown_tool(self):
         from mnemion.mcp_server import handle_request
@@ -283,6 +295,104 @@ class TestWriteTools:
         result = tool_delete_drawer("nonexistent_drawer")
         assert result["success"] is False
 
+    def test_get_list_and_update_drawer(self, monkeypatch, config, anaktoron_path, kg):
+        _patch_mcp_server(monkeypatch, config, kg)
+        _client, _col = _get_collection(anaktoron_path, create=True)
+        del _client
+        from mnemion.mcp_server import (
+            tool_add_drawer,
+            tool_get_drawer,
+            tool_list_drawers,
+            tool_update_drawer,
+        )
+
+        added = tool_add_drawer("ops", "repair", "Initial repair note.")
+        moved = tool_update_drawer(added["drawer_id"], wing="ops", room="status")
+        assert moved["success"] is True
+        fetched = tool_get_drawer(added["drawer_id"])
+        assert fetched["metadata"]["room"] == "status"
+        listed = tool_list_drawers(wing="ops", room="status")
+        assert [d["drawer_id"] for d in listed["drawers"]] == [added["drawer_id"]]
+
+        superseded = tool_update_drawer(added["drawer_id"], content="Replacement repair note.")
+        assert superseded["success"] is True
+        assert superseded["superseded"] == added["drawer_id"]
+        old = fetched["trust"] or {}
+        updated_old = tool_get_drawer(added["drawer_id"])["trust"]
+        assert (old == {}) or updated_old["status"] == "superseded"
+
+    def test_tunnel_tools(self, monkeypatch, config, anaktoron_path, kg):
+        _patch_mcp_server(monkeypatch, config, kg)
+        from mnemion.mcp_server import (
+            tool_create_tunnel,
+            tool_delete_tunnel,
+            tool_follow_tunnels,
+            tool_list_tunnels,
+        )
+
+        created = tool_create_tunnel("wing_a", "room_a", "wing_b", "room_b", label="related")
+        tunnel_id = created["tunnel"]["tunnel_id"]
+        assert tool_list_tunnels("wing_a")["tunnels"][0]["tunnel_id"] == tunnel_id
+        assert tool_follow_tunnels("wing_a", "room_a")["tunnels"][0]["direction"] == "outbound"
+        assert tool_delete_tunnel(tunnel_id)["success"] is True
+
+    def test_vector_disabled_duplicate_reports_limitation(self, monkeypatch, config, kg):
+        _patch_mcp_server(monkeypatch, config, kg)
+        from mnemion import mcp_server
+
+        monkeypatch.setattr(mcp_server, "_vector_disabled", True)
+        monkeypatch.setattr(mcp_server, "_vector_health", {"status": "diverged"})
+        result = mcp_server.tool_check_duplicate("same memory")
+        assert result["is_duplicate"] is None
+        assert "disabled" in result["warning"].lower()
+
+    def test_vector_disabled_status_uses_sqlite_metadata_summary(self, monkeypatch, config, kg):
+        _patch_mcp_server(monkeypatch, config, kg)
+        from mnemion import mcp_server
+
+        monkeypatch.setattr(mcp_server, "_vector_disabled", True)
+        monkeypatch.setattr(mcp_server, "_vector_health", {"status": "diverged", "sqlite_count": 3})
+        monkeypatch.setattr(
+            mcp_server,
+            "sqlite_metadata_summary",
+            lambda *_args, **_kwargs: {
+                "total_drawers": 3,
+                "wing_count": 2,
+                "room_count": 2,
+                "wings": {"ops": 2, "notes": 1},
+                "rooms": {"repair": 2, "planning": 1},
+                "metadata_unavailable": False,
+                "metadata_message": "from sqlite",
+            },
+        )
+
+        result = mcp_server.tool_status()
+
+        assert result["total_drawers"] == 3
+        assert result["wings"] == {"ops": 2, "notes": 1}
+        assert result["rooms"] == {"repair": 2, "planning": 1}
+        assert result["metadata_unavailable"] is False
+
+    def test_reconnect_clears_caches(self, monkeypatch, config, kg):
+        _patch_mcp_server(monkeypatch, config, kg)
+        from mnemion import mcp_server
+
+        called = {"close": 0}
+
+        def fake_close():
+            called["close"] += 1
+
+        monkeypatch.setattr(mcp_server, "close_chroma_handles", fake_close)
+        monkeypatch.setattr(mcp_server, "_client_cache", object())
+        monkeypatch.setattr(mcp_server, "_collection_cache", object())
+        monkeypatch.setattr(mcp_server, "_hybrid", object())
+        result = mcp_server.tool_reconnect()
+        assert result["success"] is True
+        assert called["close"] == 1
+        assert mcp_server._client_cache is None
+        assert mcp_server._collection_cache is None
+        assert mcp_server._hybrid is not None
+
     def test_check_duplicate(self, monkeypatch, config, anaktoron_path, seeded_collection, kg):
         _patch_mcp_server(monkeypatch, config, kg)
         from mnemion.mcp_server import tool_check_duplicate
@@ -301,6 +411,40 @@ class TestWriteTools:
             threshold=0.99,
         )
         assert result["is_duplicate"] is False
+
+    def test_update_drawer_rolls_back_new_row_when_supersede_trust_fails(
+        self, monkeypatch, config, anaktoron_path, kg
+    ):
+        _patch_mcp_server(monkeypatch, config, kg)
+        _client, col = _get_collection(anaktoron_path, create=True)
+        del _client
+        from mnemion import mcp_server
+
+        added = mcp_server.tool_add_drawer("ops", "repair", "Original repair note.")
+        old_id = added["drawer_id"]
+        new_content = "Replacement repair note."
+        new_id = (
+            "drawer_ops_repair_"
+            + hashlib.md5(new_content.encode(), usedforsecurity=False).hexdigest()[:16]
+        )
+        real_update = mcp_server._trust.update_status
+
+        def fail_old_update(drawer_id, *args, **kwargs):
+            if drawer_id == old_id:
+                raise RuntimeError("trust supersede failed")
+            return real_update(drawer_id, *args, **kwargs)
+
+        monkeypatch.setattr(mcp_server._trust, "update_status", fail_old_update)
+
+        result = mcp_server.tool_update_drawer(old_id, content=new_content)
+
+        assert result["success"] is False
+        assert not col.get(ids=[new_id])["ids"]
+        with sqlite3.connect(mcp_server._hybrid.kg_path) as conn:
+            fts_count = conn.execute(
+                "SELECT COUNT(*) FROM drawers_fts WHERE drawer_id = ?", (new_id,)
+            ).fetchone()[0]
+        assert fts_count == 0
 
 
 # ── KG Tools ────────────────────────────────────────────────────────────
@@ -351,6 +495,49 @@ class TestKGTools:
 
         result = tool_kg_stats()
         assert result["entities"] >= 4
+
+
+class TestWalAndTrustTools:
+    def test_wal_redacts_sensitive_fields(self):
+        from mnemion import mcp_server
+
+        redacted = mcp_server._redact_for_wal(
+            {
+                "drawer_id": "drawer_123",
+                "content": "secret content",
+                "object": "secret object",
+                "label": "private label",
+                "reason": "private reason",
+                "resolution_note": "private note",
+                "source_file": "C:/Users/name/private.txt",
+            }
+        )
+
+        assert redacted["drawer_id"] == "drawer_123"
+        for key in ["content", "object", "label", "reason", "resolution_note", "source_file"]:
+            assert redacted[key]["redacted"] is True
+            assert "secret" not in json.dumps(redacted[key])
+            assert "private" not in json.dumps(redacted[key])
+
+    def test_resolve_contest_writes_redacted_wal(self, monkeypatch, config, kg, tmp_path):
+        _patch_mcp_server(monkeypatch, config, kg)
+        from mnemion import mcp_server
+
+        mcp_server._trust.create("drawer_loser", "ops", "repair")
+        mcp_server._trust.create("drawer_winner", "ops", "repair")
+
+        result = mcp_server.tool_resolve_contest(
+            "drawer_loser", "drawer_winner", "this note contains sensitive detail"
+        )
+
+        wal_path = Path.home() / ".mnemion" / "wal" / "write_log.jsonl"
+        record = json.loads(wal_path.read_text(encoding="utf-8").splitlines()[-1])
+        assert result["success"] is True
+        assert record["tool"] == "mnemion_resolve_contest"
+        assert record["args"]["drawer_id"] == "drawer_loser"
+        assert record["args"]["winner_id"] == "drawer_winner"
+        assert record["args"]["resolution_note"]["redacted"] is True
+        assert "sensitive detail" not in json.dumps(record)
 
 
 # ── Diary Tools ─────────────────────────────────────────────────────────

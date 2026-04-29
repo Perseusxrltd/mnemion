@@ -121,12 +121,14 @@ def save_to_anaktoron(memories, session_id):
     try:
         if MNEMION_SRC not in sys.path:
             sys.path.insert(0, MNEMION_SRC)
-        import chromadb
-        from mnemion.config import MnemionConfig
+        from mnemion.chroma_compat import make_persistent_client
+        from mnemion.config import DRAWER_HNSW_METADATA, MnemionConfig
 
         config = MnemionConfig()
-        client = chromadb.PersistentClient(path=config.anaktoron_path)
-        collection = client.get_or_create_collection(config.collection_name)
+        client = make_persistent_client(config.anaktoron_path)
+        collection = client.get_or_create_collection(
+            config.collection_name, metadata=DRAWER_HNSW_METADATA
+        )
 
         saved = 0
         for mem in memories:

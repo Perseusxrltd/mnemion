@@ -48,6 +48,8 @@ def cmd_init(args):
     from pathlib import Path
     from .entity_detector import scan_for_detection, detect_entities, confirm_entities
     from .room_detector_local import detect_rooms_local
+    from .corpus_origin import detect_corpus_origin, save_origin_metadata
+    from .miner import scan_project
 
     # Pass 1: auto-detect people and projects from file content
     print(f"\n  Scanning for entities in: {args.dir}")
@@ -69,7 +71,27 @@ def cmd_init(args):
 
     # Pass 2: detect rooms from folder structure
     detect_rooms_local(project_dir=args.dir, yes=getattr(args, "yes", False))
-    MnemionConfig().init()
+    cfg = MnemionConfig()
+    cfg.init()
+
+    files = scan_project(args.dir)
+    total_bytes = sum(Path(p).stat().st_size for p in files if Path(p).exists())
+    print(f"  Scope estimate: {len(files)} files, {total_bytes / 1_048_576:.1f} MB")
+
+    origin = detect_corpus_origin(args.dir)
+    origin_path = Path(cfg.anaktoron_path).expanduser().parent / "origin.json"
+    save_origin_metadata(origin_path, origin)
+    print(f"  Origin metadata saved: {origin_path}")
+
+    should_mine = getattr(args, "auto_mine", False)
+    if not should_mine and not getattr(args, "yes", False) and sys.stdin.isatty():
+        answer = input("  Mine this directory now? [y/N] ").strip().lower()
+        should_mine = answer in {"y", "yes"}
+    if should_mine:
+        print("  Auto-mining selected.")
+        from .miner import mine
+
+        mine(project_dir=args.dir, anaktoron_path=cfg.anaktoron_path)
 
 
 def cmd_mine(args):
@@ -79,6 +101,13 @@ def cmd_mine(args):
     include_ignored = []
     for raw in args.include_ignored or []:
         include_ignored.extend(part.strip() for part in raw.split(",") if part.strip())
+
+    if getattr(args, "redetect_origin", False):
+        from .corpus_origin import detect_corpus_origin, save_origin_metadata
+
+        origin_path = Path(anaktoron_path).expanduser().parent / "origin.json"
+        save_origin_metadata(origin_path, detect_corpus_origin(args.dir))
+        print(f"  Origin metadata saved: {origin_path}")
 
     if args.mode == "convos":
         from .convo_miner import mine_convos
@@ -193,77 +222,52 @@ def cmd_status(args):
 
 
 def cmd_repair(args):
-    """Rebuild Anaktoron vector index from SQLite metadata."""
-    import chromadb
-    import shutil
+    """Run Anaktoron repair and health tooling."""
+    import json
 
-    cfg = MnemionConfig()
-    anaktoron_path = os.path.expanduser(args.palace) if args.palace else cfg.anaktoron_path
-    col_name = cfg.collection_name
+    from . import repair as repair_mod
 
-    if not os.path.isdir(anaktoron_path):
-        print(f"\n  No Anaktoron found at {anaktoron_path}")
-        return
+    anaktoron_path = os.path.expanduser(args.palace) if args.palace else None
+    mode = getattr(args, "mode", "rebuild") or "rebuild"
 
-    print(f"\n{'=' * 55}")
-    print("  Mnemion Repair")
-    print(f"{'=' * 55}\n")
-    print(f"  Anaktoron: {anaktoron_path}")
-    print(f"  Collection: {col_name}")
-
-    # Try to read existing drawers
     try:
-        client = chromadb.PersistentClient(path=anaktoron_path)
-        col = client.get_collection(col_name)
-        total = col.count()
-        print(f"  Drawers found: {total}")
-    except Exception as e:
-        print(f"  Error reading Anaktoron: {e}")
-        print("  Cannot recover — Anaktoron may need to be re-mined from source files.")
-        return
-
-    if total == 0:
-        print("  Nothing to repair.")
-        return
-
-    # Extract all drawers in batches
-    print("\n  Extracting drawers...")
-    batch_size = 5000
-    all_ids = []
-    all_docs = []
-    all_metas = []
-    offset = 0
-    while offset < total:
-        batch = col.get(limit=batch_size, offset=offset, include=["documents", "metadatas"])
-        all_ids.extend(batch["ids"])
-        all_docs.extend(batch["documents"])
-        all_metas.extend(batch["metadatas"])
-        offset += batch_size
-    print(f"  Extracted {len(all_ids)} drawers")
-
-    # Backup and rebuild
-    backup_path = anaktoron_path + ".backup"
-    if os.path.exists(backup_path):
-        shutil.rmtree(backup_path)
-    print(f"  Backing up to {backup_path}...")
-    shutil.copytree(anaktoron_path, backup_path)
-
-    print("  Rebuilding collection...")
-    client.delete_collection(col_name)
-    new_col = client.create_collection(col_name)
-
-    filed = 0
-    for i in range(0, len(all_ids), batch_size):
-        batch_ids = all_ids[i : i + batch_size]
-        batch_docs = all_docs[i : i + batch_size]
-        batch_metas = all_metas[i : i + batch_size]
-        new_col.add(documents=batch_docs, ids=batch_ids, metadatas=batch_metas)
-        filed += len(batch_ids)
-        print(f"  Re-filed {filed}/{len(all_ids)} drawers...")
-
-    print(f"\n  Repair complete. {filed} drawers rebuilt.")
-    print(f"  Backup saved at {backup_path}")
-    print(f"\n{'=' * 55}\n")
+        if mode == "status":
+            result = repair_mod.status(anaktoron_path)
+            repair_mod.cli_print_status(result)
+        elif mode == "scan":
+            result = repair_mod.scan_anaktoron(
+                anaktoron_path, only_wing=getattr(args, "wing", None)
+            )
+            print(json.dumps(result, indent=2))
+        elif mode == "prune":
+            result = repair_mod.prune_corrupt(
+                anaktoron_path, assume_yes=getattr(args, "yes", False)
+            )
+            print(json.dumps(result, indent=2))
+        elif mode == "max-seq-id":
+            result = repair_mod.repair_max_seq_id(
+                anaktoron_path or MnemionConfig().anaktoron_path,
+                segment=getattr(args, "segment", None),
+                from_sidecar=getattr(args, "from_sidecar", None),
+                backup=not getattr(args, "no_backup", False),
+                dry_run=getattr(args, "dry_run", False),
+                assume_yes=getattr(args, "yes", False),
+                all_collections=getattr(args, "all_collections", False),
+            )
+            print(json.dumps(result, indent=2))
+        else:
+            result = repair_mod.rebuild_index(
+                anaktoron_path,
+                confirm_truncation_ok=getattr(args, "confirm_truncation_ok", False),
+                backup=not getattr(args, "no_backup", False),
+            )
+            print(json.dumps(result, indent=2))
+    except repair_mod.TruncationDetected as exc:
+        print(exc.message)
+        sys.exit(2)
+    except repair_mod.MaxSeqIdVerificationError as exc:
+        print(f"\n  ERROR: {exc}")
+        sys.exit(2)
 
 
 def _count_json_objects(filepath):
@@ -333,9 +337,9 @@ def _stream_json_array(filepath, read_size=524288):
 def cmd_restore(args):
     """Import a JSON export (archive/drawers_export.json) into the local Anaktoron."""
     import gc
-    import chromadb
     from pathlib import Path
     from .config import MnemionConfig, DRAWER_HNSW_METADATA
+    from .chroma_compat import make_persistent_client, pin_hnsw_threads
 
     cfg = MnemionConfig()
     anaktoron_path = os.path.expanduser(args.palace) if args.palace else cfg.anaktoron_path
@@ -362,10 +366,11 @@ def cmd_restore(args):
     print(f"{total}", flush=True)
 
     Path(anaktoron_path).mkdir(parents=True, exist_ok=True)
-    client = chromadb.PersistentClient(path=anaktoron_path)
+    client = make_persistent_client(anaktoron_path)
 
     try:
         col = client.get_or_create_collection(col_name, metadata=DRAWER_HNSW_METADATA)
+        pin_hnsw_threads(col)
     except Exception as e:
         print(f"  Error opening Anaktoron: {e}\n", flush=True)
         sys.exit(1)
@@ -380,6 +385,7 @@ def cmd_restore(args):
         print(f"\n  Replacing {existing} existing drawers...", flush=True)
         client.delete_collection(col_name)
         col = client.create_collection(col_name, metadata=DRAWER_HNSW_METADATA)
+        pin_hnsw_threads(col)
 
     print("  Streaming restore started ...\n", flush=True)
 
@@ -654,8 +660,8 @@ def cmd_instructions(args):
 
 def cmd_compress(args):
     """Compress drawers in a wing using AAAK Dialect."""
-    import chromadb
     from .dialect import Dialect
+    from .chroma_compat import make_persistent_client, pin_hnsw_threads
 
     cfg = MnemionConfig()
     anaktoron_path = os.path.expanduser(args.palace) if args.palace else cfg.anaktoron_path
@@ -677,7 +683,7 @@ def cmd_compress(args):
 
     # Connect to Anaktoron
     try:
-        client = chromadb.PersistentClient(path=anaktoron_path)
+        client = make_persistent_client(anaktoron_path)
         col = client.get_collection(col_name)
     except Exception:
         print(f"\n  No Anaktoron found at {anaktoron_path}")
@@ -749,7 +755,12 @@ def cmd_compress(args):
     # Store compressed versions (unless dry-run)
     if not args.dry_run:
         try:
-            comp_col = client.get_or_create_collection("mnemion_compressed")
+            from .config import DRAWER_HNSW_METADATA
+
+            comp_col = client.get_or_create_collection(
+                "mnemion_compressed", metadata=DRAWER_HNSW_METADATA
+            )
+            pin_hnsw_threads(comp_col)
             for doc_id, compressed, meta, stats in compressed_entries:
                 comp_meta = dict(meta)
                 comp_meta["compression_ratio"] = round(stats["ratio"], 1)
@@ -795,6 +806,11 @@ def main():
     p_init.add_argument(
         "--yes", action="store_true", help="Auto-accept all detected entities (non-interactive)"
     )
+    p_init.add_argument(
+        "--auto-mine",
+        action="store_true",
+        help="Mine the same directory immediately after init (explicit non-interactive mining)",
+    )
 
     # mine
     p_mine = sub.add_parser("mine", help="Mine files into the Anaktoron")
@@ -831,6 +847,11 @@ def main():
         choices=["exchange", "general"],
         default="exchange",
         help="Extraction strategy for convos mode: 'exchange' (default) or 'general' (5 memory types)",
+    )
+    p_mine.add_argument(
+        "--redetect-origin",
+        action="store_true",
+        help="Re-detect and persist corpus origin metadata before mining",
     )
 
     # search
@@ -947,9 +968,40 @@ def main():
     )
 
     # repair
-    sub.add_parser(
+    p_repair = sub.add_parser(
         "repair",
-        help="Rebuild Anaktoron vector index from stored data (fixes segfaults after corruption)",
+        help="Inspect and repair Anaktoron storage health",
+    )
+    p_repair.add_argument(
+        "--mode",
+        choices=["status", "scan", "prune", "rebuild", "max-seq-id"],
+        default="rebuild",
+        help="Repair mode (default: rebuild, preserving legacy bare `mnemion repair` behavior)",
+    )
+    p_repair.add_argument("--wing", default=None, help="Scan only this wing")
+    p_repair.add_argument("--segment", default=None, help="Limit max-seq-id repair to one segment")
+    p_repair.add_argument(
+        "--all-collections",
+        action="store_true",
+        help="For max-seq-id repair, include poisoned rows from every Chroma collection",
+    )
+    p_repair.add_argument(
+        "--from-sidecar",
+        dest="from_sidecar",
+        default=None,
+        help="Restore max_seq_id values from another chroma.sqlite3 sidecar",
+    )
+    p_repair.add_argument("--dry-run", action="store_true", help="Report planned repair only")
+    p_repair.add_argument("--yes", action="store_true", help="Confirm repair/prune actions")
+    p_repair.add_argument(
+        "--no-backup",
+        action="store_true",
+        help="Skip backup creation for repair modes that normally back up",
+    )
+    p_repair.add_argument(
+        "--confirm-truncation-ok",
+        action="store_true",
+        help="Allow rebuild when extracted count is below/ambiguous vs SQLite ground truth",
     )
 
     # librarian

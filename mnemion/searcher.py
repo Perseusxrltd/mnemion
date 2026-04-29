@@ -15,9 +15,8 @@ Returns verbatim text — the actual words, never summaries.
 import logging
 from pathlib import Path
 
-import chromadb
-
 from .config import MnemionConfig
+from .chroma_compat import VectorStoreUnsafe, make_persistent_client
 
 logger = logging.getLogger("mnemion_mcp")
 
@@ -41,8 +40,12 @@ def search(
     """
     col_name = collection_name or MnemionConfig().collection_name
     try:
-        client = chromadb.PersistentClient(path=anaktoron_path)
+        client = make_persistent_client(anaktoron_path, vector_safe=True, collection_name=col_name)
         col = client.get_collection(col_name)
+    except VectorStoreUnsafe as exc:
+        print("\n  Vector search disabled: HNSW index divergence detected")
+        print("  Run: mnemion repair --mode status")
+        raise SearchError("Vector store unsafe to open") from exc
     except Exception:
         print(f"\n  No Anaktoron found at {anaktoron_path}")
         print("  Run: mnemion init <dir> then mnemion mine <dir>")
@@ -130,8 +133,15 @@ def search_memories(
     """
     col_name = collection_name or MnemionConfig().collection_name
     try:
-        client = chromadb.PersistentClient(path=anaktoron_path)
+        client = make_persistent_client(anaktoron_path, vector_safe=True, collection_name=col_name)
         col = client.get_collection(col_name)
+    except VectorStoreUnsafe as exc:
+        return {
+            "error": "Vector store unsafe to open",
+            "vector_disabled": True,
+            "health": exc.health,
+            "hint": "Run: mnemion repair --mode status, then rebuild if divergence is confirmed",
+        }
     except Exception as e:
         logger.error("No Anaktoron found at %s: %s", anaktoron_path, e)
         return {

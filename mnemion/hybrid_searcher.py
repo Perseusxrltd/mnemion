@@ -22,8 +22,8 @@ from collections import defaultdict
 from pathlib import Path
 from typing import List, Dict, Optional, Any, Set
 
-import chromadb
 from .config import MnemionConfig
+from .chroma_compat import VectorStoreUnsafe, make_persistent_client
 
 # Statuses excluded from search by default
 _HIDDEN_STATUSES: Set[str] = {"superseded", "historical"}
@@ -157,24 +157,40 @@ class HybridSearcher:
     """
 
     def __init__(
-        self, anaktoron_path: Optional[str] = None, kg_path: Optional[str] = None, k: int = 60
+        self,
+        anaktoron_path: Optional[str] = None,
+        kg_path: Optional[str] = None,
+        k: int = 60,
+        vector_disabled: bool = False,
+        vector_disabled_reason: str = "",
     ):
         cfg = MnemionConfig()
         self.anaktoron_path = anaktoron_path or cfg.anaktoron_path
         self.kg_path = kg_path or Path(self.anaktoron_path).parent / "knowledge_graph.sqlite3"
         self.k = k
         self.collection_name = cfg.collection_name
+        self.vector_disabled = vector_disabled
+        self.vector_disabled_reason = vector_disabled_reason
 
         # Persistent clients
-        from .chroma_compat import fix_blob_seq_ids
-
-        fix_blob_seq_ids(self.anaktoron_path)
-        self.chroma_client = chromadb.PersistentClient(path=self.anaktoron_path)
-        try:
-            self.collection = self.chroma_client.get_collection(self.collection_name)
-        except Exception:
-            # Anaktoron not yet initialized — search will return empty results.
-            self.collection = None
+        self.chroma_client = None
+        self.collection = None
+        if not self.vector_disabled:
+            try:
+                self.chroma_client = make_persistent_client(
+                    self.anaktoron_path,
+                    vector_safe=True,
+                    collection_name=self.collection_name,
+                )
+                self.collection = self.chroma_client.get_collection(self.collection_name)
+            except VectorStoreUnsafe as exc:
+                self.vector_disabled = True
+                self.vector_disabled_reason = exc.health.get("message", str(exc))
+                self.chroma_client = None
+                self.collection = None
+            except Exception:
+                # Anaktoron not yet initialized — search will return empty results.
+                self.collection = None
 
     def _fts_run(
         self,
@@ -241,6 +257,70 @@ class HybridSearcher:
                 merged.append(doc_id)
         return merged[:limit]
 
+    def _fts_hydrate_search(
+        self,
+        query: str,
+        wing: Optional[str],
+        room: Optional[str],
+        n_results: int,
+        include_superseded: bool,
+    ) -> List[Dict[str, Any]]:
+        """Return FTS-only hydrated results without touching Chroma."""
+        ids = self._fts_search(query, wing, room, limit=max(50, n_results * 10))
+        if not ids:
+            return []
+        trust_map = self._get_trust_map(ids)
+        placeholders = ",".join("?" * len(ids))
+        conn = None
+        try:
+            conn = sqlite3.connect(self.kg_path, timeout=10)
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute(
+                f"""
+                SELECT drawer_id, content, wing, room
+                FROM drawers_fts
+                WHERE drawer_id IN ({placeholders})
+                """,
+                ids,
+            ).fetchall()
+        except Exception as e:
+            logger.warning("FTS fallback hydration failed: %s", e)
+            return []
+        finally:
+            if conn is not None:
+                conn.close()
+
+        row_map = {row["drawer_id"]: row for row in rows}
+        hits = []
+        for rank, drawer_id in enumerate(ids, 1):
+            trust = trust_map.get(drawer_id, {"status": "current", "confidence": 1.0})
+            status = trust.get("status", "current")
+            if not include_superseded and status in _HIDDEN_STATUSES:
+                continue
+            row = row_map.get(drawer_id)
+            if not row:
+                continue
+            confidence = float(trust.get("confidence", 1.0))
+            hits.append(
+                {
+                    "id": drawer_id,
+                    "text": row["content"],
+                    "wing": row["wing"],
+                    "room": row["room"],
+                    "source": "knowledge_graph.sqlite3",
+                    "score": round((1.0 / (self.k + rank)) * confidence, 6),
+                    "trust_status": status,
+                    "confidence": round(confidence, 3),
+                    "embedding": None,
+                    "matched_via": "fts_fallback",
+                    "vector_disabled": True,
+                    "vector_disabled_reason": self.vector_disabled_reason,
+                }
+            )
+            if len(hits) >= n_results:
+                break
+        return hits
+
     def _vector_search(
         self, query: str, wing: Optional[str] = None, room: Optional[str] = None, limit: int = 50
     ) -> List[str]:
@@ -304,6 +384,8 @@ class HybridSearcher:
         Superseded and historical drawers are filtered out by default.
         Contested drawers are included but flagged with a warning marker.
         """
+        if self.vector_disabled:
+            return self._fts_hydrate_search(query, wing, room, n_results, include_superseded)
         if self.collection is None:
             return []
 

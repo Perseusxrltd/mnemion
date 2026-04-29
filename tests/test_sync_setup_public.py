@@ -59,8 +59,8 @@ def test_windows_installer_exposes_programmable_sync_setup():
 
     assert "git remote add origin $MemoryRepoUrl" in text
     assert "git remote set-url origin $MemoryRepoUrl" in text
-    assert "-Branch `\"$MemoryBranch`\"" in text
-    assert "-AgentId `\"$AgentId`\"" in text
+    assert '-Branch `"$MemoryBranch`"' in text
+    assert '-AgentId `"$AgentId`"' in text
 
 
 def test_windows_installer_removes_legacy_mempalace_hook_entries():
@@ -68,7 +68,7 @@ def test_windows_installer_removes_legacy_mempalace_hook_entries():
 
     assert "mempalace" in text.lower()
     assert "mempal_save_hook" in text.lower()
-    assert "$settings[\"hooks\"][\"Stop\"] = $filteredStopHooks" in text
+    assert '$settings["hooks"]["Stop"] = $filteredStopHooks' in text
 
 
 def test_sync_scripts_only_stage_portable_sync_artifacts():
@@ -83,7 +83,9 @@ def test_sync_scripts_only_stage_portable_sync_artifacts():
         assert "MNEMION_SYNC_KG" in text
 
     assert '$SyncKnowledgeGraph = $env:MNEMION_SYNC_KG -in @("1", "true", "yes")' in powershell
-    assert 'if ($SyncKnowledgeGraph) { $syncArtifacts += "archive/knowledge_graph.sql" }' in powershell
+    assert (
+        'if ($SyncKnowledgeGraph) { $syncArtifacts += "archive/knowledge_graph.sql" }' in powershell
+    )
     assert 'SYNC_KG="${MNEMION_SYNC_KG:-0}"' in bash
 
 
@@ -96,4 +98,6 @@ def test_powershell_sync_avoids_native_argument_quote_loss_in_inline_python():
 
 def test_codex_shell_hooks_use_lf_line_endings():
     for path in SHELL_HOOK_FILES:
-        assert b"\r\n" not in path.read_bytes(), f"{path.relative_to(ROOT)} must use LF line endings"
+        assert b"\r\n" not in path.read_bytes(), (
+            f"{path.relative_to(ROOT)} must use LF line endings"
+        )

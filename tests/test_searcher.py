@@ -43,3 +43,32 @@ class TestSearchMemories:
         assert "source_file" in hit
         assert "similarity" in hit
         assert isinstance(hit["similarity"], float)
+
+
+def test_hybrid_searcher_vector_safe_fallback_uses_fts(monkeypatch, tmp_path):
+    from mnemion.chroma_compat import VectorStoreUnsafe
+    from mnemion.hybrid_searcher import HybridSearcher
+    from mnemion.knowledge_graph import KnowledgeGraph
+
+    anaktoron = tmp_path / "anaktoron"
+    anaktoron.mkdir()
+    kg_path = tmp_path / "knowledge_graph.sqlite3"
+    KnowledgeGraph(db_path=str(kg_path))
+    with __import__("sqlite3").connect(kg_path) as conn:
+        conn.execute(
+            "INSERT INTO drawers_fts (drawer_id, content, wing, room) VALUES (?, ?, ?, ?)",
+            ("drawer_fallback", "repair fallback lexical result", "ops", "repair"),
+        )
+        conn.commit()
+
+    def refuse_open(*args, **kwargs):
+        raise VectorStoreUnsafe({"status": "diverged", "message": "unsafe vector store"})
+
+    monkeypatch.setattr("mnemion.hybrid_searcher.make_persistent_client", refuse_open)
+
+    searcher = HybridSearcher(anaktoron_path=str(anaktoron), kg_path=str(kg_path))
+    hits = searcher.search("repair fallback", n_results=1)
+
+    assert searcher.vector_disabled is True
+    assert hits[0]["id"] == "drawer_fallback"
+    assert hits[0]["vector_disabled"] is True
