@@ -11,9 +11,9 @@ import os
 
 sys.path.insert(0, os.path.expanduser("~/projects/mnemion"))
 
-from mnemion.chroma_compat import make_persistent_client
-from mnemion.config import MnemionConfig
-from mnemion.trust_lifecycle import DrawerTrust
+from mnemion.chroma_compat import make_persistent_client  # noqa: E402
+from mnemion.config import MnemionConfig  # noqa: E402
+from mnemion.trust_lifecycle import DrawerTrust  # noqa: E402
 
 config = MnemionConfig()
 client = make_persistent_client(
