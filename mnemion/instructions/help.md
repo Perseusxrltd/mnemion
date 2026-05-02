@@ -70,9 +70,10 @@ AI memory system. Store everything, find anything. Local, free, no API key.
     mnemion mine <dir> --mode convos    Mine conversation exports
     mnemion sweep <jsonl-or-dir>        Ingest Claude/Codex JSONL messages with skip counts
     mnemion search "query"              Search your memories
-    mnemion consolidate                 Extract cognitive graph units
+    mnemion consolidate                 Extract cognitive graph units; repeated --limit runs advance through unconsolidated drawers
     mnemion reconstruct "query"         Search evidence trails and topic tunnels
     mnemion memory-guard scan           Scan for prompt-injection/privacy risks
+    mnemion memory-guard review         Write report-only Markdown/CSV from existing findings
     mnemion eval moat                   Run deterministic moat eval cases
     mnemion split <dir>                 Split large transcript files
     mnemion wake-up                     Load Anaktoron into context

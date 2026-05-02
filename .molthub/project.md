@@ -39,7 +39,7 @@ Persistent AI memory that actually works. Not just a vector store — a full sel
 - Exposed via `mnemion_predict_next` MCP tool
 
 ### Memory Trust Layer (`trust_lifecycle.py`)
-- Every drawer has a trust record: `current → superseded | contested → historical`
+- Every drawer has a trust record: `current → superseded | contested | quarantined | historical`
 - Background contradiction detection: Stage 1 fast LLM judge, Stage 2 Anaktoron-context enriched
 - 5 trust MCP tools: verify, challenge, get_contested, resolve_contest, trust_stats
 
@@ -113,19 +113,27 @@ Persistent AI memory that actually works. Not just a vector store — a full sel
 ### Librarian (`librarian.py`)
 - Daily background tidy-up: contradiction scan, room re-classification, KG triple extraction.
 - Cursor-based, resumes where it left off. `mnemion librarian [--dry-run] [--status]`.
+- Dry-run is read-only: it previews decisions without writing conflicts, trust changes, KG triples, Chroma metadata, or cursor state.
 - Scheduled via `scripts/setup_librarian_scheduler.ps1` (Windows Task Scheduler, 3 AM).
+
+### Cognitive Reconstruction and Memory Guard
+- `mnemion consolidate --limit N` extracts structured cognitive units and advances through the next unconsolidated drawers on repeated batch runs.
+- `mnemion reconstruct "query" --json` searches cognitive units and topic tunnels, then hydrates raw drawers with evidence trails.
+- `mnemion memory-guard scan` records instruction-injection/privacy findings.
+- `mnemion memory-guard review --out <dir>` writes report-only Markdown/CSV from existing findings without rescanning, quarantining, or changing trust state.
+- `mnemion memory-guard scan --quarantine` is the explicit opt-in path for hiding flagged drawers from retrieval.
 
 ### Multi-Agent Anaktoron Sync (`sync/`)
 - `SyncMemories.ps1` / `SyncMemories.sh`: fetch-before-push, merge remote export, `git push --force-with-lease`, 5 retries with random 2–9s jitter, lock file (stale > 10 min auto-cleared).
 - `merge_exports.py`: pure-Python merge of two `drawers_export.json` files — deduplicates by ID, newer `filed_at` wins.
 
-## MCP Tools (25 tools across 6 categories)
+## MCP Tools (29 tools across 6 categories)
 
 ### Read
-`mnemion_status` · `mnemion_list_wings` · `mnemion_list_rooms` · `mnemion_get_taxonomy` · `mnemion_get_aaak_spec` · `mnemion_search` · `mnemion_check_duplicate`
+`mnemion_status` · `mnemion_list_wings` · `mnemion_list_rooms` · `mnemion_get_taxonomy` · `mnemion_get_aaak_spec` · `mnemion_search` · `mnemion_reconstruct` · `mnemion_get_evidence_trail` · `mnemion_check_duplicate`
 
 ### Write
-`mnemion_add_drawer` · `mnemion_delete_drawer`
+`mnemion_add_drawer` · `mnemion_consolidate` · `mnemion_memory_guard_scan` · `mnemion_delete_drawer`
 
 ### Knowledge Graph
 `mnemion_kg_query` · `mnemion_kg_add` · `mnemion_kg_invalidate` · `mnemion_kg_timeline` · `mnemion_kg_stats` · `mnemion_traverse` · `mnemion_find_tunnels` · `mnemion_graph_stats`
@@ -143,7 +151,12 @@ Persistent AI memory that actually works. Not just a vector store — a full sel
 ```
 mnemion init <dir>                         Guided onboarding + room detection
 mnemion mine <dir> [--mode convos]         Mine project files or chat exports
+mnemion sweep <jsonl-or-dir>               Message-granular Claude/Codex JSONL ingest
 mnemion search "query"                     Hybrid search
+mnemion consolidate --limit N              Extract cognitive units in safe batches
+mnemion reconstruct "query" [--json]       Evidence-trail reconstruction
+mnemion memory-guard scan                  Scan for memory risks
+mnemion memory-guard review --out <dir>    Report-only review from existing findings
 mnemion restore <file.json>                Import JSON export (streaming, OOM-safe)
 mnemion compress [--wing W] [--dry-run]    AAAK Dialect compression (~30x)
 mnemion wake-up [--wing W]                 L0 + L1 wake-up context
@@ -153,7 +166,7 @@ mnemion instructions <name>               Print skill instructions
 mnemion llm setup|status|test|start|stop   LLM backend management
 mnemion librarian [--dry-run] [--status]   Background Anaktoron tidy-up
 mnemion status                             Show Anaktoron stats
-mnemion repair                             Rebuild vector index
+mnemion repair --mode status|scan|prune|rebuild|max-seq-id
 ```
 
 ## Technical Stack
@@ -162,7 +175,7 @@ mnemion repair                             Rebuild vector index
 - **Vector Store:** ChromaDB (Local Persistent, `~/.mnemion/anaktoron/`)
 - **Studio:** FastAPI, React 18, Vite 6, Electron 41
 - **Optimization:** PyTorch (SIGReg & JEPA Predictor) — optional dep `mnemion[lewm]`
-- **Protocol:** Model Context Protocol (MCP) — 25 tools across 6 categories
+- **Protocol:** Model Context Protocol (MCP) — 29 tools across 6 categories
 - **Reproducibility:** `uv.lock`, frontend `package-lock.json`, Electron `package-lock.json`, Ruff format/check, npm audit gates
 - **Optional:** `autocorrect` (spellcheck)
 

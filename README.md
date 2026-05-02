@@ -122,7 +122,7 @@ The Librarian is cursor-based — it saves its position to `~/.mnemion/librarian
 # Run manually
 mnemion librarian
 
-# Dry-run — shows what would change without writing
+# Dry-run — read-only preview; still uses the configured LLM for LLM-backed tasks
 mnemion librarian --dry-run
 
 # Schedule daily 3 AM run (Windows)
@@ -165,14 +165,15 @@ Enable grooming in `~/.mnemion/config.json`:
 
 Mnemion now adds a structured cognitive graph above raw vector drawers. `mnemion consolidate` extracts proposition, causal, preference, objective, event, and prescription units from stored drawers. `mnemion reconstruct` searches those units first, follows recurring topic tunnels, and only then hydrates raw drawers with an evidence trail.
 
-The security path is part of the memory system, not an afterthought: `mnemion memory-guard scan --quarantine` detects obvious instruction-injection and privacy-exfiltration memories, then moves risky drawers into the quarantined trust state so retrieval excludes them until review.
+The security path is part of the memory system, not an afterthought. `mnemion memory-guard scan` detects obvious instruction-injection and privacy-exfiltration memories, `mnemion memory-guard review --out <dir>` turns existing findings into Markdown/CSV for human review, and `mnemion memory-guard scan --quarantine` is the explicit opt-in path for moving risky drawers into the quarantined trust state.
 
 The moat harness is executable:
 
 ```bash
 mnemion consolidate --limit 1000
 mnemion reconstruct "why did the pricing dashboard move to GraphQL?"
-mnemion memory-guard scan --quarantine
+mnemion memory-guard scan
+mnemion memory-guard review --out ./memory_guard_review
 mnemion eval moat --suite all
 ```
 
@@ -234,14 +235,19 @@ py sync/backfill_trust.py
 # Message-granular Claude/Codex JSONL ingestion with cursor resume
 mnemion sweep ~/logs/codex --wing codex --consolidate
 
-# Build or refresh the cognitive graph over recent drawers
+# Build or refresh the cognitive graph. Repeated --limit runs advance through
+# the next unconsolidated drawers, so large Anaktorons can be processed safely
+# in batches.
 mnemion consolidate --limit 1000
 
 # Active reconstruction over cognitive units, topic tunnels, and raw evidence
 mnemion reconstruct "what did we decide about retrieval scoring?"
 
-# Scan stored memories for prompt-injection or privacy bait
-mnemion memory-guard scan --quarantine
+# Scan stored memories for prompt-injection or privacy bait, then write a
+# report-only review artifact from existing findings. Add --quarantine only
+# when you explicitly want to hide flagged drawers from retrieval.
+mnemion memory-guard scan
+mnemion memory-guard review --out ./memory_guard_review
 
 # Run deterministic moat cases for structure, causality, forgetting, and security
 mnemion eval moat --suite all
@@ -298,7 +304,7 @@ mnemion llm stop    # shut it down
 
 ## MCP Tools
 
-The MCP server exposes 25 tools across six categories.
+The MCP server exposes 29 tools across six categories.
 
 ### Read
 
@@ -310,6 +316,8 @@ The MCP server exposes 25 tools across six categories.
 | `mnemion_get_taxonomy` | Full wing → room → count tree |
 | `mnemion_get_aaak_spec` | Get the AAAK compressed memory dialect spec |
 | `mnemion_search` | Hybrid search (vector + lexical RRF). Filters out superseded memories. Flags contested with ⚠. Optional `min_similarity` threshold. |
+| `mnemion_reconstruct` | Active reconstruction over cognitive units, topic tunnels, and raw evidence |
+| `mnemion_get_evidence_trail` | Return cognitive units and causal edges linked to one drawer |
 | `mnemion_check_duplicate` | Check if content already exists before filing |
 
 ### Write
@@ -317,6 +325,8 @@ The MCP server exposes 25 tools across six categories.
 | Tool | What it does |
 |------|-------------|
 | `mnemion_add_drawer` | File content into a wing/room. Creates trust record + spawns background contradiction detection |
+| `mnemion_consolidate` | Extract cognitive graph units and causal edges from drawers |
+| `mnemion_memory_guard_scan` | Scan memories for instruction-injection/privacy risks, with optional quarantine |
 | `mnemion_delete_drawer` | Soft-delete a drawer (trust record marked `historical`, never hard-removed) |
 
 ### Knowledge Graph

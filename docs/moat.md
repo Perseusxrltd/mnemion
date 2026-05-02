@@ -12,7 +12,7 @@ Mnemion's edge is not a bigger vector database. The moat is the combination of m
 | Cognitive graph | Raw drawers become typed units: propositions, causes, prescriptions, preferences, objectives, and events. | `mnemion consolidate` |
 | Topic tunnels | Repeated concepts across current drawers become graph paths that can expand reconstruction beyond exact query overlap. | `mnemion reconstruct` |
 | Active reconstruction | Searches evidence units first, then hydrates raw drawers with an evidence trail. | `mnemion reconstruct --json` |
-| Memory guard | Detects obvious instruction-injection and privacy-exfiltration memories and can quarantine them. | `mnemion memory-guard scan --quarantine` |
+| Memory guard | Detects obvious instruction-injection and privacy-exfiltration memories, writes report-only review artifacts, and can quarantine on explicit request. | `mnemion memory-guard scan`, `mnemion memory-guard review` |
 | Moat eval | Built-in deterministic cases for structure, causality, forgetting, and security. | `mnemion eval moat --suite all` |
 
 ## Recommended Workflow
@@ -37,9 +37,12 @@ Mnemion's edge is not a bigger vector database. The moat is the combination of m
    mnemion reconstruct "what did we decide about retrieval scoring?" --json
    ```
 
-4. Quarantine risky memories before they can affect retrieval:
+4. Review risky memories before deciding whether to quarantine:
 
    ```bash
+   mnemion memory-guard scan
+   mnemion memory-guard review --out ./memory_guard_review
+   # Optional, explicit write path:
    mnemion memory-guard scan --quarantine
    ```
 
@@ -104,6 +107,12 @@ Each case has a `name` and a `passed` object with one boolean for every mode.
 The CLI uses an isolated temporary SQLite DB for built-in eval fixtures so it does not write synthetic records into the live knowledge graph.
 
 `benchmarks/moat_benchmark.py` wraps the same deterministic cases with benchmark metadata and per-mode totals. Treat it as a locally reproducible Mnemion-moat proof, not as a raw vector-recall leaderboard.
+
+`mnemion memory-guard review --out <dir>` reads existing `memory_guard_findings`
+from the knowledge graph and writes `memory_guard_review.md` plus
+`memory_guard_review.csv`. It does not rescan drawers, change trust state, or
+quarantine anything. The CSV columns are `drawer_id`, `risk_type`, `score`,
+`reason`, `wing`, `room`, `source`, `created_at`, and `redacted_snippet`.
 
 ## Configuration
 

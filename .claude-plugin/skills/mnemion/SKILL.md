@@ -32,4 +32,17 @@ mnemion instructions <command>
 
 Where `<command>` is one of: `help`, `init`, `mine`, `search`, `status`.
 
+For newer operational paths that do not have slash-command wrappers yet, call
+the CLI directly:
+
+```bash
+mnemion sweep <jsonl-or-dir>
+mnemion consolidate --limit 1000
+mnemion reconstruct "query" --json
+mnemion memory-guard scan
+mnemion memory-guard review --out ./memory_guard_review
+mnemion repair --mode status
+mnemion eval moat --suite all
+```
+
 Run the appropriate instructions command, then follow the returned instructions step by step.

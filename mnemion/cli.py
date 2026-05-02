@@ -20,6 +20,7 @@ Commands:
     mnemion consolidate                 Extract cognitive graph units from drawers
     mnemion reconstruct "query"         Search cognitive graph evidence trails
     mnemion memory-guard scan           Scan for memory-injection/privacy risks
+    mnemion memory-guard review         Write report-only Markdown/CSV from existing findings
     mnemion eval moat                   Run deterministic moat eval cases
     mnemion wake-up                     Show L0 + L1 wake-up context
     mnemion wake-up --wing my_app       Wake-up for a specific project
@@ -30,6 +31,7 @@ Commands:
     mnemion llm start                   Start the LLM server (requires start_script in config)
     mnemion llm stop                    Stop the LLM server
     mnemion librarian                   Run daily background tidy-up (contradiction scan + re-classification + KG)
+    mnemion librarian --dry-run         Preview without writing conflicts/trust/KG/state
     mnemion librarian --status          Show librarian state and pending count
 
 Examples:
@@ -1158,7 +1160,12 @@ def main():
         "consolidate",
         help="Extract structured cognitive units from drawers",
     )
-    p_consolidate.add_argument("--limit", type=int, default=100, help="Max drawers")
+    p_consolidate.add_argument(
+        "--limit",
+        type=int,
+        default=100,
+        help="Max unconsolidated drawers to process in this batch",
+    )
     p_consolidate.add_argument("--dry-run", action="store_true", help="Preview only")
 
     # memory guard

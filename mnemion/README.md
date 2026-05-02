@@ -22,7 +22,7 @@ The Python package that powers Mnemion. All modules, all logic.
 | `anaktoron_graph.py` | Room-based navigation graph — BFS traversal, tunnel detection across wings |
 | `cognitive_graph.py` | Structured cognitive graph — extracts typed units, causal edges, and topic tunnels from raw drawers |
 | `reconstruction.py` | Active reconstruction — searches cognitive evidence first, then hydrates raw drawers with evidence trails |
-| `memory_guard.py` | Memory risk scanner — flags instruction-injection/privacy bait and can quarantine drawers |
+| `memory_guard.py` | Memory risk scanner — flags instruction-injection/privacy bait, writes report-only review artifacts, and can quarantine drawers on explicit request |
 | `moat_eval.py` | Deterministic moat eval cases for structure, causality, forgetting, and security |
 | `repair.py` | Storage repair helpers — Chroma health, pruning, rebuild, and max_seq_id repair |
 | `trust_lifecycle.py` | **Memory Trust Layer** — SQLite trust records per drawer; status lifecycle including quarantined drawers; confidence scoring; conflict registry; append-only audit trail |
@@ -50,7 +50,7 @@ User → CLI → miner/convo_miner → ChromaDB (Anaktoron)
 User → MCP Server → hybrid_searcher → trust-filtered results
                   → reconstruction   → evidence trails + topic tunnels
                   → kg_query         → entity facts
-                  → memory_guard     → quarantine risky drawers
+                  → memory_guard     → scan, review, or quarantine risky drawers
                   → diary            → agent journal
                   → trust tools      → verify / challenge / resolve
 
@@ -86,7 +86,11 @@ Search excludes `superseded`, `historical`, and `quarantined` by default; `conte
 │   ├── drawers_fts (FTS5 lexical mirror)
 │   ├── drawer_trust (trust records)
 │   ├── drawer_conflicts (pairwise conflict log)
-│   └── drawer_trust_history (audit trail)
+│   ├── drawer_trust_history (audit trail)
+│   ├── memory_guard_findings (scan findings for review/quarantine)
+│   ├── cognitive_units (typed propositions, causes, preferences, etc.)
+│   ├── cognitive_edges (causal/related evidence links)
+│   └── cognitive_consolidated_drawers (batch progress marker)
 └── archive/
     └── drawers_export.json  ← portable export for new-machine restore
 ```

@@ -63,6 +63,11 @@ codex /init
 | `/mine` | Mine a project or conversation into your Anaktoron |
 | `/status` | Show Anaktoron status, room counts, and health |
 
+The Python CLI also exposes the newer operational commands directly:
+`mnemion sweep`, `mnemion consolidate`, `mnemion reconstruct`,
+`mnemion memory-guard scan`, `mnemion memory-guard review`,
+`mnemion repair`, and `mnemion eval moat`.
+
 ## Hooks
 
 The plugin includes auto-save hooks that run on session stop (every 15 messages) and before context compaction, automatically preserving conversation context into your Anaktoron.
