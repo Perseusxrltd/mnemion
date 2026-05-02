@@ -1,6 +1,6 @@
 [project]
 name = "mnemion"
-version = "3.5.3"
+version = "3.5.4"
 description = "Mnemion — persistent AI memory with hybrid retrieval, trust lifecycle, and behavioral protocol. No API key required."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -30,6 +30,8 @@ dependencies = [
     "chromadb>=0.6.3,<0.7",
     "onnxruntime==1.19.2; python_version < '3.10'",
     "onnxruntime==1.20.1; python_version >= '3.10' and python_version < '3.11'",
+    "opentelemetry-exporter-otlp-proto-grpc>=1.40.0,<2.0",
+    "protobuf>=6.31.1,<7.0",
     "pyyaml>=6.0",
 ]
 

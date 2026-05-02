@@ -9,7 +9,7 @@
       "name": "mnemion",
       "source": "./.claude-plugin",
       "description": "AI memory system — mine projects and conversations into a searchable Anaktoron. 29 MCP tools, auto-save hooks, guided setup.",
-      "version": "3.5.3",
+      "version": "3.5.4",
       "author": {
         "name": "PerseusXR"
       }

@@ -506,6 +506,10 @@ Mnemion began as a fork of mempalace, which introduced the memory Anaktoron meta
 
 ## Changelog
 
+### v3.5.4 — Clean install transitive dependency hardening
+
+- Added explicit OpenTelemetry/protobuf compatibility bounds so user-level installs cannot keep or resolve the old `opentelemetry-exporter-otlp-proto-grpc 1.11.x` stack that crashes with modern protobuf.
+
 ### v3.5.3 — Clean install dependency hardening
 
 - Tightened the public Chroma dependency range to the known-good `0.6.x` line so a clean user-level install does not resolve to incompatible Chroma/OpenTelemetry/protobuf combinations.

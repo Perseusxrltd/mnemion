@@ -1,6 +1,6 @@
 {
   "name": "mnemion",
-  "version": "3.5.3",
+  "version": "3.5.4",
   "description": "Give your AI a memory — mine projects and conversations into a searchable Anaktoron. 29 MCP tools, auto-save hooks, and guided setup.",
   "author": {
     "name": "PerseusXR"
