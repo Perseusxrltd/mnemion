@@ -20,7 +20,7 @@ Inspired by the original mempal project. Built far beyond it.
 
 <br>
 
-[Architecture](#architecture-layers) · [Quick Start](#quick-start) · [MCP Tools](#mcp-tools) · [Studio](#studio--connect-agents) · [System Prompt](#behavioral-protocol-bootstrap-system_promptmd--mcp-prompts) · [Auto-Save Hooks](#auto-save-hooks) · [Librarian](#6-librarian--daily-background-tidy-up-librarianpy) · [Anaktoron Sync](#anaktoron-sync) · [Benchmarks](#benchmarks) · [Changelog](#changelog)
+[Architecture](#architecture-layers) · [Quick Start](#quick-start) · [Moat](docs/moat.md) · [MCP Tools](#mcp-tools) · [Studio](#studio--connect-agents) · [System Prompt](#behavioral-protocol-bootstrap-system_promptmd--mcp-prompts) · [Auto-Save Hooks](#auto-save-hooks) · [Librarian](#6-librarian--daily-background-tidy-up-librarianpy) · [Anaktoron Sync](#anaktoron-sync) · [Benchmarks](#benchmarks) · [Changelog](#changelog)
 
 </div>
 
@@ -161,6 +161,23 @@ Enable grooming in `~/.mnemion/config.json`:
 }
 ```
 
+### 9. Cognitive Reconstruction, Memory Guard, and Moat Evaluation
+
+Mnemion now adds a structured cognitive graph above raw vector drawers. `mnemion consolidate` extracts proposition, causal, preference, objective, event, and prescription units from stored drawers. `mnemion reconstruct` searches those units first, follows recurring topic tunnels, and only then hydrates raw drawers with an evidence trail.
+
+The security path is part of the memory system, not an afterthought: `mnemion memory-guard scan --quarantine` detects obvious instruction-injection and privacy-exfiltration memories, then moves risky drawers into the quarantined trust state so retrieval excludes them until review.
+
+The moat harness is executable:
+
+```bash
+mnemion consolidate --limit 1000
+mnemion reconstruct "why did the pricing dashboard move to GraphQL?"
+mnemion memory-guard scan --quarantine
+mnemion eval moat --suite all
+```
+
+For the design thesis and operational workflow, see [docs/moat.md](docs/moat.md).
+
 ---
 
 ## Quick Start
@@ -199,7 +216,7 @@ pip install .
 
 # Mine a project or conversation history
 mnemion init ~/projects/myapp
-mnemion mine ~/projects/myapp
+mnemion mine ~/projects/myapp --consolidate
 
 # Add MCP server
 claude mcp add mnemion -- python -m mnemion.mcp_server
@@ -210,6 +227,36 @@ claude mcp add mnemion -- python -m mnemion.mcp_server
 # Backfill trust records for existing drawers
 py sync/backfill_trust.py
 ```
+
+### Retrieval and Ingestion Catch-Up Commands
+
+```bash
+# Message-granular Claude/Codex JSONL ingestion with cursor resume
+mnemion sweep ~/logs/codex --wing codex --consolidate
+
+# Build or refresh the cognitive graph over recent drawers
+mnemion consolidate --limit 1000
+
+# Active reconstruction over cognitive units, topic tunnels, and raw evidence
+mnemion reconstruct "what did we decide about retrieval scoring?"
+
+# Scan stored memories for prompt-injection or privacy bait
+mnemion memory-guard scan --quarantine
+
+# Run deterministic moat cases for structure, causality, forgetting, and security
+mnemion eval moat --suite all
+
+# Repair storage metadata and Chroma max_seq_id issues
+mnemion repair --mode status
+mnemion repair --mode max-seq-id --dry-run
+```
+
+`mnemion sweep` accepts JSONL records shaped like Claude Code/Codex messages:
+top-level `role` + `content`, or a nested `message` object with `role` and
+`content`. It preserves `session_id`/`sessionId`/`conversation_id`, message
+`uuid`/`id`, timestamp, role, and source file metadata. Malformed JSON lines
+and records without both role and content are skipped and reported in the
+summary; existing deterministic IDs are skipped idempotently.
 
 ### LLM backend (contradiction detection — optional)
 
@@ -440,9 +487,14 @@ python eval/benchmark.py
 
 # Full LongMemEval benchmark (500 questions)
 python benchmarks/longmemeval_bench.py /path/to/longmemeval_s_cleaned.json
+
+# Mnemion-specific moat behavior: trust, reconstruction, and memory guard
+python benchmarks/moat_benchmark.py --suite all
 ```
 
-The upstream project's **96.6% R@5 on LongMemEval** (raw mode) is real and independently reproduced. AAAK mode trades ~12 points of recall for token density — use raw mode for maximum accuracy.
+The upstream raw LongMemEval result, **96.6% R@5** with no LLM, is real and independently reproduced. In the May 2, 2026 local comparison, official MemPalace `develop` and this Mnemion branch tied on reproduced raw LongMemEval retrieval; do not treat raw vector recall as Mnemion's edge. Mnemion's differentiator is the cognitive/trust moat: trust lifecycle, contradiction handling, reconstruction evidence trails, memory guard, and the deterministic moat eval.
+
+AAAK mode trades recall for token density — use raw mode for maximum retrieval accuracy, and use `mnemion eval moat` / `benchmarks/moat_benchmark.py` to verify Mnemion-only behavior.
 
 ---
 
@@ -453,6 +505,13 @@ Mnemion began as a fork of mempalace, which introduced the memory Anaktoron meta
 ---
 
 ## Changelog
+
+### v3.5.1 — MemPalace catch-up + release hardening
+
+- Added typed Chroma backend wrappers, safer collection metadata, embedding-device selection, and read-only repair visibility for max-seq-id/HNSW/stale-segment state.
+- Added query sanitization, message-granular sweeper ingestion, corpus-origin detection, project scanning, i18n entity-pattern loading, and init auto-mine UX.
+- Preserved Mnemion's moat while tightening benchmark claims: raw LongMemEval parity is documented separately from trust lifecycle, contradiction handling, reconstruction, memory guard, and moat eval evidence.
+- Added conservative tests and proof-copy smoke coverage for storage repair, MCP registry, real-data search/reconstruct/memory-guard, and deterministic moat benchmarking.
 
 ### v3.5.0 — Studio: Connect Agents + systematic bug fixes
 

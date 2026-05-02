@@ -15,12 +15,10 @@ from pathlib import Path
 from datetime import datetime
 from collections import defaultdict
 
-import chromadb
 import sqlite3
 from .trust_lifecycle import DrawerTrust
 from .knowledge_graph import KnowledgeGraph
 
-from .config import DRAWER_HNSW_METADATA
 from .normalize import normalize
 
 
@@ -89,7 +87,7 @@ def _chunk_by_exchange(lines: list) -> list:
                     ai_lines.append(next_line.strip())
                 i += 1
 
-            ai_response = " ".join(ai_lines[:8])
+            ai_response = " ".join(ai_lines)
             content = f"{user_turn}\n{ai_response}" if ai_response else user_turn
 
             if len(content.strip()) > MIN_CHUNK_SIZE:
@@ -217,14 +215,11 @@ def detect_convo_room(content: str) -> str:
 
 def get_collection(anaktoron_path: str, collection_name: str = None):
     from .config import MnemionConfig
+    from .backends.registry import get_backend
 
     col_name = collection_name or MnemionConfig().collection_name
     os.makedirs(anaktoron_path, exist_ok=True)
-    client = chromadb.PersistentClient(path=anaktoron_path)
-    try:
-        return client.get_collection(col_name)
-    except Exception:
-        return client.create_collection(col_name, metadata=DRAWER_HNSW_METADATA)
+    return get_backend(anaktoron_path=anaktoron_path).get_collection(col_name, create=True)
 
 
 def file_already_mined(collection, source_file: str) -> bool:

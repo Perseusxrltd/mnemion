@@ -2,6 +2,8 @@
 
 **March 2026 — The complete record from baseline to state-of-the-art.**
 
+**Comparison note, May 2, 2026:** the objective local comparison against official MemPalace `develop` reproduced the same raw LongMemEval result for both projects: R@5 0.966, R@10 0.982, and NDCG@10 0.889. The raw benchmark remains an important lineage result, but it is not evidence that Mnemion beats MemPalace on raw vector recall. Mnemion's current edge is measured by its trust lifecycle, contradiction handling, cognitive reconstruction, memory guard, and moat-eval behavior.
+
 ---
 
 ## The Core Finding
@@ -13,7 +15,7 @@ Every competitive memory system uses an LLM to manage memory:
 
 They all start from the assumption that you need AI to decide what to remember.
 
-**Mnemion's baseline just stores the actual words and searches them with ChromaDB's default embeddings. No extraction. No summarization. No AI deciding what matters. And it scores 96.6% on LongMemEval.**
+**The Mnemion/MemPalace raw baseline stores the actual words and searches them with ChromaDB embeddings. No extraction. No summarization. No AI deciding what matters. It scores 96.6% on LongMemEval.**
 
 That's the finding. The field is over-engineering the memory extraction step. Raw verbatim text with good embeddings is a stronger baseline than anyone realized — because it doesn't lose information. When an LLM extracts "user prefers PostgreSQL" and throws away the original conversation, it loses the context of *why*, the alternatives considered, the tradeoffs discussed. Mnemion keeps all of that, and the search model finds it.
 
@@ -31,7 +33,7 @@ These are different claims. They need to be presented as a pair.
 | **Hybrid v4 + Haiku rerank** | **100%** | Haiku (optional) | ~$0.001 |
 | **Hybrid v4 + Sonnet rerank** | **100%** | Sonnet (optional) | ~$0.003 |
 
-The 96.6% is the product story: free, private, one dependency, no API key, runs entirely offline.
+The 96.6% is the raw-retrieval baseline story: free, private, one dependency, no API key, runs entirely offline. It should be described as reproduced parity with official MemPalace unless the comparison target changes.
 
 The 100% is the competitive story: a perfect score on the standard benchmark for AI memory, verified across all 500 questions and all 6 question types — reproducible with either Haiku or Sonnet as the reranker.
 
@@ -48,16 +50,16 @@ Both are real. Both are reproducible. Neither is the whole picture alone.
 | 3 | Mnemion (hybrid v3 + rerank) | 99.4% | Optional | Haiku | Reproducible |
 | 3 | Mnemion (Anaktoron + rerank) | 99.4% | Optional | Haiku | Independent architecture |
 | 4 | Mastra | 94.87% | Yes | GPT-5-mini | — |
-| 5 | **Mnemion (raw, no LLM)** | **96.6%** | **None** | **None** | **Highest zero-API score published** |
+| 5 | **Mnemion/MemPalace raw, no LLM** | **96.6%** | **None** | **None** | **Reproduced parity in May 2026 comparison** |
 | 6 | Hindsight | 91.4% | Yes | Gemini-3 | — |
 | 7 | Supermemory (production) | ~85% | Yes | Undisclosed | — |
 | 8 | Stella (dense retriever) | ~85% | None | None | Academic baseline |
 | 9 | Contriever | ~78% | None | None | Academic baseline |
 | 10 | BM25 (sparse) | ~70% | None | None | Keyword baseline |
 
-**Mnemion raw (96.6%) is the highest published LongMemEval score that requires no API key, no cloud, and no LLM at any stage.**
+**Mnemion raw (96.6%) is a strong zero-API baseline, but it is not a Mnemion-over-MemPalace differentiator in the May 2026 comparison.**
 
-**Mnemion hybrid v4 + Haiku rerank (100%) is the first perfect score on LongMemEval — 500/500 questions, all 6 question types at 100%.**
+**Mnemion hybrid v4 + Haiku rerank (100%) is a historical harness result that requires an LLM reranker. It was not rerun in the May 2026 head-to-head proof, so keep it separate from locally reproduced raw parity claims.**
 
 ---
 

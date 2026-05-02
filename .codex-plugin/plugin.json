@@ -1,7 +1,7 @@
 {
   "name": "mnemion",
-  "version": "3.5.0",
-  "description": "Give your AI a memory — mine projects and conversations into a searchable Anaktoron. 25 MCP tools, auto-save hooks, and guided setup.",
+  "version": "3.5.1",
+  "description": "Give your AI a memory — mine projects and conversations into a searchable Anaktoron. 29 MCP tools, auto-save hooks, and guided setup.",
   "author": {
     "name": "PerseusXR"
   },
@@ -31,7 +31,7 @@
   "interface": {
     "displayName": "Mnemion",
     "shortDescription": "AI memory system for Codex",
-    "longDescription": "Give your AI a persistent memory — mine projects and conversations into a searchable Anaktoron backed by ChromaDB, with 25 MCP tools, auto-save hooks, and guided skills.",
+    "longDescription": "Give your AI a persistent memory — mine projects and conversations into a searchable Anaktoron backed by ChromaDB, with 29 MCP tools, auto-save hooks, and guided skills.",
     "developerName": "PerseusXR",
     "category": "Coding",
     "capabilities": [

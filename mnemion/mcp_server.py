@@ -10,10 +10,14 @@ Tools (read):
   mnemion_list_rooms      — rooms within a wing
   mnemion_get_taxonomy    — full wing → room → count tree
   mnemion_search          — hybrid search (vector + lexical)
+  mnemion_reconstruct     — cognitive graph reconstruction with evidence trails
+  mnemion_get_evidence_trail — structured units and edges for one drawer
   mnemion_check_duplicate — check if content already exists before filing
 
 Tools (write):
   mnemion_add_drawer      — file verbatim content into a wing/room
+  mnemion_consolidate     — extract cognitive graph units from drawers
+  mnemion_memory_guard_scan — scan/quarantine memory-injection risks
   mnemion_delete_drawer   — remove a drawer by ID
 """
 
@@ -32,14 +36,14 @@ import hashlib  # noqa: E402
 import sqlite3  # noqa: E402
 from datetime import datetime, timezone  # noqa: E402
 
-import chromadb  # noqa: E402
-
-from .config import DRAWER_HNSW_METADATA, MnemionConfig  # noqa: E402
+from .config import MnemionConfig  # noqa: E402
 from .version import __version__  # noqa: E402
 from .anaktoron_graph import traverse, find_tunnels, graph_stats  # noqa: E402
 from .knowledge_graph import KnowledgeGraph  # noqa: E402
 from .hybrid_searcher import HybridSearcher  # noqa: E402
 from .trust_lifecycle import DrawerTrust  # noqa: E402
+from .backends.registry import get_backend  # noqa: E402
+from .query_sanitizer import sanitize_query  # noqa: E402
 from . import contradiction_detector as _cd  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(message)s", stream=sys.stderr)
@@ -64,16 +68,12 @@ if _args.anaktoron:
 
 _config = MnemionConfig()
 
-# Hybrid Searcher and KG initialization with support for custom Anaktoron paths
-if _args.anaktoron:
-    kg_path = os.path.join(os.path.dirname(_config.anaktoron_path), "knowledge_graph.sqlite3")
-    _kg = KnowledgeGraph(db_path=kg_path)
-    _hybrid = HybridSearcher(anaktoron_path=_config.anaktoron_path, kg_path=kg_path)
-    _trust = DrawerTrust(db_path=kg_path)
-else:
-    _kg = KnowledgeGraph()
-    _hybrid = HybridSearcher()
-    _trust = DrawerTrust()
+# Hybrid Searcher and sidecar DB initialization follow the resolved Anaktoron path,
+# regardless of whether it came from --anaktoron, env vars, or config.json.
+kg_path = os.path.join(os.path.dirname(_config.anaktoron_path), "knowledge_graph.sqlite3")
+_kg = KnowledgeGraph(db_path=kg_path)
+_hybrid = HybridSearcher(anaktoron_path=_config.anaktoron_path, kg_path=kg_path)
+_trust = DrawerTrust(db_path=kg_path)
 
 
 _client_cache = None
@@ -85,15 +85,9 @@ def _get_collection(create=False):
     global _client_cache, _collection_cache
     try:
         if _client_cache is None:
-            from .chroma_compat import fix_blob_seq_ids
-
-            fix_blob_seq_ids(_config.anaktoron_path)
-            _client_cache = chromadb.PersistentClient(path=_config.anaktoron_path)
+            _client_cache = get_backend(anaktoron_path=_config.anaktoron_path)
         if create:
-            # Issue #218: cosine required so similarity = 1 - distance is meaningful.
-            _collection_cache = _client_cache.get_or_create_collection(
-                _config.collection_name, metadata=DRAWER_HNSW_METADATA
-            )
+            _collection_cache = _client_cache.get_collection(_config.collection_name, create=True)
         elif _collection_cache is None:
             _collection_cache = _client_cache.get_collection(_config.collection_name)
         return _collection_cache
@@ -230,19 +224,81 @@ def tool_search(
     """Hybrid search tool handler."""
     from . import predictor
 
+    sanitized = sanitize_query(query)
+    clean_query = sanitized["clean_query"]
     limit = max(1, min(limit, 50))
     hits = _hybrid.search(
-        query, wing=wing, room=room, n_results=limit, min_similarity=min_similarity
+        clean_query, wing=wing, room=room, n_results=limit, min_similarity=min_similarity
     )
 
     # Log activity for predictive context
     for hit in hits:
         predictor.record_activity(hit["id"], hit.get("embedding"))
 
-    return {
+    response = {
         "query": query,
         "filters": {"wing": wing, "room": room},
         "results": hits,
+    }
+    if sanitized["was_sanitized"]:
+        response["sanitized_query"] = clean_query
+        response["sanitizer"] = {
+            "method": sanitized["method"],
+            "original_length": sanitized["original_length"],
+            "clean_length": sanitized["clean_length"],
+        }
+    return response
+
+
+def tool_reconstruct(query: str, budget: int = 10):
+    """Active reconstruction search over cognitive graph evidence."""
+    from .reconstruction import reconstruct_query
+
+    return reconstruct_query(
+        query=query,
+        anaktoron_path=_config.anaktoron_path,
+        kg_path=os.path.join(os.path.dirname(_config.anaktoron_path), "knowledge_graph.sqlite3"),
+        budget=max(1, min(int(budget), 50)),
+    )
+
+
+def tool_consolidate(limit: int = 100, dry_run: bool = False):
+    """Consolidate raw drawers into cognitive graph units."""
+    from .cognitive_graph import CognitiveGraph
+
+    col = _get_collection()
+    if not col:
+        return _no_anaktoron()
+    kg_path = os.path.join(os.path.dirname(_config.anaktoron_path), "knowledge_graph.sqlite3")
+    return CognitiveGraph(kg_path).consolidate_collection(
+        col,
+        trust=_trust,
+        limit=max(1, min(int(limit), 1000)),
+        dry_run=bool(dry_run),
+    )
+
+
+def tool_memory_guard_scan(quarantine: bool = False):
+    """Scan drawers for memory-injection and privacy risks."""
+    from .memory_guard import MemoryGuard
+
+    col = _get_collection()
+    if not col:
+        return _no_anaktoron()
+    kg_path = os.path.join(os.path.dirname(_config.anaktoron_path), "knowledge_graph.sqlite3")
+    return MemoryGuard(kg_path).scan_collection(col, trust=_trust, quarantine=bool(quarantine))
+
+
+def tool_get_evidence_trail(drawer_id: str):
+    """Return cognitive graph evidence units and edges for one drawer."""
+    from .cognitive_graph import CognitiveGraph
+
+    kg_path = os.path.join(os.path.dirname(_config.anaktoron_path), "knowledge_graph.sqlite3")
+    graph = CognitiveGraph(kg_path)
+    return {
+        "drawer_id": drawer_id,
+        "units": graph.units_for_drawer(drawer_id),
+        "edges": graph.edges_for_drawer(drawer_id),
     }
 
 
@@ -856,6 +912,56 @@ TOOLS = {
             "required": ["query"],
         },
         "handler": tool_search,
+    },
+    "mnemion_reconstruct": {
+        "description": "Active reconstruction search. Uses cognitive graph evidence before hydrating raw drawers, returning an evidence trail.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "Question or search intent"},
+                "budget": {
+                    "type": "integer",
+                    "description": "Max cognitive units to traverse (default 10)",
+                },
+            },
+            "required": ["query"],
+        },
+        "handler": tool_reconstruct,
+    },
+    "mnemion_consolidate": {
+        "description": "Extract structured cognitive units and causal edges from raw drawers.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "limit": {"type": "integer", "description": "Max drawers to consolidate"},
+                "dry_run": {"type": "boolean", "description": "Preview without writing"},
+            },
+        },
+        "handler": tool_consolidate,
+    },
+    "mnemion_memory_guard_scan": {
+        "description": "Scan memories for instruction-injection or privacy-exfiltration risks.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "quarantine": {
+                    "type": "boolean",
+                    "description": "Mark flagged drawers quarantined",
+                },
+            },
+        },
+        "handler": tool_memory_guard_scan,
+    },
+    "mnemion_get_evidence_trail": {
+        "description": "Return cognitive graph units and causal edges linked to a drawer.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "drawer_id": {"type": "string", "description": "Drawer ID"},
+            },
+            "required": ["drawer_id"],
+        },
+        "handler": tool_get_evidence_trail,
     },
     "mnemion_predict_next": {
         "description": "Imagine the next relevant context based on current session history. Returns a prediction of which room or topic the user will likely need next.",

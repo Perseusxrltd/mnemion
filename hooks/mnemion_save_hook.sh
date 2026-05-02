@@ -4,8 +4,8 @@
 # Claude Code "Stop" hook. After every assistant response:
 # 1. Counts human messages in the session transcript
 # 2. Every SAVE_INTERVAL messages, BLOCKS the AI from stopping
-# 3. Returns a reason telling the AI to save structured diary + palace entries
-# 4. AI does the save (topics, decisions, code, quotes → organized into palace)
+# 3. Returns a reason telling the AI to save structured diary + Anaktoron entries
+# 4. AI does the save (topics, decisions, code, quotes → organized into the Anaktoron)
 # 5. Next Stop fires with stop_hook_active=true → lets AI stop normally
 #
 # The AI does the classification — it knows what wing/hall/closet to use

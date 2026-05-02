@@ -15,12 +15,10 @@ from pathlib import Path
 from datetime import datetime
 from collections import defaultdict
 
-import chromadb
 import logging
 import sqlite3
 from .trust_lifecycle import DrawerTrust
 from .knowledge_graph import KnowledgeGraph
-from .config import DRAWER_HNSW_METADATA
 
 logger = logging.getLogger("mnemion_miner")
 
@@ -395,18 +393,12 @@ def chunk_text(content: str, source_file: str) -> list:
 
 
 def get_collection(anaktoron_path: str, collection_name: str = None):
-    from .chroma_compat import fix_blob_seq_ids
     from .config import MnemionConfig
+    from .backends.registry import get_backend
 
     col_name = collection_name or MnemionConfig().collection_name
     os.makedirs(anaktoron_path, exist_ok=True)
-    fix_blob_seq_ids(anaktoron_path)
-    client = chromadb.PersistentClient(path=anaktoron_path)
-    try:
-        return client.get_collection(col_name)
-    except Exception as e:
-        logger.error(f"Caught exception: {e}")
-        return client.create_collection(col_name, metadata=DRAWER_HNSW_METADATA)
+    return get_backend(anaktoron_path=anaktoron_path).get_collection(col_name, create=True)
 
 
 def file_already_mined(collection, source_file: str) -> bool:
@@ -745,8 +737,9 @@ def status(anaktoron_path: str):
 
     col_name = MnemionConfig().collection_name
     try:
-        client = chromadb.PersistentClient(path=anaktoron_path)
-        col = client.get_collection(col_name)
+        from .backends.registry import get_backend
+
+        col = get_backend(anaktoron_path=anaktoron_path).get_collection(col_name)
     except Exception as e:
         logger.error(f"Caught exception: {e}")
         print(f"\n  No Anaktoron found at {anaktoron_path}")

@@ -18,14 +18,15 @@ No external graph DB needed — built from ChromaDB metadata.
 from collections import defaultdict, Counter
 from .config import MnemionConfig
 
-import chromadb
-
 
 def _get_collection(config=None):
     config = config or MnemionConfig()
     try:
-        client = chromadb.PersistentClient(path=config.anaktoron_path)
-        return client.get_collection(config.collection_name)
+        from .backends.registry import get_backend
+
+        return get_backend(anaktoron_path=config.anaktoron_path).get_collection(
+            config.collection_name
+        )
     except Exception as e:
         print(f"Caught exception: {e}")
         return None

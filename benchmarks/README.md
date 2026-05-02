@@ -2,6 +2,19 @@
 
 Run the exact same benchmarks we report. Clone, install, run.
 
+## Claim Classes
+
+Benchmark claims in this repo are separated into four buckets:
+
+| Claim class | Meaning |
+|---|---|
+| Published | Numbers reported by a project or paper. |
+| Locally reproduced | Numbers produced by these scripts from the same input data. |
+| Synthetic/local | Small deterministic checks that prove a feature path works, not a public leaderboard score. |
+| Inconclusive | Attempted but blocked by missing data, auth, platform, or incompatible harness assumptions. |
+
+The May 2, 2026 head-to-head comparison reproduced raw LongMemEval parity between official MemPalace `develop` and this Mnemion branch: both reached R@5 0.966, R@10 0.982, and NDCG@10 0.889 on the same raw setup. Mnemion's edge should be claimed through its trust, contradiction, reconstruction, memory-guard, and moat-eval layers, not as a raw vector-recall lead.
+
 ## Setup
 
 ```bash
@@ -96,6 +109,17 @@ Assistant Facts: 1.000
 User Facts:      0.980
 Time:            ~2 minutes
 ```
+
+## Benchmark 4: Mnemion Moat Eval
+
+This deterministic local benchmark exercises Mnemion-specific behavior rather than raw retrieval recall: trust lifecycle, superseded-memory hiding, cognitive reconstruction, topic tunnels, and memory-guard quarantine.
+
+```bash
+python benchmarks/moat_benchmark.py --suite all
+python benchmarks/moat_benchmark.py --suite all --out benchmarks/results_moat_latest.json
+```
+
+The output is JSON with `claim_type=locally_reproducible_moat_eval`, per-case evidence, and per-mode pass totals.
 
 ## What Each Benchmark Tests
 

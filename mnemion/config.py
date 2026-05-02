@@ -10,11 +10,23 @@ from pathlib import Path
 
 DEFAULT_ANAKTORON_PATH = os.path.expanduser("~/.mnemion/anaktoron")
 DEFAULT_COLLECTION_NAME = "mnemion_drawers"
+DEFAULT_BACKEND = "chroma"
+DEFAULT_EMBEDDING_DEVICE = "auto"
+DEFAULT_ENTITY_LANGUAGES = ("en",)
+DEFAULT_TOPIC_TUNNEL_MIN_COUNT = 2
 
 # hnsw:space=cosine is required because searcher.py computes
 # similarity = 1 - distance, which only yields a meaningful score in [0, 1]
 # when the underlying distance is cosine. Issue #218.
-DRAWER_HNSW_METADATA = {"hnsw:space": "cosine"}
+#
+# The batch/sync thresholds guard against HNSW fragmentation and excessive
+# compactor churn when large imports or sweeps create many drawers.
+DRAWER_HNSW_METADATA = {
+    "hnsw:space": "cosine",
+    "hnsw:num_threads": 1,
+    "hnsw:batch_size": 50_000,
+    "hnsw:sync_threshold": 50_000,
+}
 
 DEFAULT_TOPIC_WINGS = [
     "emotions",
@@ -121,6 +133,43 @@ class MnemionConfig:
         return self._file_config.get("collection_name", DEFAULT_COLLECTION_NAME)
 
     @property
+    def backend(self):
+        """Storage backend name."""
+        return os.environ.get("MNEMION_BACKEND") or self._file_config.get("backend", DEFAULT_BACKEND)
+
+    @property
+    def embedding_device(self):
+        """Preferred local embedding execution device."""
+        return (
+            os.environ.get("MNEMION_EMBEDDING_DEVICE")
+            or self._file_config.get("embedding_device")
+            or DEFAULT_EMBEDDING_DEVICE
+        ).lower()
+
+    @property
+    def entity_languages(self):
+        """Enabled entity-detection locales."""
+        raw = os.environ.get("MNEMION_ENTITY_LANGUAGES") or self._file_config.get(
+            "entity_languages"
+        )
+        if raw is None:
+            return DEFAULT_ENTITY_LANGUAGES
+        if isinstance(raw, str):
+            values = [part.strip().lower() for part in raw.split(",")]
+        else:
+            values = [str(part).strip().lower() for part in raw]
+        values = tuple(part for part in values if part)
+        return values or DEFAULT_ENTITY_LANGUAGES
+
+    @property
+    def topic_tunnel_min_count(self):
+        """Minimum graph edge support for topic tunnel surfacing."""
+        raw = os.environ.get("MNEMION_TOPIC_TUNNEL_MIN_COUNT")
+        if raw is None:
+            raw = self._file_config.get("topic_tunnel_min_count", DEFAULT_TOPIC_TUNNEL_MIN_COUNT)
+        return int(raw)
+
+    @property
     def people_map(self):
         """Mapping of name variants to canonical names."""
         if self._people_map_file.exists():
@@ -194,6 +243,10 @@ class MnemionConfig:
             default_config = {
                 "anaktoron_path": DEFAULT_ANAKTORON_PATH,
                 "collection_name": DEFAULT_COLLECTION_NAME,
+                "backend": DEFAULT_BACKEND,
+                "embedding_device": DEFAULT_EMBEDDING_DEVICE,
+                "entity_languages": list(DEFAULT_ENTITY_LANGUAGES),
+                "topic_tunnel_min_count": DEFAULT_TOPIC_TUNNEL_MIN_COUNT,
                 "topic_wings": DEFAULT_TOPIC_WINGS,
                 "hall_keywords": DEFAULT_HALL_KEYWORDS,
             }

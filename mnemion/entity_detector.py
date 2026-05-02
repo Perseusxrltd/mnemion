@@ -856,14 +856,19 @@ def extract_candidates(text: str) -> dict:
 
 def _build_patterns(name: str) -> dict:
     """Pre-compile all regex patterns for a single entity name."""
+    from .entity_patterns import get_locale_patterns
+
     n = re.escape(name)
+    locale_patterns = get_locale_patterns()
+    person_patterns = PERSON_VERB_PATTERNS + list(locale_patterns.person_verbs)
+    project_patterns = PROJECT_VERB_PATTERNS + list(locale_patterns.project_verbs)
     return {
         "dialogue": [
             re.compile(p.format(name=n), re.MULTILINE | re.IGNORECASE) for p in DIALOGUE_PATTERNS
         ],
-        "person_verbs": [re.compile(p.format(name=n), re.IGNORECASE) for p in PERSON_VERB_PATTERNS],
+        "person_verbs": [re.compile(p.format(name=n), re.IGNORECASE) for p in person_patterns],
         "project_verbs": [
-            re.compile(p.format(name=n), re.IGNORECASE) for p in PROJECT_VERB_PATTERNS
+            re.compile(p.format(name=n), re.IGNORECASE) for p in project_patterns
         ],
         "direct": re.compile(rf"\bhey\s+{n}\b|\bthanks?\s+{n}\b|\bhi\s+{n}\b", re.IGNORECASE),
         "versioned": re.compile(rf"\b{n}[-v]\w+", re.IGNORECASE),
@@ -1017,7 +1022,7 @@ def classify_entity(name: str, frequency: int, scores: dict) -> dict:
 # ==================== MAIN DETECT ====================
 
 
-def detect_entities(file_paths: list, max_files: int = 10) -> dict:
+def detect_entities(file_paths: list, max_files: int = 10, agent_personas: list = None) -> dict:
     """
     Scan files and detect entity candidates.
 
@@ -1057,7 +1062,7 @@ def detect_entities(file_paths: list, max_files: int = 10) -> dict:
     candidates = extract_candidates(combined_text)
 
     if not candidates:
-        return {"people": [], "projects": [], "uncertain": []}
+        return {"people": [], "projects": [], "uncertain": [], "agent_personas": []}
 
     # Score and classify each candidate
     people = []
@@ -1075,9 +1080,24 @@ def detect_entities(file_paths: list, max_files: int = 10) -> dict:
         else:
             uncertain.append(entity)
 
+    persona_names = {p.lower() for p in (agent_personas or [])}
+    agent_persona_entities = []
+    if persona_names:
+        kept_people = []
+        for entity in people:
+            if entity["name"].lower() in persona_names:
+                persona = dict(entity)
+                persona["type"] = "agent_persona"
+                persona["signals"] = list(persona.get("signals", [])) + ["AI dialogue origin"]
+                agent_persona_entities.append(persona)
+            else:
+                kept_people.append(entity)
+        people = kept_people
+
     # Sort by confidence descending
     people.sort(key=lambda x: x["confidence"], reverse=True)
     projects.sort(key=lambda x: x["confidence"], reverse=True)
+    agent_persona_entities.sort(key=lambda x: x["confidence"], reverse=True)
     uncertain.sort(key=lambda x: x["frequency"], reverse=True)
 
     # Drop low-signal uncertain entries (frequency-only, no type signals at all).
@@ -1090,6 +1110,7 @@ def detect_entities(file_paths: list, max_files: int = 10) -> dict:
         "people": people[:15],
         "projects": projects[:10],
         "uncertain": uncertain[:6],
+        "agent_personas": agent_persona_entities[:10],
     }
 
 
@@ -1122,6 +1143,8 @@ def confirm_entities(detected: dict, yes: bool = False) -> dict:
 
     _print_entity_list(detected["people"], "PEOPLE")
     _print_entity_list(detected["projects"], "PROJECTS")
+    if detected.get("agent_personas"):
+        _print_entity_list(detected["agent_personas"], "AI PERSONAS")
 
     if detected["uncertain"]:
         _print_entity_list(detected["uncertain"], "UNCERTAIN (need your call)")
@@ -1135,7 +1158,11 @@ def confirm_entities(detected: dict, yes: bool = False) -> dict:
         print(
             f"\n  Auto-accepting {len(confirmed_people)} people, {len(confirmed_projects)} projects."
         )
-        return {"people": confirmed_people, "projects": confirmed_projects}
+        return {
+            "people": confirmed_people,
+            "projects": confirmed_projects,
+            "agent_personas": [e["name"] for e in detected.get("agent_personas", [])],
+        }
 
     print(f"\n{'─' * 58}")
     print("  Options:")
@@ -1198,6 +1225,7 @@ def confirm_entities(detected: dict, yes: bool = False) -> dict:
     return {
         "people": confirmed_people,
         "projects": confirmed_projects,
+        "agent_personas": [e["name"] for e in detected.get("agent_personas", [])],
     }
 
 

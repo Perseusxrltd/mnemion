@@ -196,7 +196,7 @@ def run_librarian(
     from .hybrid_searcher import HybridSearcher
     from .trust_lifecycle import DrawerTrust
     from .knowledge_graph import KnowledgeGraph
-    import chromadb
+    from .backends.registry import get_backend as get_storage_backend
 
     cfg = MnemionConfig()
     backend = get_backend(cfg)
@@ -216,9 +216,10 @@ def run_librarian(
     kg = KnowledgeGraph(kg_path)
     hybrid = HybridSearcher(anaktoron_path=anaktoron_path, kg_path=kg_path)
 
-    client = chromadb.PersistentClient(path=anaktoron_path)
     try:
-        collection = client.get_collection(cfg.collection_name)
+        collection = get_storage_backend(anaktoron_path=anaktoron_path).get_collection(
+            cfg.collection_name
+        )
     except Exception as e:
         logger.error(f"Caught exception: {e}")
         return {"skipped": True, "reason": f"Collection '{cfg.collection_name}' not found"}

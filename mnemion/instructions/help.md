@@ -16,7 +16,7 @@ AI memory system. Store everything, find anything. Local, free, no API key.
 
 ---
 
-## MCP Tools (19)
+## MCP Tools
 
 ### Anaktoron (read)
 - mnemion_status -- Anaktoron status and stats
@@ -24,11 +24,15 @@ AI memory system. Store everything, find anything. Local, free, no API key.
 - mnemion_list_rooms -- List rooms in a wing
 - mnemion_get_taxonomy -- Get the full taxonomy tree
 - mnemion_search -- Search memories by query
+- mnemion_reconstruct -- Rebuild answers from cognitive graph evidence trails
+- mnemion_get_evidence_trail -- Inspect cognitive units and edges for a drawer
 - mnemion_check_duplicate -- Check if a memory already exists
 - mnemion_get_aaak_spec -- Get the AAAK specification
 
 ### Anaktoron (write)
 - mnemion_add_drawer -- Add a new memory (drawer)
+- mnemion_consolidate -- Extract cognitive graph units from drawers
+- mnemion_memory_guard_scan -- Scan and optionally quarantine risky memories
 - mnemion_delete_drawer -- Delete a memory (drawer)
 
 ### Knowledge Graph
@@ -43,6 +47,16 @@ AI memory system. Store everything, find anything. Local, free, no API key.
 - mnemion_find_tunnels -- Find cross-wing connections
 - mnemion_graph_stats -- Graph connectivity statistics
 
+### Trust and Safety
+- mnemion_trust_stats -- Trust layer status overview
+- mnemion_verify -- Confirm a drawer as accurate
+- mnemion_challenge -- Challenge a drawer and lower confidence
+- mnemion_get_contested -- List unresolved contested drawers
+- mnemion_resolve_contest -- Resolve a contested memory
+
+### Prediction
+- mnemion_predict_next -- Predict likely next relevant context
+
 ### Agent Diary
 - mnemion_diary_write -- Write a diary entry
 - mnemion_diary_read -- Read diary entries
@@ -54,12 +68,17 @@ AI memory system. Store everything, find anything. Local, free, no API key.
     mnemion init <dir>                  Initialize a new Anaktoron
     mnemion mine <dir>                  Mine a project (default mode)
     mnemion mine <dir> --mode convos    Mine conversation exports
+    mnemion sweep <jsonl-or-dir>        Ingest Claude/Codex JSONL messages with skip counts
     mnemion search "query"              Search your memories
+    mnemion consolidate                 Extract cognitive graph units
+    mnemion reconstruct "query"         Search evidence trails and topic tunnels
+    mnemion memory-guard scan           Scan for prompt-injection/privacy risks
+    mnemion eval moat                   Run deterministic moat eval cases
     mnemion split <dir>                 Split large transcript files
     mnemion wake-up                     Load Anaktoron into context
     mnemion compress                    Compress Anaktoron storage
     mnemion status                      Show Anaktoron status
-    mnemion repair                      Rebuild vector index
+    mnemion repair --mode status        Check Chroma/HNSW repair status
     mnemion hook run                    Run hook logic (for harness integration)
     mnemion instructions <name>         Output skill instructions
 

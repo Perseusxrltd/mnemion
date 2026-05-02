@@ -22,11 +22,10 @@ from collections import defaultdict
 from pathlib import Path
 from typing import List, Dict, Optional, Any, Set
 
-import chromadb
 from .config import MnemionConfig
 
 # Statuses excluded from search by default
-_HIDDEN_STATUSES: Set[str] = {"superseded", "historical"}
+_HIDDEN_STATUSES: Set[str] = {"superseded", "historical", "quarantined"}
 
 logger = logging.getLogger("mnemion.hybrid")
 
@@ -165,13 +164,13 @@ class HybridSearcher:
         self.k = k
         self.collection_name = cfg.collection_name
 
-        # Persistent clients
-        from .chroma_compat import fix_blob_seq_ids
+        # Persistent collection access.
+        from .backends.registry import get_backend
 
-        fix_blob_seq_ids(self.anaktoron_path)
-        self.chroma_client = chromadb.PersistentClient(path=self.anaktoron_path)
+        self.backend = get_backend(anaktoron_path=self.anaktoron_path)
+        self.chroma_client = getattr(self.backend, "client", None)
         try:
-            self.collection = self.chroma_client.get_collection(self.collection_name)
+            self.collection = self.backend.get_collection(self.collection_name)
         except Exception:
             # Anaktoron not yet initialized — search will return empty results.
             self.collection = None
@@ -387,9 +386,8 @@ class HybridSearcher:
 
         # 5. Hydrate from the verbatim document store
         final_ids = [item[0] for item in top_entries]
-        data = self.collection.get(ids=final_ids, include=["documents", "metadatas", "embeddings"])
-        _embs = data.get("embeddings")
-        embeddings = _embs if _embs is not None else [None] * len(data["ids"])
+        data = self.collection.get(ids=final_ids, include=["documents", "metadatas"])
+        embeddings = [None] * len(data["ids"])
         doc_map = {
             idx: (doc, meta, emb)
             for idx, doc, meta, emb in zip(

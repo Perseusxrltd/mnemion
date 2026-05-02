@@ -655,7 +655,7 @@ def run_benchmark(
     rerank_label = f" + LLM re-rank ({llm_model.split('-')[1]})" if llm_rerank_enabled else ""
 
     print(f"\n{'=' * 60}")
-    print("  MemPal × LoCoMo Benchmark")
+    print("  Mnemion × LoCoMo Benchmark")
     print(f"{'=' * 60}")
     print(f"  Data:        {Path(data_file).name}")
     print(f"  Conversations: {len(data)}")
@@ -1000,7 +1000,7 @@ def evidence_to_session_ids(evidence):
 # =============================================================================
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="MemPal × LoCoMo Benchmark")
+    parser = argparse.ArgumentParser(description="Mnemion × LoCoMo Benchmark")
     parser.add_argument("data_file", help="Path to locomo10.json")
     parser.add_argument("--top-k", type=int, default=50, help="Top-k retrieval (default: 50)")
     parser.add_argument(

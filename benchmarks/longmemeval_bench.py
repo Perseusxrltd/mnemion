@@ -3242,7 +3242,7 @@ def run_benchmark(
 # =============================================================================
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="MemPal × LongMemEval Benchmark")
+    parser = argparse.ArgumentParser(description="Mnemion × LongMemEval Benchmark")
     parser.add_argument("data_file", help="Path to longmemeval_s_cleaned.json")
     parser.add_argument(
         "--granularity",

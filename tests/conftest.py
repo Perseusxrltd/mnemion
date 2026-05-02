@@ -12,11 +12,22 @@ instead of the real user profile.
 
 import os
 import shutil
-import tempfile
+import uuid
+from pathlib import Path
 
 # ── Isolate HOME before any mnemion imports ──────────────────────────
 _original_env = {}
-_session_tmp = tempfile.mkdtemp(prefix="mnemion_session_")
+_test_tmp_root = Path(os.environ.get("MNEMION_TEST_TMP_ROOT", Path.cwd() / ".tmp" / "pytest"))
+
+
+def _make_temp_dir(prefix: str) -> str:
+    _test_tmp_root.mkdir(parents=True, exist_ok=True)
+    path = _test_tmp_root / f"{prefix}{uuid.uuid4().hex}"
+    path.mkdir()
+    return str(path)
+
+
+_session_tmp = _make_temp_dir("mnemion_session_")
 
 for _var in ("HOME", "USERPROFILE", "HOMEDRIVE", "HOMEPATH"):
     _original_env[_var] = os.environ.get(_var)
@@ -72,7 +83,7 @@ def _isolate_home():
 @pytest.fixture
 def tmp_dir():
     """Create and auto-cleanup a temporary directory."""
-    d = tempfile.mkdtemp(prefix="mnemion_test_")
+    d = _make_temp_dir("mnemion_test_")
     yield d
     shutil.rmtree(d, ignore_errors=True)
 

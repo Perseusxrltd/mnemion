@@ -16,19 +16,33 @@ There are three mining modes:
 
 ### Project mining
 
-    mnemion mine <dir>
+    mnemion mine <dir> --consolidate
 
-Mines code files, documentation, and notes from a project directory.
+Mines code files, documentation, and notes from a project directory. The
+`--consolidate` flag immediately extracts cognitive graph units for
+reconstruction.
 
 ### Conversation mining
 
-    mnemion mine <dir> --mode convos
+    mnemion mine <dir> --mode convos --consolidate
 
 Mines conversation exports from Claude, ChatGPT, or Slack into the Anaktoron.
 
+### Message-granular JSONL sweep
+
+    mnemion sweep <jsonl-or-dir> --wing <name> --consolidate
+
+Sweeps Claude/Codex JSONL transcripts message by message with deterministic
+IDs and cursor resume.
+
+Accepted rows can use top-level `role` + `content`, or a nested `message`
+object with `role` and `content`. Content arrays are flattened, including
+text blocks plus compact `tool_use` and `tool_result` summaries. Malformed JSON
+and rows missing role/content are skipped and counted in the final summary.
+
 ### General extraction (auto-classify)
 
-    mnemion mine <dir> --mode convos --extract general
+    mnemion mine <dir> --mode convos --extract general --consolidate
 
 Auto-classifies mined content into decisions, milestones, and problems.
 
@@ -60,5 +74,6 @@ completion, summarize the results including:
 
 After mining completes, suggest the user try:
 - /mnemion:search -- search the newly mined content
+- `mnemion reconstruct "question"` -- inspect evidence trails when provenance matters
 - /mnemion:status -- check the current state of their Anaktoron
 - Mine more data from additional sources

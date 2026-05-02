@@ -6,6 +6,7 @@ build/
 __pycache__/
 *.pyc
 .pytest_cache/
+.tmp/
 mempal.yaml
 .a5c/
 

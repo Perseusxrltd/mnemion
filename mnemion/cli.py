@@ -16,6 +16,11 @@ Commands:
     mnemion restore <file.json>         Import a JSON export into the Anaktoron (new machine setup)
     mnemion restore <file.json> --merge Add to an existing Anaktoron without wiping it
     mnemion search "query"              Find anything, exact words
+    mnemion sweep <jsonl-or-dir>        Ingest Claude/Codex JSONL messages
+    mnemion consolidate                 Extract cognitive graph units from drawers
+    mnemion reconstruct "query"         Search cognitive graph evidence trails
+    mnemion memory-guard scan           Scan for memory-injection/privacy risks
+    mnemion eval moat                   Run deterministic moat eval cases
     mnemion wake-up                     Show L0 + L1 wake-up context
     mnemion wake-up --wing my_app       Wake-up for a specific project
     mnemion status                      Show what's been filed
@@ -46,30 +51,84 @@ from .config import MnemionConfig
 def cmd_init(args):
     import json
     from pathlib import Path
-    from .entity_detector import scan_for_detection, detect_entities, confirm_entities
+    from .corpus_origin import detect_origin_for_path, persist_origin
+    from .project_scanner import discover_entities
+    from .entity_detector import confirm_entities
     from .room_detector_local import detect_rooms_local
 
-    # Pass 1: auto-detect people and projects from file content
+    project_path = Path(args.dir).expanduser().resolve()
+    previous_entity_languages = os.environ.get("MNEMION_ENTITY_LANGUAGES")
+    if getattr(args, "lang", None):
+        os.environ["MNEMION_ENTITY_LANGUAGES"] = args.lang
+
+    origin = detect_origin_for_path(project_path)
+    origin_path = persist_origin(project_path, origin)
+    if origin.likely_ai_dialogue:
+        personas = ", ".join(origin.agent_persona_names) or "unknown"
+        print(f"  Corpus origin: AI dialogue ({origin.primary_platform or 'unknown'}; personas: {personas})")
+    print(f"  Origin saved: {origin_path}")
+
+    # Pass 1: auto-detect people and projects from manifests, git, and prose content
     print(f"\n  Scanning for entities in: {args.dir}")
-    files = scan_for_detection(args.dir)
-    if files:
-        print(f"  Reading {len(files)} files...")
-        detected = detect_entities(files)
-        total = len(detected["people"]) + len(detected["projects"]) + len(detected["uncertain"])
-        if total > 0:
-            confirmed = confirm_entities(detected, yes=getattr(args, "yes", False))
-            # Save confirmed entities to <project>/entities.json for the miner
-            if confirmed["people"] or confirmed["projects"]:
-                entities_path = Path(args.dir).expanduser().resolve() / "entities.json"
-                with open(entities_path, "w") as f:
-                    json.dump(confirmed, f, indent=2)
-                print(f"  Entities saved: {entities_path}")
-        else:
-            print("  No entities detected — proceeding with directory-based rooms.")
+    detected = discover_entities(project_path, corpus_origin=origin)
+    total = (
+        len(detected.get("people", []))
+        + len(detected.get("projects", []))
+        + len(detected.get("uncertain", []))
+        + len(detected.get("agent_personas", []))
+    )
+    if total > 0:
+        confirmed = confirm_entities(detected, yes=getattr(args, "yes", False))
+        # Save confirmed entities to <project>/entities.json for the miner
+        if confirmed["people"] or confirmed["projects"] or confirmed.get("agent_personas"):
+            entities_path = project_path / "entities.json"
+            with open(entities_path, "w") as f:
+                json.dump(confirmed, f, indent=2)
+            print(f"  Entities saved: {entities_path}")
+    else:
+        print("  No entities detected — proceeding with directory-based rooms.")
 
     # Pass 2: detect rooms from folder structure
     detect_rooms_local(project_dir=args.dir, yes=getattr(args, "yes", False))
-    MnemionConfig().init()
+    config_path = MnemionConfig().init()
+
+    if getattr(args, "lang", None):
+        try:
+            with open(config_path, "r") as f:
+                config_data = json.load(f)
+        except (OSError, json.JSONDecodeError):
+            config_data = {}
+        config_data["entity_languages"] = [
+            part.strip().lower() for part in args.lang.split(",") if part.strip()
+        ]
+        with open(config_path, "w") as f:
+            json.dump(config_data, f, indent=2)
+
+    try:
+        from .miner import scan_project
+
+        mine_files = scan_project(str(project_path))
+        print(f"  Mine estimate: {len(mine_files)} files")
+    except Exception:
+        mine_files = []
+
+    if getattr(args, "lang", None):
+        if previous_entity_languages is None:
+            os.environ.pop("MNEMION_ENTITY_LANGUAGES", None)
+        else:
+            os.environ["MNEMION_ENTITY_LANGUAGES"] = previous_entity_languages
+
+    should_mine = bool(getattr(args, "auto_mine", False))
+    if not should_mine and sys.stdin.isatty():
+        answer = input("  Mine this project now? [y/N]: ").strip().lower()
+        should_mine = answer == "y"
+    if should_mine:
+        from .miner import mine
+
+        anaktoron_path = (
+            os.path.expanduser(args.palace) if getattr(args, "palace", None) else MnemionConfig().anaktoron_path
+        )
+        mine(project_dir=str(project_path), anaktoron_path=anaktoron_path)
 
 
 def cmd_mine(args):
@@ -105,20 +164,29 @@ def cmd_mine(args):
             respect_gitignore=not args.no_gitignore,
             include_ignored=include_ignored,
         )
+    if getattr(args, "consolidate", False) and not args.dry_run:
+        result = _consolidate_anaktoron(
+            anaktoron_path=anaktoron_path,
+            limit=getattr(args, "consolidate_limit", 100),
+        )
+        _print_consolidation_result(result)
 
 
 def cmd_search(args):
     from .hybrid_searcher import HybridSearcher
     from .config import MnemionConfig
+    from .query_sanitizer import sanitize_query
 
     anaktoron_path = (
         os.path.expanduser(args.palace) if args.palace else MnemionConfig().anaktoron_path
     )
 
     try:
+        sanitized = sanitize_query(args.query)
+        clean_query = sanitized["clean_query"]
         hs = HybridSearcher(anaktoron_path=anaktoron_path)
         hits = hs.search(
-            query=args.query,
+            query=clean_query,
             wing=args.wing,
             room=args.room,
             n_results=args.results,
@@ -129,7 +197,9 @@ def cmd_search(args):
             print("No results found.")
             return
 
-        print(f"\nFound {len(hits)} results for '{args.query}'\n" + "=" * 50)
+        if sanitized["was_sanitized"]:
+            print(f"\nSanitized query: {clean_query}")
+        print(f"\nFound {len(hits)} results for '{clean_query}'\n" + "=" * 50)
         for i, hit in enumerate(hits, 1):
             w = hit.get("wing", "unknown")
             r = hit.get("room", "unknown")
@@ -193,13 +263,46 @@ def cmd_status(args):
 
 
 def cmd_repair(args):
-    """Rebuild Anaktoron vector index from SQLite metadata."""
+    """Repair Anaktoron storage issues."""
     import chromadb
     import shutil
+    import json
 
     cfg = MnemionConfig()
     anaktoron_path = os.path.expanduser(args.palace) if args.palace else cfg.anaktoron_path
     col_name = cfg.collection_name
+    mode = getattr(args, "mode", "rebuild")
+
+    if mode == "status":
+        from .repair import status as repair_status
+
+        data = repair_status(anaktoron_path, collection_name=col_name)
+        print(json.dumps(data, indent=2))
+        return
+
+    if mode == "scan":
+        from .repair import scan as repair_scan
+
+        data = repair_scan(anaktoron_path, collection_name=col_name)
+        print(json.dumps(data, indent=2))
+        return
+
+    if mode == "max-seq-id":
+        from .repair import repair_max_seq_id
+
+        kwargs = {"dry_run": getattr(args, "dry_run", False)}
+        if getattr(args, "threshold", None) is not None:
+            kwargs["threshold"] = args.threshold
+        result = repair_max_seq_id(anaktoron_path, **kwargs)
+        print(json.dumps(result, indent=2))
+        return
+
+    if mode == "prune":
+        from .repair import prune
+
+        result = prune(anaktoron_path, dry_run=getattr(args, "dry_run", True))
+        print(json.dumps(result, indent=2))
+        return
 
     if not os.path.isdir(anaktoron_path):
         print(f"\n  No Anaktoron found at {anaktoron_path}")
@@ -250,7 +353,14 @@ def cmd_repair(args):
 
     print("  Rebuilding collection...")
     client.delete_collection(col_name)
-    new_col = client.create_collection(col_name)
+    from .config import DRAWER_HNSW_METADATA
+    from .embedding import get_embedding_function
+
+    create_kwargs = {"metadata": DRAWER_HNSW_METADATA}
+    embedding_function = get_embedding_function()
+    if embedding_function is not None:
+        create_kwargs["embedding_function"] = embedding_function
+    new_col = client.create_collection(col_name, **create_kwargs)
 
     filed = 0
     for i in range(0, len(all_ids), batch_size):
@@ -264,6 +374,145 @@ def cmd_repair(args):
     print(f"\n  Repair complete. {filed} drawers rebuilt.")
     print(f"  Backup saved at {backup_path}")
     print(f"\n{'=' * 55}\n")
+
+
+def cmd_sweep(args):
+    """Ingest Claude/Codex JSONL transcripts message by message."""
+    from .sweeper import sweep
+
+    anaktoron_path = (
+        os.path.expanduser(args.palace) if getattr(args, "palace", None) else MnemionConfig().anaktoron_path
+    )
+    stats = sweep(
+        args.path,
+        anaktoron_path=anaktoron_path,
+        source_label=args.wing,
+        batch_size=args.batch_size,
+    )
+    print(f"\n  Sweep complete: {stats['filed']} filed, {stats['skipped_existing']} existing")
+    print(f"  Files: {stats['files']}  Messages seen: {stats['seen']}")
+    skipped_invalid = stats.get("skipped_invalid", 0)
+    skipped_unsupported = stats.get("skipped_unsupported", 0)
+    skipped_cursor = stats.get("skipped_cursor", 0)
+    if skipped_invalid or skipped_unsupported or skipped_cursor:
+        print(
+            "  Skipped: "
+            f"{skipped_cursor} cursor, "
+            f"{skipped_invalid} invalid JSON, "
+            f"{skipped_unsupported} unsupported"
+        )
+    if getattr(args, "consolidate", False):
+        result = _consolidate_anaktoron(
+            anaktoron_path=anaktoron_path,
+            limit=getattr(args, "consolidate_limit", 100),
+        )
+        _print_consolidation_result(result)
+
+
+def _consolidate_anaktoron(anaktoron_path: str, limit: int = 100) -> dict:
+    """Consolidate newly filed drawers into cognitive graph units."""
+    from pathlib import Path
+    from .backends.registry import get_backend
+    from .cognitive_graph import CognitiveGraph
+    from .trust_lifecycle import DrawerTrust
+
+    cfg = MnemionConfig()
+    kg_path = str(Path(anaktoron_path).parent / "knowledge_graph.sqlite3")
+    collection = get_backend(anaktoron_path=anaktoron_path).get_collection(cfg.collection_name)
+    return CognitiveGraph(kg_path).consolidate_collection(
+        collection,
+        trust=DrawerTrust(kg_path),
+        limit=limit,
+    )
+
+
+def _print_consolidation_result(result: dict) -> None:
+    drawers = result.get("drawers_consolidated", 0)
+    units = result.get("units_inserted", 0)
+    edges = result.get("edges_inserted", 0)
+    print(f"  Consolidated: {drawers} drawers, {units} units, {edges} edges")
+
+
+def cmd_reconstruct(args):
+    """Run active reconstruction search over the cognitive graph."""
+    import json
+    from .reconstruction import reconstruct_query
+
+    anaktoron_path = (
+        os.path.expanduser(args.palace) if getattr(args, "palace", None) else MnemionConfig().anaktoron_path
+    )
+    result = reconstruct_query(
+        query=args.query,
+        anaktoron_path=anaktoron_path,
+        budget=args.budget,
+    )
+    if getattr(args, "json", False):
+        print(json.dumps(result, indent=2))
+        return
+    if not result["results"]:
+        print("No reconstructed results found.")
+        return
+    tunnels = result.get("topic_tunnels") or []
+    if tunnels:
+        labels = [
+            f"{tunnel['cue']} ({tunnel.get('drawer_count', 0)} drawers)" for tunnel in tunnels
+        ]
+        print(f"Topic tunnels: {', '.join(labels)}")
+    for item in result["results"]:
+        print(f"\n{item['id']}  {item.get('wing', '?')}/{item.get('room', '?')}")
+        for ev in item.get("evidence_trail", []):
+            tunnel = ev.get("via_topic_tunnel")
+            suffix = f"  (via tunnel: {tunnel})" if tunnel else ""
+            print(f"  - {ev['unit_type']}: {ev['text']}{suffix}")
+
+
+def cmd_consolidate(args):
+    """Build structured cognitive units from raw drawers."""
+    import json
+    from pathlib import Path
+    from .backends.registry import get_backend
+    from .cognitive_graph import CognitiveGraph
+    from .trust_lifecycle import DrawerTrust
+
+    cfg = MnemionConfig()
+    anaktoron_path = os.path.expanduser(args.palace) if args.palace else cfg.anaktoron_path
+    kg_path = str(Path(anaktoron_path).parent / "knowledge_graph.sqlite3")
+    collection = get_backend(anaktoron_path=anaktoron_path).get_collection(cfg.collection_name)
+    result = CognitiveGraph(kg_path).consolidate_collection(
+        collection,
+        trust=DrawerTrust(kg_path),
+        limit=args.limit,
+        dry_run=args.dry_run,
+    )
+    print(json.dumps(result, indent=2))
+
+
+def cmd_memory_guard(args):
+    """Scan Anaktoron drawers for memory injection and privacy bait."""
+    import json
+    from pathlib import Path
+    from .backends.registry import get_backend
+    from .memory_guard import MemoryGuard
+    from .trust_lifecycle import DrawerTrust
+
+    cfg = MnemionConfig()
+    anaktoron_path = os.path.expanduser(args.palace) if args.palace else cfg.anaktoron_path
+    kg_path = str(Path(anaktoron_path).parent / "knowledge_graph.sqlite3")
+    collection = get_backend(anaktoron_path=anaktoron_path).get_collection(cfg.collection_name)
+    result = MemoryGuard(kg_path).scan_collection(
+        collection,
+        trust=DrawerTrust(kg_path),
+        quarantine=args.quarantine,
+    )
+    print(json.dumps(result, indent=2))
+
+
+def cmd_moat_eval(args):
+    """Run moat evaluation suites."""
+    import json
+    from .moat_eval import run_moat_eval
+
+    print(json.dumps(run_moat_eval(suite=args.suite), indent=2))
 
 
 def _count_json_objects(filepath):
@@ -333,9 +582,9 @@ def _stream_json_array(filepath, read_size=524288):
 def cmd_restore(args):
     """Import a JSON export (archive/drawers_export.json) into the local Anaktoron."""
     import gc
-    import chromadb
     from pathlib import Path
-    from .config import MnemionConfig, DRAWER_HNSW_METADATA
+    from .config import MnemionConfig
+    from .backends.registry import get_backend
 
     cfg = MnemionConfig()
     anaktoron_path = os.path.expanduser(args.palace) if args.palace else cfg.anaktoron_path
@@ -362,10 +611,11 @@ def cmd_restore(args):
     print(f"{total}", flush=True)
 
     Path(anaktoron_path).mkdir(parents=True, exist_ok=True)
-    client = chromadb.PersistentClient(path=anaktoron_path)
+    backend = get_backend(anaktoron_path=anaktoron_path)
+    client = getattr(backend, "client", None)
 
     try:
-        col = client.get_or_create_collection(col_name, metadata=DRAWER_HNSW_METADATA)
+        col = backend.get_collection(col_name, create=True)
     except Exception as e:
         print(f"  Error opening Anaktoron: {e}\n", flush=True)
         sys.exit(1)
@@ -379,7 +629,7 @@ def cmd_restore(args):
     if args.replace and existing > 0:
         print(f"\n  Replacing {existing} existing drawers...", flush=True)
         client.delete_collection(col_name)
-        col = client.create_collection(col_name, metadata=DRAWER_HNSW_METADATA)
+        col = backend.create_collection(col_name)
 
     print("  Streaming restore started ...\n", flush=True)
 
@@ -654,8 +904,8 @@ def cmd_instructions(args):
 
 def cmd_compress(args):
     """Compress drawers in a wing using AAAK Dialect."""
-    import chromadb
     from .dialect import Dialect
+    from .backends.registry import get_backend
 
     cfg = MnemionConfig()
     anaktoron_path = os.path.expanduser(args.palace) if args.palace else cfg.anaktoron_path
@@ -677,8 +927,8 @@ def cmd_compress(args):
 
     # Connect to Anaktoron
     try:
-        client = chromadb.PersistentClient(path=anaktoron_path)
-        col = client.get_collection(col_name)
+        backend = get_backend(anaktoron_path=anaktoron_path)
+        col = backend.get_collection(col_name)
     except Exception:
         print(f"\n  No Anaktoron found at {anaktoron_path}")
         print("  Run: mnemion init <dir> then mnemion mine <dir>")
@@ -749,7 +999,7 @@ def cmd_compress(args):
     # Store compressed versions (unless dry-run)
     if not args.dry_run:
         try:
-            comp_col = client.get_or_create_collection("mnemion_compressed")
+            comp_col = backend.get_collection("mnemion_compressed", create=True)
             for doc_id, compressed, meta, stats in compressed_entries:
                 comp_meta = dict(meta)
                 comp_meta["compression_ratio"] = round(stats["ratio"], 1)
@@ -795,6 +1045,14 @@ def main():
     p_init.add_argument(
         "--yes", action="store_true", help="Auto-accept all detected entities (non-interactive)"
     )
+    p_init.add_argument(
+        "--auto-mine", action="store_true", help="Run project mining immediately after init"
+    )
+    p_init.add_argument(
+        "--lang",
+        default=None,
+        help="Entity detection locales, comma-separated (default: en)",
+    )
 
     # mine
     p_mine = sub.add_parser("mine", help="Mine files into the Anaktoron")
@@ -827,6 +1085,17 @@ def main():
         "--dry-run", action="store_true", help="Show what would be filed without filing"
     )
     p_mine.add_argument(
+        "--consolidate",
+        action="store_true",
+        help="Extract cognitive graph units after mining completes",
+    )
+    p_mine.add_argument(
+        "--consolidate-limit",
+        type=int,
+        default=100,
+        help="Max drawers to consolidate after mining",
+    )
+    p_mine.add_argument(
         "--extract",
         choices=["exchange", "general"],
         default="exchange",
@@ -839,6 +1108,61 @@ def main():
     p_search.add_argument("--wing", default=None, help="Limit to one project")
     p_search.add_argument("--room", default=None, help="Limit to one room")
     p_search.add_argument("--results", type=int, default=5, help="Number of results")
+
+    # sweep
+    p_sweep = sub.add_parser(
+        "sweep",
+        help="Message-granular Claude/Codex JSONL ingestion with cursor resume",
+    )
+    p_sweep.add_argument("path", help="JSONL file or directory containing JSONL transcripts")
+    p_sweep.add_argument("--wing", default=None, help="Wing label for swept messages")
+    p_sweep.add_argument("--batch-size", type=int, default=64, help="Chroma upsert batch size")
+    p_sweep.add_argument(
+        "--consolidate",
+        action="store_true",
+        help="Extract cognitive graph units after sweeping completes",
+    )
+    p_sweep.add_argument(
+        "--consolidate-limit",
+        type=int,
+        default=100,
+        help="Max drawers to consolidate after sweeping",
+    )
+
+    # reconstruct
+    p_reconstruct = sub.add_parser(
+        "reconstruct",
+        help="Active reconstruction search over the cognitive graph",
+    )
+    p_reconstruct.add_argument("query", help="Question or search intent")
+    p_reconstruct.add_argument("--budget", type=int, default=10, help="Max cognitive units")
+    p_reconstruct.add_argument("--json", action="store_true", help="Print JSON response")
+
+    # consolidate
+    p_consolidate = sub.add_parser(
+        "consolidate",
+        help="Extract structured cognitive units from drawers",
+    )
+    p_consolidate.add_argument("--limit", type=int, default=100, help="Max drawers")
+    p_consolidate.add_argument("--dry-run", action="store_true", help="Preview only")
+
+    # memory guard
+    p_guard = sub.add_parser("memory-guard", help="Memory injection/privacy guard")
+    guard_sub = p_guard.add_subparsers(dest="memory_guard_action")
+    p_guard_scan = guard_sub.add_parser("scan", help="Scan drawers for memory risks")
+    p_guard_scan.add_argument(
+        "--quarantine", action="store_true", help="Quarantine flagged drawers"
+    )
+
+    # moat eval
+    p_eval = sub.add_parser("eval", help="Evaluation commands")
+    eval_sub = p_eval.add_subparsers(dest="eval_action")
+    p_eval_moat = eval_sub.add_parser("moat", help="Run moat evaluation suites")
+    p_eval_moat.add_argument(
+        "--suite",
+        choices=["struct", "causal", "forgetting", "security", "all"],
+        default="all",
+    )
 
     # compress
     p_compress = sub.add_parser(
@@ -947,9 +1271,22 @@ def main():
     )
 
     # repair
-    sub.add_parser(
+    p_repair = sub.add_parser(
         "repair",
-        help="Rebuild Anaktoron vector index from stored data (fixes segfaults after corruption)",
+        help="Repair Anaktoron storage (status, scan, prune, rebuild, max-seq-id)",
+    )
+    p_repair.add_argument(
+        "--mode",
+        choices=["status", "scan", "prune", "rebuild", "max-seq-id"],
+        default="rebuild",
+        help="Repair mode (default: rebuild, matching previous behavior)",
+    )
+    p_repair.add_argument("--dry-run", action="store_true", help="Show repair actions only")
+    p_repair.add_argument(
+        "--threshold",
+        type=int,
+        default=None,
+        help="max_seq_id poison threshold for --mode max-seq-id",
     )
 
     # librarian
@@ -1001,10 +1338,27 @@ def main():
         cmd_instructions(args)
         return
 
+    if args.command == "memory-guard":
+        if getattr(args, "memory_guard_action", None) != "scan":
+            p_guard.print_help()
+            return
+        cmd_memory_guard(args)
+        return
+
+    if args.command == "eval":
+        if getattr(args, "eval_action", None) != "moat":
+            p_eval.print_help()
+            return
+        cmd_moat_eval(args)
+        return
+
     dispatch = {
         "init": cmd_init,
         "mine": cmd_mine,
         "restore": cmd_restore,
+        "sweep": cmd_sweep,
+        "reconstruct": cmd_reconstruct,
+        "consolidate": cmd_consolidate,
         "split": cmd_split,
         "search": cmd_search,
         "compress": cmd_compress,

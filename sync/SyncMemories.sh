@@ -137,16 +137,13 @@ EXPORT_RESULT=$("$PYTHON" - <<PYEOF
 import sys, json
 if "$SRC_DIR":
     sys.path.insert(0, "$SRC_DIR")
-import chromadb
-from mnemion.chroma_compat import fix_blob_seq_ids
 from mnemion.config import MnemionConfig
+from mnemion.backends.registry import get_backend
 
 config = MnemionConfig()
-fix_blob_seq_ids(config.anaktoron_path)
 BATCH = 2000  # stay under SQLite SQLITE_MAX_VARIABLE_NUMBER on any version
 try:
-    client  = chromadb.PersistentClient(path=config.anaktoron_path)
-    col     = client.get_collection(config.collection_name)
+    col     = get_backend(anaktoron_path=config.anaktoron_path).get_collection(config.collection_name)
     drawers = []
     offset  = 0
     while True:

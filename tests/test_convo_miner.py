@@ -2,7 +2,7 @@ import os
 import tempfile
 import shutil
 import chromadb
-from mnemion.convo_miner import mine_convos
+from mnemion.convo_miner import chunk_exchanges, mine_convos
 
 
 def test_convo_mining():
@@ -24,3 +24,20 @@ def test_convo_mining():
     assert len(results["documents"][0]) > 0
 
     shutil.rmtree(tmpdir, ignore_errors=True)
+
+
+def test_exchange_chunk_preserves_full_assistant_response():
+    assistant_lines = [f"line {i}" for i in range(12)]
+    content = (
+        "> What happened?\n"
+        + "\n".join(assistant_lines)
+        + "\n\n> What next?\n"
+        + "continue\n"
+        + "\n\n> Final?\n"
+        + "done\n"
+    )
+
+    chunks = chunk_exchanges(content)
+
+    assert "line 0" in chunks[0]["content"]
+    assert "line 11" in chunks[0]["content"]

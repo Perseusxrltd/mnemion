@@ -7,6 +7,9 @@ via monkeypatch to avoid touching real data.
 """
 
 import json
+import os
+import subprocess
+import sys
 
 
 def _patch_mcp_server(monkeypatch, config, kg):
@@ -45,6 +48,36 @@ def _get_collection(anaktoron_path, create=False):
 
 
 class TestHandleRequest:
+    def test_import_uses_configured_anaktoron_for_sidecar_db(self, tmp_path):
+        anaktoron_path = tmp_path / "custom" / "anaktoron"
+        env = os.environ.copy()
+        env["MNEMION_ANAKTORON_PATH"] = str(anaktoron_path)
+        env["HOME"] = str(tmp_path / "home")
+        env["USERPROFILE"] = str(tmp_path / "home")
+        code = """
+import json
+import mnemion.mcp_server as m
+m._real_stdout.write(json.dumps({
+    "anaktoron": m._config.anaktoron_path,
+    "kg": m._kg.db_path,
+    "trust": m._trust.db_path,
+}))
+"""
+        result = subprocess.run(
+            [sys.executable, "-c", code],
+            cwd=os.getcwd(),
+            env=env,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        payload = json.loads(result.stdout)
+
+        expected_db = str(tmp_path / "custom" / "knowledge_graph.sqlite3")
+        assert payload["anaktoron"] == str(anaktoron_path)
+        assert payload["kg"] == expected_db
+        assert payload["trust"] == expected_db
+
     def test_initialize(self):
         from mnemion.mcp_server import handle_request
 

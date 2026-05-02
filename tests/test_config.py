@@ -34,6 +34,18 @@ def test_env_override():
     del os.environ["MNEMION_ANAKTORON_PATH"]
 
 
+def test_topic_tunnel_min_count_env_override():
+    tmpdir = tempfile.mkdtemp()
+    with open(os.path.join(tmpdir, "config.json"), "w") as f:
+        json.dump({"topic_tunnel_min_count": 5}, f)
+    os.environ["MNEMION_TOPIC_TUNNEL_MIN_COUNT"] = "3"
+    try:
+        cfg = MnemionConfig(config_dir=tmpdir)
+        assert cfg.topic_tunnel_min_count == 3
+    finally:
+        del os.environ["MNEMION_TOPIC_TUNNEL_MIN_COUNT"]
+
+
 def test_legacy_env_override():
     """Backward compat: old MNEMION_PALACE_PATH env var still works."""
     os.environ["MNEMION_PALACE_PATH"] = "/env/anaktoron"

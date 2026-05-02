@@ -22,6 +22,8 @@ If MCP tools are available, use them in this priority order:
 
 - mnemion_search(query, wing, room) -- Primary search tool. Pass the semantic
   query and any wing/room filters.
+- mnemion_reconstruct(query) -- Use when provenance matters. Returns hydrated
+  drawers with cognitive graph evidence trails and topic tunnels.
 - mnemion_list_wings -- Discover all available wings. Use when the user asks
   what categories exist or you need to resolve a wing name.
 - mnemion_list_rooms(wing) -- List rooms within a specific wing. Use to help
@@ -39,6 +41,7 @@ If MCP tools are available, use them in this priority order:
 If MCP tools are not available, fall back to the CLI:
 
     mnemion search "query" [--wing X] [--room Y]
+    mnemion reconstruct "query"
 
 ## 5. Present Results
 
@@ -52,6 +55,7 @@ When presenting search results:
 
 After presenting results, offer the user options to go deeper:
 - Drill deeper -- search within a specific room or narrow the query
+- Reconstruct -- show the evidence trail and topic tunnels behind an answer
 - Traverse -- explore the knowledge graph from a related room
 - Check tunnels -- look for cross-wing connections if the topic spans domains
 - Browse taxonomy -- show the full structure for manual exploration

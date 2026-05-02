@@ -15,8 +15,6 @@ Returns verbatim text — the actual words, never summaries.
 import logging
 from pathlib import Path
 
-import chromadb
-
 from .config import MnemionConfig
 
 logger = logging.getLogger("mnemion_mcp")
@@ -39,10 +37,11 @@ def search(
     Search the Anaktoron. Returns verbatim drawer content.
     Optionally filter by wing (project) or room (aspect).
     """
+    from .backends.registry import get_backend
+
     col_name = collection_name or MnemionConfig().collection_name
     try:
-        client = chromadb.PersistentClient(path=anaktoron_path)
-        col = client.get_collection(col_name)
+        col = get_backend(anaktoron_path=anaktoron_path).get_collection(col_name)
     except Exception:
         print(f"\n  No Anaktoron found at {anaktoron_path}")
         print("  Run: mnemion init <dir> then mnemion mine <dir>")
@@ -128,10 +127,14 @@ def search_memories(
     Programmatic search — returns a dict instead of printing.
     Used by the MCP server and other callers that need data.
     """
+    from .backends.registry import get_backend
+    from .query_sanitizer import sanitize_query
+
     col_name = collection_name or MnemionConfig().collection_name
+    sanitized = sanitize_query(query)
+    clean_query = sanitized["clean_query"]
     try:
-        client = chromadb.PersistentClient(path=anaktoron_path)
-        col = client.get_collection(col_name)
+        col = get_backend(anaktoron_path=anaktoron_path).get_collection(col_name)
     except Exception as e:
         logger.error("No Anaktoron found at %s: %s", anaktoron_path, e)
         return {
@@ -150,7 +153,7 @@ def search_memories(
 
     try:
         kwargs = {
-            "query_texts": [query],
+            "query_texts": [clean_query],
             "n_results": n_results,
             "include": ["documents", "metadatas", "distances"],
         }
@@ -167,6 +170,7 @@ def search_memories(
             "query": query,
             "filters": {"wing": wing, "room": room},
             "results": [],
+            **({"sanitized_query": clean_query} if sanitized["was_sanitized"] else {}),
         }
 
     docs = results["documents"][0]
@@ -188,8 +192,11 @@ def search_memories(
             }
         )
 
-    return {
+    response = {
         "query": query,
         "filters": {"wing": wing, "room": room},
         "results": hits,
     }
+    if sanitized["was_sanitized"]:
+        response["sanitized_query"] = clean_query
+    return response

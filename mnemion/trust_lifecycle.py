@@ -29,6 +29,7 @@ STATUS_CURRENT = "current"
 STATUS_SUPERSEDED = "superseded"
 STATUS_CONTESTED = "contested"
 STATUS_HISTORICAL = "historical"  # soft-deleted: never hard-removed
+STATUS_QUARANTINED = "quarantined"  # memory guard: hidden until reviewed
 
 CONFLICT_DIRECT = "direct_contradiction"
 CONFLICT_TEMPORAL = "temporal_update"
@@ -38,7 +39,7 @@ SCHEMA = """
 -- Primary trust record per drawer
 CREATE TABLE IF NOT EXISTS drawer_trust (
     drawer_id       TEXT PRIMARY KEY,
-    status          TEXT NOT NULL DEFAULT 'current',       -- current|superseded|contested|historical
+    status          TEXT NOT NULL DEFAULT 'current',       -- current|superseded|contested|historical|quarantined
     confidence      REAL NOT NULL DEFAULT 1.0,            -- 0.0–1.0
     valid_from      TEXT,                                  -- ISO date when fact became true
     valid_to        TEXT,                                  -- ISO date when fact stopped being true (NULL = still valid)
