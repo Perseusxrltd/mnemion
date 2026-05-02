@@ -10,7 +10,7 @@ def test_cli_version_flag(capsys, monkeypatch):
         cli.main()
 
     assert exc.value.code == 0
-    assert "mnemion 3.5.4" in capsys.readouterr().out
+    assert "mnemion 3.5.5" in capsys.readouterr().out
 
 
 def test_public_chroma_dependency_stays_on_known_good_line():

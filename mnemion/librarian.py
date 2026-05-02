@@ -272,10 +272,10 @@ def run_librarian(
                 s1 = _cd.stage1_check(text, candidate)
                 if s1 and s1.get("conflict_type", "none") != "none":
                     conf = s1.get("confidence", 0.0)
-                    conflict_id = trust.record_conflict(
-                        candidate["id"], drawer_id, s1["conflict_type"], conf
-                    )
                     if not dry_run:
+                        conflict_id = trust.record_conflict(
+                            candidate["id"], drawer_id, s1["conflict_type"], conf
+                        )
                         from .contradiction_detector import _apply_resolution
 
                         s1["stage"] = 1

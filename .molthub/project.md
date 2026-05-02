@@ -2,7 +2,7 @@
 title: "Mnemion"
 category: "Tool"
 status: "active"
-version: "3.5.4"
+version: "3.5.5"
 summary: "Frontier AI memory. Hybrid retrieval (MRR 0.54→0.88), Trust Lifecycle, SIGReg Latent Grooming (+40% Recall@5), and JEPA Predictive Context."
 description: "Mnemion is a production-grade AI memory system by PerseusXR. Named after Mnemosyne — Greek goddess of memory, mother of the Muses. Featuring Hybrid lexical-semantic retrieval, a human-like Trust Lifecycle, and SIGReg (Sketched Isotropic Gaussian Regularization) latent grooming that prevents embedding collapse and delivers a verified +40% Recall@5 improvement over raw vector search. An LSTM-based JEPA-style predictor enables session-aware proactive retrieval. No API key required."
 tags: ["AI", "Memory", "RAG", "Hybrid-Search", "MCP", "LeWorldModel", "JEPA", "SIGReg", "ChromaDB", "SQLite", "Plugins", "Entity-Registry", "AAAK-Dialect", "Claude-Code", "Codex", "PyTorch"]
@@ -11,7 +11,7 @@ demo_url: "https://www.molthub.info/artifacts/mnemion"
 collaboration_open: true
 skills_needed: ["Python", "SQLite", "ChromaDB", "Information Retrieval", "MCP", "PyTorch"]
 help_wanted: "GraphRAG contextual expansion, CRDT-based cross-device sync, cross-encoder reranking, LeWM online fine-tuning pipeline."
-latest_milestone: "v3.5.4 — Clean user install dependency hardening for OpenTelemetry/protobuf compatibility (May 2026)"
+latest_milestone: "v3.5.5 — Live follow-up safety for memory guard review, consolidation batching, and librarian dry-run (May 2026)"
 ---
 
 # Mnemion
@@ -89,13 +89,13 @@ Persistent AI memory that actually works. Not just a vector store — a full sel
 - Available: `init`, `mine`, `search`, `status`, `help`.
 
 ### Claude Code Plugin (`.claude-plugin/`)
-- `plugin.json` + `marketplace.json`: registers Mnemion as a Claude Code plugin (v3.5.4).
+- `plugin.json` + `marketplace.json`: registers Mnemion as a Claude Code plugin (v3.5.5).
 - Skills: `mnemion/SKILL.md` (unified skill prompt). Commands: `help`, `init`, `mine`, `search`, `status`.
 - Hooks: `mnemion-stop-hook.sh` + `mnemion-precompact-hook.sh`.
 - MCP server: `python3 -m mnemion.mcp_server`.
 
 ### Codex Plugin (`.codex-plugin/`)
-- `plugin.json`: registers Mnemion as an OpenAI Codex CLI plugin (v3.5.4).
+- `plugin.json`: registers Mnemion as an OpenAI Codex CLI plugin (v3.5.5).
 - Skills: per-skill `SKILL.md` files for `init`, `mine`, `search`, `status`, `help`.
 - Hooks: `hooks.json` + `mnemion-hook.sh`. MCP server: `python3 -m mnemion.mcp_server`.
 - `.agents/plugins/marketplace.json`: local marketplace manifest pointing at `.codex-plugin/`.

@@ -263,17 +263,37 @@ class CognitiveGraph:
         dry_run: bool = False,
     ) -> dict[str, int]:
         result = {"drawers_consolidated": 0, "units_inserted": 0, "edges_inserted": 0}
-        docs = collection.get(limit=limit, include=["documents", "metadatas"])
-        ids = docs.get("ids") or []
-        documents = docs.get("documents") or []
-        metadatas = docs.get("metadatas") or []
+        if limit <= 0:
+            return {"would_consolidate": 0, **result} if dry_run else result
+
+        pending = []
+        count_fn = getattr(collection, "count", None)
+        total = count_fn() if callable(count_fn) else None
+        offset = 0
+        batch_size = min(max(limit, 100), 5000)
 
         with self._connect() as conn:
-            pending = [
-                (drawer_id, doc, meta or {})
-                for drawer_id, doc, meta in zip(ids, documents, metadatas)
-                if not self._is_consolidated(conn, drawer_id)
-            ]
+            while len(pending) < limit and (total is None or offset < total):
+                page_limit = batch_size if total is None else min(batch_size, total - offset)
+                docs = collection.get(
+                    limit=page_limit,
+                    offset=offset,
+                    include=["documents", "metadatas"],
+                )
+                ids = docs.get("ids") or []
+                documents = docs.get("documents") or []
+                metadatas = docs.get("metadatas") or []
+                if not ids:
+                    break
+                for drawer_id, doc, meta in zip(ids, documents, metadatas):
+                    if not self._is_consolidated(conn, drawer_id):
+                        pending.append((drawer_id, doc, meta or {}))
+                        if len(pending) >= limit:
+                            break
+                offset += len(ids)
+                if total is None and len(ids) < page_limit:
+                    break
+
         if dry_run:
             return {"would_consolidate": len(pending), **result}
 

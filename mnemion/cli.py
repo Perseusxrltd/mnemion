@@ -500,13 +500,18 @@ def cmd_memory_guard(args):
     import json
     from pathlib import Path
     from .backends.registry import get_backend
-    from .memory_guard import MemoryGuard
+    from .memory_guard import MemoryGuard, generate_review_report
     from .trust_lifecycle import DrawerTrust
 
     cfg = MnemionConfig()
     anaktoron_path = os.path.expanduser(args.palace) if args.palace else cfg.anaktoron_path
     kg_path = str(Path(anaktoron_path).parent / "knowledge_graph.sqlite3")
     collection = get_backend(anaktoron_path=anaktoron_path).get_collection(cfg.collection_name)
+    if args.memory_guard_action == "review":
+        result = generate_review_report(kg_path, collection, args.out)
+        print(json.dumps(result, indent=2))
+        return
+
     result = MemoryGuard(kg_path).scan_collection(
         collection,
         trust=DrawerTrust(kg_path),
@@ -1163,6 +1168,15 @@ def main():
     p_guard_scan.add_argument(
         "--quarantine", action="store_true", help="Quarantine flagged drawers"
     )
+    p_guard_review = guard_sub.add_parser(
+        "review",
+        help="Write a report from existing memory-guard findings without rescanning",
+    )
+    p_guard_review.add_argument(
+        "--out",
+        default="C:\\tmp\\mnemion-live-followups-2026-05-02",
+        help="Output directory for memory_guard_review.md and .csv",
+    )
 
     # moat eval
     p_eval = sub.add_parser("eval", help="Evaluation commands")
@@ -1349,7 +1363,7 @@ def main():
         return
 
     if args.command == "memory-guard":
-        if getattr(args, "memory_guard_action", None) != "scan":
+        if getattr(args, "memory_guard_action", None) not in {"scan", "review"}:
             p_guard.print_help()
             return
         cmd_memory_guard(args)

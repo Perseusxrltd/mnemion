@@ -506,6 +506,12 @@ Mnemion began as a fork of mempalace, which introduced the memory Anaktoron meta
 
 ## Changelog
 
+### v3.5.5 — Live follow-up safety
+
+- Made `mnemion librarian --dry-run` avoid conflict writes while previewing.
+- Fixed cognitive consolidation batching so repeated `--limit` runs advance through unconsolidated drawers.
+- Added `mnemion memory-guard review --out <dir>` to write report-only Markdown/CSV from existing findings without rescanning or quarantining.
+
 ### v3.5.4 — Clean install transitive dependency hardening
 
 - Added explicit OpenTelemetry/protobuf compatibility bounds so user-level installs cannot keep or resolve the old `opentelemetry-exporter-otlp-proto-grpc 1.11.x` stack that crashes with modern protobuf.

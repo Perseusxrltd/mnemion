@@ -1,4 +1,6 @@
 from mnemion.trust_lifecycle import DrawerTrust
+import csv
+import sqlite3
 
 
 def test_memory_guard_detects_injection_and_privacy_bait():
@@ -67,3 +69,54 @@ def test_quarantined_memories_are_hidden_from_hybrid_search(collection, tmp_path
     results = searcher.search("GraphQL pricing passwords", n_results=5)
 
     assert results == []
+
+
+def test_memory_guard_review_report_does_not_rescan_or_quarantine(collection, tmp_path):
+    from mnemion.memory_guard import MemoryGuard, generate_review_report
+
+    kg_path = tmp_path / "kg.sqlite3"
+    trust = DrawerTrust(str(kg_path))
+    collection.add(
+        ids=["drawer_secret", "drawer_ok"],
+        documents=[
+            "The deployment token=abc123supersecret should not be retrieved casually.",
+            "The pricing dashboard moved to GraphQL because REST was too slow.",
+        ],
+        metadatas=[
+            {"wing": "project", "room": "security", "source_file": "secrets.md"},
+            {"wing": "project", "room": "decisions", "source_file": "decision.md"},
+        ],
+    )
+    trust.bulk_create_default(
+        [
+            ("drawer_secret", "project", "security"),
+            ("drawer_ok", "project", "decisions"),
+        ]
+    )
+    guard = MemoryGuard(str(kg_path))
+    scan = guard.scan_collection(collection, trust=trust, quarantine=False)
+    before_rows = sqlite3.connect(kg_path).execute(
+        "SELECT COUNT(*) FROM memory_guard_findings"
+    ).fetchone()[0]
+
+    report = generate_review_report(str(kg_path), collection, str(tmp_path / "review"))
+
+    after_rows = sqlite3.connect(kg_path).execute(
+        "SELECT COUNT(*) FROM memory_guard_findings"
+    ).fetchone()[0]
+    assert scan["flagged"] == 1
+    assert before_rows == after_rows == 1
+    assert trust.get("drawer_secret")["status"] == "current"
+    assert report["findings"] == 1
+    assert report["distinct_drawers"] == 1
+
+    with open(report["csv_path"], newline="", encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    assert rows[0]["drawer_id"] == "drawer_secret"
+    assert rows[0]["wing"] == "project"
+    assert rows[0]["room"] == "security"
+    assert "token=[REDACTED]" in rows[0]["redacted_snippet"]
+    assert "abc123supersecret" not in rows[0]["redacted_snippet"]
+    assert "Action taken: report only" in open(
+        report["markdown_path"], encoding="utf-8"
+    ).read()

@@ -81,6 +81,28 @@ def test_consolidation_dry_run_does_not_write(collection, tmp_path):
     assert graph.units_for_drawer("drawer_dry") == []
 
 
+def test_consolidation_batches_past_already_consolidated_prefix(collection, tmp_path):
+    from mnemion.cognitive_graph import CognitiveGraph
+
+    graph = CognitiveGraph(str(tmp_path / "kg.sqlite3"))
+    ids = [f"drawer_{i}" for i in range(5)]
+    collection.add(
+        ids=ids,
+        documents=[f"Memory {i} says retrieval should preserve evidence." for i in range(5)],
+        metadatas=[{"wing": "project", "room": "memory"} for _ in ids],
+    )
+
+    first = graph.consolidate_collection(collection, limit=3)
+    second_dry_run = graph.consolidate_collection(collection, limit=2, dry_run=True)
+    second = graph.consolidate_collection(collection, limit=2)
+    third = graph.consolidate_collection(collection, limit=2)
+
+    assert first["drawers_consolidated"] == 3
+    assert second_dry_run["would_consolidate"] == 2
+    assert second["drawers_consolidated"] == 2
+    assert third["drawers_consolidated"] == 0
+
+
 def test_topic_tunnels_find_repeated_current_cues(collection, tmp_path):
     from mnemion.cognitive_graph import CognitiveGraph
 
