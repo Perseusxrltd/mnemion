@@ -19,7 +19,7 @@
   "build": {
     "appId": "com.perseusxr.mnemion-studio",
     "productName": "Mnemion Studio",
-    "copyright": "Copyright © 2025 Quentin Jorquera",
+    "copyright": "Copyright © 2025 PerseusXR",
     "directories": {
       "output": "../../dist-electron"
     },

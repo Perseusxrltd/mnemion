@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "mnemion": {
-      "command": "C:/Users/jorqu/AppData/Local/Programs/Python/Python314/python.exe",
+      "command": "python",
       "args": [
         "-m",
         "mnemion.mcp_server"

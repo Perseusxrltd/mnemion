@@ -12,6 +12,8 @@ PUBLIC_SYNC_FILES = [
     ROOT / "sync" / "SyncMemories.sh",
     ROOT / "sync" / "backfill_trust.py",
     ROOT / "hooks" / "mnemion_save_hook.py",
+    ROOT / ".mcp.json",
+    ROOT / "studio" / "electron" / "package.json",
 ]
 
 SHELL_HOOK_FILES = [
@@ -27,6 +29,7 @@ def test_public_sync_docs_and_scripts_do_not_ship_personal_memory_repo_details()
     personal_user = "jo" + "rqu"
     sample_agent = "open" + "claw-prod"
     sample_repo = "personal-ai-" + "memories"
+    personal_name = "Quen" + "tin " + "Jor" + "quera"
     forbidden = [
         personal_user,
         sample_agent,
@@ -34,6 +37,7 @@ def test_public_sync_docs_and_scripts_do_not_ship_personal_memory_repo_details()
         "Perseusxrltd/" + sample_repo,
         "C:/Users/" + personal_user,
         "C:\\Users\\" + personal_user,
+        personal_name,
     ]
 
     for path in PUBLIC_SYNC_FILES:
