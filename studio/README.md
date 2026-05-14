@@ -14,6 +14,8 @@ A local web dashboard for Mnemion — visualise your Anaktoron, connect AI agent
 | **Connect** | `/connect` | One-click install of Mnemion into every MCP-capable client on your system |
 | **Settings** | `/settings` | LLM backend config, Anaktoron path, Obsidian mirror |
 
+Backend-only source/wiki endpoints are available for early compiled-wiki workflows; dedicated frontend panels are planned after the CLI and MCP surfaces settle.
+
 ## Quick start (Windows)
 
 ```bat
@@ -152,6 +154,8 @@ All endpoints under `/api`; typed client in `frontend/src/api/client.ts`. Mutati
 - **Connectors:** `/connectors`, `/connectors/{id}`, `/connectors/{id}/install`, `/connectors/{id}/uninstall`
 - **Config:** `/config` (GET), `/config/llm` (PUT)
 - **Obsidian:** `/obsidian/status`, `/obsidian/sync`, `/obsidian/open`
+- **Sources:** `/sources/status`, `/sources`, `/sources/{id}`, `/sources/{id}/chunks`
+- **Wiki:** `/wiki/status`, `/wiki/pages`, `/wiki/pages/{path}`, `/wiki/compile`, `/wiki/lint`, `/wiki/context-pack`, `/wiki/jobs/{id}/apply`
 - **Export:** `/export/vault?wing=...` — streams the Obsidian-compatible mirror as a ZIP
 
 OpenAPI docs at **http://127.0.0.1:7891/api/docs**.

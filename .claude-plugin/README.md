@@ -50,7 +50,7 @@ Set the `MNEMION_DIR` environment variable to a directory path to automatically 
 
 ## MCP Server
 
-The plugin automatically configures a local MCP server with 29 tools for storing, searching, reconstructing, consolidating, guarding, and managing memories. No manual MCP setup is required -- `/mnemion:init` handles everything.
+The plugin automatically configures a local MCP server with tools for storing, searching, reconstructing, consolidating, guarding, source/wiki workflows, and Open Brain-compatible memory aliases. No manual MCP setup is required -- `/mnemion:init` handles everything.
 
 ## Full Documentation
 

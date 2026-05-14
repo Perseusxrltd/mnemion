@@ -43,8 +43,12 @@ from mnemion.obsidian import (  # noqa: E402
     sync_obsidian_vault as obsidian_sync_vault,
     vault_status as obsidian_vault_status,
 )
+from mnemion.sources.store import SourceStore  # noqa: E402
 from mnemion.trust_lifecycle import DrawerTrust  # noqa: E402
 from mnemion.version import __version__  # noqa: E402
+from mnemion.wiki.compiler import WikiCompiler  # noqa: E402
+from mnemion.wiki.context_pack import build_context_pack as build_wiki_context_pack  # noqa: E402
+from mnemion.wiki.linter import WikiLinter  # noqa: E402
 from . import connectors as _connectors  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s  %(name)s  %(message)s")
@@ -152,6 +156,27 @@ class LLMConfig(BaseModel):
     url: str = ""
     model: str = ""
     api_key: str = ""
+
+
+class SourceCreate(BaseModel):
+    path: str
+    source_type: str = ""
+    title: str = ""
+    author: str = ""
+    privacy_class: str = "private"
+    compile_wiki: bool = False
+
+
+class WikiCompileRequest(BaseModel):
+    source_id: str = ""
+    apply: bool = False
+    review: bool = True
+
+
+class WikiContextPackRequest(BaseModel):
+    query: str
+    mode: str = "answer_question"
+    token_budget: int = 6000
 
 
 # ── Status & taxonomy ─────────────────────────────────────────────────────────
@@ -607,6 +632,121 @@ def uninstall_connector(conn_id: str):
 def get_obsidian_status():
     """Report owned Obsidian mirror path, manifest, and registration state."""
     return obsidian_vault_status(_obsidian_vault_path())
+
+
+# ── Source vault and compiled wiki ───────────────────────────────────────────
+
+
+@app.get("/api/sources/status")
+def get_sources_status():
+    return SourceStore().stats()
+
+
+@app.get("/api/sources")
+def list_sources(
+    source_type: Optional[str] = None,
+    privacy_class: Optional[str] = None,
+    limit: int = Query(50, ge=1, le=200),
+):
+    return {
+        "sources": SourceStore().list_sources(
+            source_type=source_type,
+            privacy_class=privacy_class,
+            limit=limit,
+        )
+    }
+
+
+@app.get("/api/sources/{source_id}")
+def get_source(source_id: str):
+    try:
+        return SourceStore().read_source(source_id, include_chunks=False)
+    except KeyError as exc:
+        raise HTTPException(404, str(exc)) from exc
+
+
+@app.get("/api/sources/{source_id}/chunks")
+def get_source_chunks(source_id: str, limit: int = Query(1000, ge=1, le=5000)):
+    try:
+        store = SourceStore()
+        store.get_source(source_id)
+        return {"source_id": source_id, "chunks": store.list_chunks(source_id, limit=limit)}
+    except KeyError as exc:
+        raise HTTPException(404, str(exc)) from exc
+
+
+@app.post("/api/sources")
+def create_source(body: SourceCreate):
+    try:
+        result = SourceStore().add_path(
+            body.path,
+            source_type=body.source_type or None,
+            title=body.title or None,
+            author=body.author or None,
+            privacy_class=body.privacy_class,
+        )
+        if body.compile_wiki and result.get("source_id"):
+            result["wiki"] = WikiCompiler().compile_source(result["source_id"], apply=True)
+        return result
+    except FileNotFoundError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+
+@app.get("/api/wiki/status")
+def get_wiki_status():
+    return WikiCompiler().status()
+
+
+@app.get("/api/wiki/pages")
+def list_wiki_pages():
+    return {"pages": WikiCompiler().store.pages()}
+
+
+@app.get("/api/wiki/pages/{id_or_path:path}")
+def get_wiki_page(id_or_path: str):
+    compiler = WikiCompiler()
+    page = Path(compiler.wiki_path) / id_or_path
+    if not page.suffix:
+        page = page.with_suffix(".md")
+    if not page.exists():
+        raise HTTPException(404, "Wiki page not found")
+    return {"path": id_or_path, "content": page.read_text(encoding="utf-8", errors="replace")}
+
+
+@app.post("/api/wiki/compile")
+def compile_wiki(body: WikiCompileRequest):
+    compiler = WikiCompiler()
+    if body.source_id:
+        return compiler.compile_source(
+            body.source_id,
+            apply=body.apply,
+            review=body.review and not body.apply,
+        )
+    return compiler.compile_all(apply=body.apply, review=body.review and not body.apply)
+
+
+@app.post("/api/wiki/lint")
+def lint_wiki():
+    return WikiLinter().lint().to_dict()
+
+
+@app.post("/api/wiki/context-pack")
+def wiki_context_pack(body: WikiContextPackRequest):
+    return build_wiki_context_pack(
+        query=body.query,
+        mode=body.mode,
+        token_budget=body.token_budget,
+    )
+
+
+@app.post("/api/wiki/jobs/{job_id}/apply")
+def apply_wiki_job(job_id: str):
+    try:
+        return WikiCompiler().apply_job(job_id)
+    except KeyError as exc:
+        raise HTTPException(404, str(exc)) from exc
 
 
 @app.post("/api/obsidian/sync")

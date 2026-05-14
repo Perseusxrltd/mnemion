@@ -120,6 +120,82 @@ def _finding_rows(db_path: str) -> list[sqlite3.Row]:
         conn.close()
 
 
+def finding_status(db_path: str) -> dict[str, Any]:
+    """Return aggregate memory-guard counts without exposing drawer content."""
+
+    MemoryGuard(db_path)
+    with sqlite3.connect(db_path) as conn:
+        total = conn.execute("SELECT COUNT(*) FROM memory_guard_findings").fetchone()[0]
+        distinct_drawers = conn.execute(
+            "SELECT COUNT(DISTINCT drawer_id) FROM memory_guard_findings"
+        ).fetchone()[0]
+        by_risk_type = {
+            row[0]: row[1]
+            for row in conn.execute(
+                """SELECT risk_type, COUNT(*)
+                   FROM memory_guard_findings
+                   GROUP BY risk_type
+                   ORDER BY COUNT(*) DESC, risk_type"""
+            ).fetchall()
+        }
+    return {
+        "findings": total,
+        "distinct_drawers": distinct_drawers,
+        "by_risk_type": by_risk_type,
+    }
+
+
+def review_findings(db_path: str, limit: int = 20) -> dict[str, Any]:
+    """Return operator review metadata only; never include drawer text or snippets."""
+
+    MemoryGuard(db_path)
+    with sqlite3.connect(db_path) as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            """SELECT drawer_id, risk_type, score, created_at
+               FROM memory_guard_findings
+               ORDER BY created_at DESC, id DESC
+               LIMIT ?""",
+            (max(1, int(limit)),),
+        ).fetchall()
+    return {
+        "findings": [
+            {
+                "drawer_id": row["drawer_id"],
+                "risk_type": row["risk_type"],
+                "score": row["score"],
+                "created_at": row["created_at"],
+            }
+            for row in rows
+        ],
+        "limit": max(1, int(limit)),
+    }
+
+
+def quarantine_finding_drawer(db_path: str, drawer_id: str, dry_run: bool = True) -> dict[str, Any]:
+    """Quarantine a drawer selected during operator review."""
+
+    MemoryGuard(db_path)
+    if dry_run:
+        return {
+            "status": "dry_run",
+            "drawer_id": drawer_id,
+            "would_set_trust_status": STATUS_QUARANTINED,
+        }
+    from .trust_lifecycle import DrawerTrust
+
+    result = DrawerTrust(db_path).update_status(
+        drawer_id,
+        STATUS_QUARANTINED,
+        confidence=0.0,
+        reason="memory guard operator quarantine",
+        changed_by="memory_guard_cli",
+    )
+    if result.get("error"):
+        return {"status": "failed", **result}
+    return {"status": "quarantined", **result}
+
+
 def generate_review_report(db_path: str, collection, output_dir: str) -> dict[str, Any]:
     """Write a report from existing memory-guard findings without rescanning or quarantining."""
     rows = _finding_rows(db_path)

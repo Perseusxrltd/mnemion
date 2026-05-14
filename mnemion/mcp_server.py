@@ -481,6 +481,416 @@ def tool_add_drawer(
         return {"success": False, "error": "Failed to add drawer"}
 
 
+def tool_source_add(
+    path: str,
+    source_type: str = None,
+    title: str = None,
+    author: str = None,
+    privacy_class: str = "private",
+    compile_wiki: bool = False,
+):
+    """Add an immutable raw source to the source vault."""
+    from .sources.store import SourceStore
+
+    result = SourceStore(db_path=_hybrid.kg_path, anaktoron_path=_config.anaktoron_path).add_path(
+        path,
+        source_type=source_type,
+        title=title,
+        author=author,
+        privacy_class=privacy_class,
+    )
+    if compile_wiki and result.get("source_id"):
+        from .wiki.compiler import WikiCompiler
+
+        result["wiki"] = WikiCompiler(db_path=_hybrid.kg_path).compile_source(
+            result["source_id"], apply=True
+        )
+    return result
+
+
+def tool_source_list(source_type: str = None, privacy_class: str = None, limit: int = 20):
+    from .sources.store import SourceStore
+
+    return {
+        "sources": SourceStore(db_path=_hybrid.kg_path).list_sources(
+            source_type=source_type,
+            privacy_class=privacy_class,
+            limit=max(1, min(int(limit), 200)),
+        )
+    }
+
+
+def tool_source_read(source_id: str, chunks: bool = False):
+    from .sources.store import SourceStore
+
+    return SourceStore(db_path=_hybrid.kg_path).read_source(source_id, include_chunks=chunks)
+
+
+def tool_source_search(query: str, limit: int = 10, privacy_class: str = None):
+    from .sources.store import SourceStore
+
+    return {
+        "query": query,
+        "results": SourceStore(db_path=_hybrid.kg_path).search(
+            query,
+            limit=max(1, min(int(limit), 50)),
+            privacy_class=privacy_class,
+        ),
+    }
+
+
+def tool_wiki_compile(
+    all: bool = False,
+    source_id: str = None,
+    apply: bool = False,
+    review: bool = True,
+):
+    from .wiki.compiler import WikiCompiler
+
+    compiler = WikiCompiler(db_path=_hybrid.kg_path)
+    if source_id:
+        return compiler.compile_source(source_id, apply=apply, review=review and not apply)
+    return compiler.compile_all(apply=apply, review=review and not apply)
+
+
+def tool_wiki_lint(json_output: bool = True, page: str = None):
+    from .wiki.linter import WikiLinter
+
+    result = WikiLinter(db_path=_hybrid.kg_path).lint(page=page)
+    return result.to_dict()
+
+
+def tool_wiki_context_pack(query: str, mode: str = "answer_question", token_budget: int = 6000):
+    from .wiki.context_pack import build_context_pack
+
+    return build_context_pack(
+        query,
+        mode=mode,
+        token_budget=max(1000, min(int(token_budget), 24000)),
+        db_path=_hybrid.kg_path,
+        anaktoron_path=_config.anaktoron_path,
+    )
+
+
+def tool_wiki_blast_radius(source_id: str = None, drawer_id: str = None, topic: str = None):
+    from .wiki.compiler import WikiCompiler
+
+    return WikiCompiler(db_path=_hybrid.kg_path).blast_radius(
+        source_id=source_id,
+        drawer_id=drawer_id,
+        topic=topic,
+    )
+
+
+def tool_wiki_page_get(id_or_path: str):
+    from pathlib import Path
+    from .wiki.compiler import WikiCompiler
+    from .wiki.provenance import resolve_page_provenance
+
+    compiler = WikiCompiler(db_path=_hybrid.kg_path)
+    target = Path(id_or_path)
+    if not target.suffix:
+        target = target.with_suffix(".md")
+    page = compiler.wiki_path / target
+    if not page.exists():
+        # Try resolving a page id through SQLite.
+        conn = sqlite3.connect(_hybrid.kg_path)
+        conn.row_factory = sqlite3.Row
+        try:
+            row = conn.execute("SELECT path FROM wiki_pages WHERE id = ?", (id_or_path,)).fetchone()
+        finally:
+            conn.close()
+        if row:
+            page = compiler.wiki_path / row["path"]
+    if not page.exists():
+        return {"error": f"wiki page not found: {id_or_path}"}
+    text = page.read_text(encoding="utf-8", errors="replace")
+    rel = str(page.relative_to(compiler.wiki_path)).replace("\\", "/")
+    provenance = resolve_page_provenance(text, rel, db_path=_hybrid.kg_path)
+    if provenance.quarantined_source_ids:
+        return {"error": f"wiki page references quarantined evidence: {id_or_path}"}
+    warnings = _trust_warning(provenance.effective_trust_status, id_or_path)
+    warnings.extend(provenance.warnings)
+    return {"path": str(page), "content": text, "warnings": warnings}
+
+
+def tool_wiki_export_obsidian(path: str = None, include_sensitive: bool = False):
+    from pathlib import Path
+    from .wiki.compiler import WikiCompiler
+    from .wiki.obsidian_export import export_compiled_wiki_to_obsidian
+
+    compiler = WikiCompiler(db_path=_hybrid.kg_path)
+    target = path or str(Path(_config.obsidian_vault_path))
+    return export_compiled_wiki_to_obsidian(
+        compiler.wiki_path,
+        target,
+        include_sensitive=include_sensitive,
+        db_path=_hybrid.kg_path,
+    )
+
+
+def _is_quarantined_trust(status=None) -> bool:
+    return (status or "current") == "quarantined"
+
+
+def _trust_warning(status, identifier):
+    if status == "contested":
+        return [f"contested evidence: {identifier}"]
+    if status in {"superseded", "historical"}:
+        return [f"{status} evidence: {identifier}"]
+    return []
+
+
+def tool_openbrain_capture_thought(
+    content: str,
+    tags: list = None,
+    source: str = None,
+    metadata: dict = None,
+    wing: str = None,
+    room: str = None,
+    privacy_class: str = "private",
+    compile_wiki: bool = False,
+):
+    from .capture.cli_capture import capture_text
+
+    duplicate = tool_check_duplicate(content)
+    if duplicate.get("is_duplicate"):
+        match = duplicate["matches"][0]
+        return {
+            "id": match["id"],
+            "status": "duplicate",
+            "message": "Thought already exists in Mnemion",
+            "wing": match.get("wing", wing or "thoughts"),
+            "room": match.get("room", room or "general"),
+            "trust_status": "current",
+        }
+    result = capture_text(
+        content,
+        tags=tags or [],
+        source=source,
+        metadata=metadata or {},
+        wing=wing,
+        room=room,
+        privacy_class=privacy_class,
+        added_by="mcp_openbrain_compat",
+        anaktoron_path=_config.anaktoron_path,
+    )
+    if compile_wiki and result.get("status") == "created":
+        from .wiki.compiler import WikiCompiler
+
+        result["wiki"] = WikiCompiler(db_path=_hybrid.kg_path).compile_all(apply=True)
+    return result
+
+
+def tool_openbrain_search_thoughts(
+    query: str,
+    limit: int = 10,
+    min_similarity: float = 0.0,
+    include_contested: bool = True,
+    include_superseded: bool = False,
+    wing: str = None,
+    room: str = None,
+):
+    from .mcp.compat.openbrain import thought_result
+
+    hits = _hybrid.search(
+        query,
+        wing=wing,
+        room=room,
+        n_results=max(1, min(int(limit), 50)),
+        include_superseded=bool(include_superseded),
+        min_similarity=float(min_similarity),
+    )
+    hits = [hit for hit in hits if hit.get("trust_status", "current") != "quarantined"]
+    if not include_contested:
+        hits = [hit for hit in hits if hit.get("trust_status") != "contested"]
+    if not include_superseded:
+        hits = [hit for hit in hits if hit.get("trust_status") != "superseded"]
+    return {
+        "results": [
+            thought_result(hit) for hit in hits if not str(hit.get("id", "")).startswith("kg_")
+        ]
+    }
+
+
+def tool_openbrain_list_thoughts(
+    limit: int = 20,
+    offset: int = 0,
+    wing: str = None,
+    room: str = None,
+    since: str = None,
+    trust_status: str = None,
+):
+    col = _get_collection()
+    if not col:
+        return _no_anaktoron()
+    where = {}
+    if wing:
+        where["wing"] = wing
+    if room:
+        where["room"] = room
+    kwargs = {
+        "include": ["documents", "metadatas"],
+        "limit": max(1, min(int(limit), 200)),
+        "offset": max(0, int(offset)),
+    }
+    if len(where) == 1:
+        kwargs["where"] = where
+    elif len(where) > 1:
+        kwargs["where"] = {"$and": [{key: value} for key, value in where.items()]}
+    result = col.get(**kwargs)
+    thoughts = []
+    for drawer_id, doc, meta in zip(
+        result.get("ids") or [],
+        result.get("documents") or [],
+        result.get("metadatas") or [],
+    ):
+        meta = meta or {}
+        filed_at = meta.get("filed_at") or meta.get("timestamp") or ""
+        if since and filed_at and filed_at < since:
+            continue
+        trust = _trust.get(drawer_id) or {"status": "current"}
+        if trust.get("status", "current") == "quarantined" and trust_status != "quarantined":
+            continue
+        if trust_status and trust.get("status") != trust_status:
+            continue
+        thoughts.append(
+            {
+                "id": drawer_id,
+                "content": doc,
+                "wing": meta.get("wing", "unknown"),
+                "room": meta.get("room", "unknown"),
+                "created_at": filed_at,
+                "trust_status": trust.get("status", "current"),
+            }
+        )
+    return {"thoughts": thoughts, "limit": limit, "offset": offset}
+
+
+def tool_openbrain_thought_stats():
+    from .sources.store import SourceStore
+    from .wiki.compiler import WikiCompiler
+
+    status = tool_status()
+    return {
+        "drawers": status.get("total_drawers", 0),
+        "wings": status.get("wings", {}),
+        "rooms": status.get("rooms", {}),
+        "trust": _trust.stats(),
+        "sources": SourceStore(db_path=_hybrid.kg_path).stats(),
+        "wiki": WikiCompiler(db_path=_hybrid.kg_path).status(),
+    }
+
+
+def tool_openbrain_search(query: str):
+    from .mcp.compat.openbrain import connector_search_result
+    from .sources.store import SourceStore
+    from .wiki.context_pack import build_context_pack
+
+    results = []
+    for hit in _hybrid.search(query, n_results=5):
+        trust_status = hit.get("trust_status", "current")
+        if str(hit.get("id", "")).startswith("kg_") or trust_status == "quarantined":
+            continue
+        results.append(
+            connector_search_result(
+                "drawer",
+                hit["id"],
+                f"{hit.get('wing', '')}/{hit.get('room', '')}",
+                hit.get("text", ""),
+                hit.get("score", 0),
+            )
+        )
+    source_store = SourceStore(db_path=_hybrid.kg_path)
+    for hit in source_store.search(query, limit=5):
+        results.append(
+            connector_search_result(
+                "chunk", hit["id"], hit.get("title", hit["source_id"]), hit["text"], 0.8
+            )
+        )
+    pack = build_context_pack(query, db_path=_hybrid.kg_path, anaktoron_path=_config.anaktoron_path)
+    for page in pack.get("wiki_pages", [])[:5]:
+        results.append(
+            connector_search_result(
+                "wiki",
+                page["path"],
+                page.get("title", page["path"]),
+                page.get("text", ""),
+                page.get("relevance", 0.5),
+            )
+        )
+    return {"query": query, "results": results[:15]}
+
+
+def tool_openbrain_fetch(id: str):
+    from pathlib import Path
+    from .sources.store import SourceStore
+    from .wiki.compiler import WikiCompiler
+
+    if ":" not in id:
+        return {"error": "id must be typed as drawer:<id>, source:<id>, chunk:<id>, or wiki:<path>"}
+    kind, identifier = id.split(":", 1)
+    if kind == "drawer":
+        col = _get_collection()
+        if not col:
+            return _no_anaktoron()
+        result = col.get(ids=[identifier], include=["documents", "metadatas"])
+        if not result.get("ids"):
+            return {"error": f"drawer not found: {identifier}"}
+        trust = _trust.get(identifier) or {"status": "current"}
+        if _is_quarantined_trust(trust.get("status")):
+            return {"error": f"drawer is quarantined: {identifier}"}
+        meta = result["metadatas"][0] or {}
+        return {
+            "id": id,
+            "content": result["documents"][0] or "",
+            "metadata": meta,
+            "trust": trust,
+            "warnings": _trust_warning(trust.get("status"), identifier),
+        }
+    source_store = SourceStore(db_path=_hybrid.kg_path)
+    if kind == "source":
+        source = source_store.get_source(identifier)
+        if _is_quarantined_trust(source.get("trust_status")):
+            return {"error": f"source is quarantined: {identifier}"}
+        payload = source_store.read_source(identifier, include_chunks=False)
+        payload["warnings"] = _trust_warning(source.get("trust_status"), identifier)
+        return {"id": id, **payload}
+    if kind == "chunk":
+        chunk = source_store.get_chunk(identifier)
+        source = source_store.get_source(chunk["source_id"])
+        if _is_quarantined_trust(source.get("trust_status")):
+            return {"error": f"source chunk is quarantined: {identifier}"}
+        return {
+            "id": id,
+            "chunk": chunk,
+            "warnings": _trust_warning(source.get("trust_status"), chunk["source_id"]),
+        }
+    if kind == "wiki":
+        from .wiki.provenance import resolve_page_provenance
+
+        compiler = WikiCompiler(db_path=_hybrid.kg_path)
+        page = compiler.wiki_path / identifier
+        if not page.suffix:
+            page = page.with_suffix(".md")
+        if not page.exists():
+            return {"error": f"wiki page not found: {identifier}"}
+        text = page.read_text(encoding="utf-8", errors="replace")
+        rel = str(page.relative_to(compiler.wiki_path)).replace("\\", "/")
+        provenance = resolve_page_provenance(text, rel, db_path=_hybrid.kg_path)
+        if _is_quarantined_trust(provenance.effective_trust_status):
+            return {"error": f"wiki page is quarantined: {identifier}"}
+        warnings = _trust_warning(provenance.effective_trust_status, identifier)
+        warnings.extend(provenance.warnings)
+        return {
+            "id": id,
+            "path": str(Path(identifier)),
+            "content": text,
+            "warnings": warnings,
+        }
+    return {"error": f"unsupported id kind: {kind}"}
+
+
 def tool_delete_drawer(drawer_id: str):
     """Delete a single drawer by ID from both stores."""
     col = _get_collection()
@@ -1002,6 +1412,201 @@ TOOLS = {
             "required": ["wing", "room", "content"],
         },
         "handler": tool_add_drawer,
+    },
+    "mnemion_source_add": {
+        "description": "Add an immutable raw source file to Mnemion's source vault.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "path": {"type": "string"},
+                "source_type": {"type": "string"},
+                "title": {"type": "string"},
+                "author": {"type": "string"},
+                "privacy_class": {"type": "string", "default": "private"},
+                "compile_wiki": {"type": "boolean", "default": False},
+            },
+            "required": ["path"],
+        },
+        "handler": tool_source_add,
+    },
+    "mnemion_source_list": {
+        "description": "List raw sources in the source vault.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "source_type": {"type": "string"},
+                "privacy_class": {"type": "string"},
+                "limit": {"type": "integer", "default": 20},
+            },
+        },
+        "handler": tool_source_list,
+    },
+    "mnemion_source_read": {
+        "description": "Read a raw source and optionally its chunks.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "source_id": {"type": "string"},
+                "chunks": {"type": "boolean", "default": False},
+            },
+            "required": ["source_id"],
+        },
+        "handler": tool_source_read,
+    },
+    "mnemion_source_search": {
+        "description": "Search immutable raw source chunks with SQLite FTS5.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string"},
+                "limit": {"type": "integer", "default": 10},
+                "privacy_class": {"type": "string"},
+            },
+            "required": ["query"],
+        },
+        "handler": tool_source_search,
+    },
+    "mnemion_wiki_compile": {
+        "description": "Compile source-backed Markdown wiki pages. Defaults to review mode unless apply=true.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "all": {"type": "boolean", "default": False},
+                "source_id": {"type": "string"},
+                "apply": {"type": "boolean", "default": False},
+                "review": {"type": "boolean", "default": True},
+            },
+        },
+        "handler": tool_wiki_compile,
+    },
+    "mnemion_wiki_page_get": {
+        "description": "Fetch a compiled wiki page by path or page id.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"id_or_path": {"type": "string"}},
+            "required": ["id_or_path"],
+        },
+        "handler": tool_wiki_page_get,
+    },
+    "mnemion_wiki_lint": {
+        "description": "Lint compiled wiki pages for frontmatter, generated markers, and provenance issues.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "json_output": {"type": "boolean", "default": True},
+                "page": {"type": "string"},
+            },
+        },
+        "handler": tool_wiki_lint,
+    },
+    "mnemion_wiki_context_pack": {
+        "description": "Build a query-focused context pack from wiki pages, source chunks, drawers, and trust state.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string"},
+                "mode": {"type": "string", "default": "answer_question"},
+                "token_budget": {"type": "integer", "default": 6000},
+            },
+            "required": ["query"],
+        },
+        "handler": tool_wiki_context_pack,
+    },
+    "mnemion_wiki_blast_radius": {
+        "description": "Estimate affected wiki pages for a source, drawer, or topic update.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "source_id": {"type": "string"},
+                "drawer_id": {"type": "string"},
+                "topic": {"type": "string"},
+            },
+        },
+        "handler": tool_wiki_blast_radius,
+    },
+    "mnemion_wiki_export_obsidian": {
+        "description": "Export compiled wiki pages into a managed Obsidian subfolder.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "path": {"type": "string"},
+                "include_sensitive": {"type": "boolean", "default": False},
+            },
+        },
+        "handler": tool_wiki_export_obsidian,
+    },
+    "capture_thought": {
+        "description": "Open Brain-compatible alias: capture text into Mnemion as a normal drawer.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "content": {"type": "string"},
+                "tags": {"type": "array", "items": {"type": "string"}},
+                "source": {"type": "string"},
+                "metadata": {"type": "object"},
+                "wing": {"type": "string"},
+                "room": {"type": "string"},
+                "privacy_class": {"type": "string"},
+                "compile_wiki": {"type": "boolean", "default": False},
+            },
+            "required": ["content"],
+        },
+        "handler": tool_openbrain_capture_thought,
+    },
+    "search_thoughts": {
+        "description": "Open Brain-compatible alias: search Mnemion drawers through native hybrid retrieval.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string"},
+                "limit": {"type": "integer", "default": 10},
+                "min_similarity": {"type": "number", "default": 0.0},
+                "include_contested": {"type": "boolean", "default": True},
+                "include_superseded": {"type": "boolean", "default": False},
+                "wing": {"type": "string"},
+                "room": {"type": "string"},
+            },
+            "required": ["query"],
+        },
+        "handler": tool_openbrain_search_thoughts,
+    },
+    "list_thoughts": {
+        "description": "Open Brain-compatible alias: list recent Mnemion drawers.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "limit": {"type": "integer", "default": 20},
+                "offset": {"type": "integer", "default": 0},
+                "wing": {"type": "string"},
+                "room": {"type": "string"},
+                "since": {"type": "string"},
+                "trust_status": {"type": "string"},
+            },
+        },
+        "handler": tool_openbrain_list_thoughts,
+    },
+    "thought_stats": {
+        "description": "Open Brain-compatible alias: return Mnemion drawer, trust, source, and wiki stats.",
+        "input_schema": {"type": "object", "properties": {}},
+        "handler": tool_openbrain_thought_stats,
+    },
+    "search": {
+        "description": "OpenAI/ChatGPT connector-compatible search over Mnemion drawers, source chunks, and wiki pages.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"query": {"type": "string"}},
+            "required": ["query"],
+        },
+        "handler": tool_openbrain_search,
+    },
+    "fetch": {
+        "description": "OpenAI/ChatGPT connector-compatible fetch for typed IDs returned by search.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"id": {"type": "string"}},
+            "required": ["id"],
+        },
+        "handler": tool_openbrain_fetch,
     },
     "mnemion_delete_drawer": {
         "description": "Delete a drawer by ID from both stores. Trust record is soft-deleted (marked historical).",
