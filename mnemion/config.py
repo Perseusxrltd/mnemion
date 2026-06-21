@@ -15,6 +15,8 @@ DEFAULT_EMBEDDING_DEVICE = "auto"
 DEFAULT_ENTITY_LANGUAGES = ("en",)
 DEFAULT_TOPIC_TUNNEL_MIN_COUNT = 2
 DEFAULT_OBSIDIAN_VAULT_PATH = os.path.expanduser("~/.mnemion/obsidian-vault")
+DEFAULT_SOURCE_PATH = os.path.expanduser("~/.mnemion/sources")
+DEFAULT_WIKI_PATH = os.path.expanduser("~/.mnemion/wiki")
 
 # hnsw:space=cosine is required because searcher.py computes
 # similarity = 1 - distance, which only yields a meaningful score in [0, 1]
@@ -182,6 +184,24 @@ class MnemionConfig:
         )
 
     @property
+    def source_path(self):
+        """Path to Mnemion's immutable raw source vault."""
+        return (
+            os.environ.get("MNEMION_SOURCE_PATH")
+            or self._file_config.get("source_path")
+            or DEFAULT_SOURCE_PATH
+        )
+
+    @property
+    def wiki_path(self):
+        """Path to Mnemion's compiled wiki projection."""
+        return (
+            os.environ.get("MNEMION_WIKI_PATH")
+            or self._file_config.get("wiki_path")
+            or DEFAULT_WIKI_PATH
+        )
+
+    @property
     def people_map(self):
         """Mapping of name variants to canonical names."""
         if self._people_map_file.exists():
@@ -260,6 +280,8 @@ class MnemionConfig:
                 "entity_languages": list(DEFAULT_ENTITY_LANGUAGES),
                 "topic_tunnel_min_count": DEFAULT_TOPIC_TUNNEL_MIN_COUNT,
                 "obsidian_vault_path": DEFAULT_OBSIDIAN_VAULT_PATH,
+                "source_path": DEFAULT_SOURCE_PATH,
+                "wiki_path": DEFAULT_WIKI_PATH,
                 "topic_wings": DEFAULT_TOPIC_WINGS,
                 "hall_keywords": DEFAULT_HALL_KEYWORDS,
             }

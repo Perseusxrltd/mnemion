@@ -20,7 +20,7 @@ Commands:
     mnemion consolidate                 Extract cognitive graph units from drawers
     mnemion reconstruct "query"         Search cognitive graph evidence trails
     mnemion memory-guard scan           Scan for memory-injection/privacy risks
-    mnemion memory-guard review         Write report-only Markdown/CSV from existing findings
+    mnemion memory-guard review         Review finding metadata without dumping content
     mnemion eval moat                   Run deterministic moat eval cases
     mnemion wake-up                     Show L0 + L1 wake-up context
     mnemion wake-up --wing my_app       Wake-up for a specific project
@@ -36,6 +36,9 @@ Commands:
     mnemion obsidian setup              Create/refresh and open the owned Obsidian mirror
     mnemion obsidian sync               Refresh the owned Obsidian mirror without opening it
     mnemion obsidian status             Show mirror path, sync, and registration state
+    mnemion source add <path>           Add an immutable raw source
+    mnemion wiki compile --all --apply  Compile source-backed Markdown wiki pages
+    mnemion capture "thought"           Capture a thought as a normal drawer
 
 Examples:
     mnemion init ~/projects/my_app
@@ -512,19 +515,48 @@ def cmd_memory_guard(args):
     """Scan Anaktoron drawers for memory injection and privacy bait."""
     import json
     from pathlib import Path
-    from .backends.registry import get_backend
-    from .memory_guard import MemoryGuard, generate_review_report
-    from .trust_lifecycle import DrawerTrust
+    from .memory_guard import (
+        MemoryGuard,
+        finding_status,
+        quarantine_finding_drawer,
+        review_findings,
+    )
 
     cfg = MnemionConfig()
     anaktoron_path = os.path.expanduser(args.palace) if args.palace else cfg.anaktoron_path
     kg_path = str(Path(anaktoron_path).parent / "knowledge_graph.sqlite3")
-    collection = get_backend(anaktoron_path=anaktoron_path).get_collection(cfg.collection_name)
-    if args.memory_guard_action == "review":
-        result = generate_review_report(kg_path, collection, args.out)
+    action = args.memory_guard_action
+    if action == "status":
+        result = finding_status(kg_path)
         print(json.dumps(result, indent=2))
         return
 
+    if action == "review":
+        result = review_findings(kg_path, limit=getattr(args, "limit", 20))
+        if getattr(args, "json", False):
+            print(json.dumps(result, indent=2))
+        else:
+            print(f"Memory guard findings: {len(result['findings'])}")
+            for row in result["findings"]:
+                print(
+                    f"- {row['drawer_id']} {row['risk_type']} "
+                    f"score={row['score']} created_at={row['created_at']}"
+                )
+        return
+
+    if action == "quarantine":
+        result = quarantine_finding_drawer(
+            kg_path,
+            drawer_id=args.drawer_id,
+            dry_run=getattr(args, "dry_run", False) or not getattr(args, "apply", False),
+        )
+        print(json.dumps(result, indent=2))
+        return
+
+    from .backends.registry import get_backend
+    from .trust_lifecycle import DrawerTrust
+
+    collection = get_backend(anaktoron_path=anaktoron_path).get_collection(cfg.collection_name)
     result = MemoryGuard(kg_path).scan_collection(
         collection,
         trust=DrawerTrust(kg_path),
@@ -632,6 +664,259 @@ def cmd_obsidian(args):
 
     print("Unknown obsidian action", file=sys.stderr)
     raise SystemExit(2)
+
+
+def cmd_source(args):
+    """Manage immutable raw sources."""
+    import json
+
+    from .sources.store import SourceStore
+
+    store = SourceStore()
+    action = getattr(args, "source_action", None)
+    if action == "add":
+        result = store.add_path(
+            args.path_or_url,
+            source_type=getattr(args, "type", None),
+            title=getattr(args, "title", None),
+            author=getattr(args, "author", None),
+            privacy_class=getattr(args, "privacy", None),
+            dry_run=getattr(args, "dry_run", False),
+            index_embeddings=getattr(args, "index_embeddings", False),
+        )
+        if getattr(args, "compile", False) and result.get("source_id") and not args.dry_run:
+            from .wiki.compiler import WikiCompiler
+
+            compile_result = WikiCompiler().compile_source(result["source_id"], apply=True)
+            result["wiki"] = compile_result
+        print(json.dumps(result, indent=2))
+        return
+
+    if action == "list":
+        rows = store.list_sources(
+            source_type=getattr(args, "type", None),
+            privacy_class=getattr(args, "privacy", None),
+            limit=getattr(args, "limit", 50),
+        )
+        print(json.dumps({"sources": rows}, indent=2))
+        return
+
+    if action == "read":
+        print(json.dumps(store.read_source(args.source_id, include_chunks=args.chunks), indent=2))
+        return
+
+    if action == "search":
+        hits = store.search(args.query, limit=args.limit, privacy_class=args.privacy)
+        print(json.dumps({"query": args.query, "results": hits}, indent=2))
+        return
+
+    if action == "status":
+        print(json.dumps(store.stats(), indent=2))
+        return
+
+    raise SystemExit("Unknown source action")
+
+
+def cmd_wiki(args):
+    """Manage the compiled source-backed wiki projection."""
+    import json
+    from pathlib import Path
+
+    from .wiki.compiler import WikiCompiler
+    from .wiki.context_pack import build_context_pack
+    from .wiki.linter import WikiLinter
+    from .wiki.obsidian_export import export_compiled_wiki_to_obsidian
+
+    compiler = WikiCompiler()
+    action = getattr(args, "wiki_action", None)
+    if action == "compile":
+        if args.source:
+            result = compiler.compile_source(
+                args.source,
+                apply=args.apply,
+                review=args.review,
+                dry_run=args.dry_run,
+            )
+        else:
+            result = compiler.compile_all(
+                apply=args.apply,
+                review=args.review or not args.apply,
+                dry_run=args.dry_run,
+                include_historical=args.include_historical,
+            )
+        print(json.dumps(result, indent=2))
+        return
+
+    if action == "status":
+        print(json.dumps(compiler.status(), indent=2))
+        return
+
+    if action == "open":
+        print(str(Path(compiler.wiki_path).expanduser()))
+        return
+
+    if action == "lint":
+        result = WikiLinter(db_path=compiler.db_path, wiki_path=compiler.wiki_path).lint(
+            page=args.page
+        )
+        if args.json:
+            print(json.dumps(result.to_dict(), indent=2))
+        else:
+            print(f"Wiki lint: {result.pages_checked} pages checked")
+            print(f"Warnings: {result.warnings}")
+            print(f"Errors: {result.errors}")
+            for issue in result.issues:
+                print(f"- {issue.severity}: {issue.path}: {issue.category}: {issue.message}")
+        return
+
+    if action == "context-pack":
+        pack = build_context_pack(
+            args.query,
+            mode=args.mode,
+            token_budget=args.token_budget,
+            db_path=compiler.db_path,
+            wiki_path=compiler.wiki_path,
+        )
+        print(json.dumps(pack, indent=2))
+        return
+
+    if action == "blast-radius":
+        print(
+            json.dumps(
+                compiler.blast_radius(
+                    source_id=args.source,
+                    topic=args.topic,
+                    drawer_id=args.drawer,
+                ),
+                indent=2,
+            )
+        )
+        return
+
+    if action == "diff":
+        print(json.dumps(compiler.diff_job(args.job_id), indent=2))
+        return
+
+    if action == "apply":
+        print(json.dumps(compiler.apply_job(args.job_id), indent=2))
+        return
+
+    if action == "export-obsidian":
+        from .config import MnemionConfig
+
+        vault_path = args.path or Path(MnemionConfig().obsidian_vault_path)
+        print(
+            json.dumps(
+                export_compiled_wiki_to_obsidian(
+                    compiler.wiki_path,
+                    vault_path,
+                    include_sensitive=args.include_sensitive,
+                    db_path=compiler.db_path,
+                ),
+                indent=2,
+            )
+        )
+        return
+
+    if action == "query":
+        pack = build_context_pack(
+            args.query,
+            mode="answer_question",
+            token_budget=args.token_budget,
+            db_path=compiler.db_path,
+            wiki_path=compiler.wiki_path,
+        )
+        print(json.dumps(pack, indent=2))
+        return
+
+    raise SystemExit("Unknown wiki action")
+
+
+def cmd_capture(args):
+    """Capture text or folder files through normal Mnemion paths."""
+    import json
+
+    capture_args = list(getattr(args, "capture_args", []) or [])
+    if capture_args and capture_args[0] == "watch":
+        from .capture.folder_watch import capture_folder_once
+
+        if len(capture_args) < 2:
+            raise SystemExit("Usage: mnemion capture watch <folder> [--pattern PATTERN]")
+        pattern = "*.md"
+        privacy = "private"
+        compile_wiki = "--compile-wiki" in capture_args
+        if "--pattern" in capture_args:
+            idx = capture_args.index("--pattern")
+            if idx + 1 < len(capture_args):
+                pattern = capture_args[idx + 1]
+        if "--privacy" in capture_args:
+            idx = capture_args.index("--privacy")
+            if idx + 1 < len(capture_args):
+                privacy = capture_args[idx + 1]
+        result = capture_folder_once(
+            capture_args[1],
+            pattern=pattern,
+            privacy_class=privacy,
+        )
+        if compile_wiki and result.get("added", 0) > 0:
+            from .wiki.compiler import WikiCompiler
+
+            result["wiki"] = WikiCompiler().compile_all(apply=True)
+        print(json.dumps(result, indent=2))
+        return
+
+    from .capture.cli_capture import capture_text
+
+    text_parts = []
+    tags = []
+    wing = None
+    room = None
+    source = None
+    privacy = "private"
+    compile_wiki = "--compile-wiki" in capture_args
+    i = 0
+    while i < len(capture_args):
+        item = capture_args[i]
+        if item == "--tag" and i + 1 < len(capture_args):
+            tags.append(capture_args[i + 1])
+            i += 2
+            continue
+        if item == "--wing" and i + 1 < len(capture_args):
+            wing = capture_args[i + 1]
+            i += 2
+            continue
+        if item == "--room" and i + 1 < len(capture_args):
+            room = capture_args[i + 1]
+            i += 2
+            continue
+        if item == "--source" and i + 1 < len(capture_args):
+            source = capture_args[i + 1]
+            i += 2
+            continue
+        if item == "--privacy" and i + 1 < len(capture_args):
+            privacy = capture_args[i + 1]
+            i += 2
+            continue
+        if item == "--compile-wiki":
+            i += 1
+            continue
+        text_parts.append(item)
+        i += 1
+    if not text_parts:
+        raise SystemExit('Usage: mnemion capture "thought text"')
+    result = capture_text(
+        " ".join(text_parts),
+        tags=tags,
+        source=source,
+        wing=wing,
+        room=room,
+        privacy_class=privacy,
+    )
+    if compile_wiki and result.get("status") == "created":
+        from .wiki.compiler import WikiCompiler
+
+        result["wiki"] = WikiCompiler().compile_all(apply=True)
+    print(json.dumps(result, indent=2))
 
 
 def _count_json_objects(filepath):
@@ -1275,19 +1560,24 @@ def main():
     # memory guard
     p_guard = sub.add_parser("memory-guard", help="Memory injection/privacy guard")
     guard_sub = p_guard.add_subparsers(dest="memory_guard_action")
+    guard_sub.add_parser("status", help="Show finding counts without dumping content")
     p_guard_scan = guard_sub.add_parser("scan", help="Scan drawers for memory risks")
     p_guard_scan.add_argument(
         "--quarantine", action="store_true", help="Quarantine flagged drawers"
     )
     p_guard_review = guard_sub.add_parser(
         "review",
-        help="Write a report from existing memory-guard findings without rescanning",
+        help="Review finding metadata without dumping drawer content",
     )
-    p_guard_review.add_argument(
-        "--out",
-        default="C:\\tmp\\mnemion-live-followups-2026-05-02",
-        help="Output directory for memory_guard_review.md and .csv",
+    p_guard_review.add_argument("--limit", type=int, default=20)
+    p_guard_review.add_argument("--json", action="store_true")
+    p_guard_quarantine = guard_sub.add_parser(
+        "quarantine",
+        help="Quarantine a reviewed drawer; dry-run unless --apply is provided",
     )
+    p_guard_quarantine.add_argument("--drawer-id", required=True)
+    p_guard_quarantine.add_argument("--dry-run", action="store_true", help="Preview only")
+    p_guard_quarantine.add_argument("--apply", action="store_true", help="Mutate drawer trust")
 
     # moat eval
     p_eval = sub.add_parser("eval", help="Evaluation commands")
@@ -1420,6 +1710,93 @@ def main():
         help="Mirror vault path (default: config obsidian_vault_path or ~/.mnemion/obsidian-vault)",
     )
 
+    # source vault
+    p_source = sub.add_parser("source", help="Manage immutable raw sources")
+    source_sub = p_source.add_subparsers(dest="source_action")
+    p_source_add = source_sub.add_parser("add", help="Add a raw source file")
+    p_source_add.add_argument("path_or_url", help="Path or URI to ingest")
+    p_source_add.add_argument("--type", default=None, help="Source type override")
+    p_source_add.add_argument("--title", default=None, help="Source title")
+    p_source_add.add_argument("--author", default=None, help="Source author")
+    p_source_add.add_argument(
+        "--privacy",
+        choices=["private", "internal", "public", "sensitive"],
+        default="private",
+        help="Privacy class",
+    )
+    p_source_add.add_argument("--compile", action="store_true", help="Compile affected wiki pages")
+    p_source_add.add_argument("--dry-run", action="store_true", help="Preview without writing")
+    p_source_add.add_argument(
+        "--index-embeddings",
+        action="store_true",
+        help="Also index chunks into the optional source Chroma collection",
+    )
+    p_source_list = source_sub.add_parser("list", help="List raw sources")
+    p_source_list.add_argument("--type", default=None, help="Filter by source type")
+    p_source_list.add_argument(
+        "--privacy",
+        choices=["private", "internal", "public", "sensitive"],
+        default=None,
+        help="Filter by privacy class",
+    )
+    p_source_list.add_argument("--limit", type=int, default=50)
+    p_source_read = source_sub.add_parser("read", help="Read a raw source")
+    p_source_read.add_argument("source_id")
+    p_source_read.add_argument("--chunks", action="store_true")
+    p_source_search = source_sub.add_parser("search", help="Search source chunks")
+    p_source_search.add_argument("query")
+    p_source_search.add_argument("--limit", type=int, default=10)
+    p_source_search.add_argument(
+        "--privacy",
+        choices=["private", "internal", "public", "sensitive"],
+        default=None,
+    )
+    source_sub.add_parser("status", help="Show source vault status")
+
+    # compiled wiki
+    p_wiki = sub.add_parser("wiki", help="Compile and query the source-backed wiki")
+    wiki_sub = p_wiki.add_subparsers(dest="wiki_action")
+    p_wiki_compile = wiki_sub.add_parser("compile", help="Compile wiki pages")
+    p_wiki_compile.add_argument("--all", action="store_true", help="Compile all sources")
+    p_wiki_compile.add_argument("--source", default=None, help="Compile one source ID")
+    p_wiki_compile.add_argument("--drawer", default=None, help="Reserved drawer scope")
+    p_wiki_compile.add_argument("--topic", default=None, help="Reserved topic scope")
+    p_wiki_compile.add_argument("--page", default=None, help="Reserved page scope")
+    p_wiki_compile.add_argument("--dry-run", action="store_true")
+    p_wiki_compile.add_argument("--review", action="store_true")
+    p_wiki_compile.add_argument("--apply", action="store_true")
+    p_wiki_compile.add_argument("--include-historical", action="store_true")
+    p_wiki_lint = wiki_sub.add_parser("lint", help="Lint compiled wiki pages")
+    p_wiki_lint.add_argument("--json", action="store_true")
+    p_wiki_lint.add_argument("--fix", action="store_true")
+    p_wiki_lint.add_argument("--page", default=None)
+    p_wiki_query = wiki_sub.add_parser("query", help="Query wiki context")
+    p_wiki_query.add_argument("query")
+    p_wiki_query.add_argument("--limit", type=int, default=10)
+    p_wiki_query.add_argument("--token-budget", type=int, default=6000)
+    p_context = wiki_sub.add_parser("context-pack", help="Build a retrieval context pack")
+    p_context.add_argument("query")
+    p_context.add_argument("--mode", default="answer_question")
+    p_context.add_argument("--token-budget", type=int, default=6000)
+    p_context.add_argument("--json", action="store_true")
+    p_blast = wiki_sub.add_parser("blast-radius", help="Show affected pages")
+    p_blast.add_argument("--source", default=None)
+    p_blast.add_argument("--drawer", default=None)
+    p_blast.add_argument("--topic", default=None)
+    p_diff = wiki_sub.add_parser("diff", help="Show review diffs")
+    p_diff.add_argument("job_id")
+    p_apply = wiki_sub.add_parser("apply", help="Apply a review job")
+    p_apply.add_argument("job_id")
+    wiki_sub.add_parser("open", help="Print compiled wiki path")
+    wiki_sub.add_parser("status", help="Show compiled wiki status")
+    p_export_wiki = wiki_sub.add_parser("export-obsidian", help="Export compiled wiki to Obsidian")
+    p_export_wiki.add_argument("--path", default=None)
+    p_export_wiki.add_argument("--include-sensitive", action="store_true")
+
+    # capture
+    p_capture = sub.add_parser("capture", help="Capture a thought as a normal drawer")
+    p_capture.add_argument("capture_args", nargs=argparse.REMAINDER)
+
     # restore
     p_restore = sub.add_parser(
         "restore",
@@ -1505,6 +1882,35 @@ def main():
         cmd_obsidian(args)
         return
 
+    if args.command == "source":
+        if getattr(args, "source_action", None) not in {"add", "list", "read", "search", "status"}:
+            p_source.print_help()
+            return
+        cmd_source(args)
+        return
+
+    if args.command == "wiki":
+        if getattr(args, "wiki_action", None) not in {
+            "compile",
+            "lint",
+            "query",
+            "context-pack",
+            "blast-radius",
+            "diff",
+            "apply",
+            "open",
+            "status",
+            "export-obsidian",
+        }:
+            p_wiki.print_help()
+            return
+        cmd_wiki(args)
+        return
+
+    if args.command == "capture":
+        cmd_capture(args)
+        return
+
     if args.command == "hook":
         if not getattr(args, "hook_action", None):
             p_hook.print_help()
@@ -1522,7 +1928,12 @@ def main():
         return
 
     if args.command == "memory-guard":
-        if getattr(args, "memory_guard_action", None) not in {"scan", "review"}:
+        if getattr(args, "memory_guard_action", None) not in {
+            "scan",
+            "status",
+            "review",
+            "quarantine",
+        }:
             p_guard.print_help()
             return
         cmd_memory_guard(args)
@@ -1550,6 +1961,9 @@ def main():
         "status": cmd_status,
         "llm": cmd_llm,
         "obsidian": cmd_obsidian,
+        "source": cmd_source,
+        "wiki": cmd_wiki,
+        "capture": cmd_capture,
         "librarian": cmd_librarian,
     }
     dispatch[args.command](args)

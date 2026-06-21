@@ -66,7 +66,8 @@ codex /init
 The Python CLI also exposes the newer operational commands directly:
 `mnemion sweep`, `mnemion consolidate`, `mnemion reconstruct`,
 `mnemion memory-guard scan`, `mnemion memory-guard review`,
-`mnemion repair`, and `mnemion eval moat`.
+`mnemion repair`, `mnemion eval moat`, `mnemion source`,
+`mnemion wiki`, and `mnemion capture`.
 
 ## Hooks
 

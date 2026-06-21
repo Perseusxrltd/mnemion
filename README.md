@@ -20,7 +20,7 @@ Inspired by the original mempal project. Built far beyond it.
 
 <br>
 
-[Architecture](#architecture-layers) · [Quick Start](#quick-start) · [Moat](docs/moat.md) · [Obsidian](#10-obsidian-owned-mirror-obsidianpy) · [MCP Tools](#mcp-tools) · [Studio](#studio--connect-agents) · [System Prompt](#behavioral-protocol-bootstrap-system_promptmd--mcp-prompts) · [Auto-Save Hooks](#auto-save-hooks) · [Librarian](#6-librarian--daily-background-tidy-up-librarianpy) · [Anaktoron Sync](#anaktoron-sync) · [Benchmarks](#benchmarks) · [Changelog](#changelog)
+[Architecture](#architecture-layers) · [Quick Start](#quick-start) · [Moat](docs/moat.md) · [Source Wiki](docs/wiki_compiler.md) · [Obsidian](#10-obsidian-owned-mirror-obsidianpy) · [MCP Tools](#mcp-tools) · [Studio](#studio--connect-agents) · [System Prompt](#behavioral-protocol-bootstrap-system_promptmd--mcp-prompts) · [Auto-Save Hooks](#auto-save-hooks) · [Librarian](#6-librarian--daily-background-tidy-up-librarianpy) · [Anaktoron Sync](#anaktoron-sync) · [Benchmarks](#benchmarks) · [Changelog](#changelog)
 
 </div>
 
@@ -220,7 +220,7 @@ Enable grooming in `~/.mnemion/config.json`:
 
 Mnemion now adds a structured cognitive graph above raw vector drawers. `mnemion consolidate` extracts proposition, causal, preference, objective, event, and prescription units from stored drawers. `mnemion reconstruct` searches those units first, follows recurring topic tunnels, and only then hydrates raw drawers with an evidence trail.
 
-The security path is part of the memory system, not an afterthought. `mnemion memory-guard scan` detects obvious instruction-injection and privacy-exfiltration memories, `mnemion memory-guard review --out <dir>` turns existing findings into Markdown/CSV for human review, and `mnemion memory-guard scan --quarantine` is the explicit opt-in path for moving risky drawers into the quarantined trust state.
+The security path is part of the memory system, not an afterthought. `mnemion memory-guard scan` detects obvious instruction-injection and privacy-exfiltration memories, `mnemion memory-guard status` shows aggregate risk counts without dumping content, `mnemion memory-guard review --limit 20 --json` returns drawer IDs/risk types/scores/timestamps only, and `mnemion memory-guard quarantine --drawer-id <id> --apply` is the explicit opt-in path for moving a reviewed drawer into the quarantined trust state.
 
 The moat harness is executable:
 
@@ -228,7 +228,9 @@ The moat harness is executable:
 mnemion consolidate --limit 1000
 mnemion reconstruct "why did the pricing dashboard move to GraphQL?"
 mnemion memory-guard scan
-mnemion memory-guard review --out ./memory_guard_review
+mnemion memory-guard status
+mnemion memory-guard review --limit 20 --json
+mnemion memory-guard quarantine --drawer-id drawer_... --dry-run
 mnemion eval moat --suite all
 ```
 
@@ -261,6 +263,21 @@ Users can also monitor, review, and directly edit these core memory blocks live 
 ### 12. Structured JSON Mode Enforcement (`llm_backend.py` + `contradiction_detector.py`)
 
 To eliminate regex extraction failures when parsing LLM outputs, Mnemion enforces native structured JSON output when scanning for contradictions. OpenAI-compatible APIs, vLLM, LM Studio, and Ollama backends are queried with `response_format={"type": "json_object"}` (mapped to Ollama's native `"format": "json"` payload parameters), ensuring all returned payloads conform to valid JSON format.
+
+### 13. Source Vault + Compiled Wiki (`sources/` + `wiki/`)
+
+Mnemion can now ingest immutable raw sources and compile them into an evidence-backed Markdown wiki. The source vault and wiki registry live in the existing `knowledge_graph.sqlite3` sidecar; Chroma drawers, trust state, KG facts, cognitive units, and memory-guard findings remain canonical.
+
+```bash
+mnemion source add ./docs/meeting.txt --source-id src_meeting_01
+mnemion wiki compile --jobs-out ./wiki_jobs
+mnemion wiki apply ./wiki_jobs
+mnemion wiki export-obsidian
+```
+
+Generated wiki pages use YAML frontmatter, Obsidian wikilinks, `MNEMION:BEGIN/END` generated-section markers, and claim comments linking claims back to source chunks. Manual sections outside generated markers are preserved. See [docs/source_vault.md](docs/source_vault.md), [docs/wiki_compiler.md](docs/wiki_compiler.md), and [docs/wiki_agent_schema.md](docs/wiki_agent_schema.md).
+
+Source wiki paths are unique by source ID, e.g. `sources/research-note-src_abc123.md`, so duplicate titles cannot overwrite each other. Lint, context packs, MCP wiki fetch, and Obsidian export resolve live DB provenance before trusting generated frontmatter; quarantined source evidence is default-deny, contested source evidence is visibly warned, and generated source evidence is rendered as untrusted quoted data.
 
 ---
 
@@ -390,7 +407,7 @@ mnemion llm stop    # shut it down
 
 ## MCP Tools
 
-The MCP server exposes 29 tools across six categories.
+The MCP server exposes the core Mnemion tools plus source/wiki tools and clean-room Open Brain-compatible aliases.
 
 ### Read
 
@@ -452,6 +469,15 @@ The MCP server exposes 29 tools across six categories.
 |------|-------------|
 | `mnemion_diary_write` | Write a diary entry in AAAK format — agent's personal journal |
 | `mnemion_diary_read` | Read recent diary entries |
+
+### Source, Wiki, And Compatibility
+
+| Tool | What it does |
+|------|-------------|
+| `mnemion_source_add/list/read/search` | Manage immutable source records and source chunks |
+| `mnemion_wiki_compile/page_get/lint/context_pack/blast_radius/export_obsidian` | Compile, inspect, lint, retrieve, and export the wiki projection |
+| `capture_thought`, `search_thoughts`, `list_thoughts`, `thought_stats` | Open Brain-style aliases over native Mnemion drawers, trust, and search |
+| `search`, `fetch` | OpenAI/ChatGPT connector-compatible typed search/fetch IDs |
 
 ---
 
@@ -609,6 +635,13 @@ Mnemion began as a fork of mempalace, which introduced the memory Anaktoron meta
 - Added `mnemion obsidian setup|sync|open|status` for a one-way Mnemion-owned Markdown mirror.
 - Studio Settings now creates, refreshes, opens, and ZIP-exports the same Obsidian-compatible mirror.
 - The exporter renders wing/room indexes, drawer notes, trust pages, entity pages, cognitive graph and memory-guard summaries, with manifest-limited pruning and safe Obsidian config registration.
+
+### Unreleased — Source vault, compiled wiki, and Open Brain compatibility
+
+- Added immutable source ingestion with `mnemion source add|list|read|search|status`.
+- Added deterministic compiled wiki MVP with source pages, index/log pages, claim provenance, linting, review/apply diffs, context packs, and managed Obsidian export.
+- Added clean-room Open Brain-compatible MCP aliases: `capture_thought`, `search_thoughts`, `list_thoughts`, `thought_stats`, `search`, and `fetch`.
+- Added Studio backend endpoints for sources, wiki pages/jobs, lint, compile, and context packs.
 
 ### v3.5.5 — Live follow-up safety
 

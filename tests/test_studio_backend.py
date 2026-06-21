@@ -201,3 +201,40 @@ def test_export_vault_zip_uses_managed_obsidian_renderer(monkeypatch, tmp_path):
         assert "Mnemion.md" in names
         assert ".mnemion-obsidian-manifest.json" in names
         assert any(name.endswith(".md") and "drawer_one" in name for name in names)
+
+
+def test_source_status_endpoint_returns_stats(monkeypatch, tmp_path):
+    monkeypatch.setattr(
+        studio_main,
+        "SourceStore",
+        lambda: type("FakeSourceStore", (), {"stats": lambda self: {"sources": 1}})(),
+        raising=False,
+    )
+    client = TestClient(app)
+
+    response = client.get("/api/sources/status")
+
+    assert response.status_code == 200
+    assert response.json()["sources"] == 1
+
+
+def test_wiki_context_pack_endpoint_uses_token_guard(monkeypatch):
+    monkeypatch.setenv("MNEMION_STUDIO_TOKEN", "secret-token")
+    monkeypatch.setattr(
+        studio_main,
+        "build_wiki_context_pack",
+        lambda **kwargs: {"query": kwargs["query"], "wiki_pages": []},
+        raising=False,
+    )
+    client = TestClient(app)
+
+    forbidden = client.post("/api/wiki/context-pack", json={"query": "hybrid retrieval"})
+    allowed = client.post(
+        "/api/wiki/context-pack",
+        json={"query": "hybrid retrieval"},
+        headers={STUDIO_TOKEN_HEADER: "secret-token"},
+    )
+
+    assert forbidden.status_code == 403
+    assert allowed.status_code == 200
+    assert allowed.json()["query"] == "hybrid retrieval"
