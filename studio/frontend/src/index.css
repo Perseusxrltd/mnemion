@@ -3,22 +3,21 @@
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Mnemion Studio — Obsidian-Inspired Design System
-   Research-grounded: Linear timing, Obsidian palette, Raycast interactions
+   Mnemion Studio — Apple Human Interface Guidelines Design System
+   Sleek Translucent Materials, SF Pro Typography, Tactile Spring Animations
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ── Design tokens ────────────────────────────────────────────────────────── */
 
 :root {
-  /* ── 5-level elevation surface system (dark mode) ──
-     Each level is ~5-8% lighter in luminance than the one below.
-     Elevation communicates containment, not decoration.
-     Never use pure #000 — it creates excessive contrast.          */
-  --surface-deep:    #111111;  /* below-the-fold: scrollable list bg     */
-  --surface-base:    #161616;  /* primary surface: sidebars, ribbon       */
-  --surface-raised:  #202020;  /* main content panes                      */
-  --surface-overlay: #252525;  /* cards, inline containers, hover targets */
-  --surface-float:   #2e2e2e;  /* modals, dropdowns, tooltips             */
+  /* ── macOS Material Surface System (Translucent Dark Mode) ──
+     Uses alpha overlays combined with backdrop-filter blur.
+     Commits to premium native material depth.                  */
+  --surface-deep:    #000000;                      /* Desktop/app background  */
+  --surface-base:    rgba(22, 22, 28, 0.72);       /* Sidebar / Ribbon (Thin)  */
+  --surface-raised:  rgba(30, 30, 38, 0.62);       /* Primary content panes   */
+  --surface-overlay: rgba(44, 44, 54, 0.5);        /* Cards, panels (Regular) */
+  --surface-float:   rgba(56, 56, 68, 0.94);       /* Popovers, modals, menus */
 
   /* Aliases used by legacy code */
   --bg:      var(--surface-raised);
@@ -26,88 +25,92 @@
   --surface: var(--surface-overlay);
   --raised:  var(--surface-float);
 
-  /* ── Border ── */
-  --border-subtle:   rgba(255,255,255,0.06);
-  --border-default:  #2e2e2e;
-  --border-strong:   #3d3d3d;
+  /* ── Glass properties ── */
+  --glass-blur:   20px;
+  --glass-border: rgba(255, 255, 255, 0.08);
+
+  /* ── Borders ── */
+  --border-subtle:   rgba(255, 255, 255, 0.06);
+  --border-default:  rgba(255, 255, 255, 0.1);
+  --border-strong:   rgba(255, 255, 255, 0.18);
   --border:          var(--border-default);
   --background-modifier-border: var(--border-default);
 
-  /* ── Text ── */
-  --text-normal:  #dcddde;   /* 90% — no pure white, avoids eye strain   */
-  --text-muted:   #999999;   /* 60% — sidebar items, labels, timestamps  */
-  --text-faint:   #555555;   /* 35% — placeholders, dividers, secondary  */
-  --text-accent:  #7f6df2;   /* accent: links, wikilinks, active states  */
-  --text-error:   #ff453a;
-  --text-success: #30d158;
+  /* ── Text (System SF Typography) ── */
+  --text-normal:  #f5f5f7;   /* Apple primary text  */
+  --text-muted:   #86868b;   /* Apple secondary text */
+  --text-faint:   #515154;   /* Apple tertiary text  */
+  --text-accent:  #5e5ce6;   /* Apple SF Indigo     */
+  --text-error:   #ff453a;   /* SF Red              */
+  --text-success: #30d158;   /* SF Green            */
   --text:         var(--text-normal);
   --muted:        var(--text-muted);
   --faint:        var(--text-faint);
 
-  /* ── Accent (Obsidian purple) ── */
-  --interactive-accent:       #7f6df2;
-  --interactive-accent-hover: #8f7ef5;
+  /* ── Accents (Apple SF Indigo / SF Purple) ── */
+  --interactive-accent:       #5e5ce6;
+  --interactive-accent-hover: #7b79fa;
   --accent:       var(--interactive-accent);
-  --accent-light: #9d8ff9;
+  --accent-light: #9896f2;
 
   /* ── Interactive states ── */
-  --interactive-normal:    var(--surface-float);
-  --interactive-hover:     #363636;
-  --interactive-active:    rgba(127, 109, 242, 0.14);
+  --interactive-normal:    var(--surface-overlay);
+  --interactive-hover:     rgba(255, 255, 255, 0.08);
+  --interactive-active:    rgba(94, 92, 230, 0.16);
 
   /* ── Backgrounds (Obsidian naming compat) ── */
   --background-primary:           var(--surface-raised);
   --background-secondary:         var(--surface-base);
   --background-primary-alt:       var(--surface-overlay);
-  --background-secondary-alt:     #1a1a1a;
-  --background-modifier-form-field: #1e1e1e;
-  --background-modifier-hover:    rgba(255,255,255,0.05);
-  --background-modifier-active:   rgba(127,109,242,0.12);
-  --background-modifier-error:    rgba(255,69,58,0.12);
-  --background-modifier-success:  rgba(48,209,88,0.12);
+  --background-secondary-alt:     rgba(20, 20, 24, 0.8);
+  --background-modifier-form-field: rgba(255, 255, 255, 0.04);
+  --background-modifier-hover:    rgba(255, 255, 255, 0.06);
+  --background-modifier-active:   rgba(94, 92, 230, 0.14);
+  --background-modifier-error:    rgba(255, 69, 58, 0.12);
+  --background-modifier-success:  rgba(48, 209, 88, 0.12);
 
   /* ── Command palette ── */
-  --prompt-background:  #1a1a1a;
-  --prompt-border:      #3a3a3a;
-  --prompt-shadow:      0 20px 60px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.05);
+  --prompt-background:  rgba(28, 28, 32, 0.85);
+  --prompt-border:      rgba(255, 255, 255, 0.12);
+  --prompt-shadow:      0 24px 72px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.06);
 
   /* ── Ribbon ── */
   --ribbon-background:        var(--surface-base);
-  --ribbon-background-hovered:#252525;
-  --ribbon-width:             44px;
+  --ribbon-background-hovered:rgba(255, 255, 255, 0.06);
+  --ribbon-width:             48px;
 
   /* ── Status bar ── */
   --status-bar-background:    var(--surface-base);
-  --status-bar-border:        var(--border-default);
+  --status-bar-border:        var(--border-subtle);
 
   /* ── Tab bar ── */
   --tab-background-active:    var(--surface-raised);
   --tab-background-inactive:  var(--surface-base);
-  --tab-height:               32px;
+  --tab-height:               36px;
 
-  /* ── Timing — research-grounded
-     Hover: ≤50ms, Modal: 120ms, Sidebar: 180ms              */
+  /* ── Timing & Easing (Apple Spring Physics) ── */
   --duration-instant:  0ms;
-  --duration-hover:    50ms;
-  --duration-fast:     120ms;
-  --duration-medium:   180ms;
-  --duration-slow:     250ms;
-  --ease-out:   cubic-bezier(0, 0, 0.2, 1);
-  --ease-in:    cubic-bezier(0.4, 0, 1, 1);
-  --ease-inout: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-hover:    120ms;
+  --duration-spring:   320ms;
+  --duration-medium:   200ms;
+  --duration-slow:     350ms;
+  
+  --ease-spring:       cubic-bezier(0.25, 1, 0.5, 1);    /* Apple smooth spring */
+  --ease-out:          cubic-bezier(0.16, 1, 0.3, 1);    /* easeOutQuart */
+  --ease-inout:        cubic-bezier(0.76, 0, 0.24, 1);
 
   /* ── Typography ── */
-  --font-text: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+  --font-text: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "SF Pro", "Inter", sans-serif;
+  --font-mono: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
   --font-ui-smaller: 11px;
   --font-ui-small:   13px;
-  --font-ui-medium:  15px;
+  --font-ui-medium:  14px;
 
-  /* ── Radius ── */
-  --radius-s:  4px;
-  --radius-m:  8px;
-  --radius-l:  12px;
-  --radius-xl: 16px;
+  /* ── Apple Squircle Radii ── */
+  --radius-s:  6px;
+  --radius-m:  12px;
+  --radius-l:  18px;
+  --radius-xl: 24px;
 }
 
 /* ── Reset ────────────────────────────────────────────────────────────────── */
@@ -117,87 +120,127 @@
 html, body, #root {
   height: 100%;
   overflow: hidden;
+  background-color: var(--surface-deep);
 }
 
 body {
-  background: var(--surface-raised);
+  background: var(--surface-deep);
   color: var(--text-normal);
   font-family: var(--font-text);
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: 13.5px;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ── Scrollbar ────────────────────────────────────────────────────────────── */
+/* ── Scrollbars (Mac-style overlays) ───────────────────────────────────────── */
 
-::-webkit-scrollbar         { width: 5px; height: 5px; }
+::-webkit-scrollbar         { width: 7px; height: 7px; }
 ::-webkit-scrollbar-track   { background: transparent; }
-::-webkit-scrollbar-thumb   { background: #333; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #444; }
+::-webkit-scrollbar-thumb   { background: rgba(255, 255, 255, 0.16); border-radius: 4px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); border: 2px solid transparent; background-clip: padding-box; }
 
-/* ── Focus ring ───────────────────────────────────────────────────────────── */
+/* ── Focus ring (Apple Classic Blue) ──────────────────────────────────────── */
 
 :focus-visible {
-  outline: 2px solid var(--interactive-accent);
-  outline-offset: 2px;
+  outline: 3px solid rgba(94, 92, 230, 0.35);
+  outline-offset: 1px;
   border-radius: var(--radius-s);
 }
 
 /* ── Wikilinks ────────────────────────────────────────────────────────────── */
 
 .wikilink {
-  color: var(--text-accent);
-  background: rgba(127,109,242,0.1);
-  padding: 0 3px;
-  border-radius: 3px;
+  color: #9896f2;
+  background: rgba(94, 92, 230, 0.12);
+  padding: 1px 4px;
+  border-radius: 4px;
   cursor: pointer;
   text-decoration: none;
-  transition: background var(--duration-hover) var(--ease-out);
+  font-weight: 500;
+  transition: background var(--duration-hover) var(--ease-spring), color var(--duration-hover) var(--ease-spring);
 }
-.wikilink:hover { background: rgba(127,109,242,0.2); }
+.wikilink:hover {
+  background: rgba(94, 92, 230, 0.22);
+  color: white;
+}
 
-/* ── Drawer content (monospace prose) ────────────────────────────────────── */
+/* ── Drawer Content (Prose) ────────────────────────────────────────────────── */
 
 .drawer-content {
   font-family: var(--font-mono);
-  font-size: 12.5px;
-  line-height: 1.75;
-  color: #c8c8c8;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #e4e4e7;
   white-space: pre-wrap;
   word-break: break-word;
 }
 
-/* ── Search highlight ─────────────────────────────────────────────────────── */
+/* ── Search Highlight ─────────────────────────────────────────────────────── */
 
 mark {
-  background: rgba(127, 109, 242, 0.28);
-  color: #c4b5fd;
-  border-radius: 2px;
-  padding: 0 1px;
+  background: rgba(94, 92, 230, 0.32);
+  color: white;
+  border-radius: 3px;
+  padding: 0 2px;
+  font-weight: 500;
 }
 
-/* ── Navigation / hover rows ─────────────────────────────────────────────── */
-/* Research says: hover ≤50ms. Use opacity on a pseudo-element for GPU.     */
+/* ── Apple Glassmorphism Utility ── */
+
+.apple-glass {
+  background: var(--surface-raised);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+}
+
+/* ── Apple Card Utility ── */
+
+.apple-card {
+  background: var(--surface-overlay);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-m);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.02);
+  transition: 
+    transform var(--duration-spring) var(--ease-spring), 
+    box-shadow var(--duration-spring) var(--ease-spring), 
+    border-color var(--duration-spring) var(--ease-spring),
+    background-color var(--duration-spring) var(--ease-spring);
+}
+.apple-card:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  background-color: rgba(54, 54, 66, 0.55);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+.apple-card:active {
+  transform: scale(0.985);
+}
+
+/* ── Hover and Navigation Rows ────────────────────────────────────────────── */
 
 .hover-row {
   position: relative;
-  transition: color var(--duration-hover) var(--ease-out);
+  transition: 
+    color var(--duration-hover) var(--ease-spring),
+    transform var(--duration-spring) var(--ease-spring);
 }
 .hover-row::before {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: var(--radius-s);
-  background: rgba(255,255,255,0.05);
+  background: rgba(255, 255, 255, 0.05);
   opacity: 0;
-  transition: opacity var(--duration-hover) var(--ease-out);
+  transition: opacity var(--duration-hover) var(--ease-spring);
   pointer-events: none;
 }
 .hover-row:hover::before { opacity: 1; }
+.hover-row:active {
+  transform: scale(0.99);
+}
 
-/* ── Sidebar active item — left border stripe ─────────────────────────────── */
-/* Obsidian/Linear pattern: accent left border = unambiguous selection cue   */
+/* ── Sidebar Active Item Left-border Indicator ────────────────────────────── */
 
 .nav-item-active {
   position: relative;
@@ -207,51 +250,54 @@ mark {
   content: '';
   position: absolute;
   left: 0;
-  top: 4px;
-  bottom: 4px;
-  width: 2px;
-  border-radius: 1px;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  border-radius: 1.5px;
   background: var(--interactive-accent);
+  box-shadow: 0 0 8px rgba(94, 92, 230, 0.6);
 }
 
-/* ── Wing color pills ─────────────────────────────────────────────────────── */
+/* ── Wing Color Pills ─────────────────────────────────────────────────────── */
 
 .wing-pill {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
+  gap: 5px;
+  padding: 3px 9px;
   border-radius: var(--radius-s);
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 500;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
+  border: 1px solid rgba(255, 255, 255, 0.04);
 }
 
-/* ── Tree indentation ─────────────────────────────────────────────────────── */
+/* ── Tree Indentation ─────────────────────────────────────────────────────── */
 
 .tree-indent {
-  border-left: 1px solid var(--border-default);
-  margin-left: 7px;
-  padding-left: 8px;
+  border-left: 1px solid rgba(255, 255, 255, 0.06);
+  margin-left: 8px;
+  padding-left: 9px;
 }
 
-/* ── Command palette ─────────────────────────────────────────────────────── */
+/* ── Command Palette / Spotlight Search ─────────────────────────────────────── */
 
 .prompt-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.55);
+  background: rgba(0, 0, 0, 0.45);
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding-top: 80px;
+  padding-top: 100px;
   z-index: 1000;
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 .prompt-modal {
-  width: 560px;
-  max-height: 440px;
+  width: 600px;
+  max-height: 460px;
   border-radius: var(--radius-l);
   background: var(--prompt-background);
   border: 1px solid var(--prompt-border);
@@ -259,14 +305,16 @@ mark {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  animation: slideDown var(--duration-spring) var(--ease-spring);
 }
 
 .prompt-input-wrap {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--border-default);
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.01);
 }
 
 .prompt-input {
@@ -274,37 +322,46 @@ mark {
   background: transparent;
   border: none;
   outline: none;
-  font-size: 15px;
+  font-size: 14.5px;
   color: var(--text-normal);
   font-family: var(--font-text);
 }
+.prompt-input::placeholder {
+  color: var(--text-muted);
+}
 
-.prompt-results { flex: 1; overflow-y: auto; padding: 6px; }
+.prompt-results { flex: 1; overflow-y: auto; padding: 8px; }
 
 .prompt-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 7px 10px;
+  gap: 12px;
+  padding: 8px 12px;
   border-radius: var(--radius-m);
   cursor: pointer;
   font-size: 13px;
   color: var(--text-normal);
-  transition: background var(--duration-hover) var(--ease-out);
+  transition: 
+    background var(--duration-hover) var(--ease-spring),
+    transform var(--duration-spring) var(--ease-spring);
 }
 .prompt-item:hover, .prompt-item.selected {
-  background: rgba(255,255,255,0.07);
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateX(2px);
+}
+.prompt-item:active {
+  transform: scale(0.99);
 }
 .prompt-item-icon  { color: var(--text-muted); flex-shrink: 0; }
-.prompt-item-label { flex: 1; }
-.prompt-item-sub   { font-size: 11px; color: var(--text-faint); }
+.prompt-item-label { flex: 1; font-weight: 500; }
+.prompt-item-sub   { font-size: 11px; color: var(--text-muted); font-mono: var(--font-mono); }
 .prompt-section-header {
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-faint);
-  padding: 8px 10px 4px;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  padding: 10px 12px 6px;
 }
 
 /* ── Ribbon ───────────────────────────────────────────────────────────────── */
@@ -313,12 +370,14 @@ mark {
   width: var(--ribbon-width);
   flex-shrink: 0;
   background: var(--ribbon-background);
-  border-right: 1px solid var(--border-default);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-right: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 8px 0;
-  gap: 2px;
+  padding: 12px 0;
+  gap: 4px;
   overflow: hidden;
 }
 
@@ -332,48 +391,53 @@ mark {
   color: var(--text-muted);
   cursor: pointer;
   transition:
-    color      var(--duration-hover) var(--ease-out),
-    background var(--duration-hover) var(--ease-out);
-  /* No background by default — avoids repaints on hover */
+    color      var(--duration-spring) var(--ease-spring),
+    background var(--duration-spring) var(--ease-spring),
+    transform  var(--duration-spring) var(--ease-spring);
 }
 .ribbon-icon:hover {
   background: var(--ribbon-background-hovered);
   color: var(--text-normal);
 }
 .ribbon-icon.active {
-  color: var(--interactive-accent);
-  background: rgba(127,109,242,0.12);
+  color: white;
+  background: var(--interactive-accent);
+  box-shadow: 0 2px 10px rgba(94, 92, 230, 0.4);
+}
+.ribbon-icon:active {
+  transform: scale(0.92);
 }
 
-/* ── Status bar ───────────────────────────────────────────────────────────── */
+/* ── Status Bar ───────────────────────────────────────────────────────────── */
 
 .status-bar {
-  height: 22px;
+  height: 24px;
   display: flex;
   align-items: center;
-  padding: 0 12px;
-  gap: 12px;
+  padding: 0 16px;
+  gap: 16px;
   font-size: 11px;
   color: var(--text-muted);
   background: var(--status-bar-background);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   border-top: 1px solid var(--status-bar-border);
   flex-shrink: 0;
   user-select: none;
-  letter-spacing: 0.01em;
 }
 
-/* ── Property panel ───────────────────────────────────────────────────────── */
+/* ── Property Row ─────────────────────────────────────────────────────────── */
 
 .property-row {
   display: flex;
   align-items: baseline;
-  gap: 8px;
-  padding: 5px 0;
+  gap: 12px;
+  padding: 6px 0;
   border-bottom: 1px solid var(--border-subtle);
-  font-size: 12px;
+  font-size: 11.5px;
 }
-.property-key   { color: var(--text-faint); width: 72px; flex-shrink: 0; font-size: 11px; }
-.property-value { color: var(--text-muted);  word-break: break-all; }
+.property-key   { color: var(--text-muted); width: 80px; flex-shrink: 0; font-size: 10.5px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.02em; }
+.property-value { color: var(--text-normal); word-break: break-all; }
 
 /* ── Tabs ─────────────────────────────────────────────────────────────────── */
 
@@ -381,108 +445,109 @@ mark {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 0 14px;
+  padding: 0 16px;
   height: var(--tab-height);
-  font-size: 13px;
+  font-size: 12.5px;
+  font-weight: 500;
   cursor: pointer;
-  border-right: 1px solid var(--border-default);
+  border-right: 1px solid var(--border-subtle);
   transition:
-    color      var(--duration-hover) var(--ease-out),
-    background var(--duration-hover) var(--ease-out);
+    color      var(--duration-hover) var(--ease-spring),
+    background var(--duration-hover) var(--ease-spring);
   user-select: none;
   white-space: nowrap;
   color: var(--text-muted);
   background: var(--tab-background-inactive);
 }
-.obs-tab:hover  { background: rgba(255,255,255,0.04); color: var(--text-normal); }
+.obs-tab:hover  { background: rgba(255,255,255,0.02); color: var(--text-normal); }
 .obs-tab.active { background: var(--tab-background-active); color: var(--text-normal); box-shadow: inset 0 -2px 0 var(--interactive-accent); }
 
 /* ── Animations ───────────────────────────────────────────────────────────── */
 
-/* Research: enter with ease-out (fast arrival), leave with ease-in (fast exit) */
-
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px) scale(0.99); }
+  from { opacity: 0; transform: translateY(6px) scale(0.985); }
   to   { opacity: 1; transform: translateY(0)   scale(1); }
 }
-.fade-in { animation: fadeIn var(--duration-fast) var(--ease-out); }
+.fade-in { animation: fadeIn var(--duration-spring) var(--ease-spring); }
 
 @keyframes slideDown {
-  from { opacity: 0; transform: translateY(-6px) scale(0.99); }
+  from { opacity: 0; transform: translateY(-10px) scale(0.98); }
   to   { opacity: 1; transform: translateY(0)    scale(1); }
 }
-.slide-down { animation: slideDown var(--duration-fast) var(--ease-out); }
+.slide-down { animation: slideDown var(--duration-spring) var(--ease-spring); }
 
-/* Scale-in for modals — 0.97 → 1 (subtle, per research: ≤0.95 looks dramatic) */
 @keyframes scaleIn {
   from { opacity: 0; transform: scale(0.97); }
   to   { opacity: 1; transform: scale(1); }
 }
-.scale-in { animation: scaleIn var(--duration-fast) var(--ease-out); }
+.scale-in { animation: scaleIn var(--duration-spring) var(--ease-spring); }
 
 @keyframes pulse-slow {
   0%, 100% { opacity: 1; }
-  50%       { opacity: 0.4; }
+  50%       { opacity: 0.5; }
 }
-.pulse-slow { animation: pulse-slow 2s infinite; }
+.pulse-slow { animation: pulse-slow 2.2s ease-in-out infinite; }
 
-/* Shimmer skeleton — only opacity/transform (GPU-safe) */
+/* Shimmer Skeleton */
 @keyframes shimmer {
-  0%   { opacity: 0.4; }
-  50%  { opacity: 0.7; }
-  100% { opacity: 0.4; }
+  0%   { opacity: 0.45; }
+  50%  { opacity: 0.75; }
+  100% { opacity: 0.45; }
 }
 .shimmer {
-  background: var(--surface-overlay);
-  animation: shimmer 1.4s ease-in-out infinite;
+  background: rgba(255, 255, 255, 0.05);
+  animation: shimmer 1.5s ease-in-out infinite;
 }
 
-/* ── Sigma / Graph ────────────────────────────────────────────────────────── */
+/* ── Sigma Graph ──────────────────────────────────────────────────────────── */
 
 .sigma-container { width: 100%; height: 100%; }
 
-/* ── Utility: pane divider ────────────────────────────────────────────────── */
+/* ── Utility Pane Divider ──────────────────────────────────────────────────── */
 
 .pane-divider {
   width: 1px;
-  background: var(--border-default);
+  background: var(--border-subtle);
   flex-shrink: 0;
-  transition: background var(--duration-hover) var(--ease-out);
+  transition: background var(--duration-spring) var(--ease-spring);
 }
 .pane-divider:hover { background: var(--interactive-accent); }
 
-/* ── Keyboard key badge ───────────────────────────────────────────────────── */
+/* ── Keyboard Key Badge ───────────────────────────────────────────────────── */
 
 .kbd {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 4px;
-  border-radius: 4px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  border-radius: 5px;
   font-size: 10px;
   font-family: var(--font-mono);
   font-weight: 500;
-  background: var(--surface-overlay);
-  border: 1px solid var(--border-strong);
-  border-bottom-width: 2px;
-  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.16);
+  color: var(--text-normal);
   user-select: none;
 }
 
-/* ── Sidebar active nav item ──────────────────────────────────────────────── */
+/* ── Sidebar Active Nav Item ──────────────────────────────────────────────── */
 
 .sidebar-item {
   position: relative;
   border-radius: var(--radius-s);
-  transition: color var(--duration-hover) var(--ease-out);
-  padding-left: 8px;
+  transition: 
+    color var(--duration-hover) var(--ease-spring),
+    background-color var(--duration-hover) var(--ease-spring),
+    transform var(--duration-spring) var(--ease-spring);
+  padding-left: 10px;
 }
 .sidebar-item:hover { color: var(--text-normal); }
 .sidebar-item.active {
   color: var(--text-normal);
-  background: rgba(127,109,242,0.1);
+  background: rgba(94, 92, 230, 0.12);
 }
 .sidebar-item.active::before {
   content: '';
@@ -490,12 +555,16 @@ mark {
   left: 0;
   top: 4px;
   bottom: 4px;
-  width: 2px;
-  border-radius: 1px;
+  width: 3px;
+  border-radius: 1.5px;
   background: var(--interactive-accent);
+  box-shadow: 0 0 6px var(--interactive-accent);
+}
+.sidebar-item:active {
+  transform: scale(0.99);
 }
 
-/* ── Input base style ─────────────────────────────────────────────────────── */
+/* ── Input Base Styles ────────────────────────────────────────────────────── */
 
 .obs-input {
   width: 100%;
@@ -504,31 +573,72 @@ mark {
   border-radius: var(--radius-m);
   color: var(--text-normal);
   outline: none;
-  transition: border-color var(--duration-hover) var(--ease-out);
+  padding: 8px 12px;
+  transition: 
+    border-color var(--duration-spring) var(--ease-spring),
+    background-color var(--duration-spring) var(--ease-spring),
+    box-shadow var(--duration-spring) var(--ease-spring);
 }
-.obs-input:focus { border-color: var(--interactive-accent); }
-.obs-input::placeholder { color: var(--text-faint); }
+.obs-input:focus {
+  border-color: var(--interactive-accent);
+  background-color: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 3px rgba(94, 92, 230, 0.25);
+}
+.obs-input::placeholder { color: var(--text-muted); }
 
-/* ── Button base ──────────────────────────────────────────────────────────── */
+/* ── Buttons ──────────────────────────────────────────────────────────────── */
 
 .btn-ghost {
   color: var(--text-muted);
   border-radius: var(--radius-m);
-  transition: color var(--duration-hover) var(--ease-out), background var(--duration-hover) var(--ease-out);
+  transition: 
+    color var(--duration-hover) var(--ease-spring), 
+    background-color var(--duration-hover) var(--ease-spring),
+    transform var(--duration-spring) var(--ease-spring);
 }
-.btn-ghost:hover { color: var(--text-normal); background: rgba(255,255,255,0.06); }
+.btn-ghost:hover { color: var(--text-normal); background-color: rgba(255, 255, 255, 0.06); }
+.btn-ghost:active { transform: scale(0.97); }
 
 .btn-accent {
   background: var(--interactive-accent);
   color: white;
   border-radius: var(--radius-m);
-  font-weight: 500;
-  transition: background var(--duration-hover) var(--ease-out);
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(94, 92, 230, 0.35);
+  transition: 
+    background-color var(--duration-hover) var(--ease-spring),
+    transform var(--duration-spring) var(--ease-spring),
+    box-shadow var(--duration-spring) var(--ease-spring);
 }
-.btn-accent:hover:not(:disabled) { background: var(--interactive-accent-hover); }
-.btn-accent:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-accent:hover:not(:disabled) { 
+  background-color: var(--interactive-accent-hover); 
+  box-shadow: 0 4px 12px rgba(94, 92, 230, 0.55);
+}
+.btn-accent:active:not(:disabled) { 
+  transform: scale(0.97); 
+}
+.btn-accent:disabled { 
+  opacity: 0.35; 
+  cursor: not-allowed; 
+  box-shadow: none;
+}
 
-/* ── Responsive: prefers-reduced-motion ──────────────────────────────────── */
+/* ── Custom UI Additions for Apple Glass Feel ── */
+
+/* Glass panels for major UI view sections */
+.glass-pane {
+  background: var(--surface-raised);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.glass-pane-border {
+  border-color: var(--glass-border);
+}
+
+/* ── Prefers-reduced-motion ──────────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after {
