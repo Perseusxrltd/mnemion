@@ -120,17 +120,44 @@
 html, body, #root {
   height: 100%;
   overflow: hidden;
-  background-color: var(--surface-deep);
+  background-color: #060609;
+  position: relative;
 }
 
 body {
-  background: var(--surface-deep);
+  background: radial-gradient(circle at 50% 50%, rgba(94, 92, 230, 0.05) 0%, #060609 100%);
   color: var(--text-normal);
   font-family: var(--font-text);
   font-size: 13.5px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Ambient glow blobs for Apple Glass effect */
+#root::before {
+  content: '';
+  position: absolute;
+  top: -150px;
+  left: -150px;
+  width: 50vw;
+  height: 50vh;
+  background: radial-gradient(circle, rgba(94, 92, 230, 0.16) 0%, rgba(94, 92, 230, 0) 70%);
+  z-index: -1;
+  pointer-events: none;
+  filter: blur(120px);
+}
+#root::after {
+  content: '';
+  position: absolute;
+  bottom: -200px;
+  right: -200px;
+  width: 60vw;
+  height: 60vh;
+  background: radial-gradient(circle, rgba(191, 90, 242, 0.12) 0%, rgba(191, 90, 242, 0) 70%);
+  z-index: -1;
+  pointer-events: none;
+  filter: blur(150px);
 }
 
 /* ── Scrollbars (Mac-style overlays) ───────────────────────────────────────── */
