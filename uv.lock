@@ -1934,7 +1934,7 @@ wheels = [
 
 [[package]]
 name = "mnemion"
-version = "3.5.5"
+version = "3.6.0"
 source = { editable = "." }
 dependencies = [
     { name = "chromadb" },
