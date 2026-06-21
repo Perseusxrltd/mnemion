@@ -26,6 +26,14 @@ function getIconPath(): string {
   }
 }
 
+function getTrayIconPath(): string {
+  if (isDev) {
+    return join(__dirname, '../../frontend/public/icon-tray.png')
+  } else {
+    return join(process.resourcesPath, 'frontend/dist/icon-tray.png')
+  }
+}
+
 // ── Backend launcher ──────────────────────────────────────────────────────────
 
 function startBackend() {
@@ -163,7 +171,7 @@ async function createWindow() {
 // ── Tray ──────────────────────────────────────────────────────────────────────
 
 function createTray() {
-  const iconPath = getIconPath()
+  const iconPath = getTrayIconPath()
   tray = new Tray(iconPath)
   const contextMenu = Menu.buildFromTemplate([
     { label: 'Show Mnemion Studio', click: () => { mainWindow?.show(); mainWindow?.focus(); } },
