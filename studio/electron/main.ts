@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell, ipcMain } from 'electron'
+import { app, BrowserWindow, shell, ipcMain, Menu, Tray } from 'electron'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { spawn, ChildProcess } from 'child_process'
@@ -14,6 +14,8 @@ const STUDIO_TOKEN = process.env.MNEMION_STUDIO_TOKEN || randomBytes(32).toStrin
 
 let backendProcess: ChildProcess | null = null
 let mainWindow: BrowserWindow | null = null
+let tray: Tray | null = null
+let isQuitting = false
 
 // ── Backend launcher ──────────────────────────────────────────────────────────
 
@@ -120,6 +122,12 @@ async function createWindow() {
   })
 
   mainWindow.once('ready-to-show', () => mainWindow?.show())
+  mainWindow.on('close', (event) => {
+    if (!isQuitting) {
+      event.preventDefault()
+      mainWindow?.hide()
+    }
+  })
   mainWindow.on('closed', () => { mainWindow = null })
 
   if (isDev) {
@@ -143,6 +151,42 @@ async function createWindow() {
   }
 }
 
+// ── Tray ──────────────────────────────────────────────────────────────────────
+
+function createTray() {
+  const iconPath = isDev 
+    ? join(__dirname, '../../frontend/public/icon.png') 
+    : join(__dirname, '../../frontend/dist/icon.png')
+
+  tray = new Tray(iconPath)
+  const contextMenu = Menu.buildFromTemplate([
+    { label: 'Show Mnemion Studio', click: () => { mainWindow?.show(); mainWindow?.focus(); } },
+    { label: 'Hide Mnemion Studio', click: () => { mainWindow?.hide(); } },
+    { type: 'separator' },
+    { label: 'Restart Backend', click: () => { stopBackend(); startBackend(); } },
+    { type: 'separator' },
+    { label: 'Quit', click: () => {
+        isQuitting = true
+        app.quit()
+      }
+    }
+  ])
+  
+  tray.setToolTip('Mnemion Studio')
+  tray.setContextMenu(contextMenu)
+
+  tray.on('click', () => {
+    if (mainWindow) {
+      if (mainWindow.isVisible()) {
+        mainWindow.hide()
+      } else {
+        mainWindow.show()
+        mainWindow.focus()
+      }
+    }
+  })
+}
+
 // ── IPC ───────────────────────────────────────────────────────────────────────
 
 ipcMain.handle('app:version', () => app.getVersion())
@@ -155,6 +199,7 @@ ipcMain.handle('backend:token', () => STUDIO_TOKEN)
 app.whenReady().then(async () => {
   startBackend()
   await createWindow()
+  createTray()
 
   app.on('activate', async () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -164,8 +209,10 @@ app.whenReady().then(async () => {
 })
 
 app.on('window-all-closed', () => {
-  stopBackend()
-  if (process.platform !== 'darwin') app.quit()
+  // Do not quit, run in background tray
 })
 
-app.on('before-quit', stopBackend)
+app.on('before-quit', () => {
+  isQuitting = true
+  stopBackend()
+})
