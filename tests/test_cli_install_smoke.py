@@ -13,13 +13,15 @@ class FakeCollection:
 
 
 def test_cli_version_flag(capsys, monkeypatch):
+    from mnemion.version import __version__
+
     monkeypatch.setattr("sys.argv", ["mnemion", "--version"])
 
     with pytest.raises(SystemExit) as exc:
         cli.main()
 
     assert exc.value.code == 0
-    assert "mnemion 3.5.5" in capsys.readouterr().out
+    assert f"mnemion {__version__}" in capsys.readouterr().out
 
 
 def test_public_chroma_dependency_stays_on_known_good_line():
