@@ -18,7 +18,7 @@ let tray: Tray | null = null
 let isQuitting = false
 
 function getIconPath(): string {
-  const ext = process.platform === 'win32' ? 'ico' : 'png'
+  const ext = 'png'
   if (isDev) {
     return join(__dirname, `../../frontend/public/icon.${ext}`)
   } else {
