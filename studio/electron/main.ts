@@ -17,6 +17,15 @@ let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
 let isQuitting = false
 
+function getIconPath(): string {
+  const ext = process.platform === 'win32' ? 'ico' : 'png'
+  if (isDev) {
+    return join(__dirname, `../../frontend/public/icon.${ext}`)
+  } else {
+    return join(process.resourcesPath, `frontend/dist/icon.${ext}`)
+  }
+}
+
 // ── Backend launcher ──────────────────────────────────────────────────────────
 
 function startBackend() {
@@ -112,7 +121,7 @@ async function createWindow() {
     },
     show: false, // show after ready
     title: 'Mnemion Studio',
-    icon: join(__dirname, '../../frontend/public/icon.png'),
+    icon: getIconPath(),
   })
 
   // Open external links in browser
@@ -154,10 +163,7 @@ async function createWindow() {
 // ── Tray ──────────────────────────────────────────────────────────────────────
 
 function createTray() {
-  const iconPath = isDev 
-    ? join(__dirname, '../../frontend/public/icon.png') 
-    : join(__dirname, '../../frontend/dist/icon.png')
-
+  const iconPath = getIconPath()
   tray = new Tray(iconPath)
   const contextMenu = Menu.buildFromTemplate([
     { label: 'Show Mnemion Studio', click: () => { mainWindow?.show(); mainWindow?.focus(); } },
