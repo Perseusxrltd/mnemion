@@ -26,6 +26,61 @@ Inspired by the original mempal project. Built far beyond it.
 
 ---
 
+## Architecture Overview
+
+```mermaid
+graph TD
+    subgraph Clients [MCP Clients & IDEs]
+        Codex[OpenAI Codex CLI]
+        Antigravity[Antigravity / Gemini CLI]
+        Claude[Claude Code / Cursor]
+    end
+
+    subgraph Studio [Dashboard]
+        WebUI[Mnemion Studio Frontend<br/>React + Vite + Tailwind]
+        Backend[FastAPI Backend]
+    end
+
+    subgraph Server [Mnemion Core]
+        MCPServer[MCP Server<br/>JSON-RPC Loop]
+        CLI[Mnemion CLI]
+    end
+
+    subgraph Database [Shared Local Database - Anaktoron]
+        Chroma[ChromaDB Vector Store<br/>Semantic Search & SIGReg]
+        SQLite[SQLite3 Database<br/>FTS5 Lexical Index<br/>Temporal Graph & Core Memories]
+    end
+
+    subgraph LLM [LLM Backend]
+        Ollama[Ollama / vLLM / LM Studio<br/>Async Contradiction Scanning]
+    end
+
+    %% Client Interactions
+    Codex <-->|JSON-RPC via stdin/stdout| MCPServer
+    Antigravity <-->|JSON-RPC via stdin/stdout| MCPServer
+    Claude <-->|JSON-RPC via stdin/stdout| MCPServer
+
+    %% Core Operations
+    MCPServer <-->|Query / Write| Chroma
+    MCPServer <-->|Query / Write| SQLite
+    CLI <-->|Bulk Ingest / Sweep| Chroma
+    CLI <-->|Bulk Ingest / Sweep| SQLite
+
+    %% Studio Operations
+    WebUI <-->|HTTP / REST| Backend
+    Backend <-->|Query / Write| Chroma
+    Backend <-->|Query / Write| SQLite
+    Backend -->|Auto-Connect Config| Codex
+    Backend -->|Auto-Connect Config| Antigravity
+    Backend -->|Auto-Connect Config| Claude
+
+    %% Background LLM Checks
+    MCPServer -->|Async Daemon Thread| Ollama
+    SQLite <-->|Pre-computed Trust & Conflicts| MCPServer
+```
+
+---
+
 ## Architecture Layers
 
 ### 1. Hybrid Lexical-Semantic Retrieval (`hybrid_searcher.py`)
@@ -193,6 +248,20 @@ mnemion obsidian open
 
 Default vault: `~/.mnemion/obsidian-vault`, configurable with `obsidian_vault_path` or `MNEMION_OBSIDIAN_VAULT_PATH`. The mirror writes `Mnemion.md`, wing/room indexes, drawer notes, trust pages, entity pages, `_Mnemion/Cognitive Graph.md`, `_Mnemion/Memory Guard.md`, and a managed `.mnemion-obsidian-manifest.json`. It refuses to sync into a non-empty unmanaged folder unless `--force-existing` is explicit, and pruning is limited to files from the previous manifest.
 
+### 11. Letta-Style Core Working Memory (`knowledge_graph.py` + `mcp_server.py`)
+
+Mnemion implements a Letta/MemGPT-style Core Working Memory model, exposing SQLite-backed variables that agents can dynamically read and self-edit. Unlike raw vector search (which is passive and RAG-based), Core Memory acts as the agent's live scratchpad. This workspace remains persistent across turns and is always loaded inside the agent's context window.
+
+Exposed via two new MCP tools:
+- `mnemion_get_core_memory(key)`: Retrieves a persistent, editable text block for a specific key.
+- `mnemion_update_core_memory(key, content)`: Updates the content of the core memory block for the given key.
+
+Users can also monitor, review, and directly edit these core memory blocks live using the new dedicated **Core Memory** tab in Mnemion Studio.
+
+### 12. Structured JSON Mode Enforcement (`llm_backend.py` + `contradiction_detector.py`)
+
+To eliminate regex extraction failures when parsing LLM outputs, Mnemion enforces native structured JSON output when scanning for contradictions. OpenAI-compatible APIs, vLLM, LM Studio, and Ollama backends are queried with `response_format={"type": "json_object"}` (mapped to Ollama's native `"format": "json"` payload parameters), ensuring all returned payloads conform to valid JSON format.
+
 ---
 
 ## Quick Start
@@ -336,6 +405,7 @@ The MCP server exposes 29 tools across six categories.
 | `mnemion_reconstruct` | Active reconstruction over cognitive units, topic tunnels, and raw evidence |
 | `mnemion_get_evidence_trail` | Return cognitive units and causal edges linked to one drawer |
 | `mnemion_check_duplicate` | Check if content already exists before filing |
+| `mnemion_get_core_memory` | Retrieve the persistent core working memory block for a key (defaults to 'default') |
 
 ### Write
 
@@ -345,6 +415,7 @@ The MCP server exposes 29 tools across six categories.
 | `mnemion_consolidate` | Extract cognitive graph units and causal edges from drawers |
 | `mnemion_memory_guard_scan` | Scan memories for instruction-injection/privacy risks, with optional quarantine |
 | `mnemion_delete_drawer` | Soft-delete a drawer (trust record marked `historical`, never hard-removed) |
+| `mnemion_update_core_memory` | Update or overwrite the persistent core working memory block for a key |
 
 ### Knowledge Graph
 

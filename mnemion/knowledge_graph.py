@@ -93,6 +93,13 @@ class KnowledgeGraph:
                 room,
                 tokenize='porter'
             );
+
+            -- Letta-style Core Working Memory
+            CREATE TABLE IF NOT EXISTS core_memories (
+                key             TEXT PRIMARY KEY,
+                content         TEXT NOT NULL,
+                updated_at      TEXT DEFAULT CURRENT_TIMESTAMP
+            );
         """)
         conn.commit()
         conn.close()
@@ -146,41 +153,41 @@ class KnowledgeGraph:
         pred = predicate.lower().replace(" ", "_")
 
         with self._lock:
-            # Auto-create entities if they don't exist
             conn = self._conn()
-            conn.execute(
-                "INSERT OR IGNORE INTO entities (id, name) VALUES (?, ?)", (sub_id, subject)
-            )
-            conn.execute("INSERT OR IGNORE INTO entities (id, name) VALUES (?, ?)", (obj_id, obj))
-
-            # Check for existing identical triple
-            existing = conn.execute(
-                "SELECT id FROM triples WHERE subject=? AND predicate=? AND object=? AND valid_to IS NULL",
-                (sub_id, pred, obj_id),
-            ).fetchone()
-
-            if existing:
-                conn.close()
-                return existing[0]  # Already exists and still valid
-
-            triple_id = f"t_{sub_id}_{pred}_{obj_id}_{hashlib.md5(f'{valid_from}{datetime.now().isoformat()}'.encode()).hexdigest()[:8]}"
-
             with conn:
+                # Auto-create entities if they don't exist
                 conn.execute(
-                    """INSERT INTO triples (id, subject, predicate, object, valid_from, valid_to, confidence, source_closet, source_file)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                    (
-                        triple_id,
-                        sub_id,
-                        pred,
-                        obj_id,
-                        valid_from,
-                        valid_to,
-                        confidence,
-                        source_closet,
-                        source_file,
-                    ),
+                    "INSERT OR IGNORE INTO entities (id, name) VALUES (?, ?)", (sub_id, subject)
                 )
+                conn.execute(
+                    "INSERT OR IGNORE INTO entities (id, name) VALUES (?, ?)", (obj_id, obj)
+                )
+
+                # Check for existing identical triple
+                existing = conn.execute(
+                    "SELECT id FROM triples WHERE subject=? AND predicate=? AND object=? AND valid_to IS NULL",
+                    (sub_id, pred, obj_id),
+                ).fetchone()
+
+                if existing:
+                    triple_id = existing[0]  # Already exists and still valid
+                else:
+                    triple_id = f"t_{sub_id}_{pred}_{obj_id}_{hashlib.md5(f'{valid_from}{datetime.now().isoformat()}'.encode()).hexdigest()[:8]}"
+                    conn.execute(
+                        """INSERT INTO triples (id, subject, predicate, object, valid_from, valid_to, confidence, source_closet, source_file)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                        (
+                            triple_id,
+                            sub_id,
+                            pred,
+                            obj_id,
+                            valid_from,
+                            valid_to,
+                            confidence,
+                            source_closet,
+                            source_file,
+                        ),
+                    )
             conn.close()
         return triple_id
 
@@ -402,3 +409,24 @@ class KnowledgeGraph:
             # Interests
             for interest in facts.get("interests", []):
                 self.add_triple(name, "loves", interest.capitalize(), valid_from="2025-01-01")
+
+    # ── Core Working Memory ───────────────────────────────────────────────
+
+    def get_core_memory(self, key: str) -> str:
+        """Retrieve the core memory block for a key (defaults to empty string)."""
+        with self._lock:
+            conn = self._conn()
+            row = conn.execute("SELECT content FROM core_memories WHERE key=?", (key,)).fetchone()
+            conn.close()
+            return row[0] if row else ""
+
+    def update_core_memory(self, key: str, content: str) -> None:
+        """Update or insert the core memory block for a key."""
+        with self._lock:
+            conn = self._conn()
+            with conn:
+                conn.execute(
+                    "INSERT OR REPLACE INTO core_memories (key, content, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)",
+                    (key, content),
+                )
+            conn.close()

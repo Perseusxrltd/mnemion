@@ -1,4 +1,4 @@
-import type { AgentsResponse, ConnectorStatus, DrawerDetail, DrawerSummary, KGGraph, ObsidianStatus, RecentDrawer, SearchHit, Status, StudioConfig, Taxonomy, TrustStats } from '../types'
+import type { AgentsResponse, ConnectorStatus, CoreMemory, DrawerDetail, DrawerSummary, KGGraph, ObsidianStatus, RecentDrawer, SearchHit, Status, StudioConfig, Taxonomy, TrustStats } from '../types'
 
 declare global {
   interface Window {
@@ -147,6 +147,13 @@ export const api = {
   syncObsidian: (): Promise<Record<string, unknown>> => post('/obsidian/sync'),
 
   openObsidian: (): Promise<Record<string, unknown>> => post('/obsidian/open'),
+
+  getCoreMemories: (): Promise<CoreMemory[]> => get('/core-memory'),
+
+  getCoreMemory: (key: string): Promise<CoreMemory> => get(`/core-memory/${encodeURIComponent(key)}`),
+
+  updateCoreMemory: (key: string, content: string): Promise<{ success: boolean; key: string; content: string }> =>
+    put(`/core-memory/${encodeURIComponent(key)}`, { content }),
 
   // Vault export — download as zip
   exportVaultUrl: (wing?: string) => {

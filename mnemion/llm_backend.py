@@ -81,7 +81,12 @@ class LLMBackend:
 
     name: str = "base"
 
-    def chat(self, messages: List[Dict], max_tokens: int = 512) -> Optional[str]:
+    def chat(
+        self,
+        messages: List[Dict],
+        max_tokens: int = 512,
+        response_format: Optional[Dict] = None,
+    ) -> Optional[str]:
         """Send a chat request. Returns assistant text or None on failure."""
         raise NotImplementedError
 
@@ -99,7 +104,7 @@ class NullBackend(LLMBackend):
 
     name = "none"
 
-    def chat(self, messages, max_tokens=512):
+    def chat(self, messages, max_tokens=512, response_format=None):
         return None
 
     def ping(self):
@@ -130,15 +135,22 @@ class OpenAICompatBackend(LLMBackend):
         self.timeout = timeout
         self.name = name
 
-    def chat(self, messages: List[Dict], max_tokens: int = 512) -> Optional[str]:
-        payload = json.dumps(
-            {
-                "model": self.model,
-                "messages": messages,
-                "max_tokens": max_tokens,
-                "temperature": 0.1,
-            }
-        ).encode("utf-8")
+    def chat(
+        self,
+        messages: List[Dict],
+        max_tokens: int = 512,
+        response_format: Optional[Dict] = None,
+    ) -> Optional[str]:
+        payload_data = {
+            "model": self.model,
+            "messages": messages,
+            "max_tokens": max_tokens,
+            "temperature": 0.1,
+        }
+        if response_format:
+            payload_data["response_format"] = response_format
+
+        payload = json.dumps(payload_data).encode("utf-8")
 
         headers = {"Content-Type": "application/json"}
         if self.api_key:
@@ -185,21 +197,29 @@ class OllamaBackend(LLMBackend):
         # Try OpenAI-compat first; fall back to native
         self._compat = OpenAICompatBackend(url, model, timeout=timeout, name="ollama_compat")
 
-    def chat(self, messages: List[Dict], max_tokens: int = 512) -> Optional[str]:
+    def chat(
+        self,
+        messages: List[Dict],
+        max_tokens: int = 512,
+        response_format: Optional[Dict] = None,
+    ) -> Optional[str]:
         # Try OpenAI-compat endpoint first (Ollama ≥0.1.14)
-        result = self._compat.chat(messages, max_tokens)
+        result = self._compat.chat(messages, max_tokens, response_format)
         if result is not None:
             return result
 
         # Fall back to native /api/chat
-        payload = json.dumps(
-            {
-                "model": self.model,
-                "messages": messages,
-                "stream": False,
-                "options": {"num_predict": max_tokens, "temperature": 0.1},
-            }
-        ).encode("utf-8")
+        payload_data = {
+            "model": self.model,
+            "messages": messages,
+            "stream": False,
+            "options": {"num_predict": max_tokens, "temperature": 0.1},
+        }
+        if response_format:
+            if isinstance(response_format, dict) and response_format.get("type") == "json_object":
+                payload_data["format"] = "json"
+
+        payload = json.dumps(payload_data).encode("utf-8")
         req = urllib.request.Request(
             f"{self.base_url}/api/chat",
             data=payload,
@@ -263,9 +283,14 @@ class ManagedBackend(OpenAICompatBackend):
 
     # ── Public API ─────────────────────────────────────────────────────────────
 
-    def chat(self, messages: List[Dict], max_tokens: int = 512) -> Optional[str]:
+    def chat(
+        self,
+        messages: List[Dict],
+        max_tokens: int = 512,
+        response_format: Optional[Dict] = None,
+    ) -> Optional[str]:
         self._last_used = _time.monotonic()
-        result = super().chat(messages, max_tokens)
+        result = super().chat(messages, max_tokens, response_format)
         if result is None:
             self._consecutive_failures += 1
             if self._consecutive_failures >= _MAX_FAILURES:
@@ -313,6 +338,17 @@ class ManagedBackend(OpenAICompatBackend):
                 wsl_exe = self._wsl_exe()
                 subprocess.run(
                     [wsl_exe, "-d", self.wsl_distro, "-e", "bash", "-c", "pkill -f 'vllm serve'"],
+                    capture_output=True,
+                    timeout=10,
+                )
+            elif sys.platform == "win32":
+                cmd = (
+                    "Get-CimInstance Win32_Process | "
+                    "Where-Object { $_.CommandLine -like '*vllm serve*' } | "
+                    "ForEach-Object { Stop-Process -Id $_.ProcessId -Force }"
+                )
+                subprocess.run(
+                    ["powershell", "-NoProfile", "-Command", cmd],
                     capture_output=True,
                     timeout=10,
                 )

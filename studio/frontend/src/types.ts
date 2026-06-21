@@ -158,7 +158,13 @@ export interface TrustStats {
   contested_conflicts: number
 }
 
-export type ViewName = 'dashboard' | 'graph' | 'browser' | 'search' | 'agents' | 'settings'
+export interface CoreMemory {
+  key: string
+  content: string
+  updated_at?: string
+}
+
+export type ViewName = 'dashboard' | 'graph' | 'browser' | 'search' | 'agents' | 'settings' | 'corememory'
 
 // Wing colors — consistent palette
 export const WING_COLORS: Record<string, string> = {

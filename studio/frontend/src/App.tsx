@@ -10,6 +10,7 @@ const DrawerDetail = lazy(() => import('./views/DrawerDetail'))
 const AgentsView = lazy(() => import('./views/AgentsView'))
 const ConnectorsView = lazy(() => import('./views/ConnectorsView'))
 const SettingsView = lazy(() => import('./views/SettingsView'))
+const CoreMemoryView = lazy(() => import('./views/CoreMemoryView'))
 
 // Electron loads the app from file:// — HashRouter required for routing to work.
 // In the browser dev server, BrowserRouter is fine.
@@ -35,6 +36,7 @@ export default function App() {
           <Route path="/agents" element={lazyRoute(<AgentsView />)} />
           <Route path="/connect" element={lazyRoute(<ConnectorsView />)} />
           <Route path="/settings" element={lazyRoute(<SettingsView />)} />
+          <Route path="/corememory" element={lazyRoute(<CoreMemoryView />)} />
         </Route>
       </Routes>
     </Router>

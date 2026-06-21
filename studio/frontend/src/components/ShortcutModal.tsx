@@ -24,6 +24,7 @@ const GROUPS = [
       { keys: ['G', 'B'], label: 'Go to Browse' },
       { keys: ['G', 'S'], label: 'Go to Search' },
       { keys: ['G', 'A'], label: 'Go to Agents' },
+      { keys: ['G', 'M'], label: 'Go to Core Memory' },
       { keys: ['G', 'C'], label: 'Connect agents (MCP setup)' },
     ],
   },

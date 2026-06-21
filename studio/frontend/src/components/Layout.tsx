@@ -104,6 +104,7 @@ export default function Layout() {
         else if (k === 's') navigate('/search')
         else if (k === 'a') navigate('/agents')
         else if (k === 'c') navigate('/connect')
+        else if (k === 'm') navigate('/corememory')
         return
       }
 

@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Network, FolderOpen, Search, Bot, Plug, Settings } from 'lucide-react'
+import { LayoutDashboard, Network, FolderOpen, Search, Bot, Plug, Settings, Brain } from 'lucide-react'
 
 const ITEMS = [
   { to: '/dashboard', icon: LayoutDashboard, title: 'Dashboard  [G D]' },
@@ -7,6 +7,7 @@ const ITEMS = [
   { to: '/browse',    icon: FolderOpen,      title: 'Browse  [G B]' },
   { to: '/search',    icon: Search,          title: 'Search  [G S]' },
   { to: '/agents',    icon: Bot,             title: 'Agents  [G A]' },
+  { to: '/corememory', icon: Brain,          title: 'Core Memory  [G M]' },
   { to: '/connect',   icon: Plug,            title: 'Connect agents  [G C]' },
 ]
 

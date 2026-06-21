@@ -747,6 +747,32 @@ def tool_diary_read(agent_name: str, last_n: int = 10):
         return {"error": "Failed to read diary entries"}
 
 
+def tool_get_core_memory(key: str = "default") -> dict:
+    """
+    Retrieve the persistent core working memory block for a given key.
+    Use this to load high-level context, rules, or state on startup.
+    """
+    try:
+        content = _kg.get_core_memory(key)
+        return {"key": key, "content": content}
+    except Exception as e:
+        logger.error(f"Failed to get core memory: {e}")
+        return {"error": "Failed to retrieve core memory"}
+
+
+def tool_update_core_memory(key: str = "default", content: str = "") -> dict:
+    """
+    Update or overwrite the persistent core working memory block for a given key.
+    Use this to save high-level context, rules, state, or milestones when they change.
+    """
+    try:
+        _kg.update_core_memory(key, content)
+        return {"success": True, "key": key, "content": content}
+    except Exception as e:
+        logger.error(f"Failed to update core memory: {e}")
+        return {"error": "Failed to update core memory"}
+
+
 # ==================== MCP PROTOCOL ====================
 
 TOOLS = {
@@ -1108,6 +1134,37 @@ TOOLS = {
             "required": ["agent_name"],
         },
         "handler": tool_diary_read,
+    },
+    "mnemion_get_core_memory": {
+        "description": "Retrieve the persistent core working memory block for a given key (e.g., workspace directory name or 'default'). Use this to load high-level context, rules, or state on startup.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string",
+                    "description": "Unique key for this core memory block (defaults to 'default')",
+                }
+            },
+        },
+        "handler": tool_get_core_memory,
+    },
+    "mnemion_update_core_memory": {
+        "description": "Update or overwrite the persistent core working memory block for a given key (e.g., workspace directory name or 'default'). Use this to save high-level context, rules, state, or milestones when they change.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string",
+                    "description": "Unique key for this core memory block (defaults to 'default')",
+                },
+                "content": {
+                    "type": "string",
+                    "description": "The markdown or text content of the core memory block",
+                },
+            },
+            "required": ["content"],
+        },
+        "handler": tool_update_core_memory,
     },
 }
 

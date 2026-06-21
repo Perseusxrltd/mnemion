@@ -600,6 +600,51 @@ def uninstall_connector(conn_id: str):
     return result
 
 
+# ── Core Working Memories ────────────────────────────────────────────────────
+
+
+class CoreMemoryUpdate(BaseModel):
+    content: str
+
+
+@app.get("/api/core-memory")
+def get_all_core_memories():
+    """Retrieve all core working memory blocks."""
+    try:
+        conn = _kg._conn()
+        rows = conn.execute("SELECT key, content, updated_at FROM core_memories").fetchall()
+        conn.close()
+        return [
+            {"key": row["key"], "content": row["content"], "updated_at": row["updated_at"]}
+            for row in rows
+        ]
+    except Exception as e:
+        logger.error(f"Failed to list core memories: {e}")
+        return []
+
+
+@app.get("/api/core-memory/{key}")
+def get_core_memory_by_key(key: str):
+    """Retrieve a specific core working memory block by key."""
+    try:
+        content = _kg.get_core_memory(key)
+        return {"key": key, "content": content}
+    except Exception as e:
+        logger.error(f"Failed to retrieve core memory for key {key}: {e}")
+        raise HTTPException(500, f"Failed to retrieve core memory: {e}")
+
+
+@app.put("/api/core-memory/{key}")
+def update_core_memory_by_key(key: str, data: CoreMemoryUpdate):
+    """Update or insert a core working memory block by key."""
+    try:
+        _kg.update_core_memory(key, data.content)
+        return {"success": True, "key": key, "content": data.content}
+    except Exception as e:
+        logger.error(f"Failed to update core memory for key {key}: {e}")
+        raise HTTPException(500, f"Failed to update core memory: {e}")
+
+
 # ── Obsidian owned mirror ────────────────────────────────────────────────────
 
 

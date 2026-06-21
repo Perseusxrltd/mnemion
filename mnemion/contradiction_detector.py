@@ -124,7 +124,7 @@ def stage1_check(new_text: str, candidate: Dict[str, Any]) -> Optional[Dict]:
             ),
         },
     ]
-    raw = backend.chat(messages, MAX_TOKENS_S1)
+    raw = backend.chat(messages, MAX_TOKENS_S1, response_format={"type": "json_object"})
     result = _parse_llm_json(raw)
     if result:
         result["candidate_id"] = candidate["id"]
@@ -153,7 +153,7 @@ def stage2_resolve(
             ),
         },
     ]
-    raw = backend.chat(messages, MAX_TOKENS_S2)
+    raw = backend.chat(messages, MAX_TOKENS_S2, response_format={"type": "json_object"})
     result = _parse_llm_json(raw)
     if result:
         result["candidate_id"] = candidate["id"]
