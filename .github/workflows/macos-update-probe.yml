@@ -5,6 +5,8 @@ on:
     branches: ['codex/**', experiment/macos-sparkle]
     paths:
       - deploy/macos_update_probe.py
+      - deploy/macos_update_bridge_probe.py
+      - studio/electron/native/macos-updater.m
       - .github/workflows/macos-update-probe.yml
   workflow_dispatch:
 
@@ -27,6 +29,8 @@ jobs:
           python-version: '3.13'
       - name: Verify signed archive rejection, replacement and relaunch
         run: python deploy/macos_update_probe.py --output "$RUNNER_TEMP/mnemion-sparkle-probe"
+      - name: Verify Mnemion controls cancellation and installation
+        run: python -m deploy.macos_update_bridge_probe --output "$RUNNER_TEMP/mnemion-sparkle-bridge"
       - name: Retain bounded failure diagnostics in the job log
         if: failure()
         shell: bash
@@ -40,4 +44,7 @@ jobs:
               if path.is_file():
                   print(name)
                   print(path.read_text()[-6000:])
+          for path in sorted((Path(os.environ['RUNNER_TEMP']) / 'mnemion-sparkle-bridge').glob('bridge-*.log')):
+              print(path.name)
+              print(path.read_text()[-6000:])
           PY

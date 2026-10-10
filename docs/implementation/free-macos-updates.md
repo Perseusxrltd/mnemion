@@ -36,6 +36,18 @@ running old app, installation at the original path, automatic relaunch and the
 new bundle's ad-hoc signature. It changes no Gatekeeper setting and never targets
 an installed Mnemion app.
 
+**Native mechanism validated on 2026-10-10:** both Intel and Apple Silicon jobs
+passed at commit `44c48ce29c57727a7ad4c1fc77485a332c75fa20`
+([workflow evidence](https://github.com/Perseusxrltd/mnemion/actions/runs/38071829414)).
+The invalid archive was rejected, the old running app survived, and a valid
+archive replaced it and relaunched version 4.0.1. This evidence covers the native
+update mechanism, not Mnemion's Electron integration or first-install approval.
+
+`deploy/macos_update_bridge_probe.py` additionally exercises Mnemion's small
+Sparkle control adapter: a verified update must wait for its parent to authorize
+installation, and cancelling must prevent installation when the host exits.
+That adapter is under validation and is not yet used by the production app.
+
 On an isolated native Mac with Xcode Command Line Tools and Python 3.13:
 
 ```sh
