@@ -10,9 +10,9 @@ the [validation report](validation/2026-10-10.md), but unsigned or ad-hoc signed
 test builds are not approved production updates. The platform-v1 release remains
 a draft. Do not interpret a checksum or a successful build as a trusted signature.
 
-We are evaluating the free [SignPath Foundation program](https://signpath.org/apply)
-under its [code of conduct](https://signpath.org/terms). Acceptance, certificate
-provisioning and CI integration remain pending. If accepted, the required credit
+The application to the free [SignPath Foundation program](https://signpath.org/apply)
+has been submitted under its [code of conduct](https://signpath.org/terms).
+Acceptance, certificate provisioning and CI integration remain pending. If accepted, the required credit
 will be: “Free code signing provided by [SignPath.io](https://signpath.io),
 certificate by [SignPath Foundation](https://signpath.org).” This conditional
 statement does not claim an existing endorsement or certificate.
@@ -27,9 +27,14 @@ certificates or enroll in paid programs or automatically converting trials.
 Apple's standard Developer ID program requires paid membership. Its fee waiver
 is limited to eligible nonprofits, accredited educational institutions and
 government entities; no such eligibility has been established for this company.
-Trusted macOS signing, notarization and production automatic upgrades remain
-blocked without an eligible free route. Development builds and the browser/service
-remain available; bypassing OS trust checks is not a release solution.
+Apple-trusted macOS signing and notarization remain unavailable. Mac compatibility
+itself does not require Apple membership. We are now testing
+[Sparkle's independent Ed25519 update signatures](implementation/free-macos-updates.md)
+as a free distribution option. The native experiment and actual Electron
+integration must pass before changing the production updater. This route retains
+an initial user approval requirement and may be restricted by company device
+policy; it cannot provide Apple's publisher trust. Never disable Gatekeeper
+globally or mislabel ad-hoc builds as notarized.
 
 ## Roles and release controls
 

@@ -51,7 +51,10 @@ release artifacts require the platform checks and publisher requirements below.
 1. Pass service, legacy, SDK, security and frontend checks on the release commit.
 2. Build and launch native desktop packages on Windows, macOS and Linux, for
    x64 and ARM64, including their sandboxed bridges and local Obsidian client.
-3. Supply valid Windows publisher and Apple Developer ID/notarization credentials.
+3. Complete Windows publisher signing and verify the macOS distribution route.
+   The current Electron/Squirrel path requires Apple signing; a free Sparkle
+   alternative is under [native investigation](implementation/free-macos-updates.md).
+   It must pass its integration/security gates before replacing the current path.
    Unsigned validation packages are not production automatic-update releases.
 4. Rehearse a signed upgrade, rollback/recovery, startup and safe restart. Record
    the environments and results rather than inferring them from compilation.
@@ -68,9 +71,11 @@ release notes must state the actual shipping status.
 Release operations have a no-spend constraint: do not buy certificates, enroll
 in paid programs or start trials that convert to paid subscriptions. Evaluate
 free open-source signing and sponsorship without claiming approval in advance.
-The standard Apple Developer ID program is paid; without an eligible free route,
-trusted macOS signing/notarization and its production automatic updates remain
-blocked. Keep source, web and local development paths documented. See the
+The standard Apple Developer ID program is paid. Apple's publisher trust remains
+unavailable, but Mac compatibility does not require membership. A maintained
+updater with independently signed archives may support a free desktop release
+with explicit first-install approval; native integration and validation remain
+open. Keep source, web and local development paths documented. See the
 [code signing policy](CODE_SIGNING.md).
 
 ## Next patches: reliability and operational confidence

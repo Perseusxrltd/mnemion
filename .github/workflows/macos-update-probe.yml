@@ -1,0 +1,43 @@
+name: Free macOS update validation
+
+on:
+  push:
+    branches: ['codex/**']
+    paths:
+      - deploy/macos_update_probe.py
+      - .github/workflows/macos-update-probe.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    name: Sparkle / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, macos-15-intel]
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.13'
+      - name: Verify signed archive rejection, replacement and relaunch
+        run: python deploy/macos_update_probe.py --output "$RUNNER_TEMP/mnemion-sparkle-probe"
+      - name: Retain bounded failure diagnostics in the job log
+        if: failure()
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          root = Path(os.environ['RUNNER_TEMP']) / 'mnemion-sparkle-probe'
+          for name in ['invalid-signature.log', 'valid-signature.log']:
+              path = root / name
+              if path.is_file():
+                  print(name)
+                  print(path.read_text()[-6000:])
+          PY

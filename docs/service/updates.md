@@ -50,8 +50,15 @@ do not purchase enrollment or start a trial that converts to a paid subscription
 The configuration below describes how existing valid credentials are consumed;
 it is not an instruction to purchase them. Free open-source signing is being
 evaluated and has not yet supplied a production certificate. Apple's standard
-Developer ID program is paid, so trusted macOS publication remains blocked
+Developer ID program is paid, so Apple-trusted macOS publication remains blocked
 without an eligible free route.
+
+Mac compatibility itself does not require membership. A
+[Sparkle update experiment](../implementation/free-macos-updates.md) now tests
+independent archive signatures without Developer ID. It has not replaced the
+production Electron/Squirrel updater; integration, recovery and first-install
+validation remain required. First-install warnings and company device policy
+are separate from cryptographic verification of subsequent updates.
 
 The **Prepare signed release** workflow runs product checks and all six native
 builds, verifies signatures and payloads, and creates a draft containing installers,
