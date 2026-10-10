@@ -2,7 +2,7 @@ name: Free macOS update validation
 
 on:
   push:
-    branches: ['codex/**']
+    branches: ['codex/**', experiment/macos-sparkle]
     paths:
       - deploy/macos_update_probe.py
       - .github/workflows/macos-update-probe.yml

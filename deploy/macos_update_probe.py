@@ -129,6 +129,9 @@ def prepare_upstream(root: Path) -> tuple[Path, Path]:
             "clang",
             "-fobjc-arc",
             "-fmodules",
+            # Match ConfigCommon.xcconfig in the pinned upstream source.
+            "-DSPU_OBJC_DIRECT=__attribute__((objc_direct))",
+            "-DSPU_OBJC_DIRECT_MEMBERS=__attribute__((objc_direct_members))",
             "-framework",
             "Cocoa",
             "-framework",
