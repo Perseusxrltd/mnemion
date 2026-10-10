@@ -1,192 +1,227 @@
 {
   "schema": 1,
-  "tag_name": "v4.0.0",
+  "tag_name": "v4.0.1",
   "draft": false,
   "prerelease": false,
-  "html_url": "https://github.com/Perseusxrltd/mnemion/releases/tag/v4.0.0",
-  "published_at": "2026-10-10T19:05:38Z",
+  "html_url": "https://github.com/Perseusxrltd/mnemion/releases/tag/v4.0.1",
+  "published_at": "2026-10-10T20:48:46Z",
   "assets": [
     {
-      "name": "Mnemion-Studio-4.0.0-linux-amd64.deb",
-      "size": 122988836,
+      "name": "Mnemion-Studio-4.0.1-linux-amd64.deb",
+      "size": 123000188,
       "state": "uploaded",
-      "digest": "sha256:bc8f47bea082a15d1e42fcaf07dde2a3c54562a11cb5aa472c06ca0de399cf53",
-      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.0/Mnemion-Studio-4.0.0-linux-amd64.deb"
+      "digest": "sha256:3c743944c4ba036a9a95be45b71cdf12f111c859e5297a3904427d024bac1b39",
+      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.1/Mnemion-Studio-4.0.1-linux-amd64.deb"
     },
     {
-      "name": "Mnemion-Studio-4.0.0-linux-arm64.AppImage",
-      "size": 155430924,
+      "name": "Mnemion-Studio-4.0.1-linux-arm64.AppImage",
+      "size": 155443299,
       "state": "uploaded",
-      "digest": "sha256:7c8734ae6b4fc449c19b10ae57027adc4e5c2ab62dbabce507e5c9cfff6f2e28",
-      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.0/Mnemion-Studio-4.0.0-linux-arm64.AppImage"
+      "digest": "sha256:52af3005e6c74ce6356957f6453c63f510a98c72a4eeee61082c1c89cf0c3b28",
+      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.1/Mnemion-Studio-4.0.1-linux-arm64.AppImage"
     },
     {
-      "name": "Mnemion-Studio-4.0.0-linux-arm64.deb",
-      "size": 116790860,
+      "name": "Mnemion-Studio-4.0.1-linux-arm64.deb",
+      "size": 116802260,
       "state": "uploaded",
-      "digest": "sha256:201ed62a8c42d0e7410253981485a8543c1d88be95bc7d0142fb75061a8cc4ae",
-      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.0/Mnemion-Studio-4.0.0-linux-arm64.deb"
+      "digest": "sha256:a2867238fa97819d2db34c9222547114f858caaa68872ecbfa51165dd2f0d155",
+      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.1/Mnemion-Studio-4.0.1-linux-arm64.deb"
     },
     {
-      "name": "Mnemion-Studio-4.0.0-linux-x86_64.AppImage",
-      "size": 155183672,
+      "name": "Mnemion-Studio-4.0.1-linux-x86_64.AppImage",
+      "size": 155195954,
       "state": "uploaded",
-      "digest": "sha256:77e3b9e92c5dfde5e1e04d94c034248ab521b4079f66f220f15aeca0a94db588",
-      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.0/Mnemion-Studio-4.0.0-linux-x86_64.AppImage"
+      "digest": "sha256:e74cd86278d8b8fc5368755774b3a5efef3018902b373df27bf0e5a93a3207e7",
+      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.1/Mnemion-Studio-4.0.1-linux-x86_64.AppImage"
     },
     {
-      "name": "Mnemion-Studio-4.0.0-macos-arm64.dmg",
-      "size": 342850063,
+      "name": "Mnemion-Studio-4.0.1-macos-arm64.dmg",
+      "size": 342907407,
       "state": "uploaded",
-      "digest": "sha256:026d1bfd1b6d9c0ccf7b4b797a8ebe242ba2de8f379258c2b62e284ca565329d",
-      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.0/Mnemion-Studio-4.0.0-macos-arm64.dmg"
+      "digest": "sha256:c2d7cfb1446ebc07a53202af685f64bc34cc17b3749d0369e733d27dbdd7108b",
+      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.1/Mnemion-Studio-4.0.1-macos-arm64.dmg"
     },
     {
-      "name": "Mnemion-Studio-4.0.0-macos-arm64.dmg.blockmap",
-      "size": 344840,
+      "name": "Mnemion-Studio-4.0.1-macos-arm64.dmg.blockmap",
+      "size": 344887,
       "state": "uploaded",
-      "digest": "sha256:47575d946726dcd1cbfbc77d485d27f4e2a382e00447cd117e5b448f527d3908",
-      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.0/Mnemion-Studio-4.0.0-macos-arm64.dmg.blockmap"
+      "digest": "sha256:8744c3ed350303bc167ccdeaf616d95be63b65dd37bb23bba2d573b456750da5",
+      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.1/Mnemion-Studio-4.0.1-macos-arm64.dmg.blockmap"
     },
     {
-      "name": "Mnemion-Studio-4.0.0-macos-arm64.zip",
-      "size": 337295007,
+      "name": "Mnemion-Studio-4.0.1-macos-arm64.zip",
+      "size": 337345054,
       "state": "uploaded",
-      "digest": "sha256:3a3276cd5731bc5dda96c8b26b48f7b0ef7dc6f73eaad6bd4d9b62587690ddc1",
-      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.0/Mnemion-Studio-4.0.0-macos-arm64.zip"
+      "digest": "sha256:40411b9339a0ccd610274c75461efa5faababb72e331f2df14865bdebea4bd10",
+      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.1/Mnemion-Studio-4.0.1-macos-arm64.zip"
     },
     {
-      "name": "Mnemion-Studio-4.0.0-macos-arm64.zip.blockmap",
-      "size": 343214,
+      "name": "Mnemion-Studio-4.0.1-macos-arm64.zip.blockmap",
+      "size": 343151,
       "state": "uploaded",
-      "digest": "sha256:050195671690f1f27e4d9077ae22da4abac80ad1d35a2ca9575d9c6a13ac1c09",
-      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.0/Mnemion-Studio-4.0.0-macos-arm64.zip.blockmap"
+      "digest": "sha256:23ae912d8366a7f52b1328c91d2048c97a47ec1a6528617d22009cdb05055eac",
+      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.1/Mnemion-Studio-4.0.1-macos-arm64.zip.blockmap"
     },
     {
-      "name": "Mnemion-Studio-4.0.0-macos-x64.dmg",
-      "size": 347367951,
+      "name": "Mnemion-Studio-4.0.1-macos-x64.dmg",
+      "size": 347425295,
       "state": "uploaded",
-      "digest": "sha256:b1cbcde38895f46bc652f0bb7c646102b3fab4063e8afbb54982b7b7ec769fdd",
-      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.0/Mnemion-Studio-4.0.0-macos-x64.dmg"
+      "digest": "sha256:87c7825514762b50549e0666e61e7f544875b491cd923d4273376d7d18219295",
+      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.1/Mnemion-Studio-4.0.1-macos-x64.dmg"
     },
     {
-      "name": "Mnemion-Studio-4.0.0-macos-x64.dmg.blockmap",
-      "size": 348768,
+      "name": "Mnemion-Studio-4.0.1-macos-x64.dmg.blockmap",
+      "size": 348788,
       "state": "uploaded",
-      "digest": "sha256:ce9e5410d54543b72c975f5537b1cd69a55d5a0b8f504ddd80b55c78f035d7f9",
-      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.0/Mnemion-Studio-4.0.0-macos-x64.dmg.blockmap"
+      "digest": "sha256:d99ff8ac4825ab48b4b8aa368ac9b195e8a052d8a31664d1333c25158165da18",
+      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.1/Mnemion-Studio-4.0.1-macos-x64.dmg.blockmap"
     },
     {
-      "name": "Mnemion-Studio-4.0.0-macos-x64.zip",
-      "size": 341799456,
+      "name": "Mnemion-Studio-4.0.1-macos-x64.zip",
+      "size": 341849503,
       "state": "uploaded",
-      "digest": "sha256:c3fd3510b0f89dec605117a8d9dfb93f451047b4235f4dd19f3da69917c2a742",
-      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.0/Mnemion-Studio-4.0.0-macos-x64.zip"
+      "digest": "sha256:ca8924295baf5ca3f721cdefa7cd9d1c8f68f3ecd883c9f5a02fe35ae36a5e7a",
+      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.1/Mnemion-Studio-4.0.1-macos-x64.zip"
     },
     {
-      "name": "Mnemion-Studio-4.0.0-macos-x64.zip.blockmap",
-      "size": 347238,
+      "name": "Mnemion-Studio-4.0.1-macos-x64.zip.blockmap",
+      "size": 347322,
       "state": "uploaded",
-      "digest": "sha256:953d4c200b435ce0f1d05a6f0909e97ca757c772f350e6c7f4ae69d77adcb9f4",
-      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.0/Mnemion-Studio-4.0.0-macos-x64.zip.blockmap"
+      "digest": "sha256:8e6e644d3a62fb84af82507eede8b7285d884eff815637aca67118c8020a9def",
+      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.1/Mnemion-Studio-4.0.1-macos-x64.zip.blockmap"
+    },
+    {
+      "name": "Mnemion-Studio-4.0.1-windows-x64.exe",
+      "size": 134573812,
+      "state": "uploaded",
+      "digest": "sha256:17391799321e4c46672b756eef70f56f06e6ae6e67a6c18e0c2f05e8cb26b21d",
+      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.1/Mnemion-Studio-4.0.1-windows-x64.exe"
+    },
+    {
+      "name": "Mnemion-Studio-4.0.1-windows-x64.exe.blockmap",
+      "size": 141941,
+      "state": "uploaded",
+      "digest": "sha256:9f8507f10cfc62963b42275cb7e070520809b8eeb7ae22c4c851627e4a118e14",
+      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.1/Mnemion-Studio-4.0.1-windows-x64.exe.blockmap"
     },
     {
       "name": "SHA256SUMS-darwin-arm64.txt",
       "size": 206,
       "state": "uploaded",
-      "digest": "sha256:3ce050b314ba6e28faffcf12409fa818a99f1673e026ef0ffabc8500c5cd37df",
-      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.0/SHA256SUMS-darwin-arm64.txt"
+      "digest": "sha256:f6fdf7c28903b5592499d908d9c42bf8bf7b619bde6499416388ed5dae997ada",
+      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.1/SHA256SUMS-darwin-arm64.txt"
     },
     {
       "name": "SHA256SUMS-darwin-x64.txt",
       "size": 202,
       "state": "uploaded",
-      "digest": "sha256:1c82cae054e911aa8d5f15c768eda28dbdbdd440c0266ae57cab20a2d1447f3e",
-      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.0/SHA256SUMS-darwin-x64.txt"
+      "digest": "sha256:2c0ff89ea2dc32135984fcccbdc47237aff9a9533d58bcca83203e81753ad76c",
+      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.1/SHA256SUMS-darwin-x64.txt"
     },
     {
       "name": "SHA256SUMS-linux-arm64.txt",
       "size": 211,
       "state": "uploaded",
-      "digest": "sha256:a8075ab5a8dcf8a8e385144732d8fabc45674a511e9a4026e198c87959bd1018",
-      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.0/SHA256SUMS-linux-arm64.txt"
+      "digest": "sha256:3dd51a35e5ee54d410a66f9145683fb434a2ef806973f044f3755cbd26d0973a",
+      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.1/SHA256SUMS-linux-arm64.txt"
     },
     {
       "name": "SHA256SUMS-linux-x64.txt",
       "size": 212,
       "state": "uploaded",
-      "digest": "sha256:2829e316fbd1af3c229bc4f17e050f72b3291f3ee7b4be568d5e33604e542372",
-      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.0/SHA256SUMS-linux-x64.txt"
+      "digest": "sha256:579a169b7e43a6319a21459c103738ea548e7917b47bc881460283010fa34e76",
+      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.1/SHA256SUMS-linux-x64.txt"
+    },
+    {
+      "name": "SHA256SUMS-win32-x64.txt",
+      "size": 193,
+      "state": "uploaded",
+      "digest": "sha256:5f37be5f39d70e5f50f4e4303159ed76d9dc61d9670720dd63ad228b8e9ea608",
+      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.1/SHA256SUMS-win32-x64.txt"
     },
     {
       "name": "SHA256SUMS.txt",
-      "size": 2446,
+      "size": 2923,
       "state": "uploaded",
-      "digest": "sha256:100ce09b75bf5b40b23ae8acf42ed32f550c58f89d6ee18d0aaec06c03dbcdfc",
-      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.0/SHA256SUMS.txt"
+      "digest": "sha256:e8cc34d6ab4362640a3d53d02c2a88b8559e9f9ec79502c42b823f2c32803ecf",
+      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.1/SHA256SUMS.txt"
     },
     {
       "name": "latest-arm64-linux-arm64.yml",
       "size": 571,
       "state": "uploaded",
-      "digest": "sha256:a0967f6f3aa3e380d447bb9b99a39dcf774387a11cc3afc2cc078a3afab1bb7e",
-      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.0/latest-arm64-linux-arm64.yml"
+      "digest": "sha256:2ad1c328ba43feae8580146141f90d66900c61472ba5612143b97d0fc9cdfd5f",
+      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.1/latest-arm64-linux-arm64.yml"
     },
     {
       "name": "latest-arm64-mac.xml",
       "size": 694,
       "state": "uploaded",
-      "digest": "sha256:7b2dcad7c17aadcff9bb72eb9feb1aeaffa3b5491bcc2a265f41d4fe90a60072",
-      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.0/latest-arm64-mac.xml"
+      "digest": "sha256:4a38d40c6cc7c23535f861529467f18ba6c1f22b3f2b8226dbe95b8e57ebbb30",
+      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.1/latest-arm64-mac.xml"
     },
     {
       "name": "latest-arm64-mac.yml",
       "size": 536,
       "state": "uploaded",
-      "digest": "sha256:1d14e6b34c1de87149732af958371067050d8ac30415f2273a0b412435025217",
-      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.0/latest-arm64-mac.yml"
+      "digest": "sha256:5a185298faca9b1bd0078c63ab9780bfaf8d157acaf227e6edccdead59e13b0f",
+      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.1/latest-arm64-mac.yml"
     },
     {
       "name": "latest-x64-linux.yml",
       "size": 573,
       "state": "uploaded",
-      "digest": "sha256:34f58a3f7b4380d6dbf94b60a0e1e4183fa7b951b31fa7d39980da98f2f38e52",
-      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.0/latest-x64-linux.yml"
+      "digest": "sha256:6f6b6678eb9ca41cbd283e8cb1a37a8cf8a6f00819827674c83202bc70be6f5e",
+      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.1/latest-x64-linux.yml"
     },
     {
       "name": "latest-x64-mac.xml",
       "size": 692,
       "state": "uploaded",
-      "digest": "sha256:745a2473cd8a90a2a381d7425dea3968542e7dca6f134d30f273a3deb0e15814",
-      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.0/latest-x64-mac.xml"
+      "digest": "sha256:f50f5aaed9c8e38cd8c20183c8137d2a471e5783fd7d9159236093a7a8a5da05",
+      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.1/latest-x64-mac.xml"
     },
     {
       "name": "latest-x64-mac.yml",
       "size": 530,
       "state": "uploaded",
-      "digest": "sha256:56038d01f6cb022ce80e6d816acc232d583664d999017226a04d6f16fce7e2c8",
-      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.0/latest-x64-mac.yml"
+      "digest": "sha256:6812ae37366052b27b2be7385ef3a6a2056e010192796b0fa88c13940e1e608a",
+      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.1/latest-x64-mac.yml"
     },
     {
-      "name": "mnemion-4.0.0-py3-none-any.whl",
-      "size": 471860,
+      "name": "latest-x64-windows.json",
+      "size": 657,
       "state": "uploaded",
-      "digest": "sha256:885942869162bf92bca25586c0638caf1fad9c0d55fe3faca4d9bd4ac2792253",
-      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.0/mnemion-4.0.0-py3-none-any.whl"
+      "digest": "sha256:486c88835eb3fafa1445a08abb8acfc909d3d9ae0df169ab7ebac1d23925984b",
+      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.1/latest-x64-windows.json"
     },
     {
-      "name": "mnemion-4.0.0.tar.gz",
-      "size": 8040687,
+      "name": "latest-x64.yml",
+      "size": 369,
       "state": "uploaded",
-      "digest": "sha256:1c92f38392acd934594bb30e5503babba9820663189a169eae68099159e4e27a",
-      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.0/mnemion-4.0.0.tar.gz"
+      "digest": "sha256:0f6ccecd7d91f55cba797e6380adc4d9719d5b874800b2e2fdf4e2d5276bf055",
+      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.1/latest-x64.yml"
     },
     {
-      "name": "mnemion-client-4.0.0.tgz",
+      "name": "mnemion-4.0.1-py3-none-any.whl",
+      "size": 471941,
+      "state": "uploaded",
+      "digest": "sha256:a589157d1549ea96e9c67bc4d6f61c5ddea53f8695b40e110bc489249e6e6b14",
+      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.1/mnemion-4.0.1-py3-none-any.whl"
+    },
+    {
+      "name": "mnemion-4.0.1.tar.gz",
+      "size": 8067677,
+      "state": "uploaded",
+      "digest": "sha256:f1acc35dc52d252fb5980b1c3dd3a8424be983c4db233130c3796aa751ef4fdd",
+      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.1/mnemion-4.0.1.tar.gz"
+    },
+    {
+      "name": "mnemion-client-4.0.1.tgz",
       "size": 10915,
       "state": "uploaded",
-      "digest": "sha256:2abc863864dfdadfd03c8ac135f6ec99682e0c65da16560ee14ce7902e26c259",
-      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.0/mnemion-client-4.0.0.tgz"
+      "digest": "sha256:6aa385c11e804dd7564ad4bb96f0aa2ec6e60b11f131b25ca90708eaaadba74a",
+      "browser_download_url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.1/mnemion-client-4.0.1.tgz"
     }
   ]
 }
