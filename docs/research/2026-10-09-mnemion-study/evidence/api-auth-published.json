@@ -1,0 +1,8 @@
+{
+  "repo": "published",
+  "configured_token": true,
+  "anonymous_read_status": 200,
+  "anonymous_response_contains_synthetic_provider_key": true,
+  "authenticated_read_status": 200,
+  "authenticated_response_contains_synthetic_provider_key": true
+}

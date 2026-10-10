@@ -11,6 +11,7 @@ instead of the real user profile.
 """
 
 import os
+import json
 import shutil
 import uuid
 from pathlib import Path
@@ -37,11 +38,19 @@ os.environ["USERPROFILE"] = _session_tmp
 os.environ["HOMEDRIVE"] = os.path.splitdrive(_session_tmp)[0] or "C:"
 os.environ["HOMEPATH"] = os.path.splitdrive(_session_tmp)[1] or _session_tmp
 
+_config_dir = Path(_session_tmp) / ".mnemion"
+_config_dir.mkdir(parents=True, exist_ok=True)
+(_config_dir / "config.json").write_text(
+    json.dumps({"embedding_device": "hash"}),
+    encoding="utf-8",
+)
+
 # Now it is safe to import mnemion modules that trigger initialisation.
 import chromadb  # noqa: E402
 import pytest  # noqa: E402
 
 from mnemion.config import DRAWER_HNSW_METADATA, MnemionConfig  # noqa: E402
+from mnemion.embedding import get_embedding_function  # noqa: E402
 from mnemion.knowledge_graph import KnowledgeGraph  # noqa: E402
 
 
@@ -101,10 +110,9 @@ def config(tmp_dir, anaktoron_path):
     """A MnemionConfig pointing at the temp Anaktoron."""
     cfg_dir = os.path.join(tmp_dir, "config")
     os.makedirs(cfg_dir)
-    import json
 
     with open(os.path.join(cfg_dir, "config.json"), "w") as f:
-        json.dump({"anaktoron_path": anaktoron_path}, f)
+        json.dump({"anaktoron_path": anaktoron_path, "embedding_device": "hash"}, f)
     return MnemionConfig(config_dir=cfg_dir)
 
 
@@ -112,7 +120,11 @@ def config(tmp_dir, anaktoron_path):
 def collection(anaktoron_path):
     """A ChromaDB collection pre-seeded in the temp Anaktoron."""
     client = chromadb.PersistentClient(path=anaktoron_path)
-    col = client.get_or_create_collection("mnemion_drawers", metadata=DRAWER_HNSW_METADATA)
+    col = client.get_or_create_collection(
+        "mnemion_drawers",
+        metadata=DRAWER_HNSW_METADATA,
+        embedding_function=get_embedding_function("hash"),
+    )
     yield col
     client.delete_collection("mnemion_drawers")
     del client

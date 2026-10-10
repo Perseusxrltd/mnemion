@@ -13,7 +13,7 @@ from .reconstruction import Reconstructor
 from .trust_lifecycle import DrawerTrust, STATUS_QUARANTINED, STATUS_SUPERSEDED
 
 _SUITES = {"struct", "causal", "forgetting", "security", "all"}
-_MODES = ["raw_vector", "hybrid_rrf", "trust_kg", "cognitive_reconstruction"]
+_MODES = ["raw_vector", "hybrid_rrf", "trust_kg", "cognitive_reconstruction", "memory_guard"]
 
 
 class _EvalCollection:
@@ -65,16 +65,17 @@ class _EvalCollection:
         return result
 
 
-def _blank_passed() -> dict[str, bool]:
-    return {mode: False for mode in _MODES}
+def _blank_passed() -> dict[str, bool | None]:
+    # null means not executed; it must never be counted as a failed comparator.
+    return {mode: None for mode in _MODES}
 
 
-def _score_cases(cases: list[dict[str, Any]]) -> dict[str, float]:
-    if not cases:
-        return {mode: 0.0 for mode in _MODES}
-    return {
-        mode: sum(1 for case in cases if case["passed"].get(mode)) / len(cases) for mode in _MODES
-    }
+def _score_cases(cases: list[dict[str, Any]]) -> dict[str, float | None]:
+    scores = {}
+    for mode in _MODES:
+        measured = [case["passed"][mode] for case in cases if case["passed"].get(mode) is not None]
+        scores[mode] = sum(measured) / len(measured) if measured else None
+    return scores
 
 
 def _suite_db_path(base_path: str, suite: str, multi_suite: bool) -> str:
@@ -104,14 +105,14 @@ def _run_struct_case(kg_path: str) -> list[dict[str, Any]]:
     graph.consolidate_collection(collection, limit=10)
     result = Reconstructor(graph, collection, topic_tunnel_min_count=2).reconstruct(
         "retrieval",
-        budget=1,
+        budget=2,
     )
     actual_ids = [item["id"] for item in result["results"]]
     passed = _blank_passed()
     passed["cognitive_reconstruction"] = actual_ids == ["struct_alpha", "struct_beta"]
     return [
         {
-            "name": "topic_tunnel_expansion",
+            "name": "shared_topic_within_result_budget",
             "query": "retrieval",
             "expected_ids": ["struct_alpha", "struct_beta"],
             "actual_ids": actual_ids,
@@ -173,7 +174,6 @@ def _run_forgetting_case(kg_path: str) -> list[dict[str, Any]]:
     actual_ids = [item["id"] for item in result["results"]]
     ok = "forget_old" not in actual_ids and "forget_current" in actual_ids
     passed = _blank_passed()
-    passed["trust_kg"] = ok
     passed["cognitive_reconstruction"] = ok
     return [
         {
@@ -207,7 +207,7 @@ def _run_security_case(kg_path: str) -> list[dict[str, Any]]:
     status = trust.get("security_bad")["status"]
     ok = guard_result["flagged"] == 1 and status == STATUS_QUARANTINED and len(findings) >= 2
     passed = _blank_passed()
-    passed["trust_kg"] = ok
+    passed["memory_guard"] = ok
     return [
         {
             "name": "memory_injection_quarantine",

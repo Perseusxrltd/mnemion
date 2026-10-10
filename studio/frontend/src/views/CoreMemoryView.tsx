@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Brain, Save, Plus, Trash2, HelpCircle, FileText, Check, AlertCircle } from 'lucide-react'
 import { api } from '../api/client'
 import type { CoreMemory } from '../types'
+import { useToast } from '../components/ToastProvider'
 
 // Simple Markdown rendering helper for core memory previews
 function renderSimpleMarkdown(md: string): string {
@@ -48,6 +49,7 @@ function renderSimpleMarkdown(md: string): string {
 }
 
 export default function CoreMemoryView() {
+  const toast = useToast()
   const [memories, setMemories] = useState<CoreMemory[]>([])
   const [activeKey, setActiveKey] = useState<string>('default')
   const [content, setContent] = useState<string>('')
@@ -61,6 +63,7 @@ export default function CoreMemoryView() {
   const [saveError, setSaveError] = useState<string>('')
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [showHelp, setShowHelp] = useState<boolean>(true)
+  const [pendingKey, setPendingKey] = useState<string | null>(null)
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -106,11 +109,9 @@ export default function CoreMemoryView() {
           setActiveKey(data[0].key)
         }
       } else {
-        // Create default memory if none exists
-        await api.updateCoreMemory('default', '# Core Working Memory\n\n- Milestone: Initial project audit completed.\n- State: Running locally.\n- Rules: Prioritize local-first databases.')
-        const refreshed = await api.getCoreMemories()
-        setMemories(refreshed)
         setActiveKey('default')
+        setContent('')
+        setOriginalContent('')
       }
     } catch (e: any) {
       console.error(e)
@@ -129,9 +130,12 @@ export default function CoreMemoryView() {
       setOriginalContent(content)
       
       // Update local state list
-      setMemories(prev =>
-        prev.map(m => (m.key === activeKey ? { ...m, content } : m))
-      )
+      setMemories(prev => {
+        if (prev.some(m => m.key === activeKey)) {
+          return prev.map(m => (m.key === activeKey ? { ...m, content } : m))
+        }
+        return [...prev, { key: activeKey, content }]
+      })
       
       setTimeout(() => setSaveStatus('idle'), 2000)
     } catch (e: any) {
@@ -146,7 +150,7 @@ export default function CoreMemoryView() {
     if (!cleanKey) return
     
     if (memories.some(m => m.key === cleanKey)) {
-      alert('A core memory block with that key already exists!')
+      toast.error('A core memory block with that key already exists.')
       return
     }
 
@@ -160,9 +164,25 @@ export default function CoreMemoryView() {
       setActiveKey(cleanKey)
       setIsCreating(false)
       setNewKey('')
+      toast.success('Core memory block created.')
     } catch (e: any) {
-      alert('Failed to create block: ' + e.message)
+      toast.error(e.message ? `Failed to create block: ${e.message}` : 'Failed to create block.')
     }
+  }
+
+  function chooseMemoryKey(key: string) {
+    if (key === activeKey) return
+    if (isDirty) {
+      setPendingKey(key)
+      return
+    }
+    setActiveKey(key)
+  }
+
+  function discardAndSwitch() {
+    if (!pendingKey) return
+    setActiveKey(pendingKey)
+    setPendingKey(null)
   }
 
   const filteredMemories = memories.filter(m =>
@@ -258,12 +278,7 @@ export default function CoreMemoryView() {
               return (
                 <button
                   key={m.key}
-                  onClick={() => {
-                    if (isDirty) {
-                      if (!confirm('You have unsaved changes in the current block. Discard them?')) return
-                    }
-                    setActiveKey(m.key)
-                  }}
+                  onClick={() => chooseMemoryKey(m.key)}
                   className={`flex items-center gap-2 w-full px-2.5 py-2 rounded-lg text-left text-xs transition-colors ${
                     active ? 'active text-white' : 'text-muted hover-row'
                   }`}
@@ -284,7 +299,7 @@ export default function CoreMemoryView() {
 
         {/* Info footer */}
         <div className="p-3 border-t text-[11px] text-faint bg-raised" style={{ borderColor: 'var(--background-modifier-border)' }}>
-          Always injected into connected MCP agents' system prompts.
+          Always available to connected AI apps during sessions.
         </div>
       </div>
 
@@ -358,10 +373,10 @@ export default function CoreMemoryView() {
         {showHelp && (
           <div className="px-6 py-4 border-b text-xs space-y-2 bg-purple-500/5 border-purple-500/10 text-muted transition-all">
             <div className="font-semibold text-purple-300 flex items-center gap-1.5">
-              💡 What is Core Working Memory?
+              What is Core Working Memory?
             </div>
             <p className="leading-relaxed">
-              Inspired by Letta and MemGPT, Mnemion's Core Working Memory provides a persistent scratchpad for agents. Instead of passive context lookup (RAG), this memory block is **permanently injected into the agent's context window**.
+              Core Working Memory is a persistent scratchpad for active goals, project rules, and important context. Connected AI apps can read it live so they stay aligned across sessions.
             </p>
             <div className="grid grid-cols-2 gap-4 pt-1 font-mono text-[11px]">
               <div className="p-2.5 rounded bg-raised border">
@@ -412,6 +427,38 @@ export default function CoreMemoryView() {
           </div>
         </div>
       </div>
+
+      {pendingKey && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-sm">
+          <div
+            className="w-[360px] rounded-xl p-5 shadow-2xl"
+            style={{ background: 'var(--background-primary-alt)', border: '1px solid var(--border)' }}
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <AlertCircle size={16} className="text-amber-400" />
+              <h2 className="text-sm font-semibold">Unsaved changes</h2>
+            </div>
+            <p className="text-xs text-muted leading-relaxed">
+              Save the current block before switching, or discard your edits and open another block.
+            </p>
+            <div className="flex justify-end gap-2 mt-5">
+              <button
+                className="px-3 py-1.5 rounded-lg text-xs text-muted hover:text-white hover:bg-white/5 transition-colors"
+                onClick={() => setPendingKey(null)}
+              >
+                Keep editing
+              </button>
+              <button
+                className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                style={{ background: 'rgba(245,158,11,0.14)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.28)' }}
+                onClick={discardAndSwitch}
+              >
+                Discard edits
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

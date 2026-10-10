@@ -2,7 +2,10 @@
 node_modules/
 .venv/
 dist/
+dist-electron/
+dist-backend/
 build/
+build-tmp/
 __pycache__/
 *.pyc
 .pytest_cache/
@@ -21,3 +24,24 @@ mnemion/palace/
 .coverage
 jobs.json
 failed_logs.txt
+studio/electron/backend.spec
+
+# Local v4 credentials and deployment state
+.mnemion-run/
+*.mnemion-credentials.json
+
+# Browser automation state can contain temporary credentials
+.playwright-cli/
+
+dist-client/
+dist-desktop/
+
+# Private credentials, backups, and local run logs
+.env
+.env.*
+!.env.example
+*.mnemion
+*.mnemion-ledger.json
+
+# Local browser acceptance artifacts may include fixture credentials
+output/

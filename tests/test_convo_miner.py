@@ -3,6 +3,7 @@ import tempfile
 import shutil
 import chromadb
 from mnemion.convo_miner import chunk_exchanges, mine_convos
+from mnemion.embedding import get_embedding_function
 
 
 def test_convo_mining():
@@ -16,7 +17,10 @@ def test_convo_mining():
     mine_convos(tmpdir, anaktoron_path, wing="test_convos")
 
     client = chromadb.PersistentClient(path=anaktoron_path)
-    col = client.get_collection("mnemion_drawers")
+    col = client.get_collection(
+        "mnemion_drawers",
+        embedding_function=get_embedding_function("hash"),
+    )
     assert col.count() >= 2
 
     # Verify search works

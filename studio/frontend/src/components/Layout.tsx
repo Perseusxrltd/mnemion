@@ -81,10 +81,10 @@ export default function Layout() {
 
       // ── 'G' prefix: navigation sequences ──
       // Chord dispatch MUST run before single-key shortcuts, otherwise keys
-      // like 'C' (new drawer) would shadow chords like 'G C' (→ /connect).
+      // Single-key shortcuts are checked after navigation chords.
       if (e.key === 'g' || e.key === 'G') {
         if (gActiveRef.current) {
-          // Double-G → graph
+          // Double-G opens the graph.
           if (gTimerRef.current) clearTimeout(gTimerRef.current)
           gActiveRef.current = false
           navigate('/graph')
@@ -114,7 +114,7 @@ export default function Layout() {
         return
       }
 
-      // ── 'C': new drawer ──
+      // C opens the save-memory form.
       if (e.key === 'c' || e.key === 'C') {
         openCreateDrawer()
         return
@@ -134,17 +134,19 @@ export default function Layout() {
     <ToastProvider>
       <LayoutContext.Provider value={ctx}>
         <div
-          className="flex h-screen overflow-hidden"
+          className="app-shell flex h-screen overflow-hidden"
           style={{ background: 'var(--background-primary)' }}
         >
-          {/* Ribbon — 44px leftmost icon strip */}
+          {/* Ribbon: 44px leftmost icon strip */}
           <Ribbon />
 
-          {/* Left sidebar — file explorer */}
-          <LeftSidebar />
+          {/* Left sidebar: memory explorer */}
+          <div className="memory-sidebar-shell">
+            <LeftSidebar />
+          </div>
 
           {/* Main content column */}
-          <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+          <div className="app-main flex-1 flex flex-col overflow-hidden min-w-0">
             <main className="flex-1 overflow-hidden flex flex-col">
               <ErrorBoundary>
                 <Outlet />

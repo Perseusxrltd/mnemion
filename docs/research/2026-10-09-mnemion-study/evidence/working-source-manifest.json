@@ -1,0 +1,1089 @@
+{
+  "head": "c670e3039d2f7b43dbb00a2157e420e665203979",
+  "files": [
+    {
+      "path": ".agents/plugins/marketplace.json",
+      "sha256": "b6a9efc28a27ac9975e3923b5fca83fc24e92aec98a6e82acf13417033d2d25f"
+    },
+    {
+      "path": ".claude-plugin/.mcp.json",
+      "sha256": "54dd8053d600728d8c370622972d225d8bdab901d7decb2451395d6b8254db02"
+    },
+    {
+      "path": ".claude-plugin/README.md",
+      "sha256": "3ca159ec0caa23f3cbe31d151f8fe4a39c186f9f56ce58cbac201ca9fd402393"
+    },
+    {
+      "path": ".claude-plugin/commands/help.md",
+      "sha256": "91307c0223586d650de49ccefd100d7312c8ef573078c9eb1139d341ea091670"
+    },
+    {
+      "path": ".claude-plugin/commands/init.md",
+      "sha256": "ede8dda6cf0cf234035617bcf817b83bc53447364adc4dc3284074438507cda9"
+    },
+    {
+      "path": ".claude-plugin/commands/mine.md",
+      "sha256": "c6494fddc55f42703c72ba09a8af2dc4e245ae04196804d9116ef4a3df2c6f48"
+    },
+    {
+      "path": ".claude-plugin/commands/search.md",
+      "sha256": "b068233159a5f5ed80fa9c877902cbeff115dd6a169b64ade01bbc5afdee5c73"
+    },
+    {
+      "path": ".claude-plugin/commands/status.md",
+      "sha256": "ef74dce7fa846c39e4ef95d6399258a7802deb8ae01f0790adf06f741bdd1fae"
+    },
+    {
+      "path": ".claude-plugin/hooks/hooks.json",
+      "sha256": "4fb2e8fcefaaa1e5d47c6223670e97cb5104f32ebcac49a5eba213f1870528c1"
+    },
+    {
+      "path": ".claude-plugin/hooks/mnemion-precompact-hook.sh",
+      "sha256": "301340c56197777126d1f4e6905d9d18b83ad3b41c31c08f264df8a1c9058d6c"
+    },
+    {
+      "path": ".claude-plugin/hooks/mnemion-stop-hook.sh",
+      "sha256": "d83fc251f274a3e3940687f3898c57bb8ee899bbc32b2a7551f6946f3ebd98f4"
+    },
+    {
+      "path": ".claude-plugin/marketplace.json",
+      "sha256": "9ec69b843c74850e7c8dbd386cc8ea303e5d6622e3e505214d552a64f90810e9"
+    },
+    {
+      "path": ".claude-plugin/plugin.json",
+      "sha256": "895de425c89fcbea47264d6ee89ad97bd7d6373e846600eb553cd1adbd4296e2"
+    },
+    {
+      "path": ".claude-plugin/skills/mnemion/SKILL.md",
+      "sha256": "91ec5b435a67bf16ac2059a746d9758d101fc9082179c899ccb9abeddb539f80"
+    },
+    {
+      "path": ".codex-plugin/README.md",
+      "sha256": "e87311d4fb8ee7cc7dbc589d714f11c1be9012caecee7e0eb04fce85e58ce430"
+    },
+    {
+      "path": ".codex-plugin/hooks.json",
+      "sha256": "6a1d25af42acf343f5e571a3fa16a9430a7afa957b4cd2e9f609d5b45d76fd9d"
+    },
+    {
+      "path": ".codex-plugin/hooks/mnemion-hook.sh",
+      "sha256": "4c187ba8236c825f0c97b74bee90ba3b4f770bcffc6996a7852e1880789220b3"
+    },
+    {
+      "path": ".codex-plugin/plugin.json",
+      "sha256": "381deac6fa5c0bc6038b9e2d2ebb792e9d9c522e283f8fa492047d73c34171ef"
+    },
+    {
+      "path": ".codex-plugin/skills/help/SKILL.md",
+      "sha256": "e08694de49f51801ea101a3c181cc46bff3cfa94f48b6498b58b5cc7247f92d5"
+    },
+    {
+      "path": ".codex-plugin/skills/init/SKILL.md",
+      "sha256": "d384e71923bd91d429edf9f79181d2976d052738519650454178a8959b2f59f9"
+    },
+    {
+      "path": ".codex-plugin/skills/mine/SKILL.md",
+      "sha256": "db82177768c9ccc809fc320f8e955b62483228487608c98fd63efffd958814fe"
+    },
+    {
+      "path": ".codex-plugin/skills/search/SKILL.md",
+      "sha256": "a59a0b71d8798ea81c32e62856ccd3784d5f8362f12dac1860dae05e6524f8fd"
+    },
+    {
+      "path": ".codex-plugin/skills/status/SKILL.md",
+      "sha256": "4065339369681f2b582071684a7d730b6157c089767afdf6d7c253be7b54eef7"
+    },
+    {
+      "path": ".gitattributes",
+      "sha256": "f384ba461a50afb098378001b2fbd8247288b83caea234f269d8a2e80deadb13"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/bug_report.md",
+      "sha256": "af2a93d1f648a8810e4c34f5c6612604fd5b3673717daab113266483b7ae156b"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/feature_request.md",
+      "sha256": "bdfdde4241e0e31aba19af67aba5bee4562281a59101900db86713b074927481"
+    },
+    {
+      "path": ".github/PULL_REQUEST_TEMPLATE.md",
+      "sha256": "6dd59a6ef2164c50c3601d10b20c02b6e81b63fc64c6e3ba736fbb2f3752bbf7"
+    },
+    {
+      "path": ".github/workflows/bump-plugin-version.yml",
+      "sha256": "74b8a1abac2b731363a93beaf29d6b61070403ffddc16b73dc6adf15de9e1482"
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "21dd9ed05846332423759cbd73a7e6604bb0b621f1c3fc16cdd68e9377255425"
+    },
+    {
+      "path": ".gitignore",
+      "sha256": "cbcb9264c70207029013931c300bfa2258e5d33f70a7afe45fc31d949fb59d3c"
+    },
+    {
+      "path": ".mcp.json",
+      "sha256": "ec9f436444b4f825e989bb9f1564c6e1d294ad04c140791ea5523a34a24eb7a8"
+    },
+    {
+      "path": ".molthub/project.md",
+      "sha256": "cd9b8afc8c2993e6a06baca08278b6c78584381906102fb70173e1aed8ab8e01"
+    },
+    {
+      "path": ".pre-commit-config.yaml",
+      "sha256": "f33912e85be41b7351be6c5339c8608a0d7a2c1b22a1337f7bae675147aa4fe7"
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "sha256": "1c3229db8b8f8aef62c791eb7a7fedf0907cc0034b9691cf2336e553d1341e2c"
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "a6919185dcba37544153a02905b24577e0f6cdde599c5f7ff5658acb4d345495"
+    },
+    {
+      "path": "Makefile",
+      "sha256": "ace3bcf4145fd8d8263e0fa1e47255ac24cddf33561ec6ad8d45804bf5ff15db"
+    },
+    {
+      "path": "README.md",
+      "sha256": "a0219af1cb921574a193f0039b1c2cf687735a586de4e79f655245c63dcf0210"
+    },
+    {
+      "path": "RESEARCH.md",
+      "sha256": "893bd46a3793d4e764e3cccc61b20efb28b56a0ac835b61bc712d759f6b43d2c"
+    },
+    {
+      "path": "SYSTEM_PROMPT.md",
+      "sha256": "976bfe4086ca60d0c64e34b17f4a6696fccf32421e57606818dbaf0652d0e132"
+    },
+    {
+      "path": "assets/mnemion_logo.png",
+      "sha256": "2446a45a9ef690951844f95693ac17559745009453a5cadc27af5445b7ad8146"
+    },
+    {
+      "path": "benchmarks/BENCHMARKS.md",
+      "sha256": "b305d38ecc58f3b144198785b8f670e92cf4c4648a33ffc822da973d5744f22a"
+    },
+    {
+      "path": "benchmarks/HYBRID_MODE.md",
+      "sha256": "967edea474007fccb78e4dba07d9d1a993689f90b4fb58f87b7a94f1eead2e58"
+    },
+    {
+      "path": "benchmarks/README.md",
+      "sha256": "e6b356b8195e520a9930428f32d2355ee5359ba766e6b03bcdb1af6dda8bb991"
+    },
+    {
+      "path": "benchmarks/convomem_bench.py",
+      "sha256": "86dd8f6c6216d8b828b9ff2cd441d31b7c38e7dca6f000923d34e2f3786ef7f5"
+    },
+    {
+      "path": "benchmarks/head_to_head.py",
+      "sha256": "4a0bf05fb616fa9b9cc98b451fa9c409945eac2049966646252d64a8bc8b4852"
+    },
+    {
+      "path": "benchmarks/latent_health.py",
+      "sha256": "ef614dd10ce798f48e05b646f2a7ca7345f2ca6f43a3d7a0185625edaea537bb"
+    },
+    {
+      "path": "benchmarks/locomo_bench.py",
+      "sha256": "6e76e1c7ec0a693a7b46fda8782356eeb9a40e0e99dc6e7941b08b9a7484a6e0"
+    },
+    {
+      "path": "benchmarks/longmemeval_bench.py",
+      "sha256": "570b8c2704019c9f4dd8c1defdd14a173c4f99789d7073bbc682c2d9fecf078c"
+    },
+    {
+      "path": "benchmarks/membench_bench.py",
+      "sha256": "d37912701755c31fbc6cb1a733c07573999b050089a9f01f9561482de5e58dfe"
+    },
+    {
+      "path": "benchmarks/moat_benchmark.py",
+      "sha256": "a015c303699aac088ce1ee290b5786f3454d8347500878b6b1894df30cf83747"
+    },
+    {
+      "path": "benchmarks/verify_storage.py",
+      "sha256": "8ab28601b2c6eff79ce95c4b65baf161ccb27956c7ae0f36ca2438fa07dc2f32"
+    },
+    {
+      "path": "docs/implementation/wiki_openbrain_status.md",
+      "sha256": "fdf43c03811a3e7f4433a50c4b14cb6f420da39bcf3d1e3347d3151ca7f6a9d6"
+    },
+    {
+      "path": "docs/moat.md",
+      "sha256": "9ec8a500c1309b6e84903aa5ef163a81724d7a6cf46fd31ff58f4e5f88d395a2"
+    },
+    {
+      "path": "docs/openbrain_compat.md",
+      "sha256": "ebc8fd421ddfc93bebf97c8993dd086eaf7de890fb43812a284fa57cf831a10d"
+    },
+    {
+      "path": "docs/source_vault.md",
+      "sha256": "0d16d6b2de33477c8805d8fa2654d986874c658d1548fd23308d13e1b52163a4"
+    },
+    {
+      "path": "docs/wiki_agent_schema.md",
+      "sha256": "dccf25562580cc8da5ef693647cef30826ece3e6737bfa9859258ab01f8e033f"
+    },
+    {
+      "path": "docs/wiki_compiler.md",
+      "sha256": "4f746f54a56d28d322b0eb2342a0257adb83812cfe55696eaed27272a6c4afee"
+    },
+    {
+      "path": "eval/BENCHMARK_RESULTS.md",
+      "sha256": "899e8d76380c04ddbf7da4cc489ff14342c63dfb49bf5c5b3c39bb07c5926dbe"
+    },
+    {
+      "path": "eval/benchmark.py",
+      "sha256": "163b2c9ac80ad34ab2bf98a684603e76ab2a145630e39cd824934b5ec98ed6dc"
+    },
+    {
+      "path": "eval/gold_standard.json",
+      "sha256": "21d97fe92d0251491e3462735656114bb1ae38d075ff4a2960b50185d7cc9c6a"
+    },
+    {
+      "path": "examples/HOOKS_TUTORIAL.md",
+      "sha256": "9e6d0140728c8e9100141b9977e10f4a50e035daec453fbab591a888c77ea3f4"
+    },
+    {
+      "path": "examples/basic_mining.py",
+      "sha256": "cf3f1e087b81191dffed6379bfa7af0e1668af0e196e25290d9989baf09f981f"
+    },
+    {
+      "path": "examples/convo_import.py",
+      "sha256": "e06ef9427cdd7b547909af9e3990c6d4c1074ccc30c1dee4219517651837f1bf"
+    },
+    {
+      "path": "examples/gemini_cli_setup.md",
+      "sha256": "255a9120641caa117777a1fadf44ec2257a5e0ba31084a107ba412b82917c2e0"
+    },
+    {
+      "path": "examples/mcp_setup.md",
+      "sha256": "3b8555d0b0109fb931dff351a04ad5fe1af593ed9c96d8c13a31100d7e9597ac"
+    },
+    {
+      "path": "hooks/README.md",
+      "sha256": "247291eabb7f3260f6c8fb646d4d17e8cd40e182b817a3eccddc8425c728aaa7"
+    },
+    {
+      "path": "hooks/mnemion_precompact_hook.sh",
+      "sha256": "9fe2822455dee44fb99dbeddfb5704e03a480b10d7ec55fb6d1dd1df33b4ddcf"
+    },
+    {
+      "path": "hooks/mnemion_save_hook.py",
+      "sha256": "59bc20d35396ef6387410516de91848846f435ffa409b1493d053e31be9cf8c8"
+    },
+    {
+      "path": "hooks/mnemion_save_hook.sh",
+      "sha256": "687077258bf264485f7921d73bcc7c9e5acc3b4b7078c20ace808f66e786892e"
+    },
+    {
+      "path": "mnemion/README.md",
+      "sha256": "b5a3393b1ad15a9b9eaeec789a4614f7bfc7bef8910d42e6c326e1d1a69bac4f"
+    },
+    {
+      "path": "mnemion/__init__.py",
+      "sha256": "62b1ce1161a94e4b174fa4f2b0ef9c01fde7ddc3aee37a3ca62b7a6d2c94e7c3"
+    },
+    {
+      "path": "mnemion/__main__.py",
+      "sha256": "cf7cde968be9e5d5c05a2e09a9fb2758c1ea94e472fca7ee6a88a000e32d50d9"
+    },
+    {
+      "path": "mnemion/anaktoron_graph.py",
+      "sha256": "c78725c2897c2c9b6a2b034e0ebde9a2fa5c3e8a3cc42f0b301d5de89861a1cf"
+    },
+    {
+      "path": "mnemion/backends/__init__.py",
+      "sha256": "d0dc05fc167f1f91b7f4f958b603984302739777cdcaba292550201c5e3b033c"
+    },
+    {
+      "path": "mnemion/backends/base.py",
+      "sha256": "3337cb97f08654c29d3dc96ac162b9982701a365bce10d01af922bedbf51fdc3"
+    },
+    {
+      "path": "mnemion/backends/chroma.py",
+      "sha256": "7e2c2417d0939e95da309de8fdd5829e415cd8e57e1e0bb1b0cdd0048c1429cf"
+    },
+    {
+      "path": "mnemion/backends/registry.py",
+      "sha256": "05c625df6062066475be812068459bc1951d49517b02aaf552d832a8aafc34db"
+    },
+    {
+      "path": "mnemion/capture/__init__.py",
+      "sha256": "5e0c0dfc47d8571bd40ad9524490afca45298525b0bd421ded01fc5a0cb28ce2"
+    },
+    {
+      "path": "mnemion/capture/cli_capture.py",
+      "sha256": "b0fbbf67bd79feeae94152e8953441fbdedae667cf510ea88a30fbd5d2abd1af"
+    },
+    {
+      "path": "mnemion/capture/folder_watch.py",
+      "sha256": "7731c86d6c6d6772332f8f8ec81c6cb7cc140776ef8c0534e89d58e354aa950b"
+    },
+    {
+      "path": "mnemion/capture/webhook.py",
+      "sha256": "944e666f124766808188be67ee2d6ad45509fb1eac202ac51220479e62bde373"
+    },
+    {
+      "path": "mnemion/chroma_compat.py",
+      "sha256": "d39ac78c4ba5e1296bdb89e4f8221edf049d10363c7a64e4d57f2591ce4b51ce"
+    },
+    {
+      "path": "mnemion/cli.py",
+      "sha256": "d018c988eaad2e164940263fb2c5b7a1b208ecc140669f20ef5e379a53162d3f"
+    },
+    {
+      "path": "mnemion/cognitive_graph.py",
+      "sha256": "dd98600150bd5ccb53abfa857b76834239ae7793e7fb1e5480f488bcb9d1a9bd"
+    },
+    {
+      "path": "mnemion/config.py",
+      "sha256": "f0e57e4d11a1a7879b6f93c28793e1340cd6c2438d0b24b310a136b00856b3fa"
+    },
+    {
+      "path": "mnemion/contradiction_detector.py",
+      "sha256": "83296263a03f802b194c11b3081cc24adc591a67b7b220cf55e74a34f9275272"
+    },
+    {
+      "path": "mnemion/convo_miner.py",
+      "sha256": "ed281ea1cf2cee274dc99160962accd1039f04f6bcdcc3177b2445e4d0a8125e"
+    },
+    {
+      "path": "mnemion/corpus_origin.py",
+      "sha256": "ec9067ec0034b992104c9f0927f32ad09ba73591146c804c791746ad974e2744"
+    },
+    {
+      "path": "mnemion/dialect.py",
+      "sha256": "02e3dd628c441c337eff762efd49de4f3bb218212253dc1405ca23a264a5a777"
+    },
+    {
+      "path": "mnemion/embedding.py",
+      "sha256": "b0eb23abdea0a999feff285dc0463c3bc91a4a47f6e2519dbceff61ee81030d3"
+    },
+    {
+      "path": "mnemion/entity_detector.py",
+      "sha256": "4158b8fac9dcf7b8ffc8b942f2a747bc9c3f77f220c0224073aeb508377c0869"
+    },
+    {
+      "path": "mnemion/entity_patterns.py",
+      "sha256": "7cf782d693ba74f734c54ff7fe278d120e66fcd8363d70ea93bb029dfc201f01"
+    },
+    {
+      "path": "mnemion/entity_registry.py",
+      "sha256": "2d212593773f300b27745c7a8c2f7447f6ef3e12d00e872d0c09fb26b79c7331"
+    },
+    {
+      "path": "mnemion/general_extractor.py",
+      "sha256": "e6acfafd6922c25763f5ae350893975af757d9e47954679f0d51d0a5186a3c5d"
+    },
+    {
+      "path": "mnemion/hooks_cli.py",
+      "sha256": "4dbf82bae6e9c305ec41e0f011a7fdc890acde80f7a699d6ffcf24f3891e2829"
+    },
+    {
+      "path": "mnemion/hybrid_searcher.py",
+      "sha256": "226f8d577819c849dc5623fa2997951cf021de18fac6372b8d71c4811668ea76"
+    },
+    {
+      "path": "mnemion/instructions/help.md",
+      "sha256": "548d943ea9da4aedca6b64e8a45b829831401119f81ce7822bcbd5921d166f1f"
+    },
+    {
+      "path": "mnemion/instructions/init.md",
+      "sha256": "b0b8e67f82fb5dee4732ca51c524201a430c54a0daeb7dc25486fa3a9af7bc03"
+    },
+    {
+      "path": "mnemion/instructions/mine.md",
+      "sha256": "a39d0c5e9eab0efad91e5eecdb01a503b8e0344d4ea8f55f8b24821328ba5e90"
+    },
+    {
+      "path": "mnemion/instructions/search.md",
+      "sha256": "4edf67cabeef9c77b61a28bd5376cccc8c388f7a4c6ed061631e744ebdacaf28"
+    },
+    {
+      "path": "mnemion/instructions/status.md",
+      "sha256": "fcb48b21d67b25da7ff3d93e1f0c0686cffb02bcd0c8225f178eb2a4ccf135f5"
+    },
+    {
+      "path": "mnemion/instructions_cli.py",
+      "sha256": "090938f74f48d5abb3b202954752f00708baa135976d478f04165182263acc95"
+    },
+    {
+      "path": "mnemion/knowledge_graph.py",
+      "sha256": "c3307b8b7395adc3e7a275f095be810294c5d6275b1a0fa1f2cc63e0db9674ec"
+    },
+    {
+      "path": "mnemion/layers.py",
+      "sha256": "f3034ea9a944c226a4388da8e6877219911d2217b416f4973d285d83f3eb4a35"
+    },
+    {
+      "path": "mnemion/lewm.py",
+      "sha256": "ea13afc32b7bc48bbf4ec5731bbedf0f892c104336734cd25efa5a066215e68a"
+    },
+    {
+      "path": "mnemion/librarian.py",
+      "sha256": "5ff38ec99525c0540b9baf424579166f794909ecbfe0360dfff8239443295822"
+    },
+    {
+      "path": "mnemion/llm_backend.py",
+      "sha256": "e7670a844792675629524acd8e5e79e8b26610e2d863fadc3cc30a78bfa0e9a8"
+    },
+    {
+      "path": "mnemion/mcp/__init__.py",
+      "sha256": "ba1c848dc2388f75443efa11230b85bccbd61f2245aeb7551957947d6fe7213d"
+    },
+    {
+      "path": "mnemion/mcp/compat/__init__.py",
+      "sha256": "24d6a5b9ea8b8985e6192b7ce0b72a990e5b79247e03c1e2c927e34426511d51"
+    },
+    {
+      "path": "mnemion/mcp/compat/openbrain.py",
+      "sha256": "a44699a2e399a6e45f58341a5385c5720fb10c68cf12e3ca3ab559a03418348d"
+    },
+    {
+      "path": "mnemion/mcp_server.py",
+      "sha256": "646eed96a3dc92d7fb4f70ad89a554e334ea3d9a9200226c1385bcfb51c30823"
+    },
+    {
+      "path": "mnemion/memory_guard.py",
+      "sha256": "b421bfff0f7baf9ffe52824896d8e4f7363e9468820eb7cadae57fd7de431926"
+    },
+    {
+      "path": "mnemion/miner.py",
+      "sha256": "5594060889facd0433960b43cc299f509fd1973b9419e1be0290b2e9b818a88f"
+    },
+    {
+      "path": "mnemion/moat_eval.py",
+      "sha256": "2994474e8698f36d2e12a103c44db8f31ef81a0bb58f38fdf939069fdd242672"
+    },
+    {
+      "path": "mnemion/normalize.py",
+      "sha256": "93044fb73c99162777b8d6b6c8a19b6661e1cd19fd9c287670d1ea13815afab3"
+    },
+    {
+      "path": "mnemion/obsidian.py",
+      "sha256": "262227485c4a15b1584bddb47174281dd52af90d0b75e029550047667537d8e1"
+    },
+    {
+      "path": "mnemion/onboarding.py",
+      "sha256": "a35cd3115c1e2a1aefe58274e51c501492ee0a568023cc6e0fb9333ad34f4854"
+    },
+    {
+      "path": "mnemion/predictor.py",
+      "sha256": "fd29d8fa27739863177251a66d21d61175f84ae083cd6184034163a366ba1260"
+    },
+    {
+      "path": "mnemion/project_scanner.py",
+      "sha256": "b5814207b241947f626f13463e82bcee3c580556edeb1799eb9d4398ede9db58"
+    },
+    {
+      "path": "mnemion/py.typed",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "mnemion/query_sanitizer.py",
+      "sha256": "9c33ca94484972d43d1722b07f606feb9e63da51e6752640f5eaa0e0090530f9"
+    },
+    {
+      "path": "mnemion/reconstruction.py",
+      "sha256": "01110c8604836e4424535b2f0fd11b71abf85c514e962a9f6fff28390db8db72"
+    },
+    {
+      "path": "mnemion/repair.py",
+      "sha256": "0c7716fa8f140da6558d87b823f88c10da96d2e371bdb88c035f1f7adaebe704"
+    },
+    {
+      "path": "mnemion/room_detector_local.py",
+      "sha256": "96af80776399efeff8ebc02293d9632d15c4dd557c686c1b94a8244c30860d22"
+    },
+    {
+      "path": "mnemion/searcher.py",
+      "sha256": "58ac6dcc10ab4793e5e20020903aed79852b2269e08b90ed9a94bec81008e4b8"
+    },
+    {
+      "path": "mnemion/sources/__init__.py",
+      "sha256": "27f270dec80f1d47399f11bdf1ebd1798c52fffbf328713d982a3690745a0b5d"
+    },
+    {
+      "path": "mnemion/sources/chunking.py",
+      "sha256": "acc6f33f34cf44cbee9eb342120e724fbfdea6f2985ac0469f2b9142670b9905"
+    },
+    {
+      "path": "mnemion/sources/extractors.py",
+      "sha256": "c32b14dfc01ed3382457a427f368923ffb9cd3c4afe1109436ed42ff6ccadfea"
+    },
+    {
+      "path": "mnemion/sources/index.py",
+      "sha256": "d7f62682e3b080fd484ed43a3a340941cfd2902b6973beac96dc52120a215d38"
+    },
+    {
+      "path": "mnemion/sources/ingest.py",
+      "sha256": "ec7ca1123ba823dff2d6d0a779dfc20143d8324d5b7edc0f8aea940ca41d6303"
+    },
+    {
+      "path": "mnemion/sources/models.py",
+      "sha256": "579475f238f9da3898a7bcee8dc707cf2b3d92eef6ee17757f8c7136e7a4807f"
+    },
+    {
+      "path": "mnemion/sources/privacy.py",
+      "sha256": "025af018be3e755168987198a2f8c849f9254306ed866d6bb81b8d071e99ef55"
+    },
+    {
+      "path": "mnemion/sources/store.py",
+      "sha256": "cdc592946a0d48daa0e18d7c304f3b0c52d7f7a723e75f147122de6a9b975509"
+    },
+    {
+      "path": "mnemion/spellcheck.py",
+      "sha256": "a072f7f3d02aaebcad7a1437894271d0c695c117d217893b216fed08d73586b1"
+    },
+    {
+      "path": "mnemion/split_mega_files.py",
+      "sha256": "5f3cad2c6fcd18a71202b7e4e2f9422f1cbb0f86b75356b6d3169e2863aa5076"
+    },
+    {
+      "path": "mnemion/sweeper.py",
+      "sha256": "83edbbd97ad297a8b58f50d4341bb0b65ba3529d846d2c7ace01a79ec567732c"
+    },
+    {
+      "path": "mnemion/trust_lifecycle.py",
+      "sha256": "05a564ac2c3cb9979525fd44bf73ad51e3a481bcbb52d64e36b2d86ce4e1439c"
+    },
+    {
+      "path": "mnemion/version.py",
+      "sha256": "147afe4bcba4d7364a2c5180dda506101d11fec8dc229ae0dee4d3fd20aa5824"
+    },
+    {
+      "path": "mnemion/wiki/__init__.py",
+      "sha256": "738e3140c9796ee656285f0fc671469d34e411f94523421b37866d48ba47a6da"
+    },
+    {
+      "path": "mnemion/wiki/blast_radius.py",
+      "sha256": "caa109dd9ca81702b9f69153d7d82f39640446343fb750b56c412d0af4dd9336"
+    },
+    {
+      "path": "mnemion/wiki/claims.py",
+      "sha256": "921820991dc340dee4fcf53e17509cf1905104ca5a974b75d34cdb4fae01600c"
+    },
+    {
+      "path": "mnemion/wiki/compiler.py",
+      "sha256": "834819b420ec25e6a20a2d1a4d64a3309ec31551989fa48da90d115e50bfcf90"
+    },
+    {
+      "path": "mnemion/wiki/context_pack.py",
+      "sha256": "335eac34af94ee592aebf2fd4653472d1fadcf634fb81d31423a877eb1c5b009"
+    },
+    {
+      "path": "mnemion/wiki/diffs.py",
+      "sha256": "5bf151a491b8f5fe025854426e27863377d7a34c076fc8374020712cc6ebb776"
+    },
+    {
+      "path": "mnemion/wiki/linter.py",
+      "sha256": "6d3002d4449461290e800c9a773d11f9326fd8a4eaba2bc3afe1e3d0b89f20ca"
+    },
+    {
+      "path": "mnemion/wiki/models.py",
+      "sha256": "e04b0a97b2b3381d445df50a6624fd300f74c1778d5673103e6f43e24b8b07f8"
+    },
+    {
+      "path": "mnemion/wiki/obsidian_export.py",
+      "sha256": "86f4b05f86e9e72ab067323d3bf4e1f9e2c4bfb86e3ef74bae0e3b3320b319db"
+    },
+    {
+      "path": "mnemion/wiki/prompts.py",
+      "sha256": "219c4e21f25eb37bfd90f3cc359f2f7dd525044988fc2537d600734152fd960d"
+    },
+    {
+      "path": "mnemion/wiki/provenance.py",
+      "sha256": "33d5ae3678d3f72ed013366ffb0d9ffaacfb83fdbf1e7b9bdb04b414bcbe7798"
+    },
+    {
+      "path": "mnemion/wiki/renderer.py",
+      "sha256": "92bb9d88c314b80e6d607647cf078cf78932036e26ef6642059ac538ad71e05c"
+    },
+    {
+      "path": "mnemion/wiki/store.py",
+      "sha256": "0359d6a060743afb083998f3b4ab825257d9e3ab0ed7fe81d05fabf88a6aa9e3"
+    },
+    {
+      "path": "pyproject.toml",
+      "sha256": "d4d0df58fe52b802c7f3f8fdfe298e8e7cb9fd4a5cc878642e2bea25bcf5f9d3"
+    },
+    {
+      "path": "scripts/setup_librarian_scheduler.ps1",
+      "sha256": "1c845c1403cea10b111ac4b817d726293ac4ea635324430755089129155387a0"
+    },
+    {
+      "path": "studio/README.md",
+      "sha256": "807e6ab4a9bb4f156bff9b525ad9ca65a35dd498543dbf78d04f97bc3d391706"
+    },
+    {
+      "path": "studio/backend/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "studio/backend/connectors.py",
+      "sha256": "588b79ece7249b3e950d363cdd459224b297afc221d2d69bd53a00986db326f6"
+    },
+    {
+      "path": "studio/backend/main.py",
+      "sha256": "f8a60a8ad94ecace290e40123e82200c985989665c7619acf2d27f60fc4cd10a"
+    },
+    {
+      "path": "studio/electron/main.ts",
+      "sha256": "4da11ad503029c1ff8bec975e70536772381cf65265b371fdbe4ff590456cd35"
+    },
+    {
+      "path": "studio/electron/package-lock.json",
+      "sha256": "f286d8e463592f26daa41f5366dcd002c6dceff9b80a4a6c76cb182055974adb"
+    },
+    {
+      "path": "studio/electron/package.json",
+      "sha256": "eec4b9598fea3d6c93ceb5b1708d083da45192fd4596b848d2f16a503fb6374e"
+    },
+    {
+      "path": "studio/electron/preload.ts",
+      "sha256": "439ca38582337c816ace43bd80db7acd3f996db11452c2073077871320fcc8b5"
+    },
+    {
+      "path": "studio/electron/tsconfig.json",
+      "sha256": "42022e7757166763fdb6f307c349d5c0e68fcd255148207109e462c25b6b9356"
+    },
+    {
+      "path": "studio/frontend/.gitignore",
+      "sha256": "ea51f78e69c37ba5b07274b23829325147e58ae7f0b4ddb332200f761dd6ffb1"
+    },
+    {
+      "path": "studio/frontend/index.html",
+      "sha256": "6f01bd2465ee9b8529b823d1d51cbd190cdbacdc603764eb9c79c626a66e3d52"
+    },
+    {
+      "path": "studio/frontend/package-lock.json",
+      "sha256": "10595300cd1465f93b2fe54c05bffa9299c325d08203f7903e563700bf11478b"
+    },
+    {
+      "path": "studio/frontend/package.json",
+      "sha256": "abe3ec9023eed5dc058c5c90e9d390d434775f7e47c4a802174b14a403e7bb32"
+    },
+    {
+      "path": "studio/frontend/postcss.config.js",
+      "sha256": "3ca34adf3a8b1acc31480f4d7f75ba9d606957c5fcd4299d2aae0b13b3e1e19a"
+    },
+    {
+      "path": "studio/frontend/public/icon-tray.png",
+      "sha256": "e9338962463814dbfd1e67f74cc4901cac6d58c95a26fe21e14515fa5a99d3af"
+    },
+    {
+      "path": "studio/frontend/public/icon.ico",
+      "sha256": "349671abbd3770facf1b95cd9fd358e6c8f44547e35553d115084948fb84dd6d"
+    },
+    {
+      "path": "studio/frontend/public/icon.png",
+      "sha256": "3ffe1c258a8abefdd962e28d1afe9b31429b5f0bb0726ad3cb54d9dbc60fc55d"
+    },
+    {
+      "path": "studio/frontend/src/App.tsx",
+      "sha256": "addae7ef15df48e0e4e8412ae6c96858ffc53ed36ca0caff8858faaa9c07de42"
+    },
+    {
+      "path": "studio/frontend/src/api/client.ts",
+      "sha256": "b701861e9b7baae16e063e46d50f8d6e697a527a57a02088f8049314c462321d"
+    },
+    {
+      "path": "studio/frontend/src/components/CommandPalette.tsx",
+      "sha256": "c76b19b4e922a80f58806e57ba71cc7ee6031c4fcc63e65862e59b71b9dd8065"
+    },
+    {
+      "path": "studio/frontend/src/components/DrawerCreateModal.tsx",
+      "sha256": "47b893a3dd54a1a5c8d9e376e7489eb815a90851fbb8083ab94e0fb00e0588bf"
+    },
+    {
+      "path": "studio/frontend/src/components/ErrorBoundary.tsx",
+      "sha256": "204d2e9ad2eaef85e13d51bc20a96ac4c43515b4b5ad66cbae3f29817fabb002"
+    },
+    {
+      "path": "studio/frontend/src/components/Layout.tsx",
+      "sha256": "e0c398c2abe2972871017b576c273a47f58cae883bca4106c86aaeb0ce9a98a3"
+    },
+    {
+      "path": "studio/frontend/src/components/LeftSidebar.tsx",
+      "sha256": "4143bb17f365c091e31d1e94ed7b36be54d7564ed63a07609fb101c7ac259cd4"
+    },
+    {
+      "path": "studio/frontend/src/components/Ribbon.tsx",
+      "sha256": "35c517a985891673b1e00c29edf30d6b9925dcab3446e5a694b2c8dd3482bf08"
+    },
+    {
+      "path": "studio/frontend/src/components/ShortcutModal.tsx",
+      "sha256": "16d095a7ead5cac93829138d174280cb20f129ba4933f944dc1e347638438e4a"
+    },
+    {
+      "path": "studio/frontend/src/components/StatusBar.tsx",
+      "sha256": "c330790165fa9c3bdb8afad09bdd2475979b2b802c72d85392a32fc796314fdb"
+    },
+    {
+      "path": "studio/frontend/src/components/ToastProvider.tsx",
+      "sha256": "0079ef3c9be9495a2c8a1d708507c4d0be9f7e1df8fcaca4515a1c457fef0ab9"
+    },
+    {
+      "path": "studio/frontend/src/components/TrustBadge.tsx",
+      "sha256": "4b3490bcf1f9324c676965ab950451ea88a295b89b6754421b75e9a54b28afdb"
+    },
+    {
+      "path": "studio/frontend/src/components/WingBadge.tsx",
+      "sha256": "15be5028abc550113ecb414769920ba6fbe098f262fb4da1c01b26b74781e63e"
+    },
+    {
+      "path": "studio/frontend/src/index.css",
+      "sha256": "07fc6c1a491a0ab360139f7b270a81174f70eedb66317abde7b6efc6271d1d66"
+    },
+    {
+      "path": "studio/frontend/src/main.tsx",
+      "sha256": "eb3b9f4aa4de25ee0cc3b06fe65a5c2bdb5e42a4881d574be5cdf890a118de0d"
+    },
+    {
+      "path": "studio/frontend/src/types.ts",
+      "sha256": "071632dff595bbfb5304df6a4202a01ee4de922027bad955fb7e1f6be5c9d355"
+    },
+    {
+      "path": "studio/frontend/src/views/AgentsView.tsx",
+      "sha256": "b6f95a14d176e06997af07c2df5258fb1c7978e2e09434140964cfbc275ebcd1"
+    },
+    {
+      "path": "studio/frontend/src/views/Browser.tsx",
+      "sha256": "0e15c6e52a615df1f663c26e1aec332cce413489be0c19245d66e1c288a2b754"
+    },
+    {
+      "path": "studio/frontend/src/views/ConnectorsView.tsx",
+      "sha256": "3b0875ec3272ba8bfe38fd2b419c471d3a7a5bba7da66d7cb6bc446be437f55b"
+    },
+    {
+      "path": "studio/frontend/src/views/CoreMemoryView.tsx",
+      "sha256": "dc714cbc5a14ee87c683985c59b9c0f9d366032bf4214f8088ab480259f85985"
+    },
+    {
+      "path": "studio/frontend/src/views/Dashboard.tsx",
+      "sha256": "86403c57071aad8cc3b20b6a16881cae37503bd880f98d38b8521b0516f240b7"
+    },
+    {
+      "path": "studio/frontend/src/views/DrawerDetail.tsx",
+      "sha256": "8dfdce31bd3b5472010ec01d49e96deeb544dfa4fecd660bf48e324952c2ab0f"
+    },
+    {
+      "path": "studio/frontend/src/views/GraphView.tsx",
+      "sha256": "18e3fa9e16652cd7c89870e5d5e2c079e6390fc00fccbd193c6c163e7fd4a72b"
+    },
+    {
+      "path": "studio/frontend/src/views/SearchView.tsx",
+      "sha256": "ace2aab6836835d42b415edb31c3b03167bde2942fba61c6312092185599eccb"
+    },
+    {
+      "path": "studio/frontend/src/views/SettingsView.tsx",
+      "sha256": "343accd2b2fd162e138a9e7cd6c7bdfe9710a97b1659b0e7cecf515ff7ecaf2e"
+    },
+    {
+      "path": "studio/frontend/tailwind.config.ts",
+      "sha256": "09b6e74d5db077ce54448b29a7f8be9335dc84baa9cc215075d738c5d7eef5cf"
+    },
+    {
+      "path": "studio/frontend/tsconfig.json",
+      "sha256": "2482a07121c76391227c9669b9215a436b3a83fedd20755f2ad589143a948076"
+    },
+    {
+      "path": "studio/frontend/vite.config.ts",
+      "sha256": "553a324c0df3123694cc956b54c5024153b5e92bbe5a5bd20135a62d3479a471"
+    },
+    {
+      "path": "studio/scripts/build-all.bat",
+      "sha256": "a5df7bcffbc778b2f51479b6549b3754ae202e0ca3b383b2487c253d1b6ec328"
+    },
+    {
+      "path": "studio/scripts/build-backend.bat",
+      "sha256": "0784c10628438a65a32448ad7f4144a1033cde2bd26d36d93073c570f3ac047e"
+    },
+    {
+      "path": "studio/start.bat",
+      "sha256": "d9c829d041d5227c9fb431ed2189c50149908185d7db329857f13b6823b1105b"
+    },
+    {
+      "path": "sync/README.md",
+      "sha256": "3481f6c39d4c2b2e6470c70a0722d9056a061b7500985b9aad50ba54b74e2e67"
+    },
+    {
+      "path": "sync/SyncMemories.ps1",
+      "sha256": "2817dce34227a7206d75b4cb08782789caafe90f2db6dd7aa5f216da7293ba44"
+    },
+    {
+      "path": "sync/SyncMemories.sh",
+      "sha256": "f2292494d295dc7fe8fc48a5d10ba5d4df8337f96c34766d3d5be3bcf72ede06"
+    },
+    {
+      "path": "sync/backfill_trust.py",
+      "sha256": "ff081f49d8e1f29bc87dc1b574b2745449df1647d27fdaaa4f099a91e34a7b2c"
+    },
+    {
+      "path": "sync/install_windows.ps1",
+      "sha256": "9f2005ecbaacf12e588a8bbe6d568717f9bc5cf99dccfc055677dbde36998406"
+    },
+    {
+      "path": "sync/merge_exports.py",
+      "sha256": "1c3262c0d9e8314323b77d75023d7e3b4d19bca9099f9a9c55a0afa625a8e574"
+    },
+    {
+      "path": "sync/run_vllm.sh",
+      "sha256": "b8d6513540cbcf17d2ad0d85a49643848f79f3839a5204e7ed94d9a83475b15e"
+    },
+    {
+      "path": "tests/__init__.py",
+      "sha256": "be50f31df78f7dcd576669935c984260a7550415f4a9ba06509ad3d9030ec48b"
+    },
+    {
+      "path": "tests/benchmarks/README.md",
+      "sha256": "806728ca16c7e25a350132bb5b18f8735a0bfb14d9322b82ba616949b8db832c"
+    },
+    {
+      "path": "tests/benchmarks/__init__.py",
+      "sha256": "0319382c3d88bc0934c122dbdcebe4f7382c03366d7e02eef9196453090cbaad"
+    },
+    {
+      "path": "tests/benchmarks/bench_ab_test.py",
+      "sha256": "eba20b2d525569f24e7b7b4ddb287560c178a6046ea67122211720541809221f"
+    },
+    {
+      "path": "tests/benchmarks/conftest.py",
+      "sha256": "008167014adfc1f2b4e8204c95a91ed38bed4cc6c8a65dfe77000a1008e811fc"
+    },
+    {
+      "path": "tests/benchmarks/data_generator.py",
+      "sha256": "f1727a0a48248b675d0f7db305c3b847e6d983ce402dfaa6b1bc6583bee8db83"
+    },
+    {
+      "path": "tests/benchmarks/report.py",
+      "sha256": "755d09c90642b6f13709e01be4b226942da020802b5f7a16900e96c7eed7d8d5"
+    },
+    {
+      "path": "tests/benchmarks/test_anaktoron_boost.py",
+      "sha256": "b8cf85ccb4686ad91626cb56d3c752e72e7e948dfb4aa4c35cf3cb28ff45c320"
+    },
+    {
+      "path": "tests/benchmarks/test_chromadb_stress.py",
+      "sha256": "a055a700ff023051c277f73abf865ee128483ac7ea81f858e00dec8356c292b4"
+    },
+    {
+      "path": "tests/benchmarks/test_ingest_bench.py",
+      "sha256": "993f912faf0568383cb9ebf654375d07743a806b134ccdda5b7afaec29e1272d"
+    },
+    {
+      "path": "tests/benchmarks/test_knowledge_graph_bench.py",
+      "sha256": "e75cf3464620032b3063442cd517ce7b4e1a24018b9adb6a12d9a32cb1734aff"
+    },
+    {
+      "path": "tests/benchmarks/test_layers_bench.py",
+      "sha256": "09bbb4ec29b1d7af2bb8c2865f3966ae428a3c3482461c5cbf2dd6e18836b466"
+    },
+    {
+      "path": "tests/benchmarks/test_mcp_bench.py",
+      "sha256": "8d4dcea117c6bc299c588d8c083f84c239434cb5963c976f74c085374b9bc1ef"
+    },
+    {
+      "path": "tests/benchmarks/test_memory_profile.py",
+      "sha256": "df15c9c9ee27ce67b71afd00a3fac57f899acc06f3ab4f791515403643e76f9b"
+    },
+    {
+      "path": "tests/benchmarks/test_recall_threshold.py",
+      "sha256": "d62014a155be6915432b5cac4e7eb2e6f462b568c8dcde4d96655789a6ca9443"
+    },
+    {
+      "path": "tests/benchmarks/test_search_bench.py",
+      "sha256": "cbb3d8c85abf0d4078ef2fa8ba07811ab0d490bf3ad79c5f924105f8f72f68f6"
+    },
+    {
+      "path": "tests/conftest.py",
+      "sha256": "4c910e3ed9501c1de34bd7322468d0a8bbb443678a129148c13827cb6501dc4b"
+    },
+    {
+      "path": "tests/test_backends.py",
+      "sha256": "c20f459af1f581f78e09cf0fe2a5926a358756c430d6019eaec5e0e14c571548"
+    },
+    {
+      "path": "tests/test_cli_init.py",
+      "sha256": "8dba3656c6604a65c6437314e48d6e8546f0e2c7c45725d449a3655c14ae9f65"
+    },
+    {
+      "path": "tests/test_cli_install_smoke.py",
+      "sha256": "fff1f9659849308f504dfe337c5e4d05d0f923c0aac42e5197cebade11a14c4a"
+    },
+    {
+      "path": "tests/test_cognitive_graph.py",
+      "sha256": "c4516348cf3085c6460bbf9310f45a944924a2b974d5d584f6e0618d50f66215"
+    },
+    {
+      "path": "tests/test_config.py",
+      "sha256": "7dfb07d964250a3934e711b6d74f400564fc1357f80fdb4c7239575f9884eabd"
+    },
+    {
+      "path": "tests/test_connectors.py",
+      "sha256": "a0663b93c08ed29d711da42852cc080941cf19c1f1df1b2b8294e532c3f1a41c"
+    },
+    {
+      "path": "tests/test_convo_miner.py",
+      "sha256": "69fc3d763a48dff57bb9be13079f11d3a8f1b0ae8464f15a972a7e08d0cf674b"
+    },
+    {
+      "path": "tests/test_core_memory.py",
+      "sha256": "d8462a1f90b30455892bff61d03883048dd598950cb59fd0a288fdd77b3eabf2"
+    },
+    {
+      "path": "tests/test_corpus_origin_project_scanner.py",
+      "sha256": "15d0baa2ad807f6c5cf4ff8ff0d6c433daf0802e866d144da72725efce50ceb1"
+    },
+    {
+      "path": "tests/test_dialect.py",
+      "sha256": "c173519b9c312fefca6adb8023d1814ad1065c19b6a62899cac04ae8812757e7"
+    },
+    {
+      "path": "tests/test_embedding.py",
+      "sha256": "9fb3d91285052eefc36222e21130b35a3b73bc234ddf9ec0e2512fa800f61812"
+    },
+    {
+      "path": "tests/test_entity_patterns.py",
+      "sha256": "5897ea02da3f1946580a9649f258199e84dd16e65c46d85e17be1fa100d39d34"
+    },
+    {
+      "path": "tests/test_hnsw_safety.py",
+      "sha256": "23be9f76a29b541bab817c72af0cb7226bcff24f6c0d44a5a2aecd3354f46691"
+    },
+    {
+      "path": "tests/test_hooks_cli.py",
+      "sha256": "9081c50dfc885b055992f00f443b2f3963deb69254c48eeaa43d13263fd6241c"
+    },
+    {
+      "path": "tests/test_hybrid_searcher.py",
+      "sha256": "82e6e7ab192261a1be5695f48e20b603cddad4a18488be1ef5eecb32b5b27151"
+    },
+    {
+      "path": "tests/test_knowledge_graph.py",
+      "sha256": "4840a85b824fe52b715c9616efd8d5322ff12a54e87184e1289dfacbe35c8bbb"
+    },
+    {
+      "path": "tests/test_librarian.py",
+      "sha256": "eb094577effad02827c6fd2d40f243ccf040e6141498f1ff9bd86db6c4a7c454"
+    },
+    {
+      "path": "tests/test_mcp_openbrain_compat.py",
+      "sha256": "c3c834796579c554849716d4d1d38e60e243108c1899e21e7bd3f7f62c216dbf"
+    },
+    {
+      "path": "tests/test_mcp_server.py",
+      "sha256": "5ef296c892f3a1af45144ac32b3af9e6b2fcd30140ef63e35887bb4e6fd92e0b"
+    },
+    {
+      "path": "tests/test_memory_guard.py",
+      "sha256": "af6ce8950043a7e17e84d50f706cf075e2de5d7e09021a7cdfc8953e2aab1337"
+    },
+    {
+      "path": "tests/test_memory_guard_cli.py",
+      "sha256": "cf6c50f354ea3596f98f03ec795f9b10f8d002e8251d016fc2b83e9a88911528"
+    },
+    {
+      "path": "tests/test_miner.py",
+      "sha256": "df3f6f9b346dccc1f12ada84b6d0bb8a957a5bbe2609b4a4e4437f544f9ce4aa"
+    },
+    {
+      "path": "tests/test_moat_eval.py",
+      "sha256": "ab6eaccd6f7621c528d3fb0b965225ac821b279c0b0eb1d8198c0f440d793ee2"
+    },
+    {
+      "path": "tests/test_moat_interfaces.py",
+      "sha256": "0add5f66f0bcdffbfcdfa7bcec379777f035e07e35343aeb04ad6c7df07808cd"
+    },
+    {
+      "path": "tests/test_normalize.py",
+      "sha256": "f8c1f4a86bd6b8758eefded8e2ed031015365efc8e8403ebd4fedb3f9a0e6976"
+    },
+    {
+      "path": "tests/test_obsidian.py",
+      "sha256": "0768a36588c5e0262a718eb8af756951abf654bc4be94705bc52881e77e4d330"
+    },
+    {
+      "path": "tests/test_query_sanitizer.py",
+      "sha256": "587abe352d933c9e492fd2f973d4a19c87096e374a46434547739807764dd9cb"
+    },
+    {
+      "path": "tests/test_reconstruction.py",
+      "sha256": "c46a68002893b17ca972a9c308712612819430fd3b0b3890efd4eee06fa77641"
+    },
+    {
+      "path": "tests/test_repair_max_seq_id.py",
+      "sha256": "6fef11f0239d3689a23b9d872bb54eb1704f9630758f5341a8bbbc32278c7fd7"
+    },
+    {
+      "path": "tests/test_searcher.py",
+      "sha256": "bd8764bf2c003eb0c9b4124631a8a5756a40df0b7b02aad1dfbe0c83819a5a12"
+    },
+    {
+      "path": "tests/test_sigreg_grooming.py",
+      "sha256": "8e808833119f45ec5a106e0beb2707436462e1264e8825108a1584afaa3b1082"
+    },
+    {
+      "path": "tests/test_source_search.py",
+      "sha256": "cfdad1d8b2b2c4e3cec0d755affe4abf513eb63aafb80944c8696ca647fb9f5d"
+    },
+    {
+      "path": "tests/test_sources_ingest.py",
+      "sha256": "c5cebe7b3e8b3498b9c155c79b81c342945e9a309a3de451bd34565f77114101"
+    },
+    {
+      "path": "tests/test_sources_store.py",
+      "sha256": "6ba936f4c238bde6e69881c35d4b572ae447d5db36ab8ece72e81d9b7a828e71"
+    },
+    {
+      "path": "tests/test_split_mega_files.py",
+      "sha256": "aa2da15fd7be5442b27daa7b5819249dab0317d97aa78644c6b18e05d02da2e9"
+    },
+    {
+      "path": "tests/test_studio_backend.py",
+      "sha256": "21bf186e5fd97e40dfede3077082a1e4c09217d1983492bc6c320248b1f22511"
+    },
+    {
+      "path": "tests/test_sweeper.py",
+      "sha256": "1170d2cf93bd0642b040c03c0090926bc6319073bab6ece7d4091c3588beb3e6"
+    },
+    {
+      "path": "tests/test_sync_setup_public.py",
+      "sha256": "0ac96a13205b9fad1741777b95be28e0dca9ba8cd8f4ba1d640fabf290fe3cf3"
+    },
+    {
+      "path": "tests/test_version_consistency.py",
+      "sha256": "e292b7bef1022580c10a2744937e7d13ea735f23007fda233ae9f9d0b68ee050"
+    },
+    {
+      "path": "tests/test_wiki_compiler.py",
+      "sha256": "271721383aa9ac7daec6e74e592e456b816cde232bab99443551ae25c98bce95"
+    },
+    {
+      "path": "tests/test_wiki_context_pack.py",
+      "sha256": "e8621eb0a4fb959cacd9f974b713835ba4c7b50ad27baf061e5fe50f62929ba5"
+    },
+    {
+      "path": "tests/test_wiki_linter.py",
+      "sha256": "92111a5561be73d8799bef34c847827a5a855a4edc336593b2df0ff6e98366d5"
+    },
+    {
+      "path": "tests/test_wiki_obsidian_export.py",
+      "sha256": "f9cd46c2cb314c0f0d8498522077d2c732a8ccc0bd0a96731f1a73a3f262f1e9"
+    },
+    {
+      "path": "tests/test_wiki_openbrain_alpha_hardening.py",
+      "sha256": "a2d48a3ada0fdb7a27d4973263e7004acabee462be4db87d4cc3ed86b29b60a5"
+    },
+    {
+      "path": "tests/test_wiki_renderer.py",
+      "sha256": "d828372e0f9d416568306639e7540f6f4a63d3e5dac2c3b975b93827cb9d68c1"
+    },
+    {
+      "path": "uv.lock",
+      "sha256": "9b9deb8aa215f89e603827b76bfa25188f5d87a3af9e8baffd5837628f2e499f"
+    }
+  ]
+}

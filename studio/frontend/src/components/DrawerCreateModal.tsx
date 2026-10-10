@@ -38,12 +38,12 @@ export default function DrawerCreateModal({ open, defaultWing = '', defaultRoom 
       qc.invalidateQueries({ queryKey: ['status'] })
       qc.invalidateQueries({ queryKey: ['taxonomy'] })
       const newId = data?.drawer_id ?? data?.id ?? ''
-      toast.success(data?.reason === 'already_exists' ? 'Drawer already exists' : 'Drawer created')
+      toast.success(data?.reason === 'already_exists' ? 'Memory already exists' : 'Memory saved')
       onCreated?.(newId)
       onClose()
     },
     onError: (err: any) => {
-      toast.error(err?.message ?? 'Failed to create drawer')
+      toast.error(err?.message ?? 'Failed to save memory')
     },
   })
 
@@ -84,7 +84,7 @@ export default function DrawerCreateModal({ open, defaultWing = '', defaultRoom 
         >
           <div className="flex items-center gap-2">
             <Plus size={15} style={{ color: 'var(--interactive-accent)' }} />
-            <span className="font-semibold text-sm">New Drawer</span>
+            <span className="font-semibold text-sm">Save Memory</span>
           </div>
           <button
             onClick={onClose}
@@ -100,7 +100,7 @@ export default function DrawerCreateModal({ open, defaultWing = '', defaultRoom 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-[11px] font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>
-                Wing <span style={{ color: 'var(--interactive-accent)' }}>*</span>
+                Area <span style={{ color: 'var(--interactive-accent)' }}>*</span>
               </label>
               <input
                 value={wing}
@@ -118,7 +118,7 @@ export default function DrawerCreateModal({ open, defaultWing = '', defaultRoom 
             </div>
             <div>
               <label className="block text-[11px] font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>
-                Room <span style={{ color: 'var(--interactive-accent)' }}>*</span>
+                Topic <span style={{ color: 'var(--interactive-accent)' }}>*</span>
               </label>
               <input
                 value={room}
@@ -144,7 +144,7 @@ export default function DrawerCreateModal({ open, defaultWing = '', defaultRoom 
               ref={textareaRef}
               value={content}
               onChange={e => setContent(e.target.value)}
-              placeholder="Write your memory here…&#10;&#10;You can reference entities with [[wikilinks]]."
+              placeholder="Write your memory here...&#10;&#10;You can reference entities with [[wikilinks]]."
               rows={8}
               className="w-full px-3 py-2.5 rounded-lg text-sm outline-none transition-colors resize-none font-mono leading-relaxed"
               style={{
@@ -168,7 +168,7 @@ export default function DrawerCreateModal({ open, defaultWing = '', defaultRoom 
           {mut.isError && (
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm" style={{ background: 'var(--background-modifier-error)', color: 'var(--text-error)' }}>
               <AlertCircle size={13} />
-              {(mut.error as Error)?.message ?? 'Failed to create drawer'}
+              {(mut.error as Error)?.message ?? 'Failed to save memory'}
             </div>
           )}
         </div>
@@ -179,7 +179,7 @@ export default function DrawerCreateModal({ open, defaultWing = '', defaultRoom 
           style={{ borderColor: 'var(--background-modifier-border)' }}
         >
           <span className="text-[11px]" style={{ color: 'var(--text-faint)' }}>
-            <kbd className="font-mono">Ctrl</kbd>+<kbd className="font-mono">↵</kbd> to save
+            <kbd className="font-mono">Ctrl</kbd>+<kbd className="font-mono">Enter</kbd> to save
           </span>
           <div className="flex items-center gap-2">
             <button
@@ -198,11 +198,11 @@ export default function DrawerCreateModal({ open, defaultWing = '', defaultRoom 
               {mut.isPending ? (
                 <span className="flex items-center gap-1.5">
                   <span className="w-3 h-3 border border-white/40 border-t-white rounded-full animate-spin" />
-                  Saving…
+                  Saving...
                 </span>
               ) : (
                 <>
-                  <Plus size={13} /> Save Drawer
+                  <Plus size={13} /> Save Memory
                 </>
               )}
             </button>

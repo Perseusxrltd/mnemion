@@ -1,0 +1,15 @@
+Mnemion
+Copyright (c) 2026 PerseusXR contributors
+
+Mnemion retains code and design lineage from MemPalace. The original MIT
+license and attribution, Copyright (c) 2026 MemPalace Contributors, are
+preserved in LICENSE. Subsequent Mnemion contributions are also provided
+under the MIT license.
+
+References to MemPalace and other memory systems in the research documents
+identify their respective projects; they do not imply endorsement.
+
+Third-party libraries, model weights, desktop runtimes, and evaluation data
+retain their own licenses. Model and evaluation artifacts are obtained
+separately from their documented upstream sources; their licenses are not
+replaced by Mnemion's MIT license.

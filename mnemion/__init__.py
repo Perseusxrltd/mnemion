@@ -1,10 +1,9 @@
-"""Mnemion — Give your AI a memory. No API key required."""
+"""Mnemion: shared memory infrastructure with optional private legacy profiles."""
 
 import logging
 import os
 import platform
 
-from .cli import main  # noqa: E402
 from .version import __version__  # noqa: E402
 
 # ChromaDB 0.6.x ships a Posthog telemetry client whose capture() signature is
@@ -19,3 +18,10 @@ if platform.machine() == "arm64" and platform.system() == "Darwin":
     os.environ.setdefault("ORT_DISABLE_COREML", "1")
 
 __all__ = ["main", "__version__"]
+
+
+def main(*args, **kwargs):
+    """Retain the historical entry point without loading the CLI in every client."""
+    from .cli import main as cli_main
+
+    return cli_main(*args, **kwargs)

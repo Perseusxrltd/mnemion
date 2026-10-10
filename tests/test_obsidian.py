@@ -1,4 +1,5 @@
 import json
+import hashlib
 import sqlite3
 import zipfile
 from pathlib import Path
@@ -194,7 +195,7 @@ def test_sync_refuses_vault_nested_inside_existing_obsidian_vault(tmp_path):
         )
 
 
-def test_sync_prunes_only_previous_manifest_files(tmp_path):
+def test_sync_prunes_only_unchanged_manifest_files(tmp_path):
     vault = tmp_path / "vault"
     old_generated = vault / "Wings" / "old.md"
     old_generated.parent.mkdir(parents=True)
@@ -202,7 +203,12 @@ def test_sync_prunes_only_previous_manifest_files(tmp_path):
     keep = vault / "keep.md"
     keep.write_text("keep\n", encoding="utf-8")
     (vault / MANIFEST_NAME).write_text(
-        json.dumps({"files": ["Wings/old.md"]}),
+        json.dumps(
+            {
+                "files": ["Wings/old.md"],
+                "entries": {"Wings/old.md": {"file_sha256": hashlib.sha256(b"old\n").hexdigest()}},
+            }
+        ),
         encoding="utf-8",
     )
 

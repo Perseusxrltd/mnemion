@@ -1,4 +1,18 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
+
+let pending = 0
+const edited = new Set<Element>()
+window.addEventListener('input', event => {
+  const target = event.target
+  if (target instanceof Element && !target.matches('input[type="search"], [data-update-safe]')) edited.add(target)
+}, true)
+window.addEventListener('change', event => {
+  if (event.target instanceof Element) edited.add(event.target)
+}, true)
+async function transfer(channel: string, ...args: unknown[]) {
+  pending++
+  try { return await ipcRenderer.invoke(channel, ...args) } finally { pending-- }
+}
 
 // Expose a minimal, safe bridge to the renderer
 contextBridge.exposeInMainWorld('mnemion', {
@@ -6,4 +20,20 @@ contextBridge.exposeInMainWorld('mnemion', {
   platform:     () => ipcRenderer.invoke('app:platform'),
   backendPort:  () => ipcRenderer.invoke('backend:port'),
   studioToken:  () => ipcRenderer.invoke('backend:token'),
+  serviceRequest: (request: unknown) => transfer('service:request', request),
+  chooseVault: () => transfer('vault:choose'),
+  refreshVault: (selection: string, bytes: Uint8Array) => transfer('vault:refresh', selection, bytes),
+  updateSafety: () => {
+    for (const element of edited) if (!element.isConnected) edited.delete(element)
+    return pending === 0 && edited.size === 0
+  },
+  onNavigate: (callback: (route: string) => void) => {
+    const listener = (_event: IpcRendererEvent, route: unknown) => {
+      if (typeof route === 'string' && route.startsWith('/')) {
+        callback(route)
+      }
+    }
+    ipcRenderer.on('app:navigate', listener)
+    return () => ipcRenderer.removeListener('app:navigate', listener)
+  },
 })

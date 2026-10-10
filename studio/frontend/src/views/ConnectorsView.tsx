@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Plug, CheckCircle, AlertTriangle, RefreshCw, ExternalLink,
@@ -8,7 +8,7 @@ import { api } from '../api/client'
 import type { ConnectorStatus } from '../types'
 import { useToast } from '../components/ToastProvider'
 
-// ── Vendor → accent colour ────────────────────────────────────────────────────
+// Vendor accent colors
 
 const VENDOR_COLOR: Record<string, string> = {
   Anthropic: '#c96442',
@@ -29,7 +29,7 @@ function CategoryIcon({ cat, size = 11 }: { cat: string; size?: number }) {
   return <Code2 size={size} />
 }
 
-// ── Copy button ───────────────────────────────────────────────────────────────
+// Copy button
 
 function CopyButton({ text, label = 'Copy' }: { text: string; label?: string }) {
   const [copied, setCopied] = useState(false)
@@ -53,7 +53,7 @@ function CopyButton({ text, label = 'Copy' }: { text: string; label?: string }) 
   )
 }
 
-// ── Connector card ────────────────────────────────────────────────────────────
+// Connector card
 
 function StatusBadge({ conn }: { conn: ConnectorStatus }) {
   if (!conn.installed) {
@@ -73,13 +73,13 @@ function StatusBadge({ conn }: { conn: ConnectorStatus }) {
   if (conn.legacy_detected) {
     return (
       <span className="flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ color: '#f97316', background: 'rgba(249,115,22,0.12)' }}>
-        <AlertTriangle size={9} /> Legacy (mempalace)
+        <AlertTriangle size={9} /> Old setup found
       </span>
     )
   }
   return (
     <span className="flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ color: 'var(--text-muted)', background: 'rgba(255,255,255,0.04)' }}>
-      Available
+      Ready to connect
     </span>
   )
 }
@@ -158,7 +158,7 @@ function ConnectorCard({
               style={{ background: 'rgba(127,109,242,0.15)', color: '#9d8ff9', border: '1px solid rgba(127,109,242,0.3)' }}
             >
               {busy ? <RefreshCw size={11} className="animate-spin" /> : <Plus size={11} />}
-              {conn.legacy_detected ? 'Fix & Install' : 'Install'}
+              {conn.legacy_detected ? 'Fix and Connect' : 'Connect'}
             </button>
           )}
           <button
@@ -187,7 +187,7 @@ function ConnectorCard({
         <div className="px-4 py-3 space-y-3 text-xs" style={{ borderTop: '1px solid var(--background-modifier-border)' }}>
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--text-faint)' }}>
-              Config path
+              Settings file
             </div>
             <div className="flex items-center gap-2 font-mono text-[11px] break-all" style={{ color: 'var(--text-muted)' }}>
               {conn.config_path}
@@ -196,7 +196,7 @@ function ConnectorCard({
           </div>
           {conn.install_note && (
             <div className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
-              ⓘ {conn.install_note}
+              Note: {conn.install_note}
             </div>
           )}
           {conn.error && (
@@ -209,7 +209,7 @@ function ConnectorCard({
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-faint)' }}>
-                  Manual setup — {conn.format.toUpperCase()}
+                  Manual setup - {conn.format.toUpperCase()}
                 </span>
                 <CopyButton text={snippet} />
               </div>
@@ -230,7 +230,7 @@ function ConnectorCard({
   )
 }
 
-// ── Main view ────────────────────────────────────────────────────────────────
+// Main view
 
 export default function ConnectorsView() {
   const qc = useQueryClient()
@@ -242,7 +242,7 @@ export default function ConnectorsView() {
   })
   const [busyId, setBusyId] = useState<string | null>(null)
 
-  // Per-card detail fetches (for snippet); only loads when expanded
+  // Snippets are tiny; fetch them in the background after the connector list loads.
   const [details, setDetails] = useState<Record<string, string>>({})
 
   const installMut = useMutation({
@@ -250,7 +250,7 @@ export default function ConnectorsView() {
     onMutate: (id) => setBusyId(id),
     onSuccess: (r, id) => {
       const name = data?.connectors.find(c => c.id === id)?.name ?? id
-      toast.success(`Mnemion installed in ${name}${r.note ? ' — ' + r.note : ''}`)
+      toast.success(`Mnemion installed in ${name}${r.note ? ' - ' + r.note : ''}`)
       qc.invalidateQueries({ queryKey: ['connectors'] })
     },
     onError: (err: any) => toast.error(err?.message ?? 'Install failed'),
@@ -269,12 +269,13 @@ export default function ConnectorsView() {
     onSettled: () => setBusyId(null),
   })
 
-  // Simple pre-fetch of all snippets (they're tiny)
-  async function ensureSnippets() {
+  useEffect(() => {
     if (!data) return
     const missing = data.connectors.filter(c => !(c.id in details))
     if (!missing.length) return
-    const fetched = await Promise.all(
+
+    let cancelled = false
+    void Promise.all(
       missing.map(async c => {
         try {
           const full = await api.connector(c.id)
@@ -283,14 +284,13 @@ export default function ConnectorsView() {
           return [c.id, ''] as const
         }
       })
-    )
-    setDetails(prev => ({ ...prev, ...Object.fromEntries(fetched) }))
-  }
+    ).then(fetched => {
+      if (cancelled) return
+      setDetails(prev => ({ ...prev, ...Object.fromEntries(fetched) }))
+    })
 
-  // Lazy: when data loads, fetch snippets in the background
-  if (data && Object.keys(details).length === 0) {
-    void ensureSnippets()
-  }
+    return () => { cancelled = true }
+  }, [data, details])
 
   const groups: Array<[string, ConnectorStatus[]]> = [
     ['CLI', (data?.connectors ?? []).filter(c => c.category === 'cli')],
@@ -308,15 +308,15 @@ export default function ConnectorsView() {
         <div>
           <h1 className="text-xl font-semibold tracking-tight flex items-center gap-2">
             <Plug size={18} style={{ color: 'var(--interactive-accent)' }} />
-            Connect Agents
+            Connect AI Apps
           </h1>
           <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
-            One-click setup for AI tools that speak the Model Context Protocol.
+            One-click setup for supported AI tools.
             {!isLoading && data && (
               <span>
                 {' '}
-                <span style={{ color: '#30d158' }}>{connectedCount} connected</span> ·{' '}
-                {totalInstalled} detected · {data.connectors.length} known
+                <span style={{ color: '#30d158' }}>{connectedCount} connected</span> -{' '}
+                {totalInstalled} detected - {data.connectors.length} known
               </span>
             )}
           </p>
@@ -348,7 +348,7 @@ export default function ConnectorsView() {
           <Terminal size={14} style={{ color: 'var(--interactive-accent)' }} />
           <div className="flex-1 min-w-0">
             <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-faint)' }}>
-              Mnemion MCP command
+              Connection command
             </div>
             <div className="font-mono text-[12px] mt-0.5 break-all" style={{ color: 'var(--text-muted)' }}>
               {data.python_cmd} {data.python_args.join(' ')}
@@ -386,10 +386,9 @@ export default function ConnectorsView() {
         className="rounded-xl p-5 fade-in"
         style={{ background: 'var(--surface)', border: '1px dashed var(--background-modifier-border)' }}
       >
-        <h2 className="text-sm font-semibold mb-2">Other MCP clients</h2>
+        <h2 className="text-sm font-semibold mb-2">Other compatible apps</h2>
         <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>
-          Don't see your tool? Any MCP-compatible client (OpenClaw, Nemoclaw, Hermes, Cline,
-          custom agents…) can connect using this command:
+          Don't see your tool? Advanced apps that accept a local command can connect with this setup:
         </p>
         {data && (
           <pre

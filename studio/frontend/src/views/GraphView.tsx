@@ -395,7 +395,7 @@ export default function GraphView() {
         style={{ borderColor: 'var(--background-modifier-border)', background: 'var(--background-secondary)', minHeight: 44 }}
       >
         <Network size={14} style={{ color: 'var(--interactive-accent)', flexShrink: 0 }} />
-        <span className="font-medium text-sm">Memory Graph</span>
+        <span className="font-medium text-sm">Memory Map</span>
 
         {/* Mode switcher */}
         <div className="flex gap-0.5 ml-3 p-0.5 rounded-lg" style={{ background: 'var(--interactive-normal)' }}>
@@ -417,7 +417,7 @@ export default function GraphView() {
               onMouseEnter={e => { if (mode !== m) e.currentTarget.style.color = 'var(--text-normal)' }}
               onMouseLeave={e => { if (mode !== m) e.currentTarget.style.color = 'var(--text-muted)' }}
             >
-              {m === 'wings' ? 'Wing Map' : 'Knowledge Graph'}
+              {m === 'wings' ? 'Area Map' : 'Knowledge Map'}
             </button>
           ))}
         </div>
@@ -426,14 +426,14 @@ export default function GraphView() {
         {((mode === 'wings' && !wingReady) || (mode === 'kg' && !kgReady)) && (
           <span className="flex items-center gap-1.5 text-xs ml-2" style={{ color: 'var(--text-muted)' }}>
             <RefreshCw size={11} className="animate-spin" />
-            {mode === 'wings' ? 'Computing layout…' : 'Building graph…'}
+            {mode === 'wings' ? 'Computing layout...' : 'Building graph...'}
           </span>
         )}
 
         <div className="ml-auto text-xs font-mono" style={{ color: 'var(--text-faint)' }}>
           {mode === 'wings'
-            ? wingReady ? `${wingCount} wings · ${roomCount} rooms` : '—'
-            : kgNodeCount > 0 ? `${kgNodeCount} entities` : 'KG empty'
+            ? wingReady ? `${wingCount} areas - ${roomCount} topics` : '-'
+            : kgNodeCount > 0 ? `${kgNodeCount} entities` : 'Knowledge map empty'
           }
         </div>
       </div>
@@ -475,7 +475,7 @@ export default function GraphView() {
         {mode === 'wings' && !resolvedWingGraph && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3" style={{ background: '#111' }}>
             <RefreshCw size={22} className="animate-spin" style={{ color: '#7f6df2' }} />
-            <span className="text-sm" style={{ color: 'var(--text-muted)' }}>Computing force layout…</span>
+            <span className="text-sm" style={{ color: 'var(--text-muted)' }}>Computing layout...</span>
           </div>
         )}
 
@@ -484,10 +484,9 @@ export default function GraphView() {
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 pointer-events-none"
             style={{ background: '#111' }}>
             <Info size={28} style={{ color: 'var(--text-faint)' }} />
-            <div className="text-sm" style={{ color: 'var(--text-muted)' }}>Knowledge Graph is empty</div>
+            <div className="text-sm" style={{ color: 'var(--text-muted)' }}>Knowledge map is empty</div>
             <div className="text-xs text-center max-w-xs" style={{ color: 'var(--text-faint)', lineHeight: 1.6 }}>
-              Run <code style={{ background: 'rgba(127,109,242,0.15)', color: '#9d8ff9', borderRadius: 3, padding: '1px 5px' }}>mnemion librarian</code> to extract
-              entity relationships from your drawers. Entities, people, projects and concepts will appear here as a connected graph.
+              Save or import memories to build relationships here. People, projects, places, and concepts will appear as a connected map.
             </div>
           </div>
         )}
@@ -521,7 +520,7 @@ export default function GraphView() {
             }}
           >
             <div className="text-[10px] font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-faint)' }}>
-              Wings
+              Areas
             </div>
             <div className="flex flex-wrap gap-x-3 gap-y-1.5">
               {Object.entries(taxonomyMap)
@@ -535,7 +534,7 @@ export default function GraphView() {
                 ))}
             </div>
             <div className="mt-2 text-[10px]" style={{ color: 'var(--text-faint)', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 6 }}>
-              Node size = drawer count · Click to inspect
+              Node size = memory count - Click to inspect
             </div>
           </div>
         )}
@@ -594,8 +593,8 @@ export default function GraphView() {
                 </div>
                 <div className="text-[11px] mt-1" style={{ color: 'var(--text-muted)' }}>
                   {wingSelection.isWing
-                    ? `${wingSelection.total?.toLocaleString()} drawers · ${wingSelection.rooms?.length} rooms`
-                    : `${wingSelection.roomCount?.toLocaleString()} drawers in ${wingSelection.wingName}`
+                    ? `${wingSelection.total?.toLocaleString()} memories - ${wingSelection.rooms?.length} topics`
+                    : `${wingSelection.roomCount?.toLocaleString()} memories in ${wingSelection.wingName}`
                   }
                 </div>
               </div>
@@ -652,7 +651,7 @@ export default function GraphView() {
                 onMouseEnter={e => (e.currentTarget.style.background = 'rgba(127,109,242,0.25)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'rgba(127,109,242,0.15)')}
               >
-                <FolderOpen size={11} /> Browse drawers
+                <FolderOpen size={11} /> Browse memories
               </button>
             </div>
           </div>
@@ -688,7 +687,7 @@ export default function GraphView() {
               {kgSelection.edges.slice(0, 15).map((e, i) => (
                 <div key={i} className="flex items-start gap-2 text-[12px]">
                   <span className="flex-shrink-0 font-mono w-3" style={{ color: 'var(--text-faint)' }}>
-                    {e.direction === 'out' ? '→' : '←'}
+                    {e.direction === 'out' ? '->' : '<-'}
                   </span>
                   <span className="italic flex-shrink-0" style={{ color: 'var(--interactive-accent)', opacity: 0.8 }}>
                     {e.label}

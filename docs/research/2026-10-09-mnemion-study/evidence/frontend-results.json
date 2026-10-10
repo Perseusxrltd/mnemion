@@ -1,0 +1,23 @@
+[
+  {
+    "name": "frontend-build",
+    "command": [
+      "npm",
+      "run",
+      "build"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 10.56
+  },
+  {
+    "name": "frontend-audit",
+    "command": [
+      "npm",
+      "audit",
+      "--audit-level=high",
+      "--json"
+    ],
+    "exit_code": 1,
+    "elapsed_seconds": 3.42
+  }
+]

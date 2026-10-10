@@ -1,0 +1,49 @@
+name: Prepare signed release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prepare-release-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  checks:
+    uses: ./.github/workflows/ci.yml
+  native:
+    uses: ./.github/workflows/desktop.yml
+    with:
+      release: true
+    secrets: inherit
+  assemble:
+    needs: [checks, native]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+      - run: python -m pip install uv==0.12.24 PyYAML==6.0.3
+      - run: uv build --out-dir release-artifacts
+      - run: npm --prefix packages/client ci && npm --prefix packages/client run build
+      - run: cd packages/client && npm pack --pack-destination ../../release-artifacts
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: release-*
+          merge-multiple: true
+          path: release-artifacts
+      - name: Verify version and complete update feeds
+        run: python deploy/release.py --artifacts release-artifacts
+      - name: Prepare or refresh the reviewable release draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python deploy/draft_release.py --repo "$GITHUB_REPOSITORY" --commit "$GITHUB_SHA" --artifacts release-artifacts

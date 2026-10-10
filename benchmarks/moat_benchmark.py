@@ -19,19 +19,21 @@ from mnemion.moat_eval import run_moat_eval
 def summarize(result: dict[str, Any]) -> dict[str, Any]:
     modes = result.get("modes", [])
     cases = result.get("cases", {})
-    totals = {mode: {"passed": 0, "total": 0, "score": 0.0} for mode in modes}
+    totals = {mode: {"passed": 0, "total": 0, "score": None} for mode in modes}
 
     for case_list in cases.values():
         for case in case_list:
             passed = case.get("passed", {})
             for mode in modes:
+                if passed.get(mode) is None:
+                    continue
                 totals[mode]["total"] += 1
                 if passed.get(mode):
                     totals[mode]["passed"] += 1
 
     for stats in totals.values():
         total = stats["total"]
-        stats["score"] = stats["passed"] / total if total else 0.0
+        stats["score"] = stats["passed"] / total if total else None
     return {"mode_totals": totals}
 
 

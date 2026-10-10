@@ -1,0 +1,7 @@
+{
+  "method": "synthetic export and refresh; no native Obsidian application launched",
+  "unmanaged_note_preserved": true,
+  "manual_edit_in_managed_mirror_note_preserved": false,
+  "manual_edit_in_exported_wiki_note_preserved": false,
+  "interpretation": "Owned exports are replaced on refresh; preservation in the wiki compiler does not preserve edits made in its exported copy."
+}

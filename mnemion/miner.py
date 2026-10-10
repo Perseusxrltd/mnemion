@@ -16,9 +16,6 @@ from datetime import datetime
 from collections import defaultdict
 
 import logging
-import sqlite3
-from .trust_lifecycle import DrawerTrust
-from .knowledge_graph import KnowledgeGraph
 
 logger = logging.getLogger("mnemion_miner")
 
@@ -494,32 +491,15 @@ def add_drawer(
             except Exception as e:
                 logger.error(f"Suppressed error in execution: {e}")
 
-        upsert_kwargs = {
-            "documents": [content],
-            "ids": [drawer_id],
-            "metadatas": [metadata],
-        }
-        if final_embedding is not None:
-            upsert_kwargs["embeddings"] = [final_embedding]
+        from .ingestion import LegacyMemoryWriter
 
-        collection.upsert(**upsert_kwargs)
-
-        # 2. Add to SQLite FTS5 (Lexical Mirror)
         kg_path = str(Path(cfg.anaktoron_path).parent / "knowledge_graph.sqlite3")
-        KnowledgeGraph(kg_path)  # Ensure schema exists
-        conn = sqlite3.connect(kg_path)
-        try:
-            conn.execute(
-                "INSERT OR REPLACE INTO drawers_fts (drawer_id, content, wing, room) VALUES (?, ?, ?, ?)",
-                (drawer_id, content, wing, room),
-            )
-            conn.commit()
-        finally:
-            conn.close()
-
-        # 3. Create trust record (idempotent)
-        trust_db = DrawerTrust(kg_path)
-        trust_db.create(drawer_id, wing=wing, room=room)
+        LegacyMemoryWriter(collection, kg_path).save(
+            drawer_id,
+            content,
+            metadata,
+            embedding=final_embedding,
+        )
 
         return True
     except Exception as e:

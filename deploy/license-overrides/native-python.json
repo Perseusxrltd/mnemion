@@ -1,0 +1,90 @@
+{
+  "7f0f2d27c94d74a478c41ab2dcd91803be0097c0b8e92415ab19b411017c9d6e": {
+    "python_version": "3.13.16",
+    "platform": "linux",
+    "target": "x86_64-unknown-linux-gnu",
+    "builtin_modules": [
+      "_bz2",
+      "_ctypes",
+      "_curses",
+      "_curses_panel",
+      "_decimal",
+      "_hashlib",
+      "_lzma",
+      "_sqlite3",
+      "_ssl",
+      "_uuid",
+      "binascii",
+      "pyexpat",
+      "readline",
+      "zlib"
+    ],
+    "source": "https://github.com/astral-sh/python-build-standalone/releases/download/20261003/cpython-3.13.16%2B20261003-x86_64-unknown-linux-gnu-pgo%2Blto-full.tar.zst",
+    "archive_sha256": "1785cc77a638c5e1e0c86baffd395a49b784535136c00e2aac203116057f13b7",
+    "build_sources": "https://github.com/astral-sh/python-build-standalone/tree/5e46737f6480fc315ebfea83866910cbfcc772f0",
+    "metadata_sha256": "de1790333a49076bee2b029d1e9055417ea86046fb30e8f8db1364bf3cbfd929",
+    "files": [
+      {
+        "file": "cpython-3.13.16-LICENSE.bzip2.txt",
+        "sha256": "1f38bbc7caacafd65169276d759c0d88c991b753b643ce35d0e45ea1971dd441",
+        "member": "python/licenses/LICENSE.bzip2.txt"
+      },
+      {
+        "file": "cpython-3.13.16-LICENSE.expat.txt",
+        "sha256": "122f2c27000472a201d337b9b31f7eb2b52d091b02857061a8880371612d9534",
+        "member": "python/licenses/LICENSE.expat.txt"
+      },
+      {
+        "file": "cpython-3.13.16-LICENSE.libedit.txt",
+        "sha256": "29cea33c32bbc9785142386377915612a2fa786482c46843383384aded2e09b1",
+        "member": "python/licenses/LICENSE.libedit.txt"
+      },
+      {
+        "file": "cpython-3.13.16-LICENSE.libffi.txt",
+        "sha256": "deaf3a42effb551a5b140fa9afefed183a27f1341c6d1bf430d106a5e6931fc0",
+        "member": "python/licenses/LICENSE.libffi.txt"
+      },
+      {
+        "file": "cpython-3.13.16-LICENSE.liblzma.txt",
+        "sha256": "9a4062de0a2c388a98cf35a35d348b62fa97c838a71c3c28ee1a2d7d0a565b02",
+        "member": "python/licenses/LICENSE.liblzma.txt"
+      },
+      {
+        "file": "cpython-3.13.16-LICENSE.libuuid.txt",
+        "sha256": "122ee1f7e258f2c3c0e538a75c037684f420454bf3850ddc74ce750bbf5fe86b",
+        "member": "python/licenses/LICENSE.libuuid.txt"
+      },
+      {
+        "file": "cpython-3.13.16-LICENSE.mpdecimal.txt",
+        "sha256": "669512af7219f58be03a398766d7c9da11a3b3df9d3f05cb74c5ceca25c8da3b",
+        "member": "python/licenses/LICENSE.mpdecimal.txt"
+      },
+      {
+        "file": "cpython-3.13.16-LICENSE.ncurses.txt",
+        "sha256": "87a4c4442337b8968ef956031c406b74f9cb7149b7ba87311bdaba534816201c",
+        "member": "python/licenses/LICENSE.ncurses.txt"
+      },
+      {
+        "file": "cpython-3.13.16-LICENSE.openssl-1.1.txt",
+        "sha256": "9c04cce50c4989d5601dd8b07f6ab922c40388b66ac736c9007cb1ed9d9dd560",
+        "member": "python/licenses/LICENSE.openssl-1.1.txt"
+      },
+      {
+        "file": "cpython-3.13.16-LICENSE.openssl-3.txt",
+        "sha256": "7d5450cb2d142651b8afa315b5f238efc805dad827d91ba367d8516bc9d49e7a",
+        "member": "python/licenses/LICENSE.openssl-3.txt"
+      },
+      {
+        "file": "cpython-3.13.16-LICENSE.sqlite.txt",
+        "sha256": "38bef3d28b24f145ea293bd3b6eb4b20396982abc8303128fb493986ea5bc719",
+        "member": "python/licenses/LICENSE.sqlite.txt"
+      },
+      {
+        "file": "cpython-3.13.16-LICENSE.zlib.txt",
+        "sha256": "818922b2620f12801a12bf78e399644a30990e66824abd8ca8ec24d451d6f92c",
+        "member": "python/licenses/LICENSE.zlib.txt"
+      }
+    ],
+    "notes": "Selected from actual built-in modules of this exact runtime binary. Berkeley DB and Tk are not built in and are not bundled by the local client analysis. zlib is 1.3.2; the unshipped zlib-ng alternative is excluded."
+  }
+}

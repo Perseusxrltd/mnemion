@@ -1,0 +1,36 @@
+{
+  "/api/search?q=PostgreSQL": {
+    "status": 200,
+    "body": {
+      "query": "PostgreSQL",
+      "count": 0,
+      "results": []
+    }
+  },
+  "/api/status": {
+    "status": 200,
+    "body": {
+      "version": "3.6.0",
+      "total_drawers": 1,
+      "wing_count": 1,
+      "room_count": 1,
+      "wings": {
+        "team-alpha": 1
+      },
+      "rooms": {
+        "decisions": 1
+      },
+      "anaktoron_path": "/tmp/mnemion-study-2026-10-09/ui-profile/anaktoron",
+      "collection_name": "mnemion_drawers"
+    }
+  },
+  "/api/trust/stats": {
+    "status": 200,
+    "body": {
+      "trust_counts": {
+        "current": 1
+      },
+      "avg_confidence_current": 1.0
+    }
+  }
+}

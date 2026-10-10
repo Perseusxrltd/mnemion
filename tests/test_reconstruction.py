@@ -69,7 +69,7 @@ def test_reconstruct_excludes_superseded_memory(collection, tmp_path):
     assert [item["id"] for item in result["results"]] == ["drawer_current"]
 
 
-def test_reconstruct_expands_through_topic_tunnels(collection, tmp_path):
+def test_reconstruct_expands_through_topic_tunnels(collection, tmp_path, monkeypatch):
     from mnemion.cognitive_graph import CognitiveGraph
     from mnemion.reconstruction import Reconstructor
 
@@ -90,9 +90,11 @@ def test_reconstruct_expands_through_topic_tunnels(collection, tmp_path):
     )
     graph.consolidate_collection(collection, limit=10)
 
+    search_units = graph.search_units
+    monkeypatch.setattr(graph, "search_units", lambda query, budget: search_units(query, budget=1))
     result = Reconstructor(graph, collection, topic_tunnel_min_count=2).reconstruct(
         "retrieval",
-        budget=1,
+        budget=2,
     )
 
     assert [item["id"] for item in result["results"]] == ["drawer_alpha", "drawer_beta"]

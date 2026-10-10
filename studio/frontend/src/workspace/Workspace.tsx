@@ -1,0 +1,2162 @@
+import {
+  createContext,
+  useContext,
+  useMemo,
+  useRef,
+  useState,
+  lazy,
+  Suspense,
+  type FormEvent,
+  type ReactNode,
+} from "react";
+import {
+  Link,
+  NavLink,
+  Navigate,
+  Route,
+  Routes,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
+import {
+  QueryClient,
+  QueryClientProvider,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import {
+  Archive,
+  ChartNoAxesCombined,
+  ArrowLeft,
+  ArrowRight,
+  BookOpen,
+  BookOpenCheck,
+  Check,
+  Copy,
+  Database,
+  Download,
+  FileText,
+  Layers,
+  LoaderCircle,
+  LogOut,
+  Plus,
+  Plug,
+  RefreshCw,
+  Search,
+  ShieldCheck,
+  Users,
+  Workflow,
+} from "lucide-react";
+import {
+  MnemionClient,
+  MnemionError,
+  type ApiKey,
+  type ContextPack,
+  type CoreBlock,
+  type Kind,
+  type Memory,
+  type MemoryInput,
+  type Page,
+  type Receipt,
+  type Recall,
+  type Role,
+  type Space,
+} from "@mnemion/client";
+import "./workspace.css";
+import { nativeFetch } from "./native";
+import { Connections, SourceProposals } from "./Connections";
+import { Agents } from "./Agents";
+import { KnowledgeView } from "./Knowledge";
+
+const InsightsView = lazy(() => import("./Insights"));
+const Documentation = lazy(() => import("./Documentation"));
+const EmbeddingModels = lazy(() => import("./EmbeddingModels"));
+const Librarian = lazy(() => import("./Librarian"));
+
+type Me = Awaited<ReturnType<MnemionClient["me"]>>;
+type Connection = { client: MnemionClient; me: Me; endpoint: string };
+type Session = Connection & {
+  space: Space;
+  reviewer: boolean;
+  writer: boolean;
+  disconnect: () => void;
+  selectSpace: (id: string) => void;
+};
+const SessionContext = createContext<Session | null>(null);
+const useSession = () => {
+  const session = useContext(SessionContext);
+  if (!session) throw new Error("Connect to a workspace first");
+  return session;
+};
+const date = (value: string) =>
+  new Date(value).toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+const message = (error: unknown) =>
+  error instanceof MnemionError
+    ? `${error.message}${error.requestId ? ` · Request ${error.requestId}` : ""}`
+    : error instanceof Error
+      ? error.message
+      : "The request could not be completed.";
+
+function ErrorNotice({ error }: { error: unknown }) {
+  return error ? (
+    <div className="ws-notice ws-error" role="alert">
+      {message(error)}
+    </div>
+  ) : null;
+}
+function Busy() {
+  return (
+    <div className="ws-loading" role="status">
+      <LoaderCircle className="ws-spin" size={18} /> Loading workspace…
+    </div>
+  );
+}
+function Empty({ title, children }: { title: string; children?: ReactNode }) {
+  return (
+    <div className="ws-empty">
+      <Layers size={30} />
+      <h3>{title}</h3>
+      <div>{children}</div>
+    </div>
+  );
+}
+function Title({
+  eyebrow,
+  title,
+  children,
+  action,
+}: {
+  eyebrow?: string;
+  title: string;
+  children?: ReactNode;
+  action?: ReactNode;
+}) {
+  return (
+    <header className="ws-page-heading">
+      <div>
+        {eyebrow && <p className="ws-eyebrow">{eyebrow}</p>}
+        <h1>{title}</h1>
+        {children && <p>{children}</p>}
+      </div>
+      {action}
+    </header>
+  );
+}
+function Badge({
+  children,
+  tone = "",
+}: {
+  children: ReactNode;
+  tone?: string;
+}) {
+  return <span className={`ws-badge ${tone}`}>{children}</span>;
+}
+function CopyButton({
+  text,
+  label = "Copy",
+}: {
+  text: string;
+  label?: string;
+}) {
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<unknown>();
+  return (
+    <>
+      <button
+        className="ws-button ws-quiet"
+        onClick={async () => {
+          try {
+            await navigator.clipboard.writeText(text);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+          } catch (error) {
+            setError(error);
+          }
+        }}
+      >
+        {copied ? <Check size={15} /> : <Copy size={15} />}
+        {copied ? "Copied" : label}
+      </button>
+      <ErrorNotice error={error} />
+    </>
+  );
+}
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="ws-field">
+      <span>{label}</span>
+      {children}
+    </label>
+  );
+}
+function WarningList({ warnings }: { warnings: string[] }) {
+  const descriptions: Record<string, string> = {
+    semantic_index_incomplete:
+      "Some memories are waiting for semantic indexing. Search results may be incomplete.",
+    semantic_unavailable_lexical_only:
+      "Semantic search is unavailable. These results use exact text search.",
+    contested_evidence:
+      "Some evidence is contested. Check its source before relying on it.",
+    semantic_matches_require_evidence_review:
+      "These matches are based on meaning. Check the evidence for your question.",
+    context_budget_or_freshness_limited:
+      "Some items were omitted to fit the context budget or because their source changed.",
+  };
+  return warnings.length ? (
+    <div className="ws-notice">
+      {warnings.map((warning) => (
+        <p key={warning}>
+          {descriptions[warning] ?? warning.replaceAll("_", " ")}
+        </p>
+      ))}
+    </div>
+  ) : null;
+}
+
+function Connect({
+  onConnect,
+}: {
+  onConnect: (connection: Connection) => void;
+}) {
+  const [endpoint, setEndpoint] = useState(
+    () =>
+      localStorage.getItem("mnemion_service_url") ||
+      (location.protocol === "file:"
+        ? "http://127.0.0.1:7892"
+        : location.origin),
+  );
+  const [key, setKey] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<unknown>();
+  async function connect(event: FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setError(undefined);
+    try {
+      const url = new URL(endpoint);
+      if (
+        !["http:", "https:"].includes(url.protocol) ||
+        url.username ||
+        url.password ||
+        url.search ||
+        url.hash
+      )
+        throw new Error(
+          "Enter the service HTTP or HTTPS address without credentials or query parameters.",
+        );
+      if (
+        url.protocol !== "https:" &&
+        !["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)
+      )
+        throw new Error(
+          "Use HTTPS for a remote service so your API key is protected in transit.",
+        );
+      const address = url.href.replace(/\/$/, "");
+      const client = new MnemionClient({
+        baseUrl: address,
+        apiKey: key.trim(),
+        fetch: nativeFetch,
+      });
+      const me = await client.me();
+      localStorage.setItem("mnemion_service_url", address);
+      setKey("");
+      onConnect({ client, me, endpoint: address });
+    } catch (error) {
+      setError(error);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="ws-connect">
+      <div className="ws-connect-story">
+        <Link to="/workspace" className="ws-brand">
+          <img
+            src={new URL("../../public/icon.png", import.meta.url).href}
+            alt=""
+          />
+          mnemion<span>studio</span>
+        </Link>
+        <div>
+          <p className="ws-eyebrow">Memory that travels with your work</p>
+          <h1>
+            One shared memory.
+            <br />
+            Every app, on the same page.
+          </h1>
+          <p>
+            Keep decisions, context, and evidence connected across your team’s
+            assistants and systems.
+          </p>
+          <div className="ws-story-features">
+            <span>
+              <ShieldCheck size={18} /> Explicit access for every space
+            </span>
+            <span>
+              <BookOpen size={18} /> Sources and revision history
+            </span>
+            <span>
+              <Workflow size={18} /> Visualize your memory in Obsidian
+            </span>
+          </div>
+        </div>
+        <small>Mnemion · Shared memory platform</small>
+      </div>
+      <div className="ws-connect-panel">
+        <form className="ws-connect-form" onSubmit={connect}>
+          <p className="ws-eyebrow">Your workspace</p>
+          <h2>Connect to Mnemion</h2>
+          <p>
+            Use the service address and API key supplied by your workspace
+            administrator.
+          </p>
+          <Field label="Service address">
+            <input
+              type="url"
+              value={endpoint}
+              onChange={(event) => setEndpoint(event.target.value)}
+              required
+              placeholder="https://memory.example.com"
+              autoComplete="url"
+            />
+          </Field>
+          <Field label="API key">
+            <input
+              type="password"
+              value={key}
+              onChange={(event) => setKey(event.target.value)}
+              required
+              placeholder="mnm_…"
+              autoComplete="off"
+              spellCheck={false}
+            />
+          </Field>
+          <ErrorNotice error={error} />
+          <button
+            className="ws-button ws-primary"
+            disabled={busy || !key.trim()}
+          >
+            {busy ? (
+              <LoaderCircle size={17} className="ws-spin" />
+            ) : (
+              <ArrowRight size={17} />
+            )}
+            {busy ? "Connecting…" : "Open workspace"}
+          </button>
+          <small>
+            Your key stays in this window’s memory. Disconnecting or reloading
+            clears it.
+          </small>
+          <Link className="ws-link" to="/help">Setup guides, documentation & roadmap</Link>
+          <Link className="ws-link" to="/help?doc=docs%2Fservice%2Fprivacy.md">Privacy & data handling</Link>
+          {window.mnemion?.platform && (
+            <small>
+              Desktop installations enable background mode, login startup and
+              supported automatic updates by default. Change these settings in
+              the application’s <strong>Background and updates</strong> menu.
+            </small>
+          )}
+        </form>
+        {import.meta.env.DEV && (
+          <Link className="ws-link ws-legacy-link" to="/dashboard">
+            Open the legacy local vault
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Shell({
+  connection,
+  disconnect,
+}: {
+  connection: Connection;
+  disconnect: () => void;
+}) {
+  const { client, me } = connection;
+  const spaces = useQuery({
+    queryKey: ["spaces"],
+    queryFn: () => client.spaces(),
+  });
+  const [selected, setSelected] = useState("");
+  const selectedSpace = useQuery({
+    queryKey: ["space", selected], queryFn: () => client.space(selected),
+    enabled: !!selected && !!spaces.data && !spaces.data.items.some(item => item.id === selected),
+  });
+  const space =
+    spaces.data?.items.find((item) => item.id === selected) ??
+    selectedSpace.data ??
+    spaces.data?.items.find((item) => item.role);
+  const [createName, setCreateName] = useState("");
+  const [error, setError] = useState<unknown>();
+  const [creating, setCreating] = useState(false);
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const role = space?.role ?? "reader";
+  const reviewer = ["reviewer", "administrator"].includes(role);
+  const links = [
+    { to: "memories", label: "Memories", icon: Layers },
+    { to: "search", label: "Search & context", icon: Search },
+    { to: "knowledge", label: "Wiki & graph", icon: BookOpen },
+    { to: "blocks", label: "Core context", icon: BookOpen },
+    ...(reviewer ? [{ to: "review", label: "Review", icon: ShieldCheck }] : []),
+    { to: "operations", label: "Activity", icon: Workflow },
+    ...(reviewer ? [{ to: "insights", label: "Insights & evaluations", icon: ChartNoAxesCombined }] : []),
+    ...(reviewer ? [{ to: "librarian", label: "Librarian", icon: BookOpenCheck }] : []),
+    ...(role === "administrator" ? [{ to: "models", label: "Embedding models", icon: Database }] : []),
+    { to: "obsidian", label: "Obsidian", icon: Archive },
+    { to: "agents", label: "Agents & apps", icon: Plug },
+    { to: "help", label: "Documentation & roadmap", icon: FileText },
+    ...(me.administrator
+      ? [{ to: "connections", label: "Connections", icon: Plug }, { to: "team", label: "People & apps", icon: Users }]
+      : []),
+  ];
+  async function createSpace(event: FormEvent) {
+    event.preventDefault();
+    setCreating(true);
+    setError(undefined);
+    try {
+      const added = await client.createSpace(createName);
+      setCreateName("");
+      setSelected(added.id);
+      await queryClient.invalidateQueries({ queryKey: ["spaces"] });
+    } catch (error) {
+      setError(error);
+    } finally {
+      setCreating(false);
+    }
+  }
+  if (spaces.isPending) return <Busy />;
+  if (selected && !spaces.data?.items.some(item => item.id === selected)) {
+    if (selectedSpace.isPending) return <Busy />;
+    if (selectedSpace.isError) return <div className="ws-page"><ErrorNotice error={selectedSpace.error} /><button className="ws-button" onClick={() => setSelected("")}>Return to available spaces</button></div>;
+  }
+  if (spaces.isError)
+    return (
+      <div className="ws-page">
+        <ErrorNotice error={spaces.error} />
+        <button className="ws-button" onClick={disconnect}>
+          Disconnect
+        </button>
+      </div>
+    );
+  return (
+    <div className="ws-shell">
+      <aside className="ws-sidebar">
+        <Link to="/workspace" className="ws-brand">
+          <img
+            src={new URL("../../public/icon.png", import.meta.url).href}
+            alt=""
+          />
+          mnemion<span>studio</span>
+        </Link>
+        <div className="ws-workspace-name">{me.tenant_name}</div>
+        <label className="ws-space-picker">
+          <span>Memory space</span>
+          <select
+            aria-label="Memory space"
+            value={space?.id ?? ""}
+            onChange={(event) => {
+              setSelected(event.target.value);
+              navigate("/workspace/memories");
+            }}
+          >
+            {spaces.data?.items
+              .filter((item) => item.role)
+              .map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+          </select>
+        </label>
+        <nav aria-label="Workspace navigation">
+          {links.map(({ to, label, icon: Icon }) => (
+            <NavLink
+              key={to}
+              to={`/workspace/${to}`}
+              className={({ isActive }) => (isActive ? "active" : "")}
+            >
+              <Icon size={17} />
+              {label}
+            </NavLink>
+          ))}
+        </nav>
+        <div className="ws-sidebar-bottom">
+          <div>
+            <span className="ws-avatar">
+              {me.name.slice(0, 1).toUpperCase()}
+            </span>
+            <div>
+              <strong>{me.name}</strong>
+              <small>{space?.role ?? "No space access"}</small>
+            </div>
+            <button
+              title="Disconnect"
+              aria-label="Disconnect"
+              className="ws-icon-button"
+              onClick={disconnect}
+            >
+              <LogOut size={17} />
+            </button>
+          </div>
+          <small className="ws-preview">Mnemion 4.0</small>
+        </div>
+      </aside>
+      <main className="ws-main">
+        {!space ? (
+          <div className="ws-page">
+            <Title title="Welcome to your workspace">
+              Create a private space, or ask your administrator for access to a
+              team space.
+            </Title>
+            {me.administrator && (
+              <form onSubmit={createSpace} className="ws-card ws-form">
+                <Field label="Space name">
+                  <input
+                    value={createName}
+                    onChange={(event) => setCreateName(event.target.value)}
+                    required
+                    maxLength={200}
+                  />
+                </Field>
+                <button className="ws-button ws-primary" disabled={creating}>
+                  Create space
+                </button>
+              </form>
+            )}
+            <ErrorNotice error={error} />
+          </div>
+        ) : (
+          <SessionContext.Provider
+            value={{
+              ...connection,
+              space,
+              reviewer,
+              writer: role !== "reader",
+              disconnect,
+              selectSpace: setSelected,
+            }}
+          >
+            <div className="ws-topbar">
+              <span>
+                <Database size={14} />
+                {space.name}
+              </span>
+              <Badge>{role}</Badge>
+              <button className="ws-icon-button ws-mobile-disconnect" aria-label="Disconnect workspace" onClick={disconnect}>
+                <LogOut size={17} />
+              </button>
+            </div>
+            <div className="ws-scroll" key={space.id}>
+              <Routes>
+                <Route index element={<Navigate to="memories" replace />} />
+                <Route path="memories" element={<Memories />} />
+                <Route path="new" element={<CreateMemory />} />
+                <Route path="memory/:id" element={<MemoryDetail />} />
+                <Route path="sources/:id" element={<SourceDetail />} />
+                <Route path="search" element={<SearchMemory />} />
+                <Route path="knowledge" element={<KnowledgeView client={client} space={space.id} />} />
+                <Route path="review" element={<Memories review />} />
+                <Route path="blocks" element={<CoreContext />} />
+                <Route path="operations" element={<Operations />} />
+                <Route path="insights" element={<Suspense fallback={<Busy />}><InsightsView client={client} space={space.id} reviewer={reviewer} administrator={me.administrator} /></Suspense>} />
+                <Route path="obsidian" element={<Obsidian />} />
+                <Route path="models" element={<Suspense fallback={<Busy />}><EmbeddingModels key={space.id} client={client} space={space.id} administrator={space.role === "administrator"} /></Suspense>} />
+                <Route path="librarian" element={<Suspense fallback={<Busy />}><Librarian key={space.id} client={client} space={space.id} reviewer={reviewer} administrator={space.role === "administrator"} /></Suspense>} />
+                <Route path="help" element={<Suspense fallback={<Busy />}><Documentation /></Suspense>} />
+                <Route path="agents" element={<Agents endpoint={connection.endpoint} space={space.id} />} />
+                <Route path="team" element={<Team />} />
+                <Route path="connections" element={<Connections client={client} administrator={me.administrator} endpoint={connection.endpoint} selectSpace={setSelected} />} />
+                <Route
+                  path="*"
+                  element={<Navigate to="/workspace/memories" replace />}
+                />
+              </Routes>
+            </div>
+          </SessionContext.Provider>
+        )}
+      </main>
+    </div>
+  );
+}
+
+function MemoryCard({ memory }: { memory: Memory }) {
+  return (
+    <Link
+      to={`/workspace/memory/${memory.memory_id}`}
+      className="ws-memory-card"
+    >
+      <div className="ws-card-top">
+        <Badge>{memory.kind}</Badge>
+        <Badge tone={memory.review_state === "quarantined" ? "warn" : ""}>
+          {memory.review_state === "quarantined"
+            ? "Quarantined"
+            : memory.claim_status}
+        </Badge>
+        <time dateTime={memory.recorded_at}>{date(memory.recorded_at)}</time>
+      </div>
+      <h3>{memory.subject || memory.evidence.title}</h3>
+      <p className="ws-excerpt">{memory.content}</p>
+      <div className="ws-card-bottom">
+        <span>
+          <FileText size={13} />
+          {memory.evidence.title}
+        </span>
+        <span>
+          Revision {memory.revision_version}
+          <ArrowRight size={14} />
+        </span>
+      </div>
+    </Link>
+  );
+}
+function Memories({ review = false }: { review?: boolean }) {
+  const { client, space, writer, reviewer } = useSession();
+  const [cursor, setCursor] = useState<string>();
+  const query = useQuery({
+    queryKey: ["memories", space.id, cursor, review],
+    queryFn: () => client.list(space.id, { limit: 30, cursor, review }),
+  });
+  if (review && !reviewer)
+    return (
+      <Empty title="Review access required">
+        A reviewer can inspect quarantined evidence.
+      </Empty>
+    );
+  const items = query.data?.items ?? [];
+  return (
+    <div className="ws-page">
+      <Title
+        eyebrow={space.name}
+        title={review ? "Review evidence" : "Shared memory"}
+        action={
+          writer && (
+            <Link className="ws-button ws-primary" to="/workspace/new">
+              <Plus size={16} />
+              Save memory
+            </Link>
+          )
+        }
+      >
+        {review
+          ? "Inspect current trust decisions, quarantine uncertain evidence, and preserve its history."
+          : "Decisions and context your apps and assistants can recall, with their sources attached."}
+      </Title>
+      <ErrorNotice error={query.error} />
+      {review && reviewer && <SourceProposals client={client} space={space.id} />}
+      {query.isPending ? (
+        <Busy />
+      ) : (
+        !query.isError &&
+        (items.length ? (
+          <div className="ws-memory-grid">
+            {items.map((memory) => (
+              <MemoryCard key={memory.memory_id} memory={memory} />
+            ))}
+          </div>
+        ) : (
+          <Empty title="This space is ready for its first memory">
+            {writer ? (
+              <Link className="ws-link" to="/workspace/new">
+                Save a decision, preference, or project note.
+              </Link>
+            ) : (
+              "Memories shared with this space will appear here."
+            )}
+          </Empty>
+        ))
+      )}
+      <div className="ws-pagination">
+        {cursor && (
+          <button className="ws-button" onClick={() => setCursor(undefined)}>
+            First page
+          </button>
+        )}
+        {query.data?.next_cursor && (
+          <button
+            className="ws-button"
+            onClick={() => setCursor(query.data!.next_cursor!)}
+          >
+            Next page
+            <ArrowRight size={14} />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MemoryForm({
+  initial,
+  onSave,
+  busy,
+}: {
+  initial?: Memory;
+  onSave: (input: MemoryInput, reason: string) => void;
+  busy: boolean;
+}) {
+  const [content, setContent] = useState(initial?.content ?? "");
+  const [subject, setSubject] = useState(initial?.subject ?? "");
+  const [kind, setKind] = useState<Kind>(initial?.kind ?? "fact");
+  const [title, setTitle] = useState("");
+  const [uri, setUri] = useState("");
+  const [source, setSource] = useState("");
+  const [reason, setReason] = useState("");
+  return (
+    <form
+      className="ws-form"
+      onSubmit={(event) => {
+        event.preventDefault();
+        onSave(
+          {
+            content,
+            subject: subject || null,
+            kind,
+            ...(title || source || uri
+              ? {
+                  source: {
+                    title: title || "Captured evidence",
+                    uri: uri || null,
+                    content: source || null,
+                  },
+                }
+              : {}),
+          },
+          reason,
+        );
+      }}
+    >
+      <div className="ws-form-row">
+        <Field label="Subject">
+          <input
+            value={subject}
+            onChange={(event) => setSubject(event.target.value)}
+            maxLength={500}
+            placeholder="e.g. Billing project"
+          />
+        </Field>
+        <Field label="Memory type">
+          <select
+            value={kind}
+            onChange={(event) => setKind(event.target.value as Kind)}
+          >
+            {["fact", "event", "preference", "procedure", "note"].map(
+              (kind) => (
+                <option key={kind}>{kind}</option>
+              ),
+            )}
+          </select>
+        </Field>
+      </div>
+      <Field label="Memory content">
+        <textarea
+          value={content}
+          onChange={(event) => setContent(event.target.value)}
+          required
+          maxLength={65536}
+          rows={8}
+          placeholder="What should this workspace remember?"
+        />
+      </Field>
+      <details className="ws-details">
+        <summary>Attach source evidence</summary>
+        <div className="ws-form">
+          <Field label="Source title">
+            <input
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              maxLength={300}
+              placeholder="Project decision · 9 October"
+            />
+          </Field>
+          <Field label="Source URL (optional)">
+            <input
+              value={uri}
+              onChange={(event) => setUri(event.target.value)}
+              maxLength={4096}
+              placeholder="https://…"
+            />
+          </Field>
+          <Field label="Original source text (optional)">
+            <textarea
+              value={source}
+              onChange={(event) => setSource(event.target.value)}
+              rows={5}
+              maxLength={1000000}
+              placeholder="Paste the original evidence. Otherwise the memory text is retained as its source."
+            />
+          </Field>
+        </div>
+      </details>
+      {initial && (
+        <Field label="Reason for this revision">
+          <input
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
+            required
+            maxLength={1000}
+          />
+        </Field>
+      )}
+      <div>
+        <button
+          className="ws-button ws-primary"
+          disabled={busy || !content.trim()}
+        >
+          {busy ? (
+            <LoaderCircle size={16} className="ws-spin" />
+          ) : (
+            <Check size={16} />
+          )}
+          {initial ? "Save revision" : "Save memory"}
+        </button>
+      </div>
+    </form>
+  );
+}
+function CreateMemory() {
+  const { client, space, writer } = useSession();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<unknown>();
+  const request = useRef<{ body: string; key: string } | null>(null);
+  const navigate = useNavigate();
+  const cache = useQueryClient();
+  async function save(input: MemoryInput) {
+    setBusy(true);
+    setError(undefined);
+    const body = JSON.stringify(input);
+    if (request.current?.body !== body)
+      request.current = { body, key: crypto.randomUUID() };
+    try {
+      const receipt = await client.save(space.id, input, request.current.key);
+      await cache.invalidateQueries({ queryKey: ["memories", space.id] });
+      navigate(`/workspace/memory/${receipt.memory_id}`);
+    } catch (error) {
+      setError(error);
+    } finally {
+      setBusy(false);
+    }
+  }
+  if (!writer)
+    return (
+      <Empty title="Contributor access required">
+        Your current space role allows reading shared memory.
+      </Empty>
+    );
+  return (
+    <div className="ws-page ws-narrow">
+      <Link className="ws-back" to="/workspace/memories">
+        <ArrowLeft size={15} />
+        Memories
+      </Link>
+      <Title title="Save a memory">
+        Give your apps and assistants useful context, with evidence they can
+        follow.
+      </Title>
+      <ErrorNotice error={error} />
+      <div className="ws-card">
+        <MemoryForm onSave={save} busy={busy} />
+      </div>
+    </div>
+  );
+}
+
+function MemoryDetail() {
+  const { id = "" } = useParams();
+  const { client, reviewer, writer } = useSession();
+  const cache = useQueryClient();
+  const navigate = useNavigate();
+  const query = useQuery({
+    queryKey: ["memory", id, reviewer],
+    queryFn: () => client.fetch(id, { review: reviewer }),
+  });
+  const history = useQuery({
+    queryKey: ["history", id, reviewer],
+    queryFn: () => client.history(id, reviewer),
+  });
+  const [editing, setEditing] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<unknown>();
+  const [receipt, setReceipt] = useState<Receipt>();
+  const [reason, setReason] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const request = useRef<{ body: string; key: string } | null>(null);
+  const operation = useQuery({
+    queryKey: ["operation", receipt?.operation_id],
+    queryFn: () => client.operation(receipt!.operation_id),
+    enabled: !!receipt,
+    refetchInterval: (query) =>
+      ["ready", "failed", "cancelled"].includes(query.state.data?.state ?? "")
+        ? false
+        : 2000,
+  });
+  async function refresh() {
+    await Promise.all([
+      cache.invalidateQueries({ queryKey: ["memory", id] }),
+      cache.invalidateQueries({ queryKey: ["history", id] }),
+      cache.invalidateQueries({ queryKey: ["memories"] }),
+    ]);
+  }
+  async function revise(input: MemoryInput, reason: string) {
+    if (!query.data) return;
+    setBusy(true);
+    setError(undefined);
+    const revision = { ...input, reason, expected_version: query.data.version };
+    const body = JSON.stringify(revision);
+    if (request.current?.body !== body)
+      request.current = { body, key: crypto.randomUUID() };
+    try {
+      setReceipt(await client.revise(id, revision, request.current.key));
+      setEditing(false);
+      await refresh();
+    } catch (error) {
+      setError(error);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function review() {
+    if (!query.data) return;
+    setBusy(true);
+    setError(undefined);
+    try {
+      await client.review(
+        id,
+        query.data.review_state === "ordinary" ? "quarantined" : "ordinary",
+        query.data.version,
+        reason,
+      );
+      setReason("");
+      await refresh();
+    } catch (error) {
+      setError(error);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function forget() {
+    if (!query.data) return;
+    setBusy(true);
+    setError(undefined);
+    const body = `delete:${id}:${query.data.version}`;
+    if (request.current?.body !== body)
+      request.current = { body, key: crypto.randomUUID() };
+    try {
+      await client.forget(id, query.data.version, request.current.key);
+      await cache.invalidateQueries({ queryKey: ["memories"] });
+      navigate("/workspace/operations");
+    } catch (error) {
+      setError(error);
+    } finally {
+      setBusy(false);
+    }
+  }
+  if (query.isPending) return <Busy />;
+  if (query.isError)
+    return (
+      <div className="ws-page">
+        <ErrorNotice error={query.error} />
+        <Link className="ws-link" to="/workspace/memories">
+          Return to memories
+        </Link>
+      </div>
+    );
+  const memory = query.data;
+  return (
+    <div className="ws-page">
+      <Link className="ws-back" to="/workspace/memories">
+        <ArrowLeft size={15} />
+        Memories
+      </Link>
+      <Title
+        eyebrow={`${memory.kind} · version ${memory.version}`}
+        title={memory.subject || memory.evidence.title}
+        action={
+          writer && (
+            <button className="ws-button" onClick={() => setEditing(!editing)}>
+              {editing ? "Cancel revision" : "Revise memory"}
+            </button>
+          )
+        }
+      >
+        Recorded {date(memory.recorded_at)}
+      </Title>
+      <ErrorNotice error={error} />
+      {receipt && (
+        <div className="ws-notice" role="status">
+          Revision saved. Search indexing:{" "}
+          {operation.data?.state ?? receipt.state}.
+        </div>
+      )}
+      <div className="ws-detail-grid">
+        <section>
+          <div className="ws-card">
+            {editing ? (
+              <MemoryForm
+                key={memory.version}
+                initial={memory}
+                onSave={revise}
+                busy={busy}
+              />
+            ) : (
+              <>
+                <div className="ws-card-top">
+                  <Badge>{memory.claim_status}</Badge>
+                  <Badge
+                    tone={
+                      memory.review_state === "quarantined" ? "warn" : "good"
+                    }
+                  >
+                    {memory.review_state}
+                  </Badge>
+                </div>
+                <div className="ws-prose">{memory.content}</div>
+              </>
+            )}
+          </div>
+          <div className="ws-card">
+            <h2>Source evidence</h2>
+            <Link
+              className="ws-source-link"
+              to={`/workspace/sources/${memory.evidence.source_revision_id}`}
+            >
+              <FileText size={18} />
+              <span>
+                {memory.evidence.title}
+                <small>Open original source and content hash</small>
+              </span>
+              <ArrowRight size={16} />
+            </Link>
+            <blockquote>{memory.evidence.excerpt.slice(0, 4000)}</blockquote>
+          </div>
+          {reviewer && (
+            <div className="ws-card">
+              <h2>Review & lifecycle</h2>
+              <p>
+                Quarantined memory stays available to reviewers and is excluded
+                from ordinary search and exports.
+              </p>
+              <div className="ws-form">
+                <Field label="Review reason">
+                  <input
+                    value={reason}
+                    onChange={(event) => setReason(event.target.value)}
+                    maxLength={1000}
+                    placeholder="Explain this decision"
+                  />
+                </Field>
+                <div className="ws-actions">
+                  <button
+                    className="ws-button"
+                    disabled={busy || !reason.trim()}
+                    onClick={review}
+                  >
+                    {memory.review_state === "ordinary"
+                      ? "Quarantine memory"
+                      : "Return to ordinary memory"}
+                  </button>
+                  <button
+                    className="ws-button ws-danger"
+                    onClick={() => setConfirmDelete(true)}
+                  >
+                    Delete memory
+                  </button>
+                </div>
+                {confirmDelete && (
+                  <div className="ws-notice ws-delete-confirm">
+                    <strong>Delete this memory and its saved sources?</strong>
+                    <p>
+                      Access is removed immediately. The worker then purges
+                      content and retains a deletion receipt.
+                    </p>
+                    <div className="ws-actions">
+                      <button
+                        className="ws-button ws-danger"
+                        disabled={busy}
+                        onClick={forget}
+                      >
+                        Delete this memory
+                      </button>
+                      <button
+                        className="ws-button"
+                        onClick={() => setConfirmDelete(false)}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
+        <aside className="ws-card ws-history">
+          <h2>Revision history</h2>
+          <ErrorNotice error={history.error} />
+          {history.isPending ? (
+            <Busy />
+          ) : (
+            history.data?.items.map((revision) => (
+              <details key={revision.revision_id}>
+                <summary>
+                  <span>Revision {revision.revision_version}</span>
+                  <small>{date(revision.recorded_at)}</small>
+                </summary>
+                <p className="ws-prose">{revision.content}</p>
+                <Link
+                  className="ws-link"
+                  to={`/workspace/sources/${revision.evidence.source_revision_id}`}
+                >
+                  View evidence
+                </Link>
+              </details>
+            ))
+          )}
+          <div className="ws-identifier">
+            <span>Memory ID</span>
+            <code>{memory.memory_id}</code>
+            <CopyButton text={memory.memory_id} />
+          </div>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+function SourceDetail() {
+  const { id = "" } = useParams();
+  const { client, reviewer } = useSession();
+  const [downloadError, setDownloadError] = useState<unknown>();
+  const [downloading, setDownloading] = useState<string>();
+  const query = useQuery({
+    queryKey: ["source", id, reviewer],
+    queryFn: () => client.source(id, reviewer),
+  });
+  if (query.isPending) return <Busy />;
+  if (query.isError)
+    return (
+      <div className="ws-page">
+        <ErrorNotice error={query.error} />
+      </div>
+    );
+  const source = query.data;
+  return (
+    <div className="ws-page ws-narrow">
+      <Title eyebrow="Source evidence" title={source.title}>
+        Captured {date(source.recorded_at)} · {source.media_type}
+      </Title>
+      {source.uri && (
+        <div className="ws-notice">
+          Origin:{" "}
+          {/^https?:\/\//i.test(source.uri) ? (
+            <a href={source.uri} target="_blank" rel="noopener noreferrer">
+              {source.uri}
+            </a>
+          ) : (
+            source.uri
+          )}
+        </div>
+      )}
+      <div className="ws-card ws-prose">{source.content}</div>
+      <ErrorNotice error={downloadError} />
+      {source.attachments?.length > 0 && <div className="ws-card">
+        <h3>Original files and migration evidence</h3>
+        <div className="ws-actions">
+          {source.attachments.map(file => <button className="ws-button" key={file.attachment_id} disabled={!!downloading} onClick={async () => {
+            setDownloading(file.attachment_id); setDownloadError(undefined);
+            try {
+              const bytes = await client.attachment(id, file.attachment_id, reviewer);
+              const actual = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)), n => n.toString(16).padStart(2, "0")).join("");
+              if (actual !== file.content_hash) throw new Error("The downloaded file failed its checksum. Please retry.");
+              const url = URL.createObjectURL(new Blob([bytes], { type: "application/octet-stream" }));
+              const link = document.createElement("a"); link.href = url; link.download = file.name; link.click();
+              setTimeout(() => URL.revokeObjectURL(url), 30_000);
+            } catch (error) { setDownloadError(error); }
+            finally { setDownloading(undefined); }
+          }}><Download size={16} />{file.name} · {Math.ceil(file.size_bytes / 1024)} KB</button>)}
+        </div>
+      </div>}
+      <div className="ws-identifier">
+        <span>SHA-256</span>
+        <code>{source.content_hash}</code>
+      </div>
+    </div>
+  );
+}
+
+function SearchMemory() {
+  const { client, space, selectSpace } = useSession();
+  const [allAccessible, setAllAccessible] = useState(true);
+  const [text, setText] = useState("");
+  const [mode, setMode] = useState<"hybrid" | "lexical" | "semantic">("hybrid");
+  const [result, setResult] = useState<Recall>();
+  const [context, setContext] = useState<ContextPack>();
+  const [budget, setBudget] = useState(2048);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<unknown>();
+  async function search(event?: FormEvent, pack = false) {
+    event?.preventDefault();
+    setBusy(true);
+    setError(undefined);
+    setContext(undefined);
+    setResult(undefined);
+    try {
+      const input = { query: text, ...(allAccessible ? { all_accessible: true } : { space_ids: [space.id] }), mode, limit: 20 };
+      if (pack)
+        setContext(await client.context({ ...input, token_budget: budget }));
+      else setResult(await client.search(input));
+    } catch (error) {
+      setError(error);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="ws-page">
+      <Title title="Find the context that matters">
+        Search permitted sources, follow the evidence, or prepare context for an
+        assistant.
+      </Title>
+      <form className="ws-search-form" onSubmit={search}>
+        <div className="ws-search-input">
+          <Search size={20} />
+          <input
+            aria-label="Search shared memory"
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+            placeholder="What does your team need to remember?"
+            required
+            maxLength={4000}
+          />
+        </div>
+        <button
+          className="ws-button ws-primary"
+          disabled={busy || !text.trim()}
+        >
+          Search
+        </button>
+      </form>
+      <div className="ws-search-options">
+        <Field label="Search scope"><select value={allAccessible ? "all" : "space"} onChange={event => setAllAccessible(event.target.value === "all")}><option value="all">All accessible memory</option><option value="space">This space</option></select></Field>
+        <Field label="Search method">
+          <select
+            value={mode}
+            onChange={(event) => setMode(event.target.value as typeof mode)}
+          >
+            <option value="hybrid">Meaning + exact text</option>
+            <option value="lexical">Exact text</option>
+            <option value="semantic">Meaning</option>
+          </select>
+        </Field>
+        <Field label="Context token budget">
+          <input
+            type="number"
+            min={64}
+            max={32768}
+            value={budget}
+            onChange={(event) => setBudget(Number(event.target.value))}
+          />
+        </Field>
+        <button
+          className="ws-button"
+          disabled={busy || !text.trim() || budget < 64 || budget > 32768}
+          onClick={() => search(undefined, true)}
+        >
+          <BookOpen size={16} />
+          Build context
+        </button>
+      </div>
+      <ErrorNotice error={error} />
+      {busy && <Busy />}
+      {result && (
+        <>
+          <WarningList warnings={result.warnings} />
+          <div className="ws-result-summary">
+            {result.hits.length} results · {result.timing_ms.toFixed(0)} ms ·{" "}
+            {result.index.indexed_records}/{result.index.eligible_records}{" "}
+            memories indexed
+          </div>
+          {result.hits.length ? (
+            result.hits.map((hit) => (
+              <article className="ws-card ws-search-result" key={hit.memory_id}>
+                <div className="ws-card-top">
+                  <Badge>{hit.claim_status}</Badge>
+                  <time>{date(hit.recorded_at)}</time>
+                </div>
+                <h2>
+                  <Link to={`/workspace/memory/${hit.memory_id}`} onClick={() => selectSpace(hit.space_id)}>
+                    {hit.subject || hit.evidence.title}
+                  </Link>
+                </h2>
+                <p className="ws-prose">{hit.text}</p>
+                <Link
+                  className="ws-link"
+                  to={`/workspace/sources/${hit.evidence.source_revision_id}`}
+                  onClick={() => selectSpace(hit.space_id)}
+                >
+                  {hit.evidence.title} <ArrowRight size={13} />
+                </Link>
+                <details className="ws-details">
+                  <summary>Why this result?</summary>
+                  <p>
+                    Combined relevance: {hit.relevance_score.toFixed(3)}. This
+                    rank measures a match to your question, not whether the
+                    claim is true.
+                  </p>
+                  <p>
+                    {hit.ranking.ranks.lexical
+                      ? `Exact-text rank ${hit.ranking.ranks.lexical}. `
+                      : ""}
+                    {hit.ranking.ranks.semantic
+                      ? `Semantic rank ${hit.ranking.ranks.semantic}.`
+                      : ""}
+                  </p>
+                  <blockquote>{hit.evidence.excerpt}</blockquote>
+                </details>
+              </article>
+            ))
+          ) : (
+            <Empty title="No matching evidence">
+              Try another phrase or check that the memory belongs to this space.
+            </Empty>
+          )}
+        </>
+      )}
+      {context && (
+        <>
+          <WarningList warnings={context.warnings} />
+          <div className="ws-result-summary">
+            {context.token_count}/{context.token_budget} {context.token_count_unit === "utf8_bytes" ? "UTF-8 bytes" : "tokens"} ·{" "}
+            {context.citations.length} citations · {context.omitted_items}{" "}
+            omitted
+          </div>
+          <div className="ws-card">
+            <div className="ws-section-title">
+              <h2>Context pack</h2>
+              <CopyButton text={context.text} label="Copy context" />
+            </div>
+            <pre className="ws-prose">
+              {context.text || "No evidence fits this request."}
+            </pre>
+            <p className="ws-helper">
+              Budget measured with {context.tokenizer}. An assistant’s tokenizer
+              may count differently.
+            </p>
+            {context.citations.map((citation) => (
+              <Link
+                className="ws-citation"
+                key={citation.number}
+                to={`/workspace/memory/${citation.memory_id}`}
+                onClick={() => selectSpace(citation.space_id)}
+              >
+                [{citation.number}] Open cited memory
+                <ArrowRight size={13} />
+              </Link>
+            ))}
+          </div>
+        </>
+      )}
+      {!result && !context && !busy && (
+        <Empty title="Start with a question">
+          Search returns evidence your team can inspect. Context packs include
+          source citations.
+        </Empty>
+      )}
+    </div>
+  );
+}
+
+function CoreContext() {
+  const { client, space, reviewer } = useSession();
+  const query = useQuery({
+    queryKey: ["blocks", space.id],
+    queryFn: () => client.blocks(space.id),
+  });
+  const cache = useQueryClient();
+  const [editing, setEditing] = useState<CoreBlock | "new">();
+  const [key, setKey] = useState("");
+  const [content, setContent] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<unknown>();
+  async function save(event: FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setError(undefined);
+    try {
+      await client.putBlock(
+        space.id,
+        key,
+        content,
+        editing && editing !== "new" ? editing.version : 0,
+      );
+      setEditing(undefined);
+      await cache.invalidateQueries({ queryKey: ["blocks", space.id] });
+    } catch (error) {
+      setError(error);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="ws-page ws-narrow">
+      <Title
+        title="Core context"
+        action={
+          reviewer && (
+            <button
+              className="ws-button ws-primary"
+              onClick={() => {
+                setEditing("new");
+                setKey("");
+                setContent("");
+              }}
+            >
+              <Plus size={16} />
+              New block
+            </button>
+          )
+        }
+      >
+        Keep concise team context available when assistants build a context
+        pack.
+      </Title>
+      <ErrorNotice error={query.error || error} />
+      {editing && (
+        <form className="ws-card ws-form" onSubmit={save}>
+          <Field label="Block key">
+            <input
+              value={key}
+              onChange={(event) => setKey(event.target.value)}
+              disabled={editing !== "new"}
+              required
+              maxLength={100}
+              pattern="[\p{L}\p{N}_\-]+"
+              placeholder="team_context"
+            />
+          </Field>
+          <Field label="Block content">
+            <textarea
+              value={content}
+              onChange={(event) => setContent(event.target.value)}
+              rows={6}
+              maxLength={16000}
+            />
+          </Field>
+          <div className="ws-actions">
+            <button className="ws-button ws-primary" disabled={busy}>
+              Save block
+            </button>
+            <button
+              type="button"
+              className="ws-button"
+              onClick={() => setEditing(undefined)}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+      {query.isPending ? (
+        <Busy />
+      ) : (
+        !query.isError &&
+        (query.data?.items.length ? (
+          query.data.items.map((block) => (
+            <div key={block.key} className="ws-card">
+              <div className="ws-section-title">
+                <h2>{block.key}</h2>
+                {reviewer && (
+                  <button
+                    className="ws-button ws-quiet"
+                    onClick={() => {
+                      setEditing(block);
+                      setKey(block.key);
+                      setContent(block.content);
+                    }}
+                  >
+                    Edit
+                  </button>
+                )}
+              </div>
+              <p className="ws-prose">{block.content || "Empty block"}</p>
+              <small>
+                Version {block.version} · Updated {date(block.updated_at)}
+              </small>
+            </div>
+          ))
+        ) : (
+          <Empty title="No core context yet">
+            A reviewer can add team conventions or a project overview.
+          </Empty>
+        ))
+      )}
+    </div>
+  );
+}
+
+function Operations() {
+  const { client, space, reviewer } = useSession();
+  const activity = useQuery({
+    queryKey: ["activity", space.id],
+    queryFn: () => client.activity(space.id),
+    enabled: reviewer,
+    refetchInterval: 5000,
+  });
+  const query = useQuery({
+    queryKey: ["operations", space.id],
+    queryFn: () => client.operations(space.id),
+    refetchInterval: 5000,
+  });
+  const status = useQuery({
+    queryKey: ["status", space.id],
+    queryFn: () =>
+      client.request<{
+        memories: number;
+        operations: { state: string; count: number }[];
+      }>("GET", `/v1/spaces/${space.id}/status`),
+    refetchInterval: 5000,
+  });
+  const [error, setError] = useState<unknown>();
+  async function retry(id: string) {
+    try {
+      await client.retryOperation(id);
+      await query.refetch();
+    } catch (error) {
+      setError(error);
+    }
+  }
+  const count = (states: string[]) =>
+    status.data?.operations
+      .filter((item) => states.includes(item.state))
+      .reduce((total, item) => total + item.count, 0) ?? 0;
+  return (
+    <div className="ws-page">
+      <Title
+        title="Activity & recovery"
+        action={
+          <button
+            className="ws-button"
+            onClick={() => {
+              void query.refetch();
+              void status.refetch();
+              if (reviewer) void activity.refetch();
+            }}
+          >
+            <RefreshCw size={15} />
+            Refresh
+          </button>
+        }
+      >
+        A save is durable as soon as it is accepted. The worker adds semantic
+        search and completes content purges.
+      </Title>
+      <ErrorNotice error={query.error || status.error || activity.error || error} />
+      <div className="ws-stats">
+        <div>
+          <span>Current memories</span>
+          <strong>{status.data?.memories ?? "—"}</strong>
+        </div>
+        <div>
+          <span>Waiting / indexing</span>
+          <strong>{status.data ? count(["accepted", "indexing"]) : "—"}</strong>
+        </div>
+        <div>
+          <span>Needs attention</span>
+          <strong>{status.data ? count(["failed"]) : "—"}</strong>
+        </div>
+      </div>
+      {query.isPending ? (
+        <Busy />
+      ) : (
+        !query.isError &&
+        (query.data?.items.length ? (
+          <div className="ws-table-wrap">
+            <table className="ws-table">
+              <thead>
+                <tr>
+                  <th>Operation</th>
+                  <th>State</th>
+                  <th>Updated</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {query.data.items.map((operation) => (
+                  <tr key={operation.operation_id}>
+                    <td>
+                      <strong>
+                        {operation.kind === "delete"
+                          ? "Content purge"
+                          : operation.kind === "revise"
+                            ? "Revision indexing"
+                            : "Memory indexing"}
+                      </strong>
+                      <small>{operation.operation_id}</small>
+                    </td>
+                    <td>
+                      <Badge
+                        tone={
+                          operation.state === "failed"
+                            ? "warn"
+                            : operation.state === "ready"
+                              ? "good"
+                              : ""
+                        }
+                      >
+                        {operation.state}
+                      </Badge>
+                      {operation.error_code && (
+                        <small>{operation.error_code}</small>
+                      )}
+                    </td>
+                    <td>{date(operation.updated_at)}</td>
+                    <td>
+                      {operation.state === "failed" && reviewer ? (
+                        <button
+                          className="ws-button"
+                          onClick={() => retry(operation.operation_id)}
+                        >
+                          Retry
+                        </button>
+                      ) : operation.kind !== "delete" && !operation.memory_deleted && operation.memory_id ? (
+                        <Link
+                          className="ws-link"
+                          to={`/workspace/memory/${operation.memory_id}`}
+                        >
+                          View memory
+                        </Link>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <Empty title="No operations yet">
+            Accepted saves and deletion receipts appear here.
+          </Empty>
+        ))
+      )}
+      <p className="ws-helper">
+        The most recent 100 operations are shown. If work stays accepted, check
+        that the indexing worker is running.
+      </p>
+      {reviewer && <section aria-label="Recent changes">
+        <h2>Recent changes</h2>
+        <p className="ws-helper">Review and correction notes are visible to reviewers. Notes are removed when their memory is deleted.</p>
+        {activity.isPending ? <Busy /> : activity.data?.items.length ? (
+          <div className="ws-table-wrap"><table className="ws-table">
+            <thead><tr><th>Change</th><th>Note</th><th>When</th></tr></thead>
+            <tbody>{activity.data.items.map(event => <tr key={event.id}>
+              <td><strong>{event.action.replaceAll(".", " ").replaceAll("_", " ")}</strong><small>{event.resource_id}</small></td>
+              <td><p className="ws-prose">{event.reason || "—"}</p></td>
+              <td>{date(event.created_at)}</td>
+            </tr>)}</tbody>
+          </table></div>
+        ) : <Empty title="No changes yet">Saves, corrections, reviews, and deletions appear here.</Empty>}
+      </section>}
+    </div>
+  );
+}
+
+function Obsidian() {
+  const { client, space, reviewer } = useSession();
+  const [allAccessible, setAllAccessible] = useState(false);
+  const [review, setReview] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<unknown>();
+  const [downloaded, setDownloaded] = useState(false);
+  const [vault, setVault] = useState("Mnemion");
+  const [localVault, setLocalVault] = useState<{ id: string; path: string } | null>(null);
+  const [refreshed, setRefreshed] = useState<Awaited<ReturnType<NonNullable<NonNullable<Window["mnemion"]>["refreshVault"]>>> | null>(null);
+  async function refreshLocal() {
+    setBusy(true);
+    setError(undefined);
+    setRefreshed(null);
+    try {
+      const chosen = localVault || await window.mnemion!.chooseVault!();
+      if (!chosen) return;
+      setLocalVault(chosen);
+      const bundle = await client.exportObsidian(allAccessible ? [] : [space.id], review, allAccessible);
+      const result = await window.mnemion!.refreshVault!(chosen.id, new Uint8Array(bundle));
+      setRefreshed(result);
+    } catch (error) {
+      setError(error);
+    } finally { setBusy(false); }
+  }
+  async function download() {
+    setBusy(true);
+    setError(undefined);
+    setDownloaded(false);
+    try {
+      const bundle = await client.exportObsidian(allAccessible ? [] : [space.id], review, allAccessible);
+      const url = URL.createObjectURL(
+        new Blob([bundle], { type: "application/zip" }),
+      );
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "mnemion-obsidian.zip";
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+      setDownloaded(true);
+    } catch (error) {
+      setError(error);
+    } finally {
+      setBusy(false);
+    }
+  }
+  const command = `mnemion-service --credentials owner.mnemion-credentials.json vault --path "Mnemion" ${allAccessible ? "--all-accessible" : `--spaces ${space.id}`}${review ? " --review" : ""}`;
+  return (
+    <div className="ws-page ws-narrow">
+      <Title eyebrow="Connected visualization" title="Your memory, in Obsidian">
+        Explore the same memories as Markdown notes, linked sources, and a
+        native knowledge graph.
+      </Title>
+      <ErrorNotice error={error} />
+      <div className="ws-card ws-obsidian-card">
+        <div className="ws-obsidian-symbol">
+          <Workflow size={34} />
+        </div>
+        <h2>Open a connected vault</h2>
+        <p>
+          Download selected memory as a vault and extract it into a new folder. In
+          Obsidian, choose “Open folder as vault”. The Mnemion index links
+          memories, sources, revisions, and subjects.
+        </p>
+        <label className="ws-checkbox"><input type="checkbox" checked={allAccessible} onChange={event => { setAllAccessible(event.target.checked); setLocalVault(null); setRefreshed(null); setDownloaded(false); }} />Include all accessible memory</label>
+        {(reviewer || allAccessible) && (
+          <label className="ws-checkbox">
+            <input
+              type="checkbox"
+              checked={review}
+              onChange={(event) => setReview(event.target.checked)}
+            />
+            Include quarantined evidence for review
+          </label>
+        )}
+        <button
+          className="ws-button ws-primary"
+          disabled={busy}
+          onClick={download}
+        >
+          <Download size={16} />
+          {busy ? "Preparing vault…" : "Download Obsidian vault"}
+        </button>
+        {downloaded && (
+          <p className="ws-success" role="status">
+            Vault downloaded. Open the extracted folder in Obsidian.
+          </p>
+        )}
+        {window.mnemion?.refreshVault && (
+          <div className="ws-native-vault">
+            <button className="ws-button" disabled={busy} onClick={refreshLocal}>
+              <RefreshCw size={16} />{busy ? "Refreshing…" : localVault ? "Refresh selected vault" : "Choose folder and refresh"}
+            </button>
+            {localVault && <p className="ws-helper">{localVault.path} <button className="ws-link" onClick={() => { setLocalVault(null); setRefreshed(null); }}>Change folder</button></p>}
+            {refreshed?.completed && <p className="ws-success" role="status">Vault refreshed. Personal annotations and Obsidian settings were preserved.</p>}
+            {refreshed && !refreshed.completed && <div className="ws-notice" role="alert">Some generated sections were edited. Your files were preserved; review the conflict proposals in the vault before refreshing again.<ul>{refreshed.conflicts.map((conflict) => <li key={conflict.path}>{conflict.path}</li>)}</ul></div>}
+          </div>
+        )}
+      </div>
+      <div className="ws-card">
+        <h2>Refresh without losing your notes</h2>
+        <p>
+          The local refresh command keeps personal annotations and unmanaged
+          files. If a generated section was edited, it preserves your version
+          and creates a conflict proposal. Use a copied vault for the first
+          migration.
+        </p>
+        <Field label="Registered Obsidian vault name">
+          <input
+            value={vault}
+            onChange={(event) => setVault(event.target.value)}
+            placeholder="Mnemion"
+          />
+        </Field>
+        <div className="ws-code">
+          <code>{command}</code>
+          <CopyButton text={command} label="Copy command" />
+        </div>
+        <small>
+          The credentials file belongs to your local client. The service does
+          not write to a folder on your computer.
+        </small>
+      </div>
+      <div className="ws-card">
+        <h2>Already registered in Obsidian?</h2>
+        <p>
+          After importing or refreshing, open the vault by its registered name.
+        </p>
+        <a
+          className="ws-button"
+          href={`obsidian://open?vault=${encodeURIComponent(vault.split(/[\\/]/).filter(Boolean).at(-1) || "Mnemion")}`}
+        >
+          Open in Obsidian
+          <ArrowRight size={15} />
+        </a>
+      </div>
+    </div>
+  );
+}
+
+function Team() {
+  const { client, space, me } = useSession();
+  const cache = useQueryClient();
+  const people = useQuery({
+    queryKey: ["principals"],
+    queryFn: () => client.principals(),
+    enabled: me.administrator,
+  });
+  const keys = useQuery({
+    queryKey: ["keys"],
+    queryFn: () => client.keys(),
+    enabled: me.administrator,
+  });
+  const grants = useQuery({
+    queryKey: ["grants", space.id],
+    queryFn: () =>
+      client.request<
+        Page<{ principal_id: string; name: string; kind: string; role: Role }>
+      >("GET", `/v1/spaces/${space.id}/grants`),
+    enabled: me.administrator,
+  });
+  const [name, setName] = useState("");
+  const [kind, setKind] = useState<"human" | "application">("application");
+  const [principal, setPrincipal] = useState("");
+  const [role, setRole] = useState<Role>("reader");
+  const [keyName, setKeyName] = useState("");
+  const [keyPrincipal, setKeyPrincipal] = useState("");
+  const [newKey, setNewKey] = useState<ApiKey & { api_key: string }>();
+  const [newSpace, setNewSpace] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<unknown>();
+  async function act(work: () => Promise<unknown>) {
+    setBusy(true);
+    setError(undefined);
+    try {
+      await work();
+      await Promise.all(
+        ["principals", "keys", "grants", "spaces"].map((key) =>
+          cache.invalidateQueries({ queryKey: [key] }),
+        ),
+      );
+    } catch (error) {
+      setError(error);
+    } finally {
+      setBusy(false);
+    }
+  }
+  if (!me.administrator)
+    return <Empty title="Organization administrator access required" />;
+  const options =
+    people.data?.items.filter((person) => !person.disabled_at) ?? [];
+  return (
+    <div className="ws-page">
+      <Title title="People & apps">
+        Give each person and application its own identity, then grant access to
+        specific spaces.
+      </Title>
+      <ErrorNotice
+        error={error || people.error || keys.error || grants.error}
+      />
+      <div className="ws-team-grid">
+        <form
+          className="ws-card ws-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void act(async () => {
+              await client.createPrincipal(name, kind);
+              setName("");
+            });
+          }}
+        >
+          <h2>Add an identity</h2>
+          <Field label="Name">
+            <input
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              required
+              maxLength={200}
+              placeholder="Billing assistant"
+            />
+          </Field>
+          <Field label="Identity type">
+            <select
+              value={kind}
+              onChange={(event) => setKind(event.target.value as typeof kind)}
+            >
+              <option value="application">Application / assistant</option>
+              <option value="human">Person</option>
+            </select>
+          </Field>
+          <button className="ws-button ws-primary" disabled={busy}>
+            Create identity
+          </button>
+          <small>
+            New identities have no memory access until you grant it.
+          </small>
+        </form>
+        <form
+          className="ws-card ws-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void act(() => client.grant(space.id, principal, role));
+          }}
+        >
+          <h2>Grant access to {space.name}</h2>
+          <Field label="Identity">
+            <select
+              required
+              value={principal}
+              onChange={(event) => setPrincipal(event.target.value)}
+            >
+              <option value="">Select a person or app</option>
+              {options.map((person) => (
+                <option key={person.id} value={person.id}>
+                  {person.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Space role">
+            <select
+              value={role}
+              onChange={(event) => setRole(event.target.value as Role)}
+            >
+              {["reader", "contributor", "reviewer", "administrator"].map(
+                (role) => (
+                  <option key={role}>{role}</option>
+                ),
+              )}
+            </select>
+          </Field>
+          <button className="ws-button" disabled={busy || !principal}>
+            Save access
+          </button>
+          <small>
+            Readers recall. Contributors also save and revise observed memories.
+            Reviewers manage truth and deletion.
+          </small>
+        </form>
+      </div>
+      <div className="ws-card">
+        <h2>Space access</h2>
+        {grants.isPending ? (
+          <Busy />
+        ) : (
+          <div className="ws-table-wrap">
+            <table className="ws-table">
+              <thead>
+                <tr>
+                  <th>Identity</th>
+                  <th>Type</th>
+                  <th>Role</th>
+                  <th>Access</th>
+                </tr>
+              </thead>
+              <tbody>
+                {grants.data?.items.map((grant) => (
+                  <tr key={grant.principal_id}>
+                    <td>{grant.name}</td>
+                    <td>{grant.kind}</td>
+                    <td>{grant.role}</td>
+                    <td>
+                      {grant.principal_id !== me.principal_id && (
+                        <button
+                          className="ws-button ws-quiet"
+                          disabled={busy}
+                          onClick={() =>
+                            act(() =>
+                              client.revokeGrant(space.id, grant.principal_id),
+                            )
+                          }
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+      <div className="ws-team-grid">
+        <form
+          className="ws-card ws-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void act(async () => {
+              setNewKey(await client.createKey(keyPrincipal, keyName));
+              setKeyName("");
+            });
+          }}
+        >
+          <h2>Create an API key</h2>
+          <Field label="Key identity">
+            <select
+              value={keyPrincipal}
+              onChange={(event) => setKeyPrincipal(event.target.value)}
+              required
+            >
+              <option value="">Select a person or app</option>
+              {options.map((person) => (
+                <option key={person.id} value={person.id}>
+                  {person.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Key name">
+            <input
+              value={keyName}
+              onChange={(event) => setKeyName(event.target.value)}
+              required
+              maxLength={200}
+              placeholder="Production assistant"
+            />
+          </Field>
+          <button className="ws-button" disabled={busy || !keyPrincipal}>
+            Create API key
+          </button>
+        </form>
+        <form
+          className="ws-card ws-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void act(async () => {
+              await client.createSpace(newSpace);
+              setNewSpace("");
+            });
+          }}
+        >
+          <h2>Create another space</h2>
+          <p>
+            Separate projects or private work. You choose which apps and people
+            can use each space.
+          </p>
+          <Field label="New space name">
+            <input
+              value={newSpace}
+              onChange={(event) => setNewSpace(event.target.value)}
+              required
+              maxLength={200}
+            />
+          </Field>
+          <button className="ws-button" disabled={busy}>
+            Create space
+          </button>
+        </form>
+      </div>
+      {newKey && (
+        <div className="ws-card ws-new-key" role="status">
+          <h2>Save this key now</h2>
+          <p>
+            Its full value is shown once. Give it only to{" "}
+            {options.find((person) => person.id === newKey.principal_id)
+              ?.name ?? "the selected identity"}
+            .
+          </p>
+          <div className="ws-code">
+            <code>{newKey.api_key}</code>
+            <CopyButton text={newKey.api_key} label="Copy API key" />
+          </div>
+          <button className="ws-button" onClick={() => setNewKey(undefined)}>
+            I’ve saved the key
+          </button>
+        </div>
+      )}
+      <div className="ws-card">
+        <h2>API keys</h2>
+        {keys.isPending ? (
+          <Busy />
+        ) : (
+          <div className="ws-table-wrap">
+            <table className="ws-table">
+              <thead>
+                <tr>
+                  <th>Key</th>
+                  <th>Identity</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {keys.data?.items.map((key) => (
+                  <tr key={key.id}>
+                    <td>
+                      <strong>{key.name}</strong>
+                      <small>{key.prefix}…</small>
+                    </td>
+                    <td>
+                      {options.find((person) => person.id === key.principal_id)
+                        ?.name ?? "Disabled identity"}
+                    </td>
+                    <td>
+                      {key.revoked_at
+                        ? "Revoked"
+                        : key.expires_at &&
+                            new Date(key.expires_at) < new Date()
+                          ? "Expired"
+                          : "Active"}
+                    </td>
+                    <td>
+                      {!key.revoked_at &&
+                        key.principal_id !== me.principal_id && (
+                          <button
+                            className="ws-button ws-quiet"
+                            disabled={busy}
+                            onClick={() => act(() => client.revokeKey(key.id))}
+                          >
+                            Revoke
+                          </button>
+                        )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default function Workspace() {
+  const [connection, setConnection] = useState<Connection>();
+  const queryClient = useMemo(
+    () =>
+      new QueryClient({
+        defaultOptions: { queries: { retry: false, staleTime: 10000 } },
+      }),
+    [connection],
+  );
+  return (
+    <div className="workspace">
+      {connection ? (
+        <QueryClientProvider client={queryClient}>
+          <Shell
+            connection={connection}
+            disconnect={() => {
+              void queryClient.cancelQueries();
+              queryClient.clear();
+              setConnection(undefined);
+            }}
+          />
+        </QueryClientProvider>
+      ) : (
+        <Connect onConnect={setConnection} />
+      )}
+    </div>
+  );
+}

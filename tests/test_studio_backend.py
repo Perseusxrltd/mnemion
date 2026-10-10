@@ -17,6 +17,9 @@ class FakeCollection:
             "metadatas": [{"wing": "project", "room": "notes", "trust_status": "current"}],
         }
 
+    def count(self):
+        return 1
+
 
 def _preflight(origin: str, method: str = "POST"):
     client = TestClient(app)
@@ -87,13 +90,34 @@ def test_mutating_request_with_valid_token_reaches_endpoint_validation(monkeypat
     assert response.status_code == 422
 
 
-def test_read_only_request_does_not_require_token(monkeypatch):
+def test_docs_request_does_not_require_token(monkeypatch):
     monkeypatch.setenv("MNEMION_STUDIO_TOKEN", "secret-token")
     client = TestClient(app)
 
     response = client.get("/api/docs")
 
     assert response.status_code == 200
+
+
+def test_data_read_requires_token_when_configured(monkeypatch):
+    monkeypatch.setenv("MNEMION_STUDIO_TOKEN", "secret-token")
+    client = TestClient(app)
+
+    response = client.get("/api/status")
+
+    assert response.status_code == 403
+    assert response.json() == {"detail": "Forbidden"}
+
+
+def test_data_read_with_valid_token_reaches_endpoint(monkeypatch):
+    monkeypatch.setenv("MNEMION_STUDIO_TOKEN", "secret-token")
+    monkeypatch.setattr(studio_main, "_get_collection", lambda: FakeCollection())
+    client = TestClient(app)
+
+    response = client.get("/api/status", headers={STUDIO_TOKEN_HEADER: "secret-token"})
+
+    assert response.status_code == 200
+    assert response.json()["total_drawers"] == 1
 
 
 def test_cors_preflight_does_not_require_token(monkeypatch):
@@ -238,3 +262,40 @@ def test_wiki_context_pack_endpoint_uses_token_guard(monkeypatch):
     assert forbidden.status_code == 403
     assert allowed.status_code == 200
     assert allowed.json()["query"] == "hybrid retrieval"
+
+
+def test_llm_config_redacts_preserves_and_clears_provider_secrets(monkeypatch):
+    class Config:
+        anaktoron_path = "isolated"
+        collection_name = "test"
+        topic_wings = []
+        llm = {
+            "backend": "custom",
+            "url": "https://provider.example",
+            "model": "one",
+            "api_key": "dummy-provider-secret",
+        }
+
+        def save_llm_config(self, **kwargs):
+            self.llm = kwargs
+
+    config = Config()
+    monkeypatch.setattr(studio_main, "_config", config)
+    client = TestClient(app)
+    assert "dummy-provider-secret" not in client.get("/api/config").text
+    retained = client.put(
+        "/api/config/llm",
+        json={"backend": "custom", "url": "https://provider.example", "model": "two"},
+    )
+    assert retained.status_code == 200
+    assert config.llm["api_key"] == "dummy-provider-secret"
+    assert retained.json()["llm"]["api_key_configured"] is True
+    assert "dummy-provider-secret" not in retained.text
+    client.put(
+        "/api/config/llm",
+        json={"backend": "custom", "url": "https://provider.example", "api_key": ""},
+    )
+    assert config.llm["api_key"] == ""
+    config.llm["api_key"] = "new-dummy-secret"
+    client.put("/api/config/llm", json={"backend": "custom", "url": "https://different.example"})
+    assert config.llm["api_key"] == ""

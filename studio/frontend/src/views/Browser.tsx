@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, FileText, Clock, User, ArrowRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, FileText, Clock, User, ArrowRight, Plus, Plug } from 'lucide-react'
 import { api } from '../api/client'
 import { wingColor, type DrawerSummary } from '../types'
 import TrustBadge from '../components/TrustBadge'
 import WingBadge from '../components/WingBadge'
+import { useLayoutCtx } from '../components/Layout'
 
 const PAGE = 50
 
@@ -69,10 +70,11 @@ function DrawerRow({ drawer, onClick }: { drawer: DrawerSummary; onClick: () => 
   )
 }
 
-// ── Wing grid (shown when no wing selected) ───────────────────────────────────
+// Memory area grid shown when no area is selected.
 
 function WingGrid() {
   const navigate = useNavigate()
+  const { openCreateDrawer } = useLayoutCtx()
   const { data: taxonomy, isLoading } = useQuery({
     queryKey: ['taxonomy'],
     queryFn: api.taxonomy,
@@ -102,11 +104,31 @@ function WingGrid() {
 
   if (wingsSorted.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center flex-1 gap-3 py-16">
-        <FileText size={36} style={{ color: 'var(--text-faint)' }} />
-        <div className="text-sm" style={{ color: 'var(--text-muted)' }}>No drawers in the vault yet</div>
-        <div className="text-xs" style={{ color: 'var(--text-faint)' }}>
-          Connect an MCP agent to start storing memories.
+      <div className="flex flex-col items-center justify-center flex-1 gap-4 py-16 px-6 text-center">
+        <span className="p-3 rounded-xl" style={{ background: 'var(--raised)', color: 'var(--interactive-accent)' }}>
+          <FileText size={28} />
+        </span>
+        <div>
+          <div className="text-sm font-semibold">No memories yet</div>
+          <div className="text-xs mt-1 max-w-md leading-relaxed" style={{ color: 'var(--text-faint)' }}>
+            Save a first memory or connect an AI app. New areas and topics will appear here automatically.
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <button
+            onClick={() => openCreateDrawer()}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+            style={{ background: 'var(--interactive-accent)', color: 'white' }}
+          >
+            <Plus size={12} /> Save first memory
+          </button>
+          <button
+            onClick={() => navigate('/connect')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors"
+            style={{ background: 'var(--raised)', borderColor: 'var(--border)', color: 'var(--text)' }}
+          >
+            <Plug size={12} /> Connect AI app
+          </button>
         </div>
       </div>
     )
@@ -115,7 +137,7 @@ function WingGrid() {
   return (
     <div className="flex-1 overflow-y-auto p-6">
       <h2 className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: 'var(--text-faint)' }}>
-        All Wings — {wingsSorted.length}
+        Memory Areas - {wingsSorted.length}
       </h2>
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
         {wingsSorted.map(([wing, rooms]) => {
@@ -148,7 +170,7 @@ function WingGrid() {
                   {wing}
                 </div>
                 <div className="text-[11px]" style={{ color: 'var(--text-faint)' }}>
-                  {roomCount} {roomCount === 1 ? 'room' : 'rooms'}
+                  {roomCount} {roomCount === 1 ? 'topic' : 'topics'}
                 </div>
               </div>
             </button>
@@ -170,14 +192,14 @@ export default function Browser() {
     queryKey: ['drawers', wing, room, offset],
     queryFn: () => api.drawers({ wing, room, limit: PAGE, offset }),
     placeholderData: prev => prev,
-    enabled: !!wing, // only fetch when a wing is selected
+    enabled: !!wing,
   })
 
   const drawers: DrawerSummary[] = data?.drawers ?? []
   const hasMore = drawers.length === PAGE
   const color = wing ? wingColor(wing) : '#7f6df2'
 
-  // No wing selected — show wing grid
+  // No area selected; show memory area grid.
   if (!wing) {
     return (
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -188,7 +210,7 @@ export default function Browser() {
         >
           <span className="font-medium">Browse</span>
           <div className="ml-auto text-[11px]" style={{ color: 'var(--text-faint)' }}>
-            Select a wing to explore
+            Select an area to explore
           </div>
         </div>
         <WingGrid />
@@ -231,7 +253,7 @@ export default function Browser() {
           </>
         )}
         <span className="ml-auto text-xs font-mono" style={{ color: 'var(--text-faint)' }}>
-          {isLoading ? '…' : drawers.length > 0 ? `${offset + 1}–${offset + drawers.length}` : '0 drawers'}
+          {isLoading ? '...' : drawers.length > 0 ? `${offset + 1}-${offset + drawers.length}` : '0 memories'}
         </span>
       </div>
 
@@ -246,7 +268,7 @@ export default function Browser() {
       {!isLoading && drawers.length === 0 && (
         <div className="flex-1 flex flex-col items-center justify-center gap-3">
           <FileText size={32} style={{ color: 'var(--text-faint)' }} />
-          <div className="text-sm" style={{ color: 'var(--text-muted)' }}>No drawers in this {room ? 'room' : 'wing'}</div>
+          <div className="text-sm" style={{ color: 'var(--text-muted)' }}>No memories in this {room ? 'topic' : 'area'}</div>
         </div>
       )}
 

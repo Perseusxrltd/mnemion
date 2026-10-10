@@ -1,0 +1,23 @@
+[
+  {
+    "name": "electron-build",
+    "command": [
+      "npm",
+      "run",
+      "build"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 2.03
+  },
+  {
+    "name": "electron-audit",
+    "command": [
+      "npm",
+      "audit",
+      "--audit-level=high",
+      "--json"
+    ],
+    "exit_code": 1,
+    "elapsed_seconds": 7.27
+  }
+]

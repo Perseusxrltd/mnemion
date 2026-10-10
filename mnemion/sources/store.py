@@ -109,6 +109,9 @@ class SourceStore:
         self._init_schema()
 
     def _connect(self) -> sqlite3.Connection:
+        from ..legacy_freeze import require_writable
+
+        require_writable(self.db_path.parent)
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA journal_mode=WAL")
@@ -137,6 +140,9 @@ class SourceStore:
         dry_run: bool = False,
         index_embeddings: bool = False,
     ) -> dict[str, Any]:
+        from ..legacy_freeze import require_writable
+
+        require_writable(self.db_path.parent)
         source_path = Path(path).expanduser().resolve()
         raw_bytes = source_path.read_bytes()
         content_hash = sha256_hex(raw_bytes)

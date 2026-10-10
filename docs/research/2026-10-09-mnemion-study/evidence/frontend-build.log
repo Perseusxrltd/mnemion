@@ -1,0 +1,35 @@
+
+> mnemion-studio@0.1.0 build
+> tsc && vite build
+
+vite v6.4.3 building for production...
+transforming...
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+✓ 1669 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                           0.50 kB │ gzip:  0.32 kB
+dist/assets/index-BflCzdRO.css           35.29 kB │ gzip:  7.66 kB
+dist/assets/check-DhNXxGi9.js             0.29 kB │ gzip:  0.24 kB
+dist/assets/clock-FNBH3gLJ.js             0.35 kB │ gzip:  0.27 kB
+dist/assets/code-xml-Bxl-zIi_.js          0.38 kB │ gzip:  0.28 kB
+dist/assets/copy-0k_1sEPx.js              0.40 kB │ gzip:  0.31 kB
+dist/assets/database-CN-Ihoy2.js          0.41 kB │ gzip:  0.30 kB
+dist/assets/WingBadge-BnQKVuU1.js         0.42 kB │ gzip:  0.31 kB
+dist/assets/external-link-CEgxsJhW.js     0.42 kB │ gzip:  0.30 kB
+dist/assets/save-DShcMiqn.js              0.50 kB │ gzip:  0.33 kB
+dist/assets/trash-2-BaG2P-W6.js           0.53 kB │ gzip:  0.35 kB
+dist/assets/TrustBadge-LIjZWTZN.js        1.63 kB │ gzip:  0.81 kB
+dist/assets/SearchView-Bj8r6baZ.js        7.92 kB │ gzip:  2.76 kB
+dist/assets/AgentsView-D0X2De6m.js        7.96 kB │ gzip:  2.63 kB
+dist/assets/Browser-BDp-htJ8.js           9.12 kB │ gzip:  2.57 kB
+dist/assets/SettingsView-Bc4ksVLJ.js      9.82 kB │ gzip:  3.20 kB
+dist/assets/ConnectorsView-ri_ffEHZ.js   11.20 kB │ gzip:  3.38 kB
+dist/assets/DrawerDetail-BFFM0bmS.js     11.96 kB │ gzip:  3.38 kB
+dist/assets/CoreMemoryView-Y5WYlgZy.js   12.53 kB │ gzip:  4.07 kB
+dist/assets/Dashboard-BCju4Kyt.js        14.41 kB │ gzip:  3.69 kB
+dist/assets/GraphView-8y1vlQcF.js       188.19 kB │ gzip: 46.66 kB
+dist/assets/index-DVpnFnac.js           255.93 kB │ gzip: 79.63 kB
+✓ built in 4.58s

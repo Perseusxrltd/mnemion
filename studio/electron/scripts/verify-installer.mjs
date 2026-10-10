@@ -1,0 +1,107 @@
+import { createReadStream, existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { basename, join } from 'node:path'
+import { tmpdir } from 'node:os'
+import { createHash } from 'node:crypto'
+import { spawnSync } from 'node:child_process'
+import { root, platformArtifacts } from './platform-artifacts.mjs'
+
+const artifacts = platformArtifacts()
+const requireSignature = process.env.MNEMION_REQUIRE_CODE_SIGNATURE === '1'
+
+function requireFile(path, minBytes = 1) {
+  if (!existsSync(path) || !statSync(path).isFile() || statSync(path).size < minBytes) {
+    throw new Error(`Missing or incomplete packaged file: ${path}`)
+  }
+}
+
+function run(command, args, options = {}) {
+  const result = spawnSync(command, args, { cwd: root, encoding: 'utf8', timeout: 120_000, maxBuffer: 32 * 1024 * 1024, ...options })
+  if (result.error || !(options.allowedStatus || [0]).includes(result.status)) {
+    throw new Error(`${command} failed: ${result.error?.message || result.stderr || result.stdout}`)
+  }
+  return `${result.stdout || ''}\n${result.stderr || ''}`
+}
+
+function payload(listing, paths) {
+  const normalized = listing.replaceAll('\\', '/')
+  for (const path of paths) {
+    if (!normalized.includes(path)) throw new Error(`Installer is missing ${path}`)
+  }
+}
+
+requireFile(artifacts.app)
+requireFile(join(artifacts.resources, 'frontend/dist/index.html'))
+for (const file of ['LICENSE', 'NOTICE', 'inventory.json', 'sbom.cdx.json']) {
+  requireFile(join(artifacts.resources, 'licenses', file))
+}
+requireFile(join(artifacts.resources, 'client', process.platform === 'win32' ? 'mnemion-client.exe' : 'mnemion-client'))
+for (const installer of artifacts.installers) requireFile(installer, 40 * 1024 * 1024)
+
+let signature = 'not required on this platform'
+if (process.platform === 'win32') {
+  const installer = artifacts.installers[0]
+  requireFile(`${installer}.blockmap`, 1024)
+  const { getPath7za } = await import('app-builder-lib/out/toolsets/7zip.js')
+  const listing = run(await getPath7za(), ['l', installer], { allowedStatus: [0, 1] })
+  // NSIS self-extractors can return 1 for the data after their 7z payload.
+  payload(listing, ['Mnemion Studio.exe', 'resources/client/mnemion-client.exe',
+    'resources/frontend/dist/index.html', 'resources/frontend/dist/icon.ico'])
+  // A PowerShell 7 build shell exports its module path. Windows PowerShell 5
+  // must resolve its own security module instead of trying to load that runtime.
+  const signatureEnv = { ...process.env }
+  for (const key of Object.keys(signatureEnv)) {
+    if (key.toLowerCase() === 'psmodulepath') delete signatureEnv[key]
+  }
+  signature = run('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
+    `Get-AuthenticodeSignature -LiteralPath '${installer.replaceAll("'", "''")}' | Select-Object -ExpandProperty Status`], { env: signatureEnv }).trim()
+  if (requireSignature && signature !== 'Valid') throw new Error(`Authenticode verification failed: ${signature}`)
+} else if (process.platform === 'darwin') {
+  run('hdiutil', ['verify', artifacts.installers[0]])
+  payload(run('unzip', ['-Z1', artifacts.installers[1]]), [
+    'Mnemion Studio.app/Contents/MacOS/Mnemion Studio',
+    'Mnemion Studio.app/Contents/Resources/client/mnemion-client',
+    'Mnemion Studio.app/Contents/Resources/frontend/dist/index.html',
+    'Mnemion Studio.app/Contents/MacOS/MnemionUpdater',
+    'Mnemion Studio.app/Contents/Frameworks/Sparkle.framework/',
+  ])
+  const check = spawnSync('codesign', ['-dv', '--verbose=4', artifacts.bundle], { encoding: 'utf8' })
+  signature = /Signature=adhoc/.test(check.stderr || '') ? 'ad hoc; independent Ed25519 updates' : 'unexpected signature'
+  if (signature === 'unexpected signature') throw new Error('The free macOS build requires an intact ad-hoc signature')
+  run('codesign', ['--verify', '--deep', '--strict', artifacts.bundle])
+  const config = JSON.parse(readFileSync(join(root, 'studio/electron/native/sparkle.json'), 'utf8'))
+  const build = JSON.parse(readFileSync(join(artifacts.resources, 'macos-updater-build.json'), 'utf8'))
+  if (build.fixture !== false || build.public_key !== config.publicKey || build.sparkle_distribution_sha256 !== config.sha256) {
+    throw new Error('The macOS updater is not the verified production configuration')
+  }
+  const plist = join(artifacts.bundle, 'Contents/Info.plist')
+  if (run('/usr/libexec/PlistBuddy', ['-c', 'Print :SUPublicEDKey', plist]).trim() !== config.publicKey
+    || run('/usr/libexec/PlistBuddy', ['-c', 'Print :SUVerifyUpdateBeforeExtraction', plist]).trim() !== 'true') {
+    throw new Error('The installed update verifier is misconfigured')
+  }
+  const inventory = JSON.parse(readFileSync(join(artifacts.resources, 'licenses/inventory.json'), 'utf8'))
+  if (!inventory.components.some(item => item.name === 'Sparkle' && item.version === config.version)) {
+    throw new Error('The packaged updater is missing its third-party license inventory')
+  }
+} else {
+  const directory = mkdtempSync(join(tmpdir(), 'mnemion-package-'))
+  try {
+    run(artifacts.installers[0], ['--appimage-extract'], { cwd: directory })
+    const extracted = join(directory, 'squashfs-root')
+    for (const path of ['AppRun', 'mnemion-studio', 'resources/client/mnemion-client', 'resources/frontend/dist/index.html']) {
+      requireFile(join(extracted, path))
+    }
+    payload(run('dpkg-deb', ['--contents', artifacts.installers[1]]), [
+      'resources/client/mnemion-client', 'resources/frontend/dist/index.html', 'mnemion-studio',
+    ])
+  } finally { rmSync(directory, { recursive: true, force: true }) }
+}
+
+const checksums = []
+for (const path of artifacts.installers) {
+  const digest = createHash('sha256')
+  for await (const chunk of createReadStream(path)) digest.update(chunk)
+  checksums.push(`${digest.digest('hex')}  ${basename(path)}`)
+}
+writeFileSync(join(artifacts.output, `SHA256SUMS-${process.platform}-${process.arch}.txt`), checksums.join('\n') + '\n')
+console.log(JSON.stringify({ ok: true, platform: process.platform, architecture: process.arch, signature,
+  installers: artifacts.installers.map(path => ({ file: basename(path), bytes: statSync(path).size })) }, null, 2))

@@ -1,0 +1,103 @@
+........................................................................ [ 25%]
+........................................................................ [ 51%]
+........................................................................ [ 76%]
+s................................................................        [100%]
+=============================== warnings summary ===============================
+tests/test_backends.py: 5 warnings
+tests/test_cognitive_graph.py: 46 warnings
+tests/test_convo_miner.py: 16 warnings
+tests/test_mcp_server.py: 205 warnings
+tests/test_memory_guard.py: 30 warnings
+tests/test_miner.py: 8 warnings
+tests/test_reconstruction.py: 32 warnings
+tests/test_searcher.py: 96 warnings
+tests/test_sweeper.py: 10 warnings
+  /tmp/mnemion-study-2026-10-09/working/.venv/lib/python3.12/site-packages/chromadb/types.py:144: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    return self.model_fields  # pydantic 2.x
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.12.3-final-0 ________________
+
+Name                                Stmts   Miss  Cover   Missing
+-----------------------------------------------------------------
+mnemion/__init__.py                     9      1    89%   19
+mnemion/__main__.py                     2      2     0%   3-5
+mnemion/anaktoron_graph.py            105     97     8%   23-32, 43-99, 109-161, 169-193, 198-206, 221-230
+mnemion/backends/__init__.py            2      0   100%
+mnemion/backends/base.py               68     13    81%   61, 124, 127, 130, 133, 136, 139, 142, 145, 148, 151, 158, 161
+mnemion/backends/chroma.py            307     56    82%   41-42, 50, 54, 57, 64-65, 72, 81-82, 91, 95-96, 109, 112-113, 152-154, 183, 186-189, 211, 227, 229-231, 291-292, 350-353, 363-365, 379-384, 412, 421, 438-444, 478-480, 483, 486-487
+mnemion/backends/registry.py           51      9    82%   21, 38-40, 63-64, 81-82, 86
+mnemion/capture/__init__.py             2      0   100%
+mnemion/capture/cli_capture.py         43      3    93%   37, 47, 68
+mnemion/capture/folder_watch.py        18     18     0%   3-28
+mnemion/capture/webhook.py              2      2     0%   4-5
+mnemion/chroma_compat.py              121     32    74%   36-37, 49, 52-54, 67-79, 99-100, 119-120, 126-127, 129, 148-149, 176-177, 184-185
+mnemion/cli.py                       1095    745    32%   83-84, 99-105, 117-118, 130-131, 137, 141-142, 160, 163-165, 196-234, 239-250, 255-273, 277-282, 287-396, 420, 436-444, 477-478, 495-511, 539-541, 556-565, 582-591, 618-620, 635-666, 671-717, 722-832, 837-919, 930-934, 944-983, 988-1083, 1088-1170, 1175-1275, 1280-1292, 1297-1299, 1304-1306, 1311-1429, 1867-1868, 1872-1876, 1880-1881, 1885-1969
+mnemion/cognitive_graph.py            186      4    98%   142, 159, 267, 287
+mnemion/config.py                     124     36    71%   117-118, 173, 182, 215-221, 226, 231, 254-277, 306-309
+mnemion/contradiction_detector.py     132    102    23%   103-110, 115-131, 138-161, 168-218, 237-306, 328-347
+mnemion/convo_miner.py                180     47    74%   67, 101, 108-124, 208, 229-230, 246, 276, 280, 290, 304-305, 310-311, 314, 318-320, 326, 332, 335-350, 360, 398-400
+mnemion/corpus_origin.py               64      9    86%   35-38, 69, 72-75
+mnemion/dialect.py                    399    164    59%   345-347, 354-369, 379-385, 400, 402, 405, 407, 409, 542, 623, 677, 683-685, 694, 714, 728-757, 763-769, 773-786, 803-908, 921
+mnemion/embedding.py                   76     23    70%   39-40, 54-62, 77, 98, 105, 115, 125-138, 142-143
+mnemion/entity_detector.py            249    113    55%   846-847, 894-895, 921-922, 929-930, 934-935, 939-940, 964-965, 981, 986-987, 996-1009, 1047, 1054-1055, 1076-1079, 1084-1093, 1119-1126, 1137-1223, 1250-1251
+mnemion/entity_patterns.py             26      6    77%   35-40, 49
+mnemion/entity_registry.py            192    192     0%   18-639
+mnemion/general_extractor.py          132    132     0%   22-485
+mnemion/hooks_cli.py                  125     34    73%   68-69, 81-82, 87, 94-103, 112-113, 143-144, 154-155, 191-201, 209-226
+mnemion/hybrid_searcher.py            161     27    83%   200-202, 238-240, 251, 258, 268-270, 275, 288-290, 321-330, 363, 377-378, 401, 416
+mnemion/instructions_cli.py            14     14     0%   8-28
+mnemion/knowledge_graph.py            150     27    82%   54, 259-260, 292-293, 380-421
+mnemion/layers.py                     240    240     0%   19-466
+mnemion/lewm.py                        76     65    14%   3-5, 24-35, 42-63, 80-148
+mnemion/librarian.py                  200    101    50%   82-86, 91-93, 121-122, 124-125, 140-142, 150-167, 172-181, 205, 209-211, 223-225, 232-233, 254-255, 267-268, 276-282, 294-317, 324-333, 337-345, 349, 355-357, 361-364, 371-389
+mnemion/llm_backend.py                234    175    25%   54, 91, 95, 99, 108, 111, 114, 131-136, 144-166, 169-177, 180, 194-198, 207-235, 238-242, 245, 274-282, 292-304, 312-331, 335-358, 361-365, 371-376, 380-381, 385-410, 419-430, 434-444, 448-457, 480-507
+mnemion/mcp/__init__.py                 0      0   100%
+mnemion/mcp/compat/__init__.py          0      0   100%
+mnemion/mcp/compat/openbrain.py         9      4    56%   13-16
+mnemion/mcp_server.py                 637    263    59%   67, 123-126, 188, 199, 210, 244-245, 255-257, 267-273, 283-289, 294-298, 307-351, 357, 385-388, 393, 398-402, 407-410, 415-418, 430, 439-440, 478-481, 493-508, 512-514, 524-526, 530-532, 548-553, 557-560, 564-566, 576-578, 593, 597-604, 606, 612-614, 618-624, 638, 640, 654-682, 694-709, 724-767, 771-775, 794, 831, 836, 839, 842, 863, 875, 877, 891, 898, 915, 919-922, 930, 935-938, 943-949, 954, 966-995, 1058, 1106-1109, 1121, 1154-1157, 1168-1170, 1181-1183, 1795, 1808-1826, 1863, 1865, 1875-1878, 1923-1924, 1928-1946
+mnemion/memory_guard.py               159      6    96%   93-94, 99, 112, 195, 213
+mnemion/miner.py                      409    133    67%   106-108, 114, 117, 119, 127, 134, 146, 153-154, 157, 160, 178, 196, 247-248, 260-261, 264, 288-290, 322-339, 356, 367-373, 415-423, 451-452, 456-495, 503, 525-527, 549, 553-554, 558, 564-565, 673, 683, 685, 687, 693, 710, 736-775
+mnemion/moat_eval.py                  112      3    97%   52, 74, 252
+mnemion/normalize.py                  229    140    39%   31-32, 57, 61, 65-66, 73, 83-84, 87-96, 98, 115-116, 120-143, 146, 153, 155, 159-175, 181, 190, 195-231, 240-264, 271-281, 291-294, 308-311
+mnemion/obsidian.py                   443     45    90%   52, 58, 63, 65, 91, 128, 140-143, 253, 258, 268-269, 288, 290-291, 355, 383-389, 649, 653, 735, 781, 792, 795, 807-808, 810, 822, 835, 847, 869, 873-882, 898-900
+mnemion/onboarding.py                 198    198     0%   19-477
+mnemion/predictor.py                   84     58    31%   19-46, 57-58, 62, 78-127
+mnemion/project_scanner.py            137     55    60%   46-47, 49-51, 55-60, 64-71, 73-75, 79-84, 89-104, 127-128, 132-139, 151, 175, 209-210
+mnemion/query_sanitizer.py             43     17    60%   38, 41, 44, 48-52, 65-75
+mnemion/reconstruction.py              55      7    87%   64, 78, 100-106
+mnemion/repair.py                     118     26    78%   34-35, 41-43, 55-61, 72, 89, 95, 104, 108-109, 167-172, 209-213
+mnemion/room_detector_local.py        125    113    10%   103-165, 173-203, 207-215, 220-254, 258-276, 281-313
+mnemion/searcher.py                   102     61    40%   40-114, 164-165, 169, 184, 201
+mnemion/sources/__init__.py             2      0   100%
+mnemion/sources/chunking.py            41      1    98%   37
+mnemion/sources/extractors.py          74     13    82%   42, 53, 55-57, 64, 66, 70, 94, 115-117, 124
+mnemion/sources/index.py                2      2     0%   3-5
+mnemion/sources/ingest.py               6      0   100%
+mnemion/sources/models.py              34     34     0%   3-41
+mnemion/sources/privacy.py              7      1    86%   11
+mnemion/sources/store.py              207     24    88%   76-78, 146-148, 164-165, 259, 263-288, 301, 317-318, 354, 367, 386-387
+mnemion/spellcheck.py                 113     81    28%   42-43, 52-58, 90-107, 117-129, 139-151, 178-213, 222-233, 241-242
+mnemion/split_mega_files.py           155    103    34%   46, 55-56, 88-89, 94-98, 106-131, 165-176, 184-227, 231-305
+mnemion/sweeper.py                    128     16    88%   24, 33-36, 38-42, 91, 111, 125-126, 167, 211-212
+mnemion/trust_lifecycle.py            133     48    64%   179, 215-232, 236-253, 265-278, 286-298, 301-311, 317-327, 353-373
+mnemion/version.py                      1      0   100%
+mnemion/wiki/__init__.py                2      0   100%
+mnemion/wiki/blast_radius.py            2      2     0%   3-5
+mnemion/wiki/claims.py                 18      0   100%
+mnemion/wiki/compiler.py              208     26    88%   134-135, 148-157, 160-168, 173, 208, 224, 261, 264
+mnemion/wiki/context_pack.py           75     17    77%   61-68, 96, 99, 136-151
+mnemion/wiki/diffs.py                   2      2     0%   3-5
+mnemion/wiki/linter.py                 75     15    80%   26-28, 37, 42-45, 50, 63, 73, 82, 91, 100, 118, 161, 197, 206
+mnemion/wiki/models.py                 46      3    93%   53, 57, 60
+mnemion/wiki/obsidian_export.py        64      5    92%   35-36, 60, 74-75
+mnemion/wiki/prompts.py                 1      1     0%   3
+mnemion/wiki/provenance.py            142     18    87%   49, 53, 57, 68, 97-98, 115-118, 148-151, 166-167, 169-170
+mnemion/wiki/renderer.py               67      3    96%   91, 98, 132
+mnemion/wiki/store.py                  64     14    78%   87-89, 232, 239-249
+-----------------------------------------------------------------
+TOTAL                                9314   4047    57%
+Coverage JSON written to file /tmp/mnemion-study-2026-10-09/checks/coverage-working.json
+Required test coverage of 30% reached. Total coverage: 56.55%
+280 passed, 1 skipped, 448 warnings in 103.95s (0:01:43)

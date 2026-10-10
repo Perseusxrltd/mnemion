@@ -1,0 +1,154 @@
+name: mnemion
+
+x-runtime: &runtime
+  image: ${MNEMION_IMAGE:-mnemion:local}
+  build:
+    context: .
+    dockerfile: deploy/Dockerfile
+  init: true
+  read_only: true
+  security_opt: [no-new-privileges:true]
+  cap_drop: [ALL]
+  pids_limit: 256
+  mem_limit: ${MNEMION_TOOL_MEMORY_LIMIT:-2g}
+  memswap_limit: ${MNEMION_TOOL_MEMORY_LIMIT:-2g}
+  cpus: ${MNEMION_TOOL_CPUS:-2.0}
+  tmpfs: ['/tmp:rw,nosuid,nodev,size=256m,mode=1777']
+  networks: [memory]
+
+services:
+  database:
+    image: pgvector/pgvector:pg17@sha256:ac08538c6f8b9904c33c8224c5e5706dbe760aca29db1d096972b4052c22a75d
+    restart: unless-stopped
+    mem_limit: ${MNEMION_DATABASE_MEMORY_LIMIT:-768m}
+    memswap_limit: ${MNEMION_DATABASE_MEMORY_LIMIT:-768m}
+    cpus: ${MNEMION_DATABASE_CPUS:-2.0}
+    command: [postgres, -c, shared_buffers=128MB, -c, work_mem=8MB, -c, maintenance_work_mem=64MB, -c, max_connections=50]
+    environment:
+      POSTGRES_DB: mnemion
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD_FILE: /run/secrets/database_password
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+    secrets: [database_password]
+    volumes: [database:/var/lib/postgresql/data]
+    networks: [memory]
+    shm_size: 256m
+    pids_limit: 256
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U postgres -d mnemion]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  initialize:
+    <<: *runtime
+    user: '0:0'
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER]
+    command: [initialize]
+    environment:
+      MNEMION_TENANT: ${MNEMION_TENANT:-My organization}
+      MNEMION_OWNER: ${MNEMION_OWNER:-Owner}
+      MNEMION_PUBLIC_URL: ${MNEMION_PUBLIC_URL:-http://127.0.0.1:7892}
+    secrets: [database_password]
+    volumes:
+      - operator:/state/operator
+      - api_credentials:/state/api
+      - worker_credentials:/state/worker
+      - models:/models
+    depends_on:
+      database: {condition: service_healthy}
+
+  model:
+    <<: *runtime
+    command: [model]
+    volumes: [models:/models]
+    depends_on:
+      initialize: {condition: service_completed_successfully}
+
+  api:
+    <<: *runtime
+    command: [api]
+    restart: unless-stopped
+    mem_limit: ${MNEMION_API_MEMORY_LIMIT:-2g}
+    memswap_limit: ${MNEMION_API_MEMORY_LIMIT:-2g}
+    cpus: ${MNEMION_API_CPUS:-2.0}
+    ports: ['${MNEMION_BIND_ADDRESS:-127.0.0.1}:${MNEMION_PORT:-7892}:7892']
+    environment:
+      MNEMION_HTTP_CONCURRENCY: ${MNEMION_HTTP_CONCURRENCY:-64}
+      MNEMION_DB_POOL_SIZE: ${MNEMION_DB_POOL_SIZE:-10}
+      MNEMION_API_DOCS: ${MNEMION_API_DOCS:-0}
+      MNEMION_CORS_ORIGINS: ${MNEMION_CORS_ORIGINS:-}
+      MNEMION_EVALUATIONS_DISABLED: ${MNEMION_EVALUATIONS_DISABLED:-0}
+    volumes:
+      - api_credentials:/state/api:ro
+      - models:/models:ro
+    depends_on:
+      model: {condition: service_completed_successfully}
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:7892/health/ready', timeout=4).read()"]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 6
+
+  worker:
+    <<: *runtime
+    command: [worker]
+    restart: unless-stopped
+    mem_limit: ${MNEMION_WORKER_MEMORY_LIMIT:-2g}
+    memswap_limit: ${MNEMION_WORKER_MEMORY_LIMIT:-2g}
+    cpus: ${MNEMION_WORKER_CPUS:-2.0}
+    volumes:
+      - worker_credentials:/state/worker:ro
+      - models:/models:ro
+    depends_on:
+      model: {condition: service_completed_successfully}
+    stop_grace_period: 30s
+
+  operator:
+    <<: *runtime
+    profiles: [operator]
+    user: '0:0'
+    cap_add: [DAC_OVERRIDE, SETUID, SETGID]
+    command: [operator, --help]
+    environment:
+      MNEMION_OPERATOR_UID: ${MNEMION_OPERATOR_UID:-1000}
+      MNEMION_OPERATOR_GID: ${MNEMION_OPERATOR_GID:-1000}
+    secrets: [database_password]
+    volumes:
+      - ${MNEMION_BACKUP_DIR:?Set MNEMION_BACKUP_DIR using deploy/manage.py}:/backups
+      - operator:/state/operator:ro
+    depends_on:
+      database: {condition: service_healthy}
+
+  activate:
+    <<: *runtime
+    profiles: [operator]
+    user: '0:0'
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER]
+    command: [adopt-restored, --help]
+    environment:
+      MNEMION_PUBLIC_URL: ${MNEMION_PUBLIC_URL:-http://127.0.0.1:7892}
+    secrets: [database_password]
+    volumes:
+      - operator:/state/operator
+      - api_credentials:/state/api
+      - worker_credentials:/state/worker
+      - ${MNEMION_BACKUP_DIR:?Set MNEMION_BACKUP_DIR using deploy/manage.py}:/backups:ro
+    depends_on:
+      database: {condition: service_healthy}
+
+secrets:
+  database_password:
+    file: ${MNEMION_PASSWORD_FILE:?Run python deploy/manage.py init to create a private password file}
+
+volumes:
+  database:
+  operator:
+  api_credentials:
+  worker_credentials:
+  models:
+
+networks:
+  memory:

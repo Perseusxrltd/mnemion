@@ -1,25 +1,37 @@
 {
   "name": "mnemion-studio",
-  "version": "1.0.0",
-  "description": "Mnemion Studio — Obsidian-style memory palace desktop app",
+  "version": "4.0.0",
+  "description": "Mnemion Studio - shared app and team memory with Obsidian visualization",
+  "author": {
+    "name": "PERSEUS LEGACY LIMITED",
+    "email": "Perseusxrltd@users.noreply.github.com",
+    "url": "https://github.com/Perseusxrltd"
+  },
   "main": "dist/main.js",
   "type": "module",
   "scripts": {
     "dev": "electron .",
-    "build": "tsc -p tsconfig.json",
-    "pack": "npm run build && electron-builder --dir",
-    "dist": "npm run build && electron-builder"
+    "build": "node scripts/build.mjs",
+    "build:resources": "node scripts/build-resources.mjs",
+    "verify:resources": "node scripts/verify-resources.mjs",
+    "verify:installer": "node scripts/verify-installer.mjs",
+    "smoke:packaged": "node scripts/smoke-packaged-app.mjs",
+    "pack": "npm run build:resources && npm run build && npm run verify:resources && electron-builder --config builder.config.cjs --publish never --dir",
+    "dist": "npm run build:resources && npm run build && npm run verify:resources && electron-builder --config builder.config.cjs --publish never && npm run verify:installer",
+    "dist:prepackaged": "electron-builder --config builder.config.cjs --publish never --win nsis --prepackaged ../../dist-electron/win-unpacked && npm run verify:installer",
+    "test": "npm run build && node --test scripts/test-update-policy.mjs scripts/test-macos-updates.mjs"
   },
   "devDependencies": {
-    "@types/node": "^22.0.0",
-    "electron": "^41.3.0",
-    "electron-builder": "^26.8.1",
+    "@types/node": "^22.20.5",
+    "electron": "^44.7.0",
+    "electron-builder": "^26.15.3",
     "typescript": "^5.6.0"
   },
   "build": {
     "appId": "com.perseusxr.mnemion-studio",
     "productName": "Mnemion Studio",
-    "copyright": "Copyright © 2025 PerseusXR",
+    "copyright": "Copyright 2026 PERSEUS LEGACY LIMITED",
+    "compression": "store",
     "directories": {
       "output": "../../dist-electron"
     },
@@ -29,14 +41,21 @@
     ],
     "extraResources": [
       {
-        "from": "../../dist-backend/backend",
-        "to": "backend",
+        "from": "../../build-tmp/notices",
+        "to": "licenses",
         "filter": [
           "**/*"
         ]
       },
       {
-        "from": "../frontend/dist",
+        "from": "../../dist-client/mnemion-client",
+        "to": "client",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "../frontend/dist-desktop",
         "to": "frontend/dist",
         "filter": [
           "**/*"
@@ -44,15 +63,17 @@
       }
     ],
     "win": {
+      "signtoolOptions": {
+        "signingHashAlgorithms": [
+          "sha256"
+        ]
+      },
+      "verifyUpdateCodeSignature": true,
       "target": [
-        {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        }
+        "nsis"
       ],
-      "icon": "../frontend/public/icon.ico"
+      "icon": "../frontend/public/icon.ico",
+      "artifactName": "Mnemion-Studio-${version}-windows-${arch}.${ext}"
     },
     "nsis": {
       "oneClick": false,
@@ -65,14 +86,34 @@
       "shortcutName": "Mnemion Studio"
     },
     "mac": {
-      "target": "dmg",
+      "target": [
+        "dmg",
+        "zip"
+      ],
       "icon": "../frontend/public/icon.icns",
-      "category": "public.app-category.productivity"
+      "category": "public.app-category.productivity",
+      "artifactName": "Mnemion-Studio-${version}-macos-${arch}.${ext}",
+      "minimumSystemVersion": "13.0",
+      "hardenedRuntime": true,
+      "entitlements": "entitlements.mac.plist",
+      "entitlementsInherit": "entitlements.mac.plist"
     },
     "linux": {
-      "target": "AppImage",
+      "target": [
+        "AppImage",
+        "deb"
+      ],
       "icon": "../frontend/public/icon.png",
-      "category": "Office"
+      "category": "Office",
+      "artifactName": "Mnemion-Studio-${version}-linux-${arch}.${ext}",
+      "executableName": "mnemion-studio",
+      "syncDesktopName": true
     }
+  },
+  "homepage": "https://github.com/Perseusxrltd/mnemion",
+  "license": "MIT",
+  "desktopName": "com.perseusxr.mnemion-studio.desktop",
+  "dependencies": {
+    "electron-updater": "6.8.9"
   }
 }

@@ -1,0 +1,190 @@
+{
+  "access_date": "2026-10-09",
+  "method": "GitHub API repository/default-branch metadata and source files, accessed live; competitors were not executed.",
+  "repositories": [
+    {
+      "full_name": "MemPalace/mempalace",
+      "description": "The best-benchmarked open-source AI memory system. And it's free.",
+      "default_branch": "develop",
+      "created_at": "2026-04-05T01:12:07Z",
+      "pushed_at": "2026-10-09T07:54:33Z",
+      "stargazers_count": 59486,
+      "forks_count": 7564,
+      "open_issues_count": 808,
+      "html_url": "https://github.com/MemPalace/mempalace",
+      "license": "MIT",
+      "sha": "d439d1e6d01e2680d79fe3f5de5a336722cec779",
+      "commit_date": "2026-10-06T23:16:42Z",
+      "readme_path": "README.md",
+      "readme_url": "https://github.com/MemPalace/mempalace/blob/d439d1e6d01e2680d79fe3f5de5a336722cec779/README.md",
+      "accessed_at": "2026-10-09T14:39:47.438496+00:00"
+    },
+    {
+      "full_name": "mem0ai/mem0",
+      "description": "The Memory Layer for AI Agents - Drop-in memory infrastructure for AI agents and apps. Context that persists. Built for production.",
+      "default_branch": "main",
+      "created_at": "2023-06-20T08:58:36Z",
+      "pushed_at": "2026-10-09T06:17:43Z",
+      "stargazers_count": 66891,
+      "forks_count": 7872,
+      "open_issues_count": 811,
+      "html_url": "https://github.com/mem0ai/mem0",
+      "license": "Apache-2.0",
+      "sha": "b7ad69afda6b6ed030347c66d48a13e4de9dec08",
+      "commit_date": "2026-10-07T13:06:15Z",
+      "readme_path": "README.md",
+      "readme_url": "https://github.com/mem0ai/mem0/blob/b7ad69afda6b6ed030347c66d48a13e4de9dec08/README.md",
+      "accessed_at": "2026-10-09T14:39:54.980068+00:00"
+    },
+    {
+      "full_name": "letta-ai/letta",
+      "description": "Platform for stateful agents: AI with advanced memory that can learn and self-improve over time.",
+      "default_branch": "main",
+      "created_at": "2023-10-11T07:38:37Z",
+      "pushed_at": "2026-09-10T17:59:08Z",
+      "stargazers_count": 25087,
+      "forks_count": 2642,
+      "open_issues_count": 0,
+      "html_url": "https://github.com/letta-ai/letta",
+      "license": "Apache-2.0",
+      "sha": "5bcdd177d70fa2b31a754cfcd801e77b2e1ab16a",
+      "commit_date": "2026-09-10T17:59:06Z",
+      "readme_path": "README.md",
+      "readme_url": "https://github.com/letta-ai/letta/blob/5bcdd177d70fa2b31a754cfcd801e77b2e1ab16a/README.md",
+      "accessed_at": "2026-10-09T14:40:03.421217+00:00"
+    },
+    {
+      "full_name": "getzep/graphiti",
+      "description": "Build Real-Time Knowledge Graphs for AI Agents",
+      "default_branch": "main",
+      "created_at": "2024-08-08T22:08:30Z",
+      "pushed_at": "2026-10-09T14:36:28Z",
+      "stargazers_count": 31588,
+      "forks_count": 3244,
+      "open_issues_count": 463,
+      "html_url": "https://github.com/getzep/graphiti",
+      "license": "Apache-2.0",
+      "sha": "6ba19a1b4d860c1b72aec8f099f458d424bac90f",
+      "commit_date": "2026-10-09T14:36:24Z",
+      "readme_path": "README.md",
+      "readme_url": "https://github.com/getzep/graphiti/blob/6ba19a1b4d860c1b72aec8f099f458d424bac90f/README.md",
+      "accessed_at": "2026-10-09T14:40:13.103102+00:00"
+    },
+    {
+      "full_name": "vectorize-io/hindsight",
+      "description": "Hindsight: Agent Memory That Learns",
+      "default_branch": "main",
+      "created_at": "2025-10-30T11:49:48Z",
+      "pushed_at": "2026-10-09T14:30:41Z",
+      "stargazers_count": 47594,
+      "forks_count": 5978,
+      "open_issues_count": 173,
+      "html_url": "https://github.com/vectorize-io/hindsight",
+      "license": "MIT",
+      "sha": "d29b842de948cf714274e3c97d471010ed55c685",
+      "commit_date": "2026-10-09T14:30:38Z",
+      "readme_path": "README.md",
+      "readme_url": "https://github.com/vectorize-io/hindsight/blob/d29b842de948cf714274e3c97d471010ed55c685/README.md",
+      "accessed_at": "2026-10-09T14:40:23.423457+00:00"
+    },
+    {
+      "full_name": "tobi/qmd",
+      "description": "mini cli search engine for your docs, knowledge bases, meeting notes, whatever. Tracking current sota approaches while being all local",
+      "default_branch": "main",
+      "created_at": "2025-12-08T14:22:57Z",
+      "pushed_at": "2026-10-06T13:51:34Z",
+      "stargazers_count": 30295,
+      "forks_count": 1902,
+      "open_issues_count": 202,
+      "html_url": "https://github.com/tobi/qmd",
+      "license": "MIT",
+      "sha": "93d211f9ef4a869a9aed0d075ca767dda552627f",
+      "commit_date": "2026-10-06T13:51:33Z",
+      "readme_path": "README.md",
+      "readme_url": "https://github.com/tobi/qmd/blob/93d211f9ef4a869a9aed0d075ca767dda552627f/README.md",
+      "accessed_at": "2026-10-09T14:40:26.635663+00:00"
+    },
+    {
+      "full_name": "supermemoryai/supermemory",
+      "description": "Memory and context engine + app that is extremely fast, scalable, and can be run fully locally. The Memory API for the AI era.",
+      "default_branch": "main",
+      "created_at": "2024-02-27T20:10:04Z",
+      "pushed_at": "2026-10-08T23:16:31Z",
+      "stargazers_count": 31173,
+      "forks_count": 2741,
+      "open_issues_count": 101,
+      "html_url": "https://github.com/supermemoryai/supermemory",
+      "license": "MIT",
+      "sha": "02474bb73289a6ddb45891bfda9ec88386053be7",
+      "commit_date": "2026-10-08T22:02:38Z",
+      "readme_path": "README.md",
+      "readme_url": "https://github.com/supermemoryai/supermemory/blob/02474bb73289a6ddb45891bfda9ec88386053be7/README.md",
+      "accessed_at": "2026-10-09T14:40:29.206236+00:00"
+    },
+    {
+      "full_name": "volcengine/OpenViking",
+      "description": "Self-evolving Context Database for AI Agents. Unify Agent Memory, Knowledge RAG and Skills.",
+      "default_branch": "main",
+      "created_at": "2026-01-05T07:11:17Z",
+      "pushed_at": "2026-10-09T14:34:14Z",
+      "stargazers_count": 39510,
+      "forks_count": 3118,
+      "open_issues_count": 868,
+      "html_url": "https://github.com/volcengine/OpenViking",
+      "license": "AGPL-3.0",
+      "sha": "7967eca5845a03320b87f48be7336233a69d42bc",
+      "commit_date": "2026-10-09T11:53:06Z",
+      "readme_path": "README.md",
+      "readme_url": "https://github.com/volcengine/OpenViking/blob/7967eca5845a03320b87f48be7336233a69d42bc/README.md",
+      "accessed_at": "2026-10-09T14:40:31.946429+00:00"
+    },
+    {
+      "full_name": "letta-ai/letta-code",
+      "description": "Stateful agents that are like people, with memory, identity, and the ability to learn and adapt",
+      "default_branch": "main",
+      "pushed_at": "2026-10-09T07:52:38Z",
+      "html_url": "https://github.com/letta-ai/letta-code",
+      "license": "Apache-2.0",
+      "sha": "253a3bc812b6d0dd2f4273194c4ab78f9ad9542b",
+      "readme_url": "https://github.com/letta-ai/letta-code/blob/253a3bc812b6d0dd2f4273194c4ab78f9ad9542b/README.md",
+      "accessed_at": "2026-10-09T14:42:44.593102+00:00"
+    }
+  ],
+  "mempalace_latest_release": {
+    "tag_name": "v3.10.0",
+    "name": "v3.10.0 \u2014 lighter ways in for agents",
+    "published_at": "2026-09-16T00:24:11Z",
+    "html_url": "https://github.com/MemPalace/mempalace/releases/tag/v3.10.0",
+    "target_commitish": "develop"
+  },
+  "additional_documents": [
+    {
+      "repository": "MemPalace/mempalace",
+      "paths": [
+        "benchmarks/BENCHMARKS.md",
+        "docs/rfcs/001-storage-backend-plugin-spec.md",
+        "docs/rfcs/004-replicated-palace.md",
+        "docs/rfcs/005-agent-identity-routing.md",
+        "mempalace/mcp_server/http.py",
+        "mempalace/daemon.py",
+        "deploy/server.env.example"
+      ]
+    },
+    {
+      "repository": "mem0ai/mem0",
+      "paths": [
+        "docs/migration/oss-v2-to-v3.mdx",
+        "docs/open-source/setup.mdx",
+        "server/auth.py"
+      ]
+    },
+    {
+      "repository": "vectorize-io/hindsight",
+      "paths": [
+        "hindsight-docs/blog/2026-08-04-per-user-multi-tenant-agent-memory.md",
+        "hindsight-api-slim/hindsight_api/extensions/tenant.py",
+        "hindsight-api-slim/hindsight_api/worker/poller.py"
+      ]
+    }
+  ]
+}

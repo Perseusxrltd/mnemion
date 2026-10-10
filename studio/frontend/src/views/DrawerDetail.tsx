@@ -57,7 +57,7 @@ function MetaRow({ icon: Icon, label, value, mono = false, truncate = false }: {
           className={`text-[12px] ${mono ? 'font-mono' : ''} ${truncate ? 'truncate' : 'break-words'}`}
           style={{ color: 'var(--text-muted)' }}
         >
-          {value || '—'}
+          {value || '-'}
         </div>
       </div>
     </div>
@@ -107,7 +107,7 @@ export default function DrawerDetail() {
       <div className="flex-1 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--background-modifier-border)', borderTopColor: 'var(--interactive-accent)' }} />
-          <div className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading drawer…</div>
+          <div className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading memory...</div>
         </div>
       </div>
     )
@@ -117,7 +117,7 @@ export default function DrawerDetail() {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-3">
         <FileText size={32} style={{ color: 'var(--text-faint)' }} />
-        <div className="text-sm" style={{ color: 'var(--text-muted)' }}>Drawer not found</div>
+        <div className="text-sm" style={{ color: 'var(--text-muted)' }}>Memory not found</div>
         <button
           onClick={() => navigate(-1)}
           className="text-xs hover:underline"
@@ -196,9 +196,9 @@ export default function DrawerDetail() {
             <span
               className="text-[10px] px-2 py-0.5 rounded font-medium flex-shrink-0"
               style={{ background: 'rgba(127,109,242,0.12)', color: 'var(--interactive-accent)' }}
-              title={`${wikilinkCount} wikilinks`}
+              title={`${wikilinkCount} links`}
             >
-              {wikilinkCount} [[links]]
+              {wikilinkCount} links
             </span>
           )}
 
@@ -282,10 +282,10 @@ export default function DrawerDetail() {
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-5">
           {/* Metadata */}
           <section>
-            <SectionHeader><Hash size={10} /> Metadata</SectionHeader>
+            <SectionHeader><Hash size={10} /> Details</SectionHeader>
             <MetaRow icon={User}     label="Added by"  value={data.added_by} />
             <MetaRow icon={Clock}    label="Timestamp" value={data.timestamp ? data.timestamp.slice(0, 16).replace('T', ' ') : ''} />
-            <MetaRow icon={FileText} label="Size"      value={`${data.char_count.toLocaleString()} chars`} />
+            <MetaRow icon={FileText} label="Size"      value={`${data.char_count.toLocaleString()} characters`} />
             {data.source && (
               <MetaRow icon={Link2} label="Source" value={data.source} truncate />
             )}
@@ -318,7 +318,7 @@ export default function DrawerDetail() {
                     onMouseEnter={e => (e.currentTarget.style.background = 'rgba(48,209,88,0.2)')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'rgba(48,209,88,0.12)')}
                   >
-                    Verify
+                    Confirm
                   </button>
                   <button
                     onClick={() => challengeMut.mutate()}
@@ -328,12 +328,12 @@ export default function DrawerDetail() {
                     onMouseEnter={e => (e.currentTarget.style.background = 'rgba(249,115,22,0.2)')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'rgba(249,115,22,0.12)')}
                   >
-                    Challenge
+                    Flag
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="text-[12px]" style={{ color: 'var(--text-faint)' }}>No trust record</div>
+              <div className="text-[12px]" style={{ color: 'var(--text-faint)' }}>No verification history</div>
             )}
           </section>
 
@@ -365,10 +365,10 @@ export default function DrawerDetail() {
             </section>
           )}
 
-          {/* Related drawers */}
+          {/* Related memories */}
           {data.related?.length > 0 && (
             <section>
-              <SectionHeader>Related</SectionHeader>
+              <SectionHeader>Related Memories</SectionHeader>
               <div className="space-y-1.5">
                 {data.related.map(r => (
                   <button

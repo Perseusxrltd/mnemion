@@ -1,0 +1,16 @@
+{
+  "command": [
+    "/tmp/mnemion-study-2026-10-09/tooling/uv-x86_64-unknown-linux-gnu/uv",
+    "tool",
+    "run",
+    "--no-progress",
+    "pip-audit",
+    "--path",
+    "/tmp/mnemion-study-2026-10-09/working/.venv/lib/python3.12/site-packages",
+    "--format=json",
+    "--output",
+    "/tmp/mnemion-study-2026-10-09/checks/python-audit.json"
+  ],
+  "exit_code": 1,
+  "elapsed_seconds": 12.47
+}

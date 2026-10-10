@@ -19,7 +19,7 @@ export default function Ribbon({ onSearch: _onSearch }: { onSearch?: () => void 
     <div className="ribbon">
       {/* Mnemion logo */}
       <div className="ribbon-icon mb-2" title="Mnemion Studio">
-        <span style={{ fontSize: 18, lineHeight: 1 }}>🏛</span>
+        <Brain size={18} />
       </div>
 
       <div className="w-6 h-px mb-2" style={{ background: 'var(--background-modifier-border)' }} />

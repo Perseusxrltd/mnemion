@@ -1,7 +1,7 @@
 import json
 
 from mnemion.config import MnemionConfig
-from mnemion.embedding import resolve_embedding_device
+from mnemion.embedding import get_embedding_function, resolve_embedding_device
 
 
 def test_embedding_device_config_and_env(monkeypatch, tmp_path):
@@ -23,3 +23,16 @@ def test_embedding_device_falls_back_when_provider_unavailable(monkeypatch):
     assert resolved.device == "cpu"
     assert resolved.providers == ["CPUExecutionProvider"]
     assert "fallback" in resolved.reason.lower()
+
+
+def test_hash_embedding_device_is_deterministic_and_offline():
+    resolved = resolve_embedding_device("hash")
+    embedding_function = get_embedding_function("hash")
+
+    first = embedding_function(["pricing GraphQL"])[0]
+    second = embedding_function(["pricing GraphQL"])[0]
+
+    assert resolved.device == "hash"
+    assert resolved.providers == ["deterministic-hash"]
+    assert first == second
+    assert len(first) == 384

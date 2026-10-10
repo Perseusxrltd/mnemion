@@ -96,6 +96,9 @@ class WikiStore:
         self._init_schema()
 
     def connect(self) -> sqlite3.Connection:
+        from ..legacy_freeze import require_writable
+
+        require_writable(self.db_path.parent)
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA journal_mode=WAL")

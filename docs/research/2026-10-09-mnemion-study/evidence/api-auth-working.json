@@ -1,0 +1,8 @@
+{
+  "repo": "working",
+  "configured_token": true,
+  "anonymous_read_status": 403,
+  "anonymous_response_contains_synthetic_provider_key": false,
+  "authenticated_read_status": 200,
+  "authenticated_response_contains_synthetic_provider_key": true
+}

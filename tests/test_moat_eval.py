@@ -9,6 +9,7 @@ def test_moat_eval_reports_all_modes_and_suites(tmp_path):
         "hybrid_rrf",
         "trust_kg",
         "cognitive_reconstruction",
+        "memory_guard",
     }
     assert {"struct", "causal", "forgetting", "security"}.issubset(result["scores"])
 
@@ -36,7 +37,8 @@ def test_moat_eval_runs_security_guard_case(tmp_path):
 
     result = run_moat_eval(suite="security", kg_path=str(tmp_path / "kg.sqlite3"))
 
-    assert result["scores"]["security"]["trust_kg"] == 1.0
+    assert result["scores"]["security"]["memory_guard"] == 1.0
+    assert result["scores"]["security"]["trust_kg"] is None
     assert result["cases"]["security"][0]["findings"]
 
 
@@ -52,11 +54,14 @@ def test_moat_eval_response_schema_is_stable(tmp_path):
         "hybrid_rrf",
         "trust_kg",
         "cognitive_reconstruction",
+        "memory_guard",
     ]
     for suite_name, cases in result["cases"].items():
         assert result["case_counts"][suite_name] == len(cases)
         for mode in result["modes"]:
-            assert isinstance(result["scores"][suite_name][mode], float)
+            assert result["scores"][suite_name][mode] is None or isinstance(
+                result["scores"][suite_name][mode], float
+            )
         for case in cases:
             assert {"name", "passed"}.issubset(case)
             assert set(case["passed"]) == set(result["modes"])
@@ -83,3 +88,12 @@ def test_moat_benchmark_summary_counts_modes():
         "total": 2,
         "score": 1.0,
     }
+
+
+def test_unexecuted_comparators_are_not_reported_as_failures():
+    from mnemion.moat_eval import run_moat_eval
+    from benchmarks.moat_benchmark import summarize
+
+    result = run_moat_eval()
+    for mode in ("raw_vector", "hybrid_rrf", "trust_kg"):
+        assert summarize(result)["mode_totals"][mode] == {"passed": 0, "total": 0, "score": None}

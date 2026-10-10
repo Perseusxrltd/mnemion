@@ -1,0 +1,124 @@
+name: Native desktop checks
+
+on:
+  push:
+    branches: [main, 'codex/**']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      macos_only:
+        description: Validate the two Mac builds during updater development
+        type: boolean
+        default: false
+      sign_macos:
+        description: Verify the configured Mac signing key without uploading release artifacts
+        type: boolean
+        default: false
+  workflow_call:
+    inputs:
+      release:
+        type: boolean
+        default: false
+      macos_only:
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  desktop:
+    name: ${{ matrix.os }} / ${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(inputs.macos_only && '[{"os":"macos-15-intel","arch":"x64"},{"os":"macos-15","arch":"arm64"}]' || '[{"os":"ubuntu-22.04","arch":"x64"},{"os":"ubuntu-22.04-arm","arch":"arm64"},{"os":"windows-2022","arch":"x64"},{"os":"windows-11-arm","arch":"arm64"},{"os":"macos-15-intel","arch":"x64"},{"os":"macos-15","arch":"arm64"}]') }}
+    env:
+      # Signing is available only to the explicit release workflow, never PR builds.
+      CSC_IDENTITY_AUTO_DISCOVERY: ${{ inputs.release && startsWith(matrix.os, 'windows-') && 'true' || 'false' }}
+      CSC_LINK: ${{ inputs.release && startsWith(matrix.os, 'windows-') && secrets.WINDOWS_CSC_LINK || '' }}
+      CSC_KEY_PASSWORD: ${{ inputs.release && startsWith(matrix.os, 'windows-') && secrets.WINDOWS_CSC_KEY_PASSWORD || '' }}
+      MNEMION_REQUIRE_CODE_SIGNATURE: ${{ inputs.release && startsWith(matrix.os, 'windows-') && '1' || '0' }}
+      MNEMION_BUILD_PYTHON: ${{ github.workspace }}/studio/client/.venv/${{ startsWith(matrix.os, 'windows-') && 'Scripts/python.exe' || 'bin/python' }}
+    steps:
+      - name: Require publisher credentials for a release
+        if: inputs.release && runner.os == 'Windows'
+        shell: bash
+        run: |
+          test -n "$CSC_LINK" || { echo "Configure publisher signing credentials before releasing automatic updates."; exit 1; }
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.13'
+          architecture: ${{ matrix.arch }}
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+          architecture: ${{ matrix.arch }}
+          cache: npm
+          cache-dependency-path: |
+            packages/client/package-lock.json
+            studio/frontend/package-lock.json
+            studio/electron/package-lock.json
+      - name: Linux desktop libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libgtk-3-0 libnss3 libgbm1 libasound2 libnotify4 libfuse2
+      - run: python -m pip install uv==0.12.24
+      - run: uv sync --project studio/client --locked --python 3.13
+      - run: uv run --project studio/client --no-sync python -m pytest client_tests -q
+      - run: npm --prefix packages/client ci
+      - run: npm --prefix packages/client test
+      - run: npm --prefix studio/frontend ci
+      - run: npm --prefix studio/electron ci
+      - run: npm --prefix studio/electron test
+      - run: npm --prefix studio/electron run dist
+      - name: Sign and verify the free macOS update archive
+        if: (inputs.release || (github.event_name == 'workflow_dispatch' && inputs.sign_macos)) && runner.os == 'macOS'
+        env:
+          MNEMION_MAC_UPDATE_PRIVATE_KEY: ${{ secrets.MNEMION_MAC_UPDATE_PRIVATE_KEY }}
+        run: python -m deploy.macos_sparkle sign
+      - run: node studio/electron/scripts/test-local-client.mjs
+      - name: Packaged window, sandboxed bridge, and local client
+        if: runner.os != 'Linux'
+        run: npm --prefix studio/electron run smoke:packaged
+      - name: Packaged Linux window, sandboxed bridge, and local client
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm --prefix studio/electron run smoke:packaged
+      - name: Packaged Mac update, restart guards and relaunch
+        if: runner.os == 'macOS'
+        run: python -m deploy.macos_electron_update_probe --output "$RUNNER_TEMP/mnemion-electron-update"
+      - name: Bounded native update failure diagnostics
+        if: failure() && runner.os == 'macOS'
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          root = Path(os.environ['RUNNER_TEMP']) / 'mnemion-electron-update'
+          for name in ['electron.log', 'events.jsonl']:
+              path = root / name
+              if path.is_file():
+                  print(name)
+                  print(path.read_text(errors='replace')[-8000:])
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        # Validation keeps its evidence in job logs, not large installer uploads.
+        if: inputs.release
+        with:
+          name: release-${{ matrix.os }}-${{ matrix.arch }}
+          retention-days: 1
+          if-no-files-found: error
+          path: |
+            dist-electron/latest-*.yml
+            dist-electron/latest-*-mac.xml
+            dist-electron/*.exe
+            dist-electron/*.blockmap
+            dist-electron/*.dmg
+            dist-electron/*.zip
+            dist-electron/*.deb
+            dist-electron/*.AppImage
+            dist-electron/SHA256SUMS-*.txt

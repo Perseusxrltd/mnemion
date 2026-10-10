@@ -22,6 +22,8 @@ class Reconstructor:
         self.topic_tunnel_min_count = max(2, int(topic_tunnel_min_count))
 
     def reconstruct(self, query: str, budget: int = 10) -> dict[str, Any]:
+        if budget <= 0:
+            return {"query": query, "results": [], "topic_tunnels": []}
         units = self.graph.search_units(query, budget=budget)
         drawer_order = []
         evidence: dict[str, list[dict[str, Any]]] = {}
@@ -29,6 +31,8 @@ class Reconstructor:
         def add_evidence(unit: dict[str, Any], via_topic_tunnel: str | None = None) -> None:
             drawer_id = unit["drawer_id"]
             if drawer_id not in evidence:
+                if len(drawer_order) >= budget:
+                    return
                 drawer_order.append(drawer_id)
                 evidence[drawer_id] = []
             matched_cues = list(unit.get("matched_cues") or [])
@@ -87,7 +91,21 @@ class Reconstructor:
                     "evidence_trail": evidence[drawer_id],
                 }
             )
-        return {"query": query, "results": results, "topic_tunnels": topic_tunnels}
+        returned_ids = {item["id"] for item in results}
+        bounded_tunnels = []
+        for tunnel in topic_tunnels:
+            kept = [unit for unit in tunnel["units"] if unit["drawer_id"] in returned_ids]
+            if kept:
+                bounded_tunnels.append(
+                    {
+                        **tunnel,
+                        "units": kept,
+                        "drawer_ids": sorted({unit["drawer_id"] for unit in kept}),
+                        "drawer_count": len({unit["drawer_id"] for unit in kept}),
+                        "unit_count": len(kept),
+                    }
+                )
+        return {"query": query, "results": results, "topic_tunnels": bounded_tunnels}
 
 
 def reconstruct_query(

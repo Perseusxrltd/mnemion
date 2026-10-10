@@ -85,7 +85,8 @@ CREATE TABLE IF NOT EXISTS cognitive_edges (
 
 CREATE TABLE IF NOT EXISTS cognitive_consolidated_drawers (
     drawer_id       TEXT PRIMARY KEY,
-    consolidated_at TEXT NOT NULL
+    consolidated_at TEXT NOT NULL,
+    content_hash    TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_cognitive_units_drawer ON cognitive_units(drawer_id);
@@ -182,6 +183,10 @@ class CognitiveGraph:
         self._init_schema()
 
     def _connect(self):
+        from .legacy_freeze import require_writable
+        from pathlib import Path
+
+        require_writable(Path(self.db_path).parent)
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA journal_mode=WAL")
@@ -190,6 +195,13 @@ class CognitiveGraph:
     def _init_schema(self) -> None:
         with self._connect() as conn:
             conn.executescript(SCHEMA)
+            columns = {
+                row[1] for row in conn.execute("PRAGMA table_info(cognitive_consolidated_drawers)")
+            }
+            if "content_hash" not in columns:
+                conn.execute(
+                    "ALTER TABLE cognitive_consolidated_drawers ADD COLUMN content_hash TEXT"
+                )
             conn.commit()
 
     def upsert_drawer_units(
@@ -200,6 +212,8 @@ class CognitiveGraph:
     ) -> dict[str, int]:
         now = datetime.now(timezone.utc).isoformat()
         with self._connect() as conn:
+            conn.execute("DELETE FROM cognitive_units WHERE drawer_id = ?", (drawer_id,))
+            conn.execute("DELETE FROM cognitive_edges WHERE drawer_id = ?", (drawer_id,))
             before_units = conn.total_changes
             conn.executemany(
                 """INSERT OR IGNORE INTO cognitive_units
@@ -242,17 +256,26 @@ class CognitiveGraph:
             conn.commit()
         return {"units_inserted": units_inserted, "edges_inserted": edges_inserted}
 
-    def _is_consolidated(self, conn: sqlite3.Connection, drawer_id: str) -> bool:
+    @staticmethod
+    def _content_hash(content: str, metadata: dict[str, Any]) -> str:
+        import json
+
+        payload = json.dumps([content, metadata], sort_keys=True, ensure_ascii=False)
+        return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+    def _is_consolidated(self, conn: sqlite3.Connection, drawer_id: str, content_hash: str) -> bool:
         row = conn.execute(
-            "SELECT 1 FROM cognitive_consolidated_drawers WHERE drawer_id = ?",
-            (drawer_id,),
+            "SELECT 1 FROM cognitive_consolidated_drawers WHERE drawer_id = ? AND content_hash = ?",
+            (drawer_id, content_hash),
         ).fetchone()
         return row is not None
 
-    def _mark_consolidated(self, conn: sqlite3.Connection, drawer_id: str) -> None:
+    def _mark_consolidated(
+        self, conn: sqlite3.Connection, drawer_id: str, content_hash: str
+    ) -> None:
         conn.execute(
-            "INSERT OR IGNORE INTO cognitive_consolidated_drawers VALUES (?, ?)",
-            (drawer_id, datetime.now(timezone.utc).isoformat()),
+            "INSERT OR REPLACE INTO cognitive_consolidated_drawers (drawer_id, consolidated_at, content_hash) VALUES (?, ?, ?)",
+            (drawer_id, datetime.now(timezone.utc).isoformat(), content_hash),
         )
 
     def consolidate_collection(
@@ -286,7 +309,9 @@ class CognitiveGraph:
                 if not ids:
                     break
                 for drawer_id, doc, meta in zip(ids, documents, metadatas):
-                    if not self._is_consolidated(conn, drawer_id):
+                    if not self._is_consolidated(
+                        conn, drawer_id, self._content_hash(doc, meta or {})
+                    ):
                         pending.append((drawer_id, doc, meta or {}))
                         if len(pending) >= limit:
                             break
@@ -306,19 +331,53 @@ class CognitiveGraph:
             result["units_inserted"] += inserted["units_inserted"]
             result["edges_inserted"] += inserted["edges_inserted"]
             with self._connect() as conn:
-                self._mark_consolidated(conn, drawer_id)
+                self._mark_consolidated(conn, drawer_id, self._content_hash(doc, meta))
                 conn.commit()
         return result
 
-    def units_for_drawer(self, drawer_id: str) -> list[dict[str, Any]]:
+    def _read_units(
+        self, include_hidden: bool = False, drawer_id: str | None = None
+    ) -> list[dict[str, Any]]:
+        """Resolve current trust when reading every cognitive projection."""
         with self._connect() as conn:
-            rows = conn.execute(
-                "SELECT * FROM cognitive_units WHERE drawer_id = ? ORDER BY unit_id",
-                (drawer_id,),
-            ).fetchall()
-        return [dict(row) for row in rows]
+            has_trust = conn.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='drawer_trust'"
+            ).fetchone()
+            sql = "SELECT u.*"
+            if has_trust:
+                sql += ", COALESCE(t.status, u.trust_status) AS live_status"
+            sql += " FROM cognitive_units u"
+            if has_trust:
+                sql += " LEFT JOIN drawer_trust t ON t.drawer_id = u.drawer_id"
+            parameters = []
+            clauses = []
+            if drawer_id is not None:
+                clauses.append("u.drawer_id = ?")
+                parameters.append(drawer_id)
+            if conn.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='drawer_deletions'"
+            ).fetchone():
+                clauses.append(
+                    "NOT EXISTS (SELECT 1 FROM drawer_deletions d WHERE d.drawer_id=u.drawer_id)"
+                )
+            if clauses:
+                sql += " WHERE " + " AND ".join(clauses)
+            sql += " ORDER BY u.unit_id"
+            rows = conn.execute(sql, parameters).fetchall()
+        units = []
+        for row in rows:
+            unit = dict(row)
+            unit["trust_status"] = unit.pop("live_status", unit["trust_status"])
+            if include_hidden or unit["trust_status"] not in _HIDDEN_TRUST_STATUSES:
+                units.append(unit)
+        return units
 
-    def edges_for_drawer(self, drawer_id: str) -> list[dict[str, Any]]:
+    def units_for_drawer(self, drawer_id: str, include_hidden: bool = True) -> list[dict[str, Any]]:
+        return self._read_units(include_hidden=include_hidden, drawer_id=drawer_id)
+
+    def edges_for_drawer(self, drawer_id: str, include_hidden: bool = True) -> list[dict[str, Any]]:
+        if not include_hidden and not self.units_for_drawer(drawer_id, include_hidden=False):
+            return []
         with self._connect() as conn:
             rows = conn.execute(
                 "SELECT * FROM cognitive_edges WHERE drawer_id = ? ORDER BY edge_id",
@@ -333,8 +392,7 @@ class CognitiveGraph:
         include_hidden: bool = False,
     ) -> list[dict[str, Any]]:
         query_cues = set(_cues(query))
-        with self._connect() as conn:
-            rows = conn.execute("SELECT * FROM cognitive_units").fetchall()
+        rows = self._read_units(include_hidden=include_hidden)
         scored = []
         for row in rows:
             unit = dict(row)
@@ -357,8 +415,7 @@ class CognitiveGraph:
     ) -> list[dict[str, Any]]:
         """Return recurring cue paths that connect multiple current drawers."""
         min_count = max(2, int(min_count))
-        with self._connect() as conn:
-            rows = conn.execute("SELECT * FROM cognitive_units").fetchall()
+        rows = self._read_units(include_hidden=include_hidden)
 
         by_cue: dict[str, dict[str, list[dict[str, Any]]]] = {}
         for row in rows:

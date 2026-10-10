@@ -21,7 +21,7 @@ export default function TrustBadge({ trust, showConfidence = false }: Props) {
     <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium ${s.bg} ${s.text}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
       {s.label}
-      {showConfidence && ` · ${pct}%`}
+      {showConfidence && ` - ${pct}%`}
     </span>
   )
 }

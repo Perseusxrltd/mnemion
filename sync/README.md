@@ -1,220 +1,83 @@
-# Mnemion Sync — Multi-Agent Anaktoron Backup & Sync
+# Shared memory and scheduled Obsidian refresh
 
-The Anaktoron (ChromaDB vector store) is too large for git (~860 MB). The sync
-system exports a portable JSON snapshot and commits that instead.  Multiple
-agents on different machines can each run the sync script and share the same
-memory automatically — no human coordination needed.
+Applications and assistants now share the authenticated Mnemion service. Each
+client has its own credential and explicit space grants. Saves, corrections,
+reviews, and deletions use the same authoritative database.
 
----
+`SyncMemories.sh` and `SyncMemories.ps1` now refresh a local Obsidian vault through
+that service. They use the same verified export/refresh path as Studio and the
+Python client, preserving personal sections, stable note paths, and conflicts.
+They perform no Git operations.
 
-## How It Works
+## Configure a vault
 
-Every hour (or on your schedule):
+Create a private credentials JSON file containing `api_key` and `api_url`. Use a
+reader key granted only the spaces this vault should contain. A reviewer export
+requires a reviewer key and an explicit `"review": true` configuration.
 
-1. **Export** — all non-session drawers are exported from the local ChromaDB
-   Anaktoron → `archive/drawers_export.json` (stable-sorted, human-readable JSON)
-2. **Fetch** — `git fetch` peeks at the remote without touching your working tree
-3. **Merge** — if the remote is ahead (another agent pushed), `merge_exports.py`
-   produces a clean union of both export files:
-   - All drawers from both sides are kept
-   - When the same drawer ID exists in both: the one with the newer `filed_at`
-     timestamp wins; remote wins on tie
-4. **Commit** — the merged (or unchanged) export is committed with the agent ID
-   and drawer count in the message
-5. **Push** — `git push --force-with-lease`; if rejected (another agent pushed
-   between step 2 and step 5), the commit is rolled back, the script waits a
-   random 2–9 seconds, then retries from step 2 — up to 5 times
+Create `obsidian-refresh.json`:
 
-The lock file (`~/.mnemion/.sync_lock`) prevents two concurrent runs on the
-same machine.  Stale locks (> 10 minutes old) are cleaned up automatically.
-
-### Commit messages are traceable
-
-```
-sync: 2026-04-13 14:32:10 [laptop] 1582 drawers
-sync: 2026-04-13 14:35:01 [workstation] 1596 drawers
+```json
+{
+  "credentials_file": "/private/mnemion-reader.json",
+  "vault_path": "/notes/Mnemion",
+  "space_ids": ["YOUR_SPACE_UUID"],
+  "review": false
+}
 ```
 
-Set `MNEMION_AGENT_ID` to a meaningful name for each machine/agent.
+Use absolute paths appropriate for the local operating system. Register the
+vault in Obsidian once, then refresh it:
 
-### Known limitation — v1
+```sh
+python -m mnemion.vault_sync --config /private/obsidian-refresh.json --dry-run
+python -m mnemion.vault_sync --config /private/obsidian-refresh.json
+```
 
-Drawer **deletions** do not propagate.  A drawer deleted from one agent's Anaktoron
-will be re-added after the next merge from another agent that still has it.
-Deletion sync requires tombstone records and is planned for a future version.
+A conflict leaves the last completed watermark unchanged and returns exit code 2.
+Review the proposed changes before running the next refresh. Obsidian is an
+inspectable local projection: withdrawn content is removed from managed sections
+on refresh; personal annotations remain the user's files.
 
----
+## Optional scheduling
 
-## Quick Start
+On Linux, set `MNEMION_VAULT_CONFIG` to the configuration file and call
+`sync/SyncMemories.sh` from the chosen scheduler. `MNEMION_PYTHON` can select the
+installed environment's Python executable. Schedule one job per vault; refreshes
+use a local lock.
 
-### One-Shot Windows Install
+On Windows, install Mnemion's Python package, then review the task configuration:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File sync\install_windows.ps1 `
-    -MemoryRepoUrl https://github.com/OWNER/PRIVATE-MEMORY-REPO.git `
-    -MemoryBranch main `
-    -AgentId laptop
+powershell -NoProfile -File sync\install_windows.ps1 `
+  -CredentialsFile C:\Private\mnemion-reader.json `
+  -VaultPath C:\Notes\Mnemion `
+  -SpaceIds YOUR_SPACE_UUID `
+  -PythonExe C:\Mnemion\.venv\Scripts\python.exe `
+  -DryRun
 ```
 
-Installs everything: hooks, hourly sync task, vLLM auto-start, trust backfill.
-Skip optional parts: `install_windows.ps1 -SkipVllm` / `-SkipHook` / `-SkipSync`.
-The memory repo URL, branch, repo path, task name, interval, and agent ID are all parameters.
+Run the same command without `-DryRun` to write the configuration and register
+`MnemionObsidianRefresh` for the current user. `-SkipSync` writes the configuration
+without registering a task. `-MnemionDir`, `-SyncTaskName`, and
+`-SyncIntervalHours` customize its location, name, and interval. Existing
+configuration files are not overwritten. Assistant hooks and model-server startup
+are configured separately by the applications that need them.
 
----
+## Migration from Git sync
 
-## Manual Setup
+The v3 array-union merge and optional SQL-dump merge are retired. They could
+resurrect deletions, reset trust state, and expose an entire personal corpus to
+any participant with repository access. A Git export was not a complete backup.
+The old merge command now fails before writing output, and an old scheduled sync
+without a service configuration fails before touching the profile.
 
-### 1. Initialize the memory git repo (once per machine)
+Stop the old cron/Task Scheduler job. Preserve and verify the installation with
+[the complete v3 backup and restore commands](../docs/service/recovery.md), then
+migrate it into an explicitly owned private space. Configure each assistant or
+application to use the service and each Obsidian vault to use an authorized
+refresh credential. Git repository history still contains its earlier exports;
+retention of those copies is an operator decision, independent of service deletion.
 
-```powershell
-# Windows
-cd $env:USERPROFILE\.mnemion
-git init
-git remote add origin https://github.com/OWNER/PRIVATE-MEMORY-REPO.git
-```
-
-```bash
-# Linux / macOS
-cd ~/.mnemion
-git init
-git remote add origin https://github.com/OWNER/PRIVATE-MEMORY-REPO.git
-```
-
-### 2. Copy the sync script and set your agent ID
-
-**Windows:**
-```powershell
-Copy-Item sync\SyncMemories.ps1 $env:USERPROFILE\.mnemion\SyncMemories.ps1
-$env:MNEMION_AGENT_ID = "my-machine-name"   # put this in your profile
-```
-
-**Linux / macOS:**
-```bash
-cp sync/SyncMemories.sh ~/.mnemion/SyncMemories.sh
-chmod +x ~/.mnemion/SyncMemories.sh
-export MNEMION_AGENT_ID="laptop"   # put this in ~/.bashrc or ~/.zshrc
-```
-
-### 3. Schedule the sync
-
-**Windows — Task Scheduler (run as Administrator):**
-```powershell
-$action  = New-ScheduledTaskAction -Execute "powershell.exe" `
-    -Argument "-NonInteractive -WindowStyle Hidden -File $env:USERPROFILE\.mnemion\SyncMemories.ps1"
-$trigger = New-ScheduledTaskTrigger -RepetitionInterval (New-TimeSpan -Hours 1) -Once -At (Get-Date)
-$settings = New-ScheduledTaskSettingsSet `
-    -ExecutionTimeLimit (New-TimeSpan -Minutes 5) `
-    -StartWhenAvailable `
-    -RunOnlyIfNetworkAvailable
-Register-ScheduledTask -TaskName "MnemionMemorySync" `
-    -Action $action -Trigger $trigger -Settings $settings `
-    -RunLevel Highest -Force
-```
-
-**Linux / macOS — cron:**
-```bash
-# Every hour at :00
-(crontab -l 2>/dev/null; echo "0 * * * * MNEMION_AGENT_ID=laptop ~/.mnemion/SyncMemories.sh >> ~/.mnemion/sync.log 2>&1") | crontab -
-```
-
-### 4. Verify
-
-**Windows:**
-```powershell
-# Run once manually to confirm
-powershell -File $env:USERPROFILE\.mnemion\SyncMemories.ps1
-```
-
-**Linux / macOS:**
-```bash
-~/.mnemion/SyncMemories.sh
-```
-
-You should see output like:
-```
-2026-04-13 14:32:10 [my-agent] Export: 1582 drawers exported
-2026-04-13 14:32:14 [my-agent] Pushed OK (attempt 1). Branch: main
-```
-
----
-
-## Environment Variables
-
-| Variable               | Default              | Description                                  |
-|------------------------|----------------------|----------------------------------------------|
-| `MNEMION_AGENT_ID`     | hostname             | Name shown in commit messages                |
-| `MNEMION_BRANCH`       | auto-detected        | Git branch to push to                        |
-| `MNEMION_REPO_DIR`     | `~/.mnemion`         | Path to the memory git repo                  |
-| `MNEMION_SOURCE_DIR`   | auto-detected        | Path to the mnemion package (for imports)    |
-| `MNEMION_PYTHON`       | `python3`            | Python binary (Linux/Mac only)               |
-| `MNEMION_SYNC_KG`      | unset                | Set to `1` to also sync `knowledge_graph.sql`; this can be hundreds of MB and is off by default |
-
----
-
-## Restoring on a New Machine
-
-```bash
-# 1. Clone your memory repo
-git clone https://github.com/OWNER/PRIVATE-MEMORY-REPO.git ~/.mnemion
-
-# 2. Rebuild the Anaktoron from the JSON export
-cd ~/.mnemion
-python3 -m mnemion restore archive/drawers_export.json
-
-# 3. Backfill trust records for all restored drawers
-python3 ~/.mnemion/backfill_trust.py
-```
-
----
-
-## .gitignore
-
-`~/.mnemion/.gitignore` should contain:
-
-```gitignore
-anaktoron/
-cursor_scraped/
-hook_state/
-hooks/
-heartbeats/
-config.json
-session_history.json
-jepa_predictor.pt
-archive/knowledge_graph.sql
-*.sqlite3
-*.sqlite3-wal
-*.sqlite3-shm
-*.log
-.sync_lock
-.drawers_remote_tmp.json
-!SyncMemories.ps1
-!SyncMemories.sh
-```
-
-The ChromaDB binary files and SQLite databases never go to git.
-Only the portable JSON export and the sync scripts travel.
-
----
-
-## Merge Logic (`sync/merge_exports.py`)
-
-The merge script produces a clean union without git merge markers:
-
-```
-local export  ──┐
-                ├─► merge_exports.py ──► merged export
-remote export ──┘
-```
-
-- **ID only in local** → kept
-- **ID only in remote** → kept
-- **ID in both** → newer `filed_at` timestamp wins; remote wins on tie
-- Output is sorted by drawer ID (stable, diffable)
-
-You can run it manually:
-```bash
-python3 sync/merge_exports.py \
-    --ours   ~/.mnemion/archive/drawers_export.json \
-    --theirs /tmp/remote_export.json \
-    --out    ~/.mnemion/archive/drawers_export.json
-```
+The original scripts and documentation are retained as non-executable historical
+text under [docs/legacy](../docs/legacy/). They are not supported replication paths.

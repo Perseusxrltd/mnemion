@@ -1,6 +1,5 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@config "../tailwind.config.ts";
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Mnemion Studio — Apple Human Interface Guidelines Design System
@@ -435,6 +434,12 @@ mark {
   transform: scale(0.92);
 }
 
+.memory-sidebar-shell {
+  display: flex;
+  flex-shrink: 0;
+  min-height: 0;
+}
+
 /* ── Status Bar ───────────────────────────────────────────────────────────── */
 
 .status-bar {
@@ -451,6 +456,37 @@ mark {
   border-top: 1px solid var(--status-bar-border);
   flex-shrink: 0;
   user-select: none;
+}
+
+@media (max-width: 760px) {
+  .memory-sidebar-shell {
+    display: none;
+  }
+
+  .status-bar {
+    padding: 0 10px;
+    gap: 8px;
+  }
+
+  .status-bar > div:last-child span:not(:last-child) {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --ribbon-width: 44px;
+  }
+
+  .ribbon {
+    padding: 8px 0;
+  }
+
+  .ribbon-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+  }
 }
 
 /* ── Property Row ─────────────────────────────────────────────────────────── */
