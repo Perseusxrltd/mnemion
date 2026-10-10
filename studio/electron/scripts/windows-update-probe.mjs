@@ -39,6 +39,11 @@ const sockets = new Set()
 
 const server = createServer((request, response) => {
   const path = new URL(request.url, 'http://127.0.0.1').pathname
+  if (path === '/control/redirect-probe') {
+    response.writeHead(302, { Location: origin + '/control/redirect-target' }).end()
+    return
+  }
+  if (path === '/control/redirect-target') { response.writeHead(500).end('The redirect must not be followed automatically'); return }
   if (path.startsWith('/control/')) {
     mode = path.slice('/control/'.length)
     response.end('ok')
@@ -77,6 +82,7 @@ await new Promise(resolve_ => server.listen(0, '127.0.0.1', resolve_))
 const origin = `http://127.0.0.1:${server.address().port}`
 const env = { ...process.env, CSC_IDENTITY_AUTO_DISCOVERY: 'false' }
 for (const name of ['CSC_LINK', 'CSC_KEY_PASSWORD', 'MNEMION_MAC_UPDATE_PRIVATE_KEY', 'MNEMION_WINDOWS_UPDATE_PRIVATE_KEY']) delete env[name]
+for (const name of Object.keys(env)) if (name.toLowerCase() === 'psmodulepath') delete env[name]
 const log = createWriteStream(join(output, 'build.log'))
 const sleep = milliseconds => new Promise(resolve_ => setTimeout(resolve_, milliseconds))
 let child
@@ -148,9 +154,24 @@ try {
   const hash = createHash('sha512')
   for await (const bytes of createReadStream(installerPath)) hash.update(bytes)
   installerHash = hash.digest('base64')
-  await run(initial, ['/S', '/currentuser', `/D=${installed}`])
+  // A Windows ARM bootstrap can hand work to an emulated child process.
+  // Start-Process -Wait tracks that tree; a successful stub exit is not installation proof.
+  env.MNEMION_PROBE_INITIAL_INSTALLER = initial
+  env.MNEMION_PROBE_INSTALL_DIRECTORY = installed
+  await run('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
+    '$ErrorActionPreference="Stop"; $p=Start-Process -FilePath $env:MNEMION_PROBE_INITIAL_INSTALLER '
+    + '-ArgumentList @("/S","/currentuser",("/D="+$env:MNEMION_PROBE_INSTALL_DIRECTORY)) -PassThru -Wait; exit $p.ExitCode'])
+  delete env.MNEMION_PROBE_INITIAL_INSTALLER
+  delete env.MNEMION_PROBE_INSTALL_DIRECTORY
   const executable = join(installed, `${productName}.exe`)
-  if (!existsSync(executable)) throw new Error('NSIS first installation did not create the application')
+  const installationDeadline = Date.now() + 30_000
+  while (!existsSync(executable) && Date.now() < installationDeadline) await sleep(250)
+  if (!existsSync(executable)) {
+    writeFileSync(join(output, 'first-install.json'), JSON.stringify({ architecture: process.arch, installed,
+      files: existsSync(installed) ? (await readdir(installed)).slice(0, 40) : [],
+      packageFiles: (await readdir(join(output, 'packages', version))).slice(0, 40) }, null, 2))
+    throw new Error('NSIS first installation did not create the application')
+  }
   const electronLog = createWriteStream(join(output, 'electron.log'))
   child = spawn(executable, [], { stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true, env })
   child.stdout.pipe(electronLog, { end: false }); child.stderr.pipe(electronLog, { end: false })
@@ -172,7 +193,8 @@ try {
   if (!relaunched || relaunched.version !== target || relaunched.pid === child.pid) throw new Error('NSIS did not replace and relaunch the target application')
   process.kill(relaunched.pid, 0)
   if (events.filter(event => event.event === 'install-authorized').length !== 1
-    || !events.some(event => event.event === 'guards-passed') || !events.some(event => event.event === 'cancelled-transfer')) throw new Error('Native Windows guards and recovery checks were incomplete')
+    || !events.some(event => event.event === 'guards-passed') || !events.some(event => event.event === 'cancelled-transfer')
+    || !events.some(event => event.event === 'native-redirect-verified')) throw new Error('Native Windows guards and recovery checks were incomplete')
   for (const rejected of ['bad-signature', 'wrong-architecture', 'oversized', 'interrupted', 'older', 'cached-tamper']) {
     if (!events.some(event => event.event === 'rejected' && event.case === rejected)) throw new Error('A native rejection case was not measured')
   }
@@ -181,6 +203,7 @@ try {
   const result = { architecture: process.arch, originalVersion: version, updatedVersion: target, downloads,
     nativeNsisFirstInstallation: true, nativeReplacementAndRelaunch: true, packagedDesktopController: true,
     signedMetadataAndCachedInstallerVerified: true, focusTransferDraftIdleGuards: true,
+    nativeManualRedirects: true,
     interruptionPauseTamperingAndRecovery: true, productionPackageUnchanged: true,
     fixtureScope: 'Private copies, ephemeral publisher key and local HTTP; synthetic idle/transfer/draft state; real native windows and NSIS installation' }
   writeFileSync(join(output, 'result.json'), JSON.stringify(result, null, 2))

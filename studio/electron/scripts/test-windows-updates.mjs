@@ -8,6 +8,9 @@ import { verifyWindowsManifest, verifyWindowsInstaller, compareWindowsVersions, 
   windowsManifestURL, WINDOWS_INSTALLER_MINIMUM, WINDOWS_READY_LIFETIME } from '../dist/windows-update-security.js'
 import { transferWindowsUpdate } from '../dist/windows-update-transfer.js'
 import { WindowsUpdateBridge, windowsInstallerEnvironment } from '../dist/windows-updates.js'
+import { createWindowsUpdateFetch } from '../dist/windows-update-network.js'
+import { EventEmitter } from 'node:events'
+import { Readable } from 'node:stream'
 
 const pair = generateKeyPairSync('ed25519')
 const publicKey = pair.publicKey.export({ type: 'spki', format: 'der' }).subarray(-32).toString('base64')
@@ -146,6 +149,44 @@ test('transport cancels stalled requests at its deadline and honours an already 
     signal: controller.signal, limit: 5, timeout: 50, consume: async () => {},
   }))
   assert.equal(requested, false)
+})
+
+test('Electron redirect events are returned for validation without following or forwarding credentials', async () => {
+  let aborted = false, followed = false
+  const request = new EventEmitter()
+  request.setHeader = () => {}
+  request.abort = () => { aborted = true; request.emit('error', new Error('cancelled redirect')) }
+  request.followRedirect = () => { followed = true }
+  request.end = () => queueMicrotask(() => request.emit('redirect', 302, 'GET', 'https://release-assets.githubusercontent.com/file'))
+  const fetcher = createWindowsUpdateFetch(() => request)
+  const response = await fetcher(data().url, { signal: new AbortController().signal })
+  assert.equal(response.status, 302)
+  assert.equal(response.headers.get('location'), 'https://release-assets.githubusercontent.com/file')
+  assert.equal(aborted, true)
+  assert.equal(followed, false)
+})
+
+test('Electron response bodies stream through the adapter and aborts stop an active body', async () => {
+  const make = (stall = false) => {
+    const request = new EventEmitter()
+    const incoming = new Readable({ read() {} })
+    incoming.statusCode = 200
+    incoming.headers = { 'content-type': 'application/octet-stream' }
+    request.setHeader = () => {}
+    request.abort = () => { incoming.destroy(new Error('aborted')) }
+    request.end = () => queueMicrotask(() => {
+      request.emit('response', incoming)
+      incoming.push(Buffer.from('hello'))
+      if (!stall) incoming.push(null)
+    })
+    return request
+  }
+  const fetcher = createWindowsUpdateFetch(() => make())
+  assert.equal(await (await fetcher(data().url, {})).text(), 'hello')
+  const controller = new AbortController()
+  const stalled = await createWindowsUpdateFetch(() => make(true))(data().url, { signal: controller.signal })
+  controller.abort()
+  await assert.rejects(stalled.text())
 })
 
 test('a valid update waits for guards, pauses safely, and never installs during ordinary cleanup', async t => {

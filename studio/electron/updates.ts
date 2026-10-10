@@ -1,10 +1,11 @@
-import { app, powerMonitor, session, type BrowserWindow } from 'electron'
+import { app, net, powerMonitor, session, type BrowserWindow } from 'electron'
 import updaterPackage from 'electron-updater'
 import { join } from 'node:path'
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { canRestartForUpdate, desktopExec, updateChannel } from './update-policy.js'
 import { MacUpdateBridge, type MacUpdateEvent } from './macos-updates.js'
 import { WindowsUpdateBridge, type WindowsUpdateEvent, type WindowsUpdateTrust } from './windows-updates.js'
+import { createWindowsUpdateFetch } from './windows-update-network.js'
 
 let autoUpdater: typeof updaterPackage.autoUpdater
 type Preferences = { automaticUpdates: boolean; startAtLogin: boolean; background: boolean }
@@ -15,6 +16,7 @@ export class DesktopUpdates {
   preferences: Preferences = { ...defaults }
   status: UpdateStatus = { state: 'Starting' }
   private checking = false
+  private checkRequested = false
   private downloaded = false
   private installing = false
   private cancelDownload?: () => void
@@ -51,7 +53,10 @@ export class DesktopUpdates {
       const network = session.fromPartition('mnemion-signed-updates', { cache: false })
       this.windows = new WindowsUpdateBridge({ version: app.getVersion(), architecture: process.arch,
         cacheDirectory: join(app.getPath('userData'), 'updates-windows'), applicationPath: process.execPath,
-        resourcesPath: process.resourcesPath, trust }, (url, options) => network.fetch(url, options),
+        resourcesPath: process.resourcesPath, trust }, createWindowsUpdateFetch(url => net.request({
+          url, method: 'GET', session: network, redirect: 'manual', credentials: 'omit',
+          cache: 'no-store', bypassCustomProtocolHandlers: true,
+        })),
       event => this.platformEvent(event))
     } else {
       autoUpdater = updaterPackage.autoUpdater
@@ -146,8 +151,8 @@ export class DesktopUpdates {
       this.applyUpdatePolicy()
       if (!this.enabled) {
         this.cancelDownload?.()
-        if (this.mac) void this.mac.cancel()
-        if (this.windows) void this.windows.cancel()
+        const updater = this.mac || this.windows
+        if (updater) void updater.cancel().then(() => { if (this.enabled) void this.check() })
       }
       this.setStatus({ state: this.enabled ? 'Automatic updates enabled' : 'Automatic updates paused' })
       if (key === 'automaticUpdates' && enabled) void this.check()
@@ -168,7 +173,8 @@ export class DesktopUpdates {
     writeFileSync(path, `[Desktop Entry]\nType=Application\nName=Mnemion Studio\nExec=${desktopExec(executable)}\nTerminal=false\nX-GNOME-Autostart-enabled=true\n`, { mode: 0o600 })
   }
   async check() {
-    if (!this.enabled || this.checking || this.downloaded) return
+    if (!this.enabled || this.downloaded) return
+    if (this.checking) { this.checkRequested = true; return }
     this.checking = true
     this.setStatus({ state: 'Checking for updates' })
     try {
@@ -179,7 +185,10 @@ export class DesktopUpdates {
       if (!this.enabled) this.cancelDownload()
       await result?.downloadPromise
     } catch { this.setStatus({ state: 'Update unavailable · retry scheduled' }) }
-    finally { this.checking = false }
+    finally {
+      this.checking = false
+      if (this.checkRequested) { this.checkRequested = false; queueMicrotask(() => void this.check()) }
+    }
   }
   private async restartIsSafe(): Promise<boolean> {
     if (!this.enabled || !this.downloaded) return false

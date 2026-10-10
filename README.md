@@ -13,6 +13,8 @@ Version **4.0.0 is published for macOS and Linux** on both architectures;
 Windows installers remain in release validation. Ready platforms are published
 while work on the others continues. Development and current documentation live
 on `main`.
+The next patch, [4.0.1](docs/releases/4.0.1.md), adds the independently authenticated
+Windows update path and is undergoing native installation/upgrade validation.
 The [release notes](docs/releases/4.0.0.md) describe its scope and current shipping
 status. Implementation and acceptance are tracked in [the release ledger](docs/implementation/v4_progress.md).
 See the [current validation report](docs/validation/2026-10-10.md) for measured

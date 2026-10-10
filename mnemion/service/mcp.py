@@ -12,6 +12,7 @@ from mcp.types import ToolAnnotations
 from pydantic import BaseModel, Field
 
 from ..sdk import Client, ContextPack, Memory, MnemionError, Receipt, Recall
+from ..version import __version__
 from .contracts import Page, Space
 from .models import MemoryKind, SourceInput
 
@@ -35,7 +36,7 @@ def create_mcp(
 ) -> MCPServer:
     server = MCPServer(
         "Mnemion",
-        version="4.0.0a1",
+        version=__version__,
         instructions=(
             "Use memory_spaces to select a writable space for saves. For global recall/context, pass space_ids=[] and all_accessible=true. "
             "Saves are durable before semantic indexing finishes; reuse idempotency keys for retries. "

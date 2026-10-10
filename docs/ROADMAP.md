@@ -1,15 +1,16 @@
 # Mnemion product roadmap
 
-Current distribution: **4.0.0**. Updated: **2026-10-10**.
+Current distribution: **4.0.1** (release preparation). Updated: **2026-10-10**.
 
-Published for **macOS and Linux, x64 and ARM64**. Downloads are available at
+Version 4.0.0 is published for **macOS and Linux, x64 and ARM64**. Downloads are available at
 [the official product page](https://www.perseusxr.com/mnemion). Windows remains
 the next desktop release priority; it is not offered as a completed installer.
 
-The rebuilt shared-memory platform is product v1; its package version is 4.0.0
+The rebuilt shared-memory platform is product v1; its package version is 4.x
 to upgrade correctly from the earlier 3.x product. This is a living delivery
 plan, not a claim that every planned capability is available. Release status and
-known limitations are recorded in [the release notes](releases/4.0.0.md) and
+known limitations are recorded in [the current patch notes](releases/4.0.1.md),
+[the published baseline](releases/4.0.0.md) and
 [validation report](validation/2026-10-10.md).
 
 ## Product direction
@@ -56,7 +57,8 @@ release artifacts require the platform checks and publisher requirements below.
 2. Build and launch native desktop packages on Windows, macOS and Linux, for
    x64 and ARM64, including their sandboxed bridges and local Obsidian client.
 3. Publish ready platforms independently using `deploy/release-targets.json`.
-   The first desktop release targets macOS and Linux on both architectures.
+   Version 4.0.0 shipped macOS and Linux. Version 4.0.1 targets all three operating
+   systems, with publication gated on both native architectures.
    Mac uses the [validated Sparkle integration](implementation/free-macos-updates.md)
    with independently signed archives. Windows release validation and SignPath
    approval remain pending and do not hold back ready Mac/Linux packages.

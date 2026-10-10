@@ -1,8 +1,9 @@
 // Private rehearsal entry point. It is never included by the production build.
-import { app, BrowserWindow, powerMonitor } from 'electron'
+import { app, BrowserWindow, net, powerMonitor, session } from 'electron'
 import { appendFileSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { DesktopUpdates } from './dist/updates.js'
+import { createWindowsUpdateFetch } from './dist/windows-update-network.js'
 
 const fixture = JSON.parse(readFileSync(join(process.resourcesPath, 'update-fixture.json'), 'utf8'))
 app.setPath('userData', fixture.userData)
@@ -35,6 +36,12 @@ record('bootstrapped')
 app.whenReady().then(async () => {
   record('launched')
   if (app.getVersion() === fixture.expectedVersion) { record('relaunched'); return }
+  const network = session.fromPartition('mnemion-redirect-probe', { cache: false })
+  const transport = createWindowsUpdateFetch(url => net.request({ url, session: network, redirect: 'manual', credentials: 'omit' }))
+  const redirect = await transport(fixture.control + '/redirect-probe', { signal: AbortSignal.timeout(5000) })
+  assert(redirect.status === 302 && redirect.headers.get('location') === fixture.control + '/redirect-target',
+    'Electron manual redirects did not reach the update URL validator')
+  record('native-redirect-verified')
   window = new BrowserWindow({ width: 500, height: 300, show: false,
     webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false } })
   await window.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(
