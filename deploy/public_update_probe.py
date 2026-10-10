@@ -1,7 +1,8 @@
 """Observe unmodified public installers updating through their production feeds.
 
 Runs only on disposable GitHub-hosted runners. No fixture entry point, signing
-key, feed override, debugger, simulated idle time or disabled sandbox is used.
+key, feed override, debugger or simulated idle time is used. The probe does not
+add sandbox-disabling flags and records the packaged launcher's actual flags.
 """
 
 from __future__ import annotations
@@ -266,32 +267,77 @@ def profiles(system: str) -> list[Path]:
 def app_processes(executable: Path, system: str, started: float) -> list:
     import psutil
 
+    if system == "linux":
+        # AppImage exec replaces the launcher. psutil's process_iter cache may
+        # retain its old executable, and Chromium may clear the initial environ.
+        # The newly created default profile's Chromium lock identifies the real
+        # main process across both exec and updater relaunch without either.
+        found = []
+        for profile in profiles(system):
+            pid = profile_process_id(profile)
+            if pid is None:
+                continue
+            try:
+                process = psutil.Process(pid)
+                if (
+                    process.create_time() >= started - 1
+                    and process.uids().real == os.getuid()
+                    and not any(arg.startswith("--type=") for arg in process.cmdline())
+                ):
+                    app_archive(process, system)
+                    found.append(process)
+            except (FileNotFoundError, psutil.NoSuchProcess, psutil.AccessDenied):
+                continue
+        return found
     found = []
     for process in psutil.process_iter(["pid", "name", "exe", "create_time"]):
         info = process.info
         if info.get("create_time", 0) < started - 1 or not info.get("exe"):
             continue
         path = Path(info["exe"])
-        if system == "linux":
-            if path.name != "mnemion-studio":
-                continue
-        elif path != executable:
+        if path != executable:
             continue
         try:
             if any(arg.startswith("--type=") for arg in process.cmdline()):
                 continue
-            if system == "linux":
-                image = Path(process.environ().get("APPIMAGE", "/not-an-appimage"))
-                if image.parent != executable.parent:
-                    continue
             found.append(process)
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             continue
     return found
 
 
+def profile_process_id(profile: Path) -> int | None:
+    try:
+        target = os.readlink(profile / "SingletonLock")
+    except (FileNotFoundError, OSError):
+        return None
+    match = re.fullmatch(r"[^/\x00]{1,255}-([1-9][0-9]{0,9})", target)
+    return int(match[1]) if match else None
+
+
 def app_archive(process, system: str) -> Path:
     path = Path(process.exe())
+    if system == "linux":
+        import psutil
+
+        # Resolve the mounted binary from a fresh Process or one of its direct
+        # Electron children. Never infer a running version from the download.
+        paths = [path, *(Path(arg) for arg in process.cmdline()[:1])]
+        for child in process.children()[:32]:
+            try:
+                paths.append(Path(child.exe()))
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                continue
+        for candidate in paths:
+            archive = candidate.parent / "resources/app.asar"
+            if (
+                candidate.is_absolute()
+                and candidate.name == "mnemion-studio"
+                and candidate.parent.name.startswith(".mount_")
+                and archive.is_file()
+            ):
+                return archive
+        raise FileNotFoundError("The running AppImage mount has no accessible app archive")
     return (
         path.parent.parent / "Resources" if system == "macos" else path.parent / "resources"
     ) / "app.asar"
@@ -405,7 +451,13 @@ def observe(args) -> dict:
                                 env=env,
                             )
                         elif args.platform == "linux":
-                            image = Path(process.environ()["APPIMAGE"])
+                            # The updater may preserve a custom filename or use
+                            # the new versioned name; only our install directory
+                            # is eligible, never its separate download cache.
+                            installed = list(executable.parent.glob("*.AppImage"))
+                            if len(installed) != 1:
+                                raise ValueError("Expected one installed AppImage after update")
+                            image = installed[0]
                             with image.open("rb") as handle:
                                 digest = hashlib.file_digest(handle, "sha256").hexdigest()
                             if "sha256:" + digest != target_asset["digest"]:
@@ -421,6 +473,7 @@ def observe(args) -> dict:
                             unmodified_packages=True,
                             real_system_idle=True,
                             elapsed_seconds=round(time.time() - started, 2),
+                            main_sandbox_disabled="--no-sandbox" in process.cmdline(),
                         )
                         return result
                 except (
@@ -463,6 +516,8 @@ def observe(args) -> dict:
             entry = {"pid": process.pid, "name": process.info["name"]}
             try:
                 entry["executable"] = process.exe()
+                entry["parent_pid"] = process.ppid()
+                entry["arguments"] = process.cmdline()[:16]
                 entry["appimage"] = process.environ().get("APPIMAGE")
                 entry["appdir"] = process.environ().get("APPDIR")
             except (psutil.NoSuchProcess, psutil.AccessDenied) as error:
@@ -476,6 +531,7 @@ def observe(args) -> dict:
                 "name": path.name,
                 "exists": path.exists(),
                 "preferences": (path / "desktop-preferences.json").exists(),
+                "lock_pid": profile_process_id(path) if args.platform == "linux" else None,
             }
             for path in profiles(args.platform)
         ]

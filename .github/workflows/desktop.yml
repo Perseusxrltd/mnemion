@@ -3,6 +3,23 @@ name: Native desktop checks
 on:
   push:
     branches: [main, 'codex/**']
+    # Public-feed rehearsals and documentation-only hotfixes do not rebuild six
+    # installers. PRs stay unfiltered; every release still calls the full matrix.
+    paths:
+      - '.github/workflows/desktop.yml'
+      - '.github/workflows/release.yml'
+      - 'mnemion/**'
+      - 'studio/**'
+      - 'packages/client/**'
+      - 'client_tests/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - 'deploy/macos*'
+      - 'deploy/windows*'
+      - 'deploy/verify-mac-signature.mjs'
+      - 'deploy/notices.py'
+      - 'deploy/license-overrides/**'
+      - 'deploy/release*'
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -39,6 +56,10 @@ on:
 
 permissions:
   contents: read
+
+concurrency:
+  group: native-desktop-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}-${{ inputs.release || false }}-${{ inputs.architecture || 'all' }}
+  cancel-in-progress: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
 
 jobs:
   targets:

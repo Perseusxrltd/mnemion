@@ -3,7 +3,7 @@ import struct
 
 import pytest
 
-from deploy.public_update_probe import asar_json, installer_name, select_pairs
+from deploy.public_update_probe import asar_json, installer_name, profile_process_id, select_pairs
 
 
 def published(tag, pairs):
@@ -58,3 +58,39 @@ def test_asar_metadata_rejects_truncation_oversize_and_external_entries(tmp_path
     archive.write_bytes(b"\0")
     with pytest.raises(ValueError):
         asar_json(archive)
+
+
+def test_linux_main_process_is_taken_from_the_new_default_profile_lock(tmp_path):
+    import os
+
+    if os.name == "nt":
+        pytest.skip("Chromium uses SingletonLock symlinks on Linux")
+    lock = tmp_path / "SingletonLock"
+    assert profile_process_id(tmp_path) is None
+    lock.symlink_to("runner-with-hyphens-12345")
+    assert profile_process_id(tmp_path) == 12345
+    for invalid in ("runner-0", "runner-01", "../runner-12345", "runner-" + "9" * 100):
+        lock.unlink()
+        lock.symlink_to(invalid)
+        assert profile_process_id(tmp_path) is None
+
+
+def test_linux_archive_comes_from_the_running_mount_after_launcher_exec(tmp_path):
+    from types import SimpleNamespace
+
+    from deploy.public_update_probe import app_archive
+
+    archive = tmp_path / ".mount_Mnemion1/resources/app.asar"
+    archive.parent.mkdir(parents=True)
+    archive.write_bytes(b"running package")
+    process = SimpleNamespace(
+        exe=lambda: str(tmp_path / "installed/Mnemion.AppImage"),
+        cmdline=lambda: ["Mnemion Studio", "--background"],
+        children=lambda: [
+            SimpleNamespace(exe=lambda: str(archive.parent.parent / "mnemion-studio"))
+        ],
+    )
+    assert app_archive(process, "linux") == archive
+    archive.unlink()
+    with pytest.raises(FileNotFoundError):
+        app_archive(process, "linux")
