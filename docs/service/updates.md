@@ -1,6 +1,6 @@
 # Desktop background operation and updates
 
-Platform v1 is distributed as **4.0.0**. The first desktop release targets
+Platform v1 is distributed as **4.0.0**, published on 2026-10-10 for
 **macOS and Linux, on Intel/x64 and ARM64**. Windows packages remain under release
 validation. Download published installers from
 [the official product page](https://www.perseusxr.com/mnemion).

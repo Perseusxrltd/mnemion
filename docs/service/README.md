@@ -6,7 +6,7 @@ MCP access, and Obsidian exports. The [product page](https://www.perseusxr.com/m
 provides desktop downloads, and the [release notes](../releases/4.0.0.md) identify
 the supported packages and remaining platform work. Complete backup/recovery,
 v3 import with cutover and rollback, and Studio are implemented. The initial
-desktop release targets macOS and Linux; Windows release validation and larger
+desktop release is published for macOS and Linux; Windows release validation and larger
 concurrent-capacity measurements remain open.
 
 Use the [Compose deployment guide](deployment.md) for packaged initialization,

@@ -4,8 +4,8 @@ Updated: **2026-10-10**. Project maintainer: **PERSEUS LEGACY LIMITED**.
 
 ## Platform status
 
-The first platform-v1 desktop distribution targets macOS and Linux on both
-architectures. Each platform is published only after its complete installer,
+The first platform-v1 desktop distribution, **4.0.0**, is published for macOS and
+Linux on both architectures. Each platform is published only after its complete installer,
 update and native validation gates pass. Windows remains under release validation;
 it does not prevent users from receiving ready platforms. Published assets at
 [the product page](https://www.perseusxr.com/mnemion) determine availability.

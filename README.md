@@ -9,7 +9,7 @@ never gates downloads, usage or access.
 
 **Mnemion 4.0 is the first release of the rebuilt shared-memory platform.**
 Download published builds from [the official product page](https://www.perseusxr.com/mnemion).
-The first desktop distribution targets macOS and Linux on both architectures;
+Version **4.0.0 is published for macOS and Linux** on both architectures;
 Windows installers remain in release validation. Ready platforms are published
 while work on the others continues. Development and current documentation live
 on `main`.

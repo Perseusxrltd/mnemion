@@ -2,6 +2,10 @@
 
 Current distribution: **4.0.0**. Updated: **2026-10-10**.
 
+Published for **macOS and Linux, x64 and ARM64**. Downloads are available at
+[the official product page](https://www.perseusxr.com/mnemion). Windows remains
+the next desktop release priority; it is not offered as a completed installer.
+
 The rebuilt shared-memory platform is product v1; its package version is 4.0.0
 to upgrade correctly from the earlier 3.x product. This is a living delivery
 plan, not a claim that every planned capability is available. Release status and

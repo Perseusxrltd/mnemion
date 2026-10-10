@@ -205,3 +205,15 @@ validation continues. The release-target registry and platform-specific website
 gates require complete installer/update assets for each offered platform.
 Historical build counts above remain historical; the versioned release notes and
 current roadmap define current availability and outstanding work.
+
+
+## Platform v1 published
+
+Version **4.0.0** is public for macOS and Linux on Intel/x64 and ARM64, from
+`d66345a53329adf64c0745e599250ccddd6c8215`. Release workflow
+[38077770316](https://github.com/Perseusxrltd/mnemion/actions/runs/38077770316)
+passed all checks. The 26 immutable assets and their digests were verified after
+upload, and the four public installer URLs returned HTTP 200. Downloads, setup,
+release notes and the roadmap are available at
+https://www.perseusxr.com/mnemion. Windows remains the next platform delivery;
+see the current roadmap and dated validation report for the exact scope.
