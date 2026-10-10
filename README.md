@@ -140,3 +140,11 @@ keep credentials and private memory content out of public reports.
 Mnemion retains its MemPalace lineage and attribution. See [LICENSE](LICENSE) for
 the MIT license. The study distinguishes upstream design inspiration from features
 and performance independently verified in this implementation.
+
+## Documentation and roadmap
+
+Open **Documentation & roadmap** in Studio, or use the setup screen’s help link.
+The offline library ships the same Markdown as this repository. See the
+[product roadmap](docs/ROADMAP.md), [release notes](docs/releases/4.0.0.md), and
+[documentation maintenance policy](docs/MAINTENANCE.md). Every release and hotfix
+must include matching release notes and a reviewed roadmap.

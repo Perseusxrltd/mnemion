@@ -19,7 +19,9 @@
     "lucide-react": "^0.460.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
+    "react-markdown": "10.1.0",
     "react-router-dom": "^7.18.4",
+    "remark-gfm": "4.0.1",
     "sigma": "^3.0.3"
   },
   "devDependencies": {

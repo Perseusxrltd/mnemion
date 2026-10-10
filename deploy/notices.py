@@ -92,7 +92,24 @@ def native_python_licenses(root: Path, analysis: Path | None) -> list[Path]:
     # where PyInstaller cannot inventory them as separate extension files.
     # Match the actual binary, rather than assuming a CPython version identifies
     # its OpenSSL, compression, terminal, or other bundled dependencies.
-    if analysis is None or not ({"_ssl", "_hashlib", "zlib"} & set(sys.builtin_module_names)):
+    # Standard Windows CPython builds zlib into python3xx.dll. Include the
+    # matching upstream notice; this alone is not a standalone Unix runtime.
+    probes = {"_ssl", "_hashlib"} if sys.platform == "win32" else {"_ssl", "_hashlib", "zlib"}
+    if analysis is None:
+        return []
+    if not (probes & set(sys.builtin_module_names)):
+        if sys.platform == "win32" and "zlib" in sys.builtin_module_names:
+            import zlib
+
+            directory = root / "deploy" / "license-overrides"
+            catalog = json.loads((directory / "native-zlib.json").read_text(encoding="utf-8"))
+            record = catalog.get(zlib.ZLIB_RUNTIME_VERSION)
+            if not record or Path(record["file"]).name != record["file"]:
+                raise ValueError("Review the bundled Windows zlib notice for this runtime version")
+            path = directory / record["file"]
+            if hashlib.sha256(path.read_bytes()).hexdigest() != record["sha256"]:
+                raise ValueError("Native zlib notice checksum mismatch")
+            return [path]
         return []
     library = sysconfig.get_config_var("LDLIBRARY")
     if not library:

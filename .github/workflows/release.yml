@@ -43,4 +43,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           VERSION=$(python -c 'from mnemion.version import __version__; print(__version__)')
-          gh release create "v$VERSION" --target "$GITHUB_SHA" --draft --title "Mnemion $VERSION" --notes-file docs/releases/4.0.0.md release-artifacts/*
+          gh release create "v$VERSION" --target "$GITHUB_SHA" --draft --title "Mnemion $VERSION" --notes-file "docs/releases/$VERSION.md" release-artifacts/*

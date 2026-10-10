@@ -1,10 +1,10 @@
 {
   "evidence/api-auth-published.json": "224d882476a0a1847275c9152a4152ed5abe79468dffcde146e485cccc91b1ee",
   "evidence/api-auth-working.json": "0b0044b47eedf19b7f47339c6748131a744800df8f5b4873c0fcbf89728dba39",
-  "evidence/browser-console.log": "c5fca68ab97df0689e076a661fd4573c87a1ab3e86896b26e729da42897a1af8",
+  "evidence/browser-console.log": "882abb4b908cf3d61f60b60253e5241d75473838e9940b8600bf1b5d566d502b",
   "evidence/electron-audit-retry-result.json": "1c70644ead8ab9b8c9d7ac9fc9facbfd870fa6b937f9795d70be09511806d3d7",
   "evidence/electron-audit.json": "831fb81eab3b0b25af0377d9732ff9198ae19b20256a7695a37fefc0fd562592",
-  "evidence/electron-build.log": "de6308dfd4ce9abd2085f56a8c95b83e7a0f1cb49b541432bf54bfe3cc795b26",
+  "evidence/electron-build.log": "44a618f202477d9d3870f91791cf52893af4e16e243d01d6a3e15c8685f4fe8d",
   "evidence/electron-results.json": "dd7b608bc6db7dac07f65f7432c9c2797d01c7031a3a443400cb6a0908afc897",
   "evidence/frontend-audit.json": "f11aaebd385895ace9d75de017ed2781de0c3b655ad1e18d6fd8f8e4b118da3a",
   "evidence/frontend-build.log": "8f0bf8e716eda776717be72087a8f93d90b7d29271856ced5ad6e76389ff4902",

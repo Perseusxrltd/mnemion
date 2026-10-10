@@ -12,6 +12,7 @@ const ConnectorsView = lazy(() => import('./views/ConnectorsView'))
 const SettingsView = lazy(() => import('./views/SettingsView'))
 const CoreMemoryView = lazy(() => import('./views/CoreMemoryView'))
 const Workspace = lazy(() => import('./workspace/Workspace'))
+const Documentation = lazy(() => import('./workspace/Documentation'))
 
 // Electron loads the app from file://, so HashRouter is required.
 // In the browser dev server, BrowserRouter is fine.
@@ -36,6 +37,7 @@ export default function App() {
     <Router>
       <NativeNavigationBridge />
       <Routes>
+        <Route path="/help" element={lazyRoute(<Documentation />)} />
         <Route path="/workspace/*" element={lazyRoute(<Workspace />)} />
         <Route index element={<Navigate to="/workspace" replace />} />
         <Route element={<Layout />}>

@@ -13,7 +13,7 @@ from pathlib import Path
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--artifacts", type=Path, required=True)
+    parser.add_argument("--artifacts", type=Path)
     args = parser.parse_args()
     root = Path(__file__).resolve().parent.parent
     sys.path.insert(0, str(root))
@@ -24,10 +24,26 @@ def main() -> None:
 
     if version != __version__:
         raise ValueError("Python versions disagree")
+    notes = root / "docs" / "releases" / f"{version}.md"
+    if not notes.is_file() or not notes.read_text(encoding="utf-8").startswith(
+        f"# Mnemion {version}"
+    ):
+        raise ValueError("Add release notes for this version before shipping")
+    roadmap = (root / "docs" / "ROADMAP.md").read_text(encoding="utf-8")
+    if f"Current distribution: **{version}**" not in roadmap:
+        raise ValueError("Review and update the roadmap for this release")
+    client_version = tomllib.loads((root / "studio/client/pyproject.toml").read_text())["project"][
+        "version"
+    ]
+    if client_version != version:
+        raise ValueError("Desktop Python client version disagrees")
     for name in ("packages/client", "studio/frontend", "studio/electron"):
         for filename in ("package.json", "package-lock.json"):
             if json.loads((root / name / filename).read_text())["version"] != version:
                 raise ValueError(f"Version mismatch: {name}/{filename}")
+    if args.artifacts is None:
+        print(f"Validated Mnemion {version}: package versions, release notes and roadmap")
+        return
     files = list(args.artifacts.iterdir())
     for architecture in ("x64", "arm64"):
         for suffix in ("", "-mac", "-linux" if architecture == "x64" else "-linux-arm64"):

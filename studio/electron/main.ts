@@ -309,6 +309,7 @@ function buildApplicationMenu(): Menu {
     {
       label: 'Help',
       submenu: [
+        { label: 'Documentation and Roadmap', click: () => { void navigateTo('/help') } },
         { label: 'Team and Applications', click: () => { void navigateTo(legacyEnabled ? '/connect' : '/workspace/team') } },
         { label: 'Open Obsidian View', click: () => { void navigateTo(legacyEnabled ? '/settings' : '/workspace/obsidian') } },
         { type: 'separator' },

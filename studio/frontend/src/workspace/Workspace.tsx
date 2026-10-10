@@ -68,6 +68,7 @@ import { Agents } from "./Agents";
 import { KnowledgeView } from "./Knowledge";
 
 const InsightsView = lazy(() => import("./Insights"));
+const Documentation = lazy(() => import("./Documentation"));
 
 type Me = Awaited<ReturnType<MnemionClient["me"]>>;
 type Connection = { client: MnemionClient; me: Me; endpoint: string };
@@ -346,6 +347,7 @@ function Connect({
             Your key stays in this window’s memory. Disconnecting or reloading
             clears it.
           </small>
+          <Link className="ws-link" to="/help">Setup guides, documentation & roadmap</Link>
         </form>
         {import.meta.env.DEV && (
           <Link className="ws-link ws-legacy-link" to="/dashboard">
@@ -395,6 +397,7 @@ function Shell({
     ...(reviewer ? [{ to: "insights", label: "Insights & evaluations", icon: ChartNoAxesCombined }] : []),
     { to: "obsidian", label: "Obsidian", icon: Archive },
     { to: "agents", label: "Agents & apps", icon: Plug },
+    { to: "help", label: "Documentation & roadmap", icon: FileText },
     ...(me.administrator
       ? [{ to: "connections", label: "Connections", icon: Plug }, { to: "team", label: "People & apps", icon: Users }]
       : []),
@@ -550,6 +553,7 @@ function Shell({
                 <Route path="operations" element={<Operations />} />
                 <Route path="insights" element={<Suspense fallback={<Busy />}><InsightsView client={client} space={space.id} reviewer={reviewer} administrator={me.administrator} /></Suspense>} />
                 <Route path="obsidian" element={<Obsidian />} />
+                <Route path="help" element={<Suspense fallback={<Busy />}><Documentation /></Suspense>} />
                 <Route path="agents" element={<Agents endpoint={connection.endpoint} space={space.id} />} />
                 <Route path="team" element={<Team />} />
                 <Route path="connections" element={<Connections client={client} administrator={me.administrator} endpoint={connection.endpoint} selectSpace={setSelected} />} />

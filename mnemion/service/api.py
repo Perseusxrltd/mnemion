@@ -564,6 +564,7 @@ def create_app(database: Database | None = None, embedder: Embedder | None = Non
         app.mount("/assets", StaticFiles(directory=studio / "assets"), name="studio-assets")
 
         @app.get("/", include_in_schema=False)
+        @app.get("/help", include_in_schema=False)
         @app.get("/workspace", include_in_schema=False)
         @app.get("/workspace/{route:path}", include_in_schema=False)
         def studio_page(route: str = ""):

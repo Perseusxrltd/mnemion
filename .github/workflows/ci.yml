@@ -76,6 +76,7 @@ jobs:
       - run: uv sync --locked --group dev
       - run: uv run --no-sync ruff check .
       - run: uv run --no-sync ruff format --check .
+      - run: python deploy/release.py
       - run: git ls-files -z '*.sh' | xargs -0 -r -n 1 bash -n
 
   dependency-audit:

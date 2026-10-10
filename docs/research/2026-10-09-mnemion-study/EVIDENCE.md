@@ -134,3 +134,13 @@ python /path/to/study/probes/probe_obsidian.py --repo /path/to/audited-copy --ou
 In each copied `studio/frontend` and `studio/electron` directory, installation used `npm ci --ignore-scripts`, followed by `npm run build` and `npm audit --audit-level=high --json`. Skipping installation scripts is why this verifies frontend assets and Electron TypeScript, not an installed Electron binary. Python auditing used `pip-audit --path <working-venv-site-packages> --format=json` from a separate tool environment.
 
 The [validation summary](evidence/validation.json), pytest logs/JUnit reports, command-result records, build logs, and audit reports preserve the outcomes. No public dataset comparison, real-team workload, exhaustive adversarial analysis, packaged desktop run, or distributed crash matrix was completed. Proposed v4 guarantees and latency targets must be tested during implementation; the current results do not establish them.
+
+## Evidence text normalization, 2026-10-10
+
+Repository cleanup removed trailing whitespace and an extra terminal blank line
+from the following retained text logs. No command output content or recorded
+result was changed. The checksum manifest now describes the normalized files;
+original and normalized SHA-256 values are retained here for provenance.
+
+- `evidence/browser-console.log`: original `c5fca68ab97df0689e076a661fd4573c87a1ab3e86896b26e729da42897a1af8`; normalized `882abb4b908cf3d61f60b60253e5241d75473838e9940b8600bf1b5d566d502b`.
+- `evidence/electron-build.log`: original `de6308dfd4ce9abd2085f56a8c95b83e7a0f1cb49b541432bf54bfe3cc795b26`; normalized `44a618f202477d9d3870f91791cf52893af4e16e243d01d6a3e15c8685f4fe8d`.
