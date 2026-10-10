@@ -9,12 +9,17 @@ on:
         description: Current public release to verify (latest or vX.Y.Z)
         default: latest
         type: string
+      platform:
+        description: Rehearse all platforms or one platform during investigation
+        type: choice
+        default: all
+        options: [all, windows, macos, linux]
 
 permissions:
   contents: read
 
 concurrency:
-  group: public-desktop-updates
+  group: public-desktop-updates-${{ inputs.platform || 'all' }}
   cancel-in-progress: true
 
 jobs:
@@ -33,7 +38,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           MNEMION_PROBE_TAG: ${{ inputs.tag || github.event.release.tag_name || 'latest' }}
-        run: python -m deploy.public_update_probe --select --tag "$MNEMION_PROBE_TAG" >> "$GITHUB_OUTPUT"
+          MNEMION_PROBE_SELECTION: ${{ inputs.platform || 'all' }}
+        run: python -m deploy.public_update_probe --select --tag "$MNEMION_PROBE_TAG" --selection-platform "$MNEMION_PROBE_SELECTION" >> "$GITHUB_OUTPUT"
       - name: Record selection
         env:
           MNEMION_PROBE_MATRIX: ${{ steps.select.outputs.matrix }}
@@ -67,12 +73,12 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb libgtk-3-0 libnss3 libgbm1 libasound2 libnotify4 libfuse2
+          sudo apt-get install -y xvfb dbus-x11 libgtk-3-0 libnss3 libgbm1 libasound2 libnotify4 libfuse2
       - name: Install public release and observe its automatic update
         shell: bash
         run: |
           if [ "$RUNNER_OS" = Linux ]; then
-            xvfb-run -a python -m deploy.public_update_probe --from-tag "$MNEMION_PROBE_FROM" --to-tag "$MNEMION_PROBE_TO" --platform "$MNEMION_PROBE_PLATFORM" --arch "$MNEMION_PROBE_ARCH" --output "$RUNNER_TEMP/public-mnemion-upgrade"
+            dbus-run-session -- xvfb-run -a python -m deploy.public_update_probe --from-tag "$MNEMION_PROBE_FROM" --to-tag "$MNEMION_PROBE_TO" --platform "$MNEMION_PROBE_PLATFORM" --arch "$MNEMION_PROBE_ARCH" --output "$RUNNER_TEMP/public-mnemion-upgrade"
           else
             python -m deploy.public_update_probe --from-tag "$MNEMION_PROBE_FROM" --to-tag "$MNEMION_PROBE_TO" --platform "$MNEMION_PROBE_PLATFORM" --arch "$MNEMION_PROBE_ARCH" --output "$RUNNER_TEMP/public-mnemion-upgrade"
           fi

@@ -453,6 +453,34 @@ def observe(args) -> dict:
         )
     finally:
         result["observed_process_versions"] = observed
+        candidates = []
+        for process in psutil.process_iter(["pid", "name", "create_time"]):
+            if (
+                "mnemion" not in (process.info.get("name") or "").lower()
+                or process.info.get("create_time", 0) < started - 1
+            ):
+                continue
+            entry = {"pid": process.pid, "name": process.info["name"]}
+            try:
+                entry["executable"] = process.exe()
+                entry["appimage"] = process.environ().get("APPIMAGE")
+                entry["appdir"] = process.environ().get("APPDIR")
+            except (psutil.NoSuchProcess, psutil.AccessDenied) as error:
+                entry["inspection_error"] = type(error).__name__
+            candidates.append(entry)
+            if len(candidates) >= 20:
+                break
+        result["candidate_processes"] = candidates
+        result["profile_directories"] = [
+            {
+                "name": path.name,
+                "exists": path.exists(),
+                "preferences": (path / "desktop-preferences.json").exists(),
+            }
+            for path in profiles(args.platform)
+        ]
+        result["initial_launcher_pid"] = child.pid
+        result["initial_launcher_exit"] = child.poll()
         (root / "result.json").write_text(json.dumps(result, indent=2) + "\n")
         (root / "application.log").write_bytes(b"".join(log)[-32768:])
         for process in app_processes(executable, args.platform, started):
@@ -472,6 +500,9 @@ def observe(args) -> dict:
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--select", action="store_true")
+    parser.add_argument(
+        "--selection-platform", choices=["all", "windows", "macos", "linux"], default="all"
+    )
     parser.add_argument("--tag", default="latest")
     parser.add_argument("--from-tag")
     parser.add_argument("--to-tag")
@@ -486,6 +517,8 @@ def main():
         else:
             previous = json.loads(fetch(API.removesuffix("/latest") + "?per_page=5", api=True))
             selected, skipped = select_pairs(target, previous)
+            if args.selection_platform != "all":
+                selected = [row for row in selected if row["platform"] == args.selection_platform]
         print("matrix=" + json.dumps(selected))
         print("available=" + str(bool(selected)).lower())
         print("skipped=" + json.dumps(skipped))
