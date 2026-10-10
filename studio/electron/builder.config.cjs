@@ -5,6 +5,10 @@ const sparkle = require('./native/sparkle.json')
 for (const name of ['CSC_LINK', 'CSC_KEY_PASSWORD', 'APPLE_ID', 'APPLE_APP_SPECIFIC_PASSWORD', 'APPLE_TEAM_ID']) {
   if (process.env[name] === '') delete process.env[name]
 }
+// The bundled NSIS decoder cannot extract 7-Zip's automatic ARM64/BCJ2 streams.
+// Use the supported single-stream filter; otherwise installers can exit 0 while
+// silently omitting executable files. electron-builder upstream issue #9983.
+if (process.platform === 'win32') process.env.ELECTRON_BUILDER_7Z_FILTER = 'BCJ'
 // Unique feeds prevent x64/ARM artifacts from overwriting each other's metadata.
 module.exports = {
   ...build,

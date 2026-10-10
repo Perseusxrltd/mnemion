@@ -30,6 +30,14 @@ can connect to an organization server without downloading an embedding or
 language model. Resource limits must be explicit; memory capacity depends on the
 server configuration rather than every employee owning a powerful computer.
 
+End-to-end agent operation is an explicit acceptance requirement. Agents need
+documented, discoverable API, CLI and MCP routes for setup, source management,
+memory organization, retrieval, model/librarian configuration, evaluations,
+diagnostics, recovery and maintenance. Use scoped identities, explicit egress
+policy, auditable operations and durable results that agents can inspect and
+retry. A manual-only screen is a parity gap, not a completed agent workflow.
+Administrative authority remains distinct from ordinary memory access.
+
 ## Implemented for the first shared-platform release
 
 | Area | Available behavior | Documentation |

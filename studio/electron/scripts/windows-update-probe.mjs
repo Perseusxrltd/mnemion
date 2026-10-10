@@ -3,6 +3,7 @@ import { createReadStream, createWriteStream, existsSync, readFileSync, writeFil
 import { cp, mkdir, readdir, rename, rm } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { createRequire } from 'node:module'
 import { createServer } from 'node:http'
 import { createHash, generateKeyPairSync, randomUUID, sign } from 'node:crypto'
 import { spawn, spawnSync } from 'node:child_process'
@@ -11,6 +12,8 @@ import { NtExecutable, NtExecutableResource, Resource } from 'resedit'
 import { root, platformArtifacts, packageJson } from './platform-artifacts.mjs'
 
 if (process.platform !== 'win32') throw new Error('Run this rehearsal on native Windows')
+// The disposable packages use the production archive policy as well.
+createRequire(import.meta.url)('../builder.config.cjs')
 const outputIndex = process.argv.indexOf('--output')
 if (outputIndex === -1 || !process.argv[outputIndex + 1]) throw new Error('Pass a fresh --output directory')
 const output = resolve(process.argv[outputIndex + 1])
@@ -25,7 +28,7 @@ const target = `${parts[0]}.${parts[1]}.${parts[2] + 1}`
 const id = randomUUID().replaceAll('-', '').slice(0, 12)
 const productName = `Mnemion Update Probe ${id}`
 const applicationId = `com.perseusxr.mnemion.update-probe.${id}`
-const installed = join(output, 'installed')
+const installed = join(output, 'installed with spaces')
 const receipt = join(output, 'events.jsonl')
 const userData = join(output, 'user-data')
 await mkdir(userData)
@@ -146,6 +149,25 @@ async function prepare(buildVersion) {
   return join(destination, `Mnemion-Studio-${buildVersion}-windows-${process.arch}.exe`)
 }
 
+async function verifyInstalledBinaries(expected, actual) {
+  let count = 0
+  for (const entry of await readdir(expected, { withFileTypes: true })) {
+    const sourcePath = join(expected, entry.name), installedPath = join(actual, entry.name)
+    if (entry.isDirectory()) { count += await verifyInstalledBinaries(sourcePath, installedPath); continue }
+    if (!/\.(?:exe|dll|node|pyd)$/i.test(entry.name)) continue
+    if (!existsSync(installedPath)) throw new Error(`NSIS did not extract a required binary: ${entry.name}`)
+    const hashes = []
+    for (const path of [sourcePath, installedPath]) {
+      const hash = createHash('sha256')
+      for await (const bytes of createReadStream(path)) hash.update(bytes)
+      hashes.push(hash.digest('hex'))
+    }
+    if (hashes[0] !== hashes[1]) throw new Error(`NSIS changed an installed binary: ${entry.name}`)
+    count++
+  }
+  return count
+}
+
 try {
   const initial = await prepare(version)
   installerPath = await prepare(target)
@@ -172,6 +194,7 @@ try {
       packageFiles: (await readdir(join(output, 'packages', version))).slice(0, 40) }, null, 2))
     throw new Error('NSIS first installation did not create the application')
   }
+  const installedBinaries = await verifyInstalledBinaries(join(output, 'packages', version), installed)
   const electronLog = createWriteStream(join(output, 'electron.log'))
   child = spawn(executable, [], { stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true, env })
   child.stdout.pipe(electronLog, { end: false }); child.stderr.pipe(electronLog, { end: false })
@@ -192,6 +215,7 @@ try {
   }
   if (!relaunched || relaunched.version !== target || relaunched.pid === child.pid) throw new Error('NSIS did not replace and relaunch the target application')
   process.kill(relaunched.pid, 0)
+  const updatedBinaries = await verifyInstalledBinaries(join(output, 'packages', target), installed)
   if (events.filter(event => event.event === 'install-authorized').length !== 1
     || !events.some(event => event.event === 'guards-passed') || !events.some(event => event.event === 'cancelled-transfer')
     || !events.some(event => event.event === 'native-redirect-verified')) throw new Error('Native Windows guards and recovery checks were incomplete')
@@ -201,6 +225,7 @@ try {
   if (requests.some(request => request.path.endsWith('.exe') && ['bad-signature', 'wrong-architecture', 'oversized', 'older'].includes(request.mode))) throw new Error('Rejected metadata triggered a payload download')
   if (createHash('sha256').update(readFileSync(join(source.resources, 'app.asar'))).digest('hex') !== sourceHash) throw new Error('The production package was changed by the fixture')
   const result = { architecture: process.arch, originalVersion: version, updatedVersion: target, downloads,
+    installedBinaries, updatedBinaries, binaryHashesPreserved: true, installationPathWithSpaces: true,
     nativeNsisFirstInstallation: true, nativeReplacementAndRelaunch: true, packagedDesktopController: true,
     signedMetadataAndCachedInstallerVerified: true, focusTransferDraftIdleGuards: true,
     nativeManualRedirects: true,

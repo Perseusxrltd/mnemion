@@ -66,6 +66,14 @@ represent system inactivity and in-flight work. A successful run records its
 scope in `result.json`; job failure prints bounded diagnostics. Do not infer
 native results from passing unit tests.
 
+The archive builder pins the supported BCJ filter. Native ARM64 installation
+exposed [electron-builder issue 9983](https://github.com/electron-userland/electron-builder/issues/9983):
+the newer 7-Zip packer can produce ARM64/BCJ2 streams that the bundled NSIS decoder
+silently skips, leaving data files but no executable or DLLs despite exit code 0.
+The regression check compares every installed EXE/DLL/PYD/native-module hash with
+the packaged input after both first installation and upgrade, using a destination
+with spaces. The same packing policy applies to release and disposable packages.
+
 ## Release maintenance
 
 The public configuration is `studio/electron/native/windows-updates.json`.
