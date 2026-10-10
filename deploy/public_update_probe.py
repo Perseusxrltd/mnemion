@@ -315,6 +315,57 @@ def profile_process_id(profile: Path) -> int | None:
     return int(match[1]) if match else None
 
 
+def process_active(pid: int) -> bool:
+    import psutil
+
+    try:
+        process = psutil.Process(pid)
+        return process.is_running() and process.status() not in {
+            psutil.STATUS_ZOMBIE,
+            psutil.STATUS_DEAD,
+        }
+    except psutil.NoSuchProcess:
+        return False
+
+
+def linux_idle_seconds() -> float | None:
+    """Observe X11 inactivity without generating input or changing app policy."""
+    import ctypes as c
+
+    class Info(c.Structure):
+        _fields_ = [
+            ("window", c.c_ulong),
+            ("state", c.c_int),
+            ("kind", c.c_int),
+            ("since", c.c_ulong),
+            ("idle", c.c_ulong),
+            ("mask", c.c_ulong),
+        ]
+
+    try:
+        x11, xss = c.CDLL("libX11.so.6"), c.CDLL("libXss.so.1")
+    except OSError:
+        return None
+    x11.XOpenDisplay.argtypes, x11.XOpenDisplay.restype = [c.c_char_p], c.c_void_p
+    x11.XDefaultRootWindow.argtypes, x11.XDefaultRootWindow.restype = [c.c_void_p], c.c_ulong
+    x11.XCloseDisplay.argtypes = [c.c_void_p]
+    x11.XFree.argtypes = [c.c_void_p]
+    xss.XScreenSaverAllocInfo.restype = c.POINTER(Info)
+    xss.XScreenSaverQueryInfo.argtypes = [c.c_void_p, c.c_ulong, c.POINTER(Info)]
+    display = x11.XOpenDisplay(None)
+    if not display:
+        return None
+    info = xss.XScreenSaverAllocInfo()
+    try:
+        if info and xss.XScreenSaverQueryInfo(display, x11.XDefaultRootWindow(display), info):
+            return round(info.contents.idle / 1000, 2)
+        return None
+    finally:
+        if info:
+            x11.XFree(info)
+        x11.XCloseDisplay(display)
+
+
 def app_archive(process, system: str) -> Path:
     path = Path(process.exe())
     if system == "linux":
@@ -435,7 +486,7 @@ def observe(args) -> dict:
                     ):
                         time.sleep(10)
                         child.poll()
-                        if not process.is_running() or psutil.pid_exists(original):
+                        if not process_active(process.pid) or process_active(original):
                             continue
                         if (profile / "public-upgrade-sentinel.bin").read_bytes() != sentinel or (
                             profile / "desktop-preferences.json"
@@ -500,6 +551,9 @@ def observe(args) -> dict:
                             "elapsed_seconds": elapsed,
                             "observed_versions": sorted(set(observed.values())),
                             "waiting_for": args.to_tag,
+                            "x11_idle_seconds": linux_idle_seconds()
+                            if args.platform == "linux"
+                            else None,
                         }
                     ),
                     flush=True,
@@ -522,6 +576,7 @@ def observe(args) -> dict:
             try:
                 entry["executable"] = process.exe()
                 entry["parent_pid"] = process.ppid()
+                entry["status"] = process.status()
                 entry["arguments"] = process.cmdline()[:16]
                 entry["appimage"] = process.environ().get("APPIMAGE")
                 entry["appdir"] = process.environ().get("APPDIR")
@@ -542,6 +597,18 @@ def observe(args) -> dict:
         ]
         result["initial_launcher_pid"] = child.pid
         result["initial_launcher_exit"] = child.poll()
+        if args.platform == "linux":
+            result["x11_idle_seconds"] = linux_idle_seconds()
+            result["installed_files"] = [
+                {"name": path.name, "bytes": path.stat().st_size}
+                for path in executable.parent.glob("*.AppImage")
+            ][:5]
+            cache = Path.home() / ".cache/mnemion-studio-updater"
+            result["update_cache"] = [
+                {"name": str(path.relative_to(cache)), "bytes": path.stat().st_size}
+                for path in cache.glob("*/*")
+                if path.is_file()
+            ][:20]
         (root / "result.json").write_text(json.dumps(result, indent=2) + "\n")
         (root / "application.log").write_bytes(b"".join(log)[-32768:])
         for process in app_processes(executable, args.platform, started):

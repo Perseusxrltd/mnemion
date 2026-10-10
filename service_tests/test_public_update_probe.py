@@ -94,3 +94,23 @@ def test_linux_archive_comes_from_the_running_mount_after_launcher_exec(tmp_path
     archive.unlink()
     with pytest.raises(FileNotFoundError):
         app_archive(process, "linux")
+
+
+def test_exited_posix_child_is_not_mistaken_for_a_running_application():
+    import os
+    import subprocess
+    import sys
+
+    import psutil
+
+    from deploy.public_update_probe import process_active
+
+    if not hasattr(os, "waitid") or not hasattr(os, "WNOWAIT"):
+        pytest.skip("This regression concerns POSIX zombie processes")
+    child = subprocess.Popen([sys.executable, "-c", "pass"])
+    try:
+        os.waitid(os.P_PID, child.pid, os.WEXITED | os.WNOWAIT)
+        assert psutil.pid_exists(child.pid)
+        assert not process_active(child.pid)
+    finally:
+        child.wait(timeout=5)
