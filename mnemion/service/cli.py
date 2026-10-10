@@ -10,7 +10,7 @@ import signal
 import threading
 from pathlib import Path
 
-from .embeddings import LocalEmbedder
+from .model_registry import ModelRegistry
 
 
 def _private_json(path: Path, data: dict) -> None:
@@ -24,14 +24,6 @@ def _required(name: str) -> str:
     if not value:
         raise ValueError(f"Set {name}")
     return value
-
-
-def _model() -> LocalEmbedder:
-    return LocalEmbedder(
-        os.environ.get("MNEMION_MODEL_CACHE", str(Path.home() / ".cache/mnemion/models")),
-        threads=int(os.environ.get("MNEMION_MODEL_THREADS", "2")),
-        offline=os.environ.get("MNEMION_MODEL_OFFLINE") == "1",
-    )
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -70,8 +62,17 @@ def main(argv: list[str] | None = None) -> int:
     )
     worker = commands.add_parser("worker", help="Run durable indexing and deletion work")
     worker.add_argument("--once", action="store_true")
-    commands.add_parser(
-        "prepare-model", help="Download and verify the pinned local multilingual model"
+    prepare = commands.add_parser(
+        "prepare-model", help="Prepare a configured local model or pinned endpoint tokenizer"
+    )
+    prepare.add_argument("--profile", default="e5-small")
+    models = commands.add_parser(
+        "models", help="List operator-approved embedding profiles without inference"
+    )
+    models.add_argument(
+        "--register",
+        action="store_true",
+        help="Register generation identities with the owner database login",
     )
     schema = commands.add_parser(
         "schema", help="Write the versioned OpenAPI contract without connecting to a database"
@@ -322,13 +323,30 @@ def main(argv: list[str] | None = None) -> int:
             timeout_graceful_shutdown=30,
         )
     elif args.command == "prepare-model":
-        model = _model()
-        model.prepare()
-        print(
-            json.dumps(
-                {"generation_id": model.generation.id, "dimensions": model.generation.dimensions}
+        registry = ModelRegistry.from_environment()
+        try:
+            model = registry.profile(args.profile)
+            model.prepare()
+            print(
+                json.dumps(
+                    {
+                        "generation_id": model.generation.id,
+                        "dimensions": model.generation.dimensions,
+                    }
+                )
             )
-        )
+        finally:
+            registry.close()
+    elif args.command == "models":
+        registry = ModelRegistry.from_environment()
+        if args.register:
+            import psycopg
+            from .admin import register_generation
+
+            with psycopg.connect(_required("MNEMION_ADMIN_DATABASE_URL")) as conn:
+                for generation in registry.generation_ids:
+                    register_generation(conn, registry.get(generation).generation)
+        print(json.dumps({"profiles": registry.describe(), "registered": args.register}))
     elif args.command == "schema":
         from .api import create_app
         from .db import Database
@@ -424,7 +442,7 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({"profile": str(args.profile), "paused": False}))
     elif args.command == "worker":
         from .db import Database
-        from .worker import Worker
+        from .model_worker import ModelWorker
         from .telemetry import Telemetry
 
         database = Database(_required("MNEMION_WORKER_DATABASE_URL"), worker=True)
@@ -435,9 +453,8 @@ def main(argv: list[str] | None = None) -> int:
         for sig in (signal.SIGINT, signal.SIGTERM):
             signal.signal(sig, lambda *_: stop.set())
         try:
-            model = _model()
-            model.prepare()
-            process = Worker(database, model, telemetry=telemetry)
+            registry = ModelRegistry.from_environment()
+            process = ModelWorker(database, registry, telemetry=telemetry)
             if args.once:
                 print(json.dumps({"processed": process.run_once()}))
             else:
@@ -446,6 +463,8 @@ def main(argv: list[str] | None = None) -> int:
                         stop.wait(0.5)
         finally:
             telemetry.stop()
+            if "registry" in locals():
+                registry.close()
             database.close()
     elif args.command == "mcp":
         from .mcp import create_mcp

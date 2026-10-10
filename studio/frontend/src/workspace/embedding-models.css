@@ -1,0 +1,11 @@
+.model-fingerprint { display: block; overflow-wrap: anywhere; font-size: 12px; }
+.model-json { max-height: 360px; overflow: auto; }
+.model-settings .ws-section-title h2 { display: flex; align-items: center; gap: 8px; }
+.model-candidate progress { appearance: none; display: block; width: 100%; height: 12px; margin: 12px 0; border: 0; border-radius: 6px; overflow: hidden; background: var(--ws-border); }
+.model-candidate progress::-webkit-progress-bar { background: var(--ws-border); }
+.model-candidate progress::-webkit-progress-value { background: var(--ws-accent); }
+.model-candidate progress::-moz-progress-bar { background: var(--ws-accent); }
+.model-progress-caption { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
+.model-preview-hit { padding: 12px 0; border-top: 1px solid var(--border, #303a3c); }
+.model-preview-hit p { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 180px; overflow: auto; }
+.model-candidate .ws-form { margin-top: 24px; }

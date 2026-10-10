@@ -59,7 +59,7 @@ configure the listener. For network deployment, put the API behind a TLS proxy
 and configure allowed browser origins with `MNEMION_CORS_ORIGINS`.
 
 The worker downloads and verifies the pinned multilingual E5 small ONNX model
-on first startup. No paid model key is needed. Prepare the cache explicitly with:
+when first needed. No paid model key is needed. Prepare the cache explicitly with:
 
 ```bash
 uv run --no-sync mnemion-service prepare-model
@@ -67,9 +67,12 @@ uv run --no-sync mnemion-service prepare-model
 
 `MNEMION_MODEL_CACHE` selects the cache location; `MNEMION_MODEL_OFFLINE=1`
 requires the files to be present already. `MNEMION_MODEL_THREADS` defaults to 2.
-The API and worker must use the same embedding generation. The generation
+The API and worker must use the same approved model configuration. Each space
+can select a generation through a controlled candidate reindex. The generation
 includes the model revision, tokenizer/model hashes, dimensions, query/document
 prefixes, pooling, normalization, and chunking configuration.
+See [embedding models](embeddings.md) for the small English CPU option, approved
+local/cloud endpoints, per-space egress approval, comparisons and rollback.
 
 ## Studio
 
@@ -258,9 +261,10 @@ terminal failures, and reviewer-triggered retries are implemented.
 The initial retrieval engine uses PostgreSQL text search and **exact**, scoped
 vector distances with rank fusion. It does not yet claim approximate-index
 performance at large scale. Scores describe relevance, not truth probability.
-Context packs count their complete rendered text with the pinned model's
-tokenizer and report the tokenizer/generation; applications using another model
-must account for that model's tokenizer and their surrounding prompt.
+Context packs count their complete rendered text with the selected tokenizer
+or explicitly labelled UTF-8 byte budgeting. They report `token_count_unit`, the
+tokenizer and generation. Cross-generation context uses byte budgeting;
+applications must account for their answering model and surrounding prompt.
 
 Current limits include 65,536 characters per memory, a 2 MB request body, 50
 recall results, and 1,000 explicitly selected spaces. `all_accessible: true` resolves up to 10,000 current readable scopes. Obsidian artifacts are limited to 10,000

@@ -323,3 +323,143 @@ def test_restore_rejects_a_stale_ledger_and_existing_database(env, pg_bin, tmp_p
             pg_bin=pg_bin,
         )
     assert exists(env.admin_dsn, destination)
+
+
+def test_restore_requires_fresh_model_endpoint_consent(
+    env, postgres, pg_bin, tmp_path, destination
+):
+    import httpx
+    from mnemion.service.admin import register_generation
+    from mnemion.service.embedding_models import ReindexControl, ReindexInput
+    from mnemion.service.http_embeddings import HttpEmbedder
+    from mnemion.service.model_config import RemoteEmbeddingProfile
+    from mnemion.service.model_registry import ModelRegistry
+    from mnemion.service.reindex import ReindexBackfill, ReindexService
+    from mnemion.service.worker import Worker
+
+    calls = []
+
+    def respond(request):
+        inputs = json.loads(request.content)["input"]
+        calls.append(len(inputs))
+        return httpx.Response(
+            200,
+            json={
+                "model": "fixture-model",
+                "data": [{"index": index, "embedding": [1, 0]} for index, _ in enumerate(inputs)],
+            },
+        )
+
+    models = [
+        HttpEmbedder(
+            RemoteEmbeddingProfile(
+                id=f"cloud-{index}",
+                label=f"Cloud fixture {index}",
+                protocol="openai",
+                endpoint="https://fixture.example/v1/embeddings",
+                model="fixture-model",
+                revision=str(index),
+                dimensions=2,
+            ),
+            tmp_path,
+            transport=httpx.MockTransport(respond),
+        )
+        for index in (1, 2)
+    ]
+    registry = ModelRegistry(
+        env.embedder, {"baseline": env.embedder, "cloud-1": models[0], "cloud-2": models[1]}
+    )
+    with psycopg.connect(env.admin_dsn) as conn:
+        for model in models:
+            register_generation(conn, model.generation)
+    env.memory.save(
+        env.owner, env.space, MemoryInput(content="synthetic backup policy evidence"), uuid4().hex
+    )
+    service = ReindexService(env.db, registry)
+    state = service.start(
+        env.owner,
+        env.space,
+        ReindexInput(profile_id="cloud-1", expected_version=0, approve_network_egress=True),
+        uuid4().hex,
+    )
+    backfill = ReindexBackfill(env.worker_db, registry)
+    while backfill.run_once():
+        pass
+    worker = Worker(env.worker_db, models[0], default_generation=env.embedder.generation.id)
+    while worker.run_once():
+        pass
+    state = service.control(
+        env.owner, env.space, UUID(state["candidate"]["id"]), "activate", state["version"]
+    )
+    service.start(
+        env.owner,
+        env.space,
+        ReindexInput(
+            profile_id="cloud-2", expected_version=state["version"], approve_network_egress=True
+        ),
+        uuid4().hex,
+    )
+    archive, ledger, credentials = (
+        tmp_path / name for name in ("models.mnemion", "ledger.json", "owners.json")
+    )
+    recovery.create_backup(env.admin_dsn, archive, pg_bin=pg_bin)
+    recovery.export_ledger(env.admin_dsn, ledger)
+    recovery.restore_backup(
+        env.admin_dsn,
+        archive,
+        database_name=destination,
+        deletion_ledger=ledger,
+        credentials_output=credentials,
+        pg_bin=pg_bin,
+    )
+    restored = Database(make_conninfo(postgres[1], dbname=destination))
+    restored.open()
+    try:
+        owner = next(
+            row
+            for row in json.loads(credentials.read_text())["organizations"]
+            if row["tenant_id"] == str(env.owner.tenant_id)
+        )
+        identity = restored.authenticate(owner["api_key"])
+        service = ReindexService(restored, registry)
+        state = service.read(identity, env.space)
+        assert state["inference_paused"] and state["candidate"]["state"] == "paused"
+        assert state["candidate"]["network_egress_approved"] is False
+        previous_calls = len(calls)
+        result = RetrievalService(restored, env.embedder, registry=registry).recall(
+            identity, RecallInput(query="backup", space_ids=[env.space])
+        )
+        assert result["hits"] and "semantic_unavailable_lexical_only" in result["warnings"]
+        assert len(calls) == previous_calls
+        with pytest.raises(ServiceError) as caught:
+            service.resume_processing(
+                identity, env.space, ReindexControl(expected_version=state["version"])
+            )
+        assert caught.value.code == "embedding_egress_approval_required"
+        state = service.resume_processing(
+            identity,
+            env.space,
+            ReindexControl(expected_version=state["version"], approve_network_egress=True),
+        )
+        assert not state["inference_paused"]
+        with pytest.raises(ServiceError) as caught:
+            service.control(
+                identity, env.space, UUID(state["candidate"]["id"]), "resume", state["version"]
+            )
+        assert caught.value.code == "embedding_egress_approval_required"
+        state = service.control(
+            identity,
+            env.space,
+            UUID(state["candidate"]["id"]),
+            "resume",
+            state["version"],
+            approve_network_egress=True,
+        )
+        assert (
+            state["candidate"]["state"] == "running"
+            and state["candidate"]["network_egress_approved"]
+        )
+        assert len(calls) == previous_calls
+    finally:
+        restored.close()
+        registry.close()

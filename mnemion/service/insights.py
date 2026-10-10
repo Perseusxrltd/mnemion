@@ -15,6 +15,7 @@ from .db import Database, Identity, require_administrator, require_space
 from .embeddings import Embedder
 from .errors import ServiceError
 from .models import json_value
+from .model_state import active_generations
 from .telemetry import COUNTERS, LATENCY_BOUNDS_MS, Telemetry, percentile_bound
 
 
@@ -129,7 +130,7 @@ class InsightsService:
                     "space_id": space,
                     "observed_at": now,
                     "snapshot_cache_seconds": self.cache_seconds,
-                    "generation_id": self.embedder.generation.id,
+                    "generation_id": snapshot["generation_id"],
                     **snapshot,
                     "changes": changes,
                     "queue_latency": latency,
@@ -158,13 +159,13 @@ class InsightsService:
             self._capacity.release()
 
     def _snapshot(self, conn, identity: Identity, space: UUID) -> dict:
-        key = (identity, space, self.embedder.generation.id)
+        generation = active_generations(conn, [space], self.embedder.generation.id)[space]
+        key = (identity, space, generation)
         with self._lock:
             previous = self._cache.get(key)
             if previous and time.monotonic() - previous[0] < self.cache_seconds:
                 self._cache.move_to_end(key)
                 return previous[1]
-        generation = self.embedder.generation.id
         current = """FROM mnemion.memories m JOIN mnemion.memory_revisions r
             ON r.tenant_id=m.tenant_id AND r.space_id=m.space_id AND r.id=m.current_revision_id
             WHERE m.space_id=%(space)s AND m.deleted_at IS NULL"""
@@ -270,6 +271,7 @@ class InsightsService:
                     (space,),
                 ).fetchall()
         result = {
+            "generation_id": generation,
             "snapshot_at": datetime.now(timezone.utc),
             "memory": {
                 **counts,
@@ -290,7 +292,12 @@ class InsightsService:
 
 
 def runtime_insights(
-    database: Database, identity: Identity, embedder: Embedder, telemetry: Telemetry
+    database: Database,
+    identity: Identity,
+    embedder: Embedder,
+    telemetry: Telemetry,
+    *,
+    registry=None,
 ) -> dict:
     with database.transaction(identity) as conn:
         require_administrator(conn)
@@ -309,6 +316,20 @@ def runtime_insights(
         "generation_id": embedder.generation.id,
         "dimensions": embedder.generation.dimensions,
         "configuration": embedder.generation.configuration,
+        "models": [
+            {
+                "generation_id": model.generation.id,
+                "model": model.generation.model,
+                "model_loaded": getattr(model, "_model", None) is not None
+                if hasattr(model, "_model")
+                else None,
+                "configuration": model.generation.configuration,
+                "provider": model.snapshot() if hasattr(model, "snapshot") else None,
+            }
+            for model in (registry.get(generation) for generation in registry.generation_ids)
+        ]
+        if registry
+        else [],
         "pool": database.pool.get_stats(),
         "resources": process_resources(),
         "notices": [

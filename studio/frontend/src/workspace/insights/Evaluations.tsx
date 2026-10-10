@@ -153,6 +153,10 @@ function DatasetEditor({ client, space, initial, close, saved }: { client: Mnemi
 }
 
 function RunForm({ client, space, datasets, close, created }: { client: MnemionClient; space: string; datasets: EvaluationDataset[]; close: () => void; created: (run: EvaluationRun) => void }) {
+  const [params] = useSearchParams();
+  const [generation, setGeneration] = useState(params.get("generation") || "");
+  const models = useQuery({ queryKey: ["embedding-choices", space], queryFn: () => client.embeddingChoices(space), retry: 1 });
+  const selectedModel = models.data?.items.find(model => generation ? model.generation_id === generation : model.state === "active");
   const [dataset, setDataset] = useState(datasets[0]?.id || ""), [split, setSplit] = useState<EvaluationSplit>("development");
   const [modes, setModes] = useState<EvaluationMode[]>(["hybrid"]), [cutoffs, setCutoffs] = useState("5, 10, 20");
   const [context, setContext] = useState(true), [tokens, setTokens] = useState(2048), [seconds, setSeconds] = useState(300), [interval, setInterval] = useState(1);
@@ -164,19 +168,21 @@ function RunForm({ client, space, datasets, close, created }: { client: MnemionC
     try {
       const ks = cutoffs.split(",").map(value => Number(value.trim()));
       if (!ks.length || ks.length > 5 || ks.some(k => !Number.isInteger(k) || k < 1 || k > 50) || new Set(ks).size !== ks.length) throw new Error("Choose up to five distinct K values from 1 to 50.");
-      const body = { dataset_id: dataset, split, modes, cutoffs: ks, context, token_budget: tokens, max_seconds: seconds, interval_seconds: interval };
+      const body = { dataset_id: dataset, split, modes, cutoffs: ks, context, token_budget: tokens, max_seconds: seconds, interval_seconds: interval, embedding_generation: generation || null };
       const signature = JSON.stringify(body); if (key.current.body !== signature) key.current = { body: signature, key: crypto.randomUUID() };
       created(await client.startEvaluation(space, body, key.current.key));
     } catch (error) { setError(error); } finally { setSubmitting(false); }
   }
   return <Panel title="Configure evaluation" subtitle="A durable run with a fixed test set and explicit resource budget." action={<button className="ws-icon-button" onClick={close} aria-label="Close evaluation configuration"><X size={16} /></button>} className="ins-run-form"><form onSubmit={submit}>
+    <label className="ws-field"><span>Embedding generation</span><select value={generation} onChange={event => setGeneration(event.target.value)} disabled={models.isPending}><option value="">Active index when this run is queued</option>{models.data?.items.map(model => <option key={model.generation_id} value={model.generation_id} disabled={!model.available}>{model.label} · {model.state} · {model.generation_id.slice(0, 10)}</option>)}</select><small>The run freezes the selected generation. Preview a candidate search first to warm up its model before measuring latency.</small></label>
+    {models.isError && <p className="ws-notice ws-error" role="alert">{models.error.message}<button type="button" className="ws-link" onClick={() => void models.refetch()}>Retry model choices</button></p>}
     <div className="ins-form-grid"><label className="ws-field"><span>Test-set version</span><select value={dataset} onChange={event => setDataset(event.target.value)}>{datasets.map(item => <option key={item.id} value={item.id}>{item.name} · v{item.version} · {item.case_count} questions</option>)}</select></label><label className="ws-field"><span>Split</span><select value={split} onChange={event => setSplit(event.target.value as EvaluationSplit)}><option value="development">Development</option><option value="held_out">Held out</option></select></label></div>
     <div className="ins-form-grid"><fieldset className="ins-mode-picker"><legend>Retrieval modes</legend>{(["lexical", "semantic", "hybrid"] as EvaluationMode[]).map(mode => <label key={mode}><input type="checkbox" checked={modes.includes(mode)} onChange={event => setModes(event.target.checked ? [...modes, mode] : modes.filter(item => item !== mode))} /><span>{label(mode)}</span></label>)}</fieldset><label className="ws-field"><span>Evaluate at K</span><input value={cutoffs} onChange={event => setCutoffs(event.target.value)} placeholder="5, 10, 20" /><small>Top results to assess at each cutoff; at most 50.</small></label></div>
-    <div className="ins-form-grid"><label className="ins-live-control"><input type="checkbox" checked={context} onChange={event => setContext(event.target.checked)} />Also evaluate bounded context</label><label className="ws-field"><span>Context token budget</span><input type="number" min={128} max={16000} step={1} disabled={!context} value={tokens} onChange={event => setTokens(Number(event.target.value))} /></label></div>
+    <div className="ins-form-grid"><label className="ins-live-control"><input type="checkbox" checked={context} onChange={event => setContext(event.target.checked)} />Also evaluate bounded context</label><label className="ws-field"><span>Context {selectedModel?.token_count_unit === "utf8_bytes" ? "UTF-8 byte" : "token"} budget</span><input type="number" min={128} max={16000} step={1} disabled={!context} value={tokens} onChange={event => setTokens(Number(event.target.value))} /></label></div>
     <details className="ins-inline-details"><summary>Execution budget</summary><div className="ins-form-grid"><label className="ws-field"><span>Maximum run duration · seconds</span><input type="number" min={10} max={3600} value={seconds} onChange={event => setSeconds(Number(event.target.value))} /></label><label className="ws-field"><span>Delay between case-mode checks · seconds</span><input type="number" min={.25} max={60} step={.25} value={interval} onChange={event => setInterval(Number(event.target.value))} /></label></div><p className="ins-footnote">One evaluation runs at a time across the deployment. Calls use the selected service model. The runner does not download or launch new local models.</p></details>
     {split === "held_out" && <p className="ins-note">Keep this split for assessing final choices. Repeated tuning on held-out results makes the evaluation less independent.</p>}
     {!!error && <p className="ws-notice ws-error" role="alert">{errorText(error)}</p>}
-    <div className="ins-form-actions"><p><b>{count * modes.length}</b> case-mode checks{context ? " + context calls" : ""} · {seconds} second budget</p><button className="ws-button ws-primary" disabled={submitting || !count || !modes.length}>{submitting ? <LoaderCircle size={14} className="ws-spin" /> : <Play size={14} />}Start evaluation</button></div>
+    <div className="ins-form-actions"><p><b>{count * modes.length}</b> case-mode checks{context ? " + context calls" : ""} · {seconds} second budget</p><button className="ws-button ws-primary" disabled={submitting || !count || !modes.length || !selectedModel?.available}>{submitting ? <LoaderCircle size={14} className="ws-spin" /> : <Play size={14} />}Start evaluation</button></div>
   </form></Panel>;
 }
 

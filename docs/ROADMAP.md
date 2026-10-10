@@ -26,6 +26,7 @@ server configuration rather than every employee owning a powerful computer.
 | --- | --- | --- |
 | Shared memory | PostgreSQL transactions, tenant/space boundaries, scoped agent identities, revision history, durable receipts and deletion | [Service](service/README.md), [organizations](service/organizations.md) |
 | Retrieval | Pinned local multilingual E5, lexical and semantic search, cited context, chunk/index identity and bounded context packs | [Service](service/README.md) |
+| Model choice | E5/BGE CPU profiles, approved Ollama/OpenAI endpoints, per-space candidate indexes, progress/pause/retry, preview/evals and atomic activation/rollback | [Embedding models](service/embeddings.md) |
 | Sources | Git, selected folders, Google Drive, Slack, rclone and custom adapters; checkpoints, leases, review proposals and pauses | [Connectors](service/connectors.md) |
 | Agent compatibility | HTTP/OpenAPI, Python and TypeScript SDKs, MCP stdio and HTTP, conversation capture | [Agents](service/agents.md), [capture](service/capture.md) |
 | Human organization | Studio memory review, source evidence, team access, wiki/graph, core context and operations | [Knowledge](service/knowledge.md) |
@@ -50,6 +51,10 @@ release artifacts require the platform checks and publisher requirements below.
    the environments and results rather than inferring them from compilation.
 5. Verify all immutable artifacts, architecture-specific feeds, inventories,
    checksums, release notes and public repository hygiene before publication.
+6. Publish the matching Perseus XR product page with simple platform downloads,
+   setup guidance, release notes and roadmap links. Download buttons must target
+   the verified published release; drafts and validation builds are not downloads
+   for end users.
 
 Missing credentials or failed platform checks remain release blockers; the
 release notes must state the actual shipping status.
@@ -86,25 +91,19 @@ regressions and release notes describing changed behavior and limitations.
 
 ## Selectable embeddings and controlled reindexing
 
-Users should be able to choose a lightweight local CPU model, a larger local
-model or an approved cloud embedding endpoint. Current production retrieval
-uses pinned multilingual E5; it is not advertised as the universally best or
-latest model. Selection must follow measured language/domain quality, latency,
-memory, licensing, privacy and cost on the intended hardware.
+Implemented: operator-approved model profiles, two small CPU choices,
+Ollama/OpenAI-compatible endpoints, pinned generation/tokenizer identities,
+explicit per-space egress approval, bounded inference and durable reindexing.
+Studio shows coverage, pause/resume/retry, candidate search and generation-aware
+evaluations. Activation checks retained revision coverage atomically; rollback
+reuses existing vectors and fills missing revisions. Recovery requires renewed
+endpoint consent. See [the model guide](service/embeddings.md).
 
-- Provider/model registry with immutable model identity, dimensions, tokenizer,
-  input limits, normalization, licensing and supported execution engines.
-- Hardware-aware recommendations and an explicit download/resource estimate;
-  lightweight clients continue to delegate indexing to their service.
-- Generation-based reindex jobs, progress, pause/resume and recovery; compare a
-  candidate against the active index before atomic activation or rollback.
-- Organization policy for approved endpoints and data egress; secrets remain
-  server-side and model access follows space/source permissions.
-- Budgeted batches, concurrency, caching, retries and rate limits.
-
-Acceptance: no mixed-dimensional indexes, no stale or revoked content returned,
-reproducible evaluation before activation, interruption-safe jobs and a usable
-CPU baseline. Provider choice must never silently send private memories out.
+Remaining improvements: measured hardware recommendations, larger multilingual
+comparisons, provider-specific pricing/rate-limit instrumentation and an explicit
+retention/garbage-collection policy for old generations. Current retrieval keeps
+E5 as its default; model selection follows measured language/domain quality,
+latency, memory, privacy and cost rather than a universal "best model" claim.
 
 ## Configurable librarian
 

@@ -10,6 +10,8 @@ from uuid import uuid4
 from .db import Database
 from .embeddings import Embedder, vector_literal
 from .lifecycle import purge_memory
+from .fences import shared_boundary
+from .model_state import job_policy
 from .telemetry import Telemetry
 
 logger = logging.getLogger(__name__)
@@ -24,6 +26,7 @@ class Worker:
         lease_seconds: int = 120,
         max_attempts: int = 5,
         telemetry: Telemetry | None = None,
+        default_generation: str | None = None,
     ):
         if not database.worker:
             raise ValueError("A separate worker database login is required")
@@ -32,6 +35,7 @@ class Worker:
         self.lease_seconds = lease_seconds
         self.max_attempts = max_attempts
         self.telemetry = telemetry
+        self.default_generation = default_generation or embedder.generation.id
 
     def claim(self) -> dict | None:
         with self.db.pool.connection() as conn:
@@ -83,12 +87,19 @@ class Worker:
         if job["kind"] == "purge":
             return self._purge(job)
         with self.db.worker_transaction(job["tenant_id"]) as conn:
+            shared_boundary(conn, job["tenant_id"], job["space_id"])
             if not self._owned(conn, job):
+                return False
+            if not self._policy(conn, job):
                 return False
             row = conn.execute(
                 """SELECT r.content FROM mnemion.memory_revisions r JOIN mnemion.memories m
                      ON m.tenant_id=r.tenant_id AND m.space_id=r.space_id AND m.id=r.memory_id
-                   WHERE r.id=%s AND m.deleted_at IS NULL""",
+                   WHERE r.id=%s AND m.deleted_at IS NULL AND EXISTS (
+                     SELECT FROM mnemion.source_revisions sr JOIN mnemion.sources s
+                       ON s.tenant_id=sr.tenant_id AND s.space_id=sr.space_id AND s.id=sr.source_id
+                     WHERE sr.tenant_id=r.tenant_id AND sr.space_id=r.space_id
+                       AND sr.id=r.source_revision_id AND s.deleted_at IS NULL)""",
                 (job["revision_id"],),
             ).fetchone()
             if not row:
@@ -113,15 +124,22 @@ class Worker:
         # Inference may have taken seconds, or a worker may have been killed.
         # Lock and check the lease again before publishing any vector rows.
         with self.db.worker_transaction(job["tenant_id"]) as conn:
+            shared_boundary(conn, job["tenant_id"], job["space_id"])
             live = conn.execute(
                 """SELECT m.id FROM mnemion.memories m JOIN mnemion.memory_revisions r
                      ON r.tenant_id=m.tenant_id AND r.space_id=m.space_id AND r.memory_id=m.id
-                   WHERE r.id=%s AND m.deleted_at IS NULL FOR UPDATE OF m""",
+                   WHERE r.id=%s AND m.deleted_at IS NULL AND EXISTS (
+                     SELECT FROM mnemion.source_revisions sr JOIN mnemion.sources s
+                       ON s.tenant_id=sr.tenant_id AND s.space_id=sr.space_id AND s.id=sr.source_id
+                     WHERE sr.tenant_id=r.tenant_id AND sr.space_id=r.space_id
+                       AND sr.id=r.source_revision_id AND s.deleted_at IS NULL) FOR UPDATE OF m""",
                 (job["revision_id"],),
             ).fetchone()
             # Deletion also locks memory before jobs. Keep that order to avoid
             # a worker-finalization/delete deadlock.
             if not self._owned(conn, job):
+                return False
+            if not self._policy(conn, job, finishing=True):
                 return False
             if not live:
                 self._finish(conn, job, "cancelled")
@@ -153,6 +171,33 @@ class Worker:
             job["metric_input_bytes"] = len(row["content"].encode("utf-8"))
             job["metric_chunks"] = len(chunks)
             return True
+
+    def _policy(self, conn, job, *, finishing=False):
+        policy = job_policy(conn, job, self.default_generation)
+        if policy == "obsolete":
+            self._finish(conn, job, "cancelled")
+            return False
+        if policy == "blocked" or (policy == "paused" and not finishing):
+            conn.execute(
+                "UPDATE mnemion.jobs SET state='pending',lease_id=NULL,lease_until=NULL,attempts=greatest(0,attempts-1) WHERE id=%s",
+                (job["id"],),
+            )
+            return False
+        if not conn.execute(
+            "SELECT mnemion.embedding_source_current(%s) AS current", (job["space_id"],)
+        ).fetchone()["current"]:
+            conn.execute(
+                """UPDATE mnemion.jobs SET state='pending',lease_id=NULL,lease_until=NULL,
+                   attempts=greatest(0,attempts-1),available_at=now()+interval '60 seconds',error_code='source_access_unavailable'
+                   WHERE id=%s""",
+                (job["id"],),
+            )
+            conn.execute(
+                "UPDATE mnemion.operations SET state='accepted',error_code='source_access_unavailable',updated_at=now() WHERE id=%s",
+                (job["operation_id"],),
+            )
+            return False
+        return True
 
     def _purge(self, job: dict) -> bool:
         with self.db.worker_transaction(job["tenant_id"]) as conn:

@@ -14,6 +14,7 @@ from .db import Database, Identity, require_space
 from .embeddings import Generation
 from .errors import ServiceError, not_found
 from .models import BlockInput, MemoryInput, RevisionInput, ReviewInput, json_value
+from .model_state import enqueue_candidate, settings
 from .repository import audit, hydrate, idempotency, memory_row, remember_receipt
 
 
@@ -103,6 +104,8 @@ class MemoryService:
     def _operation(
         self, conn, identity: Identity, space: UUID, memory: UUID, revision: UUID | None, kind: str
     ) -> dict:
+        model_settings = settings(conn, space, self.generation.id)
+        generation = model_settings["active_generation_id"] if kind != "delete" else None
         operation = uuid4()
         conn.execute(
             """INSERT INTO mnemion.operations
@@ -120,10 +123,21 @@ class MemoryService:
                 uuid4(),
                 operation,
                 revision,
-                self.generation.id if kind != "delete" else None,
+                generation,
                 "purge" if kind == "delete" else "embed",
             ),
         )
+        if kind != "delete" and model_settings["candidate_run_id"]:
+            enqueue_candidate(
+                conn,
+                tenant=identity.tenant_id,
+                space=space,
+                memory=memory,
+                revision=revision,
+                run=model_settings["candidate_run_id"],
+                generation=model_settings["candidate_generation_id"],
+                created_by=identity.principal_id,
+            )
         return {
             "operation_id": operation,
             "memory_id": memory,
@@ -132,7 +146,7 @@ class MemoryService:
             "state": "accepted",
             "lexical_ready": kind != "delete",
             "semantic_ready": False,
-            "generation_id": self.generation.id if kind != "delete" else None,
+            "generation_id": generation,
         }
 
     def save(self, identity: Identity, space: UUID, command: MemoryInput, key: str) -> dict:
@@ -620,7 +634,9 @@ class MemoryService:
                     "space_id": space,
                     **counts,
                     "operations": queue,
-                    "generation_id": self.generation.id,
+                    "generation_id": settings(conn, space, self.generation.id)[
+                        "active_generation_id"
+                    ],
                 }
             )
 

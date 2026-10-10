@@ -9,6 +9,7 @@ import pytest
 
 from mnemion.service.admin import register_generation
 from mnemion.service.embeddings import LocalEmbedder
+from mnemion.service.model_catalog import BGE_SMALL_GENERATION
 from mnemion.service.memory import MemoryService
 from mnemion.service.models import MemoryInput, RecallInput
 from mnemion.service.retrieval import RetrievalService
@@ -65,3 +66,21 @@ def test_real_multilingual_retrieval_and_long_document_chunks(env):
     assert memories.fetch(env.owner, UUID(relevant["memory_id"]))["content"].startswith(
         "Le service"
     )
+
+
+def test_real_small_english_cpu_model_and_source_spans():
+    import math
+
+    model = LocalEmbedder(Path(os.environ["MNEMION_MODEL_CACHE"]), generation=BGE_SMALL_GENERATION)
+    model.prepare()
+    query = model.query("Which database stores billing records?")
+    relevant = model.document("Billing records are stored in PostgreSQL with daily backups.")[0]
+    unrelated = model.document("The office garden has roses beside the bicycle rack.")[0]
+    assert sum(a * b for a, b in zip(query, relevant.vector)) > sum(
+        a * b for a, b in zip(query, unrelated.vector)
+    )
+    assert len(query) == 384 and math.isclose(math.hypot(*query), 1.0, rel_tol=1e-5)
+    source = "PostgreSQL billing backups protect customer invoices. " * 180
+    chunks = model.document(source)
+    assert len(chunks) > 1 and chunks[0].start == 0 and chunks[-1].end == len(source)
+    assert all(a.end >= b.start for a, b in zip(chunks, chunks[1:]))

@@ -36,6 +36,8 @@ export interface Insights {
   notices: string[]
 }
 export interface RuntimeInsights {
+  models?: { generation_id: string; model: string; model_loaded: boolean | null; configuration: Record<string, unknown>;
+    provider: { requests: number; failed_requests: number; request_bytes: number; response_bytes: number; token_count_unit: string } | null }[]
   observed_at: string; scope: 'this_api_process'; model: string; generation_id: string; dimensions: number
   configuration: Record<string, unknown>; model_loaded: boolean | null; pool: Record<string, number>; notices: string[]
   telemetry: { started_at: string; buffered_series: number; series_capacity: number; dropped_samples: number
@@ -62,6 +64,7 @@ export interface EvaluationDataset {
 export interface EvaluationInput {
   dataset_id: string; split?: EvaluationSplit; modes?: EvaluationMode[]; cutoffs?: number[]; context?: boolean
   token_budget?: number; max_seconds?: number; interval_seconds?: number
+  embedding_generation?: string | null
 }
 export interface EvaluationScores { recall: number | null; precision: number | null; ndcg: number | null; mrr: number | null; complete: boolean | null }
 export interface EvaluationScoreSummary extends Omit<EvaluationScores, 'complete'> {

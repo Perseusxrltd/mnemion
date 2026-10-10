@@ -27,6 +27,7 @@ from .service.contracts import (
 from .service.models import ContextInput, MemoryInput, RecallInput, RevisionInput
 
 if TYPE_CHECKING:
+    from .service.embedding_models import EmbeddingSettings
     from .service.knowledge import Knowledge
     from .service.insights_models import Insights, RuntimeInsights
     from .service.evaluation_models import (
@@ -63,6 +64,78 @@ class MnemionError(RuntimeError):
 
 
 class Client:
+    def embedding_settings(self, space_id: str) -> EmbeddingSettings:
+        from .service.embedding_models import EmbeddingSettings
+
+        return EmbeddingSettings.model_validate(
+            self.request("GET", f"/v1/spaces/{UUID(space_id)}/embedding")
+        )
+
+    def start_reindex(
+        self,
+        space_id: str,
+        profile_id: str,
+        *,
+        expected_version: int,
+        approve_network_egress: bool = False,
+        idempotency_key: str | None = None,
+    ) -> EmbeddingSettings:
+        from .service.embedding_models import EmbeddingSettings, ReindexInput
+
+        command = ReindexInput(
+            profile_id=profile_id,
+            expected_version=expected_version,
+            approve_network_egress=approve_network_egress,
+        )
+        return EmbeddingSettings.model_validate(
+            self.request(
+                "POST",
+                f"/v1/spaces/{UUID(space_id)}/embedding/reindex",
+                body=command.model_dump(mode="json"),
+                key=idempotency_key or str(uuid4()),
+            )
+        )
+
+    def control_reindex(
+        self,
+        space_id: str,
+        run_id: str,
+        action: Literal["pause", "resume", "retry", "cancel", "activate"],
+        *,
+        expected_version: int,
+        approve_network_egress: bool = False,
+    ) -> EmbeddingSettings:
+        from .service.embedding_models import EmbeddingSettings, ReindexControl
+
+        if action not in {"pause", "resume", "retry", "cancel", "activate"}:
+            raise ValueError("Unknown reindex action")
+        command = ReindexControl(
+            expected_version=expected_version, approve_network_egress=approve_network_egress
+        )
+        return EmbeddingSettings.model_validate(
+            self.request(
+                "POST",
+                f"/v1/spaces/{UUID(space_id)}/embedding/reindex/{UUID(run_id)}/{action}",
+                body=command.model_dump(mode="json"),
+            )
+        )
+
+    def resume_embedding_processing(
+        self, space_id: str, *, expected_version: int, approve_network_egress: bool = False
+    ) -> EmbeddingSettings:
+        from .service.embedding_models import EmbeddingSettings, ReindexControl
+
+        command = ReindexControl(
+            expected_version=expected_version, approve_network_egress=approve_network_egress
+        )
+        return EmbeddingSettings.model_validate(
+            self.request(
+                "POST",
+                f"/v1/spaces/{UUID(space_id)}/embedding/resume",
+                body=command.model_dump(mode="json"),
+            )
+        )
+
     def __init__(
         self, base_url: str, api_key: str, *, timeout: float = 30, retries: int = 2, transport=None
     ):

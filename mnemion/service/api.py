@@ -21,7 +21,9 @@ from mnemion.version import __version__
 
 from . import contracts as c
 from .db import Database, Identity
-from .embeddings import Embedder, LocalEmbedder
+from .embeddings import Embedder
+from .model_registry import ModelRegistry
+from .embedding_api import attach_embeddings
 from .errors import ServiceError
 from .export import ExportService
 from .identity import IdentityService
@@ -120,7 +122,12 @@ class BodyLimitMiddleware:
         await self.app(scope, replay, send)
 
 
-def create_app(database: Database | None = None, embedder: Embedder | None = None) -> FastAPI:
+def create_app(
+    database: Database | None = None,
+    embedder: Embedder | None = None,
+    *,
+    registry: ModelRegistry | None = None,
+) -> FastAPI:
     owned = database is None
     if database is None:
         dsn = os.environ.get("MNEMION_DATABASE_URL")
@@ -129,20 +136,14 @@ def create_app(database: Database | None = None, embedder: Embedder | None = Non
                 "Set MNEMION_DATABASE_URL to the non-owner application database login"
             )
         database = Database(dsn, max_size=int(os.environ.get("MNEMION_DB_POOL_SIZE", "10")))
-    if embedder is None:
-        embedder = LocalEmbedder(
-            Path(
-                os.environ.get(
-                    "MNEMION_MODEL_CACHE", str(Path.home() / ".cache" / "mnemion" / "models")
-                )
-            ),
-            threads=int(os.environ.get("MNEMION_MODEL_THREADS", "2")),
-            offline=os.environ.get("MNEMION_MODEL_OFFLINE") == "1",
-        )
+    registry = registry or (
+        ModelRegistry(embedder) if embedder is not None else ModelRegistry.from_environment()
+    )
+    embedder = registry.default
     identity_service = IdentityService(database)
     memory = MemoryService(database, embedder.generation)
     telemetry = Telemetry(database)
-    retrieval = RetrievalService(database, embedder, telemetry)
+    retrieval = RetrievalService(database, embedder, telemetry, registry=registry)
     insights = InsightsService(database, embedder)
     evaluations = EvaluationRunner(database, retrieval)
     exports = ExportService(database)
@@ -157,6 +158,7 @@ def create_app(database: Database | None = None, embedder: Embedder | None = Non
         yield
         evaluations.stop()
         telemetry.stop()
+        registry.close()
         if owned:
             database.close()
 
@@ -200,6 +202,7 @@ def create_app(database: Database | None = None, embedder: Embedder | None = Non
         )
     app.state.database = database
     app.state.embedder = embedder
+    app.state.model_registry = registry
     app.state.telemetry = telemetry
     app.state.evaluations = evaluations
 
@@ -292,7 +295,8 @@ def create_app(database: Database | None = None, embedder: Embedder | None = Non
     from .connectors import ConnectorService
 
     install_routes(app, authenticated, ConnectorService(memory))
-    attach_evaluations(app, database, embedder, authenticated)
+    attach_evaluations(app, database, embedder, authenticated, registry=registry)
+    attach_embeddings(app, database, registry, authenticated)
 
     @app.get("/health/live", tags=["Operations"], response_model=c.LiveStatus)
     def live():
@@ -526,7 +530,7 @@ def create_app(database: Database | None = None, embedder: Embedder | None = Non
 
     @app.get("/v1/insights/runtime", tags=["Insights"], response_model=RuntimeInsights)
     def runtime_statistics(identity: Auth):
-        return runtime_insights(database, identity, embedder, telemetry)
+        return runtime_insights(database, identity, embedder, telemetry, registry=registry)
 
     @app.get(
         "/v1/spaces/{space_id}/activity", tags=["Operations"], response_model=c.Page[c.AuditEvent]

@@ -122,7 +122,9 @@ class RecallHit(MemoryMetadata):
 
 
 class IndexState(ResponseModel):
-    generation_id: str
+    generation_id: str | None
+    generation_ids: list[str] = Field(default_factory=list)
+    space_generations: dict[str, str] = Field(default_factory=dict)
     eligible_records: int
     indexed_records: int
     pending_records: int
@@ -165,6 +167,7 @@ class ContextPack(ResponseModel):
     token_budget: int
     tokenizer: str
     tokenizer_generation: str
+    token_count_unit: Literal["model_tokens", "utf8_bytes"] = "model_tokens"
     omitted_items: int
     warnings: list[str]
     index: IndexState

@@ -430,3 +430,44 @@ def test_connector_cannot_grant_itself_access_to_other_spaces_or_register_an_adm
         assert result.status_code == 200, result.text
         schema = client.get("/openapi.json").json()
         assert schema["paths"]["/v1/connectors"]["post"]["security"]
+
+
+def test_expired_source_permission_defers_embedding_without_inference(env, connected, monkeypatch):
+    service, connection, space, operator, identities = connected
+    while env.worker.run_once():
+        pass
+    ingest(service, operator, space, item(text="Permission-sensitive source text"))
+    with psycopg.connect(env.admin_dsn) as conn:
+        conn.execute(
+            "UPDATE mnemion.connector_scopes SET access_valid_until=now()-interval '1 second' WHERE space_id=%s",
+            (space,),
+        )
+    calls = []
+    previous = env.embedder.document
+    monkeypatch.setattr(env.embedder, "document", lambda text: calls.append(text))
+    job = env.worker.claim()
+    assert job["space_id"] == space
+    assert env.worker.process(job) is False and calls == []
+    with env.worker_db.worker_transaction(env.owner.tenant_id) as conn:
+        deferred = conn.execute(
+            "SELECT state,attempts,error_code FROM mnemion.jobs WHERE id=%s", (job["id"],)
+        ).fetchone()
+        assert deferred == {
+            "state": "pending",
+            "attempts": 0,
+            "error_code": "source_access_unavailable",
+        }
+    monkeypatch.setattr(env.embedder, "document", previous)
+    service.refresh_scope(
+        operator,
+        connection,
+        ScopeInput(
+            external_id="channel:C_PRIVATE",
+            name="Private channel",
+            members=["U_reader", "U_reviewer"],
+            observed_at=utc_now(),
+        ),
+    )
+    with psycopg.connect(env.admin_dsn) as conn:
+        conn.execute("UPDATE mnemion.jobs SET available_at=now() WHERE id=%s", (job["id"],))
+    assert env.worker.run_once()

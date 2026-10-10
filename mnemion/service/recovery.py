@@ -359,6 +359,12 @@ def _recover_access(conn, ledger: dict, backup_id: str) -> dict:
     from .connector_recovery import restore
 
     restore(conn, ledger)
+    # A backup is not evidence of current consent for outbound model calls.
+    conn.execute("""UPDATE mnemion.space_embedding_settings s SET inference_paused=true,
+        version=version+1,updated_at=now() FROM mnemion.embedding_generations g
+        WHERE g.id=s.active_generation_id AND g.configuration->>'runtime' IN ('http-openai','http-ollama')""")
+    conn.execute("""UPDATE mnemion.reindex_runs SET state='paused',network_egress_approved=false,
+        lease_id=NULL,lease_until=NULL,updated_at=now() WHERE state IN ('running','paused')""")
     # Reconcile current grants before issuing new keys; an old backup must not
     # restore a revoked team grant or resurrect a disabled administrator.
     # Provider permissions and checkpoints in an old backup are not proof of

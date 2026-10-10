@@ -106,8 +106,11 @@ def unavailable_references(conn, space: UUID, dataset: UUID) -> bool:
 
 
 class EvaluationService:
-    def __init__(self, database: Database, embedder: Embedder):
+    def __init__(self, database: Database, embedder: Embedder, *, registry=None):
         self.db, self.embedder = database, embedder
+        from .model_registry import ModelRegistry
+
+        self.registry = registry or ModelRegistry(embedder)
 
     @staticmethod
     def _dataset(conn, space: UUID, dataset: UUID, *, include_cases: bool = True) -> dict:
@@ -388,16 +391,23 @@ class EvaluationService:
                     "This space already has a queued or running evaluation.",
                 )
             run = uuid4()
+            from .model_state import selected_generations
+
+            generation = selected_generations(
+                conn, [space], self.embedder.generation.id, command.embedding_generation
+            )[space]
+            model = self.registry.get(generation)
+            payload["embedding_generation"] = generation
             manifest = {
                 "version": 1,
                 "scorer_version": SCORER_VERSION,
                 "dataset_hash": dataset["content_hash"],
                 "dataset_version": dataset["version"],
                 "generation": {
-                    "id": self.embedder.generation.id,
-                    "model": self.embedder.generation.model,
-                    "dimensions": self.embedder.generation.dimensions,
-                    "configuration": self.embedder.generation.configuration,
+                    "id": model.generation.id,
+                    "model": model.generation.model,
+                    "dimensions": model.generation.dimensions,
+                    "configuration": model.generation.configuration,
                 },
                 "retrieval": "scoped_exact_cosine_lexical_rrf_k60",
                 "selected_cases": [case["id"] for case in selected],
@@ -425,7 +435,7 @@ class EvaluationService:
                     identity.key_id,
                     key,
                     request_hash,
-                    self.embedder.generation.id,
+                    model.generation.id,
                     Jsonb(payload),
                     Jsonb(manifest),
                     len(selected) * len(command.modes),

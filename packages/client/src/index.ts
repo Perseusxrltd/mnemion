@@ -1,6 +1,8 @@
 import type { Insights, RuntimeInsights, MetricOrigin, EvaluationDataset, EvaluationDatasetInput,
   EvaluationInput, EvaluationRun, EvaluationResultPage, EvaluationResult, AssessmentInput, EvaluationComparison } from './insights.js'
 export * from './insights.js'
+import type { EmbeddingSettings, EmbeddingChoice, ReindexInput, ReindexAction } from './embeddings.js'
+export * from './embeddings.js'
 
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json }
 export type Kind = 'fact' | 'event' | 'preference' | 'procedure' | 'note'
@@ -53,6 +55,7 @@ export interface RecallInput {
   query: string; space_ids?: string[]; all_accessible?: boolean; subject?: string | null; kinds?: Kind[]
   limit?: number; mode?: 'hybrid' | 'lexical' | 'semantic'; include_contested?: boolean
   valid_at?: string | null; known_at?: string | null; metadata_filter?: Record<string, string | number | boolean>
+  embedding_generation?: string | null
 }
 export interface RecallHit extends Omit<Memory, 'content'> {
   text: string; text_truncated: boolean
@@ -61,7 +64,8 @@ export interface RecallHit extends Omit<Memory, 'content'> {
   ranking: { ranks: { lexical?: number; semantic?: number }; rrf: number; lexical_rank: number | null; cosine_similarity: number | null }
 }
 export interface IndexState {
-  generation_id: string; eligible_records: number; indexed_records: number
+  generation_id: string | null; generation_ids?: string[]; space_generations?: Record<string, string>
+  eligible_records: number; indexed_records: number
   pending_records: number; observed_at: string
 }
 export interface Recall {
@@ -71,6 +75,7 @@ export interface Recall {
 export interface ContextPack {
   request_id: string; text: string; token_count: number; token_budget: number; tokenizer: string
   tokenizer_generation: string; omitted_items: number; warnings: string[]; index: IndexState
+  token_count_unit?: 'model_tokens' | 'utf8_bytes'
   citations: { number: number; memory_id: string; revision_id: string; space_id: string; source_revision_id: string; source_start: number; source_end: number }[]
   core_blocks: { space_id: string; key: string; version: number }[]
 }
@@ -98,6 +103,11 @@ export interface ClientOptions {
 interface RequestOptions { body?: unknown; key?: string; signal?: AbortSignal; binary?: boolean }
 
 export class MnemionClient {
+  embeddingChoices(space: string) { return this.request<Page<EmbeddingChoice>>('GET', `/v1/spaces/${encodeURIComponent(space)}/embedding/choices`) }
+  embeddingSettings(space: string) { return this.request<EmbeddingSettings>('GET', `/v1/spaces/${encodeURIComponent(space)}/embedding`) }
+  startReindex(space: string, input: ReindexInput, key?: string) { return this.request<EmbeddingSettings>('POST', `/v1/spaces/${encodeURIComponent(space)}/embedding/reindex`, { body: input, key: key ?? globalThis.crypto.randomUUID() }) }
+  controlReindex(space: string, run: string, action: ReindexAction, version: number, approveNetworkEgress = false) { return this.request<EmbeddingSettings>('POST', `/v1/spaces/${encodeURIComponent(space)}/embedding/reindex/${encodeURIComponent(run)}/${action}`, { body: { expected_version: version, approve_network_egress: approveNetworkEgress } }) }
+  resumeEmbeddingProcessing(space: string, version: number, approveNetworkEgress = false) { return this.request<EmbeddingSettings>('POST', `/v1/spaces/${encodeURIComponent(space)}/embedding/resume`, { body: { expected_version: version, approve_network_egress: approveNetworkEgress } }) }
   readonly baseUrl: string
   #apiKey: string
   #fetch: typeof globalThis.fetch

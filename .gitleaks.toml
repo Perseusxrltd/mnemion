@@ -11,6 +11,7 @@ regexes = [
   '''^0b0044b47eedf19b7f47339c6748131a744800df8f5b4873c0fcbf89728dba39$''',
   '''^d648d19ee54a17647cee83a81f06d7f6ad2d117b1802b80ac353f2588facf087$''',
   '''^0b44a9d7b51c3c62626640cda0e2c2f70fdacdc25bbbd68038369d14ebdf4c39$''',
+  '''^d241a60d5e8f04cc1b2b3e9ef7a4921b27bf526d9f6050ab90f9267a1f9e5c66$''',
   '''^billing-policy-2026-10-09$''',
 ]
 

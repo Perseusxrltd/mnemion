@@ -17,6 +17,7 @@ from .errors import ServiceError
 from .evaluation_metrics import ranking_metrics, summarize_results
 from .evaluations import EvaluationService, digest
 from .models import ContextInput, RecallInput, json_value
+from .model_state import selected_generations
 from .repository import hydrate, memory_row
 from .retrieval import RetrievalService
 
@@ -67,7 +68,7 @@ class EvaluationRunner:
                 "Evaluation requires the restricted API login and the initiating caller's identity"
             )
         self.db, self.retrieval = database, retrieval
-        self.service = EvaluationService(database, retrieval.embedder)
+        self.service = EvaluationService(database, retrieval.embedder, registry=retrieval.registry)
         self._job: dict | None = None
         self._thread: threading.Thread | None = None
         self._stopped = threading.Event()
@@ -135,10 +136,13 @@ class EvaluationRunner:
         try:
             if self._job is None:
                 with self.db.pool.connection() as conn:
-                    self._job = conn.execute(
-                        "SELECT * FROM mnemion.claim_evaluation(%s,%s)",
-                        (uuid4(), self.retrieval.embedder.generation.id),
-                    ).fetchone()
+                    for generation in self.retrieval.registry.generation_ids:
+                        self._job = conn.execute(
+                            "SELECT * FROM mnemion.claim_evaluation(%s,%s)",
+                            (uuid4(), generation),
+                        ).fetchone()
+                        if self._job:
+                            break
             if not self._job:
                 return False
             job = self._job
@@ -184,10 +188,11 @@ class EvaluationRunner:
                     409, "reference_unavailable", "Evaluation references are no longer available."
                 )
             config = job["configuration"]
-            if job["generation_id"] != self.retrieval.embedder.generation.id:
-                raise ServiceError(409, "generation_changed", "The configured model changed.")
+            selected_generations(
+                conn, [job["space_id"]], self.retrieval.embedder.generation.id, job["generation_id"]
+            )
+            model = self.retrieval.registry.get(job["generation_id"])
             if any(mode != "lexical" for mode in config["modes"]) or config["context"]:
-                model = self.retrieval.embedder
                 if hasattr(model, "_model") and model._model is None:
                     raise ServiceError(
                         409,
@@ -220,7 +225,13 @@ class EvaluationRunner:
         heartbeat = threading.Thread(target=self._heartbeat, args=(job, stopped), daemon=True)
         heartbeat.start()
         try:
-            result = self._case(identity, job["space_id"], case, mode, config)
+            result = self._case(
+                identity,
+                job["space_id"],
+                case,
+                mode,
+                {**config, "embedding_generation": job["generation_id"]},
+            )
         finally:
             stopped.set()
             heartbeat.join(timeout=1)
@@ -228,6 +239,9 @@ class EvaluationRunner:
             if not self._live(conn, job):
                 self._job = None
                 return
+            selected_generations(
+                conn, [job["space_id"]], self.retrieval.embedder.generation.id, job["generation_id"]
+            )
             if self.service._dataset(conn, job["space_id"], job["dataset_id"])["state"] != "active":
                 raise ServiceError(
                     409, "reference_unavailable", "Evaluation references changed during retrieval."
@@ -282,6 +296,7 @@ class EvaluationRunner:
             limit=max(config["cutoffs"]),
             valid_at=case["valid_at"],
             known_at=case["known_at"],
+            embedding_generation=config.get("embedding_generation"),
         )
         started = time.monotonic()
         try:
@@ -350,7 +365,13 @@ class EvaluationRunner:
             if context and relevant
             else None,
             "context_complete": relevant.keys() <= cited if context and relevant else None,
-            "context_tokens": context["token_count"] if context else 0,
+            "context_tokens": context["token_count"]
+            if context and context.get("token_count_unit", "model_tokens") == "model_tokens"
+            else 0,
+            "context_budget_used": context["token_count"] if context else 0,
+            "context_budget_unit": context.get("token_count_unit", "model_tokens")
+            if context
+            else None,
             "context_citations": context["citations"] if context else [],
             "citations_checked": checked,
             "citations_invalid": 0,

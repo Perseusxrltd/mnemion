@@ -67,6 +67,7 @@ class DatasetInput(Command):
 
 class EvaluationInput(Command):
     dataset_id: UUID
+    embedding_generation: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
     split: Split = "development"
     modes: list[Mode] = Field(default_factory=lambda: ["hybrid"], min_length=1, max_length=3)
     cutoffs: list[StrictInt] = Field(

@@ -23,6 +23,7 @@ const titles: Record<string, string> = {
   "docs/service/recovery.md": "Backup & recovery", "docs/service/updates.md": "Background operation & updates",
   "docs/MAINTENANCE.md": "Release & documentation maintenance",
   "docs/CODE_SIGNING.md": "Code signing policy", "docs/service/privacy.md": "Privacy & data handling",
+  "docs/service/embeddings.md": "Embedding models, reindexing & resources",
 };
 const documents = Object.entries(sources).map(([key, load]) => {
   const path = key.startsWith("../../../../") ? key.slice(12) : `studio/${key.slice(9)}`;

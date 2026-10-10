@@ -14,6 +14,9 @@ from .db import Database, Identity, require_space, resolve_spaces
 from .embeddings import Embedder, vector_literal
 from .errors import ServiceError
 from .models import ContextInput, RecallInput, json_value
+from .model_registry import ModelRegistry
+from .model_state import selected_generations
+from .model_state import settings as model_settings
 from .repository import hydrate, memory_row
 from .telemetry import Telemetry
 
@@ -57,10 +60,18 @@ WITH eligible AS MATERIALIZED (
 
 
 class RetrievalService:
-    def __init__(self, database: Database, embedder: Embedder, telemetry: Telemetry | None = None):
+    def __init__(
+        self,
+        database: Database,
+        embedder: Embedder,
+        telemetry: Telemetry | None = None,
+        *,
+        registry: ModelRegistry | None = None,
+    ):
         self.db = database
         self.embedder = embedder
         self.telemetry = telemetry
+        self.registry = registry or ModelRegistry(embedder)
 
     def recall(
         self, identity: Identity, command: RecallInput, *, origin: str = "interactive"
@@ -97,12 +108,15 @@ class RetrievalService:
                         stage=stage,
                         mode=command.mode,
                         origin=origin,
-                        generation=self.embedder.generation.id,
+                        generation=result.get("index", {}).get("generation_id")
+                        or "mixed_or_unresolved",
                         failed=failed,
                         duration_ms=(time.monotonic() - started) * 1000,
                         input_bytes=len(command.query.encode("utf-8")),
                         output_bytes=len(text.encode("utf-8")),
-                        output_tokens=result.get("token_count", 0),
+                        output_tokens=result.get("token_count", 0)
+                        if result.get("token_count_unit", "model_tokens") == "model_tokens"
+                        else 0,
                         records=len(result.get("hits", result.get("citations", []))),
                         empty_results=int(
                             not failed and not result.get("hits", result.get("citations", []))
@@ -116,23 +130,68 @@ class RetrievalService:
     def _recall(self, identity: Identity, command: RecallInput) -> dict:
         started = time.monotonic()
         with self.db.transaction(identity) as conn:
-            resolve_spaces(conn, command)
+            spaces = resolve_spaces(conn, command)
+            routing = selected_generations(
+                conn, spaces, self.embedder.generation.id, command.embedding_generation
+            )
+        groups = defaultdict(list)
+        for space, generation in routing.items():
+            groups[generation].append(space)
         warnings = []
-        vector = None
+        vectors = {}
         if command.mode != "lexical":
-            try:
-                vector = vector_literal(
-                    self.embedder.query(command.query), self.embedder.generation.dimensions
-                )
-            except ServiceError:
-                raise
-            except Exception as exc:
-                logger.warning("Query embedding unavailable (%s)", type(exc).__name__)
-                if command.mode == "semantic":
-                    raise ServiceError(
-                        503, "embedding_unavailable", "Semantic search is temporarily unavailable."
-                    ) from None
-                warnings.append("semantic_unavailable_lexical_only")
+            for generation in groups:
+                try:
+                    with self.db.transaction(identity) as conn:
+                        if (
+                            selected_generations(
+                                conn,
+                                resolve_spaces(conn, command),
+                                self.embedder.generation.id,
+                                command.embedding_generation,
+                            )
+                            != routing
+                        ):
+                            raise ServiceError(
+                                409,
+                                "generation_changed",
+                                "Space model settings changed; retry the search.",
+                            )
+                        for space in groups[generation]:
+                            policy = model_settings(conn, space, self.embedder.generation.id)
+                            active_paused = (
+                                policy.get("inference_paused")
+                                and policy["active_generation_id"] == generation
+                            )
+                            candidate_unapproved = (
+                                generation == policy["candidate_generation_id"]
+                                and self.registry.network_egress(generation)
+                                and not policy.get("candidate_network_egress_approved")
+                            )
+                            if active_paused or candidate_unapproved:
+                                raise ServiceError(
+                                    503,
+                                    "embedding_processing_paused",
+                                    "An administrator must reapprove model processing after recovery.",
+                                )
+                    model = self.registry.get(generation)
+                    vectors[generation] = vector_literal(
+                        model.query(command.query), model.generation.dimensions
+                    )
+                except Exception as exc:
+                    if isinstance(exc, ServiceError) and exc.code not in {
+                        "embedding_profile_unavailable",
+                        "embedding_processing_paused",
+                    }:
+                        raise
+                    logger.warning("Query embedding unavailable (%s)", type(exc).__name__)
+                    if command.mode == "semantic":
+                        raise ServiceError(
+                            503,
+                            "embedding_unavailable",
+                            "Semantic search is temporarily unavailable.",
+                        ) from None
+                    warnings.append("semantic_unavailable_lexical_only")
         params = {
             "spaces": command.space_ids,
             "subject": command.subject,
@@ -142,13 +201,23 @@ class RetrievalService:
             "contested": command.include_contested,
             "query": command.query,
             "limit": min(250, max(30, command.limit * 5)),
-            "generation": self.embedder.generation.id,
-            "vector": vector,
             "metadata": Jsonb(command.metadata_filter),
         }
         with self.db.transaction(identity) as conn:
             # Recheck after model inference, including revoked keys and grants.
             params["spaces"] = resolve_spaces(conn, command)
+            if (
+                selected_generations(
+                    conn,
+                    params["spaces"],
+                    self.embedder.generation.id,
+                    command.embedding_generation,
+                )
+                != routing
+            ):
+                raise ServiceError(
+                    409, "generation_changed", "Space model settings changed; retry the search."
+                )
             lexical, semantic = [], []
             if command.mode != "semantic":
                 lexical = conn.execute(
@@ -163,8 +232,10 @@ class RetrievalService:
                 """,
                     params,
                 ).fetchall()
-            if vector is not None:
-                semantic = conn.execute(
+            for generation, group_spaces in groups.items():
+                if generation not in vectors:
+                    continue
+                group_rows = conn.execute(
                     ELIGIBLE
                     + """
                     , distances AS (
@@ -178,11 +249,22 @@ class RetrievalService:
                     ) SELECT * FROM distances WHERE part=1
                     ORDER BY distance, memory_id LIMIT %(limit)s
                 """,
-                    params,
+                    {
+                        **params,
+                        "generation": generation,
+                        "spaces": group_spaces,
+                        "vector": vectors[generation],
+                    },
                 ).fetchall()
-            readiness = conn.execute(
-                ELIGIBLE
-                + """
+                semantic.extend(
+                    {**row, "generation_rank": rank, "embedding_generation": generation}
+                    for rank, row in enumerate(group_rows, 1)
+                )
+            readiness = {"eligible_records": 0, "indexed_records": 0}
+            for generation, group_spaces in groups.items():
+                counts = conn.execute(
+                    ELIGIBLE
+                    + """
                 SELECT count(*) AS eligible_records,
                        count(*) FILTER (WHERE EXISTS (
                            SELECT FROM mnemion.embeddings v WHERE v.tenant_id=mnemion.tenant()
@@ -190,8 +272,10 @@ class RetrievalService:
                            AND v.generation_id=%(generation)s
                        )) AS indexed_records FROM eligible e
             """,
-                params,
-            ).fetchone()
+                    {**params, "generation": generation, "spaces": group_spaces},
+                ).fetchone()
+                for key in readiness:
+                    readiness[key] += counts[key]
             missing = readiness["eligible_records"] - readiness["indexed_records"]
             if missing:
                 warnings.append("semantic_index_incomplete")
@@ -199,11 +283,13 @@ class RetrievalService:
             candidates, ranks = {}, defaultdict(dict)
             for channel, rows in (("lexical", lexical), ("semantic", semantic)):
                 for rank, row in enumerate(rows, 1):
+                    if channel == "semantic":
+                        rank = row["generation_rank"]
                     key = row["memory_id"]
                     scores[key] += 1 / (60 + rank)
                     ranks[key][channel] = rank
                     candidates[key] = {**candidates.get(key, {}), **row}
-            channel_count = int(command.mode != "semantic") + int(vector is not None)
+            channel_count = int(command.mode != "semantic") + int(bool(vectors))
             denominator = max(1, channel_count) / 61
             ordered = sorted(scores, key=lambda key: (-scores[key], str(key)))
             hits = []
@@ -253,6 +339,7 @@ class RetrievalService:
                     if "distance" in candidate
                     else None,
                 }
+                hit["embedding_generation"] = routing[row["space_id"]]
                 if hit["claim_status"] == "contested":
                     warnings.append("contested_evidence")
                 hits.append(hit)
@@ -267,20 +354,34 @@ class RetrievalService:
                 "hits": hits,
                 "warnings": sorted(set(warnings)),
                 "index": {
-                    "generation_id": self.embedder.generation.id,
+                    "generation_id": next(iter(groups))
+                    if len(groups) == 1
+                    else (None if groups else self.embedder.generation.id),
+                    "generation_ids": sorted(groups),
+                    "space_generations": {
+                        str(space): generation for space, generation in routing.items()
+                    },
                     **readiness,
                     "pending_records": missing,
                     "observed_at": datetime.now(timezone.utc),
                 },
-                "score_description": "Rank fusion relevance, not a truth probability.",
+                "score_description": "Rank fusion relevance, not a truth probability. Semantic ranks are computed separately within each embedding generation.",
                 "timing_ms": round((time.monotonic() - started) * 1000, 2),
             }
         )
 
     def _context(self, identity: Identity, command: ContextInput) -> dict:
         result = self._recall(identity, RecallInput(**command.model_dump(exclude={"token_budget"})))
+        generation = result["index"]["generation_id"]
+        model = self.registry.get(generation) if generation else None
+        count = model.token_count if model else lambda text: len(text.encode("utf-8"))
+        unit = (
+            model.generation.configuration.get("token_count_unit", "model_tokens")
+            if model
+            else "utf8_bytes"
+        )
         # Load tokenizer assets before opening a scoped database transaction.
-        self.embedder.token_count("")
+        count("")
         sections, citations, included_blocks = [], [], []
         omitted = 0
         with self.db.transaction(identity) as conn:
@@ -293,7 +394,7 @@ class RetrievalService:
             for block in blocks:
                 section = f"Core block {block['key']} (space {block['space_id']}, version {block['version']}):\n{block['content']}"
                 text = "\n\n".join([*sections, section])
-                if self.embedder.token_count(text) <= command.token_budget:
+                if count(text) <= command.token_budget:
                     sections.append(section)
                     included_blocks.append(
                         json_value({k: v for k, v in block.items() if k != "content"})
@@ -322,7 +423,7 @@ class RetrievalService:
                 snippet = fresh["content"][span["start"] : span["end"]]
                 section = f"[{number}] {fresh['evidence']['title']} ({fresh['claim_status']}, recorded {fresh['recorded_at']}):\n{snippet}"
                 text = "\n\n".join([*sections, section])
-                if self.embedder.token_count(text) <= command.token_budget:
+                if count(text) <= command.token_budget:
                     sections.append(section)
                     citations.append(
                         {
@@ -344,10 +445,13 @@ class RetrievalService:
             "text": text,
             "citations": citations,
             "core_blocks": included_blocks,
-            "token_count": self.embedder.token_count(text),
+            "token_count": count(text),
             "token_budget": command.token_budget,
-            "tokenizer": self.embedder.generation.model,
-            "tokenizer_generation": self.embedder.generation.id,
+            "tokenizer": model.generation.model
+            if model
+            else "UTF-8 bytes (mixed embedding generations)",
+            "tokenizer_generation": model.generation.id if model else "utf8-v1",
+            "token_count_unit": unit,
             "omitted_items": omitted,
             "warnings": result["warnings"]
             + (["context_budget_or_freshness_limited"] if omitted else []),

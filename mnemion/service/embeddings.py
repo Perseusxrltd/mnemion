@@ -27,6 +27,18 @@ class Generation:
     dimensions: int
     configuration: dict
 
+    def __post_init__(self) -> None:
+        if not isinstance(self.model, str) or not 1 <= len(self.model) <= 300:
+            raise ValueError("Embedding model identity must contain 1–300 characters")
+        if type(self.dimensions) is not int or not 1 <= self.dimensions <= 4096:
+            raise ValueError("Embedding dimensions must be an integer from 1 to 4096")
+        if (
+            not isinstance(self.configuration, dict)
+            or {"model", "dimensions"} & self.configuration.keys()
+        ):
+            raise ValueError("Embedding configuration cannot override its model or dimensions")
+        json.dumps(self.configuration, allow_nan=False)
+
     @property
     def id(self) -> str:
         value = {"model": self.model, "dimensions": self.dimensions, **self.configuration}
@@ -74,7 +86,9 @@ class Embedder(Protocol):
 
 
 def vector_literal(vector: list[float], dimensions: int) -> str:
-    if len(vector) != dimensions or not all(math.isfinite(x) for x in vector):
+    if len(vector) != dimensions or not all(
+        isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x) for x in vector
+    ):
         raise ValueError("Embedding dimensions or finite-value check failed")
     if sum(x * x for x in vector) < 1e-12:
         raise ValueError("Zero embeddings cannot be indexed or queried")
@@ -93,7 +107,14 @@ class LocalEmbedder:
         offline: bool = False,
         max_queued: int = 4,
         wait_seconds: float = 0.25,
+        generation: Generation | None = None,
     ):
+        if generation is not None:
+            if generation.configuration.get("runtime") != "fastembed":
+                raise ValueError("Local ONNX inference requires a fastembed generation")
+            self.generation = generation
+        if type(threads) is not int or not 1 <= threads <= 64:
+            raise ValueError("Model threads must be an integer from 1 to 64")
         self.cache_dir = Path(cache_dir)
         self.threads = threads
         self.offline = offline
@@ -123,6 +144,7 @@ class LocalEmbedder:
                     cache_dir=str(self.cache_dir),
                     allow_patterns=[config["model_file"], "*.json"],
                     local_files_only=self.offline,
+                    token=False,
                 )
             )
             for filename, expected in (
@@ -141,7 +163,7 @@ class LocalEmbedder:
                 ):
                     TextEmbedding.add_custom_model(
                         model=registered_name,
-                        pooling=PoolingType.MEAN,
+                        pooling=PoolingType(config["pooling"].upper()),
                         normalization=True,
                         sources=ModelSource(hf=config["repository"]),
                         dim=self.generation.dimensions,
@@ -172,7 +194,7 @@ class LocalEmbedder:
         self.prepare()
         if self.token_count(text) > self.generation.configuration["max_query_tokens"]:
             raise ServiceError(
-                422, "query_too_long", "The semantic query exceeds 480 model tokens."
+                422, "query_too_long", "The semantic query exceeds this model's query budget."
             )
         vector = next(
             iter(self._model.embed([self.generation.configuration["query_prefix"] + text]))

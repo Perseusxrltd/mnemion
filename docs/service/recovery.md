@@ -58,6 +58,14 @@ key per organization; a single-organization file can be passed directly with
 active administrator, recovery creates an administrator with no automatic content
 grants; explicitly assign the necessary space access before use.
 
+Endpoint embedding processing is paused after restore. Candidate reindex runs
+are paused too, and their previous endpoint approvals are cleared. Review the
+registered destinations in Studio's **Embedding models** page, then explicitly
+reapprove and resume the active endpoint or candidate. Lexical retrieval remains
+available; you can build and activate a local candidate without reapproving the
+old endpoint. See [embedding recovery controls](embeddings.md). Source connectors
+also require access revalidation before processing resumes.
+
 Point administration at the recovered database, provision separate API and worker
 logins with a new `logins --prefix`, start an isolated API/worker, and verify fetch,
 history, scoped recall, an Obsidian export, and a deletion receipt before changing

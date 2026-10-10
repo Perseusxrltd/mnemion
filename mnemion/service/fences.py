@@ -10,11 +10,15 @@ from .errors import ServiceError
 from .models import json_value
 
 
-def write_boundary(conn, tenant: UUID, space: UUID) -> None:
+def shared_boundary(conn, tenant: UUID, space: UUID) -> None:
     conn.execute(
         "SELECT pg_advisory_xact_lock_shared(hashtextextended(%s, 0))",
         (f"mnemion-write:{tenant}:{space}",),
     )
+
+
+def write_boundary(conn, tenant: UUID, space: UUID) -> None:
+    shared_boundary(conn, tenant, space)
     if conn.execute(
         "SELECT 1 FROM mnemion.space_fences WHERE tenant_id=%s AND space_id=%s",
         (tenant, space),

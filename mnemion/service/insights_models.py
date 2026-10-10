@@ -152,6 +152,7 @@ class RuntimeInsights(ResponseModel):
     generation_id: str
     dimensions: int
     configuration: dict
+    models: list[dict] = Field(default_factory=list)
     pool: dict
     resources: dict
     notices: list[str] = Field(default_factory=list)

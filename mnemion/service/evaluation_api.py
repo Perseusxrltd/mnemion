@@ -21,8 +21,8 @@ from .evaluation_models import (
 from .evaluations import EvaluationService
 
 
-def attach_evaluations(app, database, embedder, authenticated):
-    service = EvaluationService(database, embedder)
+def attach_evaluations(app, database, embedder, authenticated, *, registry=None):
+    service = EvaluationService(database, embedder, registry=registry)
     Auth = Annotated[Identity, Depends(authenticated)]
     base = "/v1/spaces/{space_id}/evaluations"
 

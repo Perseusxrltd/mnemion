@@ -106,6 +106,7 @@ class RecallInput(SpaceSelection):
     known_at: AwareDatetime | None = None
     include_contested: bool = True
     metadata_filter: dict[str, str | int | bool] = Field(default_factory=dict, max_length=10)
+    embedding_generation: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
 
     @field_validator("metadata_filter")
     @classmethod

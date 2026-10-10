@@ -69,6 +69,7 @@ import { KnowledgeView } from "./Knowledge";
 
 const InsightsView = lazy(() => import("./Insights"));
 const Documentation = lazy(() => import("./Documentation"));
+const EmbeddingModels = lazy(() => import("./EmbeddingModels"));
 
 type Me = Awaited<ReturnType<MnemionClient["me"]>>;
 type Connection = { client: MnemionClient; me: Me; endpoint: string };
@@ -403,6 +404,7 @@ function Shell({
     ...(reviewer ? [{ to: "review", label: "Review", icon: ShieldCheck }] : []),
     { to: "operations", label: "Activity", icon: Workflow },
     ...(reviewer ? [{ to: "insights", label: "Insights & evaluations", icon: ChartNoAxesCombined }] : []),
+    ...(role === "administrator" ? [{ to: "models", label: "Embedding models", icon: Database }] : []),
     { to: "obsidian", label: "Obsidian", icon: Archive },
     { to: "agents", label: "Agents & apps", icon: Plug },
     { to: "help", label: "Documentation & roadmap", icon: FileText },
@@ -561,6 +563,7 @@ function Shell({
                 <Route path="operations" element={<Operations />} />
                 <Route path="insights" element={<Suspense fallback={<Busy />}><InsightsView client={client} space={space.id} reviewer={reviewer} administrator={me.administrator} /></Suspense>} />
                 <Route path="obsidian" element={<Obsidian />} />
+                <Route path="models" element={<Suspense fallback={<Busy />}><EmbeddingModels key={space.id} client={client} space={space.id} administrator={space.role === "administrator"} /></Suspense>} />
                 <Route path="help" element={<Suspense fallback={<Busy />}><Documentation /></Suspense>} />
                 <Route path="agents" element={<Agents endpoint={connection.endpoint} space={space.id} />} />
                 <Route path="team" element={<Team />} />
@@ -1324,7 +1327,7 @@ function SearchMemory() {
         <>
           <WarningList warnings={context.warnings} />
           <div className="ws-result-summary">
-            {context.token_count}/{context.token_budget} tokens ·{" "}
+            {context.token_count}/{context.token_budget} {context.token_count_unit === "utf8_bytes" ? "UTF-8 bytes" : "tokens"} ·{" "}
             {context.citations.length} citations · {context.omitted_items}{" "}
             omitted
           </div>
