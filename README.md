@@ -9,8 +9,9 @@ never gates downloads, usage or access.
 
 **Mnemion 4.0 is the first release of the rebuilt shared-memory platform.**
 Download published builds from [the official product page](https://www.perseusxr.com/mnemion).
-The [4.0.1 release](docs/releases/4.0.1.md) adds **Windows x64** alongside
-**macOS and Linux, x64 and ARM64**, with independently authenticated Windows
+The [4.0.2 release](docs/releases/4.0.2.md) hardens remote-agent connections,
+scope diagnostics and concurrent memory requests. Downloads cover **Windows x64**
+and **macOS and Linux, x64 and ARM64**, with independently authenticated Windows
 updates. Windows ARM64 remains under automatic-relaunch validation and is not
 offered as a completed download. The product page lists only published builds;
 ready architectures ship while work on the others continues. Development and
@@ -33,7 +34,8 @@ An authenticated identity is separate from the person or project a memory is abo
 - Pinned local multilingual embeddings, scoped hybrid recall, source citations,
   temporal filters, and bounded context packs.
 - A versioned HTTP API, [OpenAPI contract](docs/service/openapi.json),
-  Python and TypeScript clients, and an MCP gateway with stdio and Streamable HTTP.
+  Python and TypeScript clients, and authenticated MCP with stdio and Streamable
+  HTTP; API and HTTP MCP share one listener by default.
 - Studio for saving, searching, inspecting evidence and revisions, reviewing
   memories, managing identities/grants, and tracking indexing/deletion activity.
 - [Visual insights and evaluations](docs/service/insights.md): resource and retrieval
@@ -157,7 +159,7 @@ and performance independently verified in this implementation.
 
 Open **Documentation & roadmap** in Studio, or use the setup screen’s help link.
 The offline library ships the same Markdown as this repository. See the
-[product roadmap](docs/ROADMAP.md), [release notes](docs/releases/4.0.1.md), and
+[product roadmap](docs/ROADMAP.md), [release notes](docs/releases/4.0.2.md), and
 [documentation maintenance policy](docs/MAINTENANCE.md). Every release and hotfix
 must include matching release notes and a reviewed roadmap.
 

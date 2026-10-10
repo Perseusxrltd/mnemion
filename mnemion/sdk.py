@@ -7,6 +7,8 @@ write. Callers can distinguish durable acceptance from indexing completion.
 from __future__ import annotations
 
 import time
+import re
+from email.utils import parsedate_to_datetime
 from typing import TYPE_CHECKING, Literal
 from uuid import UUID, uuid4
 
@@ -65,11 +67,36 @@ __all__ = [
 
 
 class MnemionError(RuntimeError):
-    def __init__(self, status: int, code: str, message: str, request_id: str | None = None):
+    def __init__(
+        self,
+        status: int,
+        code: str,
+        message: str,
+        request_id: str | None = None,
+        *,
+        retry_after: float | None = None,
+    ):
         super().__init__(message)
         self.status = status
         self.code = code
         self.request_id = request_id
+        self.retry_after = retry_after
+
+    @property
+    def retryable(self) -> bool:
+        return self.status in {408, 429, 502, 503, 504}
+
+
+def _retry_after(response: httpx.Response) -> float | None:
+    value = response.headers.get("Retry-After", "").strip()
+    if not value or len(value) > 128:
+        return None
+    if re.fullmatch(r"[0-9]{1,5}(?:\.[0-9]{1,3})?", value):
+        return min(30.0, float(value))
+    try:
+        return min(30.0, max(0.0, parsedate_to_datetime(value).timestamp() - time.time()))
+    except (TypeError, ValueError, OverflowError):
+        return None
 
 
 class Client:
@@ -293,6 +320,7 @@ class Client:
             or path in ("/v1/recall", "/v1/context", "/v1/knowledge")
         )
         for attempt in range(self.retries + 1):
+            delay = min(2, 0.2 * 2**attempt)
             try:
                 response = self._http.request(
                     method,
@@ -316,7 +344,11 @@ class Client:
                 ):
                     try:
                         data = response.json()
+                        if not isinstance(data, dict):
+                            data = {}
                         error = data.get("error", {})
+                        if not isinstance(error, dict):
+                            error = {}
                     except ValueError:
                         data, error = {}, {}
                     raise MnemionError(
@@ -324,8 +356,10 @@ class Client:
                         error.get("code", "http_error"),
                         error.get("message", f"Mnemion returned HTTP {response.status_code}"),
                         data.get("request_id") or response.headers.get("X-Request-ID"),
+                        retry_after=_retry_after(response),
                     )
-            time.sleep(min(2, 0.2 * 2**attempt))
+                delay = max(delay, _retry_after(response) or 0)
+            time.sleep(delay)
         raise RuntimeError("Request retry loop exhausted")
 
     def insights(self, space_id: str, *, hours: int = 24, origin: str = "all") -> Insights:

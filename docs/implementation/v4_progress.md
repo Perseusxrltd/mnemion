@@ -229,6 +229,22 @@ independently for the verified variants. See the
 [dated evidence](../validation/2026-10-10.md#windows-x64-installer-and-updater-verification)
 and [4.0.1 notes](../releases/4.0.1.md).
 
-The next patch work includes full discoverable agent administration and reported
-remote setup issues 3–10: one API/MCP endpoint, handshake authentication, explicit
-scope diagnostics, remote/OAuth setup, Studio availability and non-systemd hosts.
+## Remote-agent hotfix 4.0.2
+
+Implemented issues 5, 9, 10, 12 and 16: authenticated HTTP MCP initialization and
+discovery, API/MCP on one listener, explicit invalid-scope instructions, described
+tool fields, structured privacy-preserving errors, bounded inference admission
+and retry hints in Python/TypeScript clients. Source and Compose deployments can
+set the exact public HTTPS origin without disabling MCP host/origin protection.
+
+The local service suite passed 221 tests with two opt-in real-model tests skipped,
+at 85.68% service coverage. Both SDKs have retry behavior checks; production
+release CI additionally runs real-model tests and the native platform gates.
+These results do not claim a live capacity benchmark or an already-upgraded
+remote host. See [4.0.2 notes](../releases/4.0.2.md) and the dated validation report.
+
+Remaining patch work includes public-artifact upgrade rehearsals, Windows ARM64
+relaunch, full discoverable agent administration, remote/OAuth setup, source
+installation UI, managed server upgrades/non-systemd supervision, API/worker RSS,
+source synchronization, author-deletion policy and natural-language retrieval
+quality. The roadmap and issue queue track those independently.

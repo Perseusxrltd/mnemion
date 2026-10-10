@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import os
 import threading
 import time
 from contextlib import contextmanager
@@ -18,7 +19,7 @@ class InferenceGate:
     Saturated callers receive a retryable error instead of an unbounded wait.
     """
 
-    def __init__(self, *, max_queued: int = 4, wait_seconds: float = 0.25):
+    def __init__(self, *, max_queued: int = 16, wait_seconds: float = 2):
         if (
             not isinstance(max_queued, int)
             or isinstance(max_queued, bool)
@@ -51,6 +52,14 @@ class InferenceGate:
         """Cumulative process-local counters; contains no text or caller labels."""
         with self._lock:
             return {"concurrency": 1, "queue_capacity": self.max_queued, **self._stats}
+
+    @classmethod
+    def from_environment(cls) -> "InferenceGate":
+        """A bounded, process-wide admission policy for all approved embedding models."""
+        return cls(
+            max_queued=int(os.environ.get("MNEMION_MODEL_MAX_QUEUED", "16")),
+            wait_seconds=float(os.environ.get("MNEMION_MODEL_WAIT_SECONDS", "2")),
+        )
 
     @staticmethod
     def busy() -> ServiceError:

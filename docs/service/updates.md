@@ -4,6 +4,8 @@ Platform v1 uses the **4.x** package series. Version **4.0.1** adds Windows x64 
 macOS and Linux on x64 and ARM64. Windows ARM64 remains under automatic-relaunch
 validation. Download published installers from
 [the official product page](https://www.perseusxr.com/mnemion).
+Version **4.0.2** retains those platforms and fixes remote-agent and concurrent
+request behavior; see [the patch notes](../releases/4.0.2.md).
 
 Official Studio installations enable automatic stable updates, background mode
 and launch at login by default. Preferences are in the application or tray menu,
@@ -95,6 +97,14 @@ Older releases without this updater need one initial installation. Desktop
 updates do not replace a company's database. Use backups, migrations and health
 checks from the deployment guide for service updates. Browser clients receive
 the deployed service assets on reload.
+
+To receive the 4.0.2 API/MCP fixes, operators must update and restart the separately
+deployed **server**, including an installation launched with `uv run`. Updating
+Studio alone cannot patch it. Source deployments can use a reviewed release
+checkout, `uv sync --locked`, and their existing process supervisor; keep the
+previous checkout and deployment backup for rollback. No new database migration
+is introduced in 4.0.2. Managed server update/restart/rollback and non-systemd
+supervision are tracked in issues 6/11 and are not yet an automatic service feature.
 
 ## Publisher setup
 

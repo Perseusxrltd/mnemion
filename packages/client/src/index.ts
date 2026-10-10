@@ -96,9 +96,25 @@ export interface ConnectorItem { external_id: string; revision: string; action: 
 export interface ConnectorProposal { memory_id: string; proposal_hash: string; payload: ConnectorItem; created_at: string; version: number }
 
 export class MnemionError extends Error {
-  constructor(public readonly status: number, public readonly code: string, message: string, public readonly requestId?: string) {
+  constructor(public readonly status: number, public readonly code: string, message: string, public readonly requestId?: string, public readonly retryAfterSeconds?: number) {
     super(message); this.name = 'MnemionError'
   }
+  get retryable() { return [408, 429, 502, 503, 504].includes(this.status) }
+}
+
+function retryAfter(value: string | null): number | undefined {
+  if (!value || value.length > 128) return undefined
+  const seconds = /^\d+(?:\.\d+)?$/.test(value) ? Number(value) : (Date.parse(value) - Date.now()) / 1000
+  return Number.isFinite(seconds) ? Math.max(0, Math.min(30, seconds)) : undefined
+}
+
+function waitForRetry(ms: number, signal?: AbortSignal): Promise<void> {
+  if (signal?.aborted) return Promise.reject(signal.reason)
+  return new Promise((resolve, reject) => {
+    const abort = () => { clearTimeout(timer); reject(signal?.reason) }
+    const timer = setTimeout(() => { signal?.removeEventListener('abort', abort); resolve() }, ms)
+    signal?.addEventListener('abort', abort, { once: true })
+  })
 }
 export interface ClientOptions {
   baseUrl: string; apiKey: string; timeoutMs?: number; retries?: number; fetch?: typeof globalThis.fetch
@@ -150,6 +166,7 @@ export class MnemionClient {
   async request<T>(method: string, path: string, options: RequestOptions = {}): Promise<T> {
     const safeRetry = method === 'GET' || !!options.key || ['/v1/recall', '/v1/context', '/v1/knowledge'].includes(path)
     for (let attempt = 0; attempt <= this.#retries; attempt++) {
+      let retryDelay = Math.min(2000, 200 * 2 ** attempt)
       const timeout = new AbortController()
       const timer = setTimeout(() => timeout.abort(new Error('Mnemion request timed out')), this.#timeout)
       const signal = options.signal ? AbortSignal.any([options.signal, timeout.signal]) : timeout.signal
@@ -162,15 +179,20 @@ export class MnemionClient {
         })
         if (response.ok) return (response.status === 204 ? undefined : options.binary ? await response.arrayBuffer() : await response.json()) as T
         let payload: { error?: { code?: string; message?: string }; request_id?: string } = {}
-        try { payload = await response.json() } catch { /* Non-JSON proxy errors have a stable fallback. */ }
-        if (!(safeRetry && [429, 502, 503, 504].includes(response.status) && attempt < this.#retries)) {
+        try {
+          const parsed = await response.json()
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) payload = parsed
+        } catch { /* Non-JSON proxy errors have a stable fallback. */ }
+        const retryAfterSeconds = retryAfter(response.headers.get('Retry-After'))
+        if (retryAfterSeconds !== undefined) retryDelay = Math.max(retryDelay, retryAfterSeconds * 1000)
+        if (!(safeRetry && [408, 429, 502, 503, 504].includes(response.status) && attempt < this.#retries)) {
           throw new MnemionError(response.status, payload.error?.code ?? 'http_error',
-            payload.error?.message ?? `Mnemion returned HTTP ${response.status}`, payload.request_id ?? response.headers.get('X-Request-ID') ?? undefined)
+            payload.error?.message ?? `Mnemion returned HTTP ${response.status}`, payload.request_id ?? response.headers.get('X-Request-ID') ?? undefined, retryAfterSeconds)
         }
       } catch (error) {
         if (error instanceof MnemionError || options.signal?.aborted || !safeRetry || attempt === this.#retries) throw error
       } finally { clearTimeout(timer) }
-      await new Promise(resolve => setTimeout(resolve, Math.min(2000, 200 * 2 ** attempt)))
+      await waitForRetry(retryDelay, options.signal)
     }
     throw new Error('Request retry loop exhausted')
   }

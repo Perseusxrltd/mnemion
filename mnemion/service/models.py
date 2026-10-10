@@ -8,6 +8,11 @@ from typing import Annotated, Any, Literal
 from uuid import UUID
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic_core import PydanticCustomError
+
+SCOPE_SELECTION_MESSAGE = (
+    "Set non-empty space_ids, or set all_accessible=true with space_ids=[]; choose exactly one."
+)
 
 Role = Literal["reader", "contributor", "reviewer", "administrator"]
 ClaimStatus = Literal["observed", "verified", "contested", "superseded", "retracted"]
@@ -27,12 +32,36 @@ class Command(BaseModel):
 
 
 class SourceInput(Command):
-    title: str = Field(default="Captured evidence", min_length=1, max_length=300)
-    uri: str | None = Field(default=None, max_length=4096)
-    content: str | None = Field(default=None, min_length=1, max_length=1_000_000)
-    media_type: Literal["text/plain", "text/markdown"] = "text/plain"
-    start: int = Field(default=0, ge=0)
-    end: int | None = Field(default=None, ge=0)
+    title: str = Field(
+        default="Captured evidence",
+        min_length=1,
+        max_length=300,
+        description="Human-readable title of the cited evidence.",
+    )
+    uri: str | None = Field(
+        default=None,
+        max_length=4096,
+        description="Optional source location for citations; never include credentials in the URL.",
+    )
+    content: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=1_000_000,
+        description="Original source text. If omitted, the saved memory itself is the evidence.",
+    )
+    media_type: Literal["text/plain", "text/markdown"] = Field(
+        default="text/plain", description="Format of the source text."
+    )
+    start: int = Field(
+        default=0,
+        ge=0,
+        description="Inclusive Unicode character offset of the cited span in source content.",
+    )
+    end: int | None = Field(
+        default=None,
+        ge=0,
+        description="Exclusive Unicode character offset; omitted means the end of source content.",
+    )
 
 
 class MemoryInput(Command):
@@ -85,13 +114,20 @@ class ReviewInput(Command):
 
 
 class SpaceSelection(Command):
-    space_ids: list[UUID] = Field(default_factory=list, max_length=1000)
-    all_accessible: bool = False
+    space_ids: list[UUID] = Field(
+        default_factory=list,
+        max_length=1000,
+        description="Explicit spaces to search. Use [] with all_accessible=true to search across all currently authorized spaces.",
+    )
+    all_accessible: bool = Field(
+        default=False,
+        description="Search across all spaces the caller can currently access. Requires empty space_ids and never bypasses permissions.",
+    )
 
     @model_validator(mode="after")
     def explicit_selection(self):
         if bool(self.space_ids) == self.all_accessible:
-            raise ValueError("Select explicit spaces or all_accessible, but not both")
+            raise PydanticCustomError("memory_scope", SCOPE_SELECTION_MESSAGE)
         self.space_ids = list(dict.fromkeys(self.space_ids))
         return self
 

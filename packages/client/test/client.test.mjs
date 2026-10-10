@@ -43,3 +43,43 @@ test('browser fetch is invoked with its required global receiver', async () => {
   } })
   assert.equal((await client.me()).principal_id, 'browser-client')
 })
+
+test('busy reads respect Retry-After without replaying administrative writes', async () => {
+  let calls = 0
+  const fetch = async () => {
+    calls++
+    return calls === 1
+      ? Response.json({ error: { code: 'inference_busy', message: 'Retry shortly' } }, { status: 503, headers: { 'Retry-After': '0.35' } })
+      : Response.json({ hits: [] })
+  }
+  const client = new MnemionClient({ baseUrl: 'http://example.test', apiKey: 'dummy', fetch })
+  const started = performance.now()
+  await client.search({ query: 'decision', all_accessible: true })
+  assert.ok(performance.now() - started >= 300, 'The server admission delay must be respected')
+  assert.equal(calls, 2)
+  calls = 0
+  await assert.rejects(client.createPrincipal('agent'), error =>
+    error instanceof MnemionError && error.retryable && error.retryAfterSeconds === 0.35)
+  assert.equal(calls, 1)
+})
+
+test('retry hints are bounded and non-object proxy errors remain structured', async () => {
+  for (const [header, expected] of [['9999999', 30], ['invalid', undefined], [new Date(Date.now() + 600000).toUTCString(), 30]]) {
+    const client = new MnemionClient({ baseUrl: 'http://example.test', apiKey: 'dummy', retries: 0,
+      fetch: async () => Response.json(null, { status: 503, headers: { 'Retry-After': header } }) })
+    await assert.rejects(client.me(), error => error instanceof MnemionError && error.code === 'http_error' && error.retryAfterSeconds === expected)
+  }
+})
+
+test('cancelling during backoff stops the wait and the next request', async () => {
+  let calls = 0
+  const abort = new AbortController()
+  const client = new MnemionClient({ baseUrl: 'http://example.test', apiKey: 'dummy', fetch: async () => {
+    calls++
+    return Response.json({}, { status: 503, headers: { 'Retry-After': '30' } })
+  } })
+  const pending = client.request('GET', '/v1/me', { signal: abort.signal })
+  const timer = setTimeout(() => abort.abort(new Error('Cancelled by user')), 20)
+  try { await assert.rejects(pending, /Cancelled by user/) } finally { clearTimeout(timer) }
+  assert.equal(calls, 1)
+})

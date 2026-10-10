@@ -2,6 +2,7 @@
 
 from concurrent.futures import ThreadPoolExecutor
 import threading
+import time
 
 import pytest
 
@@ -53,6 +54,40 @@ def test_timed_out_waiter_does_not_leak_capacity_or_release_running_model():
     stats = gate.snapshot()
     assert stats["failed"] == 1 and stats["rejected"] == 3 and stats["completed"] == 2
     assert stats["active"] == stats["queued"] == 0
+
+
+def test_ten_caller_burst_queues_without_parallel_model_allocations():
+    gate = InferenceGate()
+    ready = threading.Barrier(10)
+    active = maximum = 0
+    lock = threading.Lock()
+
+    def request():
+        nonlocal active, maximum
+        ready.wait(timeout=5)
+        with gate.acquire():
+            with lock:
+                active += 1
+                maximum = max(maximum, active)
+            time.sleep(0.04)
+            with lock:
+                active -= 1
+
+    with ThreadPoolExecutor(max_workers=10) as pool:
+        list(pool.map(lambda _: request(), range(10)))
+    assert maximum == 1
+    assert gate.snapshot()["completed"] == 10
+    assert gate.snapshot()["rejected"] == 0
+
+
+def test_operator_queue_configuration_is_bounded(monkeypatch):
+    monkeypatch.setenv("MNEMION_MODEL_MAX_QUEUED", "12")
+    monkeypatch.setenv("MNEMION_MODEL_WAIT_SECONDS", "3.5")
+    gate = InferenceGate.from_environment()
+    assert (gate.max_queued, gate.wait_seconds) == (12, 3.5)
+    monkeypatch.setenv("MNEMION_MODEL_MAX_QUEUED", "100000")
+    with pytest.raises(ValueError):
+        InferenceGate.from_environment()
 
 
 @pytest.mark.parametrize("value", [True, -1, 65, 1.5, "4"])

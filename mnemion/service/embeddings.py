@@ -105,8 +105,8 @@ class LocalEmbedder:
         *,
         threads: int = 2,
         offline: bool = False,
-        max_queued: int = 4,
-        wait_seconds: float = 0.25,
+        max_queued: int = 16,
+        wait_seconds: float = 2,
         generation: Generation | None = None,
     ):
         if generation is not None:

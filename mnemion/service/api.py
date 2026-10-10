@@ -3,7 +3,7 @@
 import asyncio
 import logging
 import os
-from contextlib import asynccontextmanager
+from contextlib import AsyncExitStack, asynccontextmanager
 from pathlib import Path
 from typing import Annotated
 from uuid import UUID, uuid4
@@ -16,6 +16,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from fastapi.staticfiles import StaticFiles
 from psycopg_pool import PoolTimeout
+from starlette.routing import Route
 
 from mnemion.version import __version__
 
@@ -30,6 +31,7 @@ from .identity import IdentityService
 from .knowledge import Knowledge, KnowledgeInput, KnowledgeService
 from .memory import MemoryService
 from .models import (
+    SCOPE_SELECTION_MESSAGE,
     BlockInput,
     ContextInput,
     ExportInput,
@@ -132,6 +134,7 @@ def create_app(
     *,
     registry: ModelRegistry | None = None,
     librarian_registry: LibrarianRegistry | None = None,
+    mcp_enabled: bool | None = None,
 ) -> FastAPI:
     owned = database is None
     if database is None:
@@ -155,6 +158,7 @@ def create_app(
     librarian = LibrarianService(database, librarian_registry, memory)
     librarian_runner = LibrarianRunner(librarian)
     exports = ExportService(database)
+    mcp_app = None
 
     @asynccontextmanager
     async def lifespan(app):
@@ -165,14 +169,19 @@ def create_app(
             evaluations.start()
         if os.environ.get("MNEMION_LIBRARIAN_DISABLED") != "1":
             librarian_runner.start()
-        yield
-        librarian_runner.stop()
-        evaluations.stop()
-        telemetry.stop()
-        librarian_registry.close()
-        registry.close()
-        if owned:
-            database.close()
+        try:
+            async with AsyncExitStack() as stack:
+                if mcp_app is not None:
+                    await stack.enter_async_context(mcp_app.router.lifespan_context(mcp_app))
+                yield
+        finally:
+            librarian_runner.stop()
+            evaluations.stop()
+            telemetry.stop()
+            librarian_registry.close()
+            registry.close()
+            if owned:
+                database.close()
 
     app = FastAPI(
         title="Mnemion Memory Service",
@@ -231,7 +240,9 @@ def create_app(
 
     @app.exception_handler(ServiceError)
     async def service_error(request: Request, exc: ServiceError):
-        headers = {"WWW-Authenticate": "Bearer"} if exc.status == 401 else None
+        headers = {"WWW-Authenticate": "Bearer"} if exc.status == 401 else {}
+        if exc.status in {429, 503}:
+            headers["Retry-After"] = "1" if exc.code == "inference_busy" else "2"
         return JSONResponse(
             {
                 "error": {"code": exc.code, "message": exc.message},
@@ -252,7 +263,9 @@ def create_app(
             {
                 "error": {
                     "code": "invalid_request",
-                    "message": "Check the request fields against the API schema.",
+                    "message": SCOPE_SELECTION_MESSAGE
+                    if any(error["type"] == "memory_scope" for error in exc.errors())
+                    else "Check the request fields against the API schema.",
                     "fields": fields,
                 },
                 "request_id": request.state.request_id,
@@ -574,6 +587,23 @@ def create_app(
             media_type="application/zip",
             headers={"Content-Disposition": 'attachment; filename="mnemion-obsidian.zip"'},
         )
+
+    if (
+        mcp_enabled
+        if mcp_enabled is not None
+        else os.environ.get("MNEMION_MCP_ENABLED", "1") == "1"
+    ):
+        from .mcp import create_mcp
+
+        gateway = create_mcp(
+            "http://mnemion.internal", api_app=app, public_url=os.environ.get("MNEMION_PUBLIC_URL")
+        )
+        mcp_app = gateway.streamable_http_app(stateless_http=True, json_response=True)
+        # Preserve the exact /mcp URL without Mount's trailing-slash redirect.
+        # Internal tool requests use ASGI, so they cannot exhaust the listening
+        # server's concurrency slots while waiting for their own loopback HTTP.
+        app.router.routes.append(Route("/mcp", mcp_app, methods=["GET", "POST", "DELETE"]))
+        app.state.mcp = gateway
 
     studio_path = os.environ.get("MNEMION_STUDIO_DIST")
     if studio_path:

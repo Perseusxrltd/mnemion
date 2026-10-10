@@ -80,6 +80,13 @@ the API. An independently hosted browser client needs explicit comma-separated
 Interactive API documentation is disabled in Compose unless
 `MNEMION_API_DOCS=1` is explicitly configured.
 
+From 4.0.2, the API listener also serves authenticated Streamable HTTP MCP at
+`/mcp`; one proxy/tunnel handles both API and agents. `MNEMION_PUBLIC_URL` must
+match the external HTTPS origin so MCP host/origin validation accepts it. Local
+loopback hosts remain allowed. Set `MNEMION_MCP_ENABLED=0` (or source CLI
+`serve --no-mcp`) if this deployment needs only the HTTP API. The standalone MCP
+gateway remains available for existing separate-process deployments.
+
 Start capacity planning with four CPU cores, 8 GiB RAM and durable storage, then
 measure the actual corpus. This is planning guidance, not a capacity guarantee.
 The model is local and uses two inference threads per process by default. API
@@ -87,6 +94,9 @@ concurrency defaults to 64 (`MNEMION_HTTP_CONCURRENCY`) and the database pool to
 10 (`MNEMION_DB_POOL_SIZE`). Increasing workers also increases model memory and
 database connections. Vector ranking currently computes exact distance within
 authorized scopes; scope size, text length and concurrency affect latency.
+Embedding inference defaults to one active call, 16 waiting callers and a
+2-second admission wait per process. See [the model resource settings](embeddings.md#inference-admission)
+for bounds, overload responses and retry behavior.
 
 The included Compose profile caps API and worker containers at 2 GiB RAM and two
 CPUs each, database memory at 768 MiB, and operator tools at 2 GiB. Swap allowance

@@ -4,6 +4,47 @@ from fastapi.testclient import TestClient
 
 from mnemion.service.api import create_app
 from mnemion.service.models import KeyInput, PrincipalInput
+from mnemion.service.errors import ServiceError
+from mnemion.service.retrieval import RetrievalService
+
+
+def test_missing_and_conflicting_scopes_explain_the_fix_without_echoing_query(env):
+    with TestClient(create_app(env.db, env.embedder)) as client:
+        auth = {"Authorization": "Bearer " + env.token}
+        for selection in ({}, {"space_ids": [str(env.space)], "all_accessible": True}):
+            response = client.post(
+                "/v1/recall", headers=auth, json={"query": "private-query-sentinel", **selection}
+            )
+            assert response.status_code == 422
+            error = response.json()["error"]
+            assert error["code"] == "invalid_request"
+            assert "space_ids" in error["message"] and "all_accessible=true" in error["message"]
+            assert "private-query-sentinel" not in response.text
+        assert (
+            client.post(
+                "/v1/recall",
+                headers=auth,
+                json={"query": "test", "all_accessible": True, "mode": "lexical"},
+            ).status_code
+            == 200
+        )
+
+
+def test_inference_overload_is_retryable_at_the_http_boundary(env, monkeypatch):
+    def busy(*args, **kwargs):
+        raise ServiceError(503, "inference_busy", "Model capacity is busy; retry shortly.")
+
+    monkeypatch.setattr(RetrievalService, "recall", busy)
+    with TestClient(create_app(env.db, env.embedder)) as client:
+        response = client.post(
+            "/v1/recall",
+            headers={"Authorization": "Bearer " + env.token},
+            json={"query": "test", "all_accessible": True},
+        )
+        assert response.status_code == 503
+        assert response.headers["Retry-After"] == "1"
+        assert response.json()["error"]["code"] == "inference_busy"
+        assert response.json()["request_id"] == response.headers["X-Request-ID"]
 
 
 def test_http_save_search_citation_correction_and_forget(env):

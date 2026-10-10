@@ -21,7 +21,7 @@ class ModelRegistry:
         self._by_generation = {model.generation.id: model for model in self.profiles.values()}
         self._by_generation.setdefault(default.generation.id, default)
         # Switching models must not multiply simultaneous tensor allocations.
-        gate = InferenceGate()
+        gate = InferenceGate.from_environment()
         for model in self._by_generation.values():
             if hasattr(model, "_inference_gate"):
                 model._inference_gate = gate

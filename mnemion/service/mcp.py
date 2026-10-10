@@ -7,19 +7,103 @@ from uuid import UUID
 
 import anyio
 from mcp.server.mcpserver import Context, MCPServer
-from mcp.server.mcpserver.exceptions import ToolError
 from mcp.types import ToolAnnotations
 from pydantic import BaseModel, Field
 
-from ..sdk import Client, ContextPack, Memory, MnemionError, Receipt, Recall
+from ..sdk import ContextPack, Memory, MnemionError, Receipt, Recall
 from ..version import __version__
 from .contracts import Page, Space
 from .models import MemoryKind, SourceInput
+from .mcp_transport import MnemionMCPServer
 
-Text = Annotated[str, Field(min_length=1, max_length=65536)]
-Query = Annotated[str, Field(min_length=1, max_length=4000)]
-IdempotencyKey = Annotated[str, Field(min_length=1, max_length=200)]
-Limit = Annotated[int, Field(ge=1, le=50)]
+Text = Annotated[
+    str,
+    Field(
+        min_length=1,
+        max_length=65536,
+        description="The memory text to preserve. Keep source evidence separate when it differs.",
+    ),
+]
+Query = Annotated[
+    str,
+    Field(
+        min_length=1,
+        max_length=4000,
+        description="Natural-language query used to retrieve relevant authorized evidence.",
+    ),
+]
+IdempotencyKey = Annotated[
+    str,
+    Field(
+        min_length=1,
+        max_length=200,
+        description="Unique key for this logical write. Reuse it only when retrying the same request after interruption.",
+    ),
+]
+Limit = Annotated[
+    int, Field(ge=1, le=50, description="Maximum number of results to return, from 1 to 50.")
+]
+SpaceId = Annotated[
+    UUID,
+    Field(description="Writable space ID from memory_spaces; saves require contributor or higher."),
+]
+SpaceIds = Annotated[
+    list[UUID],
+    Field(
+        max_length=1000,
+        description="Explicit authorized spaces. For global retrieval use [] and all_accessible=true.",
+    ),
+]
+AllAccessible = Annotated[
+    bool,
+    Field(
+        description="Search every currently accessible space, including connected sources; requires space_ids=[]. Never bypasses permissions."
+    ),
+]
+MemoryId = Annotated[UUID, Field(description="Memory ID from a save receipt or search result.")]
+RevisionId = Annotated[
+    UUID | None,
+    Field(
+        description="Optional historical revision ID; omit to fetch the current revision. Current access and deletion rules still apply."
+    ),
+]
+Subject = Annotated[
+    str | None,
+    Field(
+        max_length=500,
+        description="Optional exact subject label for grouping or filtering memories.",
+    ),
+]
+Kind = Annotated[
+    MemoryKind, Field(description="Memory type: fact, event, preference, procedure or note.")
+]
+OptionalKind = Annotated[
+    MemoryKind | None,
+    Field(
+        description="Replacement memory type: fact, event, preference, procedure or note. Omit to retain the current type."
+    ),
+]
+Source = Annotated[
+    SourceInput | None,
+    Field(
+        description="Original evidence and citation span. Omit to use the memory text as evidence."
+    ),
+]
+ExpectedVersion = Annotated[
+    int,
+    Field(
+        ge=1,
+        description="Current version from memory_fetch. Stale versions are rejected to avoid overwriting another contributor's work.",
+    ),
+]
+Reason = Annotated[
+    str,
+    Field(
+        min_length=1,
+        max_length=1000,
+        description="Why this correction is needed; retained in the audit history.",
+    ),
+]
 Read = ToolAnnotations(
     readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False
 )
@@ -32,10 +116,18 @@ Delete = ToolAnnotations(
 
 
 def create_mcp(
-    base_url: str, *, stdio_token: str | None = None, legacy_space: str | None = None
+    base_url: str,
+    *,
+    stdio_token: str | None = None,
+    legacy_space: str | None = None,
+    api_app=None,
+    public_url: str | None = None,
 ) -> MCPServer:
-    server = MCPServer(
+    server = MnemionMCPServer(
         "Mnemion",
+        api_url=base_url,
+        api_app=api_app,
+        public_url=public_url,
         version=__version__,
         instructions=(
             "Use memory_spaces to select a writable space for saves. For global recall/context, pass space_ids=[] and all_accessible=true. "
@@ -56,25 +148,26 @@ def create_mcp(
         if request is not None:
             header = request.headers.get("authorization", "")
             if not header.lower().startswith("bearer "):
-                raise ToolError("unauthorized: send your own Mnemion API key as a Bearer token")
+                raise MnemionError(
+                    401, "unauthorized", "Send your own Mnemion API key as a Bearer token."
+                )
             # HTTP never falls back to a process-wide administrator credential.
             return header[7:]
         if not stdio_token:
-            raise ToolError("unauthorized: configure MNEMION_API_KEY for the stdio client")
+            raise MnemionError(
+                401, "unauthorized", "Configure MNEMION_API_KEY for the stdio client."
+            )
         return stdio_token
 
     async def invoke(ctx: Context, action, *args, **kwargs):
         token = credential(ctx)
 
         def run():
-            try:
-                with Client(base_url, token) as client:
-                    result = action(client, *args, **kwargs)
-                return result.model_dump(mode="json") if isinstance(result, BaseModel) else result
-            except MnemionError as exc:
-                raise ToolError(f"{exc.code}: {exc}; request_id={exc.request_id}") from None
+            with server.api_client(token) as client:
+                result = action(client, *args, **kwargs)
+            return result.model_dump(mode="json") if isinstance(result, BaseModel) else result
 
-        return await anyio.to_thread.run_sync(run)
+        return await anyio.to_thread.run_sync(run, limiter=server.worker_capacity)
 
     @server.tool(annotations=Read, structured_output=True)
     async def memory_spaces(ctx: Context) -> Page[Space]:
@@ -85,13 +178,13 @@ def create_mcp(
 
     @server.tool(annotations=Write, structured_output=True)
     async def memory_save(
-        space_id: UUID,
+        space_id: SpaceId,
         content: Text,
         idempotency_key: IdempotencyKey,
         ctx: Context,
-        subject: str | None = None,
-        kind: MemoryKind = "fact",
-        source: SourceInput | None = None,
+        subject: Subject = None,
+        kind: Kind = "fact",
+        source: Source = None,
     ) -> Receipt:
         """Save sourced memory in an authorized space; return durable IDs and indexing state."""
         return await invoke(
@@ -108,10 +201,10 @@ def create_mcp(
 
     @server.tool(annotations=Read, structured_output=True)
     async def memory_map(
-        space_ids: list[UUID],
+        space_ids: SpaceIds,
         ctx: Context,
-        all_accessible: bool = False,
-        subject: str | None = None,
+        all_accessible: AllAccessible = False,
+        subject: Subject = None,
         limit: Limit = 25,
     ) -> dict[str, Any]:
         """Explore current topics, evidence links, and curation findings. Fetch cited memories for text."""
@@ -132,11 +225,11 @@ def create_mcp(
     @server.tool(annotations=Read, structured_output=True)
     async def memory_search(
         query: Query,
-        space_ids: list[UUID],
+        space_ids: SpaceIds,
         ctx: Context,
         limit: Limit = 10,
-        subject: str | None = None,
-        all_accessible: bool = False,
+        subject: Subject = None,
+        all_accessible: AllAccessible = False,
     ) -> Recall:
         """Recall current authorized evidence with source citations and ranking details."""
         return await invoke(
@@ -152,7 +245,7 @@ def create_mcp(
 
     @server.tool(annotations=Read, structured_output=True)
     async def memory_fetch(
-        memory_id: UUID, ctx: Context, revision_id: UUID | None = None
+        memory_id: MemoryId, ctx: Context, revision_id: RevisionId = None
     ) -> Memory:
         """Fetch the memory and its evidence, applying current access and quarantine policy."""
         return await invoke(
@@ -165,10 +258,17 @@ def create_mcp(
     @server.tool(annotations=Read, structured_output=True)
     async def memory_context(
         query: Query,
-        space_ids: list[UUID],
+        space_ids: SpaceIds,
         ctx: Context,
-        token_budget: Annotated[int, Field(ge=64, le=32768)] = 2048,
-        all_accessible: bool = False,
+        token_budget: Annotated[
+            int,
+            Field(
+                ge=64,
+                le=32768,
+                description="Maximum context budget, including core blocks and evidence, from 64 to 32768. The response reports its counting unit and omissions.",
+            ),
+        ] = 2048,
+        all_accessible: AllAccessible = False,
     ) -> ContextPack:
         """Build a bounded context pack with core blocks, evidence citations, and omissions."""
         return await invoke(
@@ -183,15 +283,15 @@ def create_mcp(
 
     @server.tool(annotations=Write, structured_output=True)
     async def memory_revise(
-        memory_id: UUID,
+        memory_id: MemoryId,
         content: Text,
-        expected_version: int,
-        reason: str,
+        expected_version: ExpectedVersion,
+        reason: Reason,
         idempotency_key: IdempotencyKey,
         ctx: Context,
-        subject: str | None = None,
-        kind: MemoryKind | None = None,
-        source: SourceInput | None = None,
+        subject: Subject = None,
+        kind: OptionalKind = None,
+        source: Source = None,
     ) -> Receipt:
         """Record a sourced correction while preserving prior revisions; reject stale edits."""
         fields = {
@@ -217,7 +317,10 @@ def create_mcp(
 
     @server.tool(annotations=Delete, structured_output=True)
     async def memory_forget(
-        memory_id: UUID, expected_version: int, idempotency_key: IdempotencyKey, ctx: Context
+        memory_id: MemoryId,
+        expected_version: ExpectedVersion,
+        idempotency_key: IdempotencyKey,
+        ctx: Context,
     ) -> Receipt:
         """Deny future reads immediately and queue content purge; requires reviewer authority."""
         return await invoke(

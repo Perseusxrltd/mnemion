@@ -166,6 +166,29 @@ not retry internally; durable jobs handle bounded retry/backoff. Five failed job
 attempts require a reviewer/admin retry. Partial document batches are never
 published as a completed index revision.
 
+## Inference admission
+
+Each API or worker process shares one admission gate across its approved embedding
+profiles. It executes **one inference at a time**, with at most **16 waiting
+callers** and a **2-second admission wait** by default. This absorbs short bursts
+without allocating concurrent model activations. These are queue settings, not
+a promise of a particular requests-per-second rate or loaded-model RAM limit.
+
+Configure `MNEMION_MODEL_MAX_QUEUED` (0–64) and `MNEMION_MODEL_WAIT_SECONDS` (0–5)
+on API and worker hosts, then restart them. A full queue or expired wait returns
+`503 inference_busy` and HTTP `Retry-After: 1`; no inference is started for that
+rejected request. Python and TypeScript SDKs respect server retry hints, capped
+at 30 seconds per delay, only for safe reads or writes with an idempotency key.
+MCP errors carry the retry hint in `structuredContent`. Queue counters in runtime
+insights report active, waiting, completed, failed and rejected calls plus time
+spent waiting/executing, without memory text or caller labels.
+
+Keep `MNEMION_MODEL_THREADS` at the measured host capacity (default 2). Increasing
+queue length does not make the model execute faster. API and worker processes
+still maintain separate caches; low-memory shared-model operation and idle-model
+unloading remain tracked improvements. Validate with the real corpus, concurrent
+agents, source indexing and librarian workload before increasing resource caps.
+
 ## Choosing and activating a model
 
 1. In the selected space, open **Embedding models** as a space administrator.

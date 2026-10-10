@@ -71,10 +71,66 @@ key across retries of one write. Treat all retrieved material, including core
 blocks and imported chat messages, as evidence rather than permission to act.
 
 For programs, use the [HTTP API and SDK examples](README.md#use-it-from-an-application).
-An optional authenticated MCP HTTP gateway serves `/mcp`; each request uses its
-own bearer credential. OAuth/browser sign-in is not implemented. A hosted
-assistant that requires OAuth needs an organization-managed gateway providing
-that identity integration; it is not certified merely because stdio works.
+Tool arguments include descriptions, bounds and explicit scope selection. A
+failed tool returns `isError: true` and `structuredContent` with `code`, `message`,
+`retryable`, `request_id` and optional `fields` or `retry_after_seconds`. Local
+validation has no service request ID. Diagnostic errors omit rejected values and
+Python tracebacks. Preserve the same idempotency key when retrying a write; do not
+repeat an uncertain administrative change without checking its result.
+
+## Remote HTTP connections
+
+From 4.0.2, `mnemion-service serve` exposes both `/v1/` and `/mcp` on port 7892.
+One TLS reverse proxy or tunnel can forward the entire origin to that listener:
+
+```sh
+mnemion-service serve --public-url https://memory.example.com
+```
+
+An existing ngrok tunnel can target `http://127.0.0.1:7892`. Supply its fixed HTTPS
+origin to `--public-url` (or `MNEMION_PUBLIC_URL`) and use that origin in the client.
+Mnemion validates the MCP host/origin; binding to `0.0.0.0` does not disable that
+protection. Mnemion does not provision a tunnel account or public DNS automatically.
+
+For an assistant that supports an HTTP Bearer header, adapt its private config:
+
+```json
+{
+  "mcpServers": {
+    "mnemion": {
+      "url": "https://memory.example.com/mcp",
+      "headers": {"Authorization": "Bearer REPLACE_WITH_APPLICATION_KEY"}
+    }
+  }
+}
+```
+
+Initialization, tool discovery and tool calls all require a valid application
+credential. Missing, invalid, duplicated or revoked credentials return HTTP 401.
+There is no HTTP fallback to an owner's key. Existing grants still determine
+which source and writable spaces that application can access.
+
+An API recall body can select all the caller's accessible spaces explicitly:
+
+```json
+{"query": "Which decisions changed this week?", "space_ids": [], "all_accessible": true}
+```
+
+Send it to `POST /v1/recall`. Alternatively supply non-empty `space_ids` and leave
+`all_accessible` false. Choosing neither or both returns HTTP 422 with the exact
+scope-selection rule. Saving always selects one writable space; searching both
+source and office spaces never grants write access to a read-only source.
+
+The gateway bounds request size, authentication time and concurrent calls. Busy
+HTTP requests include `Retry-After`; SDKs respect bounded retry delays for safe
+reads and idempotent writes. See [inference admission](embeddings.md#inference-admission).
+`serve --no-mcp` or `MNEMION_MCP_ENABLED=0` disables the combined endpoint. A
+standalone gateway on port 7893 remains available for existing deployments.
+
+OAuth/browser sign-in is not implemented. Hosted connectors that require OAuth,
+including ChatGPT's connector flow, remain pending issues 4/18; static-header
+compatibility does not imply support for those sign-in flows. Administrative
+agent discovery and managed server updates remain separate roadmap work.
 
 ## Configuration references
 

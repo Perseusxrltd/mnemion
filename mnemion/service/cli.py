@@ -51,9 +51,14 @@ def main(argv: list[str] | None = None) -> int:
     bootstrap.add_argument("--owner", required=True)
     bootstrap.add_argument("--space", default="Private memory")
     bootstrap.add_argument("--output", type=Path, required=True)
-    serve = commands.add_parser("serve", help="Run the versioned HTTP API")
+    serve = commands.add_parser("serve", help="Run the HTTP API and authenticated MCP on one port")
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=7892)
+    serve.add_argument("--no-mcp", action="store_true", help="Disable the combined /mcp endpoint")
+    serve.add_argument(
+        "--public-url",
+        help="Public HTTPS origin used by a reverse proxy or tunnel; permits its MCP Host and Origin",
+    )
     serve.add_argument(
         "--concurrency", type=int, default=int(os.environ.get("MNEMION_HTTP_CONCURRENCY", "64"))
     )
@@ -178,6 +183,7 @@ def main(argv: list[str] | None = None) -> int:
     mcp.add_argument("--host", default="127.0.0.1")
     mcp.add_argument("--port", type=int, default=7893)
     mcp.add_argument("--legacy-space", default=None)
+    mcp.add_argument("--public-url", help="Public HTTPS origin used by a reverse proxy or tunnel")
     vault = commands.add_parser(
         "vault", help="Refresh a local Obsidian vault from authorized service data"
     )
@@ -319,6 +325,10 @@ def main(argv: list[str] | None = None) -> int:
             raise ValueError("HTTP concurrency must be between 1 and 4096")
         if args.studio:
             os.environ["MNEMION_STUDIO_DIST"] = str(args.studio)
+        if args.no_mcp:
+            os.environ["MNEMION_MCP_ENABLED"] = "0"
+        if args.public_url:
+            os.environ["MNEMION_PUBLIC_URL"] = args.public_url
         uvicorn.run(
             "mnemion.service.api:create_app",
             factory=True,
@@ -500,6 +510,7 @@ def main(argv: list[str] | None = None) -> int:
             os.environ.get("MNEMION_API_URL", "http://127.0.0.1:7892"),
             stdio_token=_required("MNEMION_API_KEY") if args.transport == "stdio" else None,
             legacy_space=args.legacy_space,
+            public_url=args.public_url or os.environ.get("MNEMION_PUBLIC_URL"),
         )
         if args.transport == "stdio":
             gateway.run("stdio")

@@ -3,7 +3,7 @@
 This is the **4.0 shared-memory service**. It provides authenticated spaces,
 versioned source evidence, durable indexing, local multilingual search, HTTP and
 MCP access, and Obsidian exports. The [product page](https://www.perseusxr.com/mnemion)
-provides desktop downloads, and the [release notes](../releases/4.0.0.md) identify
+provides desktop downloads, and the [release notes](../releases/4.0.2.md) identify
 the supported packages and remaining platform work. Complete backup/recovery,
 v3 import with cutover and rollback, and Studio are implemented. The initial
 desktop release is published for macOS and Linux; Windows release validation and larger
@@ -199,16 +199,23 @@ an explicit idempotency key. Memory content is evidence, not an instruction
 channel. MCP registration does not install capture hooks or imply automatic
 conversation capture.
 
-For clients supporting authenticated Streamable HTTP:
+The API now serves authenticated Streamable HTTP MCP on the same port by default:
 
 ```bash
-uv run --no-sync mnemion-service mcp --transport streamable-http
+uv run --no-sync mnemion-service serve
 ```
 
-The endpoint is `http://127.0.0.1:7893/mcp`. Every HTTP tool request uses its own
-Bearer API key; it cannot fall back to a configured stdio/owner credential.
-Both the current discovery flow and older initialization flow are exercised by
-the transport tests. OAuth browser sign-in is not implemented yet.
+Use `http://127.0.0.1:7892/mcp` for MCP and `http://127.0.0.1:7892/v1/` for
+HTTP operations. Every MCP request, including initialization and tool discovery,
+requires the caller's valid Bearer API key; it cannot fall back to a configured
+stdio/owner credential. Revocation is checked on subsequent requests.
+For a TLS proxy or tunnel, configure `serve --public-url https://memory.example.com`
+so MCP accepts the exact public host/origin. See [remote agent setup](agents.md#remote-http-connections).
+
+`serve --no-mcp` disables the combined endpoint. The standalone command
+`mnemion-service mcp --transport streamable-http` remains available on port 7893,
+with the same `--public-url` option. Tests exercise both current discovery and
+older initialization flows. OAuth browser sign-in is not implemented yet.
 
 `mcp --legacy-space SPACE_UUID` also exposes compatibility names for drawer
 save/search/delete and Open Brain capture/search/list/stats/search-fetch. Wing

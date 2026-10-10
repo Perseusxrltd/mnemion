@@ -886,6 +886,7 @@
         "properties": {
           "all_accessible": {
             "default": false,
+            "description": "Search across all spaces the caller can currently access. Requires empty space_ids and never bypasses permissions.",
             "title": "All Accessible",
             "type": "boolean"
           },
@@ -982,6 +983,7 @@
             "type": "string"
           },
           "space_ids": {
+            "description": "Explicit spaces to search. Use [] with all_accessible=true to search across all currently authorized spaces.",
             "items": {
               "format": "uuid",
               "type": "string"
@@ -2094,6 +2096,7 @@
         "properties": {
           "all_accessible": {
             "default": false,
+            "description": "Search across all spaces the caller can currently access. Requires empty space_ids and never bypasses permissions.",
             "title": "All Accessible",
             "type": "boolean"
           },
@@ -2103,6 +2106,7 @@
             "type": "boolean"
           },
           "space_ids": {
+            "description": "Explicit spaces to search. Use [] with all_accessible=true to search across all currently authorized spaces.",
             "items": {
               "format": "uuid",
               "type": "string"
@@ -2642,6 +2646,7 @@
         "properties": {
           "all_accessible": {
             "default": false,
+            "description": "Search across all spaces the caller can currently access. Requires empty space_ids and never bypasses permissions.",
             "title": "All Accessible",
             "type": "boolean"
           },
@@ -2658,6 +2663,7 @@
             "type": "integer"
           },
           "space_ids": {
+            "description": "Explicit spaces to search. Use [] with all_accessible=true to search across all currently authorized spaces.",
             "items": {
               "format": "uuid",
               "type": "string"
@@ -5339,6 +5345,7 @@
         "properties": {
           "all_accessible": {
             "default": false,
+            "description": "Search across all spaces the caller can currently access. Requires empty space_ids and never bypasses permissions.",
             "title": "All Accessible",
             "type": "boolean"
           },
@@ -5435,6 +5442,7 @@
             "type": "string"
           },
           "space_ids": {
+            "description": "Explicit spaces to search. Use [] with all_accessible=true to search across all currently authorized spaces.",
             "items": {
               "format": "uuid",
               "type": "string"
@@ -6307,6 +6315,7 @@
                 "type": "null"
               }
             ],
+            "description": "Original source text. If omitted, the saved memory itself is the evidence.",
             "title": "Content"
           },
           "end": {
@@ -6319,10 +6328,12 @@
                 "type": "null"
               }
             ],
+            "description": "Exclusive Unicode character offset; omitted means the end of source content.",
             "title": "End"
           },
           "media_type": {
             "default": "text/plain",
+            "description": "Format of the source text.",
             "enum": [
               "text/plain",
               "text/markdown"
@@ -6332,12 +6343,14 @@
           },
           "start": {
             "default": 0,
+            "description": "Inclusive Unicode character offset of the cited span in source content.",
             "minimum": 0.0,
             "title": "Start",
             "type": "integer"
           },
           "title": {
             "default": "Captured evidence",
+            "description": "Human-readable title of the cited evidence.",
             "maxLength": 300,
             "minLength": 1,
             "title": "Title",
@@ -6353,6 +6366,7 @@
                 "type": "null"
               }
             ],
+            "description": "Optional source location for citations; never include credentials in the URL.",
             "title": "Uri"
           }
         },
@@ -6614,7 +6628,7 @@
   "info": {
     "description": "Shared, scoped memory and evidence for apps, teams, and assistants. Saves acknowledge canonical durability; operations report semantic indexing readiness.",
     "title": "Mnemion Memory Service",
-    "version": "4.0.1"
+    "version": "4.0.2"
   },
   "openapi": "3.1.0",
   "paths": {

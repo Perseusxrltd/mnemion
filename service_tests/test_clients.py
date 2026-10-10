@@ -23,6 +23,35 @@ from mnemion.service.mcp import create_mcp
 from mnemion.service.models import KeyInput, PrincipalInput
 
 
+def test_sdk_respects_retry_after_without_replaying_an_unsafe_write(monkeypatch):
+    delays, requests = [], []
+    monkeypatch.setattr("mnemion.sdk.time.sleep", delays.append)
+
+    def busy(request):
+        requests.append(request)
+        return httpx.Response(
+            503,
+            headers={"Retry-After": "1"},
+            json={
+                "error": {"code": "inference_busy", "message": "Busy"},
+                "request_id": "request-test",
+            },
+        )
+
+    with Client(
+        "http://mnemion.test", "fixture-key", transport=httpx.MockTransport(busy), retries=1
+    ) as client:
+        with pytest.raises(MnemionError) as caught:
+            client.request("POST", "/v1/recall", body={"query": "test", "all_accessible": True})
+        assert delays == [1] and len(requests) == 2
+        assert caught.value.retryable and caught.value.retry_after == 1
+        requests.clear()
+        delays.clear()
+        with pytest.raises(MnemionError):
+            client.request("POST", "/v1/principals", body={"name": "Not safe to replay"})
+        assert len(requests) == 1 and delays == []
+
+
 @contextmanager
 def running(app):
     listener = socket.socket()
@@ -243,12 +272,139 @@ def test_mcp_http_auth_is_per_request_and_never_falls_back_to_owner(env):
                         )
 
             async def run():
-                assert (await call(None)).is_error
+                async with httpx2.AsyncClient() as raw:
+                    for method in ("initialize", "tools/list"):
+                        response = await raw.post(
+                            gateway_url + "/mcp",
+                            json={"jsonrpc": "2.0", "id": 1, "method": method, "params": {}},
+                        )
+                        assert response.status_code == 401
+                        assert response.headers["WWW-Authenticate"].startswith("Bearer")
+                        assert "memory_save" not in response.text
+                    response = await raw.post(
+                        gateway_url + "/mcp",
+                        headers={"Authorization": "Bearer invalid-key"},
+                        json={"jsonrpc": "2.0", "id": 1, "method": "tools/list"},
+                    )
+                    assert response.status_code == 401
+                    duplicate = await raw.post(
+                        gateway_url + "/mcp",
+                        headers=[
+                            ("Authorization", "Bearer " + env.token),
+                            ("Authorization", "Bearer invalid-key"),
+                        ],
+                        json={"jsonrpc": "2.0", "id": 1, "method": "tools/list"},
+                    )
+                    assert duplicate.status_code == 401
                 unauthorized = await call(key["api_key"])
                 assert unauthorized.is_error
+                assert unauthorized.structured_content["code"] == "not_found"
+                assert unauthorized.structured_content["retryable"] is False
                 for mode in ("auto", "legacy"):
                     allowed = await call(env.token, mode)
                     assert not allowed.is_error, allowed
                     assert allowed.structured_content["state"] == "accepted"
+                env.identities.revoke_key(env.owner, UUID(key["id"]))
+                async with httpx2.AsyncClient() as raw:
+                    revoked = await raw.post(
+                        gateway_url + "/mcp",
+                        headers={"Authorization": "Bearer " + key["api_key"]},
+                        json={"jsonrpc": "2.0", "id": 1, "method": "tools/list"},
+                    )
+                    assert revoked.status_code == 401
 
             asyncio.run(run())
+
+
+def test_combined_mcp_uses_one_port_and_preserves_api_auth_and_structured_errors(env):
+    with running(create_app(env.db, env.embedder)) as api_url:
+
+        async def run():
+            async with httpx2.AsyncClient(headers={"Authorization": "Bearer " + env.token}) as http:
+                async with MCPClient(
+                    streamable_http_client(api_url + "/mcp", http_client=http),
+                    read_timeout_seconds=15,
+                ) as client:
+                    tools = await client.list_tools()
+                    for tool in tools.tools:
+                        for name, field in tool.input_schema.get("properties", {}).items():
+                            assert field.get("description"), (tool.name, name)
+                    invalid = await client.call_tool(
+                        "memory_search",
+                        {"query": "private-query-sentinel", "space_ids": ["private-invalid-uuid"]},
+                    )
+                    assert invalid.is_error
+                    assert invalid.structured_content["code"] == "invalid_arguments"
+                    assert "private-invalid-uuid" not in str(invalid)
+                    assert "private-query-sentinel" not in str(invalid)
+                    no_scope = await client.call_tool(
+                        "memory_search", {"query": "test", "space_ids": []}
+                    )
+                    assert no_scope.is_error
+                    assert "all_accessible=true" in no_scope.structured_content["message"]
+                    saved = await client.call_tool(
+                        "memory_save",
+                        {
+                            "space_id": str(env.space),
+                            "content": "Combined MCP evidence",
+                            "idempotency_key": "combined-mcp",
+                        },
+                    )
+                    assert not saved.is_error, saved
+                    fetched = await client.call_tool(
+                        "memory_fetch", {"memory_id": saved.structured_content["memory_id"]}
+                    )
+                    assert not fetched.is_error
+                    assert fetched.structured_content["content"] == "Combined MCP evidence"
+                    # More tools than the gateway worker capacity must make progress.
+                    results = await asyncio.gather(
+                        *[client.call_tool("memory_spaces", {}) for _ in range(12)]
+                    )
+                    assert all(not result.is_error for result in results)
+
+        asyncio.run(run())
+
+
+def test_mcp_public_host_is_explicit_and_other_hosts_remain_rejected(env):
+    with running(create_app(env.db, env.embedder, mcp_enabled=False)) as api_url:
+        gateway = create_mcp(api_url, public_url="https://memory.example.com")
+        with running(gateway.streamable_http_app(stateless_http=True, json_response=True)) as url:
+            headers = {
+                "Authorization": "Bearer " + env.token,
+                "Content-Type": "application/json",
+                "Accept": "application/json, text/event-stream",
+            }
+            message = {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "initialize",
+                "params": {
+                    "protocolVersion": "2025-03-26",
+                    "capabilities": {},
+                    "clientInfo": {"name": "gateway-test", "version": "1"},
+                },
+            }
+            allowed = httpx.post(
+                url + "/mcp",
+                headers={
+                    **headers,
+                    "Host": "memory.example.com",
+                    "Origin": "https://memory.example.com",
+                },
+                json=message,
+            )
+            assert allowed.status_code == 200, allowed.text
+            refused = httpx.post(
+                url + "/mcp", headers={**headers, "Host": "unapproved.example.com"}, json=message
+            )
+            assert refused.status_code == 421
+            wrong_origin = httpx.post(
+                url + "/mcp",
+                headers={
+                    **headers,
+                    "Host": "memory.example.com",
+                    "Origin": "https://unapproved.example.com",
+                },
+                json=message,
+            )
+            assert wrong_origin.status_code == 403
