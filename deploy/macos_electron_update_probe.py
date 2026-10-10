@@ -127,7 +127,21 @@ def execute(root: Path) -> dict:
     (installed / "Contents/Info.plist").write_bytes(plistlib.dumps(info))
     sign_bundle(installed)
     run(["ditto", installed, candidate])
-    candidate_info = {**info, "CFBundleVersion": target, "CFBundleShortVersionString": target}
+    candidate_hash = run(
+        [
+            "node",
+            ROOT / "studio/electron/scripts/make-update-fixture.mjs",
+            candidate / "Contents/Resources",
+            root / "unpacked-candidate",
+            target,
+        ]
+    ).stdout.strip()
+    candidate_info = {
+        **deepcopy(info),
+        "CFBundleVersion": target,
+        "CFBundleShortVersionString": target,
+    }
+    candidate_info["ElectronAsarIntegrity"]["Resources/app.asar"]["hash"] = candidate_hash
     (candidate / "Contents/Info.plist").write_bytes(plistlib.dumps(candidate_info))
     sign_bundle(candidate)
     archive = public / "update.zip"

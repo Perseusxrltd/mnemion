@@ -47,21 +47,21 @@ export class DesktopUpdates {
     } else {
       autoUpdater = updaterPackage.autoUpdater
       autoUpdater.setFeedURL({ provider: 'github', owner: 'Perseusxrltd', repo: 'mnemion',
-      private: false, channel: updateChannel(process.arch) })
-    autoUpdater.channel = updateChannel(process.arch)
-    autoUpdater.allowDowngrade = false
-    autoUpdater.allowPrerelease = false
-    autoUpdater.disableWebInstaller = true
-    autoUpdater.logger = null // Provider errors can contain URLs; expose bounded status only.
-    this.applyUpdatePolicy()
-    autoUpdater.on('update-available', info => this.setStatus({ state: 'Downloading update', version: info.version }))
-    autoUpdater.on('update-not-available', () => this.setStatus({ state: 'Up to date', checkedAt: new Date().toISOString() }))
-    autoUpdater.on('download-progress', progress => this.setStatus({ state: 'Downloading update', percent: Math.round(progress.percent) }))
-    autoUpdater.on('update-downloaded', info => {
-      this.downloaded = true
-      this.setStatus({ state: 'Update ready · waiting for a safe restart', version: info.version })
-    })
-    autoUpdater.on('error', () => this.setStatus({ state: 'Update unavailable · retry scheduled' }))
+        private: false, channel: updateChannel(process.arch) })
+      autoUpdater.channel = updateChannel(process.arch)
+      autoUpdater.allowDowngrade = false
+      autoUpdater.allowPrerelease = false
+      autoUpdater.disableWebInstaller = true
+      autoUpdater.logger = null // Provider errors can contain URLs; expose bounded status only.
+      this.applyUpdatePolicy()
+      autoUpdater.on('update-available', info => this.setStatus({ state: 'Downloading update', version: info.version }))
+      autoUpdater.on('update-not-available', () => this.setStatus({ state: 'Up to date', checkedAt: new Date().toISOString() }))
+      autoUpdater.on('download-progress', progress => this.setStatus({ state: 'Downloading update', percent: Math.round(progress.percent) }))
+      autoUpdater.on('update-downloaded', info => {
+        this.downloaded = true
+        this.setStatus({ state: 'Update ready · waiting for a safe restart', version: info.version })
+      })
+      autoUpdater.on('error', () => this.setStatus({ state: 'Update unavailable · retry scheduled' }))
     }
     this.status = { state: this.enabled ? 'Automatic updates enabled' : this.managed ? 'Updates managed by administrator' : !this.supported ? 'Updates managed by installer or package manager' : 'Automatic updates paused' }
     if (this.supported) {
