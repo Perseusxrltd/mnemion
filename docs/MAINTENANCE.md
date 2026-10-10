@@ -63,7 +63,11 @@ Routine native validation runs on standard public-repository runners and keeps
 results in job logs; it does not upload installer artifacts. Release-only artifact
 transfers expire after one day. Before enabling a signed release, verify that its
 temporary storage fits the account's remaining free allowance and delete staging
-artifacts after assembly. A successful public build does not establish the billing
+artifacts after successful assembly. A failed assembly retains its transfers for
+a retry, with a maximum one-day retention; remove abandoned transfers promptly.
+The source builder's control files stay outside the release asset directory.
+Published release-note links are converted to the matching immutable Git tag.
+A successful public build does not establish the billing
 status of unrelated account usage. Never enable larger paid runners or raise a
 storage/billing limit to make a check pass.
 

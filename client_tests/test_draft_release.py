@@ -9,6 +9,23 @@ import pytest
 from deploy import draft_release
 
 
+def test_published_notes_link_to_documentation_in_the_release_tag(tmp_path):
+    notes = tmp_path / "docs/releases/4.0.0.md"
+    notes.parent.mkdir(parents=True)
+    guide = tmp_path / "docs/service/updates.md"
+    guide.parent.mkdir()
+    guide.write_text("# Updates\n")
+    notes.write_text(
+        "[Install](../service/updates.md#macos) and [Website](https://www.perseusxr.com/mnemion)\n"
+    )
+    rendered = draft_release.publication_notes(notes, tmp_path, "owner/repo", "4.0.0")
+    assert "https://github.com/owner/repo/blob/v4.0.0/docs/service/updates.md#macos" in rendered
+    assert "[Website](https://www.perseusxr.com/mnemion)" in rendered
+    notes.write_text("[Missing](../service/missing.md)\n")
+    with pytest.raises(ValueError, match="does not exist"):
+        draft_release.publication_notes(notes, tmp_path, "owner/repo", "4.0.0")
+
+
 class GitHub:
     def __init__(self, *, draft=True, exists=True, fail_upload=False):
         self.release = {

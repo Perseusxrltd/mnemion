@@ -8,8 +8,27 @@ import json
 import re
 import subprocess
 import sys
+import tempfile
 import tomllib
 from pathlib import Path
+from urllib.parse import quote, urlsplit
+
+
+def publication_notes(notes: Path, root: Path, repo: str, version: str) -> str:
+    """Keep repository-relative documentation links usable on GitHub Releases."""
+
+    def replace(match: re.Match[str]) -> str:
+        target = urlsplit(match.group(1))
+        path = (notes.parent / target.path).resolve()
+        relative = path.relative_to(root.resolve())
+        if not path.is_file():
+            raise ValueError(f"Release documentation does not exist: {relative}")
+        url = f"https://github.com/{repo}/blob/v{version}/{quote(relative.as_posix())}"
+        if target.fragment:
+            url += "#" + target.fragment
+        return f"]({url})"
+
+    return re.sub(r"\]\((\.\.?/[^)\s]+)\)", replace, notes.read_text(encoding="utf-8"))
 
 
 def gh(*arguments: str) -> str:
@@ -128,13 +147,15 @@ def main() -> None:
         check=True,
     )
     version = tomllib.loads((root / "pyproject.toml").read_text())["project"]["version"]
-    prepare(
-        args.repo,
-        args.commit,
-        version,
-        args.artifacts,
-        root / "docs" / "releases" / f"{version}.md",
-    )
+    with tempfile.TemporaryDirectory(prefix="mnemion-release-notes-") as directory:
+        notes = Path(directory) / "release.md"
+        notes.write_text(
+            publication_notes(
+                root / "docs" / "releases" / f"{version}.md", root, args.repo, version
+            ),
+            encoding="utf-8",
+        )
+        prepare(args.repo, args.commit, version, args.artifacts, notes)
 
 
 if __name__ == "__main__":

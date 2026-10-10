@@ -2,10 +2,12 @@
 
 This is the **4.0 shared-memory service**. It provides authenticated spaces,
 versioned source evidence, durable indexing, local multilingual search, HTTP and
-MCP access, and Obsidian exports. The [implementation ledger](../implementation/v4_progress.md)
-tracks verification and remaining release gates. Complete backup/recovery, v3
-import with cutover and rollback, Studio, and native Windows packaging are
-implemented; final deployment, native and scale validation remain in progress.
+MCP access, and Obsidian exports. The [product page](https://www.perseusxr.com/mnemion)
+provides desktop downloads, and the [release notes](../releases/4.0.0.md) identify
+the supported packages and remaining platform work. Complete backup/recovery,
+v3 import with cutover and rollback, and Studio are implemented. The initial
+desktop release targets macOS and Linux; Windows release validation and larger
+concurrent-capacity measurements remain open.
 
 Use the [Compose deployment guide](deployment.md) for packaged initialization,
 private runtime credentials, a shared Studio service, operations, and recovery
@@ -18,7 +20,7 @@ available. Migration credentials need permission to install the extension,
 create the Mnemion schema, and create database roles. API and worker processes
 use separate restricted logins; startup rejects an owner or superuser login.
 
-Install from this branch:
+Install from a tagged release checkout, or use `main` for current development:
 
 ```bash
 uv sync --locked --no-dev
@@ -99,7 +101,7 @@ evidence, manage applications/access, follow ingestion activity, and export to
 Obsidian. Keys stay in window memory; reconnect after a reload. Downloadable
 original source attachments include hashes that Studio verifies before saving.
 
-The [Windows client](../windows-release.md) connects to the same service. It adds
+The [desktop client](updates.md) connects to the same service. It adds
 a native vault picker and applies authorized Obsidian exports using a packaged
 local client. The desktop connection does not require browser CORS exceptions or
 a separate Chroma/model installation. The new desktop defaults to the shared
