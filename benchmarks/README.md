@@ -1,5 +1,20 @@
 # Mnemion Benchmarks — Reproduction Guide
 
+## Shared-platform v1
+
+Use `service_retrieval.py` with `plans/longmemeval-v4.json` against a disposable
+service organization. The frozen split, dataset identity, actual aggregate
+results and limitations are in [the current validation report](../docs/validation/2026-10-10.md).
+`service_answering.py` evaluates saved retrieval context separately. No held-out
+answering-accuracy or 100,000-record concurrent-capacity result is claimed.
+Use `--help` for the exact runner arguments. Keep credentials and run state
+outside Git, and apply CPU/memory limits on modest hardware.
+
+## Historical v3 benchmark reference
+
+The instructions and comparisons below concern the optional v3-compatible local
+backend. They are retained for reproducibility and are not results for platform v1.
+
 Run the exact same benchmarks we report. Clone, install, run.
 
 ## Claim Classes

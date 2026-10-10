@@ -47,3 +47,21 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           python deploy/draft_release.py --repo "$GITHUB_REPOSITORY" --commit "$GITHUB_SHA" --artifacts release-artifacts
+  cleanup:
+    name: Remove temporary release transfers
+    if: always()
+    needs: [native, assemble]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    steps:
+      - name: Delete only this run's release staging artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=100" \
+            --jq '.artifacts[] | select(.name | startswith("release-")) | .id' > "$RUNNER_TEMP/release-artifact-ids"
+          while read -r artifact_id; do
+            gh api --method DELETE "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id"
+          done < "$RUNNER_TEMP/release-artifact-ids"

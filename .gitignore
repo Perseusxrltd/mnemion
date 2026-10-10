@@ -1,5 +1,5 @@
 *.egg-info/
-node_modules/
+node_modules
 .venv/
 dist/
 dist-electron/

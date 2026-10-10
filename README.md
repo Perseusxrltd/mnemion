@@ -8,6 +8,11 @@ and updates are included; optional [support](docs/SUPPORT.md) starts at €5 and
 never gates downloads, usage or access.
 
 **Mnemion 4.0 is the first release of the rebuilt shared-memory platform.**
+Download published builds from [the official product page](https://www.perseusxr.com/mnemion).
+The first desktop distribution targets macOS and Linux on both architectures;
+Windows installers remain in release validation. Ready platforms are published
+while work on the others continues. Development and current documentation live
+on `main`.
 The [release notes](docs/releases/4.0.0.md) describe its scope and current shipping
 status. Implementation and acceptance are tracked in [the release ledger](docs/implementation/v4_progress.md).
 See the [current validation report](docs/validation/2026-10-10.md) for measured
@@ -159,5 +164,7 @@ must include matching release notes and a reviewed roadmap.
 
 See the [code signing policy](docs/CODE_SIGNING.md) for signing status, release
 roles and verification requirements, and the [privacy policy](docs/service/privacy.md)
-for network connections, storage and user controls. Native validation builds are
-not trusted, signed production releases. Free open-source signing is under review.
+for network connections, storage and user controls. Mac updates use independently
+signed Ed25519 archives with a validated Sparkle/Electron integration; first
+installation may need Privacy & Security approval. Windows SignPath approval and
+its release path remain pending. CI-only packages are not published downloads.

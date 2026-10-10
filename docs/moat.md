@@ -1,5 +1,7 @@
 # Mnemion Moat
 
+> **Compatibility reference, reviewed 2026-10-10.** Legacy reconstruction and trust design below describe the optional v3-compatible backend. For shared-platform v1, use the [current service guide](service/README.md) and `main`. These historical commands and claims are not the default service architecture or current performance measurements.
+
 Mnemion's edge is not a bigger vector database. The moat is the combination of memory lifecycle, structured reconstruction, and operational guardrails around the corpus.
 
 ## What Mnemion Adds

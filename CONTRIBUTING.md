@@ -1,122 +1,75 @@
 # Contributing to Mnemion
 
-Thanks for wanting to help. Mnemion is open source and we welcome contributions of all sizes — from typo fixes to new features.
+Mnemion is a free shared-memory platform for people, organizations and agents.
+Current implementation and documentation live on `main`. Submit external changes
+as pull requests against `main`; maintainers keep release fixes and guides current
+there. Published versions use immutable tags and artifacts.
 
-## Getting Started
+## Development
 
-```bash
+Use Python **3.12–3.14**, Node.js **22**, and the committed dependency lockfiles.
+Use Python 3.12 for the optional Chroma-based legacy compatibility tests.
+
+```sh
 git clone https://github.com/Perseusxrltd/mnemion.git
 cd mnemion
-python -m pip install uv
-uv sync --group dev
+python -m pip install uv==0.12.24
+uv sync --locked --group dev --python 3.12
+npm --prefix packages/client ci
+npm --prefix studio/frontend ci
+npm --prefix studio/electron ci
 ```
 
-## Running Tests
+Service integration tests require PostgreSQL with pgvector; the exact disposable
+service setup and environment are in `.github/workflows/ci.yml`. Never run
+integration or migration fixtures against a user's real database or vault.
 
-```bash
+```sh
 uv lock --check
-uvx ruff check .
-uvx ruff format --check .
-uv run pytest tests/ -v --ignore=tests/benchmarks --cov=mnemion --cov-report=term-missing --cov-fail-under=30
+uv run ruff check .
+uv run ruff format --check .
+uv run python -m pytest service_tests client_tests -q
+npm --prefix packages/client test
+npm --prefix studio/frontend run build
+npm --prefix studio/electron test
 ```
 
-All tests must pass before submitting a PR. Tests should run without API keys or network access.
+Install the `legacy` extra before running `tests/`; the service does not require
+Chroma by default. Unit tests use synthetic fixtures. Real-model checks explicitly
+opt in to a pinned model download/cache and need adequate resources. Use bounded
+CPU/memory and do not run a large model merely to check a small change. API keys
+and paid model calls are not required by the normal test suite.
 
-## Studio and Electron Checks
+Native desktop checks build and launch each OS/architecture on its own runner.
+Use [Studio](studio/README.md) and [Windows validation](docs/windows-release.md)
+for local packaging. Build-only artifacts must not be presented as user releases.
+The first desktop release targets Mac and Linux; Windows release work continues.
 
-```bash
-cd studio/frontend
-npm ci
-npm run build
-npm audit --audit-level=high
+## Architecture and review
 
-cd ../electron
-npm ci
-npm run build
-npm audit --audit-level=high
-```
+- Preserve canonical source text, evidence and revision identities. Derived titles,
+  summaries, links and librarian findings remain reviewable proposals.
+- Enforce organization/space permissions at the service boundary and in retrieval,
+  exports, jobs and derived views. Unknown or deleted data must not bypass policy.
+- Respect durable deletion, revocation and quarantine. Recovery must reconcile
+  newer denials; do not resurrect a memory from an older backup.
+- Keep model calls optional, bounded and explicitly approved for outbound data.
+  A model's finding does not automatically verify, merge or delete facts.
+- Preserve Obsidian paths, links and personal annotations during managed refresh.
+- Use small dependencies and update locks, notices and security review when needed.
+- Run checks relevant to the change and the required release checks; do not claim
+  capacity or model accuracy from synthetic tests.
 
-On Linux/WSL, also validate tracked shell scripts:
+Use conventional commit messages. Update affected setup/API/security guides,
+release notes and the [roadmap](docs/ROADMAP.md) with each product change. Follow
+[release maintenance](docs/MAINTENANCE.md), including complete per-platform update
+assets, the no-spend policy, and protected signing keys. Never commit credentials,
+private data, model weights, temporary databases or browser profiles.
 
-```bash
-git ls-files '*.sh' | xargs -r bash -n
-```
+The current benchmark protocol and measured limitations are linked from
+[the reproduction guide](benchmarks/README.md). Historical v3 comparisons are
+preserved separately and are not measurements of the rebuilt service.
 
-## Running Benchmarks
-
-```bash
-# Quick test (20 questions, ~30 seconds)
-python benchmarks/longmemeval_bench.py /path/to/longmemeval_s_cleaned.json --limit 20
-
-# Full benchmark (500 questions, ~5 minutes)
-python benchmarks/longmemeval_bench.py /path/to/longmemeval_s_cleaned.json
-```
-
-See [benchmarks/README.md](benchmarks/README.md) for data download instructions and reproduction guide.
-
-## Project Structure
-
-```
-mnemion/          ← core package (see mnemion/README.md for module guide)
-benchmarks/         ← reproducible benchmark runners
-hooks/              ← Claude Code auto-save hooks (shell + Python)
-sync/               ← Anaktoron backup and portability scripts
-examples/           ← usage examples
-tests/              ← test suite
-assets/             ← logo + brand
-```
-
-## PR Guidelines
-
-1. Fork the repo and create a feature branch: `git checkout -b feat/my-thing`
-2. Write your code
-3. Add or update tests if applicable
-4. Run the Python, shell, frontend, and Electron checks above — everything must pass
-5. Commit with a clear message following [conventional commits](https://www.conventionalcommits.org/):
-   - `feat: add Notion export format`
-   - `fix: handle empty transcript files`
-   - `docs: update MCP tool descriptions`
-   - `bench: add LoCoMo turn-level metrics`
-6. Push to your fork and open a PR against `main`
-
-## Code Style
-
-- **Formatting**: [Ruff](https://docs.astral.sh/ruff/) with 100-char line limit (configured in `pyproject.toml`)
-- **Naming**: `snake_case` for functions/variables, `PascalCase` for classes
-- **Docstrings**: on all modules and public functions
-- **Type hints**: where they improve readability
-- **Dependencies**: minimize runtime dependencies. Keep Python 3.9+ compatibility, update lockfiles intentionally, and don't add new runtime deps without discussion.
-
-## Good First Issues
-
-Check the [Issues](https://github.com/Perseusxrltd/mnemion/issues) tab. Great starting points:
-
-- **New chat formats**: Add import support for Cursor, Copilot, or other AI tool exports
-- **Room detection**: Improve pattern matching in `room_detector_local.py`
-- **Tests**: Increase coverage — especially for `predictor.py`, `entity_registry.py`, `onboarding.py`, `spellcheck.py`, `anaktoron_graph.py`
-- **Entity detection**: Better name disambiguation in `entity_detector.py`
-- **Trust UI**: A simple CLI command to review and resolve contested memories
-- **macOS sync**: A `SyncMemories.sh` equivalent of the PowerShell sync script
-- **Docs**: Improve examples, add tutorials
-
-## Architecture Decisions
-
-If you're planning a significant change, open an issue first to discuss the approach. Key principles:
-
-- **Verbatim first**: Never summarize user content. Store exact words.
-- **Local first**: Everything runs on the user's machine. No cloud dependencies.
-- **Zero API by default**: Core features must work without any API key.
-- **Anaktoron structure matters**: Wings, halls, and rooms aren't cosmetic — they drive real retrieval improvements. Respect the hierarchy.
-- **Never hard-delete memories**: Trust layer uses soft-invalidation (status transitions), not deletion. Audit trails are append-only.
-- **Save can be slow, fetch must be fast**: Trust resolution and contradiction detection happen in background threads at save time. Search reads pre-computed trust state — no LLM calls on the fetch path.
-- **Trust is optional**: The trust layer degrades gracefully — drawers without trust records are treated as `current`. This ensures backwards compatibility with existing Anaktorons.
-
-## Community
-
-- **Discord**: [Join us](https://discord.com/invite/ycTQQCu6kn)
-- **Issues**: Bug reports and feature requests welcome
-- **Discussions**: For questions and ideas
-
-## License
-
-MIT — your contributions will be released under the same license.
+Report bugs and proposals through [GitHub issues](https://github.com/Perseusxrltd/mnemion/issues).
+Follow [SECURITY.md](SECURITY.md) for private vulnerability reports. Contributions
+are distributed under the repository's MIT license.

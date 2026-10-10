@@ -1,5 +1,7 @@
 # mnemion/ — Core Package
 
+> **Compatibility reference, reviewed 2026-10-10.** Legacy module inventory below describe the optional v3-compatible backend. For shared-platform v1, use the [current service guide](../docs/service/README.md) and `main`. These historical commands and claims are not the default service architecture or current performance measurements.
+
 The Python package that powers Mnemion. All modules, all logic.
 
 ## Modules

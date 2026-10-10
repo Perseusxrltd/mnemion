@@ -20,7 +20,7 @@ Requirements and acceptance criteria are defined by the
 
 ## Worktree and reproducibility
 
-- Implementation branch: `codex/mnemion-v4`, based on `c670e3039d2f7b43dbb00a2157e420e665203979`.
+- Current implementation: `main`. The rebuild and free Mac updater were merged at `da74785f67f96d0fd375e7925d23284c435b6f99`. The original implementation branch was `codex/mnemion-v4`, based on `c670e3039d2f7b43dbb00a2157e420e665203979`.
 - Pre-existing tracked and untracked work was preserved before implementation. A WSL restart on 10 October cleared the temporary backup and fixture directory; the working tree remained intact. A fresh private snapshot now preserves the complete current tree in persistent local validation storage.
 - Local test runs use isolated temporary profiles and an environment installed from the refreshed `uv.lock`. No production memory or personal Obsidian vault has been migrated.
 - A real local PostgreSQL 16.2 instance with pgvector was verified through a temporary `pgserver` development installation. This binary is test tooling, not the production database distribution.
@@ -67,7 +67,11 @@ screenshots remain under `output/playwright/mnemion-v4`. No production
 profile, personal Obsidian vault, scheduled task, or GitHub release was changed.
 The overall product goal remains active.
 
-## Remaining release requirements
+## Original program checklist (historical)
+
+This checklist records the early rebuild checkpoint. Later entries and the
+[current roadmap](../ROADMAP.md) supersede its implementation status. Broader
+capacity, live-provider and answering evaluation commitments remain visible there.
 
 - [ ] Complete memory/resource limits and observable bandwidth, selectable current embedding models with safe reindex/activation, and the configurable local/cloud librarian.
 - [x] Implement and validate the detailed visual [observability and evaluations workspace](observability-and-evaluations.md), including reproducible test sets/runs, bounded execution, comparisons, exports and permission/deletion handling.
@@ -185,3 +189,19 @@ and optional support; download eligibility requires a complete published release
 Production promotion remains tied to the desktop publication gates. Current
 validation, public scan results and remaining limits belong in the
 [validation report](../validation/2026-10-10.md), not an unconditional v1 claim.
+
+
+## Main integration and staged platform release — 2026-10-10
+
+The rebuild, selectable embeddings, librarian, documentation and free Mac updater
+are on `main`. Both packaged Mac architectures passed signed upgrade/relaunch
+and inactivity, transfer, draft and focus guards at `873da44`; native interrupted
+download, oversize, downgrade and disconnection recovery passed at `c088757`.
+The [implementation report](free-macos-updates.md) links the exact workflows.
+
+The Perseus XR product page, homepage feature and existing Lab Notes entry are
+live. Ready Mac/Linux platforms are published independently while Windows release
+validation continues. The release-target registry and platform-specific website
+gates require complete installer/update assets for each offered platform.
+Historical build counts above remain historical; the versioned release notes and
+current roadmap define current availability and outstanding work.

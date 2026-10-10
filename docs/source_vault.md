@@ -1,5 +1,7 @@
 # Mnemion Source Vault
 
+> **Compatibility reference, reviewed 2026-10-10.** Source vault and SQLite sidecar commands below describe the optional v3-compatible backend. For shared-platform v1, use the [current service guide](service/knowledge.md) and `main`. These historical commands and claims are not the default service architecture or current performance measurements.
+
 The source vault stores immutable raw evidence used by the compiled wiki. It is a projection input, not a second memory database: source metadata and chunks live in the existing `knowledge_graph.sqlite3` sidecar, alongside trust, KG, cognitive graph, and guard tables.
 
 ## CLI

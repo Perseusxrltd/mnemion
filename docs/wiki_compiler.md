@@ -1,5 +1,7 @@
 # Mnemion Compiled Wiki
 
+> **Compatibility reference, reviewed 2026-10-10.** Legacy compiled-wiki commands below describe the optional v3-compatible backend. For shared-platform v1, use the [current service guide](service/knowledge.md) and `main`. These historical commands and claims are not the default service architecture or current performance measurements.
+
 The compiled wiki turns Mnemion sources, drawers, and evidence into Obsidian-friendly Markdown. Mnemion remains canonical; the wiki is a derived artifact.
 
 ## CLI

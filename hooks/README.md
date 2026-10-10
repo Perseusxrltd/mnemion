@@ -1,5 +1,7 @@
 # Mnemion Hooks — Auto-Save for Terminal AI Tools
 
+> **Compatibility reference, reviewed 2026-10-10.** Legacy local capture hooks below describe the optional v3-compatible backend. For shared-platform v1, use the [current service guide](../docs/service/capture.md) and `main`. These historical commands and claims are not the default service architecture or current performance measurements.
+
 These hooks make Mnemion save automatically. Two modes available: AI-assisted (original) and direct Python extraction (new, recommended).
 
 ---

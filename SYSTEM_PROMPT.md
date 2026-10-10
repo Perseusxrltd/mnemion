@@ -1,5 +1,7 @@
 # Mnemion — System Prompt Template
 
+> **Compatibility reference, reviewed 2026-10-10.** Legacy local-backend prompt below describe the optional v3-compatible backend. For shared-platform v1, use the [current service guide](docs/service/agents.md) and `main`. These historical commands and claims are not the default service architecture or current performance measurements.
+
 Copy-paste this into any AI system that has access to the Mnemion MCP server.
 This tells the AI *when*, *where*, *how*, and *why* to use its memory.
 

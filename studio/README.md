@@ -1,6 +1,8 @@
 # Mnemion Studio
 
-The desktop and web workspace for the shared-memory service. Studio supports
+The desktop and web workspace for the shared-memory service. Published downloads
+are on [the product page](https://www.perseusxr.com/mnemion). The first desktop
+release targets Mac and Linux; Windows installers remain under validation. Studio supports
 organizations, scoped spaces, memory editing and review, evidence, search,
 source connections, agents, Obsidian, operations and visual insights/evaluations.
 

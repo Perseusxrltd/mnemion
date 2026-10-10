@@ -28,14 +28,23 @@ permissions:
   contents: read
 
 jobs:
+  targets:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.select.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - id: select
+        run: python -m deploy.release_targets ${{ inputs.release && '--release' || inputs.macos_only && '--macos-only' || '' }} >> "$GITHUB_OUTPUT"
   desktop:
+    needs: targets
     name: ${{ matrix.os }} / ${{ matrix.arch }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 35
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJSON(inputs.macos_only && '[{"os":"macos-15-intel","arch":"x64"},{"os":"macos-15","arch":"arm64"}]' || '[{"os":"ubuntu-22.04","arch":"x64"},{"os":"ubuntu-22.04-arm","arch":"arm64"},{"os":"windows-2022","arch":"x64"},{"os":"windows-11-arm","arch":"arm64"},{"os":"macos-15-intel","arch":"x64"},{"os":"macos-15","arch":"arm64"}]') }}
+        include: ${{ fromJSON(needs.targets.outputs.matrix) }}
     env:
       # Signing is available only to the explicit release workflow, never PR builds.
       CSC_IDENTITY_AUTO_DISCOVERY: ${{ inputs.release && startsWith(matrix.os, 'windows-') && 'true' || 'false' }}

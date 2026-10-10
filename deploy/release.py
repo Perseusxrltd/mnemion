@@ -136,9 +136,11 @@ def main() -> None:
     if not re.fullmatch(r"\d+\.\d+\.\d+", version):
         raise ValueError("A stable version is required")
     from mnemion.version import __version__
+    from deploy.release_targets import release_platforms
 
     if version != __version__:
         raise ValueError("Python versions disagree")
+    platforms = release_platforms(version)
     notes = root / "docs" / "releases" / f"{version}.md"
     if not notes.is_file() or not notes.read_text(encoding="utf-8").startswith(
         f"# Mnemion {version}"
@@ -161,19 +163,35 @@ def main() -> None:
         return
     files = [path for path in args.artifacts.iterdir() if path.name != "SHA256SUMS.txt"]
     for architecture in ("x64", "arm64"):
-        for suffix in ("", "-mac", "-linux" if architecture == "x64" else "-linux-arm64"):
+        suffixes = {
+            "windows": "",
+            "macos": "-mac",
+            "linux": "-linux" if architecture == "x64" else "-linux-arm64",
+        }
+        for platform in platforms:
+            extension = {"windows": "exe", "macos": "dmg", "linux": "AppImage"}[platform]
+            artifact_arch = (
+                "x86_64" if platform == "linux" and architecture == "x64" else architecture
+            )
+            installer = (
+                args.artifacts / f"Mnemion-Studio-{version}-{platform}-{artifact_arch}.{extension}"
+            )
+            if installer.is_symlink() or not installer.is_file() or installer.stat().st_size <= 0:
+                raise ValueError(f"Missing or unsafe release installer: {installer.name}")
+            suffix = suffixes[platform]
             feed = args.artifacts / f"latest-{architecture}{suffix}.yml"
             verify_feed(feed, args.artifacts, version)
-        public_key = json.loads((root / "studio/electron/native/sparkle.json").read_text())[
-            "publicKey"
-        ]
-        verify_sparkle_feed(
-            args.artifacts / f"latest-{architecture}-mac.xml",
-            args.artifacts,
-            version,
-            architecture,
-            public_key,
-        )
+        if "macos" in platforms:
+            public_key = json.loads((root / "studio/electron/native/sparkle.json").read_text())[
+                "publicKey"
+            ]
+            verify_sparkle_feed(
+                args.artifacts / f"latest-{architecture}-mac.xml",
+                args.artifacts,
+                version,
+                architecture,
+                public_key,
+            )
     checksums = []
     for path in sorted(files):
         if path.is_symlink() or not path.is_file():
@@ -184,9 +202,7 @@ def main() -> None:
                 digest.update(chunk)
         checksums.append(f"{digest.hexdigest()}  {path.name}")
     (args.artifacts / "SHA256SUMS.txt").write_text("\n".join(checksums) + "\n")
-    print(
-        f"Validated Mnemion {version}: {len(files)} assets, six manifests and two signed macOS feeds"
-    )
+    print(f"Validated Mnemion {version}: {len(files)} assets for {', '.join(platforms)}")
 
 
 if __name__ == "__main__":

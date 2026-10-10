@@ -1,5 +1,7 @@
 # Shared memory and scheduled Obsidian refresh
 
+> **Compatibility reference, reviewed 2026-10-10.** Legacy vault portability below describe the optional v3-compatible backend. For shared-platform v1, use the [current service guide](../docs/service/migration.md) and `main`. These historical commands and claims are not the default service architecture or current performance measurements.
+
 Applications and assistants now share the authenticated Mnemion service. Each
 client has its own credential and explicit space grants. Saves, corrections,
 reviews, and deletions use the same authoritative database.

@@ -1,5 +1,7 @@
 # Gemini CLI Integration Guide
 
+> **Compatibility reference, reviewed 2026-10-10.** Legacy Gemini CLI setup below describe the optional v3-compatible backend. For shared-platform v1, use the [current service guide](../docs/service/agents.md) and `main`. These historical commands and claims are not the default service architecture or current performance measurements.
+
 This guide explains how to set up Mnemion as a permanent memory for the [Gemini CLI](https://github.com/google/gemini-cli).
 
 ## Prerequisites

@@ -1,78 +1,59 @@
-# Free macOS distribution and update investigation
+# Free macOS distribution and verified updates
 
-Updated: **2026-10-10**. This records an investigation, not a shipped updater.
+Updated: **2026-10-10**. The implementation is on `main` and both Mac architectures
+have passed the native and actual packaged Electron upgrade checks. Published
+installer availability is shown on [the product page](https://www.perseusxr.com/mnemion).
 
-Building and distributing a macOS app does not require a paid Apple membership.
-Developer ID signing and notarization provide Apple's publisher trust and first
-installation experience. Without them, an initial installation may require the
-user's explicit approval in Privacy & Security. Managed Macs may prohibit that
-exception. Never disable Gatekeeper globally or describe an ad-hoc signature as
-an Apple-verified publisher identity.
+Mnemion uses [Sparkle](https://sparkle-project.org/documentation/) **2.10.0**,
+pinned to commit `eef1a539a373c1f1a320624b1130fc5de7b2e100` and a checked distribution
+SHA-256. The upstream framework owns signature validation, extraction, replacement
+and relaunch. Mnemion's small native control adapter communicates with Electron
+through private pipes and waits for the app to authorize installation.
 
-The current Electron/Squirrel updater requires application signing on macOS.
-That requirement is specific to the current updater; it does not establish that
-every safe automatic-update design requires Apple enrollment.
+Mac compatibility does not require Apple membership. This pipeline uses ad-hoc
+application signatures and a protected Ed25519 archive-signing key. It does not
+provide Apple Developer ID identity or notarization. First installation may
+require Privacy & Security approval, and managed devices may prohibit that.
+Never disable Gatekeeper. See [installation and updates](../service/updates.md).
 
-[Sparkle](https://sparkle-project.org/documentation/) supports Ed25519 signatures
-for update archives and describes Developer ID/notarization as recommended "if
-possible." We are evaluating its maintained native installer instead of creating
-a custom archive replacement or signature-verification implementation.
+## Verified evidence
 
-## Native experiment
+| Check | Commit and evidence | Result |
+| --- | --- | --- |
+| Unmodified upstream CLI, two disposable Cocoa apps | `44c48ce` · [run 38071829414](https://github.com/Perseusxrltd/mnemion/actions/runs/38071829414) | Intel and Apple silicon rejected invalid signatures and installed/relaunched a valid archive |
+| Native Mnemion control adapter | `37bd0c9` · [run 38072833794](https://github.com/Perseusxrltd/mnemion/actions/runs/38072833794) | Verified updates waited for permission; cancellation prevented install on exit |
+| Actual production package structure | `867e704` · [run 38073545786](https://github.com/Perseusxrltd/mnemion/actions/runs/38073545786) | Both native packages, embedded framework/helper, public key, license inventory and strict ad-hoc verification passed |
+| Actual packaged Electron upgrade and release signing key | `873da44` · [run 38075042790](https://github.com/Perseusxrltd/mnemion/actions/runs/38075042790) | Both architectures verified the configured release signature; private fixture apps respected idle, active-transfer, draft and real-window focus guards, replaced and relaunched the target version |
+| Native failure and recovery cases | `c088757` · [run 38075412900](https://github.com/Perseusxrltd/mnemion/actions/runs/38075412900) | Invalid signatures and interrupted downloads preserved the running app; oversized/older archives were rejected before download; parent disconnection and cancellation prevented installation; the following valid update installed and relaunched |
 
-`deploy/macos_update_probe.py` downloads the pinned Sparkle **2.10.0** distribution
-and compiles its unmodified command-line driver from commit
-`eef1a539a373c1f1a320624b1130fc5de7b2e100`. Every downloaded file is checked against
-a pinned SHA-256. The upstream license remains with the private test distribution.
-The [native workflow](../../.github/workflows/macos-update-probe.yml) runs on
-standard Intel and Apple Silicon macOS runners. No paid service, certificate,
-stored signing credential or installer-artifact upload is involved.
+The packaged rehearsal repacks disposable copies with a test entry point and an
+ephemeral signing key, retaining the actual compiled updater/controller. Idle time,
+transfer state and a renderer draft are controlled fixture inputs. Native windows,
+Sparkle, signature verification, the installer and relaunch are real. Production
+bundles are not modified by the fixture. These tests do not simulate a power loss
+during replacement or certify every managed-device first-install policy.
 
-The experiment creates two tiny ad-hoc signed Cocoa apps in a new private
-directory, and an ephemeral Ed25519 key held in memory and a signing pipe. A
-loopback feed first offers an archive with an invalid signature, then the valid
-signature. Assertions cover rejection before replacement, preservation of the
-running old app, installation at the original path, automatic relaunch and the
-new bundle's ad-hoc signature. It changes no Gatekeeper setting and never targets
-an installed Mnemion app.
+## Boundaries and operation
 
-**Native mechanism validated on 2026-10-10:** both Intel and Apple Silicon jobs
-passed at commit `44c48ce29c57727a7ad4c1fc77485a332c75fa20`
-([workflow evidence](https://github.com/Perseusxrltd/mnemion/actions/runs/38071829414)).
-The invalid archive was rejected, the old running app survived, and a valid
-archive replaced it and relaunched version 4.0.1. This evidence covers the native
-update mechanism, not Mnemion's Electron integration or first-install approval.
+Production feeds and archive URLs are fixed to the official repository, immutable
+stable versions and the matching architecture. Downloads are limited to 1 GiB
+and 20 minutes; a staged update expires after 24 hours. Cancellation uses Sparkle's
+skip operation rather than dismissing into install-on-quit. The helper keeps its
+run loop alive for two seconds after the cycle callback so asynchronous XPC
+cleanup can finish. A normal Mac quit cancels the staged update.
 
-`deploy/macos_update_bridge_probe.py` additionally exercises Mnemion's small
-Sparkle control adapter: a verified update must wait for its parent to authorize
-installation, and cancelling must prevent installation when the host exits.
-That adapter is under validation and is not yet used by the production app.
+`deploy/macos_sparkle.py` builds the verified helper and signs release archives.
+`deploy/release.py` validates the two XML feeds and signatures before publication.
+The installed public key is committed in `studio/electron/native/sparkle.json`;
+the private key is an encrypted release secret with a separate private recovery
+copy. The original Sparkle license and versioned inventory ship with the app.
 
-On an isolated native Mac with Xcode Command Line Tools and Python 3.13:
+For disposable native validation with Xcode Command Line Tools and Python 3.13:
 
 ```sh
-python deploy/macos_update_probe.py --output /private/tmp/mnemion-sparkle-probe
+python -m deploy.macos_update_bridge_probe --output /private/tmp/mnemion-update-check
 ```
 
-Use a new directory for each run. The result and diagnostic logs contain only
-synthetic app data; no production signing key is generated or published.
-
-## Gates before adopting it
-
-- Pass the native experiment on both architectures. A workflow definition alone
-  is not evidence that it works.
-- Integrate with the actual Electron bundle, visible update preferences, managed
-  policy, bounded downloads, safe idle restart and cancellation.
-- Validate tampered archives, wrong keys, interrupted downloads/installations,
-  downgrade prevention, resource limits, recovery and source/artifact provenance.
-- Keep the update public key in the installed bundle, protect its private key in
-  the release secret store, and document recovery and key-rotation limits.
-- Produce architecture-specific HTTPS feeds and immutable signed update assets;
-  update the release verifier, website, installation guide and troubleshooting.
-- Test and document the first-install approval experience separately. The probe
-  begins with an already-running fixture and cannot certify Gatekeeper approval,
-  notarization or installation on a managed company device.
-
-The desktop release remains under validation while these gates are open. This
-route could remove the Apple membership dependency for Mnemion's own verified
-updates; it cannot manufacture Apple's publisher trust.
+Use a new private output directory. The workflow's optional `compare_upstream`
+input repeats the original upstream CLI comparison. Production signing keys are
+never used by those synthetic fixtures.

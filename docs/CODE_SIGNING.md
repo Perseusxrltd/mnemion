@@ -2,68 +2,74 @@
 
 Updated: **2026-10-10**. Project maintainer: **PERSEUS LEGACY LIMITED**.
 
-## Current status
+## Platform status
 
-Trusted Windows and macOS signing is not yet available for the rebuilt platform.
-All six native platform/architecture validation jobs passed at the checkpoint in
-the [validation report](validation/2026-10-10.md), but unsigned or ad-hoc signed
-test builds are not approved production updates. The platform-v1 release remains
-a draft. Do not interpret a checksum or a successful build as a trusted signature.
+The first platform-v1 desktop distribution targets macOS and Linux on both
+architectures. Each platform is published only after its complete installer,
+update and native validation gates pass. Windows remains under release validation;
+it does not prevent users from receiving ready platforms. Published assets at
+[the product page](https://www.perseusxr.com/mnemion) determine availability.
 
-The application to the free [SignPath Foundation program](https://signpath.org/apply)
-has been submitted under its [code of conduct](https://signpath.org/terms).
-Acceptance, certificate provisioning and CI integration remain pending. If accepted, the required credit
-will be: “Free code signing provided by [SignPath.io](https://signpath.io),
-certificate by [SignPath Foundation](https://signpath.org).” This conditional
-statement does not claim an existing endorsement or certificate.
+Mac applications use intact ad-hoc signatures and pinned Sparkle with independent
+Ed25519 signatures over update archives. Both real packaged Electron architectures
+passed signed replacement/relaunch and safe-restart guards. Native checks also
+passed invalid signatures, interruption recovery, oversized/older releases and
+cancellation. See [the implementation evidence](implementation/free-macos-updates.md).
+The build is not Apple Developer ID signed or notarized. First launch may require
+explicit Privacy & Security approval, which a managed Mac may prohibit. Apple
+publisher trust is separate from verification of subsequent signed archives.
+Never disable Gatekeeper or describe an ad-hoc signature as Apple-verified identity.
 
-A Foundation certificate identifies **SignPath Foundation**, not our company.
-Before the first signed release, bind the updater to the actual approved signing
-identity and verify the installed executable and installer. Do not pin an assumed
-publisher or disable signature checks to accommodate an unsigned build.
+Linux AppImage updates use the established Electron updater with HTTPS release
+feeds and payload hashes. Debian packages use administrator-managed upgrades.
+Checksums establish payload integrity; they are not an OS publisher certificate.
 
-Only free services are authorized for project release operations. Do not buy
-certificates or enroll in paid programs or automatically converting trials.
-Apple's standard Developer ID program requires paid membership. Its fee waiver
-is limited to eligible nonprofits, accredited educational institutions and
-government entities; no such eligibility has been established for this company.
-Apple-trusted macOS signing and notarization remain unavailable. Mac compatibility
-itself does not require Apple membership. We are now testing
-[Sparkle's independent Ed25519 update signatures](implementation/free-macos-updates.md)
-as a free distribution option. The native experiment and actual Electron
-integration must pass before changing the production updater. This route retains
-an initial user approval requirement and may be restricted by company device
-policy; it cannot provide Apple's publisher trust. Never disable Gatekeeper
-globally or mislabel ad-hoc builds as notarized.
+The free [SignPath Foundation application](https://signpath.org/apply) has been
+submitted under its [code of conduct](https://signpath.org/terms). Approval,
+provisioning and CI integration remain pending. Do not resubmit the application
+or claim approval in advance. If accepted, credit will be: “Free code signing
+provided by [SignPath.io](https://signpath.io), certificate by
+[SignPath Foundation](https://signpath.org).” A Foundation certificate identifies
+SignPath Foundation. Bind any Authenticode publisher check to the actual approved
+identity, not an assumed company certificate. SignPath's service does not export
+a PFX; its integration must use the approved project and signing policy.
 
-## Roles and release controls
+A separate free Windows archive-signature route is being assessed. It is not yet
+an available Windows release. Do not disable updater authentication merely to
+publish an unsigned installer. An independent signature can authenticate updates
+without providing Windows publisher reputation or bypassing company policies.
 
-- **Authors and reviewers:** the [repository maintainer](https://github.com/Perseusxrltd).
-  External contributions require maintainer review, including build scripts and
-  dependency changes.
-- **Release approver:** the same repository maintainer. A provider requiring manual
-  approval must receive that approval for every signing request; an automated
-  draft or a previous release's approval does not replace it.
-- **Account security:** signing and source-control users must enable multi-factor
-  authentication before production signing access is provisioned.
+Only free services are authorized. Do not purchase certificates, Apple membership,
+paid runners or trials that turn into paid subscriptions.
 
-Build from a reviewed, identified commit with pinned CI actions and lockfiles.
-Verify product names/versions, upstream license notices, inventories, platform
-signatures and update payloads. Sign only this project's eligible binaries;
-preserve upstream components and their signatures rather than claiming authorship.
-Keep keys and signing service credentials in protected stores outside the repository.
+## Keys and release controls
 
-Prepare a draft only after product and native checks pass. Recheck that a release
-is still a draft before replacing its assets. Never overwrite a published version:
-issue a new patch. Publish only after the complete artifact set, signing identity
-and signed upgrade rehearsal have been reviewed. Installed clients can then
-receive that approved update under the [automatic update policy](service/updates.md).
+The Mac public key is in `studio/electron/native/sparkle.json`; its matching
+private seed is supplied only to the release signing step through
+`MNEMION_MAC_UPDATE_PRIVATE_KEY`. The private recovery copy stays outside the
+repository. Never print, commit or upload private keys or account credentials.
+Document and test rotation before changing a shipped trust key. Loss or compromise
+requires an explicit recovery plan for already-installed clients.
 
-## Privacy and system changes
+The repository maintainer reviews changes and approves releases. Provider-required
+manual signing approvals apply to each request; previous approval does not replace
+them. Signing and source-control accounts must use multi-factor authentication.
+Build from an identified commit using pinned actions and dependency lockfiles.
+Preserve upstream notices and verify payload inventories, architectures, versions,
+platform signatures, archive signatures and update feeds.
 
-The [privacy policy](service/privacy.md) describes data handling and third-party
-connections. Studio enables background operation, launch at login and stable
-update checks by default in supported installations. These settings are visible
-in **Background and updates** and can be disabled by users or deployment policy.
-See [background operation, updates and removal](service/updates.md) for controls
-and uninstallation. Signing approval does not grant access to any user's memories.
+Keep `main` current with implementation and documentation. Prepare a draft from
+a fixed commit after checks pass. Recheck draft status before changing its assets.
+Publish complete platforms listed in `deploy/release-targets.json`; pending
+platforms stay unavailable. Never overwrite published assets: later binaries
+require a new patch version. Retain update feeds for already-supported platforms
+when publishing the next stable release. The website offers only complete,
+published platform assets and updates its links after revalidation.
+
+## Privacy and user control
+
+The [privacy policy](service/privacy.md) describes data handling and connections.
+Background operation, login startup and stable updates are enabled by default in
+supported installations, with visible user and administrator controls. See
+[updates and removal](service/updates.md). Signing never grants access to a user's
+memories, changes server permissions or authorizes a database upgrade.

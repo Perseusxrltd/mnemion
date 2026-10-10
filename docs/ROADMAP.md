@@ -51,19 +51,20 @@ release artifacts require the platform checks and publisher requirements below.
 1. Pass service, legacy, SDK, security and frontend checks on the release commit.
 2. Build and launch native desktop packages on Windows, macOS and Linux, for
    x64 and ARM64, including their sandboxed bridges and local Obsidian client.
-3. Complete Windows publisher signing and verify the macOS distribution route.
-   The current Electron/Squirrel path requires Apple signing; a free Sparkle
-   alternative is under [native investigation](implementation/free-macos-updates.md).
-   It must pass its integration/security gates before replacing the current path.
-   Unsigned validation packages are not production automatic-update releases.
+3. Publish ready platforms independently using `deploy/release-targets.json`.
+   The first desktop release targets macOS and Linux on both architectures.
+   Mac uses the [validated Sparkle integration](implementation/free-macos-updates.md)
+   with independently signed archives. Windows release validation and SignPath
+   approval remain pending and do not hold back ready Mac/Linux packages.
 4. Rehearse a signed upgrade, rollback/recovery, startup and safe restart. Record
    the environments and results rather than inferring them from compilation.
 5. Verify all immutable artifacts, architecture-specific feeds, inventories,
    checksums, release notes and public repository hygiene before publication.
-6. Publish the matching Perseus XR product page with simple platform downloads,
-   setup guidance, release notes and roadmap links. Download buttons must target
-   the verified published release; drafts and validation builds are not downloads
-   for end users.
+6. Keep the live [Perseus XR product page](https://www.perseusxr.com/mnemion),
+   homepage feature and existing Lab Notes entry current. The site provides
+   platform downloads, setup, release notes, the roadmap and optional support.
+   Each platform's downloads require its complete published installer/update
+   assets. Pending platforms stay visible without download links.
 
 Missing credentials or failed platform checks remain release blockers; the
 release notes must state the actual shipping status.
@@ -72,10 +73,11 @@ Release operations have a no-spend constraint: do not buy certificates, enroll
 in paid programs or start trials that convert to paid subscriptions. Evaluate
 free open-source signing and sponsorship without claiming approval in advance.
 The standard Apple Developer ID program is paid. Apple's publisher trust remains
-unavailable, but Mac compatibility does not require membership. A maintained
-updater with independently signed archives may support a free desktop release
-with explicit first-install approval; native integration and validation remain
-open. Keep source, web and local development paths documented. See the
+unavailable, but Mac compatibility does not require membership. The maintained
+Sparkle updater and real Electron integration passed both native architectures
+with independently signed archives and explicit first-install approval. Broader
+managed-device and OS-version checks continue after this measured baseline.
+Keep source, web and local development paths documented. See the
 [code signing policy](CODE_SIGNING.md).
 
 ## Next patches: reliability and operational confidence
@@ -84,6 +86,9 @@ Priority is defects found in installation, access control, recovery, migration,
 update behavior and routine team use. Patches retain the service/API contract
 where possible and include migration/rollback instructions when needed.
 
+- Finish and publish the Windows installer/update path, using a verified free
+  distribution route; integrate SignPath when approved. No publisher approval
+  is assumed and no paid certificate purchase is planned.
 - Complete signed native installation and upgrade rehearsals across supported
   OS versions, including restricted company devices, offline recovery and Linux
   desktop environments with and without a system tray.

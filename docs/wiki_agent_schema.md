@@ -1,5 +1,7 @@
 # Mnemion Wiki Agent Schema
 
+> **Compatibility reference, reviewed 2026-10-10.** Legacy drawer/wiki agent schema below describe the optional v3-compatible backend. For shared-platform v1, use the [current service guide](service/knowledge.md) and `main`. These historical commands and claims are not the default service architecture or current performance measurements.
+
 Agents working with the compiled wiki must follow these rules.
 
 ## Canonical Truth

@@ -8,6 +8,11 @@ updating the app updates its guides without an independent content service.
 
 ## Required for every release and hotfix
 
+Keep implementation and documentation current on `main`. Publish fixed version
+tags from checked commits. Users must have access to platforms that are ready
+while other platforms are tested; a pending platform is not a reason to hide a
+complete published platform.
+
 1. Change the canonical version and dependent package metadata/lockfiles together.
 2. Add `docs/releases/<version>.md`. Include the shipping status, changes, fixes,
    compatibility/migration impact, verification evidence and known limitations.
@@ -22,10 +27,16 @@ updating the app updates its guides without an independent content service.
    including internal links, code blocks and offline access in the packaged app.
 6. Prepare immutable, signed and verified artifacts and update feeds. The release
    verifier requires matching versions, release notes, a current roadmap and a
-   complete set of architecture feeds before a desktop release draft is created.
+   complete set of installers and architecture feeds for each platform selected
+   in `deploy/release-targets.json` before a desktop release draft is created.
 7. Review the concrete draft and publish only when its documented release gates
    pass. Installed supported desktop packages then receive stable updates under
    the [update policy](service/updates.md).
+
+Update the release-target version with every patch. Add a new platform only after
+its native installation/update checks pass. Keep update feeds for every previously
+published platform in each new stable release, because installed clients follow
+the latest stable channel. Never replace a published binary in place.
 
 CI checks can require files and version consistency; they cannot determine whether
 prose accurately describes behavior. The person or agent making a change owns the

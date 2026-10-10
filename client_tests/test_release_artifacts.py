@@ -10,6 +10,30 @@ import yaml
 
 from deploy.macos_sparkle import create_feed
 from deploy.release import verify_feed, verify_sparkle_feed
+from deploy.release_targets import MATRIX, release_platforms
+
+
+def test_ready_platforms_always_include_both_architectures(tmp_path):
+    path = tmp_path / "targets.json"
+    path.write_text(json.dumps({"version": "4.0.0", "platforms": ["macos", "linux"]}))
+    platforms = release_platforms("4.0.0", path)
+    selected = [item for item in MATRIX if item["platform"] in platforms]
+    assert len(selected) == 4
+    for platform in platforms:
+        assert {item["arch"] for item in selected if item["platform"] == platform} == {
+            "x64",
+            "arm64",
+        }
+    with pytest.raises(ValueError, match="match the version"):
+        release_platforms("4.0.1", path)
+
+
+@pytest.mark.parametrize("platforms", [[], ["macos", "macos"], ["unknown"], "macos"])
+def test_invalid_release_targets_are_rejected(tmp_path, platforms):
+    path = tmp_path / "targets.json"
+    path.write_text(json.dumps({"version": "4.0.0", "platforms": platforms}))
+    with pytest.raises(ValueError, match="complete platforms"):
+        release_platforms("4.0.0", path)
 
 
 def fixture_feed(tmp_path):

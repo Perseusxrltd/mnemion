@@ -1,5 +1,9 @@
 # Windows client release
 
+Updated 2026-10-10. **Windows desktop publication is pending.** Mac and Linux
+release independently. Windows users can use browser Studio with their memory
+service now; see [the product page](https://www.perseusxr.com/mnemion).
+
 Mnemion Studio 4 connects to the shared service and adds native Obsidian vault
 refresh. The default package includes the frontend, sandboxed Electron bridge,
 and a small local vault client. It does not start the v3 Chroma backend.
@@ -9,7 +13,8 @@ and a small local vault client. It does not start the v3 Chroma backend.
 Use native Windows Node.js 22 and Python 3.13. From the checkout root:
 
 ```powershell
-uv.exe sync --locked --extra studio --no-dev --python 3.13
+uv.exe sync --project studio/client --locked --python 3.13
+$env:MNEMION_BUILD_PYTHON = Join-Path (Get-Location) "studio/client/.venv/Scripts/python.exe"
 npm.cmd --prefix packages/client ci
 npm.cmd --prefix studio/frontend ci
 npm.cmd --prefix studio/electron ci
@@ -58,7 +63,7 @@ acceptance checks and any outstanding release requirements.
 ## Publisher signing
 
 The local artifact is **NotSigned**. It is suitable for controlled development
-validation; a commercial public release requires a valid publisher certificate.
+validation; its installer and authenticated update path must pass before public distribution.
 To require signing during release validation:
 
 ```powershell
@@ -67,9 +72,9 @@ npm.cmd --prefix studio/electron run verify:installer
 ```
 
 That check must fail for an unsigned installer. Builder log lines mentioning a
-signing step do not establish that a certificate was applied. No signing key,
-certificate purchase, installer publication, or update feed was configured by the
-local build.
+signing step do not establish that a certificate was applied. The free SignPath application is submitted, with approval and integration
+pending. An independent Windows update-signature route is being assessed; it is
+not shipped yet. See the [current signing policy](CODE_SIGNING.md).
 
 The package still contains historical frontend views for v3 development. An
 explicit `MNEMION_LEGACY_STUDIO=1` launch additionally requires the separately

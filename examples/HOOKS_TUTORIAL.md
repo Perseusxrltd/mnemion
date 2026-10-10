@@ -1,5 +1,7 @@
 # How to Use Mnemion Hooks (Auto-Save)
 
+> **Compatibility reference, reviewed 2026-10-10.** Legacy hook tutorial below describe the optional v3-compatible backend. For shared-platform v1, use the [current service guide](../docs/service/capture.md) and `main`. These historical commands and claims are not the default service architecture or current performance measurements.
+
 Mnemion hooks act as an "Auto-Save" feature. They help your AI keep a permanent memory without you needing to run manual commands.
 
 ### 1. What are these hooks?

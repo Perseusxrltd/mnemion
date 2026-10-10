@@ -11,7 +11,11 @@ Mnemion exposes simple MCP tool names for interoperability with clients that exp
 - `search`
 - `fetch`
 
-All tools route into normal Mnemion storage, search, trust, source, and wiki systems. They do not create a second database.
+On platform v1 these aliases route through the authenticated shared-service API
+and the explicitly configured compatibility space. They preserve the caller’s
+permissions and source evidence; they do not create a second database. Configure
+them with the [current agent guide](service/agents.md). The optional legacy MCP
+server retains its older local-backend behavior.
 
 ## Examples
 
