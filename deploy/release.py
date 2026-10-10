@@ -192,6 +192,27 @@ def main() -> None:
                 architecture,
                 public_key,
             )
+        if "windows" in platforms:
+            node = shutil.which("node")
+            if node is None:
+                raise RuntimeError("Node 22+ is required for Windows signature verification")
+            verified = subprocess.run(
+                [
+                    node,
+                    str(root / "deploy/windows_updates.mjs"),
+                    "verify",
+                    "--artifacts",
+                    str(args.artifacts.resolve()),
+                    "--arch",
+                    architecture,
+                ],
+                capture_output=True,
+                text=True,
+                timeout=120,
+                check=False,
+            )
+            if verified.returncode:
+                raise ValueError("Windows update manifest does not authenticate the installer")
     checksums = []
     for path in sorted(files):
         if path.is_symlink() or not path.is_file():

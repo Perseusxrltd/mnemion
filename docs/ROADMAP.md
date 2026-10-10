@@ -92,7 +92,10 @@ where possible and include migration/rollback instructions when needed.
 
 - Finish and publish the Windows installer/update path, using a verified free
   distribution route; integrate SignPath when approved. No publisher approval
-  is assumed and no paid certificate purchase is planned.
+  is assumed and no paid certificate purchase is planned. The
+  [independent signed-update implementation](implementation/free-windows-updates.md)
+  is on `main`; native NSIS installation/upgrade and both architectures remain
+  the shipping gate.
 - Complete signed native installation and upgrade rehearsals across supported
   OS versions, including restricted company devices, offline recovery and Linux
   desktop environments with and without a system tray.

@@ -11,8 +11,16 @@ on:
         description: Validate the two Mac builds during updater development
         type: boolean
         default: false
+      windows_only:
+        description: Validate both native Windows builds during updater development
+        type: boolean
+        default: false
       sign_macos:
         description: Verify the configured Mac signing key without uploading release artifacts
+        type: boolean
+        default: false
+      sign_windows:
+        description: Verify the Windows update signing key without uploading release artifacts
         type: boolean
         default: false
   workflow_call:
@@ -35,7 +43,7 @@ jobs:
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - id: select
-        run: python -m deploy.release_targets ${{ inputs.release && '--release' || inputs.macos_only && '--macos-only' || '' }} >> "$GITHUB_OUTPUT"
+        run: python -m deploy.release_targets ${{ inputs.release && '--release' || inputs.macos_only && '--macos-only' || inputs.windows_only && '--windows-only' || '' }} >> "$GITHUB_OUTPUT"
   desktop:
     needs: targets
     name: ${{ matrix.os }} / ${{ matrix.arch }}
@@ -50,14 +58,9 @@ jobs:
       CSC_IDENTITY_AUTO_DISCOVERY: ${{ inputs.release && startsWith(matrix.os, 'windows-') && 'true' || 'false' }}
       CSC_LINK: ${{ inputs.release && startsWith(matrix.os, 'windows-') && secrets.WINDOWS_CSC_LINK || '' }}
       CSC_KEY_PASSWORD: ${{ inputs.release && startsWith(matrix.os, 'windows-') && secrets.WINDOWS_CSC_KEY_PASSWORD || '' }}
-      MNEMION_REQUIRE_CODE_SIGNATURE: ${{ inputs.release && startsWith(matrix.os, 'windows-') && '1' || '0' }}
+      MNEMION_REQUIRE_CODE_SIGNATURE: ${{ inputs.release && startsWith(matrix.os, 'windows-') && secrets.WINDOWS_CSC_LINK != '' && '1' || '0' }}
       MNEMION_BUILD_PYTHON: ${{ github.workspace }}/studio/client/.venv/${{ startsWith(matrix.os, 'windows-') && 'Scripts/python.exe' || 'bin/python' }}
     steps:
-      - name: Require publisher credentials for a release
-        if: inputs.release && runner.os == 'Windows'
-        shell: bash
-        run: |
-          test -n "$CSC_LINK" || { echo "Configure publisher signing credentials before releasing automatic updates."; exit 1; }
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
@@ -86,6 +89,11 @@ jobs:
       - run: npm --prefix studio/electron ci
       - run: npm --prefix studio/electron test
       - run: npm --prefix studio/electron run dist
+      - name: Sign and verify the free Windows update manifest
+        if: (inputs.release || (github.event_name == 'workflow_dispatch' && inputs.sign_windows)) && runner.os == 'Windows'
+        env:
+          MNEMION_WINDOWS_UPDATE_PRIVATE_KEY: ${{ secrets.MNEMION_WINDOWS_UPDATE_PRIVATE_KEY }}
+        run: node deploy/windows_updates.mjs sign
       - name: Sign and verify the free macOS update archive
         if: (inputs.release || (github.event_name == 'workflow_dispatch' && inputs.sign_macos)) && runner.os == 'macOS'
         env:
@@ -101,6 +109,15 @@ jobs:
       - name: Packaged Mac update, restart guards and relaunch
         if: runner.os == 'macOS'
         run: python -m deploy.macos_electron_update_probe --output "$RUNNER_TEMP/mnemion-electron-update"
+      - name: Native Windows installation, authenticated upgrade and relaunch
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: node studio/electron/scripts/windows-update-probe.mjs --output "$env:RUNNER_TEMP/mnemion-windows-update"
+      - name: Bounded Windows update failure diagnostics
+        if: failure() && runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          python -c "import os; from pathlib import Path; root=Path(os.environ['RUNNER_TEMP'])/'mnemion-windows-update'; [(print(name), print((root/name).read_text(errors='replace')[-8000:])) for name in ['build.log','electron.log','events.jsonl','spawn-error.txt'] if (root/name).is_file()]"
       - name: Bounded native update failure diagnostics
         if: failure() && runner.os == 'macOS'
         run: |
@@ -124,6 +141,7 @@ jobs:
           path: |
             dist-electron/latest-*.yml
             dist-electron/latest-*-mac.xml
+            dist-electron/latest-*-windows.json
             dist-electron/*.exe
             dist-electron/*.blockmap
             dist-electron/*.dmg

@@ -99,6 +99,7 @@ for platforms already offered to users.
 | Repository Actions secret | Purpose |
 | --- | --- |
 | `MNEMION_MAC_UPDATE_PRIVATE_KEY` | Base64-encoded 32-byte Ed25519 seed matching the Mac public key committed in `studio/electron/native/sparkle.json` |
+| `MNEMION_WINDOWS_UPDATE_PRIVATE_KEY` | Base64 PKCS#8 Ed25519 key matching `studio/electron/native/windows-updates.json`; authenticates full Windows installers independently of an OS certificate |
 | `WINDOWS_CSC_LINK` | Optional future Windows publisher PFX; not available from SignPath's non-exportable signing service |
 | `WINDOWS_CSC_KEY_PASSWORD` | Password for an approved Windows PFX, when that route is used |
 

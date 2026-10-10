@@ -39,6 +39,15 @@ for (const installer of artifacts.installers) requireFile(installer, 40 * 1024 *
 
 let signature = 'not required on this platform'
 if (process.platform === 'win32') {
+  const { extractFile, listPackage } = await import('@electron/asar')
+  const archive = join(artifacts.resources, 'app.asar')
+  const embedded = JSON.parse(extractFile(archive, 'dist/windows-updates.json').toString())
+  const expected = JSON.parse(readFileSync(join(root, 'studio/electron/native/windows-updates.json'), 'utf8'))
+  if (JSON.stringify(embedded) !== JSON.stringify(expected)
+    || !extractFile(archive, 'dist/windows-update-security.js').toString().includes('https://github.com/Perseusxrltd/mnemion/releases')
+    || listPackage(archive).some(name => /(?:windows-update-fixture|update-fixture)\.mjs$/.test(name))) {
+    throw new Error('The Windows package must embed the production update trust configuration')
+  }
   const installer = artifacts.installers[0]
   requireFile(`${installer}.blockmap`, 1024)
   const { getPath7za } = await import('app-builder-lib/out/toolsets/7zip.js')

@@ -1,9 +1,10 @@
-import { app, powerMonitor, type BrowserWindow } from 'electron'
+import { app, powerMonitor, session, type BrowserWindow } from 'electron'
 import updaterPackage from 'electron-updater'
 import { join } from 'node:path'
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { canRestartForUpdate, desktopExec, updateChannel } from './update-policy.js'
 import { MacUpdateBridge, type MacUpdateEvent } from './macos-updates.js'
+import { WindowsUpdateBridge, type WindowsUpdateEvent, type WindowsUpdateTrust } from './windows-updates.js'
 
 let autoUpdater: typeof updaterPackage.autoUpdater
 type Preferences = { automaticUpdates: boolean; startAtLogin: boolean; background: boolean }
@@ -18,6 +19,7 @@ export class DesktopUpdates {
   private installing = false
   private cancelDownload?: () => void
   private mac?: MacUpdateBridge
+  private windows?: WindowsUpdateBridge
   private timers: NodeJS.Timeout[] = []
   private readonly path = join(app.getPath('userData'), 'desktop-preferences.json')
   private readonly managed = process.env.MNEMION_AUTO_UPDATE === '0'
@@ -43,7 +45,14 @@ export class DesktopUpdates {
     }
     if (process.platform === 'darwin') {
       this.mac = new MacUpdateBridge(join(process.resourcesPath, '..', 'MacOS', 'MnemionUpdater'),
-        event => this.macEvent(event))
+        event => this.platformEvent(event))
+    } else if (process.platform === 'win32') {
+      const trust: WindowsUpdateTrust = JSON.parse(readFileSync(new URL('./windows-updates.json', import.meta.url), 'utf8'))
+      const network = session.fromPartition('mnemion-signed-updates', { cache: false })
+      this.windows = new WindowsUpdateBridge({ version: app.getVersion(), architecture: process.arch,
+        cacheDirectory: join(app.getPath('userData'), 'updates-windows'), applicationPath: process.execPath,
+        resourcesPath: process.resourcesPath, trust }, (url, options) => network.fetch(url, options),
+      event => this.platformEvent(event))
     } else {
       autoUpdater = updaterPackage.autoUpdater
       autoUpdater.setFeedURL({ provider: 'github', owner: 'Perseusxrltd', repo: 'mnemion',
@@ -61,7 +70,11 @@ export class DesktopUpdates {
         this.downloaded = true
         this.setStatus({ state: 'Update ready · waiting for a safe restart', version: info.version })
       })
-      autoUpdater.on('error', () => this.setStatus({ state: 'Update unavailable · retry scheduled' }))
+      autoUpdater.on('error', () => {
+        this.downloaded = false
+        this.installing = false
+        this.setStatus({ state: 'Update unavailable · retry scheduled' })
+      })
     }
     this.status = { state: this.enabled ? 'Automatic updates enabled' : this.managed ? 'Updates managed by administrator' : !this.supported ? 'Updates managed by installer or package manager' : 'Automatic updates paused' }
     if (this.supported) {
@@ -76,11 +89,14 @@ export class DesktopUpdates {
 
   get enabled() { return this.supported && !this.managed && this.preferences.automaticUpdates }
   get policyManaged() { return this.managed }
-  get quitNeedsUpdateCleanup() { return !!this.mac?.active && !this.mac.installing }
+  get quitNeedsUpdateCleanup() {
+    const updater = this.mac || this.windows
+    return !!updater?.active && !updater.installing
+  }
 
-  private macEvent(event: MacUpdateEvent) {
+  private platformEvent(event: MacUpdateEvent | WindowsUpdateEvent) {
     if (event.state === 'ready') {
-      if (!this.enabled) { void this.mac?.cancel(); return }
+      if (!this.enabled) { void (this.mac || this.windows)?.cancel(); return }
       this.downloaded = true
       this.setStatus({ state: 'Update ready · waiting for a safe restart', version: event.version })
     } else if (event.state === 'downloading') {
@@ -95,6 +111,7 @@ export class DesktopUpdates {
       this.setStatus({ state: 'Update unavailable · retry scheduled' })
     } else if (event.state === 'cancelled') {
       this.downloaded = false
+      this.installing = false
       this.setStatus({ state: this.enabled ? 'Automatic updates enabled' : 'Automatic updates paused' })
     }
   }
@@ -102,7 +119,7 @@ export class DesktopUpdates {
   async prepareQuit(): Promise<boolean> {
     if (!this.quitNeedsUpdateCleanup) return true
     this.setStatus({ state: 'Finishing update cleanup' })
-    const stopped = await this.mac!.cancel()
+    const stopped = await (this.mac || this.windows)!.cancel()
     if (!stopped) this.setStatus({ state: 'Update cleanup is still running · try quitting again shortly' })
     return stopped
   }
@@ -114,7 +131,7 @@ export class DesktopUpdates {
     renameSync(`${this.path}.tmp`, this.path)
   }
   private applyUpdatePolicy() {
-    if (this.mac || process.platform === 'darwin') return
+    if (this.mac || this.windows || process.platform === 'darwin' || process.platform === 'win32') return
     autoUpdater.autoDownload = this.enabled
     autoUpdater.autoInstallOnAppQuit = this.enabled
     autoUpdater.autoRunAppAfterInstall = true
@@ -130,6 +147,7 @@ export class DesktopUpdates {
       if (!this.enabled) {
         this.cancelDownload?.()
         if (this.mac) void this.mac.cancel()
+        if (this.windows) void this.windows.cancel()
       }
       this.setStatus({ state: this.enabled ? 'Automatic updates enabled' : 'Automatic updates paused' })
       if (key === 'automaticUpdates' && enabled) void this.check()
@@ -155,6 +173,7 @@ export class DesktopUpdates {
     this.setStatus({ state: 'Checking for updates' })
     try {
       if (this.mac) { await this.mac.check(); return }
+      if (this.windows) { await this.windows.check(); return }
       const result = await autoUpdater.checkForUpdates()
       this.cancelDownload = () => result?.cancellationToken?.cancel()
       if (!this.enabled) this.cancelDownload()
@@ -162,18 +181,28 @@ export class DesktopUpdates {
     } catch { this.setStatus({ state: 'Update unavailable · retry scheduled' }) }
     finally { this.checking = false }
   }
-  async restartIfSafe() {
-    if (!this.enabled || !this.downloaded || this.installing) return
+  private async restartIsSafe(): Promise<boolean> {
+    if (!this.enabled || !this.downloaded) return false
     const window = this.window()
     let safe = !window
     try { if (window) safe = await window.webContents.executeJavaScript('window.mnemion?.updateSafety?.() === true') }
-    catch { return }
-    if (!canRestartForUpdate({ enabled: this.enabled, downloaded: this.downloaded,
-      idleSeconds: powerMonitor.getSystemIdleTime(), focused: window?.isFocused() || false, safe, busy: this.busy() })) return
+    catch { return false }
+    return canRestartForUpdate({ enabled: this.enabled, downloaded: this.downloaded,
+      idleSeconds: powerMonitor.getSystemIdleTime(), focused: window?.isFocused() || false, safe, busy: this.busy() })
+  }
+  async restartIfSafe() {
+    if (this.installing || !await this.restartIsSafe()) return
+    // A second timer can finish its renderer check while the first starts installing.
+    if (this.installing) return
     if (this.mac) {
       if (!this.mac.install()) return
       this.installing = true
       this.beforeRestart()
+    } else if (this.windows) {
+      this.installing = true
+      const started = await this.windows.install(() => this.restartIsSafe())
+      if (started) { this.beforeRestart(); app.quit() }
+      else this.installing = false
     } else {
       this.installing = true
       this.beforeRestart()

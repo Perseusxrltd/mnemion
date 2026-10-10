@@ -34,10 +34,12 @@ SignPath Foundation. Bind any Authenticode publisher check to the actual approve
 identity, not an assumed company certificate. SignPath's service does not export
 a PFX; its integration must use the approved project and signing policy.
 
-A separate free Windows archive-signature route is being assessed. It is not yet
-an available Windows release. Do not disable updater authentication merely to
-publish an unsigned installer. An independent signature can authenticate updates
-without providing Windows publisher reputation or bypassing company policies.
+A free [Windows update implementation](implementation/free-windows-updates.md)
+is on `main` and undergoing native validation. An Ed25519 manifest binds the
+exact full NSIS installer, version, architecture, URL, size and hash. Cached
+installers are verified again before execution. This is not yet an available
+Windows release. An independent signature authenticates updates without providing
+Windows publisher reputation or bypassing company policies.
 
 Only free services are authorized. Do not purchase certificates, Apple membership,
 paid runners or trials that turn into paid subscriptions.
@@ -50,6 +52,12 @@ private seed is supplied only to the release signing step through
 repository. Never print, commit or upload private keys or account credentials.
 Document and test rotation before changing a shipped trust key. Loss or compromise
 requires an explicit recovery plan for already-installed clients.
+
+The Windows public key is in `studio/electron/native/windows-updates.json`.
+Its separate Ed25519 private key is provided only to the signing step as
+`MNEMION_WINDOWS_UPDATE_PRIVATE_KEY` (base64 PKCS#8). The same recovery, rotation
+and non-disclosure rules apply. The manifest must verify against this embedded
+key even when no OS publisher certificate is available.
 
 The repository maintainer reviews changes and approves releases. Provider-required
 manual signing approvals apply to each request; previous approval does not replace

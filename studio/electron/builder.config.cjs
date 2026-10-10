@@ -8,6 +8,13 @@ for (const name of ['CSC_LINK', 'CSC_KEY_PASSWORD', 'APPLE_ID', 'APPLE_APP_SPECI
 // Unique feeds prevent x64/ARM artifacts from overwriting each other's metadata.
 module.exports = {
   ...build,
+  electronFuses: {
+    runAsNode: false,
+    enableNodeOptionsEnvironmentVariable: false,
+    enableNodeCliInspectArguments: false,
+    onlyLoadAppFromAsar: true,
+    enableEmbeddedAsarIntegrityValidation: process.platform !== 'linux',
+  },
   mac: {
     ...build.mac,
     identity: '-',

@@ -38,11 +38,18 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--release", action="store_true")
     parser.add_argument("--macos-only", action="store_true")
+    parser.add_argument("--windows-only", action="store_true")
     args = parser.parse_args()
     platforms = (
         release_platforms()
         if args.release
-        else (["macos"] if args.macos_only else ["windows", "macos", "linux"])
+        else (
+            ["macos"]
+            if args.macos_only
+            else ["windows"]
+            if args.windows_only
+            else ["windows", "macos", "linux"]
+        )
     )
     print("matrix=" + json.dumps([item for item in MATRIX if item["platform"] in platforms]))
 
