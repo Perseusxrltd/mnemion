@@ -3,12 +3,47 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import hashlib
 import json
 import re
 import sys
 import tomllib
 from pathlib import Path
+
+
+def verify_feed(feed: Path, artifacts: Path, version: str) -> None:
+    import yaml
+
+    if not feed.is_file() or feed.stat().st_size > 100_000:
+        raise ValueError(f"Missing or oversized update feed: {feed.name}")
+    data = yaml.safe_load(feed.read_text(encoding="utf-8"))
+    if not isinstance(data, dict) or data.get("version") != version:
+        raise ValueError(f"Wrong version in {feed.name}")
+    entries = data.get("files")
+    if not isinstance(entries, list) or not entries:
+        raise ValueError(f"Missing payload list in {feed.name}")
+    hashes = {}
+    for entry in entries:
+        if not isinstance(entry, dict):
+            raise ValueError("Invalid update payload entry")
+        name = entry.get("url", "")
+        if not isinstance(name, str) or not re.fullmatch(
+            r"[A-Za-z0-9][A-Za-z0-9._+-]{0,254}", name
+        ):
+            raise ValueError("Update payloads must be local release filenames")
+        path = artifacts / name
+        if path.is_symlink() or not path.is_file():
+            raise ValueError(f"Missing or unsafe update payload: {name}")
+        with path.open("rb") as stream:
+            digest = base64.b64encode(hashlib.file_digest(stream, "sha512").digest()).decode(
+                "ascii"
+            )
+        if entry.get("sha512") != digest or entry.get("size") != path.stat().st_size:
+            raise ValueError(f"Update payload hash or size mismatch: {name}")
+        hashes[name] = digest
+    if data.get("path") not in hashes or data.get("sha512") != hashes[data["path"]]:
+        raise ValueError(f"Legacy update pointer disagrees in {feed.name}")
 
 
 def main() -> None:
@@ -44,21 +79,11 @@ def main() -> None:
     if args.artifacts is None:
         print(f"Validated Mnemion {version}: package versions, release notes and roadmap")
         return
-    files = list(args.artifacts.iterdir())
+    files = [path for path in args.artifacts.iterdir() if path.name != "SHA256SUMS.txt"]
     for architecture in ("x64", "arm64"):
         for suffix in ("", "-mac", "-linux" if architecture == "x64" else "-linux-arm64"):
             feed = args.artifacts / f"latest-{architecture}{suffix}.yml"
-            if not feed.is_file():
-                raise ValueError(f"Missing update feed: {feed.name}")
-            text = feed.read_text()
-            if not re.search(rf"^version: ['\"]?{re.escape(version)}['\"]?\s*$", text, re.M):
-                raise ValueError(f"Wrong version in {feed.name}")
-            # All generated feed URLs must point at artifacts in this release.
-            urls = re.findall(r"^\s*-?\s*url:\s*['\"]?([^'\"\s]+)", text, re.M)
-            if not urls or any(
-                Path(url).name != url or not (args.artifacts / url).is_file() for url in urls
-            ):
-                raise ValueError(f"Missing or external update payload in {feed.name}")
+            verify_feed(feed, args.artifacts, version)
     checksums = []
     for path in sorted(files):
         if path.is_symlink() or not path.is_file():

@@ -88,6 +88,17 @@ concurrency defaults to 64 (`MNEMION_HTTP_CONCURRENCY`) and the database pool to
 database connections. Vector ranking currently computes exact distance within
 authorized scopes; scope size, text length and concurrency affect latency.
 
+The included Compose profile caps API and worker containers at 2 GiB RAM and two
+CPUs each, database memory at 768 MiB, and operator tools at 2 GiB. Swap allowance
+is zero beyond each memory limit. Override the corresponding
+`MNEMION_API_MEMORY_LIMIT`, `MNEMION_WORKER_MEMORY_LIMIT`,
+`MNEMION_DATABASE_MEMORY_LIMIT`, `MNEMION_TOOL_MEMORY_LIMIT` and `*_CPUS`
+settings only after measuring the deployment. A process that exceeds its limit
+can be killed by the container runtime; durable jobs and recovery procedures
+remain necessary. Inspect the resource and ingestion views before increasing
+parallel indexing or evaluation work. Client hardware does not need these server
+resources when connecting to a separately hosted service.
+
 ## Routine backup and recovery rehearsal
 
 Run one operator at a time. Commands after `operator --` are passed verbatim to

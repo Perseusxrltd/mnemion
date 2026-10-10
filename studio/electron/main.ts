@@ -463,6 +463,19 @@ async function createWindow() {
         if (renderer?.workspace && renderer?.serviceBridge && renderer?.vaultBridge) break
         await new Promise(resolve => setTimeout(resolve, 100))
       } while (Date.now() < deadline)
+      // Help must load entirely from packaged assets before any service connects.
+      await mainWindow.webContents.executeJavaScript("location.hash = '/help?doc=docs%2FROADMAP.md'")
+      const helpDeadline = Date.now() + 10_000
+      let documentation = false
+      do {
+        documentation = await mainWindow.webContents.executeJavaScript(`
+          document.querySelector('.mn-docs-article h1')?.textContent === 'Mnemion product roadmap'
+          && document.querySelector('.mn-docs-header')?.textContent.includes('Version ${app.getVersion()}')
+        `)
+        if (documentation) break
+        await new Promise(resolve => setTimeout(resolve, 100))
+      } while (Date.now() < helpDeadline)
+      renderer = { ...renderer, documentation }
     }
     writeSmokeStatus('client-ready', { legacyEnabled, localClient, renderer })
   }

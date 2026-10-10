@@ -1,5 +1,10 @@
 # Mnemion v4 implementation status
 
+For current delivery priorities and the platform-v1 freeze, use the
+[product roadmap](../ROADMAP.md) and [4.0.0 release notes](../releases/4.0.0.md).
+This chronological ledger also retains earlier checkpoints and the broader
+program acceptance criteria; historical counts are not final-version results.
+
 Objective: deliver a professional shared memory product for applications, teams,
 assistants, and programs, retaining Obsidian visualization. The objective remains
 active until the implementation and release gates are verified.
@@ -65,7 +70,7 @@ The overall product goal remains active.
 ## Remaining release requirements
 
 - [ ] Complete memory/resource limits and observable bandwidth, selectable current embedding models with safe reindex/activation, and the configurable local/cloud librarian.
-- [ ] Implement and validate the detailed visual [observability and evaluations workspace](observability-and-evaluations.md), including reproducible test sets/runs, bounded execution, comparisons, exports and permission/deletion handling.
+- [x] Implement and validate the detailed visual [observability and evaluations workspace](observability-and-evaluations.md), including reproducible test sets/runs, bounded execution, comparisons, exports and permission/deletion handling.
 - [x] Implement complete service and legacy recovery, durable legacy writes, strict JSON imports, and replacement of unsafe Git sync.
 - [ ] Finish migration/rollback edge-case and operational review, including derived legacy views and uncommon source layouts.
 - [ ] Complete the bounded component/adoption decision with comparable contract and cost evidence.

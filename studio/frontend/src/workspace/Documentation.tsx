@@ -29,7 +29,10 @@ const documents = Object.entries(sources).map(([key, load]) => {
     : path.includes("/implementation/") ? "Engineering" : path.includes("/validation/") ? "Validation"
     : path.includes("/releases/") ? "Release notes" : path.includes("/service/") ? "Guides" : "Product";
   return { path, load, category, title: titles[path] ?? path.split("/").at(-1)!.replace(/\.md$/, "").replaceAll(/[_-]/g, " ") };
-}).sort((a, b) => a.category.localeCompare(b.category) || a.title.localeCompare(b.title));
+}).sort((a, b) => {
+  const order = ["Guides", "Product", "Release notes", "Validation", "Engineering", "Research", "Archive"];
+  return order.indexOf(a.category) - order.indexOf(b.category) || a.title.localeCompare(b.title);
+});
 const lookup = new Map(documents.map(doc => [doc.path, doc]));
 const repository = "https://github.com/Perseusxrltd/mnemion/blob/main/";
 function headingText(node: ReactNode): string {
