@@ -294,7 +294,13 @@ def execute(root: Path) -> dict:
         (root / "invalid-signature.log").write_text(rejected.stdout + rejected.stderr)
         if rejected.returncode == 0 or not any(path.startswith("/update.zip") for path in requests):
             raise AssertionError("The invalid update was not downloaded and rejected")
-        if "signature" not in (rejected.stdout + rejected.stderr).lower():
+        # The pinned CLI wraps signature rejection in SUInstallationError (4005).
+        # Require its specific validation detail too; a generic install error is not proof.
+        rejection = rejected.stdout + rejected.stderr
+        if (
+            "error 4005 (SUSparkleErrorDomain)" not in rejection
+            or "improperly signed and could not be validated" not in rejection
+        ):
             raise AssertionError("The invalid update did not report a signature failure")
         if plistlib.loads((old / "Contents/Info.plist").read_bytes())["CFBundleVersion"] != "4.0.0":
             raise AssertionError("An invalid update changed the installed bundle")
