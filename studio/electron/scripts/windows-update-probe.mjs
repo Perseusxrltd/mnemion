@@ -32,10 +32,11 @@ const installed = join(output, 'installed with spaces')
 const receipt = join(output, 'events.jsonl')
 const userData = join(output, 'user-data')
 await mkdir(userData)
-const nsisLog = join(output, 'nsis-stages.log').replaceAll('\\', '/')
+const nsisLog = join(output, 'nsis-stages.log')
 if (/["$\r\n]/.test(nsisLog)) throw new Error('The private NSIS diagnostic path contains unsupported characters')
 const nsisInclude = join(output, 'probe-diagnostics.nsh')
-writeFileSync(nsisInclude, ['customInit', 'customInstall', 'customUnInit', 'customUnInstall'].map(stage => [
+writeFileSync(nsisInclude, `!include "${join(root, 'studio/electron/native/windows-installer.nsh')}"\n`
+  + ['customInit', 'customInstall', 'customUnInit', 'customUnInstall'].map(stage => [
   `!macro ${stage}`,
   '  Push $R9',
   `  FileOpen $R9 "${nsisLog}" a`,

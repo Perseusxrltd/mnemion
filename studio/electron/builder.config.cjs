@@ -1,4 +1,5 @@
 const { build } = require('./package.json')
+const { join } = require('node:path')
 const sparkle = require('./native/sparkle.json')
 // GitHub supplies absent secrets as empty strings. electron-builder interprets
 // an empty CSC_LINK as the working directory instead of an absent certificate.
@@ -19,6 +20,7 @@ module.exports = {
     onlyLoadAppFromAsar: true,
     enableEmbeddedAsarIntegrityValidation: process.platform !== 'linux',
   },
+  nsis: { ...build.nsis, include: join(__dirname, 'native/windows-installer.nsh') },
   mac: {
     ...build.mac,
     identity: '-',
