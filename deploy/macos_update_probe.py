@@ -198,15 +198,15 @@ def bundle(root: Path, name: str, version: str, identifier: str, public: str, fe
     return application
 
 
-def write_feed(path: Path, url: str, archive: Path, signature: str) -> None:
+def write_feed(path: Path, url: str, archive: Path, signature: str, version: str = "4.0.1") -> None:
     ET.register_namespace("sparkle", SPARKLE_XML)
     rss = ET.Element("rss", {"version": "2.0"})
     channel = ET.SubElement(rss, "channel")
     ET.SubElement(channel, "title").text = "Disposable Mnemion updater validation"
     item = ET.SubElement(channel, "item")
-    ET.SubElement(item, "title").text = "Probe 4.0.1"
-    ET.SubElement(item, f"{{{SPARKLE_XML}}}version").text = "4.0.1"
-    ET.SubElement(item, f"{{{SPARKLE_XML}}}shortVersionString").text = "4.0.1"
+    ET.SubElement(item, "title").text = f"Probe {version}"
+    ET.SubElement(item, f"{{{SPARKLE_XML}}}version").text = version
+    ET.SubElement(item, f"{{{SPARKLE_XML}}}shortVersionString").text = version
     ET.SubElement(
         item,
         "enclosure",

@@ -5,7 +5,7 @@ import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync 
 import { canRestartForUpdate, desktopExec, updateChannel } from './update-policy.js'
 import { MacUpdateBridge, type MacUpdateEvent } from './macos-updates.js'
 
-const { autoUpdater } = updaterPackage
+let autoUpdater: typeof updaterPackage.autoUpdater
 type Preferences = { automaticUpdates: boolean; startAtLogin: boolean; background: boolean }
 const defaults: Preferences = { automaticUpdates: true, startAtLogin: true, background: true }
 export type UpdateStatus = { state: string; version?: string; percent?: number; checkedAt?: string }
@@ -45,6 +45,7 @@ export class DesktopUpdates {
       this.mac = new MacUpdateBridge(join(process.resourcesPath, '..', 'MacOS', 'MnemionUpdater'),
         event => this.macEvent(event))
     } else {
+      autoUpdater = updaterPackage.autoUpdater
       autoUpdater.setFeedURL({ provider: 'github', owner: 'Perseusxrltd', repo: 'mnemion',
       private: false, channel: updateChannel(process.arch) })
     autoUpdater.channel = updateChannel(process.arch)

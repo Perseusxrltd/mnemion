@@ -11,6 +11,10 @@ on:
         description: Validate the two Mac builds during updater development
         type: boolean
         default: false
+      sign_macos:
+        description: Verify the configured Mac signing key without uploading release artifacts
+        type: boolean
+        default: false
   workflow_call:
     inputs:
       release:
@@ -74,7 +78,7 @@ jobs:
       - run: npm --prefix studio/electron test
       - run: npm --prefix studio/electron run dist
       - name: Sign and verify the free macOS update archive
-        if: inputs.release && runner.os == 'macOS'
+        if: (inputs.release || (github.event_name == 'workflow_dispatch' && inputs.sign_macos)) && runner.os == 'macOS'
         env:
           MNEMION_MAC_UPDATE_PRIVATE_KEY: ${{ secrets.MNEMION_MAC_UPDATE_PRIVATE_KEY }}
         run: python -m deploy.macos_sparkle sign
@@ -85,6 +89,22 @@ jobs:
       - name: Packaged Linux window, sandboxed bridge, and local client
         if: runner.os == 'Linux'
         run: xvfb-run -a npm --prefix studio/electron run smoke:packaged
+      - name: Packaged Mac update, restart guards and relaunch
+        if: runner.os == 'macOS'
+        run: python -m deploy.macos_electron_update_probe --output "$RUNNER_TEMP/mnemion-electron-update"
+      - name: Bounded native update failure diagnostics
+        if: failure() && runner.os == 'macOS'
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          root = Path(os.environ['RUNNER_TEMP']) / 'mnemion-electron-update'
+          for name in ['electron.log', 'events.jsonl']:
+              path = root / name
+              if path.is_file():
+                  print(name)
+                  print(path.read_text(errors='replace')[-8000:])
+          PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         # Validation keeps its evidence in job logs, not large installer uploads.
         if: inputs.release
