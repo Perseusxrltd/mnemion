@@ -2408,6 +2408,574 @@
       "group": "connectors",
       "input_schema": {
         "$defs": {
+          "SyncReportInput": {
+            "additionalProperties": false,
+            "properties": {
+              "changed": {
+                "default": 0,
+                "maximum": 9007199254740991.0,
+                "minimum": 0.0,
+                "title": "Changed",
+                "type": "integer"
+              },
+              "duration_seconds": {
+                "maximum": 604800.0,
+                "minimum": 0.0,
+                "title": "Duration Seconds",
+                "type": "number"
+              },
+              "error_code": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "incomplete_inventory",
+                      "provider_unavailable",
+                      "service_unavailable",
+                      "connector_busy"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Error Code"
+              },
+              "generation": {
+                "maximum": 9007199254740991.0,
+                "minimum": 0.0,
+                "title": "Generation",
+                "type": "integer"
+              },
+              "removed": {
+                "default": 0,
+                "maximum": 9007199254740991.0,
+                "minimum": 0.0,
+                "title": "Removed",
+                "type": "integer"
+              },
+              "successful": {
+                "title": "Successful",
+                "type": "boolean"
+              },
+              "unchanged": {
+                "default": 0,
+                "maximum": 9007199254740991.0,
+                "minimum": 0.0,
+                "title": "Unchanged",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "generation",
+              "successful",
+              "duration_seconds"
+            ],
+            "title": "SyncReportInput",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/SyncReportInput"
+          },
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "connector_id": {
+                "format": "uuid",
+                "title": "Connector Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "connector_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters",
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "POST",
+      "name": "connectors.sync_report",
+      "output_schema": {
+        "$defs": {
+          "SyncStatus": {
+            "additionalProperties": true,
+            "properties": {
+              "completed_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Completed At"
+              },
+              "completed_generation": {
+                "title": "Completed Generation",
+                "type": "integer"
+              },
+              "connector_id": {
+                "title": "Connector Id",
+                "type": "string"
+              },
+              "last_attempt_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Attempt At"
+              },
+              "last_changed": {
+                "title": "Last Changed",
+                "type": "integer"
+              },
+              "last_duration_seconds": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Duration Seconds"
+              },
+              "last_error_code": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Error Code"
+              },
+              "last_removed": {
+                "title": "Last Removed",
+                "type": "integer"
+              },
+              "last_successful": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Successful"
+              },
+              "last_unchanged": {
+                "title": "Last Unchanged",
+                "type": "integer"
+              },
+              "pending": {
+                "title": "Pending",
+                "type": "boolean"
+              },
+              "requested_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Requested At"
+              },
+              "requested_generation": {
+                "title": "Requested Generation",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "connector_id",
+              "requested_generation",
+              "completed_generation",
+              "requested_at",
+              "completed_at",
+              "pending",
+              "last_attempt_at",
+              "last_successful",
+              "last_duration_seconds",
+              "last_changed",
+              "last_removed",
+              "last_unchanged",
+              "last_error_code"
+            ],
+            "title": "SyncStatus",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/SyncStatus"
+      },
+      "parameter_locations": {
+        "connector_id": "path"
+      },
+      "path": "/v1/connectors/{connector_id}/sync/report",
+      "retry": "inspect_before_retry",
+      "sensitive_result": false,
+      "summary": "Report Connector Sync"
+    },
+    {
+      "download": false,
+      "effect": "write",
+      "group": "connectors",
+      "input_schema": {
+        "$defs": {
+          "SyncRequestInput": {
+            "additionalProperties": false,
+            "properties": {
+              "expected_generation": {
+                "maximum": 9007199254740991.0,
+                "minimum": 0.0,
+                "title": "Expected Generation",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "expected_generation"
+            ],
+            "title": "SyncRequestInput",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/SyncRequestInput"
+          },
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "connector_id": {
+                "format": "uuid",
+                "title": "Connector Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "connector_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters",
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "POST",
+      "name": "connectors.sync_request",
+      "output_schema": {
+        "$defs": {
+          "SyncStatus": {
+            "additionalProperties": true,
+            "properties": {
+              "completed_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Completed At"
+              },
+              "completed_generation": {
+                "title": "Completed Generation",
+                "type": "integer"
+              },
+              "connector_id": {
+                "title": "Connector Id",
+                "type": "string"
+              },
+              "last_attempt_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Attempt At"
+              },
+              "last_changed": {
+                "title": "Last Changed",
+                "type": "integer"
+              },
+              "last_duration_seconds": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Duration Seconds"
+              },
+              "last_error_code": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Error Code"
+              },
+              "last_removed": {
+                "title": "Last Removed",
+                "type": "integer"
+              },
+              "last_successful": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Successful"
+              },
+              "last_unchanged": {
+                "title": "Last Unchanged",
+                "type": "integer"
+              },
+              "pending": {
+                "title": "Pending",
+                "type": "boolean"
+              },
+              "requested_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Requested At"
+              },
+              "requested_generation": {
+                "title": "Requested Generation",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "connector_id",
+              "requested_generation",
+              "completed_generation",
+              "requested_at",
+              "completed_at",
+              "pending",
+              "last_attempt_at",
+              "last_successful",
+              "last_duration_seconds",
+              "last_changed",
+              "last_removed",
+              "last_unchanged",
+              "last_error_code"
+            ],
+            "title": "SyncStatus",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/SyncStatus"
+      },
+      "parameter_locations": {
+        "connector_id": "path"
+      },
+      "path": "/v1/connectors/{connector_id}/sync",
+      "retry": "inspect_before_retry",
+      "sensitive_result": false,
+      "summary": "Request Connector Sync"
+    },
+    {
+      "download": false,
+      "effect": "read",
+      "group": "connectors",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "connector_id": {
+                "format": "uuid",
+                "title": "Connector Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "connector_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters"
+        ],
+        "type": "object"
+      },
+      "method": "GET",
+      "name": "connectors.sync_status",
+      "output_schema": {
+        "$defs": {
+          "SyncStatus": {
+            "additionalProperties": true,
+            "properties": {
+              "completed_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Completed At"
+              },
+              "completed_generation": {
+                "title": "Completed Generation",
+                "type": "integer"
+              },
+              "connector_id": {
+                "title": "Connector Id",
+                "type": "string"
+              },
+              "last_attempt_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Attempt At"
+              },
+              "last_changed": {
+                "title": "Last Changed",
+                "type": "integer"
+              },
+              "last_duration_seconds": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Duration Seconds"
+              },
+              "last_error_code": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Error Code"
+              },
+              "last_removed": {
+                "title": "Last Removed",
+                "type": "integer"
+              },
+              "last_successful": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Successful"
+              },
+              "last_unchanged": {
+                "title": "Last Unchanged",
+                "type": "integer"
+              },
+              "pending": {
+                "title": "Pending",
+                "type": "boolean"
+              },
+              "requested_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Requested At"
+              },
+              "requested_generation": {
+                "title": "Requested Generation",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "connector_id",
+              "requested_generation",
+              "completed_generation",
+              "requested_at",
+              "completed_at",
+              "pending",
+              "last_attempt_at",
+              "last_successful",
+              "last_duration_seconds",
+              "last_changed",
+              "last_removed",
+              "last_unchanged",
+              "last_error_code"
+            ],
+            "title": "SyncStatus",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/SyncStatus"
+      },
+      "parameter_locations": {
+        "connector_id": "path"
+      },
+      "path": "/v1/connectors/{connector_id}/sync",
+      "retry": "read",
+      "sensitive_result": false,
+      "summary": "Connector Sync Status"
+    },
+    {
+      "download": false,
+      "effect": "write",
+      "group": "connectors",
+      "input_schema": {
+        "$defs": {
           "BindingInput": {
             "additionalProperties": false,
             "properties": {

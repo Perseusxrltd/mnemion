@@ -166,6 +166,8 @@ class ConnectorConfig(Command):
     provider: Provider
     access_lease_seconds: int = Field(default=900, ge=60, le=86400)
     poll_seconds: int = Field(default=300, ge=30, le=86400)
+    remote_sync: bool = True
+    trigger_poll_seconds: int = Field(default=5, ge=1, le=60)
 
     _service_url = field_validator("service_url")(service_url)
 

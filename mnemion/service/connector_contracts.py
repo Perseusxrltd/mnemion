@@ -20,6 +20,22 @@ class Binding(ResponseModel):
     role: Literal["reader", "reviewer"]
 
 
+class SyncStatus(ResponseModel):
+    connector_id: str
+    requested_generation: int
+    completed_generation: int
+    requested_at: str | None
+    completed_at: str | None
+    pending: bool
+    last_attempt_at: str | None
+    last_successful: bool | None
+    last_duration_seconds: float | None
+    last_changed: int
+    last_removed: int
+    last_unchanged: int
+    last_error_code: str | None
+
+
 class BindingResult(Binding):
     connector_id: str
     removed: bool

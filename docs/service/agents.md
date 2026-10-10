@@ -76,6 +76,8 @@ schema to the initial tool list. The `mnemion-control` CLI supports the same
 operations and private exports/key results. See
 [agent administration](agent-control.md) for complete workflows, bounds and
 retry rules. Upgrade the gateway and refresh its tool connection to see them.
+Version 4.0.5 adds `connectors.sync_status`, `connectors.sync_request` and
+`connectors.sync_report`; see [source timing and requests](connectors.md#scan-timing-and-immediate-requests).
 
 For programs, use the [HTTP API and SDK examples](README.md#use-it-from-an-application).
 Tool arguments include descriptions, bounds and explicit scope selection. A

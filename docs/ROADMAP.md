@@ -1,19 +1,20 @@
 # Mnemion product roadmap
 
-Current distribution: **4.0.4**. Updated: **2026-10-11**.
+Current distribution: **4.0.5**. Updated: **2026-10-11**.
 
-Version 4.0.4 adds a reviewed 81-operation agent catalog, CLI/MCP administration
-and Linux login-path maintenance after updates. It retains 4.0.3's Windows ARM64
-and local-model RAM improvements. Release targets include **Windows, macOS and Linux, x64 and ARM64**.
+Version 4.0.5 adds durable immediate source-sync requests, timestamped results
+and Studio controls. Its agent catalog covers 84 operations. It retains the
+previous patches' Linux login-path repair, Windows ARM64 and local-model RAM
+improvements. Release targets include **Windows, macOS and Linux, x64 and ARM64**.
 [The official product page](https://www.perseusxr.com/mnemion) lists published
 downloads. Each architecture requires its complete verified installer/update set.
 
 The rebuilt shared-memory platform is product v1; its package version is 4.x
 to upgrade correctly from the earlier 3.x product. This is a living delivery
 plan, not a claim that every planned capability is available. Release status and
-known limitations are recorded in [the current patch notes](releases/4.0.4.md),
+known limitations are recorded in [the current patch notes](releases/4.0.5.md),
 [the published baseline](releases/4.0.0.md) and
-[validation report](validation/2026-10-11.md).
+[validation report](validation/2026-10-11-hotfixes.md).
 
 ## Product direction
 
@@ -48,8 +49,8 @@ Administrative authority remains distinct from ordinary memory access.
 | Retrieval | Pinned local multilingual E5, lexical and semantic search, cited context, chunk/index identity and bounded context packs | [Service](service/README.md) |
 | Model choice | E5/BGE CPU profiles, approved Ollama/OpenAI endpoints, per-space candidate indexes, progress/pause/retry, preview/evals and atomic activation/rollback | [Embedding models](service/embeddings.md) |
 | Librarian | Approved local/cloud models, optional schedules, call budgets, exact source revisions, organization proposals, review findings and guarded undo | [Librarian](service/librarian.md) |
-| Sources | Git, selected folders, Google Drive, Slack, rclone and custom adapters; checkpoints, leases, review proposals and pauses | [Connectors](service/connectors.md) |
-| Agent compatibility | HTTP/OpenAPI, Python/TypeScript SDKs, authenticated MCP, 81-operation discovery and CLI/MCP administration, bounded private results, safe retries, conversation capture | [Agents](service/agents.md), [administration](service/agent-control.md), [capture](service/capture.md) |
+| Sources | Git, selected folders, Google Drive, Slack, rclone and custom adapters; immediate sync requests, timestamped results, checkpoints, leases, review proposals and pauses | [Connectors](service/connectors.md) |
+| Agent compatibility | HTTP/OpenAPI, Python/TypeScript SDKs, authenticated MCP, 84-operation discovery and CLI/MCP administration, bounded private results, safe retries, conversation capture | [Agents](service/agents.md), [administration](service/agent-control.md), [capture](service/capture.md) |
 | Human organization | Studio memory review, source evidence, team access, wiki/graph, core context and operations | [Knowledge](service/knowledge.md) |
 | Obsidian | Markdown, stable paths, citations, wikilinks, managed refresh, conflict detection and preservation of personal annotations | [Studio](../studio/README.md) |
 | Reliability | Durable jobs, retries and leases, ingestion/resource limits, verified backup/recovery, v3 archive/import/cutover/rollback | [Recovery](service/recovery.md), [migration](service/migration.md) |
@@ -127,7 +128,8 @@ where possible and include migration/rollback instructions when needed.
   tokenizer vocabulary per local model, saving 296 MiB after loading E5 in the
   recorded comparison while preserving generation, source spans and vectors.
   Separate API/worker model caches and idle unloading remain open. Review policy for an author's
-  own deletions (14), improve source synchronization and diagnostics (8 and 15),
+  own deletions (14), improve source-space onboarding (8), extend 4.0.5's durable
+  sync requests and timestamped diagnostics with provider webhook verification (15),
   and evaluate natural-language retrieval against keyword baselines (17).
   Track [the issue queue](https://github.com/Perseusxrltd/mnemion/issues) and verify
   fixes through real deployments as well as isolated protocol tests.

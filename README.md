@@ -9,15 +9,15 @@ never gates downloads, usage or access.
 
 **Mnemion 4.0 is the first release of the rebuilt shared-memory platform.**
 Download published builds from [the official product page](https://www.perseusxr.com/mnemion).
-The [4.0.4 release](docs/releases/4.0.4.md) adds discoverable agent administration
-and repairs Linux login paths after AppImage updates. The preceding 4.0.3 patch
-added native Windows ARM64 and reduced local-model RAM by sharing its tokenizer.
+The [4.0.5 release](docs/releases/4.0.5.md) adds immediate source-sync requests,
+timestamped scan results and Studio controls. It retains 4.0.4's agent administration
+and Linux startup repair, and 4.0.3's Windows ARM64 and lower local-model RAM.
 Release targets cover **Windows, macOS and Linux on x64 and ARM64**. Windows and
 Mac updates use independent publisher signatures. The product page lists only
 published, verified builds. Development and
 current documentation live on `main`.
 Implementation and acceptance are tracked in [the release ledger](docs/implementation/v4_progress.md).
-See the [current validation report](docs/validation/2026-10-11.md) for measured
+See the [current validation report](docs/validation/2026-10-11-hotfixes.md) for measured
 retrieval results, native checks and remaining limits.
 The full codebase study, design decisions, and rebuild map are preserved in
 [the research report](docs/research/2026-10-09-mnemion-study/README.md).
@@ -36,7 +36,7 @@ An authenticated identity is separate from the person or project a memory is abo
 - A versioned HTTP API, [OpenAPI contract](docs/service/openapi.json),
   Python and TypeScript clients, and authenticated MCP with stdio and Streamable
   HTTP; API and HTTP MCP share one listener by default.
-- [Agent administration](docs/service/agent-control.md): 81 discoverable operations,
+- [Agent administration](docs/service/agent-control.md): 84 discoverable operations,
   an offline catalog/CLI, compact MCP tools, private results and safe retry rules.
 - Studio for saving, searching, inspecting evidence and revisions, reviewing
   memories, managing identities/grants, and tracking indexing/deletion activity.
@@ -49,7 +49,8 @@ An authenticated identity is separate from the person or project a memory is abo
 - Standard Obsidian Markdown, YAML, wikilinks, source anchors, native graph
   navigation, stable existing note paths, and conflict-aware local refresh.
 - [Source connections](docs/service/connectors.md) for Git, Google Drive, Slack,
-  selected folders/vaults, rclone-supported storage and custom company adapters.
+  selected folders/vaults, rclone-supported storage and custom company adapters,
+  with durable sync requests and timestamped scan diagnostics.
 - [Conversation capture](docs/service/capture.md), [agent setup](docs/service/agents.md),
   and an evidence-linked [wiki, graph and curation view](docs/service/knowledge.md).
 - Complete versioned service backup/restore and v3 preservation tools, with

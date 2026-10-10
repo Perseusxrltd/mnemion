@@ -88,6 +88,7 @@ export interface ApiKey { id: string; principal_id: string; name: string; prefix
 export interface CoreBlock { key: string; content: string; version: number; updated_at: string; updated_by: string }
 export interface Page<T> { items: T[]; next_cursor?: string | null }
 export interface Connector { id: string; name: string; provider: string; principal_id: string; access_mode: 'provider' | 'published'; disabled_at: string | null; created_at: string }
+export interface ConnectorSyncStatus { connector_id: string; requested_generation: number; completed_generation: number; pending: boolean; requested_at: string | null; completed_at: string | null; last_attempt_at: string | null; last_successful: boolean | null; last_duration_seconds: number | null; last_changed: number; last_removed: number; last_unchanged: number; last_error_code: string | null }
 export interface ConnectorBinding { external_id: string; principal_id: string; role: 'reader' | 'reviewer' }
 export interface ConnectorScope { space_id: string; connector_id: string; external_id: string; name?: string; operator_paused: boolean; access_current: boolean; observed_at: string; access_valid_until: string; suspended_at: string | null; suspension_reason: string | null; completed_at: string | null }
 export interface KnowledgeNode { id: string; kind: 'space' | 'memory' | 'source' | 'entity'; label: string; space_id: string; memory_id?: string }
@@ -271,6 +272,8 @@ export class MnemionClient {
   createConnector(input: Pick<Connector, 'name' | 'provider' | 'principal_id' | 'access_mode'>) { return this.request<Connector>('POST', '/v1/connectors', { body: input }) }
   disableConnector(id: string) { return this.request<Connector>('DELETE', `/v1/connectors/${encodeURIComponent(id)}`) }
   enableConnector(id: string) { return this.request<Connector>('POST', `/v1/connectors/${encodeURIComponent(id)}/enable`) }
+  connectorSyncStatus(id: string) { return this.request<ConnectorSyncStatus>('GET', `/v1/connectors/${encodeURIComponent(id)}/sync`) }
+  requestConnectorSync(id: string, expectedGeneration: number) { return this.request<ConnectorSyncStatus>('POST', `/v1/connectors/${encodeURIComponent(id)}/sync`, { body: { expected_generation: expectedGeneration } }) }
   connectorBindings(id: string) { return this.request<Page<ConnectorBinding>>('GET', `/v1/connectors/${encodeURIComponent(id)}/bindings`) }
   putConnectorBinding(id: string, input: ConnectorBinding) { return this.request('PUT', `/v1/connectors/${encodeURIComponent(id)}/bindings`, { body: input }) }
   removeConnectorBinding(id: string, input: ConnectorBinding) { return this.request('DELETE', `/v1/connectors/${encodeURIComponent(id)}/bindings`, { body: input }) }

@@ -25,6 +25,7 @@ from .connector_models import (
     utc_now,
 )
 from .db import Identity, require_administrator, require_space
+from .connector_sync import ConnectorSyncControls
 from .errors import ServiceError, not_found
 from .memory import MemoryService
 from .models import RevisionInput, json_value
@@ -41,7 +42,7 @@ def _lock(conn, space: UUID) -> None:
     conn.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s,0))", (f"connector:{space}",))
 
 
-class ConnectorService:
+class ConnectorService(ConnectorSyncControls):
     def __init__(self, memory: MemoryService):
         self.memory, self.db = memory, memory.db
 

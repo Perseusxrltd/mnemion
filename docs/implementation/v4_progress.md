@@ -283,3 +283,19 @@ quality. The roadmap and issue queue track those independently.
 - Hosted OAuth, remote setup, server supervision/updates, source triggers and
   further memory/retrieval work remain explicit roadmap items. The public
   4.0.3 release and automatic six-platform website refresh were verified.
+
+## Hotfix 4.0.5, 11 October 2026
+
+- Durable connector sync requests preserve requests arriving during a scan and
+  leave failed inventories pending. Existing source ownership, ACL leases and
+  canonical deletion safeguards remain in effect.
+- Studio, Python/TypeScript SDKs and the 84-operation agent catalog expose sync
+  requests/status. Runner logs and server status include UTC times, duration and
+  changed/removed/unchanged counts; small control polling is configurable.
+- Real PostgreSQL and HTTP tests cover concurrent requests, restricted roles,
+  active-scan races, Git deletions, acknowledgements, bounded polling and older
+  services. The full service group passed 243 tests with two model skips and
+  86.03% coverage; all seven TypeScript SDK checks and the Studio build passed.
+- Migration 012 adds one control record per connector. Release notes describe
+  coordinated backup/migration/restart and separate-database rollback. Managed
+  server updates and native provider webhook receivers remain separate work.

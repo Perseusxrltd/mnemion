@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download, Plus, RefreshCw } from "lucide-react";
-import { MnemionClient, type Connector, type ConnectorProposal } from "@mnemion/client";
+import { MnemionClient, MnemionError, type Connector, type ConnectorProposal } from "@mnemion/client";
 
 const providers = [
   ["filesystem", "Obsidian / folder"], ["git", "Git repository"],
@@ -45,6 +45,10 @@ export function Connections({ client, administrator, endpoint, selectSpace }: {
   const [error, setError] = useState<unknown>();
   const bindings = useQuery({ queryKey: ["connector-bindings", connection?.id], queryFn: () => client.connectorBindings(connection!.id), enabled: !!connection });
   const scopes = useQuery({ queryKey: ["connector-scopes", connection?.id, cursor], queryFn: () => client.connectorScopes(connection!.id, cursor), enabled: !!connection, refetchInterval: 15000 });
+  const syncStatus = useQuery({ queryKey: ["connector-sync", connection?.id], queryFn: async () => {
+    try { return await client.connectorSyncStatus(connection!.id); }
+    catch (error) { if (error instanceof MnemionError && [404, 405].includes(error.status)) return null; throw error; }
+  }, enabled: !!connection, retry: false, refetchInterval: 15000 });
   const published = !["gdrive", "slack"].includes(provider);
   async function act(work: () => Promise<unknown>) {
     setBusy(true); setError(undefined);
@@ -66,7 +70,7 @@ export function Connections({ client, administrator, endpoint, selectSpace }: {
   }
   return <div className="ws-page">
     <header className="ws-page-heading"><div><div className="ws-eyebrow">Sources</div><h1>Connect company knowledge</h1><p>Bring repositories, vaults and conversations into shared memory with their access boundaries intact.</p></div></header>
-    {[error, connections.error, people.error, bindings.error, scopes.error].filter(Boolean).map((value, i) => <div className="ws-notice ws-error" role="alert" key={i}>{failure(value)}</div>)}
+    {[error, connections.error, people.error, bindings.error, scopes.error, syncStatus.error].filter(Boolean).map((value, i) => <div className="ws-notice ws-error" role="alert" key={i}>{failure(value)}</div>)}
     {administrator && <details className="ws-card" open={!connections.data?.items.length}>
       <summary><strong>Add a connection</strong></summary>
       <form onSubmit={create} className="ws-connector-form">
@@ -96,6 +100,17 @@ export function Connections({ client, administrator, endpoint, selectSpace }: {
         {!bindings.data?.items.length && <p className="ws-helper">No audience is mapped. Imported content remains available only to the dedicated connector identity.</p>}
       </section>
       <section className="ws-card"><div className="ws-section-title"><h2>Source status</h2><button className="ws-button" onClick={() => scopes.refetch()}><RefreshCw size={14} />Refresh</button></div>
+        {syncStatus.data && <div className="ws-connector-heading">
+          <div><p>{syncStatus.data.pending ? `Sync requested ${when(syncStatus.data.requested_at)}. Waiting for a complete scan.` : syncStatus.data.last_attempt_at ? (syncStatus.data.last_successful ? "Source scan complete." : "The last source scan was incomplete.") : "No scan reported yet."}</p>
+            {syncStatus.data.last_attempt_at && <p className="ws-helper">Last report {when(syncStatus.data.last_attempt_at)} · {syncStatus.data.last_changed} changed · {syncStatus.data.last_removed} removed · {syncStatus.data.last_unchanged} unchanged · {syncStatus.data.last_duration_seconds?.toFixed(1)} seconds{syncStatus.data.last_successful === false ? ". Counts cover completed scopes." : ""}</p>}
+            {syncStatus.data.pending && <p className="ws-helper">The source runner must be running and connected. Requests do not change source permissions.</p>}
+          </div>
+          <button className="ws-button" disabled={busy || !!connection.disabled_at} onClick={() => void act(async () => {
+            try { await client.requestConnectorSync(connection.id, syncStatus.data!.requested_generation); }
+            finally { await syncStatus.refetch(); }
+          })}><RefreshCw size={14} />Sync now</button>
+        </div>}
+        {syncStatus.data === null && <p className="ws-helper">Upgrade the memory server and source runner to 4.0.5 or later to request and monitor scans here.</p>}
         <div className="ws-table-wrap"><table className="ws-table"><thead><tr><th>Source</th><th>Access</th><th>Last complete scan</th>{administrator && <th>Control</th>}</tr></thead><tbody>{scopes.data?.items.map(scope => <tr key={scope.space_id}><td><Link className="ws-link" to="/workspace/memories" onClick={() => selectSpace(scope.space_id)}>{scope.name || scope.external_id}</Link><small className="ws-helper">{scope.external_id}</small></td><td>{connection.disabled_at ? "Disabled" : scope.operator_paused ? "Paused by an administrator" : scope.suspended_at ? "Needs permission recheck" : scope.access_current ? `Checked until ${when(scope.access_valid_until)}` : "Access expired"}</td><td>{when(scope.completed_at)}</td>{administrator && <td><button className="ws-link" disabled={busy || !!connection.disabled_at} onClick={() => act(() => scope.operator_paused ? client.resumeConnectorScope(scope.space_id) : client.pauseConnectorScope(scope.space_id))}>{scope.operator_paused ? "Resume and recheck" : "Pause source"}</button></td>}</tr>)}</tbody></table></div>
         {!scopes.data?.items.length && <p className="ws-helper">Run the adapter to discover sources and verify access.</p>}
         {scopes.data?.next_cursor && <button className="ws-button" onClick={() => setCursor(scopes.data!.next_cursor!)}>Next sources</button>}{cursor && <button className="ws-button" onClick={() => setCursor(undefined)}>First sources</button>}

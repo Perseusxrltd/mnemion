@@ -55,6 +55,9 @@ connectors.list GET /v1/connectors
 connectors.create POST /v1/connectors
 connectors.disable DELETE /v1/connectors/{connector_id}
 connectors.enable POST /v1/connectors/{connector_id}/enable
+connectors.sync_status GET /v1/connectors/{connector_id}/sync
+connectors.sync_request POST /v1/connectors/{connector_id}/sync
+connectors.sync_report POST /v1/connectors/{connector_id}/sync/report
 connectors.bindings GET /v1/connectors/{connector_id}/bindings
 connectors.bind PUT /v1/connectors/{connector_id}/bindings
 connectors.unbind DELETE /v1/connectors/{connector_id}/bindings

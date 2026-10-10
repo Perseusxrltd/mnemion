@@ -24,6 +24,31 @@ class BindingInput(Command):
     role: Literal["reader", "reviewer"] = "reader"
 
 
+class SyncRequestInput(Command):
+    expected_generation: int = Field(ge=0, le=9007199254740991)
+
+
+class SyncReportInput(Command):
+    generation: int = Field(ge=0, le=9007199254740991)
+    successful: bool
+    duration_seconds: float = Field(ge=0, le=604800, allow_inf_nan=False)
+    changed: int = Field(default=0, ge=0, le=9007199254740991)
+    removed: int = Field(default=0, ge=0, le=9007199254740991)
+    unchanged: int = Field(default=0, ge=0, le=9007199254740991)
+    error_code: (
+        Literal[
+            "incomplete_inventory", "provider_unavailable", "service_unavailable", "connector_busy"
+        ]
+        | None
+    ) = None
+
+    @model_validator(mode="after")
+    def valid_result(self):
+        if self.successful != (self.error_code is None):
+            raise ValueError("Failed scans require a bounded error code; successful scans omit it")
+        return self
+
+
 class ScopeInput(Command):
     external_id: ExternalID
     name: str = Field(min_length=1, max_length=200)

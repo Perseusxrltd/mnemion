@@ -97,6 +97,82 @@ from a document title. Provision OAuth/workload credentials with read permission
 for the selected sources. Google access tokens must be refreshed by the operator's
 credential provider. The runner does not implement an interactive OAuth consent UI.
 
+## Scan timing and immediate requests
+
+From 4.0.5, **Connections → Source status → Sync now** requests a complete scan by
+the connector's existing runner. The equivalent HTTP routes are
+`GET /v1/connectors/{id}/sync` and `POST /v1/connectors/{id}/sync` with
+`{"expected_generation": N}`, using the generation returned by the GET.
+Organization administrators and that connector's dedicated application can
+request scans. Other source readers and reviewers cannot. Provider credentials
+remain on the runner; this endpoint accepts no URL, command, Git payload or token.
+
+The watch configuration has these optional top-level settings:
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `poll_seconds` | `300` | Seconds after a scan before the next scheduled full scan; range 30–86400 |
+| `remote_sync` | `true` | Check the service for durable immediate-sync requests |
+| `trigger_poll_seconds` | `5` | Seconds between small control checks; range 1–60 |
+
+At the defaults, an idle connected runner observes a request in approximately
+five seconds, plus network time. Source fetching, provider rate limits and
+indexing add their own latency. A busy runner finishes its current scan first;
+requests arriving during that scan remain pending. Only a successful complete
+scan acknowledges the generation it observed **before** reading the source.
+Failed scans keep requests pending and wait at least 30 seconds before another
+requested attempt. Normal scheduled scans continue if control checks fail.
+Configurations and credential files reload between runs; token files are also
+reread for control checks. A stopped runner cannot fetch a source, so Studio
+shows the outstanding request without claiming that the source is current.
+
+Control checks do not fetch the provider, run embeddings or ingest memories.
+They read one small record per connector, about 12 API requests per minute at
+the default interval. Increase `trigger_poll_seconds` or disable `remote_sync`
+when minimizing control traffic matters more than prompt synchronization.
+An older server returning 404/405 retains the ordinary polling behavior.
+Upgrade **both server and runner** to receive immediate requests and reports.
+
+Agents can discover `connectors.sync_status`, `connectors.sync_request` and
+`connectors.sync_report` through [the operation catalog](agent-control.md).
+The first two are also typed SDK methods:
+
+```python
+status = client.connector_sync_status(connector_id)
+requested = client.request_connector_sync(
+    connector_id, expected_generation=status.requested_generation,
+)
+```
+
+TypeScript uses `connectorSyncStatus(id)` and
+`requestConnectorSync(id, status.requested_generation)`. After an uncertain
+request or a 409 conflict, read status again before deciding whether another
+scan is needed. Writes are not blindly retried. The comparison prevents two
+agents using the same observed generation from duplicating a request.
+
+A company's Git push workflow can call these authenticated routes using its
+protected connector credential. Mnemion does not yet accept unauthenticated
+GitHub webhooks or supply provider-specific webhook signature verification.
+No inbound port or public tunnel is required on the runner.
+
+Each runner result includes UTC `started_at` and `timestamp`, elapsed
+`duration_seconds`, `changed`, `removed`, `unchanged` and `conflicts`, plus the
+per-scope results. Changed means created or revised canonical memories; a review
+proposal is reported as a conflict. Removed includes explicit deletion outcomes
+and the final cumulative snapshot-pruning count, without double-counting batches.
+Counts in an incomplete scan cover its completed scopes. Fatal failures log a
+timestamp and bounded error code; provider response bodies and credentials are
+excluded. Server status records the latest reported result and request/completion
+generations. It is not a historical analytics store or a runner heartbeat.
+Exit code 2 indicates an incomplete scan or unconfirmed control report; already
+committed observations remain committed. An unconfirmed report also activates
+the watcher's retry backoff, avoiding repeated cloud scans every five seconds.
+
+Version 4.0.5 adds migration `012_connector_sync_requests.sql`. Follow the
+coordinated backup, migration and restart instructions in its
+[release notes](../releases/4.0.5.md). Existing indexes and Obsidian formats stay
+unchanged; a Studio update alone cannot migrate a separately hosted server.
+
 ## Updates, permissions, and deletion
 
 Each provider scope has an access lease, default **15 minutes**, configurable

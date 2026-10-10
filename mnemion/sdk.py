@@ -29,6 +29,7 @@ from .service.contracts import (
 from .service.models import ContextInput, MemoryInput, RecallInput, RevisionInput
 
 if TYPE_CHECKING:
+    from .service.connector_contracts import SyncStatus
     from .service.librarian_models import (
         LibrarianChoice,
         LibrarianSettings,
@@ -100,6 +101,26 @@ def _retry_after(response: httpx.Response) -> float | None:
 
 
 class Client:
+    def connector_sync_status(self, connector_id: str) -> SyncStatus:
+        from .service.connector_contracts import SyncStatus
+
+        return SyncStatus.model_validate(
+            self.request("GET", f"/v1/connectors/{UUID(connector_id)}/sync")
+        )
+
+    def request_connector_sync(self, connector_id: str, *, expected_generation: int) -> SyncStatus:
+        from .service.connector_contracts import SyncStatus
+        from .service.connector_models import SyncRequestInput
+
+        command = SyncRequestInput(expected_generation=expected_generation)
+        return SyncStatus.model_validate(
+            self.request(
+                "POST",
+                f"/v1/connectors/{UUID(connector_id)}/sync",
+                body=command.model_dump(mode="json"),
+            )
+        )
+
     @staticmethod
     def _librarian_path(space_id: str) -> str:
         return f"/v1/spaces/{UUID(space_id)}/librarian"

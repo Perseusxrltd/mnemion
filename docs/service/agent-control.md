@@ -1,8 +1,8 @@
 # Agent administration and operation discovery
 
 From **4.0.4**, agents can discover and use every existing HTTP operation through
-a reviewed catalog, a command-line client and four compact MCP tools. The first
-catalog covers **81 operations**. Schemas load one at a time, so connecting an
+a reviewed catalog, a command-line client and four compact MCP tools. Version
+4.0.5 covers **84 operations**, including durable source-sync controls. Schemas load one at a time, so connecting an
 assistant does not put the entire administration API into its context.
 
 Every call uses the application's own credential and the existing tenant,
@@ -17,7 +17,7 @@ subsequent operations. Source-derived read-only spaces retain their policy.
 | Identity and teams | Inspect identity, create/list spaces and principals, issue/revoke keys, manage grants |
 | Memory and evidence | Save, fetch, revise, review, forget, retrieve history, inspect source evidence and attachments |
 | Retrieval and knowledge | Search, construct bounded context, explore the knowledge map, maintain core blocks |
-| Source connectors | Register, enable/disable, bind access, list/refresh scopes, suspend/resume, run sync pages and resolve proposals |
+| Source connectors | Register, enable/disable, bind access, list/refresh scopes, request/monitor scans, suspend/resume, run sync pages and resolve proposals |
 | Embeddings | Discover approved choices, inspect settings, start/control reindexing and resume approved configurations |
 | Librarian | Configure approved models and budgets, start/cancel runs, inspect findings, accept/reject/undo proposals |
 | Evaluations | Manage datasets, start/cancel runs, inspect/assess results, compare and export |
@@ -32,7 +32,8 @@ An agent with those operator credentials can follow the
 ## Discover through MCP
 
 Use the [connection guide](agents.md) to connect with an application key.
-Upgrade the server/gateway to 4.0.4 and refresh the assistant's tool connection.
+Upgrade the server/gateway to 4.0.4 or later and refresh the assistant's tool
+connection. Source-sync controls require 4.0.5 and its updated runner.
 
 1. Call `mnemion_operations` with a query such as `librarian` or `connectors`.
    Use `next_offset` to page through results and `groups` to narrow discovery.

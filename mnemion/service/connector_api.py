@@ -15,6 +15,8 @@ from .connector_models import (
     RunInput,
     ScopeInput,
     SuspensionInput,
+    SyncRequestInput,
+    SyncReportInput,
 )
 from .contracts import Page
 from .db import Identity
@@ -40,6 +42,27 @@ def install_routes(app, authenticated, service):
     )
     def enable_connector(connector_id: UUID, identity: Auth):
         return service.enable(identity, connector_id)
+
+    @app.get("/v1/connectors/{connector_id}/sync", tags=["Connectors"], response_model=c.SyncStatus)
+    def connector_sync_status(connector_id: UUID, identity: Auth):
+        return service.sync_status(identity, connector_id)
+
+    @app.post(
+        "/v1/connectors/{connector_id}/sync",
+        tags=["Connectors"],
+        response_model=c.SyncStatus,
+        status_code=202,
+    )
+    def request_connector_sync(connector_id: UUID, command: SyncRequestInput, identity: Auth):
+        return service.request_sync(identity, connector_id, command)
+
+    @app.post(
+        "/v1/connectors/{connector_id}/sync/report",
+        tags=["Connectors"],
+        response_model=c.SyncStatus,
+    )
+    def report_connector_sync(connector_id: UUID, command: SyncReportInput, identity: Auth):
+        return service.report_sync(identity, connector_id, command)
 
     @app.get(
         "/v1/connectors/{connector_id}/bindings",

@@ -6,6 +6,7 @@ import argparse
 import json
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 import httpx
@@ -30,7 +31,7 @@ def provider(config):
     }[config.type](config)
 
 
-def sync(config, *, inspect=False, adapter=None, client=None) -> dict:
+def _scan(config, *, inspect=False, adapter=None, client=None) -> dict:
     adapter = adapter or provider(config.provider)
     owned_client = client is None
     client = client or Client(config.service_url, config.service_token.read())
@@ -142,6 +143,122 @@ def sync(config, *, inspect=False, adapter=None, client=None) -> dict:
             client.close()
 
 
+def control_status(client, connector):
+    """Old services retain ordinary polling until they are upgraded."""
+    try:
+        from ..service.connector_contracts import SyncStatus
+
+        return SyncStatus.model_validate(
+            client.request("GET", f"/v1/connectors/{connector}/sync")
+        ).model_dump()
+    except MnemionError as exc:
+        if exc.status in {404, 405}:
+            return None
+        raise
+    except ValidationError:
+        raise MnemionError(
+            502, "invalid_sync_status", "The service returned an invalid sync status."
+        ) from None
+
+
+def _stamp(report, started_at, started):
+    outcomes = {}
+    removed = 0
+    for scope in report.get("scopes", []):
+        removed += scope.get("removed", 0)
+        for key, count in scope.get("outcomes", {}).items():
+            outcomes[key] = outcomes.get(key, 0) + count
+    report.update(
+        event="connector_scan",
+        started_at=started_at,
+        timestamp=datetime.now(timezone.utc).isoformat(),
+        duration_seconds=round(time.monotonic() - started, 3),
+        changed=outcomes.get("created", 0) + outcomes.get("revised", 0),
+        removed=removed + outcomes.get("deleted", 0),
+        unchanged=outcomes.get("unchanged", 0),
+        conflicts=outcomes.get("conflict", 0),
+    )
+
+
+def _report_control(client, connector, control, report):
+    report["remote_sync_available"] = control is not None
+    if control is None:
+        return
+    report["sync_generation"] = control["requested_generation"]
+    body = {
+        "generation": control["requested_generation"],
+        "successful": report["completed"],
+        "duration_seconds": min(604800, report["duration_seconds"]),
+        "changed": report["changed"],
+        "removed": report["removed"],
+        "unchanged": report["unchanged"],
+        "error_code": None if report["completed"] else "incomplete_inventory",
+    }
+    try:
+        # A report is not replayed after an uncertain write. The durable pending
+        # generation causes a safe subsequent scan if the acknowledgement was lost.
+        client.request("POST", f"/v1/connectors/{connector}/sync/report", body=body)
+        report["control_reported"] = True
+    except (MnemionError, OSError, ValueError, httpx.HTTPError):
+        report["control_reported"] = False
+
+
+def sync(config, *, inspect=False, adapter=None, client=None) -> dict:
+    started, started_at = time.monotonic(), datetime.now(timezone.utc).isoformat()
+    owned_client = client is None
+    client = client or Client(config.service_url, config.service_token.read())
+    control = None
+    try:
+        if not inspect and config.remote_sync:
+            control = control_status(client, config.connector_id)
+        try:
+            report = _scan(config, inspect=inspect, adapter=adapter, client=client)
+        except (ProviderError, MnemionError, OSError, ValueError, httpx.HTTPError):
+            report = {"completed": False, "scopes": []}
+            _stamp(report, started_at, started)
+            _report_control(client, config.connector_id, control, report)
+            raise
+        _stamp(report, started_at, started)
+        if not inspect:
+            _report_control(client, config.connector_id, control, report)
+        return report
+    finally:
+        if owned_client:
+            client.close()
+
+
+def wait_for_sync(config, *, failed=False, client=None, clock=None, sleep=None):
+    """Poll only a small control record; never fetch the source between scans."""
+    clock, sleep = clock or time.monotonic, sleep or time.sleep
+    deadline = clock() + config.poll_seconds
+    retry_at = clock() + (min(30, config.poll_seconds) if failed else 0)
+    while clock() < deadline:
+        sleep(min(config.trigger_poll_seconds, max(0, deadline - clock())))
+        if clock() >= deadline:
+            break
+        if not config.remote_sync or clock() < retry_at:
+            continue
+        owned_client = client is None
+        current = None
+        try:
+            current = client or Client(
+                config.service_url, config.service_token.read(), timeout=10, retries=0
+            )
+            control = control_status(current, config.connector_id)
+            if control is None:
+                sleep(max(0, deadline - clock()))
+                break
+            if control["pending"]:
+                return "requested"
+        except (MnemionError, OSError, ValueError, httpx.HTTPError):
+            # Back off control failures without suppressing the normal source scan.
+            retry_at = clock() + 30
+        finally:
+            if owned_client and current is not None:
+                current.close()
+    return "poll"
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(
         description="Connect company sources to a scoped Mnemion memory service"
@@ -160,12 +277,16 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
     if args.inspect and args.watch:
         parser.error("--inspect cannot be combined with --watch")
+    trigger = "startup"
     while True:
+        started, started_at = time.monotonic(), datetime.now(timezone.utc).isoformat()
         try:
             config = read_config(args.config)
             report = sync(config, inspect=args.inspect)
+            report["trigger"] = trigger
+            report["poll_seconds"] = config.poll_seconds
             print(json.dumps(report, ensure_ascii=False), flush=True)
-            code = 0 if report["completed"] else 2
+            code = 0 if report["completed"] and report.get("control_reported") is not False else 2
         except ValidationError as exc:
             # Pydantic repr may include submitted token-shaped values. Report
             # locations only, never raw configuration or provider diagnostics.
@@ -173,6 +294,7 @@ def main(argv=None) -> int:
                 json.dumps(
                     {
                         "error": "invalid_config",
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
                         "fields": [".".join(map(str, error["loc"])) for error in exc.errors()],
                     }
                 ),
@@ -180,11 +302,30 @@ def main(argv=None) -> int:
             )
             return 2
         except (ProviderError, MnemionError, ValueError, OSError, httpx.HTTPError) as exc:
-            print(json.dumps({"error": getattr(exc, "code", "connector_failed")}), file=sys.stderr)
+            print(
+                json.dumps(
+                    {
+                        "event": "connector_scan_failed",
+                        "error": getattr(exc, "code", "connector_failed"),
+                        "started_at": started_at,
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "duration_seconds": round(time.monotonic() - started, 3),
+                        "trigger": trigger,
+                    }
+                ),
+                file=sys.stderr,
+                flush=True,
+            )
             code = 2
         if not args.watch:
             return code
-        time.sleep(config.poll_seconds if "config" in locals() else 300)
+        try:
+            if "config" in locals():
+                trigger = wait_for_sync(config, failed=code != 0)
+            else:
+                time.sleep(300)
+        except KeyboardInterrupt:
+            return 130
 
 
 if __name__ == "__main__":
