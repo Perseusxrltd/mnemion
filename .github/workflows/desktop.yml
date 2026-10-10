@@ -6,9 +6,17 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      macos_only:
+        description: Validate the two Mac builds during updater development
+        type: boolean
+        default: false
   workflow_call:
     inputs:
       release:
+        type: boolean
+        default: false
+      macos_only:
         type: boolean
         default: false
 
@@ -23,32 +31,20 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - {os: ubuntu-22.04, arch: x64}
-          - {os: ubuntu-22.04-arm, arch: arm64}
-          - {os: windows-2022, arch: x64}
-          - {os: windows-11-arm, arch: arm64}
-          - {os: macos-15-intel, arch: x64}
-          - {os: macos-15, arch: arm64}
+        include: ${{ fromJSON(inputs.macos_only && '[{"os":"macos-15-intel","arch":"x64"},{"os":"macos-15","arch":"arm64"}]' || '[{"os":"ubuntu-22.04","arch":"x64"},{"os":"ubuntu-22.04-arm","arch":"arm64"},{"os":"windows-2022","arch":"x64"},{"os":"windows-11-arm","arch":"arm64"},{"os":"macos-15-intel","arch":"x64"},{"os":"macos-15","arch":"arm64"}]') }}
     env:
       # Signing is available only to the explicit release workflow, never PR builds.
-      CSC_IDENTITY_AUTO_DISCOVERY: ${{ inputs.release && 'true' || 'false' }}
-      CSC_LINK: ${{ inputs.release && (matrix.os == 'windows-2022' || matrix.os == 'windows-11-arm') && secrets.WINDOWS_CSC_LINK || inputs.release && startsWith(matrix.os, 'macos-') && secrets.MAC_CSC_LINK || '' }}
-      CSC_KEY_PASSWORD: ${{ inputs.release && startsWith(matrix.os, 'windows-') && secrets.WINDOWS_CSC_KEY_PASSWORD || inputs.release && startsWith(matrix.os, 'macos-') && secrets.MAC_CSC_KEY_PASSWORD || '' }}
-      APPLE_ID: ${{ inputs.release && startsWith(matrix.os, 'macos-') && secrets.APPLE_ID || '' }}
-      APPLE_APP_SPECIFIC_PASSWORD: ${{ inputs.release && startsWith(matrix.os, 'macos-') && secrets.APPLE_APP_SPECIFIC_PASSWORD || '' }}
-      APPLE_TEAM_ID: ${{ inputs.release && startsWith(matrix.os, 'macos-') && secrets.APPLE_TEAM_ID || '' }}
-      MNEMION_REQUIRE_CODE_SIGNATURE: ${{ inputs.release && !startsWith(matrix.os, 'ubuntu-') && '1' || '0' }}
+      CSC_IDENTITY_AUTO_DISCOVERY: ${{ inputs.release && startsWith(matrix.os, 'windows-') && 'true' || 'false' }}
+      CSC_LINK: ${{ inputs.release && startsWith(matrix.os, 'windows-') && secrets.WINDOWS_CSC_LINK || '' }}
+      CSC_KEY_PASSWORD: ${{ inputs.release && startsWith(matrix.os, 'windows-') && secrets.WINDOWS_CSC_KEY_PASSWORD || '' }}
+      MNEMION_REQUIRE_CODE_SIGNATURE: ${{ inputs.release && startsWith(matrix.os, 'windows-') && '1' || '0' }}
       MNEMION_BUILD_PYTHON: ${{ github.workspace }}/studio/client/.venv/${{ startsWith(matrix.os, 'windows-') && 'Scripts/python.exe' || 'bin/python' }}
     steps:
       - name: Require publisher credentials for a release
-        if: inputs.release && runner.os != 'Linux'
+        if: inputs.release && runner.os == 'Windows'
         shell: bash
         run: |
           test -n "$CSC_LINK" || { echo "Configure publisher signing credentials before releasing automatic updates."; exit 1; }
-          if [ "$RUNNER_OS" = "macOS" ]; then
-            test -n "$APPLE_ID" && test -n "$APPLE_APP_SPECIFIC_PASSWORD" && test -n "$APPLE_TEAM_ID"
-          fi
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
@@ -77,6 +73,11 @@ jobs:
       - run: npm --prefix studio/electron ci
       - run: npm --prefix studio/electron test
       - run: npm --prefix studio/electron run dist
+      - name: Sign and verify the free macOS update archive
+        if: inputs.release && runner.os == 'macOS'
+        env:
+          MNEMION_MAC_UPDATE_PRIVATE_KEY: ${{ secrets.MNEMION_MAC_UPDATE_PRIVATE_KEY }}
+        run: python -m deploy.macos_sparkle sign
       - run: node studio/electron/scripts/test-local-client.mjs
       - name: Packaged window, sandboxed bridge, and local client
         if: runner.os != 'Linux'
@@ -93,6 +94,7 @@ jobs:
           if-no-files-found: error
           path: |
             dist-electron/latest-*.yml
+            dist-electron/latest-*-mac.xml
             dist-electron/*.exe
             dist-electron/*.blockmap
             dist-electron/*.dmg

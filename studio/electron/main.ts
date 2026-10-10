@@ -586,7 +586,19 @@ app.on('window-all-closed', () => {
   // Do not quit, run in background tray
 })
 
-app.on('before-quit', () => {
+let updateQuitPending = false
+app.on('before-quit', event => {
+  if (updates?.quitNeedsUpdateCleanup) {
+    event.preventDefault()
+    if (updateQuitPending) return
+    updateQuitPending = true
+    void updates.prepareQuit().then(stopped => {
+      updateQuitPending = false
+      if (stopped) app.quit()
+      else isQuitting = false
+    })
+    return
+  }
   isQuitting = true
   stopBackend()
 })

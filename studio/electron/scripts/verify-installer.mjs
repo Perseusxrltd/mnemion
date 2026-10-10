@@ -1,4 +1,4 @@
-import { createReadStream, existsSync, mkdtempSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { createReadStream, existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { createHash } from 'node:crypto'
@@ -61,14 +61,26 @@ if (process.platform === 'win32') {
     'Mnemion Studio.app/Contents/MacOS/Mnemion Studio',
     'Mnemion Studio.app/Contents/Resources/client/mnemion-client',
     'Mnemion Studio.app/Contents/Resources/frontend/dist/index.html',
+    'Mnemion Studio.app/Contents/MacOS/MnemionUpdater',
+    'Mnemion Studio.app/Contents/Frameworks/Sparkle.framework/',
   ])
   const check = spawnSync('codesign', ['-dv', '--verbose=4', artifacts.bundle], { encoding: 'utf8' })
-  signature = /Authority=Developer ID Application:/.test(check.stderr || '') ? 'Developer ID' : 'unsigned or ad hoc'
-  if (requireSignature) {
-    if (signature !== 'Developer ID') throw new Error('A Developer ID application signature is required')
-    run('codesign', ['--verify', '--deep', '--strict', artifacts.bundle])
-    run('spctl', ['--assess', '--type', 'execute', '--verbose=2', artifacts.bundle])
-    run('xcrun', ['stapler', 'validate', artifacts.bundle])
+  signature = /Signature=adhoc/.test(check.stderr || '') ? 'ad hoc; independent Ed25519 updates' : 'unexpected signature'
+  if (signature === 'unexpected signature') throw new Error('The free macOS build requires an intact ad-hoc signature')
+  run('codesign', ['--verify', '--deep', '--strict', artifacts.bundle])
+  const config = JSON.parse(readFileSync(join(root, 'studio/electron/native/sparkle.json'), 'utf8'))
+  const build = JSON.parse(readFileSync(join(artifacts.resources, 'macos-updater-build.json'), 'utf8'))
+  if (build.fixture !== false || build.public_key !== config.publicKey || build.sparkle_distribution_sha256 !== config.sha256) {
+    throw new Error('The macOS updater is not the verified production configuration')
+  }
+  const plist = join(artifacts.bundle, 'Contents/Info.plist')
+  if (run('/usr/libexec/PlistBuddy', ['-c', 'Print :SUPublicEDKey', plist]).trim() !== config.publicKey
+    || run('/usr/libexec/PlistBuddy', ['-c', 'Print :SUVerifyUpdateBeforeExtraction', plist]).trim() !== 'true') {
+    throw new Error('The installed update verifier is misconfigured')
+  }
+  const inventory = JSON.parse(readFileSync(join(artifacts.resources, 'licenses/inventory.json'), 'utf8'))
+  if (!inventory.components.some(item => item.name === 'Sparkle' && item.version === config.version)) {
+    throw new Error('The packaged updater is missing its third-party license inventory')
   }
 } else {
   const directory = mkdtempSync(join(tmpdir(), 'mnemion-package-'))

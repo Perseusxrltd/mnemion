@@ -264,6 +264,7 @@ def main(argv=None):
     parser.add_argument("--analysis", type=Path)
     parser.add_argument("--frontend", type=Path)
     parser.add_argument("--electron", type=Path)
+    parser.add_argument("--sparkle", type=Path, help="Verified native Sparkle distribution")
     parser.add_argument("--python", action="store_true", help="Include Python runtime components")
     args = parser.parse_args(argv)
     args.output.mkdir(parents=True, exist_ok=True)
@@ -274,6 +275,19 @@ def main(argv=None):
         components.extend(collect_frontend(args.output, args.frontend))
     if args.electron:
         components.extend(collect_frontend(args.output, args.electron))
+    if args.sparkle:
+        config = json.loads((args.root / "studio/electron/native/sparkle.json").read_text())
+        identity = f"pkg:github/sparkle-project/Sparkle@{config['version']}"
+        components.append(
+            {
+                "type": "framework",
+                "name": "Sparkle",
+                "version": config["version"],
+                "purl": identity,
+                "license_label": "MIT and bundled third-party license notices",
+                "license_files": copy_licenses(args.output, identity, [args.sparkle / "LICENSE"]),
+            }
+        )
     components = list({item["purl"]: item for item in components}.values())
     components.sort(key=lambda item: item["purl"])
     (args.output / "inventory.json").write_text(

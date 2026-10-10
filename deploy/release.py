@@ -7,9 +7,89 @@ import base64
 import hashlib
 import json
 import re
+import shutil
+import subprocess
 import sys
 import tomllib
 from pathlib import Path
+from xml.etree import ElementTree as ET
+
+
+def verify_ed25519(archive: Path, signature: str, public_key: str) -> None:
+    if archive.is_symlink() or not archive.is_file() or not 0 < archive.stat().st_size <= 1024**3:
+        raise ValueError("Missing, unsafe or oversized signed update archive")
+    try:
+        if (
+            len(base64.b64decode(signature, validate=True)) != 64
+            or len(base64.b64decode(public_key, validate=True)) != 32
+        ):
+            raise ValueError("Invalid signature length")
+    except (ValueError, TypeError) as error:
+        raise ValueError("Invalid Ed25519 signing metadata") from error
+    node = shutil.which("node")
+    if node is None:
+        raise RuntimeError("Node 22+ is required for release-signature verification")
+    result = subprocess.run(
+        [
+            node,
+            str(Path(__file__).with_name("verify-mac-signature.mjs")),
+            str(archive),
+            public_key,
+            signature,
+        ],
+        capture_output=True,
+        text=True,
+        timeout=120,
+        check=False,
+    )
+    if result.returncode:
+        raise ValueError("Update archive signature does not match the installed public key")
+
+
+def verify_sparkle_feed(
+    feed: Path, artifacts: Path, version: str, architecture: str, public_key: str
+) -> None:
+    if architecture not in {"x64", "arm64"}:
+        raise ValueError("Invalid update architecture")
+    if feed.is_symlink() or not feed.is_file() or feed.stat().st_size > 100_000:
+        raise ValueError("Missing, unsafe or oversized macOS update feed")
+    content = feed.read_bytes()
+    if b"<!DOCTYPE" in content or b"<!ENTITY" in content:
+        raise ValueError("Update feed declarations are not allowed")
+    try:
+        document = ET.fromstring(content)
+    except ET.ParseError as error:
+        raise ValueError("Malformed macOS update feed") from error
+    if document.tag != "rss" or document.get("version") != "2.0":
+        raise ValueError("Invalid macOS update feed")
+    items = document.findall("./channel/item")
+    if len(items) != 1:
+        raise ValueError("A release feed must contain exactly one version")
+    item = items[0]
+    ns = "{http://www.andymatuschak.org/xml-namespaces/sparkle}"
+    if (
+        item.findtext(ns + "version") != version
+        or item.findtext(ns + "shortVersionString") != version
+    ):
+        raise ValueError("Wrong version in the macOS update feed")
+    if item.findtext(ns + "minimumSystemVersion") != "13.0":
+        raise ValueError("The macOS minimum version does not match the application")
+    enclosures = item.findall("enclosure")
+    if len(enclosures) != 1:
+        raise ValueError("A macOS release requires one signed full archive")
+    enclosure = enclosures[0]
+    filename = f"Mnemion-Studio-{version}-macos-{architecture}.zip"
+    expected = f"https://github.com/Perseusxrltd/mnemion/releases/download/v{version}/{filename}"
+    if enclosure.get("url") != expected or enclosure.get("type") != "application/octet-stream":
+        raise ValueError("The macOS archive URL does not match the immutable release")
+    archive = artifacts / filename
+    if (
+        archive.is_symlink()
+        or not archive.is_file()
+        or enclosure.get("length") != str(archive.stat().st_size)
+    ):
+        raise ValueError("The macOS update archive size does not match")
+    verify_ed25519(archive, enclosure.get(ns + "edSignature", ""), public_key)
 
 
 def verify_feed(feed: Path, artifacts: Path, version: str) -> None:
@@ -84,6 +164,16 @@ def main() -> None:
         for suffix in ("", "-mac", "-linux" if architecture == "x64" else "-linux-arm64"):
             feed = args.artifacts / f"latest-{architecture}{suffix}.yml"
             verify_feed(feed, args.artifacts, version)
+        public_key = json.loads((root / "studio/electron/native/sparkle.json").read_text())[
+            "publicKey"
+        ]
+        verify_sparkle_feed(
+            args.artifacts / f"latest-{architecture}-mac.xml",
+            args.artifacts,
+            version,
+            architecture,
+            public_key,
+        )
     checksums = []
     for path in sorted(files):
         if path.is_symlink() or not path.is_file():
@@ -94,7 +184,9 @@ def main() -> None:
                 digest.update(chunk)
         checksums.append(f"{digest.hexdigest()}  {path.name}")
     (args.artifacts / "SHA256SUMS.txt").write_text("\n".join(checksums) + "\n")
-    print(f"Validated Mnemion {version}: {len(files)} assets and six update feeds")
+    print(
+        f"Validated Mnemion {version}: {len(files)} assets, six manifests and two signed macOS feeds"
+    )
 
 
 if __name__ == "__main__":

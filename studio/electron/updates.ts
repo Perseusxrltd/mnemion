@@ -3,6 +3,7 @@ import updaterPackage from 'electron-updater'
 import { join } from 'node:path'
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { canRestartForUpdate, desktopExec, updateChannel } from './update-policy.js'
+import { MacUpdateBridge, type MacUpdateEvent } from './macos-updates.js'
 
 const { autoUpdater } = updaterPackage
 type Preferences = { automaticUpdates: boolean; startAtLogin: boolean; background: boolean }
@@ -16,6 +17,7 @@ export class DesktopUpdates {
   private downloaded = false
   private installing = false
   private cancelDownload?: () => void
+  private mac?: MacUpdateBridge
   private timers: NodeJS.Timeout[] = []
   private readonly path = join(app.getPath('userData'), 'desktop-preferences.json')
   private readonly managed = process.env.MNEMION_AUTO_UPDATE === '0'
@@ -39,7 +41,11 @@ export class DesktopUpdates {
     if (firstLaunch && app.isPackaged && !process.env.MNEMION_STUDIO_SMOKE_FILE && process.env.MNEMION_STUDIO_SMOKE_HEADLESS !== '1') {
       try { this.applyLogin(); this.save() } catch { this.status = { state: 'Startup setup needs attention' } }
     }
-    autoUpdater.setFeedURL({ provider: 'github', owner: 'Perseusxrltd', repo: 'mnemion',
+    if (process.platform === 'darwin') {
+      this.mac = new MacUpdateBridge(join(process.resourcesPath, '..', 'MacOS', 'MnemionUpdater'),
+        event => this.macEvent(event))
+    } else {
+      autoUpdater.setFeedURL({ provider: 'github', owner: 'Perseusxrltd', repo: 'mnemion',
       private: false, channel: updateChannel(process.arch) })
     autoUpdater.channel = updateChannel(process.arch)
     autoUpdater.allowDowngrade = false
@@ -55,6 +61,7 @@ export class DesktopUpdates {
       this.setStatus({ state: 'Update ready · waiting for a safe restart', version: info.version })
     })
     autoUpdater.on('error', () => this.setStatus({ state: 'Update unavailable · retry scheduled' }))
+    }
     this.status = { state: this.enabled ? 'Automatic updates enabled' : this.managed ? 'Updates managed by administrator' : !this.supported ? 'Updates managed by installer or package manager' : 'Automatic updates paused' }
     if (this.supported) {
       // Spread checks across an organization and avoid competing with startup.
@@ -68,6 +75,36 @@ export class DesktopUpdates {
 
   get enabled() { return this.supported && !this.managed && this.preferences.automaticUpdates }
   get policyManaged() { return this.managed }
+  get quitNeedsUpdateCleanup() { return !!this.mac?.active && !this.mac.installing }
+
+  private macEvent(event: MacUpdateEvent) {
+    if (event.state === 'ready') {
+      if (!this.enabled) { void this.mac?.cancel(); return }
+      this.downloaded = true
+      this.setStatus({ state: 'Update ready · waiting for a safe restart', version: event.version })
+    } else if (event.state === 'downloading') {
+      if (this.enabled) this.setStatus({ state: 'Downloading update', version: event.version, percent: event.percent })
+    } else if (event.state === 'verifying') {
+      if (this.enabled) this.setStatus({ state: 'Verifying update' })
+    } else if (event.state === 'current') {
+      this.setStatus({ state: 'Up to date', checkedAt: new Date().toISOString() })
+    } else if (event.state === 'error') {
+      this.downloaded = false
+      this.installing = false
+      this.setStatus({ state: 'Update unavailable · retry scheduled' })
+    } else if (event.state === 'cancelled') {
+      this.downloaded = false
+      this.setStatus({ state: this.enabled ? 'Automatic updates enabled' : 'Automatic updates paused' })
+    }
+  }
+
+  async prepareQuit(): Promise<boolean> {
+    if (!this.quitNeedsUpdateCleanup) return true
+    this.setStatus({ state: 'Finishing update cleanup' })
+    const stopped = await this.mac!.cancel()
+    if (!stopped) this.setStatus({ state: 'Update cleanup is still running · try quitting again shortly' })
+    return stopped
+  }
 
   private setStatus(status: UpdateStatus) { this.status = status; this.changed() }
   private save() {
@@ -76,6 +113,7 @@ export class DesktopUpdates {
     renameSync(`${this.path}.tmp`, this.path)
   }
   private applyUpdatePolicy() {
+    if (this.mac || process.platform === 'darwin') return
     autoUpdater.autoDownload = this.enabled
     autoUpdater.autoInstallOnAppQuit = this.enabled
     autoUpdater.autoRunAppAfterInstall = true
@@ -88,7 +126,10 @@ export class DesktopUpdates {
       if (key === 'startAtLogin') this.applyLogin()
       this.save()
       this.applyUpdatePolicy()
-      if (!this.enabled) this.cancelDownload?.()
+      if (!this.enabled) {
+        this.cancelDownload?.()
+        if (this.mac) void this.mac.cancel()
+      }
       this.setStatus({ state: this.enabled ? 'Automatic updates enabled' : 'Automatic updates paused' })
       if (key === 'automaticUpdates' && enabled) void this.check()
     } catch { this.preferences[key] = previous; this.applyUpdatePolicy(); this.setStatus({ state: 'Preference could not be saved' }) }
@@ -112,6 +153,7 @@ export class DesktopUpdates {
     this.checking = true
     this.setStatus({ state: 'Checking for updates' })
     try {
+      if (this.mac) { await this.mac.check(); return }
       const result = await autoUpdater.checkForUpdates()
       this.cancelDownload = () => result?.cancellationToken?.cancel()
       if (!this.enabled) this.cancelDownload()
@@ -127,8 +169,14 @@ export class DesktopUpdates {
     catch { return }
     if (!canRestartForUpdate({ enabled: this.enabled, downloaded: this.downloaded,
       idleSeconds: powerMonitor.getSystemIdleTime(), focused: window?.isFocused() || false, safe, busy: this.busy() })) return
-    this.installing = true
-    this.beforeRestart()
-    autoUpdater.quitAndInstall(true, true)
+    if (this.mac) {
+      if (!this.mac.install()) return
+      this.installing = true
+      this.beforeRestart()
+    } else {
+      this.installing = true
+      this.beforeRestart()
+      autoUpdater.quitAndInstall(true, true)
+    }
   }
 }

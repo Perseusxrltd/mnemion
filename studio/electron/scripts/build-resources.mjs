@@ -25,6 +25,8 @@ run(python, ['-m', 'PyInstaller', '--name', 'mnemion-client', '--onedir', '--noc
   '--specpath', resolve(root, 'build-tmp'), '--exclude-module', 'chromadb', '--exclude-module', 'fastembed',
   '--exclude-module', 'onnxruntime', '--exclude-module', 'torch', '--exclude-module', 'pytest',
   resolve(root, 'studio/bridge/main.py')])
+if (process.platform === 'darwin') run(python, ['-m', 'deploy.macos_sparkle', 'build'])
 run(python, [resolve(root, 'deploy/notices.py'), '--root', root, '--python',
   '--analysis', resolve(root, 'build-tmp/client/mnemion-client/Analysis-00.toc'),
-  '--frontend', resolve(root, 'studio/frontend'), '--electron', resolve(root, 'studio/electron'), '--output', resolve(root, 'build-tmp/notices')])
+  '--frontend', resolve(root, 'studio/frontend'), '--electron', resolve(root, 'studio/electron'), '--output', resolve(root, 'build-tmp/notices'),
+  ...(process.platform === 'darwin' ? ['--sparkle', resolve(root, 'build-tmp/macos-update/sparkle')] : [])])

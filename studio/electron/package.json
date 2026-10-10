@@ -19,7 +19,7 @@
     "pack": "npm run build:resources && npm run build && npm run verify:resources && electron-builder --config builder.config.cjs --publish never --dir",
     "dist": "npm run build:resources && npm run build && npm run verify:resources && electron-builder --config builder.config.cjs --publish never && npm run verify:installer",
     "dist:prepackaged": "electron-builder --config builder.config.cjs --publish never --win nsis --prepackaged ../../dist-electron/win-unpacked && npm run verify:installer",
-    "test": "npm run build && node --test scripts/test-update-policy.mjs"
+    "test": "npm run build && node --test scripts/test-update-policy.mjs scripts/test-macos-updates.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",
