@@ -71,6 +71,9 @@ To recover a missed metadata event, run the **Synchronize public release metadat
 workflow. A future publisher that uses `GITHUB_TOKEN` must explicitly invoke this
 workflow as part of publication: GitHub does not recursively trigger workflows
 from that token's release events. The scheduled reconciliation is a second path.
+The workflow must also exist in the released tag. The already-built 4.0.1 tag
+predates this setup, so its initial synchronization was dispatched once during
+installation; subsequent release commits include the workflow automatically.
 Check the workflow result and repository webhook delivery status for failures.
 These tasks use standard public GitHub Actions and the existing website; they
 require no model calls, paid runner, new hosting service or routine deployment.

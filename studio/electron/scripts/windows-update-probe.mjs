@@ -7,7 +7,7 @@ import { createRequire } from 'node:module'
 import { createServer } from 'node:http'
 import { createHash, generateKeyPairSync, randomUUID, sign } from 'node:crypto'
 import { spawn, spawnSync } from 'node:child_process'
-import { extractAll, createPackageWithOptions, getRawHeader } from '@electron/asar'
+import { extractAll, extractFile, createPackageWithOptions, getRawHeader } from '@electron/asar'
 import { NtExecutable, NtExecutableResource, Resource } from 'resedit'
 import { root, platformArtifacts, packageJson } from './platform-artifacts.mjs'
 
@@ -32,6 +32,19 @@ const installed = join(output, 'installed with spaces')
 const receipt = join(output, 'events.jsonl')
 const userData = join(output, 'user-data')
 await mkdir(userData)
+const nsisLog = join(output, 'nsis-stages.log').replaceAll('\\', '/')
+if (/["$\r\n]/.test(nsisLog)) throw new Error('The private NSIS diagnostic path contains unsupported characters')
+const nsisInclude = join(output, 'probe-diagnostics.nsh')
+writeFileSync(nsisInclude, ['customInit', 'customInstall', 'customUnInit', 'customUnInstall'].map(stage => [
+  `!macro ${stage}`,
+  '  Push $R9',
+  `  FileOpen $R9 "${nsisLog}" a`,
+  '  FileSeek $R9 0 END',
+  `  FileWrite $R9 "${stage} ` + '${VERSION} instdir=$INSTDIR executable=$EXEPATH command=$CMDLINE$\\r$\\n"',
+  '  FileClose $R9',
+  '  Pop $R9',
+  '!macroend',
+].join('\n')).join('\n'))
 writeFileSync(join(userData, 'desktop-preferences.json'), JSON.stringify({ automaticUpdates: true, startAtLogin: false, background: true }))
 const pair = generateKeyPairSync('ed25519')
 const publicKey = pair.publicKey.export({ type: 'spki', format: 'der' }).subarray(-32).toString('base64')
@@ -140,7 +153,7 @@ async function prepare(buildVersion) {
     directories: { output: destination }, compression: 'store',
     win: { target: ['nsis'], artifactName: `Mnemion-Studio-${buildVersion}-windows-${process.arch}.exe` },
     nsis: { oneClick: false, allowToChangeInstallationDirectory: true, createDesktopShortcut: false,
-      createStartMenuShortcut: false, runAfterFinish: false },
+      createStartMenuShortcut: false, runAfterFinish: false, include: nsisInclude },
   }
   const configPath = join(output, `builder-${buildVersion}.json`)
   writeFileSync(configPath, JSON.stringify(configuration))
@@ -233,6 +246,24 @@ try {
     fixtureScope: 'Private copies, ephemeral publisher key and local HTTP; synthetic idle/transfer/draft state; real native windows and NSIS installation' }
   writeFileSync(join(output, 'result.json'), JSON.stringify(result, null, 2))
   console.log(JSON.stringify(result, null, 2))
+} catch (error) {
+  const diagnostic = { architecture: process.arch, initialPid: child?.pid,
+    initialExitCode: child?.exitCode, initialSignal: child?.signalCode,
+    files: existsSync(installed) ? (await readdir(installed)).slice(0, 60) : [] }
+  try {
+    diagnostic.installedVersion = JSON.parse(extractFile(join(installed, 'resources/app.asar'), 'package.json').toString('utf8')).version
+    diagnostic.updatedBinaries = await verifyInstalledBinaries(join(output, 'packages', target), installed)
+  } catch (failure) { diagnostic.binaryVerification = failure.message }
+  const processEnvironment = { ...env, MNEMION_PROBE_OUTPUT_DIRECTORY: output }
+  const processes = spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
+    '$ErrorActionPreference="Stop"; Get-CimInstance Win32_Process | Where-Object { '
+    + '$_.ExecutablePath -like ($env:MNEMION_PROBE_OUTPUT_DIRECTORY+"\\*") -or '
+    + '($_.CommandLine -and $_.CommandLine.Contains($env:MNEMION_PROBE_OUTPUT_DIRECTORY)) } '
+    + '| Select-Object ProcessId,ParentProcessId,Name,ExecutablePath | ConvertTo-Json -Compress'],
+  { env: processEnvironment, encoding: 'utf8', timeout: 15_000, windowsHide: true, maxBuffer: 32_768 })
+  try { diagnostic.processes = JSON.parse(processes.stdout || '[]') } catch { diagnostic.processInspectionFailed = true }
+  writeFileSync(join(output, 'upgrade-failure.json'), JSON.stringify(diagnostic, null, 2))
+  throw error
 } finally {
   for (const socket of sockets) socket.destroy()
   await new Promise(resolve_ => server.close(resolve_))

@@ -124,7 +124,7 @@ jobs:
         if: failure() && runner.os == 'Windows'
         shell: pwsh
         run: |
-          python -c "import os; from pathlib import Path; root=Path(os.environ['RUNNER_TEMP'])/'mnemion-windows-update'; [(print(name), print((root/name).read_text(errors='replace')[-8000:])) for name in ['build.log','electron.log','events.jsonl','spawn-error.txt','first-install.json'] if (root/name).is_file()]"
+          python -c "import os; from pathlib import Path; root=Path(os.environ['RUNNER_TEMP'])/'mnemion-windows-update'; [(print(name), print((root/name).read_text(errors='replace')[-8000:])) for name in ['build.log','electron.log','events.jsonl','spawn-error.txt','first-install.json','upgrade-failure.json','nsis-stages.log'] if (root/name).is_file()]"
       - name: Bounded native update failure diagnostics
         if: failure() && runner.os == 'macOS'
         run: |

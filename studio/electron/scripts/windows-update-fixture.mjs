@@ -11,7 +11,7 @@ let updates, window
 let busy = false, idleSeconds = 0, restarts = 0, quitting = false
 const sleep = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds))
 function record(event, detail = {}) {
-  appendFileSync(fixture.receipt, JSON.stringify({ event, version: app.getVersion(), pid: process.pid, ...detail }) + '\n')
+  appendFileSync(fixture.receipt, JSON.stringify({ event, timestamp: new Date().toISOString(), version: app.getVersion(), pid: process.pid, ...detail }) + '\n')
 }
 function assert(condition, message) { if (!condition) throw new Error(message) }
 async function mode(value) {
@@ -25,6 +25,8 @@ async function until(predicate, message, timeout = 30_000) {
 }
 process.on('uncaughtException', error => { record('error', { message: error.message }); app.exit(1) })
 process.on('unhandledRejection', error => { record('error', { message: String(error) }); app.exit(1) })
+app.on('will-quit', () => record('will-quit'))
+process.on('exit', code => record('process-exit', { code }))
 app.on('before-quit', event => {
   if (!updates?.quitNeedsUpdateCleanup) return
   event.preventDefault()
