@@ -1,10 +1,11 @@
 # Mnemion product roadmap
 
-Current distribution: **4.0.1** (release preparation). Updated: **2026-10-10**.
+Current distribution: **4.0.1**. Updated: **2026-10-10**.
 
-Version 4.0.0 is published for **macOS and Linux, x64 and ARM64**. Downloads are available at
-[the official product page](https://www.perseusxr.com/mnemion). Windows remains
-the next desktop release priority; it is not offered as a completed installer.
+Version 4.0.1 adds **Windows x64** to **macOS and Linux, x64 and ARM64**.
+[The official product page](https://www.perseusxr.com/mnemion) lists published
+downloads. Windows ARM64 automatic relaunch remains under validation; that
+installer stays pending while verified architectures ship.
 
 The rebuilt shared-memory platform is product v1; its package version is 4.x
 to upgrade correctly from the earlier 3.x product. This is a living delivery
@@ -64,12 +65,13 @@ release artifacts require the platform checks and publisher requirements below.
 1. Pass service, legacy, SDK, security and frontend checks on the release commit.
 2. Build and launch native desktop packages on Windows, macOS and Linux, for
    x64 and ARM64, including their sandboxed bridges and local Obsidian client.
-3. Publish ready platforms independently using `deploy/release-targets.json`.
-   Version 4.0.0 shipped macOS and Linux. Version 4.0.1 targets all three operating
-   systems, with publication gated on both native architectures.
+3. Publish ready OS/architecture pairs independently using `deploy/release-targets.json`.
+   Version 4.0.0 shipped macOS and Linux. Version 4.0.1 adds Windows x64; ARM64
+   waits for successful automatic relaunch. Each offered pair needs all its
+   installer and authenticated-update checks.
    Mac uses the [validated Sparkle integration](implementation/free-macos-updates.md)
-   with independently signed archives. Windows release validation and SignPath
-   approval remain pending and do not hold back ready Mac/Linux packages.
+   with independently signed archives. Windows x64 uses independent manifest
+   signatures; pending SignPath approval concerns OS publisher reputation.
 4. Rehearse a signed upgrade, rollback/recovery, startup and safe restart. Record
    the environments and results rather than inferring them from compilation.
 5. Verify all immutable artifacts, architecture-specific feeds, inventories,
@@ -100,12 +102,17 @@ Priority is defects found in installation, access control, recovery, migration,
 update behavior and routine team use. Patches retain the service/API contract
 where possible and include migration/rollback instructions when needed.
 
-- Finish and publish the Windows installer/update path, using a verified free
-  distribution route; integrate SignPath when approved. No publisher approval
+- Finish Windows ARM64 automatic relaunch and publish its installer/update path;
+  integrate SignPath when approved. No publisher approval
   is assumed and no paid certificate purchase is planned. The
   [independent signed-update implementation](implementation/free-windows-updates.md)
-  is on `main`; native NSIS installation/upgrade and both architectures remain
-  the shipping gate.
+  passes native Windows x64 installation, upgrade and relaunch. ARM64 first
+  installation and the negative/guard checks pass; relaunch is its remaining gate.
+- Close the reported remote-agent setup gaps: one HTTPS endpoint for API/MCP,
+  authentication at MCP connection time, clear scope diagnostics, hosted-agent
+  OAuth, non-systemd operation and visible Studio setup. Track
+  [issues 3–10](https://github.com/Perseusxrltd/mnemion/issues) and verify fixes
+  through real remote connections as well as isolated protocol tests.
 - Complete signed native installation and upgrade rehearsals across supported
   OS versions, including restricted company devices, offline recovery and Linux
   desktop environments with and without a system tray.

@@ -1,7 +1,7 @@
 # Desktop background operation and updates
 
-Platform v1 is distributed as **4.0.0**, published on 2026-10-10 for
-**macOS and Linux, on Intel/x64 and ARM64**. Windows packages remain under release
+Platform v1 uses the **4.x** package series. Version **4.0.1** adds Windows x64 to
+macOS and Linux on x64 and ARM64. Windows ARM64 remains under automatic-relaunch
 validation. Download published installers from
 [the official product page](https://www.perseusxr.com/mnemion).
 
@@ -15,11 +15,20 @@ startup. An explicit operating-system startup override is not reset on each laun
 | macOS application, Intel/Apple silicon | Sparkle verifies independently signed Ed25519 update archives, then installs and relaunches when safe | Menu bar and Dock; launch at login |
 | Linux AppImage, x64/ARM64 | Automatic download and replacement of the writable AppImage | Tray where supported; minimized window remains accessible; XDG login entry |
 | Linux DEB | Distribution/package-manager updates | Same background and login behavior |
-| Windows NSIS, x64/ARM64 | Installer and update release validation pending | System tray and login support implemented |
+| Windows NSIS, x64 | Independently signed Ed25519 manifest, verified full installer, automatic safe restart | System tray and launch at login |
+| Windows ARM64 | First installation passes; automatic relaunch remains under validation | No completed public installer yet |
 | Web Studio | Served with the deployed service version | Browser behavior; no desktop startup registration |
 | Python SDK, CLI, MCP and server | Administrator/package-manager deployment | Service manager or container restart policy |
 
 ## First installation
+
+On Windows x64, choose **Intel / AMD (most PCs)** and run the NSIS installer.
+It supports a user installation without installing models or databases. The
+initial installer does not yet carry an OS publisher certificate, so Windows may
+show an unknown-publisher message. Verify its official source; company policy may
+require an administrator-approved deployment. Independent signatures authenticate
+subsequent updates without bypassing SmartScreen or company policy. Do not choose
+the x64 package as a claimed native ARM64 release.
 
 On macOS 13 or later, choose **Apple silicon** for an M-series Mac or **Intel**
 for an Intel Mac. Open the disk image, drag **Mnemion Studio** to Applications,
@@ -43,8 +52,7 @@ only an installer matching your architecture.
 Studio connects to a shared memory service; it does not install a large model on
 every device. Follow the [deployment guide](deployment.md) to create a workspace,
 or use the workspace address and application key supplied by your administrator.
-Windows users can use the service's browser Studio while the desktop release is
-being completed.
+Users awaiting a native ARM64 Windows installer can use the service's browser Studio.
 
 ## Update behavior and resource limits
 
@@ -57,7 +65,7 @@ access to memory. Users can pause updates and administrators can manage them.
 Updates install and restart automatically after ten minutes of system inactivity,
 provided Studio is not focused, no vault/API transfer is active, and no edited
 input remains open. Close a completed editor or navigate away to release its
-draft guard. On Mac, a normal quit cancels a staged update; a later check can
+draft guard. On Mac and Windows, a normal quit cancels a staged update; a later check can
 retry it. This prevents a cancelled update from installing after the app exits.
 On AppImage, a downloaded update can also install during a normal quit.
 
@@ -68,6 +76,12 @@ running, Studio reports that and allows another quit attempt. Sparkle owns
 signature verification, extraction, replacement and relaunch. The controller
 holds installation until the app's restart guards permit it. The signed Mac
 archives are published at immutable GitHub release URLs.
+
+Windows verifies a signed manifest of at most 16 KiB and streams a full installer
+of at most 1 GiB to its update cache. Downloads have a 20-minute total deadline
+and 30-second idle timeout. The app rechecks size and SHA-512 immediately before
+execution, expires staged authorization after 24 hours, and removes partial or
+superseded downloads. It checks restart guards again before launching NSIS.
 
 Closing the main window keeps the app running when background mode is enabled;
 use **Quit Mnemion Studio** to exit. On Linux, close minimizes the window because
@@ -86,9 +100,9 @@ the deployed service assets on reload.
 
 The [code signing policy](../CODE_SIGNING.md) records platform trust and release
 roles. Release operations use free services, with no paid enrollment or trials.
-`deploy/release-targets.json` identifies the complete platforms to publish. Every
-selected platform requires both architectures and its full update assets. A
-pending platform does not prevent publication of platforms that have passed.
+`deploy/release-targets.json` identifies the OS/architecture pairs to publish.
+Every selected pair requires its complete installer and update assets. A pending
+architecture does not prevent publication of another that has passed.
 
 **Prepare signed release** runs product checks, builds the selected native
 packages, verifies their payloads and creates a reviewable draft. Publish only
@@ -118,7 +132,7 @@ before removing it. On macOS, remove Mnemion Studio from Applications and check
 **System Settings → General → Login Items**. On Linux, remove the AppImage or
 uninstall the DEB with your package manager. If the application was removed
 before disabling startup, remove its `com.perseusxr.mnemion-studio.desktop` entry
-from your XDG `autostart` directory. On Windows validation installations, use
+from your XDG `autostart` directory. On Windows, use
 **Settings → Apps → Installed apps → Mnemion Studio → Uninstall**.
 
 Uninstalling the desktop does not delete organization memories, backups or

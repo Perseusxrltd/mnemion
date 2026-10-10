@@ -9,14 +9,13 @@ never gates downloads, usage or access.
 
 **Mnemion 4.0 is the first release of the rebuilt shared-memory platform.**
 Download published builds from [the official product page](https://www.perseusxr.com/mnemion).
-Version **4.0.0 is published for macOS and Linux** on both architectures;
-Windows installers remain in release validation. Ready platforms are published
-while work on the others continues. Development and current documentation live
-on `main`.
-The next patch, [4.0.1](docs/releases/4.0.1.md), adds the independently authenticated
-Windows update path and is undergoing native installation/upgrade validation.
-The [release notes](docs/releases/4.0.0.md) describe its scope and current shipping
-status. Implementation and acceptance are tracked in [the release ledger](docs/implementation/v4_progress.md).
+The [4.0.1 release](docs/releases/4.0.1.md) adds **Windows x64** alongside
+**macOS and Linux, x64 and ARM64**, with independently authenticated Windows
+updates. Windows ARM64 remains under automatic-relaunch validation and is not
+offered as a completed download. The product page lists only published builds;
+ready architectures ship while work on the others continues. Development and
+current documentation live on `main`.
+Implementation and acceptance are tracked in [the release ledger](docs/implementation/v4_progress.md).
 See the [current validation report](docs/validation/2026-10-10.md) for measured
 retrieval results, native checks and remaining limits.
 The full codebase study, design decisions, and rebuild map are preserved in
@@ -158,7 +157,7 @@ and performance independently verified in this implementation.
 
 Open **Documentation & roadmap** in Studio, or use the setup screen’s help link.
 The offline library ships the same Markdown as this repository. See the
-[product roadmap](docs/ROADMAP.md), [release notes](docs/releases/4.0.0.md), and
+[product roadmap](docs/ROADMAP.md), [release notes](docs/releases/4.0.1.md), and
 [documentation maintenance policy](docs/MAINTENANCE.md). Every release and hotfix
 must include matching release notes and a reviewed roadmap.
 
@@ -168,5 +167,6 @@ See the [code signing policy](docs/CODE_SIGNING.md) for signing status, release
 roles and verification requirements, and the [privacy policy](docs/service/privacy.md)
 for network connections, storage and user controls. Mac updates use independently
 signed Ed25519 archives with a validated Sparkle/Electron integration; first
-installation may need Privacy & Security approval. Windows SignPath approval and
-its release path remain pending. CI-only packages are not published downloads.
+installation may need Privacy & Security approval. Windows updates authenticate
+signed Ed25519 manifests; the first installer can show an unknown-publisher prompt
+while SignPath approval is pending. CI-only packages are not published downloads.

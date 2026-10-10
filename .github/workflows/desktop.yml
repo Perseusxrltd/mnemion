@@ -15,6 +15,11 @@ on:
         description: Validate both native Windows builds during updater development
         type: boolean
         default: false
+      architecture:
+        description: Native processor architecture for a validation run
+        type: choice
+        options: [all, x64, arm64]
+        default: all
       sign_macos:
         description: Verify the configured Mac signing key without uploading release artifacts
         type: boolean
@@ -43,7 +48,9 @@ jobs:
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - id: select
-        run: python -m deploy.release_targets ${{ inputs.release && '--release' || inputs.macos_only && '--macos-only' || inputs.windows_only && '--windows-only' || '' }} >> "$GITHUB_OUTPUT"
+        env:
+          MNEMION_TARGET_ARCHITECTURE: ${{ inputs.architecture || 'all' }}
+        run: python -m deploy.release_targets --architecture "$MNEMION_TARGET_ARCHITECTURE" ${{ inputs.release && '--release' || inputs.macos_only && '--macos-only' || inputs.windows_only && '--windows-only' || '' }} >> "$GITHUB_OUTPUT"
   desktop:
     needs: targets
     name: ${{ matrix.os }} / ${{ matrix.arch }}

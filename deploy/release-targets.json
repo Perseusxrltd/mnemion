@@ -4,5 +4,10 @@
     "windows",
     "macos",
     "linux"
-  ]
+  ],
+  "architectures": {
+    "windows": ["x64"],
+    "macos": ["x64", "arm64"],
+    "linux": ["x64", "arm64"]
+  }
 }

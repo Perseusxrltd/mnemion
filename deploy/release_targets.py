@@ -1,4 +1,4 @@
-"""Select complete native platforms without holding ready releases for pending ones."""
+"""Select verified OS/architecture pairs without holding ready downloads back."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ MATRIX = [
 ]
 
 
-def release_platforms(version: str | None = None, path: Path | None = None) -> list[str]:
+def release_targets(version: str | None = None, path: Path | None = None) -> dict[str, list[str]]:
     path = path or Path(__file__).with_name("release-targets.json")
     data = json.loads(path.read_text(encoding="utf-8"))
     platforms = data.get("platforms") if isinstance(data, dict) else None
@@ -31,7 +31,26 @@ def release_platforms(version: str | None = None, path: Path | None = None) -> l
         or (version is not None and data.get("version") != version)
     ):
         raise ValueError("Release targets must match the version and name complete platforms")
-    return platforms
+    architectures = data.get(
+        "architectures", {platform: ["x64", "arm64"] for platform in platforms}
+    )
+    if (
+        not isinstance(architectures, dict)
+        or set(architectures) != set(platforms)
+        or any(
+            not isinstance(values, list)
+            or not values
+            or any(not isinstance(value, str) or value not in {"x64", "arm64"} for value in values)
+            or len(set(values)) != len(values)
+            for values in architectures.values()
+        )
+    ):
+        raise ValueError("Each selected platform needs explicit, unique supported architectures")
+    return {platform: architectures[platform] for platform in platforms}
+
+
+def release_platforms(version: str | None = None, path: Path | None = None) -> list[str]:
+    return list(release_targets(version, path))
 
 
 def main() -> None:
@@ -39,19 +58,28 @@ def main() -> None:
     parser.add_argument("--release", action="store_true")
     parser.add_argument("--macos-only", action="store_true")
     parser.add_argument("--windows-only", action="store_true")
+    parser.add_argument("--architecture", choices=["all", "x64", "arm64"], default="all")
     args = parser.parse_args()
-    platforms = (
-        release_platforms()
+    selected = (
+        release_targets()
         if args.release
-        else (
-            ["macos"]
-            if args.macos_only
-            else ["windows"]
-            if args.windows_only
-            else ["windows", "macos", "linux"]
+        else {
+            platform: ["x64", "arm64"] if args.architecture == "all" else [args.architecture]
+            for platform in (
+                ["macos"]
+                if args.macos_only
+                else ["windows"]
+                if args.windows_only
+                else ["windows", "macos", "linux"]
+            )
+        }
+    )
+    print(
+        "matrix="
+        + json.dumps(
+            [item for item in MATRIX if item["arch"] in selected.get(item["platform"], [])]
         )
     )
-    print("matrix=" + json.dumps([item for item in MATRIX if item["platform"] in platforms]))
 
 
 if __name__ == "__main__":

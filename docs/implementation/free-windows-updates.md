@@ -1,8 +1,10 @@
 # Free Windows updates
 
-Status on 2026-10-10: implemented on `main`, undergoing native installation and
-upgrade validation. Windows is not part of the published 4.0.0 release. The
-existing Mac/Linux downloads remain available while these checks run.
+Status on 2026-10-10: Windows x64 passed native first installation, authenticated
+upgrade and relaunch in [job 114302342465](https://github.com/Perseusxrltd/mnemion/actions/runs/38082561771/job/114302342465).
+Version 4.0.1 selects x64 for publication. ARM64 first installation, binary
+integrity, rejection/recovery and restart guards pass, but its final relaunch
+does not; ARM64 stays pending. Windows was not part of the 4.0.0 release.
 
 ## Delivery and trust
 
@@ -84,8 +86,9 @@ each architecture's manifest against its actual installer and the embedded
 public key. A separate dispatch can test the signing key without uploading
 release artifacts.
 
-Keep both `latest-x64-windows.json` and `latest-arm64-windows.json` with their
-immutable installers and checksums. Never replace a published asset. The next
+Keep each released architecture's `latest-ARCH-windows.json` with its immutable
+installer and checksums. Add ARM64 only after its remaining validation passes.
+Never replace a published asset. The next
 Windows delivery requires a new patch version and the Mac/Linux feeds needed by
 existing users. Key rotation needs an explicit, tested transition for installed
 clients; changing a source file alone does not rotate their trust.

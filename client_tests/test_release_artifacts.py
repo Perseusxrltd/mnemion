@@ -10,10 +10,10 @@ import yaml
 
 from deploy.macos_sparkle import create_feed
 from deploy.release import verify_feed, verify_sparkle_feed
-from deploy.release_targets import MATRIX, release_platforms
+from deploy.release_targets import MATRIX, release_platforms, release_targets
 
 
-def test_ready_platforms_always_include_both_architectures(tmp_path):
+def test_older_release_targets_default_to_both_architectures(tmp_path):
     path = tmp_path / "targets.json"
     path.write_text(json.dumps({"version": "4.0.0", "platforms": ["macos", "linux"]}))
     platforms = release_platforms("4.0.0", path)
@@ -26,6 +26,50 @@ def test_ready_platforms_always_include_both_architectures(tmp_path):
         }
     with pytest.raises(ValueError, match="match the version"):
         release_platforms("4.0.1", path)
+
+
+def test_ready_architecture_can_ship_while_another_stays_pending(tmp_path):
+    path = tmp_path / "targets.json"
+    path.write_text(
+        json.dumps(
+            {
+                "version": "4.0.1",
+                "platforms": ["windows", "macos", "linux"],
+                "architectures": {
+                    "windows": ["x64"],
+                    "macos": ["x64", "arm64"],
+                    "linux": ["x64", "arm64"],
+                },
+            }
+        )
+    )
+    targets = release_targets("4.0.1", path)
+    selected = [item for item in MATRIX if item["arch"] in targets.get(item["platform"], [])]
+    assert len(selected) == 5
+    assert not any(item["platform"] == "windows" and item["arch"] == "arm64" for item in selected)
+    assert all(targets[platform] == ["x64", "arm64"] for platform in ["macos", "linux"])
+
+
+@pytest.mark.parametrize(
+    "architectures",
+    [
+        {},
+        {"windows": []},
+        {"windows": ["x86"]},
+        {"windows": ["x64", "x64"]},
+        {"windows": "x64"},
+        {"windows": ["x64"], "linux": ["x64"]},
+    ],
+)
+def test_release_architecture_inventory_rejects_missing_and_ambiguous_targets(
+    tmp_path, architectures
+):
+    path = tmp_path / "targets.json"
+    path.write_text(
+        json.dumps({"version": "4.0.1", "platforms": ["windows"], "architectures": architectures})
+    )
+    with pytest.raises(ValueError, match="supported architectures"):
+        release_targets("4.0.1", path)
 
 
 @pytest.mark.parametrize("platforms", [[], ["macos", "macos"], ["unknown"], "macos"])

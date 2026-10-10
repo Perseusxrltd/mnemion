@@ -136,11 +136,12 @@ def main() -> None:
     if not re.fullmatch(r"\d+\.\d+\.\d+", version):
         raise ValueError("A stable version is required")
     from mnemion.version import __version__
-    from deploy.release_targets import release_platforms
+    from deploy.release_targets import release_targets
 
     if version != __version__:
         raise ValueError("Python versions disagree")
-    platforms = release_platforms(version)
+    targets = release_targets(version)
+    platforms = list(targets)
     notes = root / "docs" / "releases" / f"{version}.md"
     if not notes.is_file() or not notes.read_text(encoding="utf-8").startswith(
         f"# Mnemion {version}"
@@ -169,6 +170,8 @@ def main() -> None:
             "linux": "-linux" if architecture == "x64" else "-linux-arm64",
         }
         for platform in platforms:
+            if architecture not in targets[platform]:
+                continue
             extension = {"windows": "exe", "macos": "dmg", "linux": "AppImage"}[platform]
             artifact_arch = (
                 "x86_64" if platform == "linux" and architecture == "x64" else architecture
@@ -181,7 +184,7 @@ def main() -> None:
             suffix = suffixes[platform]
             feed = args.artifacts / f"latest-{architecture}{suffix}.yml"
             verify_feed(feed, args.artifacts, version)
-        if "macos" in platforms:
+        if architecture in targets.get("macos", []):
             public_key = json.loads((root / "studio/electron/native/sparkle.json").read_text())[
                 "publicKey"
             ]
@@ -192,7 +195,7 @@ def main() -> None:
                 architecture,
                 public_key,
             )
-        if "windows" in platforms:
+        if architecture in targets.get("windows", []):
             node = shutil.which("node")
             if node is None:
                 raise RuntimeError("Node 22+ is required for Windows signature verification")
@@ -217,6 +220,15 @@ def main() -> None:
     for path in sorted(files):
         if path.is_symlink() or not path.is_file():
             raise ValueError("Release assets must be regular files")
+        native = re.fullmatch(
+            rf"Mnemion-Studio-{re.escape(version)}-(windows|macos|linux)-(x64|arm64|x86_64|amd64)\.(exe|dmg|zip|AppImage|deb)(\.blockmap)?",
+            path.name,
+        )
+        if native:
+            platform, architecture = native.group(1), native.group(2)
+            architecture = "x64" if architecture in {"x86_64", "amd64"} else architecture
+            if architecture not in targets.get(platform, []):
+                raise ValueError("An unselected native installer cannot be published")
         digest = hashlib.sha256()
         with path.open("rb") as stream:
             for chunk in iter(lambda: stream.read(1024 * 1024), b""):

@@ -217,3 +217,18 @@ upload, and the four public installer URLs returned HTTP 200. Downloads, setup,
 release notes and the roadmap are available at
 https://www.perseusxr.com/mnemion. Windows remains the next platform delivery;
 see the current roadmap and dated validation report for the exact scope.
+
+## Windows x64 delivery and remote-agent follow-up
+
+The 4.0.1 release target includes Windows x64 plus both Mac/Linux architectures.
+Native Windows x64 installation, authenticated upgrade and relaunch pass, with
+72 installed binary hashes preserved and paths containing spaces. Windows ARM64
+first installation now passes after the archive-filter correction; its automatic
+relaunch remains a release blocker for that architecture. Publication proceeds
+independently for the verified variants. See the
+[dated evidence](../validation/2026-10-10.md#windows-x64-installer-and-updater-verification)
+and [4.0.1 notes](../releases/4.0.1.md).
+
+The next patch work includes full discoverable agent administration and reported
+remote setup issues 3–10: one API/MCP endpoint, handshake authentication, explicit
+scope diagnostics, remote/OAuth setup, Studio availability and non-systemd hosts.

@@ -4,10 +4,10 @@ Updated: **2026-10-10**. Project maintainer: **PERSEUS LEGACY LIMITED**.
 
 ## Platform status
 
-The first platform-v1 desktop distribution, **4.0.0**, is published for macOS and
-Linux on both architectures. Each platform is published only after its complete installer,
-update and native validation gates pass. Windows remains under release validation;
-it does not prevent users from receiving ready platforms. Published assets at
+The first platform-v1 desktop distribution, **4.0.0**, introduced macOS and Linux.
+Version **4.0.1** adds Windows x64. Each OS/architecture pair is published only
+after its installer, update and native validation gates pass. Windows ARM64
+automatic relaunch remains under validation. Published assets at
 [the product page](https://www.perseusxr.com/mnemion) determine availability.
 
 Mac applications use intact ad-hoc signatures and pinned Sparkle with independent
@@ -35,10 +35,9 @@ identity, not an assumed company certificate. SignPath's service does not export
 a PFX; its integration must use the approved project and signing policy.
 
 A free [Windows update implementation](implementation/free-windows-updates.md)
-is on `main` and undergoing native validation. An Ed25519 manifest binds the
+authenticates Windows x64 delivery. An Ed25519 manifest binds the
 exact full NSIS installer, version, architecture, URL, size and hash. Cached
-installers are verified again before execution. This is not yet an available
-Windows release. An independent signature authenticates updates without providing
+installers are verified again before execution. An independent signature authenticates updates without providing
 Windows publisher reputation or bypassing company policies.
 
 Only free services are authorized. Do not purchase certificates, Apple membership,
@@ -68,8 +67,8 @@ platform signatures, archive signatures and update feeds.
 
 Keep `main` current with implementation and documentation. Prepare a draft from
 a fixed commit after checks pass. Recheck draft status before changing its assets.
-Publish complete platforms listed in `deploy/release-targets.json`; pending
-platforms stay unavailable. Never overwrite published assets: later binaries
+Publish complete OS/architecture pairs listed in `deploy/release-targets.json`;
+pending architectures stay unavailable. Never overwrite published assets: later binaries
 require a new patch version. Retain update feeds for already-supported platforms
 when publishing the next stable release. The website offers only complete,
 published platform assets and updates its links after revalidation.
