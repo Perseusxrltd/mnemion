@@ -80,6 +80,30 @@ require no model calls, paid runner, new hosting service or routine deployment.
 Release-note accuracy and roadmap completion remain part of the code review and
 release gates; automation must never invent a completed feature.
 
+## Public desktop upgrade checks
+
+`Public desktop update rehearsal` installs a previous **unmodified, published**
+installer on fresh GitHub-hosted Windows, Mac and Linux runners. It waits for the
+real default startup check and system-inactivity guard, then verifies a new
+target-version process and preserved profile/preferences. It uses official feeds
+and the embedded production keys, with no rewritten app entry point, debugger,
+fixture key, simulated idle time or sandbox override. Login registration is
+disabled for the disposable runner; this test does not certify boot startup.
+
+The workflow runs after publication for release tags that include it, or manually
+with the current public tag. The first 4.0.2 run requires manual dispatch because
+its release commit was already frozen before this workflow was added. Every
+selected architecture needs an earlier public installer; newly introduced
+architectures retain their native fixture gate until their next public upgrade.
+Only small JSON results and bounded logs are retained for seven days. Failures
+are visible in Actions and need investigation; they do not silently alter,
+withdraw or republish immutable release artifacts.
+
+The runner has no user workspace, production memory credentials or signing
+secret. Native fixture checks still cover cancellation, malicious updates,
+interrupted downloads and restart guards before publication. The public rehearsal
+adds deployment evidence; neither check substitutes for the other.
+
 ## Release service costs
 
 The product is [free forever](SUPPORT.md), including team features and updates.
