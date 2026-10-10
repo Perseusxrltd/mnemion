@@ -40,8 +40,36 @@ class MemoryService:
         memory: UUID,
         version: int,
         command: MemoryInput,
+        *,
+        evidence_from: UUID | None = None,
     ) -> UUID:
         source_id, source_revision, revision = uuid4(), uuid4(), uuid4()
+        if evidence_from is not None:
+            # Reviewed organization changes keep the exact original source and
+            # attachments. They cannot manufacture replacement evidence.
+            inserted = conn.execute(
+                """INSERT INTO mnemion.memory_revisions
+                    (tenant_id,space_id,id,memory_id,version,content,content_hash,metadata,subject,kind,
+                     source_revision_id,source_start,source_end,claim_status,valid_from,valid_to,created_by)
+                    SELECT tenant_id,space_id,%s,memory_id,%s,content,content_hash,%s,%s,kind,
+                           source_revision_id,source_start,source_end,claim_status,valid_from,valid_to,%s
+                    FROM mnemion.memory_revisions WHERE tenant_id=%s AND space_id=%s AND memory_id=%s AND id=%s
+                    RETURNING id""",
+                (
+                    revision,
+                    version,
+                    Jsonb(command.metadata),
+                    command.subject,
+                    identity.principal_id,
+                    identity.tenant_id,
+                    space,
+                    memory,
+                    evidence_from,
+                ),
+            ).fetchone()
+            if not inserted:
+                raise not_found()
+            return revision
         source = command.source
         source_content = (
             source.content if source and source.content is not None else command.content
@@ -230,7 +258,14 @@ class MemoryService:
             return self.revise_in_transaction(conn, identity, memory, command, key)
 
     def revise_in_transaction(
-        self, conn, identity: Identity, memory: UUID, command: RevisionInput, key: str
+        self,
+        conn,
+        identity: Identity,
+        memory: UUID,
+        command: RevisionInput,
+        key: str,
+        *,
+        preserve_evidence: bool = False,
     ) -> dict:
         # Check replay before the optimistic version check. The same request
         # remains a successful replay after its first version increment.
@@ -251,6 +286,7 @@ class MemoryService:
                 "kind": "revise",
                 "memory_id": str(memory),
                 **command.model_dump(mode="json", exclude_unset=True),
+                **({"preserve_evidence": True} if preserve_evidence else {}),
             },
         )
         if previous:
@@ -258,6 +294,10 @@ class MemoryService:
         row = memory_row(conn, memory, review=review, lock=True)
         _version(row, command.expected_version)
         current = hydrate(conn, row)
+        if preserve_evidence and (
+            command.source is not None or command.content != current["content"]
+        ):
+            raise ValueError("Evidence-preserving organization cannot rewrite memory content")
         # Omitted metadata remains intact. Explicit null/empty values are
         # meaningful changes, and therefore distinct idempotency payloads.
         preserved = {
@@ -277,7 +317,15 @@ class MemoryService:
         if command.claim_status != "observed" or current["claim_status"] != "observed":
             require_space(conn, space, 30)
         version = row["version"] + 1
-        revision = self._revision(conn, identity, space, memory, version, command)
+        revision = self._revision(
+            conn,
+            identity,
+            space,
+            memory,
+            version,
+            command,
+            evidence_from=row["current_revision_id"] if preserve_evidence else None,
+        )
         conn.execute(
             """UPDATE mnemion.memories SET current_revision_id=%s, version=%s,
                       subject=%s, kind=%s, updated_at=now() WHERE id=%s""",
@@ -305,6 +353,10 @@ class MemoryService:
             row = memory_row(conn, memory, review=True, lock=True)
             _version(row, command.expected_version)
             version = row["version"] + 1
+            if command.state == "quarantined":
+                from .librarian import purge_librarian_dependencies
+
+                purge_librarian_dependencies(conn, identity.tenant_id, row["space_id"], memory)
             conn.execute(
                 """UPDATE mnemion.memories SET review_state=%s, version=%s, updated_at=now()
                    WHERE id=%s""",
@@ -368,6 +420,9 @@ class MemoryService:
                 },
             )
         _version(row, expected_version)
+        from .librarian import purge_librarian_dependencies
+
+        purge_librarian_dependencies(conn, identity.tenant_id, space, memory)
         conn.execute(
             """UPDATE mnemion.memories SET deleted_at=now(), updated_at=now(), version=version+1
                WHERE id=%s""",

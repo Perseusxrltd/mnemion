@@ -85,6 +85,10 @@ def finish(env, service, backfill, worker):
 
 def test_background_candidate_does_not_starve_active_indexing(env, models):
     registry, service, _, _, other = models
+    # Workers share the session database's queue across tenant fixtures. Finish
+    # earlier tests' eligible work before measuring this explicit eight-record
+    # backlog; otherwise a fair baseline turn may index another test's memory.
+    drain(ModelWorker(env.worker_db, registry))
     for number in range(8):
         save(env, f"shared worker backlog {number}")
     start(env, service)

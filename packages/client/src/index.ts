@@ -3,6 +3,9 @@ import type { Insights, RuntimeInsights, MetricOrigin, EvaluationDataset, Evalua
 export * from './insights.js'
 import type { EmbeddingSettings, EmbeddingChoice, ReindexInput, ReindexAction } from './embeddings.js'
 export * from './embeddings.js'
+import type { LibrarianChoice, LibrarianSettings, LibrarianSettingsInput, LibrarianRun, LibrarianRunItem,
+  LibrarianMode, LibrarianProposal, LibrarianProposalState, LibrarianDecisionReceipt } from './librarian.js'
+export * from './librarian.js'
 
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json }
 export type Kind = 'fact' | 'event' | 'preference' | 'procedure' | 'note'
@@ -103,6 +106,28 @@ export interface ClientOptions {
 interface RequestOptions { body?: unknown; key?: string; signal?: AbortSignal; binary?: boolean }
 
 export class MnemionClient {
+  private librarianPath(space: string) { return '/v1/spaces/' + encodeURIComponent(space) + '/librarian' }
+  librarianChoices(space: string) { return this.request<Page<LibrarianChoice>>('GET', this.librarianPath(space) + '/models') }
+  librarianSettings(space: string) { return this.request<LibrarianSettings>('GET', this.librarianPath(space)) }
+  configureLibrarian(space: string, input: LibrarianSettingsInput) { return this.request<LibrarianSettings>('PUT', this.librarianPath(space), { body: input }) }
+  librarianRuns(space: string, cursor?: string) {
+    const params = new URLSearchParams({ limit: '50' }); if (cursor) params.set('cursor', cursor)
+    return this.request<Page<LibrarianRun>>('GET', this.librarianPath(space) + '/runs?' + params)
+  }
+  startLibrarian(space: string, mode: LibrarianMode = 'organize', memoryIds: string[] = [], key = crypto.randomUUID()) {
+    return this.request<LibrarianRun>('POST', this.librarianPath(space) + '/runs', { body: { mode, memory_ids: memoryIds }, key })
+  }
+  cancelLibrarian(space: string, run: string) { return this.request<LibrarianRun>('POST', this.librarianPath(space) + '/runs/' + encodeURIComponent(run) + '/cancel') }
+  librarianRunItems(space: string, run: string) { return this.request<Page<LibrarianRunItem>>('GET', this.librarianPath(space) + '/runs/' + encodeURIComponent(run) + '/items') }
+  librarianProposals(space: string, state?: LibrarianProposalState, cursor?: string) {
+    const params = new URLSearchParams({ limit: '20' })
+    if (state) params.set('state', state); if (cursor) params.set('cursor', cursor)
+    return this.request<Page<LibrarianProposal>>('GET', this.librarianPath(space) + '/proposals?' + params)
+  }
+  decideLibrarian(space: string, proposal: string, action: 'accept' | 'reject' | 'undo', version: number, key = crypto.randomUUID()) {
+    return this.request<LibrarianDecisionReceipt>('POST', this.librarianPath(space) + '/proposals/' + encodeURIComponent(proposal) + '/decision',
+      { body: { action, expected_version: version }, key })
+  }
   embeddingChoices(space: string) { return this.request<Page<EmbeddingChoice>>('GET', `/v1/spaces/${encodeURIComponent(space)}/embedding/choices`) }
   embeddingSettings(space: string) { return this.request<EmbeddingSettings>('GET', `/v1/spaces/${encodeURIComponent(space)}/embedding`) }
   startReindex(space: string, input: ReindexInput, key?: string) { return this.request<EmbeddingSettings>('POST', `/v1/spaces/${encodeURIComponent(space)}/embedding/reindex`, { body: input, key: key ?? globalThis.crypto.randomUUID() }) }

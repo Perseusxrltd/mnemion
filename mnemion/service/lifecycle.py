@@ -6,8 +6,10 @@ from uuid import UUID
 def purge_memory(conn, tenant: UUID, space: UUID, memory: UUID) -> None:
     """Caller holds the deleted memory's row lock and an authorized transaction."""
     from .evaluations import purge_evaluation_dependencies
+    from .librarian import purge_librarian_dependencies
 
     purge_evaluation_dependencies(conn, tenant, space, memory)
+    purge_librarian_dependencies(conn, tenant, space, memory)
     scope = (tenant, space, memory)
     conn.execute(
         "DELETE FROM mnemion.connector_proposals WHERE tenant_id=%s AND space_id=%s AND memory_id=%s",

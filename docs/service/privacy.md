@@ -16,6 +16,8 @@ disconnect. The server records bounded operational counters and audit history fo
 authorized administrators; these are not sent to a publisher analytics service.
 Evaluation datasets can contain private memory and should receive the same
 protection as the source material. Avoid placing secrets in public support reports.
+Librarian proposals also contain derived memory text and exact quotations; they
+remain private to current reviewers of their source space.
 
 ## Network connections
 
@@ -26,14 +28,15 @@ protection as the source material. Avoid placing secrets in public support repor
 | Local model download host | Model preparation retrieves pinned model files, including from Hugging Face, into the server's model cache. The current local embedding model processes text locally; the download does not upload memories. |
 | Approved embedding endpoint | Only operator-configured profiles are selectable. A space administrator must approve sending retained revisions, new memories and search queries to non-loopback destinations. Credentials remain on the server. Pause/cancel candidate indexing or change the active model to control further processing; already-sent text cannot be recalled from a provider. Database restore pauses HTTP active-model processing and candidates for explicit reapproval. |
 | GitHub and its asset infrastructure | Supported desktop packages check the official stable release feed and download updates by default. GitHub receives normal network request metadata, including the source IP. Memory text, API keys and vault contents are not included in update checks. Disable automatic updates in **Background and updates**, or use the administrator policy in the update guide. |
+| Approved librarian endpoint | Optional processing sends a bounded selection of memory text, titles, tags and summaries to the configured model. It does not upload source attachments. Non-loopback processing requires space-administrator approval; credentials stay on the server. Schedules are opt-in. Pause or cancel to prevent further requests. Already-sent text remains subject to the provider's policies. Restores disable schedules and clear outbound consent. |
 | External links you open | Your browser contacts the linked site under its own privacy settings. Documentation is bundled for offline use; remote documentation images are presented as links. |
 
 GitHub's [privacy statement](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement)
 and Hugging Face's [privacy policy](https://huggingface.co/privacy) govern their
 services. Your organization should review the policies of its chosen storage,
 messaging, hosting and model providers. [Embedding profiles](embeddings.md) support
-approved local and cloud endpoints; the shared-service model librarian remains
-unfinished. Provider retention, training policies and charges are governed by
+approved local and cloud endpoints, as does the optional [librarian](librarian.md).
+Provider retention, training policies and charges are governed by
 the selected provider/operator, not by Mnemion's local model behavior.
 
 ## Local storage and lifecycle

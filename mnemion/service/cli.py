@@ -74,6 +74,14 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Register generation identities with the owner database login",
     )
+    librarian_models = commands.add_parser(
+        "librarian-models", help="Inspect approved librarian models without sending memory"
+    )
+    librarian_models.add_argument(
+        "--prepare",
+        metavar="PROFILE",
+        help="Prepare only this profile's pinned tokenizer, never model weights",
+    )
     schema = commands.add_parser(
         "schema", help="Write the versioned OpenAPI contract without connecting to a database"
     )
@@ -347,6 +355,25 @@ def main(argv: list[str] | None = None) -> int:
                 for generation in registry.generation_ids:
                     register_generation(conn, registry.get(generation).generation)
         print(json.dumps({"profiles": registry.describe(), "registered": args.register}))
+    elif args.command == "librarian-models":
+        from .librarian_provider import LibrarianRegistry
+
+        registry = LibrarianRegistry.from_environment()
+        try:
+            if args.prepare:
+                try:
+                    registry.get(args.prepare).tokenizer.prepare()
+                except Exception:
+                    raise RuntimeError(
+                        "Librarian tokenizer preparation failed; private values omitted"
+                    ) from None
+            print(
+                json.dumps(
+                    {"profiles": [p.profile.describe() for p in registry.providers.values()]}
+                )
+            )
+        finally:
+            registry.close()
     elif args.command == "schema":
         from .api import create_app
         from .db import Database

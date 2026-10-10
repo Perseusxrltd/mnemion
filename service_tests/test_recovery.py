@@ -48,6 +48,76 @@ def exists(dsn, name):
         )
 
 
+def test_recovery_erases_librarian_derivatives_and_pauses_model_schedules(
+    env, postgres, pg_bin, tmp_path, destination
+):
+    from service_tests.test_librarian import setup, save, drain
+    from mnemion.service.librarian import LibrarianService
+    from mnemion.service.librarian_models import LibrarianRunInput
+
+    service, runner = setup(env, interval=60)
+    records = [
+        save(env, content=f"Librarian recovery source {index}", key=f"librarian-recovery-{index}")
+        for index in range(3)
+    ]
+    service.create_run(env.owner, env.space, LibrarianRunInput(mode="review"), "recovery-proposals")
+    drain(runner)
+    proposal = service.proposals(env.owner, env.space)["items"][0]
+    queued = service.create_run(env.owner, env.space, LibrarianRunInput(), "queued-before-recovery")
+    archive, ledger, credentials = (
+        tmp_path / name for name in ("librarian.mnemion", "ledger.json", "owner.json")
+    )
+    recovery.create_backup(env.admin_dsn, archive, pg_bin=pg_bin)
+    cited = {quote["memory_id"] for quote in proposal["suggestion"]["evidence"]}
+    doomed = next(record for record in records if record["memory_id"] not in cited)
+    env.memory.forget(
+        env.owner, UUID(doomed["memory_id"]), expected_version=1, key="withdraw-after-backup"
+    )
+    recovery.export_ledger(env.admin_dsn, ledger)
+    recovery.restore_backup(
+        env.admin_dsn,
+        archive,
+        database_name=destination,
+        deletion_ledger=ledger,
+        credentials_output=credentials,
+        pg_bin=pg_bin,
+    )
+    db = Database(make_conninfo(postgres[1], dbname=destination))
+    db.open()
+    try:
+        owner = next(
+            row
+            for row in json.loads(credentials.read_text())["organizations"]
+            if row["tenant_id"] == str(env.owner.tenant_id)
+        )
+        identity = db.authenticate(owner["api_key"])
+        restored = LibrarianService(
+            db, service.registry, MemoryService(db, env.embedder.generation)
+        )
+        settings = restored.settings(identity, env.space)
+        assert (
+            not settings["enabled"]
+            and not settings["network_egress_approved"]
+            and settings["next_run_at"] is None
+        )
+        assert restored.run(identity, env.space, UUID(queued["id"]))["state"] == "cancelled"
+        hidden = restored.proposals(identity, env.space)["items"][0]
+        assert hidden["state"] == "invalidated" and hidden["suggestion"] is None
+        with db.transaction(identity) as conn:
+            assert (
+                conn.execute(
+                    "SELECT suggestion FROM mnemion.librarian_proposals WHERE id=%s",
+                    (proposal["id"],),
+                ).fetchone()["suggestion"]
+                is None
+            )
+        with pytest.raises(ServiceError):
+            db.authenticate(env.token)
+    finally:
+        db.close()
+        service.registry.close()
+
+
 def test_complete_recovery_reconciles_later_deletion_grants_and_keys(
     env, postgres, pg_bin, tmp_path, destination
 ):

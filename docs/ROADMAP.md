@@ -32,6 +32,7 @@ server configuration rather than every employee owning a powerful computer.
 | Shared memory | PostgreSQL transactions, tenant/space boundaries, scoped agent identities, revision history, durable receipts and deletion | [Service](service/README.md), [organizations](service/organizations.md) |
 | Retrieval | Pinned local multilingual E5, lexical and semantic search, cited context, chunk/index identity and bounded context packs | [Service](service/README.md) |
 | Model choice | E5/BGE CPU profiles, approved Ollama/OpenAI endpoints, per-space candidate indexes, progress/pause/retry, preview/evals and atomic activation/rollback | [Embedding models](service/embeddings.md) |
+| Librarian | Approved local/cloud models, optional schedules, call budgets, exact source revisions, organization proposals, review findings and guarded undo | [Librarian](service/librarian.md) |
 | Sources | Git, selected folders, Google Drive, Slack, rclone and custom adapters; checkpoints, leases, review proposals and pauses | [Connectors](service/connectors.md) |
 | Agent compatibility | HTTP/OpenAPI, Python and TypeScript SDKs, MCP stdio and HTTP, conversation capture | [Agents](service/agents.md), [capture](service/capture.md) |
 | Human organization | Studio memory review, source evidence, team access, wiki/graph, core context and operations | [Knowledge](service/knowledge.md) |
@@ -112,23 +113,23 @@ latency, memory, privacy and cost rather than a universal "best model" claim.
 
 ## Configurable librarian
 
-An optional local or cloud language model will propose organization and hygiene
-work: titles, tags, links, duplicates, contradictions, stale facts and summaries.
-This shared-service librarian is planned; legacy curation tools are not evidence
-that an autonomous organization-wide librarian is finished.
+Implemented: approved Ollama/OpenAI-compatible profiles, explicit per-space
+outbound approval, manual and optional scheduled jobs, durable daily call limits,
+strict evidence-linked proposals, diffs, decisions, guarded undo and run history.
+Organization handles titles, additional tags and summaries one memory at a time.
+Broader review finds possible links, duplicates, contradictions and stale claims
+within a bounded batch. Models cannot grant access, delete evidence, merge records
+or mark claims verified. Recovery pauses processing and clears endpoint consent.
+See [the librarian guide](service/librarian.md).
 
-- Assign any supported model/provider within administrator policy; expose its
-  context, memory, token/cost and scheduling limits.
-- Use bounded jobs and evidence-linked proposals with provenance, confidence and
-  reproducible configuration. Start with human review for substantive changes.
-- Separate model suggestions from authoritative facts. Treat source instructions
-  as untrusted input; tools obey the same access boundaries as ordinary agents.
-- Provide dry runs, queues, diffs, approvals, undo, cancellation and audit history.
-- Never allow a librarian to grant access, remove evidence or bypass deletion and
-  review policy just because generated text requests it.
+Remaining improvements: measured model/hardware comparisons, calibrated quality
+evaluations, acceptance/rejection analyses, organization-wide grouping and review
+policies for specialized domains. Current protocol, permission and recovery tests
+use synthetic HTTP model responses; they do not certify a live model's reasoning
+quality. Acknowledging a finding does not modify the canonical knowledge graph.
 
-Acceptance: measurable usefulness, reliable undo, adversarial-input tests,
-permission isolation and explicit resource/egress budgets.
+Acceptance for broader automation: measured usefulness on held-out team data,
+reliable recovery/undo, permission isolation and explicit resource/egress budgets.
 
 ## Organization operations and secured vaults
 

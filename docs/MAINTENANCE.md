@@ -70,6 +70,7 @@ storage/billing limit to make a check pass.
 - [Code signing](CODE_SIGNING.md) and [privacy](service/privacy.md): distribution
   trust, release responsibilities and data handling.
 - [Roadmap](ROADMAP.md): delivered work, priorities and acceptance criteria.
+- [Librarian](service/librarian.md): model configuration, budgets, proposals and recovery.
 - [Free forever and support](SUPPORT.md): free access and optional contributions.
 - `docs/releases/`: immutable per-version release notes.
 - `docs/validation/`: dated evidence and its limitations.

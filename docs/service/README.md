@@ -74,6 +74,12 @@ prefixes, pooling, normalization, and chunking configuration.
 See [embedding models](embeddings.md) for the small English CPU option, approved
 local/cloud endpoints, per-space egress approval, comparisons and rollback.
 
+The optional [memory librarian](librarian.md) uses separately approved local or
+cloud language models for titles, tags, summaries and review findings. Configure
+its endpoint on the API host, then enable it per space in Studio. It has bounded
+jobs, optional schedules, durable daily call limits, evidence checks and human
+review; no language model or schedule is enabled by default.
+
 ## Studio
 
 Build the SDK and web frontend, then serve Studio alongside the API:

@@ -359,6 +359,12 @@ def _recover_access(conn, ledger: dict, backup_id: str) -> dict:
     from .connector_recovery import restore
 
     restore(conn, ledger)
+    # A restored schedule or key is not current consent to send text to a model.
+    conn.execute("""UPDATE mnemion.librarian_settings SET enabled=false,
+        network_egress_approved=false,next_run_at=NULL,version=version+1,updated_at=now()""")
+    conn.execute("""UPDATE mnemion.librarian_runs SET state='cancelled',
+        error_code='recovery_revalidation_required',lease_id=NULL,lease_until=NULL,finished_at=now()
+        WHERE state IN ('queued','running')""")
     # A backup is not evidence of current consent for outbound model calls.
     conn.execute("""UPDATE mnemion.space_embedding_settings s SET inference_paused=true,
         version=version+1,updated_at=now() FROM mnemion.embedding_generations g

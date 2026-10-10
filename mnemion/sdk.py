@@ -27,6 +27,15 @@ from .service.contracts import (
 from .service.models import ContextInput, MemoryInput, RecallInput, RevisionInput
 
 if TYPE_CHECKING:
+    from .service.librarian_models import (
+        LibrarianChoice,
+        LibrarianSettings,
+        LibrarianSettingsInput,
+        LibrarianRun,
+        LibrarianRunItem,
+        LibrarianProposal,
+        LibrarianDecisionReceipt,
+    )
     from .service.embedding_models import EmbeddingSettings
     from .service.knowledge import Knowledge
     from .service.insights_models import Insights, RuntimeInsights
@@ -64,6 +73,115 @@ class MnemionError(RuntimeError):
 
 
 class Client:
+    @staticmethod
+    def _librarian_path(space_id: str) -> str:
+        return f"/v1/spaces/{UUID(space_id)}/librarian"
+
+    def librarian_choices(self, space_id: str) -> Page[LibrarianChoice]:
+        from .service.librarian_models import LibrarianChoice
+
+        return Page[LibrarianChoice].model_validate(
+            self.request("GET", self._librarian_path(space_id) + "/models")
+        )
+
+    def librarian_settings(self, space_id: str) -> LibrarianSettings:
+        from .service.librarian_models import LibrarianSettings
+
+        return LibrarianSettings.model_validate(self.request("GET", self._librarian_path(space_id)))
+
+    def configure_librarian(
+        self, space_id: str, command: LibrarianSettingsInput
+    ) -> LibrarianSettings:
+        from .service.librarian_models import LibrarianSettings, LibrarianSettingsInput
+
+        command = LibrarianSettingsInput.model_validate(command)
+        return LibrarianSettings.model_validate(
+            self.request(
+                "PUT", self._librarian_path(space_id), body=command.model_dump(mode="json")
+            )
+        )
+
+    def start_librarian(
+        self,
+        space_id: str,
+        *,
+        mode: Literal["organize", "review"] = "organize",
+        memory_ids: list[str] | None = None,
+        idempotency_key: str | None = None,
+    ) -> LibrarianRun:
+        from .service.librarian_models import LibrarianRun, LibrarianRunInput
+
+        command = LibrarianRunInput(mode=mode, memory_ids=memory_ids or [])
+        return LibrarianRun.model_validate(
+            self.request(
+                "POST",
+                self._librarian_path(space_id) + "/runs",
+                body=command.model_dump(mode="json"),
+                key=idempotency_key or str(uuid4()),
+            )
+        )
+
+    def librarian_runs(
+        self, space_id: str, *, cursor: str | None = None, limit: int = 50
+    ) -> Page[LibrarianRun]:
+        from .service.librarian_models import LibrarianRun
+
+        params = {"limit": limit}
+        if cursor:
+            params["cursor"] = cursor
+        return Page[LibrarianRun].model_validate(
+            self.request("GET", self._librarian_path(space_id) + "/runs", params=params)
+        )
+
+    def librarian_run_items(self, space_id: str, run_id: str) -> Page[LibrarianRunItem]:
+        from .service.librarian_models import LibrarianRunItem
+
+        return Page[LibrarianRunItem].model_validate(
+            self.request("GET", self._librarian_path(space_id) + f"/runs/{UUID(run_id)}/items")
+        )
+
+    def cancel_librarian(self, space_id: str, run_id: str) -> LibrarianRun:
+        from .service.librarian_models import LibrarianRun
+
+        return LibrarianRun.model_validate(
+            self.request("POST", self._librarian_path(space_id) + f"/runs/{UUID(run_id)}/cancel")
+        )
+
+    def librarian_proposals(
+        self, space_id: str, *, state: str | None = None, cursor: str | None = None, limit: int = 20
+    ) -> Page[LibrarianProposal]:
+        from .service.librarian_models import LibrarianProposal
+
+        params = {"limit": limit}
+        if cursor:
+            params["cursor"] = cursor
+        if state:
+            params["state"] = state
+        return Page[LibrarianProposal].model_validate(
+            self.request("GET", self._librarian_path(space_id) + "/proposals", params=params)
+        )
+
+    def decide_librarian(
+        self,
+        space_id: str,
+        proposal_id: str,
+        *,
+        action: Literal["accept", "reject", "undo"],
+        expected_version: int,
+        idempotency_key: str | None = None,
+    ) -> LibrarianDecisionReceipt:
+        from .service.librarian_models import LibrarianDecision, LibrarianDecisionReceipt
+
+        command = LibrarianDecision(action=action, expected_version=expected_version)
+        return LibrarianDecisionReceipt.model_validate(
+            self.request(
+                "POST",
+                self._librarian_path(space_id) + f"/proposals/{UUID(proposal_id)}/decision",
+                body=command.model_dump(mode="json"),
+                key=idempotency_key or str(uuid4()),
+            )
+        )
+
     def embedding_settings(self, space_id: str) -> EmbeddingSettings:
         from .service.embedding_models import EmbeddingSettings
 

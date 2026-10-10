@@ -153,3 +153,35 @@ client checks, container recovery activation, Obsidian correction/deletion refre
 Linux payload/window checks, and the completed frozen held-out retrieval results.
 It also records the indexing timeout and continuation, limited context coverage,
 and the remaining answering, load, native, licensing and publication gates.
+
+## Configurable librarian and product website — 2026-10-10
+
+The shared librarian now supports operator-approved Ollama and OpenAI-compatible
+endpoints, per-space outbound approval, optional schedules, durable call budgets,
+leased low-concurrency jobs and explicit source revision dependencies. Organization
+proposes titles, additional tags and summaries independently for each memory;
+review proposes possible links, duplication, contradictions and stale claims in
+a bounded batch. Generated output never grants access or verifies a claim.
+
+Studio includes model/schedule controls, before/after proposals, all input
+revisions and quotations, per-memory outcomes, run usage, accept/reject and guarded
+undo. Applying organization preserves the canonical text, original evidence,
+attachments and unrelated metadata. Deleted or quarantined inputs invalidate and
+erase affected generated text, including findings influenced by uncited inputs.
+Restoring a backup cancels pending jobs and requires renewed model approval.
+
+Browser validation found and corrected premature completion of a multi-memory
+run and a cramped mobile status layout. Regression tests cover complete and
+mixed-size batches. Cancellation retains the database-wide slot while a request
+is still in flight. The HTTP transport now enforces a total deadline across
+connection, headers and body and closes interrupted requests; real loopback HTTP
+tests exercise deliberately trickling responses. No live model or paid call was
+used for these checks. See [the operator guide](../service/librarian.md).
+
+The matching Perseus XR product page is prepared in a verified deployment
+preview. Its existing Mnemion project card now describes shared memory and links
+to the new page. The page includes platform downloads, documentation, roadmap
+and optional support; download eligibility requires a complete published release.
+Production promotion remains tied to the desktop publication gates. Current
+validation, public scan results and remaining limits belong in the
+[validation report](../validation/2026-10-10.md), not an unconditional v1 claim.

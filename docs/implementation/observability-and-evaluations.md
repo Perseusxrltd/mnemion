@@ -39,7 +39,11 @@ Required views:
    run a small diagnostic without launching or downloading a large model.
 7. **Librarian:** policy, schedule, backlog, runs, supported/unsupported proposals,
    reviews, stale evidence, model/token/cost usage and accepted/rejected outcomes.
-   This view depends on the shared librarian implementation.
+   The [shared librarian](../service/librarian.md) now provides model and schedule
+   controls, source revisions, per-input outcomes, review decisions, call budgets,
+   reported tokens, transferred bytes and provider latency in Studio. Currency
+   estimates and calibrated model-quality comparisons remain follow-up work;
+   missing usage is not displayed as zero cost.
 
 ## Measurement contract
 

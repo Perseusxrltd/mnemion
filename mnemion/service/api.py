@@ -47,6 +47,10 @@ from .telemetry import Telemetry
 from .insights import Insights, InsightsService, RuntimeInsights, runtime_insights
 from .evaluation_api import attach_evaluations
 from .evaluation_runner import EvaluationRunner
+from .librarian import LibrarianService
+from .librarian_api import attach_librarian
+from .librarian_provider import LibrarianRegistry
+from .librarian_runner import LibrarianRunner
 
 logger = logging.getLogger(__name__)
 
@@ -127,6 +131,7 @@ def create_app(
     embedder: Embedder | None = None,
     *,
     registry: ModelRegistry | None = None,
+    librarian_registry: LibrarianRegistry | None = None,
 ) -> FastAPI:
     owned = database is None
     if database is None:
@@ -146,6 +151,9 @@ def create_app(
     retrieval = RetrievalService(database, embedder, telemetry, registry=registry)
     insights = InsightsService(database, embedder)
     evaluations = EvaluationRunner(database, retrieval)
+    librarian_registry = librarian_registry or LibrarianRegistry.from_environment()
+    librarian = LibrarianService(database, librarian_registry, memory)
+    librarian_runner = LibrarianRunner(librarian)
     exports = ExportService(database)
 
     @asynccontextmanager
@@ -155,9 +163,13 @@ def create_app(
         telemetry.start()
         if os.environ.get("MNEMION_EVALUATIONS_DISABLED") != "1":
             evaluations.start()
+        if os.environ.get("MNEMION_LIBRARIAN_DISABLED") != "1":
+            librarian_runner.start()
         yield
+        librarian_runner.stop()
         evaluations.stop()
         telemetry.stop()
+        librarian_registry.close()
         registry.close()
         if owned:
             database.close()
@@ -205,6 +217,8 @@ def create_app(
     app.state.model_registry = registry
     app.state.telemetry = telemetry
     app.state.evaluations = evaluations
+    app.state.librarian = librarian
+    app.state.librarian_runner = librarian_runner
 
     @app.middleware("http")
     async def request_context(request: Request, call_next):
@@ -297,6 +311,7 @@ def create_app(
     install_routes(app, authenticated, ConnectorService(memory))
     attach_evaluations(app, database, embedder, authenticated, registry=registry)
     attach_embeddings(app, database, registry, authenticated)
+    attach_librarian(app, librarian, authenticated)
 
     @app.get("/health/live", tags=["Operations"], response_model=c.LiveStatus)
     def live():

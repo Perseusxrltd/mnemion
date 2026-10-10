@@ -32,6 +32,8 @@ An authenticated identity is separate from the person or project a memory is abo
   memories, managing identities/grants, and tracking indexing/deletion activity.
 - [Visual insights and evaluations](docs/service/insights.md): resource and retrieval
   diagnostics, private versioned test sets, bounded runs, comparisons and exports.
+- [Configurable librarian](docs/service/librarian.md): approved local/cloud models,
+  bounded schedules, source-linked organization proposals, human review and undo.
 - [Desktop background operation and automatic updates](docs/service/updates.md),
   with login startup and safe idle restarts on supported installer formats.
 - Standard Obsidian Markdown, YAML, wikilinks, source anchors, native graph
