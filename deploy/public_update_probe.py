@@ -366,6 +366,23 @@ def linux_idle_seconds() -> float | None:
         x11.XCloseDisplay(display)
 
 
+def linux_window_state() -> str | None:
+    """Read desktop ownership/focus without changing input or app state."""
+    if not shutil.which("xprop"):
+        return None
+    try:
+        result = subprocess.run(
+            ["xprop", "-root", "_NET_SUPPORTING_WM_CHECK", "_NET_ACTIVE_WINDOW"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+        )
+        return result.stdout[:2048] if result.returncode == 0 else None
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+
+
 def app_archive(process, system: str) -> Path:
     path = Path(process.exe())
     if system == "linux":
@@ -599,6 +616,7 @@ def observe(args) -> dict:
         result["initial_launcher_exit"] = child.poll()
         if args.platform == "linux":
             result["x11_idle_seconds"] = linux_idle_seconds()
+            result["x11_window_state"] = linux_window_state()
             result["installed_files"] = [
                 {"name": path.name, "bytes": path.stat().st_size}
                 for path in executable.parent.glob("*.AppImage")

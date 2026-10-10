@@ -73,12 +73,12 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb dbus-x11 libgtk-3-0 libnss3 libgbm1 libasound2 libnotify4 libfuse2
+          sudo apt-get install -y xvfb openbox x11-utils dbus-x11 libgtk-3-0 libnss3 libgbm1 libasound2 libnotify4 libfuse2
       - name: Install public release and observe its automatic update
         shell: bash
         run: |
           if [ "$RUNNER_OS" = Linux ]; then
-            dbus-run-session -- xvfb-run -a python -m deploy.public_update_probe --from-tag "$MNEMION_PROBE_FROM" --to-tag "$MNEMION_PROBE_TO" --platform "$MNEMION_PROBE_PLATFORM" --arch "$MNEMION_PROBE_ARCH" --output "$RUNNER_TEMP/public-mnemion-upgrade"
+            dbus-run-session -- xvfb-run -a bash deploy/public_update_linux.sh --from-tag "$MNEMION_PROBE_FROM" --to-tag "$MNEMION_PROBE_TO" --platform "$MNEMION_PROBE_PLATFORM" --arch "$MNEMION_PROBE_ARCH" --output "$RUNNER_TEMP/public-mnemion-upgrade"
           else
             python -m deploy.public_update_probe --from-tag "$MNEMION_PROBE_FROM" --to-tag "$MNEMION_PROBE_TO" --platform "$MNEMION_PROBE_PLATFORM" --arch "$MNEMION_PROBE_ARCH" --output "$RUNNER_TEMP/public-mnemion-upgrade"
           fi
