@@ -282,11 +282,16 @@ static BOOL StableVersion(NSString *version) {
 - (void)updater:(SPUUpdater *)updater
     didFinishUpdateCycleForUpdateCheck:(SPUUpdateCheck)check error:(NSError *)error {
     [self.deadline invalidate];
-    if (self.cancelled && !self.errorReported) Emit(@{@"state": @"cancelled"});
-    if (error != nil && !self.errorReported && !self.cancelled && error.code != SUNoUpdateError) {
-        Emit(@{@"state": @"error", @"reason": @"sparkle", @"code": @(error.code)});
-    }
-    exit(error != nil && error.code != SUNoUpdateError && !self.cancelled ? EXIT_FAILURE : EXIT_SUCCESS);
+    // Sparkle's cancellation and installer-status teardown use asynchronous XPC.
+    // Keep its run loop alive briefly instead of exiting inside its delegate callback.
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC),
+        dispatch_get_main_queue(), ^{
+        if (self.cancelled && !self.errorReported) Emit(@{@"state": @"cancelled"});
+        if (error != nil && !self.errorReported && !self.cancelled && error.code != SUNoUpdateError) {
+            Emit(@{@"state": @"error", @"reason": @"sparkle", @"code": @(error.code)});
+        }
+        exit(error != nil && error.code != SUNoUpdateError && !self.cancelled ? EXIT_FAILURE : EXIT_SUCCESS);
+    });
 }
 - (void)showUpdateReleaseNotesWithDownloadData:(SPUDownloadData *)data {}
 - (void)showUpdateReleaseNotesFailedToDownloadWithError:(NSError *)error {}
