@@ -46,8 +46,14 @@ if (process.platform === 'win32') {
   // NSIS self-extractors can return 1 for the data after their 7z payload.
   payload(listing, ['Mnemion Studio.exe', 'resources/client/mnemion-client.exe',
     'resources/frontend/dist/index.html', 'resources/frontend/dist/icon.ico'])
+  // A PowerShell 7 build shell exports its module path. Windows PowerShell 5
+  // must resolve its own security module instead of trying to load that runtime.
+  const signatureEnv = { ...process.env }
+  for (const key of Object.keys(signatureEnv)) {
+    if (key.toLowerCase() === 'psmodulepath') delete signatureEnv[key]
+  }
   signature = run('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
-    `Get-AuthenticodeSignature -LiteralPath '${installer.replaceAll("'", "''")}' | Select-Object -ExpandProperty Status`]).trim()
+    `Get-AuthenticodeSignature -LiteralPath '${installer.replaceAll("'", "''")}' | Select-Object -ExpandProperty Status`], { env: signatureEnv }).trim()
   if (requireSignature && signature !== 'Valid') throw new Error(`Authenticode verification failed: ${signature}`)
 } else if (process.platform === 'darwin') {
   run('hdiutil', ['verify', artifacts.installers[0]])
