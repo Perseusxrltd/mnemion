@@ -106,7 +106,8 @@ class Adapter:
 
     def cleanup(self):
         if self.process.poll() is None:
-            self.send("cancel")
+            if not self.process.stdin.closed:
+                self.send("cancel")
             try:
                 self.finish()
             except subprocess.TimeoutExpired:
@@ -138,6 +139,17 @@ def execute(root: Path) -> dict:
         def do_GET(self):
             if len(requests) < 1000:
                 requests.append(self.path)
+            if self.path == "/interrupted.zip":
+                archive = public / "update.zip"
+                self.send_response(200)
+                self.send_header("Content-Type", "application/octet-stream")
+                self.send_header("Content-Length", str(archive.stat().st_size))
+                self.end_headers()
+                with archive.open("rb") as content:
+                    self.wfile.write(content.read(4096))
+                self.wfile.flush()
+                self.close_connection = True
+                return
             super().do_GET()
 
     server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
@@ -176,6 +188,48 @@ def execute(root: Path) -> dict:
         assert_unchanged(installed, host)
         if not any(path.startswith("/update.zip") for path in requests):
             raise AssertionError("The invalid archive was not downloaded")
+
+        write_feed(public / "feed.xml", origin + "/interrupted.zip", archive, signature)
+        interrupted = Adapter(installed, root / "bridge-interrupted.log")
+        adapters.append(interrupted)
+        interrupted.until("error")
+        interrupted.finish()
+        assert_unchanged(installed, host)
+        if "/interrupted.zip" not in requests:
+            raise AssertionError("The interrupted archive was not requested")
+
+        request_count = len(requests)
+        write_feed(
+            public / "feed.xml", origin + "/update.zip", archive, signature, length=1024**3 + 1
+        )
+        oversized = Adapter(installed, root / "bridge-oversized.log")
+        adapters.append(oversized)
+        oversized.until("error")
+        oversized.finish()
+        assert_unchanged(installed, host)
+        if any(path.startswith("/update.zip") for path in requests[request_count:]):
+            raise AssertionError("An oversized archive was downloaded")
+
+        request_count = len(requests)
+        write_feed(public / "feed.xml", origin + "/update.zip", archive, signature, version="3.9.9")
+        downgrade = Adapter(installed, root / "bridge-downgrade.log")
+        adapters.append(downgrade)
+        downgrade.until("current")
+        if downgrade.finish() != 0:
+            raise AssertionError("An older release did not leave the application current")
+        assert_unchanged(installed, host)
+        if any(path.startswith("/update.zip") for path in requests[request_count:]):
+            raise AssertionError("An older release archive was downloaded")
+
+        write_feed(public / "feed.xml", origin + "/update.zip", archive, signature)
+        disconnected = Adapter(installed, root / "bridge-disconnected.log")
+        adapters.append(disconnected)
+        disconnected.until("ready")
+        disconnected.process.stdin.close()
+        disconnected.until("cancelled")
+        if disconnected.finish() != 0:
+            raise AssertionError("Parent disconnection did not cancel cleanly")
+        assert_unchanged(installed, host)
 
         write_feed(public / "feed.xml", origin + "/update.zip", archive, signature)
         cancelled = Adapter(installed, root / "bridge-cancel.log")
@@ -226,6 +280,10 @@ def execute(root: Path) -> dict:
         run(["codesign", "--verify", "--deep", "--strict", installed])
         return {
             "invalid_archive_rejected": True,
+            "interrupted_download_preserved_running_app_and_recovered": True,
+            "oversized_archive_rejected_before_download": True,
+            "older_release_ignored_before_download": True,
+            "parent_disconnection_cancelled_staged_update": True,
             "ready_update_waited_for_parent_permission": True,
             "cancelled_update_did_not_install_on_exit": True,
             "explicit_install_replaced_and_relaunched": True,

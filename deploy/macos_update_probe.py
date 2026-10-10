@@ -198,7 +198,15 @@ def bundle(root: Path, name: str, version: str, identifier: str, public: str, fe
     return application
 
 
-def write_feed(path: Path, url: str, archive: Path, signature: str, version: str = "4.0.1") -> None:
+def write_feed(
+    path: Path,
+    url: str,
+    archive: Path,
+    signature: str,
+    version: str = "4.0.1",
+    *,
+    length: int | None = None,
+) -> None:
     ET.register_namespace("sparkle", SPARKLE_XML)
     rss = ET.Element("rss", {"version": "2.0"})
     channel = ET.SubElement(rss, "channel")
@@ -212,7 +220,7 @@ def write_feed(path: Path, url: str, archive: Path, signature: str, version: str
         "enclosure",
         {
             "url": url,
-            "length": str(archive.stat().st_size),
+            "length": str(archive.stat().st_size if length is None else length),
             "type": "application/octet-stream",
             f"{{{SPARKLE_XML}}}edSignature": signature,
         },
