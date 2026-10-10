@@ -405,6 +405,9 @@ def observe(args) -> dict:
     try:
         deadline = time.monotonic() + 1200
         while time.monotonic() < deadline:
+            # Reap our terminated original process on POSIX. An unreaped zombie
+            # still owns a PID and would falsely look like a running old app.
+            child.poll()
             for process in app_processes(executable, args.platform, started):
                 try:
                     package = asar_json(app_archive(process, args.platform))
@@ -431,6 +434,7 @@ def observe(args) -> dict:
                         and current == args.to_tag[1:]
                     ):
                         time.sleep(10)
+                        child.poll()
                         if not process.is_running() or psutil.pid_exists(original):
                             continue
                         if (profile / "public-upgrade-sentinel.bin").read_bytes() != sentinel or (
@@ -473,6 +477,7 @@ def observe(args) -> dict:
                             unmodified_packages=True,
                             real_system_idle=True,
                             elapsed_seconds=round(time.time() - started, 2),
+                            original_launcher_exit=child.poll(),
                             main_sandbox_disabled="--no-sandbox" in process.cmdline(),
                         )
                         return result
