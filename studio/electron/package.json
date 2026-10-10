@@ -3,8 +3,8 @@
   "version": "4.0.0",
   "description": "Mnemion Studio - shared app and team memory with Obsidian visualization",
   "author": {
-    "name": "PerseusXR",
-    "email": "contact@perseusxr.com",
+    "name": "PERSEUS LEGACY LIMITED",
+    "email": "Perseusxrltd@users.noreply.github.com",
     "url": "https://github.com/Perseusxrltd"
   },
   "main": "dist/main.js",
@@ -30,7 +30,7 @@
   "build": {
     "appId": "com.perseusxr.mnemion-studio",
     "productName": "Mnemion Studio",
-    "copyright": "Copyright 2026 PerseusXR",
+    "copyright": "Copyright 2026 PERSEUS LEGACY LIMITED",
     "compression": "store",
     "directories": {
       "output": "../../dist-electron"
@@ -63,6 +63,12 @@
       }
     ],
     "win": {
+      "signtoolOptions": {
+        "signingHashAlgorithms": [
+          "sha256"
+        ]
+      },
+      "verifyUpdateCodeSignature": true,
       "target": [
         "nsis"
       ],

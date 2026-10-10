@@ -6,6 +6,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: prepare-release-${{ github.repository }}
+  cancel-in-progress: false
+
 jobs:
   checks:
     uses: ./.github/workflows/ci.yml
@@ -38,9 +42,8 @@ jobs:
           path: release-artifacts
       - name: Verify version and complete update feeds
         run: python deploy/release.py --artifacts release-artifacts
-      - name: Create reviewable release draft
+      - name: Prepare or refresh the reviewable release draft
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          VERSION=$(python -c 'from mnemion.version import __version__; print(__version__)')
-          gh release create "v$VERSION" --target "$GITHUB_SHA" --draft --title "Mnemion $VERSION" --notes-file "docs/releases/$VERSION.md" release-artifacts/*
+          python deploy/draft_release.py --repo "$GITHUB_REPOSITORY" --commit "$GITHUB_SHA" --artifacts release-artifacts

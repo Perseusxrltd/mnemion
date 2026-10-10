@@ -54,6 +54,14 @@ release artifacts require the platform checks and publisher requirements below.
 Missing credentials or failed platform checks remain release blockers; the
 release notes must state the actual shipping status.
 
+Release operations have a no-spend constraint: do not buy certificates, enroll
+in paid programs or start trials that convert to paid subscriptions. Evaluate
+free open-source signing and sponsorship without claiming approval in advance.
+The standard Apple Developer ID program is paid; without an eligible free route,
+trusted macOS signing/notarization and its production automatic updates remain
+blocked. Keep source, web and local development paths documented. See the
+[code signing policy](CODE_SIGNING.md).
+
 ## Next patches: reliability and operational confidence
 
 Priority is defects found in installation, access control, recovery, migration,

@@ -44,6 +44,15 @@ for server updates. Browser clients receive the new service assets on reload.
 
 ## Publisher setup
 
+See the [code signing policy](../CODE_SIGNING.md) for current signing status and
+release roles. Only free services are authorized for project release operations;
+do not purchase enrollment or start a trial that converts to a paid subscription.
+The configuration below describes how existing valid credentials are consumed;
+it is not an instruction to purchase them. Free open-source signing is being
+evaluated and has not yet supplied a production certificate. Apple's standard
+Developer ID program is paid, so trusted macOS publication remains blocked
+without an eligible free route.
+
 The **Prepare signed release** workflow runs product checks and all six native
 builds, verifies signatures and payloads, and creates a draft containing installers,
 architecture-specific update feeds, Python/TypeScript packages and SHA-256 checksums.
@@ -67,3 +76,18 @@ Certificates must be valid publisher credentials; self-signed or ad-hoc certific
 do not substitute for trusted Windows signing or Apple's Developer ID/notarization.
 Never add a certificate, private key, password or signing export to Git. Unsigned
 CI artifacts are labeled **validation-only** and are not public update releases.
+
+## Removal
+
+Disable **Start at login** and **Keep running in background**, then quit Studio
+before removing it. On Windows, use **Settings → Apps → Installed apps → Mnemion
+Studio → Uninstall**. On macOS, remove Mnemion Studio from Applications and check
+**System Settings → General → Login Items**. On Linux, remove the AppImage or
+uninstall the DEB with your package manager. If the Linux application was removed
+before disabling startup, remove its `com.perseusxr.mnemion-studio.desktop` entry
+from the user’s XDG `autostart` directory.
+
+Uninstalling the desktop does not delete organization memories, service backups
+or exported Obsidian vaults. Revoke the device's credentials through the workspace
+administrator. Remove local preferences and exports separately when intended;
+see the [privacy policy](privacy.md).

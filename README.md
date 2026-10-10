@@ -148,3 +148,10 @@ The offline library ships the same Markdown as this repository. See the
 [product roadmap](docs/ROADMAP.md), [release notes](docs/releases/4.0.0.md), and
 [documentation maintenance policy](docs/MAINTENANCE.md). Every release and hotfix
 must include matching release notes and a reviewed roadmap.
+
+## Code signing policy
+
+See the [code signing policy](docs/CODE_SIGNING.md) for signing status, release
+roles and verification requirements, and the [privacy policy](docs/service/privacy.md)
+for network connections, storage and user controls. Native validation builds are
+not trusted, signed production releases. Free open-source signing is under review.

@@ -348,6 +348,14 @@ function Connect({
             clears it.
           </small>
           <Link className="ws-link" to="/help">Setup guides, documentation & roadmap</Link>
+          <Link className="ws-link" to="/help?doc=docs%2Fservice%2Fprivacy.md">Privacy & data handling</Link>
+          {window.mnemion?.platform && (
+            <small>
+              Desktop installations enable background mode, login startup and
+              supported automatic updates by default. Change these settings in
+              the application’s <strong>Background and updates</strong> menu.
+            </small>
+          )}
         </form>
         {import.meta.env.DEV && (
           <Link className="ws-link ws-legacy-link" to="/dashboard">

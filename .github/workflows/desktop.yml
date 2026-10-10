@@ -85,9 +85,11 @@ jobs:
         if: runner.os == 'Linux'
         run: xvfb-run -a npm --prefix studio/electron run smoke:packaged
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        # Validation keeps its evidence in job logs, not large installer uploads.
+        if: inputs.release
         with:
-          name: ${{ inputs.release && 'release' || 'validation-only' }}-${{ matrix.os }}-${{ matrix.arch }}
-          retention-days: 7
+          name: release-${{ matrix.os }}-${{ matrix.arch }}
+          retention-days: 1
           if-no-files-found: error
           path: |
             dist-electron/latest-*.yml

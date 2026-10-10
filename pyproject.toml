@@ -6,7 +6,10 @@ readme = "README.md"
 requires-python = ">=3.12,<3.15"
 license = "MIT"
 authors = [
-    {name = "PerseusXR", email = "contact@perseusxr.com"},
+    {name = "PerseusXR"},
+]
+maintainers = [
+    {name = "PERSEUS LEGACY LIMITED"},
 ]
 keywords = [
     "ai", "memory", "llm", "rag", "chromadb", "mcp",

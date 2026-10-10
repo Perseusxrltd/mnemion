@@ -32,6 +32,24 @@ prose accurately describes behavior. The person or agent making a change owns th
 corresponding documentation review. This workflow does not imply a permanently
 running maintainer or promise fixes without an active maintenance session.
 
+## Release service costs
+
+Project release work is restricted to free services. Do not enter payment details,
+purchase certificates or enroll in paid programs. Avoid trials that automatically
+convert to paid plans; if a trial is encountered, cancel it before any charge and
+retain confirmation privately. Do not change unrelated user subscriptions.
+Provider account details, private keys and enrollment evidence stay outside Git.
+This restriction does not promise that an organization's chosen hosting, storage
+or optional model providers are free; administrators control their own services.
+
+Routine native validation runs on standard public-repository runners and keeps
+results in job logs; it does not upload installer artifacts. Release-only artifact
+transfers expire after one day. Before enabling a signed release, verify that its
+temporary storage fits the account's remaining free allowance and delete staging
+artifacts after assembly. A successful public build does not establish the billing
+status of unrelated account usage. Never enable larger paid runners or raise a
+storage/billing limit to make a check pass.
+
 ## Documentation map
 
 - [Quick start and API](service/README.md): install, initialize, connect and use.
@@ -43,6 +61,8 @@ running maintainer or promise fixes without an active maintenance session.
 - [Insights/evaluations](service/insights.md): monitoring, metrics and experiments.
 - [Migration](service/migration.md) and [recovery](service/recovery.md): continuity.
 - [Updates](service/updates.md) and [Studio](../studio/README.md): desktop lifecycle.
+- [Code signing](CODE_SIGNING.md) and [privacy](service/privacy.md): distribution
+  trust, release responsibilities and data handling.
 - [Roadmap](ROADMAP.md): delivered work, priorities and acceptance criteria.
 - `docs/releases/`: immutable per-version release notes.
 - `docs/validation/`: dated evidence and its limitations.
