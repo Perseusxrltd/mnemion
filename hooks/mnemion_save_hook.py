@@ -1,18 +1,21 @@
 #!/usr/bin/env python3
 """
 Mnemion Auto-Save Hook — fires every N exchanges.
-Extracts memories from the transcript WITHOUT AI cooperation,
-saves them directly to ChromaDB, then triggers a git sync.
-
-No blocking. No AI interruption. Fully automatic.
+Set MNEMION_CONNECTOR_CONFIG to use the shared-service capture hook.
+Without it, the original private-profile extraction remains available.
+Shared sources and their audience are explicitly configured; no Git union sync runs.
 """
 
 import sys
 import json
 import os
 import datetime
-import subprocess
 import hashlib
+
+if os.environ.get("MNEMION_CONNECTOR_CONFIG"):
+    from mnemion.capture.shared import main as shared_capture
+
+    sys.exit(shared_capture([]))
 
 # ── Config ────────────────────────────────────────────────────────────────────
 SAVE_INTERVAL = 3  # exchanges between auto-saves (was 15)
@@ -122,13 +125,19 @@ def save_to_anaktoron(memories, session_id):
         if MNEMION_SRC not in sys.path:
             sys.path.insert(0, MNEMION_SRC)
         from mnemion.config import MnemionConfig
+        from pathlib import Path
         from mnemion.backends.registry import get_backend
+        from mnemion.ingestion import LegacyMemoryWriter
 
         config = MnemionConfig()
         collection = get_backend(anaktoron_path=config.anaktoron_path).get_collection(
             config.collection_name,
             create=True,
         )
+        writer = LegacyMemoryWriter(
+            collection, Path(config.anaktoron_path).parent / "knowledge_graph.sqlite3"
+        )
+        writer.recover()
 
         saved = 0
         for mem in memories:
@@ -139,23 +148,19 @@ def save_to_anaktoron(memories, session_id):
             doc_id = "auto_" + hashlib.sha1(content.encode()).hexdigest()[:16]
 
             existing = collection.get(ids=[doc_id])
-            if existing["ids"]:
-                continue  # already stored
-
-            collection.add(
-                ids=[doc_id],
-                documents=[content],
-                metadatas=[
-                    {
-                        "wing": "sessions",
-                        "room": mem_type,  # decision / preference / milestone / problem / emotional
-                        "source": f"hook:{session_id[:12]}",
-                        "added_by": "auto_hook",
-                        "timestamp": datetime.datetime.now().isoformat(),
-                    }
-                ],
+            writer.save(
+                doc_id,
+                content,
+                {
+                    "wing": "sessions",
+                    "room": mem_type,  # decision / preference / milestone / problem / emotional
+                    "source": f"hook:{session_id[:12]}",
+                    "added_by": "auto_hook",
+                    "timestamp": datetime.datetime.now().isoformat(),
+                },
             )
-            saved += 1
+            if not existing["ids"]:
+                saved += 1
 
         return saved
     except Exception as e:
@@ -167,17 +172,8 @@ def save_to_anaktoron(memories, session_id):
 
 
 def trigger_git_sync():
-    """Fire the sync script in the background — non-blocking."""
-    try:
-        flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
-        subprocess.Popen(
-            ["powershell", "-NonInteractive", "-WindowStyle", "Hidden", "-File", SYNC_SCRIPT],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            creationflags=flags,
-        )
-    except Exception as e:
-        log(f"Git sync trigger error: {e}")
+    """Historical hook compatibility; shared writes now use the service."""
+    log("Git union sync is retired; configure a shared connector for cross-device capture")
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -194,7 +190,9 @@ if stop_hook_active:
 # ── Throttle: only run every SAVE_INTERVAL exchanges ─────────────────────────
 exchange_count = count_user_exchanges(transcript_path)
 
-last_save_file = os.path.join(STATE_DIR, f"{session_id}_last_save")
+last_save_file = os.path.join(
+    STATE_DIR, hashlib.sha256(str(session_id).encode()).hexdigest() + "_last_save"
+)
 last_save = 0
 if os.path.exists(last_save_file):
     try:

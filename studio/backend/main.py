@@ -10,29 +10,22 @@ Usage:
     uvicorn studio.backend.main:app --reload --port 7891
 """
 
-import io
 import json
 import logging
 import os
 import sqlite3
-import sys
 from secrets import compare_digest
 from pathlib import Path
 from typing import Optional
-
-# Suppress chromadb/posthog stdout noise before importing
-_saved_stdout = sys.stdout
-sys.stdout = io.StringIO()
-import chromadb  # noqa: E402
-
-sys.stdout = _saved_stdout
 
 from fastapi import FastAPI, HTTPException, Query, Request  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 from fastapi.responses import JSONResponse  # noqa: E402
 from pydantic import BaseModel  # noqa: E402
 
-from mnemion.config import DRAWER_HNSW_METADATA, MnemionConfig  # noqa: E402
+from mnemion.backends.base import BaseBackend, BaseCollection  # noqa: E402
+from mnemion.backends.registry import get_backend  # noqa: E402
+from mnemion.config import MnemionConfig  # noqa: E402
 from mnemion.hybrid_searcher import HybridSearcher  # noqa: E402
 from mnemion.knowledge_graph import KnowledgeGraph  # noqa: E402
 from mnemion.obsidian import (  # noqa: E402
@@ -49,7 +42,7 @@ from mnemion.version import __version__  # noqa: E402
 from mnemion.wiki.compiler import WikiCompiler  # noqa: E402
 from mnemion.wiki.context_pack import build_context_pack as build_wiki_context_pack  # noqa: E402
 from mnemion.wiki.linter import WikiLinter  # noqa: E402
-from . import connectors as _connectors  # noqa: E402
+from studio.backend import connectors as _connectors  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s  %(name)s  %(message)s")
 logger = logging.getLogger("studio")
@@ -60,7 +53,7 @@ app = FastAPI(title="Mnemion Studio", version=__version__, docs_url="/api/docs")
 
 ALLOWED_CORS_ORIGIN_REGEX = r"^(http://(localhost|127\.0\.0\.1):(517[3-9]|7891)|file://.*|null)$"
 STUDIO_TOKEN_HEADER = "x-mnemion-studio-token"
-MUTATING_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+PUBLIC_API_PATHS = {"/api/docs", "/api/openapi.json", "/api/redoc"}
 
 app.add_middleware(
     CORSMiddleware,
@@ -72,12 +65,13 @@ app.add_middleware(
 
 
 @app.middleware("http")
-async def require_studio_token_for_mutations(request: Request, call_next):
+async def require_studio_token(request: Request, call_next):
     expected_token = os.environ.get("MNEMION_STUDIO_TOKEN", "")
     if (
         expected_token
         and request.url.path.startswith("/api/")
-        and request.method in MUTATING_METHODS
+        and request.method != "OPTIONS"
+        and request.url.path not in PUBLIC_API_PATHS
     ):
         supplied_token = request.headers.get(STUDIO_TOKEN_HEADER, "")
         if not compare_digest(supplied_token, expected_token):
@@ -88,25 +82,33 @@ async def require_studio_token_for_mutations(request: Request, call_next):
 # ── Mnemion singletons ────────────────────────────────────────────────────────
 
 _config = MnemionConfig()
-_kg = KnowledgeGraph()
-_hybrid = HybridSearcher()
-_trust = DrawerTrust()
-
-_chroma_client: Optional[chromadb.PersistentClient] = None
-_collection: Optional[chromadb.Collection] = None
 
 
-def _get_collection() -> chromadb.Collection:
-    global _chroma_client, _collection
-    if _chroma_client is None:
-        _chroma_client = chromadb.PersistentClient(path=_config.anaktoron_path)
+def _knowledge_graph_path() -> Path:
+    path = Path(_config.anaktoron_path).expanduser().parent / "knowledge_graph.sqlite3"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+_kg = KnowledgeGraph(str(_knowledge_graph_path()))
+_hybrid = HybridSearcher(
+    anaktoron_path=_config.anaktoron_path, kg_path=str(_knowledge_graph_path())
+)
+_trust = DrawerTrust(db_path=str(_knowledge_graph_path()))
+
+_backend: Optional[BaseBackend] = None
+_collection: Optional[BaseCollection] = None
+
+
+def _get_collection() -> BaseCollection:
+    global _backend, _collection
+    if _backend is None:
+        _backend = get_backend(anaktoron_path=_config.anaktoron_path)
     if _collection is None:
         try:
-            _collection = _chroma_client.get_collection(_config.collection_name)
+            _collection = _backend.get_collection(_config.collection_name)
         except Exception:
-            _collection = _chroma_client.get_or_create_collection(
-                _config.collection_name, metadata=DRAWER_HNSW_METADATA
-            )
+            _collection = _backend.get_collection(_config.collection_name, create=True)
     return _collection
 
 
@@ -115,7 +117,7 @@ def _obsidian_vault_path() -> Path:
 
 
 def _obsidian_kg_path() -> Path:
-    return Path(_config.anaktoron_path).expanduser().parent / "knowledge_graph.sqlite3"
+    return _knowledge_graph_path()
 
 
 def _iter_metadatas(col, where=None, limit=None):
@@ -155,7 +157,7 @@ class LLMConfig(BaseModel):
     backend: str
     url: str = ""
     model: str = ""
-    api_key: str = ""
+    api_key: Optional[str] = None
 
 
 class SourceCreate(BaseModel):
@@ -267,6 +269,10 @@ def list_drawers(
 @app.get("/api/drawer/{drawer_id:path}")
 def get_drawer(drawer_id: str):
     col = _get_collection()
+    from mnemion.ingestion import LegacyMemoryWriter
+
+    if LegacyMemoryWriter(col, _hybrid.kg_path).is_deleted(drawer_id):
+        raise HTTPException(404, "Drawer not found")
     result = col.get(ids=[drawer_id], include=["documents", "metadatas"])
     if not result.get("ids"):
         raise HTTPException(404, "Drawer not found")
@@ -308,23 +314,18 @@ def get_drawer(drawer_id: str):
 
 @app.delete("/api/drawer/{drawer_id:path}")
 def delete_drawer(drawer_id: str):
+    from mnemion.ingestion import LegacyMemoryWriter
+
     col = _get_collection()
-    if not col.get(ids=[drawer_id]).get("ids"):
+    writer = LegacyMemoryWriter(col, _hybrid.kg_path)
+    if not col.get(ids=[drawer_id]).get("ids") and not writer.is_deleted(drawer_id):
         raise HTTPException(404, "Drawer not found")
-    col.delete(ids=[drawer_id])
     try:
-        conn = sqlite3.connect(_hybrid.kg_path)
-        conn.execute("DELETE FROM drawers_fts WHERE drawer_id = ?", (drawer_id,))
-        conn.commit()
-        conn.close()
-    except Exception:
-        pass
-    trust_rec = _trust.get(drawer_id)
-    if trust_rec:
-        _trust.update_status(
-            drawer_id, "historical", reason="deleted via Studio", changed_by="studio"
-        )
-    return {"success": True, "drawer_id": drawer_id}
+        receipt = writer.delete(drawer_id)
+    except Exception as exc:
+        logger.error("Drawer deletion requires recovery (%s)", type(exc).__name__)
+        raise HTTPException(503, "Deletion recorded; retry to complete projection cleanup") from exc
+    return {"success": True, **receipt}
 
 
 @app.post("/api/drawer")
@@ -538,20 +539,34 @@ def get_config():
     return {
         "anaktoron_path": _config.anaktoron_path,
         "collection_name": _config.collection_name,
-        "llm": _config.llm,
+        "llm": _public_llm_config(),
         "topic_wings": _config.topic_wings,
     }
 
 
 @app.put("/api/config/llm")
 def update_llm_config(body: LLMConfig):
+    previous = _config.llm
+    key = body.api_key
+    if key is None:
+        same_endpoint = body.backend == previous.get("backend") and body.url == previous.get(
+            "url", ""
+        )
+        key = previous.get("api_key", "") if same_endpoint else ""
     _config.save_llm_config(
         backend=body.backend,
         url=body.url,
         model=body.model,
-        api_key=body.api_key,
+        api_key=key,
     )
-    return {"success": True, "llm": _config.llm}
+    return {"success": True, "llm": _public_llm_config()}
+
+
+def _public_llm_config():
+    settings = dict(_config.llm)
+    key = settings.pop("api_key", "")
+    settings["api_key_configured"] = bool(key)
+    return settings
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -645,7 +660,7 @@ def get_all_core_memories():
         ]
     except Exception as e:
         logger.error(f"Failed to list core memories: {e}")
-        return []
+        raise HTTPException(500, "Core memory store unavailable") from e
 
 
 @app.get("/api/core-memory/{key}")
@@ -870,4 +885,7 @@ def export_vault(wing: Optional[str] = Query(None)):
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("studio.backend.main:app", host="127.0.0.1", port=7891, reload=True)
+    port = int(os.environ.get("MNEMION_STUDIO_PORT", "7891"))
+    reload = os.environ.get("MNEMION_STUDIO_RELOAD", "") == "1"
+    target = "studio.backend.main:app" if reload else app
+    uvicorn.run(target, host="127.0.0.1", port=port, reload=reload)

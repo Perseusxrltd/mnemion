@@ -192,7 +192,7 @@ class HybridSearcher:
         if room:
             sql += " AND room = ?"
             params.append(room)
-        sql += " LIMIT ?"
+        sql += " ORDER BY bm25(drawers_fts), drawer_id LIMIT ?"
         params.append(limit)
         results: List[str] = []
         try:
@@ -273,21 +273,35 @@ class HybridSearcher:
         """Fetch trust records for a batch of drawer_ids. Returns {drawer_id: {status, confidence}}."""
         if not drawer_ids:
             return {}
+        placeholders = ",".join("?" * len(drawer_ids))
+        conn = sqlite3.connect(self.kg_path, timeout=10)
         try:
-            placeholders = ",".join("?" * len(drawer_ids))
-            conn = sqlite3.connect(self.kg_path, timeout=10)
             conn.row_factory = sqlite3.Row
+            if not conn.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='drawer_trust'"
+            ).fetchone():
+                return {}  # Pre-trust v3 profiles have no lifecycle records yet.
             rows = conn.execute(
                 f"SELECT drawer_id, status, confidence FROM drawer_trust WHERE drawer_id IN ({placeholders})",
                 drawer_ids,
             ).fetchall()
-            conn.close()
-            return {
+            result = {
                 r["drawer_id"]: {"status": r["status"], "confidence": r["confidence"]} for r in rows
             }
-        except Exception as e:
-            logger.warning(f"Trust map fetch failed: {e}")
-            return {}
+            if conn.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='drawer_deletions'"
+            ).fetchone():
+                deleted = conn.execute(
+                    f"SELECT drawer_id FROM drawer_deletions WHERE drawer_id IN ({placeholders})",
+                    drawer_ids,
+                ).fetchall()
+                for row in deleted:
+                    result[row["drawer_id"]] = {"status": "quarantined", "confidence": 0.0}
+            return result
+        finally:
+            # A corrupt/unavailable existing trust store is an error, never an
+            # implicit grant to return everything with default confidence.
+            conn.close()
 
     def search(
         self,
@@ -303,8 +317,17 @@ class HybridSearcher:
         Superseded and historical drawers are filtered out by default.
         Contested drawers are included but flagged with a warning marker.
         """
-        if self.collection is None:
+        if n_results <= 0:
             return []
+        if not 0.0 <= min_similarity <= 1.0:
+            raise ValueError("min_similarity must be between 0 and 1")
+        if self.collection is None:
+            # A long-lived server may start before its first memory is saved.
+            # Reacquire a missing handle instead of caching an empty store forever.
+            try:
+                self.collection = self.backend.get_collection(self.collection_name)
+            except Exception:
+                return []
 
         # -- ACTIVE FIX: Temporal Knowledge Graph Injection --
         kg_hits = []
@@ -317,11 +340,30 @@ class HybridSearcher:
             tokens = re.findall(r"\b[A-Z][a-z]+\b", query)
             distinct_entities = set(t for t in tokens if len(t) > 2)
 
-            for ent in distinct_entities:
+            seen_facts = set()
+            for ent in sorted(distinct_entities):
                 triples = kg.query_entity(ent, direction="both")
 
                 # Format valid triples into synthetic RAG hits
                 for t in triples:
+                    source_id = t.get("source_closet")
+                    if not source_id or not t.get("current", False):
+                        continue
+                    source_trust = self._get_trust_map([source_id]).get(source_id)
+                    if not source_trust or source_trust["status"] in _HIDDEN_STATUSES:
+                        continue
+                    source = self.collection.get(ids=[source_id], include=["metadatas"])
+                    if not source.get("ids"):
+                        continue
+                    source_meta = source["metadatas"][0] or {}
+                    if wing and source_meta.get("wing") != wing:
+                        continue
+                    if room and source_meta.get("room") != room:
+                        continue
+                    fact_key = (t["subject"], t["predicate"], t["object"], source_id)
+                    if fact_key in seen_facts:
+                        continue
+                    seen_facts.add(fact_key)
                     if t.get("current", False):
                         fact_str = f"[TEMPORAL GRAPH DATA]: {t['subject']} {t['predicate'].replace('_', ' ')} {t['object']}."
                         if t.get("valid_from"):
@@ -331,24 +373,31 @@ class HybridSearcher:
                             {
                                 "id": f"kg_{hashlib.md5(fact_str.encode()).hexdigest()[:16]}",
                                 "text": fact_str,
-                                "wing": "temporal_graph",
-                                "room": "fact",
+                                "wing": source_meta.get("wing", "unknown"),
+                                "room": source_meta.get("room", "unknown"),
                                 "source": "knowledge_graph.sqlite3",
-                                "score": 1.0,  # Max score for strict graph facts
-                                "trust_status": "current",
-                                "confidence": t.get("confidence", 1.0),
+                                "source_drawer_id": source_id,
+                                "kind": "graph_fact",
+                                "score": min(t.get("confidence", 1.0), source_trust["confidence"])
+                                / (self.k + 1),
+                                "trust_status": source_trust["status"],
+                                "confidence": min(
+                                    t.get("confidence", 1.0), source_trust["confidence"]
+                                ),
                                 "embedding": None,
                             }
                         )
         except Exception as e:
             logger.debug(f"KG Injection failed non-fatally: {e}")
 
-        kg_hits = kg_hits[:3]  # Cap to top 3 pristine facts
+        kg_hits = sorted(kg_hits, key=lambda hit: (-hit["score"], hit["id"]))[:3]
 
         # 1. Gather candidates from both engines (fetch more to allow for trust filtering)
         fetch_limit = max(50, n_results * 10)
         vector_ids = self._vector_search(query, wing, room, limit=fetch_limit)
         lexical_ids = self._fts_search(query, wing, room, limit=fetch_limit)
+        active_channels = max(1, bool(vector_ids) + bool(lexical_ids))
+        maximum_score = active_channels / (self.k + 1)
 
         # 2. Reciprocal Rank Fusion (RRF)
         fused_scores = defaultdict(float)
@@ -359,8 +408,6 @@ class HybridSearcher:
 
         # 3. Rank by fused score
         ranked = sorted(fused_scores.items(), key=lambda x: x[1], reverse=True)
-        if not ranked:
-            return []
 
         all_ids = [doc_id for doc_id, _ in ranked]
 
@@ -371,7 +418,9 @@ class HybridSearcher:
             trust = trust_map.get(doc_id)
             if trust:
                 status = trust["status"]
-                if not include_superseded and status in _HIDDEN_STATUSES:
+                if status == "quarantined" or (
+                    not include_superseded and status in _HIDDEN_STATUSES
+                ):
                     continue
                 # Weight score by confidence
                 confidence = trust.get("confidence", 1.0)
@@ -380,13 +429,19 @@ class HybridSearcher:
                 # No trust record yet (pre-backfill) — treat as current
                 filtered.append((doc_id, score, "current", 1.0))
 
-        top_entries = filtered[:n_results]
-        if not top_entries:
-            return []
+        filtered.sort(key=lambda item: (-item[1], item[0]))
+        # The legacy argument is a normalized relevance threshold, never raw RRF.
+        top_entries = [item for item in filtered if item[1] / maximum_score >= min_similarity][
+            :n_results
+        ]
 
         # 5. Hydrate from the verbatim document store
         final_ids = [item[0] for item in top_entries]
-        data = self.collection.get(ids=final_ids, include=["documents", "metadatas"])
+        data = (
+            self.collection.get(ids=final_ids, include=["documents", "metadatas"])
+            if final_ids
+            else {"ids": [], "documents": [], "metadatas": []}
+        )
         embeddings = [None] * len(data["ids"])
         doc_map = {
             idx: (doc, meta, emb)
@@ -397,8 +452,6 @@ class HybridSearcher:
 
         hits = []
         for doc_id, score, status, confidence in top_entries:
-            if min_similarity > 0.0 and score < min_similarity:
-                continue
             if doc_id in doc_map:
                 doc, meta, emb = doc_map[doc_id]
                 hit = {
@@ -416,4 +469,5 @@ class HybridSearcher:
                     hit["warning"] = "⚠ This memory is contested — accuracy uncertain"
                 hits.append(hit)
 
-        return kg_hits + hits
+        graph_hits = [hit for hit in kg_hits if hit["score"] / maximum_score >= min_similarity]
+        return sorted(graph_hits + hits, key=lambda hit: (-hit["score"], hit["id"]))[:n_results]

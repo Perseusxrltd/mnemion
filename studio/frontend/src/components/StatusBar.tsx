@@ -2,11 +2,11 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 
 export default function StatusBar() {
-  const { data: status, isFetching } = useQuery({
+  const { data: status, isFetching, isError } = useQuery({
     queryKey: ['status'],
     queryFn: api.status,
     staleTime: 30_000,
-    refetchInterval: 60_000,
+    refetchInterval: 5_000,
   })
 
   return (
@@ -17,19 +17,19 @@ export default function StatusBar() {
           <span
             className="w-1.5 h-1.5 rounded-full"
             style={{
-              background: status ? '#30d158' : '#666',
-              boxShadow: status ? '0 0 5px #30d158' : 'none',
+              background: status ? '#30d158' : isError ? '#ef4444' : '#666',
+              boxShadow: status ? '0 0 5px #30d158' : isError ? '0 0 5px #ef4444' : 'none',
             }}
           />
-          {isFetching ? 'Syncing…' : status ? 'Connected' : 'Offline'}
+          {isFetching ? 'Checking...' : status ? 'Connected' : isError ? 'Memory service offline' : 'Starting...'}
         </span>
 
         {status && (
           <>
-            <span style={{ color: 'var(--text-faint)' }}>·</span>
-            <span>{status.total_drawers.toLocaleString()} drawers</span>
-            <span style={{ color: 'var(--text-faint)' }}>·</span>
-            <span>{status.wing_count} wings</span>
+            <span style={{ color: 'var(--text-faint)' }}>-</span>
+            <span>{status.total_drawers.toLocaleString()} memories</span>
+            <span style={{ color: 'var(--text-faint)' }}>-</span>
+            <span>{status.wing_count} areas</span>
           </>
         )}
       </div>

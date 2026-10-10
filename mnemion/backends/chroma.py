@@ -19,6 +19,7 @@ from ..chroma_compat import (
 )
 from ..config import DRAWER_HNSW_METADATA
 from ..embedding import get_embedding_function
+from ..legacy_freeze import require_writable
 from .base import BaseBackend, BaseCollection, GetResult, QueryResult, UnsupportedFilterError
 
 DEFAULT_HNSW_METADATA = dict(DRAWER_HNSW_METADATA)
@@ -405,22 +406,31 @@ def cached_client(path: str):
 
 
 class ChromaCollection(BaseCollection):
-    def __init__(self, raw_collection):
+    def __init__(self, raw_collection, anaktoron_path=None):
         self.raw_collection = raw_collection
+        self.anaktoron_path = anaktoron_path
+
+    def _writable(self):
+        if self.anaktoron_path:
+            require_writable(self.anaktoron_path)
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self.raw_collection, name)
 
     def add(self, **kwargs):
+        self._writable()
         return self.raw_collection.add(**kwargs)
 
     def upsert(self, **kwargs):
+        self._writable()
         return self.raw_collection.upsert(**kwargs)
 
     def update(self, **kwargs):
+        self._writable()
         return self.raw_collection.update(**kwargs)
 
     def delete(self, **kwargs):
+        self._writable()
         return self.raw_collection.delete(**kwargs)
 
     def count(self) -> int:
@@ -449,6 +459,7 @@ class ChromaBackend(BaseBackend):
 
     def __init__(self, anaktoron_path: str, embedding_device: str | None = None):
         self.anaktoron_path = str(Path(anaktoron_path).expanduser().resolve())
+        require_writable(self.anaktoron_path)
         self.embedding_device = embedding_device
         self.client = cached_client(self.anaktoron_path)
         self.embedding_function = get_embedding_function(embedding_device)
@@ -464,22 +475,30 @@ class ChromaBackend(BaseBackend):
         return kwargs
 
     def get_collection(self, name: str, create: bool = False) -> ChromaCollection:
+        require_writable(self.anaktoron_path)
         if create:
-            raw = self.client.get_or_create_collection(
-                name,
-                **self._collection_kwargs(DEFAULT_HNSW_METADATA),
-            )
+            try:
+                raw = self.client.get_or_create_collection(
+                    name,
+                    **self._collection_kwargs(DEFAULT_HNSW_METADATA),
+                )
+            except chromadb.errors.UniqueConstraintError:
+                # Another process may create the same named collection between
+                # Chroma's existence check and insertion.
+                raw = self.client.get_collection(name, **self._collection_kwargs())
         else:
             raw = self.client.get_collection(name, **self._collection_kwargs())
         _pin_hnsw_threads(raw)
-        return ChromaCollection(raw)
+        return ChromaCollection(raw, self.anaktoron_path)
 
     def create_collection(self, name: str, metadata: dict | None = None) -> ChromaCollection:
+        require_writable(self.anaktoron_path)
         raw = self.client.create_collection(name, **self._collection_kwargs(metadata))
         _pin_hnsw_threads(raw)
-        return ChromaCollection(raw)
+        return ChromaCollection(raw, self.anaktoron_path)
 
     def delete_collection(self, name: str):
+        require_writable(self.anaktoron_path)
         return self.client.delete_collection(name)
 
     def close(self) -> None:

@@ -42,7 +42,8 @@ export default function SearchView() {
   const [history, setHistory] = useState<string[]>(() => {
     try { return JSON.parse(localStorage.getItem('mnemion_search_history') ?? '[]') } catch { return [] }
   })
-  const timerRef = useRef<ReturnType<typeof setTimeout>>()
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const searchSeqRef = useRef(0)
 
   useEffect(() => {
     const initial = params.get('q')
@@ -50,6 +51,7 @@ export default function SearchView() {
   }, [])
 
   async function doSearch(query: string) {
+    const seq = ++searchSeqRef.current
     const { q: parsedQ, parsedWing, parsedRoom } = parseQuery(query)
     const effectiveWing = parsedWing || wingFilter
     // Auto-surface the parsed wing filter in the UI
@@ -64,15 +66,17 @@ export default function SearchView() {
         room: parsedRoom || undefined,
         limit: 30,
       })
+      if (seq !== searchSeqRef.current) return
       setResults(res.results)
       const updated = [query, ...history.filter(h => h !== query)].slice(0, 10)
       setHistory(updated)
       localStorage.setItem('mnemion_search_history', JSON.stringify(updated))
       setParams({ q: query }, { replace: true })
     } catch (e: any) {
+      if (seq !== searchSeqRef.current) return
       setError(e.message ?? 'Search failed')
     } finally {
-      setLoading(false)
+      if (seq === searchSeqRef.current) setLoading(false)
     }
   }
 
@@ -102,7 +106,7 @@ export default function SearchView() {
               value={q}
               onChange={e => onChange(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && doSearch(q)}
-              placeholder="Search across all drawers…"
+              placeholder="Search across all memories..."
               className="w-full rounded-lg py-2.5 pl-9 pr-10 text-sm outline-none transition-colors"
               style={{
                 background: 'var(--background-modifier-form-field)',
@@ -142,7 +146,7 @@ export default function SearchView() {
             <input
               value={wingFilter}
               onChange={e => setWingFilter(e.target.value)}
-              placeholder="Filter by wing (e.g. legal)"
+              placeholder="Filter by area (e.g. legal)"
               className="px-3 py-1.5 rounded-lg text-xs outline-none transition-colors"
               style={{
                 background: 'var(--background-modifier-form-field)',
@@ -169,7 +173,7 @@ export default function SearchView() {
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {/* No query — show history */}
+        {/* No query; show history */}
         {!q && history.length > 0 && (
           <div className="px-6 py-4">
             <div className="flex items-center justify-between mb-3">
@@ -190,7 +194,7 @@ export default function SearchView() {
 
         {/* Loading */}
         {loading && (
-          <div className="flex items-center justify-center py-12 text-sm text-muted">Searching…</div>
+          <div className="flex items-center justify-center py-12 text-sm text-muted">Searching...</div>
         )}
 
         {/* Error */}
@@ -252,7 +256,7 @@ export default function SearchView() {
           <div className="flex flex-col items-center justify-center py-16 gap-3">
             <Search size={28} style={{ color: 'var(--text-faint)' }} />
             <div className="text-sm" style={{ color: 'var(--text-muted)' }}>No results for "{q}"</div>
-            <div className="text-xs" style={{ color: 'var(--text-faint)' }}>Try a different query or clear wing filters</div>
+            <div className="text-xs" style={{ color: 'var(--text-faint)' }}>Try a different query or clear area filters</div>
           </div>
         )}
 
@@ -260,9 +264,9 @@ export default function SearchView() {
         {!q && history.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
             <Search size={28} style={{ color: 'var(--text-faint)' }} />
-            <div className="text-sm" style={{ color: 'var(--text-muted)' }}>Search across all drawers</div>
+            <div className="text-sm" style={{ color: 'var(--text-muted)' }}>Search across all memories</div>
             <div className="text-xs" style={{ color: 'var(--text-faint)' }}>
-              Hybrid semantic + keyword — try a concept, phrase, or topic
+              Hybrid semantic + keyword; try a concept, phrase, or topic
             </div>
           </div>
         )}

@@ -1,0 +1,22 @@
+title = "Mnemion secret scan"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Reviewed public evidence/model SHA-256 digests and a documented request idempotency key; these confer no access."
+regexTarget = "secret"
+regexes = [
+  '''^224d882476a0a1847275c9152a4152ed5abe79468dffcde146e485cccc91b1ee$''',
+  '''^0b0044b47eedf19b7f47339c6748131a744800df8f5b4873c0fcbf89728dba39$''',
+  '''^d648d19ee54a17647cee83a81f06d7f6ad2d117b1802b80ac353f2588facf087$''',
+  '''^0b44a9d7b51c3c62626640cda0e2c2f70fdacdc25bbbd68038369d14ebdf4c39$''',
+  '''^billing-policy-2026-10-09$''',
+]
+
+[[allowlists]]
+description = "Reviewed bounded JSON reader call: the matched text is an integer byte limit, not a credential."
+regexTarget = "line"
+regexes = [
+  '''^\s*_read_json\(selected\.credentials, max_bytes=16 \* 1024 \* 1024\),\s*$''',
+]

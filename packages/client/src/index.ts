@@ -1,0 +1,226 @@
+import type { Insights, RuntimeInsights, MetricOrigin, EvaluationDataset, EvaluationDatasetInput,
+  EvaluationInput, EvaluationRun, EvaluationResultPage, EvaluationResult, AssessmentInput, EvaluationComparison } from './insights.js'
+export * from './insights.js'
+
+export type Json = null | boolean | number | string | Json[] | { [key: string]: Json }
+export type Kind = 'fact' | 'event' | 'preference' | 'procedure' | 'note'
+export type ClaimStatus = 'observed' | 'verified' | 'contested' | 'superseded' | 'retracted'
+export type Role = 'reader' | 'contributor' | 'reviewer' | 'administrator'
+export type OperationState = 'accepted' | 'indexing' | 'ready' | 'failed' | 'cancelled'
+
+export interface SourceInput {
+  title?: string; uri?: string | null; content?: string | null
+  media_type?: 'text/plain' | 'text/markdown'; start?: number; end?: number | null
+}
+export interface MemoryInput {
+  content: string; kind?: Kind; subject?: string | null; metadata?: Record<string, Json>
+  source?: SourceInput | null; claim_status?: ClaimStatus
+  valid_from?: string | null; valid_to?: string | null
+}
+export interface RevisionInput extends MemoryInput { expected_version: number; reason: string }
+export interface Receipt {
+  operation_id: string; memory_id: string; revision_id: string | null; space_id: string
+  state: OperationState; version?: number; lexical_ready: boolean; semantic_ready: boolean
+  generation_id: string | null; deleted?: boolean
+}
+export interface Operation {
+  operation_id: string; memory_id: string | null; revision_id: string | null; space_id: string
+  kind: 'ingest' | 'revise' | 'delete' | 'reindex'; state: OperationState
+  error_code: string | null; created_at: string; updated_at: string; memory_deleted?: boolean
+}
+export interface AuditEvent {
+  id: string; space_id: string | null; principal_id: string; action: string
+  resource_id: string; details: Record<string, Json>; reason: string | null; created_at: string
+}
+export interface Evidence {
+  source_id: string; source_revision_id: string; title: string; uri: string | null
+  media_type: string; content_hash: string; start: number; end: number
+  offset_unit: 'unicode_codepoints'; excerpt: string; excerpt_truncated?: boolean
+}
+export interface Attachment { attachment_id: string; name: string; media_type: string; content_hash: string; size_bytes: number }
+export interface Source {
+  source_revision_id: string; source_id: string; space_id: string; title: string; uri: string | null
+  content: string; content_hash: string; media_type: string; recorded_at: string; attachments: Attachment[]
+}
+export interface Memory {
+  memory_id: string; revision_id: string; space_id: string; version: number; revision_version: number
+  content: string; content_hash: string; metadata: Record<string, Json>; kind: Kind
+  subject: string | null; claim_status: ClaimStatus; review_state: 'ordinary' | 'quarantined'
+  valid_from: string | null; valid_to: string | null; recorded_at: string
+  created_at: string; updated_at: string; created_by: string; evidence: Evidence
+}
+export interface RecallInput {
+  query: string; space_ids?: string[]; all_accessible?: boolean; subject?: string | null; kinds?: Kind[]
+  limit?: number; mode?: 'hybrid' | 'lexical' | 'semantic'; include_contested?: boolean
+  valid_at?: string | null; known_at?: string | null; metadata_filter?: Record<string, string | number | boolean>
+}
+export interface RecallHit extends Omit<Memory, 'content'> {
+  text: string; text_truncated: boolean
+  memory_span: { start: number; end: number; offset_unit: 'unicode_codepoints' }
+  relevance_score: number; score_method: 'normalized_rrf_k60'
+  ranking: { ranks: { lexical?: number; semantic?: number }; rrf: number; lexical_rank: number | null; cosine_similarity: number | null }
+}
+export interface IndexState {
+  generation_id: string; eligible_records: number; indexed_records: number
+  pending_records: number; observed_at: string
+}
+export interface Recall {
+  request_id: string; query: string; hits: RecallHit[]; warnings: string[]
+  index: IndexState; timing_ms: number; score_description: string
+}
+export interface ContextPack {
+  request_id: string; text: string; token_count: number; token_budget: number; tokenizer: string
+  tokenizer_generation: string; omitted_items: number; warnings: string[]; index: IndexState
+  citations: { number: number; memory_id: string; revision_id: string; space_id: string; source_revision_id: string; source_start: number; source_end: number }[]
+  core_blocks: { space_id: string; key: string; version: number }[]
+}
+export interface Space { id: string; name: string; description: string; role: Role | null; created_at: string }
+export interface Principal { id: string; name: string; kind: 'human' | 'application'; administrator: boolean; disabled_at: string | null }
+export interface ApiKey { id: string; principal_id: string; name: string; prefix: string; expires_at: string | null; revoked_at: string | null }
+export interface CoreBlock { key: string; content: string; version: number; updated_at: string; updated_by: string }
+export interface Page<T> { items: T[]; next_cursor?: string | null }
+export interface Connector { id: string; name: string; provider: string; principal_id: string; access_mode: 'provider' | 'published'; disabled_at: string | null; created_at: string }
+export interface ConnectorBinding { external_id: string; principal_id: string; role: 'reader' | 'reviewer' }
+export interface ConnectorScope { space_id: string; connector_id: string; external_id: string; name?: string; operator_paused: boolean; access_current: boolean; observed_at: string; access_valid_until: string; suspended_at: string | null; suspension_reason: string | null; completed_at: string | null }
+export interface KnowledgeNode { id: string; kind: 'space' | 'memory' | 'source' | 'entity'; label: string; space_id: string; memory_id?: string }
+export interface Knowledge { generated_at: string; fingerprint: string; truncated: boolean; memories: Memory[]; nodes: KnowledgeNode[]; edges: { source: string; target: string; relation: 'in_space' | 'cites' | 'about' }[]; topics: { id: string; title: string; space_id: string; memory_ids: string[] }[]; findings: { kind: 'exact_duplicate' | 'contested' | 'unassigned_subject'; message: string; memory_ids: string[] }[]; markdown: string }
+export interface ConnectorItem { external_id: string; revision: string; action: 'upsert' | 'delete'; memory?: MemoryInput | null }
+export interface ConnectorProposal { memory_id: string; proposal_hash: string; payload: ConnectorItem; created_at: string; version: number }
+
+export class MnemionError extends Error {
+  constructor(public readonly status: number, public readonly code: string, message: string, public readonly requestId?: string) {
+    super(message); this.name = 'MnemionError'
+  }
+}
+export interface ClientOptions {
+  baseUrl: string; apiKey: string; timeoutMs?: number; retries?: number; fetch?: typeof globalThis.fetch
+}
+interface RequestOptions { body?: unknown; key?: string; signal?: AbortSignal; binary?: boolean }
+
+export class MnemionClient {
+  readonly baseUrl: string
+  #apiKey: string
+  #fetch: typeof globalThis.fetch
+  #timeout: number
+  #retries: number
+  constructor(options: ClientOptions) {
+    this.baseUrl = options.baseUrl.replace(/\/$/, '')
+    this.#apiKey = options.apiKey
+    this.#fetch = (options.fetch ?? globalThis.fetch).bind(globalThis)
+    this.#timeout = options.timeoutMs ?? 30000
+    this.#retries = options.retries ?? 2
+    if (this.#retries < 0 || this.#retries > 5) throw new Error('Retries must be between 0 and 5')
+  }
+
+  async request<T>(method: string, path: string, options: RequestOptions = {}): Promise<T> {
+    const safeRetry = method === 'GET' || !!options.key || ['/v1/recall', '/v1/context', '/v1/knowledge'].includes(path)
+    for (let attempt = 0; attempt <= this.#retries; attempt++) {
+      const timeout = new AbortController()
+      const timer = setTimeout(() => timeout.abort(new Error('Mnemion request timed out')), this.#timeout)
+      const signal = options.signal ? AbortSignal.any([options.signal, timeout.signal]) : timeout.signal
+      try {
+        const response = await this.#fetch(this.baseUrl + path, {
+          method, signal, redirect: 'error',
+          headers: { 'Authorization': `Bearer ${this.#apiKey}`, ...(options.body === undefined ? {} : { 'Content-Type': 'application/json' }),
+            ...(options.key ? { 'Idempotency-Key': options.key } : {}) },
+          body: options.body === undefined ? undefined : JSON.stringify(options.body),
+        })
+        if (response.ok) return (response.status === 204 ? undefined : options.binary ? await response.arrayBuffer() : await response.json()) as T
+        let payload: { error?: { code?: string; message?: string }; request_id?: string } = {}
+        try { payload = await response.json() } catch { /* Non-JSON proxy errors have a stable fallback. */ }
+        if (!(safeRetry && [429, 502, 503, 504].includes(response.status) && attempt < this.#retries)) {
+          throw new MnemionError(response.status, payload.error?.code ?? 'http_error',
+            payload.error?.message ?? `Mnemion returned HTTP ${response.status}`, payload.request_id ?? response.headers.get('X-Request-ID') ?? undefined)
+        }
+      } catch (error) {
+        if (error instanceof MnemionError || options.signal?.aborted || !safeRetry || attempt === this.#retries) throw error
+      } finally { clearTimeout(timer) }
+      await new Promise(resolve => setTimeout(resolve, Math.min(2000, 200 * 2 ** attempt)))
+    }
+    throw new Error('Request retry loop exhausted')
+  }
+
+  me() { return this.request<{ principal_id: string; tenant_id: string; name: string; tenant_name: string; administrator: boolean }>('GET', '/v1/me') }
+  spaces() { return this.request<Page<Space>>('GET', '/v1/spaces') }
+  space(id: string) { return this.request<Space>('GET', `/v1/spaces/${encodeURIComponent(id)}`) }
+  createSpace(name: string, description = '') { return this.request<Space>('POST', '/v1/spaces', { body: { name, description } }) }
+  save(space: string, memory: MemoryInput, key: string = crypto.randomUUID()) { return this.request<Receipt>('POST', `/v1/spaces/${encodeURIComponent(space)}/memories`, { body: memory, key }) }
+  fetch(memory: string, options: { revisionId?: string; review?: boolean } = {}) {
+    const params = new URLSearchParams({ review: String(options.review ?? false) })
+    if (options.revisionId) params.set('revision_id', options.revisionId)
+    return this.request<Memory>('GET', `/v1/memories/${encodeURIComponent(memory)}?${params}`)
+  }
+  list(space: string, options: { limit?: number; cursor?: string; review?: boolean } = {}) {
+    const params = new URLSearchParams({ limit: String(options.limit ?? 50), review: String(options.review ?? false) })
+    if (options.cursor) params.set('cursor', options.cursor)
+    return this.request<Page<Memory>>('GET', `/v1/spaces/${encodeURIComponent(space)}/memories?${params}`)
+  }
+  history(memory: string, review = false) { return this.request<Page<Memory>>('GET', `/v1/memories/${encodeURIComponent(memory)}/revisions?review=${review}`) }
+  source(revision: string, review = false) { return this.request<Source>('GET', `/v1/sources/${encodeURIComponent(revision)}?review=${review}`) }
+  resolveAlias(space: string, legacyId: string, review = false) { return this.request<Memory>('GET', `/v1/spaces/${encodeURIComponent(space)}/resolve?${new URLSearchParams({ legacy_id: legacyId, review: String(review) })}`) }
+  attachment(revision: string, attachment: string, review = false) { return this.request<ArrayBuffer>('GET', `/v1/sources/${encodeURIComponent(revision)}/attachments/${encodeURIComponent(attachment)}?review=${review}`, { binary: true }) }
+  revise(memory: string, revision: RevisionInput, key: string = crypto.randomUUID()) { return this.request<Receipt>('POST', `/v1/memories/${encodeURIComponent(memory)}/revisions`, { body: revision, key }) }
+  review(memory: string, state: 'ordinary' | 'quarantined', expectedVersion: number, reason: string) {
+    return this.request<{ memory_id: string; version: number; review_state: string }>('PUT', `/v1/memories/${encodeURIComponent(memory)}/review`, { body: { state, expected_version: expectedVersion, reason } })
+  }
+  forget(memory: string, expectedVersion: number, key: string = crypto.randomUUID()) { return this.request<Receipt>('DELETE', `/v1/memories/${encodeURIComponent(memory)}?expected_version=${expectedVersion}`, { key }) }
+  search(input: RecallInput) { return this.request<Recall>('POST', '/v1/recall', { body: input }) }
+  context(input: RecallInput & { token_budget?: number }) { return this.request<ContextPack>('POST', '/v1/context', { body: input }) }
+  operation(id: string) { return this.request<Operation>('GET', `/v1/operations/${encodeURIComponent(id)}`) }
+  operations(space: string, state?: OperationState) { return this.request<Page<Operation>>('GET', `/v1/spaces/${encodeURIComponent(space)}/operations${state ? `?state=${state}` : ''}`) }
+  activity(space: string, options: { memoryId?: string; limit?: number } = {}) {
+    const params = new URLSearchParams({ limit: String(options.limit ?? 100) })
+    if (options.memoryId) params.set('memory_id', options.memoryId)
+    return this.request<Page<AuditEvent>>('GET', `/v1/spaces/${encodeURIComponent(space)}/activity?${params}`)
+  }
+  insights(space: string, options: { hours?: number; origin?: MetricOrigin; signal?: AbortSignal } = {}) {
+    return this.request<Insights>('GET', `/v1/spaces/${encodeURIComponent(space)}/insights?${new URLSearchParams({ hours: String(options.hours ?? 24), origin: options.origin ?? 'all' })}`, { signal: options.signal })
+  }
+  runtimeInsights(signal?: AbortSignal) { return this.request<RuntimeInsights>('GET', '/v1/insights/runtime', { signal }) }
+  evaluationDatasets(space: string, options: { cursor?: string; limit?: number } = {}) {
+    const params = new URLSearchParams({ limit: String(options.limit ?? 200) })
+    if (options.cursor) params.set('cursor', options.cursor)
+    return this.request<Page<EvaluationDataset>>('GET', `/v1/spaces/${encodeURIComponent(space)}/evaluations/datasets?${params}`)
+  }
+  evaluationDataset(space: string, id: string) { return this.request<EvaluationDataset>('GET', `/v1/spaces/${encodeURIComponent(space)}/evaluations/datasets/${encodeURIComponent(id)}`) }
+  createEvaluationDataset(space: string, input: EvaluationDatasetInput) { return this.request<EvaluationDataset>('POST', `/v1/spaces/${encodeURIComponent(space)}/evaluations/datasets`, { body: input }) }
+  removeEvaluationDataset(space: string, id: string) { return this.request<void>('DELETE', `/v1/spaces/${encodeURIComponent(space)}/evaluations/datasets/${encodeURIComponent(id)}`) }
+  evaluationRuns(space: string, options: { cursor?: string; limit?: number } = {}) {
+    const params = new URLSearchParams({ limit: String(options.limit ?? 100) })
+    if (options.cursor) params.set('cursor', options.cursor)
+    return this.request<Page<EvaluationRun>>('GET', `/v1/spaces/${encodeURIComponent(space)}/evaluations/runs?${params}`)
+  }
+  evaluationRun(space: string, id: string, compact = false) { return this.request<EvaluationRun>('GET', `/v1/spaces/${encodeURIComponent(space)}/evaluations/runs/${encodeURIComponent(id)}?compact=${compact}`) }
+  startEvaluation(space: string, input: EvaluationInput, key: string = crypto.randomUUID()) { return this.request<EvaluationRun>('POST', `/v1/spaces/${encodeURIComponent(space)}/evaluations/runs`, { body: input, key }) }
+  evaluationResults(space: string, id: string, cursor = 0, limit = 50) { return this.request<EvaluationResultPage>('GET', `/v1/spaces/${encodeURIComponent(space)}/evaluations/runs/${encodeURIComponent(id)}/results?cursor=${cursor}&limit=${limit}`) }
+  cancelEvaluation(space: string, id: string) { return this.request<EvaluationRun>('POST', `/v1/spaces/${encodeURIComponent(space)}/evaluations/runs/${encodeURIComponent(id)}/cancel`) }
+  assessEvaluation(space: string, id: string, position: number, input: AssessmentInput) { return this.request<EvaluationResult>('PUT', `/v1/spaces/${encodeURIComponent(space)}/evaluations/runs/${encodeURIComponent(id)}/results/${position}/assessment`, { body: input }) }
+  compareEvaluations(space: string, baselineId: string, candidateId: string) { return this.request<EvaluationComparison>('POST', `/v1/spaces/${encodeURIComponent(space)}/evaluations/compare`, { body: { baseline_id: baselineId, candidate_id: candidateId } }) }
+  exportEvaluation(space: string, id: string, format: 'json' | 'csv' = 'json') { return this.request<ArrayBuffer>('GET', `/v1/spaces/${encodeURIComponent(space)}/evaluations/runs/${encodeURIComponent(id)}/export?format=${format}`, { binary: true }) }
+  retryOperation(id: string) { return this.request<{ operation_id: string; state: string }>('POST', `/v1/operations/${encodeURIComponent(id)}/retry`) }
+  blocks(space: string) { return this.request<Page<CoreBlock>>('GET', `/v1/spaces/${encodeURIComponent(space)}/blocks`) }
+  putBlock(space: string, key: string, content: string, expectedVersion: number) {
+    return this.request<Pick<CoreBlock, 'key' | 'content' | 'version'> & { space_id: string }>('PUT', `/v1/spaces/${encodeURIComponent(space)}/blocks/${encodeURIComponent(key)}`, { body: { content, expected_version: expectedVersion } })
+  }
+  principals() { return this.request<Page<Principal>>('GET', '/v1/principals') }
+  createPrincipal(name: string, kind: 'human' | 'application' = 'application') { return this.request<Principal>('POST', '/v1/principals', { body: { name, kind } }) }
+  keys() { return this.request<Page<ApiKey>>('GET', '/v1/keys') }
+  createKey(principal: string, name: string, expires_at?: string) { return this.request<ApiKey & { api_key: string }>('POST', `/v1/principals/${encodeURIComponent(principal)}/keys`, { body: { name, expires_at } }) }
+  revokeKey(key: string) { return this.request<{ id: string; revoked_at: string }>('DELETE', `/v1/keys/${encodeURIComponent(key)}`) }
+  grant(space: string, principal: string, role: Role) { return this.request('PUT', `/v1/spaces/${encodeURIComponent(space)}/grants/${encodeURIComponent(principal)}`, { body: { role } }) }
+  revokeGrant(space: string, principal: string) { return this.request('DELETE', `/v1/spaces/${encodeURIComponent(space)}/grants/${encodeURIComponent(principal)}`) }
+  exportObsidian(space_ids: string[] = [], review = false, all_accessible = false) { return this.request<ArrayBuffer>('POST', '/v1/exports', { body: { space_ids, review, all_accessible }, binary: true }) }
+  connectors() { return this.request<Page<Connector>>('GET', '/v1/connectors') }
+  createConnector(input: Pick<Connector, 'name' | 'provider' | 'principal_id' | 'access_mode'>) { return this.request<Connector>('POST', '/v1/connectors', { body: input }) }
+  disableConnector(id: string) { return this.request<Connector>('DELETE', `/v1/connectors/${encodeURIComponent(id)}`) }
+  enableConnector(id: string) { return this.request<Connector>('POST', `/v1/connectors/${encodeURIComponent(id)}/enable`) }
+  connectorBindings(id: string) { return this.request<Page<ConnectorBinding>>('GET', `/v1/connectors/${encodeURIComponent(id)}/bindings`) }
+  putConnectorBinding(id: string, input: ConnectorBinding) { return this.request('PUT', `/v1/connectors/${encodeURIComponent(id)}/bindings`, { body: input }) }
+  removeConnectorBinding(id: string, input: ConnectorBinding) { return this.request('DELETE', `/v1/connectors/${encodeURIComponent(id)}/bindings`, { body: input }) }
+  connectorScopes(id: string, after?: string) { return this.request<Page<ConnectorScope>>('GET', `/v1/connectors/${encodeURIComponent(id)}/scopes${after ? `?after=${encodeURIComponent(after)}` : ''}`) }
+  pauseConnectorScope(space: string) { return this.request('POST', `/v1/connector-scopes/${encodeURIComponent(space)}/suspend`, { body: { reason: 'operator_paused' } }) }
+  resumeConnectorScope(space: string) { return this.request('POST', `/v1/connector-scopes/${encodeURIComponent(space)}/resume`) }
+  connectorProposals(space: string) { return this.request<Page<ConnectorProposal>>('GET', `/v1/spaces/${encodeURIComponent(space)}/connector-proposals`) }
+  knowledge(input: { space_ids?: string[]; all_accessible?: boolean; subject?: string; limit?: number; include_historical?: boolean }) { return this.request<Knowledge>('POST', '/v1/knowledge', { body: input }) }
+  resolveConnectorProposal(memory: string, input: { expected_version: number; proposal_hash: string; resolution: 'accept' | 'keep_local'; reason: string }) { return this.request('POST', `/v1/memories/${encodeURIComponent(memory)}/connector-proposal`, { body: input }) }
+}

@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import Any
 
-from ..sources.store import atomic_write_text
+from ..vault_refresh import VaultRefreshError, refresh
 from .provenance import resolve_page_provenance
 from .renderer import parse_frontmatter
 
@@ -28,13 +27,6 @@ def export_compiled_wiki_to_obsidian(
     vault = Path(vault_path).expanduser()
     target_root = vault / DEFAULT_SUBDIR
     manifest_path = target_root / MANIFEST_NAME
-    previous = {}
-    if manifest_path.exists():
-        try:
-            previous = json.loads(manifest_path.read_text(encoding="utf-8"))
-        except json.JSONDecodeError as exc:
-            raise WikiObsidianExportError("compiled wiki manifest is malformed") from exc
-
     files: dict[str, str] = {}
     skipped_sensitive = 0
     skipped_quarantined = 0
@@ -60,33 +52,21 @@ def export_compiled_wiki_to_obsidian(
             warnings.append(f"export includes contested source evidence: {rel}")
         files[rel] = text
 
-    target_root.mkdir(parents=True, exist_ok=True)
-    previous_files = set(previous.get("files") or [])
-    current_files = set(files)
-    pruned = 0
-    for rel in sorted(previous_files - current_files):
-        target = target_root / rel
-        try:
-            resolved = target.resolve()
-            if target_root.resolve() in resolved.parents and target.is_file():
-                target.unlink()
-                pruned += 1
-        except OSError:
-            continue
-
-    for rel, text in files.items():
-        atomic_write_text(target_root / rel, text)
     manifest = {
         "generated_by": "mnemion-wiki-export",
         "files": sorted(files),
         "file_count": len(files),
+        "scope": {"type": "compiled-wiki", "include_sensitive": include_sensitive},
     }
-    atomic_write_text(manifest_path, json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+    try:
+        result = refresh(target_root, files, manifest, MANIFEST_NAME)
+    except VaultRefreshError as exc:
+        raise WikiObsidianExportError(str(exc)) from exc
     return {
-        "status": "exported",
+        **result,
+        "status": "exported" if result["completed"] else "conflicts",
         "target_path": str(target_root),
         "file_count": len(files),
-        "pruned_files": pruned,
         "manifest_path": str(manifest_path),
         "skipped_sensitive": skipped_sensitive,
         "skipped_quarantined": skipped_quarantined,

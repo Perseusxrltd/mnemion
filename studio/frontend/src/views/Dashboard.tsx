@@ -1,6 +1,18 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { Database, Network, Layers, Bot, AlertTriangle, CheckCircle, Clock, Plus, FileText } from 'lucide-react'
+import {
+  Database,
+  Network,
+  Layers,
+  Bot,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  Plus,
+  FileText,
+  Plug,
+  Settings,
+} from 'lucide-react'
 import { api } from '../api/client'
 import { wingColor } from '../types'
 import TrustBadge from '../components/TrustBadge'
@@ -63,7 +75,7 @@ function StatCard({ icon: Icon, label, value, sub, color = '#7f6df2', onClick, l
         ) : (
           <>
             <div className="text-2xl font-semibold tracking-tight">
-              {typeof value === 'number' ? value.toLocaleString() : (value ?? '—')}
+              {typeof value === 'number' ? value.toLocaleString() : (value ?? '-')}
             </div>
             {sub && <div className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{sub}</div>}
           </>
@@ -78,18 +90,31 @@ function StatCard({ icon: Icon, label, value, sub, color = '#7f6df2', onClick, l
 export default function Dashboard() {
   const navigate = useNavigate()
   const { openCreateDrawer } = useLayoutCtx()
-  const { data: status, isLoading: statusLoading } = useQuery({
+  const {
+    data: status,
+    isLoading: statusLoading,
+    isError: statusError,
+    refetch: refetchStatus,
+    isFetching: statusFetching,
+  } = useQuery({
     queryKey: ['status'],
     queryFn: api.status,
+    refetchInterval: 5_000,
   })
   const { data: trust, isLoading: trustLoading } = useQuery({
     queryKey: ['trust-stats'],
     queryFn: api.trustStats,
+    refetchInterval: 15_000,
   })
-  const { data: agents } = useQuery({ queryKey: ['agents'], queryFn: api.agents })
+  const { data: agents } = useQuery({
+    queryKey: ['agents'],
+    queryFn: api.agents,
+    refetchInterval: 10_000,
+  })
   const { data: recent } = useQuery({
     queryKey: ['drawers-recent'],
     queryFn: () => api.recentDrawers(7),
+    refetchInterval: 10_000,
   })
 
   const topWings = status
@@ -105,15 +130,16 @@ export default function Dashboard() {
   const currentPct = trust?.by_status?.current
     ? Math.round((trust.by_status.current.count / (trust.total || 1)) * 100)
     : null
+  const isFirstRun = !statusLoading && !statusError && (status?.total_drawers ?? 0) === 0
 
   return (
     <div className="flex-1 overflow-y-auto p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 fade-in">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Overview</h1>
+          <h1 className="text-xl font-semibold tracking-tight">Live Memory</h1>
           <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
-            Anaktoron status and memory health at a glance.
+            Mnemion is running locally and keeping your memory space current.
           </p>
         </div>
         <button
@@ -122,37 +148,103 @@ export default function Dashboard() {
           style={{ background: 'rgba(127,109,242,0.15)', color: '#9d8ff9', border: '1px solid rgba(127,109,242,0.25)' }}
           onMouseEnter={e => (e.currentTarget.style.background = 'rgba(127,109,242,0.25)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'rgba(127,109,242,0.15)')}
-          title="New drawer (C)"
+          title="Save memory (C)"
         >
-          <Plus size={12} /> New Drawer
+          <Plus size={12} /> Save Memory
         </button>
       </div>
 
+      {statusError && (
+        <div
+          className="flex flex-wrap items-center justify-between gap-3 rounded-xl p-4 fade-in"
+          style={{ background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.28)' }}
+        >
+          <div className="flex items-center gap-3">
+            <span className="p-2 rounded-lg" style={{ background: 'rgba(239,68,68,0.14)', color: '#f87171' }}>
+              <AlertTriangle size={16} />
+            </span>
+            <div>
+              <div className="text-sm font-semibold">Mnemion is not connected</div>
+              <div className="text-xs text-muted mt-0.5">
+                The local memory service is still starting or needs to be restarted.
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => refetchStatus()}
+            disabled={statusFetching}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors disabled:opacity-50"
+            style={{ background: 'var(--raised)', borderColor: 'rgba(239,68,68,0.32)', color: 'var(--text)' }}
+          >
+            {statusFetching ? 'Checking...' : 'Check again'}
+          </button>
+        </div>
+      )}
+
       {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
         <StatCard
-          icon={Database} label="Total Drawers" loading={statusLoading}
+          icon={Database} label="Saved Memories" loading={statusLoading}
           value={status?.total_drawers} color="#7f6df2"
           onClick={() => navigate('/browse')}
         />
         <StatCard
-          icon={Layers} label="Wings" loading={statusLoading}
+          icon={Layers} label="Memory Areas" loading={statusLoading}
           value={status?.wing_count}
-          sub={status ? `${status.room_count} rooms` : undefined}
+          sub={status ? `${status.room_count} topics` : undefined}
           color="#4A9EFF" onClick={() => navigate('/browse')}
         />
         <StatCard
-          icon={Bot} label="Active Agents"
-          value={activeAgents} sub="seen in sessions"
+          icon={Bot} label="Live Agents"
+          value={activeAgents} sub="recent activity"
           color="#4ECDC4" onClick={() => navigate('/agents')}
         />
         <StatCard
-          icon={Network} label="Trust Health" loading={trustLoading}
+          icon={Network} label="Healthy Memories" loading={trustLoading}
           value={currentPct !== null ? `${currentPct}%` : undefined}
-          sub="drawers current"
+          sub="ready to use"
           color="#30d158" onClick={() => navigate('/settings')}
         />
       </div>
+
+      {isFirstRun && (
+        <div
+          className="rounded-xl p-5 fade-in"
+          style={{ background: 'var(--surface)', border: '1px solid var(--background-modifier-border)' }}
+        >
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-sm font-semibold">Start your memory space</h2>
+              <p className="text-xs text-muted mt-1 max-w-2xl leading-relaxed">
+                Mnemion is ready. Save a first memory manually, or connect an AI app so memories appear here automatically.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => openCreateDrawer()}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                style={{ background: 'var(--interactive-accent)', color: 'white' }}
+              >
+                <Plus size={12} /> Save first memory
+              </button>
+              <button
+                onClick={() => navigate('/connect')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors"
+                style={{ background: 'var(--raised)', borderColor: 'var(--border)', color: 'var(--text)' }}
+              >
+                <Plug size={12} /> Connect AI app
+              </button>
+              <button
+                onClick={() => navigate('/settings')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors"
+                style={{ background: 'var(--raised)', borderColor: 'var(--border)', color: 'var(--text-muted)' }}
+              >
+                <Settings size={12} /> Check storage
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Recently Added drawers */}
       {recent?.drawers && recent.drawers.length > 0 && (
@@ -161,7 +253,7 @@ export default function Dashboard() {
           style={{ background: 'var(--surface)', border: '1px solid var(--background-modifier-border)' }}
         >
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold">Recently Added</h2>
+            <h2 className="text-sm font-semibold">Recent Memories</h2>
             <button
               onClick={() => navigate('/browse')}
               className="text-xs transition-colors"
@@ -169,7 +261,7 @@ export default function Dashboard() {
               onMouseEnter={e => (e.currentTarget.style.color = 'var(--interactive-accent)')}
               onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
             >
-              Browse all →
+              Browse all {'>'}
             </button>
           </div>
           <div className="space-y-1">
@@ -188,7 +280,7 @@ export default function Dashboard() {
                     </span>
                   </div>
                   <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>
-                    {d.preview || '—'}
+                    {d.preview || '-'}
                   </p>
                 </div>
               </button>
@@ -197,14 +289,14 @@ export default function Dashboard() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
         {/* Wings breakdown */}
         <div
           className="rounded-xl p-5 fade-in"
           style={{ background: 'var(--surface)', border: '1px solid var(--background-modifier-border)' }}
         >
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold">Wings</h2>
+            <h2 className="text-sm font-semibold">Memory Areas</h2>
             <button
               onClick={() => navigate('/browse')}
               className="text-xs transition-colors"
@@ -212,7 +304,7 @@ export default function Dashboard() {
               onMouseEnter={e => (e.currentTarget.style.color = 'var(--interactive-accent)')}
               onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
             >
-              Browse all →
+              Browse all {'>'}
             </button>
           </div>
 
@@ -262,7 +354,7 @@ export default function Dashboard() {
           style={{ background: 'var(--surface)', border: '1px solid var(--background-modifier-border)' }}
         >
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold">Memory Trust</h2>
+            <h2 className="text-sm font-semibold">Memory Quality</h2>
             {contestedCount > 0 && (
               <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded" style={{ color: '#f97316', background: 'rgba(249,115,22,0.1)' }}>
                 <AlertTriangle size={10} /> {contestedCount} contested
@@ -296,7 +388,7 @@ export default function Dashboard() {
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-medium capitalize" style={{ color }}>{st}</span>
                       <span style={{ color: 'var(--text-muted)' }}>
-                        {data.count.toLocaleString()} · {pct}%
+                        {data.count.toLocaleString()} - {pct}%
                       </span>
                     </div>
                     <div className="h-1 rounded-full overflow-hidden" style={{ background: 'var(--interactive-normal)' }}>
@@ -313,7 +405,7 @@ export default function Dashboard() {
                 style={{ borderColor: 'var(--background-modifier-border)', color: 'var(--text-muted)' }}
               >
                 <CheckCircle size={11} style={{ color: '#30d158' }} />
-                avg confidence {Math.round((trust.by_status?.current?.avg_confidence ?? 1) * 100)}%
+                average confidence {Math.round((trust.by_status?.current?.avg_confidence ?? 1) * 100)}%
               </div>
             </div>
           ) : (
@@ -329,7 +421,7 @@ export default function Dashboard() {
           style={{ background: 'var(--surface)', border: '1px solid var(--background-modifier-border)' }}
         >
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold">Recent Agent Activity</h2>
+            <h2 className="text-sm font-semibold">Agent Activity</h2>
             <button
               onClick={() => navigate('/agents')}
               className="text-xs transition-colors"
@@ -337,7 +429,7 @@ export default function Dashboard() {
               onMouseEnter={e => (e.currentTarget.style.color = 'var(--interactive-accent)')}
               onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
             >
-              View all →
+              View all {'>'}
             </button>
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -370,7 +462,7 @@ export default function Dashboard() {
           className="rounded-xl p-5 fade-in"
           style={{ background: 'var(--surface)', border: '1px solid var(--background-modifier-border)' }}
         >
-          <h2 className="text-sm font-semibold mb-4">Busiest Rooms</h2>
+          <h2 className="text-sm font-semibold mb-4">Active Topics</h2>
           <div className="flex flex-wrap gap-2">
             {topRooms.map(([room, count]) => (
               <button

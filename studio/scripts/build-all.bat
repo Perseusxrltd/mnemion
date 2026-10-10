@@ -1,63 +1,68 @@
 @echo off
-:: ── Full Mnemion Studio build pipeline ────────────────────────────────────
-:: Produces:  dist-electron/  (Windows NSIS installer + unpacked app)
-::
-:: Prerequisites:
-::   - Python 3.11+ with mnemion installed editable
-::   - Node 20+ in PATH
-::   - PyInstaller: py -m pip install pyinstaller
-::
+:: Full Mnemion Studio build pipeline.
+:: Produces dist-electron with the unpacked Windows app and installer.
 :: Run from the mnemion repo root.
 
 setlocal
 set ROOT=%~dp0..\..
 
 echo.
-echo ╔══════════════════════════════════════════════╗
-echo ║        Mnemion Studio — Full Build           ║
-echo ╚══════════════════════════════════════════════╝
+echo ==============================================
+echo   Mnemion Studio - Full Build
+echo ==============================================
 echo.
 
-:: ── Step 1: Build frontend ────────────────────────────────────────────────
-echo [1/4] Building React frontend…
+echo [1/5] Building frontend assets
 pushd "%ROOT%\studio\frontend"
-call npm install --silent
-if %ERRORLEVEL% NEQ 0 ( echo ERROR: npm install failed && exit /b 1 )
+if not exist "node_modules" (
+    call npm ci
+    if %ERRORLEVEL% NEQ 0 ( echo ERROR: frontend npm ci failed && exit /b 1 )
+)
 call npm run build:electron
-if %ERRORLEVEL% NEQ 0 ( echo ERROR: npm build failed && exit /b 1 )
+if %ERRORLEVEL% NEQ 0 ( echo ERROR: frontend build failed && exit /b 1 )
 popd
-echo [1/4] Frontend OK → studio/frontend/dist/
+echo [1/5] Frontend OK
 
-:: ── Step 2: Build Python backend ─────────────────────────────────────────
 echo.
-echo [2/4] Building Python backend…
+echo [2/5] Building memory service
 call "%ROOT%\studio\scripts\build-backend.bat"
-if %ERRORLEVEL% NEQ 0 ( echo ERROR: backend build failed && exit /b 1 )
-echo [2/4] Backend OK → dist-backend/backend/
+if %ERRORLEVEL% NEQ 0 ( echo ERROR: memory service build failed && exit /b 1 )
+echo [2/5] Memory service OK
 
-:: ── Step 3: Build Electron main process ───────────────────────────────────
 echo.
-echo [3/4] Building Electron main process…
+echo [3/5] Building Electron shell
 pushd "%ROOT%\studio\electron"
-call npm install --silent
-if %ERRORLEVEL% NEQ 0 ( echo ERROR: npm install failed && exit /b 1 )
+if not exist "node_modules" (
+    call npm ci
+    if %ERRORLEVEL% NEQ 0 ( echo ERROR: Electron npm ci failed && exit /b 1 )
+)
 call npm run build
-if %ERRORLEVEL% NEQ 0 ( echo ERROR: tsc failed && exit /b 1 )
+if %ERRORLEVEL% NEQ 0 ( echo ERROR: Electron TypeScript build failed && exit /b 1 )
 popd
-echo [3/4] Electron TS compiled → studio/electron/dist/
+echo [3/5] Electron shell OK
 
-:: ── Step 4: Package with electron-builder ────────────────────────────────
 echo.
-echo [4/4] Packaging installer…
+echo [4/5] Verifying resources and building unpacked app
 pushd "%ROOT%\studio\electron"
-call npx electron-builder --win --x64
-if %ERRORLEVEL% NEQ 0 ( echo ERROR: electron-builder failed && exit /b 1 )
+call npm run verify:resources
+if %ERRORLEVEL% NEQ 0 ( echo ERROR: packaged resources missing && exit /b 1 )
+call npx electron-builder --dir
+if %ERRORLEVEL% NEQ 0 ( echo ERROR: unpacked app build failed && exit /b 1 )
 popd
-echo [4/4] Installer OK → dist-electron/
+echo [4/5] Unpacked app OK
 
 echo.
-echo ══════════════════════════════════════════════
-echo  Build complete!
-echo  Installer: %ROOT%\dist-electron\
-echo ══════════════════════════════════════════════
+echo [5/5] Packaging Windows installer
+pushd "%ROOT%\studio\electron"
+call npm run dist:prepackaged
+if %ERRORLEVEL% NEQ 0 ( echo ERROR: installer build failed && exit /b 1 )
+popd
+echo [5/5] Installer OK
+
+echo.
+echo ==============================================
+echo   Build complete
+echo   Output: %ROOT%\dist-electron
+echo ==============================================
+
 endlocal

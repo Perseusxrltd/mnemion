@@ -1,0 +1,32 @@
+// Launched by the PostgreSQL/HTTP pytest fixture, never against a personal space.
+import assert from 'node:assert/strict'
+import { MnemionClient, MnemionError } from '../dist/index.js'
+
+const client = new MnemionClient({ baseUrl: process.env.MNEMION_API_URL, apiKey: process.env.MNEMION_API_KEY })
+const space = process.env.MNEMION_SPACE_ID
+assert.equal((await client.me()).administrator, true)
+assert.ok((await client.spaces()).items.some(item => item.id === space))
+const application = await client.createPrincipal('TypeScript assistant')
+const key = await client.createKey(application.id, 'Integration test')
+const assistant = new MnemionClient({ baseUrl: process.env.MNEMION_API_URL, apiKey: key.api_key })
+await assert.rejects(assistant.list(space), error => error instanceof MnemionError && error.status === 404)
+await client.grant(space, application.id, 'reader')
+const saved = await client.save(space, { content: 'Mnemion uses source evidence', subject: 'Mnemion' }, 'typescript-save')
+assert.equal(saved.state, 'accepted')
+const recalled = await assistant.search({ query: 'evidence', space_ids: [space], mode: 'lexical' })
+assert.equal(recalled.hits[0].memory_id, saved.memory_id)
+assert.equal((await assistant.fetch(saved.memory_id)).subject, 'Mnemion')
+await assert.rejects(assistant.save(space, { content: 'Reader cannot write' }), error => error.status === 403)
+const revised = await client.revise(saved.memory_id, { content: 'Mnemion preserves source evidence and revisions', expected_version: 1, reason: 'Clarification' })
+assert.equal(revised.version, 2)
+assert.equal((await client.history(saved.memory_id)).items.length, 2)
+const pack = await assistant.context({ query: 'evidence', space_ids: [space], mode: 'lexical', token_budget: 128 })
+assert.ok(pack.token_count <= 128 && pack.citations.length > 0)
+assert.ok((await assistant.exportObsidian([space])).byteLength > 0)
+await client.revokeGrant(space, application.id)
+await assert.rejects(assistant.fetch(saved.memory_id), error => error.status === 404)
+await client.revokeKey(key.id)
+await assert.rejects(assistant.me(), error => error.status === 401)
+const deleted = await client.forget(saved.memory_id, 2)
+assert.equal(deleted.deleted, true)
+assert.equal((await client.forget(saved.memory_id, 2)).operation_id, deleted.operation_id)

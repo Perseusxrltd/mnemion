@@ -1,4 +1,5 @@
 import json
+import hashlib
 import sqlite3
 
 from mnemion.sources.store import SourceStore
@@ -17,7 +18,14 @@ def test_wiki_obsidian_export_writes_managed_subfolder_and_prunes_manifest_only(
     manifest = unmanaged.parent / ".mnemion-compiled-wiki-manifest.json"
     old = unmanaged.parent / "old.md"
     old.write_text("old\n")
-    manifest.write_text(json.dumps({"files": ["old.md"]}))
+    manifest.write_text(
+        json.dumps(
+            {
+                "files": ["old.md"],
+                "entries": {"old.md": {"file_sha256": hashlib.sha256(b"old\n").hexdigest()}},
+            }
+        )
+    )
 
     result = export_compiled_wiki_to_obsidian(wiki, vault)
 

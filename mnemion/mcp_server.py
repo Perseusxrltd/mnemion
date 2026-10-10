@@ -293,12 +293,18 @@ def tool_get_evidence_trail(drawer_id: str):
     """Return cognitive graph evidence units and edges for one drawer."""
     from .cognitive_graph import CognitiveGraph
 
+    collection = _get_collection()
+    if not collection or not collection.get(ids=[drawer_id]).get("ids"):
+        return {"drawer_id": drawer_id, "units": [], "edges": []}
+    trust = _hybrid._get_trust_map([drawer_id]).get(drawer_id, {})
+    if trust.get("status") in {"historical", "superseded", "quarantined"}:
+        return {"drawer_id": drawer_id, "units": [], "edges": []}
     kg_path = os.path.join(os.path.dirname(_config.anaktoron_path), "knowledge_graph.sqlite3")
     graph = CognitiveGraph(kg_path)
     return {
         "drawer_id": drawer_id,
-        "units": graph.units_for_drawer(drawer_id),
-        "edges": graph.edges_for_drawer(drawer_id),
+        "units": graph.units_for_drawer(drawer_id, include_hidden=False),
+        "edges": graph.edges_for_drawer(drawer_id, include_hidden=False),
     }
 
 
@@ -431,52 +437,38 @@ def tool_add_drawer(
 
     drawer_id = f"drawer_{wing}_{room}_{hashlib.md5(content.encode(), usedforsecurity=False).hexdigest()[:16]}"
 
-    # Idempotency: if the deterministic ID already exists, return success as a no-op.
-    try:
-        existing = col.get(ids=[drawer_id])
-        if existing and existing["ids"]:
-            return {"success": True, "reason": "already_exists", "drawer_id": drawer_id}
-    except Exception as e:
-        logger.error(f"Suppressed error in execution: {e}")
+    from .ingestion import LegacyMemoryWriter
 
     try:
-        # 1. Add to ChromaDB (Semantic) using upsert for idempotency
-        col.upsert(
-            ids=[drawer_id],
-            documents=[content],
-            metadatas=[
-                {
-                    "wing": wing,
-                    "room": room,
-                    "source_file": source_file or "",
-                    "chunk_index": 0,
-                    "added_by": added_by,
-                    "filed_at": datetime.now().isoformat(),
-                }
-            ],
+        existing = col.get(ids=[drawer_id], include=["documents", "metadatas"])
+        duplicate = bool(existing.get("ids"))
+        if duplicate and existing["documents"][0] != content:
+            raise ValueError("Memory ID collision")
+        metadata = (
+            (existing["metadatas"][0] or {})
+            if duplicate
+            else {
+                "wing": wing,
+                "room": room,
+                "source_file": source_file or "",
+                "chunk_index": 0,
+                "added_by": added_by,
+                "filed_at": datetime.now(timezone.utc).isoformat(),
+            }
         )
-
-        # 2. Add to SQLite FTS5 (Lexical Mirror)
-        KnowledgeGraph(db_path=_hybrid.kg_path)  # Ensure schema exists
-        conn = sqlite3.connect(_hybrid.kg_path)
-        conn.execute(
-            "INSERT OR REPLACE INTO drawers_fts (drawer_id, content, wing, room) VALUES (?, ?, ?, ?)",
-            (drawer_id, content, wing, room),
-        )
-        conn.commit()
-        conn.close()
-
-        logger.info(f"Filed drawer: {drawer_id} → {wing}/{room}")
-
-        # Create trust record (idempotent — same drawer_id = same trust row)
-        _trust.create(drawer_id, wing=wing, room=room)
-
-        # Spawn background contradiction detection (daemon thread — never blocks)
-        _cd.spawn_detection(drawer_id, content, wing, room, _trust, _hybrid)
-
-        return {"success": True, "drawer_id": drawer_id, "wing": wing, "room": room}
-    except Exception as e:
-        logger.error(f"Caught exception: {e}")
+        operation = LegacyMemoryWriter(col, _hybrid.kg_path).save(drawer_id, content, metadata)
+        if not duplicate:
+            try:
+                _cd.spawn_detection(drawer_id, content, wing, room, _trust, _hybrid)
+            except Exception:
+                logger.exception(
+                    "Memory persisted; optional contradiction detection could not start"
+                )
+        result = {"success": True, "drawer_id": drawer_id, "wing": wing, "room": room, **operation}
+        if duplicate:
+            result["reason"] = "already_exists"
+        return result
+    except Exception:
         logger.exception("add_drawer failed")
         return {"success": False, "error": "Failed to add drawer"}
 
@@ -837,7 +829,7 @@ def tool_openbrain_fetch(id: str):
         result = col.get(ids=[identifier], include=["documents", "metadatas"])
         if not result.get("ids"):
             return {"error": f"drawer not found: {identifier}"}
-        trust = _trust.get(identifier) or {"status": "current"}
+        trust = _hybrid._get_trust_map([identifier]).get(identifier) or {"status": "current"}
         if _is_quarantined_trust(trust.get("status")):
             return {"error": f"drawer is quarantined: {identifier}"}
         meta = result["metadatas"][0] or {}
@@ -896,26 +888,17 @@ def tool_delete_drawer(drawer_id: str):
     col = _get_collection()
     if not col:
         return _no_anaktoron()
+    from .ingestion import LegacyMemoryWriter
+
+    writer = LegacyMemoryWriter(col, _hybrid.kg_path)
     existing = col.get(ids=[drawer_id])
-    if not existing["ids"]:
+    if not existing["ids"] and not writer.is_deleted(drawer_id):
         return {"success": False, "error": f"Drawer not found: {drawer_id}"}
     try:
-        # 1. Delete from Chroma
-        col.delete(ids=[drawer_id])
-
-        # 2. Delete from FTS5
-        conn = sqlite3.connect(_hybrid.kg_path)
-        conn.execute("DELETE FROM drawers_fts WHERE drawer_id = ?", (drawer_id,))
-        conn.commit()
-        conn.close()
-
-        # 3. Soft-delete from trust layer (mark historical instead of hard-removing)
-        trust_rec = _trust.get(drawer_id)
-        if trust_rec:
-            _trust.update_status(drawer_id, "historical", reason="drawer deleted", changed_by="mcp")
+        receipt = writer.delete(drawer_id)
 
         logger.info(f"Deleted drawer: {drawer_id}")
-        return {"success": True, "drawer_id": drawer_id}
+        return {"success": True, **receipt}
     except Exception as e:
         logger.error(f"Caught exception: {e}")
         logger.exception("delete_drawer failed")
@@ -1061,39 +1044,22 @@ def tool_diary_write(agent_name: str, entry: str, topic: str = "general"):
     entry_id = f"diary_{wing}_{now.strftime('%Y%m%d_%H%M%S')}_{hashlib.md5(entry[:50].encode()).hexdigest()[:8]}"
 
     try:
-        col.add(
-            ids=[entry_id],
-            documents=[entry],
-            metadatas=[
-                {
-                    "wing": wing,
-                    "room": room,
-                    "hall": "hall_diary",
-                    "topic": topic,
-                    "type": "diary_entry",
-                    "agent": agent_name,
-                    "filed_at": now.isoformat(),
-                    "date": now.strftime("%Y-%m-%d"),
-                }
-            ],
+        from .ingestion import LegacyMemoryWriter
+
+        LegacyMemoryWriter(col, _hybrid.kg_path).save(
+            entry_id,
+            entry,
+            {
+                "wing": wing,
+                "room": room,
+                "hall": "hall_diary",
+                "topic": topic,
+                "type": "diary_entry",
+                "agent": agent_name,
+                "filed_at": now.isoformat(),
+                "date": now.strftime("%Y-%m-%d"),
+            },
         )
-
-        # 2. Add to SQLite FTS5 (Lexical Mirror)
-        import sqlite3
-
-        KnowledgeGraph(db_path=_hybrid.kg_path)  # Ensure schema exists
-        conn = sqlite3.connect(_hybrid.kg_path)
-        try:
-            conn.execute(
-                "INSERT OR REPLACE INTO drawers_fts (drawer_id, content, wing, room) VALUES (?, ?, ?, ?)",
-                (entry_id, entry, wing, room),
-            )
-            conn.commit()
-        finally:
-            conn.close()
-
-        # 3. Create trust record (idempotent)
-        _trust.create(entry_id, wing=wing, room=room)
 
         logger.info(f"Diary entry: {entry_id} → {wing}/diary/{topic}")
         return {

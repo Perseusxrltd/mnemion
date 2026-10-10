@@ -1,0 +1,18 @@
+{
+  "name": "pytest-working",
+  "command": [
+    ".venv/bin/python",
+    "-m",
+    "pytest",
+    "tests/",
+    "--ignore=tests/benchmarks",
+    "-q",
+    "--cov=mnemion",
+    "--cov-report=json:/tmp/mnemion-study-2026-10-09/checks/coverage-working.json",
+    "--cov-report=term",
+    "--cov-fail-under=30",
+    "--junitxml=/tmp/mnemion-study-2026-10-09/checks/pytest-working.xml"
+  ],
+  "exit_code": 0,
+  "elapsed_seconds": 108.9
+}

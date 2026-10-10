@@ -1,0 +1,199 @@
+{
+  "method": "synthetic regression probes; no retrieval-quality or load benchmark",
+  "observations": [
+    {
+      "case": "R01_first_write_invisible_to_existing_searcher",
+      "reproduced": true,
+      "collection_missing_at_start": true,
+      "write_success": true,
+      "existing_search_hits": 0,
+      "newly_constructed_searcher_hits": 1
+    },
+    {
+      "case": "R02_retry_acknowledges_incomplete_write",
+      "reproduced": true,
+      "first_result": {
+        "success": false,
+        "error": "Failed to add drawer"
+      },
+      "retry_result": {
+        "success": true,
+        "reason": "already_exists",
+        "drawer_id": "drawer_study_fault_d55121b3173620f2"
+      },
+      "vector_records": 1,
+      "lexical_records": 0,
+      "trust_record_present": false
+    },
+    {
+      "case": "R03_sweep_skips_lexical_and_trust",
+      "reproduced": true,
+      "sweep": {
+        "files": 1,
+        "seen": 1,
+        "filed": 1,
+        "skipped_existing": 0,
+        "skipped_cursor": 0,
+        "skipped_invalid": 0,
+        "skipped_unsupported": 0
+      },
+      "lexical_records": 0,
+      "trust_records": 0
+    },
+    {
+      "case": "R04_reconstruction_uses_stale_trust",
+      "reproduced": true,
+      "live_status": "quarantined",
+      "returned_ids": [
+        "stale-claim"
+      ],
+      "second_consolidation_count": 0
+    },
+    {
+      "case": "R05_graph_injection_ignores_scope_and_source_trust",
+      "reproduced": true,
+      "requested_wing": "team_a",
+      "requested_limit": 1,
+      "returned_count": 2,
+      "quarantined_source_graph_hits": [
+        {
+          "id": "kg_fee4af37b73d3f56",
+          "text": "[TEMPORAL GRAPH DATA]: Alice works at TeamBeta.",
+          "wing": "temporal_graph",
+          "room": "fact",
+          "source": "knowledge_graph.sqlite3",
+          "score": 1.0,
+          "trust_status": "current",
+          "confidence": 1.0,
+          "embedding": null
+        }
+      ]
+    },
+    {
+      "case": "R06_confidence_weight_does_not_rerank",
+      "reproduced": true,
+      "ordered_scores": [
+        {
+          "id": "low-confidence",
+          "score": 0.00082
+        },
+        {
+          "id": "high-confidence",
+          "score": 0.016129
+        }
+      ],
+      "top_one": "low-confidence"
+    },
+    {
+      "case": "R07_similarity_threshold_applied_to_rrf",
+      "reproduced": true,
+      "results_without_threshold": 2,
+      "results_with_threshold_0_5": 0,
+      "maximum_two_channel_rrf_score_at_k60": 0.03278688524590164
+    },
+    {
+      "case": "R08_remining_duplicates_fts_rows",
+      "reproduced": true,
+      "lexical_rows": [
+        [
+          "drawer_study_edit_ee3bd59065058328",
+          "obsoletequartz detail"
+        ],
+        [
+          "drawer_study_edit_ee3bd59065058328",
+          "replacementquartz detail"
+        ]
+      ],
+      "vector_documents": [
+        "replacementquartz detail"
+      ]
+    },
+    {
+      "case": "R09_restore_loses_quarantine_and_sidecar",
+      "reproduced": true,
+      "original_trust": "quarantined",
+      "sidecar_created_by_restore": false,
+      "restored_trust_record": null,
+      "restored_search_statuses": [
+        "current"
+      ]
+    },
+    {
+      "case": "R10_restore_parser_accepts_truncation",
+      "reproduced": true,
+      "parsed_objects": [
+        {
+          "id": "complete",
+          "content": "one",
+          "meta": {}
+        }
+      ],
+      "raised_parse_error": false
+    },
+    {
+      "case": "R11_sync_resurrects_deleted_memory",
+      "reproduced": true,
+      "local_count_after_delete": 0,
+      "remote_count": 1,
+      "merged_count": 1
+    },
+    {
+      "case": "R12_benchmark_rewards_wrong_needle",
+      "reproduced": true,
+      "wrong_needle_recall_at_5": 1.0,
+      "wrong_needle_mrr": 1.0
+    },
+    {
+      "case": "R13_moat_baselines_are_not_executed",
+      "reproduced": true,
+      "hybrid_calls": 0,
+      "vector_calls": 0,
+      "fixture_count": 4,
+      "mode_scores": {
+        "struct": {
+          "raw_vector": 0.0,
+          "hybrid_rrf": 0.0,
+          "trust_kg": 0.0,
+          "cognitive_reconstruction": 1.0
+        },
+        "causal": {
+          "raw_vector": 0.0,
+          "hybrid_rrf": 0.0,
+          "trust_kg": 0.0,
+          "cognitive_reconstruction": 1.0
+        },
+        "forgetting": {
+          "raw_vector": 0.0,
+          "hybrid_rrf": 0.0,
+          "trust_kg": 1.0,
+          "cognitive_reconstruction": 1.0
+        },
+        "security": {
+          "raw_vector": 0.0,
+          "hybrid_rrf": 0.0,
+          "trust_kg": 1.0,
+          "cognitive_reconstruction": 0.0
+        }
+      }
+    },
+    {
+      "case": "R14_predictive_retrieval_has_no_search_embeddings",
+      "reproduced": true,
+      "result_count": 1,
+      "embeddings_present": 0
+    },
+    {
+      "case": "R15_ndcg_normalizes_only_retrieved_relevance",
+      "reproduced": true,
+      "returned_relevant_documents": 1,
+      "total_relevant_documents": 2,
+      "reported_ndcg_at_2": 1.0,
+      "correct_ndcg_at_2": 0.6131471927654584
+    },
+    {
+      "case": "tool_surface_inventory",
+      "tool_count": 47,
+      "schema_utf8_bytes": 17263
+    }
+  ]
+}

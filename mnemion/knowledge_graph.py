@@ -44,12 +44,22 @@ from datetime import date, datetime
 from pathlib import Path
 
 
-DEFAULT_KG_PATH = os.path.expanduser("~/.mnemion/knowledge_graph.sqlite3")
+DEFAULT_KG_PATH = str(
+    Path(os.environ.get("MNEMION_HOME") or os.path.expanduser("~/.mnemion")).expanduser()
+    / "knowledge_graph.sqlite3"
+)
+
+
+def _default_kg_path() -> str:
+    return str(
+        Path(os.environ.get("MNEMION_HOME") or os.path.expanduser("~/.mnemion")).expanduser()
+        / "knowledge_graph.sqlite3"
+    )
 
 
 class KnowledgeGraph:
     def __init__(self, db_path: str = None):
-        self.db_path = db_path or DEFAULT_KG_PATH
+        self.db_path = db_path or _default_kg_path()
         Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
         self._lock = threading.Lock()
         self._init_db()
@@ -105,6 +115,10 @@ class KnowledgeGraph:
         conn.close()
 
     def _conn(self):
+        from .legacy_freeze import require_writable
+        from pathlib import Path
+
+        require_writable(Path(self.db_path).parent)
         conn = sqlite3.connect(self.db_path, timeout=10)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA journal_mode=WAL")

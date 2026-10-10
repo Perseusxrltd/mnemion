@@ -96,7 +96,7 @@ Mnemion's edge is not a bigger vector database. The moat is the combination of m
 {
   "suite": "all",
   "kg_path": null,
-  "modes": ["raw_vector", "hybrid_rrf", "trust_kg", "cognitive_reconstruction"],
+  "modes": ["raw_vector", "hybrid_rrf", "trust_kg", "cognitive_reconstruction", "memory_guard"],
   "scores": {},
   "case_counts": {},
   "cases": {}
@@ -106,7 +106,7 @@ Mnemion's edge is not a bigger vector database. The moat is the combination of m
 Each case has a `name` and a `passed` object with one boolean for every mode.
 The CLI uses an isolated temporary SQLite DB for built-in eval fixtures so it does not write synthetic records into the live knowledge graph.
 
-`benchmarks/moat_benchmark.py` wraps the same deterministic cases with benchmark metadata and per-mode totals. Treat it as a locally reproducible Mnemion-moat proof, not as a raw vector-recall leaderboard.
+`benchmarks/moat_benchmark.py` wraps the same four deterministic fixtures with per-mode totals. Scores and `passed` values are `null` when that mode was not executed; unexecuted vector, hybrid, and trust/graph comparators are excluded from totals. Memory Guard and reconstruction are reported separately. This is a narrow behavior check, and provides no evidence of comparative retrieval accuracy.
 
 `mnemion memory-guard review --out <dir>` reads existing `memory_guard_findings`
 from the knowledge graph and writes `memory_guard_review.md` plus
@@ -119,7 +119,7 @@ quarantine anything. The CSV columns are `drawer_id`, `risk_type`, `score`,
 | Key | Environment | Default | Meaning |
 |-----|-------------|---------|---------|
 | `backend` | `MNEMION_BACKEND` | `chroma` | Storage backend entry point. |
-| `embedding_device` | `MNEMION_EMBEDDING_DEVICE` | `auto` | Embedding provider target: `auto`, `cpu`, `cuda`, `dml`, or `coreml`. |
+| `embedding_device` | `MNEMION_EMBEDDING_DEVICE` | `auto` | Embedding provider target: `auto`, `cpu`, `cuda`, `dml`, `coreml`, or deterministic offline `hash`. |
 | `entity_languages` | `MNEMION_ENTITY_LANGUAGES` | `en` | Entity pattern locales, comma-separated. |
 | `topic_tunnel_min_count` | `MNEMION_TOPIC_TUNNEL_MIN_COUNT` | `2` | Minimum drawer support before a repeated cue becomes a topic tunnel. |
 | `obsidian_vault_path` | `MNEMION_OBSIDIAN_VAULT_PATH` | `~/.mnemion/obsidian-vault` | Owned one-way Obsidian Markdown mirror path. |

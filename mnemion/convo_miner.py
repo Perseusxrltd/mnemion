@@ -15,9 +15,6 @@ from pathlib import Path
 from datetime import datetime
 from collections import defaultdict
 
-import sqlite3
-from .trust_lifecycle import DrawerTrust
-from .knowledge_graph import KnowledgeGraph
 
 from .normalize import normalize
 
@@ -360,39 +357,23 @@ def mine_convos(
                 room_counts[chunk_room] += 1
             drawer_id = f"drawer_{wing}_{chunk_room}_{hashlib.md5((source_file + str(chunk['chunk_index'])).encode(), usedforsecurity=False).hexdigest()[:16]}"
             try:
-                collection.add(
-                    documents=[chunk["content"]],
-                    ids=[drawer_id],
-                    metadatas=[
-                        {
-                            "wing": wing,
-                            "room": chunk_room,
-                            "source_file": source_file,
-                            "chunk_index": chunk["chunk_index"],
-                            "added_by": agent,
-                            "filed_at": datetime.now().isoformat(),
-                            "ingest_mode": "convos",
-                            "extract_mode": extract_mode,
-                        }
-                    ],
-                )
+                from .ingestion import LegacyMemoryWriter
 
-                # 2. Add to SQLite FTS5 (Lexical Mirror)
                 kg_path = str(Path(anaktoron_path).parent / "knowledge_graph.sqlite3")
-                KnowledgeGraph(kg_path)  # Ensure schema exists
-                conn = sqlite3.connect(kg_path)
-                try:
-                    conn.execute(
-                        "INSERT OR REPLACE INTO drawers_fts (drawer_id, content, wing, room) VALUES (?, ?, ?, ?)",
-                        (drawer_id, chunk["content"], wing, chunk_room),
-                    )
-                    conn.commit()
-                finally:
-                    conn.close()
-
-                # 3. Create trust record (idempotent)
-                trust_db = DrawerTrust(kg_path)
-                trust_db.create(drawer_id, wing=wing, room=chunk_room)
+                LegacyMemoryWriter(collection, kg_path).save(
+                    drawer_id,
+                    chunk["content"],
+                    {
+                        "wing": wing,
+                        "room": chunk_room,
+                        "source_file": source_file,
+                        "chunk_index": chunk["chunk_index"],
+                        "added_by": agent,
+                        "filed_at": datetime.now().isoformat(),
+                        "ingest_mode": "convos",
+                        "extract_mode": extract_mode,
+                    },
+                )
 
                 drawers_added += 1
             except Exception as e:

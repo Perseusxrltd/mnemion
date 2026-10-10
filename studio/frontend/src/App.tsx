@@ -1,5 +1,5 @@
-import { lazy, Suspense, type ReactNode } from 'react'
-import { BrowserRouter, HashRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { lazy, Suspense, useEffect, type ReactNode } from 'react'
+import { BrowserRouter, HashRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import Layout from './components/Layout'
 
 const Dashboard = lazy(() => import('./views/Dashboard'))
@@ -11,8 +11,9 @@ const AgentsView = lazy(() => import('./views/AgentsView'))
 const ConnectorsView = lazy(() => import('./views/ConnectorsView'))
 const SettingsView = lazy(() => import('./views/SettingsView'))
 const CoreMemoryView = lazy(() => import('./views/CoreMemoryView'))
+const Workspace = lazy(() => import('./workspace/Workspace'))
 
-// Electron loads the app from file:// — HashRouter required for routing to work.
+// Electron loads the app from file://, so HashRouter is required.
 // In the browser dev server, BrowserRouter is fine.
 const Router = window.location.protocol === 'file:' ? HashRouter : BrowserRouter
 
@@ -20,12 +21,24 @@ function lazyRoute(node: ReactNode) {
   return <Suspense fallback={<div className="min-h-[240px]" />}>{node}</Suspense>
 }
 
+function NativeNavigationBridge() {
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    return window.mnemion?.onNavigate?.((route) => navigate(route))
+  }, [navigate])
+
+  return null
+}
+
 export default function App() {
   return (
     <Router>
+      <NativeNavigationBridge />
       <Routes>
+        <Route path="/workspace/*" element={lazyRoute(<Workspace />)} />
+        <Route index element={<Navigate to="/workspace" replace />} />
         <Route element={<Layout />}>
-          <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={lazyRoute(<Dashboard />)} />
           <Route path="/graph" element={lazyRoute(<GraphView />)} />
           <Route path="/browse" element={lazyRoute(<Browser />)} />

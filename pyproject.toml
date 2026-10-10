@@ -1,9 +1,9 @@
 [project]
 name = "mnemion"
-version = "3.6.0"
-description = "Mnemion — persistent AI memory with hybrid retrieval, trust lifecycle, and behavioral protocol. No API key required."
+version = "4.0.0"
+description = "Shared memory infrastructure for applications, teams, and AI assistants, with source evidence and Obsidian visualization."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.12,<3.15"
 license = "MIT"
 authors = [
     {name = "PerseusXR", email = "contact@perseusxr.com"},
@@ -13,13 +13,10 @@ keywords = [
     "vector-database", "claude", "chatgpt", "embeddings",
 ]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 3 - Alpha",
     "Environment :: Console",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
@@ -27,13 +24,16 @@ classifiers = [
     "Topic :: Utilities",
 ]
 dependencies = [
-    "chromadb>=0.6.3,<0.7",
-    "onnxruntime==1.19.2; python_version < '3.10'",
-    "onnxruntime==1.20.1; python_version >= '3.10' and python_version < '3.11'",
-    "onnxruntime>=1.20.1; python_version >= '3.11'",
-    "opentelemetry-exporter-otlp-proto-grpc>=1.40.0,<2.0",
-    "protobuf>=6.31.1,<7.0",
-    "pyyaml>=6.0",
+    "fastapi>=0.143.0,<0.144",
+    "uvicorn>=0.54.0,<1",
+    "psycopg[binary,pool]>=3.3.6,<4",
+    "pgvector>=0.5.1,<0.6",
+    "fastembed==0.9.0",
+    "mcp>=2.3.0,<3",
+    "httpx>=0.28.1,<0.29",
+    "pyyaml>=6.0.3,<7",
+    "tomlkit>=0.13.3,<1",
+    "psutil>=7.2.2,<8",
 ]
 
 [project.urls]
@@ -43,6 +43,10 @@ Repository = "https://github.com/Perseusxrltd/mnemion"
 
 [project.scripts]
 mnemion = "mnemion.cli:main"
+mnemion-service = "mnemion.service.cli:main"
+mnemion-connect = "mnemion.connectors.runner:main"
+mnemion-agent = "mnemion.agent_setup:main"
+mnemion-capture-hook = "mnemion.capture.shared:main"
 
 [project.entry-points."mnemion.backends"]
 chroma = "mnemion.backends.chroma:ChromaBackend"
@@ -50,27 +54,32 @@ chroma = "mnemion.backends.chroma:ChromaBackend"
 [project.entry-points."mnemion.sources"]
 
 [project.optional-dependencies]
+legacy = [
+    "chromadb>=0.6.3,<0.7",
+    "opentelemetry-exporter-otlp-proto-grpc>=1.40.0,<2.0",
+    "protobuf>=6.31.1,<7.0",
+]
 dev = [
-    "fastapi[standard]>=0.115.0",
     "pytest>=7.0",
     "pytest-cov>=4.0",
     "ruff>=0.4.0",
     "psutil>=5.9",
+    "pgserver>=0.1.4; platform_system != 'Windows' and python_version == '3.12'",
 ]
 spellcheck = ["autocorrect>=2.0"]
 lewm = ["torch>=2.0", "numpy>=1.24"]
-studio = ["fastapi[standard]>=0.115.0", "uvicorn[standard]>=0.32.0"]
+studio = ["uvicorn[standard]>=0.54.0", "pyinstaller>=6.0"]
 gpu = ["onnxruntime-gpu>=1.20.1; platform_system != 'Darwin'"]
 dml = ["onnxruntime-directml>=1.20.1; platform_system == 'Windows'"]
 coreml = ["onnxruntime>=1.20.1; python_version >= '3.10' and platform_system == 'Darwin'"]
 
 [dependency-groups]
 dev = [
-    "fastapi[standard]>=0.115.0",
     "pytest>=7.0",
     "pytest-cov>=4.0",
     "ruff>=0.4.0",
     "psutil>=5.9",
+    "pgserver>=0.1.4; platform_system != 'Windows' and python_version == '3.12'",
 ]
 
 [build-system]
@@ -82,7 +91,9 @@ packages = ["mnemion"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py39"
+target-version = "py312"
+include = ["*.py", "*.pyi", "*.ipynb"]
+extend-exclude = ["docs/research", "output"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W"]
@@ -92,7 +103,7 @@ ignore = ["E501"]
 quote-style = "double"
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests", "service_tests", "client_tests"]
 pythonpath = ["."]
 addopts = "-m 'not benchmark and not slow and not stress'"
 markers = [

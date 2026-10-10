@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { NavLink, useNavigate, useLocation, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { ChevronDown, ChevronRight, FileText, Plus } from 'lucide-react'
+import { BrainCircuit, ChevronDown, ChevronRight, FileText, Plus } from 'lucide-react'
 import { api } from '../api/client'
 import { wingColor } from '../types'
 import { useLayoutCtx } from './Layout'
@@ -88,12 +88,14 @@ export default function LeftSidebar({ width = 260 }: { width?: number }) {
     queryKey: ['taxonomy'],
     queryFn: api.taxonomy,
     staleTime: 60_000,
+    refetchInterval: 10_000,
   })
 
   const { data: status } = useQuery({
     queryKey: ['status'],
     queryFn: api.status,
     staleTime: 30_000,
+    refetchInterval: 5_000,
   })
 
   const wings = taxonomy?.taxonomy ?? {}
@@ -118,10 +120,10 @@ export default function LeftSidebar({ width = 260 }: { width?: number }) {
           className="flex items-center gap-2 px-3 py-2.5 border-b"
           style={{ borderColor: 'var(--background-modifier-border)' }}
         >
-          <span style={{ fontSize: 15, lineHeight: 1, flexShrink: 0 }}>🏛</span>
+          <BrainCircuit size={17} style={{ color: 'var(--interactive-accent)', flexShrink: 0 }} />
           <div className="flex-1 min-w-0">
             <div className="text-[13px] font-semibold truncate">Mnemion</div>
-            <div className="text-[10px]" style={{ color: 'var(--text-faint)' }}>Memory Palace</div>
+            <div className="text-[10px]" style={{ color: 'var(--text-faint)' }}>Local Memory</div>
           </div>
           {status && (
             <span
@@ -133,7 +135,7 @@ export default function LeftSidebar({ width = 260 }: { width?: number }) {
           )}
         </div>
 
-        {/* New Drawer button */}
+        {/* Save Memory button */}
         <div className="px-2 pt-2">
           <button
             onClick={() => openCreateDrawer(currentWing ?? '')}
@@ -147,7 +149,7 @@ export default function LeftSidebar({ width = 260 }: { width?: number }) {
             onMouseLeave={e => (e.currentTarget.style.background = 'rgba(127,109,242,0.12)')}
           >
             <Plus size={13} />
-            New Drawer
+            Save Memory
           </button>
         </div>
 
@@ -160,7 +162,7 @@ export default function LeftSidebar({ width = 260 }: { width?: number }) {
             onClick={() => setVaultOpen(v => !v)}
           >
             {vaultOpen ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
-            <span>Vault</span>
+            <span>Memory</span>
             {status && (
               <span className="ml-auto font-mono text-[10px]">
                 {status.total_drawers.toLocaleString()}
@@ -181,13 +183,13 @@ export default function LeftSidebar({ width = 260 }: { width?: number }) {
 
               {wingsSorted.length === 0 && (
                 <div className="px-3 py-4 text-center text-[12px]" style={{ color: 'var(--text-faint)' }}>
-                  No wings yet.<br />
+                  No memory areas yet.<br />
                   <button
                     onClick={() => openCreateDrawer()}
                     className="mt-1 underline"
                     style={{ color: 'var(--interactive-accent)' }}
                   >
-                    Create first drawer
+                    Save first memory
                   </button>
                 </div>
               )}
@@ -208,8 +210,8 @@ export default function LeftSidebar({ width = 260 }: { width?: number }) {
             }}
           />
           {status
-            ? `${status.total_drawers.toLocaleString()} drawers · ${status.wing_count} wings`
-            : 'Connecting…'}
+            ? `${status.total_drawers.toLocaleString()} memories - ${status.wing_count} areas`
+            : 'Connecting...'}
         </div>
     </div>
   )

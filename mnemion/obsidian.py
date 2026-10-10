@@ -23,6 +23,7 @@ from urllib.parse import quote
 
 import yaml
 
+from .vault_refresh import VaultRefreshError, bundle, refresh
 from .version import __version__
 
 MANIFEST_NAME = ".mnemion-obsidian-manifest.json"
@@ -297,8 +298,10 @@ def _load_sidecars(kg_db_path: Path) -> dict[str, Any]:
     triples = _db_rows(
         kg_db_path,
         "triples",
-        "SELECT subject, predicate, object, confidence, source_drawer, valid_from, valid_to, created_at FROM triples",
+        "SELECT * FROM triples",
     )
+    for triple in triples:
+        triple["source_drawer"] = triple.get("source_drawer") or triple.get("source_closet")
     entities = _db_rows(
         kg_db_path,
         "entities",
@@ -366,6 +369,25 @@ def _render_vault_files(
     db_path = Path(kg_db_path).expanduser()
     sidecars = _load_sidecars(db_path)
     drawers = list(_iter_collection_drawers(collection, wing=wing))
+    deleted = {
+        row["drawer_id"]
+        for row in _db_rows(db_path, "drawer_deletions", "SELECT drawer_id FROM drawer_deletions")
+    }
+    drawers = [drawer for drawer in drawers if drawer.drawer_id not in deleted]
+    allowed = {drawer.drawer_id for drawer in drawers}
+    sidecars["triples"] = [
+        row
+        for row in sidecars["triples"]
+        if row.get("source_drawer") in allowed and not row.get("valid_to")
+    ]
+    for key in ("cognitive_units", "cognitive_edges", "memory_findings"):
+        sidecars[key] = [row for row in sidecars[key] if row.get("drawer_id") in allowed]
+    visible_entities = {
+        entity for drawer in drawers for entity in _metadata_entities(drawer.metadata)
+    } | {row.get(key) for row in sidecars["triples"] for key in ("subject", "object")}
+    sidecars["entities"] = [
+        row for row in sidecars["entities"] if row.get("name") in visible_entities
+    ]
     trust_records = sidecars["trust"]
     triples_by_drawer = _group_by_drawer(sidecars["triples"])
     units_by_drawer = _group_by_drawer(sidecars["cognitive_units"])
@@ -378,16 +400,17 @@ def _render_vault_files(
     drawer_paths_by_room: dict[tuple[str, str], list[tuple[str, str]]] = defaultdict(list)
     entity_drawers: dict[str, list[tuple[str, str]]] = defaultdict(list)
 
-    def add_file(path: str, content: str) -> None:
-        if path in files:
+    def add_file(path: str, content: str) -> str:
+        if path.casefold() in {key.casefold() for key in files}:
             stem, suffix = path.rsplit(".", 1) if "." in path else (path, "md")
             i = 2
             candidate = f"{stem}-{i}.{suffix}"
-            while candidate in files:
+            while candidate.casefold() in {key.casefold() for key in files}:
                 i += 1
                 candidate = f"{stem}-{i}.{suffix}"
             path = candidate
         files[path] = content
+        return path
 
     for drawer in sorted(
         drawers,
@@ -400,14 +423,14 @@ def _render_vault_files(
         metadata = dict(drawer.metadata)
         trust_row = trust_records.get(drawer.drawer_id)
         if trust_row:
-            metadata.setdefault("trust_status", trust_row.get("status"))
-            metadata.setdefault("confidence", trust_row.get("confidence"))
+            metadata["trust_status"] = trust_row.get("status")
+            metadata["confidence"] = trust_row.get("confidence")
         wing_name = str(metadata.get("wing") or "unknown")
         room_name = str(metadata.get("room") or "misc")
         status = str(metadata.get("trust_status") or "current")
         entities = _drawer_entities(drawer, triples_by_drawer)
         note_path = drawer_note_path(drawer.drawer_id, metadata)
-        add_file(
+        note_path = add_file(
             note_path,
             render_drawer_note(
                 drawer.drawer_id,
@@ -685,6 +708,7 @@ def _manifest_payload(
         "vault_path": str(vault_path),
         "synced_at": now_iso(),
         "wing": wing,
+        "scope": {"type": "legacy-owner-review", "wing": wing},
         "files": sorted(files),
         **summary,
     }
@@ -717,40 +741,13 @@ def sync_obsidian_vault(
 
     files, summary = _render_vault_files(collection, kg_db_path, wing=wing)
     manifest = _manifest_payload(vault, files, summary, wing)
-    if dry_run:
-        return {
-            "status": "dry_run",
-            "vault_path": str(vault),
-            "would_write_files": len(files) + 1,
-            "would_prune_files": len(set((previous_manifest or {}).get("files", [])) - set(files)),
-            **summary,
-        }
-
-    vault.mkdir(parents=True, exist_ok=True)
-    previous_files = set((previous_manifest or {}).get("files", []))
-    current_files = set(files)
-    pruned = 0
-    for rel_path in sorted(previous_files - current_files):
-        if rel_path == MANIFEST_NAME:
-            continue
-        target = _ensure_inside(vault, str(rel_path))
-        if target.exists() and target.is_file():
-            target.unlink()
-            pruned += 1
-
-    for rel_path, content in files.items():
-        target = _ensure_inside(vault, rel_path)
-        target.parent.mkdir(parents=True, exist_ok=True)
-        with target.open("w", encoding="utf-8", newline="\n") as f:
-            f.write(content)
-
-    with (vault / MANIFEST_NAME).open("w", encoding="utf-8", newline="\n") as f:
-        f.write(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+    try:
+        result = refresh(vault, files, manifest, MANIFEST_NAME, dry_run=dry_run)
+    except VaultRefreshError as exc:
+        raise ObsidianSafetyError(str(exc)) from exc
     return {
-        "status": "synced",
+        **result,
         "vault_path": str(vault),
-        "file_count": len(files),
-        "pruned_files": pruned,
         "manifest_path": str(vault / MANIFEST_NAME),
         **summary,
     }
@@ -766,6 +763,7 @@ def export_obsidian_zip(
     target = Path(zip_path)
     files, summary = _render_vault_files(collection, kg_db_path, wing=wing)
     manifest = _manifest_payload(Path("mnemion_vault"), files, summary, wing)
+    files, manifest = bundle(files, manifest)
     target.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as zf:
         for rel_path, content in files.items():

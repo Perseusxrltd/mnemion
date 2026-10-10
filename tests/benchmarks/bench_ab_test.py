@@ -29,15 +29,15 @@ import chromadb
 from tests.benchmarks.data_generator import AnaktoronDataGenerator
 
 
-def _recall_at_k(results_texts, k):
-    """Check if any needle appears in the top-k results."""
-    return 1.0 if any("NEEDLE_" in t for t in results_texts[:k]) else 0.0
+def _recall_at_k(result_ids, k, expected_id):
+    """Recall for this query's expected document, never a different needle."""
+    return float(k > 0 and expected_id in result_ids[:k])
 
 
-def _mrr(results_texts):
-    """Mean Reciprocal Rank — 1/rank of first needle hit, or 0."""
-    for i, t in enumerate(results_texts):
-        if "NEEDLE_" in t:
+def _mrr(result_ids, expected_id):
+    """Reciprocal rank of this query's expected document."""
+    for i, identifier in enumerate(result_ids):
+        if identifier == expected_id:
             return 1.0 / (i + 1)
     return 0.0
 
@@ -53,10 +53,10 @@ def run_pipeline_a(anaktoron_path, queries):
         result = search_memories(q["query"], anaktoron_path, n_results=10, collection_name=col_name)
         elapsed = (time.perf_counter() - start) * 1000
 
-        texts = [h["text"] for h in result.get("results", [])]
-        results["recall@5"].append(_recall_at_k(texts, 5))
-        results["recall@10"].append(_recall_at_k(texts, 10))
-        results["mrr"].append(_mrr(texts))
+        result_ids = [h["id"] for h in result.get("results", [])]
+        results["recall@5"].append(_recall_at_k(result_ids, 5, q["id"]))
+        results["recall@10"].append(_recall_at_k(result_ids, 10, q["id"]))
+        results["mrr"].append(_mrr(result_ids, q["id"]))
         results["latency_ms"].append(elapsed)
 
     return results
@@ -122,10 +122,10 @@ def run_pipeline_b(anaktoron_path, queries):
         )
         elapsed = (time.perf_counter() - start) * 1000
 
-        texts = [h["text"] for h in result.get("results", [])]
-        results["recall@5"].append(_recall_at_k(texts, 5))
-        results["recall@10"].append(_recall_at_k(texts, 10))
-        results["mrr"].append(_mrr(texts))
+        result_ids = [h["id"] for h in result.get("results", [])]
+        results["recall@5"].append(_recall_at_k(result_ids, 5, q["id"]))
+        results["recall@10"].append(_recall_at_k(result_ids, 10, q["id"]))
+        results["mrr"].append(_mrr(result_ids, q["id"]))
         results["latency_ms"].append(elapsed)
 
     return results
@@ -159,10 +159,10 @@ def run_pipeline_c(anaktoron_path, queries):
             hits = []
         elapsed = (time.perf_counter() - start) * 1000
 
-        texts = [h.get("text", "") for h in hits]
-        results["recall@5"].append(_recall_at_k(texts, 5))
-        results["recall@10"].append(_recall_at_k(texts, 10))
-        results["mrr"].append(_mrr(texts))
+        result_ids = [h["id"] for h in hits]
+        results["recall@5"].append(_recall_at_k(result_ids, 5, q["id"]))
+        results["recall@10"].append(_recall_at_k(result_ids, 10, q["id"]))
+        results["mrr"].append(_mrr(result_ids, q["id"]))
         results["latency_ms"].append(elapsed)
 
     return results
@@ -234,18 +234,22 @@ def main():
             if abs(delta_r5) < 0.001:
                 print("    -> Grooming had NO measurable impact on recall.")
             elif delta_r5 > 0:
-                print(f"    -> Grooming IMPROVED recall by {delta_r5 * 100:.1f}%")
+                print(f"    -> Grooming IMPROVED recall by {delta_r5 * 100:.1f} percentage points")
             else:
-                print(f"    -> Grooming HURT recall by {abs(delta_r5) * 100:.1f}%")
+                print(f"    -> Grooming HURT recall by {abs(delta_r5) * 100:.1f} percentage points")
 
         delta_hybrid = _avg(results_c["recall@5"]) - _avg(results_a["recall@5"])
         print(f"    Hybrid vs raw:           R@5 delta = {delta_hybrid:+.3f}")
         if abs(delta_hybrid) < 0.001:
             print("    -> Hybrid search had NO measurable impact on recall.")
         elif delta_hybrid > 0:
-            print(f"    -> Hybrid search IMPROVED recall by {delta_hybrid * 100:.1f}%")
+            print(
+                f"    -> Hybrid search IMPROVED recall by {delta_hybrid * 100:.1f} percentage points"
+            )
         else:
-            print(f"    -> Hybrid search HURT recall by {abs(delta_hybrid) * 100:.1f}%")
+            print(
+                f"    -> Hybrid search HURT recall by {abs(delta_hybrid) * 100:.1f} percentage points"
+            )
 
         lat_a = _avg(results_a["latency_ms"])
         lat_c = _avg(results_c["latency_ms"])

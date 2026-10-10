@@ -152,6 +152,12 @@ def sweep(
         create=True,
     )
     cursors = _load_cursors(target)
+    from .ingestion import LegacyMemoryWriter
+
+    writer = LegacyMemoryWriter(
+        collection, Path(target).expanduser().parent / "knowledge_graph.sqlite3"
+    )
+    writer.recover()
     stats = {
         "files": 0,
         "seen": 0,
@@ -169,13 +175,11 @@ def sweep(
         existing = set(collection.get(ids=ids).ids)
         new_rows = [row for row, doc_id in zip(batch, ids) if doc_id not in existing]
         stats["skipped_existing"] += len(batch) - len(new_rows)
-        if not new_rows:
-            return
         now = datetime.now(timezone.utc).isoformat()
-        collection.upsert(
-            ids=[_doc_id(row) for row in new_rows],
-            documents=[row["content"] for row in new_rows],
-            metadatas=[
+        for row in batch:
+            writer.save(
+                _doc_id(row),
+                row["content"],
                 {
                     "wing": source_label or "sweeps",
                     "room": row["role"],
@@ -186,10 +190,8 @@ def sweep(
                     "role": row["role"],
                     "filed_at": now,
                     "ingest_mode": "sweep",
-                }
-                for row in new_rows
-            ],
-        )
+                },
+            )
         stats["filed"] += len(new_rows)
 
     for path in _iter_jsonl(jsonl_or_dir):

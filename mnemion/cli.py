@@ -920,167 +920,44 @@ def cmd_capture(args):
 
 
 def _count_json_objects(filepath):
-    """Fast byte scan to count top-level objects in the export.
+    from .drawer_import import preflight
 
-    Each drawer has exactly one top-level ``"id":`` key. Keys inside
-    JSON string values are escaped (``\\\"``), so searching for the
-    literal byte sequence ``b'"id":'`` reliably counts only top-level
-    drawer entries.
-    """
-    count = 0
-    with open(filepath, "rb") as f:
-        for chunk in iter(lambda: f.read(65536), b""):
-            count += chunk.count(b'"id":')
-    return count
+    with preflight(filepath) as (_, count):
+        return count
 
 
 def _stream_json_array(filepath, read_size=524288):
-    """Yield objects from a top-level JSON array one at a time.
+    """Compatibility iterator; malformed or incomplete input raises explicitly."""
+    from .drawer_import import iter_drawers
 
-    Uses ``json.JSONDecoder.raw_decode()`` with a rolling file buffer so
-    only a single object (plus a small read-ahead) is in memory at once —
-    regardless of how large the overall file is.
-    """
-    import json
-
-    decoder = json.JSONDecoder()
-    buf = ""
-
-    with open(filepath, "r", encoding="utf-8") as f:
-        # Advance to the opening bracket
-        while "[" not in buf:
-            chunk = f.read(read_size)
-            if not chunk:
-                return
-            buf += chunk
-        buf = buf[buf.index("[") + 1 :]
-
-        while True:
-            # Drop separators between elements
-            buf = buf.lstrip(" \t\r\n,")
-
-            # Refill when the buffer is running low
-            if len(buf) < read_size // 4:
-                chunk = f.read(read_size)
-                if chunk:
-                    buf += chunk
-
-            # End of array or empty file
-            if not buf or buf[0] == "]":
-                break
-
-            # Decode one object; read more if it is incomplete
-            while True:
-                try:
-                    obj, end = decoder.raw_decode(buf)
-                    yield obj
-                    buf = buf[end:]
-                    break
-                except json.JSONDecodeError:
-                    chunk = f.read(read_size)
-                    if not chunk:
-                        return  # Truncated file
-                    buf += chunk
+    yield from iter_drawers(filepath, read_size=read_size)
 
 
 def cmd_restore(args):
-    """Import a JSON export (archive/drawers_export.json) into the local Anaktoron."""
-    import gc
-    from pathlib import Path
-    from .config import MnemionConfig
-    from .backends.registry import get_backend
+    """Preflight drawer JSON, then import through the durable legacy writer."""
+    import json
+    from .drawer_import import restore_drawers
 
+    if args.replace:
+        print(
+            "Drawer JSON cannot replace a complete profile. Use mnemion-service legacy-restore into a new profile.",
+            file=sys.stderr,
+        )
+        raise SystemExit(2)
     cfg = MnemionConfig()
-    anaktoron_path = os.path.expanduser(args.palace) if args.palace else cfg.anaktoron_path
-    col_name = cfg.collection_name
-    json_file = args.file
-    batch_size = args.batch_size
-
-    if not os.path.isfile(json_file):
-        print(f"\n  File not found: {json_file}\n", flush=True)
-        sys.exit(1)
-
-    file_mb = os.path.getsize(json_file) / 1_048_576
-    print(f"\n{'=' * 55}", flush=True)
-    print("  Mnemion Restore", flush=True)
-    print(f"{'=' * 55}\n", flush=True)
-    print(f"  Source:     {json_file} ({file_mb:.1f} MB)", flush=True)
-    print(f"  Anaktoron: {anaktoron_path}", flush=True)
-    print(f"  Collection: {col_name}", flush=True)
-    print(f"  Batch size: {batch_size}", flush=True)
-
-    # Fast pre-count (byte scan, no JSON parsing) so we can show %
-    print("  Counting drawers ...", end=" ", flush=True)
-    total = _count_json_objects(json_file)
-    print(f"{total}", flush=True)
-
-    Path(anaktoron_path).mkdir(parents=True, exist_ok=True)
-    backend = get_backend(anaktoron_path=anaktoron_path)
-    client = getattr(backend, "client", None)
-
+    palace = os.path.expanduser(args.palace) if args.palace else cfg.anaktoron_path
     try:
-        col = backend.get_collection(col_name, create=True)
-    except Exception as e:
-        print(f"  Error opening Anaktoron: {e}\n", flush=True)
-        sys.exit(1)
-
-    existing = col.count()
-    if existing > 0 and not args.merge and not args.replace:
-        print(f"\n  Anaktoron already has {existing} drawers.")
-        print("  Use --merge to add to an existing Anaktoron, or --replace to overwrite.\n")
-        sys.exit(1)
-
-    if args.replace and existing > 0:
-        print(f"\n  Replacing {existing} existing drawers...", flush=True)
-        client.delete_collection(col_name)
-        col = backend.create_collection(col_name)
-
-    print("  Streaming restore started ...\n", flush=True)
-
-    filed = 0
-    skipped = 0
-    batch = []
-
-    def _flush(b):
-        nonlocal filed, skipped
-        ids = [d["id"] for d in b]
-        docs = [d["content"] for d in b]
-        clean_metas = [
-            {
-                k: v
-                for k, v in (d.get("meta") or {}).items()
-                if isinstance(v, (str, int, float, bool))
-            }
-            for d in b
-        ]
-        try:
-            col.upsert(ids=ids, documents=docs, metadatas=clean_metas)
-            filed += len(b)
-            pct = filed * 100 // total if total else 0
-            print(f"  [{pct:3d}%] {filed}/{total}", flush=True)
-        except Exception as e:
-            print(f"  Error at {filed}: {e}", flush=True)
-            skipped += len(b)
-        finally:
-            del ids, docs, clean_metas
-            gc.collect()
-
-    for drawer in _stream_json_array(json_file):
-        batch.append(drawer)
-        if len(batch) >= batch_size:
-            _flush(batch)
-            batch = []
-
-    if batch:
-        _flush(batch)
-
-    print(
-        f"\n  Done. {filed} drawers restored" + (f", {skipped} skipped." if skipped else "."),
-        flush=True,
-    )
-    if filed > 0:
-        print("  Run 'mnemion status' to verify.\n", flush=True)
-    print(f"{'=' * 55}\n", flush=True)
+        result = restore_drawers(args.file, palace, cfg.collection_name, merge=args.merge)
+    except (ValueError, OSError) as exc:
+        print(f"Drawer import failed: {exc}", file=sys.stderr)
+        raise SystemExit(1) from exc
+    except Exception as exc:
+        print(
+            f"Drawer import interrupted ({type(exc).__name__}); accepted records remain in the durable ingestion journal for retry.",
+            file=sys.stderr,
+        )
+        raise SystemExit(1) from exc
+    print(json.dumps(result, indent=2))
 
 
 def cmd_llm(args):

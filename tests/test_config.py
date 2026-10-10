@@ -1,6 +1,7 @@
 import os
 import json
 import tempfile
+from pathlib import Path
 from mnemion.config import MnemionConfig
 
 
@@ -59,6 +60,24 @@ def test_init():
     cfg = MnemionConfig(config_dir=tmpdir)
     cfg.init()
     assert os.path.exists(os.path.join(tmpdir, "config.json"))
+
+
+def test_mnemion_home_overrides_default_root(monkeypatch, tmp_path):
+    home = tmp_path / "app-data"
+    monkeypatch.delenv("MNEMION_ANAKTORON_PATH", raising=False)
+    monkeypatch.delenv("MNEMION_PALACE_PATH", raising=False)
+    monkeypatch.delenv("MNEMION_OBSIDIAN_VAULT_PATH", raising=False)
+    monkeypatch.delenv("MNEMION_SOURCE_PATH", raising=False)
+    monkeypatch.delenv("MNEMION_WIKI_PATH", raising=False)
+    monkeypatch.setenv("MNEMION_HOME", str(home))
+
+    cfg = MnemionConfig()
+
+    assert Path(cfg.anaktoron_path) == home / "anaktoron"
+    assert Path(cfg.obsidian_vault_path) == home / "obsidian-vault"
+    assert Path(cfg.source_path) == home / "sources"
+    assert Path(cfg.wiki_path) == home / "wiki"
+    assert cfg.init() == home / "config.json"
 
 
 def test_obsidian_vault_path_config_and_env():

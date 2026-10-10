@@ -1,0 +1,284 @@
+# Mnemion shared service
+
+This is the **4.0 shared-memory service**. It provides authenticated spaces,
+versioned source evidence, durable indexing, local multilingual search, HTTP and
+MCP access, and Obsidian exports. The [implementation ledger](../implementation/v4_progress.md)
+tracks verification and remaining release gates. Complete backup/recovery, v3
+import with cutover and rollback, Studio, and native Windows packaging are
+implemented; final deployment, native and scale validation remain in progress.
+
+Use the [Compose deployment guide](deployment.md) for packaged initialization,
+private runtime credentials, a shared Studio service, operations, and recovery
+cutover. The commands below cover a standalone or managed PostgreSQL installation.
+
+## Run the service
+
+Use Python 3.12–3.14 and a dedicated PostgreSQL database with the `vector` extension
+available. Migration credentials need permission to install the extension,
+create the Mnemion schema, and create database roles. API and worker processes
+use separate restricted logins; startup rejects an owner or superuser login.
+
+Install from this branch:
+
+```bash
+uv sync --locked --no-dev
+```
+
+Set `MNEMION_ADMIN_DATABASE_URL` to your database administration connection
+string. Keep it out of application and worker configuration. Provision the schema
+and restricted logins, then create your first organization and private space:
+
+```bash
+uv run --no-sync mnemion-service migrate
+uv run --no-sync mnemion-service logins --output .mnemion-run/database.mnemion-credentials.json
+uv run --no-sync mnemion-service bootstrap \
+  --tenant "My team" --owner "Owner" --space "Private memory" \
+  --output .mnemion-run/owner.mnemion-credentials.json
+```
+
+The login command creates `mnemion_api_login` and `mnemion_worker_login` by
+default; use `--prefix` for another deployment in the same cluster. It refuses
+to overwrite an existing credentials file or existing login. The bootstrap
+command creates a new organization on every successful invocation. It writes
+the one-time owner API key to the specified file, and prints only the file path
+and organization/space identifiers. Protect both credentials files.
+
+Run the API and worker in separate processes:
+
+```bash
+uv run --no-sync mnemion-service \
+  --credentials .mnemion-run/database.mnemion-credentials.json serve
+
+uv run --no-sync mnemion-service \
+  --credentials .mnemion-run/database.mnemion-credentials.json worker
+```
+
+The API listens on `127.0.0.1:7892`; interactive API documentation is at `/docs`.
+The old local Studio backend uses port 7891. Use `serve --host` and `--port` to
+configure the listener. For network deployment, put the API behind a TLS proxy
+and configure allowed browser origins with `MNEMION_CORS_ORIGINS`.
+
+The worker downloads and verifies the pinned multilingual E5 small ONNX model
+on first startup. No paid model key is needed. Prepare the cache explicitly with:
+
+```bash
+uv run --no-sync mnemion-service prepare-model
+```
+
+`MNEMION_MODEL_CACHE` selects the cache location; `MNEMION_MODEL_OFFLINE=1`
+requires the files to be present already. `MNEMION_MODEL_THREADS` defaults to 2.
+The API and worker must use the same embedding generation. The generation
+includes the model revision, tokenizer/model hashes, dimensions, query/document
+prefixes, pooling, normalization, and chunking configuration.
+
+## Studio
+
+Build the SDK and web frontend, then serve Studio alongside the API:
+
+```bash
+npm --prefix packages/client ci
+npm --prefix packages/client run build
+npm --prefix studio/frontend ci
+npm --prefix studio/frontend run build
+mnemion-service --credentials .mnemion-run/database.mnemion-credentials.json \
+  serve --studio studio/frontend/dist
+```
+
+Open `http://127.0.0.1:7892/workspace`, enter the service address and a scoped API
+key, and use the workspace to save, revise, review, search, build context, inspect
+evidence, manage applications/access, follow ingestion activity, and export to
+Obsidian. Keys stay in window memory; reconnect after a reload. Downloadable
+original source attachments include hashes that Studio verifies before saving.
+
+The [Windows client](../windows-release.md) connects to the same service. It adds
+a native vault picker and applies authorized Obsidian exports using a packaged
+local client. The desktop connection does not require browser CORS exceptions or
+a separate Chroma/model installation. The new desktop defaults to the shared
+workspace; legacy Studio is a separate development compatibility mode.
+
+## Use it from an application
+
+The Python client uses the same HTTP contract as other programs:
+
+```python
+import json
+from pathlib import Path
+from mnemion.sdk import Client
+
+owner = json.loads(Path(".mnemion-run/owner.mnemion-credentials.json").read_text())
+with Client("http://127.0.0.1:7892", owner["api_key"]) as memory:
+    receipt = memory.save(
+        owner["space_id"],
+        "Billing backups are retained for thirty days.",
+        subject="Billing service",
+        idempotency_key="billing-policy-2026-10-09",
+        source={"title": "Billing retention decision", "uri": "https://example.com/decisions/42"},
+    )
+    results = memory.search("How long are billing backups retained?", [owner["space_id"]])
+    for hit in results.hits:
+        print(hit.text, hit.evidence.source_revision_id)
+```
+
+`accepted` means the source, memory revision, lexical index, audit event, and
+indexing job committed together. Use `memory.operation(receipt.operation_id)`
+or `memory.wait(...)` for semantic indexing completion. A wait can return
+`failed` or `cancelled`, or raise a timeout; callers must handle those states.
+
+The TypeScript client is in `packages/client`:
+
+```ts
+import { MnemionClient } from '@mnemion/client'
+
+const memory = new MnemionClient({ baseUrl, apiKey })
+const receipt = await memory.save(spaceId, {
+  content: 'Billing backups are retained for thirty days.',
+  subject: 'Billing service',
+}, 'billing-policy-2026-10-09')
+const results = await memory.search({ query: 'billing backups', space_ids: [spaceId] })
+```
+
+Each client retains one idempotency key across a retry. A reused key with a
+changed payload receives `409 idempotency_conflict`. Revision writes require
+`expected_version`; omitted subject, metadata, kind, and validity fields are
+preserved. Explicit null/empty values change those fields. Previous source and
+memory revisions remain traceable until authorized deletion.
+
+## Applications, people, and spaces
+
+Create a principal with `POST /v1/principals`, create its API key with
+`POST /v1/principals/{id}/keys`, and grant a role with
+`PUT /v1/spaces/{space_id}/grants/{principal_id}`. A new principal has no content
+access until granted. API keys are returned once at creation; later key lists
+contain prefixes and expiry/revocation metadata. Only their digests are stored.
+
+| Role | Content operations |
+| --- | --- |
+| Reader | Recall, fetch, context, ordinary exports |
+| Contributor | Reader operations plus observed-memory saves and corrections |
+| Reviewer | Contributor operations plus verification/lifecycle changes, quarantine review, deletion, and core blocks |
+| Space administrator | Reviewer content permissions; organization administration remains separate |
+
+An organization administrator manages principals, keys, and grants. It still
+needs a space grant to read that space's content. A memory's `subject` is the
+entity it describes; `created_by` comes from the authenticated principal.
+
+## Connect an assistant
+
+Use the maintained MCP 2.x implementation through stdio:
+
+```json
+{
+  "mcpServers": {
+    "mnemion": {
+      "command": "/path/to/.venv/bin/mnemion-service",
+      "args": ["mcp"],
+      "env": {
+        "MNEMION_API_URL": "http://127.0.0.1:7892",
+        "MNEMION_API_KEY": "YOUR_APPLICATION_KEY"
+      }
+    }
+  }
+}
+```
+
+Use [Agents & apps and the safe setup command](agents.md) for client-specific configuration.
+The ordinary tools are `memory_spaces`, `memory_save`, `memory_search`, `memory_fetch`,
+`memory_context`, `memory_map`, `memory_revise`, and `memory_forget`. Saves and revisions take
+an explicit idempotency key. Memory content is evidence, not an instruction
+channel. MCP registration does not install capture hooks or imply automatic
+conversation capture.
+
+For clients supporting authenticated Streamable HTTP:
+
+```bash
+uv run --no-sync mnemion-service mcp --transport streamable-http
+```
+
+The endpoint is `http://127.0.0.1:7893/mcp`. Every HTTP tool request uses its own
+Bearer API key; it cannot fall back to a configured stdio/owner credential.
+Both the current discovery flow and older initialization flow are exercised by
+the transport tests. OAuth browser sign-in is not implemented yet.
+
+`mcp --legacy-space SPACE_UUID` also exposes compatibility names for drawer
+save/search/delete and Open Brain capture/search/list/stats/search-fetch. Wing
+and room filters are metadata within that configured space. These adapters
+return canonical UUIDs and resolve imported v3 IDs within the configured space.
+The [migration guide](migration.md) explains aliases, raw source evidence,
+cutover, and the preserved legacy graph/wiki archive. Original local tools
+remain available through the Python 3.12 `legacy` extra.
+
+## Obsidian
+
+Refresh a local vault with the owner or application credential:
+
+```bash
+uv run --no-sync mnemion-service \
+  --credentials .mnemion-run/owner.mnemion-credentials.json \
+  vault --path ./My-memory-vault --spaces SPACE_UUID
+```
+
+Set `MNEMION_API_URL` for another API address. `--dry-run` inspects a refresh;
+`--open` opens a successfully refreshed vault in Obsidian. Reviewer exports
+require `--review` and reviewer access to every selected space. The HTTP
+`POST /v1/exports` endpoint provides the same ZIP without accessing desktop files.
+
+The vault contains standard YAML/Markdown, stable memory paths, entity and space
+indexes, source citations, revision notes, and wikilinks for the native graph.
+No community plugin is required. Add your text under **Personal annotations**
+or outside the generated markers. Those sections are preserved byte-for-byte.
+Unmanaged notes and `.obsidian` settings are not refreshed or pruned.
+
+An edit inside a generated section produces a proposed replacement in
+`.mnemion-conflicts`, preserves the original, and leaves the completed watermark
+unchanged. Review the proposal and reconcile the original before retrying.
+Unknown legacy files likewise require review when their ownership cannot be
+established by hashes. When a known generated memory is withdrawn, its generated
+content is removed and any annotations remain as an unmanaged note at the same
+path. An interrupted refresh retains intended hashes for the next reconciliation.
+
+A vault is bound to its exported tenant, spaces, and ordinary/review policy.
+Use a separate destination for another scope. Offline copies reflect their last
+successful refresh; the service cannot recall content a person copied elsewhere.
+
+## Sources, capture and organized knowledge
+
+Use [Connections](connectors.md) for selected vaults, Git, Google Drive, Slack,
+rclone-supported clouds and custom company adapters. The [capture guide](capture.md)
+explains optional conversation normalization and session hooks. [Wiki & graph](knowledge.md)
+provides current evidence-linked topics, relationships and review suggestions.
+
+## Operations and limits
+
+`/health/live` reports process liveness. `/health/ready` checks database access
+and the configured model generation. Readiness does not imply that a worker is
+running or that every memory is semantically indexed. Per-space status and
+operation receipts expose that distinction. Worker lease recovery, retries,
+terminal failures, and reviewer-triggered retries are implemented.
+
+The initial retrieval engine uses PostgreSQL text search and **exact**, scoped
+vector distances with rank fusion. It does not yet claim approximate-index
+performance at large scale. Scores describe relevance, not truth probability.
+Context packs count their complete rendered text with the pinned model's
+tokenizer and report the tokenizer/generation; applications using another model
+must account for that model's tokenizer and their surrounding prompt.
+
+Current limits include 65,536 characters per memory, a 2 MB request body, 50
+recall results, and 1,000 explicitly selected spaces. `all_accessible: true` resolves up to 10,000 current readable scopes. Obsidian artifacts are limited to 10,000
+memories and 100 MB of captured record data. See [complete backup and recovery](recovery.md)
+and [v3 migration, cutover, and rollback](migration.md). An Obsidian ZIP is an
+authorized visualization export and cannot substitute for a database backup.
+
+Run developer checks with PostgreSQL integration tooling and the legacy adapter:
+
+```bash
+uv sync --locked --extra legacy --group dev
+uv run --no-sync pytest
+MNEMION_TEST_LOCAL_MODEL=1 MNEMION_MODEL_CACHE=/path/to/model-cache uv run --no-sync pytest service_tests
+cd packages/client
+npm ci
+npm test
+```
+
+Service tests use an isolated PostgreSQL database. Set `MNEMION_TEST_ADMIN_DSN`
+to a disposable test cluster, or use the development-only `pgserver` dependency
+on Linux/macOS. Its bundled database is test tooling, not a production distribution.

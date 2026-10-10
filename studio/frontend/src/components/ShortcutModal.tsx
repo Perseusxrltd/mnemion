@@ -12,7 +12,7 @@ const GROUPS = [
     shortcuts: [
       { keys: ['Ctrl', 'K'], label: 'Command palette' },
       { keys: ['?'],         label: 'Show keyboard shortcuts' },
-      { keys: ['C'],         label: 'New drawer (when not typing)' },
+      { keys: ['C'],         label: 'Save memory (when not typing)' },
       { keys: ['Esc'],       label: 'Close modal / go back' },
     ],
   },
@@ -25,21 +25,21 @@ const GROUPS = [
       { keys: ['G', 'S'], label: 'Go to Search' },
       { keys: ['G', 'A'], label: 'Go to Agents' },
       { keys: ['G', 'M'], label: 'Go to Core Memory' },
-      { keys: ['G', 'C'], label: 'Connect agents (MCP setup)' },
+      { keys: ['G', 'C'], label: 'Connect AI apps' },
     ],
   },
   {
     title: 'Command Palette',
     shortcuts: [
-      { keys: ['↑', '↓'],   label: 'Navigate results' },
-      { keys: ['↵'],         label: 'Select / open' },
+      { keys: ['Up', 'Down'], label: 'Navigate results' },
+      { keys: ['Enter'],      label: 'Select / open' },
       { keys: ['Esc'],       label: 'Close' },
     ],
   },
   {
-    title: 'New Drawer Form',
+    title: 'Save Memory Form',
     shortcuts: [
-      { keys: ['Ctrl', '↵'], label: 'Save drawer' },
+      { keys: ['Ctrl', 'Enter'], label: 'Save memory' },
       { keys: ['Esc'],       label: 'Cancel' },
     ],
   },

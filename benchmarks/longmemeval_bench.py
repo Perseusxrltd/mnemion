@@ -60,8 +60,15 @@ def dcg(relevances, k):
 
 def ndcg(rankings, correct_ids, corpus_ids, k):
     """Normalized DCG."""
-    relevances = [1.0 if corpus_ids[idx] in correct_ids else 0.0 for idx in rankings[:k]]
-    ideal = sorted(relevances, reverse=True)
+    if k <= 0:
+        return 0.0
+    seen = set()
+    relevances = []
+    for index in rankings[:k]:
+        identifier = corpus_ids[index]
+        relevances.append(float(identifier in correct_ids and identifier not in seen))
+        seen.add(identifier)
+    ideal = [1.0] * min(k, len(set(correct_ids)))
     idcg = dcg(ideal, k)
     if idcg == 0:
         return 0.0

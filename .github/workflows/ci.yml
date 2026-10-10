@@ -1,69 +1,107 @@
-name: Tests
+name: Product checks
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'codex/**']
   pull_request:
     branches: [main]
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
 
 jobs:
-  python:
+  service:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.11", "3.13"]
+        python: ['3.12', '3.13', '3.14']
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_PASSWORD: mnemion_ci_only
+          POSTGRES_DB: mnemion_ci
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d mnemion_ci"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      MNEMION_TEST_ADMIN_DSN: postgresql://postgres:mnemion_ci_only@localhost:5432/mnemion_ci
+      MNEMION_REQUIRE_NODE_SDK: '1'
+      MNEMION_TEST_LOCAL_MODEL: ${{ matrix.python == '3.12' && '1' || '0' }}
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
-          python-version: ${{ matrix.python-version }}
-      - run: python -m pip install uv
-      - run: uv lock --check
-      - run: uv sync --python ${{ matrix.python-version }} --group dev
-      - run: uv run python -m pytest tests/ -v --ignore=tests/benchmarks --cov=mnemion --cov-report=term-missing --cov-fail-under=30
+          python-version: ${{ matrix.python }}
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: packages/client/package-lock.json
+      - run: python -m pip install uv==0.12.24
+      - name: Matching PostgreSQL recovery tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-16
+          echo "MNEMION_PG_BIN=/usr/lib/postgresql/16/bin" >> "$GITHUB_ENV"
+      - run: uv sync --locked --python ${{ matrix.python }} --group dev
+      - run: npm --prefix packages/client ci && npm --prefix packages/client test
+      - run: uv run --no-sync python -m pytest service_tests -q --cov=mnemion.service --cov-report=term-missing --cov-fail-under=75
+      - run: uv run --no-sync mnemion-service schema --output /tmp/openapi.json && diff docs/service/openapi.json /tmp/openapi.json
+
+  legacy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - run: python -m pip install uv==0.12.24
+      - run: uv sync --locked --extra legacy --group dev
+      - run: uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-report=term-missing --cov-fail-under=30
 
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
-          python-version: "3.11"
-      - run: python -m pip install uv
-      - run: uv lock --check
-      - run: uvx ruff check .
-      - run: uvx ruff format --check .
-      - run: git ls-files '*.sh' | xargs -r bash -n
+          python-version: '3.12'
+      - run: python -m pip install uv==0.12.24
+      - run: uv sync --locked --group dev
+      - run: uv run --no-sync ruff check .
+      - run: uv run --no-sync ruff format --check .
+      - run: git ls-files -z '*.sh' | xargs -0 -r -n 1 bash -n
 
-  frontend:
+  dependency-audit:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: studio/frontend
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
-          node-version: "22"
-          cache: npm
-          cache-dependency-path: studio/frontend/package-lock.json
-      - run: npm ci
-      - run: npm run build
-      - run: npm audit --audit-level=high
+          python-version: '3.12'
+      - run: python -m pip install uv==0.12.24
+      - run: uv sync --locked --no-dev
+      - run: uvx pip-audit --path .venv/lib/python3.12/site-packages
 
-  electron:
+  studio:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: studio/electron
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          node-version: "22"
+          node-version: '22'
           cache: npm
-          cache-dependency-path: studio/electron/package-lock.json
-      - run: npm ci
-      - run: npm run build
-      - run: npm audit --audit-level=high
+          cache-dependency-path: |
+            packages/client/package-lock.json
+            studio/frontend/package-lock.json
+            studio/electron/package-lock.json
+      - run: npm --prefix packages/client ci && npm --prefix packages/client test
+      - run: npm --prefix studio/frontend ci && npm --prefix studio/frontend run build
+      - run: npm --prefix studio/frontend audit --audit-level=high
+      - run: npm --prefix studio/electron ci && npm --prefix studio/electron test
+      - run: npm --prefix studio/electron audit --audit-level=high

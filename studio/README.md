@@ -1,161 +1,45 @@
 # Mnemion Studio
 
-A local web dashboard for Mnemion — visualise your Anaktoron, connect AI agents, and manage memories.
+The desktop and web workspace for the shared-memory service. Studio supports
+organizations, scoped spaces, memory editing and review, evidence, search,
+source connections, agents, Obsidian, operations and visual insights/evaluations.
 
-## Views
+The desktop client includes a sandboxed Electron shell and a small local vault
+refresh executable. It connects to a local or remote service; it does not bundle
+PostgreSQL or silently start a model on every employee's laptop.
 
-| View | Path | Description |
-|------|------|-------------|
-| **Dashboard** | `/dashboard` | Overview, trust health, recent drawers, quick capture, agent activity |
-| **Graph** | `/graph` | Force-directed Wing Map + Knowledge Graph with Obsidian-style hover highlight |
-| **Browser** | `/browse` | Wing → Room → Drawer tree with pagination |
-| **Search** | `/search` | Hybrid semantic + keyword search, supports `wing:` / `room:` operators |
-| **Agents** | `/agents` | Live heartbeat status of connected MCP agents |
-| **Connect** | `/connect` | One-click install of Mnemion into every MCP-capable client on your system |
-| **Settings** | `/settings` | LLM backend config, Anaktoron path, Obsidian mirror |
+Use the [service deployment guide](../docs/service/deployment.md) first, then
+connect with the service URL and a personal or application credential. Credentials
+remain scoped to the spaces granted to that identity.
 
-Backend-only source/wiki endpoints are available for early compiled-wiki workflows; dedicated frontend panels are planned after the CLI and MCP surfaces settle.
+[Background and update behavior](../docs/service/updates.md) covers login startup,
+tray/dock access, automatic stable updates and safe restarts. Windows NSIS, macOS
+DMG/ZIP and Linux AppImage/DEB are built natively for x64 and ARM64. Release signing
+and each native validation result must pass before promoting desktop artifacts.
 
-## Quick start (Windows)
+For development:
 
-```bat
-cd C:\path\to\mnemion
-studio\start.bat
+```sh
+uv sync --locked --extra studio --group dev
+npm --prefix packages/client ci
+npm --prefix packages/client run build
+npm --prefix studio/frontend ci
+npm --prefix studio/frontend run dev
 ```
 
-Then open **http://localhost:5173** — or whichever port Vite picked if 5173 was busy (the terminal prints it).
+In a second terminal, install/build the Electron shell and run it:
 
-## Manual start
-
-**Backend (FastAPI):**
-```bash
-uv sync --extra studio
-uv run uvicorn studio.backend.main:app --host 127.0.0.1 --port 7891 --reload
+```sh
+npm --prefix studio/electron ci
+npm --prefix studio/electron test
+npm --prefix studio/electron run dev
 ```
 
-**Frontend (Vite + React):**
-```bash
-cd studio/frontend
-npm ci
-npm run dev
-```
+Create native installers with `npm --prefix studio/electron run dist` on the target
+OS and architecture. Packaging validates the local client, license inventory and
+payload. `npm --prefix studio/electron run smoke:packaged` opens the real installed
+payload with an isolated profile; Linux CI uses Xvfb. CI validation artifacts are
+unsigned and are not sent to the automatic update feed.
 
-## Connecting AI agents
-
-The **Connect Agents** view (`/connect`, keyboard shortcut `G C`) detects installed MCP-capable clients and wires Mnemion into each one's config file with a single click. Every install writes a timestamped backup to `.mnemion_backups/` next to the edited config.
-
-Supported out of the box:
-
-| Vendor | Client | Config | Format |
-|---|---|---|---|
-| Anthropic | Claude Code (user) | `~/.claude.json` | JSON |
-| Anthropic | Claude Code (project) | `./.mcp.json` | JSON |
-| Anthropic | Claude Desktop | `%APPDATA%/Claude/claude_desktop_config.json` (Win)<br>`~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) | JSON |
-| OpenAI | Codex CLI | `~/.codex/config.toml` | TOML |
-| Google | Gemini CLI | `~/.gemini/settings.json` | JSON |
-| Cursor | Cursor | `~/.cursor/mcp.json` | JSON |
-| Codeium | Windsurf | `~/.codeium/windsurf/mcp_config.json` | JSON |
-| Zed Industries | Zed | `~/.config/zed/settings.json` | JSON |
-
-Legacy `mempalace` entries (from the v3.4.x rename) are detected and auto-replaced. The command installed into each config uses the absolute path of the Python interpreter that Studio itself is running in, so there are no PATH-resolution issues.
-
-Any client that speaks MCP but isn't in the list (OpenClaw, Nemoclaw, Hermes, Cline, custom agents…) can connect using the universal JSON snippet shown at the bottom of the Connect view:
-
-```json
-{
-  "mcpServers": {
-    "mnemion": {
-      "command": "<absolute path to your Python>",
-      "args": ["-m", "mnemion.mcp_server"]
-    }
-  }
-}
-```
-
-## Architecture
-
-```
-studio/
-├── backend/
-│   ├── main.py         FastAPI — imports mnemion.* directly
-│   └── connectors.py   Registry + safe JSON/TOML install/uninstall
-├── electron/           Desktop packaging (probes Vite port at 5173–5179)
-└── frontend/
-    └── src/
-        ├── views/        Lazy-loaded Dashboard, GraphView, Browser, Search, DrawerDetail,
-        │                 Agents, ConnectorsView, Settings
-        ├── components/   Layout, Ribbon, LeftSidebar, StatusBar, ErrorBoundary,
-        │                 CommandPalette, ShortcutModal, DrawerCreateModal,
-        │                 ToastProvider, WingBadge, TrustBadge
-        └── api/          Typed client for all backend endpoints
-```
-
-**Backend port:** 7891  
-**Frontend port:** 5173 by default — Vite auto-bumps to 5174/5175/… if busy. CORS allows only the expected local dev surface: `localhost`/`127.0.0.1` ports 5173-5179 and 7891, plus `file://`/`null` for Electron.
-
-## Local API security
-
-Read-only `GET` endpoints stay open for the local dashboard. If `MNEMION_STUDIO_TOKEN` is set, every mutating `/api` request (`POST`, `PUT`, `PATCH`, `DELETE`) must include:
-
-```http
-X-Mnemion-Studio-Token: <token>
-```
-
-Packaged Electron generates or inherits this token, passes it to the backend process as `MNEMION_STUDIO_TOKEN`, and exposes it to the frontend through the preload bridge. Browser-only development can leave the env var unset, or set it and provide the same header from local tooling.
-
-## Obsidian mirror
-
-Settings exposes the same owned mirror as the CLI:
-
-- `Create/Refresh & Open` writes the managed Markdown vault, best-effort registers it with Obsidian, then opens it through `obsidian://`.
-- `Refresh Only` updates the mirror without opening Obsidian.
-- `Download ZIP` streams the same Markdown rendering as a ZIP for manual import or review.
-
-The default target is `~/.mnemion/obsidian-vault`, overridable with `obsidian_vault_path` or `MNEMION_OBSIDIAN_VAULT_PATH`. Mnemion remains the source of truth; the vault is a one-way mirror.
-
-## Build checks
-
-```bash
-cd studio/frontend
-npm ci
-npm run build
-npm audit --audit-level=high
-
-cd ../electron
-npm ci
-npm run build
-npm audit --audit-level=high
-```
-
-## Agent heartbeats
-
-Each MCP server process writes `~/.mnemion/heartbeats/<pid>.json` on every tool call.
-Studio reads these to show live connection status in the **Agents** view. Set `MNEMION_AGENT_ID=your-agent-name` in the MCP server environment to display a friendly name.
-
-## Keyboard shortcuts
-
-| Keys | Action |
-|------|--------|
-| `Ctrl+K` | Command palette |
-| `?` | Show all shortcuts |
-| `C` | New drawer |
-| `G D` / `G G` / `G B` / `G S` / `G A` / `G C` | Navigate to Dashboard / Graph / Browse / Search / Agents / Connect |
-| `Esc` | Close any open modal |
-
-## API surface
-
-All endpoints under `/api`; typed client in `frontend/src/api/client.ts`. Mutating endpoints require `X-Mnemion-Studio-Token` when `MNEMION_STUDIO_TOKEN` is configured.
-
-- **Drawers:** `/status`, `/taxonomy`, `/drawers`, `/drawers/recent`, `/drawer/{id}` (GET/DELETE/POST)
-- **Search:** `/search?q=...&wing=...&room=...&limit=...`
-- **Knowledge Graph:** `/kg/graph`, `/kg/entity/{name}`, `/kg/entities`
-- **Trust:** `/trust/stats`, `/trust/contested`, `/trust/{id}/verify`, `/trust/{id}/challenge`
-- **Agents:** `/agents`
-- **Connectors:** `/connectors`, `/connectors/{id}`, `/connectors/{id}/install`, `/connectors/{id}/uninstall`
-- **Config:** `/config` (GET), `/config/llm` (PUT)
-- **Obsidian:** `/obsidian/status`, `/obsidian/sync`, `/obsidian/open`
-- **Sources:** `/sources/status`, `/sources`, `/sources/{id}`, `/sources/{id}/chunks`
-- **Wiki:** `/wiki/status`, `/wiki/pages`, `/wiki/pages/{path}`, `/wiki/compile`, `/wiki/lint`, `/wiki/context-pack`, `/wiki/jobs/{id}/apply`
-- **Export:** `/export/vault?wing=...` — streams the Obsidian-compatible mirror as a ZIP
-
-OpenAPI docs at **http://127.0.0.1:7891/api/docs**.
+The [historical v3 Studio guide](../docs/legacy/v3-studio.md) documents the retired
+bundled legacy backend and older UI routes.

@@ -106,6 +106,10 @@ class DrawerTrust:
         self._init_schema()
 
     def _connect(self):
+        from .legacy_freeze import require_writable
+        from pathlib import Path
+
+        require_writable(Path(self.db_path).parent)
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA journal_mode=WAL")
@@ -135,17 +139,25 @@ class DrawerTrust:
         now = self._now()
         conn = self._connect()
         try:
-            conn.execute(
+            inserted = conn.execute(
                 """INSERT OR IGNORE INTO drawer_trust
                    (drawer_id, status, confidence, valid_from, created_at, updated_at, wing, room)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
                 (drawer_id, STATUS_CURRENT, confidence, valid_from, now, now, wing, room),
             )
-            self._log_history(
-                conn, drawer_id, None, STATUS_CURRENT, None, confidence, "created", "system"
-            )
+            if inserted.rowcount:
+                self._log_history(
+                    conn, drawer_id, None, STATUS_CURRENT, None, confidence, "created", "system"
+                )
+            record = conn.execute(
+                "SELECT status, confidence FROM drawer_trust WHERE drawer_id=?", (drawer_id,)
+            ).fetchone()
             conn.commit()
-            return {"drawer_id": drawer_id, "status": STATUS_CURRENT, "confidence": confidence}
+            return {
+                "drawer_id": drawer_id,
+                "status": record["status"],
+                "confidence": record["confidence"],
+            }
         finally:
             conn.close()
 

@@ -37,11 +37,18 @@ def _get_collection(anaktoron_path, create=False):
     when they are done.
     """
     import chromadb
+    from mnemion.embedding import get_embedding_function
 
     client = chromadb.PersistentClient(path=anaktoron_path)
     if create:
-        return client, client.get_or_create_collection("mnemion_drawers")
-    return client, client.get_collection("mnemion_drawers")
+        return client, client.get_or_create_collection(
+            "mnemion_drawers",
+            embedding_function=get_embedding_function("hash"),
+        )
+    return client, client.get_collection(
+        "mnemion_drawers",
+        embedding_function=get_embedding_function("hash"),
+    )
 
 
 # ── Protocol Layer ──────────────────────────────────────────────────────

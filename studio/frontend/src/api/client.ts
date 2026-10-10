@@ -7,14 +7,30 @@ declare global {
       platform?: () => Promise<string>
       backendPort?: () => Promise<number>
       studioToken?: () => Promise<string | null>
+      serviceRequest?: (request: { url: string; method: string; headers: Record<string, string>; body?: string }) => Promise<{ status: number; headers: Record<string, string>; body: Uint8Array }>
+      chooseVault?: () => Promise<{ id: string; path: string } | null>
+      refreshVault?: (selection: string, bytes: Uint8Array) => Promise<{ completed: boolean; file_count: number; pruned_files: number; detached_annotations: string[]; conflicts: Array<{ path: string; proposal_path?: string }>; vault_path: string }>
+      onNavigate?: (callback: (route: string) => void) => () => void
     }
   }
 }
 
-// In Electron (file:// origin) the backend runs on localhost:7891
-const ELECTRON_ORIGIN = 'http://127.0.0.1:7891'
 const isElectron = typeof window !== 'undefined' && window.location.protocol === 'file:'
 let cachedStudioToken: string | null | undefined
+let cachedElectronOrigin: string | undefined
+
+async function electronOrigin(): Promise<string> {
+  if (!cachedElectronOrigin) {
+    let port = 7891
+    try {
+      port = (await window.mnemion?.backendPort?.()) || port
+    } catch {
+      port = 7891
+    }
+    cachedElectronOrigin = `http://127.0.0.1:${port}`
+  }
+  return cachedElectronOrigin
+}
 
 async function studioTokenHeader(): Promise<Record<string, string>> {
   if (cachedStudioToken === undefined) {
@@ -29,24 +45,48 @@ async function studioTokenHeader(): Promise<Record<string, string>> {
 }
 
 async function get<T>(path: string, params?: Record<string, string | number>): Promise<T> {
-  const base = isElectron ? `${ELECTRON_ORIGIN}/api${path}` : `/api${path}`
-  const url = new URL(base, isElectron ? undefined : window.location.origin)
+  const base = isElectron ? `${await electronOrigin()}/api${path}` : `/api${path}`
+  const url = isElectron ? new URL(base) : new URL(base, window.location.origin)
   if (params) {
     for (const [k, v] of Object.entries(params)) {
       if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, String(v))
     }
   }
-  const res = await fetch(url.toString())
+  const res = await fetch(url.toString(), { headers: await studioTokenHeader() })
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
   return res.json()
 }
 
-function apiUrl(path: string): string {
-  return isElectron ? `${ELECTRON_ORIGIN}/api${path}` : `/api${path}`
+async function getBlob(path: string, params?: Record<string, string | number>): Promise<Blob> {
+  const base = isElectron ? `${await electronOrigin()}/api${path}` : `/api${path}`
+  const url = isElectron ? new URL(base) : new URL(base, window.location.origin)
+  if (params) {
+    for (const [k, v] of Object.entries(params)) {
+      if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, String(v))
+    }
+  }
+  const res = await fetch(url.toString(), { headers: await studioTokenHeader() })
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+  return res.blob()
+}
+
+function saveBlob(blob: Blob, filename: string): void {
+  const objectUrl = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = objectUrl
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0)
+}
+
+async function apiUrl(path: string): Promise<string> {
+  return isElectron ? `${await electronOrigin()}/api${path}` : `/api${path}`
 }
 
 async function del(path: string): Promise<void> {
-  const res = await fetch(apiUrl(path), {
+  const res = await fetch(await apiUrl(path), {
     method: 'DELETE',
     headers: await studioTokenHeader(),
   })
@@ -54,7 +94,7 @@ async function del(path: string): Promise<void> {
 }
 
 async function post<T>(path: string, body?: unknown): Promise<T> {
-  const res = await fetch(apiUrl(path), {
+  const res = await fetch(await apiUrl(path), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...(await studioTokenHeader()) },
     body: body ? JSON.stringify(body) : undefined,
@@ -64,7 +104,7 @@ async function post<T>(path: string, body?: unknown): Promise<T> {
 }
 
 async function put<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(apiUrl(path), {
+  const res = await fetch(await apiUrl(path), {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...(await studioTokenHeader()) },
     body: JSON.stringify(body),
@@ -73,7 +113,7 @@ async function put<T>(path: string, body: unknown): Promise<T> {
   return res.json()
 }
 
-// ── API methods ───────────────────────────────────────────────────────────────
+// API methods
 
 export const api = {
   status: (): Promise<Status> => get('/status'),
@@ -155,11 +195,8 @@ export const api = {
   updateCoreMemory: (key: string, content: string): Promise<{ success: boolean; key: string; content: string }> =>
     put(`/core-memory/${encodeURIComponent(key)}`, { content }),
 
-  // Vault export — download as zip
-  exportVaultUrl: (wing?: string) => {
-    const origin = isElectron ? ELECTRON_ORIGIN : window.location.origin
-    const url = new URL('/api/export/vault', origin)
-    if (wing) url.searchParams.set('wing', wing)
-    return url.toString()
+  downloadVault: async (wing?: string) => {
+    const blob = await getBlob('/export/vault', wing ? { wing } : undefined)
+    saveBlob(blob, `mnemion_vault${wing ? `_${wing}` : ''}.zip`)
   },
 }

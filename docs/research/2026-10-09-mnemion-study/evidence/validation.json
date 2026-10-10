@@ -1,0 +1,118 @@
+{
+  "study_date": "2026-10-09",
+  "published_head": "c670e3039d2f7b43dbb00a2157e420e665203979",
+  "published_version": "3.6.0",
+  "scope": {
+    "tracked_files": 271,
+    "commits": 269,
+    "preexisting_modified_tracked_files": 45,
+    "production_code_changed_by_study": false
+  },
+  "environment": {
+    "platform": "Linux under WSL",
+    "python": "3.12.3",
+    "node": "22.22.0",
+    "npm": "10.9.4",
+    "python_dependency_install": "uv sync --locked --group dev",
+    "javascript_dependency_install": "npm ci --ignore-scripts"
+  },
+  "python_suites": {
+    "published": {
+      "tests": 277,
+      "passed": 276,
+      "skipped": 1,
+      "failures": 0,
+      "errors": 0,
+      "coverage_percent": 56.5470417070805,
+      "coverage_kind": "statement",
+      "exclusions": [
+        "tests/benchmarks",
+        "benchmark marker",
+        "slow marker",
+        "stress marker"
+      ]
+    },
+    "working": {
+      "tests": 281,
+      "passed": 280,
+      "skipped": 1,
+      "failures": 0,
+      "errors": 0,
+      "coverage_percent": 56.54928065278076,
+      "coverage_kind": "statement",
+      "exclusions": [
+        "tests/benchmarks",
+        "benchmark marker",
+        "slow marker",
+        "stress marker"
+      ]
+    }
+  },
+  "builds": {
+    "frontend": {
+      "passed": true,
+      "scope": "TypeScript and Vite production assets"
+    },
+    "electron": {
+      "passed": true,
+      "scope": "TypeScript only; native installer not exercised"
+    }
+  },
+  "lint": {
+    "ruff_check": true,
+    "ruff_format": true
+  },
+  "dependency_audits": {
+    "frontend": {
+      "info": 0,
+      "low": 0,
+      "moderate": 4,
+      "high": 9,
+      "critical": 0,
+      "total": 13
+    },
+    "electron": {
+      "info": 0,
+      "low": 0,
+      "moderate": 4,
+      "high": 14,
+      "critical": 1,
+      "total": 19
+    },
+    "python": {
+      "installed_packages": 102,
+      "affected_packages": 9,
+      "reported_advisory_entries": 35,
+      "distinct_advisory_ids": 23
+    }
+  },
+  "diagnostics": {
+    "cases": 15,
+    "reproduced": 15,
+    "interpretation": "Reproduced means the documented problematic behavior was observed; not a quality score."
+  },
+  "not_executed": [
+    "public-dataset retrieval/answering comparison",
+    "private-memory corpus inspection",
+    "production load or distributed failure matrix",
+    "paid LLM or GPU experiments",
+    "native Windows installer packaging and launch",
+    "competitor installation or benchmark execution"
+  ],
+  "obsidian": {
+    "required_in_rebuild": true,
+    "named_export_tests_per_baseline": 12,
+    "named_export_tests_passed_per_baseline": 12,
+    "additional_probe": "obsidian-observations.json",
+    "native_application_launched": false,
+    "personal_vault_changed": false
+  },
+  "artifact_checks": {
+    "local_document_links_resolve": true,
+    "evidence_json_parses": true,
+    "probe_python_syntax_valid": true,
+    "probe_ruff_lint_passed": true,
+    "probe_ruff_format_passed": true,
+    "preexisting_tracked_file_hashes_unchanged": true
+  }
+}

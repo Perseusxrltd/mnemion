@@ -8,15 +8,25 @@ import json
 import os
 from pathlib import Path
 
-DEFAULT_ANAKTORON_PATH = os.path.expanduser("~/.mnemion/anaktoron")
+DEFAULT_MNEMION_HOME = os.path.expanduser("~/.mnemion")
+DEFAULT_ANAKTORON_PATH = str(Path(DEFAULT_MNEMION_HOME) / "anaktoron")
 DEFAULT_COLLECTION_NAME = "mnemion_drawers"
 DEFAULT_BACKEND = "chroma"
 DEFAULT_EMBEDDING_DEVICE = "auto"
 DEFAULT_ENTITY_LANGUAGES = ("en",)
 DEFAULT_TOPIC_TUNNEL_MIN_COUNT = 2
-DEFAULT_OBSIDIAN_VAULT_PATH = os.path.expanduser("~/.mnemion/obsidian-vault")
-DEFAULT_SOURCE_PATH = os.path.expanduser("~/.mnemion/sources")
-DEFAULT_WIKI_PATH = os.path.expanduser("~/.mnemion/wiki")
+DEFAULT_OBSIDIAN_VAULT_PATH = str(Path(DEFAULT_MNEMION_HOME) / "obsidian-vault")
+DEFAULT_SOURCE_PATH = str(Path(DEFAULT_MNEMION_HOME) / "sources")
+DEFAULT_WIKI_PATH = str(Path(DEFAULT_MNEMION_HOME) / "wiki")
+
+
+def _mnemion_home() -> Path:
+    return Path(os.environ.get("MNEMION_HOME") or os.path.expanduser("~/.mnemion")).expanduser()
+
+
+def _default_path(name: str) -> str:
+    return str(_mnemion_home() / name)
+
 
 # hnsw:space=cosine is required because searcher.py computes
 # similarity = 1 - distance, which only yields a meaningful score in [0, 1]
@@ -95,9 +105,7 @@ class MnemionConfig:
             config_dir: Override config directory (useful for testing).
                         Defaults to ~/.mnemion.
         """
-        self._config_dir = (
-            Path(config_dir) if config_dir else Path(os.path.expanduser("~/.mnemion"))
-        )
+        self._config_dir = Path(config_dir) if config_dir else _mnemion_home()
         self._config_file = self._config_dir / "config.json"
         self._people_map_file = self._config_dir / "people_map.json"
         self._file_config = {}
@@ -127,7 +135,7 @@ class MnemionConfig:
         return (
             self._file_config.get("anaktoron_path")
             or self._file_config.get("palace_path")
-            or DEFAULT_ANAKTORON_PATH
+            or _default_path("anaktoron")
         )
 
     @property
@@ -180,7 +188,7 @@ class MnemionConfig:
         return (
             os.environ.get("MNEMION_OBSIDIAN_VAULT_PATH")
             or self._file_config.get("obsidian_vault_path")
-            or DEFAULT_OBSIDIAN_VAULT_PATH
+            or _default_path("obsidian-vault")
         )
 
     @property
@@ -189,7 +197,7 @@ class MnemionConfig:
         return (
             os.environ.get("MNEMION_SOURCE_PATH")
             or self._file_config.get("source_path")
-            or DEFAULT_SOURCE_PATH
+            or _default_path("sources")
         )
 
     @property
@@ -198,7 +206,7 @@ class MnemionConfig:
         return (
             os.environ.get("MNEMION_WIKI_PATH")
             or self._file_config.get("wiki_path")
-            or DEFAULT_WIKI_PATH
+            or _default_path("wiki")
         )
 
     @property
@@ -273,15 +281,15 @@ class MnemionConfig:
         self._config_dir.mkdir(parents=True, exist_ok=True)
         if not self._config_file.exists():
             default_config = {
-                "anaktoron_path": DEFAULT_ANAKTORON_PATH,
+                "anaktoron_path": _default_path("anaktoron"),
                 "collection_name": DEFAULT_COLLECTION_NAME,
                 "backend": DEFAULT_BACKEND,
                 "embedding_device": DEFAULT_EMBEDDING_DEVICE,
                 "entity_languages": list(DEFAULT_ENTITY_LANGUAGES),
                 "topic_tunnel_min_count": DEFAULT_TOPIC_TUNNEL_MIN_COUNT,
-                "obsidian_vault_path": DEFAULT_OBSIDIAN_VAULT_PATH,
-                "source_path": DEFAULT_SOURCE_PATH,
-                "wiki_path": DEFAULT_WIKI_PATH,
+                "obsidian_vault_path": _default_path("obsidian-vault"),
+                "source_path": _default_path("sources"),
+                "wiki_path": _default_path("wiki"),
                 "topic_wings": DEFAULT_TOPIC_WINGS,
                 "hall_keywords": DEFAULT_HALL_KEYWORDS,
             }

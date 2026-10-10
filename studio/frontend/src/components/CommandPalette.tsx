@@ -13,15 +13,14 @@ interface PaletteItem {
   icon: React.ReactNode
   action: () => void
 }
-
 const NAV_ITEMS = (navigate: (p: string) => void): PaletteItem[] => [
-  { id: 'nav-dashboard', label: 'Dashboard',       sub: 'Overview & stats',      icon: <LayoutDashboard size={14} />, action: () => navigate('/dashboard') },
-  { id: 'nav-graph',     label: 'Graph',            sub: 'Wing Map & Knowledge Graph', icon: <Network size={14} />,         action: () => navigate('/graph') },
-  { id: 'nav-browse',    label: 'Browse Drawers',   sub: 'All wings & rooms',     icon: <FolderOpen size={14} />,      action: () => navigate('/browse') },
+  { id: 'nav-dashboard', label: 'Live Memory',      sub: 'Status and recent activity', icon: <LayoutDashboard size={14} />, action: () => navigate('/dashboard') },
+  { id: 'nav-graph',     label: 'Graph',            sub: 'Memory map and relationships', icon: <Network size={14} />,      action: () => navigate('/graph') },
+  { id: 'nav-browse',    label: 'Browse Memories',  sub: 'Areas and topics',       icon: <FolderOpen size={14} />,      action: () => navigate('/browse') },
   { id: 'nav-search',    label: 'Search',           sub: 'Full-text & semantic',  icon: <Search size={14} />,          action: () => navigate('/search') },
   { id: 'nav-agents',    label: 'Agents',           sub: 'Connected agents',      icon: <Bot size={14} />,             action: () => navigate('/agents') },
-  { id: 'nav-connect',   label: 'Connect Agents',   sub: 'One-click MCP setup',   icon: <Plug size={14} />,            action: () => navigate('/connect') },
-  { id: 'nav-settings',  label: 'Settings',         sub: 'LLM & backend config',  icon: <Settings size={14} />,        action: () => navigate('/settings') },
+  { id: 'nav-connect',   label: 'Connect AI Apps',  sub: 'Guided setup',         icon: <Plug size={14} />,            action: () => navigate('/connect') },
+  { id: 'nav-settings',  label: 'Settings',         sub: 'Storage and AI helper', icon: <Settings size={14} />,        action: () => navigate('/settings') },
 ]
 
 interface CommandPaletteProps {
@@ -36,7 +35,7 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [searching, setSearching] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
-  const searchTimer = useRef<ReturnType<typeof setTimeout>>()
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   const navItems = NAV_ITEMS(navigate)
 
@@ -64,7 +63,7 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
         const items: PaletteItem[] = (res.results ?? []).map((hit: any) => {
           const content = typeof hit.content === 'string' ? hit.content : ''
           const label = content
-            ? content.slice(0, 60) + (content.length > 60 ? '…' : '')
+            ? content.slice(0, 60) + (content.length > 60 ? '...' : '')
             : hit.id
           return {
             id: `drawer-${hit.id}`,
@@ -126,13 +125,13 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
           <input
             ref={inputRef}
             className="prompt-input"
-            placeholder="Type a command or search drawers…"
+            placeholder="Type a command or search memories..."
             value={query}
             onChange={e => setQuery(e.target.value)}
             spellCheck={false}
           />
           {searching && (
-            <span className="text-[11px]" style={{ color: 'var(--text-faint)' }}>Searching…</span>
+            <span className="text-[11px]" style={{ color: 'var(--text-faint)' }}>Searching...</span>
           )}
         </div>
 
@@ -193,8 +192,8 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
           className="px-4 py-2 border-t flex items-center gap-4 text-[11px]"
           style={{ borderColor: 'var(--background-modifier-border)', color: 'var(--text-faint)' }}
         >
-          <span><kbd className="font-mono">↑↓</kbd> navigate</span>
-          <span><kbd className="font-mono">↵</kbd> select</span>
+          <span><kbd className="font-mono">Up/Down</kbd> navigate</span>
+          <span><kbd className="font-mono">Enter</kbd> select</span>
           <span><kbd className="font-mono">Esc</kbd> close</span>
         </div>
       </div>

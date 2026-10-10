@@ -50,7 +50,7 @@ export default function AgentsView() {
       <div className="flex items-center justify-between fade-in">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Agents</h1>
-          <p className="text-sm text-muted mt-0.5">Connected AI agents and their activity in the Anaktoron.</p>
+          <p className="text-sm text-muted mt-0.5">Connected AI agents and recent memory activity.</p>
         </div>
         <button
           onClick={() => refetch()}
@@ -96,16 +96,16 @@ export default function AgentsView() {
       {/* Session activity */}
       <div className="fade-in">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-muted mb-3">
-          Session Activity {activity.length > 0 && `· ${activity.length} agents`}
+          Session Activity {activity.length > 0 && `- ${activity.length} agents`}
         </h2>
 
-        {isLoading && <div className="text-sm text-muted">Loading…</div>}
+        {isLoading && <div className="text-sm text-muted">Loading...</div>}
 
         {!isLoading && activity.length === 0 && (
           <div className="flex flex-col items-center justify-center py-12 gap-3 rounded-xl" style={{ border: '1px dashed var(--border)' }}>
             <Bot size={28} className="text-faint" />
             <div className="text-sm text-muted">No agent activity recorded yet</div>
-            <div className="text-xs text-faint">Agents write to the sessions wing after each conversation.</div>
+            <div className="text-xs text-faint">Connected agents save conversation memories automatically.</div>
           </div>
         )}
 
@@ -149,17 +149,17 @@ export default function AgentsView() {
 
       {/* How to connect */}
       <div className="rounded-xl p-5 fade-in" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted mb-3">Connecting a new agent</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted mb-3">Connect a new AI app</h2>
         <div className="text-xs text-muted space-y-2">
-          <p>Any MCP-compatible agent (Claude Code, Cursor, Windsurf…) can connect to Mnemion:</p>
-          <pre className="bg-raised rounded-lg p-3 font-mono text-[11px] text-white/70 overflow-x-auto">{`# In your MCP config:
+          <p>Use the Connect page for guided setup, or add this manual connection entry:</p>
+          <pre className="bg-raised rounded-lg p-3 font-mono text-[11px] text-white/70 overflow-x-auto">{`# Advanced app config:
 {
   "mnemion": {
     "command": "python",
     "args": ["-m", "mnemion.mcp_server"]
   }
 }`}</pre>
-          <p>Agents with <code className="bg-raised px-1 rounded text-accent/80">mnemion_diary_write</code> configured will appear here after their first session.</p>
+          <p>AI apps with automatic memory capture enabled will appear here after their first session.</p>
         </div>
       </div>
     </div>
