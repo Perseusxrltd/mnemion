@@ -43,6 +43,40 @@ prose accurately describes behavior. The person or agent making a change owns th
 corresponding documentation review. This workflow does not imply a permanently
 running maintainer or promise fixes without an active maintenance session.
 
+## Automatic product-page updates
+
+The [Perseus XR product page](https://www.perseusxr.com/mnemion) reads published
+stable releases directly. Version labels, available architectures, installer URLs,
+checksums, release notes and version-specific guides follow the same release.
+The roadmap link follows `main`, so planning updates are visible between releases.
+Do not edit or redeploy the website for an ordinary hotfix.
+
+`.github/workflows/website-release.yml` maintains `deploy/published-release.json`
+after release publication or edits, with a six-hour reconciliation schedule and a
+manual dispatch for recovery. It verifies GitHub's uploaded-asset SHA-256 digests
+against the published `SHA256SUMS.txt`, rejects drafts and older generations, and
+requires each offered installer's update assets. Only changed metadata is committed
+to `main`; the Actions token prevents a build loop. Concurrent changes are rebased
+without force pushes. The manifest never moves backwards in version.
+
+The website caches both the GitHub API and this independent raw-content manifest
+for five minutes. It chooses the newest valid release, keeping a bundled published
+snapshot only as a final fallback. An authenticated repository release webhook
+invalidates the release cache, product page and sitemap immediately; it cannot
+supply page content or arbitrary invalidation paths. Its signing secret belongs
+only in the repository webhook configuration and the website's production
+`MNEMION_RELEASE_WEBHOOK_SECRET`, never in this repository.
+
+To recover a missed metadata event, run the **Synchronize public release metadata**
+workflow. A future publisher that uses `GITHUB_TOKEN` must explicitly invoke this
+workflow as part of publication: GitHub does not recursively trigger workflows
+from that token's release events. The scheduled reconciliation is a second path.
+Check the workflow result and repository webhook delivery status for failures.
+These tasks use standard public GitHub Actions and the existing website; they
+require no model calls, paid runner, new hosting service or routine deployment.
+Release-note accuracy and roadmap completion remain part of the code review and
+release gates; automation must never invent a completed feature.
+
 ## Release service costs
 
 The product is [free forever](SUPPORT.md), including team features and updates.
