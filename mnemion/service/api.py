@@ -168,8 +168,19 @@ def create_app(database: Database | None = None, embedder: Embedder | None = Non
         openapi_url="/openapi.json" if os.environ.get("MNEMION_API_DOCS", "1") == "1" else None,
         lifespan=lifespan,
         responses={
-            status: {"model": c.ErrorResponse}
-            for status in (400, 401, 403, 404, 408, 409, 413, 422, 429, 503)
+            status: {"model": c.ErrorResponse, "description": description}
+            for status, description in {
+                400: "Bad Request",
+                401: "Unauthorized",
+                403: "Forbidden",
+                404: "Not Found",
+                408: "Request Timeout",
+                409: "Conflict",
+                413: "Content Too Large",
+                422: "Unprocessable Content",
+                429: "Too Many Requests",
+                503: "Service Unavailable",
+            }.items()
         },
         description="Shared, scoped memory and evidence for apps, teams, and assistants. Saves acknowledge canonical durability; operations report semantic indexing readiness.",
     )

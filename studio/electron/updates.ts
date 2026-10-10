@@ -36,7 +36,7 @@ export class DesktopUpdates {
     } catch { /* Missing or damaged preferences use the documented defaults. */ }
     if (process.env.MNEMION_START_AT_LOGIN === '0') this.preferences.startAtLogin = false
     if (this.managed) this.preferences.automaticUpdates = false
-    if (firstLaunch && app.isPackaged && !process.env.MNEMION_STUDIO_SMOKE_FILE) {
+    if (firstLaunch && app.isPackaged && !process.env.MNEMION_STUDIO_SMOKE_FILE && process.env.MNEMION_STUDIO_SMOKE_HEADLESS !== '1') {
       try { this.applyLogin(); this.save() } catch { this.status = { state: 'Startup setup needs attention' } }
     }
     autoUpdater.setFeedURL({ provider: 'github', owner: 'Perseusxrltd', repo: 'mnemion',

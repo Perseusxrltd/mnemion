@@ -32,6 +32,7 @@ jobs:
       MNEMION_TEST_ADMIN_DSN: postgresql://postgres:mnemion_ci_only@localhost:5432/mnemion_ci
       MNEMION_REQUIRE_NODE_SDK: '1'
       MNEMION_TEST_LOCAL_MODEL: ${{ matrix.python == '3.12' && '1' || '0' }}
+      MNEMION_MODEL_CACHE: ${{ github.workspace }}/.tmp/ci-model-cache
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6

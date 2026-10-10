@@ -217,6 +217,16 @@ def collect_frontend(output: Path, frontend: Path) -> list[dict]:
             continue
         seen.add(purl)
         files = [p for p in directory.iterdir() if p.is_file() and LICENSE_NAME.match(p.name)]
+        if not files:
+            overrides_dir = Path(__file__).resolve().parent / "license-overrides"
+            overrides = json.loads((overrides_dir / "manifest.json").read_text(encoding="utf-8"))
+            for item in overrides.get(purl, {}).get("files", []):
+                if Path(item["file"]).name != item["file"]:
+                    raise ValueError("Invalid npm notice override path")
+                source = overrides_dir / item["file"]
+                if hashlib.sha256(source.read_bytes()).hexdigest() != item["sha256"]:
+                    raise ValueError("npm notice checksum mismatch")
+                files.append(source)
         components.append(
             {
                 "type": "library",

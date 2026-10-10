@@ -34,5 +34,22 @@
         "file": "flatbuffers-25.12.19-0.txt"
       }
     ]
+  },
+  "pkg:npm/lazy-val@1.0.5": {
+    "license_label": "MIT",
+    "note": "Upstream MIT metadata plus a clearly identified redistribution notice; upstream has no standalone license file.",
+    "files": [
+      {
+        "source": "https://raw.githubusercontent.com/develar/lazy-val/b69ad4119f1b19bdab13c61ee2fcc88d46b89071/package.json",
+        "revision": "b69ad4119f1b19bdab13c61ee2fcc88d46b89071",
+        "file": "lazy-val-1.0.5-package.json",
+        "sha256": "a642078ae0684963e5747e9499487a4c649c150bbddbfdfd8eb357bfcbf9c1c2"
+      },
+      {
+        "source": "Redistribution notice based on pinned upstream metadata and standard MIT terms (https://spdx.org/licenses/MIT.html)",
+        "file": "lazy-val-1.0.5-LICENSE.txt",
+        "sha256": "85837618aa11a98378bf36830e0eb4d9bde3d8ca1fa92aea3d1a235ae38e0098"
+      }
+    ]
   }
 }

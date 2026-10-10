@@ -2,7 +2,13 @@
 
 import argparse
 import json
+import sys
 from pathlib import Path
+
+# The locked desktop environment deliberately does not install the server.
+# Source launches resolve this checkout; frozen clients use their bundled modules.
+if not getattr(sys, "frozen", False):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from mnemion.vault_client import sync_bundle
 from mnemion.vault_refresh import VaultRefreshError

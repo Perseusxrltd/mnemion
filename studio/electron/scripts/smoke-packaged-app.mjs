@@ -120,6 +120,11 @@ try {
     fail(`Packaged renderer or preload failed: ${JSON.stringify(status.renderer)}`)
   }
   if (status.renderer.nodeAvailable) fail('Node must not be available to the renderer')
+  const guard = status.renderer.updateGuard
+  if (!guard?.clean || guard.edited !== false || !guard.removed) {
+    fail('Automatic restarts must wait for edited inputs to close')
+  }
+  if (existsSync(join(userData, 'desktop-preferences.json'))) fail('Smoke tests must not register login startup')
   if (!status.localClient?.capabilities?.includes('obsidian-refresh')) {
     fail('The packaged local client does not support Obsidian refresh')
   }

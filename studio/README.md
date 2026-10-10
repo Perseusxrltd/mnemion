@@ -20,7 +20,7 @@ and each native validation result must pass before promoting desktop artifacts.
 For development:
 
 ```sh
-uv sync --locked --extra studio --group dev
+uv sync --project studio/client --locked
 npm --prefix packages/client ci
 npm --prefix packages/client run build
 npm --prefix studio/frontend ci
@@ -36,7 +36,8 @@ npm --prefix studio/electron run dev
 ```
 
 Create native installers with `npm --prefix studio/electron run dist` on the target
-OS and architecture. Packaging validates the local client, license inventory and
+OS and architecture. The separate locked desktop environment installs no database
+driver or embedding runtime, including on Intel Macs and Windows ARM64. Packaging validates the local client, license inventory and
 payload. `npm --prefix studio/electron run smoke:packaged` opens the real installed
 payload with an isolated profile; Linux CI uses Xvfb. CI validation artifacts are
 unsigned and are not sent to the automatic update feed.

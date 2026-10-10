@@ -72,18 +72,20 @@ def test_windows_private_state_removes_existing_explicit_world_grant(setup_tool,
     )
     setup_tool.private_directory(folder)
     script = """$ErrorActionPreference='Stop'
-$entries = (Get-Acl -LiteralPath $env:MNEMION_ACL_FIXTURE).Access | ForEach-Object {
-  $_.IdentityReference.Translate([System.Security.Principal.SecurityIdentifier]).Value
+$acl = [System.IO.Directory]::GetAccessControl($env:MNEMION_ACL_FIXTURE, [System.Security.AccessControl.AccessControlSections]::Access)
+$entries = $acl.GetAccessRules($true, $true, [System.Security.Principal.SecurityIdentifier]) | ForEach-Object {
+  $_.IdentityReference.Value
 }
 ConvertTo-Json -InputObject @($entries)
 """
     result = subprocess.run(
         ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", script],
         env={**os.environ, "MNEMION_ACL_FIXTURE": str(folder)},
-        check=True,
+        check=False,
         capture_output=True,
         text=True,
     )
+    assert result.returncode == 0, result.stderr
     entries = json.loads(result.stdout)
     assert len(entries) == 2
     assert "S-1-1-0" not in entries

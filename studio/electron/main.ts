@@ -449,6 +449,13 @@ async function createWindow() {
           workspace: document.body.innerText.includes('Connect to Mnemion'),
           serviceBridge: typeof window.mnemion?.serviceRequest === 'function',
           vaultBridge: typeof window.mnemion?.refreshVault === 'function',
+          updateGuard: (() => {
+            const clean = window.mnemion?.updateSafety?.();
+            const field = document.createElement('textarea'); document.body.append(field);
+            field.value = 'Unsaved smoke-test draft'; field.dispatchEvent(new Event('input', { bubbles: true }));
+            const edited = window.mnemion?.updateSafety?.(); field.remove();
+            return { clean, edited, removed: window.mnemion?.updateSafety?.() };
+          })(),
           nodeAvailable: typeof window.require !== 'undefined',
           route: location.hash
         })`)
