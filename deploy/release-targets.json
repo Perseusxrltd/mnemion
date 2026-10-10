@@ -1,5 +1,5 @@
 {
-  "version": "4.0.2",
+  "version": "4.0.3",
   "platforms": [
     "windows",
     "macos",
@@ -7,7 +7,8 @@
   ],
   "architectures": {
     "windows": [
-      "x64"
+      "x64",
+      "arm64"
     ],
     "macos": [
       "x64",

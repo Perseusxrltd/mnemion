@@ -9,15 +9,14 @@ never gates downloads, usage or access.
 
 **Mnemion 4.0 is the first release of the rebuilt shared-memory platform.**
 Download published builds from [the official product page](https://www.perseusxr.com/mnemion).
-The [4.0.2 release](docs/releases/4.0.2.md) hardens remote-agent connections,
-scope diagnostics and concurrent memory requests. Downloads cover **Windows x64**
-and **macOS and Linux, x64 and ARM64**, with independently authenticated Windows
-updates. Windows ARM64 remains under automatic-relaunch validation and is not
-offered as a completed download. The product page lists only published builds;
-ready architectures ship while work on the others continues. Development and
+The [4.0.3 release](docs/releases/4.0.3.md) adds native Windows ARM64 installation
+and automatic updates, and reduces local-model RAM by sharing its tokenizer.
+Release targets cover **Windows, macOS and Linux on x64 and ARM64**. Windows and
+Mac updates use independent publisher signatures. The product page lists only
+published, verified builds. Development and
 current documentation live on `main`.
 Implementation and acceptance are tracked in [the release ledger](docs/implementation/v4_progress.md).
-See the [current validation report](docs/validation/2026-10-10.md) for measured
+See the [current validation report](docs/validation/2026-10-11.md) for measured
 retrieval results, native checks and remaining limits.
 The full codebase study, design decisions, and rebuild map are preserved in
 [the research report](docs/research/2026-10-09-mnemion-study/README.md).
@@ -159,7 +158,7 @@ and performance independently verified in this implementation.
 
 Open **Documentation & roadmap** in Studio, or use the setup screen’s help link.
 The offline library ships the same Markdown as this repository. See the
-[product roadmap](docs/ROADMAP.md), [release notes](docs/releases/4.0.2.md), and
+[product roadmap](docs/ROADMAP.md), [release notes](docs/releases/4.0.3.md), and
 [documentation maintenance policy](docs/MAINTENANCE.md). Every release and hotfix
 must include matching release notes and a reviewed roadmap.
 

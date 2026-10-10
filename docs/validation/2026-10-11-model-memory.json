@@ -1,0 +1,62 @@
+{
+  "scope": "Sequential controlled single-process measurements; not a capacity or retrieval-quality claim",
+  "host": "WSL2 Linux x86_64",
+  "limits": {
+    "memory_bytes": 2147483648,
+    "swap_bytes": 0,
+    "cpu_quota_percent": 200
+  },
+  "baseline_release_commit": "9229945a415153abfad6d3c57e762f2140904f68",
+  "baseline": {
+    "scope": "single_local_model_process_synthetic_document",
+    "python": "3.12.3",
+    "platform": "Linux",
+    "architecture": "x86_64",
+    "runtime_versions": {
+      "fastembed": "0.9.0",
+      "onnxruntime": "1.31.0",
+      "tokenizers": "0.23.3"
+    },
+    "profile": "e5-small",
+    "implementation_sha256": "5ac884ef918102cab45da6c1e8b4b8efd4a456a69b7c14c175def549ff766a5a",
+    "generation_id": "ce98fcc87e3bb78d0dc8976eaa9592e0025a7021bff866515923f40ebb39aea0",
+    "model_threads": 2,
+    "source_sha256": "1963bd792d06a0fdcf32ddc12c90195c55da0f09554c4f08d67e5733c5389a6b",
+    "source_characters": 59220,
+    "source_tokens": 11521,
+    "chunks": 35,
+    "vectors_and_spans_sha256": "8dc6db98cfa24bae87ef917a5f093a65f51269f363db2ee4353a5facb1e6db33",
+    "loaded_rss_bytes": 826744832,
+    "post_document_rss_bytes": 1408147456,
+    "peak_rss_bytes": 1408147456,
+    "preparation_seconds": 2.6918,
+    "query_seconds": 0.0062,
+    "document_seconds": 4.7006
+  },
+  "shared_tokenizer": {
+    "scope": "single_local_model_process_synthetic_document",
+    "python": "3.12.3",
+    "platform": "Linux",
+    "architecture": "x86_64",
+    "runtime_versions": {
+      "fastembed": "0.9.0",
+      "onnxruntime": "1.31.0",
+      "tokenizers": "0.23.3"
+    },
+    "profile": "e5-small",
+    "implementation_sha256": "93cb4b180d6d20a0fb32d4bcba9658a44fbf01ab33a25a8be3299a3f9ce1d5d4",
+    "generation_id": "ce98fcc87e3bb78d0dc8976eaa9592e0025a7021bff866515923f40ebb39aea0",
+    "model_threads": 2,
+    "source_sha256": "1963bd792d06a0fdcf32ddc12c90195c55da0f09554c4f08d67e5733c5389a6b",
+    "source_characters": 59220,
+    "source_tokens": 11521,
+    "chunks": 35,
+    "vectors_and_spans_sha256": "8dc6db98cfa24bae87ef917a5f093a65f51269f363db2ee4353a5facb1e6db33",
+    "loaded_rss_bytes": 516362240,
+    "post_document_rss_bytes": 1110560768,
+    "peak_rss_bytes": 1110740992,
+    "preparation_seconds": 1.5299,
+    "query_seconds": 0.0065,
+    "document_seconds": 4.5939
+  }
+}

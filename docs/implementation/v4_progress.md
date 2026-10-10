@@ -248,3 +248,20 @@ relaunch, full discoverable agent administration, remote/OAuth setup, source
 installation UI, managed server upgrades/non-systemd supervision, API/worker RSS,
 source synchronization, author-deletion policy and natural-language retrieval
 quality. The roadmap and issue queue track those independently.
+
+## Hotfix 4.0.3, 11 October 2026
+
+- Native Windows ARM64 installation, signed upgrade and relaunch passed; its
+  architecture joins the complete release target set. Windows x64, both Mac
+  architectures and both Linux architectures remain in every stable feed.
+- Local E5/BGE reuse one tokenizer vocabulary with locked source/inference modes.
+  Complete source offsets, model settings and vector generations are preserved.
+  A controlled E5 comparison saved 296 MiB after load and 283.8 MiB after a
+  35-chunk document, with identical vector/span checksums. The focused real-model
+  and concurrency group passed 19 tests. Separate process caches remain open.
+- A reusable public-package upgrade observer follows official feeds, preserves
+  the default profile, observes actual new processes and reaps exited launchers.
+  It does not bypass application guards or simulate inactivity.
+- Release notes, roadmap, model-resource reproduction instructions, Windows and
+  desktop guides now describe the patch. Full release evidence is tracked in
+  [the current validation report](../validation/2026-10-11.md).

@@ -87,7 +87,8 @@ installer on fresh GitHub-hosted Windows, Mac and Linux runners. It waits for th
 real default startup check and system-inactivity guard, then verifies a new
 target-version process and preserved profile/preferences. It uses official feeds
 and the embedded production keys, with no rewritten app entry point, debugger,
-fixture key, simulated idle time or sandbox override. Login registration is
+fixture key or simulated idle time. It adds no sandbox-disabling flag and records
+the packaged Linux launcher's actual flags. Login registration is
 disabled for the disposable runner; this test does not certify boot startup.
 
 The workflow runs after publication for release tags that include it, or manually

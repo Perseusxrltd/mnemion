@@ -1,13 +1,13 @@
 # Code signing policy
 
-Updated: **2026-10-10**. Project maintainer: **PERSEUS LEGACY LIMITED**.
+Updated: **2026-10-11**. Project maintainer: **PERSEUS LEGACY LIMITED**.
 
 ## Platform status
 
 The first platform-v1 desktop distribution, **4.0.0**, introduced macOS and Linux.
-Version **4.0.1** adds Windows x64. Each OS/architecture pair is published only
-after its installer, update and native validation gates pass. Windows ARM64
-automatic relaunch remains under validation. Published assets at
+Version **4.0.1** adds Windows x64; **4.0.3** adds Windows ARM64 after its native
+installation, authenticated upgrade and relaunch passed. Each OS/architecture
+pair is published only after its release validation gates pass. Published assets at
 [the product page](https://www.perseusxr.com/mnemion) determine availability.
 
 Mac applications use intact ad-hoc signatures and pinned Sparkle with independent
@@ -35,7 +35,7 @@ identity, not an assumed company certificate. SignPath's service does not export
 a PFX; its integration must use the approved project and signing policy.
 
 A free [Windows update implementation](implementation/free-windows-updates.md)
-authenticates Windows x64 delivery. An Ed25519 manifest binds the
+authenticates Windows x64 and ARM64 delivery. An Ed25519 manifest binds the
 exact full NSIS installer, version, architecture, URL, size and hash. Cached
 installers are verified again before execution. An independent signature authenticates updates without providing
 Windows publisher reputation or bypassing company policies.

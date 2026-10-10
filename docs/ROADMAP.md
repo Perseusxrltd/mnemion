@@ -1,19 +1,18 @@
 # Mnemion product roadmap
 
-Current distribution: **4.0.2**. Updated: **2026-10-10**.
+Current distribution: **4.0.3**. Updated: **2026-10-11**.
 
-Version 4.0.2 hardens remote-agent access and inference admission. The distribution
-includes **Windows x64** and **macOS and Linux, x64 and ARM64**.
+Version 4.0.3 adds native Windows ARM64 and removes a duplicate local-model
+tokenizer. The release targets include **Windows, macOS and Linux, x64 and ARM64**.
 [The official product page](https://www.perseusxr.com/mnemion) lists published
-downloads. Windows ARM64 automatic relaunch has passed native validation on
-`main`; its first public installer is being prepared for the next complete release.
+downloads. Each architecture requires its complete verified installer/update set.
 
 The rebuilt shared-memory platform is product v1; its package version is 4.x
 to upgrade correctly from the earlier 3.x product. This is a living delivery
 plan, not a claim that every planned capability is available. Release status and
-known limitations are recorded in [the current patch notes](releases/4.0.2.md),
+known limitations are recorded in [the current patch notes](releases/4.0.3.md),
 [the published baseline](releases/4.0.0.md) and
-[validation report](validation/2026-10-10.md).
+[validation report](validation/2026-10-11.md).
 
 ## Product direction
 
@@ -67,8 +66,9 @@ release artifacts require the platform checks and publisher requirements below.
 2. Build and launch native desktop packages on Windows, macOS and Linux, for
    x64 and ARM64, including their sandboxed bridges and local Obsidian client.
 3. Publish ready OS/architecture pairs independently using `deploy/release-targets.json`.
-   Version 4.0.0 shipped macOS and Linux. Version 4.0.1 adds Windows x64; ARM64
-   waits for successful automatic relaunch. Each offered pair needs all its
+   Version 4.0.0 shipped macOS and Linux. Version 4.0.1 adds Windows x64;
+   4.0.3 adds Windows ARM64 after native installation/update/relaunch validation.
+   Each offered pair needs all its
    installer and authenticated-update checks.
    Mac uses the [validated Sparkle integration](implementation/free-macos-updates.md)
    with independently signed archives. Windows x64 uses independent manifest
@@ -103,8 +103,8 @@ Priority is defects found in installation, access control, recovery, migration,
 update behavior and routine team use. Patches retain the service/API contract
 where possible and include migration/rollback instructions when needed.
 
-- Publish the now-validated Windows ARM64 installer/update path in the next release;
-  integrate SignPath when approved. No publisher approval
+- Keep every published architecture in subsequent releases and integrate SignPath
+  when approved. No publisher approval
   is assumed and no paid certificate purchase is planned. The
   [independent signed-update implementation](implementation/free-windows-updates.md)
   passes native Windows x64 and ARM64 installation, upgrade and relaunch. The
@@ -118,7 +118,10 @@ where possible and include migration/rollback instructions when needed.
   remote setup (3), non-systemd supervision (6), visible source-install Studio
   setup (7) and verified server updates with backups/restart/rollback (11).
   Desktop automatic updates do not upgrade a separately deployed memory server.
-- Reduce measured API/worker resident memory (13), review policy for an author's
+- Continue reducing API/worker resident memory (13). Version 4.0.3 shares one
+  tokenizer vocabulary per local model, saving 296 MiB after loading E5 in the
+  recorded comparison while preserving generation, source spans and vectors.
+  Separate API/worker model caches and idle unloading remain open. Review policy for an author's
   own deletions (14), improve source synchronization and diagnostics (8 and 15),
   and evaluate natural-language retrieval against keyword baselines (17).
   Track [the issue queue](https://github.com/Perseusxrltd/mnemion/issues) and verify

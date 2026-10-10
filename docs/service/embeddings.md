@@ -26,6 +26,17 @@ CPU threads for local models, and loads local weights only when used. Two enable
 local models may both remain cached in that process; API and worker processes have
 separate memory. Set container/service CPU and memory caps for the actual host.
 
+From 4.0.3, each local model shares one tokenizer vocabulary between source
+counting/chunking and inference. A lock restores the model's original padding
+and truncation settings before inference; source spans still cover the complete
+Unicode document. Pinned E5/BGE tests verify identical source-tokenizer semantics.
+This changes memory allocation, not the embedding generation, and requires no
+reindex. The [resource comparison](../validation/2026-10-11.md) measured E5 loading
+at 788.4 → 492.4 MiB and a 35-chunk document at 1342.9 → 1059.1 MiB of process RSS.
+Those are one controlled CPU run per implementation, not universal RAM limits or
+retrieval-quality claims. API and worker remain separate processes; their models
+are not shared across process boundaries.
+
 Mnemion does not start an Ollama daemon, pull remote-server models, provision a
 cloud account, or make a paid call during configuration or model preparation.
 The operator installs the desired model separately. Model cards and API formats

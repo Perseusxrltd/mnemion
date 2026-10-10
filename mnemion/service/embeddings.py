@@ -19,6 +19,7 @@ from typing import Protocol
 
 from .errors import ServiceError
 from .inference_limits import InferenceGate
+from .local_tokenizer import SharedModelTokenizer
 
 
 @dataclass(frozen=True)
@@ -176,10 +177,13 @@ class LocalEmbedder:
                 providers=["CPUExecutionProvider"],
                 local_files_only=True,
             )
-            tokenizer = Tokenizer.from_file(str(model_path / "tokenizer.json"))
-            tokenizer.no_truncation()
-            tokenizer.no_padding()
-            self._tokenizer = tokenizer
+            # The pinned FastEmbed runtime already loaded these exact tokenizer
+            # bytes. Keep its vocabulary once, while preserving its normal
+            # inference configuration and untruncated Unicode source offsets.
+            tokenizer = model.model.tokenizer
+            if not isinstance(tokenizer, Tokenizer):
+                raise RuntimeError("The pinned runtime did not expose its loaded tokenizer")
+            self._tokenizer = SharedModelTokenizer(tokenizer)
             self._model = model
 
     def token_count(self, text: str) -> int:
@@ -196,9 +200,10 @@ class LocalEmbedder:
             raise ServiceError(
                 422, "query_too_long", "The semantic query exceeds this model's query budget."
             )
-        vector = next(
-            iter(self._model.embed([self.generation.configuration["query_prefix"] + text]))
-        ).tolist()
+        with self._tokenizer.inference():
+            vector = next(
+                iter(self._model.embed([self.generation.configuration["query_prefix"] + text]))
+            ).tolist()
         vector_literal(vector, self.generation.dimensions)
         return vector
 
@@ -224,12 +229,13 @@ class LocalEmbedder:
                 break
         if len(spans) > 512:
             raise ValueError("Document exceeds the 512 chunk indexing limit")
-        vectors = self._model.embed(
-            [config["document_prefix"] + text[start:end] for start, end in spans], batch_size=16
-        )
         chunks = []
-        for (start, end), vector in zip(spans, vectors, strict=True):
-            values = vector.tolist()
-            vector_literal(values, self.generation.dimensions)
-            chunks.append(EmbeddedChunk(start, end, values))
+        with self._tokenizer.inference():
+            vectors = self._model.embed(
+                [config["document_prefix"] + text[start:end] for start, end in spans], batch_size=16
+            )
+            for (start, end), vector in zip(spans, vectors, strict=True):
+                values = vector.tolist()
+                vector_literal(values, self.generation.dimensions)
+                chunks.append(EmbeddedChunk(start, end, values))
         return chunks

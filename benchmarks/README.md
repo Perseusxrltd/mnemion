@@ -10,6 +10,16 @@ answering-accuracy or 100,000-record concurrent-capacity result is claimed.
 Use `--help` for the exact runner arguments. Keep credentials and run state
 outside Git, and apply CPU/memory limits on modest hardware.
 
+`local_model_resources.py` measures the actual local query and document pipeline
+with public synthetic English/French text. Prepare the pinned cache first, then
+run `python -m benchmarks.local_model_resources --cache /path/to/model-cache`.
+It defaults to offline operation and two model threads, with no provider calls,
+database or private corpus. Its JSON includes RSS, timings, runtime/source
+fingerprints, generation identity and a checksum of every vector/source span.
+Use the same script, cache, runtime and hardware limits across release checkouts.
+This resource probe is separate from held-out retrieval evaluation. See the
+[4.0.3 comparison](../docs/validation/2026-10-11.md).
+
 ## Historical v3 benchmark reference
 
 The instructions and comparisons below concern the optional v3-compatible local

@@ -1,10 +1,12 @@
 # Free Windows updates
 
-Status on 2026-10-10: Windows x64 passed native first installation, authenticated
-upgrade and relaunch in [job 114302342465](https://github.com/Perseusxrltd/mnemion/actions/runs/38082561771/job/114302342465).
-Version 4.0.1 selects x64 for publication. ARM64 first installation, binary
-integrity, rejection/recovery and restart guards pass, but its final relaunch
-does not; ARM64 stays pending. Windows was not part of the 4.0.0 release.
+Status on 2026-10-11: Windows x64 and ARM64 pass native first installation,
+authenticated upgrade, binary integrity, rejection/recovery and automatic
+relaunch. [ARM validation](https://github.com/Perseusxrltd/mnemion/actions/runs/38087726926)
+checks the native system process-query fix. Version 4.0.1 introduced Windows x64;
+4.0.3 adds ARM64. The unmodified public x64 4.0.1 → 4.0.2 upgrade also passed
+through the official feed, with preserved settings. See
+[current evidence](../validation/2026-10-11.md).
 
 ## Delivery and trust
 
@@ -76,6 +78,11 @@ The regression check compares every installed EXE/DLL/PYD/native-module hash wit
 the packaged input after both first installation and upgrade, using a destination
 with spaces. The same packing policy applies to release and disposable packages.
 
+The ARM NSIS process check uses native `Sysnative` PowerShell/cmd paths rather
+than the stub's emulated system tools. It then runs the upstream availability
+and application-running checks, preserving shutdown protection. This fixed an
+upgrade that stalled in the old uninstaller after the app had exited normally.
+
 ## Release maintenance
 
 The public configuration is `studio/electron/native/windows-updates.json`.
@@ -87,8 +94,8 @@ public key. A separate dispatch can test the signing key without uploading
 release artifacts.
 
 Keep each released architecture's `latest-ARCH-windows.json` with its immutable
-installer and checksums. Add ARM64 only after its remaining validation passes.
-Never replace a published asset. The next
+installer and checksums, including both x64 and ARM64 from 4.0.3.
+Never replace a published asset. Every
 Windows delivery requires a new patch version and the Mac/Linux feeds needed by
 existing users. Key rotation needs an explicit, tested transition for installed
 clients; changing a source file alone does not rotate their trust.

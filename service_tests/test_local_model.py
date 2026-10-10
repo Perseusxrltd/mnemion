@@ -21,8 +21,36 @@ pytestmark = pytest.mark.skipif(
 )
 
 
+def assert_shared_tokenizer_preserves_pinned_source_semantics(model):
+    import json
+
+    from tokenizers import Tokenizer
+
+    model.prepare()
+    raw = Tokenizer.from_file(str(model._model.model._model_dir / "tokenizer.json"))
+    original = json.loads(raw.to_str())
+    shared = json.loads(model._model.model.tokenizer.to_str())
+    for settings in (original, shared):
+        settings.pop("padding", None)
+        settings.pop("truncation", None)
+    assert original == shared
+    raw.no_truncation()
+    raw.no_padding()
+    for text in (
+        "Le café coûte cinq euros. PostgreSQL stores invoices. 中文笔记。",
+        "<s><mask></s><pad>[CLS][MASK][SEP]",
+        "Long document with source spans and no silent truncation. " * 180,
+    ):
+        expected = raw.encode(text, add_special_tokens=False)
+        actual = model._tokenizer.encode(text, add_special_tokens=False)
+        assert actual.ids == expected.ids
+        assert actual.offsets == expected.offsets
+        assert model.token_count(text) == len(expected.ids)
+
+
 def test_real_multilingual_retrieval_and_long_document_chunks(env):
     model = LocalEmbedder(Path(os.environ["MNEMION_MODEL_CACHE"]))
+    assert_shared_tokenizer_preserves_pinned_source_semantics(model)
     with psycopg.connect(env.admin_dsn) as conn:
         register_generation(conn, model.generation)
     memories = MemoryService(env.db, model.generation)
@@ -72,7 +100,7 @@ def test_real_small_english_cpu_model_and_source_spans():
     import math
 
     model = LocalEmbedder(Path(os.environ["MNEMION_MODEL_CACHE"]), generation=BGE_SMALL_GENERATION)
-    model.prepare()
+    assert_shared_tokenizer_preserves_pinned_source_semantics(model)
     query = model.query("Which database stores billing records?")
     relevant = model.document("Billing records are stored in PostgreSQL with daily backups.")[0]
     unrelated = model.document("The office garden has roses beside the bicycle rack.")[0]

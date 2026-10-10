@@ -72,9 +72,16 @@ npm.cmd --prefix studio/electron run verify:installer
 ```
 
 That check must fail for an unsigned installer. Builder log lines mentioning a
-signing step do not establish that a certificate was applied. The free SignPath application is submitted, with approval and integration
-pending. An independent Windows update-signature route is being assessed; it is
-not shipped yet. See the [current signing policy](CODE_SIGNING.md).
+signing step do not establish that a certificate was applied. The free SignPath
+application is submitted, with approval and integration pending. Windows x64
+ships an independently signed Ed25519 update manifest from 4.0.1; 4.0.3 adds
+native ARM64. Both pass real NSIS installation, signed upgrade and relaunch.
+The ARM installer selects native system PowerShell for the upstream running-app
+check, retaining normal shutdown protection. The public x64 4.0.1 → 4.0.2
+automatic upgrade also passed with unmodified packages and the official feed.
+See the [current signing policy](CODE_SIGNING.md) and
+[update validation](validation/2026-10-11.md). These independent update signatures
+do not confer Windows publisher reputation or bypass organization policy.
 
 The package still contains historical frontend views for v3 development. An
 explicit `MNEMION_LEGACY_STUDIO=1` launch additionally requires the separately

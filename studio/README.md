@@ -1,18 +1,18 @@
 # Mnemion Studio
 
 The desktop and web workspace for the shared-memory service. Published downloads
-are on [the product page](https://www.perseusxr.com/mnemion). Version 4.0.2 retains
-Windows x64 and both Mac/Linux architectures. Windows ARM64 remains under automatic
-relaunch validation. Studio supports
+are on [the product page](https://www.perseusxr.com/mnemion). Version 4.0.3 adds
+native Windows ARM64, with automatic installation and relaunch verified on a
+Windows ARM runner. All three operating systems have x64 and ARM64 targets. Studio supports
 organizations, scoped spaces, memory editing and review, evidence, search,
 source connections, agents, Obsidian, operations and visual insights/evaluations.
 
 The desktop client includes a sandboxed Electron shell and a small local vault
 refresh executable. It connects to a local or remote service; it does not bundle
 PostgreSQL or silently start a model on every employee's laptop.
-Remote-agent fixes in 4.0.2 require upgrading the memory server as well as Studio;
+Remote-agent fixes in 4.0.2 and lower model RAM in 4.0.3 require upgrading the memory server;
 the desktop updater cannot replace a separately deployed service. See the
-[patch notes](../docs/releases/4.0.2.md).
+[patch notes](../docs/releases/4.0.3.md).
 
 Use the [service deployment guide](../docs/service/deployment.md) first, then
 connect with the service URL and a personal or application credential. Credentials

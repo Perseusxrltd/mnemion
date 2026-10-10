@@ -1,11 +1,9 @@
 # Desktop background operation and updates
 
-Platform v1 uses the **4.x** package series. Version **4.0.1** adds Windows x64 to
-macOS and Linux on x64 and ARM64. Windows ARM64 remains under automatic-relaunch
-validation. Download published installers from
+Platform v1 uses the **4.x** package series. Version **4.0.3** adds Windows ARM64;
+release targets now cover Windows, macOS and Linux on x64 and ARM64. Download published installers from
 [the official product page](https://www.perseusxr.com/mnemion).
-Version **4.0.2** retains those platforms and fixes remote-agent and concurrent
-request behavior; see [the patch notes](../releases/4.0.2.md).
+See [the patch notes](../releases/4.0.3.md) for current changes and measured limits.
 
 Official Studio installations enable automatic stable updates, background mode
 and launch at login by default. Preferences are in the application or tray menu,
@@ -17,20 +15,20 @@ startup. An explicit operating-system startup override is not reset on each laun
 | macOS application, Intel/Apple silicon | Sparkle verifies independently signed Ed25519 update archives, then installs and relaunches when safe | Menu bar and Dock; launch at login |
 | Linux AppImage, x64/ARM64 | Automatic download and replacement of the writable AppImage | Tray where supported; minimized window remains accessible; XDG login entry |
 | Linux DEB | Distribution/package-manager updates | Same background and login behavior |
-| Windows NSIS, x64 | Independently signed Ed25519 manifest, verified full installer, automatic safe restart | System tray and launch at login |
-| Windows ARM64 | First installation passes; automatic relaunch remains under validation | No completed public installer yet |
+| Windows NSIS, x64/ARM64 | Independently signed Ed25519 manifest, verified full installer, automatic safe restart | System tray and launch at login |
 | Web Studio | Served with the deployed service version | Browser behavior; no desktop startup registration |
 | Python SDK, CLI, MCP and server | Administrator/package-manager deployment | Service manager or container restart policy |
 
 ## First installation
 
-On Windows x64, choose **Intel / AMD (most PCs)** and run the NSIS installer.
+On Windows x64, choose **Intel / AMD (most PCs)**; on a Windows ARM device,
+choose **ARM64**. Run the matching NSIS installer.
 It supports a user installation without installing models or databases. The
 initial installer does not yet carry an OS publisher certificate, so Windows may
 show an unknown-publisher message. Verify its official source; company policy may
 require an administrator-approved deployment. Independent signatures authenticate
-subsequent updates without bypassing SmartScreen or company policy. Do not choose
-the x64 package as a claimed native ARM64 release.
+subsequent updates without bypassing SmartScreen or company policy. The ARM64
+installer uses native system process checks during installation and updates.
 
 On macOS 13 or later, choose **Apple silicon** for an M-series Mac or **Intel**
 for an Intel Mac. Open the disk image, drag **Mnemion Studio** to Applications,
@@ -54,7 +52,6 @@ only an installer matching your architecture.
 Studio connects to a shared memory service; it does not install a large model on
 every device. Follow the [deployment guide](deployment.md) to create a workspace,
 or use the workspace address and application key supplied by your administrator.
-Users awaiting a native ARM64 Windows installer can use the service's browser Studio.
 
 ## Update behavior and resource limits
 
