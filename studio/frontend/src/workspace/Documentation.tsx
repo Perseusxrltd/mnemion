@@ -22,6 +22,7 @@ const titles: Record<string, string> = {
   "docs/service/knowledge.md": "Wiki, graph & curation", "docs/service/migration.md": "Migration from v3",
   "docs/service/recovery.md": "Backup & recovery", "docs/service/updates.md": "Background operation & updates",
   "docs/MAINTENANCE.md": "Release & documentation maintenance",
+  "docs/SUPPORT.md": "Free forever & optional support",
   "docs/CODE_SIGNING.md": "Code signing policy", "docs/service/privacy.md": "Privacy & data handling",
   "docs/service/embeddings.md": "Embedding models, reindexing & resources",
 };

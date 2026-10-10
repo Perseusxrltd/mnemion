@@ -34,6 +34,12 @@ running maintainer or promise fixes without an active maintenance session.
 
 ## Release service costs
 
+The product is [free forever](SUPPORT.md), including team features and updates.
+Keep support payments separate from downloads and product access. The website
+may offer optional one-time PayPal support from €5; its verified recipient belongs
+in deployment configuration, not in public source or application telemetry.
+Do not claim that PayPal has no fees or transfers automatically to a bank.
+
 Project release work is restricted to free services. Do not enter payment details,
 purchase certificates or enroll in paid programs. Avoid trials that automatically
 convert to paid plans; if a trial is encountered, cancel it before any charge and
@@ -64,6 +70,7 @@ storage/billing limit to make a check pass.
 - [Code signing](CODE_SIGNING.md) and [privacy](service/privacy.md): distribution
   trust, release responsibilities and data handling.
 - [Roadmap](ROADMAP.md): delivered work, priorities and acceptance criteria.
+- [Free forever and support](SUPPORT.md): free access and optional contributions.
 - `docs/releases/`: immutable per-version release notes.
 - `docs/validation/`: dated evidence and its limitations.
 - `docs/implementation/`: feature preservation and technical decisions.

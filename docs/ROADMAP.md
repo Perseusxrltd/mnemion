@@ -10,6 +10,11 @@ known limitations are recorded in [the release notes](releases/4.0.0.md) and
 
 ## Product direction
 
+Mnemion stays **100% free forever**, including organization features and updates.
+There are no paid tiers or seats. Optional one-time PayPal support starts at €5,
+with higher contributions available; it never changes product access. See
+[free software and support](SUPPORT.md).
+
 One organized, evidence-backed memory system for people, teams, applications and
 agents across devices and providers. Companies control where the service runs,
 which sources are connected, who can recall each space, and what leaves their

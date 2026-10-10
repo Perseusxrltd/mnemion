@@ -3,6 +3,10 @@
 Memory infrastructure for applications, teams, and AI assistants, with Obsidian
 as a local visualization and inspection surface.
 
+**100% free, always**, for individuals, teams and organizations. All features
+and updates are included; optional [support](docs/SUPPORT.md) starts at €5 and
+never gates downloads, usage or access.
+
 **Mnemion 4.0 is the first release of the rebuilt shared-memory platform.**
 The [release notes](docs/releases/4.0.0.md) describe its scope and current shipping
 status. Implementation and acceptance are tracked in [the release ledger](docs/implementation/v4_progress.md).
