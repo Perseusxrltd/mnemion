@@ -5,8 +5,8 @@ Current distribution: **4.0.2**. Updated: **2026-10-10**.
 Version 4.0.2 hardens remote-agent access and inference admission. The distribution
 includes **Windows x64** and **macOS and Linux, x64 and ARM64**.
 [The official product page](https://www.perseusxr.com/mnemion) lists published
-downloads. Windows ARM64 automatic relaunch remains under validation; that
-installer stays pending while verified architectures ship.
+downloads. Windows ARM64 automatic relaunch has passed native validation on
+`main`; its first public installer is being prepared for the next complete release.
 
 The rebuilt shared-memory platform is product v1; its package version is 4.x
 to upgrade correctly from the earlier 3.x product. This is a living delivery
@@ -103,12 +103,13 @@ Priority is defects found in installation, access control, recovery, migration,
 update behavior and routine team use. Patches retain the service/API contract
 where possible and include migration/rollback instructions when needed.
 
-- Finish Windows ARM64 automatic relaunch and publish its installer/update path;
+- Publish the now-validated Windows ARM64 installer/update path in the next release;
   integrate SignPath when approved. No publisher approval
   is assumed and no paid certificate purchase is planned. The
   [independent signed-update implementation](implementation/free-windows-updates.md)
-  passes native Windows x64 installation, upgrade and relaunch. ARM64 first
-  installation and the negative/guard checks pass; relaunch is its remaining gate.
+  passes native Windows x64 and ARM64 installation, upgrade and relaunch. The
+  public, unmodified Windows x64 4.0.1 → 4.0.2 automatic upgrade also passed;
+  see [the dated evidence](validation/2026-10-10.md).
 - Verify the 4.0.2 remote-agent fixes in upgraded deployments: one API/MCP
   endpoint, connection-time authentication, explicit scope diagnostics,
   described tool fields, compact structured errors and bounded inference
