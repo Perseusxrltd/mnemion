@@ -9,8 +9,9 @@ never gates downloads, usage or access.
 
 **Mnemion 4.0 is the first release of the rebuilt shared-memory platform.**
 Download published builds from [the official product page](https://www.perseusxr.com/mnemion).
-The [4.0.3 release](docs/releases/4.0.3.md) adds native Windows ARM64 installation
-and automatic updates, and reduces local-model RAM by sharing its tokenizer.
+The [4.0.4 release](docs/releases/4.0.4.md) adds discoverable agent administration
+and repairs Linux login paths after AppImage updates. The preceding 4.0.3 patch
+added native Windows ARM64 and reduced local-model RAM by sharing its tokenizer.
 Release targets cover **Windows, macOS and Linux on x64 and ARM64**. Windows and
 Mac updates use independent publisher signatures. The product page lists only
 published, verified builds. Development and
@@ -35,6 +36,8 @@ An authenticated identity is separate from the person or project a memory is abo
 - A versioned HTTP API, [OpenAPI contract](docs/service/openapi.json),
   Python and TypeScript clients, and authenticated MCP with stdio and Streamable
   HTTP; API and HTTP MCP share one listener by default.
+- [Agent administration](docs/service/agent-control.md): 81 discoverable operations,
+  an offline catalog/CLI, compact MCP tools, private results and safe retry rules.
 - Studio for saving, searching, inspecting evidence and revisions, reviewing
   memories, managing identities/grants, and tracking indexing/deletion activity.
 - [Visual insights and evaluations](docs/service/insights.md): resource and retrieval

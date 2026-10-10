@@ -1,16 +1,17 @@
 # Mnemion product roadmap
 
-Current distribution: **4.0.3**. Updated: **2026-10-11**.
+Current distribution: **4.0.4**. Updated: **2026-10-11**.
 
-Version 4.0.3 adds native Windows ARM64 and removes a duplicate local-model
-tokenizer. The release targets include **Windows, macOS and Linux, x64 and ARM64**.
+Version 4.0.4 adds a reviewed 81-operation agent catalog, CLI/MCP administration
+and Linux login-path maintenance after updates. It retains 4.0.3's Windows ARM64
+and local-model RAM improvements. Release targets include **Windows, macOS and Linux, x64 and ARM64**.
 [The official product page](https://www.perseusxr.com/mnemion) lists published
 downloads. Each architecture requires its complete verified installer/update set.
 
 The rebuilt shared-memory platform is product v1; its package version is 4.x
 to upgrade correctly from the earlier 3.x product. This is a living delivery
 plan, not a claim that every planned capability is available. Release status and
-known limitations are recorded in [the current patch notes](releases/4.0.3.md),
+known limitations are recorded in [the current patch notes](releases/4.0.4.md),
 [the published baseline](releases/4.0.0.md) and
 [validation report](validation/2026-10-11.md).
 
@@ -48,7 +49,7 @@ Administrative authority remains distinct from ordinary memory access.
 | Model choice | E5/BGE CPU profiles, approved Ollama/OpenAI endpoints, per-space candidate indexes, progress/pause/retry, preview/evals and atomic activation/rollback | [Embedding models](service/embeddings.md) |
 | Librarian | Approved local/cloud models, optional schedules, call budgets, exact source revisions, organization proposals, review findings and guarded undo | [Librarian](service/librarian.md) |
 | Sources | Git, selected folders, Google Drive, Slack, rclone and custom adapters; checkpoints, leases, review proposals and pauses | [Connectors](service/connectors.md) |
-| Agent compatibility | HTTP/OpenAPI, Python and TypeScript SDKs, authenticated MCP on the API port, described tool inputs and structured errors, conversation capture | [Agents](service/agents.md), [capture](service/capture.md) |
+| Agent compatibility | HTTP/OpenAPI, Python/TypeScript SDKs, authenticated MCP, 81-operation discovery and CLI/MCP administration, bounded private results, safe retries, conversation capture | [Agents](service/agents.md), [administration](service/agent-control.md), [capture](service/capture.md) |
 | Human organization | Studio memory review, source evidence, team access, wiki/graph, core context and operations | [Knowledge](service/knowledge.md) |
 | Obsidian | Markdown, stable paths, citations, wikilinks, managed refresh, conflict detection and preservation of personal annotations | [Studio](../studio/README.md) |
 | Reliability | Durable jobs, retries and leases, ingestion/resource limits, verified backup/recovery, v3 archive/import/cutover/rollback | [Recovery](service/recovery.md), [migration](service/migration.md) |
@@ -118,6 +119,10 @@ where possible and include migration/rollback instructions when needed.
   remote setup (3), non-systemd supervision (6), visible source-install Studio
   setup (7) and verified server updates with backups/restart/rollback (11).
   Desktop automatic updates do not upgrade a separately deployed memory server.
+- Extend the 4.0.4 agent catalog to new operations as they ship. Existing HTTP
+  administration is discoverable and callable; host setup, recovery and service
+  updates continue to require operator credentials and their separate CLI paths.
+  Keep schema parity, small response budgets and unknown-write outcomes tested.
 - Continue reducing API/worker resident memory (13). Version 4.0.3 shares one
   tokenizer vocabulary per local model, saving 296 MiB after loading E5 in the
   recorded comparison while preserving generation, source spans and vectors.

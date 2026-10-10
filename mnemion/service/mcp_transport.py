@@ -69,20 +69,39 @@ class InProcessAPITransport(httpx.BaseTransport):
     This transport is for bounded JSON tools; bulk exports remain on HTTP/CLI.
     """
 
-    def __init__(self, app):
+    def __init__(self, app, *, maximum=2_000_000):
         self.app = app
+        self.maximum = maximum
 
     def handle_request(self, request: httpx.Request) -> httpx.Response:
         body = request.read()
 
         async def dispatch():
+            size, exceeded = 0, False
+
+            async def bounded(scope, receive, send):
+                async def bounded_send(message):
+                    nonlocal size, exceeded
+                    if message["type"] == "http.response.body":
+                        size += len(message.get("body", b""))
+                        if size > self.maximum:
+                            exceeded = True
+                            raise httpx.ReadError(
+                                "The internal API response exceeds its byte limit"
+                            )
+                    await send(message)
+
+                await self.app(scope, receive, bounded_send)
+
             async with httpx.AsyncClient(
-                transport=httpx.ASGITransport(app=self.app, raise_app_exceptions=False),
+                transport=httpx.ASGITransport(app=bounded, raise_app_exceptions=False),
                 follow_redirects=False,
             ) as client:
                 response = await client.request(
                     request.method, request.url, headers=request.headers, content=body
                 )
+                if exceeded:
+                    raise httpx.ReadError("The internal API response exceeds its byte limit")
                 return httpx.Response(
                     response.status_code,
                     headers=response.headers,
@@ -164,17 +183,29 @@ class MCPBearerMiddleware:
             self.capacity.release()
 
 
-def tool_error(code, message, *, status=None, request_id=None, fields=None, retry_after=None):
+def tool_error(
+    code,
+    message,
+    *,
+    status=None,
+    request_id=None,
+    fields=None,
+    retry_after=None,
+    outcome=None,
+    retryable=None,
+):
     data = {
         "code": code,
         "message": message,
-        "retryable": status in {408, 429, 502, 503, 504},
+        "retryable": status in {408, 429, 502, 503, 504} if retryable is None else retryable,
         "request_id": request_id,
     }
     if fields:
         data["fields"] = fields
     if retry_after is not None:
         data["retry_after_seconds"] = retry_after
+    if outcome is not None:
+        data["outcome"] = outcome
     return CallToolResult(
         is_error=True,
         structured_content=data,
@@ -243,6 +274,8 @@ class MnemionMCPServer(MCPServer):
                         status=cause.status,
                         request_id=cause.request_id,
                         retry_after=getattr(cause, "retry_after", None),
+                        outcome=getattr(cause, "outcome", None),
+                        retryable=cause.retryable,
                     )
                 if isinstance(cause, ValidationError):
                     errors = cause.errors()

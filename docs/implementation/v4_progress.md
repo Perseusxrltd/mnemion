@@ -265,3 +265,21 @@ quality. The roadmap and issue queue track those independently.
 - Release notes, roadmap, model-resource reproduction instructions, Windows and
   desktop guides now describe the patch. Full release evidence is tracked in
   [the current validation report](../validation/2026-10-11.md).
+
+## Hotfix 4.0.4, 11 October 2026
+
+- Reviewed operation discovery covers all 81 existing HTTP actions with strict
+  input schemas, read/write classification and retry behavior. CLI and compact
+  MCP tools preserve the same tenant/space authorization and version checks.
+- Responses have explicit byte budgets and transfer limits; exports stream to
+  private files. New API keys are issued only after reserving an owner-only
+  result file and are usable directly by existing agent setup commands.
+- CI regenerates the agent contract and rejects unclassified route additions.
+  HTTP/MCP tests cover access denial, revoked keys, unknown write outcomes,
+  preserved idempotency, retry delays, private results and bounded buffering.
+- Linux login entries follow renamed AppImages while retaining OS disable flags
+  and custom startup commands. The public observer checks the actual startup
+  target as well as the replaced process, installed bytes and preserved profile.
+- Hosted OAuth, remote setup, server supervision/updates, source triggers and
+  further memory/retrieval work remain explicit roadmap items. The public
+  4.0.3 release and automatic six-platform website refresh were verified.

@@ -53,6 +53,7 @@ jobs:
       - run: npm --prefix packages/client ci && npm --prefix packages/client test
       - run: uv run --no-sync python -m pytest service_tests -q --cov=mnemion.service --cov-report=term-missing --cov-fail-under=75
       - run: uv run --no-sync mnemion-service schema --output /tmp/openapi.json && diff docs/service/openapi.json /tmp/openapi.json
+      - run: uv run --no-sync mnemion-service agent-schema --output /tmp/agent-contract.json && diff mnemion/service/agent_contract.json /tmp/agent-contract.json
 
   legacy:
     runs-on: ubuntu-latest

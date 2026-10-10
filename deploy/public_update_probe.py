@@ -15,6 +15,7 @@ import os
 from pathlib import Path
 import platform
 import re
+import shlex
 import shutil
 import struct
 import subprocess
@@ -207,8 +208,33 @@ def child_environment() -> dict[str, str]:
     }
     # Preserve normal system paths, but no CI/API keys, loader overrides or smoke flags.
     result = {key: value for key, value in os.environ.items() if key.lower() in allowed}
-    result["MNEMION_START_AT_LOGIN"] = "0"
+    # Linux's per-user desktop entry is inspected across the actual update.
+    # Mac/Windows login registration remains outside this rehearsal's scope.
+    if platform.system() != "Linux":
+        result["MNEMION_START_AT_LOGIN"] = "0"
     return result
+
+
+def linux_login_entry() -> Path:
+    return (
+        Path(os.environ.get("XDG_CONFIG_HOME", str(Path.home() / ".config")))
+        / "autostart/com.perseusxr.mnemion-studio.desktop"
+    )
+
+
+def verify_linux_login(executable: Path) -> None:
+    path = linux_login_entry()
+    if not path.is_file() or path.stat().st_size > 4096:
+        raise ValueError("The update did not preserve a bounded login entry")
+    commands = [
+        line.removeprefix("Exec=")
+        for line in path.read_text().splitlines()
+        if line.startswith("Exec=")
+    ]
+    # The fixture's controlled install path has spaces but no Desktop Entry
+    # field codes; parse the actual emitted command without executing a shell.
+    if len(commands) != 1 or shlex.split(commands[0]) != [str(executable), "--background"]:
+        raise ValueError("The login entry does not launch the installed AppImage")
 
 
 def run(command: list, *, env: dict, timeout: int = 180) -> None:
@@ -429,6 +455,8 @@ def observe(args) -> dict:
             "Use a fresh matching GitHub-hosted runner and a new RUNNER_TEMP directory"
         )
     before, after = release(args.from_tag), release(args.to_tag)
+    if args.platform == "linux" and linux_login_entry().exists():
+        raise ValueError("Use a fresh runner without an existing Mnemion login entry")
     if version(before["tag_name"]) >= version(after["tag_name"]):
         raise ValueError("The public target must be newer than the installed release")
     if release("latest")["tag_name"] != after["tag_name"]:
@@ -495,6 +523,12 @@ def observe(args) -> dict:
                             raise ValueError(
                                 "The public installation did not enable automatic updates"
                             )
+                        if args.platform == "linux":
+                            if json.loads(preferences).get("startAtLogin") is not True:
+                                raise ValueError(
+                                    "The public installation did not enable login startup"
+                                )
+                            verify_linux_login(executable)
                         (profile / "public-upgrade-sentinel.bin").write_bytes(sentinel)
                     elif (
                         original is not None
@@ -536,6 +570,7 @@ def observe(args) -> dict:
                                 raise ValueError(
                                     "The installed AppImage is not the verified public target"
                                 )
+                            verify_linux_login(image)
                         result.update(
                             status="passed",
                             original_pid=original,
@@ -547,6 +582,7 @@ def observe(args) -> dict:
                             elapsed_seconds=round(time.time() - started, 2),
                             original_launcher_exit=child.poll(),
                             main_sandbox_disabled="--no-sandbox" in process.cmdline(),
+                            login_entry_tracks_installed_image=args.platform == "linux",
                         )
                         return result
                 except (

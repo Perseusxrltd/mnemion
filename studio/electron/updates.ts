@@ -6,6 +6,7 @@ import { canRestartForUpdate, desktopExec, updateChannel } from './update-policy
 import { MacUpdateBridge, type MacUpdateEvent } from './macos-updates.js'
 import { WindowsUpdateBridge, type WindowsUpdateEvent, type WindowsUpdateTrust } from './windows-updates.js'
 import { createWindowsUpdateFetch } from './windows-update-network.js'
+import { refreshLinuxLoginEntry } from './linux-startup.js'
 
 let autoUpdater: typeof updaterPackage.autoUpdater
 type Preferences = { automaticUpdates: boolean; startAtLogin: boolean; background: boolean }
@@ -45,6 +46,10 @@ export class DesktopUpdates {
     if (firstLaunch && app.isPackaged && !process.env.MNEMION_STUDIO_SMOKE_FILE && process.env.MNEMION_STUDIO_SMOKE_HEADLESS !== '1') {
       try { this.applyLogin(); this.save() } catch { this.status = { state: 'Startup setup needs attention' } }
     }
+    if (!firstLaunch && process.platform === 'linux' && this.supported && this.preferences.startAtLogin) {
+      try { this.refreshLinuxLogin(process.env.APPIMAGE!) }
+      catch { this.status = { state: 'Startup setup needs attention' } }
+    }
     if (process.platform === 'darwin') {
       this.mac = new MacUpdateBridge(join(process.resourcesPath, '..', 'MacOS', 'MnemionUpdater'),
         event => this.platformEvent(event))
@@ -74,6 +79,11 @@ export class DesktopUpdates {
       autoUpdater.on('update-downloaded', info => {
         this.downloaded = true
         this.setStatus({ state: 'Update ready · waiting for a safe restart', version: info.version })
+      })
+      autoUpdater.on('appimage-filename-updated', (filename: string) => {
+        if (!this.preferences.startAtLogin) return
+        try { this.refreshLinuxLogin(filename, process.env.APPIMAGE) }
+        catch { this.setStatus({ state: 'Startup setup needs attention' }) }
       })
       autoUpdater.on('error', () => {
         this.downloaded = false
@@ -157,6 +167,10 @@ export class DesktopUpdates {
       this.setStatus({ state: this.enabled ? 'Automatic updates enabled' : 'Automatic updates paused' })
       if (key === 'automaticUpdates' && enabled) void this.check()
     } catch { this.preferences[key] = previous; this.applyUpdatePolicy(); this.setStatus({ state: 'Preference could not be saved' }) }
+  }
+  private refreshLinuxLogin(executable: string, previousExecutable?: string) {
+    const directory = join(process.env.XDG_CONFIG_HOME || join(app.getPath('home'), '.config'), 'autostart')
+    refreshLinuxLoginEntry(join(directory, 'com.perseusxr.mnemion-studio.desktop'), executable, previousExecutable)
   }
   private applyLogin() {
     if (!app.isPackaged) return

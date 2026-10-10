@@ -53,6 +53,7 @@ from .librarian import LibrarianService
 from .librarian_api import attach_librarian
 from .librarian_provider import LibrarianRegistry
 from .librarian_runner import LibrarianRunner
+from .agent_api import attach_agents
 
 logger = logging.getLogger(__name__)
 
@@ -325,6 +326,7 @@ def create_app(
     attach_evaluations(app, database, embedder, authenticated, registry=registry)
     attach_embeddings(app, database, registry, authenticated)
     attach_librarian(app, librarian, authenticated)
+    attach_agents(app, authenticated)
 
     @app.get("/health/live", tags=["Operations"], response_model=c.LiveStatus)
     def live():

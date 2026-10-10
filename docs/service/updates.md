@@ -3,12 +3,16 @@
 Platform v1 uses the **4.x** package series. Version **4.0.3** adds Windows ARM64;
 release targets now cover Windows, macOS and Linux on x64 and ARM64. Download published installers from
 [the official product page](https://www.perseusxr.com/mnemion).
-See [the patch notes](../releases/4.0.3.md) for current changes and measured limits.
+See [the patch notes](../releases/4.0.4.md) for current changes and measured limits.
 
 Official Studio installations enable automatic stable updates, background mode
 and launch at login by default. Preferences are in the application or tray menu,
 under **Background and updates**. The first installed launch registers login
 startup. An explicit operating-system startup override is not reset on each launch.
+From 4.0.4, an existing Linux login entry follows the AppImage's new versioned
+filename during updating and on the first launch after an earlier version's
+update. OS disable flags, deleted entries and custom startup commands are
+preserved. A manually managed startup command remains the operator's responsibility.
 
 | Installation | Updates | Background access |
 | --- | --- | --- |

@@ -91,6 +91,10 @@ def main(argv: list[str] | None = None) -> int:
         "schema", help="Write the versioned OpenAPI contract without connecting to a database"
     )
     schema.add_argument("--output", type=Path, required=True)
+    agent_schema = commands.add_parser(
+        "agent-schema", help="Write the reviewed agent operation contract without database access"
+    )
+    agent_schema.add_argument("--output", type=Path, required=True)
     backup = commands.add_parser("backup", help="Create a complete, consistent PostgreSQL archive")
     backup.add_argument("--output", type=Path, required=True)
     backup.add_argument("--pg-bin", type=Path)
@@ -384,11 +388,21 @@ def main(argv: list[str] | None = None) -> int:
             )
         finally:
             registry.close()
-    elif args.command == "schema":
+    elif args.command in {"schema", "agent-schema"}:
         from .api import create_app
         from .db import Database
 
         schema = create_app(Database("dbname=mnemion_schema_only")).openapi()
+        if args.command == "agent-schema":
+            from .agent_contract import write_contract
+
+            write_contract(schema, args.output)
+            print(
+                json.dumps(
+                    {"contract_file": str(args.output), "version": schema["info"]["version"]}
+                )
+            )
+            return 0
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(
             json.dumps(schema, indent=2, sort_keys=True) + "\n", encoding="utf-8"

@@ -1,0 +1,147 @@
+# Agent administration and operation discovery
+
+From **4.0.4**, agents can discover and use every existing HTTP operation through
+a reviewed catalog, a command-line client and four compact MCP tools. The first
+catalog covers **81 operations**. Schemas load one at a time, so connecting an
+assistant does not put the entire administration API into its context.
+
+Every call uses the application's own credential and the existing tenant,
+space and role checks. Catalog visibility describes capabilities; it does not
+grant permission to use them. Revoking a key or a space grant takes effect on
+subsequent operations. Source-derived read-only spaces retain their policy.
+
+## Available operations
+
+| Area | Operations |
+| --- | --- |
+| Identity and teams | Inspect identity, create/list spaces and principals, issue/revoke keys, manage grants |
+| Memory and evidence | Save, fetch, revise, review, forget, retrieve history, inspect source evidence and attachments |
+| Retrieval and knowledge | Search, construct bounded context, explore the knowledge map, maintain core blocks |
+| Source connectors | Register, enable/disable, bind access, list/refresh scopes, suspend/resume, run sync pages and resolve proposals |
+| Embeddings | Discover approved choices, inspect settings, start/control reindexing and resume approved configurations |
+| Librarian | Configure approved models and budgets, start/cancel runs, inspect findings, accept/reject/undo proposals |
+| Evaluations | Manage datasets, start/cancel runs, inspect/assess results, compare and export |
+| Operations | Health, durable receipts, retries, activity, resource insights and Obsidian export |
+
+Machine setup, database migrations, model-provider configuration, backups and
+recovery use the operator's existing `mnemion-service` commands and deployment
+credentials. Their host privileges remain separate from a memory API key.
+An agent with those operator credentials can follow the
+[deployment](deployment.md) and [recovery](recovery.md) procedures.
+
+## Discover through MCP
+
+Use the [connection guide](agents.md) to connect with an application key.
+Upgrade the server/gateway to 4.0.4 and refresh the assistant's tool connection.
+
+1. Call `mnemion_operations` with a query such as `librarian` or `connectors`.
+   Use `next_offset` to page through results and `groups` to narrow discovery.
+2. Call `mnemion_operation` with one returned operation name. Inspect its
+   `input_schema`, `effect`, `retry`, `download` and `sensitive_result` fields.
+3. Use `mnemion_read` for a read operation or `mnemion_write` for a write.
+   Supply the exact `request` envelope described by that schema.
+4. Keep returned request/operation IDs. Poll durable operations before treating
+   indexing, reindexing, sync or librarian work as complete.
+
+The familiar `memory_save`, `memory_search`, `memory_context`, `memory_fetch`
+and other primary tools remain available. A read tool rejects a write before
+sending it. The generic write tool advertises possible destructive effects and
+does not advertise universal idempotence.
+
+## Use the CLI from any supported OS
+
+Install the Python release on the agent's machine. The catalog and schemas work
+offline and do not load an embedding model:
+
+```sh
+mnemion-control catalog --query librarian
+mnemion-control describe retrieval.search
+mnemion-control --credentials app.mnemion-credentials.json call identity.me
+```
+
+Create a `recall.json` input file:
+
+```json
+{
+  "body": {
+    "query": "Which project decisions changed this week?",
+    "space_ids": [],
+    "all_accessible": true
+  }
+}
+```
+
+```sh
+mnemion-control --credentials app.mnemion-credentials.json call retrieval.search --input recall.json
+```
+
+Use `--input -` to read JSON from standard input. Credentials come from the
+private file or `MNEMION_API_URL`/`MNEMION_API_KEY`; there is no command-line token
+argument. `--url` can select a HTTPS origin or loopback HTTP address. An address
+ending in `/v1/` is accepted. Redirects are not followed with credentials.
+
+The request envelope has `parameters` for path/query values, `body` for JSON,
+and `idempotency_key` where the operation supports it. Names and paths come from
+the reviewed catalog. Arbitrary URLs, headers and process commands cannot be
+injected through an operation request. Input validation never prints rejected
+memory text or credentials.
+
+## Private results and bounded memory bandwidth
+
+The CLI returns JSON containing the operation, result, HTTP status, request ID,
+attempt count, elapsed milliseconds, response bytes and response SHA-256.
+MCP defaults to **32 KiB** of response JSON; the CLI defaults to **64 KiB**.
+Choose smaller API pages first. `--max-response-bytes` can raise CLI JSON output
+to 256 KiB; an oversized result fails explicitly instead of returning a cut-off
+document. MCP permits at most 128 KiB per generic result.
+
+Attachments, Obsidian archives and evaluation exports stream to `--output FILE`,
+with a default/maximum of **1 GiB**, rather than entering an agent transcript.
+Inline operations have a 90-second retry/transfer budget; downloads have fifteen
+minutes. The budget is checked between network chunks, including a slow trickle;
+an in-flight socket read may take up to its remaining configured timeout
+(capped at thirty seconds). Inputs are bounded to 2 MB, and the combined MCP
+transport bounds response buffering before copying a complete API result.
+
+`keys.create` requires `--result-file FILE` and is unavailable through generic
+MCP execution. The new file is reserved and made private **before** issuing the
+key. The resulting JSON includes top-level `api_url` and `api_key`, so it can
+be passed directly to `mnemion-agent`, `mnemion-service --credentials`, or
+`mnemion-control --credentials` without printing or copying the secret.
+Other `--result-file` operations retain the ordinary JSON result envelope.
+
+Files are created exclusively. An existing file, symlink or invalid filename
+is never overwritten. Failed downloads are removed. Unix outputs use mode 0600;
+Windows outputs use a protected owner-only DACL before data is written. A
+filesystem that cannot enforce the required Windows permissions fails before
+the request. Use a private folder; these files contain authorized private data.
+
+## Retry and outcome rules
+
+| Outcome | Meaning | Next step |
+| --- | --- | --- |
+| `not_sent` | Local validation or output preparation failed | Correct the request or output path |
+| `rejected` | The service returned a rejection | Follow the status, permissions and current resource state |
+| `unknown` | A response was lost, invalid or incomplete, or the service returned a server error | Inspect durable state before retrying a write |
+
+Reads may retry transient failures. Writes retry only when their operation
+explicitly supports idempotency **and** the request includes a stable key.
+Retries preserve the complete request and key, and honor bounded `Retry-After`
+delays. An uncertain administrative write without idempotency returns
+`retryable: false`. The CLI never invents a new key to replay it. Use the same
+key only for the same logical write; preserve optimistic version fields.
+
+## Contract maintenance
+
+The authenticated server exposes `GET /v1/agent/operations` and
+`GET /v1/agent/operations/{operation_name}`. The CLI catalog describes its own
+installed package; the server catalog reports that server's package version.
+
+`mnemion-service agent-schema --output FILE` regenerates the machine-readable
+contract from the actual OpenAPI routes without opening a database. CI rejects
+unclassified operations, schema drift and duplicate operation names. Each new
+public route requires an explicit read/write, download and retry classification.
+
+The catalog does not add hosted OAuth, provision a public tunnel, install a
+source runner, or automatically upgrade a deployed server. Those capabilities
+remain distinct items on the [roadmap](../ROADMAP.md).

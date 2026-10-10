@@ -12,7 +12,9 @@ refresh executable. It connects to a local or remote service; it does not bundle
 PostgreSQL or silently start a model on every employee's laptop.
 Remote-agent fixes in 4.0.2 and lower model RAM in 4.0.3 require upgrading the memory server;
 the desktop updater cannot replace a separately deployed service. See the
-[patch notes](../docs/releases/4.0.3.md).
+[patch notes](../docs/releases/4.0.4.md). Version 4.0.4 adds server-side agent
+administration and keeps Linux AppImage login entries current after an update,
+while preserving OS startup disable flags and custom commands.
 
 Use the [service deployment guide](../docs/service/deployment.md) first, then
 connect with the service URL and a personal or application credential. Credentials

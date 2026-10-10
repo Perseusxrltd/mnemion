@@ -21,7 +21,7 @@ a completed published download.
    only verified work into the implemented section. Keep unfinished commitments
    visible; update priorities when evidence changes them.
 4. Update each affected setup/API/security/operations guide in the same change.
-   Update OpenAPI and SDK examples when the contract changes. Include relevant
+   Update OpenAPI, the reviewed agent contract and SDK examples when the contract changes. Include relevant
    validation results with the tested version/commit and environment.
 5. Run product and native checks. Inspect in-app help on desktop/mobile widths,
    including internal links, code blocks and offline access in the packaged app.
@@ -88,8 +88,12 @@ real default startup check and system-inactivity guard, then verifies a new
 target-version process and preserved profile/preferences. It uses official feeds
 and the embedded production keys, with no rewritten app entry point, debugger,
 fixture key or simulated idle time. It adds no sandbox-disabling flag and records
-the packaged Linux launcher's actual flags. Login registration is
-disabled for the disposable runner; this test does not certify boot startup.
+the packaged Linux launcher's actual flags. Linux runs use Openbox so normal
+minimize/focus behavior works; Xvfb alone is not a desktop window manager.
+From 4.0.4, Linux registration stays at its production default and the observer
+checks that the login entry targets the actual installed update. Mac/Windows
+login registration remains disabled on the disposable runners. Checking a
+registration file does not certify a full reboot/login sequence.
 
 The workflow runs after publication for release tags that include it, or manually
 with the current public tag. The first 4.0.2 run requires manual dispatch because

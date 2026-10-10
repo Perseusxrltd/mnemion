@@ -114,3 +114,16 @@ def test_exited_posix_child_is_not_mistaken_for_a_running_application():
         assert not process_active(child.pid)
     finally:
         child.wait(timeout=5)
+
+
+def test_public_linux_update_requires_startup_to_follow_the_installed_file(tmp_path, monkeypatch):
+    from deploy import public_update_probe as probe
+
+    startup = tmp_path / "mnemion.desktop"
+    monkeypatch.setattr(probe, "linux_login_entry", lambda: startup)
+    installed = tmp_path / "installed with spaces/Mnemion-Studio-4.0.4-linux-x86_64.AppImage"
+    startup.write_text(f'[Desktop Entry]\nExec="{installed}" --background\n')
+    probe.verify_linux_login(installed)
+    startup.write_text(startup.read_text().replace("4.0.4", "4.0.3"))
+    with pytest.raises(ValueError, match="does not launch"):
+        probe.verify_linux_login(installed)

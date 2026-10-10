@@ -1,6 +1,6 @@
 [project]
 name = "mnemion"
-version = "4.0.3"
+version = "4.0.4"
 description = "Shared memory infrastructure for applications, teams, and AI assistants, with source evidence and Obsidian visualization."
 readme = "README.md"
 requires-python = ">=3.12,<3.15"
@@ -34,6 +34,7 @@ dependencies = [
     "fastembed==0.9.0",
     "mcp>=2.3.0,<3",
     "httpx>=0.28.1,<0.29",
+    "jsonschema>=4.26.0,<5",
     "pyyaml>=6.0.3,<7",
     "tomlkit>=0.13.3,<1",
     "psutil>=7.2.2,<8",
@@ -49,6 +50,7 @@ mnemion = "mnemion.cli:main"
 mnemion-service = "mnemion.service.cli:main"
 mnemion-connect = "mnemion.connectors.runner:main"
 mnemion-agent = "mnemion.agent_setup:main"
+mnemion-control = "mnemion.control_cli:main"
 mnemion-capture-hook = "mnemion.capture.shared:main"
 
 [project.entry-points."mnemion.backends"]
