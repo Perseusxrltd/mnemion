@@ -35,7 +35,19 @@ export interface Insights {
   }
   notices: string[]
 }
+export interface MemoryBudgetSnapshot {
+  mode: 'auto' | 'manual'; requested_limit_mib: number | null; revision: string
+  target_bytes: number; used_bytes: number; engine_bytes: number; database_bytes: number; desktop_bytes: number
+  effective_hardware_bytes: number; available_hardware_bytes: number; system_reserve_bytes: number
+  os_memory_limit_bytes: number | null; measurement_complete: boolean
+  measurement: 'sum_of_process_resident_sets'; scope: 'local_engine_database_and_reported_desktop'; enforcement: 'cooperative'
+  state: 'normal' | 'constrained' | 'paused'
+  reason: 'policy_unavailable' | 'measurement_unavailable' | 'system_pressure' | 'working_set_over_budget' | 'model_exceeds_budget' | null
+  background_paused: boolean; indexing_paused: boolean; minimum_model_budget_bytes: number
+  batch_size: number; rejected_inferences: number; model_evictions: number
+}
 export interface RuntimeInsights {
+  memory_budget?: MemoryBudgetSnapshot | null
   models?: { generation_id: string; model: string; model_loaded: boolean | null; configuration: Record<string, unknown>;
     provider: { requests: number; failed_requests: number; request_bytes: number; response_bytes: number; token_count_unit: string } | null }[]
   observed_at: string; scope: 'this_api_process'; model: string; generation_id: string; dimensions: number

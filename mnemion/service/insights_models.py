@@ -142,6 +142,42 @@ class Insights(ResponseModel):
     notices: list[str]
 
 
+class MemoryBudgetSnapshot(ResponseModel):
+    mode: Literal["auto", "manual"]
+    requested_limit_mib: int | None
+    revision: str
+    target_bytes: int
+    used_bytes: int
+    engine_bytes: int
+    database_bytes: int
+    desktop_bytes: int
+    effective_hardware_bytes: int
+    available_hardware_bytes: int
+    system_reserve_bytes: int
+    os_memory_limit_bytes: int | None
+    measurement_complete: bool
+    measurement: Literal["sum_of_process_resident_sets"]
+    scope: Literal["local_engine_database_and_reported_desktop"]
+    enforcement: Literal["cooperative"]
+    state: Literal["normal", "constrained", "paused"]
+    reason: (
+        Literal[
+            "policy_unavailable",
+            "measurement_unavailable",
+            "system_pressure",
+            "working_set_over_budget",
+            "model_exceeds_budget",
+        ]
+        | None
+    )
+    background_paused: bool
+    indexing_paused: bool
+    minimum_model_budget_bytes: int
+    batch_size: int
+    rejected_inferences: int
+    model_evictions: int
+
+
 class RuntimeInsights(ResponseModel):
     observed_at: str
     scope: Literal["this_api_process"]
@@ -155,5 +191,5 @@ class RuntimeInsights(ResponseModel):
     models: list[dict] = Field(default_factory=list)
     pool: dict
     resources: dict
-    memory_budget: dict | None = None
+    memory_budget: MemoryBudgetSnapshot | None = None
     notices: list[str] = Field(default_factory=list)

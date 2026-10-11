@@ -7119,6 +7119,175 @@
       "name": "insights.runtime",
       "output_schema": {
         "$defs": {
+          "MemoryBudgetSnapshot": {
+            "additionalProperties": true,
+            "properties": {
+              "available_hardware_bytes": {
+                "title": "Available Hardware Bytes",
+                "type": "integer"
+              },
+              "background_paused": {
+                "title": "Background Paused",
+                "type": "boolean"
+              },
+              "batch_size": {
+                "title": "Batch Size",
+                "type": "integer"
+              },
+              "database_bytes": {
+                "title": "Database Bytes",
+                "type": "integer"
+              },
+              "desktop_bytes": {
+                "title": "Desktop Bytes",
+                "type": "integer"
+              },
+              "effective_hardware_bytes": {
+                "title": "Effective Hardware Bytes",
+                "type": "integer"
+              },
+              "enforcement": {
+                "const": "cooperative",
+                "title": "Enforcement",
+                "type": "string"
+              },
+              "engine_bytes": {
+                "title": "Engine Bytes",
+                "type": "integer"
+              },
+              "indexing_paused": {
+                "title": "Indexing Paused",
+                "type": "boolean"
+              },
+              "measurement": {
+                "const": "sum_of_process_resident_sets",
+                "title": "Measurement",
+                "type": "string"
+              },
+              "measurement_complete": {
+                "title": "Measurement Complete",
+                "type": "boolean"
+              },
+              "minimum_model_budget_bytes": {
+                "title": "Minimum Model Budget Bytes",
+                "type": "integer"
+              },
+              "mode": {
+                "enum": [
+                  "auto",
+                  "manual"
+                ],
+                "title": "Mode",
+                "type": "string"
+              },
+              "model_evictions": {
+                "title": "Model Evictions",
+                "type": "integer"
+              },
+              "os_memory_limit_bytes": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Os Memory Limit Bytes"
+              },
+              "reason": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "policy_unavailable",
+                      "measurement_unavailable",
+                      "system_pressure",
+                      "working_set_over_budget",
+                      "model_exceeds_budget"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Reason"
+              },
+              "rejected_inferences": {
+                "title": "Rejected Inferences",
+                "type": "integer"
+              },
+              "requested_limit_mib": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Requested Limit Mib"
+              },
+              "revision": {
+                "title": "Revision",
+                "type": "string"
+              },
+              "scope": {
+                "const": "local_engine_database_and_reported_desktop",
+                "title": "Scope",
+                "type": "string"
+              },
+              "state": {
+                "enum": [
+                  "normal",
+                  "constrained",
+                  "paused"
+                ],
+                "title": "State",
+                "type": "string"
+              },
+              "system_reserve_bytes": {
+                "title": "System Reserve Bytes",
+                "type": "integer"
+              },
+              "target_bytes": {
+                "title": "Target Bytes",
+                "type": "integer"
+              },
+              "used_bytes": {
+                "title": "Used Bytes",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "mode",
+              "requested_limit_mib",
+              "revision",
+              "target_bytes",
+              "used_bytes",
+              "engine_bytes",
+              "database_bytes",
+              "desktop_bytes",
+              "effective_hardware_bytes",
+              "available_hardware_bytes",
+              "system_reserve_bytes",
+              "os_memory_limit_bytes",
+              "measurement_complete",
+              "measurement",
+              "scope",
+              "enforcement",
+              "state",
+              "reason",
+              "background_paused",
+              "indexing_paused",
+              "minimum_model_budget_bytes",
+              "batch_size",
+              "rejected_inferences",
+              "model_evictions"
+            ],
+            "title": "MemoryBudgetSnapshot",
+            "type": "object"
+          },
           "RuntimeInsights": {
             "additionalProperties": true,
             "properties": {
@@ -7146,6 +7315,16 @@
                   }
                 ],
                 "title": "Inference"
+              },
+              "memory_budget": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/MemoryBudgetSnapshot"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "model": {
                 "title": "Model",

@@ -8,6 +8,7 @@ import pytest
 
 from mnemion.service.embeddings import LocalEmbedder
 from mnemion.service.errors import ServiceError
+from mnemion.service.insights_models import MemoryBudgetSnapshot
 from mnemion.service.memory_budget import (
     GIB,
     MIB,
@@ -76,6 +77,7 @@ def test_system_pressure_and_missing_measurements_pause_even_a_large_manual_budg
     sample = MemorySample(4 * GIB, 64 * MIB, 600 * MIB)
     budget = MemoryBudget(MemoryOptions(mode="manual", limit_mib=1048576), sample=lambda: sample)
     view = budget.snapshot()
+    assert MemoryBudgetSnapshot.model_validate(view).model_dump() == view
     assert view["background_paused"] and view["reason"] == "system_pressure"
     assert view["target_bytes"] < 4 * GIB
     budget.policy_unavailable()
