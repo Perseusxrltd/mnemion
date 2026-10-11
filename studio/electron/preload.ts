@@ -7,7 +7,8 @@ window.addEventListener('input', event => {
   if (target instanceof Element && !target.matches('input[type="search"], [data-update-safe]')) edited.add(target)
 }, true)
 window.addEventListener('change', event => {
-  if (event.target instanceof Element) edited.add(event.target)
+  const target = event.target
+  if (target instanceof Element && !target.matches('input[type="search"], [data-update-safe]')) edited.add(target)
 }, true)
 async function transfer(channel: string, ...args: unknown[]) {
   pending++

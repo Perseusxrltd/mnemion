@@ -9,6 +9,13 @@ native onboarding and RAM controls, company sign-in and independent host access,
 Dot/Grokbot/Claude/Hermes/OpenClaw integrations, automatic cross-app capture and
 the requested live 3D memory/activity map.
 
+New on `main`, pending the next native release: [bounded connection diagnosis](service/connection-diagnostics.md)
+and the [live 3D memory map](service/memory-map.md). The map includes browser/desktop
+orbit, full-screen inspection, evidence links, creator/time filters, recorded
+activity, a compact 2D/list path and periodic authorized refresh. It retains the
+wiki, earlier evidence graph and Obsidian workflows. Public 4.0.9 does not yet
+include these additions.
+
 Version 4.0.9 adds OS-encrypted saved desktop connections, authenticated
 reconnection after app restart, durable disconnect, device-only forgetting and
 clear session choices. The complete native/product gates are required before
@@ -141,10 +148,10 @@ recovery from an agent's availability or model quota. Add clear connectivity
 diagnostics, individual invitations/sign-in and hosted OAuth while continuing
 the native local-runtime and resource work. See [current agent-platform research](research/2026-10-11-agent-platforms.md).
 
-The live 3D map is retained as an explicit browser and desktop requirement:
-permission-filtered memories, topics, relationships and real agent activity,
-with evidence inspection and a lightweight mode. The current wiki/graph does
-not yet fulfill that requirement.
+The first [live 3D map](service/memory-map.md) is implemented for the next patch:
+permission-filtered memories, topics, relationships and real recorded activity,
+with evidence inspection and a lightweight mode. Follow native release validation
+with larger-workspace clustering, incremental subscriptions and time replay.
 
 Priority is defects found in installation, access control, recovery, migration,
 update behavior and routine team use. Patches retain the service/API contract

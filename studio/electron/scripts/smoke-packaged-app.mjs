@@ -163,8 +163,8 @@ function validate(status) {
   if (status.renderer.nodeAvailable) fail('Node must not be available to the renderer')
   if (!status.renderer.documentation) fail('Packaged versioned documentation must load without a service')
   const guard = status.renderer.updateGuard
-  if (!guard?.clean || guard.edited !== false || !guard.removed) {
-    fail('Automatic restarts must wait for edited inputs to close')
+  if (!guard?.clean || guard.edited !== false || !guard.removed || !guard.viewChanged) {
+    fail('Automatic restarts must preserve unsaved drafts without blocking on read-only view filters')
   }
   if (existsSync(join(userData, 'desktop-preferences.json'))) fail('Smoke tests must not register login startup')
   if (!status.localClient?.capabilities?.includes('obsidian-refresh')) {

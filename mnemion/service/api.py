@@ -635,7 +635,15 @@ def create_app(
 
         @app.get("/icon.png", include_in_schema=False)
         @app.get("/icon.ico", include_in_schema=False)
+        @app.get("/mnemion.svg", include_in_schema=False)
+        @app.get("/mnemion-symbol.svg", include_in_schema=False)
+        @app.get("/icon-16.png", include_in_schema=False)
+        @app.get("/icon-32.png", include_in_schema=False)
+        @app.get("/icon-180.png", include_in_schema=False)
         def studio_icon(request: Request):
-            return FileResponse(studio / request.url.path.removeprefix("/"))
+            path = studio / request.url.path.removeprefix("/")
+            if not path.is_file():
+                return Response(status_code=404)
+            return FileResponse(path)
 
     return app
