@@ -437,6 +437,78 @@ def app_archive(process, system: str) -> Path:
     ) / "app.asar"
 
 
+def linux_failure_ui(root: Path) -> dict:
+    """Capture the app's own update menu after a failed, completed deadline.
+
+    This interaction never makes a failed rehearsal pass. The ordinary binary,
+    production feed and restart guard remain unmodified; no debugger is used.
+    Only the already-enforced fresh disposable runner profile is eligible.
+    """
+    if not shutil.which("xdotool") or not shutil.which("scrot"):
+        return {"captured": False, "reason": "Desktop diagnostic tools unavailable"}
+    try:
+        windows = subprocess.check_output(
+            ["xdotool", "search", "--name", "^Mnemion Studio$"], timeout=10, text=True
+        ).splitlines()
+        if not windows or not re.fullmatch(r"[0-9]{1,16}", windows[0]):
+            return {"captured": False, "reason": "Application window unavailable"}
+        window = windows[0]
+        before = subprocess.check_output(
+            ["xprop", "-id", window, "_NET_WM_STATE", "WM_STATE"], text=True, timeout=5
+        )
+        subprocess.run(
+            ["xdotool", "windowactivate", "--sync", window],
+            check=True,
+            timeout=10,
+            capture_output=True,
+        )
+        time.sleep(0.5)
+        subprocess.run(
+            ["scrot", "--silent", str(root / "failure-window.png")],
+            check=True,
+            timeout=10,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["xdotool", "mousemove", "--window", window, "50", "10", "click", "1"],
+            check=True,
+            timeout=5,
+            capture_output=True,
+        )
+        time.sleep(0.25)
+        subprocess.run(
+            [
+                "xdotool",
+                "key",
+                "--clearmodifiers",
+                "Home",
+                "Down",
+                "Down",
+                "Down",
+                "Down",
+                "Down",
+                "Right",
+            ],
+            check=True,
+            timeout=5,
+            capture_output=True,
+        )
+        time.sleep(0.5)
+        subprocess.run(
+            ["scrot", "--silent", str(root / "failure-update-menu.png")],
+            check=True,
+            timeout=10,
+            capture_output=True,
+        )
+        return {
+            "captured": True,
+            "window_state_before_interaction": before[:4096],
+            "after_failed_deadline_only": True,
+        }
+    except (OSError, subprocess.SubprocessError):
+        return {"captured": False, "reason": "Application menu could not be captured"}
+
+
 def observe(args) -> dict:
     import psutil
 
@@ -663,6 +735,8 @@ def observe(args) -> dict:
                 for path in cache.glob("*/*")
                 if path.is_file()
             ][:20]
+            if result["status"] != "passed":
+                result["post_failure_ui_diagnostics"] = linux_failure_ui(root)
         (root / "result.json").write_text(json.dumps(result, indent=2) + "\n")
         (root / "application.log").write_bytes(b"".join(log)[-32768:])
         for process in app_processes(executable, args.platform, started):
@@ -685,6 +759,7 @@ def main():
     parser.add_argument(
         "--selection-platform", choices=["all", "windows", "macos", "linux"], default="all"
     )
+    parser.add_argument("--selection-architecture", choices=["all", "x64", "arm64"], default="all")
     parser.add_argument("--tag", default="latest")
     parser.add_argument("--from-tag")
     parser.add_argument("--to-tag")
@@ -701,6 +776,8 @@ def main():
             selected, skipped = select_pairs(target, previous)
             if args.selection_platform != "all":
                 selected = [row for row in selected if row["platform"] == args.selection_platform]
+            if args.selection_architecture != "all":
+                selected = [row for row in selected if row["arch"] == args.selection_architecture]
         print("matrix=" + json.dumps(selected))
         print("available=" + str(bool(selected)).lower())
         print("skipped=" + json.dumps(skipped))

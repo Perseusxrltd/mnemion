@@ -14,6 +14,11 @@ on:
         type: choice
         default: all
         options: [all, windows, macos, linux]
+      architecture:
+        description: Rehearse both architectures or one during investigation
+        type: choice
+        default: all
+        options: [all, x64, arm64]
 
 permissions:
   contents: read
@@ -39,7 +44,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           MNEMION_PROBE_TAG: ${{ inputs.tag || github.event.release.tag_name || 'latest' }}
           MNEMION_PROBE_SELECTION: ${{ inputs.platform || 'all' }}
-        run: python -m deploy.public_update_probe --select --tag "$MNEMION_PROBE_TAG" --selection-platform "$MNEMION_PROBE_SELECTION" >> "$GITHUB_OUTPUT"
+          MNEMION_PROBE_ARCH_SELECTION: ${{ inputs.architecture || 'all' }}
+        run: python -m deploy.public_update_probe --select --tag "$MNEMION_PROBE_TAG" --selection-platform "$MNEMION_PROBE_SELECTION" --selection-architecture "$MNEMION_PROBE_ARCH_SELECTION" >> "$GITHUB_OUTPUT"
       - name: Record selection
         env:
           MNEMION_PROBE_MATRIX: ${{ steps.select.outputs.matrix }}
@@ -73,7 +79,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb openbox x11-utils dbus-x11 libgtk-3-0 libnss3 libgbm1 libasound2 libnotify4 libfuse2
+          sudo apt-get install -y xvfb openbox x11-utils xdotool scrot dbus-x11 libgtk-3-0 libnss3 libgbm1 libasound2 libnotify4 libfuse2
       - name: Install public release and observe its automatic update
         shell: bash
         run: |
@@ -92,5 +98,6 @@ jobs:
           path: |
             ${{ runner.temp }}/public-mnemion-upgrade/result.json
             ${{ runner.temp }}/public-mnemion-upgrade/application.log
+            ${{ runner.temp }}/public-mnemion-upgrade/failure-*.png
           if-no-files-found: ignore
           retention-days: 7
