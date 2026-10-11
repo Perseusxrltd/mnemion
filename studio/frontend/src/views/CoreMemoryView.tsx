@@ -282,7 +282,7 @@ export default function CoreMemoryView() {
                   className={`flex items-center gap-2 w-full px-2.5 py-2 rounded-lg text-left text-xs transition-colors ${
                     active ? 'active text-white' : 'text-muted hover-row'
                   }`}
-                  style={active ? { background: 'rgba(127,109,242,0.15)', borderLeft: '2px solid var(--interactive-accent)' } : {}}
+                  style={active ? { background: 'rgba(196,154,85,0.15)', borderLeft: '2px solid var(--interactive-accent)' } : {}}
                 >
                   <FileText size={12} className={active ? 'text-purple-400' : 'text-faint'} />
                   <span className="flex-1 truncate font-mono">{m.key}</span>

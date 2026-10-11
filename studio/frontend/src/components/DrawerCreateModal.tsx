@@ -157,7 +157,7 @@ export default function DrawerCreateModal({ open, defaultWing = '', defaultRoom 
             />
             <div className="flex justify-between mt-1">
               <span className="text-[10px]" style={{ color: 'var(--text-faint)' }}>
-                Use <code style={{ background: 'rgba(127,109,242,0.15)', color: 'var(--text-accent)', borderRadius: 3, padding: '0 3px' }}>[[entity]]</code> syntax for wikilinks
+                Use <code style={{ background: 'rgba(196,154,85,0.15)', color: 'var(--text-accent)', borderRadius: 3, padding: '0 3px' }}>[[entity]]</code> syntax for wikilinks
               </span>
               <span className="text-[10px] font-mono" style={{ color: 'var(--text-faint)' }}>
                 {content.length.toLocaleString()} chars

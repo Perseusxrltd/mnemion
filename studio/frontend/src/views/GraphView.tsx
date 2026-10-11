@@ -213,7 +213,7 @@ function WingMapLoader({
     registerEvents({
       clickNode: ({ node }) => {
         const attrs = sigma.getGraph().getNodeAttributes(node)
-        const color = attrs.color?.replace(/cc$/, '') ?? '#7f6df2'
+        const color = attrs.color?.replace(/cc$/, '') ?? '#c49a55'
         if (attrs.isWing) {
           const rooms = taxonomy[attrs.label] ?? {}
           const sorted = Object.entries(rooms)
@@ -320,7 +320,7 @@ const SIGMA_SETTINGS = {
   labelSize: 12,
   labelWeight: '500',
   labelColor: { color: '#aaaaaa' },
-  defaultNodeColor: '#7f6df2',
+  defaultNodeColor: '#c49a55',
   defaultEdgeColor: 'rgba(255,255,255,0.15)',
   minCameraRatio: 0.008,
   maxCameraRatio: 20,
@@ -445,7 +445,7 @@ export default function GraphView() {
         {mode === 'wings' && resolvedWingGraph && (
           <SigmaContainer
             key="wings"
-            style={{ position: 'absolute', inset: 0, background: '#111111' }}
+            style={{ position: 'absolute', inset: 0, background: '#02050d' }}
             settings={SIGMA_SETTINGS}
           >
             <WingMapLoader
@@ -462,7 +462,7 @@ export default function GraphView() {
         {mode === 'kg' && (
           <SigmaContainer
             key="kg"
-            style={{ position: 'absolute', inset: 0, background: '#111111' }}
+            style={{ position: 'absolute', inset: 0, background: '#02050d' }}
             settings={SIGMA_SETTINGS}
           >
             <KGLoader onSelect={handleKgSelect} onReady={handleKgReady} onNodeCount={handleKgNodeCount} />
@@ -473,8 +473,8 @@ export default function GraphView() {
 
         {/* Building skeleton while FA2 runs */}
         {mode === 'wings' && !resolvedWingGraph && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3" style={{ background: '#111' }}>
-            <RefreshCw size={22} className="animate-spin" style={{ color: '#7f6df2' }} />
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3" style={{ background: '#02050d' }}>
+            <RefreshCw size={22} className="animate-spin" style={{ color: '#c49a55' }} />
             <span className="text-sm" style={{ color: 'var(--text-muted)' }}>Computing layout...</span>
           </div>
         )}
@@ -482,7 +482,7 @@ export default function GraphView() {
         {/* Empty KG state */}
         {mode === 'kg' && kgReady && kgNodeCount === 0 && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 pointer-events-none"
-            style={{ background: '#111' }}>
+            style={{ background: '#02050d' }}>
             <Info size={28} style={{ color: 'var(--text-faint)' }} />
             <div className="text-sm" style={{ color: 'var(--text-muted)' }}>Knowledge map is empty</div>
             <div className="text-xs text-center max-w-xs" style={{ color: 'var(--text-faint)', lineHeight: 1.6 }}>
@@ -647,9 +647,9 @@ export default function GraphView() {
                     : `/browse/${wingSelection.wingName}/${wingSelection.label}`
                 )}
                 className="flex items-center gap-1.5 w-full px-3 py-1.5 rounded-lg text-[11px] font-medium justify-center transition-colors"
-                style={{ background: 'rgba(127,109,242,0.15)', color: '#9d8ff9' }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(127,109,242,0.25)')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'rgba(127,109,242,0.15)')}
+                style={{ background: 'rgba(196,154,85,0.15)', color: '#e2b967' }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(196,154,85,0.25)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'rgba(196,154,85,0.15)')}
               >
                 <FolderOpen size={11} /> Browse memories
               </button>

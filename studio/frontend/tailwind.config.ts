@@ -5,19 +5,20 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Obsidian-matched palette (keep names for className compat)
-        bg:            '#202020',
-        sidebar:       '#161616',
-        surface:       '#242424',
-        raised:        '#2e2e2e',
-        border:        '#333333',
-        accent:        '#7f6df2',
-        'accent-light':'#9d8ff9',
-        muted:         '#999999',
-        faint:         '#555555',
+        // Shared Perseus XR tokens; names remain compatible with local vault views.
+        bg:            'var(--bg)',
+        sidebar:       'var(--sidebar)',
+        surface:       'var(--surface)',
+        raised:        'var(--raised)',
+        border:        'var(--border)',
+        accent:        'var(--accent)',
+        'accent-light':'var(--accent-light)',
+        muted:         'var(--muted)',
+        faint:         'var(--faint)',
       },
       fontFamily: {
-        sans: ['-apple-system', 'BlinkMacSystemFont', '"Inter"', '"Segoe UI"', 'sans-serif'],
+        sans: ['"Inter"', 'Arial', 'sans-serif'],
+        display: ['"Outfit"', '"Inter"', 'Arial', 'sans-serif'],
         mono: ['"JetBrains Mono"', '"Fira Code"', 'monospace'],
       },
       keyframes: {

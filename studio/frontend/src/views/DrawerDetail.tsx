@@ -195,7 +195,7 @@ export default function DrawerDetail() {
           {wikilinkCount > 0 && (
             <span
               className="text-[10px] px-2 py-0.5 rounded font-medium flex-shrink-0"
-              style={{ background: 'rgba(127,109,242,0.12)', color: 'var(--interactive-accent)' }}
+              style={{ background: 'rgba(196,154,85,0.12)', color: 'var(--interactive-accent)' }}
               title={`${wikilinkCount} links`}
             >
               {wikilinkCount} links
@@ -211,7 +211,7 @@ export default function DrawerDetail() {
             onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
           >
             {copied
-              ? <><CheckCircle size={11} style={{ color: '#30d158' }} /> Copied</>
+              ? <><CheckCircle size={11} style={{ color: 'var(--success)' }} /> Copied</>
               : <><Copy size={11} /> Copy ID</>
             }
           </button>
@@ -222,7 +222,7 @@ export default function DrawerDetail() {
               onClick={() => setConfirmDelete(true)}
               className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg transition-colors flex-shrink-0"
               style={{ color: 'var(--text-error)', border: '1px solid transparent' }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,69,58,0.08)')}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(229,121,114,0.08)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
             >
               <Trash2 size={11} /> Delete
@@ -233,7 +233,7 @@ export default function DrawerDetail() {
               <button
                 onClick={() => deleteMut.mutate()}
                 className="px-2.5 py-1 rounded text-xs font-medium"
-                style={{ background: 'rgba(255,69,58,0.15)', color: 'var(--text-error)' }}
+                style={{ background: 'rgba(229,121,114,0.15)', color: 'var(--text-error)' }}
               >
                 Yes
               </button>
@@ -301,7 +301,7 @@ export default function DrawerDetail() {
                 <ConfidenceBar confidence={data.trust.confidence ?? 1} />
                 <div className="flex gap-3 text-[11px]" style={{ color: 'var(--text-muted)' }}>
                   <span className="flex items-center gap-1">
-                    <CheckCircle size={9} style={{ color: '#30d158' }} />
+                    <CheckCircle size={9} style={{ color: 'var(--success)' }} />
                     {data.trust.verifications}
                   </span>
                   <span className="flex items-center gap-1">
@@ -314,9 +314,9 @@ export default function DrawerDetail() {
                     onClick={() => verifyMut.mutate()}
                     disabled={verifyMut.isPending}
                     className="flex-1 py-1.5 rounded-lg text-[12px] font-medium transition-colors disabled:opacity-40"
-                    style={{ background: 'rgba(48,209,88,0.12)', color: '#30d158', border: '1px solid rgba(48,209,88,0.2)' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(48,209,88,0.2)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'rgba(48,209,88,0.12)')}
+                    style={{ background: 'rgba(106,178,140,0.12)', color: 'var(--success)', border: '1px solid rgba(106,178,140,0.2)' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(106,178,140,0.2)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'rgba(106,178,140,0.12)')}
                   >
                     Confirm
                   </button>
@@ -344,7 +344,7 @@ export default function DrawerDetail() {
               <div className="space-y-2">
                 {data.trust_history.map((h, i) => {
                   const colors: Record<string, string> = {
-                    current: '#30d158', superseded: '#f59e0b',
+                    current: 'var(--success)', superseded: '#f59e0b',
                     contested: '#f97316', historical: '#6b7280',
                   }
                   return (

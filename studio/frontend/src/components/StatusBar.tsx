@@ -17,8 +17,8 @@ export default function StatusBar() {
           <span
             className="w-1.5 h-1.5 rounded-full"
             style={{
-              background: status ? '#30d158' : isError ? '#ef4444' : '#666',
-              boxShadow: status ? '0 0 5px #30d158' : isError ? '0 0 5px #ef4444' : 'none',
+              background: status ? 'var(--success)' : isError ? '#ef4444' : 'var(--text-faint)',
+              boxShadow: status ? '0 0 5px var(--success)' : isError ? '0 0 5px #ef4444' : 'none',
             }}
           />
           {isFetching ? 'Checking...' : status ? 'Connected' : isError ? 'Memory service offline' : 'Starting...'}
@@ -45,7 +45,7 @@ export default function StatusBar() {
         <span>Mnemion Studio</span>
         <span
           className="px-1.5 py-0.5 rounded text-[10px] font-mono"
-          style={{ background: 'rgba(127,109,242,0.1)', color: 'var(--interactive-accent)' }}
+          style={{ background: 'rgba(196,154,85,0.1)', color: 'var(--interactive-accent)' }}
         >
           Ctrl+K
         </span>

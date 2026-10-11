@@ -1,7 +1,7 @@
 import { useId, useMemo, useState, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight, Download, Table2 } from "lucide-react";
 
-export const palette = ["#afa4ff", "#64d4c4", "#f1bd73", "#72b9f8", "#f393a3", "#b7ce87"];
+export const palette = ["#e2b967", "#6fc8b1", "#81b9e4", "#c3a6e8", "#e58f88", "#b6c786"];
 export const number = (value: number | null | undefined, digits = 0) => value == null || !Number.isFinite(value)
   ? "—" : new Intl.NumberFormat(undefined, { maximumFractionDigits: digits }).format(value);
 export const percent = (value: number | null | undefined) => value == null ? "—" : `${number(value * 100, 1)}%`;
@@ -119,7 +119,7 @@ export function TimeChart({ name, points, series, unit, format = v => number(v, 
           })}</g>;
       })}
       {selected != null && <g><line x1={x(data[selected].at)} x2={x(data[selected].at)} y1={top} y2={top + height} className="ins-crosshair" />
-        {visible.map(item => data[selected].values[item.key] == null ? null : <circle key={item.key} cx={x(data[selected].at)} cy={y(data[selected].values[item.key]!)} r={4.5} fill={item.color || palette[series.indexOf(item) % palette.length]} stroke="#161922" strokeWidth={2} />)}</g>}
+        {visible.map(item => data[selected].values[item.key] == null ? null : <circle key={item.key} cx={x(data[selected].at)} cy={y(data[selected].values[item.key]!)} r={4.5} fill={item.color || palette[series.indexOf(item) % palette.length]} stroke="#0a0f19" strokeWidth={2} />)}</g>}
     </svg>
     <div className="ins-chart-readout" aria-live="polite">{selected == null ? <span>Hover or focus the chart to inspect measured samples.</span> : <><time>{when(data[selected].at)}</time>{visible.map(item => <span key={item.key}>{item.label} <b>{data[selected].values[item.key] == null ? "—" : format(data[selected].values[item.key]!)}</b></span>)}</>}</div>
     <DataTable name={name} columns={["Observed at", ...series.map(item => `${item.label} · ${unit}`)]}
@@ -152,7 +152,7 @@ export function Composition({ name, values }: { name: string; values: { label: s
 export function Ring({ value, total, title }: { value: number; total: number; title: string }) {
   const ratio = total ? Math.min(1, value / total) : 0;
   return <div className="ins-ring"><svg viewBox="0 0 140 140" role="img" aria-label={`${title}: ${total ? percent(ratio) : "no eligible memories"}`}>
-    <circle cx={70} cy={70} r={58} fill="none" stroke="#2b3040" strokeWidth={8} />
+    <circle cx={70} cy={70} r={58} fill="none" stroke="#24303e" strokeWidth={8} />
     <circle cx={70} cy={70} r={58} fill="none" stroke="#64d4c4" strokeWidth={8} strokeLinecap="round" strokeDasharray={`${ratio * 364.425} 364.425`} transform="rotate(-90 70 70)" />
     <text x={70} y={73} textAnchor="middle" className="ins-ring-value">{total ? percent(ratio) : "—"}</text><text x={70} y={94} textAnchor="middle" className="ins-axis">{title}</text>
   </svg><p>{number(value)} of {number(total)} eligible memories</p></div>;

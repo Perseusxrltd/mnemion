@@ -173,6 +173,7 @@ def prepare(
     public_url: str | None = None,
     studio: Path | None = None,
     environment: Path | None = None,
+    managed_updates: bool = False,
 ) -> dict:
     _unix()
     state = state.expanduser().absolute()
@@ -243,6 +244,7 @@ def prepare(
         "studio": str(studio.expanduser().resolve()) if studio else None,
         "runtime": str(runtime),
         "environment": runtime_environment,
+        **({"managed_updates": True} if managed_updates else {}),
     }
     for value in (str(state), str(runtime), executable, settings["directory"]):
         _value(value)
@@ -323,7 +325,9 @@ supervisor.rpcinterface_factory=supervisor.rpcinterface:make_main_rpcinterface
 [supervisorctl]
 serverurl=unix://{_value(str(runtime / "control.sock"))}
 """
-    for role in ("api", "worker"):
+    for role in (
+        ("api", "worker", "updater") if settings.get("managed_updates") else ("api", "worker")
+    ):
         command = shlex.join(
             [
                 settings["python"],
@@ -442,7 +446,10 @@ def status(state: Path) -> dict:
         raise
     except (FileNotFoundError, ConnectionRefusedError):
         return {"running": False, "ready": False, "processes": []}
-    if {item["name"] for item in processes} != {"mnemion-api", "mnemion-worker"}:
+    expected = {"mnemion-api", "mnemion-worker"}
+    if value.get("managed_updates"):
+        expected.add("mnemion-updater")
+    if {item["name"] for item in processes} != expected:
         raise SupervisionError("Unexpected processes in the managed supervisor")
     host = value["host"]
     host = "127.0.0.1" if host == "0.0.0.0" else "::1" if host == "::" else host
@@ -553,6 +560,30 @@ def child(state: Path, role: str) -> int:
     os.environ.update(_environment(value["environment"]))
     for key in ROLE_VARIABLES:
         os.environ.pop(key, None)
+    runtime = None
+    if value.get("managed_updates"):
+        from .service_updates import resolved_runtime, watch
+
+        runtime = resolved_runtime(state)
+        if role == "updater":
+            if runtime["isolated"]:
+                os.chdir(runtime["directory"])
+                os.execve(
+                    runtime["python"],
+                    [
+                        runtime["python"],
+                        "-I",
+                        "-m",
+                        "mnemion.service.service_updates",
+                        "watch",
+                        "--state-dir",
+                        str(state),
+                    ],
+                    os.environ,
+                )
+            return watch(state)
+    elif role == "updater":
+        raise SupervisionError("This Supervisor instance has no managed updater")
     arguments = ["--credentials", str(state / f"{role}.json")]
     if role == "worker":
         arguments.append("worker")
@@ -563,6 +594,13 @@ def child(state: Path, role: str) -> int:
             arguments += ["--public-url", value["public_url"]]
         if value["studio"]:
             arguments += ["--studio", value["studio"]]
+    if runtime and runtime["isolated"]:
+        os.chdir(runtime["directory"])
+        os.execve(
+            runtime["python"],
+            [runtime["python"], "-I", "-m", "mnemion.service.cli", *arguments],
+            os.environ,
+        )
     from .cli import main as service
 
     return service(arguments)
@@ -580,7 +618,7 @@ def arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--port", type=int, default=7892)
     parser.add_argument("--public-url")
     parser.add_argument("--studio", type=Path)
-    parser.add_argument("--role", choices=("api", "worker"))
+    parser.add_argument("--role", choices=("api", "worker", "updater"))
 
 
 def execute(args: argparse.Namespace) -> int:

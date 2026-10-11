@@ -28,40 +28,23 @@ export default class ErrorBoundary extends Component<Props, State> {
     if (!error) return this.props.children
 
     if (this.props.fallback) return this.props.fallback(error, this.reset)
+    const update = /dynamically imported module|Importing a module script failed|Loading chunk|Unable to preload CSS/i.test(error.message)
 
     return (
       <div
-        className="flex-1 flex flex-col items-center justify-center gap-4 p-6"
-        style={{ background: 'var(--background-primary)' }}
+        className="studio-error"
+        role="alert"
       >
-        <AlertTriangle size={32} style={{ color: '#f97316' }} />
-        <div className="text-sm font-semibold" style={{ color: 'var(--text-normal)' }}>
-          Something went wrong rendering this view
+        <AlertTriangle size={30} aria-hidden="true" />
+        <h2>{update ? 'Reload to open this view' : 'This view could not be displayed'}</h2>
+        <p>{update
+          ? 'Studio may have updated, or the connection was interrupted. Reload to get the current application.'
+          : 'Try opening the view again. If the problem continues, reload Studio.'}</p>
+        <div className="studio-error-actions">
+          {!update && <button onClick={this.reset}>Try again</button>}
+          <button onClick={() => window.location.reload()}><RefreshCw size={14} /> Reload Studio</button>
         </div>
-        <pre
-          className="text-xs font-mono whitespace-pre-wrap max-w-xl rounded-lg p-3"
-          style={{
-            background: 'var(--background-secondary)',
-            border: '1px solid var(--background-modifier-border)',
-            color: 'var(--text-muted)',
-            maxHeight: 200,
-            overflowY: 'auto',
-          }}
-        >
-          {error.message}
-          {error.stack ? '\n\n' + error.stack.split('\n').slice(0, 5).join('\n') : ''}
-        </pre>
-        <button
-          onClick={this.reset}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium"
-          style={{
-            background: 'rgba(127,109,242,0.15)',
-            color: '#9d8ff9',
-            border: '1px solid rgba(127,109,242,0.25)',
-          }}
-        >
-          <RefreshCw size={12} /> Retry
-        </button>
+        <small>Reloading clears your connection and any unsaved text in this window.</small>
       </div>
     )
   }

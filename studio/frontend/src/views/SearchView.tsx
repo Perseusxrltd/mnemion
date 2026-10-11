@@ -133,8 +133,8 @@ export default function SearchView() {
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors"
             style={{
               color: showFilters ? 'var(--interactive-accent)' : 'var(--text-muted)',
-              background: showFilters ? 'rgba(127,109,242,0.1)' : 'transparent',
-              border: `1px solid ${showFilters ? 'rgba(127,109,242,0.3)' : 'var(--background-modifier-border)'}`,
+              background: showFilters ? 'rgba(196,154,85,0.1)' : 'transparent',
+              border: `1px solid ${showFilters ? 'rgba(196,154,85,0.3)' : 'var(--background-modifier-border)'}`,
             }}
           >
             <SlidersHorizontal size={13} /> Filters
@@ -229,7 +229,7 @@ export default function SearchView() {
                       <WingBadge wing={hit.wing} room={hit.room} />
                       {simPct > 0 && (
                         <span className="text-[10px] font-mono px-1.5 py-0.5 rounded"
-                          style={{ background: 'rgba(124,106,247,0.12)', color: '#9d8ff9' }}>
+                          style={{ background: 'rgba(196,154,85,0.12)', color: 'var(--gold-bright)' }}>
                           {simPct}%
                         </span>
                       )}

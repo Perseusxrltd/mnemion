@@ -47,7 +47,7 @@ function Skeleton({ className = '' }: { className?: string }) {
 
 // ── StatCard ──────────────────────────────────────────────────────────────────
 
-function StatCard({ icon: Icon, label, value, sub, color = '#7f6df2', onClick, loading }: {
+function StatCard({ icon: Icon, label, value, sub, color = 'var(--gold)', onClick, loading }: {
   icon: any; label: string; value?: string | number; sub?: string
   color?: string; onClick?: () => void; loading?: boolean
 }) {
@@ -62,7 +62,7 @@ function StatCard({ icon: Icon, label, value, sub, color = '#7f6df2', onClick, l
         <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
           {label}
         </span>
-        <span className="p-1.5 rounded-lg" style={{ background: color + '20' }}>
+        <span className="p-1.5 rounded-lg" style={{ background: `color-mix(in srgb, ${color} 12%, transparent)` }}>
           <Icon size={14} style={{ color }} />
         </span>
       </div>
@@ -145,9 +145,9 @@ export default function Dashboard() {
         <button
           onClick={() => openCreateDrawer()}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-          style={{ background: 'rgba(127,109,242,0.15)', color: '#9d8ff9', border: '1px solid rgba(127,109,242,0.25)' }}
-          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(127,109,242,0.25)')}
-          onMouseLeave={e => (e.currentTarget.style.background = 'rgba(127,109,242,0.15)')}
+          style={{ background: 'rgba(196,154,85,0.15)', color: 'var(--gold-bright)', border: '1px solid rgba(196,154,85,0.25)' }}
+          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(196,154,85,0.25)')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'rgba(196,154,85,0.15)')}
           title="Save memory (C)"
         >
           <Plus size={12} /> Save Memory
@@ -185,7 +185,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
         <StatCard
           icon={Database} label="Saved Memories" loading={statusLoading}
-          value={status?.total_drawers} color="#7f6df2"
+          value={status?.total_drawers} color="var(--gold)"
           onClick={() => navigate('/browse')}
         />
         <StatCard
@@ -203,7 +203,7 @@ export default function Dashboard() {
           icon={Network} label="Healthy Memories" loading={trustLoading}
           value={currentPct !== null ? `${currentPct}%` : undefined}
           sub="ready to use"
-          color="#30d158" onClick={() => navigate('/settings')}
+          color="var(--success)" onClick={() => navigate('/settings')}
         />
       </div>
 
@@ -378,7 +378,7 @@ export default function Dashboard() {
             <div className="space-y-3">
               {Object.entries(trust.by_status ?? {}).map(([st, data]) => {
                 const colors: Record<string, string> = {
-                  current: '#30d158', superseded: '#f59e0b',
+                  current: 'var(--success)', superseded: '#f59e0b',
                   contested: '#f97316', historical: '#6b7280',
                 }
                 const color = colors[st] ?? '#6b7280'
@@ -404,7 +404,7 @@ export default function Dashboard() {
                 className="pt-2 border-t text-xs flex items-center gap-1.5"
                 style={{ borderColor: 'var(--background-modifier-border)', color: 'var(--text-muted)' }}
               >
-                <CheckCircle size={11} style={{ color: '#30d158' }} />
+                <CheckCircle size={11} style={{ color: 'var(--success)' }} />
                 average confidence {Math.round((trust.by_status?.current?.avg_confidence ?? 1) * 100)}%
               </div>
             </div>
@@ -440,7 +440,7 @@ export default function Dashboard() {
                 style={{ background: 'var(--raised)', border: '1px solid var(--background-modifier-border)' }}
               >
                 <div className="flex items-center gap-1.5 mb-1">
-                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#30d158' }} />
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--success)' }} />
                   <span className="text-xs font-medium truncate">{a.agent}</span>
                 </div>
                 <div className="text-[10px] flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>

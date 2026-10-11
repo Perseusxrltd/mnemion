@@ -1,5 +1,6 @@
 import {
   createContext,
+  Fragment,
   useContext,
   useMemo,
   useRef,
@@ -16,6 +17,7 @@ import {
   Route,
   Routes,
   useNavigate,
+  useLocation,
   useParams,
 } from "react-router-dom";
 import {
@@ -64,6 +66,9 @@ import {
 } from "@mnemion/client";
 import "./workspace.css";
 import { nativeFetch } from "./native";
+import { version } from "../../package.json";
+import BrandMark from "../components/BrandMark";
+import ErrorBoundary from "../components/ErrorBoundary";
 import { Connections, SourceProposals } from "./Connections";
 import { Agents } from "./Agents";
 import { KnowledgeView } from "./Knowledge";
@@ -274,10 +279,7 @@ function Connect({
     <div className="ws-connect">
       <div className="ws-connect-story">
         <Link to="/workspace" className="ws-brand">
-          <img
-            src={new URL("../../public/icon.png", import.meta.url).href}
-            alt=""
-          />
+          <BrandMark />
           mnemion<span>studio</span>
         </Link>
         <div>
@@ -285,7 +287,7 @@ function Connect({
           <h1>
             One shared memory.
             <br />
-            Every app, on the same page.
+            <span>Every app, on the same page.</span>
           </h1>
           <p>
             Keep decisions, context, and evidence connected across your team’s
@@ -303,7 +305,10 @@ function Connect({
             </span>
           </div>
         </div>
-        <small>Mnemion · Shared memory platform</small>
+        <div className="ws-connect-footer">
+          <small>Free forever · Mnemion {version}</small>
+          <a href="https://www.perseusxr.com/mnemion" target="_blank" rel="noreferrer">By Perseus XR ↗</a>
+        </div>
       </div>
       <div className="ws-connect-panel">
         <form className="ws-connect-form" onSubmit={connect}>
@@ -378,6 +383,7 @@ function Shell({
   disconnect: () => void;
 }) {
   const { client, me } = connection;
+  const location = useLocation();
   const spaces = useQuery({
     queryKey: ["spaces"],
     queryFn: () => client.spaces(),
@@ -415,6 +421,11 @@ function Shell({
       ? [{ to: "connections", label: "Connections", icon: Plug }, { to: "team", label: "People & apps", icon: Users }]
       : []),
   ];
+  const navigationGroups = [
+    { label: "01 / Memory", pages: ["memories", "search", "knowledge", "blocks", "review"] },
+    { label: "02 / Intelligence", pages: ["operations", "insights", "librarian", "models"] },
+    { label: "03 / Workspace", pages: ["obsidian", "agents", "connections", "team", "help"] },
+  ];
   async function createSpace(event: FormEvent) {
     event.preventDefault();
     setCreating(true);
@@ -446,12 +457,13 @@ function Shell({
     );
   return (
     <div className="ws-shell">
+      <a className="ws-skip-link" href="#workspace-content" onClick={event => {
+        event.preventDefault();
+        document.getElementById("workspace-content")?.focus();
+      }}>Skip to workspace content</a>
       <aside className="ws-sidebar">
         <Link to="/workspace" className="ws-brand">
-          <img
-            src={new URL("../../public/icon.png", import.meta.url).href}
-            alt=""
-          />
+          <BrandMark />
           mnemion<span>studio</span>
         </Link>
         <div className="ws-workspace-name">{me.tenant_name}</div>
@@ -475,16 +487,19 @@ function Shell({
           </select>
         </label>
         <nav aria-label="Workspace navigation">
-          {links.map(({ to, label, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={`/workspace/${to}`}
-              className={({ isActive }) => (isActive ? "active" : "")}
-            >
-              <Icon size={17} />
-              {label}
-            </NavLink>
-          ))}
+          {navigationGroups.map(group => <Fragment key={group.label}>
+            <span className="ws-nav-section">{group.label}</span>
+            {group.pages.flatMap(page => links.filter(link => link.to === page)).map(({ to, label, icon: Icon }) => (
+              <NavLink
+                key={to}
+                to={`/workspace/${to}`}
+                className={({ isActive }) => (isActive ? "active" : "")}
+              >
+                <Icon size={17} />
+                {label}
+              </NavLink>
+            ))}
+          </Fragment>)}
         </nav>
         <div className="ws-sidebar-bottom">
           <div>
@@ -504,10 +519,10 @@ function Shell({
               <LogOut size={17} />
             </button>
           </div>
-          <small className="ws-preview">Mnemion 4.0</small>
+          <small className="ws-preview">Mnemion {version} · Perseus XR</small>
         </div>
       </aside>
-      <main className="ws-main">
+      <main className="ws-main" id="workspace-content" tabIndex={-1}>
         {!space ? (
           <div className="ws-page">
             <Title title="Welcome to your workspace">
@@ -553,6 +568,7 @@ function Shell({
               </button>
             </div>
             <div className="ws-scroll" key={space.id}>
+              <ErrorBoundary key={location.pathname}>
               <Routes>
                 <Route index element={<Navigate to="memories" replace />} />
                 <Route path="memories" element={<Memories />} />
@@ -577,6 +593,7 @@ function Shell({
                   element={<Navigate to="/workspace/memories" replace />}
                 />
               </Routes>
+              </ErrorBoundary>
             </div>
           </SessionContext.Provider>
         )}

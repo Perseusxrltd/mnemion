@@ -165,6 +165,10 @@ def main() -> None:
     from deploy.bundle_studio import verify_python_distributions
 
     verify_python_distributions(args.artifacts, version)
+    if tuple(map(int, version.split("."))) >= (4, 0, 8):
+        from deploy.service_update_manifest import verify_document
+
+        verify_document(root, args.artifacts)
     files = [path for path in args.artifacts.iterdir() if path.name != "SHA256SUMS.txt"]
     for architecture in ("x64", "arm64"):
         suffixes = {

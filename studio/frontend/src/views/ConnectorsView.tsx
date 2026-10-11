@@ -14,13 +14,13 @@ const VENDOR_COLOR: Record<string, string> = {
   Anthropic: '#c96442',
   OpenAI:    '#10a37f',
   Google:    '#4285f4',
-  Cursor:    '#7f6df2',
+  Cursor:    'var(--gold)',
   Codeium:   '#09b6a2',
   'Zed Industries': '#ef4444',
 }
 
 function vendorColor(vendor: string): string {
-  return VENDOR_COLOR[vendor] ?? '#7f6df2'
+  return VENDOR_COLOR[vendor] ?? 'var(--gold)'
 }
 
 function CategoryIcon({ cat, size = 11 }: { cat: string; size?: number }) {
@@ -42,9 +42,9 @@ function CopyButton({ text, label = 'Copy' }: { text: string; label?: string }) 
       }}
       className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors"
       style={{
-        background: copied ? 'rgba(48,209,88,0.15)' : 'rgba(255,255,255,0.04)',
-        color: copied ? '#30d158' : 'var(--text-muted)',
-        border: `1px solid ${copied ? 'rgba(48,209,88,0.3)' : 'var(--background-modifier-border)'}`,
+        background: copied ? 'rgba(106,178,140,0.15)' : 'rgba(255,255,255,0.04)',
+        color: copied ? 'var(--success)' : 'var(--text-muted)',
+        border: `1px solid ${copied ? 'rgba(106,178,140,0.3)' : 'var(--background-modifier-border)'}`,
       }}
     >
       {copied ? <Check size={11} /> : <Copy size={11} />}
@@ -65,7 +65,7 @@ function StatusBadge({ conn }: { conn: ConnectorStatus }) {
   }
   if (conn.mnemion_configured) {
     return (
-      <span className="flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ color: '#30d158', background: 'rgba(48,209,88,0.12)' }}>
+      <span className="flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ color: 'var(--success)', background: 'rgba(106,178,140,0.12)' }}>
         <CheckCircle size={9} /> Connected
       </span>
     )
@@ -105,14 +105,14 @@ function ConnectorCard({
       className="rounded-xl overflow-hidden fade-in transition-all"
       style={{
         background: 'var(--surface)',
-        border: `1px solid ${conn.mnemion_configured ? 'rgba(48,209,88,0.2)' : 'var(--background-modifier-border)'}`,
+        border: `1px solid ${conn.mnemion_configured ? 'rgba(106,178,140,0.2)' : 'var(--background-modifier-border)'}`,
       }}
     >
       {/* Header */}
       <div className="flex items-start gap-3 p-4">
         <div
           className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
-          style={{ background: color + '20', color }}
+          style={{ background: `color-mix(in srgb, ${color} 12%, transparent)`, color }}
         >
           <CategoryIcon cat={conn.category} size={16} />
         </div>
@@ -146,7 +146,7 @@ function ConnectorCard({
               onClick={onUninstall}
               disabled={busy}
               className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-colors disabled:opacity-40"
-              style={{ background: 'rgba(255,69,58,0.1)', color: '#ff6b6b', border: '1px solid rgba(255,69,58,0.2)' }}
+              style={{ background: 'rgba(229,121,114,0.1)', color: '#ff6b6b', border: '1px solid rgba(229,121,114,0.2)' }}
             >
               <Trash2 size={11} /> Remove
             </button>
@@ -155,7 +155,7 @@ function ConnectorCard({
               onClick={onInstall}
               disabled={busy}
               className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-colors disabled:opacity-40"
-              style={{ background: 'rgba(127,109,242,0.15)', color: '#9d8ff9', border: '1px solid rgba(127,109,242,0.3)' }}
+              style={{ background: 'rgba(196,154,85,0.15)', color: 'var(--gold-bright)', border: '1px solid rgba(196,154,85,0.3)' }}
             >
               {busy ? <RefreshCw size={11} className="animate-spin" /> : <Plus size={11} />}
               {conn.legacy_detected ? 'Fix and Connect' : 'Connect'}
@@ -200,7 +200,7 @@ function ConnectorCard({
             </div>
           )}
           {conn.error && (
-            <div className="flex items-start gap-1.5 text-[11px] px-2.5 py-1.5 rounded" style={{ color: '#ff6b6b', background: 'rgba(255,69,58,0.1)' }}>
+            <div className="flex items-start gap-1.5 text-[11px] px-2.5 py-1.5 rounded" style={{ color: '#ff6b6b', background: 'rgba(229,121,114,0.1)' }}>
               <AlertTriangle size={11} className="flex-shrink-0 mt-0.5" />
               {conn.error}
             </div>
@@ -315,7 +315,7 @@ export default function ConnectorsView() {
             {!isLoading && data && (
               <span>
                 {' '}
-                <span style={{ color: '#30d158' }}>{connectedCount} connected</span> -{' '}
+                <span style={{ color: 'var(--success)' }}>{connectedCount} connected</span> -{' '}
                 {totalInstalled} detected - {data.connectors.length} known
               </span>
             )}

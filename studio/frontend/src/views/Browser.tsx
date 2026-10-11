@@ -197,7 +197,7 @@ export default function Browser() {
 
   const drawers: DrawerSummary[] = data?.drawers ?? []
   const hasMore = drawers.length === PAGE
-  const color = wing ? wingColor(wing) : '#7f6df2'
+  const color = wing ? wingColor(wing) : 'var(--gold)'
 
   // No area selected; show memory area grid.
   if (!wing) {

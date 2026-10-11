@@ -31,7 +31,10 @@ An agent with those operator credentials can follow the
 From 4.0.7, Unix host operators can also use `mnemion-service supervise` to prepare,
 start, inspect and stop a background API/worker instance. Its JSON output and
 generated startup files are described in [the supervision guide](supervision.md).
-These commands require local host access; a remote memory key does not grant it.
+From 4.0.8, `mnemion-service updates` adds host adoption, status, signed checks,
+staging, compatible application and automatic-update preferences; see the
+[managed update guide](managed-updates.md). These JSON commands require local
+host access and appropriate private credentials; a remote memory key does not grant it.
 
 ## Discover through MCP
 

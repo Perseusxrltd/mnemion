@@ -52,6 +52,19 @@ for supported desktop packages. Users can change these in **Background and updat
 administrators can disable updater/startup defaults through deployment policy.
 See the [update and removal guide](updates.md) for package-specific behavior.
 
+From 4.0.8, explicitly adopted Linux/macOS services also check GitHub for signed
+compatible patches by default. Locked dependency installation contacts the
+package locations in the signed release. These requests contain normal network
+metadata, not memory text or database credentials. Local operators can pause
+automatic service checks through `mnemion-service updates preferences`.
+Verified pre-update database backups are private local files under managed state;
+the updater retains three unchanged copies it created. They contain sensitive
+workspace data and need the same protection as the database. See
+[managed updates](managed-updates.md) for retention and separate host authority.
+
+Studio bundles Inter and Outfit locally, including their redistribution licenses.
+Opening a screen or offline guide makes no requests to a font provider.
+
 Deleting a memory follows the service's deletion policy and removes it from
 authorized live retrieval. Independent exports, backups and external source systems
 have separate retention rules. Ask your organization's administrator about access,

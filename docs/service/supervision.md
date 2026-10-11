@@ -8,7 +8,9 @@ Studio and authenticated HTTP MCP. On Windows, use the background
 
 This manages the two application processes. PostgreSQL, TLS/tunnels and source
 runners retain their own deployment lifecycle. It does not download software
-updates or run migrations. Desktop automatic updates remain independent.
+updates or run migrations. For automatic compatible patches, use the
+[managed setup](managed-updates.md) introduced in 4.0.8; it adds an updater child
+to a new private Supervisor instance. Desktop automatic updates remain independent.
 
 ## Prepare a private instance
 
@@ -24,7 +26,7 @@ uv run --no-sync mnemion-service studio build
 
 An official Python release wheel already includes Studio. When installing that
 wheel, select its `supervision` extra, for example
-`python -m pip install './mnemion-4.0.7-py3-none-any.whl[supervision]'`.
+`python -m pip install './mnemion-4.0.8-py3-none-any.whl[supervision]'`.
 Use the [official downloads](https://github.com/Perseusxrltd/mnemion/releases).
 The extra is optional and adds no model or paid service.
 Intel Mac servers require Python 3.12 or 3.13. The package selects ONNX Runtime
@@ -165,7 +167,9 @@ authorized reads and writes. Do not replace a running virtual environment.
 
 This patch adds no database migration or reindex requirement. Upgrading from
 before 4.0.5 still requires [migration 012 and its rollback procedure](../releases/4.0.5.md#server-upgrade-and-rollback).
-Managed server update staging, verification, backups and safe cutover remain
-tracked in [issue 11](https://github.com/Perseusxrltd/mnemion/issues/11).
+[Managed service patches](managed-updates.md) add signed staging, backup
+verification and compatible runtime rollback from 4.0.8. Fleet rollouts and
+schema-changing unattended updates remain tracked in
+[issue 11](https://github.com/Perseusxrltd/mnemion/issues/11).
 Physical boot, site-specific cron/launchd policy and high availability require
 deployment-specific verification in addition to the process-recovery tests.

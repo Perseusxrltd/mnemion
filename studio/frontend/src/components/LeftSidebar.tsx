@@ -64,7 +64,7 @@ function WingEntry({
                     isRoomActive ? 'text-white' : 'text-muted hover-row'
                   }`
                 }
-                style={isRoomActive ? { background: 'rgba(127,109,242,0.15)' } : {}}
+                style={isRoomActive ? { background: 'rgba(196,154,85,0.15)' } : {}}
               >
                 <FileText size={10} className="flex-shrink-0 opacity-40" />
                 <span className="flex-1 truncate">{room}</span>
@@ -128,7 +128,7 @@ export default function LeftSidebar({ width = 260 }: { width?: number }) {
           {status && (
             <span
               className="text-[10px] font-mono px-1.5 py-0.5 rounded flex-shrink-0"
-              style={{ background: 'rgba(127,109,242,0.15)', color: '#9d8ff9' }}
+              style={{ background: 'rgba(196,154,85,0.15)', color: 'var(--gold-bright)' }}
             >
               v{status.version}
             </span>
@@ -141,12 +141,12 @@ export default function LeftSidebar({ width = 260 }: { width?: number }) {
             onClick={() => openCreateDrawer(currentWing ?? '')}
             className="flex items-center gap-1.5 w-full px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
             style={{
-              background: 'rgba(127,109,242,0.12)',
+              background: 'rgba(196,154,85,0.12)',
               color: 'var(--interactive-accent)',
-              border: '1px solid rgba(127,109,242,0.2)',
+              border: '1px solid rgba(196,154,85,0.2)',
             }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(127,109,242,0.2)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'rgba(127,109,242,0.12)')}
+            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(196,154,85,0.2)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'rgba(196,154,85,0.12)')}
           >
             <Plus size={13} />
             Save Memory
@@ -205,7 +205,7 @@ export default function LeftSidebar({ width = 260 }: { width?: number }) {
           <span
             className="w-1.5 h-1.5 rounded-full flex-shrink-0"
             style={{
-              background: status ? '#30d158' : '#666',
+              background: status ? 'var(--success)' : 'var(--text-faint)',
               boxShadow: status ? '0 0 5px #30d15860' : 'none',
             }}
           />

@@ -18,6 +18,8 @@ const titles: Record<string, string> = {
   "docs/ROADMAP.md": "Product roadmap", "docs/service/README.md": "Quick start & API",
   "docs/service/deployment.md": "Self-hosted deployment", "docs/service/organizations.md": "Organizations, spaces & security",
   "docs/service/supervision.md": "Background service without systemd",
+  "docs/service/managed-updates.md": "Managed server updates",
+  "docs/STUDIO_DESIGN.md": "Studio design system",
   "docs/service/connectors.md": "Cloud, Git & messaging sources", "docs/service/agents.md": "Agents, apps & MCP",
   "docs/service/agent-control.md": "Agent administration & CLI",
   "docs/service/capture.md": "Conversation capture", "docs/service/insights.md": "Insights & evaluations",

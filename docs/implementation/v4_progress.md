@@ -345,3 +345,27 @@ quality. The roadmap and issue queue track those independently.
   public 4.0.6 → 4.0.7 automatic upgrades passed and preserved profiles. The
   website followed the release automatically. Issue 6 is closed; host-specific
   boot adoption and verified server software updates remain separate work.
+
+## Hotfix 4.0.8, 11 October 2026
+
+- Studio now shares Perseus XR's ink/ivory/gold palette, locally bundled
+  Inter/Outfit fonts and license inventory across workspace, insights, settings,
+  documentation and local-vault surfaces. Navigation is grouped and responsive;
+  installed patch labels come from package metadata.
+- Added a reload recovery screen for open web tabs whose old lazy screen bundle
+  disappears during a service update. Navigation survives, and reload is explicit.
+- Added independently signed compatible Unix service patches, explicit host
+  adoption, default automatic checks, isolated locked staging, verified backup,
+  durable recovery and runtime-only rollback. The separate publisher secret is
+  configured for release assembly; private key recovery material stays outside Git.
+- Backup retention preserves three updater-created verified archives. Runtime
+  cleanup preserves active/previous/pending/journal references and leaves operator
+  data alone. Package installation and service children do not inherit owner credentials.
+- Local service checks passed 336 tests, two opt-in skips, 86.05% coverage; legacy
+  passed 311 with one skip and 106 marker exclusions. Client and desktop-policy
+  checks passed seven and 24 respectively. Browser checks covered connected flows,
+  six insight tabs, narrow layouts and a missing-bundle recovery fault.
+- Native release gates and public upgrade checks remain required. The first
+  public service manifest establishes the baseline for a later real feed upgrade.
+  Fleet/Compose/Windows-server updates, schema-changing unattended upgrades and
+  physical host boot checks remain open under issue 11 and the deployment roadmap.

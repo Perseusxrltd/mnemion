@@ -121,7 +121,7 @@ export default function AgentsView() {
                 <div className="relative flex-shrink-0">
                   <div className="w-10 h-10 rounded-full flex items-center justify-center"
                     style={{ background: active ? 'rgba(16,185,129,0.12)' : 'var(--raised)' }}>
-                    <AgentIcon name={a.agent} size={18} color={active ? '#30d158' : '#666'} />
+                    <AgentIcon name={a.agent} size={18} color={active ? 'var(--success)' : 'var(--text-faint)'} />
                   </div>
                   <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 ${active ? 'bg-emerald-400' : 'bg-zinc-600'}`}
                     style={{ borderColor: 'var(--surface)' }} />

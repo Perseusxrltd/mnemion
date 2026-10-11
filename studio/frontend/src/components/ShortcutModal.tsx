@@ -59,10 +59,10 @@ function Key({ children }: { children: string }) {
         fontSize: 11,
         fontFamily: 'var(--font-monospace)',
         fontWeight: 500,
-        background: '#2a2a2a',
-        border: '1px solid #3d3d3d',
-        borderBottom: '2px solid #333',
-        color: '#dcddde',
+        background: 'var(--surface-overlay)',
+        border: '1px solid var(--line)',
+        borderBottom: '2px solid var(--line-soft)',
+        color: 'var(--ivory)',
         lineHeight: 1,
         userSelect: 'none',
       }}
@@ -99,8 +99,8 @@ export default function ShortcutModal({ open, onClose }: ShortcutModalProps) {
           width: 560,
           maxHeight: '80vh',
           borderRadius: 12,
-          background: '#1a1a1a',
-          border: '1px solid #333',
+          background: 'var(--surface-raised)',
+          border: '1px solid var(--line-soft)',
           boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
           display: 'flex',
           flexDirection: 'column',
@@ -114,18 +114,18 @@ export default function ShortcutModal({ open, onClose }: ShortcutModalProps) {
           style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             padding: '16px 20px',
-            borderBottom: '1px solid #2a2a2a',
+            borderBottom: '1px solid var(--surface-overlay)',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Keyboard size={15} style={{ color: '#7f6df2' }} />
-            <span style={{ fontSize: 14, fontWeight: 600, color: '#dcddde' }}>Keyboard Shortcuts</span>
+            <Keyboard size={15} style={{ color: 'var(--gold)' }} />
+            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--ivory)' }}>Keyboard Shortcuts</span>
           </div>
           <button
             onClick={onClose}
-            style={{ color: '#555', padding: 4, borderRadius: 6 }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#999')}
-            onMouseLeave={e => (e.currentTarget.style.color = '#555')}
+            style={{ color: 'var(--text-faint)', padding: 4, borderRadius: 6 }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--ivory-muted)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}
           >
             <X size={14} />
           </button>
@@ -139,7 +139,7 @@ export default function ShortcutModal({ open, onClose }: ShortcutModalProps) {
                 <div
                   style={{
                     fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-                    letterSpacing: '0.08em', color: '#555', marginBottom: 10,
+                    letterSpacing: '0.08em', color: 'var(--text-faint)', marginBottom: 10,
                   }}
                 >
                   {group.title}
@@ -150,7 +150,7 @@ export default function ShortcutModal({ open, onClose }: ShortcutModalProps) {
                       key={i}
                       style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}
                     >
-                      <span style={{ fontSize: 13, color: '#999', flex: 1 }}>{s.label}</span>
+                      <span style={{ fontSize: 13, color: 'var(--ivory-muted)', flex: 1 }}>{s.label}</span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0 }}>
                         {s.keys.map((k, ki) => <Key key={ki}>{k}</Key>)}
                       </div>
@@ -166,9 +166,9 @@ export default function ShortcutModal({ open, onClose }: ShortcutModalProps) {
         <div
           style={{
             padding: '10px 20px',
-            borderTop: '1px solid #2a2a2a',
+            borderTop: '1px solid var(--surface-overlay)',
             fontSize: 11,
-            color: '#444',
+            color: 'var(--line)',
             display: 'flex',
             alignItems: 'center',
             gap: 16,

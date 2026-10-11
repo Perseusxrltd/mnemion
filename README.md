@@ -9,11 +9,13 @@ never gates downloads, usage or access.
 
 **Mnemion 4.0 is the first release of the rebuilt shared-memory platform.**
 Download published builds from [the official product page](https://www.perseusxr.com/mnemion).
-The [4.0.7 release](docs/releases/4.0.7.md) adds background API/worker supervision
-on Linux and macOS without systemd. Official Python packages include web Studio
-and offline guides, with one build command for Git checkouts. It retains 4.0.5's
-immediate source-sync requests and scan diagnostics, 4.0.4's agent administration
-and Linux startup repair, and 4.0.3's Windows ARM64 and lower local-model RAM.
+The [4.0.8 release](docs/releases/4.0.8.md) brings Studio into the Perseus XR style
+and adds signed automatic patches for explicitly adopted Linux/macOS services.
+The [managed updater](docs/service/managed-updates.md) stages locked packages,
+verifies a backup before restarting and preserves accepted data on runtime rollback.
+Official Python packages include web Studio, local fonts and offline guides.
+Source-sync controls, agent administration, Obsidian compatibility and the earlier
+native-update and model-memory improvements are retained.
 Release targets cover **Windows, macOS and Linux on x64 and ARM64**. Windows and
 Mac updates use independent publisher signatures. The product page lists only
 published, verified builds. Development and
@@ -48,6 +50,8 @@ An authenticated identity is separate from the person or project a memory is abo
   bounded schedules, source-linked organization proposals, human review and undo.
 - [Desktop background operation and automatic updates](docs/service/updates.md),
   with login startup and safe idle restarts on supported installer formats.
+- [Managed server updates](docs/service/managed-updates.md) for compatible Unix
+  service patches, with private host controls, backup verification and rollback.
 - Standard Obsidian Markdown, YAML, wikilinks, source anchors, native graph
   navigation, stable existing note paths, and conflict-aware local refresh.
 - [Source connections](docs/service/connectors.md) for Git, Google Drive, Slack,
@@ -169,7 +173,7 @@ and performance independently verified in this implementation.
 
 Open **Documentation & roadmap** in Studio, or use the setup screen’s help link.
 The offline library ships the same Markdown as this repository. See the
-[product roadmap](docs/ROADMAP.md), [release notes](docs/releases/4.0.7.md), and
+[product roadmap](docs/ROADMAP.md), [release notes](docs/releases/4.0.8.md), and
 [documentation maintenance policy](docs/MAINTENANCE.md). Every release and hotfix
 must include matching release notes and a reviewed roadmap.
 

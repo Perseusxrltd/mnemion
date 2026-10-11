@@ -1,0 +1,136 @@
+{
+  "connected": {
+    "version": "4.0.8",
+    "connected": true,
+    "createdMemory": true,
+    "desktopViews": [
+      "Search & context",
+      "Wiki & graph",
+      "Core context",
+      "Review",
+      "Activity",
+      "Insights & evaluations",
+      "Librarian",
+      "Embedding models",
+      "Obsidian",
+      "Agents & apps",
+      "Connections",
+      "People & apps"
+    ],
+    "mobile": [
+      {
+        "view": "Memories",
+        "viewport": 360,
+        "page": 360,
+        "main": 360
+      },
+      {
+        "view": "Insights & evaluations",
+        "viewport": 360,
+        "page": 360,
+        "main": 360
+      },
+      {
+        "view": "Embedding models",
+        "viewport": 360,
+        "page": 360,
+        "main": 360
+      },
+      {
+        "view": "Librarian",
+        "viewport": 360,
+        "page": 360,
+        "main": 360
+      },
+      {
+        "view": "Connections",
+        "viewport": 360,
+        "page": 360,
+        "main": 360
+      },
+      {
+        "view": "Obsidian",
+        "viewport": 360,
+        "page": 360,
+        "main": 360
+      },
+      {
+        "view": "Documentation & roadmap",
+        "viewport": 360,
+        "page": 360,
+        "main": 360
+      }
+    ],
+    "externalRequests": [],
+    "errors": []
+  },
+  "narrow": [
+    {
+      "link": "Memories",
+      "page": 360,
+      "width": 360,
+      "main": 360,
+      "scroll": 360
+    },
+    {
+      "link": "Insights & evaluations",
+      "page": 360,
+      "width": 360,
+      "main": 360,
+      "scroll": 360
+    },
+    {
+      "link": "Embedding models",
+      "page": 360,
+      "width": 360,
+      "main": 360,
+      "scroll": 360
+    },
+    {
+      "link": "Librarian",
+      "page": 360,
+      "width": 360,
+      "main": 360,
+      "scroll": 360
+    },
+    {
+      "link": "Connections",
+      "page": 360,
+      "width": 360,
+      "main": 360,
+      "scroll": 360
+    },
+    {
+      "link": "Obsidian",
+      "page": 360,
+      "width": 360,
+      "main": 360,
+      "scroll": 360
+    },
+    {
+      "link": "Documentation & roadmap",
+      "page": 360,
+      "width": 360,
+      "main": 360,
+      "scroll": 360
+    }
+  ],
+  "update_recovery": {
+    "missingBundleRecovery": true,
+    "navigationRetained": true,
+    "explicitReloadWorked": true,
+    "credentialCleared": true,
+    "reconnected": true,
+    "skipLink": true,
+    "reducedMotion": "1e-05s"
+  },
+  "scope": {
+    "version": "4.0.8",
+    "browser": "Chromium",
+    "fixture_data": true,
+    "production_accounts": false,
+    "desktop_width": 1440,
+    "narrow_width": 360,
+    "missing_bundle_test": "intercepted application chunk request; explicit reload and reconnect"
+  }
+}

@@ -80,6 +80,11 @@ def main(argv: list[str] | None = None) -> int:
             "supervise", help="Manage a private Supervisor instance on Linux/macOS without systemd"
         )
     )
+    from .service_updates import arguments as update_arguments
+
+    update_arguments(
+        commands.add_parser("updates", help="Manage signed server hotfixes with verified backups")
+    )
     worker = commands.add_parser("worker", help="Run durable indexing and deletion work")
     worker.add_argument("--once", action="store_true")
     prepare = commands.add_parser(
@@ -228,6 +233,10 @@ def main(argv: list[str] | None = None) -> int:
         from .supervision import execute as supervise
 
         return supervise(args)
+    elif args.command == "updates":
+        from .service_updates import execute as update_service
+
+        return update_service(args)
     elif args.command == "studio":
         from .studio import build_studio, studio_status
 

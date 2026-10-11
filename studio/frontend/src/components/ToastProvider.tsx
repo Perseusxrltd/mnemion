@@ -30,9 +30,9 @@ export const useToast = () => useContext(ToastContext)
 // ── Icons / styling per kind ──────────────────────────────────────────────────
 
 const TOAST_STYLE: Record<ToastKind, { icon: any; accent: string; border: string }> = {
-  success: { icon: CheckCircle, accent: '#30d158', border: 'rgba(48,209,88,0.25)' },
-  error:   { icon: AlertCircle, accent: '#ff453a', border: 'rgba(255,69,58,0.25)'  },
-  info:    { icon: Info,        accent: '#7f6df2', border: 'rgba(127,109,242,0.25)' },
+  success: { icon: CheckCircle, accent: 'var(--success)', border: 'rgba(106,178,140,0.25)' },
+  error:   { icon: AlertCircle, accent: 'var(--danger)', border: 'rgba(229,121,114,0.25)'  },
+  info:    { icon: Info,        accent: 'var(--gold)', border: 'rgba(196,154,85,0.25)' },
 }
 
 // ── Toast item ────────────────────────────────────────────────────────────────
@@ -43,7 +43,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
     <div
       className="flex items-start gap-3 px-4 py-3 rounded-xl text-sm"
       style={{
-        background: '#1e1e1e',
+        background: 'var(--surface-float)',
         border: `1px solid ${border}`,
         boxShadow: '0 8px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.04)',
         minWidth: 260,
@@ -52,12 +52,12 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
       }}
     >
       <Icon size={15} style={{ color: accent, flexShrink: 0, marginTop: 1 }} />
-      <span style={{ color: '#dcddde', flex: 1, lineHeight: 1.4 }}>{toast.message}</span>
+      <span style={{ color: 'var(--ivory)', flex: 1, lineHeight: 1.4 }}>{toast.message}</span>
       <button
         onClick={onDismiss}
-        style={{ color: '#555', flexShrink: 0, marginTop: 1 }}
-        onMouseEnter={e => (e.currentTarget.style.color = '#999')}
-        onMouseLeave={e => (e.currentTarget.style.color = '#555')}
+        style={{ color: 'var(--text-faint)', flexShrink: 0, marginTop: 1 }}
+        onMouseEnter={e => (e.currentTarget.style.color = 'var(--ivory-muted)')}
+        onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}
       >
         <X size={13} />
       </button>

@@ -1,9 +1,9 @@
-# Desktop background operation and updates
+# Background operation and updates
 
 Platform v1 uses the **4.x** package series. Version **4.0.3** adds Windows ARM64;
 release targets now cover Windows, macOS and Linux on x64 and ARM64. Download published installers from
 [the official product page](https://www.perseusxr.com/mnemion).
-See [the patch notes](../releases/4.0.7.md) for current changes and measured limits.
+See [the patch notes](../releases/4.0.8.md) for current changes and measured limits.
 
 Official Studio installations enable automatic stable updates, background mode
 and launch at login by default. Preferences are in the application or tray menu,
@@ -21,7 +21,8 @@ preserved. A manually managed startup command remains the operator's responsibil
 | Linux DEB | Distribution/package-manager updates | Same background and login behavior |
 | Windows NSIS, x64/ARM64 | Independently signed Ed25519 manifest, verified full installer, automatic safe restart | System tray and launch at login |
 | Web Studio | Served with the deployed service version | Browser behavior; no desktop startup registration |
-| Python SDK, CLI, MCP and server | Administrator/package-manager deployment | Service manager or container restart policy |
+| Managed Linux/macOS Python service | Independently signed compatible patches after explicit host adoption; verified backup and runtime rollback | Private Supervisor instance and host startup configuration |
+| Other Python SDK, CLI, MCP and server deployments | Administrator/package-manager deployment | Service manager or container restart policy |
 
 ## First installation
 
@@ -106,8 +107,11 @@ checkout, `uv sync --locked`, and their existing process supervisor; keep the
 previous checkout and deployment backup for rollback. No new database migration
 is introduced in 4.0.2. From 4.0.7, the [Supervisor setup](supervision.md) manages
 the API and worker on Linux/macOS without systemd, with crash recovery and
-cron/launchd startup configuration. It does not install new software. Verified
-server update staging, backups and safe rollback remain tracked in issue 11.
+cron/launchd startup configuration. From 4.0.8, the separate
+[managed setup](managed-updates.md) adds signed stable service patches, isolated
+staging, verified backups and runtime rollback. This requires local host adoption;
+existing memory keys cannot grant it. Containers, Windows servers, schema changes
+and broader fleet policy remain tracked in issue 11.
 
 Version 4.0.5's source-sync controls require the updated runner and a coordinated
 server upgrade with migration `012_connector_sync_requests.sql`. Follow the

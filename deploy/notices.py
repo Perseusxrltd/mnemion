@@ -257,6 +257,37 @@ def collect_frontend(output: Path, frontend: Path) -> list[dict]:
     return components
 
 
+def collect_fonts(output: Path, frontend: Path) -> list[dict]:
+    """Inventory the exact locally bundled typefaces and their redistribution licenses."""
+    root = frontend / "public/fonts"
+    manifest = json.loads((root / "provenance.json").read_text())
+    components = []
+    for family in ("inter", "outfit"):
+        records = [item for item in manifest["fonts"] if item["file"].startswith(family + "-")]
+        if len(records) != 2:
+            raise ValueError(f"The {family} font requires both reviewed local subsets")
+        for record in records:
+            name = record["file"]
+            if name not in {family + "-latin.woff2", family + "-latin-ext.woff2"}:
+                raise ValueError("Unrecognized bundled font subset")
+            data = (frontend / "src/assets/fonts" / name).read_bytes()
+            if len(data) != record["bytes"] or hashlib.sha256(data).hexdigest() != record["sha256"]:
+                raise ValueError("Bundled font differs from its reviewed provenance")
+        version = re.search(r"/v(\d+)/", records[0]["source"]).group(1)
+        identity = f"pkg:generic/google-fonts/{family}@{version}"
+        components.append(
+            {
+                "type": "file",
+                "name": family.title(),
+                "version": version,
+                "purl": identity,
+                "license_label": "SIL Open Font License 1.1",
+                "license_files": copy_licenses(output, identity, [root / (family + "-OFL.txt")]),
+            }
+        )
+    return components
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, required=True)
@@ -273,6 +304,7 @@ def main(argv=None):
     components = collect_python(args.output, args.analysis, args.root) if args.python else []
     if args.frontend:
         components.extend(collect_frontend(args.output, args.frontend))
+        components.extend(collect_fonts(args.output, args.frontend))
     if args.electron:
         components.extend(collect_frontend(args.output, args.electron))
     if args.sparkle:

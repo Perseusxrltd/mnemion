@@ -36,7 +36,15 @@ a completed published download.
    the essential offline guides and the current release notes, including Docker.
    From 4.0.7, product CI also runs real API/worker Supervisor crash and shutdown
    checks on native macOS Intel/ARM64, in addition to the Linux service matrix.
-   The dependency audit includes the optional supervision runtime.
+   The dependency audit includes the optional supervision runtime. From 4.0.8,
+   both native Macs and Linux 3.12 also perform real signed managed-service
+   installation, rollback and accepted-write preservation. Font assets and
+   their SIL licenses are part of the frontend inventory.
+   Assemble `service-update.json` from the exact wheel, source, lockfile and
+   migrations using `python -m deploy.service_update_manifest sign --artifacts
+   release-artifacts --commit COMMIT`. The dedicated private key is supplied
+   only through the reviewed signing environment. The release verifier checks
+   the signature, input parity and hashes before creating a draft.
 7. Review the concrete draft and publish only when its documented release gates
    pass. Installed supported desktop packages then receive stable updates under
    the [update policy](service/updates.md).

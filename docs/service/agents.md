@@ -138,8 +138,9 @@ standalone gateway on port 7893 remains available for existing deployments.
 
 OAuth/browser sign-in is not implemented. Hosted connectors that require OAuth,
 including ChatGPT's connector flow, remain pending issues 4/18; static-header
-compatibility does not imply support for those sign-in flows. Managed server
-updates and hosted OAuth remain separate roadmap work.
+compatibility does not imply support for those sign-in flows. From 4.0.8,
+[managed Unix server patches](managed-updates.md) are available to authorized
+host operators; a memory key alone cannot grant software-update authority.
 
 ## Configuration references
 

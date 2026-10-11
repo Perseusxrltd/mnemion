@@ -1,115 +1,93 @@
+@import "./fonts.css";
 @import "tailwindcss";
 @config "../tailwind.config.ts";
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   Mnemion Studio — Apple Human Interface Guidelines Design System
-   Sleek Translucent Materials, SF Pro Typography, Tactile Spring Animations
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-/* ── Design tokens ────────────────────────────────────────────────────────── */
-
+/* Mnemion Studio uses the Perseus XR design system across every workspace. */
 :root {
-  /* ── macOS Material Surface System (Translucent Dark Mode) ──
-     Uses alpha overlays combined with backdrop-filter blur.
-     Commits to premium native material depth.                  */
-  --surface-deep:    #000000;                      /* Desktop/app background  */
-  --surface-base:    rgba(22, 22, 28, 0.72);       /* Sidebar / Ribbon (Thin)  */
-  --surface-raised:  rgba(30, 30, 38, 0.62);       /* Primary content panes   */
-  --surface-overlay: rgba(44, 44, 54, 0.5);        /* Cards, panels (Regular) */
-  --surface-float:   rgba(56, 56, 68, 0.94);       /* Popovers, modals, menus */
-
-  /* Aliases used by legacy code */
-  --bg:      var(--surface-raised);
+  color-scheme: dark;
+  --ink: #02050d;
+  --ink-soft: #070b14;
+  --ivory: #f2ead9;
+  --ivory-muted: #b9b1a4;
+  --gold: #c49a55;
+  --gold-bright: #e2b967;
+  --line: rgba(196, 154, 85, .34);
+  --line-soft: rgba(242, 234, 217, .13);
+  --accent-soft: rgba(196, 154, 85, .12);
+  --success: #6ab28c;
+  --success-soft: rgba(106, 178, 140, .12);
+  --danger: #e57972;
+  --danger-soft: rgba(229, 121, 114, .12);
+  --surface-deep: var(--ink);
+  --surface-base: var(--ink-soft);
+  --surface-raised: #0a0f19;
+  --surface-overlay: #0e1520;
+  --surface-float: #111b28;
+  --bg: var(--surface-raised);
   --sidebar: var(--surface-base);
   --surface: var(--surface-overlay);
-  --raised:  var(--surface-float);
-
-  /* ── Glass properties ── */
-  --glass-blur:   20px;
-  --glass-border: rgba(255, 255, 255, 0.08);
-
-  /* ── Borders ── */
-  --border-subtle:   rgba(255, 255, 255, 0.06);
-  --border-default:  rgba(255, 255, 255, 0.1);
-  --border-strong:   rgba(255, 255, 255, 0.18);
-  --border:          var(--border-default);
+  --raised: var(--surface-float);
+  --glass-blur: 0px;
+  --glass-border: var(--line-soft);
+  --border-subtle: var(--line-soft);
+  --border-default: var(--line-soft);
+  --border-strong: var(--line);
+  --border: var(--border-default);
   --background-modifier-border: var(--border-default);
-
-  /* ── Text (System SF Typography) ── */
-  --text-normal:  #f5f5f7;   /* Apple primary text  */
-  --text-muted:   #86868b;   /* Apple secondary text */
-  --text-faint:   #515154;   /* Apple tertiary text  */
-  --text-accent:  #5e5ce6;   /* Apple SF Indigo     */
-  --text-error:   #ff453a;   /* SF Red              */
-  --text-success: #30d158;   /* SF Green            */
-  --text:         var(--text-normal);
-  --muted:        var(--text-muted);
-  --faint:        var(--text-faint);
-
-  /* ── Accents (Apple SF Indigo / SF Purple) ── */
-  --interactive-accent:       #5e5ce6;
-  --interactive-accent-hover: #7b79fa;
-  --accent:       var(--interactive-accent);
-  --accent-light: #9896f2;
-
-  /* ── Interactive states ── */
-  --interactive-normal:    var(--surface-overlay);
-  --interactive-hover:     rgba(255, 255, 255, 0.08);
-  --interactive-active:    rgba(94, 92, 230, 0.16);
-
-  /* ── Backgrounds (Obsidian naming compat) ── */
-  --background-primary:           var(--surface-raised);
-  --background-secondary:         var(--surface-base);
-  --background-primary-alt:       var(--surface-overlay);
-  --background-secondary-alt:     rgba(20, 20, 24, 0.8);
-  --background-modifier-form-field: rgba(255, 255, 255, 0.04);
-  --background-modifier-hover:    rgba(255, 255, 255, 0.06);
-  --background-modifier-active:   rgba(94, 92, 230, 0.14);
-  --background-modifier-error:    rgba(255, 69, 58, 0.12);
-  --background-modifier-success:  rgba(48, 209, 88, 0.12);
-
-  /* ── Command palette ── */
-  --prompt-background:  rgba(28, 28, 32, 0.85);
-  --prompt-border:      rgba(255, 255, 255, 0.12);
-  --prompt-shadow:      0 24px 72px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.06);
-
-  /* ── Ribbon ── */
-  --ribbon-background:        var(--surface-base);
-  --ribbon-background-hovered:rgba(255, 255, 255, 0.06);
-  --ribbon-width:             48px;
-
-  /* ── Status bar ── */
-  --status-bar-background:    var(--surface-base);
-  --status-bar-border:        var(--border-subtle);
-
-  /* ── Tab bar ── */
-  --tab-background-active:    var(--surface-raised);
-  --tab-background-inactive:  var(--surface-base);
-  --tab-height:               36px;
-
-  /* ── Timing & Easing (Apple Spring Physics) ── */
-  --duration-instant:  0ms;
-  --duration-hover:    120ms;
-  --duration-spring:   320ms;
-  --duration-medium:   200ms;
-  --duration-slow:     350ms;
-  
-  --ease-spring:       cubic-bezier(0.25, 1, 0.5, 1);    /* Apple smooth spring */
-  --ease-out:          cubic-bezier(0.16, 1, 0.3, 1);    /* easeOutQuart */
-  --ease-inout:        cubic-bezier(0.76, 0, 0.24, 1);
-
-  /* ── Typography ── */
-  --font-text: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "SF Pro", "Inter", sans-serif;
-  --font-mono: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  --text-normal: var(--ivory);
+  --text-muted: var(--ivory-muted);
+  --text-faint: #918a7f;
+  --text-accent: var(--gold-bright);
+  --text-error: var(--danger);
+  --text-success: var(--success);
+  --text: var(--text-normal);
+  --muted: var(--text-muted);
+  --faint: var(--text-faint);
+  --interactive-accent: var(--gold);
+  --interactive-accent-hover: var(--gold-bright);
+  --accent: var(--interactive-accent);
+  --accent-light: var(--gold-bright);
+  --interactive-normal: var(--surface-overlay);
+  --interactive-hover: rgba(242, 234, 217, .05);
+  --interactive-active: var(--accent-soft);
+  --background-primary: var(--surface-raised);
+  --background-secondary: var(--surface-base);
+  --background-primary-alt: var(--surface-overlay);
+  --background-secondary-alt: var(--ink-soft);
+  --background-modifier-form-field: var(--surface-overlay);
+  --background-modifier-hover: var(--interactive-hover);
+  --background-modifier-active: var(--accent-soft);
+  --background-modifier-error: var(--danger-soft);
+  --background-modifier-success: var(--success-soft);
+  --prompt-background: var(--surface-float);
+  --prompt-border: var(--line);
+  --prompt-shadow: 0 24px 72px rgba(0, 0, 0, .45);
+  --ribbon-background: var(--surface-base);
+  --ribbon-background-hovered: var(--interactive-hover);
+  --ribbon-width: 48px;
+  --status-bar-background: var(--surface-base);
+  --status-bar-border: var(--border-subtle);
+  --tab-background-active: var(--surface-raised);
+  --tab-background-inactive: var(--surface-base);
+  --tab-height: 36px;
+  --duration-instant: 0ms;
+  --duration-hover: 120ms;
+  --duration-spring: 180ms;
+  --duration-medium: 200ms;
+  --duration-slow: 250ms;
+  --ease-spring: cubic-bezier(.25, 1, .5, 1);
+  --ease-out: cubic-bezier(.16, 1, .3, 1);
+  --ease-inout: ease-in-out;
+  --font-text: "Inter", Arial, sans-serif;
+  --font-display: "Outfit", "Inter", Arial, sans-serif;
+  --font-mono: "SF Mono", Menlo, Consolas, monospace;
   --font-ui-smaller: 11px;
-  --font-ui-small:   13px;
-  --font-ui-medium:  14px;
-
-  /* ── Apple Squircle Radii ── */
-  --radius-s:  6px;
-  --radius-m:  12px;
-  --radius-l:  18px;
-  --radius-xl: 24px;
+  --font-ui-small: 13px;
+  --font-ui-medium: 14px;
+  --radius-s: 4px;
+  --radius-m: 4px;
+  --radius-l: 6px;
+  --radius-xl: 8px;
 }
 
 /* ── Reset ────────────────────────────────────────────────────────────────── */
@@ -119,12 +97,12 @@
 html, body, #root {
   height: 100%;
   overflow: hidden;
-  background-color: #060609;
+  background-color: var(--ink);
   position: relative;
 }
 
 body {
-  background: radial-gradient(circle at 50% 50%, rgba(94, 92, 230, 0.05) 0%, #060609 100%);
+  background: radial-gradient(circle at 88% 8%, rgba(21, 36, 58, .28), transparent 28rem), var(--ink);
   color: var(--text-normal);
   font-family: var(--font-text);
   font-size: 13.5px;
@@ -133,31 +111,10 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Ambient glow blobs for Apple Glass effect */
-#root::before {
-  content: '';
-  position: absolute;
-  top: -150px;
-  left: -150px;
-  width: 50vw;
-  height: 50vh;
-  background: radial-gradient(circle, rgba(94, 92, 230, 0.16) 0%, rgba(94, 92, 230, 0) 70%);
-  z-index: -1;
-  pointer-events: none;
-  filter: blur(120px);
-}
-#root::after {
-  content: '';
-  position: absolute;
-  bottom: -200px;
-  right: -200px;
-  width: 60vw;
-  height: 60vh;
-  background: radial-gradient(circle, rgba(191, 90, 242, 0.12) 0%, rgba(191, 90, 242, 0) 70%);
-  z-index: -1;
-  pointer-events: none;
-  filter: blur(150px);
-}
+h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -.025em; }
+button, input, select, textarea { font: inherit; }
+button, input[type="checkbox"], input[type="radio"] { accent-color: var(--gold); }
+::selection { background: var(--gold); color: var(--ink); }
 
 /* ── Scrollbars (Mac-style overlays) ───────────────────────────────────────── */
 
@@ -166,10 +123,10 @@ body {
 ::-webkit-scrollbar-thumb   { background: rgba(255, 255, 255, 0.16); border-radius: 4px; border: 2px solid transparent; background-clip: padding-box; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); border: 2px solid transparent; background-clip: padding-box; }
 
-/* ── Focus ring (Apple Classic Blue) ──────────────────────────────────────── */
+/* ── Keyboard focus ──────────────────────────────────────── */
 
 :focus-visible {
-  outline: 3px solid rgba(94, 92, 230, 0.35);
+  outline: 2px solid var(--gold-bright);
   outline-offset: 1px;
   border-radius: var(--radius-s);
 }
@@ -177,8 +134,8 @@ body {
 /* ── Wikilinks ────────────────────────────────────────────────────────────── */
 
 .wikilink {
-  color: #9896f2;
-  background: rgba(94, 92, 230, 0.12);
+  color: var(--gold-bright);
+  background: rgba(196, 154, 85, 0.12);
   padding: 1px 4px;
   border-radius: 4px;
   cursor: pointer;
@@ -187,7 +144,7 @@ body {
   transition: background var(--duration-hover) var(--ease-spring), color var(--duration-hover) var(--ease-spring);
 }
 .wikilink:hover {
-  background: rgba(94, 92, 230, 0.22);
+  background: rgba(196, 154, 85, 0.22);
   color: white;
 }
 
@@ -197,7 +154,7 @@ body {
   font-family: var(--font-mono);
   font-size: 12px;
   line-height: 1.7;
-  color: #e4e4e7;
+  color: var(--ivory);
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -205,14 +162,14 @@ body {
 /* ── Search Highlight ─────────────────────────────────────────────────────── */
 
 mark {
-  background: rgba(94, 92, 230, 0.32);
+  background: rgba(196, 154, 85, 0.32);
   color: white;
   border-radius: 3px;
   padding: 0 2px;
   font-weight: 500;
 }
 
-/* ── Apple Glassmorphism Utility ── */
+/* Compatibility class for existing local-vault panels. */
 
 .apple-glass {
   background: var(--surface-raised);
@@ -221,7 +178,7 @@ mark {
   border: 1px solid var(--glass-border);
 }
 
-/* ── Apple Card Utility ── */
+/* Local-vault cards. */
 
 .apple-card {
   background: var(--surface-overlay);
@@ -236,7 +193,7 @@ mark {
 }
 .apple-card:hover {
   border-color: rgba(255, 255, 255, 0.12);
-  background-color: rgba(54, 54, 66, 0.55);
+  background-color: var(--surface-float);
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 .apple-card:active {
@@ -281,7 +238,7 @@ mark {
   width: 3px;
   border-radius: 1.5px;
   background: var(--interactive-accent);
-  box-shadow: 0 0 8px rgba(94, 92, 230, 0.6);
+  box-shadow: 0 0 8px rgba(196, 154, 85, 0.6);
 }
 
 /* ── Wing Color Pills ─────────────────────────────────────────────────────── */
@@ -317,12 +274,12 @@ mark {
   justify-content: center;
   padding-top: 100px;
   z-index: 1000;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .prompt-modal {
-  width: 600px;
+  width: min(600px, calc(100vw - 32px));
   max-height: 460px;
   border-radius: var(--radius-l);
   background: var(--prompt-background);
@@ -380,7 +337,7 @@ mark {
 }
 .prompt-item-icon  { color: var(--text-muted); flex-shrink: 0; }
 .prompt-item-label { flex: 1; font-weight: 500; }
-.prompt-item-sub   { font-size: 11px; color: var(--text-muted); font-mono: var(--font-mono); }
+.prompt-item-sub   { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); }
 .prompt-section-header {
   font-size: 9.5px;
   font-weight: 700;
@@ -426,9 +383,9 @@ mark {
   color: var(--text-normal);
 }
 .ribbon-icon.active {
-  color: white;
+  color: var(--ink);
   background: var(--interactive-accent);
-  box-shadow: 0 2px 10px rgba(94, 92, 230, 0.4);
+  box-shadow: 0 2px 10px rgba(196, 154, 85, 0.4);
 }
 .ribbon-icon:active {
   transform: scale(0.92);
@@ -610,7 +567,7 @@ mark {
 .sidebar-item:hover { color: var(--text-normal); }
 .sidebar-item.active {
   color: var(--text-normal);
-  background: rgba(94, 92, 230, 0.12);
+  background: rgba(196, 154, 85, 0.12);
 }
 .sidebar-item.active::before {
   content: '';
@@ -645,7 +602,7 @@ mark {
 .obs-input:focus {
   border-color: var(--interactive-accent);
   background-color: rgba(255, 255, 255, 0.06);
-  box-shadow: 0 0 0 3px rgba(94, 92, 230, 0.25);
+  box-shadow: 0 0 0 3px rgba(196, 154, 85, 0.25);
 }
 .obs-input::placeholder { color: var(--text-muted); }
 
@@ -664,10 +621,10 @@ mark {
 
 .btn-accent {
   background: var(--interactive-accent);
-  color: white;
+  color: var(--ink);
   border-radius: var(--radius-m);
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(94, 92, 230, 0.35);
+  box-shadow: 0 2px 8px rgba(196, 154, 85, 0.35);
   transition: 
     background-color var(--duration-hover) var(--ease-spring),
     transform var(--duration-spring) var(--ease-spring),
@@ -675,7 +632,7 @@ mark {
 }
 .btn-accent:hover:not(:disabled) { 
   background-color: var(--interactive-accent-hover); 
-  box-shadow: 0 4px 12px rgba(94, 92, 230, 0.55);
+  box-shadow: 0 4px 12px rgba(196, 154, 85, 0.55);
 }
 .btn-accent:active:not(:disabled) { 
   transform: scale(0.97); 
@@ -686,9 +643,9 @@ mark {
   box-shadow: none;
 }
 
-/* ── Custom UI Additions for Apple Glass Feel ── */
+/* Local-vault content panels. */
 
-/* Glass panels for major UI view sections */
+/* Opaque surfaces avoid continuous background compositing. */
 .glass-pane {
   background: var(--surface-raised);
   backdrop-filter: blur(var(--glass-blur));
@@ -703,9 +660,21 @@ mark {
 
 /* ── Prefers-reduced-motion ──────────────────────────────────────────────── */
 
+.mn-brand-mark { flex-shrink: 0; }
+.studio-error { min-height: 320px; height: 100%; overflow: auto; padding: 32px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; background: var(--ink); text-align: center; color: var(--ivory); }
+.studio-error > svg { color: var(--gold-bright); flex-shrink: 0; }
+.studio-error h2 { font-size: 26px; font-weight: 500; }
+.studio-error p { max-width: 48ch; color: var(--ivory-muted); line-height: 1.7; }
+.studio-error small { max-width: 50ch; color: var(--ivory-muted); font-size: 12px; }
+.studio-error-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+.studio-error button { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: var(--radius-m); background: var(--surface-overlay); color: var(--gold-bright); min-height: 40px; padding: 8px 16px; cursor: pointer; }
+.studio-error button:hover { border-color: var(--gold-bright); }
+
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
   }
 }
