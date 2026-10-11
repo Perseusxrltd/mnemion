@@ -25,6 +25,16 @@ the bundled web app are [published](https://www.perseusxr.com/mnemion).
 The [validation report](validation/2026-10-11-memory-map.md) records the release
 gates, signed asset verification and automatic live website refresh.
 
+The next source increment integrates native engine/database packaging, app and
+agent RAM-policy recovery, and optional trusted-issuer OAuth with individual
+bindings and revocation. Linux x64 installed setup, real model save/search,
+shutdown and automatic workspace reopen passed. Full integrated native package
+checks remain required before publishing this increment. Windows ARM uses a
+native app with an explicitly disclosed x64 backend; see
+[packaging evidence](validation/2026-10-11-native-installer-bundling.md),
+[policy recovery](validation/2026-10-11-native-policy-recovery.md), and
+[OAuth validation](validation/2026-10-11-oauth-foundation.md).
+
 Version 4.0.9 adds OS-encrypted saved desktop connections, authenticated
 reconnection after app restart, durable disconnect, device-only forgetting and
 clear session choices. Its native encrypted-restart and product gates passed;
@@ -91,7 +101,7 @@ The existing saved-connection feature does not complete these requirements.
 | Model choice | E5/BGE CPU profiles, approved Ollama/OpenAI endpoints, per-space candidate indexes, progress/pause/retry, preview/evals and atomic activation/rollback | [Embedding models](service/embeddings.md) |
 | Librarian | Approved local/cloud models, optional schedules, call budgets, exact source revisions, organization proposals, review findings and guarded undo | [Librarian](service/librarian.md) |
 | Sources | Git, selected folders, Google Drive, Slack, rclone and custom adapters; immediate sync requests, timestamped results, checkpoints, leases, review proposals and pauses | [Connectors](service/connectors.md) |
-| Agent compatibility | HTTP/OpenAPI, Python/TypeScript SDKs, authenticated MCP, 84-operation discovery and CLI/MCP administration, bounded private results, safe retries, conversation capture | [Agents](service/agents.md), [administration](service/agent-control.md), [capture](service/capture.md) |
+| Agent compatibility | HTTP/OpenAPI, Python/TypeScript SDKs, authenticated MCP, 84 published operations (87 in current source), CLI/MCP administration, bounded private results, safe retries, conversation capture | [Agents](service/agents.md), [administration](service/agent-control.md), [capture](service/capture.md) |
 | Human organization | Studio memory review, source evidence, team access, wiki/graph, core context and operations | [Knowledge](service/knowledge.md) |
 | Obsidian | Markdown, stable paths, citations, wikilinks, managed refresh, conflict detection and preservation of personal annotations | [Studio](../studio/README.md) |
 | Reliability | Durable jobs, retries and leases, ingestion/resource limits, verified backup/recovery, v3 archive/import/cutover/rollback | [Recovery](service/recovery.md), [migration](service/migration.md) |

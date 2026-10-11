@@ -7,7 +7,10 @@ diagnostic is available from version 4.0.10.
 
 From **4.0.4**, agents can discover and use every existing HTTP operation through
 a reviewed catalog, a command-line client and four compact MCP tools. Version
-4.0.5 covers **84 operations**, including durable source-sync controls. Schemas load one at a time, so connecting an
+4.0.5 through published 4.0.10 cover **84 operations**, including durable source-sync controls.
+Current source adds three OAuth binding operations for **87 total**; see the
+[optional organization OAuth guide](oauth.md) for its configuration and limits.
+Schemas load one at a time, so connecting an
 assistant does not put the entire administration API into its context.
 
 Every call uses the application's own credential and the existing tenant,
