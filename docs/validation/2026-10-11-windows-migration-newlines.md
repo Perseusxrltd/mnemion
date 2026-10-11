@@ -36,6 +36,16 @@ package-file verification continue to authenticate their exact artifact bytes.
   Windows x64 failed at the mismatch described above. That run's Windows ARM
   and Mac Intel checks were still underway when the correction was prepared.
 
-The correction still requires a fresh installed Windows x64/ARM64 run and the
-complete release gates. A unit/integration result alone is not a published or
-accepted native Windows package.
+Run [38167935399](https://github.com/Perseusxrltd/mnemion/actions/runs/38167935399)
+at `0cc51e82abfb554a4e3ff4f194c47faed77c026c` then passed real installed setup on
+Windows x64 and ARM64: model preparation, authenticated semantic save/recall,
+clean database shutdown, automatic reopen, preserved data/credentials/RAM policy,
+and recovery from an occupied API port. Both Macs and both Linux architectures
+also completed their full native jobs.
+
+Both Windows jobs failed afterward when NSIS's temporary self-deletion helper
+still held their disposable installation folders. The correction adds a finite
+retry budget for transient cleanup locks; a persistent failure still fails the
+gate. Fresh complete release acceptance of that correction and the integrated
+administration changes remains required. Installed-workspace success alone is
+not a published installer or a completed updater gate.

@@ -1,6 +1,7 @@
 /** Install this build into a new disposable location and use the real local UI. */
 import { spawn, spawnSync } from 'node:child_process'
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import { rm } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
 import { createServer } from 'node:net'
 import { join } from 'node:path'
@@ -182,5 +183,8 @@ try {
     const uninstaller = readdirSync(installed).find(name => /^Uninstall .*\.exe$/.test(name))
     if (uninstaller) run(join(installed, uninstaller), ['/S'])
   }
-  if (succeeded) rmSync(temporary, { recursive: true, force: true })
+  // NSIS can return while its temporary self-deletion helper still holds the
+  // installation directory. Retry transient Windows locks with a finite budget;
+  // persistent locks still fail the gate rather than silently skipping cleanup.
+  if (succeeded) await rm(temporary, { recursive: true, force: true, maxRetries: 12, retryDelay: 250 })
 }
