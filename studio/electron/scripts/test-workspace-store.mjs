@@ -168,3 +168,88 @@ test('workspace addresses cannot smuggle credentials or send a token over remote
   assert.equal(workspaceEndpoint('http://127.0.0.1:7892/'), 'http://127.0.0.1:7892')
   assert.equal(workspaceEndpoint('https://memory.example.com/'), 'https://memory.example.com')
 })
+
+test('offline inspection returns a dated encrypted identity without a credential or a storage write', async t => {
+  const f = await fixture(t)
+  const identity = { ...f.identity, administrator: true }
+  const saved = await f.store.save('https://memory.example.com', credential, identity)
+  await f.store.select(null)
+  const before = await readFile(f.path, 'utf8')
+  const inspection = await new WorkspaceStore(f.directory, f.cipher).inspect(saved.id)
+  assert.deepEqual(inspection, { bookmark: saved, access: { identity, verifiedAt: saved.updatedAt }, accessStatus: 'recorded' })
+  assert.ok(!before.includes('administrator'))
+  assert.ok(!JSON.stringify(inspection).includes(credential))
+  assert.ok(!JSON.stringify(inspection).includes('sealed'))
+  assert.equal(await readFile(f.path, 'utf8'), before)
+  assert.equal((await f.store.status()).activeId, null)
+})
+
+test('older saved connections remain usable and cannot be mistaken for a recorded administrator', async t => {
+  const f = await fixture(t)
+  const saved = await f.store.save('https://memory.example.com', credential, f.identity)
+  const document = JSON.parse(await readFile(f.path, 'utf8'))
+  const payload = JSON.parse(f.cipher.decrypt(Buffer.from(document.connections[0].sealed, 'base64')))
+  delete payload.identity
+  delete payload.verifiedAt
+  document.connections[0].sealed = f.cipher.encrypt(JSON.stringify(payload)).toString('base64')
+  await writeFile(f.path, JSON.stringify(document))
+  const before = await readFile(f.path, 'utf8')
+  assert.deepEqual(await f.store.inspect(saved.id), { bookmark: saved, access: null, accessStatus: 'not-recorded' })
+  assert.equal((await f.store.credential(saved.id)).credential, credential)
+  assert.equal(await readFile(f.path, 'utf8'), before)
+})
+
+test('locked secure storage retains offline context without decrypting or assigning a role', async t => {
+  const f = await fixture(t)
+  const saved = await f.store.save('https://memory.example.com', credential, f.identity)
+  f.cipher.unlocked = false
+  f.cipher.decrypt = () => { throw new Error('Must not decrypt while locked') }
+  assert.deepEqual(await f.store.inspect(saved.id), { bookmark: saved, access: null, accessStatus: 'locked' })
+})
+
+test('tampered metadata cannot change the date, identity, or destination of a verified access observation', async t => {
+  const f = await fixture(t)
+  const saved = await f.store.save('https://memory.example.com', credential, { ...f.identity, administrator: true })
+  const original = JSON.parse(await readFile(f.path, 'utf8'))
+  for (const mutation of [
+    row => { row.updatedAt = '2099-01-01T00:00:00.000Z' },
+    row => { row.principalName = 'A different administrator' },
+    row => { row.label = 'Another organization' },
+    row => { row.endpoint = 'https://another.example.com' },
+    row => { row.tenantId = randomUUID() },
+    row => { row.principalId = randomUUID() },
+  ]) {
+    const document = structuredClone(original)
+    mutation(document.connections[0])
+    await writeFile(f.path, JSON.stringify(document))
+    const before = await readFile(f.path, 'utf8')
+    const result = await f.store.inspect(saved.id)
+    assert.equal(result.access, null)
+    assert.equal(result.accessStatus, 'unavailable')
+    assert.ok(!JSON.stringify(result).includes(credential))
+    assert.equal(await readFile(f.path, 'utf8'), before)
+  }
+})
+
+test('malformed or secret-bearing access observations never reach the recovery view', async t => {
+  const f = await fixture(t)
+  const saved = await f.store.save('https://memory.example.com', credential, f.identity)
+  const original = JSON.parse(await readFile(f.path, 'utf8'))
+  const originalPayload = JSON.parse(f.cipher.decrypt(Buffer.from(original.connections[0].sealed, 'base64')))
+  for (const mutation of [
+    value => { value.identity.administrator = 'true' },
+    value => { delete value.verifiedAt },
+    value => { value.identity.tenant_id = randomUUID() },
+    value => { value.identity.name = credential },
+  ]) {
+    const document = structuredClone(original)
+    const payload = structuredClone(originalPayload)
+    mutation(payload)
+    document.connections[0].sealed = f.cipher.encrypt(JSON.stringify(payload)).toString('base64')
+    await writeFile(f.path, JSON.stringify(document))
+    const result = await f.store.inspect(saved.id)
+    assert.equal(result.access, null)
+    assert.equal(result.accessStatus, 'unavailable')
+    assert.ok(!JSON.stringify(result).includes(credential))
+  }
+})

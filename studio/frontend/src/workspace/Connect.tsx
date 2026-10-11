@@ -8,6 +8,7 @@ import { nativeFetch } from "./native";
 import type { Connection, WorkspaceSession, WorkspaceStatus } from "./connection-types";
 import type { LocalStatus } from '../../../shared/local-workspace';
 import LocalSetup from './LocalSetup';
+import WorkspaceRecovery from './WorkspaceRecovery';
 
 function errorMessage(error: unknown): string {
   const message = error instanceof Error ? error.message : "The connection could not be completed.";
@@ -43,6 +44,7 @@ export default function Connect({ onConnect, initialError }: { onConnect: (conne
   const [busy, setBusy] = useState(desktop ? "Checking saved workspaces…" : "");
   const [error, setError] = useState<unknown>(initialError);
   const [forgetting, setForgetting] = useState<string>();
+  const [inspecting, setInspecting] = useState<string>();
   const [storageIssue, setStorageIssue] = useState(false);
   const [resetConfirm, setResetConfirm] = useState(false);
   const [selection, setSelection] = useState<'join' | 'local' | null>(desktop?.localStatus ? null : 'join');
@@ -174,8 +176,13 @@ export default function Connect({ onConnect, initialError }: { onConnect: (conne
                   <div><strong>{bookmark.label}</strong><span>{bookmark.principalName}</span><small>{bookmark.endpoint}</small></div>
                   <div className="ws-saved-actions">
                     <button className="ws-button ws-primary" disabled={!!busy || !status.secureStorage} onClick={() => void run("Checking your saved connection…", async () => complete(await desktop!.workspaceRestore!(bookmark.id)))} aria-label={`Open ${bookmark.label} as ${bookmark.principalName}`}><ArrowRight size={15} />Open</button>
+                    <button type="button" className="ws-button ws-quiet" aria-expanded={inspecting === bookmark.id} aria-controls={`recovery-${bookmark.id}`} onClick={() => setInspecting(inspecting === bookmark.id ? undefined : bookmark.id)}>Details & recovery</button>
                     <button className="ws-button ws-quiet" disabled={!!busy} onClick={() => setForgetting(bookmark.id)} aria-label={`Forget ${bookmark.label} on this device`}>Forget</button>
                   </div>
+                  {inspecting === bookmark.id && <div className="ws-recovery-container" id={`recovery-${bookmark.id}`}><WorkspaceRecovery bookmark={bookmark} busy={!!busy} onReconnect={() => void run("Checking your saved connection…", async () => complete(await desktop!.workspaceRestore!(bookmark.id)))} onNewConnection={() => {
+                    setEndpoint(bookmark.endpoint); setKey(''); setSelection('join'); setError(undefined);
+                    requestAnimationFrame(() => { addressInput.current?.scrollIntoView({ block: 'center' }); addressInput.current?.focus({ preventScroll: true }); });
+                  }} /></div>}
                   {forgetting === bookmark.id && (
                     <div className="ws-forget-confirm" role="group" aria-label="Confirm forgetting this connection">
                       <p>Remove this saved connection from this device? You’ll need a current key to connect again. Your workspace and memories stay available.</p>

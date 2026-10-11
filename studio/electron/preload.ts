@@ -23,6 +23,7 @@ contextBridge.exposeInMainWorld('mnemion', {
   studioToken:  () => ipcRenderer.invoke('backend:token'),
   serviceRequest: (request: unknown) => transfer('service:request', request),
   workspaceStatus: () => transfer('workspaces:status'),
+  workspaceInspect: (id: string) => transfer('workspaces:inspect', id),
   workspaceResume: () => transfer('workspaces:resume'),
   workspaceConnect: (input: unknown) => transfer('workspaces:connect', input),
   workspaceRestore: (id: string) => transfer('workspaces:restore', id),

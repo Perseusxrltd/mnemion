@@ -63,8 +63,14 @@ export async function verifyWorkspaceStorage(): Promise<Record<string, unknown>>
     if ((await reopened.credential(bookmark.id)).credential !== credential) throw new Error('OS-protected workspace key did not round-trip')
     await reopened.select(null)
     if ((await new WorkspaceStore(directory, workspaceCipher()).status()).activeId !== null) throw new Error('Disconnect selection did not persist')
+    const inspection = await reopened.inspect(bookmark.id)
+    if (inspection.accessStatus !== 'recorded' || inspection.access?.identity.principal_id !== identity.principal_id ||
+        inspection.access.identity.administrator !== false || inspection.access.verifiedAt !== bookmark.updatedAt ||
+        JSON.stringify(inspection).includes(credential) || (await reopened.status()).activeId !== null) {
+      throw new Error('Offline workspace inspection did not preserve the protected identity and paused connection')
+    }
     await reopened.remove(bookmark.id)
-    return { backend, available: true, encryptedRoundTrip: true, disconnectPersisted: true, forgotten: (await reopened.list()).length === 0 }
+    return { backend, available: true, encryptedRoundTrip: true, disconnectPersisted: true, offlineInspection: true, forgotten: (await reopened.list()).length === 0 }
   } finally { await rm(directory, { recursive: true, force: true }) }
 }
 
@@ -232,6 +238,11 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
   }
 
   ipcMain.handle('workspaces:status', event => { trusted(event); return workspaceConnections().status() })
+  ipcMain.handle('workspaces:inspect', (event, id: unknown) => {
+    trusted(event)
+    if (typeof id !== 'string' || id.length > 64) throw new Error('Choose a saved workspace.')
+    return workspaceConnections().inspect(id)
+  })
   ipcMain.handle('workspaces:resume', event => { trusted(event); return workspaceConnections().resume() })
   ipcMain.handle('workspaces:connect', (event, input: unknown) => {
     trusted(event)

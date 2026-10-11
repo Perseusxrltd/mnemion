@@ -108,7 +108,11 @@ grant. Real API and browser checks retain a second administrator after disabling
 the original identity, without implicit content access. Named retirement in the
 app and final-current-admin protection across concurrent API/OAuth changes are
 also validated; these cannot verify possession of another key or future renewal.
-Protected desktop
-connections, local host controls, diagnostics and verified database recovery are
-also foundations. Sign-in/invitations, cached recovery records, host registration,
-operator delegation and guided restoration remain required implementation.
+Protected desktop connections now include a dated, encrypted identity/role
+observation and an offline **Details & recovery** view. Inspection makes no
+network request and never turns cached access into authorization; older or
+locked records have explicit states. Local host controls, diagnostics and
+verified database recovery are also foundations. Sign-in/invitations, pending
+unverified connection profiles, registered hosts and backup locations, an
+independent recovery entry point, operator delegation, guided restoration and
+complete agent parity remain required implementation.

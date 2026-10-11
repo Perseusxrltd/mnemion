@@ -158,3 +158,39 @@ test('a service cannot put its echoed key into plaintext identity metadata', asy
   await assert.rejects(f.store.save(endpoint, credential, identity), /credential or identity/)
   await assert.rejects(lstat(f.path), { code: 'ENOENT' })
 })
+
+test('offline recovery inspection never contacts the server, resumes a session, or grants cached admin access', async t => {
+  const f = await workspaceFixture(t)
+  const original = new WorkspaceConnections(f.store, async () => ({ ...f.identity, administrator: true }))
+  const session = await original.connect(endpoint, credential, true)
+  await original.disconnect()
+  let checks = 0
+  const offline = new WorkspaceConnections(new WorkspaceStore(f.directory, f.cipher), async () => {
+    checks++
+    throw new Error('The old host is offline')
+  })
+  const result = await offline.inspect(session.bookmarkId)
+  assert.equal(result.access.identity.administrator, true)
+  assert.equal(checks, 0)
+  assert.equal((await offline.status()).activeId, null)
+  assert.equal((await offline.status()).active, null)
+  assert.throws(() => offline.authorization(api, header(session)), /Reconnect/)
+  await assert.rejects(offline.restore(session.bookmarkId), /offline/)
+  assert.equal(checks, 1)
+  assert.equal((await offline.status()).active, null)
+  assert.equal((await offline.inspect(session.bookmarkId)).access.identity.administrator, true)
+  assert.equal(checks, 1)
+})
+
+test('inspection cannot revive a forgotten connection or interrupt another active workspace', async t => {
+  const f = await workspaceFixture(t)
+  const broker = new WorkspaceConnections(f.store, async () => f.identity)
+  const first = await broker.connect(endpoint, credential, true)
+  const next = await broker.connect('https://another.example.com', credential + '_new', true)
+  await broker.inspect(first.bookmarkId)
+  assert.equal((await broker.status()).active.sessionToken, next.sessionToken)
+  assert.equal((await broker.status()).activeId, next.bookmarkId)
+  await broker.forget(first.bookmarkId)
+  await assert.rejects(broker.inspect(first.bookmarkId), /no longer available/)
+  assert.equal((await broker.status()).active.sessionToken, next.sessionToken)
+})

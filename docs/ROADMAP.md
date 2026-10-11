@@ -123,6 +123,14 @@ are now validated in source. The Windows dogfood setup has
 its saved remote host remains offline, so no live shared-workspace load has run.
 This does not yet provide offline host control or failover.
 
+The candidate also adds an [offline saved-workspace view](validation/2026-10-11-offline-workspace-details.md)
+with the last verified identity/organization role, verification date and bundled
+recovery guides. The role is encrypted and destination-bound, and viewing it
+does not contact a server or authorize a session. Existing 4.0.10 connections
+remain compatible. Registered host and backup records, unverified prepared
+connections, independent recovery hosting, delegated operator controls and
+complete agent parity are still required.
+
 ## Implemented for the first shared-platform release
 
 | Area | Available behavior | Documentation |

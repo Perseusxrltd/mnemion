@@ -457,7 +457,7 @@ async function createWindow() {
         renderer = await mainWindow.webContents.executeJavaScript(`({
           workspace: document.body.innerText.includes('Welcome to Mnemion') || document.querySelector('.ws-workspace-name')?.textContent === 'Native validation',
           serviceBridge: typeof window.mnemion?.serviceRequest === 'function',
-          workspaceBridge: ['workspaceStatus', 'workspaceConnect', 'workspaceResume', 'workspaceRestore', 'workspaceDisconnect', 'workspaceForget', 'workspaceReset'].every(name => typeof window.mnemion?.[name] === 'function'),
+          workspaceBridge: ['workspaceStatus', 'workspaceInspect', 'workspaceConnect', 'workspaceResume', 'workspaceRestore', 'workspaceDisconnect', 'workspaceForget', 'workspaceReset'].every(name => typeof window.mnemion?.[name] === 'function'),
           vaultBridge: typeof window.mnemion?.refreshVault === 'function',
           updateGuard: (() => {
             const clean = window.mnemion?.updateSafety?.();

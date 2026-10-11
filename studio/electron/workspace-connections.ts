@@ -40,6 +40,11 @@ export class WorkspaceConnections {
     return { secureStorage: this.store.available(), ...await this.store.status(), active: this.publicSession() }
   }
 
+  async inspect(id: string) {
+    await this.queue
+    return this.store.inspect(id)
+  }
+
   private async activate(endpoint: string, credential: string, remember: boolean, generation: number, expected?: WorkspaceBookmark): Promise<WorkspaceSession> {
     endpoint = workspaceEndpoint(endpoint)
     if (typeof credential !== 'string' || !/^[A-Za-z0-9_.~+/=-]{16,1024}$/.test(credential)) throw new Error('Enter a valid workspace key.')

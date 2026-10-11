@@ -11,6 +11,11 @@ export type WorkspaceBookmark = {
   tenantId: string;
   updatedAt: string;
 };
+export type WorkspaceInspection = {
+  bookmark: WorkspaceBookmark;
+  access: { identity: Pick<WorkspaceIdentity, 'tenant_id' | 'principal_id' | 'tenant_name' | 'name' | 'administrator'>; verifiedAt: string } | null;
+  accessStatus: 'recorded' | 'not-recorded' | 'locked' | 'unavailable';
+};
 export type WorkspaceSession = {
   endpoint: string;
   sessionToken: string;

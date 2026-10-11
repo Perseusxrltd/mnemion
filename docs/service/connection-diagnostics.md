@@ -18,6 +18,33 @@ Generating another memory key does not restart an offline computer or tunnel.
 Browser network/CORS failures can hide proxy headers; in that case use the
 diagnostic below from a machine allowed to reach the workspace.
 
+## Saved workspace details when the server is offline
+
+From 4.0.11, open **Details & recovery** beside a saved desktop connection.
+The view reads this device's saved workspace address, workspace and identity IDs,
+last successful connection, and last verified organization role. It opens without
+contacting the workspace. Recovery guides are bundled with the app.
+
+The role and verification date are protected with the saved credential and bound
+to its destination and identity. They are historical information: **Reconnect and
+verify access** checks the current server identity and key before opening a
+session. An expired or revoked credential cannot authorize work through its
+cached role, and inspecting a connection does not select or resume it.
+
+Older saved connections remain usable. Their role is shown as unknown until a
+successful reconnection records it. Locked or damaged secure storage has an
+explicit explanation, while the saved address and guides remain available.
+**Use another address or key** opens an empty key field and retains the original
+saved connection; confirm a replacement destination before entering a credential.
+
+A saved connection does not establish that the device contains a database
+replica, a complete backup, or authority to restart the host. A Git/cloud source
+mirror can recover its tracked documents; full recovery also needs the verified
+database backup and current access/deletion ledger described in the
+[recovery procedure](recovery.md). Registered host controls, an independent
+online recovery entry point and guided takeover remain in the
+[continuity contract](../implementation/workspace-continuity.md).
+
 ## Read-only diagnostic for people and agents
 
 This command is included from version 4.0.10.

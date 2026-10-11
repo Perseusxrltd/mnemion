@@ -1,5 +1,5 @@
 import type { AgentsResponse, ConnectorStatus, CoreMemory, DrawerDetail, DrawerSummary, KGGraph, ObsidianStatus, RecentDrawer, SearchHit, Status, StudioConfig, Taxonomy, TrustStats } from '../types'
-import type { WorkspaceSession, WorkspaceStatus } from '../workspace/connection-types'
+import type { WorkspaceInspection, WorkspaceSession, WorkspaceStatus } from '../workspace/connection-types'
 import type { LocalOptions, LocalStatus, MemoryWrite, PortChange } from '../../../shared/local-workspace'
 
 declare global {
@@ -11,6 +11,7 @@ declare global {
       studioToken?: () => Promise<string | null>
       serviceRequest?: (request: { url: string; method: string; headers: Record<string, string>; body?: string }) => Promise<{ status: number; headers: Record<string, string>; body: Uint8Array }>
       workspaceStatus?: () => Promise<WorkspaceStatus>
+      workspaceInspect?: (id: string) => Promise<WorkspaceInspection>
       workspaceResume?: () => Promise<WorkspaceSession | null>
       workspaceConnect?: (input: { endpoint: string; credential: string; remember: boolean }) => Promise<WorkspaceSession>
       workspaceRestore?: (id: string) => Promise<WorkspaceSession>

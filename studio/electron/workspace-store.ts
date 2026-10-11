@@ -22,6 +22,13 @@ export interface WorkspaceBookmark {
   updatedAt: string
 }
 
+/** Historical information only; this never grants or restores a session. */
+export interface WorkspaceInspection {
+  bookmark: WorkspaceBookmark
+  access: { identity: WorkspaceIdentity; verifiedAt: string } | null
+  accessStatus: 'recorded' | 'not-recorded' | 'locked' | 'unavailable'
+}
+
 export interface CredentialCipher {
   available(): boolean
   encrypt(value: string): Buffer | Promise<Buffer>
@@ -186,25 +193,57 @@ export class WorkspaceStore {
       // plaintext metadata cannot redirect the saved secret to another host.
       const sealed = (await this.cipher.encrypt(JSON.stringify({
         format: 1, endpoint, principalId: bookmark.principalId, tenantId: bookmark.tenantId, credential,
+        // Older clients ignore additional encrypted fields. Keep the outer
+        // bookmark format unchanged so rollback can still open the connection.
+        identity, verifiedAt: bookmark.updatedAt,
       }))).toString('base64')
       await this.write({ activeId: bookmark.id, connections: [...entries.filter(item => item.id !== bookmark.id), { ...bookmark, sealed }] })
       return bookmark
     })
   }
 
-  /** Only the main-process connection manager may receive the decrypted secret. */
-  async credential(id: string): Promise<{ bookmark: WorkspaceBookmark; credential: string }> {
+  private async unseal(item: StoredWorkspace) {
     if (!this.available()) throw new Error('Unlock the operating system password store to reconnect.')
-    const item = (await this.read()).connections.find(item => item.id === id)
-    if (!item) throw new Error('That saved workspace is no longer available.')
     const payload = await this.cipher.decrypt(Buffer.from(item.sealed, 'base64'))
     if (Buffer.byteLength(payload) > 16384) throw new Error('Invalid saved credential.')
     const decoded = JSON.parse(payload)
     if (!decoded || typeof decoded !== 'object' || decoded.format !== 1 ||
         decoded.endpoint !== item.endpoint || decoded.principalId !== item.principalId || decoded.tenantId !== item.tenantId ||
         typeof decoded.credential !== 'string' || !TOKEN.test(decoded.credential)) throw new Error('The saved credential does not match this workspace. Reconnect with your key.')
+    return decoded
+  }
+
+  /** Only the main-process connection manager may receive the decrypted secret. */
+  async credential(id: string): Promise<{ bookmark: WorkspaceBookmark; credential: string }> {
+    const item = (await this.read()).connections.find(item => item.id === id)
+    if (!item) throw new Error('That saved workspace is no longer available.')
+    const decoded = await this.unseal(item)
     const { sealed: _sealed, ...bookmark } = item
     return { bookmark, credential: decoded.credential }
+  }
+
+  /** Read recovery context locally, without contacting or selecting a server. */
+  async inspect(id: string): Promise<WorkspaceInspection> {
+    const item = (await this.read()).connections.find(item => item.id === id)
+    if (!item) throw new Error('That saved workspace is no longer available.')
+    const { sealed: _sealed, ...bookmark } = item
+    if (!this.available()) return { bookmark, access: null, accessStatus: 'locked' }
+    try {
+      const decoded = await this.unseal(item)
+      if (decoded.identity === undefined && decoded.verifiedAt === undefined) {
+        return { bookmark, access: null, accessStatus: 'not-recorded' }
+      }
+      const identity = workspaceIdentity(decoded.identity)
+      if (identity.principal_id !== item.principalId || identity.tenant_id !== item.tenantId ||
+          identity.name !== item.principalName || identity.tenant_name !== item.label ||
+          decoded.verifiedAt !== item.updatedAt || JSON.stringify(identity).includes(decoded.credential)) {
+        throw new Error('The stored access observation does not match this workspace.')
+      }
+      // Do not spread the decrypted payload into a renderer-facing result.
+      return { bookmark, access: { identity, verifiedAt: decoded.verifiedAt }, accessStatus: 'recorded' }
+    } catch {
+      return { bookmark, access: null, accessStatus: 'unavailable' }
+    }
   }
 
   remove(id: string): Promise<void> {
