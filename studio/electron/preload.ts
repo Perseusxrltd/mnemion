@@ -21,6 +21,13 @@ contextBridge.exposeInMainWorld('mnemion', {
   backendPort:  () => ipcRenderer.invoke('backend:port'),
   studioToken:  () => ipcRenderer.invoke('backend:token'),
   serviceRequest: (request: unknown) => transfer('service:request', request),
+  workspaceStatus: () => transfer('workspaces:status'),
+  workspaceResume: () => transfer('workspaces:resume'),
+  workspaceConnect: (input: unknown) => transfer('workspaces:connect', input),
+  workspaceRestore: (id: string) => transfer('workspaces:restore', id),
+  workspaceForget: (id: string) => transfer('workspaces:forget', id),
+  workspaceDisconnect: () => transfer('workspaces:disconnect'),
+  workspaceReset: () => transfer('workspaces:reset'),
   chooseVault: () => transfer('vault:choose'),
   refreshVault: (selection: string, bytes: Uint8Array) => transfer('vault:refresh', selection, bytes),
   updateSafety: () => {

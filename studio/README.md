@@ -12,7 +12,7 @@ refresh executable. It connects to a local or remote service; it does not bundle
 PostgreSQL or silently start a model on every employee's laptop.
 Remote-agent fixes in 4.0.2 and lower model RAM in 4.0.3 require upgrading the memory server;
 the desktop updater cannot replace a separately deployed service. See the
-[patch notes](../docs/releases/4.0.8.md). Version 4.0.5 adds **Sync now**, pending
+[patch notes](../docs/releases/4.0.9.md). Version 4.0.5 adds **Sync now**, pending
 requests and scan results to Sources. Upgrade the server and runner for these
 controls. It retains 4.0.4's agent administration and Linux AppImage login-path
 repair, including preservation of OS startup disable flags and custom commands.
@@ -25,6 +25,12 @@ documentation. The API serves them automatically. Git installations can run
 Version 4.0.7 adds a [background service manager](../docs/service/supervision.md)
 for Linux/macOS hosts without systemd. It manages the API and worker; the desktop
 continues to connect to the service chosen by its user or organization.
+
+Version 4.0.9 adds [OS-protected workspace connections](../docs/service/workspaces.md):
+reopen a verified workspace after restart, disconnect durably, or forget a device
+bookmark. Locked/unavailable keyrings use a session-only connection and never
+save a plaintext key. Complete database/runtime setup from the app remains on the
+[onboarding plan](../docs/implementation/app-onboarding.md).
 
 Version 4.0.8 unifies the interface with Perseus XR, including locally bundled
 Inter/Outfit fonts, gold accents, grouped navigation, responsive charts and offline

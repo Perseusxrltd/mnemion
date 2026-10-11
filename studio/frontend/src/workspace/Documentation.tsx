@@ -19,6 +19,8 @@ const titles: Record<string, string> = {
   "docs/service/deployment.md": "Self-hosted deployment", "docs/service/organizations.md": "Organizations, spaces & security",
   "docs/service/supervision.md": "Background service without systemd",
   "docs/service/managed-updates.md": "Managed server updates",
+  "docs/service/workspaces.md": "Connect & remember workspaces",
+  "docs/implementation/app-onboarding.md": "Complete app setup requirements",
   "docs/STUDIO_DESIGN.md": "Studio design system",
   "docs/service/connectors.md": "Cloud, Git & messaging sources", "docs/service/agents.md": "Agents, apps & MCP",
   "docs/service/agent-control.md": "Agent administration & CLI",

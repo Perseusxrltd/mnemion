@@ -1,0 +1,26 @@
+import type { MnemionClient } from "@mnemion/client";
+
+export type WorkspaceIdentity = Awaited<ReturnType<MnemionClient["me"]>>;
+export type Connection = { client: MnemionClient; me: WorkspaceIdentity; endpoint: string };
+export type WorkspaceBookmark = {
+  id: string;
+  endpoint: string;
+  label: string;
+  principalName: string;
+  principalId: string;
+  tenantId: string;
+  updatedAt: string;
+};
+export type WorkspaceSession = {
+  endpoint: string;
+  sessionToken: string;
+  me: WorkspaceIdentity;
+  remembered: boolean;
+  bookmarkId?: string;
+};
+export type WorkspaceStatus = {
+  secureStorage: boolean;
+  activeId: string | null;
+  bookmarks: WorkspaceBookmark[];
+  active: WorkspaceSession | null;
+};

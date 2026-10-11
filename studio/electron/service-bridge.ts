@@ -1,12 +1,53 @@
-import { app, dialog, ipcMain, net, type BrowserWindow, type IpcMainInvokeEvent } from 'electron'
+import { app, dialog, ipcMain, net, safeStorage, type BrowserWindow, type IpcMainInvokeEvent } from 'electron'
 import { spawn, type ChildProcess } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { WorkspaceStore, workspaceIdentity } from './workspace-store.js'
+import { WorkspaceConnections, isWorkspaceSession } from './workspace-connections.js'
 
 const MAX_BYTES = 120 * 1024 * 1024
 const selections = new Map<string, string>()
 const children = new Set<ChildProcess>()
+
+function workspaceCipher() {
+  return {
+    available: () => {
+      try {
+        return safeStorage.isEncryptionAvailable() &&
+          (process.platform !== 'linux' || !['basic_text', 'unknown'].includes(safeStorage.getSelectedStorageBackend()))
+      } catch { return false }
+    },
+    encrypt: (value: string) => safeStorage.encryptString(value),
+    decrypt: (value: Buffer) => safeStorage.decryptString(value),
+  }
+}
+
+/** Called only by the native packaged-app gate, with a disposable profile. */
+export async function verifyWorkspaceStorage(): Promise<Record<string, unknown>> {
+  const cipher = workspaceCipher()
+  const backend = process.platform === 'linux' ? safeStorage.getSelectedStorageBackend() : process.platform
+  const directory = await mkdtemp(join(app.getPath('userData'), '.workspace-storage-probe-'))
+  try {
+    const store = new WorkspaceStore(directory, cipher)
+    const credential = randomUUID() + randomUUID()
+    const identity = { principal_id: randomUUID(), tenant_id: randomUUID(), name: 'Storage probe', tenant_name: 'Native validation', administrator: false }
+    if (!cipher.available()) {
+      let refused = false
+      try { await store.save('https://memory.example.invalid', credential, identity) } catch { refused = true }
+      if (!refused || (await store.list()).length) throw new Error('Unavailable secure storage must not save a workspace key')
+      return { backend, available: false, plaintextFallbackRefused: true }
+    }
+    const bookmark = await store.save('https://memory.example.invalid', credential, identity)
+    if ((await readFile(join(directory, 'connections.json'), 'utf8')).includes(credential)) throw new Error('Workspace key was stored without encryption')
+    const reopened = new WorkspaceStore(directory, workspaceCipher())
+    if ((await reopened.credential(bookmark.id)).credential !== credential) throw new Error('OS-protected workspace key did not round-trip')
+    await reopened.select(null)
+    if ((await new WorkspaceStore(directory, workspaceCipher()).status()).activeId !== null) throw new Error('Disconnect selection did not persist')
+    await reopened.remove(bookmark.id)
+    return { backend, available: true, encryptedRoundTrip: true, disconnectPersisted: true, forgotten: (await reopened.list()).length === 0 }
+  } finally { await rm(directory, { recursive: true, force: true }) }
+}
 
 export function localClientBusy(): boolean { return children.size > 0 }
 
@@ -23,8 +64,8 @@ export function allowedServiceUrl(value: unknown): URL {
   return url
 }
 
-async function boundedBody(response: Response): Promise<Uint8Array> {
-  if (Number(response.headers.get('content-length')) > MAX_BYTES) throw new Error('Service response is too large')
+async function boundedBody(response: Response, maximum = MAX_BYTES): Promise<Uint8Array> {
+  if (Number(response.headers.get('content-length')) > maximum) throw new Error('Service response is too large')
   if (!response.body) return new Uint8Array()
   const chunks: Uint8Array[] = []
   let size = 0
@@ -34,7 +75,7 @@ async function boundedBody(response: Response): Promise<Uint8Array> {
       const { value, done } = await reader.read()
       if (done) break
       size += value.byteLength
-      if (size > MAX_BYTES) throw new Error('Service response is too large')
+      if (size > maximum) throw new Error('Service response is too large')
       chunks.push(value)
     }
   } finally {
@@ -92,6 +133,24 @@ export async function verifyLocalClient(): Promise<Record<string, unknown>> {
 }
 
 export function installServiceBridge(getWindow: () => BrowserWindow | null) {
+  let connections: WorkspaceConnections | undefined
+  function workspaceConnections(): WorkspaceConnections {
+    connections ??= new WorkspaceConnections(new WorkspaceStore(join(app.getPath('userData'), 'workspaces'), workspaceCipher()), async (endpoint, credential) => {
+      let response: Response
+      try {
+        response = await net.fetch(endpoint + '/v1/me', {
+          headers: { Authorization: 'Bearer ' + credential, Accept: 'application/json' },
+          redirect: 'error', credentials: 'omit', signal: AbortSignal.timeout(15_000),
+        })
+      } catch { throw new Error('The workspace could not be reached. Check its address and your network connection.') }
+      if (response.status === 401 || response.status === 403) throw new Error('This key is expired, revoked or does not grant workspace access. Use a current key.')
+      if (!response.ok) throw new Error('The workspace is not ready. Try again or check its service status.')
+      const bytes = await boundedBody(response, 128 * 1024)
+      try { return workspaceIdentity(JSON.parse(Buffer.from(bytes).toString('utf8'))) }
+      catch { throw new Error('This address did not return a Mnemion workspace identity.') }
+    })
+    return connections
+  }
   function trusted(event: IpcMainInvokeEvent) {
     const window = getWindow()
     if (!window || event.sender !== window.webContents || event.senderFrame !== window.webContents.mainFrame) {
@@ -99,17 +158,49 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
     }
   }
 
+  ipcMain.handle('workspaces:status', event => { trusted(event); return workspaceConnections().status() })
+  ipcMain.handle('workspaces:resume', event => { trusted(event); return workspaceConnections().resume() })
+  ipcMain.handle('workspaces:connect', (event, input: unknown) => {
+    trusted(event)
+    if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Invalid workspace connection.')
+    const value = input as { endpoint: string; credential: string; remember: boolean }
+    if (typeof value.endpoint !== 'string' || typeof value.credential !== 'string' || typeof value.remember !== 'boolean' ||
+        Object.keys(value).some(key => !['endpoint', 'credential', 'remember'].includes(key))) throw new Error('Invalid workspace connection.')
+    return workspaceConnections().connect(value.endpoint, value.credential, value.remember)
+  })
+  ipcMain.handle('workspaces:restore', (event, id: unknown) => {
+    trusted(event)
+    if (typeof id !== 'string' || id.length > 64) throw new Error('Choose a saved workspace.')
+    return workspaceConnections().restore(id)
+  })
+  ipcMain.handle('workspaces:forget', (event, id: unknown) => {
+    trusted(event)
+    if (typeof id !== 'string' || id.length > 64) throw new Error('Choose a saved workspace.')
+    return workspaceConnections().forget(id)
+  })
+  ipcMain.handle('workspaces:disconnect', event => { trusted(event); return workspaceConnections().disconnect() })
+  ipcMain.handle('workspaces:reset', event => { trusted(event); return workspaceConnections().reset() })
+
   ipcMain.handle('service:request', async (event, input: unknown) => {
     trusted(event)
     if (!input || typeof input !== 'object') throw new Error('Invalid request')
     const request = input as { url: unknown; method: string; headers: Record<string, string>; body?: string }
-    const url = allowedServiceUrl(request.url)
+    if (typeof request.url !== 'string' || request.url.length > 4096) throw new Error('Invalid service URL')
+    let url = new URL(request.url)
     if (!['GET', 'POST', 'PUT', 'DELETE'].includes(request.method)) throw new Error('Unsupported method')
     if (request.body !== undefined && (typeof request.body !== 'string' || Buffer.byteLength(request.body) > 2 * 1024 * 1024)) throw new Error('Request is too large')
     const headers = new Headers()
+    if (!request.headers || typeof request.headers !== 'object' || Array.isArray(request.headers)) throw new Error('Invalid request headers')
     for (const [name, value] of Object.entries(request.headers || {})) {
       if (!['accept', 'authorization', 'content-type', 'idempotency-key'].includes(name.toLowerCase()) || typeof value !== 'string' || value.length > 1024) throw new Error('Unsupported request header')
+      if (headers.has(name)) throw new Error('Duplicate request header')
       headers.set(name, value)
+    }
+    const authorization = headers.get('authorization')
+    if (authorization && isWorkspaceSession(authorization)) {
+      headers.set('authorization', workspaceConnections().authorization(url, authorization))
+    } else {
+      url = allowedServiceUrl(request.url)
     }
     const response = await net.fetch(url.toString(), { method: request.method, headers, body: request.body, redirect: 'error', credentials: 'omit', signal: AbortSignal.timeout(60_000) })
     return { status: response.status, headers: Object.fromEntries(response.headers.entries()), body: await boundedBody(response) }
@@ -142,6 +233,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
   })
 
   app.on('before-quit', () => {
+    connections?.lock()
     for (const child of children) child.kill()
     selections.clear()
   })

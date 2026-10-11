@@ -65,7 +65,8 @@ import {
   type Space,
 } from "@mnemion/client";
 import "./workspace.css";
-import { nativeFetch } from "./native";
+import Connect from "./Connect";
+import type { Connection } from "./connection-types";
 import { version } from "../../package.json";
 import BrandMark from "../components/BrandMark";
 import ErrorBoundary from "../components/ErrorBoundary";
@@ -79,7 +80,6 @@ const EmbeddingModels = lazy(() => import("./EmbeddingModels"));
 const Librarian = lazy(() => import("./Librarian"));
 
 type Me = Awaited<ReturnType<MnemionClient["me"]>>;
-type Connection = { client: MnemionClient; me: Me; endpoint: string };
 type Session = Connection & {
   space: Space;
   reviewer: boolean;
@@ -221,159 +221,6 @@ function WarningList({ warnings }: { warnings: string[] }) {
   ) : null;
 }
 
-function Connect({
-  onConnect,
-}: {
-  onConnect: (connection: Connection) => void;
-}) {
-  const [endpoint, setEndpoint] = useState(
-    () =>
-      localStorage.getItem("mnemion_service_url") ||
-      (location.protocol === "file:"
-        ? "http://127.0.0.1:7892"
-        : location.origin),
-  );
-  const [key, setKey] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<unknown>();
-  async function connect(event: FormEvent) {
-    event.preventDefault();
-    setBusy(true);
-    setError(undefined);
-    try {
-      const url = new URL(endpoint);
-      if (
-        !["http:", "https:"].includes(url.protocol) ||
-        url.username ||
-        url.password ||
-        url.search ||
-        url.hash
-      )
-        throw new Error(
-          "Enter the service HTTP or HTTPS address without credentials or query parameters.",
-        );
-      if (
-        url.protocol !== "https:" &&
-        !["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)
-      )
-        throw new Error(
-          "Use HTTPS for a remote service so your API key is protected in transit.",
-        );
-      const address = url.href.replace(/\/$/, "");
-      const client = new MnemionClient({
-        baseUrl: address,
-        apiKey: key.trim(),
-        fetch: nativeFetch,
-      });
-      const me = await client.me();
-      localStorage.setItem("mnemion_service_url", address);
-      setKey("");
-      onConnect({ client, me, endpoint: address });
-    } catch (error) {
-      setError(error);
-    } finally {
-      setBusy(false);
-    }
-  }
-  return (
-    <div className="ws-connect">
-      <div className="ws-connect-story">
-        <Link to="/workspace" className="ws-brand">
-          <BrandMark />
-          mnemion<span>studio</span>
-        </Link>
-        <div>
-          <p className="ws-eyebrow">Memory that travels with your work</p>
-          <h1>
-            One shared memory.
-            <br />
-            <span>Every app, on the same page.</span>
-          </h1>
-          <p>
-            Keep decisions, context, and evidence connected across your team’s
-            assistants and systems.
-          </p>
-          <div className="ws-story-features">
-            <span>
-              <ShieldCheck size={18} /> Explicit access for every space
-            </span>
-            <span>
-              <BookOpen size={18} /> Sources and revision history
-            </span>
-            <span>
-              <Workflow size={18} /> Visualize your memory in Obsidian
-            </span>
-          </div>
-        </div>
-        <div className="ws-connect-footer">
-          <small>Free forever · Mnemion {version}</small>
-          <a href="https://www.perseusxr.com/mnemion" target="_blank" rel="noreferrer">By Perseus XR ↗</a>
-        </div>
-      </div>
-      <div className="ws-connect-panel">
-        <form className="ws-connect-form" onSubmit={connect}>
-          <p className="ws-eyebrow">Your workspace</p>
-          <h2>Connect to Mnemion</h2>
-          <p>
-            Use the service address and API key supplied by your workspace
-            administrator.
-          </p>
-          <Field label="Service address">
-            <input
-              type="url"
-              value={endpoint}
-              onChange={(event) => setEndpoint(event.target.value)}
-              required
-              placeholder="https://memory.example.com"
-              autoComplete="url"
-            />
-          </Field>
-          <Field label="API key">
-            <input
-              type="password"
-              value={key}
-              onChange={(event) => setKey(event.target.value)}
-              required
-              placeholder="mnm_…"
-              autoComplete="off"
-              spellCheck={false}
-            />
-          </Field>
-          <ErrorNotice error={error} />
-          <button
-            className="ws-button ws-primary"
-            disabled={busy || !key.trim()}
-          >
-            {busy ? (
-              <LoaderCircle size={17} className="ws-spin" />
-            ) : (
-              <ArrowRight size={17} />
-            )}
-            {busy ? "Connecting…" : "Open workspace"}
-          </button>
-          <small>
-            Your key stays in this window’s memory. Disconnecting or reloading
-            clears it.
-          </small>
-          <Link className="ws-link" to="/help">Setup guides, documentation & roadmap</Link>
-          <Link className="ws-link" to="/help?doc=docs%2Fservice%2Fprivacy.md">Privacy & data handling</Link>
-          {window.mnemion?.platform && (
-            <small>
-              Desktop installations enable background mode, login startup and
-              supported automatic updates by default. Change these settings in
-              the application’s <strong>Background and updates</strong> menu.
-            </small>
-          )}
-        </form>
-        {import.meta.env.DEV && (
-          <Link className="ws-link ws-legacy-link" to="/dashboard">
-            Open the legacy local vault
-          </Link>
-        )}
-      </div>
-    </div>
-  );
-}
 
 function Shell({
   connection,
@@ -2151,6 +1998,7 @@ function Team() {
 
 export default function Workspace() {
   const [connection, setConnection] = useState<Connection>();
+  const [disconnectError, setDisconnectError] = useState<unknown>();
   const queryClient = useMemo(
     () =>
       new QueryClient({
@@ -2164,15 +2012,18 @@ export default function Workspace() {
         <QueryClientProvider client={queryClient}>
           <Shell
             connection={connection}
-            disconnect={() => {
+            disconnect={async () => {
               void queryClient.cancelQueries();
               queryClient.clear();
+              setDisconnectError(undefined);
+              try { await window.mnemion?.workspaceDisconnect?.(); }
+              catch (error) { setDisconnectError(error); }
               setConnection(undefined);
             }}
           />
         </QueryClientProvider>
       ) : (
-        <Connect onConnect={setConnection} />
+        <Connect onConnect={setConnection} initialError={disconnectError} />
       )}
     </div>
   );

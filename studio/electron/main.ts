@@ -5,8 +5,9 @@ import { spawn, ChildProcess } from 'child_process'
 import { existsSync, mkdirSync, writeFileSync } from 'fs'
 import { randomBytes } from 'crypto'
 import { createServer } from 'net'
-import { installServiceBridge, localClientBusy, verifyLocalClient } from './service-bridge.js'
+import { installServiceBridge, localClientBusy, verifyLocalClient, verifyWorkspaceStorage } from './service-bridge.js'
 import { DesktopUpdates } from './updates.js'
+import { verifyNativeWorkspaceProbe } from './workspace-probe.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -447,8 +448,9 @@ async function createWindow() {
       const deadline = Date.now() + 15_000
       do {
         renderer = await mainWindow.webContents.executeJavaScript(`({
-          workspace: document.body.innerText.includes('Connect to Mnemion'),
+          workspace: document.body.innerText.includes('Welcome to Mnemion') || document.querySelector('.ws-workspace-name')?.textContent === 'Native validation',
           serviceBridge: typeof window.mnemion?.serviceRequest === 'function',
+          workspaceBridge: ['workspaceStatus', 'workspaceConnect', 'workspaceResume', 'workspaceRestore', 'workspaceDisconnect', 'workspaceForget', 'workspaceReset'].every(name => typeof window.mnemion?.[name] === 'function'),
           vaultBridge: typeof window.mnemion?.refreshVault === 'function',
           updateGuard: (() => {
             const clean = window.mnemion?.updateSafety?.();
@@ -460,9 +462,10 @@ async function createWindow() {
           nodeAvailable: typeof window.require !== 'undefined',
           route: location.hash
         })`)
-        if (renderer?.workspace && renderer?.serviceBridge && renderer?.vaultBridge) break
+        if (renderer?.workspace && renderer?.serviceBridge && renderer?.vaultBridge && (renderer.updateGuard as { clean?: boolean })?.clean) break
         await new Promise(resolve => setTimeout(resolve, 100))
       } while (Date.now() < deadline)
+      const workspaceProtocol = await verifyNativeWorkspaceProbe(mainWindow)
       // Help must load entirely from packaged assets before any service connects.
       await mainWindow.webContents.executeJavaScript("location.hash = '/help?doc=docs%2FROADMAP.md'")
       const helpDeadline = Date.now() + 10_000
@@ -475,7 +478,7 @@ async function createWindow() {
         if (documentation) break
         await new Promise(resolve => setTimeout(resolve, 100))
       } while (Date.now() < helpDeadline)
-      renderer = { ...renderer, documentation }
+      renderer = { ...renderer, documentation, secureStorage: await verifyWorkspaceStorage(), workspaceProtocol }
     }
     writeSmokeStatus('client-ready', { legacyEnabled, localClient, renderer })
   }

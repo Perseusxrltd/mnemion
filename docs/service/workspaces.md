@@ -1,0 +1,66 @@
+# Connect and remember a workspace
+
+Open Mnemion and enter the **Workspace address** and **Workspace key** supplied
+by your administrator. Mnemion checks the service and your identity before
+opening its memory spaces. A remote workspace needs HTTPS; local services can
+use a loopback address such as `http://127.0.0.1:7892`.
+
+The address is the service's base address. Leave `/v1`, `/mcp` and individual
+API routes off the end. An organization can provide a base path, for example
+`https://memory.example.com/team`; desktop requests stay within that API path.
+Do not put a key in an address or share a key in public messages.
+
+## Remember this device
+
+From desktop version 4.0.9, **Remember this workspace on this device** saves an
+encrypted connection using Windows protection, the macOS Keychain, or a
+supported Linux keyring. Mnemion rechecks your identity and reconnects after an
+app restart. No embedding or language model is installed just to join a team.
+The main process holds the real key; the interface receives a temporary handle
+that can only call the selected workspace API.
+
+Leave the option unchecked on a shared device or for a temporary connection.
+If the operating system's secure store is locked or unavailable, the app
+explains this and offers a session-only connection. There is no plaintext key
+fallback. Unlock the OS store before opening a previously saved workspace.
+
+The connection list shows each workspace, address and identity. Select **Open**
+to reconnect. **Disconnect** immediately clears the active connection and pauses
+automatic reconnection, including on the next launch. The encrypted bookmark
+remains available for an explicit **Open**. **Forget** removes that bookmark
+from this device after an in-app confirmation; it does not delete memories or
+revoke the server key. An administrator can revoke that key in **People & apps**.
+
+Browser Studio keeps the key in the current window's memory. Reloading or
+disconnecting clears it. Both clients may remember the service address locally.
+Desktop session-only connections last until disconnect or app exit; reloading
+the interface alone does not exit the desktop app.
+
+## If a connection fails
+
+- Check the address and that the service is running. A client update does not
+  install a missing server.
+- An expired or revoked key needs a current key from your administrator. A saved
+  key that now identifies a different person or workspace is not resumed.
+- A locked keyring needs to be unlocked in the operating system. Connect without
+  remembering the workspace if secure storage is unavailable.
+- During automatic reconnection, choose **Use another workspace** to stop it and
+  enter another address. A delayed response cannot undo that choice.
+- Saved connection data that is corrupt, linked elsewhere or unsafe to read is
+  rejected. Mnemion does not overwrite it with a new connection automatically.
+  Use **Reset saved connections**, then confirm **Forget all and reset** to
+  clear damaged device bookmarks and reconnect. This leaves server memories
+  intact and requires current keys. The reset can repair the app's own file
+  permissions; it refuses links or files owned by another OS account.
+
+## Creating a new installation
+
+This release improves joining and reopening existing workspaces. Complete local
+database/runtime installation, source-provider sign-in and host administration
+through the app are still being implemented. See the
+[app-setup acceptance requirements](../implementation/app-onboarding.md).
+The current operator installation is described in the
+[service guide](README.md) and [deployment guide](deployment.md).
+
+Device encryption protects the saved key, not exported memory. Obsidian exports
+remain ordinary Markdown. See [privacy and data handling](privacy.md).

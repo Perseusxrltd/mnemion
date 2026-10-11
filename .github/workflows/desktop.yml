@@ -18,6 +18,7 @@ on:
       - 'deploy/windows*'
       - 'deploy/verify-mac-signature.mjs'
       - 'deploy/notices.py'
+      - 'deploy/native-keyring-test.sh'
       - 'deploy/license-overrides/**'
       - 'deploy/release*'
   pull_request:
@@ -107,7 +108,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb libgtk-3-0 libnss3 libgbm1 libasound2 libnotify4 libfuse2
+          sudo apt-get install -y xvfb libgtk-3-0 libnss3 libgbm1 libasound2 libnotify4 libfuse2 libsecret-1-0 gnome-keyring dbus-x11
       - run: python -m pip install uv==0.12.24
       - run: uv sync --project studio/client --locked --python 3.13
       - run: uv run --project studio/client --no-sync python -m pytest client_tests -q
@@ -134,6 +135,9 @@ jobs:
       - name: Packaged Linux window, sandboxed bridge, and local client
         if: runner.os == 'Linux'
         run: xvfb-run -a npm --prefix studio/electron run smoke:packaged
+      - name: Linux encrypted workspace reconnect after process restart
+        if: runner.os == 'Linux'
+        run: dbus-run-session -- xvfb-run -a bash deploy/native-keyring-test.sh
       - name: Packaged Mac update, restart guards and relaunch
         if: runner.os == 'macOS'
         run: python -m deploy.macos_electron_update_probe --output "$RUNNER_TEMP/mnemion-electron-update"

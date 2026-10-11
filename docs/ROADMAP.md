@@ -1,6 +1,11 @@
 # Mnemion product roadmap
 
-Current distribution: **4.0.8**. Updated: **2026-10-11**.
+Current distribution: **4.0.9**. Updated: **2026-10-11**.
+
+Version 4.0.9 adds OS-encrypted saved desktop connections, authenticated
+reconnection after app restart, durable disconnect, device-only forgetting and
+clear session choices. The complete native/product gates are required before
+publication; the product page continues to select only published builds.
 
 Version 4.0.8 unifies Studio with the Perseus XR design system and adds signed,
 compatible automatic patches for adopted Linux/macOS Python services. Updates
@@ -15,7 +20,7 @@ downloads. Each architecture requires its complete verified installer/update set
 The rebuilt shared-memory platform is product v1; its package version is 4.x
 to upgrade correctly from the earlier 3.x product. This is a living delivery
 plan, not a claim that every planned capability is available. Release status and
-known limitations are recorded in [the current patch notes](releases/4.0.8.md),
+known limitations are recorded in [the current patch notes](releases/4.0.9.md),
 [the published baseline](releases/4.0.0.md) and
 [validation report](validation/2026-10-11-hotfixes.md).
 
@@ -60,6 +65,7 @@ Administrative authority remains distinct from ordinary memory access.
 | Observability | Six visual insight views, private evaluation sets and runs, comparisons, case inspection and exports | [Insights and evaluations](service/insights.md) |
 | Desktop lifecycle | Background operation, login startup, update preferences and safe idle restart; updater enabled by default in supported packages | [Updates](service/updates.md) |
 | Service lifecycle | Private Unix Supervisor lifecycle; opt-in host adoption with automatic signed compatible patches, isolated staging, verified backups and runtime rollback | [Background service](service/supervision.md), [managed updates](service/managed-updates.md) |
+| Workspace connections | OS-protected desktop bookmarks, rechecked identities, API-bound handles, durable disconnect and session-only fallback | [Workspace connections](service/workspaces.md) |
 | Studio design | Perseus XR colors and local fonts across workspace, insights, settings and offline help; grouped responsive navigation | [Design system](STUDIO_DESIGN.md) |
 | Documentation and web installation | Offline library generated from repository Markdown; Studio included in official Python archives, with one source-build command and verified asset/license inventory | [Setup](service/README.md#studio), [maintenance](MAINTENANCE.md) |
 
@@ -114,10 +120,11 @@ completion path. Models, sources, access, agents, Obsidian, updates and backups
 belong in the same guided flow, with real readiness checks and optional steps
 that can be revisited. Keep equivalent agent/operator operations available.
 
-This is **not complete in 4.0.8**: the desktop client joins an existing service;
+This is **not complete in 4.0.9**: the desktop client joins an existing service;
 database/runtime installation and several host-only settings still need operator
-setup. Secure resumable connections and native runtime provisioning are the next
-implementation steps. See the [full acceptance requirements](implementation/app-onboarding.md).
+setup. Secure resumable connections are implemented in 4.0.9 and require the
+native release gate. Native runtime provisioning and guided host operations
+remain the next implementation steps. See the [full acceptance requirements](implementation/app-onboarding.md).
 Do not count a setup guide, mock success or disabled button as an implemented flow.
 
 ## Next patches: reliability and operational confidence

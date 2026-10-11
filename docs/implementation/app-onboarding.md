@@ -49,18 +49,21 @@ key. Switching configuration preserves existing memories and prior working state
 
 ## Current gaps and implementation order
 
+The 4.0.9 implementation adds OS-protected saved desktop connections, verified
+reconnection, durable disconnect and device-only forgetting. Local real-service
+and UI checks pass; the full native encrypted-restart gate remains mandatory
+before its release. This foundation does not complete installation or host setup.
+
 1. The connection screen assumes an administrator has already installed a server.
    Build the complete first-run navigation and a native operator bridge with
    fixed, typed operations rather than arbitrary shell execution.
-2. Connections are held only in window memory. Add an OS-protected connection
-   store and authenticated reconnection; refuse an insecure plaintext fallback.
-3. PostgreSQL, Python and source runners need manual installation. Build and
+2. PostgreSQL, Python and source runners need manual installation. Build and
    validate signed native runtime packages, including the database's vector
    extension, and make staging resumable with bounded resources.
-4. Host-only settings currently require environment files or CLI commands.
+3. Host-only settings currently require environment files or CLI commands.
    Add authenticated operator workflows for model/provider approval, source
    runners, server lifecycle, update adoption, diagnostics and recovery.
-5. Remote sharing and hosted OAuth remain open roadmap work. Expose only tested
+4. Remote sharing and hosted OAuth remain open roadmap work. Expose only tested
    connection methods and finish their identity, consent and revocation flows.
 
 A guide-only link, disabled “create workspace” button or successful mock response

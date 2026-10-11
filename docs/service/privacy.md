@@ -1,6 +1,6 @@
 # Mnemion privacy policy
 
-Updated: **2026-10-10**. This describes the rebuilt shared-memory platform.
+Updated: **2026-10-11**. This describes the rebuilt shared-memory platform.
 
 ## Your organization's data
 
@@ -11,8 +11,10 @@ access each space and how backups are protected. A desktop installation does not
 create a hosted memory account with the project maintainer.
 
 Studio sends requests and memory content to the service address you select.
-The connection key stays in the window's memory and is cleared on reload or
-disconnect. The server records bounded operational counters and audit history for
+Browser keys stay in window memory and are cleared on reload or disconnect.
+Desktop keys stay in the main process; from 4.0.9 an optional remembered
+connection uses the operating system's secure store. The interface uses a
+temporary handle limited to the selected API. The server records bounded operational counters and audit history for
 authorized administrators; these are not sent to a publisher analytics service.
 Evaluation datasets can contain private memory and should receive the same
 protection as the source material. Avoid placing secrets in public support reports.
@@ -42,9 +44,16 @@ the selected provider/operator, not by Mnemion's local model behavior.
 ## Local storage and lifecycle
 
 Desktop preferences and update files are stored locally. Obsidian exports are
-ordinary plaintext Markdown and may contain sensitive evidence. Studio remembers
-the service address locally, but does not save the connection key. Protect those
-files, the device and any chosen sync destination appropriately. Space permissions
+ordinary plaintext Markdown and may contain sensitive evidence. Studio may remember
+the service address locally. From desktop 4.0.9, an opted-in saved connection also
+records its workspace/identity names and identifiers, address, last-use time and
+an OS-encrypted key. Windows protection, macOS Keychain and supported Linux
+keyrings supply encryption; unavailable stores never fall back to plaintext.
+Disconnect clears the live credential and pauses reconnection; Forget removes
+the saved device bookmark without revoking the server key or deleting memories.
+Session-only keys disappear on desktop app exit or disconnect. See
+[workspace connections](workspaces.md). Protect those files, the device and any
+chosen sync destination appropriately. Space permissions
 do not encrypt an already exported copy or remove it from someone else's backup.
 
 Background mode, login startup and automatic stable updates are enabled by default

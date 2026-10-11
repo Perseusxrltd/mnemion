@@ -1,0 +1,48 @@
+{
+  "version": "4.0.9",
+  "date": "2026-10-11",
+  "stage": "local candidate validation",
+  "desktop_policy_tests": 46,
+  "native_real_service_ui": {
+    "nativeDesktop": true,
+    "realPostgresService": true,
+    "authenticatedConnection": true,
+    "rendererUsesOpaqueHandle": true,
+    "credentialNotInBrowserStorage": true,
+    "createdMemory": true,
+    "disconnectClearedSession": true,
+    "noKeychainSessionOnly": true,
+    "reloadStayedDisconnected": true,
+    "width": {
+      "window": 360,
+      "content": 360
+    },
+    "errors": []
+  },
+  "browser_ui": {
+    "realBrowserService": true,
+    "connectAndDisconnect": true,
+    "remotePlaintextRefused": true,
+    "mobileWidth": 360,
+    "mockDesktopUiCases": [
+      "saved",
+      "locked",
+      "expired",
+      "delayed",
+      "corrupt",
+      "narrow"
+    ],
+    "errors": [],
+    "scope": "UI bridge fixtures use a real PostgreSQL-backed HTTP service; native crypto and main-process policy are tested separately."
+  },
+  "linux_native_process_restart": {
+    "passed": true,
+    "keyring_backend": "basic_text",
+    "plaintext_fallback_refused": true,
+    "authenticated_requests": 4,
+    "stale_and_wrong_path_handles_rejected": true,
+    "session_only_key_absent_after_restart": true
+  },
+  "native_encrypted_restart_matrix": "required before publication",
+  "complete_fresh_machine_onboarding": false
+}

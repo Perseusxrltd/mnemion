@@ -121,13 +121,15 @@ build in `studio/frontend/dist` is also detected when no packaged bundle exists.
 Open `http://127.0.0.1:7892/workspace`, enter the service address and a scoped API
 key, and use the workspace to save, revise, review, search, build context, inspect
 evidence, manage applications/access, follow ingestion activity, and export to
-Obsidian. Keys stay in window memory; reconnect after a reload. Downloadable
+Obsidian. Browser keys stay in window memory; reconnect after a reload. Downloadable
 original source attachments include hashes that Studio verifies before saving.
 
 The [desktop client](updates.md) connects to the same service. It adds
 a native vault picker and applies authorized Obsidian exports using a packaged
 local client. The desktop connection does not require browser CORS exceptions or
-a separate Chroma/model installation. The new desktop defaults to the shared
+a separate Chroma/model installation. From 4.0.9 it can [securely remember and
+reopen workspaces](workspaces.md), with a session-only option when OS-protected
+storage is unavailable. The new desktop defaults to the shared
 workspace; legacy Studio is a separate development compatibility mode.
 
 ## Use it from an application
@@ -145,7 +147,7 @@ with Client("http://127.0.0.1:7892", owner["api_key"]) as memory:
         owner["space_id"],
         "Billing backups are retained for thirty days.",
         subject="Billing service",
-        idempotency_key="billing-policy-2026-10-09",
+        idempotency_key="example-1",
         source={"title": "Billing retention decision", "uri": "https://example.com/decisions/42"},
     )
     results = memory.search("How long are billing backups retained?", [owner["space_id"]])

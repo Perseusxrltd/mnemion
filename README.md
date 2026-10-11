@@ -9,10 +9,13 @@ never gates downloads, usage or access.
 
 **Mnemion 4.0 is the first release of the rebuilt shared-memory platform.**
 Download published builds from [the official product page](https://www.perseusxr.com/mnemion).
-The [4.0.8 release](docs/releases/4.0.8.md) brings Studio into the Perseus XR style
-and adds signed automatic patches for explicitly adopted Linux/macOS services.
-The [managed updater](docs/service/managed-updates.md) stages locked packages,
-verifies a backup before restarting and preserves accepted data on runtime rollback.
+The [4.0.9 patch](docs/releases/4.0.9.md) adds OS-protected saved desktop
+connections, identity-checked reopening after restart and a clearer connection
+screen. [Workspace controls](docs/service/workspaces.md) explain remembering,
+disconnecting and forgetting a device connection. Complete fresh-machine setup
+through the app remains [active work](docs/implementation/app-onboarding.md).
+The Perseus XR design and [signed Linux/macOS service updater](docs/service/managed-updates.md)
+from 4.0.8 remain available, with backup verification and data-preserving rollback.
 Official Python packages include web Studio, local fonts and offline guides.
 Source-sync controls, agent administration, Obsidian compatibility and the earlier
 native-update and model-memory improvements are retained.
@@ -173,7 +176,7 @@ and performance independently verified in this implementation.
 
 Open **Documentation & roadmap** in Studio, or use the setup screen’s help link.
 The offline library ships the same Markdown as this repository. See the
-[product roadmap](docs/ROADMAP.md), [release notes](docs/releases/4.0.8.md), and
+[product roadmap](docs/ROADMAP.md), [release notes](docs/releases/4.0.9.md), and
 [documentation maintenance policy](docs/MAINTENANCE.md). Every release and hotfix
 must include matching release notes and a reviewed roadmap.
 

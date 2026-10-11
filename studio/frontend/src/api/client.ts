@@ -1,4 +1,5 @@
 import type { AgentsResponse, ConnectorStatus, CoreMemory, DrawerDetail, DrawerSummary, KGGraph, ObsidianStatus, RecentDrawer, SearchHit, Status, StudioConfig, Taxonomy, TrustStats } from '../types'
+import type { WorkspaceSession, WorkspaceStatus } from '../workspace/connection-types'
 
 declare global {
   interface Window {
@@ -8,6 +9,13 @@ declare global {
       backendPort?: () => Promise<number>
       studioToken?: () => Promise<string | null>
       serviceRequest?: (request: { url: string; method: string; headers: Record<string, string>; body?: string }) => Promise<{ status: number; headers: Record<string, string>; body: Uint8Array }>
+      workspaceStatus?: () => Promise<WorkspaceStatus>
+      workspaceResume?: () => Promise<WorkspaceSession | null>
+      workspaceConnect?: (input: { endpoint: string; credential: string; remember: boolean }) => Promise<WorkspaceSession>
+      workspaceRestore?: (id: string) => Promise<WorkspaceSession>
+      workspaceForget?: (id: string) => Promise<void>
+      workspaceDisconnect?: () => Promise<void>
+      workspaceReset?: () => Promise<void>
       chooseVault?: () => Promise<{ id: string; path: string } | null>
       refreshVault?: (selection: string, bytes: Uint8Array) => Promise<{ completed: boolean; file_count: number; pruned_files: number; detached_annotations: string[]; conflicts: Array<{ path: string; proposal_path?: string }>; vault_path: string }>
       onNavigate?: (callback: (route: string) => void) => () => void
