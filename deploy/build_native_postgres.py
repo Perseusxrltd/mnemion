@@ -439,7 +439,7 @@ def build(output: Path, cache: Path, work: Path) -> Path:
         relocation = (
             ["rpath=-Wl,-rpath,'$$ORIGIN/../lib:$$ORIGIN/..:$$ORIGIN'"]
             if operating_system == "linux"
-            else ["Meson selects static OpenSSL and its private system dependencies"]
+            else []
         )
         run(["make", "-j2", *relocation], sources["postgresql"])
         run(["make", "install", *relocation], sources["postgresql"])
@@ -512,7 +512,7 @@ def package_runtime(
         "source_adjustments": (
             ["libpq permits static OpenSSL's pthread_exit, retaining process-exit rejection"]
             if operating_system != "windows"
-            else []
+            else ["Meson selects static OpenSSL and its private system dependencies"]
         )
         + (
             ["libpq permits Apple's _atexit cleanup registration"]
