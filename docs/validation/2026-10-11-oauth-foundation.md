@@ -35,9 +35,16 @@ fixtures. No embedding weights or live provider accounts were used.
 | Ruff on changed Python files | Passed |
 | `git diff --check` | Passed |
 | OpenAPI and agent catalog generation | Passed; includes `oauth.bindings`, `oauth.bind`, `oauth.revoke` |
+| TypeScript client build and JavaScript client tests | **8 passed** |
+| Required Node client integration with real HTTP/PostgreSQL | **Passed**, 4.87 seconds |
+| Combined OAuth, native readiness, memory budget, insights and client tests | **88 passed**, 20.32 seconds |
 
-The skipped regression is the Node client integration: `packages/client/dist`
-was not built in this isolated worktree. It is not a passing Node-runtime check.
+The initial skipped Node regression was subsequently run with the built client
+and `MNEMION_REQUIRE_NODE_SDK=1`. The combined run used a temporary merge of the
+OAuth source and native runtime `ff608e5`, with real PostgreSQL, the same required
+Node check, and the 1 GiB/no-swap/one-CPU resource scope. It passed without skips.
+This integration check predates the native installer and policy-repair changes;
+the final integrated source still requires its full release checks.
 
 The OAuth suite covers real PostgreSQL row-level isolation, no implicit space
 grants, permitted MCP save/fetch, denied writes, exact subject/client resolution,
