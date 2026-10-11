@@ -31,16 +31,13 @@ def test_private_output_preserves_existing_files_and_removes_failed_downloads(tm
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows DACL verification")
 def test_windows_output_has_current_user_owner_and_private_dacl_before_write(tmp_path):
-    from client_tests.windows_acl import current_token_user_sid, security_descriptor
+    from client_tests.windows_acl import assert_private_acl
 
-    identity = current_token_user_sid()
     path = tmp_path / "private.json"
     with private_output(path) as output:
         # The handle is returned only after atomic owner/DACL creation, before
         # any credentials or downloaded bytes are supplied by the caller.
-        descriptor = security_descriptor(path)
-        assert descriptor.startswith(f"O:{identity}D:P")
-        assert descriptor.count("(") == 1 and f"(A;;FA;;;{identity})" in descriptor
+        assert_private_acl(path)
         output.write(b"owner can reopen this file")
     assert path.read_bytes() == b"owner can reopen this file"
 

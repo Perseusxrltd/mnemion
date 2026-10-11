@@ -12,6 +12,14 @@ class _SidAndAttributes(c.Structure):
     _fields_ = [("sid", c.c_void_p), ("attributes", w.DWORD)]
 
 
+class _AclSizeInformation(c.Structure):
+    _fields_ = [("ace_count", w.DWORD), ("bytes_in_use", w.DWORD), ("bytes_free", w.DWORD)]
+
+
+class _AceHeader(c.Structure):
+    _fields_ = [("type", w.BYTE), ("flags", w.BYTE), ("size", w.WORD)]
+
+
 class _TokenGroups(c.Structure):
     _fields_ = [("count", w.DWORD), ("groups", _SidAndAttributes * 1)]
 
@@ -76,6 +84,18 @@ def _api():
                 c.POINTER(w.HANDLE),
             ],
             w.BOOL,
+        ),
+        (
+            advapi.GetSecurityDescriptorControl,
+            [c.c_void_p, c.POINTER(w.WORD), c.POINTER(w.DWORD)],
+            w.BOOL,
+        ),
+        (advapi.GetAclInformation, [c.c_void_p, c.c_void_p, w.DWORD, c.c_int], w.BOOL),
+        (advapi.GetAce, [c.c_void_p, w.DWORD, c.POINTER(c.c_void_p)], w.BOOL),
+        (
+            advapi.SetNamedSecurityInfoW,
+            [w.LPWSTR, w.DWORD, w.DWORD, c.c_void_p, c.c_void_p, c.c_void_p, c.c_void_p],
+            w.DWORD,
         ),
         (advapi.ImpersonateLoggedOnUser, [w.HANDLE], w.BOOL),
         (advapi.RevertToSelf, [], w.BOOL),
@@ -151,6 +171,65 @@ def security_descriptor(path: Path) -> str:
             kernel.LocalFree(rendered)
         if security.value:
             kernel.LocalFree(security)
+
+
+def assert_private_acl(path: Path, *, directory=False, inherited=False) -> None:
+    """Check binary SIDs/ACEs, independent of SDDL aliases such as LA."""
+    kernel, advapi = _api()
+    expected = current_token_user_sid()
+    owner, acl, security = c.c_void_p(), c.c_void_p(), c.c_void_p()
+    try:
+        result = advapi.GetNamedSecurityInfoW(
+            str(path), 1, 5, c.byref(owner), None, c.byref(acl), None, c.byref(security)
+        )
+        if result:
+            raise c.WinError(result)
+        assert owner.value and acl.value, "An owner and explicit DACL are required"
+        if not inherited:
+            assert _sid_string(kernel, advapi, owner) == expected
+        control, revision = w.WORD(), w.DWORD()
+        if not advapi.GetSecurityDescriptorControl(security, c.byref(control), c.byref(revision)):
+            raise c.WinError(c.get_last_error())
+        assert bool(control.value & 0x1000) is not inherited  # SE_DACL_PROTECTED
+        information = _AclSizeInformation()
+        if not advapi.GetAclInformation(acl, c.byref(information), c.sizeof(information), 2):
+            raise c.WinError(c.get_last_error())
+        assert information.ace_count == 1, "Only the creating account may receive access"
+        ace = c.c_void_p()
+        if not advapi.GetAce(acl, 0, c.byref(ace)):
+            raise c.WinError(c.get_last_error())
+        header = c.cast(ace, c.POINTER(_AceHeader)).contents
+        assert header.type == 0  # ACCESS_ALLOWED_ACE_TYPE
+        assert header.flags == (3 if directory else 0) | (0x10 if inherited else 0)
+        mask = w.DWORD.from_address(ace.value + c.sizeof(_AceHeader)).value
+        assert mask == 0x1F01FF  # FILE_ALL_ACCESS
+        assert _sid_string(kernel, advapi, ace.value + 8) == expected
+    finally:
+        if security.value:
+            kernel.LocalFree(security)
+
+
+def make_administrators_owned(path: Path) -> bool:
+    """Set only a disposable test fixture's owner, when the token permits it."""
+    kernel, advapi = _api()
+    token, sid = w.HANDLE(), c.c_void_p()
+    try:
+        if not advapi.OpenProcessToken(kernel.GetCurrentProcess(), 8, c.byref(token)):
+            raise c.WinError(c.get_last_error())
+        identity = "S-1-5-32-544"
+        if not _token_groups(kernel, advapi, token).get(identity, 0) & 4:
+            return False
+        if not advapi.ConvertStringSidToSidW(identity, c.byref(sid)):
+            raise c.WinError(c.get_last_error())
+        result = advapi.SetNamedSecurityInfoW(str(path), 1, 1, sid, None, None, None)
+        if result:
+            raise c.WinError(result)
+        return True
+    finally:
+        if sid.value:
+            kernel.LocalFree(sid)
+        if token.value:
+            kernel.CloseHandle(token)
 
 
 @contextmanager

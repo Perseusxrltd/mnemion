@@ -76,24 +76,19 @@ def test_shared_or_redirected_state_folder_is_refused(tmp_path):
 @pytest.mark.skipif(os.name != "nt", reason="Native Windows inherited directory ACLs")
 def test_windows_workspace_and_secrets_survive_removal_of_administrator_access(tmp_path):
     from client_tests.windows_acl import (
+        assert_private_acl,
         assert_restricted_access,
-        current_token_user_sid,
-        security_descriptor,
     )
 
-    identity = current_token_user_sid()
     root = state.directory(tmp_path / "Local workspace Équipe")
-    descriptor = security_descriptor(root)
-    assert descriptor.startswith(f"O:{identity}D:P")
-    assert descriptor.count("(") == 1 and f"(A;OICI;FA;;;{identity})" in descriptor
+    assert_private_acl(root, directory=True)
     # PostgreSQL creates its own children. They must inherit the private ACL,
     # even when the elevated process's default owner is Administrators.
     data = root / "database"
     data.mkdir()
     record = data / "postgres-file"
     record.write_text("private database fixture")
-    inherited = security_descriptor(record).split("D:", 1)[1]
-    assert inherited.count("(") == 1 and f";FA;;;{identity})" in inherited
+    assert_private_acl(record, inherited=True)
     state.write(root / "state.json", {"ready": True})
     assert json.loads((root / "state.json").read_text()) == {"ready": True}
     assert_restricted_access(root, record, root / "state.json")
@@ -101,32 +96,12 @@ def test_windows_workspace_and_secrets_survive_removal_of_administrator_access(t
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows existing folder ownership")
 def test_windows_refuses_existing_foreign_owned_folder_without_taking_ownership(tmp_path):
-    from client_tests.windows_acl import security_descriptor
+    from client_tests.windows_acl import make_administrators_owned, security_descriptor
 
     root = state.directory(tmp_path / "foreign-owner-fixture")
     (root / "retained.txt").write_text("keep existing data")
-    result = subprocess.run(
-        [
-            "powershell.exe",
-            "-NoProfile",
-            "-NonInteractive",
-            "-Command",
-            "$ErrorActionPreference='Stop'; "
-            "$identity=[Security.Principal.WindowsIdentity]::GetCurrent(); "
-            "$principal=[Security.Principal.WindowsPrincipal]::new($identity); "
-            "if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { exit 20 }; "
-            "$acl=Get-Acl -LiteralPath $env:MNEMION_ACL_PROBE; "
-            "$acl.SetOwner([Security.Principal.SecurityIdentifier]::new('S-1-5-32-544')); "
-            "Set-Acl -LiteralPath $env:MNEMION_ACL_PROBE -AclObject $acl",
-        ],
-        env={**os.environ, "MNEMION_ACL_PROBE": str(root)},
-        capture_output=True,
-        text=True,
-        timeout=15,
-    )
-    if result.returncode == 20:
+    if not make_administrators_owned(root):
         pytest.skip("Fixture requires an elevated process; native Windows CI runs elevated")
-    assert result.returncode == 0, result.stderr
     before = security_descriptor(root)
     with pytest.raises(state.LocalSetupError, match="owned by your OS account"):
         state.directory(root)
