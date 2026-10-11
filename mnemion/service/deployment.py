@@ -410,9 +410,9 @@ def main(argv: list[str] | None = None) -> int:
         if args.mode == "worker":
             return service(["--credentials", str(credentials), "worker", *args.arguments])
         # Verify the pinned cache before serving a healthy application.
-        from .cli import _model
-
-        _model().prepare()
+        prepared = service(["prepare-model"])
+        if prepared:
+            return prepared
         return service(
             [
                 "--credentials",

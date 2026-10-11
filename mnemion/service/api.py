@@ -4,7 +4,6 @@ import asyncio
 import logging
 import os
 from contextlib import AsyncExitStack, asynccontextmanager
-from pathlib import Path
 from typing import Annotated
 from uuid import UUID, uuid4
 
@@ -607,11 +606,10 @@ def create_app(
         app.router.routes.append(Route("/mcp", mcp_app, methods=["GET", "POST", "DELETE"]))
         app.state.mcp = gateway
 
-    studio_path = os.environ.get("MNEMION_STUDIO_DIST")
-    if studio_path:
-        studio = Path(studio_path).resolve()
-        if not (studio / "index.html").is_file() or not (studio / "assets").is_dir():
-            raise RuntimeError("MNEMION_STUDIO_DIST must contain a built Studio frontend")
+    from .studio import resolve_studio
+
+    studio, _ = resolve_studio()
+    if studio is not None:
         app.mount("/assets", StaticFiles(directory=studio / "assets"), name="studio-assets")
 
         @app.get("/", include_in_schema=False)

@@ -9,8 +9,9 @@ never gates downloads, usage or access.
 
 **Mnemion 4.0 is the first release of the rebuilt shared-memory platform.**
 Download published builds from [the official product page](https://www.perseusxr.com/mnemion).
-The [4.0.5 release](docs/releases/4.0.5.md) adds immediate source-sync requests,
-timestamped scan results and Studio controls. It retains 4.0.4's agent administration
+The [4.0.6 release](docs/releases/4.0.6.md) includes web Studio and offline guides
+in Python packages, with one build command for Git checkouts. It retains 4.0.5's
+immediate source-sync requests and scan diagnostics, 4.0.4's agent administration
 and Linux startup repair, and 4.0.3's Windows ARM64 and lower local-model RAM.
 Release targets cover **Windows, macOS and Linux on x64 and ARM64**. Windows and
 Mac updates use independent publisher signatures. The product page lists only
@@ -63,7 +64,7 @@ For a complete local or team deployment, follow the
 private initialization, Studio, model preparation, backups and verified recovery
 cutover on Windows, macOS and Linux.
 
-Use Python 3.12–3.14, Node.js 22 for Studio/TypeScript development, and PostgreSQL
+Use Python 3.12–3.14, Node.js 22+ for Studio/TypeScript development, and PostgreSQL
 with pgvector. From this checkout:
 
 ```sh
@@ -75,6 +76,10 @@ Follow [the service setup guide](docs/service/README.md) to migrate the database
 provision separate API and worker logins, create an organization/private space,
 and start the service. Administration credentials stay with setup and recovery;
 API and worker processes use their restricted logins.
+
+Official Python release packages include Studio. For a Git checkout, run
+`uv run --no-sync mnemion-service studio build` before starting the API. The web UI
+then opens at the service's `/workspace`; `studio status` reports its availability.
 
 A local model must be prepared before semantic indexing. Lexical retrieval and
 write receipts expose readiness explicitly. Failed model preparation never

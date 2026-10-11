@@ -1,0 +1,61 @@
+"""Bundled Studio is visible by default without weakening memory authentication."""
+
+import json
+
+from fastapi.testclient import TestClient
+
+from client_tests.test_web_studio import make_bundle
+from mnemion.service import studio
+from mnemion.service.api import create_app
+from mnemion.service.cli import main
+
+
+def installed(monkeypatch, tmp_path):
+    package = tmp_path / "site-packages/mnemion"
+    monkeypatch.setattr(studio, "__file__", str(package / "service/studio.py"))
+    monkeypatch.delenv("MNEMION_STUDIO_DIST", raising=False)
+    monkeypatch.delenv("MNEMION_STUDIO_ENABLED", raising=False)
+    return package
+
+
+def test_packaged_studio_serves_routes_and_assets_but_never_private_api(env, tmp_path, monkeypatch):
+    package = installed(monkeypatch, tmp_path)
+    make_bundle(package / "_studio")
+    assert studio.studio_status()["source"] == "bundled"
+    assert studio.studio_status()["build_command"] is None
+    with TestClient(create_app(env.db, env.embedder)) as client:
+        for route in ("/", "/workspace", "/workspace/help", "/help"):
+            page = client.get(route)
+            assert page.status_code == 200 and 'src="/assets/app.js"' in page.text
+            assert "frame-ancestors 'none'" in page.headers["Content-Security-Policy"]
+            assert env.token not in page.text
+        assert client.get("/assets/app.js").status_code == 200
+        assert client.get("/v1/me").status_code == 401
+        assert client.get("/v1/missing-route").status_code == 404
+        assert client.get("/assets/%2e%2e/release.json").status_code == 404
+    monkeypatch.setenv("MNEMION_STUDIO_ENABLED", "0")
+    with TestClient(create_app(env.db, env.embedder)) as client:
+        assert client.get("/").status_code == 404
+        assert client.get("/health/ready").status_code == 200
+
+
+def test_unbuilt_source_cli_explains_how_to_enable_studio_without_database(
+    monkeypatch, tmp_path, capsys
+):
+    import uvicorn
+
+    package = installed(monkeypatch, tmp_path)
+    root = package.parent
+    (root / "studio/frontend").mkdir(parents=True)
+    (root / "studio/frontend/package.json").write_text('{"name":"mnemion-studio"}')
+    (root / "pyproject.toml").write_text("")
+    monkeypatch.setattr(uvicorn, "run", lambda *args, **kwargs: None)
+    main(["studio", "status"])
+    status = json.loads(capsys.readouterr().out)
+    assert not status["available"] and status["build_command"] == "mnemion-service studio build"
+    main(["serve"])
+    message = json.loads(capsys.readouterr().err)
+    assert "mnemion-service studio build" in message["help"]
+    main(["serve", "--no-studio"])
+    message = json.loads(capsys.readouterr().err)
+    assert message["studio"]["source"] == "disabled" and message["help"] is None

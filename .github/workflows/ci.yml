@@ -55,6 +55,42 @@ jobs:
       - run: uv run --no-sync mnemion-service schema --output /tmp/openapi.json && diff docs/service/openapi.json /tmp/openapi.json
       - run: uv run --no-sync mnemion-service agent-schema --output /tmp/agent-contract.json && diff mnemion/service/agent_contract.json /tmp/agent-contract.json
 
+  container:
+    name: container (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-22.04, ubuntu-22.04-arm]
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Build the actual deployment image with its documentation
+        run: docker build --file deploy/Dockerfile --tag mnemion:check .
+      - name: Verify the non-root image includes Studio, guides and notices offline
+        run: |
+          docker run --rm -i --network none --read-only --tmpfs /tmp \
+            --memory 1g --memory-swap 1g --cpus 2 \
+            --env MNEMION_STUDIO_DIST=/opt/mnemion/studio \
+            --entrypoint python mnemion:check - <<'PY'
+          import json, os
+          from pathlib import Path
+          from mnemion.service.studio import resolve_studio
+          from mnemion.service.deployment import main
+          from mnemion.version import __version__
+          path, source = resolve_studio()
+          assert os.geteuid() != 0 and source == "explicit"
+          assert (path / "index.html").is_file()
+          assets = [item.read_text() for item in (path / "assets").glob("*.js")]
+          assert any("Mnemion product roadmap" in body for body in assets)
+          assert any("# Mnemion " + __version__ in body for body in assets)
+          assert any("mnemion-service studio build" in body for body in assets)
+          assert Path("/opt/mnemion/licenses/frontend/inventory.json").is_file()
+          assert Path("/opt/mnemion/licenses/python/inventory.json").is_file()
+          print(json.dumps({"version": __version__, "studio": True, "offline_guides": True,
+                            "license_inventories": True, "non_root": True}))
+          PY
+
   legacy:
     runs-on: ubuntu-latest
     steps:
@@ -95,6 +131,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: '22'
@@ -103,8 +142,13 @@ jobs:
             packages/client/package-lock.json
             studio/frontend/package-lock.json
             studio/electron/package-lock.json
-      - run: npm --prefix packages/client ci && npm --prefix packages/client test
-      - run: npm --prefix studio/frontend ci && npm --prefix studio/frontend run build
+      - run: python -m pip install uv==0.12.24
+      - run: python deploy/bundle_studio.py
+      - run: npm --prefix packages/client test
+      - name: Verify wheel and source package include the matching web Studio
+        run: |
+          uv build --out-dir build-tmp/source-check
+          python deploy/bundle_studio.py --verify-artifacts build-tmp/source-check
       - run: npm --prefix studio/frontend audit --audit-level=high
       - run: npm --prefix studio/electron ci && npm --prefix studio/electron test
       - run: npm --prefix studio/electron audit --audit-level=high

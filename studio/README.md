@@ -12,10 +12,16 @@ refresh executable. It connects to a local or remote service; it does not bundle
 PostgreSQL or silently start a model on every employee's laptop.
 Remote-agent fixes in 4.0.2 and lower model RAM in 4.0.3 require upgrading the memory server;
 the desktop updater cannot replace a separately deployed service. See the
-[patch notes](../docs/releases/4.0.5.md). Version 4.0.5 adds **Sync now**, pending
+[patch notes](../docs/releases/4.0.6.md). Version 4.0.5 adds **Sync now**, pending
 requests and scan results to Sources. Upgrade the server and runner for these
 controls. It retains 4.0.4's agent administration and Linux AppImage login-path
 repair, including preservation of OS startup disable flags and custom commands.
+
+From 4.0.6, official Python release archives include the web Studio and offline
+documentation. The API serves them automatically. Git installations can run
+`uv run --no-sync mnemion-service studio build` once, then restart the API. Node.js
+22+ is needed only for this source build. See the
+[web setup and overrides](../docs/service/README.md#studio).
 
 Use the [service deployment guide](../docs/service/deployment.md) first, then
 connect with the service URL and a personal or application credential. Credentials

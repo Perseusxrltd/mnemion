@@ -29,6 +29,11 @@ a completed published download.
    verifier requires matching versions, release notes, a current roadmap and a
    complete set of installers and update feeds for each OS/architecture selected
    in `deploy/release-targets.json` before a desktop release draft is created.
+   From 4.0.6, run `python deploy/bundle_studio.py` before `uv build`. The verifier
+   also inspects both Python formats for identical web Studio files, matching
+   version, bounded paths/sizes, hashes and dependency notices. The generated
+   `mnemion/_studio/` is packaged but not committed. All frontend builds require
+   the essential offline guides and the current release notes, including Docker.
 7. Review the concrete draft and publish only when its documented release gates
    pass. Installed supported desktop packages then receive stable updates under
    the [update policy](service/updates.md).

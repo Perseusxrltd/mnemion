@@ -2,8 +2,16 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwind from '@tailwindcss/vite'
 import { fileURLToPath } from 'node:url'
+import { existsSync, readFileSync } from 'node:fs'
 
 const root = fileURLToPath(new URL('.', import.meta.url))
+const version = JSON.parse(readFileSync(new URL('package.json', import.meta.url), 'utf8')).version
+for (const document of ['README.md', 'SECURITY.md', 'CONTRIBUTING.md', 'studio/README.md',
+  'docs/ROADMAP.md', 'docs/service/README.md', 'docs/service/updates.md', `docs/releases/${version}.md`]) {
+  if (!existsSync(new URL(`../../${document}`, import.meta.url))) {
+    throw new Error(`Studio requires its offline documentation: ${document}`)
+  }
+}
 
 export default defineConfig({
   root,

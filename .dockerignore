@@ -31,9 +31,14 @@ studio/frontend/*
 !studio/frontend/src/**
 !studio/frontend/public/
 !studio/frontend/public/**
+!studio/README.md
+!docs/
+!docs/**
 !pyproject.toml
 !uv.lock
 !README.md
+!SECURITY.md
+!CONTRIBUTING.md
 !LICENSE
 !NOTICE
 **/__pycache__/
@@ -44,3 +49,4 @@ studio/frontend/*
 **/.git/
 **/*credentials*.json
 **/database.password
+mnemion/_studio/

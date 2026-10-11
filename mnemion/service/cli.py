@@ -62,9 +62,17 @@ def main(argv: list[str] | None = None) -> int:
     serve.add_argument(
         "--concurrency", type=int, default=int(os.environ.get("MNEMION_HTTP_CONCURRENCY", "64"))
     )
-    serve.add_argument(
+    studio_options = serve.add_mutually_exclusive_group()
+    studio_options.add_argument(
         "--studio", type=Path, help="Serve a built Studio frontend from this directory"
     )
+    studio_options.add_argument(
+        "--no-studio", action="store_true", help="Run the API/MCP without web Studio"
+    )
+    studio = commands.add_parser(
+        "studio", help="Inspect or build the web Studio without database credentials"
+    )
+    studio.add_argument("action", choices=["status", "build"], nargs="?", default="status")
     worker = commands.add_parser("worker", help="Run durable indexing and deletion work")
     worker.add_argument("--once", action="store_true")
     prepare = commands.add_parser(
@@ -209,7 +217,11 @@ def main(argv: list[str] | None = None) -> int:
         ):
             if values.get(key):
                 os.environ[variable] = values[key]
-    if args.command == "import-v3":
+    if args.command == "studio":
+        from .studio import build_studio, studio_status
+
+        print(json.dumps(build_studio() if args.action == "build" else studio_status()))
+    elif args.command == "import-v3":
         from uuid import UUID
         from .embeddings import DEFAULT_GENERATION
         from .legacy_import import import_v3
@@ -329,6 +341,24 @@ def main(argv: list[str] | None = None) -> int:
             raise ValueError("HTTP concurrency must be between 1 and 4096")
         if args.studio:
             os.environ["MNEMION_STUDIO_DIST"] = str(args.studio)
+            os.environ["MNEMION_STUDIO_ENABLED"] = "1"
+        if args.no_studio:
+            os.environ["MNEMION_STUDIO_ENABLED"] = "0"
+        from .studio import studio_status
+        import sys
+
+        status = studio_status()
+        print(
+            json.dumps(
+                {
+                    "studio": status,
+                    "help": None
+                    if status["available"] or status["source"] == "disabled"
+                    else "Run mnemion-service studio build from the source checkout, or install an official release package.",
+                }
+            ),
+            file=sys.stderr,
+        )
         if args.no_mcp:
             os.environ["MNEMION_MCP_ENABLED"] = "0"
         if args.public_url:

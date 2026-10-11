@@ -1,18 +1,19 @@
 # Mnemion product roadmap
 
-Current distribution: **4.0.5**. Updated: **2026-10-11**.
+Current distribution: **4.0.6**. Updated: **2026-10-11**.
 
-Version 4.0.5 adds durable immediate source-sync requests, timestamped results
-and Studio controls. Its agent catalog covers 84 operations. It retains the
-previous patches' Linux login-path repair, Windows ARM64 and local-model RAM
-improvements. Release targets include **Windows, macOS and Linux, x64 and ARM64**.
+Version 4.0.6 bundles web Studio and offline documentation with Python packages
+and provides one source-build command. It retains 4.0.5's immediate sync requests,
+timestamped results and Studio controls. Its agent catalog covers 84 operations.
+The previous patches' Linux login-path repair, Windows ARM64 and local-model RAM
+improvements are retained. Release targets include **Windows, macOS and Linux, x64 and ARM64**.
 [The official product page](https://www.perseusxr.com/mnemion) lists published
 downloads. Each architecture requires its complete verified installer/update set.
 
 The rebuilt shared-memory platform is product v1; its package version is 4.x
 to upgrade correctly from the earlier 3.x product. This is a living delivery
 plan, not a claim that every planned capability is available. Release status and
-known limitations are recorded in [the current patch notes](releases/4.0.5.md),
+known limitations are recorded in [the current patch notes](releases/4.0.6.md),
 [the published baseline](releases/4.0.0.md) and
 [validation report](validation/2026-10-11-hotfixes.md).
 
@@ -56,7 +57,7 @@ Administrative authority remains distinct from ordinary memory access.
 | Reliability | Durable jobs, retries and leases, ingestion/resource limits, verified backup/recovery, v3 archive/import/cutover/rollback | [Recovery](service/recovery.md), [migration](service/migration.md) |
 | Observability | Six visual insight views, private evaluation sets and runs, comparisons, case inspection and exports | [Insights and evaluations](service/insights.md) |
 | Desktop lifecycle | Background operation, login startup, update preferences and safe idle restart; updater enabled by default in supported packages | [Updates](service/updates.md) |
-| Documentation | In-app offline library generated from repository Markdown, version-specific notes and this roadmap | [Maintenance](MAINTENANCE.md) |
+| Documentation and web installation | Offline library generated from repository Markdown; Studio included in official Python archives, with one source-build command and verified asset/license inventory | [Setup](service/README.md#studio), [maintenance](MAINTENANCE.md) |
 
 Implementation does not by itself certify every deployment. Provider tests use
 fixtures unless a validation report explicitly identifies a live test. Native
@@ -117,8 +118,9 @@ where possible and include migration/rollback instructions when needed.
   described tool fields, compact structured errors and bounded inference
   admission with SDK retry guidance (issues 5, 9, 10, 12 and 16).
 - Complete hosted-agent OAuth with PKCE and consent (issues 4 and 18), native
-  remote setup (3), non-systemd supervision (6), visible source-install Studio
-  setup (7) and verified server updates with backups/restart/rollback (11).
+  remote setup (3), non-systemd supervision (6) and verified server updates with
+  backups/restart/rollback (11). Verify the 4.0.6 bundled Studio/source-build fix
+  (7) in existing deployments.
   Desktop automatic updates do not upgrade a separately deployed memory server.
 - Extend the 4.0.4 agent catalog to new operations as they ship. Existing HTTP
   administration is discoverable and callable; host setup, recovery and service
@@ -129,7 +131,7 @@ where possible and include migration/rollback instructions when needed.
   recorded comparison while preserving generation, source spans and vectors.
   Separate API/worker model caches and idle unloading remain open. Review policy for an author's
   own deletions (14), improve source-space onboarding (8), extend 4.0.5's durable
-  sync requests and timestamped diagnostics with provider webhook verification (15),
+  sync requests and timestamped diagnostics with provider webhook verification,
   and evaluate natural-language retrieval against keyword baselines (17).
   Track [the issue queue](https://github.com/Perseusxrltd/mnemion/issues) and verify
   fixes through real deployments as well as isolated protocol tests.

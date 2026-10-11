@@ -45,3 +45,6 @@ dist-desktop/
 
 # Local browser acceptance artifacts may include fixture credentials
 output/
+
+# Generated web UI is included in release packages, not tracked as source.
+mnemion/_studio/

@@ -2,10 +2,12 @@
 
 import json
 import os
+from pathlib import Path
 from uuid import uuid4
 
 import psycopg
 import pytest
+from fastapi.testclient import TestClient
 from psycopg import sql
 from psycopg.conninfo import conninfo_to_dict, make_conninfo
 
@@ -13,6 +15,80 @@ from mnemion.service import deployment
 from mnemion.service.db import Database
 from mnemion.service.errors import ServiceError
 from mnemion.service.recovery import create_backup, export_ledger, restore_backup
+
+
+def test_container_api_entrypoint_prepares_current_model_and_serves_studio(
+    env, postgres, tmp_path, monkeypatch
+):
+    import uvicorn
+    from client_tests.test_web_studio import make_bundle
+    from mnemion.service.api import create_app
+    from mnemion.service.model_registry import ModelRegistry
+
+    monkeypatch.setenv("MNEMION_DEPLOYMENT_STATE", str(tmp_path))
+    monkeypatch.delenv("MNEMION_DATABASE_URL", raising=False)
+    monkeypatch.delenv("MNEMION_MODEL_OFFLINE", raising=False)
+    monkeypatch.delenv("MNEMION_STUDIO_DIST", raising=False)
+    monkeypatch.delenv("MNEMION_STUDIO_ENABLED", raising=False)
+    directory = tmp_path / "api"
+    directory.mkdir()
+    (directory / "credentials.json").write_text(json.dumps({"database_url": postgres[1]}))
+    bundle = make_bundle(tmp_path / "studio")
+    prepared, served = [], []
+
+    def prepare():
+        assert os.environ["MNEMION_MODEL_OFFLINE"] == "1"
+        prepared.append(True)
+
+    monkeypatch.setattr(env.embedder, "prepare", prepare, raising=False)
+    monkeypatch.setattr(
+        ModelRegistry, "from_environment", classmethod(lambda cls: cls(env.embedder))
+    )
+
+    def serve(application, **kwargs):
+        assert application == "mnemion.service.api:create_app" and kwargs["factory"]
+        assert prepared == [True]
+        assert Path(os.environ["MNEMION_STUDIO_DIST"]) == bundle
+        with TestClient(create_app()) as client:
+            assert client.get("/health/ready").status_code == 200
+            assert client.get("/workspace").status_code == 200
+            assert client.get("/v1/me").status_code == 401
+            assert (
+                client.get("/v1/me", headers={"Authorization": "Bearer " + env.token}).status_code
+                == 200
+            )
+        served.append(True)
+
+    monkeypatch.setattr(uvicorn, "run", serve)
+    assert deployment.main(["api", "--studio", str(bundle)]) == 0
+    assert served == [True]
+
+
+def test_container_model_preflight_failure_never_opens_the_http_listener(
+    tmp_path, monkeypatch, capsys
+):
+    import uvicorn
+    from mnemion.service.model_registry import ModelRegistry
+
+    class BrokenModel:
+        def prepare(self):
+            raise ValueError("fixture private cache diagnostic")
+
+    class Registry:
+        def profile(self, identifier):
+            return BrokenModel()
+
+        def close(self):
+            pass
+
+    monkeypatch.setenv("MNEMION_DEPLOYMENT_STATE", str(tmp_path))
+    monkeypatch.delenv("MNEMION_MODEL_OFFLINE", raising=False)
+    monkeypatch.setattr(ModelRegistry, "from_environment", classmethod(lambda cls: Registry()))
+    monkeypatch.setattr(
+        uvicorn, "run", lambda *a, **kw: pytest.fail("Failed preflight opened HTTP")
+    )
+    assert deployment.main(["api"]) == 1
+    assert "private cache diagnostic" not in capsys.readouterr().err
 
 
 @pytest.fixture

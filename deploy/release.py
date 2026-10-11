@@ -162,6 +162,9 @@ def main() -> None:
     if args.artifacts is None:
         print(f"Validated Mnemion {version}: package versions, release notes and roadmap")
         return
+    from deploy.bundle_studio import verify_python_distributions
+
+    verify_python_distributions(args.artifacts, version)
     files = [path for path in args.artifacts.iterdir() if path.name != "SHA256SUMS.txt"]
     for architecture in ("x64", "arm64"):
         suffixes = {

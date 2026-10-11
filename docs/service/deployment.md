@@ -5,6 +5,10 @@ and Studio, and a durable worker. It uses pinned image indexes and locked Python
 and JavaScript dependencies. The desktop app connects to this service; each
 desktop does not need its own database or model installation.
 
+From 4.0.6, the container build includes the complete offline documentation and
+fails if essential guides are missing. Standalone official Python archives also
+include Studio; Git checkouts use the [one-command web build](README.md#studio).
+
 The release ledger records the platforms and workloads actually validated. This
 guide describes a single-host deployment. High availability, managed PostgreSQL,
 company identity federation, and provider-specific acceptance need their own

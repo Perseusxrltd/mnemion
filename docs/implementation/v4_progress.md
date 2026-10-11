@@ -299,3 +299,22 @@ quality. The roadmap and issue queue track those independently.
 - Migration 012 adds one control record per connector. Release notes describe
   coordinated backup/migration/restart and separate-database rollback. Managed
   server updates and native provider webhook receivers remain separate work.
+
+## Hotfix 4.0.6, 11 October 2026
+
+- Official Python wheel/source archives include the matching web Studio and
+  offline guides with dependency notices and a bounded SHA-256 file inventory.
+  Startup discovers the bundle; source checkouts have one build command and a
+  credential-free status command. Explicit paths and headless deployments remain supported.
+- Failed source-bundle replacement restores the previous complete build, and
+  concurrent builders cannot replace each other's dependency tree. Product CI
+  and release assembly inspect both real Python artifact formats.
+- Container builds now receive the repository Markdown. The frontend build
+  rejects missing essential documentation or notes for the selected version.
+- The container API entry point uses the current offline model-preparation
+  command. A real PostgreSQL regression check exercises initialization of the
+  HTTP application, Studio, readiness and authentication; failed preparation
+  cannot open a listener.
+- The preceding 4.0.5 release passed all product/native gates and all six public
+  4.0.4 → 4.0.5 automatic upgrades. The website updated all six download links
+  automatically. Issue 15 is closed; native provider webhooks remain an extension.

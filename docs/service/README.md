@@ -3,11 +3,11 @@
 This is the **4.0 shared-memory service**. It provides authenticated spaces,
 versioned source evidence, durable indexing, local multilingual search, HTTP and
 MCP access, and Obsidian exports. The [product page](https://www.perseusxr.com/mnemion)
-provides desktop downloads, and the [release notes](../releases/4.0.2.md) identify
-the supported packages and remaining platform work. Complete backup/recovery,
-v3 import with cutover and rollback, and Studio are implemented. The initial
-desktop release is published for macOS and Linux; Windows release validation and larger
-concurrent-capacity measurements remain open.
+provides desktop downloads for Windows, macOS and Linux on x64 and ARM64. The
+[release notes](../releases/4.0.6.md) describe the current package changes and
+remaining work. Complete backup/recovery, v3 import with cutover and rollback,
+and Studio are implemented. Larger concurrent-capacity measurements and managed
+server updates remain on the roadmap.
 
 Use the [Compose deployment guide](deployment.md) for packaged initialization,
 private runtime credentials, a shared Studio service, operations, and recovery
@@ -55,8 +55,8 @@ uv run --no-sync mnemion-service \
   --credentials .mnemion-run/database.mnemion-credentials.json worker
 ```
 
-The API listens on `127.0.0.1:7892`; interactive API documentation is at `/docs`.
-The old local Studio backend uses port 7891. Use `serve --host` and `--port` to
+The API listens on `127.0.0.1:7892`, with authenticated MCP at `/mcp`. Studio opens
+at `/workspace`; interactive API documentation is at `/docs`. Use `serve --host` and `--port` to
 configure the listener. For network deployment, put the API behind a TLS proxy
 and configure allowed browser origins with `MNEMION_CORS_ORIGINS`.
 
@@ -84,16 +84,33 @@ review; no language model or schedule is enabled by default.
 
 ## Studio
 
-Build the SDK and web frontend, then serve Studio alongside the API:
+Official Python wheel and source archives from **4.0.6** include the matching
+web Studio, offline guides, roadmap and dependency notices. Installing one of
+these packages needs no Node.js or separate UI build. `mnemion-service serve`
+automatically serves the bundled UI. It still needs the database/runtime setup
+above; installing a Python package does not provision PostgreSQL.
+
+A Git checkout contains frontend source. Install Node.js **22 or later** with
+npm and run this single command from the checkout before starting the service:
 
 ```bash
-npm --prefix packages/client ci
-npm --prefix packages/client run build
-npm --prefix studio/frontend ci
-npm --prefix studio/frontend run build
-mnemion-service --credentials .mnemion-run/database.mnemion-credentials.json \
-  serve --studio studio/frontend/dist
+uv run --no-sync mnemion-service studio build
 ```
+
+The command installs locked SDK/frontend dependencies, builds the web UI and
+documentation, collects licenses, checks the bounded file inventory, then
+replaces the generated bundle. A failed build keeps the previous complete bundle.
+Build before starting or restarting the API; this command does not restart a
+running server. Builds cannot run concurrently in one checkout. After an abrupt
+process kill, remove `build-tmp/web-studio.lock` only after confirming its recorded
+builder PID is no longer running.
+
+Use `mnemion-service studio status` to inspect the selected UI without database
+credentials. Source startup explains the build command when no UI is available.
+Use `serve --no-studio` or `MNEMION_STUDIO_ENABLED=0` for an intentional API/MCP-only
+deployment. `serve --studio PATH` and `MNEMION_STUDIO_DIST` retain explicit override
+support; an invalid selected build fails clearly. A normal frontend development
+build in `studio/frontend/dist` is also detected when no packaged bundle exists.
 
 Open `http://127.0.0.1:7892/workspace`, enter the service address and a scoped API
 key, and use the workspace to save, revise, review, search, build context, inspect
