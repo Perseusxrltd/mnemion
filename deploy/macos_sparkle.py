@@ -14,6 +14,9 @@ import shutil
 import subprocess
 import sys
 import tarfile
+import tempfile
+import time
+from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 from xml.etree import ElementTree as ET
 
@@ -38,17 +41,46 @@ def configuration() -> dict:
 
 
 def download(url: str, destination: Path, expected: str, limit: int) -> None:
+    if destination.exists() or destination.is_symlink():
+        raise FileExistsError("The native build download destination already exists")
     request = Request(url, headers={"User-Agent": "Mnemion-native-updater-build"})
-    digest, size = hashlib.sha256(), 0
-    with urlopen(request, timeout=30) as response, destination.open("xb") as output:
-        while chunk := response.read(1024 * 1024):
-            size += len(chunk)
-            if size > limit:
-                raise ValueError("Upstream download exceeded its declared limit")
-            digest.update(chunk)
-            output.write(chunk)
-    if digest.hexdigest() != expected:
-        raise ValueError("Upstream artifact digest did not match the pinned release")
+    deadline = time.monotonic() + 120
+    for attempt in range(3):
+        descriptor, name = tempfile.mkstemp(prefix=".native-download-", dir=destination.parent)
+        temporary = Path(name)
+        try:
+            digest, size = hashlib.sha256(), 0
+            with os.fdopen(descriptor, "wb") as output:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise TimeoutError("Native build download exceeded its time budget")
+                with urlopen(request, timeout=min(30, remaining)) as response:
+                    while chunk := response.read(1024 * 1024):
+                        size += len(chunk)
+                        if size > limit:
+                            raise ValueError("Upstream download exceeded its declared limit")
+                        if time.monotonic() >= deadline:
+                            raise TimeoutError("Native build download exceeded its time budget")
+                        digest.update(chunk)
+                        output.write(chunk)
+            if digest.hexdigest() != expected:
+                raise ValueError("Upstream artifact digest did not match the pinned release")
+            # Publish verified bytes exclusively; never overwrite another builder.
+            os.link(temporary, destination)
+            return
+        except HTTPError as error:
+            error.close()
+            if error.code != 429 and error.code < 500:
+                raise
+        except (URLError, TimeoutError, ConnectionError):
+            pass
+        finally:
+            temporary.unlink(missing_ok=True)
+        remaining = deadline - time.monotonic()
+        if attempt == 2 or remaining <= 0:
+            break
+        time.sleep(min(attempt + 1, remaining))
+    raise RuntimeError("The pinned native dependency could not be downloaded after bounded retries")
 
 
 def prepare_distribution(root: Path) -> Path:

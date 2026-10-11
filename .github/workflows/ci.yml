@@ -72,6 +72,13 @@ jobs:
       - run: uv sync --locked --python 3.12 --group dev
       - name: Run the real API and worker under Supervisor without systemd
         run: uv run --no-sync python -m pytest service_tests/test_supervision.py -q
+      - name: Verify both pinned local models on the actual Mac runtime
+        env:
+          MNEMION_TEST_LOCAL_MODEL: '1'
+          MNEMION_MODEL_CACHE: ${{ runner.temp }}/mnemion-model-cache
+        run: uv run --no-sync python -m pytest service_tests/test_local_model.py -q
+      - name: Audit the installed Mac dependencies
+        run: uvx pip-audit --path .venv/lib/python3.12/site-packages
 
   container:
     name: container (${{ matrix.runner }})

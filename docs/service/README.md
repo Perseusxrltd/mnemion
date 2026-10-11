@@ -15,7 +15,7 @@ cutover. The commands below cover a standalone or managed PostgreSQL installatio
 
 ## Run the service
 
-Use Python 3.12–3.14 and a dedicated PostgreSQL database with the `vector` extension
+Use Python 3.12–3.14 (3.12/3.13 on Intel Macs) and a dedicated PostgreSQL database with the `vector` extension
 available. Migration credentials need permission to install the extension,
 create the Mnemion schema, and create database roles. API and worker processes
 use separate restricted logins; startup rejects an owner or superuser login.
@@ -23,7 +23,7 @@ use separate restricted logins; startup rejects an owner or superuser login.
 Install from a tagged release checkout, or use `main` for current development:
 
 ```bash
-uv sync --locked --no-dev
+uv sync --locked --no-dev --python 3.13
 ```
 
 Set `MNEMION_ADMIN_DATABASE_URL` to your database administration connection

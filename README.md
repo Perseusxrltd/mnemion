@@ -66,10 +66,11 @@ private initialization, Studio, model preparation, backups and verified recovery
 cutover on Windows, macOS and Linux.
 
 Use Python 3.12–3.14, Node.js 22+ for Studio/TypeScript development, and PostgreSQL
-with pgvector. From this checkout:
+with pgvector. Intel Mac servers use Python 3.12 or 3.13 because their compatible
+ONNX runtime has no Python 3.14 wheel. The example selects 3.13:
 
 ```sh
-uv sync --locked
+uv sync --locked --python 3.13
 uv run mnemion-service --help
 ```
 

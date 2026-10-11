@@ -17,7 +17,7 @@ first. Prepare the model cache and, for a Git checkout, build Studio. Install th
 extra in the same environment that runs the service:
 
 ```sh
-uv sync --locked --no-dev --extra supervision
+uv sync --locked --no-dev --extra supervision --python 3.13
 uv run --no-sync mnemion-service prepare-model
 uv run --no-sync mnemion-service studio build
 ```
@@ -27,6 +27,10 @@ wheel, select its `supervision` extra, for example
 `python -m pip install './mnemion-4.0.7-py3-none-any.whl[supervision]'`.
 Use the [official downloads](https://github.com/Perseusxrltd/mnemion/releases).
 The extra is optional and adds no model or paid service.
+Intel Mac servers require Python 3.12 or 3.13. The package selects ONNX Runtime
+1.23.2 there, the newest version publishing compatible Intel wheels; other
+platforms retain their newer locked runtime. This does not change E5/BGE weights
+or require a reindex. See [model compatibility](embeddings.md#native-runtime-compatibility).
 
 From the installed environment or checkout, choose a persistent private state
 directory. The shared login file produced by `mnemion-service logins` is accepted:

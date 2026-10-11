@@ -9,6 +9,9 @@ there. Published versions use immutable tags and artifacts.
 
 Use Python **3.12–3.14**, Node.js **22**, and the committed dependency lockfiles.
 Use Python 3.12 for the optional Chroma-based legacy compatibility tests.
+Intel Mac service/model development requires Python 3.12 or 3.13; upstream ONNX
+Runtime has no Intel Mac Python 3.14 wheel. The lockfile selects the newest
+compatible Intel runtime without lowering other platforms' runtime versions.
 
 ```sh
 git clone https://github.com/Perseusxrltd/mnemion.git

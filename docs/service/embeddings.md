@@ -54,6 +54,26 @@ do not certify a particular live cloud account or Qwen deployment.
 
 ## Operator configuration
 
+### Native runtime compatibility
+
+From 4.0.7, Intel Mac servers select **ONNX Runtime 1.23.2** with Python
+**3.12 or 3.13**, the newest upstream runtime shipping Intel Mac wheels. Newer
+ONNX releases publish Apple-silicon wheels only; Python 3.14 has no compatible
+Intel Mac wheel. Other platforms retain the newer runtime in the lockfile.
+Use `uv sync --locked --python 3.13` for a source installation, and do not force
+a wheel for a different processor architecture. The pinned model weights,
+tokenizer identity and generation remain unchanged, so this packaging fix does
+not require reindexing.
+
+The desktop client includes its own small runtime and does not load ONNX or
+require the user to install Python. An Intel Mac can also connect to a service
+hosted on other hardware or use the Linux container deployment. Native Mac CI
+runs both pinned E5/BGE model checks on the selected runtime; broader throughput
+and hardware comparisons remain separate evaluations. See the
+[upstream distributions](https://pypi.org/project/onnxruntime/1.23.2/#files).
+
+### Approved profiles
+
 Set `MNEMION_EMBEDDING_CONFIG` to a private JSON file on every API and worker host.
 Without it, only E5 is enabled. To make both small CPU models available:
 
