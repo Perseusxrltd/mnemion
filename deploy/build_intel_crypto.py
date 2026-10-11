@@ -91,7 +91,10 @@ def build(root: Path, output: Path) -> Path:
     if platform.system() != "Darwin" or platform.machine() != "x86_64":
         raise ValueError("Build the Intel Mac wheel on a native Intel Mac runner")
     uv = shutil.which("uv")
-    if not uv or subprocess.check_output([uv, "--version"], text=True).strip() != "uv 0.12.24":
+    if not uv or subprocess.check_output([uv, "--version"], text=True).split()[:2] != [
+        "uv",
+        "0.12.24",
+    ]:
         raise ValueError("Use the reviewed uv release builder")
     configuration = json.loads((root / "deploy/intel-crypto.json").read_text())
     packages = {p["name"]: p for p in tomllib.loads((root / "uv.lock").read_text())["package"]}
