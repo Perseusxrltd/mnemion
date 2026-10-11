@@ -74,28 +74,88 @@ def test_shared_or_redirected_state_folder_is_refused(tmp_path):
 
 
 @pytest.mark.skipif(os.name != "nt", reason="Native Windows inherited directory ACLs")
-def test_windows_workspace_protects_new_database_files_with_inherited_owner_access(tmp_path):
+def test_windows_workspace_and_secrets_survive_removal_of_administrator_access(tmp_path):
+    from client_tests.windows_acl import (
+        assert_restricted_access,
+        current_token_user_sid,
+        security_descriptor,
+    )
+
+    identity = current_token_user_sid()
     root = state.directory(tmp_path / "Local workspace Équipe")
-    # PostgreSQL creates its own children. They must inherit the private ACL.
+    descriptor = security_descriptor(root)
+    assert descriptor.startswith(f"O:{identity}D:P")
+    assert descriptor.count("(") == 1 and f"(A;OICI;FA;;;{identity})" in descriptor
+    # PostgreSQL creates its own children. They must inherit the private ACL,
+    # even when the elevated process's default owner is Administrators.
     data = root / "database"
     data.mkdir()
     record = data / "postgres-file"
     record.write_text("private database fixture")
+    inherited = security_descriptor(record).split("D:", 1)[1]
+    assert inherited.count("(") == 1 and f";FA;;;{identity})" in inherited
+    state.write(root / "state.json", {"ready": True})
+    assert json.loads((root / "state.json").read_text()) == {"ready": True}
+    assert_restricted_access(root, record, root / "state.json")
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows existing folder ownership")
+def test_windows_refuses_existing_foreign_owned_folder_without_taking_ownership(tmp_path):
+    from client_tests.windows_acl import security_descriptor
+
+    root = state.directory(tmp_path / "foreign-owner-fixture")
+    (root / "retained.txt").write_text("keep existing data")
     result = subprocess.run(
         [
             "powershell.exe",
             "-NoProfile",
             "-NonInteractive",
             "-Command",
-            "$a=Get-Acl -LiteralPath $env:MNEMION_ACL_PROBE; $a.Sddl",
+            "$ErrorActionPreference='Stop'; "
+            "$identity=[Security.Principal.WindowsIdentity]::GetCurrent(); "
+            "$principal=[Security.Principal.WindowsPrincipal]::new($identity); "
+            "if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { exit 20 }; "
+            "$acl=Get-Acl -LiteralPath $env:MNEMION_ACL_PROBE; "
+            "$acl.SetOwner([Security.Principal.SecurityIdentifier]::new('S-1-5-32-544')); "
+            "Set-Acl -LiteralPath $env:MNEMION_ACL_PROBE -AclObject $acl",
         ],
-        env={**os.environ, "MNEMION_ACL_PROBE": str(record)},
+        env={**os.environ, "MNEMION_ACL_PROBE": str(root)},
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
+    if result.returncode == 20:
+        pytest.skip("Fixture requires an elevated process; native Windows CI runs elevated")
+    assert result.returncode == 0, result.stderr
+    before = security_descriptor(root)
+    with pytest.raises(state.LocalSetupError, match="owned by your OS account"):
+        state.directory(root)
+    assert security_descriptor(root) == before
+    assert (root / "retained.txt").read_text() == "keep existing data"
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows junction rejection")
+def test_windows_refuses_redirected_workspace_parent(tmp_path):
+    root = state.directory(tmp_path / "retained-folder")
+    junction = tmp_path / "redirected-folder"
+    subprocess.run(
+        [
+            "powershell.exe",
+            "-NoProfile",
+            "-NonInteractive",
+            "-Command",
+            "$ErrorActionPreference='Stop'; New-Item -ItemType Junction "
+            "-Path $env:MNEMION_ACL_LINK -Target $env:MNEMION_ACL_TARGET | Out-Null",
+        ],
+        env={**os.environ, "MNEMION_ACL_LINK": str(junction), "MNEMION_ACL_TARGET": str(root)},
         capture_output=True,
         text=True,
         timeout=15,
         check=True,
     )
-    dacl = result.stdout.strip().split("D:", 1)[1]
-    assert dacl.count("(") == 1 and ";FA;;;OW)" in dacl
-    state.write(root / "state.json", {"ready": True})
-    assert json.loads((root / "state.json").read_text()) == {"ready": True}
+    try:
+        with pytest.raises(state.LocalSetupError, match="redirected"):
+            state.directory(junction / "nested")
+        assert not (root / "nested").exists()
+    finally:
+        junction.rmdir()

@@ -30,51 +30,19 @@ def test_private_output_preserves_existing_files_and_removes_failed_downloads(tm
 
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows DACL verification")
-def test_windows_output_has_a_protected_owner_only_dacl(tmp_path):
-    import ctypes as c
-    from ctypes import wintypes as w
+def test_windows_output_has_current_user_owner_and_private_dacl_before_write(tmp_path):
+    from client_tests.windows_acl import current_token_user_sid, security_descriptor
 
+    identity = current_token_user_sid()
     path = tmp_path / "private.json"
     with private_output(path) as output:
+        # The handle is returned only after atomic owner/DACL creation, before
+        # any credentials or downloaded bytes are supplied by the caller.
+        descriptor = security_descriptor(path)
+        assert descriptor.startswith(f"O:{identity}D:P")
+        assert descriptor.count("(") == 1 and f"(A;;FA;;;{identity})" in descriptor
         output.write(b"owner can reopen this file")
     assert path.read_bytes() == b"owner can reopen this file"
-    advapi, kernel = c.WinDLL("advapi32"), c.WinDLL("kernel32")
-    advapi.GetNamedSecurityInfoW.argtypes = [
-        w.LPCWSTR,
-        w.DWORD,
-        w.DWORD,
-        c.c_void_p,
-        c.c_void_p,
-        c.c_void_p,
-        c.c_void_p,
-        c.POINTER(c.c_void_p),
-    ]
-    advapi.GetNamedSecurityInfoW.restype = w.DWORD
-    advapi.ConvertSecurityDescriptorToStringSecurityDescriptorW.argtypes = [
-        c.c_void_p,
-        w.DWORD,
-        w.DWORD,
-        c.POINTER(c.c_void_p),
-        c.c_void_p,
-    ]
-    advapi.ConvertSecurityDescriptorToStringSecurityDescriptorW.restype = w.BOOL
-    kernel.LocalFree.argtypes, kernel.LocalFree.restype = [c.c_void_p], c.c_void_p
-    security, rendered = c.c_void_p(), c.c_void_p()
-    try:
-        assert (
-            advapi.GetNamedSecurityInfoW(str(path), 1, 4, None, None, None, None, c.byref(security))
-            == 0
-        )
-        assert advapi.ConvertSecurityDescriptorToStringSecurityDescriptorW(
-            security, 1, 4, c.byref(rendered), None
-        )
-        dacl = c.wstring_at(rendered)
-        assert dacl.startswith("D:P") and dacl.count("(") == 1 and "(A;;FA;;;OW)" in dacl
-    finally:
-        if rendered:
-            kernel.LocalFree(rendered)
-        if security:
-            kernel.LocalFree(security)
 
 
 @pytest.mark.skipif(os.name == "nt", reason="POSIX permission verification")

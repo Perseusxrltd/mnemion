@@ -42,6 +42,9 @@ def _windows_directory(path: Path) -> None:
 
     from .private_output import _windows_owner_only_handle
 
+    class FileAttributeTagInfo(c.Structure):
+        _fields_ = [("attributes", w.DWORD), ("reparse_tag", w.DWORD)]
+
     kernel = c.WinDLL("kernel32", use_last_error=True)
     advapi = c.WinDLL("advapi32", use_last_error=True)
     kernel.CreateFileW.argtypes = [
@@ -54,6 +57,13 @@ def _windows_directory(path: Path) -> None:
         w.HANDLE,
     ]
     kernel.CreateFileW.restype = w.HANDLE
+    kernel.GetFileInformationByHandleEx.argtypes = [
+        w.HANDLE,
+        c.c_int,
+        c.c_void_p,
+        w.DWORD,
+    ]
+    kernel.GetFileInformationByHandleEx.restype = w.BOOL
     kernel.CloseHandle.argtypes, kernel.CloseHandle.restype = [w.HANDLE], w.BOOL
     kernel.GetCurrentProcess.restype = w.HANDLE
     kernel.LocalFree.argtypes, kernel.LocalFree.restype = [c.c_void_p], c.c_void_p
@@ -77,11 +87,19 @@ def _windows_directory(path: Path) -> None:
     ]
     advapi.GetSecurityInfo.restype = w.DWORD
     advapi.EqualSid.argtypes, advapi.EqualSid.restype = [c.c_void_p, c.c_void_p], w.BOOL
-    handle = kernel.CreateFileW(str(path), 0x60000, 7, None, 3, 0x02200000, None)
+    # Refuse a leaf rename while validating and protecting the opened object.
+    handle = kernel.CreateFileW(str(path), 0x60000, 3, None, 3, 0x02200000, None)
     if handle in {None, c.c_void_p(-1).value}:
         raise LocalSetupError("private_location", "Windows cannot protect this workspace folder.")
     token, security, owner = w.HANDLE(), c.c_void_p(), c.c_void_p()
     try:
+        attributes = FileAttributeTagInfo()
+        if not kernel.GetFileInformationByHandleEx(
+            handle, 9, c.byref(attributes), c.sizeof(attributes)
+        ):
+            raise OSError("Cannot check the workspace folder")
+        if attributes.attributes & 0x400 or not attributes.attributes & 0x10:
+            raise LocalSetupError("unsafe_location", "Use an ordinary local folder without links.")
         if not advapi.OpenProcessToken(kernel.GetCurrentProcess(), 8, c.byref(token)):
             raise OSError("Cannot check the folder owner")
         needed = w.DWORD()
@@ -117,7 +135,12 @@ def directory(path: Path) -> Path:
             raise LocalSetupError(
                 "unsafe_location", "Choose a local folder without redirected parents."
             )
-    path.mkdir(mode=0o700, exist_ok=True)
+    if os.name == "nt":
+        from .private_output import _windows_create_directory
+
+        _windows_create_directory(path)
+    else:
+        path.mkdir(mode=0o700, exist_ok=True)
     _regular(path, directory=True)
     if os.name == "nt":
         _windows_directory(path)

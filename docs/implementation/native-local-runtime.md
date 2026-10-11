@@ -54,17 +54,26 @@ newer Linux distribution does not establish that baseline. The checks do not
 replace a full clean-machine app/service/model/onboarding walkthrough.
 
 The 2026-10-11 matrix passed the four Unix database targets. The Windows build
-now produces the pinned database and static OpenSSL archive, but `initdb`
-fails to read its relocated executable after entering its restricted token
+produced the pinned database and static OpenSSL archive, but its earlier probe
+failed when `initdb` entered its restricted token
 ([run](https://github.com/Perseusxrltd/mnemion/actions/runs/38121287783)).
-CPython's private temporary-directory DACL includes an owner-rights entry;
-an elevated process can create an Administrators-owned directory, while
-PostgreSQL removes administrator privileges before initialization. Check the
-actual directory owner and inherited ACL under that restricted token. Grant
-the creating OS identity explicit private access on new app-owned paths if
-confirmed; preserve PostgreSQL's token restriction and reject unrelated or
-redirected existing directories. The Windows ARM check is also pending because
-it consumes the x64 database archive only after its probe passes.
+Elevated processes can create Administrators-owned files, while PostgreSQL
+removes that group's access before initialization. An owner-rights ACL therefore
+cannot reliably protect a local workspace and keep it accessible to the engine.
+
+Private directories and exclusive output files now atomically name the creating
+TokenUser as owner and grant access to that SID. New database children inherit
+the user-only directory ACL. Existing foreign-owned or redirected folders remain
+rejected; the app does not take their ownership. The native probe creates its
+temporary root and secret files through these production helpers.
+
+Fast Windows x64 and ARM64 jobs check private state, persisted RAM settings and
+actual `CreateRestrictedToken` access before database compilation begins. They
+disable Administrators and Power Users with maximum privileges removed, verify
+those groups no longer grant access, and read/execute both inherited and explicit
+private files while impersonating the restricted token. They also check folder
+traversal and new child-file creation. The full native database rerun, including
+Windows ARM emulation, remains a separate acceptance gate pending CI evidence.
 
 ## Remaining integration
 

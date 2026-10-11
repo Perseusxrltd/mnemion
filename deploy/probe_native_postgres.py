@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from contextlib import contextmanager
 import hashlib
 import json
 import os
@@ -16,6 +17,23 @@ import struct
 import subprocess
 import tempfile
 import zipfile
+
+from mnemion.local_state import directory as private_directory
+from mnemion.private_output import private_output
+
+
+@contextmanager
+def private_probe_directory():
+    # Use the app's creation path. CPython TemporaryDirectory may give an
+    # elevated process an Administrators owner and owner-rights-only DACL;
+    # PostgreSQL intentionally removes that group from its initialization token.
+    root = private_directory(
+        Path(tempfile.gettempdir()) / ("mnemion-pg-validation-" + secrets.token_hex(16))
+    )
+    try:
+        yield root
+    finally:
+        shutil.rmtree(root)
 
 
 def expand(archive_path: Path, directory: Path) -> dict:
@@ -88,9 +106,7 @@ def executable_architecture(path: Path) -> str:
 
 
 def probe(archive: Path, output: Path) -> dict:
-    with tempfile.TemporaryDirectory(prefix="mnemion-pg-validation-") as temporary:
-        root = Path(temporary)
-        root.chmod(0o700)
+    with private_probe_directory() as root:
         install = root / "Memory runtime with spaces"
         metadata = expand(archive, install)
         suffix = ".exe" if platform.system() == "Windows" else ""
@@ -157,8 +173,8 @@ def probe(archive: Path, output: Path) -> dict:
             raise ValueError("Native OpenSSL version differs from its pinned source")
         data = root / "Workspace data Équipe"
         pwfile = root / "initial-password"
-        pwfile.write_text(password + "\n")
-        pwfile.chmod(0o600)
+        with private_output(pwfile) as stream:
+            stream.write((password + "\n").encode("utf-8"))
         run(
             "initdb",
             [
@@ -182,6 +198,8 @@ def probe(archive: Path, output: Path) -> dict:
         cert, key = root / "server.crt", root / "server.key"
         ssl_config = root / "openssl.cnf"
         ssl_config.write_text("[req]\ndistinguished_name=req_dn\n[req_dn]\n")
+        with private_output(key):
+            pass
         run(
             "openssl",
             [
@@ -216,10 +234,12 @@ def probe(archive: Path, output: Path) -> dict:
                 f"ssl=on\nssl_cert_file={conf_path(cert)}\nssl_key_file={conf_path(key)}\n"
             )
         passfile = root / "connection-passwords"
-        passfile.write_text(
-            f"127.0.0.1:{port}:*:runtime_owner:{password}\n127.0.0.1:{port}:*:runtime_reader:{reader_password}\n"
-        )
-        passfile.chmod(0o600)
+        with private_output(passfile) as stream:
+            stream.write(
+                f"127.0.0.1:{port}:*:runtime_owner:{password}\n127.0.0.1:{port}:*:runtime_reader:{reader_password}\n".encode(
+                    "utf-8"
+                )
+            )
         environment.update(
             {
                 "PGHOST": "127.0.0.1",
@@ -320,6 +340,7 @@ CREATE INDEX memories_vectors ON memories USING hnsw (embedding vector_cosine_op
                 "relocated_path_with_spaces": True,
                 "unicode_data_path": True,
                 "file_inventory_verified": True,
+                "production_private_directory": True,
                 "tls_certificate_verified": True,
                 "data_checksums": True,
                 "vector_search": True,
