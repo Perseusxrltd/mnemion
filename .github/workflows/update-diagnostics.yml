@@ -49,7 +49,8 @@ jobs:
             trap '\''kill "$mnemion_wm_pid" 2>/dev/null || true'\'' EXIT
             mnemion_wm_ready=false
             for mnemion_attempt in {1..100}; do
-              if xprop -root _NET_SUPPORTING_WM_CHECK 2>/dev/null | rg -q "window id # 0x"; then
+              mnemion_wm_property=$(xprop -root _NET_SUPPORTING_WM_CHECK 2>/dev/null || true)
+              if [[ "$mnemion_wm_property" == *"window id # 0x"* ]]; then
                 mnemion_wm_ready=true; break
               fi
               sleep 0.2
