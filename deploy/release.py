@@ -155,10 +155,26 @@ def main() -> None:
     ]
     if client_version != version:
         raise ValueError("Desktop Python client version disagrees")
+    for project_root in (root, root / "studio/client"):
+        project = tomllib.loads((project_root / "pyproject.toml").read_text())["project"]
+        locked = tomllib.loads((project_root / "uv.lock").read_text())
+        matches = [item for item in locked["package"] if item["name"] == project["name"]]
+        if len(matches) != 1 or matches[0]["version"] != version:
+            raise ValueError(f"Update the project version in {project_root / 'uv.lock'}")
+    if json.loads((root / "docs/service/openapi.json").read_text())["info"]["version"] != version:
+        raise ValueError("Regenerate the checked-in OpenAPI schema for this release version")
     for name in ("packages/client", "studio/frontend", "studio/electron"):
         for filename in ("package.json", "package-lock.json"):
-            if json.loads((root / name / filename).read_text())["version"] != version:
+            manifest = json.loads((root / name / filename).read_text())
+            if manifest["version"] != version:
                 raise ValueError(f"Version mismatch: {name}/{filename}")
+            if filename == "package-lock.json":
+                for package in ("", "../../packages/client"):
+                    entry = manifest.get("packages", {}).get(package)
+                    if entry is not None and entry.get("version") != version:
+                        raise ValueError(
+                            f"Locked package version mismatch: {name}/{filename} ({package})"
+                        )
     if args.artifacts is None:
         print(f"Validated Mnemion {version}: package versions, release notes and roadmap")
         return

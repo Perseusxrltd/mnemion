@@ -14,6 +14,10 @@ are ready while others are tested; a pending architecture is not a reason to hid
 a completed published download.
 
 1. Change the canonical version and dependent package metadata/lockfiles together.
+   Include both `uv.lock` and `studio/client/uv.lock`, the nested local client
+   version in the frontend npm lock, and regenerate the OpenAPI/agent schemas.
+   Run `python deploy/release.py` before the expensive build matrix; it checks
+   these version boundaries as well as release notes and the roadmap.
 2. Add `docs/releases/<version>.md`. Include the shipping status, changes, fixes,
    compatibility/migration impact, verification evidence and known limitations.
    Do not overwrite an earlier version's release notes.
