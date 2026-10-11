@@ -6,8 +6,10 @@ through the app. A terminal command or an external setup guide is not the
 completion path for a required onboarding step. Operating-system permissions
 and provider sign-ins belong in the flow at the step that needs them.
 
-This is work in progress. The published client currently joins an existing
-service and does not provision its database or server runtime.
+This is work in progress. Published 4.0.10 joins an existing service. Current
+`main` also includes the native local engine, PostgreSQL packaging and guided
+workspace creation; those changes await the complete installed-platform gates
+before publication. Source availability is separate from a released installer.
 
 ## Entry paths
 
@@ -60,15 +62,15 @@ reconnection, durable disconnect and device-only forgetting. Local real-service,
 UI and all six native encrypted-restart gates passed. This foundation does not
 complete installation or host setup.
 
-1. The connection screen assumes an administrator has already installed a server.
-   Build the complete first-run navigation and a native operator bridge with
-   fixed, typed operations rather than arbitrary shell execution.
-2. PostgreSQL, Python and source runners need manual installation. Build and
-   validate signed native runtime packages, including the database's vector
-   extension, and make staging resumable with bounded resources. The
-   [native database foundation](native-local-runtime.md) now has a source-pinned
-   builder and a passing local Linux runtime probe; the complete platform
-   matrix, signed installer integration and portable service remain required.
+1. Current source provides first-run local/remote choices and a fixed, typed
+   native operator bridge. Complete the Windows, Mac and Linux ARM installed
+   wizard/model/reopen checks; the real Linux x64 flow has passed. See
+   [installed-hosting evidence](../validation/2026-10-11-native-installer-bundling.md).
+2. Current source bundles the Python service, CPU model drivers, PostgreSQL and
+   vector extension. The pinned database builds passed on all supported host
+   architectures, including explicitly disclosed Windows ARM compatibility.
+   Complete combined installer and update acceptance. Source-runner provisioning
+   remains a separate app workflow; a bundled database does not finish it.
 3. Host-only settings currently require environment files or CLI commands.
    Add authenticated operator workflows for model/provider approval, source
    runners, server lifecycle, update adoption, diagnostics and recovery.
@@ -81,18 +83,19 @@ do not substitute an obsolete database or bypass role separation to make a
 platform appear supported. Docker Desktop cannot be a mandatory free-company
 dependency. Existing databases and organization-hosted services remain options.
 
-The native-host branch now protects startup, shutdown and RAM-policy writes from
-overlapping with a desktop replacement. Shutdown waits for an existing policy
-write, prevents a start that was waiting on inspection, and preserves control if
-the engine does not finish within the shutdown deadline. Agent changes refresh
-the policy revision shown in Studio without replacing unsaved form edits. Five
-focused lifecycle regressions and the existing desktop suite pass locally
-(52 tests, 2026-10-11); these checks do not establish packaged native hosting on
-Windows or macOS, which remains a release prerequisite.
+Current source protects startup, shutdown and RAM-policy writes from overlapping
+with a desktop replacement. Shutdown waits for an existing policy write,
+prevents a start that was waiting on inspection, and preserves control if the
+engine does not finish within the shutdown deadline. A cancelled update reopens
+only a workspace it actually stopped; an explicit user stop cancels that intent.
+Agent changes refresh the policy revision shown in Studio without replacing
+unsaved form edits. The combined desktop suite passed **60 tests** on 2026-10-11;
+these checks do not establish packaged native hosting on Windows or macOS.
+See the [integration report](../validation/2026-10-11-native-integration.md).
 
 ## RAM-policy recovery
 
-The native-host branch now includes a fixed local operator `memory-repair`
+Current source includes a fixed local operator `memory-repair`
 command and matching app recovery controls on both the local welcome flow and
 **Setup & this device**. Corrupt JSON no longer prevents status inspection.
 Damaged or missing policies pause model admission, preserve the running
