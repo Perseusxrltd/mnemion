@@ -256,7 +256,7 @@ function Shell({
   const links = [
     { to: "memories", label: "Memories", icon: Layers },
     { to: "search", label: "Search & context", icon: Search },
-    { to: "knowledge", label: "Wiki & graph", icon: BookOpen },
+    { to: "knowledge", label: "Memory map & wiki", icon: BookOpen },
     { to: "blocks", label: "Core context", icon: BookOpen },
     ...(reviewer ? [{ to: "review", label: "Review", icon: ShieldCheck }] : []),
     { to: "operations", label: "Activity", icon: Workflow },
@@ -426,7 +426,7 @@ function Shell({
                 <Route path="memory/:id" element={<MemoryDetail />} />
                 <Route path="sources/:id" element={<SourceDetail />} />
                 <Route path="search" element={<SearchMemory />} />
-                <Route path="knowledge" element={<KnowledgeView client={client} space={space.id} />} />
+                <Route path="knowledge" element={<KnowledgeView key={space.id} client={client} space={space.id} reviewer={reviewer} administrator={me.administrator} />} />
                 <Route path="review" element={<Memories review />} />
                 <Route path="blocks" element={<CoreContext />} />
                 <Route path="operations" element={<Operations />} />

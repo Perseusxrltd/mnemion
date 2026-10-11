@@ -1,5 +1,9 @@
 # Evidence wiki, graph and curation
 
+Version 4.0.10 adds the [live 3D memory map](memory-map.md),
+with browser/desktop orbit, filters, original evidence, recorded activity and a
+2D/list fallback. The wiki and earlier evidence graph below remain available.
+
 Studio's **Wiki & graph** page organizes current accessible memories by subject,
 shows source and entity relationships, and identifies exact duplicate text,
 contested claims and unassigned subjects for review. Select a space or all

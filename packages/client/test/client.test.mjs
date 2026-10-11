@@ -2,6 +2,17 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { MnemionClient, MnemionError } from '../dist/index.js'
 
+test('an offline tunnel has actionable diagnostics without repeating private proxy content', async () => {
+  let calls = 0
+  const client = new MnemionClient({ baseUrl: 'https://example.invalid', apiKey: 'private-test-token', fetch: async () => {
+    calls++
+    return new Response('private-test-token and private host details', { status: 404, headers: { 'ngrok-error-code': 'ERR_NGROK_3200', 'X-Request-ID': 'private-test-token' } })
+  } })
+  await assert.rejects(client.me(), error => error instanceof MnemionError && error.code === 'tunnel_offline' &&
+    !JSON.stringify(error).includes('private-test-token') && !error.message.includes('private-test-token'))
+  assert.equal(calls, 1)
+})
+
 test('uncertain saves retry with the same idempotency key and body', async () => {
   const calls = []
   const client = new MnemionClient({ baseUrl: 'http://example.test', apiKey: 'dummy-key', fetch: async (url, options) => {

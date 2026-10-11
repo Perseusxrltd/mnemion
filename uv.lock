@@ -1500,7 +1500,7 @@ wheels = [
 
 [[package]]
 name = "mnemion"
-version = "4.0.9"
+version = "4.0.10"
 source = { editable = "." }
 dependencies = [
     { name = "cryptography" },

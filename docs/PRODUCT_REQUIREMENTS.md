@@ -1,0 +1,139 @@
+# Complete product requirements
+
+Updated **2026-10-11**. This is the persistent checklist for the Mnemion rebuild,
+including additions made during implementation. The [roadmap](ROADMAP.md)
+explains delivery order; this file preserves the complete requested scope.
+The current published distribution and release evidence are linked there.
+
+**Shipped** means an available, documented capability. **Partial** means useful
+behavior is available but the complete request remains open. **Building** means
+implementation or validation is underway, not released. **Planned** means the
+requirement is retained without a completed implementation. **External** means
+a provider or publisher prerequisite is unresolved. **Ongoing** identifies a
+standing product or maintenance commitment. A passing prototype, mock
+test or source commit is not a shipped feature.
+
+## Foundation and compatibility
+
+| ID | Requested outcome | State | Evidence and remaining acceptance |
+| --- | --- | --- | --- |
+| F01 | Study the entire existing repository; use MemPalace and comparable memory tools to inform an update or rebuild. | Shipped | [Study, evidence and architecture](research/2026-10-09-mnemion-study/README.md). Revisit comparisons when they inform a concrete decision. |
+| F02 | One organized memory infrastructure for individuals, teams, applications and AI systems across providers and hardware. | Partial | [Shared platform](service/README.md) is available. Complete the access, hosting, onboarding and integration rows below. |
+| F03 | Preserve valuable features from previous versions instead of losing them during the rebuild. | Partial | [V3 parity audit](implementation/v3-feature-parity.md) and [migration](service/migration.md). Continue native migration/recovery validation and explicitly record retained, replaced and deferred behavior. |
+| F04 | Keep Obsidian compatibility for visualization and ordinary Markdown use. | Shipped | [Managed export, annotations and conflicts](../studio/README.md), [knowledge views](service/knowledge.md). All new graph/capture work must preserve this boundary. |
+| F05 | Support Windows, macOS and Linux, including Intel/AMD and ARM hardware. | Partial | Six desktop distributions are published. [Native local hosting](implementation/native-local-runtime.md), restricted company devices and broader OS-version coverage remain open. |
+| F06 | Work on modest computers without requiring a GPU or a model on every client. | Partial | Remote clients and small CPU embedding profiles are available. Finish hardware-adaptive local installation and measured minimum requirements. “Any PC” does not mean an unsupported OS or unlimited data at fixed RAM. |
+| F07 | Use durable, portable formats and a maintainable architecture that can evolve safely. | Partial | Versioned API, PostgreSQL, Markdown, source evidence and migration contracts exist. Continue upgrade compatibility, recovery and large-workspace tests. |
+| F08 | Keep every required workflow usable end to end by agents as well as people. | Partial | [84-operation catalog, CLI and MCP](service/agent-control.md). New setup, sign-in, host, RAM, recovery and graph operations need equivalent discoverable controls. |
+
+## Sources, assistants and automatic capture
+
+| ID | Requested outcome | State | Evidence and remaining acceptance |
+| --- | --- | --- | --- |
+| C01 | Handle memories and vault sources from Git, Google Drive, arbitrary clouds and company-managed storage. | Partial | [Folder, Git, Drive, Slack, rclone and custom adapters](service/connectors.md). Finish provider sign-in UX, live-provider validation and reconnect/removal coverage. Provider support and permissions must be explicit. |
+| C02 | Connect company messaging and collaboration systems, including Slack. | Partial | Slack ingestion and access mapping exist. Expand messaging adapters, event delivery and their actual permission/retention contracts. |
+| C03 | Gather conversations automatically across AI applications after the user or company enables capture. | Partial | [Watchers, hooks and export normalizers](service/capture.md) exist for selected sources. Finish native provider capture and coverage reporting; connecting MCP does not automatically expose a provider's full chat history. |
+| C04 | Connect Anthropic/Claude, including relevant apps, plugins, MCP and capture paths. | Partial | Claude Code/Desktop MCP setup and Claude export normalization exist. Hosted sign-in, provider-specific packaging and live end-to-end capture remain open. |
+| C05 | Connect OpenAI/ChatGPT/Codex and Dot through the supported apps/plugins and local or remote connection paths. | Partial | Codex setup and ChatGPT/Codex export normalization exist. Dot/plugin packaging, hosted OAuth and live provider acceptance remain open; see [current platform research](research/2026-10-11-agent-platforms.md). |
+| C06 | Connect Grokbot through a supported plugin/connector and retain access independently of its model quota. | Planned | Generic authenticated HTTP/MCP works when its host is reachable. Build and validate the actual Grokbot connection/capture path and independent host ownership/recovery. |
+| C07 | Support Hermes, OpenClaw and other agent platforms without inventing incompatible configuration. | Planned | [Current MCP/OAuth research](research/2026-10-11-agent-platforms.md). Add tested setup profiles and provider-specific instructions; generic MCP alone is not a completed native integration. |
+| C08 | Offer a genuinely connected system with clear capture coverage, deduplication and source provenance. | Partial | Revisions, source identity, idempotent reconciliation and evidence exist. Show per-provider last capture, gaps, exclusions, failures and removal state. Never silently label partial imports complete. |
+| C09 | Preserve access boundaries when several agents, people, devices and configurations share sources. | Partial | Tenant/space grants, mapped source access and leases exist. Complete individual hosted sign-in, policy-managed source approval and fleet tests. |
+
+## Organization access, hosting and safety
+
+| ID | Requested outcome | State | Evidence and remaining acceptance |
+| --- | --- | --- | --- |
+| A01 | Let an organization set up a workspace once and make joining straightforward for its users. | Partial | [Remembered desktop connections](service/workspaces.md) ship. Finish invitations, individual sign-in and guided organization setup. |
+| A02 | Provide specific individual logins or an equivalent simple, secure sign-in, rather than shared administrator credentials. | Building | Design individual accounts, revocable sessions, invitation expiry and recovery; add company identity/SSO without removing scoped machine credentials. |
+| A03 | Give administrators clear control over people, agents, permitted spaces and connections. | Partial | [People, applications, keys and space grants](service/organizations.md) exist. Add session/device visibility, consent, connection policy and independent recovery access. |
+| A04 | Compartmentalize private, team, project and company memory in secured vaults. | Partial | Tenant/space authorization is enforced. Finish the app-managed encryption/key/backup experience; ordinary Obsidian exports remain plaintext and must be described accurately. |
+| A05 | Make remote workspaces reachable through stable, supported connection options. | Building | HTTPS/API/MCP and proxy configuration exist. [Bounded connection diagnostics](service/connection-diagnostics.md) and clearer offline errors are implemented for the next patch. Finish native remote setup, tunnel supervision, stable links and private-network options. [Issue 3](https://github.com/Perseusxrltd/mnemion/issues/3). |
+| A06 | Keep access and configuration available when an agent is unavailable or out of tokens. | Building | Separate workspace hosting and operator access from the agent session. Retain a human recovery path and durable backups. A stopped remote computer still requires its host-management channel. |
+| A07 | Provide an online workspace entry point and management UI as well as the desktop app. | Partial | Web Studio ships with the service. Finish company sign-in, invitations, connection status and management; use company-controlled hosting rather than requiring a central paid service. |
+| A08 | Support hosted-agent OAuth and consent, including safe authorization, expiry and revocation. | Building | Current service uses bearer credentials. OAuth 2.1/PKCE, discovery and client registration/metadata remain implementation gates. [Issues 4 and 18](https://github.com/Perseusxrltd/mnemion/issues/18). |
+| A09 | Keep memories reliable, recoverable and auditable as hosts and providers change. | Partial | [Backups, recovery ledger and restored-access reconciliation](service/recovery.md) exist. Finish guided backup scheduling, host migration and independent disaster recovery. |
+| A10 | Keep the repository clear, documented and safe to publish. | Partial | Public release inventories, license notices and secret/dependency checks exist. Repeat relevant checks on every release; no private endpoints, keys or personal account material in public evidence. |
+
+## Installation, lifecycle and updates
+
+| ID | Requested outcome | State | Evidence and remaining acceptance |
+| --- | --- | --- | --- |
+| U01 | Complete installation and configuration from scratch through a simple app UI. | Building | [Acceptance contract](implementation/app-onboarding.md). Current published desktop joins an existing service. Native database/service/model provisioning and the guided local flow are under validation. |
+| U02 | Configure sources, agents, models, access, Obsidian, resources, backups and recovery from the app. | Partial | Several workspace screens exist. Provider approval, host-only operations and full recovery still need complete, resumable UI flows. |
+| U03 | Run in the background and system tray/menu bar where supported. | Shipped | [Desktop lifecycle](service/updates.md). Linux shells without a tray retain an accessible minimized window. |
+| U04 | Start automatically and recover after restart on every supported OS. | Partial | Desktop login startup and Unix service supervision exist. Complete native local service startup and machine-boot/fleet policies, including Windows. |
+| U05 | Enable automatic verified updates by default and restart safely without losing work. | Partial | Signed desktop update paths exist on all six targets; Linux x64 public 4.0.8 → 4.0.9 restart is under investigation ([issue 21](https://github.com/Perseusxrltd/mnemion/issues/21)). Do not count download completion as a successful update. |
+| U06 | Deliver hotfixes to shared servers as well as desktop clients. | Partial | [Managed Unix service patches](service/managed-updates.md) exist after explicit host adoption. Complete Windows/fleet/Compose policy, public-feed rehearsal and migration-bearing upgrades. |
+| U07 | Ship ready platforms promptly while validating the remaining platforms. | Shipped | [Release process](MAINTENANCE.md) publishes only complete verified installer/update sets and preserves already available targets. |
+| U08 | Keep `main` current with tested work, monitor issues, and keep implementing through new user requests. | Ongoing | New requests extend this checklist and the active queue; they do not silently replace unfinished requirements. Preserve uncommitted work, commit validated milestones and record regressions. |
+| U09 | Keep documentation, release notes, roadmap and in-app help current with updates. | Partial | Offline docs are generated from repository Markdown; release/version checks exist. Update affected requirement IDs, evidence and limitations in every relevant release. |
+| U10 | Deliver an official first release, then continue improving the complete roadmap. | Partial | Shared-platform v1 is published as package series 4.x. The complete requested product remains in progress; a version label does not close this checklist. |
+
+## Models, RAM and memory bandwidth
+
+| ID | Requested outcome | State | Evidence and remaining acceptance |
+| --- | --- | --- | --- |
+| R01 | Offer current, optimized embedding models and meaningful user choice. | Partial | [Pinned CPU and approved remote profiles, candidate indexing and rollback](service/embeddings.md). Continue measured model/language/domain comparisons; no universal “best model” claim. |
+| R02 | Adapt resource use to the hardware, especially available RAM. | Building | Automatic local working budgets, pressure-aware admission, smaller batches and idle unloading are under validation. Publish actual minimums and measurements. |
+| R03 | Let both users and agents change Mnemion's RAM allocation at any time. | Building | Local operator policy and app controls are under validation. Preserve writes, pause/resume indexing safely, persist changes, expose actual use and distinguish a cooperative budget from an OS hard cap. |
+| R04 | Treat memory bandwidth, ingestion, retrieval and concurrency as part of the core pipeline. | Partial | Bounded requests, ingestion limits, leases, context budgets and inference admission exist. Finish representative throughput, queue, working-set and recovery measurements. |
+| R05 | Allow a small local model or approved cloud model to act as the memory librarian. | Shipped | [Librarian configuration, schedules, budgets, review and guarded undo](service/librarian.md). Models remain bounded by source evidence and permissions. |
+| R06 | Make organization and verification useful and trustworthy, with explicit quality evidence. | Partial | Findings and proposals exist. Expand held-out quality evaluations, relationships, contradiction/staleness handling and calibrated verification; model output is not proof of truth. |
+
+## Visibility, design and knowledge maps
+
+| ID | Requested outcome | State | Evidence and remaining acceptance |
+| --- | --- | --- | --- |
+| V01 | Provide a deep, visual graphics and statistics page for advanced monitoring. | Partial | [Six insights views](service/insights.md) exist. Extend fleet, capture coverage, bandwidth and resource-policy views with measured data. |
+| V02 | Include an evaluation system with useful comparisons, reproducibility and exports. | Partial | Datasets, runs, comparisons and case review exist. Expand representative live model/provider/hardware baselines and failure/recovery drills. |
+| V03 | Show memory relationships, topics, subjects, words, ideas and their supporting evidence. | Partial | [Wiki and graph](service/knowledge.md) exist. Extend relationships and terminology with provenance, ambiguity and uncertainty visible. |
+| V04 | Provide a futuristic, useful, live **3D memory map**, online and in the app. | Building | [First implementation](service/memory-map.md): stable 3D orbit/zoom, full screen, filters/focus, clickable evidence, 20-second authorized refresh, bounded rendering and 2D/list fallback. Browser behavior validated against real API writes and revoked access. Finish public native delivery, larger-scale clustering and incremental subscriptions. |
+| V05 | Make agentic work understandable while watching the map. | Building | Creator/time filters, administrator-visible person/app names and real reviewer-scoped creation/revision/review events are implemented. Keep event attribution separate from geometry. Extend the recent event window with replay, cross-space aggregation and capture coverage. |
+| V06 | Match the Perseus XR website theme throughout the app. | Shipped | [Studio design system](STUDIO_DESIGN.md). Preserve readability, responsive layouts and accessibility for new screens. |
+| V07 | Use the existing connected M logo everywhere and keep it readable. | Partial | [Canonical logo and generated assets](BRANDING.md) are on `main`; live website surfaces verified. Native packages with these assets still require release gates/publication. |
+
+## Website, distribution and funding
+
+| ID | Requested outcome | State | Evidence and remaining acceptance |
+| --- | --- | --- | --- |
+| W01 | Provide a proper live Perseus XR product page with simple downloads, benefits, setup and documentation. | Shipped | [Product page](https://www.perseusxr.com/mnemion). It offers verified published platforms. |
+| W02 | Update the existing homepage Mnemion feature and link it to the product page. | Shipped | Homepage and Lab Notes point to the same product page; the shared logo is live. |
+| W03 | Automatically update version numbers, downloads, notes and roadmap links. | Shipped | Release inventory, webhook and scheduled reconciliation maintain availability; normal hotfixes need no website edit/deployment. |
+| W04 | Recommend the visitor's OS/hardware while retaining clear manual download choices. | Shipped | Local browser hints, manual overrides, all six links and no-JavaScript/mobile fallbacks; ambiguous hardware is not guessed. |
+| W05 | Keep Mnemion 100% free forever for individuals and organizations. | Ongoing | [Funding policy](SUPPORT.md). No paid tiers, seats or feature gates. |
+| W06 | Offer optional PayPal support from €5, with higher amounts allowed. | Shipped | [Support policy](SUPPORT.md) and live product page. Support never changes access; payment-provider fees/settlement remain the provider's terms. |
+| W07 | Use a free release/hosting/signing pipeline and incur no paid subscriptions, trials or certificates. | Ongoing | [Code-signing policy](CODE_SIGNING.md). Existing free infrastructure and independent update signatures; no spending authorization is inferred. |
+| W08 | Complete Windows signing where free publisher approval is available and keep Mac software usable without paid enrollment. | External | SignPath sponsorship review remains external. Mac installation and independent signed updates exist; paid Apple publisher identity is not purchased. |
+| W09 | Provide clear launch communication with the download link and remaining roadmap. | Shipped | Initial release communication was sent. Continue accurate public release notes; do not send repeat emails without a new instruction. |
+
+## Current implementation queue
+
+1. **Access and continuity:** A01–A08, C04–C07. Diagnose the actual offline host
+   and protocol/authentication failures; finish individual sign-in and hosted
+   OAuth, administrator invitations, provider setup and independently managed
+   remote access. Preserve tenant/space isolation and existing credentials.
+2. **Native onboarding and hardware:** U01–U02, U04, R02–R04. Finish the existing
+   local-runtime and RAM work, Windows validation, packaged installation,
+   browser/desktop journeys and restart/update persistence.
+3. **Release reliability:** U05–U09, V07. Resolve the public Linux restart
+   rehearsal, publish validated changes for every platform, and keep `main`,
+   release evidence and documentation aligned.
+4. **Connected capture:** C01–C09, R06. Finish per-provider capture, reconnect,
+   exclusions, review and durable incremental synchronization with clear coverage.
+5. **Live knowledge visibility:** V01–V05. Build the 3D/browser/desktop view on the
+   authorized knowledge and activity contracts, then validate usefulness and
+   hardware budgets with real workloads.
+
+Dependencies can be advanced independently. An interruption may add or reorder
+items; it must not erase unfinished work. If scope changes, retain the ID and
+record what replaced it. Completion percentages must state their denominator
+and distinguish source implementation, native validation and public delivery.
+
+## Maintenance rule
+
+For every release or material hotfix, update affected rows, the roadmap and the
+release notes with evidence and remaining limits. New requests get stable IDs.
+Provider integrations need separate evidence for protocol compatibility,
+successful authentication, permitted reads/writes, capture behavior and a live
+provider test. No row closes merely because an agent reports success.

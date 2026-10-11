@@ -18,6 +18,11 @@ packages/client/*
 !packages/client/src/**
 !studio/
 studio/*
+!studio/branding/
+studio/branding/*
+!studio/branding/mnemion.svg
+!studio/branding/assets.json
+!studio/branding/verify.mjs
 !studio/frontend/
 studio/frontend/*
 !studio/frontend/package.json
@@ -32,6 +37,9 @@ studio/frontend/*
 !studio/frontend/public/
 !studio/frontend/public/**
 !studio/README.md
+!assets/
+assets/*
+!assets/mnemion_logo.png
 !docs/
 !docs/**
 !pyproject.toml

@@ -3,15 +3,24 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Download, RefreshCw } from "lucide-react";
 import { MnemionClient, type Knowledge, type KnowledgeNode } from "@mnemion/client";
+import MemoryMap, { compactMapDefault } from "./MemoryMap";
 
-export function KnowledgeView({ client, space }: { client: MnemionClient; space: string }) {
-  const [tab, setTab] = useState("wiki");
+export function KnowledgeView({ client, space, reviewer = false, administrator = false }: { client: MnemionClient; space: string; reviewer?: boolean; administrator?: boolean }) {
+  const [tab, setTab] = useState("map");
+  const [live, setLive] = useState(true);
+  const [mapLimit, setMapLimit] = useState(() => compactMapDefault() ? 60 : 120);
   const [subject, setSubject] = useState("");
   const [filter, setFilter] = useState("");
   const [all, setAll] = useState(false);
   const [history, setHistory] = useState(false);
-  const query = useQuery({ queryKey: ["knowledge", space, all, filter, history], queryFn: () => client.knowledge({ ...(all ? { all_accessible: true } : { space_ids: [space] }), subject: filter || undefined, include_historical: history, limit: 250 }) });
-  const result = query.data;
+  const limit = tab === "map" ? mapLimit : 250;
+  const query = useQuery({ queryKey: ["knowledge", client.baseUrl, space, all, filter, history, limit],
+    queryFn: ({ signal }) => client.request<Knowledge>("POST", "/v1/knowledge", { body: { ...(all ? { all_accessible: true } : { space_ids: [space] }), subject: filter || undefined, include_historical: history, limit }, signal }),
+    refetchInterval: tab === "map" && live ? 20_000 : false, refetchIntervalInBackground: false,
+    refetchOnWindowFocus: tab !== "map" || live, refetchOnReconnect: tab !== "map" || live, retry: 1, gcTime: 0,
+  });
+  // A rejected refresh must not keep rendering evidence from an older access grant.
+  const result = query.error ? undefined : query.data;
   function download() {
     if (!result) return;
     const url = URL.createObjectURL(new Blob([result.markdown], { type: "text/markdown;charset=utf-8" }));
@@ -19,17 +28,20 @@ export function KnowledgeView({ client, space }: { client: MnemionClient; space:
     setTimeout(() => URL.revokeObjectURL(url), 10000);
   }
   return <div className="ws-page">
-    <header className="ws-page-heading"><div><div className="ws-eyebrow">Organized knowledge</div><h1>Explore the evidence</h1><p>A living wiki and graph built from the memories you can currently access.</p></div><button className="ws-button" onClick={() => query.refetch()} disabled={query.isFetching}><RefreshCw size={16} />Refresh</button></header>
+    <header className="ws-page-heading"><div><div className="ws-eyebrow">{tab === "map" ? "Connected intelligence" : "Organized knowledge"}</div><h1>{tab === "map" ? "Your memory, in perspective" : "Explore the evidence"}</h1><p>A living map and wiki built from the memories you can currently access.</p></div><button className="ws-button" onClick={() => query.refetch()} disabled={query.isFetching}><RefreshCw size={16} />Refresh</button></header>
+    <details className="ws-knowledge-scope" open={tab !== "map"}><summary>Scope, subject & history{filter ? ` · ${filter}` : ""}{all ? " · all accessible spaces" : ""}{history ? " · including historical claims" : ""}</summary>
     <form className="ws-card ws-knowledge-controls" onSubmit={event => { event.preventDefault(); setFilter(subject); }}>
-      <div className="ws-knowledge-filter"><label className="ws-field"><span>Subject filter</span><input value={subject} onChange={event => setSubject(event.target.value)} placeholder="Billing, product, research…" maxLength={500} /></label><button className="ws-button">Apply filter</button></div>
-      <div className="ws-knowledge-options"><label className="ws-checkbox"><input type="checkbox" checked={all} onChange={event => setAll(event.target.checked)} />All accessible spaces</label>
-      <label className="ws-checkbox"><input type="checkbox" checked={history} onChange={event => setHistory(event.target.checked)} />Include expired and withdrawn claims</label></div>
+      <div className="ws-knowledge-filter"><label className="ws-field"><span>Subject filter</span><input type="search" value={subject} onChange={event => setSubject(event.target.value)} placeholder="Billing, product, research…" maxLength={500} /></label><button className="ws-button">Apply filter</button></div>
+      <div className="ws-knowledge-options"><label className="ws-checkbox"><input data-update-safe type="checkbox" checked={all} onChange={event => setAll(event.target.checked)} />All accessible spaces</label>
+      <label className="ws-checkbox"><input data-update-safe type="checkbox" checked={history} onChange={event => setHistory(event.target.checked)} />Include expired and withdrawn claims</label></div>
     </form>
+    </details>
     {query.error && <div className="ws-notice ws-error" role="alert">{query.error instanceof Error ? query.error.message : "Knowledge could not be loaded."}</div>}
     {query.isPending && <p role="status">Building the evidence view…</p>}
     {result && <>
-      <div className="ws-actions" role="group" aria-label="Knowledge view">{[["wiki", "Wiki"], ["graph", "Graph"], ["curation", "Curation"]].map(([id, label]) => <button className={`ws-button ${tab === id ? "ws-primary" : ""}`} key={id} aria-pressed={tab === id} onClick={() => setTab(id)}>{label}</button>)}<span className="ws-helper">{result.memories.length} memories · {result.topics.length} topics</span></div>
-      {result.truncated && <div className="ws-notice" role="status">This view includes the first 250 matching memories. Narrow the subject or space to inspect a complete set.</div>}
+      <div className="ws-actions" role="group" aria-label="Knowledge view">{[["map", "Live memory map"], ["wiki", "Wiki"], ["graph", "Evidence graph"], ["curation", "Curation"]].map(([id, label]) => <button className={`ws-button ${tab === id ? "ws-primary" : ""}`} key={id} aria-pressed={tab === id} onClick={() => setTab(id)}>{label}</button>)}<span className="ws-helper">{result.memories.length} memories · {result.topics.length} topics</span></div>
+      {result.truncated && <div className="ws-notice" role="status">This view includes the first {limit} matching memories. Narrow the subject or space to inspect a complete set.</div>}
+      {tab === "map" && <MemoryMap result={result} client={client} space={space} reviewer={reviewer} administrator={administrator} live={live} setLive={setLive} limit={mapLimit} setLimit={setMapLimit} checkedAt={query.dataUpdatedAt} refreshing={query.isFetching} />}
       {tab === "wiki" && <>
         <div className="ws-section-title"><p className="ws-helper">Each passage retains its source and review status. Refresh after changing a memory.</p><button className="ws-button" onClick={download}><Download size={16} />Save Markdown</button></div>
         {result.topics.map(topic => <section className="ws-card" key={topic.id}><h2>{topic.title}</h2>{topic.memory_ids.map(id => {

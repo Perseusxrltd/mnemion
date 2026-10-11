@@ -1,12 +1,13 @@
 {
   "name": "mnemion-studio",
   "private": true,
-  "version": "4.0.9",
+  "version": "4.0.10",
   "type": "module",
   "scripts": {
     "prebuild": "node ../branding/verify.mjs",
     "prebuild:electron": "node ../branding/verify.mjs",
     "dev": "vite",
+    "test:map": "node --test scripts/test-memory-map.mjs",
     "build": "tsc && vite build",
     "build:electron": "tsc && cross-env ELECTRON_BUILD=1 vite build",
     "preview": "vite preview"

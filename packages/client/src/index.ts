@@ -178,6 +178,11 @@ export class MnemionClient {
             ...(options.key ? { 'Idempotency-Key': options.key } : {}) },
           body: options.body === undefined ? undefined : JSON.stringify(options.body),
         })
+        if (response.headers.get('ngrok-error-code') === 'ERR_NGROK_3200') {
+          await response.body?.cancel()
+          throw new MnemionError(response.status, 'tunnel_offline',
+            'The workspace tunnel is offline. Restart its connection through the host’s operator controls; changing the workspace key will not reconnect the host.')
+        }
         if (response.ok) return (response.status === 204 ? undefined : options.binary ? await response.arrayBuffer() : await response.json()) as T
         let payload: { error?: { code?: string; message?: string }; request_id?: string } = {}
         try {

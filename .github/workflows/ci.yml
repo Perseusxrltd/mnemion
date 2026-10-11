@@ -195,6 +195,7 @@ jobs:
       - run: python -m pip install uv==0.12.24
       - run: python deploy/bundle_studio.py
       - run: npm --prefix packages/client test
+      - run: npm --prefix studio/frontend run test:map
       - name: Verify wheel and source package include the matching web Studio
         run: |
           uv build --out-dir build-tmp/source-check

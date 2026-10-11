@@ -460,7 +460,11 @@ async function createWindow() {
             const field = document.createElement('textarea'); document.body.append(field);
             field.value = 'Unsaved smoke-test draft'; field.dispatchEvent(new Event('input', { bubbles: true }));
             const edited = window.mnemion?.updateSafety?.(); field.remove();
-            return { clean, edited, removed: window.mnemion?.updateSafety?.() };
+            const removed = window.mnemion?.updateSafety?.();
+            const filter = document.createElement('select'); filter.dataset.updateSafe = ''; document.body.append(filter);
+            filter.dispatchEvent(new Event('change', { bubbles: true }));
+            const viewChanged = window.mnemion?.updateSafety?.(); filter.remove();
+            return { clean, edited, removed, viewChanged };
           })(),
           nodeAvailable: typeof window.require !== 'undefined',
           route: location.hash

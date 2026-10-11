@@ -113,10 +113,6 @@ export default function Connect({ onConnect, initialError }: { onConnect: (conne
   async function connect(event: FormEvent) {
     event.preventDefault();
     await run("Checking your workspace and access…", async () => {
-      if (desktop?.workspaceConnect) {
-        complete(await desktop.workspaceConnect({ endpoint: endpoint.trim(), credential: key.trim(), remember: remember && !!status?.secureStorage }));
-        return;
-      }
       let url: URL;
       try { url = new URL(endpoint.trim()); } catch { throw new Error("Enter a valid workspace address."); }
       if (!["http:", "https:"].includes(url.protocol) || url.username || url.password || url.search || url.hash) {
@@ -125,7 +121,11 @@ export default function Connect({ onConnect, initialError }: { onConnect: (conne
       if (url.protocol !== "https:" && !["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)) {
         throw new Error("Use HTTPS for a remote workspace so your key is protected in transit.");
       }
-      const address = url.href.replace(/\/+$/, "");
+      const address = url.href.replace(/\/+$/, "").replace(/\/(?:v1|mcp)$/, "");
+      if (desktop?.workspaceConnect) {
+        complete(await desktop.workspaceConnect({ endpoint: address, credential: key.trim(), remember: remember && !!status?.secureStorage }));
+        return;
+      }
       const client = new MnemionClient({ baseUrl: address, apiKey: key.trim(), fetch: nativeFetch });
       const me = await client.me();
       setKey("");
@@ -196,6 +196,7 @@ export default function Connect({ onConnect, initialError }: { onConnect: (conne
             {!!status?.bookmarks.length && <h3>Join another workspace</h3>}
             <p>Use the address and key supplied by your workspace administrator.</p>
             <label className="ws-field"><span>Workspace address</span><input ref={addressInput} type="url" value={endpoint} onChange={event => setEndpoint(event.target.value)} required disabled={!!busy} placeholder="https://memory.example.com" autoComplete="url" /></label>
+            <small>You can also paste the API address ending in /v1 or MCP address ending in /mcp.</small>
             <label className="ws-field"><span>Workspace key</span><input type="password" value={key} onChange={event => setKey(event.target.value)} required disabled={!!busy} placeholder="mnm_…" autoComplete="off" spellCheck={false} /></label>
             {desktop && (
               <>
@@ -223,6 +224,7 @@ export default function Connect({ onConnect, initialError }: { onConnect: (conne
           {busy === "Reconnecting to your workspace…" && <button className="ws-button ws-quiet" onClick={() => void run("Pausing reconnection…", async () => { await desktop!.workspaceDisconnect!(); requestAnimationFrame(() => addressInput.current?.focus()); })}>Use another workspace</button>}
           </>}
           <Link className="ws-link" to="/help">Setup guides, documentation & roadmap</Link>
+          <Link className="ws-link" to="/help?doc=docs%2Fservice%2Fconnection-diagnostics.md">Workspace offline? Connection & recovery guide</Link>
           <Link className="ws-link" to="/help?doc=docs%2Fservice%2Fprivacy.md">Privacy & data handling</Link>
           {window.mnemion?.platform && <small>Background mode, login startup and supported automatic updates are enabled by default. Change them in <strong>Background and updates</strong> in the app menu.</small>}
         </div>

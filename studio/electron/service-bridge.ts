@@ -203,7 +203,11 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
           headers: { Authorization: 'Bearer ' + credential, Accept: 'application/json' },
           redirect: 'error', credentials: 'omit', signal: AbortSignal.timeout(15_000),
         })
-      } catch { throw new Error('The workspace could not be reached. Check its address and your network connection.') }
+      } catch { throw new Error('The workspace could not be reached. Check its address and your network or VPN. If an agent hosts it, use the host’s operator controls to check that its computer and network connection are running.') }
+      if (response.headers.get('ngrok-error-code') === 'ERR_NGROK_3200') {
+        await response.body?.cancel()
+        throw new Error('The workspace tunnel is offline. Restart its connection through the host’s operator controls; changing the workspace key will not reconnect the host.')
+      }
       if (response.status === 401 || response.status === 403) throw new Error('This key is expired, revoked or does not grant workspace access. Use a current key.')
       if (!response.ok) throw new Error('The workspace is not ready. Try again or check its service status.')
       const bytes = await boundedBody(response, 128 * 1024)

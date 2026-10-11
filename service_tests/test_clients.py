@@ -23,6 +23,36 @@ from mnemion.service.mcp import create_mcp
 from mnemion.service.models import KeyInput, PrincipalInput
 
 
+def test_sdk_identifies_an_offline_tunnel_without_echoing_proxy_content():
+    private = "private-fixture-token"
+    with Client(
+        "https://example.invalid",
+        private,
+        transport=httpx.MockTransport(
+            lambda _: httpx.Response(
+                404,
+                text=private,
+                headers={"ngrok-error-code": "ERR_NGROK_3200", "X-Request-ID": private},
+            )
+        ),
+    ) as client:
+        with pytest.raises(MnemionError) as caught:
+            client.request("GET", "/v1/me")
+    assert caught.value.code == "tunnel_offline"
+    assert caught.value.request_id is None and private not in str(caught.value)
+
+
+def test_connection_doctor_checks_real_api_and_mcp_without_memory_writes(env):
+    from mnemion.connection_diagnostics import diagnose
+
+    with running(create_app(env.db, env.embedder)) as url:
+        report = asyncio.run(diagnose(url, env.token))
+    assert report["ready"], report
+    assert report["checks"]["mcp"]["tool_count"] >= 4
+    assert report["checks"]["spaces"]["count"] >= 1
+    assert env.token not in str(report) and str(env.space) not in str(report)
+
+
 def test_sdk_respects_retry_after_without_replaying_an_unsafe_write(monkeypatch):
     delays, requests = [], []
     monkeypatch.setattr("mnemion.sdk.time.sleep", delays.append)

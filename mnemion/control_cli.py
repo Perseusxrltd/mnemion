@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
 from contextlib import nullcontext
 import json
 import os
@@ -49,7 +50,9 @@ def _read(path: Path, maximum: int) -> bytes:
     return value
 
 
-def connection(credentials: Path | None, url: str | None) -> tuple[str, str]:
+def connection(
+    credentials: Path | None, url: str | None, *, require_key: bool = True
+) -> tuple[str, str | None]:
     saved = _json(_read(credentials, 16384)) if credentials else {}
     if not isinstance(saved, dict):
         raise ControlError("invalid_credentials", "Use a private credentials JSON object")
@@ -57,7 +60,9 @@ def connection(credentials: Path | None, url: str | None) -> tuple[str, str]:
         url or saved.get("api_url") or os.environ.get("MNEMION_API_URL", "http://127.0.0.1:7892")
     )
     key = saved.get("api_key") or os.environ.get("MNEMION_API_KEY")
-    if not isinstance(key, str) or not re.fullmatch(r"[\x21-\x7e]{1,4096}", key):
+    if (key is not None or require_key) and (
+        not isinstance(key, str) or not re.fullmatch(r"[\x21-\x7e]{1,4096}", key)
+    ):
         raise ControlError(
             "missing_credentials",
             "Set MNEMION_API_KEY or use --credentials; never put keys in command arguments",
@@ -77,6 +82,7 @@ def connection(credentials: Path | None, url: str | None) -> tuple[str, str]:
             or parsed.password is not None
             or parsed.query
             or parsed.fragment
+            or "\\" in address
             or any(ord(char) <= 32 or ord(char) >= 127 for char in address)
         ):
             raise ValueError()
@@ -85,7 +91,10 @@ def connection(credentials: Path | None, url: str | None) -> tuple[str, str]:
             "invalid_api_url",
             "Use a public HTTPS API address or loopback HTTP without credentials, query or fragment",
         ) from None
-    return address.rstrip("/").removesuffix("/v1"), key
+    base = address.rstrip("/")
+    if base.endswith(("/v1", "/mcp")):
+        base = base.rsplit("/", 1)[0]
+    return base, key
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -95,6 +104,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--url", help="API address; otherwise use credentials or MNEMION_API_URL")
     commands = parser.add_subparsers(dest="command", required=True)
+    commands.add_parser(
+        "doctor", help="Read-only health, access and MCP checks; outputs a content-free JSON report"
+    )
     listing = commands.add_parser(
         "catalog", help="Discover installed operations without a connection"
     )
@@ -130,7 +142,14 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     dispatched = False
     try:
-        if args.command == "catalog":
+        if args.command == "doctor":
+            from .connection_diagnostics import diagnose
+
+            address, key = connection(args.credentials, args.url, require_key=False)
+            result = asyncio.run(diagnose(address, key))
+            print(json.dumps(result, allow_nan=False))
+            return 0 if result["ready"] else 1
+        elif args.command == "catalog":
             result = catalog(
                 group=args.group, query=args.query, offset=args.offset, limit=args.limit
             )
