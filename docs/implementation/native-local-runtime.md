@@ -47,7 +47,8 @@ the embedded resources, and inventories the resulting bytes before packaging.
 ## Native acceptance
 
 `deploy/probe_native_postgres.py` extracts the built archive into a new path with
-spaces and accented characters, verifies every inventoried file and checks the executable architecture.
+spaces and accented characters, verifies every inventoried file and checks the
+executable architecture.
 It initializes a private temporary database in a path with accented characters,
 uses SCRAM credentials over certificate-verified loopback TLS, and tests vector
 search and row-level read/write isolation. It creates a gzip-compressed backup,
@@ -90,8 +91,13 @@ The corrected matrix passed all four Unix targets. Windows then reached its
 identity check and exposed ANSI conversion of the accented data directory;
 UTF-8 executable manifests corrected it. A retained Windows build with those
 manifests passed the complete probe locally, including accented executable and
-data paths. The complete rebuilt matrix, including Windows ARM emulation,
-remains a separate acceptance gate pending CI evidence.
+data paths. The complete rebuilt matrix subsequently passed in
+[run 38132099847](https://github.com/Perseusxrltd/mnemion/actions/runs/38132099847)
+at `95faa444056009518248baecf71aa6c1ee873f14`: Linux and macOS x64/ARM64,
+Windows x64, and the same Windows x64 package under ARM64 emulation. Both
+Windows private-state gates passed before compilation. This establishes native
+database package acceptance; complete app installation and update flows remain
+separate gates.
 
 ## Remaining integration
 

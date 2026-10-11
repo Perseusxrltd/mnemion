@@ -102,16 +102,46 @@ passed the existing-manifest preservation check. After recomputing the archive
 inventory, the complete native Windows probe passed locally with both
 executable and data paths accented: exact directory identity, verified TLS,
 checksums, vector search, RLS read/write isolation, gzip backup restore, and
-immediate-shutdown recovery. The production builder still needs its rebuilt CI
-matrix, especially the Windows ARM64 emulation gate.
+immediate-shutdown recovery. The rebuilt production matrix then passed as
+recorded below.
 
 [Product run 38130421330](https://github.com/Perseusxrltd/mnemion/actions/runs/38130421330)
 passed all 11 jobs at the same head, including both Docker architectures,
 Python 3.12/3.13/3.14 service suites, and both Mac supervision jobs.
 
-## Remaining gate
+## Rebuilt native matrix passed
 
-The rebuilt database matrix and Windows ARM64 emulation must pass with the
-manifest fix; the retained-archive experiment does not replace those build gates.
-Passing the ACL checks does not establish complete app installation,
-model/service onboarding, or signed Windows distribution readiness.
+[Native run 38132099847](https://github.com/Perseusxrltd/mnemion/actions/runs/38132099847)
+completed successfully at `95faa444056009518248baecf71aa6c1ee873f14`.
+
+| Native target | Completed job | Result |
+| --- | --- | --- |
+| Windows x64 private state | [114448374283](https://github.com/Perseusxrltd/mnemion/actions/runs/38132099847/job/114448374283) | 13 passed, 3 POSIX-only skips |
+| Windows ARM64 private state | [114448374114](https://github.com/Perseusxrltd/mnemion/actions/runs/38132099847/job/114448374114) | 13 passed, 3 POSIX-only skips |
+| Linux x64 database | [114448477848](https://github.com/Perseusxrltd/mnemion/actions/runs/38132099847/job/114448477848) | Full probe passed |
+| Linux ARM64 database | [114448477884](https://github.com/Perseusxrltd/mnemion/actions/runs/38132099847/job/114448477884) | Full probe passed |
+| macOS x64 database | [114448477869](https://github.com/Perseusxrltd/mnemion/actions/runs/38132099847/job/114448477869) | Full probe passed |
+| macOS ARM64 database | [114448477852](https://github.com/Perseusxrltd/mnemion/actions/runs/38132099847/job/114448477852) | Full probe passed |
+| Windows x64 database | [114448477883](https://github.com/Perseusxrltd/mnemion/actions/runs/38132099847/job/114448477883) | Full probe passed |
+| Windows ARM64 host, x64 database | [114450089053](https://github.com/Perseusxrltd/mnemion/actions/runs/38132099847/job/114450089053) | Full probe passed; actual ARM64 host and x64 emulation asserted |
+
+Every database result confirms inventoried bytes, Unicode executable and data
+paths, verified loopback TLS, checksums, the pinned vector extension, RLS read
+isolation and rejected writes, gzip backup restoration, and recovery after
+immediate shutdown. The Windows ARM job downloads the successfully probed x64
+package; it does not substitute a different database build. Local combined
+manifest, archive, state, process and readiness checks passed 42 tests with 4
+Windows-only skips, plus full Linux and native Windows probes.
+
+## Separate app and update acceptance
+
+Native database acceptance does not establish complete app installation,
+model/service onboarding, or signed Windows distribution readiness. At the same
+head, the [Windows x64 desktop job](https://github.com/Perseusxrltd/mnemion/actions/runs/38132099852/job/114448392590)
+passed 111 client tests (4 skips) before an existing updater-fixture assertion
+failed. The Product matrix passed its other 10 jobs, but
+[Intel Mac supervision](https://github.com/Perseusxrltd/mnemion/actions/runs/38132099845/job/114448373963)
+failed the managed-update rollback test:
+it expected the prior service runtime to be restored and instead reported that
+the updated service's updater needed a supervisor restart. These update gates
+remain separate work; this native milestone does not claim they passed.
