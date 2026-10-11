@@ -1,5 +1,6 @@
 import type { AgentsResponse, ConnectorStatus, CoreMemory, DrawerDetail, DrawerSummary, KGGraph, ObsidianStatus, RecentDrawer, SearchHit, Status, StudioConfig, Taxonomy, TrustStats } from '../types'
 import type { WorkspaceSession, WorkspaceStatus } from '../workspace/connection-types'
+import type { LocalOptions, LocalStatus, MemoryChange } from '../../../shared/local-workspace'
 
 declare global {
   interface Window {
@@ -16,6 +17,13 @@ declare global {
       workspaceForget?: (id: string) => Promise<void>
       workspaceDisconnect?: () => Promise<void>
       workspaceReset?: () => Promise<void>
+      localStatus?: () => Promise<LocalStatus>
+      localCreate?: (input: LocalOptions) => Promise<LocalStatus>
+      localStart?: () => Promise<LocalStatus>
+      localOpen?: () => Promise<WorkspaceSession>
+      localStop?: () => Promise<boolean>
+      localMemory?: (input: MemoryChange) => Promise<LocalStatus>
+      onLocalStatus?: (callback: (status: LocalStatus) => void) => () => void
       chooseVault?: () => Promise<{ id: string; path: string } | null>
       refreshVault?: (selection: string, bytes: Uint8Array) => Promise<{ completed: boolean; file_count: number; pruned_files: number; detached_annotations: string[]; conflicts: Array<{ path: string; proposal_path?: string }>; vault_path: string }>
       onNavigate?: (callback: (route: string) => void) => () => void

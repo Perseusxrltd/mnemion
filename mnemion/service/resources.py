@@ -14,6 +14,7 @@ def cgroup_limits() -> dict:
         "memory_limit_bytes": None,
         "cpu_limit_cores": None,
         "memory_current_bytes": None,
+        "memory_available_bytes": None,
         "swap_limit_bytes": None,
     }
     if platform.system() != "Linux":
@@ -33,6 +34,20 @@ def cgroup_limits() -> dict:
         except (OSError, ValueError):
             pass
         for node in [path, *(p for p in path.parents if p == root or root in p.parents)]:
+            # A parent limit is shared with siblings. The child's usage alone
+            # cannot tell us how much of that parent budget remains available.
+            try:
+                available = max(
+                    0,
+                    int((node / "memory.max").read_text())
+                    - int((node / "memory.current").read_text()),
+                )
+                prior = result["memory_available_bytes"]
+                result["memory_available_bytes"] = (
+                    min(prior, available) if prior is not None else available
+                )
+            except (OSError, ValueError):
+                pass
             for field, filename in (
                 ("memory_limit_bytes", "memory.max"),
                 ("swap_limit_bytes", "memory.swap.max"),

@@ -38,6 +38,14 @@ def main(argv: list[str] | None = None) -> int:
         help="Load a private JSON credentials file; can be repeated",
     )
     commands = parser.add_subparsers(dest="command", required=True)
+    from ..local_workspace import arguments as local_arguments
+
+    local_arguments(
+        commands.add_parser(
+            "local",
+            help="Create or run an app-managed private local workspace using a bundled database",
+        )
+    )
     commands.add_parser(
         "migrate", help="Apply checked database migrations with administration credentials"
     )
@@ -301,6 +309,10 @@ def main(argv: list[str] | None = None) -> int:
             else resume_space(dsn, tenant, space, UUID(args.token))
         )
         print(json.dumps(result))
+    elif args.command == "local":
+        from ..local_workspace import dispatch
+
+        return dispatch(args)
     elif args.command == "migrate":
         from .db import migrate
 

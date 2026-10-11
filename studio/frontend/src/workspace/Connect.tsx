@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, BookOpen, LoaderCircle, LockKeyhole, ShieldCheck, Workflow } from "lucide-react";
+import { ArrowRight, BookOpen, Database, Globe, LoaderCircle, LockKeyhole, ShieldCheck, Workflow } from "lucide-react";
 import { MnemionClient } from "@mnemion/client";
 import BrandMark from "../components/BrandMark";
 import { version } from "../../package.json";
 import { nativeFetch } from "./native";
 import type { Connection, WorkspaceSession, WorkspaceStatus } from "./connection-types";
+import type { LocalStatus } from '../../../shared/local-workspace';
+import LocalSetup from './LocalSetup';
 
 function errorMessage(error: unknown): string {
   const message = error instanceof Error ? error.message : "The connection could not be completed.";
@@ -43,6 +45,9 @@ export default function Connect({ onConnect, initialError }: { onConnect: (conne
   const [forgetting, setForgetting] = useState<string>();
   const [storageIssue, setStorageIssue] = useState(false);
   const [resetConfirm, setResetConfirm] = useState(false);
+  const [selection, setSelection] = useState<'join' | 'local' | null>(desktop?.localStatus ? null : 'join');
+  const [local, setLocal] = useState<LocalStatus>();
+  const [continueLocal, setContinueLocal] = useState(false);
   const operation = useRef(0);
   const addressInput = useRef<HTMLInputElement>(null);
 
@@ -52,12 +57,26 @@ export default function Connect({ onConnect, initialError }: { onConnect: (conne
     void (async () => {
       let readingSavedData = true;
       try {
-        const saved = await desktop.workspaceStatus!();
+        const [savedResult, localResult] = await Promise.allSettled([
+          desktop.workspaceStatus!(), desktop.localStatus?.(),
+        ]);
+        if (generation !== operation.current) return;
+        if (localResult.status === 'fulfilled' && localResult.value) {
+          setLocal(localResult.value);
+          if (localResult.value.preferences?.selected && localResult.value.available && !initialError) {
+            setContinueLocal(true); setSelection('local');
+            if (savedResult.status === 'fulfilled') setStatus(savedResult.value);
+            return;
+          }
+        }
+        if (savedResult.status === 'rejected') throw savedResult.reason;
+        const saved = savedResult.value;
         readingSavedData = false;
         if (generation !== operation.current) return;
         setStatus(saved);
         setRemember(saved.secureStorage);
-        if (saved.active || saved.activeId) {
+        if ((saved.active || saved.activeId) && !initialError) {
+          setSelection('join');
           setBusy("Reconnecting to your workspace…");
           const session = await desktop.workspaceResume!();
           if (session && generation === operation.current) onConnect(nativeConnection(session));
@@ -138,7 +157,15 @@ export default function Connect({ onConnect, initialError }: { onConnect: (conne
         <div className="ws-connect-form">
           <p className="ws-eyebrow">Your workspace</p>
           <h2>Welcome to Mnemion</h2>
-          <p>Connect to the workspace where your team’s memory lives.</p>
+          <p>{selection === 'local' ? 'Set up once. Keep every assistant connected.' : 'Create a private workspace, or connect to your team’s shared memory.'}</p>
+          {selection === null && <div className="ws-setup-choices">
+            {!!error && <div className="ws-notice ws-error" role="alert">{errorMessage(error)}</div>}
+            <button className="ws-setup-choice" disabled={!!busy || !local?.available} onClick={() => { setContinueLocal(false); setSelection('local'); }}><Database size={23} /><span><strong>{local?.info?.configured ? 'Open my local workspace' : 'Create on this computer'}</strong><small>Private storage, a local model, and automatic resource management.</small></span><ArrowRight size={18} /></button>
+            <button className="ws-setup-choice" disabled={!!busy} onClick={() => setSelection('join')}><Globe size={23} /><span><strong>Join a workspace</strong><small>Use a workspace hosted by your team or on another computer.</small></span><ArrowRight size={18} /></button>
+            {local && !local.available && <small>This installation does not include the local engine. You can join an existing workspace.</small>}
+          </div>}
+          {selection === 'local' && <LocalSetup initial={local} autoContinue={continueLocal} onOpen={complete} onBack={() => { setContinueLocal(false); setSelection(null); }} />}
+          {selection !== 'local' && <>
           {!!status?.bookmarks.length && (
             <section className="ws-saved-workspaces" aria-label="Saved workspaces">
               <h3>Continue in a workspace</h3>
@@ -164,7 +191,8 @@ export default function Connect({ onConnect, initialError }: { onConnect: (conne
               ))}
             </section>
           )}
-          <form className="ws-join-form" onSubmit={connect} aria-label="Connect a workspace">
+          {selection === 'join' && <form className="ws-join-form" onSubmit={connect} aria-label="Connect a workspace">
+            {desktop?.localStatus && <button type="button" className="ws-button ws-quiet" disabled={!!busy} onClick={() => setSelection(null)}>Choose another setup</button>}
             {!!status?.bookmarks.length && <h3>Join another workspace</h3>}
             <p>Use the address and key supplied by your workspace administrator.</p>
             <label className="ws-field"><span>Workspace address</span><input ref={addressInput} type="url" value={endpoint} onChange={event => setEndpoint(event.target.value)} required disabled={!!busy} placeholder="https://memory.example.com" autoComplete="url" /></label>
@@ -190,9 +218,10 @@ export default function Connect({ onConnect, initialError }: { onConnect: (conne
             </div>}
             <button className="ws-button ws-primary" disabled={!!busy || !key.trim()}>{busy ? <LoaderCircle size={17} className="ws-spin" /> : <ArrowRight size={17} />}{busy || "Open workspace"}</button>
             {!desktop && <small>Your key stays in this window’s memory. Disconnecting or reloading clears it.</small>}
-          </form>
+          </form>}
           {busy && <p className="ws-connect-progress" role="status" aria-live="polite">{busy}</p>}
           {busy === "Reconnecting to your workspace…" && <button className="ws-button ws-quiet" onClick={() => void run("Pausing reconnection…", async () => { await desktop!.workspaceDisconnect!(); requestAnimationFrame(() => addressInput.current?.focus()); })}>Use another workspace</button>}
+          </>}
           <Link className="ws-link" to="/help">Setup guides, documentation & roadmap</Link>
           <Link className="ws-link" to="/help?doc=docs%2Fservice%2Fprivacy.md">Privacy & data handling</Link>
           {window.mnemion?.platform && <small>Background mode, login startup and supported automatic updates are enabled by default. Change them in <strong>Background and updates</strong> in the app menu.</small>}

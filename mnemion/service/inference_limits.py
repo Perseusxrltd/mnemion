@@ -66,6 +66,16 @@ class InferenceGate:
         return ServiceError(503, "inference_busy", "Model capacity is busy; retry shortly.")
 
     @contextmanager
+    def maintenance(self):
+        """Nonblocking exclusive access for cache eviction, never preemption."""
+        acquired = self._executing.acquire(blocking=False)
+        try:
+            yield acquired
+        finally:
+            if acquired:
+                self._executing.release()
+
+    @contextmanager
     def acquire(self):
         if not self._admitted.acquire(blocking=False):
             with self._lock:

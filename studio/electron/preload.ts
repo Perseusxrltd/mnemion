@@ -28,6 +28,17 @@ contextBridge.exposeInMainWorld('mnemion', {
   workspaceForget: (id: string) => transfer('workspaces:forget', id),
   workspaceDisconnect: () => transfer('workspaces:disconnect'),
   workspaceReset: () => transfer('workspaces:reset'),
+  localStatus: () => transfer('local:status'),
+  localCreate: (input: unknown) => transfer('local:create', input),
+  localStart: () => transfer('local:start'),
+  localOpen: () => transfer('local:open'),
+  localStop: () => transfer('local:stop'),
+  localMemory: (input: unknown) => transfer('local:memory', input),
+  onLocalStatus: (callback: (status: unknown) => void) => {
+    const listener = (_event: IpcRendererEvent, status: unknown) => callback(status)
+    ipcRenderer.on('local:changed', listener)
+    return () => ipcRenderer.removeListener('local:changed', listener)
+  },
   chooseVault: () => transfer('vault:choose'),
   refreshVault: (selection: string, bytes: Uint8Array) => transfer('vault:refresh', selection, bytes),
   updateSafety: () => {

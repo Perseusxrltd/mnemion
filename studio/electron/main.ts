@@ -530,7 +530,7 @@ ipcMain.handle('app:version', () => app.getVersion())
 ipcMain.handle('app:platform', () => process.platform)
 ipcMain.handle('backend:port', () => backendPort)
 ipcMain.handle('backend:token', () => STUDIO_TOKEN)
-installServiceBridge(() => mainWindow)
+const desktopBridge = installServiceBridge(() => mainWindow)
 
 // App lifecycle
 
@@ -547,7 +547,12 @@ if (!hasSingleInstanceLock) {
     try {
       backendPort = await chooseBackendPort()
       startBackend()
-      updates = new DesktopUpdates(() => mainWindow, localClientBusy, () => { isQuitting = true }, refreshMenus)
+      updates = new DesktopUpdates(() => mainWindow, () => localClientBusy() || desktopBridge.localBusy(), async () => {
+        const stopped = await desktopBridge.stopLocal()
+        if (stopped) isQuitting = true
+        return stopped
+      }, refreshMenus, () => { isQuitting = false; void desktopBridge.bootLocal() })
+      void desktopBridge.bootLocal()
       const backendReady = legacyEnabled ? waitForBackend(`http://127.0.0.1:${backendPort}/api/status`)
         .then(() => writeSmokeStatus('backend-ready'))
         .catch((e) => writeSmokeStatus('backend-timeout', { error: String(e) })) : Promise.resolve()
@@ -593,7 +598,19 @@ app.on('window-all-closed', () => {
 })
 
 let updateQuitPending = false
+let localQuitPending = false
 app.on('before-quit', event => {
+  if (desktopBridge.localActive()) {
+    event.preventDefault()
+    if (localQuitPending) return
+    localQuitPending = true
+    void desktopBridge.closeLocal().then(stopped => {
+      localQuitPending = false
+      if (stopped) app.quit()
+      else isQuitting = false
+    })
+    return
+  }
   if (updates?.quitNeedsUpdateCleanup) {
     event.preventDefault()
     if (updateQuitPending) return

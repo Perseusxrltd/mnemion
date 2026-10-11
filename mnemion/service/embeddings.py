@@ -123,8 +123,15 @@ class LocalEmbedder:
         self._tokenizer = None
         self._load_lock = threading.Lock()
         self._inference_gate = InferenceGate(max_queued=max_queued, wait_seconds=wait_seconds)
+        self._memory_budget = None
 
     def prepare(self) -> None:
+        with self._inference_gate.acquire():
+            self._prepare()
+
+    def _prepare(self) -> None:
+        if self._memory_budget:
+            self._memory_budget.admit(self)
         if self._model is not None:
             return
         with self._load_lock:
@@ -187,16 +194,31 @@ class LocalEmbedder:
             self._model = model
 
     def token_count(self, text: str) -> int:
-        self.prepare()
-        return len(self._tokenizer.encode(text, add_special_tokens=False).ids)
+        with self._inference_gate.acquire():
+            self._prepare()
+            return len(self._tokenizer.encode(text, add_special_tokens=False).ids)
+
+    def _unload(self) -> None:
+        # Only the shared inference gate's holder may release native sessions.
+        with self._load_lock:
+            self._tokenizer = None
+            self._model = None
+
+    def close(self) -> None:
+        with self._inference_gate.maintenance() as acquired:
+            if acquired:
+                self._unload()
 
     def query(self, text: str) -> list[float]:
         with self._inference_gate.acquire():
             return self._query(text)
 
     def _query(self, text: str) -> list[float]:
-        self.prepare()
-        if self.token_count(text) > self.generation.configuration["max_query_tokens"]:
+        self._prepare()
+        if (
+            len(self._tokenizer.encode(text, add_special_tokens=False).ids)
+            > self.generation.configuration["max_query_tokens"]
+        ):
             raise ServiceError(
                 422, "query_too_long", "The semantic query exceeds this model's query budget."
             )
@@ -212,7 +234,7 @@ class LocalEmbedder:
             return self._document(text)
 
     def _document(self, text: str) -> list[EmbeddedChunk]:
-        self.prepare()
+        self._prepare()
         offsets = self._tokenizer.encode(text, add_special_tokens=False).offsets
         if not offsets:
             raise ValueError("Document has no encodable tokens")
@@ -231,11 +253,17 @@ class LocalEmbedder:
             raise ValueError("Document exceeds the 512 chunk indexing limit")
         chunks = []
         with self._tokenizer.inference():
-            vectors = self._model.embed(
-                [config["document_prefix"] + text[start:end] for start, end in spans], batch_size=16
-            )
-            for (start, end), vector in zip(spans, vectors, strict=True):
-                values = vector.tolist()
-                vector_literal(values, self.generation.dimensions)
-                chunks.append(EmbeddedChunk(start, end, values))
+            offset = 0
+            while offset < len(spans):
+                size = self._memory_budget.batch_size(self) if self._memory_budget else 16
+                batch = spans[offset : offset + size]
+                vectors = self._model.embed(
+                    [config["document_prefix"] + text[start:end] for start, end in batch],
+                    batch_size=size,
+                )
+                for (start, end), vector in zip(batch, vectors, strict=True):
+                    values = vector.tolist()
+                    vector_literal(values, self.generation.dimensions)
+                    chunks.append(EmbeddedChunk(start, end, values))
+                offset += size
         return chunks

@@ -182,6 +182,7 @@ class RetrievalService:
                     if isinstance(exc, ServiceError) and exc.code not in {
                         "embedding_profile_unavailable",
                         "embedding_processing_paused",
+                        "inference_memory_budget",
                     }:
                         raise
                     logger.warning("Query embedding unavailable (%s)", type(exc).__name__)

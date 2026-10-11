@@ -135,6 +135,9 @@ class EvaluationRunner:
             return False
         try:
             if self._job is None:
+                budget = self.retrieval.registry.memory_budget
+                if budget and not budget.can_start_background():
+                    return False
                 with self.db.pool.connection() as conn:
                     for generation in self.retrieval.registry.generation_ids:
                         self._job = conn.execute(

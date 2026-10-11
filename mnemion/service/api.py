@@ -158,7 +158,10 @@ def create_app(
     evaluations = EvaluationRunner(database, retrieval)
     librarian_registry = librarian_registry or LibrarianRegistry.from_environment()
     librarian = LibrarianService(database, librarian_registry, memory)
-    librarian_runner = LibrarianRunner(librarian)
+    librarian_runner = LibrarianRunner(
+        librarian,
+        can_start=registry.memory_budget.can_start_background if registry.memory_budget else None,
+    )
     exports = ExportService(database)
     mcp_app = None
 

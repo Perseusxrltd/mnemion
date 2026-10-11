@@ -8,10 +8,9 @@ import stat
 from .portable_paths import portable_part
 
 
-def _windows_owner_only(descriptor: int) -> None:
+def _windows_owner_only_handle(handle: int, *, inherit: bool = False) -> None:
     import ctypes as c
     from ctypes import wintypes as w
-    import msvcrt
 
     advapi = c.WinDLL("advapi32", use_last_error=True)
     kernel = c.WinDLL("kernel32", use_last_error=True)
@@ -40,15 +39,11 @@ def _windows_owner_only(descriptor: int) -> None:
     ]
     advapi.SetSecurityInfo.restype = w.DWORD
     kernel.LocalFree.argtypes, kernel.LocalFree.restype = [c.c_void_p], c.c_void_p
-    kernel.ReOpenFile.argtypes = [w.HANDLE, w.DWORD, w.DWORD, w.DWORD]
-    kernel.ReOpenFile.restype = w.HANDLE
-    kernel.CloseHandle.argtypes, kernel.CloseHandle.restype = [w.HANDLE], w.BOOL
     security = c.c_void_p()
-    security_handle = None
     # A protected DACL grants full access only to the new file's owner. Apply it
     # through the open handle before any secret arrives, never through a shell.
     if not advapi.ConvertStringSecurityDescriptorToSecurityDescriptorW(
-        "D:P(A;;FA;;;OW)", 1, c.byref(security), None
+        "D:P(A;OICI;FA;;;OW)" if inherit else "D:P(A;;FA;;;OW)", 1, c.byref(security), None
     ):
         raise OSError("Cannot create a private Windows file")
     try:
@@ -61,18 +56,31 @@ def _windows_owner_only(descriptor: int) -> None:
             or not acl.value
         ):
             raise OSError("Cannot create a private Windows file")
-        # CRT file handles do not include WRITE_DAC. Reopen the same kernel file
-        # object with that access, preserving identity even if a parent moves.
-        security_handle = kernel.ReOpenFile(msvcrt.get_osfhandle(descriptor), 0x60000, 7, 0)
-        if security_handle in {None, c.c_void_p(-1).value}:
-            raise OSError("Cannot protect the Windows output file")
-        result = advapi.SetSecurityInfo(security_handle, 1, 0x80000004, None, None, acl, None)
+        result = advapi.SetSecurityInfo(handle, 1, 0x80000004, None, None, acl, None)
         if result:
             raise OSError(result, "The filesystem cannot protect the output file")
     finally:
-        if security_handle not in {None, c.c_void_p(-1).value}:
-            kernel.CloseHandle(security_handle)
         kernel.LocalFree(security)
+
+
+def _windows_owner_only(descriptor: int) -> None:
+    import ctypes as c
+    from ctypes import wintypes as w
+    import msvcrt
+
+    kernel = c.WinDLL("kernel32", use_last_error=True)
+    kernel.ReOpenFile.argtypes = [w.HANDLE, w.DWORD, w.DWORD, w.DWORD]
+    kernel.ReOpenFile.restype = w.HANDLE
+    kernel.CloseHandle.argtypes, kernel.CloseHandle.restype = [w.HANDLE], w.BOOL
+    # CRT file handles do not include WRITE_DAC. Reopen the same kernel file
+    # object with that access, preserving identity even if a parent moves.
+    handle = kernel.ReOpenFile(msvcrt.get_osfhandle(descriptor), 0x60000, 7, 0)
+    if handle in {None, c.c_void_p(-1).value}:
+        raise OSError("Cannot protect the Windows output file")
+    try:
+        _windows_owner_only_handle(handle)
+    finally:
+        kernel.CloseHandle(handle)
 
 
 @contextmanager

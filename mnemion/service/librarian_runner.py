@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 class LibrarianRunner:
-    def __init__(self, service: LibrarianService):
+    def __init__(self, service: LibrarianService, *, can_start=None):
         if service.db.worker:
             raise ValueError(
                 "Librarian jobs require the restricted API login and initiating identity"
@@ -29,6 +29,7 @@ class LibrarianRunner:
         self._thread = None
         self._stop = threading.Event()
         self._step_lock = threading.Lock()
+        self._can_start = can_start
 
     def start(self):
         if self._thread is None and self.registry.providers:
@@ -101,6 +102,8 @@ class LibrarianRunner:
             return False
         try:
             if self._job is None:
+                if self._can_start is not None and not self._can_start():
+                    return False
                 self._schedule()
                 with self.db.pool.connection() as conn:
                     self._job = conn.execute(

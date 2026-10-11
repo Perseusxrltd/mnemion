@@ -49,6 +49,16 @@ policy, auditable operations and durable results that agents can inspect and
 retry. A manual-only screen is a parity gap, not a completed agent workflow.
 Administrative authority remains distinct from ordinary memory access.
 
+Multiple independently governed workspaces are a core requirement: people and
+agents may belong to personal, employer and client workspaces, with separate
+memberships, credentials, context and policies. Every operation has an explicit
+target; switching workspaces cannot redirect queued or in-flight work. Combined
+search and transfers require explicit scope and policy checks, and company
+administration must not expose personal workspaces. Keep every app workflow
+agent-operable under the same controls. See the
+[multiple-workspace implementation requirements and acceptance tests](implementation/multiple-workspaces.md).
+The existing saved-connection feature does not complete these requirements.
+
 ## Implemented for the first shared-platform release
 
 | Area | Available behavior | Documentation |

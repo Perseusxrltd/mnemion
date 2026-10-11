@@ -22,6 +22,8 @@ class ModelRegistry:
         self._by_generation.setdefault(default.generation.id, default)
         # Switching models must not multiply simultaneous tensor allocations.
         gate = InferenceGate.from_environment()
+        self.inference_gate = gate
+        self.memory_budget = None
         for model in self._by_generation.values():
             if hasattr(model, "_inference_gate"):
                 model._inference_gate = gate

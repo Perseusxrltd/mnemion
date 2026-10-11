@@ -155,4 +155,5 @@ class RuntimeInsights(ResponseModel):
     models: list[dict] = Field(default_factory=list)
     pool: dict
     resources: dict
+    memory_budget: dict | None = None
     notices: list[str] = Field(default_factory=list)

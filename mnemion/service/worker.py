@@ -9,6 +9,7 @@ from uuid import uuid4
 
 from .db import Database
 from .embeddings import Embedder, vector_literal
+from .errors import ServiceError
 from .lifecycle import purge_memory
 from .fences import shared_boundary
 from .model_state import job_policy
@@ -38,10 +39,16 @@ class Worker:
         self.default_generation = default_generation or embedder.generation.id
 
     def claim(self) -> dict | None:
+        budget = getattr(self.embedder, "_memory_budget", None)
+        # NULL never matches an indexing generation, while the existing narrow
+        # claim function still permits purge jobs. Pressure must not stall deletion.
+        generation = self.embedder.generation.id
+        if budget and not budget.can_schedule(self.embedder):
+            generation = None
         with self.db.pool.connection() as conn:
             return conn.execute(
                 "SELECT * FROM mnemion.claim_job(%s, %s, %s)",
-                (uuid4(), self.lease_seconds, self.embedder.generation.id),
+                (uuid4(), self.lease_seconds, generation),
             ).fetchone()
 
     def _keep_lease(self, job: dict, stopped: threading.Event) -> None:
@@ -219,6 +226,21 @@ class Worker:
     def fail(self, job: dict, error: Exception) -> None:
         with self.db.worker_transaction(job["tenant_id"]) as conn:
             if not self._owned(conn, job):
+                return
+            if isinstance(error, ServiceError) and error.code == "inference_memory_budget":
+                # A live budget reduction can arrive after claim or between
+                # batches. Return the entire job without spending a retry.
+                conn.execute(
+                    """UPDATE mnemion.jobs SET state='pending',lease_id=NULL,lease_until=NULL,
+                       attempts=greatest(0,attempts-1),available_at=now()+interval '2 seconds',
+                       error_code='inference_memory_budget' WHERE id=%s""",
+                    (job["id"],),
+                )
+                conn.execute(
+                    """UPDATE mnemion.operations SET state='accepted',error_code='inference_memory_budget',
+                       updated_at=now() WHERE id=%s""",
+                    (job["operation_id"],),
+                )
                 return
             terminal = job["attempts"] >= self.max_attempts
             code = type(error).__name__[:100]

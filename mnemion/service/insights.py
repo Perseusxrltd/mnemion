@@ -332,6 +332,9 @@ def runtime_insights(
         else [],
         "pool": database.pool.get_stats(),
         "resources": process_resources(),
+        "memory_budget": registry.memory_budget.snapshot()
+        if registry and registry.memory_budget
+        else None,
         "notices": [
             "Process counters restart with this API instance and may include several tenants. No query or source text is collected.",
             "API resource gauges do not measure a separate worker, provider, database or the user's client.",

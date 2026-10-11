@@ -47,6 +47,12 @@ Failed required steps retain progress, explain the specific remedy and offer a
 safe retry. Restarting the app must not create another organization, database or
 key. Switching configuration preserves existing memories and prior working state.
 
+Multi-workspace onboarding and operation must also satisfy the
+[multiple-workspace isolation and agent-parity requirements](multiple-workspaces.md).
+Personal and company memberships remain independent. Joining, switching,
+concurrent work, sharing and recovery must preserve the selected workspace and
+acting identity without carrying credentials or agent context across boundaries.
+
 ## Current gaps and implementation order
 
 Published 4.0.9 adds OS-protected saved desktop connections, verified

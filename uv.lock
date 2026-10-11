@@ -1566,6 +1566,9 @@ dev = [
     { name = "ruff" },
     { name = "supervisor", marker = "sys_platform != 'win32'" },
 ]
+native-build = [
+    { name = "pyinstaller" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -1612,6 +1615,7 @@ dev = [
     { name = "ruff", specifier = ">=0.4.0" },
     { name = "supervisor", marker = "sys_platform != 'win32'", specifier = "==4.3.0" },
 ]
+native-build = [{ name = "pyinstaller", specifier = "==6.22.3" }]
 
 [[package]]
 name = "mpmath"

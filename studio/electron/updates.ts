@@ -31,7 +31,8 @@ export class DesktopUpdates {
     && (process.platform !== 'linux' || !!process.env.APPIMAGE)
 
   constructor(private window: () => BrowserWindow | null, private busy: () => boolean,
-    private beforeRestart: () => void, private changed: () => void) {
+    private beforeRestart: () => boolean | Promise<boolean>, private changed: () => void,
+    private restartCancelled: () => void = () => {}) {
     const firstLaunch = !existsSync(this.path)
     try {
       const text = readFileSync(this.path, 'utf8')
@@ -86,6 +87,7 @@ export class DesktopUpdates {
         catch { this.setStatus({ state: 'Startup setup needs attention' }) }
       })
       autoUpdater.on('error', () => {
+        if (this.installing) this.restartCancelled()
         this.downloaded = false
         this.installing = false
         this.setStatus({ state: 'Update unavailable · retry scheduled' })
@@ -121,6 +123,7 @@ export class DesktopUpdates {
     } else if (event.state === 'current') {
       this.setStatus({ state: 'Up to date', checkedAt: new Date().toISOString() })
     } else if (event.state === 'error') {
+      if (this.installing) this.restartCancelled()
       this.downloaded = false
       this.installing = false
       this.setStatus({ state: 'Update unavailable · retry scheduled' })
@@ -217,19 +220,26 @@ export class DesktopUpdates {
     if (this.installing || !await this.restartIsSafe()) return
     // A second timer can finish its renderer check while the first starts installing.
     if (this.installing) return
-    if (this.mac) {
-      if (!this.mac.install()) return
-      this.installing = true
-      this.beforeRestart()
-    } else if (this.windows) {
-      this.installing = true
-      const started = await this.windows.install(() => this.restartIsSafe())
-      if (started) { this.beforeRestart(); app.quit() }
-      else this.installing = false
-    } else {
-      this.installing = true
-      this.beforeRestart()
-      autoUpdater.quitAndInstall(true, true)
+    this.installing = true
+    try {
+      // Close the managed service/database before replacing bundled runtimes.
+      // Recheck drafts and real inactivity after that asynchronous shutdown.
+      if (!await this.beforeRestart() || !await this.restartIsSafe()) {
+        this.installing = false; this.restartCancelled(); return
+      }
+      if (this.mac) {
+        if (!this.mac.install()) { this.installing = false; this.restartCancelled() }
+      } else if (this.windows) {
+        const started = await this.windows.install(() => this.restartIsSafe())
+        if (started) app.quit()
+        else { this.installing = false; this.restartCancelled() }
+      } else {
+        autoUpdater.quitAndInstall(true, true)
+      }
+    } catch {
+      this.installing = false
+      this.restartCancelled()
+      this.setStatus({ state: 'Update could not restart safely · retry scheduled' })
     }
   }
 }

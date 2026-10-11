@@ -45,6 +45,7 @@ import {
   Plug,
   RefreshCw,
   Search,
+  Settings,
   ShieldCheck,
   Users,
   Workflow,
@@ -78,6 +79,7 @@ const InsightsView = lazy(() => import("./Insights"));
 const Documentation = lazy(() => import("./Documentation"));
 const EmbeddingModels = lazy(() => import("./EmbeddingModels"));
 const Librarian = lazy(() => import("./Librarian"));
+const Setup = lazy(() => import("./Setup"));
 
 type Me = Awaited<ReturnType<MnemionClient["me"]>>;
 type Session = Connection & {
@@ -264,6 +266,7 @@ function Shell({
     { to: "obsidian", label: "Obsidian", icon: Archive },
     { to: "agents", label: "Agents & apps", icon: Plug },
     { to: "help", label: "Documentation & roadmap", icon: FileText },
+    { to: "setup", label: "Setup & this device", icon: Settings },
     ...(me.administrator
       ? [{ to: "connections", label: "Connections", icon: Plug }, { to: "team", label: "People & apps", icon: Users }]
       : []),
@@ -271,7 +274,7 @@ function Shell({
   const navigationGroups = [
     { label: "01 / Memory", pages: ["memories", "search", "knowledge", "blocks", "review"] },
     { label: "02 / Intelligence", pages: ["operations", "insights", "librarian", "models"] },
-    { label: "03 / Workspace", pages: ["obsidian", "agents", "connections", "team", "help"] },
+    { label: "03 / Workspace", pages: ["setup", "obsidian", "agents", "connections", "team", "help"] },
   ];
   async function createSpace(event: FormEvent) {
     event.preventDefault();
@@ -432,6 +435,7 @@ function Shell({
                 <Route path="models" element={<Suspense fallback={<Busy />}><EmbeddingModels key={space.id} client={client} space={space.id} administrator={space.role === "administrator"} /></Suspense>} />
                 <Route path="librarian" element={<Suspense fallback={<Busy />}><Librarian key={space.id} client={client} space={space.id} reviewer={reviewer} administrator={space.role === "administrator"} /></Suspense>} />
                 <Route path="help" element={<Suspense fallback={<Busy />}><Documentation /></Suspense>} />
+                <Route path="setup" element={<Suspense fallback={<Busy />}><Setup endpoint={connection.endpoint} administrator={me.administrator} /></Suspense>} />
                 <Route path="agents" element={<Agents endpoint={connection.endpoint} space={space.id} />} />
                 <Route path="team" element={<Team />} />
                 <Route path="connections" element={<Connections client={client} administrator={me.administrator} endpoint={connection.endpoint} selectSpace={setSelected} />} />

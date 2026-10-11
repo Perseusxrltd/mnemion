@@ -3,8 +3,10 @@ import { spawn, type ChildProcess } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { WorkspaceStore, workspaceIdentity } from './workspace-store.js'
 import { WorkspaceConnections, isWorkspaceSession } from './workspace-connections.js'
+import { LocalWorkspace, localEnvironment, localOptions } from './local-workspace.js'
 
 const MAX_BYTES = 120 * 1024 * 1024
 const selections = new Map<string, string>()
@@ -153,6 +155,46 @@ export async function verifyLocalClient(): Promise<Record<string, unknown>> {
 
 export function installServiceBridge(getWindow: () => BrowserWindow | null) {
   let connections: WorkspaceConnections | undefined
+  let local: LocalWorkspace | undefined
+  let localOpenGeneration = 0
+  type LocalPreferences = { selected: boolean; startWithApp: boolean }
+  function localPreferences(): LocalPreferences {
+    try {
+      const body = readFileSync(join(app.getPath('userData'), 'local-workspace-preferences.json'), 'utf8')
+      if (body.length > 2048) throw new Error('Invalid local preferences')
+      const value = JSON.parse(body)
+      if (typeof value.selected !== 'boolean' || typeof value.startWithApp !== 'boolean') throw new Error('Invalid local preferences')
+      return value
+    } catch { return { selected: false, startWithApp: true } }
+  }
+  function saveLocalPreferences(value: LocalPreferences) {
+    const file = join(app.getPath('userData'), 'local-workspace-preferences.json')
+    mkdirSync(app.getPath('userData'), { recursive: true })
+    const temporary = file + '.' + randomUUID() + '.tmp'
+    writeFileSync(temporary, JSON.stringify(value), { mode: 0o600, flag: 'wx' })
+    renameSync(temporary, file)
+  }
+  function deselectLocal() {
+    ++localOpenGeneration
+    if (localPreferences().selected) saveLocalPreferences({ ...localPreferences(), selected: false })
+  }
+  function localWorkspace(): LocalWorkspace {
+    if (local) return local
+    const base = process.env.MNEMION_STUDIO_USER_DATA ? app.getPath('userData') :
+      process.platform === 'win32' ? (process.env.LOCALAPPDATA || join(app.getPath('home'), 'AppData', 'Local')) :
+      process.platform === 'darwin' ? app.getPath('appData') : (process.env.XDG_DATA_HOME || join(app.getPath('home'), '.local', 'share'))
+    mkdirSync(base, { recursive: true, mode: 0o700 })
+    const root = join(base, 'mnemion-local-workspace')
+    const executable = !app.isPackaged && process.env.MNEMION_LOCAL_ENGINE ? process.env.MNEMION_LOCAL_ENGINE :
+      join(process.resourcesPath, 'engine', process.platform === 'win32' ? 'mnemion-engine.exe' : 'mnemion-engine')
+    const database = !app.isPackaged && process.env.MNEMION_LOCAL_DATABASE ? process.env.MNEMION_LOCAL_DATABASE : join(process.resourcesPath, 'postgresql')
+    local = new LocalWorkspace({ executable, database, root, version: app.getVersion(), environment: localEnvironment(process.env, root),
+      desktopMemory: () => app.getAppMetrics().reduce((sum, metric) => sum + metric.memory.workingSetSize * 1024, 0) }, status => {
+      const window = getWindow()
+      if (window && !window.webContents.isDestroyed()) window.webContents.send('local:changed', { ...status, preferences: localPreferences() })
+    })
+    return local
+  }
   function workspaceConnections(): WorkspaceConnections {
     connections ??= new WorkspaceConnections(new WorkspaceStore(join(app.getPath('userData'), 'workspaces'), workspaceCipher()), async (endpoint, credential) => {
       let response: Response
@@ -185,11 +227,13 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
     const value = input as { endpoint: string; credential: string; remember: boolean }
     if (typeof value.endpoint !== 'string' || typeof value.credential !== 'string' || typeof value.remember !== 'boolean' ||
         Object.keys(value).some(key => !['endpoint', 'credential', 'remember'].includes(key))) throw new Error('Invalid workspace connection.')
+    deselectLocal()
     return workspaceConnections().connect(value.endpoint, value.credential, value.remember)
   })
   ipcMain.handle('workspaces:restore', (event, id: unknown) => {
     trusted(event)
     if (typeof id !== 'string' || id.length > 64) throw new Error('Choose a saved workspace.')
+    deselectLocal()
     return workspaceConnections().restore(id)
   })
   ipcMain.handle('workspaces:forget', (event, id: unknown) => {
@@ -197,8 +241,50 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
     if (typeof id !== 'string' || id.length > 64) throw new Error('Choose a saved workspace.')
     return workspaceConnections().forget(id)
   })
-  ipcMain.handle('workspaces:disconnect', event => { trusted(event); return workspaceConnections().disconnect() })
+  ipcMain.handle('workspaces:disconnect', event => { trusted(event); deselectLocal(); return workspaceConnections().disconnect() })
   ipcMain.handle('workspaces:reset', event => { trusted(event); return workspaceConnections().reset() })
+
+  ipcMain.handle('local:status', async event => {
+    trusted(event)
+    const host = localWorkspace()
+    if (host.status.available && !host.status.info) await host.inspect()
+    return { ...host.status, preferences: localPreferences() }
+  })
+  ipcMain.handle('local:create', async (event, input: unknown) => {
+    trusted(event)
+    const options = localOptions(input)
+    ++localOpenGeneration
+    saveLocalPreferences({ selected: true, startWithApp: true })
+    await workspaceConnections().disconnect()
+    return { ...await localWorkspace().start(options), preferences: localPreferences() }
+  })
+  ipcMain.handle('local:start', async event => {
+    trusted(event)
+    ++localOpenGeneration
+    saveLocalPreferences({ ...localPreferences(), startWithApp: true })
+    return { ...await localWorkspace().start(), preferences: localPreferences() }
+  })
+  ipcMain.handle('local:memory', async (event, input: unknown) => {
+    trusted(event)
+    return { ...await localWorkspace().changeMemory(input), preferences: localPreferences() }
+  })
+  ipcMain.handle('local:open', async event => {
+    trusted(event)
+    const generation = ++localOpenGeneration
+    const connection = localWorkspace().privateConnection()
+    const session = await workspaceConnections().connect(connection.endpoint, connection.credential, false)
+    if (generation !== localOpenGeneration) throw new Error('Another workspace connection was selected.')
+    saveLocalPreferences({ ...localPreferences(), selected: true })
+    return session
+  })
+  ipcMain.handle('local:stop', async event => {
+    trusted(event)
+    ++localOpenGeneration
+    const selected = localPreferences().selected
+    saveLocalPreferences({ selected: false, startWithApp: false })
+    if (selected) await workspaceConnections().disconnect()
+    return localWorkspace().stop()
+  })
 
   ipcMain.handle('service:request', async (event, input: unknown) => {
     trusted(event)
@@ -256,4 +342,19 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
     for (const child of children) child.kill()
     selections.clear()
   })
+
+  return {
+    localBusy: () => local?.busy ?? false,
+    localActive: () => local?.active ?? false,
+    stopLocal: () => local?.stop() ?? Promise.resolve(true),
+    closeLocal: () => local?.close() ?? Promise.resolve(true),
+    bootLocal: async () => {
+      const host = localWorkspace()
+      if (!host.status.available) return
+      try {
+        const status = await host.inspect()
+        if (status.configured && localPreferences().startWithApp) await host.start()
+      } catch { /* The setup screen shows the specific status when opened. */ }
+    },
+  }
 }

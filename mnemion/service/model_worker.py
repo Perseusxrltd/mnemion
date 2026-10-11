@@ -7,6 +7,7 @@ from .worker import Worker
 
 class ModelWorker:
     def __init__(self, database, registry: ModelRegistry, *, telemetry=None):
+        self.registry = registry
         self.backfill = ReindexBackfill(database, registry)
         self.workers = [
             Worker(
@@ -20,7 +21,10 @@ class ModelWorker:
         self.next_worker = 0
 
     def run_once(self) -> bool:
-        backfilled = self.backfill.run_once()
+        budget = self.registry.memory_budget
+        backfilled = (
+            self.backfill.run_once() if not budget or budget.can_start_background() else False
+        )
         for _ in self.workers:
             worker = self.workers[self.next_worker]
             self.next_worker = (self.next_worker + 1) % len(self.workers)
