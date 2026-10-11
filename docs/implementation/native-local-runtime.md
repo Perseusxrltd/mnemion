@@ -20,9 +20,9 @@ external authentication/build integrations are disabled. New local databases
 use PostgreSQL's built-in Unicode locale; importing a database with unsupported
 collation/provider requirements needs a compatibility check before restoration.
 The Unix build records one source adjustment: PostgreSQL's libpq symbol check
-allows OpenSSL's `pthread_exit`, which terminates a thread. Its checks for
-process-exit calls remain active; the original substring check rejects the
-thread symbol when OpenSSL is linked statically.
+allows OpenSSL's `pthread_exit`, which terminates a thread, and Apple's `_atexit`,
+which registers cleanup. Its checks for process-exit calls remain active; the
+original substring check rejects these symbols when OpenSSL is linked statically.
 
 The build produces a ZIP containing tools, extension SQL, time-zone data and a
 file inventory. Paths are relocatable; no system database installation is

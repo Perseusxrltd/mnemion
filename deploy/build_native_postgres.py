@@ -17,6 +17,7 @@ import re
 import shutil
 import stat
 import subprocess
+import sysconfig
 import tarfile
 import urllib.request
 import zipfile
@@ -190,6 +191,8 @@ def inspect(directory: Path, operating_system: str) -> dict[str, list[str]]:
                 "libecpg.so.6",
                 "libecpg_compat.so.3",
                 "libpgtypes.so.3",
+                "ld-linux-aarch64.so.1",
+                "ld-linux-x86-64.so.2",
             }
             if any(lib not in allowed for lib in libraries):
                 raise ValueError(f"Unexpected native dependency in {path.name}: {libraries}")
@@ -242,15 +245,19 @@ def build(output: Path, cache: Path, work: Path) -> Path:
         for name in COMPONENTS
     }
     # PostgreSQL's substring check treats pthread_exit from static OpenSSL as
-    # process exit. Permit this one thread-termination symbol while retaining
-    # the upstream checks for exit/_exit and every other unapproved exit call.
+    # process exit. Permit thread termination and Apple's cleanup registration
+    # while retaining checks for exit/_exit and other unapproved exit calls.
     if operating_system != "windows":
         check = sources["postgresql"] / "src/interfaces/libpq/Makefile"
         original = check.read_text()
         marker = "grep -v -e __cxa_atexit -e __tsan_func_exit"
         if original.count(marker) != 1:
             raise ValueError("Review the upstream libpq symbol check before updating sources")
-        check.write_text(original.replace(marker, marker + " -e pthread_exit"))
+        allowed = " -e pthread_exit"
+        if operating_system == "macos":
+            # Make needs $$ to pass the end anchor through to the shell.
+            allowed += " -e ' _atexit$$'"
+        check.write_text(original.replace(marker, marker + allowed))
     install, dependencies = work / "postgres", work / "dependencies"
     environment = dict(os.environ)
     environment["CFLAGS"] = "-O2 -fPIC -fno-omit-frame-pointer"
@@ -301,10 +308,17 @@ def build(output: Path, cache: Path, work: Path) -> Path:
     run([make[0], "install_sw"], sources["openssl"])
 
     if operating_system == "windows":
+        programs = {}
         for tool in ("meson", "ninja"):
-            version = subprocess.check_output([tool, "--version"], text=True).strip()
-            if version != configuration["build_tools"][tool]:
+            program = Path(sysconfig.get_path("scripts")) / (tool + ".exe")
+            programs[tool] = str(program)
+            version = subprocess.check_output([program, "--version"], text=True).strip()
+            expected = configuration["build_tools"].get(
+                tool + "_binary_version", configuration["build_tools"][tool]
+            )
+            if version != expected:
                 raise ValueError(f"Use the pinned {tool} build tool")
+        environment["NINJA"] = programs["ninja"]
         parsers = extract(
             fetch(configuration["build_tools"]["win_flex_bison"], cache), work / "parsers", None
         )
@@ -343,7 +357,7 @@ def build(output: Path, cache: Path, work: Path) -> Path:
         ]
         run(
             [
-                "meson",
+                programs["meson"],
                 "setup",
                 work / "pg-build",
                 sources["postgresql"],
@@ -359,8 +373,8 @@ def build(output: Path, cache: Path, work: Path) -> Path:
                 *["-D" + name + "=disabled" for name in disabled],
             ]
         )
-        run(["meson", "compile", "-C", work / "pg-build", "-j", "2"])
-        run(["meson", "install", "-C", work / "pg-build"])
+        run([programs["meson"], "compile", "-C", work / "pg-build", "-j", "2"])
+        run([programs["meson"], "install", "-C", work / "pg-build"])
         run(
             [
                 "nmake",
@@ -476,11 +490,16 @@ def package_runtime(
         "architecture": architecture,
         "sources": {name: configuration[name] for name in COMPONENTS},
         "cpu": "baseline; pgvector OPTFLAGS cleared",
-        "source_adjustments": [
-            "libpq symbol check permits static OpenSSL's pthread_exit, retaining process-exit rejection"
-        ]
-        if operating_system != "windows"
-        else [],
+        "source_adjustments": (
+            ["libpq permits static OpenSSL's pthread_exit, retaining process-exit rejection"]
+            if operating_system != "windows"
+            else []
+        )
+        + (
+            ["libpq permits Apple's _atexit cleanup registration"]
+            if operating_system == "macos"
+            else []
+        ),
         "static_libraries": ["OpenSSL", "zlib"],
         "dependencies": libraries,
         "files": {
