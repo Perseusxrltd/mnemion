@@ -26,7 +26,7 @@ DEFAULT_REPOSITORY = "Perseusxrltd/mnemion"
 _VERSION = re.compile(r"(0|[1-9][0-9]{0,4})\.(0|[1-9][0-9]{0,4})\.(0|[1-9][0-9]{0,4})")
 _DIGEST = re.compile(r"[a-f0-9]{64}")
 _RUNTIME_WHEEL = re.compile(
-    r"cryptography-([0-9]{1,5}\.[0-9]{1,5}\.[0-9]{1,5})-cp311-abi3-macosx_11_0_x86_64\.whl"
+    r"cryptography-([0-9]{1,5}\.[0-9]{1,5}\.[0-9]{1,5})-cp312-abi3-macosx_11_0_x86_64\.whl"
 )
 
 

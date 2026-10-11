@@ -83,7 +83,7 @@ def inspect_wheel(path: Path, artifact: Artifact, lock: Path) -> dict[str, str]:
                 version
             ]:
                 raise ManifestError("Native dependency metadata disagrees with its filename")
-            if wheel.get_all("Tag") != ["cp311-abi3-macosx_11_0_x86_64"] or wheel.get_all(
+            if wheel.get_all("Tag") != ["cp312-abi3-macosx_11_0_x86_64"] or wheel.get_all(
                 "Root-Is-Purelib"
             ) != ["false"]:
                 raise ManifestError("Native dependency has incompatible wheel tags")

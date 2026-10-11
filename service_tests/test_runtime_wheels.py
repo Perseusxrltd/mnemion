@@ -14,7 +14,7 @@ from deploy.service_update_manifest import payload as release_payload
 from service_tests.update_fixture import package_inputs
 
 VERSION = "50.0.2"
-NAME = f"cryptography-{VERSION}-cp311-abi3-macosx_11_0_x86_64.whl"
+NAME = f"cryptography-{VERSION}-cp312-abi3-macosx_11_0_x86_64.whl"
 PREFIX = f"cryptography-{VERSION}.dist-info/"
 
 
@@ -39,7 +39,7 @@ def native_wheel(tmp_path):
         "cryptography/hazmat/bindings/_rust.abi3.so": b"protocol fixture, not executable",
         PREFIX + "METADATA": b"Metadata-Version: 2.4\nName: cryptography\nVersion: 50.0.2\n\n",
         PREFIX
-        + "WHEEL": b"Wheel-Version: 1.0\nRoot-Is-Purelib: false\nTag: cp311-abi3-macosx_11_0_x86_64\n\n",
+        + "WHEEL": b"Wheel-Version: 1.0\nRoot-Is-Purelib: false\nTag: cp312-abi3-macosx_11_0_x86_64\n\n",
         PREFIX + "licenses/LICENSE.OpenSSL": b"license fixture",
         PREFIX + "mnemion-build.json": json.dumps(provenance).encode(),
     }

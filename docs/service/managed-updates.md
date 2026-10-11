@@ -43,7 +43,7 @@ For the initial checkout installation, replace the `uv sync` command above with:
 ```sh
 uv sync --locked --no-dev --extra supervision --python 3.13 --no-install-package cryptography
 uv pip install --python .venv/bin/python --no-deps \
-  https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.8/cryptography-50.0.2-cp311-abi3-macosx_11_0_x86_64.whl
+  https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.8/cryptography-50.0.2-cp312-abi3-macosx_11_0_x86_64.whl
 ```
 
 The wheel's checksum is included in the same release's `SHA256SUMS.txt`. It

@@ -102,7 +102,7 @@ def build(root: Path, output: Path) -> Path:
     version = crypto["version"]
     openssl_version = configuration["openssl_version"]
     output.mkdir(parents=True, exist_ok=True)
-    filename = f"cryptography-{version}-cp311-abi3-{configuration['target']}.whl"
+    filename = f"cryptography-{version}-cp312-abi3-{configuration['target']}.whl"
     target = output / filename
     if target.exists():
         raise ValueError("Do not replace a previously built runtime wheel")
