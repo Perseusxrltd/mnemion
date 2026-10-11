@@ -55,6 +55,8 @@ jobs:
           sudo apt-get install -y postgresql-client-16
           echo "MNEMION_PG_BIN=/usr/lib/postgresql/16/bin" >> "$GITHUB_ENV"
       - run: uv sync --locked --python ${{ matrix.python }} --group dev
+      - name: Check release versions before building clients and running the service matrix
+        run: uv run --no-sync python deploy/release.py
       - run: npm --prefix packages/client ci && npm --prefix packages/client test
       - run: uv run --no-sync python -m pytest service_tests -q --cov=mnemion.service --cov-report=term-missing --cov-fail-under=75
       - run: uv run --no-sync mnemion-service schema --output /tmp/openapi.json && diff docs/service/openapi.json /tmp/openapi.json
