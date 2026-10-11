@@ -9,6 +9,7 @@ from typing import Annotated
 from uuid import UUID, uuid4
 
 import psycopg
+import anyio
 from fastapi import Depends, FastAPI, Header, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -54,6 +55,8 @@ from .librarian_api import attach_librarian
 from .librarian_provider import LibrarianRegistry
 from .librarian_runner import LibrarianRunner
 from .agent_api import attach_agents
+from .oauth import OAuthSettings, OAuthVerifier, unauthorized
+from .oauth_api import attach_oauth
 
 logger = logging.getLogger(__name__)
 
@@ -137,7 +140,12 @@ def create_app(
     librarian_registry: LibrarianRegistry | None = None,
     mcp_enabled: bool | None = None,
     studio_enabled: bool = True,
+    oauth: OAuthVerifier | None = None,
 ) -> FastAPI:
+    if oauth is None:
+        settings = OAuthSettings.from_environment()
+        oauth = OAuthVerifier(settings) if settings else None
+    oauth_settings = oauth.settings if oauth else None
     owned = database is None
     if database is None:
         dsn = os.environ.get("MNEMION_DATABASE_URL")
@@ -227,6 +235,7 @@ def create_app(
             expose_headers=["X-Request-ID"],
         )
     app.state.database = database
+    app.state.oauth_settings = oauth_settings
     app.state.embedder = embedder
     app.state.model_registry = registry
     app.state.telemetry = telemetry
@@ -246,6 +255,8 @@ def create_app(
     @app.exception_handler(ServiceError)
     async def service_error(request: Request, exc: ServiceError):
         headers = {"WWW-Authenticate": "Bearer"} if exc.status == 401 else {}
+        if oauth_settings and (exc.status == 401 or exc.code == "insufficient_scope"):
+            headers["WWW-Authenticate"] = oauth_settings.challenge(exc.code)
         if exc.status in {429, 503}:
             headers["Retry-After"] = "1" if exc.code == "inference_busy" else "2"
         return JSONResponse(
@@ -313,12 +324,24 @@ def create_app(
 
     bearer = HTTPBearer(auto_error=False)
 
-    def authenticated(
+    async def authenticated(
+        request: Request,
         credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)],
     ) -> Identity:
-        if not credentials or credentials.scheme.lower() != "bearer":
-            raise ServiceError(401, "unauthorized", "A valid Mnemion API key is required.")
-        return database.authenticate(credentials.credentials)
+        if (
+            len(request.headers.getlist("authorization")) != 1
+            or not credentials
+            or credentials.scheme.lower() != "bearer"
+            or not 1 <= len(credentials.credentials) <= 4096
+            or any(not 33 <= ord(c) <= 126 for c in credentials.credentials)
+        ):
+            raise unauthorized()
+        token = credentials.credentials
+        # Reserve the local key prefix. Never send a Mnemion API key to an issuer.
+        if token.startswith("mnm_") or oauth is None:
+            return await anyio.to_thread.run_sync(database.authenticate, token)
+        claims = await oauth.verify(token)
+        return await anyio.to_thread.run_sync(database.authenticate_oauth, claims)
 
     Auth = Annotated[Identity, Depends(authenticated)]
     Key = Annotated[str, Header(alias="Idempotency-Key", min_length=1, max_length=200)]
@@ -331,6 +354,14 @@ def create_app(
     attach_embeddings(app, database, registry, authenticated)
     attach_librarian(app, librarian, authenticated)
     attach_agents(app, authenticated)
+    attach_oauth(app, database, authenticated, oauth_settings)
+
+    if oauth_settings:
+
+        @app.get("/.well-known/oauth-protected-resource", include_in_schema=False)
+        @app.get("/.well-known/oauth-protected-resource/mcp", include_in_schema=False)
+        def oauth_metadata():
+            return oauth_settings.metadata()
 
     @app.get("/health/live", tags=["Operations"], response_model=c.LiveStatus)
     def live():
@@ -606,7 +637,11 @@ def create_app(
         from .mcp import create_mcp
 
         gateway = create_mcp(
-            "http://mnemion.internal", api_app=app, public_url=os.environ.get("MNEMION_PUBLIC_URL")
+            "http://mnemion.internal",
+            api_app=app,
+            public_url=oauth_settings.resource
+            if oauth_settings
+            else os.environ.get("MNEMION_PUBLIC_URL"),
         )
         mcp_app = gateway.streamable_http_app(stateless_http=True, json_response=True)
         # Preserve the exact /mcp URL without Mount's trailing-slash redirect.

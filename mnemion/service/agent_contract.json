@@ -13179,6 +13179,137 @@
       "summary": "Save"
     },
     {
+      "download": false,
+      "effect": "write",
+      "group": "identity",
+      "input_schema": {
+        "$defs": {
+          "OAuthBindingInput": {
+            "additionalProperties": false,
+            "properties": {
+              "client_id": {
+                "maxLength": 2048,
+                "minLength": 1,
+                "title": "Client Id",
+                "type": "string"
+              },
+              "name": {
+                "maxLength": 200,
+                "minLength": 1,
+                "title": "Name",
+                "type": "string"
+              },
+              "principal_id": {
+                "format": "uuid",
+                "title": "Principal Id",
+                "type": "string"
+              },
+              "subject": {
+                "maxLength": 255,
+                "minLength": 1,
+                "title": "Subject",
+                "type": "string"
+              }
+            },
+            "required": [
+              "principal_id",
+              "name",
+              "subject",
+              "client_id"
+            ],
+            "title": "OAuthBindingInput",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/OAuthBindingInput"
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "POST",
+      "name": "oauth.bind",
+      "output_schema": {
+        "additionalProperties": true,
+        "title": "Response Create Binding V1 Oauth Bindings Post",
+        "type": "object"
+      },
+      "parameter_locations": {},
+      "path": "/v1/oauth/bindings",
+      "retry": "inspect_before_retry",
+      "sensitive_result": false,
+      "summary": "Create Binding"
+    },
+    {
+      "download": false,
+      "effect": "read",
+      "group": "identity",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {},
+        "type": "object"
+      },
+      "method": "GET",
+      "name": "oauth.bindings",
+      "output_schema": {
+        "additionalProperties": true,
+        "title": "Response Bindings V1 Oauth Bindings Get",
+        "type": "object"
+      },
+      "parameter_locations": {},
+      "path": "/v1/oauth/bindings",
+      "retry": "read",
+      "sensitive_result": false,
+      "summary": "Bindings"
+    },
+    {
+      "download": false,
+      "effect": "write",
+      "group": "identity",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "binding_id": {
+                "format": "uuid",
+                "title": "Binding Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "binding_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters"
+        ],
+        "type": "object"
+      },
+      "method": "DELETE",
+      "name": "oauth.revoke",
+      "output_schema": {
+        "additionalProperties": true,
+        "title": "Response Revoke Binding V1 Oauth Bindings  Binding Id  Delete",
+        "type": "object"
+      },
+      "parameter_locations": {
+        "binding_id": "path"
+      },
+      "path": "/v1/oauth/bindings/{binding_id}",
+      "retry": "inspect_before_retry",
+      "sensitive_result": false,
+      "summary": "Revoke Binding"
+    },
+    {
       "download": true,
       "effect": "read",
       "group": "obsidian",

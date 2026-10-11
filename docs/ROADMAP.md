@@ -9,6 +9,13 @@ native onboarding and RAM controls, company sign-in and independent host access,
 Dot/Grokbot/Claude/Hermes/OpenClaw integrations, automatic cross-app capture and
 the requested live 3D memory/activity map.
 
+The next access increment includes an [optional OAuth resource-server foundation](service/oauth.md):
+trusted-issuer introspection, discovery/challenges and individually revocable
+identity bindings. It is not in the published 4.0.10 binaries. Built-in simple
+personal/team sign-in, invitations, app onboarding, consent, reauthorization,
+independent recovery and live agent-platform acceptance remain in the queue;
+external enterprise identity is an optional deployment path.
+
 Version 4.0.10 adds: [bounded connection diagnosis](service/connection-diagnostics.md)
 and the [live 3D memory map](service/memory-map.md). The map includes browser/desktop
 orbit, full-screen inspection, evidence links, creator/time filters, recorded

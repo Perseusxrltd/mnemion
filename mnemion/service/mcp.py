@@ -16,6 +16,7 @@ from .. import agent_control
 from .contracts import Page, Space
 from .models import MemoryKind, SourceInput
 from .mcp_transport import MnemionMCPServer
+from .oauth import OAuthSettings
 
 Text = Annotated[
     str,
@@ -129,6 +130,9 @@ def create_mcp(
         api_url=base_url,
         api_app=api_app,
         public_url=public_url,
+        oauth_settings=getattr(api_app.state, "oauth_settings", None)
+        if api_app is not None
+        else OAuthSettings.from_environment(),
         version=__version__,
         instructions=(
             "Use memory_spaces to select a writable space for saves. For global recall/context, pass space_ids=[] and all_accessible=true. "

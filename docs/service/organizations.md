@@ -16,6 +16,12 @@ grants. API and worker database logins have separate restricted roles; the schem
 owner is only for setup, migration and recovery. Do not give assistants an owner
 key merely to simplify configuration. MCP HTTP calls retain each caller's identity.
 
+The [OAuth foundation](oauth.md), under development after 4.0.10, adds individually
+revocable external identity bindings for one operator-approved workspace per
+issuer configuration. Other tenants cannot claim those users. It supplements
+existing keys; built-in personal/company sign-in, invitations and the complete
+app-managed access and recovery flows remain required work.
+
 Each source connection belongs to a space, has an explicit provider configuration,
 tracks a checkpoint and runs under an authorized identity. Git, local folders,
 Google Drive, Slack, rclone storage and custom adapters use the same ingestion,

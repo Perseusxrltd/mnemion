@@ -27,6 +27,7 @@ class Identity:
     tenant_id: UUID
     principal_id: UUID
     key_id: UUID
+    expires_at: float | None = None
 
 
 def token_hash(token: str) -> str:
@@ -136,6 +137,21 @@ class Database:
             raise ServiceError(401, "unauthorized", "A valid Mnemion API key is required.")
         return Identity(row["tenant_id"], row["principal_id"], row["key_id"])
 
+    def authenticate_oauth(self, claims) -> Identity:
+        """Resolve only fully verified claims from the operator's trusted issuer."""
+        if self.worker:
+            raise ServiceError(401, "unauthorized", "A valid access token is required.")
+        with self.pool.connection() as conn:
+            row = conn.execute(
+                "SELECT * FROM mnemion.authenticate_oauth(%s,%s,%s)",
+                (claims.issuer, claims.subject, claims.client_id),
+            ).fetchone()
+        if not row or row["tenant_id"] != claims.tenant_id:
+            raise ServiceError(
+                401, "unauthorized", "A valid, linked Mnemion access token is required."
+            )
+        return Identity(row["tenant_id"], row["principal_id"], row["key_id"], claims.expires_at)
+
     @contextmanager
     def transaction(
         self, identity: Identity, *, timeout: float | None = None
@@ -152,8 +168,9 @@ class Database:
                          ON p.tenant_id=k.tenant_id AND p.id=k.principal_id
                        WHERE k.id=%s AND k.principal_id=mnemion.principal()
                          AND k.revoked_at IS NULL AND p.disabled_at IS NULL
-                         AND (k.expires_at IS NULL OR k.expires_at > now())""",
-                    (identity.key_id,),
+                         AND (k.expires_at IS NULL OR k.expires_at > now())
+                         AND (%s::double precision IS NULL OR %s > extract(epoch FROM clock_timestamp()))""",
+                    (identity.key_id, identity.expires_at, identity.expires_at),
                 ).fetchone()
                 if not valid:
                     raise ServiceError(401, "unauthorized", "The API key is no longer valid.")

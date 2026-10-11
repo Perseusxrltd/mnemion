@@ -25,6 +25,9 @@ principals.disable POST /v1/principals/{principal_id}/disable
 keys.list GET /v1/keys
 keys.create POST /v1/principals/{principal_id}/keys
 keys.revoke DELETE /v1/keys/{key_id}
+oauth.bindings GET /v1/oauth/bindings
+oauth.bind POST /v1/oauth/bindings
+oauth.revoke DELETE /v1/oauth/bindings/{binding_id}
 grants.list GET /v1/spaces/{space_id}/grants
 grants.set PUT /v1/spaces/{space_id}/grants/{principal_id}
 grants.revoke DELETE /v1/spaces/{space_id}/grants/{principal_id}

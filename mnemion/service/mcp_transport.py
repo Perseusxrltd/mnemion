@@ -17,8 +17,32 @@ from starlette.responses import JSONResponse
 
 from ..sdk import Client, MnemionError
 from .models import SCOPE_SELECTION_MESSAGE
+from .oauth import OAUTH_SCOPE
 
 logger = logging.getLogger(__name__)
+
+
+async def oauth_tool_metadata(ctx, call_next):
+    """Add the OpenAI auth extension after the SDK's core-protocol field sieve.
+
+    Use the SDK's public middleware interface: typed Tool serialization and
+    protocol-version conversion otherwise discard unknown top-level fields.
+    """
+    result = await call_next(ctx)
+    if ctx.method == "tools/list" and isinstance(result, dict):
+        schemes = [{"type": "oauth2", "scopes": [OAUTH_SCOPE]}]
+        return {
+            **result,
+            "tools": [
+                {
+                    **tool,
+                    "securitySchemes": schemes,
+                    "_meta": {**(tool.get("_meta") or {}), "securitySchemes": schemes},
+                }
+                for tool in result.get("tools", [])
+            ],
+        }
+    return result
 
 
 def transport_security(public_url: str | None) -> TransportSecuritySettings:
@@ -115,15 +139,22 @@ class InProcessAPITransport(httpx.BaseTransport):
 class MCPBearerMiddleware:
     """Authenticate every HTTP request, including initialize and tools/list."""
 
-    def __init__(self, app, authenticate):
+    def __init__(self, app, authenticate, oauth_settings=None):
         self.app = app
         self.authenticate = authenticate
+        self.oauth_settings = oauth_settings
         self.capacity = anyio.CapacityLimiter(32)
 
     async def reject(self, scope, receive, send, status, code, message):
         headers = {"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"}
         if status == 401:
-            headers["WWW-Authenticate"] = 'Bearer realm="Mnemion"'
+            headers["WWW-Authenticate"] = (
+                self.oauth_settings.challenge("invalid_token")
+                if self.oauth_settings
+                else 'Bearer realm="Mnemion"'
+            )
+        if status == 403 and self.oauth_settings:
+            headers["WWW-Authenticate"] = self.oauth_settings.challenge("insufficient_scope")
         if status == 503:
             headers["Retry-After"] = "1"
         response = JSONResponse(
@@ -136,6 +167,18 @@ class MCPBearerMiddleware:
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
             return await self.app(scope, receive, send)
+        if (
+            self.oauth_settings
+            and scope.get("path")
+            in {
+                "/.well-known/oauth-protected-resource",
+                "/.well-known/oauth-protected-resource/mcp",
+            }
+            and scope.get("method") in {"GET", "HEAD"}
+        ):
+            return await JSONResponse(
+                self.oauth_settings.metadata(), headers={"Cache-Control": "no-store"}
+            )(scope, receive, send)
         headers = [
             value for name, value in scope.get("headers", []) if name.lower() == b"authorization"
         ]
@@ -151,7 +194,7 @@ class MCPBearerMiddleware:
                 send,
                 401,
                 "unauthorized",
-                "Send your own Mnemion API key as a Bearer token.",
+                "Send your own Mnemion access token as a Bearer token.",
             )
         try:
             self.capacity.acquire_nowait()
@@ -167,7 +210,21 @@ class MCPBearerMiddleware:
                 status = 503
             if status == 401:
                 return await self.reject(
-                    scope, receive, send, 401, "unauthorized", "The API key is invalid or revoked."
+                    scope,
+                    receive,
+                    send,
+                    401,
+                    "unauthorized",
+                    "The access token is invalid, expired or revoked.",
+                )
+            if status == 403:
+                return await self.reject(
+                    scope,
+                    receive,
+                    send,
+                    403,
+                    "insufficient_scope",
+                    "The token requires the mnemion:access scope.",
                 )
             if status != 200:
                 return await self.reject(
@@ -193,6 +250,7 @@ def tool_error(
     retry_after=None,
     outcome=None,
     retryable=None,
+    challenge=None,
 ):
     data = {
         "code": code,
@@ -210,11 +268,16 @@ def tool_error(
         is_error=True,
         structured_content=data,
         content=[TextContent(type="text", text=f"{code}: {message}")],
+        _meta={"mcp/www_authenticate": [challenge]} if challenge else None,
     )
 
 
 class MnemionMCPServer(MCPServer):
-    def __init__(self, *args, api_url, api_app=None, public_url=None, **kwargs):
+    def __init__(
+        self, *args, api_url, api_app=None, public_url=None, oauth_settings=None, **kwargs
+    ):
+        if oauth_settings:
+            kwargs["middleware"] = [*(kwargs.get("middleware") or []), oauth_tool_metadata]
         super().__init__(*args, **kwargs)
         self.api_url = (
             "http://mnemion.internal"
@@ -223,6 +286,7 @@ class MnemionMCPServer(MCPServer):
         )
         self.api_app = api_app
         self.public_url = public_url
+        self.oauth_settings = oauth_settings
         self.worker_capacity = anyio.CapacityLimiter(8)
         # Validate configuration during startup, never on an agent's first call.
         self.transport_security = transport_security(public_url)
@@ -256,7 +320,9 @@ class MnemionMCPServer(MCPServer):
         )
         app = super().streamable_http_app(**kwargs)
         app.add_middleware(BodyLimitMiddleware)
-        app.add_middleware(MCPBearerMiddleware, authenticate=self.authenticate)
+        app.add_middleware(
+            MCPBearerMiddleware, authenticate=self.authenticate, oauth_settings=self.oauth_settings
+        )
         return app
 
     async def call_tool(self, name, arguments, context=None):
@@ -276,6 +342,10 @@ class MnemionMCPServer(MCPServer):
                         retry_after=getattr(cause, "retry_after", None),
                         outcome=getattr(cause, "outcome", None),
                         retryable=cause.retryable,
+                        challenge=self.oauth_settings.challenge(cause.code)
+                        if self.oauth_settings
+                        and (cause.status == 401 or cause.code == "insufficient_scope")
+                        else None,
                     )
                 if isinstance(cause, ValidationError):
                     errors = cause.errors()

@@ -66,6 +66,11 @@ at `/workspace`; interactive API documentation is at `/docs`. Use `serve --host`
 configure the listener. For network deployment, put the API behind a TLS proxy
 and configure allowed browser origins with `MNEMION_CORS_ORIGINS`.
 
+The development branch also has an [optional trusted-issuer OAuth foundation](oauth.md)
+for hosted agents. It is not in published 4.0.10 binaries. It requires an actual
+authorization server and operator-approved workspace; built-in personal/team
+sign-in and guided onboarding remain in development.
+
 The worker downloads and verifies the pinned multilingual E5 small ONNX model
 when first needed. No paid model key is needed. Prepare the cache explicitly with:
 
