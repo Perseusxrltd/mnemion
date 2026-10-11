@@ -1,8 +1,17 @@
 # Mnemion product roadmap
 
-Current distribution: **4.0.12**. Updated: **2026-10-12**.
+Current distribution: **4.0.13**. Updated: **2026-10-12**.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
+
+Version [4.0.13](releases/4.0.13.md) is in release preparation. Setup shows the
+app and authenticated workspace server versions separately, supports a fresh
+server check and explains older servers without version reporting. Shared hosts
+and desktop clients retain separate update ownership. It also fixes a
+[reproduced administrator diagnostic failure](validation/2026-10-12-administrator-diagnostics.md)
+for visible compartments without a content grant, without broadening access.
+Published downloads remain
+on 4.0.12 until the new release gates pass.
 
 Version [4.0.12](releases/4.0.12.md) fixes desktop connections through free ngrok
 endpoints and prevents cached offline/identity responses from deciding current

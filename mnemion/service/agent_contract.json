@@ -7077,6 +7077,18 @@
                 "title": "Principal Id",
                 "type": "string"
               },
+              "service_version": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Version of the authenticated workspace service, independent of the client app.",
+                "title": "Service Version"
+              },
               "tenant_id": {
                 "title": "Tenant Id",
                 "type": "string"

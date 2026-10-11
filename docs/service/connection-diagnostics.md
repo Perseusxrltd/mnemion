@@ -90,6 +90,13 @@ They exclude the private address, key, names, IDs, memory text, raw HTML and
 untrusted server messages. Review any surrounding shell logs separately before
 sharing them; the credentials file itself must remain private.
 
+From 4.0.13, the spaces check separates the visible `count` from
+`accessible_count`, which includes only explicit memory-space roles. Organization
+administrators may see compartments without a content grant (`role: null`);
+this is a valid response. If all visible spaces lack grants, the report retains
+`no_spaces` while still checking authenticated MCP access. The identity check can
+confirm organization-administrator authority independently of memory access.
+
 | Result | Next action |
 | --- | --- |
 | `tunnel_offline` | Open the host's operator console; restart the tunnel and check the Mnemion service. |

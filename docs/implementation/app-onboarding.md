@@ -79,6 +79,10 @@ complete installation or host setup.
 4. Remote sharing and hosted OAuth remain open roadmap work. Expose only tested
    connection methods and finish their identity, consent and revocation flows.
 
+Source 4.0.13 adds separate app/server version reporting and a fresh authenticated
+server check in Setup, with explicit older-server and failed-check states. This
+visibility does not complete managed host adoption or its recovery workflow.
+
 A guide-only link, disabled “create workspace” button or successful mock response
 does not close any of these gaps. Native runtime availability is a release gate;
 do not substitute an obsolete database or bypass role separation to make a

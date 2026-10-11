@@ -180,6 +180,10 @@ class IdentityInfo(ResponseModel):
     tenant_name: str
     kind: Literal["human", "application"]
     administrator: bool
+    service_version: str | None = Field(
+        default=None,
+        description="Version of the authenticated workspace service, independent of the client app.",
+    )
 
 
 class Space(ResponseModel):

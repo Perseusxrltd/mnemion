@@ -16,6 +16,11 @@ grants. API and worker database logins have separate restricted roles; the schem
 owner is only for setup, migration and recovery. Do not give assistants an owner
 key merely to simplify configuration. MCP HTTP calls retain each caller's identity.
 
+From 4.0.13, **Setup & this device** shows separate app and authenticated service
+versions. Members can refresh the server observation without receiving host
+privileges. Organization administration, explicit space grants and the host's
+operator account remain separate authorities; see the [update guide](updates.md).
+
 ## Establish independent administrators
 
 Version 4.0.11 exposes **Organization role** in **People & apps** and lists

@@ -84,7 +84,7 @@ fieldset.ws-setup-fields { border: 0; padding: 0; min-width: 0; }
 .ws-budget-explanation { display: flex; align-items: flex-start; gap: 9px; padding: 12px 0 0; font-size: 12px; }
 .ws-budget-explanation svg { flex-shrink: 0; margin-top: 3px; color: var(--ws-accent); }
 .ws-live-memory details { margin-top: 14px; font-size: 12px; color: var(--ws-muted); }
-.ws-setup-page { max-width: 1000px; }
+.ws-page.ws-setup-page { max-width: 1000px; }
 .ws-setup-connected { display: flex; align-items: center; gap: 12px; padding: 18px 0 28px; color: var(--ws-accent); }
 .ws-setup-connected strong, .ws-setup-connected span { display: block; }
 .ws-setup-connected strong { font-size: 12px; }
@@ -93,6 +93,10 @@ fieldset.ws-setup-fields { border: 0; padding: 0; min-width: 0; }
 .ws-device-settings > p { color: var(--ws-muted); font-size: 13px; margin-top: 12px; }
 .ws-device-settings .ws-live-memory { margin: 22px 0; }
 .ws-device-settings .ws-setup-actions > .ws-primary { margin-left: 0; }
+.ws-software-versions dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; margin: 22px 0 0; }
+.ws-software-versions dt { display: flex; align-items: center; gap: 8px; color: var(--ws-muted); font-size: 12px; }
+.ws-software-versions dd { margin: 8px 0 0; font-size: 20px; font-weight: 500; overflow-wrap: anywhere; }
+.ws-software-versions .ws-link { display: inline-flex; gap: 7px; align-items: center; margin-top: 14px; font-size: 12px; }
 .ws-memory-saved { color: var(--ws-accent); font-size: 12px; margin-top: 14px; }
 .ws-setup-guide { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .ws-setup-card h3 { margin: 0 0 8px; font-size: 15px; }
@@ -101,7 +105,7 @@ fieldset.ws-setup-fields { border: 0; padding: 0; min-width: 0; }
 .ws-setup-footer > p { color: var(--ws-muted); margin-bottom: 18px; }
 .ws-setup-footer > div { display: flex; gap: 12px; flex-wrap: wrap; }
 @media (max-width: 600px) {
-  .ws-setup-guide, .ws-memory-modes { grid-template-columns: 1fr; }
+  .ws-setup-guide, .ws-memory-modes, .ws-software-versions dl { grid-template-columns: 1fr; }
   .ws-device-settings { padding: 18px; }
   .ws-memory-heading { flex-wrap: wrap; }
   .ws-memory-totals { gap: 18px; flex-wrap: wrap; }

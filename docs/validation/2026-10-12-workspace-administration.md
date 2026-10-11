@@ -99,9 +99,10 @@ on an agent session for normal use. Host wake still uses the provider's operator
 controls. A saved client connection or Git Markdown copy is not a complete
 replica, current recovery ledger or independently available server.
 
-A verified full backup/ledger, controlled migration of the old shared service,
-managed host updates, registered recovery locations, delegated host operators
-and guided recovery remain required. The existing remote 4.0.0 service does not
+The [full encrypted backup and isolated restore/migration](2026-10-12-encrypted-workspace-backup.md)
+passed independently. Controlled cutover of the old shared service, managed host
+updates, scheduled independent backups, registered recovery locations, delegated
+host operators and guided recovery remain required. The existing remote 4.0.0 service does not
 gain later server-side protections simply because Studio is newer. Continue
 [the continuity contract](../implementation/workspace-continuity.md) and
 requirements A06, A11–A13, U06 and U11 without claiming automatic failover or

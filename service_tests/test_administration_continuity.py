@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 from mnemion.service.admin import bootstrap_tenant
 from mnemion.service.api import create_app
 from mnemion.service.models import MemoryInput
+from mnemion.version import __version__
 
 
 def authorization(token):
@@ -49,6 +50,7 @@ def test_second_human_admin_can_manage_after_original_identities_are_disabled(en
         assert api.get("/v1/me", headers=authorization(env.token)).status_code == 401
         me = api.get("/v1/me", headers=headers)
         assert me.status_code == 200 and me.json()["administrator"] is True
+        assert me.json()["service_version"] == __version__
         assert api.get("/v1/principals", headers=headers).status_code == 200
         # Organization administration and memory access remain separate.
         path = f"/v1/memories/{memory['memory_id']}"
@@ -64,6 +66,7 @@ def test_second_human_admin_can_manage_after_original_identities_are_disabled(en
             api, headers, "Restricted replacement assistant", kind="application"
         )
         assert member["administrator"] is False
+        assert api.get("/v1/me", headers=member_headers).json()["service_version"] == __version__
         assert api.get("/v1/principals", headers=member_headers).status_code == 403
         denied = api.post(
             "/v1/principals",

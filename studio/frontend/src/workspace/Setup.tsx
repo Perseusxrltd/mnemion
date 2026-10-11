@@ -1,12 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, BookOpenCheck, Cpu, Database, HardDrive, LoaderCircle, Plug, RefreshCw, ShieldCheck, Users } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import type { MnemionClient } from '@mnemion/client';
+import { ArrowRight, BookOpenCheck, Cpu, Database, HardDrive, LoaderCircle, Monitor, Plug, RefreshCw, Server, ShieldCheck, Users } from 'lucide-react';
+import { version } from '../../package.json';
 import type { LocalStatus, MemoryOptions } from '../../../shared/local-workspace';
 import { LiveMemory, MemoryFields, RepairMemory, validMemory } from './MemoryControls';
 import { localError } from './LocalSetup';
 
-export default function Setup({ endpoint, administrator }: { endpoint: string; administrator: boolean }) {
+export default function Setup({ client, endpoint, administrator }: { client: MnemionClient; endpoint: string; administrator: boolean }) {
   const desktop = window.mnemion;
+  const service = useQuery({
+    queryKey: ['setup-service-version', endpoint], queryFn: () => client.me(),
+    retry: false, refetchOnWindowFocus: false, gcTime: 0,
+  });
+  const reportedVersion = service.data?.service_version;
+  const serviceVersion = typeof reportedVersion === 'string' && /^\d{1,5}\.\d{1,5}\.\d{1,5}$/.test(reportedVersion) ? reportedVersion : undefined;
   const [status, setStatus] = useState<LocalStatus>();
   const [options, setOptions] = useState<MemoryOptions>({ mode: 'auto', limit_mib: null });
   const [revision, setRevision] = useState<string>();
@@ -37,9 +46,19 @@ export default function Setup({ endpoint, administrator }: { endpoint: string; a
     ] : []),
     { to: 'obsidian', title: 'Open your visual memory', description: 'Refresh an Obsidian vault with linked, traceable memories.', icon: HardDrive },
   ];
-  return <div className="ws-setup-page">
+  return <div className="ws-page ws-setup-page">
     <header className="ws-page-heading"><div><p className="ws-eyebrow">Make Mnemion yours</p><h1>Setup & this device</h1><p>Your workspace, connections and local resources in one place.</p></div></header>
     <div className="ws-setup-connected"><ShieldCheck size={19} /><div><strong>Connected workspace</strong><span>{endpoint}</span></div></div>
+    <section className="ws-device-settings ws-software-versions" aria-labelledby="software-versions-title">
+      <div className="ws-memory-heading"><h2 id="software-versions-title">App & server versions</h2><button className="ws-button ws-quiet" disabled={service.isFetching} onClick={() => { void service.refetch(); }}><RefreshCw size={15} className={service.isFetching ? 'ws-spin' : undefined} />Refresh server</button></div>
+      <dl>
+        <div><dt><Monitor size={17} />{desktop ? 'This desktop app' : 'This web app'}</dt><dd>{version}</dd></div>
+        <div><dt><Server size={17} />Connected workspace server</dt><dd aria-live="polite">{service.isError ? 'Could not check' : service.isPending ? 'Checking…' : serviceVersion ?? 'Version not reported'}</dd></div>
+      </dl>
+      {service.isError ? <p role="status">The server check failed. Refresh to try again; your saved connection is retained.</p> : !service.isPending && !serviceVersion ? <p>This server predates version reporting or returned an unrecognized version. Its version must be checked on the host.</p> : null}
+      <p>{desktop ? 'App updates apply to this computer. ' : 'Web app updates arrive when you reload after a host update. '}Server updates apply to the shared workspace and are managed by a host operator.</p>
+      <Link className="ws-link" to="/workspace/help?doc=docs%2Fservice%2Fupdates.md">Update and host administration guide<ArrowRight size={13} /></Link>
+    </section>
     {!!error && <div className="ws-notice ws-error" role="alert">{localError(error)}</div>}
     {status?.info?.configured && <section className="ws-device-settings">
       <div className="ws-memory-heading"><h2>RAM on this computer</h2><span className="ws-badge">{status.state === 'running' ? 'Local workspace running' : status.state}</span></div>

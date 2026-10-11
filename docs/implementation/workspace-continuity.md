@@ -67,6 +67,12 @@ verified backups, or both. Identify the contents before offering recovery:
 | Verified Mnemion database backup and current recovery ledger | The state covered by the backup and ledger, subject to the existing restore contract | Writes after the backup or absent ledger events |
 | Enrolled and synchronized recovery replica | The acknowledged state and documented lag under the replication protocol | Zero data loss, current authority or safe takeover without fencing the old writer |
 
+An [operator exercise on 12 October](../validation/2026-10-12-encrypted-workspace-backup.md)
+verified an encrypted database/ledger copy outside the original host, independent
+Windows decryption, and restoration with migrations into a separate database.
+This evidence covers a concrete snapshot; it does not close the app workflow,
+scheduling or independent host inventory requirements.
+
 Use the [existing recovery procedure](../service/recovery.md) for complete
 backups. Preserve the original host/database and recover into a separate target.
 Review revoked access and deleted content before admitting clients. Report

@@ -203,7 +203,7 @@ export class MnemionClient {
     throw new Error('Request retry loop exhausted')
   }
 
-  me() { return this.request<{ principal_id: string; tenant_id: string; name: string; tenant_name: string; administrator: boolean }>('GET', '/v1/me') }
+  me() { return this.request<{ principal_id: string; tenant_id: string; name: string; tenant_name: string; administrator: boolean; service_version?: string | null }>('GET', '/v1/me') }
   spaces() { return this.request<Page<Space>>('GET', '/v1/spaces') }
   space(id: string) { return this.request<Space>('GET', `/v1/spaces/${encodeURIComponent(id)}`) }
   createSpace(name: string, description = '') { return this.request<Space>('POST', '/v1/spaces', { body: { name, description } }) }

@@ -382,7 +382,7 @@ function Shell({
             <div className="ws-scroll"><ErrorBoundary key={location.pathname}><Suspense fallback={<Busy />}><Routes>
               <Route path="team" element={<Team connection={connection} initialSpace={space} />} />
               <Route path="connections" element={<Connections client={client} administrator={me.administrator} endpoint={connection.endpoint} selectSpace={setSelected} />} />
-              <Route path="setup" element={<Setup endpoint={connection.endpoint} administrator={me.administrator} />} />
+              <Route path="setup" element={<Setup client={client} endpoint={connection.endpoint} administrator={me.administrator} />} />
               <Route path="help" element={<Documentation />} />
             </Routes></Suspense></ErrorBoundary></div>
           </>

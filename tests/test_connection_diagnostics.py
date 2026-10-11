@@ -61,6 +61,49 @@ def successful(request):
     )
 
 
+@pytest.mark.parametrize("roles,accessible", [([None], 0), ([None, "reader"], 1), ([], 0)])
+def test_ungranted_administrative_spaces_are_valid_without_implying_memory_access(
+    roles, accessible
+):
+    def handler(request):
+        if request.url.path.endswith("/v1/spaces"):
+            return httpx.Response(
+                200,
+                json={"items": [{"id": PRIVATE, "name": SECRET, "role": role} for role in roles]},
+            )
+        return successful(request)
+
+    report = asyncio.run(
+        doctor.diagnose(
+            "https://private.example.invalid", SECRET, transport=httpx.MockTransport(handler)
+        )
+    )
+    assert report["ready"] is bool(accessible)
+    assert report["checks"]["spaces"] == {
+        "ok": bool(accessible),
+        "code": "ok" if accessible else "no_spaces",
+        "count": len(roles),
+        "accessible_count": accessible,
+        "roles": {"reader": 1} if accessible else {},
+    }
+    assert report["checks"]["mcp"]["ok"]
+    assert PRIVATE not in json.dumps(report) and SECRET not in json.dumps(report)
+
+
+@pytest.mark.parametrize("item", [{}, {"role": "owner"}, {"role": []}, {"role": False}])
+def test_missing_or_malformed_roles_remain_invalid(item):
+    def handler(request):
+        if request.url.path.endswith("/v1/spaces"):
+            return httpx.Response(200, json={"items": [item]})
+        return successful(request)
+
+    report = asyncio.run(
+        doctor.diagnose("https://test.invalid", SECRET, transport=httpx.MockTransport(handler))
+    )
+    assert report["checks"]["spaces"]["code"] == "invalid_response"
+    assert not report["ready"]
+
+
 def test_success_reports_only_validated_statuses_counts_and_roles():
     calls = []
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
+from ..version import __version__
 from .administration import retain_administrator_access
 from .db import Database, Identity, new_token, require_administrator, require_space
 from .errors import ServiceError, not_found
@@ -25,7 +26,7 @@ class IdentityService:
                    WHERE p.id=%s""",
                 (identity.principal_id,),
             ).fetchone()
-            return json_value(row)
+            return {**json_value(row), "service_version": __version__}
 
     def spaces(self, identity: Identity) -> list[dict]:
         with self.db.transaction(identity) as conn:

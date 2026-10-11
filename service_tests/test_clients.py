@@ -19,8 +19,28 @@ from mcp.client.streamable_http import streamable_http_client
 
 from mnemion.sdk import Client, MnemionError
 from mnemion.service.api import create_app
+from mnemion.service.contracts import IdentityInfo
 from mnemion.service.mcp import create_mcp
 from mnemion.service.models import KeyInput, PrincipalInput
+
+
+def test_identity_contract_keeps_older_services_compatible():
+    # A desktop/client patch must still accept a server that predates reporting.
+    wire = {
+        "principal_id": "fixture-person",
+        "tenant_id": "fixture-team",
+        "name": "Fixture person",
+        "tenant_name": "Fixture team",
+        "kind": "human",
+        "administrator": False,
+    }
+    with Client(
+        "https://example.invalid",
+        "fixture-key",
+        transport=httpx.MockTransport(lambda _: httpx.Response(200, json=wire)),
+    ) as client:
+        identity = IdentityInfo.model_validate(client.request("GET", "/v1/me"))
+    assert identity.service_version is None and not identity.administrator
 
 
 def test_sdk_identifies_an_offline_tunnel_without_echoing_proxy_content():
@@ -40,6 +60,40 @@ def test_sdk_identifies_an_offline_tunnel_without_echoing_proxy_content():
             client.request("GET", "/v1/me")
     assert caught.value.code == "tunnel_offline"
     assert caught.value.request_id is None and private not in str(caught.value)
+
+
+@pytest.mark.parametrize("content_grant", [False, True])
+def test_connection_doctor_accepts_an_independent_admins_visible_ungranted_spaces(
+    env, content_grant
+):
+    from mnemion.connection_diagnostics import diagnose
+
+    with running(create_app(env.db, env.embedder)) as url:
+        with Client(url, env.token) as owner:
+            person = owner.request(
+                "POST",
+                "/v1/principals",
+                body={
+                    "name": "Independent fixture administrator",
+                    "kind": "human",
+                    "administrator": True,
+                },
+            )
+            key = owner.request(
+                "POST", f"/v1/principals/{person['id']}/keys", body={"name": "Fixture access"}
+            )
+            if content_grant:
+                owner.request(
+                    "PUT", f"/v1/spaces/{env.space}/grants/{person['id']}", body={"role": "reader"}
+                )
+        report = asyncio.run(diagnose(url, key["api_key"]))
+    assert report["ready"] is content_grant, report
+    assert report["checks"]["identity"]["administrator"]
+    assert report["checks"]["spaces"]["count"] == 1
+    assert report["checks"]["spaces"]["accessible_count"] == int(content_grant)
+    assert report["checks"]["spaces"]["code"] == ("ok" if content_grant else "no_spaces")
+    assert report["checks"]["mcp"]["ok"]
+    assert key["api_key"] not in str(report)
 
 
 def test_connection_doctor_checks_real_api_and_mcp_without_memory_writes(env):

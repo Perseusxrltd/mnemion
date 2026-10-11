@@ -121,6 +121,15 @@ updates do not replace a company's database. Use backups, migrations and health
 checks from the deployment guide for service updates. Browser clients receive
 the deployed service assets on reload.
 
+From 4.0.13, **Setup & this device → App & server versions** shows the installed
+app alongside the connected workspace service. **Refresh server** checks the
+service through the current authenticated connection; every member can use it.
+Earlier services without `service_version` display **Version not reported**,
+while a failed request displays **Could not check**. Neither state replaces the
+saved connection or implies that the host was updated. Use the host's installed
+package version when administering an older server. Web app assets refresh on
+reload after the host deploys them.
+
 To receive the 4.0.2 API/MCP fixes, operators must update and restart the separately
 deployed **server**, including an installation launched with `uv run`. Updating
 Studio alone cannot patch it. Source deployments can use a reviewed release

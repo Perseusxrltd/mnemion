@@ -28,7 +28,7 @@ HINTS = {
     "not_ready": "The service answered but did not report readiness. Check the service and database through the host's operator controls.",
     "http_error": "The host returned an HTTP error. Check its service status through the host's operator controls.",
     "no_credentials": "Public health checks only. Supply a private credentials file to verify identity, space access and MCP tools.",
-    "no_spaces": "The credential is valid but has no accessible spaces. An administrator must grant the intended space access.",
+    "no_spaces": "The credential is valid but has no memory-space grants. Organization administrators can still manage membership and grant the intended space access.",
 }
 
 
@@ -181,16 +181,23 @@ async def diagnose(address: str, key: str | None, *, transport=None) -> dict:
                     items = value.get("items")
                     if not isinstance(items, list) or any(
                         not isinstance(item, dict)
-                        or not isinstance(item.get("role"), str)
-                        or item["role"] not in ROLES
+                        or "role" not in item
+                        or (
+                            item["role"] is not None
+                            and (not isinstance(item["role"], str) or item["role"] not in ROLES)
+                        )
                         for item in items
                     ):
                         raise ProbeError("invalid_response", 200)
+                    # Organization administrators can inspect spaces they have
+                    # no content grant for. Visibility never implies access.
+                    accessible = [item for item in items if item["role"] is not None]
                     checks[stage] = {
-                        "ok": bool(items),
-                        "code": "ok" if items else "no_spaces",
+                        "ok": bool(accessible),
+                        "code": "ok" if accessible else "no_spaces",
                         "count": len(items),
-                        "roles": dict(Counter(item["role"] for item in items)),
+                        "accessible_count": len(accessible),
+                        "roles": dict(Counter(item["role"] for item in accessible)),
                     }
                     stage = "mcp"
                     session = {}

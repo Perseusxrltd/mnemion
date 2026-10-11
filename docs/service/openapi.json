@@ -2324,6 +2324,18 @@
             "title": "Principal Id",
             "type": "string"
           },
+          "service_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Version of the authenticated workspace service, independent of the client app.",
+            "title": "Service Version"
+          },
           "tenant_id": {
             "title": "Tenant Id",
             "type": "string"
@@ -7041,7 +7053,7 @@
   "info": {
     "description": "Shared, scoped memory and evidence for apps, teams, and assistants. Saves acknowledge canonical durability; operations report semantic indexing readiness.",
     "title": "Mnemion Memory Service",
-    "version": "4.0.12"
+    "version": "4.0.13"
   },
   "openapi": "3.1.0",
   "paths": {
