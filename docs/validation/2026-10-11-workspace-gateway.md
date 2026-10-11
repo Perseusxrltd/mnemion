@@ -48,12 +48,21 @@ The complete Electron suite also passed, including an HTTP integration test for
 gateway compatibility, request-body/header preservation, current authorization
 and redirect rejection.
 
+The first release attempt passed its functional tests but measured only 44.49%
+non-service coverage: the diagnostic tests were under `service_tests/`, outside
+the job measuring their modules. Moving those existing tests to `tests/` retained
+all assertions and both coverage thresholds. The complete non-service suite then
+passed with 327 tests, one skip and 46.87% coverage; no model was loaded for it.
+
 ## Acceptance still required
 
 The native transport probe is not a released-app reconnection or an automatic
 upgrade proof. Publish the verified patch, connect through the actual Windows
 app, retain its encrypted bookmark, and verify restart/update behavior. The
 earlier unmodified Windows 4.0.9 → 4.0.10 unattended update proof remains valid.
+The actual Windows app also completed 4.0.10 → 4.0.11 automatic installation and
+relaunch after a normal manual update check; its settings were preserved. This
+does not substitute for the 4.0.12 connection check.
 
 Waking a provider-managed computer does not establish always-on availability.
 The [continuity contract](../implementation/workspace-continuity.md) still requires

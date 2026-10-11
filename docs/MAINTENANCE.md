@@ -58,6 +58,11 @@ a completed published download.
    the retained legacy suite independently enforces at least 45% of the rest
    of `mnemion`, using `deploy/legacy.coveragerc`. This keeps changes to either
    implementation from diluting the other suite's coverage measurement.
+   The non-service suite also measures CLI/connection modules outside
+   `mnemion.service`. Keep their unit tests under `tests/` so this gate counts
+   the exercised code; running those tests only in `service_tests/` cannot
+   satisfy the separate non-service measurement. Do not lower the threshold
+   to accommodate a misplaced test.
    Intel Mac CI builds the current locked `cryptography` from its verified source
    with static OpenSSL pinned in `deploy/intel-crypto.json`. The builder verifies
    its architecture, absence of non-system dynamic libraries and Ed25519 operation,
