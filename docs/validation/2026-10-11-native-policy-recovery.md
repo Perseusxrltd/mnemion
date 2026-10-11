@@ -29,6 +29,10 @@ hosting or database backup restoration.
   local setup. A follow-up corrected it after dependency review: the app runs
   natively; the local memory service, model and PostgreSQL use Windows x64
   compatibility because the pinned psycopg binary lacks Windows ARM wheels.
+  The notice prefers native Electron `process.arch`, attached as optional
+  `desktop_architecture` on all local status IPC replies/events. It does not
+  depend on an emulated service identifying the desktop CPU, and this
+  desktop-only field is never persisted into engine configuration.
 
 ## Executed checks
 

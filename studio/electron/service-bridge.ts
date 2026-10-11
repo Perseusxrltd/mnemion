@@ -7,6 +7,7 @@ import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { WorkspaceStore, workspaceIdentity } from './workspace-store.js'
 import { WorkspaceConnections, isWorkspaceSession } from './workspace-connections.js'
 import { LocalWorkspace, localEnvironment, localOptions } from './local-workspace.js'
+import type { LocalStatus } from '../shared/local-workspace.js'
 
 const MAX_BYTES = 120 * 1024 * 1024
 const selections = new Map<string, string>()
@@ -178,6 +179,13 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
     ++localOpenGeneration
     if (localPreferences().selected) saveLocalPreferences({ ...localPreferences(), selected: false })
   }
+  function desktopLocalStatus(status: LocalStatus): LocalStatus {
+    // The desktop may be native while its service uses OS compatibility. Add
+    // this trusted observation only to IPC, without mutating engine state.
+    return { ...status, preferences: localPreferences(), info: status.info ? {
+      ...status.info, resources: { ...status.info.resources, desktop_architecture: process.arch },
+    } : undefined }
+  }
   function localWorkspace(): LocalWorkspace {
     if (local) return local
     const base = process.env.MNEMION_STUDIO_USER_DATA ? app.getPath('userData') :
@@ -191,7 +199,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
     local = new LocalWorkspace({ executable, database, root, version: app.getVersion(), environment: localEnvironment(process.env, root),
       desktopMemory: () => app.getAppMetrics().reduce((sum, metric) => sum + metric.memory.workingSetSize * 1024, 0) }, status => {
       const window = getWindow()
-      if (window && !window.webContents.isDestroyed()) window.webContents.send('local:changed', { ...status, preferences: localPreferences() })
+      if (window && !window.webContents.isDestroyed()) window.webContents.send('local:changed', desktopLocalStatus(status))
     })
     return local
   }
@@ -252,7 +260,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
     trusted(event)
     const host = localWorkspace()
     if (host.status.available) await host.inspect()
-    return { ...host.status, preferences: localPreferences() }
+    return desktopLocalStatus(host.status)
   })
   ipcMain.handle('local:create', async (event, input: unknown) => {
     trusted(event)
@@ -260,17 +268,17 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
     ++localOpenGeneration
     saveLocalPreferences({ selected: true, startWithApp: true })
     await workspaceConnections().disconnect()
-    return { ...await localWorkspace().start(options), preferences: localPreferences() }
+    return desktopLocalStatus(await localWorkspace().start(options))
   })
   ipcMain.handle('local:start', async event => {
     trusted(event)
     ++localOpenGeneration
     saveLocalPreferences({ ...localPreferences(), startWithApp: true })
-    return { ...await localWorkspace().start(), preferences: localPreferences() }
+    return desktopLocalStatus(await localWorkspace().start())
   })
   ipcMain.handle('local:memory', async (event, input: unknown) => {
     trusted(event)
-    return { ...await localWorkspace().changeMemory(input), preferences: localPreferences() }
+    return desktopLocalStatus(await localWorkspace().changeMemory(input))
   })
   ipcMain.handle('local:open', async event => {
     trusted(event)

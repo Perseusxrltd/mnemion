@@ -66,7 +66,7 @@ export default function LocalSetup({ initial, onOpen, onBack, autoContinue = fal
   return <section className="ws-local-setup" aria-label="Create a local workspace">
     <button type="button" className="ws-button ws-quiet" disabled={busy} onClick={onBack}><ArrowLeft size={15} />Choose another workspace</button>
     <div className="ws-local-intro"><span className="ws-local-symbol"><Database size={23} /></span><div><h3>{configured ? status.info?.settings?.workspace_name : 'Your memory, on this computer'}</h3><p>Mnemion manages the database, model and background service for you.</p></div></div>
-    {resources?.platform === 'win32' && /arm64|aarch64/i.test(resources.architecture) && <p className="ws-notice">On Windows ARM, the app runs natively. The local memory service, model and PostgreSQL run through Windows x64 compatibility.</p>}
+    {resources?.platform === 'win32' && /arm64|aarch64/i.test(resources.desktop_architecture ?? resources.architecture) && <p className="ws-notice">On Windows ARM, the app runs natively. The local memory service, model and PostgreSQL run through Windows x64 compatibility.</p>}
     {!!error && <div className="ws-notice ws-error" role="alert">{localError(error)}</div>}
     {!status && !error && <p role="status"><LoaderCircle className="ws-spin" size={16} />Checking this computer…</p>}
     {status && !status.available && <div className="ws-notice">This installation does not include the local engine. Use a complete desktop installer, or join an existing workspace.</div>}

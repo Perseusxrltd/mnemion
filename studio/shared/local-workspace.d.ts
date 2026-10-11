@@ -21,7 +21,7 @@ export type LocalResources = {
   memory_bytes: number; available_memory_bytes: number; available_disk_bytes: number;
   effective_memory_bytes: number; effective_available_memory_bytes: number;
   recommended_budget_bytes: number; system_reserve_bytes: number; recommended_profile: LocalOptions['embedding_profile'];
-  cpu_threads: number; platform: string; architecture: string; gpu_required: boolean;
+  cpu_threads: number; platform: string; architecture: string; desktop_architecture?: string; gpu_required: boolean;
   minimum_free_disk_bytes: number;
   profiles: Array<{ id: string; label: string; languages: string; minimum_available_memory_bytes: number }>;
 }
