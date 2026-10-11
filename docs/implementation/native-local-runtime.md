@@ -72,8 +72,15 @@ actual `CreateRestrictedToken` access before database compilation begins. They
 disable Administrators and Power Users with maximum privileges removed, verify
 those groups no longer grant access, and read/execute both inherited and explicit
 private files while impersonating the restricted token. They also check folder
-traversal and new child-file creation. The full native database rerun, including
-Windows ARM emulation, remains a separate acceptance gate pending CI evidence.
+traversal and new child-file creation. The rerun passed both Windows private-state gates and the two Linux database
+probes. Windows initialized its database, then exposed a separate output-pipe
+hang when `pg_ctl` launched a server. Native launchers now capture output in
+private regular files, with bounded reads, so a descendant cannot keep Python
+waiting for pipe EOF; production and probe share this helper. The probe also
+canonicalizes the system temporary parent for macOS's `/var` alias and uses the
+production sequence of precreating/rechecking the private data directory.
+The complete database rerun, including Windows ARM emulation, remains a separate
+acceptance gate pending CI evidence.
 
 ## Remaining integration
 

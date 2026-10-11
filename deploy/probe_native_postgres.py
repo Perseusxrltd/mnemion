@@ -14,12 +14,12 @@ import shutil
 import socket
 import stat
 import struct
-import subprocess
+import sys
 import tempfile
 import zipfile
 
 from mnemion.local_state import directory as private_directory
-from mnemion.private_output import private_output
+from mnemion.private_output import private_output, private_process
 
 
 @contextmanager
@@ -27,8 +27,10 @@ def private_probe_directory():
     # Use the app's creation path. CPython TemporaryDirectory may give an
     # elevated process an Administrators owner and owner-rights-only DACL;
     # PostgreSQL intentionally removes that group from its initialization token.
+    # Canonicalize the OS temporary parent (macOS uses a /var symlink) before
+    # applying the production checks to the new disposable workspace.
     root = private_directory(
-        Path(tempfile.gettempdir()) / ("mnemion-pg-validation-" + secrets.token_hex(16))
+        Path(tempfile.gettempdir()).resolve() / ("mnemion-pg-validation-" + secrets.token_hex(16))
     )
     try:
         yield root
@@ -108,6 +110,7 @@ def executable_architecture(path: Path) -> str:
 def probe(archive: Path, output: Path) -> dict:
     with private_probe_directory() as root:
         install = root / "Memory runtime with spaces"
+        print("Native database probe: expand and verify archive", file=sys.stderr, flush=True)
         metadata = expand(archive, install)
         suffix = ".exe" if platform.system() == "Windows" else ""
         binaries = install / "bin"
@@ -141,18 +144,18 @@ def probe(archive: Path, output: Path) -> dict:
         password, reader_password = secrets.token_urlsafe(32), secrets.token_urlsafe(32)
 
         def run(name, args=(), *, input=None, check=True, env=None, timeout=60):
+            # Tool names locate a stalled stage without logging credentials,
+            # SQL, private paths or password-file arguments.
+            print(f"Native database probe: {name}", file=sys.stderr, flush=True)
             command = (
                 binaries / (name + suffix)
                 if name != "openssl"
                 else install / "tools" / (name + suffix)
             )
-            result = subprocess.run(
+            result = private_process(
                 [str(command), *map(str, args)],
+                directory=root,
                 input=input,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                capture_output=True,
                 env=env or environment,
                 timeout=timeout,
             )
@@ -171,7 +174,7 @@ def probe(archive: Path, output: Path) -> dict:
             raise ValueError("Native PostgreSQL version differs from its pinned source")
         if not ssl_version.startswith("OpenSSL " + metadata["sources"]["openssl"]["version"] + " "):
             raise ValueError("Native OpenSSL version differs from its pinned source")
-        data = root / "Workspace data Équipe"
+        data = private_directory(root / "Workspace data Équipe")
         pwfile = root / "initial-password"
         with private_output(pwfile) as stream:
             stream.write((password + "\n").encode("utf-8"))
@@ -192,6 +195,8 @@ def probe(archive: Path, output: Path) -> dict:
             ],
         )
         pwfile.unlink()
+        # Production precreates this directory and validates it again on resume.
+        private_directory(data)
         with socket.socket() as reserved:
             reserved.bind(("127.0.0.1", 0))
             port = reserved.getsockname()[1]

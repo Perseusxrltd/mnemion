@@ -103,7 +103,16 @@ jobs:
           python -m pip install meson==1.12.1 ninja==1.13.2 pkgconf==3.0.7.post0
       - name: Compile pinned PostgreSQL, vector extension and static libraries
         run: python -m deploy.build_native_postgres --work "${{ runner.temp }}/native-postgres-work" --cache "${{ runner.temp }}/native-postgres-sources" --output build-tmp/native-postgres
+      - name: Retain the compiled Windows archive for probe diagnosis
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: native-postgres-unprobed-windows-x64
+          retention-days: 1
+          if-no-files-found: error
+          path: build-tmp/native-postgres/*.zip
       - name: Relocate, initialize, verify TLS and RLS, restore backup and recover a crash
+        timeout-minutes: 10
         run: python -c "import json; from pathlib import Path; from deploy.probe_native_postgres import probe; archives=list(Path('build-tmp/native-postgres').glob('*.zip')); assert len(archives)==1; print(json.dumps(probe(archives[0], Path('build-tmp/native-postgres/probe.json'))))"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -131,6 +140,7 @@ jobs:
           name: native-postgres-windows-x64
           path: build-tmp/native-postgres
       - name: Verify the actual x64 engine under Windows ARM emulation
+        timeout-minutes: 10
         run: python -c "import json; from pathlib import Path; from deploy.probe_native_postgres import probe; archives=list(Path('build-tmp/native-postgres').glob('*.zip')); assert len(archives)==1; result=probe(archives[0], Path('build-tmp/native-postgres/probe-arm.json')); assert result['emulated'] and result['host_architecture']=='arm64'; print(json.dumps(result))"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:

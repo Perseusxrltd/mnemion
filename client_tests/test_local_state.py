@@ -134,3 +134,19 @@ def test_windows_refuses_redirected_workspace_parent(tmp_path):
         assert not (root / "nested").exists()
     finally:
         junction.rmdir()
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX system temporary-directory symlink")
+def test_native_database_probe_resolves_the_system_temporary_alias(tmp_path, monkeypatch):
+    from deploy.probe_native_postgres import private_probe_directory
+
+    actual = tmp_path / "system temporary directory"
+    actual.mkdir(mode=0o700)
+    alias = tmp_path / "system temporary alias"
+    alias.symlink_to(actual, target_is_directory=True)
+    monkeypatch.setattr("tempfile.gettempdir", lambda: str(alias))
+    with private_probe_directory() as root:
+        assert root.parent == actual
+        assert root.is_dir()
+        assert root.stat().st_mode & 0o077 == 0
+    assert not root.exists()
