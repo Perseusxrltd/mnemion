@@ -258,6 +258,17 @@ def build(output: Path, cache: Path, work: Path) -> Path:
             # Make needs $$ to pass the end anchor through to the shell.
             allowed += " -e ' _atexit$$'"
         check.write_text(original.replace(marker, marker + allowed))
+    else:
+        check = sources["postgresql"] / "meson.build"
+        original = check.read_text()
+        marker = "ssl = dependency('openssl', required: false)"
+        if original.count(marker) != 1:
+            raise ValueError("Review upstream OpenSSL discovery before updating sources")
+        # Static OpenSSL needs its private system dependencies. A global
+        # prefer_static option incorrectly asks for static Windows OS libraries.
+        check.write_text(
+            original.replace(marker, "ssl = dependency('openssl', required: false, static: true)")
+        )
     install, dependencies = work / "postgres", work / "dependencies"
     environment = dict(os.environ)
     environment["CFLAGS"] = "-O2 -fPIC -fno-omit-frame-pointer"
@@ -371,7 +382,6 @@ def build(output: Path, cache: Path, work: Path) -> Path:
                 "--prefix=" + str(install),
                 "--buildtype=release",
                 "--wrap-mode=nodownload",
-                "-Dprefer_static=true",
                 "-Db_vscrt=mt",
                 "-Dssl=openssl",
                 "-Dzlib=enabled",
@@ -429,7 +439,7 @@ def build(output: Path, cache: Path, work: Path) -> Path:
         relocation = (
             ["rpath=-Wl,-rpath,'$$ORIGIN/../lib:$$ORIGIN/..:$$ORIGIN'"]
             if operating_system == "linux"
-            else []
+            else ["Meson selects static OpenSSL and its private system dependencies"]
         )
         run(["make", "-j2", *relocation], sources["postgresql"])
         run(["make", "install", *relocation], sources["postgresql"])
