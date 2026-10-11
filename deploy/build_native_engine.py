@@ -7,20 +7,51 @@ import hashlib
 import importlib.metadata
 import json
 import os
+import platform
 from pathlib import Path
 import shutil
 import subprocess
 import sys
+from xml.dom import minidom
 import zipfile
 
-from deploy.build_native_postgres import host_target
 from deploy.probe_native_postgres import executable_architecture
+from deploy.native_resources import source_digest
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def windows_manifest(template: bytes) -> bytes:
+    """Add UTF-8 while preserving PyInstaller's UAC, compatibility and long paths."""
+    with minidom.parseString(template) as document:
+        settings = document.getElementsByTagName("windowsSettings")
+        if len(settings) != 1 or document.getElementsByTagName("activeCodePage"):
+            raise ValueError("Review the changed PyInstaller Windows manifest")
+        namespace = "http://schemas.microsoft.com/SMI/2019/WindowsSettings"
+        codepage = document.createElementNS(namespace, "activeCodePage")
+        codepage.setAttribute("xmlns", namespace)
+        codepage.appendChild(document.createTextNode("UTF-8"))
+        settings[0].appendChild(codepage)
+        return document.toxml(encoding="UTF-8")
+
+
 def build(work: Path, output: Path) -> Path:
-    operating_system, architecture = host_target()
+    # Windows ARM currently runs the complete x64 backend: the locked
+    # psycopg-binary distribution has no Windows ARM wheel. Inspect Python's PE
+    # header, since platform.machine() can report the physical ARM host even
+    # when this interpreter and PyInstaller bootloader run as x64.
+    operating_system = {"Linux": "linux", "Darwin": "macos", "Windows": "windows"}.get(
+        platform.system()
+    )
+    architecture = {"x86_64": "x64", "amd64": "x64", "aarch64": "arm64", "arm64": "arm64"}.get(
+        platform.machine().lower()
+    )
+    if operating_system == "windows":
+        architecture = executable_architecture(Path(sys.executable))
+        if architecture != "x64":
+            raise ValueError("Use x64 Python for the locked Windows service backend")
+    if not operating_system or not architecture:
+        raise ValueError("Unsupported native engine build target")
     if work.exists() or output.exists():
         raise ValueError("Use new engine build and output directories")
     if importlib.metadata.version("pyinstaller") != "6.22.3":
@@ -59,6 +90,12 @@ def build(work: Path, output: Path) -> Path:
         command += ["--copy-metadata", distribution]
     for excluded in ("chromadb", "torch", "pytest", "tkinter"):
         command += ["--exclude-module", excluded]
+    if operating_system == "windows":
+        from PyInstaller.utils.win32.winmanifest import create_application_manifest
+
+        manifest = work / "mnemion-engine.manifest"
+        manifest.write_bytes(windows_manifest(create_application_manifest()))
+        command += ["--manifest", str(manifest)]
     command.append(str(ROOT / "studio/engine/main.py"))
     subprocess.run(command, cwd=ROOT, check=True)
     frozen = work / "frozen/mnemion-engine"
@@ -72,6 +109,13 @@ def build(work: Path, output: Path) -> Path:
     binary = runtime / ("mnemion-engine.exe" if os.name == "nt" else "mnemion-engine")
     if executable_architecture(binary) != architecture:
         raise ValueError("The frozen engine does not match the build architecture")
+    if operating_system == "windows":
+        from PyInstaller.utils.win32.winmanifest import read_manifest_from_executable
+
+        with minidom.parseString(read_manifest_from_executable(str(binary))) as document:
+            codepages = document.getElementsByTagName("activeCodePage")
+            if len(codepages) != 1 or codepages[0].firstChild.nodeValue != "UTF-8":
+                raise ValueError("The frozen service must use UTF-8 for native library file paths")
     subprocess.run(
         [
             sys.executable,
@@ -112,6 +156,7 @@ def build(work: Path, output: Path) -> Path:
         "architecture": architecture,
         "python": sys.version.split()[0],
         "lock_sha256": hashlib.sha256((ROOT / "uv.lock").read_bytes()).hexdigest(),
+        "source_sha256": source_digest(ROOT),
         "model_weights_bundled": False,
         "files": files,
     }

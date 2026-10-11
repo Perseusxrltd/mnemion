@@ -19,6 +19,8 @@ on:
       - 'deploy/verify-mac-signature.mjs'
       - 'deploy/notices.py'
       - 'deploy/native-keyring-test.sh'
+      - 'deploy/*native*'
+      - '.github/workflows/native-runtime.yml'
       - 'deploy/license-overrides/**'
       - 'deploy/release*'
   pull_request:
@@ -67,17 +69,23 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.select.outputs.matrix }}
+      database_matrix: ${{ steps.select.outputs.database_matrix }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - id: select
         env:
           MNEMION_TARGET_ARCHITECTURE: ${{ inputs.architecture || 'all' }}
         run: python -m deploy.release_targets --architecture "$MNEMION_TARGET_ARCHITECTURE" ${{ inputs.release && '--release' || inputs.macos_only && '--macos-only' || inputs.windows_only && '--windows-only' || '' }} >> "$GITHUB_OUTPUT"
-  desktop:
+  native_database:
     needs: targets
+    uses: ./.github/workflows/native-runtime.yml
+    with:
+      matrix: ${{ needs.targets.outputs.database_matrix }}
+  desktop:
+    needs: [targets, native_database]
     name: ${{ matrix.os }} / ${{ matrix.arch }}
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 35
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -88,10 +96,12 @@ jobs:
       CSC_LINK: ${{ inputs.release && startsWith(matrix.os, 'windows-') && secrets.WINDOWS_CSC_LINK || '' }}
       CSC_KEY_PASSWORD: ${{ inputs.release && startsWith(matrix.os, 'windows-') && secrets.WINDOWS_CSC_KEY_PASSWORD || '' }}
       MNEMION_REQUIRE_CODE_SIGNATURE: ${{ inputs.release && startsWith(matrix.os, 'windows-') && secrets.WINDOWS_CSC_LINK != '' && '1' || '0' }}
+      MNEMION_ENGINE_PYTHON: ${{ github.workspace }}/.venv/${{ startsWith(matrix.os, 'windows-') && 'Scripts/python.exe' || 'bin/python' }}
       MNEMION_BUILD_PYTHON: ${{ github.workspace }}/studio/client/.venv/${{ startsWith(matrix.os, 'windows-') && 'Scripts/python.exe' || 'bin/python' }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        id: client_python
         with:
           python-version: '3.13'
           architecture: ${{ matrix.arch }}
@@ -110,7 +120,22 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y xvfb libgtk-3-0 libnss3 libgbm1 libasound2 libnotify4 libfuse2 libsecret-1-0 gnome-keyring dbus-x11
       - run: python -m pip install uv==0.12.24
-      - run: uv sync --project studio/client --locked --python 3.13
+      - run: uv sync --project studio/client --locked --python "${{ steps.client_python.outputs.python-path }}" --no-managed-python
+      - name: Select the service interpreter independently of the desktop client
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        id: engine_python
+        with:
+          python-version: '3.13'
+          # The locked psycopg-binary has no Windows ARM wheel. The complete
+          # backend uses explicit x64 compatibility on Windows ARM.
+          architecture: ${{ matrix.platform == 'windows' && 'x64' || matrix.arch }}
+      - name: Locked native service build dependencies
+        run: uv sync --locked --no-default-groups --group native-build --python "${{ steps.engine_python.outputs.python-path }}" --no-managed-python
+      - name: Download this commit's verified database archive
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: native-postgres-${{ matrix.platform }}-${{ matrix.platform == 'windows' && 'x64' || matrix.arch }}
+          path: build-tmp/native-postgres
       - run: uv run --project studio/client --no-sync python -m pytest client_tests -q
       - run: npm --prefix packages/client ci
       - run: npm --prefix packages/client test
@@ -118,6 +143,12 @@ jobs:
       - run: npm --prefix studio/electron ci
       - run: npm --prefix studio/electron test
       - run: npm --prefix studio/electron run dist
+      - name: Installed app creates, searches and reopens a real local workspace
+        if: runner.os != 'Linux'
+        run: npm --prefix studio/electron run smoke:installed-hosting
+      - name: Installed Linux app creates, searches and reopens a real local workspace
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm --prefix studio/electron run smoke:installed-hosting
       - name: Sign and verify the free Windows update manifest
         if: (inputs.release || (github.event_name == 'workflow_dispatch' && inputs.sign_windows)) && runner.os == 'Windows'
         env:
@@ -163,6 +194,14 @@ jobs:
                   print(name)
                   print(path.read_text(errors='replace')[-8000:])
           PY
+      - name: Keep the bounded installed hosting evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: installed-hosting-${{ matrix.platform }}-${{ matrix.arch }}
+          retention-days: 7
+          if-no-files-found: ignore
+          path: build-tmp/installed-hosting-evidence.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         # Validation keeps its evidence in job logs, not large installer uploads.
         if: inputs.release

@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { createHash } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
 import { root, platformArtifacts } from './platform-artifacts.mjs'
+import { verifyNativeResources } from './native-resources.mjs'
 
 const artifacts = platformArtifacts()
 const requireSignature = process.env.MNEMION_REQUIRE_CODE_SIGNATURE === '1'
@@ -35,6 +36,7 @@ for (const file of ['LICENSE', 'NOTICE', 'inventory.json', 'sbom.cdx.json']) {
   requireFile(join(artifacts.resources, 'licenses', file))
 }
 requireFile(join(artifacts.resources, 'client', process.platform === 'win32' ? 'mnemion-client.exe' : 'mnemion-client'))
+const nativeRuntime = verifyNativeResources(artifacts.resources)
 for (const installer of artifacts.installers) requireFile(installer, 40 * 1024 * 1024)
 
 let signature = 'not required on this platform'
@@ -54,6 +56,7 @@ if (process.platform === 'win32') {
   const listing = run(await getPath7za(), ['l', installer], { allowedStatus: [0, 1] })
   // NSIS self-extractors can return 1 for the data after their 7z payload.
   payload(listing, ['Mnemion Studio.exe', 'resources/client/mnemion-client.exe',
+    'resources/engine/mnemion-engine.exe', 'resources/postgresql/bin/postgres.exe', 'resources/native-runtime.json',
     'resources/frontend/dist/index.html', 'resources/frontend/dist/icon.ico'])
   // A PowerShell 7 build shell exports its module path. Windows PowerShell 5
   // must resolve its own security module instead of trying to load that runtime.
@@ -69,6 +72,9 @@ if (process.platform === 'win32') {
   payload(run('unzip', ['-Z1', artifacts.installers[1]]), [
     'Mnemion Studio.app/Contents/MacOS/Mnemion Studio',
     'Mnemion Studio.app/Contents/Resources/client/mnemion-client',
+    'Mnemion Studio.app/Contents/Resources/engine/mnemion-engine',
+    'Mnemion Studio.app/Contents/Resources/postgresql/bin/postgres',
+    'Mnemion Studio.app/Contents/Resources/native-runtime.json',
     'Mnemion Studio.app/Contents/Resources/frontend/dist/index.html',
     'Mnemion Studio.app/Contents/MacOS/MnemionUpdater',
     'Mnemion Studio.app/Contents/Frameworks/Sparkle.framework/',
@@ -99,8 +105,10 @@ if (process.platform === 'win32') {
     for (const path of ['AppRun', 'mnemion-studio', 'resources/client/mnemion-client', 'resources/frontend/dist/index.html']) {
       requireFile(join(extracted, path))
     }
+    verifyNativeResources(join(extracted, 'resources'))
     payload(run('dpkg-deb', ['--contents', artifacts.installers[1]]), [
       'resources/client/mnemion-client', 'resources/frontend/dist/index.html', 'mnemion-studio',
+      'resources/engine/mnemion-engine', 'resources/postgresql/bin/postgres', 'resources/native-runtime.json',
     ])
   } finally { rmSync(directory, { recursive: true, force: true }) }
 }
@@ -112,5 +120,5 @@ for (const path of artifacts.installers) {
   checksums.push(`${digest.digest('hex')}  ${basename(path)}`)
 }
 writeFileSync(join(artifacts.output, `SHA256SUMS-${process.platform}-${process.arch}.txt`), checksums.join('\n') + '\n')
-console.log(JSON.stringify({ ok: true, platform: process.platform, architecture: process.arch, signature,
+console.log(JSON.stringify({ ok: true, platform: process.platform, architecture: process.arch, signature, nativeRuntime,
   installers: artifacts.installers.map(path => ({ file: basename(path), bytes: statSync(path).size })) }, null, 2))

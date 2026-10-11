@@ -16,6 +16,19 @@ MATRIX = [
 ]
 
 
+def database_targets(desktops: list[dict]) -> list[dict]:
+    """Windows ARM runs the separately probed x64 database, once per build."""
+    selected = {
+        (item["platform"], "x64" if item["platform"] == "windows" else item["arch"])
+        for item in desktops
+    }
+    return [
+        {"os": item["os"], "target": item["platform"], "arch": item["arch"]}
+        for item in MATRIX
+        if (item["platform"], item["arch"]) in selected
+    ]
+
+
 def release_targets(version: str | None = None, path: Path | None = None) -> dict[str, list[str]]:
     path = path or Path(__file__).with_name("release-targets.json")
     data = json.loads(path.read_text(encoding="utf-8"))
@@ -74,12 +87,9 @@ def main() -> None:
             )
         }
     )
-    print(
-        "matrix="
-        + json.dumps(
-            [item for item in MATRIX if item["arch"] in selected.get(item["platform"], [])]
-        )
-    )
+    desktops = [item for item in MATRIX if item["arch"] in selected.get(item["platform"], [])]
+    print("matrix=" + json.dumps(desktops))
+    print("database_matrix=" + json.dumps(database_targets(desktops)))
 
 
 if __name__ == "__main__":

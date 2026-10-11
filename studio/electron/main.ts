@@ -8,6 +8,7 @@ import { createServer } from 'net'
 import { installServiceBridge, localClientBusy, verifyLocalClient, verifyWorkspaceStorage } from './service-bridge.js'
 import { DesktopUpdates } from './updates.js'
 import { verifyNativeWorkspaceProbe } from './workspace-probe.js'
+import { verifyLocalHostingProbe, watchHostingProbeQuit } from './local-hosting-probe.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -446,6 +447,7 @@ async function createWindow() {
     const localClient = await verifyLocalClient()
     let renderer: Record<string, unknown> | null = null
     if (process.env.MNEMION_STUDIO_SMOKE_FILE) {
+      watchHostingProbeQuit(quitApp)
       // Probe the real packaged renderer and sandboxed preload. A successful
       // file load alone misses broken asset paths and CommonJS preload errors.
       const deadline = Date.now() + 15_000
@@ -487,7 +489,8 @@ async function createWindow() {
       } while (Date.now() < helpDeadline)
       renderer = { ...renderer, documentation, secureStorage: await verifyWorkspaceStorage(), workspaceProtocol }
     }
-    writeSmokeStatus('client-ready', { legacyEnabled, localClient, renderer })
+    const hosting = await verifyLocalHostingProbe(mainWindow)
+    writeSmokeStatus(hosting ? 'hosting-ready' : 'client-ready', { legacyEnabled, localClient, renderer, hosting })
   }
 }
 

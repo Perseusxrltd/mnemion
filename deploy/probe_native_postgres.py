@@ -38,7 +38,7 @@ def private_probe_directory():
         shutil.rmtree(root)
 
 
-def expand(archive_path: Path, directory: Path) -> dict:
+def expand(archive_path: Path, directory: Path, *, component: str = "postgresql") -> dict:
     directory.mkdir()
     with zipfile.ZipFile(archive_path) as archive:
         entries = archive.infolist()
@@ -64,8 +64,11 @@ def expand(archive_path: Path, directory: Path) -> dict:
             with archive.open(item) as source, target.open("xb") as out:
                 shutil.copyfileobj(source, out)
             target.chmod(0o755 if (item.external_attr >> 16) & 0o111 else 0o644)
-    metadata = json.loads((directory / "mnemion-runtime.json").read_text())
-    if metadata.get("format") != 1 or metadata.get("component") != "postgresql":
+    manifest = directory / "mnemion-runtime.json"
+    if manifest.stat().st_size > 4 * 1024**2:
+        raise ValueError("Native runtime inventory exceeds its size budget")
+    metadata = json.loads(manifest.read_text())
+    if metadata.get("format") != 1 or metadata.get("component") != component:
         raise ValueError("Invalid native runtime metadata")
     files = metadata["files"]
     actual = {p.relative_to(directory).as_posix() for p in directory.rglob("*") if p.is_file()}

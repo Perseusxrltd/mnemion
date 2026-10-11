@@ -25,6 +25,10 @@ module.exports = {
     ...build.mac,
     identity: '-',
     notarize: false,
+    // These binaries have already been signed ad hoc and inventoried. Signing
+    // them again would change the verified native runtime hashes. The outer
+    // app signature still seals all of these resources.
+    signIgnore: ['Contents/Resources/(engine|postgresql)/'],
     extraFiles: [
       { from: '../../build-tmp/macos-update/MnemionUpdater', to: 'MacOS/MnemionUpdater' },
       { from: '../../build-tmp/macos-update/sparkle/Sparkle.framework', to: 'Frameworks/Sparkle.framework' },

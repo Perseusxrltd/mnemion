@@ -19,7 +19,8 @@
     "pack": "npm run build:resources && npm run build && npm run verify:resources && electron-builder --config builder.config.cjs --publish never --dir",
     "dist": "npm run build:resources && npm run build && npm run verify:resources && electron-builder --config builder.config.cjs --publish never && npm run verify:installer",
     "dist:prepackaged": "electron-builder --config builder.config.cjs --publish never --win nsis --prepackaged ../../dist-electron/win-unpacked && npm run verify:installer",
-    "test": "npm run build && node --test scripts/test-update-policy.mjs scripts/test-linux-startup.mjs scripts/test-macos-updates.mjs scripts/test-windows-updates.mjs scripts/test-workspace-store.mjs scripts/test-workspace-connections.mjs scripts/test-local-workspace.mjs"
+    "test": "npm run build && node --test scripts/test-update-policy.mjs scripts/test-linux-startup.mjs scripts/test-macos-updates.mjs scripts/test-windows-updates.mjs scripts/test-workspace-store.mjs scripts/test-workspace-connections.mjs scripts/test-local-workspace.mjs",
+    "smoke:installed-hosting": "node scripts/smoke-installed-hosting.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",
@@ -57,6 +58,13 @@
       {
         "from": "../frontend/dist-desktop",
         "to": "frontend/dist",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "../../build-tmp/native-resources",
+        "to": ".",
         "filter": [
           "**/*"
         ]

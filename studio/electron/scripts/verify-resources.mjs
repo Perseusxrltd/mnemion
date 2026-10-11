@@ -2,6 +2,7 @@ import { existsSync, statSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { verifyBranding } from '../../branding/verify.mjs'
+import { verifyNativeResources } from './native-resources.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -42,4 +43,5 @@ if (missing.length > 0) {
 }
 
 verifyBranding(join(root, 'studio', 'frontend', 'dist-desktop'))
+verifyNativeResources(join(root, 'build-tmp/native-resources'))
 console.log('Packaged resources and Mnemion brand assets verified.')

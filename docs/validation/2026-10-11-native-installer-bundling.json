@@ -1,0 +1,43 @@
+{
+  "passed": true,
+  "platform": "linux",
+  "architecture": "x64",
+  "nativeRuntime": {
+    "format": 1,
+    "version": "4.0.10",
+    "platform": "linux",
+    "desktop_architecture": "x64",
+    "engine_architecture": "x64",
+    "database_architecture": "x64",
+    "database_emulation": false,
+    "engine_files": 384,
+    "database_files": 784,
+    "model_weights_bundled": false
+  },
+  "installer": "AppImage portable user installation",
+  "installationPathWithSpacesAndUnicode": true,
+  "actualSetupControls": true,
+  "authenticatedApi": true,
+  "anonymousAccessRefused": true,
+  "realSemanticSaveAndRecall": true,
+  "automaticWorkspaceReopen": true,
+  "restartPreservesWorkspaceAndCredentials": true,
+  "savedMemorySurvivesRestart": true,
+  "configuredRamBudgetPersists": true,
+  "cleanDatabaseShutdownOnAppExit": true,
+  "scope": "Locally built installer, new private profile and real model download. Public download acceptance and update migration are separate gates.",
+  "validation_environment": "WSL Linux x64; locally built installer; not public download acceptance",
+  "base_commit": "a703e41be6bad530189db4bf3c79cc8401023556",
+  "artifacts": [
+    {
+      "name": "Mnemion-Studio-4.0.10-linux-amd64.deb",
+      "bytes": 216864900,
+      "sha256": "b669e58a69d9f6d61b207271166960fdd32a59be59264469cb1df3f051ed6280"
+    },
+    {
+      "name": "Mnemion-Studio-4.0.10-linux-x86_64.AppImage",
+      "bytes": 237948085,
+      "sha256": "b683ea52b0222b7d0dd9ec7a02d5fda8db046fbd34b2aaff330d2475fd2b09df"
+    }
+  ]
+}
