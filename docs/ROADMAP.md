@@ -2,6 +2,13 @@
 
 Current distribution: **4.0.9**. Updated: **2026-10-11**.
 
+The [complete requirements checklist](PRODUCT_REQUIREMENTS.md) preserves every
+requested product area, its delivery state and remaining acceptance checks.
+New requests extend that checklist without replacing unfinished work. It covers
+native onboarding and RAM controls, company sign-in and independent host access,
+Dot/Grokbot/Claude/Hermes/OpenClaw integrations, automatic cross-app capture and
+the requested live 3D memory/activity map.
+
 Version 4.0.9 adds OS-encrypted saved desktop connections, authenticated
 reconnection after app restart, durable disconnect, device-only forgetting and
 clear session choices. The complete native/product gates are required before
@@ -128,6 +135,16 @@ remain the next implementation steps. See the [full acceptance requirements](imp
 Do not count a setup guide, mock success or disabled button as an implemented flow.
 
 ## Next patches: reliability and operational confidence
+
+The immediate access priority is to separate workspace reachability and operator
+recovery from an agent's availability or model quota. Add clear connectivity
+diagnostics, individual invitations/sign-in and hosted OAuth while continuing
+the native local-runtime and resource work. See [current agent-platform research](research/2026-10-11-agent-platforms.md).
+
+The live 3D map is retained as an explicit browser and desktop requirement:
+permission-filtered memories, topics, relationships and real agent activity,
+with evidence inspection and a lightweight mode. The current wiki/graph does
+not yet fulfill that requirement.
 
 Priority is defects found in installation, access control, recovery, migration,
 update behavior and routine team use. Patches retain the service/API contract

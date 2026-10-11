@@ -17,6 +17,8 @@ const titles: Record<string, string> = {
   "README.md": "Mnemion overview", "SECURITY.md": "Security policy",
   "CONTRIBUTING.md": "Contributing", "studio/README.md": "Desktop setup & builds",
   "docs/ROADMAP.md": "Product roadmap", "docs/service/README.md": "Quick start & API",
+  "docs/PRODUCT_REQUIREMENTS.md": "Complete requirements & implementation checklist",
+  "docs/research/2026-10-11-agent-platforms.md": "Dot, Grokbot, Claude, Hermes & OpenClaw",
   "docs/service/deployment.md": "Self-hosted deployment", "docs/service/organizations.md": "Organizations, spaces & security",
   "docs/service/supervision.md": "Background service without systemd",
   "docs/service/managed-updates.md": "Managed server updates",

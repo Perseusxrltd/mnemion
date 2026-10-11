@@ -2,6 +2,8 @@
 
 # Mnemion
 
+[Product roadmap](docs/ROADMAP.md) · [Complete requirements and progress](docs/PRODUCT_REQUIREMENTS.md)
+
 Memory infrastructure for applications, teams, and AI assistants, with Obsidian
 as a local visualization and inspection surface.
 
