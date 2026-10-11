@@ -17,7 +17,7 @@ from psycopg import sql
 from psycopg.conninfo import make_conninfo
 
 from . import local_state as state
-from .private_output import private_output
+from .private_output import private_output, private_process
 from .service.admin import register_generation
 from .service.db import migrate, new_token, token_hash
 from .service.embeddings import Generation
@@ -165,16 +165,17 @@ class LocalDatabase:
 
     def run(
         self, name: str, arguments: list, *, timeout: int = 60, check: bool = True
-    ) -> subprocess.CompletedProcess:
+    ) -> subprocess.CompletedProcess[str]:
         try:
-            result = subprocess.run(
+            # pg_ctl can pass its standard handles to a surviving server. A
+            # PIPE capture then waits for the daemon's EOF, even after pg_ctl
+            # itself exits or is killed. Private regular files keep process
+            # completion and the timeout independent of daemon lifetime.
+            result = private_process(
                 [str(self.tool(name)), *map(str, arguments)],
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                directory=state.directory(self.root / "logs"),
                 env=self.environment,
                 timeout=timeout,
-                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
             )
         except (OSError, subprocess.TimeoutExpired):
             raise state.LocalSetupError(
