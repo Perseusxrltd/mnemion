@@ -1,16 +1,19 @@
 {
   "version": "4.0.9",
   "date": "2026-10-11",
-  "stage": "local candidate validation",
+  "stage": "published native validation",
   "desktop_policy_tests": 47,
   "windows_credential_fix": {
     "cause_reproduced_with_electron": "44.7.0",
     "cause": "Forced first-process termination before Local State is saved loses Chromium's profile encryption key.",
     "fix": "Direct current-user Windows DPAPI through bounded private pipes to the bundled local client.",
-    "native_windows_x64_source_tests": { "passed": 3, "skipped": 1 },
+    "native_windows_x64_source_tests": {
+      "passed": 3,
+      "skipped": 1
+    },
     "separate_process_decryption": true,
     "modified_ciphertext_rejected": true,
-    "packaged_forced_restart_matrix": "required before publication"
+    "packaged_forced_restart_matrix": "passed on native Windows x64 and ARM64"
   },
   "native_real_service_ui": {
     "nativeDesktop": true,
@@ -52,6 +55,42 @@
     "stale_and_wrong_path_handles_rejected": true,
     "session_only_key_absent_after_restart": true
   },
-  "native_encrypted_restart_matrix": "required before publication",
+  "native_encrypted_restart_matrix": {
+    "passed": true,
+    "workflow": 38115004549,
+    "jobs": [
+      {
+        "name": "native / ubuntu-22.04-arm / arm64",
+        "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38115004549/job/114398068217",
+        "conclusion": "success"
+      },
+      {
+        "name": "native / windows-11-arm / arm64",
+        "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38115004549/job/114398068241",
+        "conclusion": "success"
+      },
+      {
+        "name": "native / macos-15-intel / x64",
+        "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38115004549/job/114398068252",
+        "conclusion": "success"
+      },
+      {
+        "name": "native / macos-15 / arm64",
+        "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38115004549/job/114398068275",
+        "conclusion": "success"
+      },
+      {
+        "name": "native / windows-2022 / x64",
+        "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38115004549/job/114398068288",
+        "conclusion": "success"
+      },
+      {
+        "name": "native / ubuntu-22.04 / x64",
+        "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38115004549/job/114398068411",
+        "conclusion": "success"
+      }
+    ],
+    "linux_keyring_and_no_keyring_verified": true
+  },
   "complete_fresh_machine_onboarding": false
 }

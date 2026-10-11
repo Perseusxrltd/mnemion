@@ -122,8 +122,8 @@ that can be revisited. Keep equivalent agent/operator operations available.
 
 This is **not complete in 4.0.9**: the desktop client joins an existing service;
 database/runtime installation and several host-only settings still need operator
-setup. Secure resumable connections are implemented in 4.0.9 and require the
-native release gate. Native runtime provisioning and guided host operations
+setup. Secure resumable connections shipped in 4.0.9 after all six native
+release gates passed. Native runtime provisioning and guided host operations
 remain the next implementation steps. See the [full acceptance requirements](implementation/app-onboarding.md).
 Do not count a setup guide, mock success or disabled button as an implemented flow.
 

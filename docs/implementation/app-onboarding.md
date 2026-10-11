@@ -49,10 +49,10 @@ key. Switching configuration preserves existing memories and prior working state
 
 ## Current gaps and implementation order
 
-The 4.0.9 implementation adds OS-protected saved desktop connections, verified
-reconnection, durable disconnect and device-only forgetting. Local real-service
-and UI checks pass; the full native encrypted-restart gate remains mandatory
-before its release. This foundation does not complete installation or host setup.
+Published 4.0.9 adds OS-protected saved desktop connections, verified
+reconnection, durable disconnect and device-only forgetting. Local real-service,
+UI and all six native encrypted-restart gates passed. This foundation does not
+complete installation or host setup.
 
 1. The connection screen assumes an administrator has already installed a server.
    Build the complete first-run navigation and a native operator bridge with
