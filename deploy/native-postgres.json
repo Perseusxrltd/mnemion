@@ -30,6 +30,8 @@
     "license": "LICENSE.txt"
   },
   "build_tools": {
+    "pkgconf": "3.0.7.post0",
+    "pkgconf_binary_version": "3.0.7",
     "meson": "1.12.1",
     "ninja": "1.13.2",
     "ninja_binary_version": "1.13.2.git.kitware.jobserver-pipe-1",

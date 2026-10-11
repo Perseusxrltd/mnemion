@@ -309,7 +309,7 @@ def build(output: Path, cache: Path, work: Path) -> Path:
 
     if operating_system == "windows":
         programs = {}
-        for tool in ("meson", "ninja"):
+        for tool in ("meson", "ninja", "pkgconf"):
             program = Path(sysconfig.get_path("scripts")) / (tool + ".exe")
             programs[tool] = str(program)
             version = subprocess.check_output([program, "--version"], text=True).strip()
@@ -319,6 +319,7 @@ def build(output: Path, cache: Path, work: Path) -> Path:
             if version != expected:
                 raise ValueError(f"Use the pinned {tool} build tool")
         environment["NINJA"] = programs["ninja"]
+        environment["PKG_CONFIG"] = programs["pkgconf"]
         parsers = extract(
             fetch(configuration["build_tools"]["win_flex_bison"], cache), work / "parsers", None
         )
@@ -329,6 +330,12 @@ def build(output: Path, cache: Path, work: Path) -> Path:
             "Name: zlib\nDescription: Pinned static zlib\nVersion: 1.3.2\nLibs: -L${libdir} -lzlib\nCflags: -I${includedir}\n"
         )
         environment["PKG_CONFIG_PATH"] = str(dependencies / "lib/pkgconfig")
+        environment["PKG_CONFIG_LIBDIR"] = environment["PKG_CONFIG_PATH"]
+        environment["PKGCONF_PYPI_EMBEDDED_ONLY"] = "1"
+        environment["INCLUDE"] = (
+            str(dependencies / "include") + os.pathsep + environment.get("INCLUDE", "")
+        )
+        environment["LIB"] = str(dependencies / "lib") + os.pathsep + environment.get("LIB", "")
         disabled = [
             "bonjour",
             "bsd_auth",
@@ -363,6 +370,8 @@ def build(output: Path, cache: Path, work: Path) -> Path:
                 sources["postgresql"],
                 "--prefix=" + str(install),
                 "--buildtype=release",
+                "--wrap-mode=nodownload",
+                "-Dprefer_static=true",
                 "-Db_vscrt=mt",
                 "-Dssl=openssl",
                 "-Dzlib=enabled",

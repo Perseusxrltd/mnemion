@@ -68,7 +68,7 @@ jobs:
             $value = [Environment]::GetEnvironmentVariable($name)
             if ($value) { "$name=$value" >> $env:GITHUB_ENV }
           }
-          python -m pip install meson==1.12.1 ninja==1.13.2
+          python -m pip install meson==1.12.1 ninja==1.13.2 pkgconf==3.0.7.post0
       - name: Compile pinned PostgreSQL, vector extension and static libraries
         run: python -m deploy.build_native_postgres --work "${{ runner.temp }}/native-postgres-work" --cache "${{ runner.temp }}/native-postgres-sources" --output build-tmp/native-postgres
       - name: Relocate, initialize, verify TLS and RLS, restore backup and recover a crash
