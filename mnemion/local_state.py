@@ -147,7 +147,8 @@ def directory(path: Path) -> Path:
     return path
 
 
-def read(path: Path) -> dict:
+def read_bytes(path: Path) -> bytes:
+    """Read a bounded private record, including damaged JSON during recovery."""
     try:
         before = _regular(path)
         descriptor = os.open(
@@ -163,7 +164,18 @@ def read(path: Path) -> dict:
             content = stream.read(MAX_RECORD_BYTES + 1)
         if len(content) > MAX_RECORD_BYTES:
             raise ValueError("Oversized record")
-        value = json.loads(content)
+        return content
+    except FileNotFoundError:
+        raise
+    except (OSError, ValueError):
+        raise LocalSetupError(
+            "damaged_state", "The saved setup could not be read. Your data has been retained."
+        ) from None
+
+
+def read(path: Path) -> dict:
+    try:
+        value = json.loads(read_bytes(path))
         if not isinstance(value, dict):
             raise ValueError("Invalid record")
         return value
@@ -181,6 +193,61 @@ def write(path: Path, value: dict, *, replace: bool = True) -> None:
         read(path)
         if not replace:
             raise FileExistsError("The setup record already exists")
+    _publish(path, value, replace=replace)
+
+
+def _sync_directory(path: Path) -> None:
+    if os.name != "nt":
+        descriptor = os.open(path, os.O_RDONLY)
+        try:
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+
+
+def replace_damaged(path: Path, value: dict, *, expected: bytes) -> Path:
+    """Explicit repair only: preserve exact private bytes before atomic replacement.
+
+    The caller owns the policy lock and has validated a matching recovery token.
+    Ordinary write() still refuses malformed records. Links, unsafe ownership,
+    unreadable/oversized records and failed preservation never reach replacement.
+    """
+    directory(path.parent)
+    if read_bytes(path) != expected:
+        raise LocalSetupError("state_changed", "The saved record changed. Refresh before repair.")
+    archive = directory(path.parent / "recovery") / ("memory-" + uuid4().hex + ".bin")
+    with private_output(archive) as stream:
+        stream.write(expected)
+    _sync_directory(archive.parent)
+    _sync_directory(path.parent)
+    if read_bytes(path) != expected:
+        raise LocalSetupError("state_changed", "The saved record changed. Refresh before repair.")
+    _publish(path, value, replace=True)
+    # Only discard old damage copies after the new policy and newest copy are
+    # durable. This is bounded diagnostic history, never canonical memory data.
+    try:
+        import re
+
+        copies = [
+            candidate
+            for candidate in archive.parent.iterdir()
+            if re.fullmatch(r"memory-[a-f0-9]{32}\.bin", candidate.name)
+        ]
+        copies.sort(key=lambda candidate: _regular(candidate).st_mtime_ns, reverse=True)
+        retained = {archive, *[copy for copy in copies if copy != archive][:7]}
+        for candidate in copies:
+            if candidate not in retained:
+                _regular(candidate)
+                candidate.unlink()
+        _sync_directory(archive.parent)
+    except (OSError, LocalSetupError):
+        # Cleanup cannot turn an already committed repair into a reported
+        # failure or change ownership/links to make a questionable copy mutable.
+        pass
+    return archive
+
+
+def _publish(path: Path, value: dict, *, replace: bool) -> None:
     content = json.dumps(value, sort_keys=True, ensure_ascii=True, allow_nan=False).encode() + b"\n"
     if len(content) > MAX_RECORD_BYTES:
         raise LocalSetupError("state_limit", "The setup record exceeds its storage limit.")
@@ -193,12 +260,7 @@ def write(path: Path, value: dict, *, replace: bool = True) -> None:
         else:
             os.link(temporary, path)
             temporary.unlink()
-        if os.name != "nt":
-            descriptor = os.open(path.parent, os.O_RDONLY)
-            try:
-                os.fsync(descriptor)
-            finally:
-                os.close(descriptor)
+        _sync_directory(path.parent)
     finally:
         temporary.unlink(missing_ok=True)
 

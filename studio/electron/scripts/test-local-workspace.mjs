@@ -136,3 +136,77 @@ test('agent RAM changes refresh the policy revision and coalesce status reads', 
   engine.event({ event: 'resources', memory })
   assert.equal(f.commands.length, before + 1)
 })
+
+const damaged = token => ({ ...info('first'), memory_policy: null, memory_recovery: {
+  code: 'memory_policy_damaged', message: 'The saved RAM policy cannot be understood.', repair_token: token,
+} })
+
+test('damaged RAM status stays inspectable and blocks startup until explicit repair', async t => {
+  const f = fixture(t)
+  const start = assert.rejects(f.host.start(), /Repair the saved RAM budget/)
+  f.last().reply(damaged('a'.repeat(64)))
+  await start
+  assert.equal(f.host.status.info.configured, true)
+  assert.equal(f.host.status.info.memory_recovery.repair_token, 'a'.repeat(64))
+  assert.deepEqual(f.commands.map(command => command.action), ['status'])
+  const save = f.host.changeMemory({ mode: 'manual', limit_mib: 512, repair_token: 'a'.repeat(64) })
+  f.last().reply(damaged('a'.repeat(64)))
+  await settle()
+  assert.equal(f.last().action, 'memory-repair')
+  f.last().reply({ event: 'memory_policy', policy: policy('repaired') })
+  assert.equal((await save).info.memory_recovery, null)
+  assert.equal(f.host.status.info.memory_policy.revision, 'repaired')
+})
+
+test('an update stop waits for an explicit repair just as for an ordinary RAM save', async t => {
+  const f = fixture(t)
+  const save = f.host.changeMemory({ mode: 'manual', limit_mib: 512, repair_token: 'a'.repeat(64) })
+  f.last().reply(damaged('a'.repeat(64)))
+  await settle()
+  assert.equal(f.last().action, 'memory-repair')
+  let stopped = false
+  const stop = f.host.stop().then(value => { stopped = true; return value })
+  await settle()
+  assert.equal(stopped, false)
+  f.last().reply({ event: 'memory_policy', policy: policy('repaired') })
+  await save
+  assert.equal(await stop, true)
+  assert.equal(f.host.busy, false)
+})
+
+test('stale repair reports the conflict and refreshing exposes the new policy state', async t => {
+  const f = fixture(t)
+  const save = assert.rejects(f.host.changeMemory({ mode: 'auto', limit_mib: null, repair_token: 'a'.repeat(64) }), /changed after inspection/)
+  f.last().reply(damaged('b'.repeat(64)))
+  await settle()
+  f.last().reply({ event: 'error', code: 'memory_policy_changed', message: 'The RAM policy changed after inspection. Refresh before repairing it.' })
+  await save
+  const refresh = f.host.inspect()
+  f.last().reply(info('restored'))
+  assert.equal((await refresh).memory_policy.revision, 'restored')
+  assert.equal(f.host.status.info.memory_recovery, undefined)
+})
+
+test('live policy damage is detected even when the last valid revision has not changed', async t => {
+  const f = fixture(t)
+  const engine = await running(f)
+  const memory = { revision: 'first', reason: 'policy_unavailable', enforcement: 'cooperative', scope: 'local_engine_database_and_reported_desktop',
+    state: 'paused', target_bytes: 512, used_bytes: 100, engine_bytes: 60, database_bytes: 20, desktop_bytes: 20,
+    effective_hardware_bytes: 4096, available_hardware_bytes: 2048 }
+  const before = f.commands.length
+  engine.event({ event: 'resources', memory })
+  assert.equal(f.commands.length, before + 1)
+  f.last().reply(damaged('a'.repeat(64)))
+  await settle()
+  assert.equal(f.host.status.info.memory_recovery.code, 'memory_policy_damaged')
+  engine.event({ event: 'resources', memory })
+  assert.equal(f.commands.length, before + 1)
+})
+
+test('repair rejects invalid tokens and conflicting revision fields before spawning', async t => {
+  const f = fixture(t)
+  for (const extra of [{ repair_token: 'bad' }, { repair_token: 'a'.repeat(64), expected_revision: 'first' }]) {
+    await assert.rejects(f.host.changeMemory({ mode: 'auto', limit_mib: null, ...extra }), /Choose automatic/)
+  }
+  assert.equal(f.commands.length, 0)
+})

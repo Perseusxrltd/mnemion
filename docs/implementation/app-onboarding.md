@@ -90,6 +90,22 @@ focused lifecycle regressions and the existing desktop suite pass locally
 (52 tests, 2026-10-11); these checks do not establish packaged native hosting on
 Windows or macOS, which remains a release prerequisite.
 
+## RAM-policy recovery
+
+The native-host branch now includes a fixed local operator `memory-repair`
+command and matching app recovery controls on both the local welcome flow and
+**Setup & this device**. Corrupt JSON no longer prevents status inspection.
+Damaged or missing policies pause model admission, preserve the running
+engine's previous budget, and block a new local start until an explicit repair.
+Repair binds the observed damage to a token, preserves its private bytes, and
+refuses stale or already-valid replacements. The desktop serializes repairs
+with shutdown and updates. Read [RAM recovery](../service/memory-resources.md)
+for agent examples and the explicit unsafe-storage/256 KiB boundary.
+
+This closes recovery for an ordinary damaged local RAM-policy record. It does
+not close backup restoration, changing a saved service port, moving the local
+data folder, or complete packaged installation/model acceptance.
+
 ## Release evidence
 
 Run clean-install walkthroughs on Windows, macOS and Linux, x64 and ARM64. Record

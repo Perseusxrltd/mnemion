@@ -35,12 +35,20 @@ deterministic protocol fixture, so these tests do not replace native model,
 packaged installer, or platform walkthroughs. Test execution was limited to a
 1 GiB Linux scope. `ruff` also passes.
 
+## Follow-up: damaged RAM policy
+
+The ordinary corrupt/missing RAM-policy dead end is resolved by the explicit
+app and operator repair in [the recovery validation report](2026-10-11-native-policy-recovery.md).
+It preserves private damage copies and the running cap, refuses stale repairs,
+and remains reachable before engine startup. Unsafe storage and records larger
+than the 256 KiB limit still require an OS/operator remedy. This does not close
+backup restoration or full installed onboarding.
+
 ## Remaining concrete blockers
 
 | Priority | Finding and current source | Required completion evidence |
 | --- | --- | --- |
 | Before native release | `studio/electron/service-bridge.ts` expects bundled `engine` and `postgresql` resources. The desktop resource builder and `package.json` only package the client, frontend and notices. | An installed app must provision verified native engine/database resources and complete setup without Python, PostgreSQL, a compiler or terminal. Run on every offered OS/architecture. |
-| Before recovery claims | Corrupt `resource-policy/memory.json` makes `local_memory.policy()` fail; both `inspect()` and `configure()` require that read. The app cannot load RAM settings or replace the damaged policy through its controls. | Expose retained status and an explicit private operator repair that preserves the damaged record and prior cap. Rehearse repair through UI and CLI while the engine is running and stopped. Do not silently reset to automatic. |
 | Before complete onboarding claims | A saved service-port conflict tells the user to change the workspace port, but `LocalSetup` only shows the port field before configuration exists. Configured workspaces only offer resume. | A stopped-workspace port change must check availability, preserve credentials/data, update the saved connection and complete reconnect through the app. |
 | Before complete onboarding claims | `service-bridge.ts` fixes the data root; `LocalSetup` displays it without a location picker. “Free disk” is checked only at creation and there is no app move flow. | Let the user choose a safe local destination and move/recover through verified separate staging without putting a live database in synced storage. Rehearse insufficient disk and an interrupted move. |
 | Before complete recovery claims | `Setup.tsx` links to recovery documentation; no native backup destination, schedule, backup verification, restore selection or activation flow is registered in the local operator bridge. Revoked/missing owner credentials also stop startup with a recovery instruction and no app repair path. | Create, inspect and restore a backup into a separate destination, reconcile access/deletion state, recover operator access without reviving revoked keys, then switch through the app while retaining the prior workspace. |

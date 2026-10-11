@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, BookOpenCheck, Cpu, Database, HardDrive, LoaderCircle, Plug, RefreshCw, ShieldCheck, Users } from 'lucide-react';
 import type { LocalStatus, MemoryOptions } from '../../../shared/local-workspace';
-import { LiveMemory, MemoryFields, validMemory } from './MemoryControls';
+import { LiveMemory, MemoryFields, RepairMemory, validMemory } from './MemoryControls';
 import { localError } from './LocalSetup';
 
 export default function Setup({ endpoint, administrator }: { endpoint: string; administrator: boolean }) {
@@ -45,7 +45,7 @@ export default function Setup({ endpoint, administrator }: { endpoint: string; a
       <div className="ws-memory-heading"><h2>RAM on this computer</h2><span className="ws-badge">{status.state === 'running' ? 'Local workspace running' : status.state}</span></div>
       <p>These controls manage <strong>{status.info.settings?.workspace_name}</strong> on this device. A workspace hosted elsewhere uses that host’s resource settings.</p>
       {status.memory && <LiveMemory value={status.memory} />}
-      <form onSubmit={async event => {
+      {status.info.memory_recovery ? <RepairMemory status={status} onStatus={(next, repaired) => { setStatus(next); setDirty(false); setSaved(!!repaired); }} /> : <form onSubmit={async event => {
         event.preventDefault(); setBusy(true); setError(undefined); setSaved(false);
         try {
           const next = await desktop!.localMemory!({ ...options, expected_revision: revision });
@@ -56,7 +56,13 @@ export default function Setup({ endpoint, administrator }: { endpoint: string; a
         <MemoryFields value={options} resources={status.info.resources} disabled={busy} onChange={value => { setOptions(value); setDirty(true); setSaved(false); }} />
         <div className="ws-setup-actions"><button className="ws-button ws-primary" disabled={busy || !dirty || !validMemory(options)}>{busy ? <LoaderCircle className="ws-spin" size={16} /> : <CheckIcon />}Apply RAM budget</button>{dirty && <button type="button" className="ws-button ws-quiet" disabled={busy} onClick={() => { setDirty(false); setError(undefined); }}><RefreshCw size={15} />Use current settings</button>}</div>
         {saved && <p className="ws-memory-saved" role="status">{status.state === 'running' ? 'RAM budget saved. The running engine applies it within a few seconds.' : 'RAM budget saved for the next local start.'} Active calculations finish safely.</p>}
-      </form>
+        {saved && !['running', 'starting', 'stopping'].includes(status.state) && <button type="button" className="ws-button" disabled={busy} onClick={async () => {
+          setBusy(true); setError(undefined);
+          try { const next = await desktop!.localStart!(); if (live.current) setStatus(next); }
+          catch (error) { if (live.current) setError(error); }
+          finally { if (live.current) setBusy(false); }
+        }}>Resume local workspace</button>}
+      </form>}
       <details className="ws-setup-advanced"><summary>Local storage & agent controls</summary><p className="ws-local-path">{status.info.data_directory}</p><p>Host agents can read the current budget with <code>mnemion-service local status --root &lt;data-folder&gt;</code> and change it through <code>local memory</code>. These are local operator commands; workspace API keys do not grant access to this computer’s settings.</p><Link className="ws-link" to="/workspace/help?doc=docs%2Fservice%2Fmemory-resources.md">RAM policy and agent examples<ArrowRight size={13} /></Link></details>
     </section>}
     {!status?.info?.configured && <div className="ws-notice">{desktop ? 'This device is connected as a client. Its workspace host controls model and database RAM. Create a local workspace from the welcome screen to manage hosting here.' : 'You are using the web app. The workspace host controls model and database RAM.'}</div>}

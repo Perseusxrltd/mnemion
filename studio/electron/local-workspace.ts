@@ -1,17 +1,18 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { StringDecoder } from 'node:string_decoder'
-import type { LocalOptions, LocalInfo, LocalStatus, MemoryChange, MemorySnapshot, MemoryPolicy } from '../shared/local-workspace.js'
+import type { LocalOptions, LocalInfo, LocalStatus, MemoryChange, MemoryWrite, MemorySnapshot, MemoryPolicy } from '../shared/local-workspace.js'
 type Connection = { endpoint: string; credential: string; workspaceId: string; version: string }
 type Options = { executable: string; database: string; root: string; version: string; environment: NodeJS.ProcessEnv; desktopMemory?: () => number }
 
-export function memoryOptions(input: unknown, revision = false): MemoryChange {
+export function memoryOptions(input: unknown, revision = false): MemoryChange & { repair_token?: string } {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Choose automatic memory management or a RAM budget of at least 256 MiB.')
-  const value = input as MemoryChange
-  const allowed = revision ? ['mode', 'limit_mib', 'expected_revision'] : ['mode', 'limit_mib']
+  const value = input as MemoryChange & { repair_token?: string }
+  const allowed = revision ? ['mode', 'limit_mib', 'expected_revision', 'repair_token'] : ['mode', 'limit_mib']
   if (Object.keys(value).some(key => !allowed.includes(key)) ||
       (value.mode !== 'auto' && value.mode !== 'manual') ||
       (value.mode === 'auto' ? value.limit_mib !== null : (!Number.isInteger(value.limit_mib) || value.limit_mib < 256 || value.limit_mib > 1048576)) ||
+      (value.repair_token !== undefined && (typeof value.repair_token !== 'string' || !/^[a-f0-9]{64}$/.test(value.repair_token) || value.expected_revision !== undefined)) ||
       (value.expected_revision !== undefined && (typeof value.expected_revision !== 'string' || !/^[a-z0-9-]{1,64}$/.test(value.expected_revision)))) {
     throw new Error('Choose automatic memory management or a RAM budget of at least 256 MiB.')
   }
@@ -121,8 +122,11 @@ export class LocalWorkspace {
               !value.resources || typeof value.resources.memory_bytes !== 'number' || typeof value.resources.available_disk_bytes !== 'number') {
             throw new Error('The local runtime does not match this app. Reinstall the complete app.')
           }
-          const { configured, data_directory, engine_version, resources, settings, last_verification, memory_policy, memory } = value
-          const info = { configured, data_directory, engine_version, resources, settings, last_verification, memory_policy, memory }
+          const { configured, data_directory, engine_version, resources, settings, last_verification, memory_policy, memory_recovery, memory } = value
+          if (memory_recovery && (!['memory_policy_missing', 'memory_policy_damaged', 'memory_policy_inaccessible'].includes(memory_recovery.code) ||
+              typeof memory_recovery.message !== 'string' || memory_recovery.message.length > 1000 ||
+              (memory_recovery.repair_token !== null && !/^[a-f0-9]{64}$/.test(memory_recovery.repair_token)))) throw new Error('Invalid RAM recovery status')
+          const info = { configured, data_directory, engine_version, resources, settings, last_verification, memory_policy, memory_recovery, memory }
           this.info = info
           this.changed(this.status)
           resolve(info)
@@ -140,6 +144,7 @@ export class LocalWorkspace {
     this.assertOpen()
     if (this.child) return this.status
     if (!options && !info.configured) throw new Error('Choose the workspace settings before starting.')
+    if (info.memory_recovery) throw new Error('Repair the saved RAM budget before resuming this workspace.')
     this.intentionalStop = false
     this.connection = undefined
     this.set({ state: 'starting', stage: 'starting', message: info.configured ? 'Opening your local workspace…' : 'Creating your local workspace…', errorCode: undefined })
@@ -165,7 +170,8 @@ export class LocalWorkspace {
           if (value.event === 'resources') {
             const memory = memorySnapshot(value.memory)
             this.set({ memory })
-            if (memory.revision !== this.info?.memory_policy?.revision) void this.inspect().catch(() => {})
+            if ((memory.reason === 'policy_unavailable') !== !!this.info?.memory_recovery ||
+                (memory.reason !== 'policy_unavailable' && memory.revision !== this.info?.memory_policy?.revision)) void this.inspect().catch(() => {})
           } else if (value.event === 'progress' && typeof value.stage === 'string' && value.stage.length <= 64 && typeof value.message === 'string' && value.message.length <= 1000) {
             this.set({ stage: value.stage, message: value.message })
           } else if (value.event === 'ready') {
@@ -222,12 +228,12 @@ export class LocalWorkspace {
     try { return await this.memoryChange } finally { this.memoryChange = undefined }
   }
 
-  private async saveMemory(change: MemoryChange): Promise<LocalStatus> {
+  private async saveMemory(change: MemoryWrite): Promise<LocalStatus> {
     const info = await this.inspect()
     this.assertOpen()
     if (!info.configured) throw new Error('Create a local workspace first.')
     const policy = await new Promise<MemoryPolicy>((resolve, reject) => {
-      const child = this.control('memory')
+      const child = this.control('repair_token' in change ? 'memory-repair' : 'memory')
       let body = '', failed = false
       const timer = setTimeout(() => { failed = true; child.kill(); reject(new Error('The RAM policy could not be saved in time. Refresh its status before retrying.')) }, 20_000)
       child.stdout.on('data', (chunk: Buffer) => {
@@ -250,8 +256,10 @@ export class LocalWorkspace {
       })
       child.stdin.end(JSON.stringify(change) + '\n')
     })
-    this.info = { ...info, memory_policy: policy }
-    this.changed(this.status)
+    this.info = { ...info, memory_policy: policy, memory_recovery: null }
+    if (this.statusValue.state === 'error' && this.statusValue.errorCode?.startsWith('memory_policy_')) {
+      this.set({ state: 'stopped', errorCode: undefined, stage: undefined, message: 'RAM budget repaired. Resume your local workspace when ready.' })
+    } else this.changed(this.status)
     return this.status
   }
 

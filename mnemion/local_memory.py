@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import hashlib
+import json
 from pathlib import Path
 import os
+import re
 import threading
 import time
 from uuid import uuid4
@@ -19,54 +22,171 @@ class MemoryChange(MemoryOptions):
     expected_revision: str | None = Field(default=None, min_length=1, max_length=64)
 
 
-def policy(root: Path, fallback: MemoryOptions | None = None) -> dict:
-    path = root / "resource-policy" / "memory.json"
+class MemoryRepair(MemoryOptions):
+    repair_token: str = Field(pattern=r"^[a-f0-9]{64}$")
+
+
+def _parse(content: bytes) -> dict:
     try:
-        value = state.read(path)
-    except FileNotFoundError:
-        return {
-            "format": 1,
-            "revision": "default",
-            "settings": (fallback or MemoryOptions()).model_dump(),
-        }
-    try:
+        value = json.loads(content)
         if (
-            value["format"] != 1
+            not isinstance(value, dict)
+            or type(value["format"]) is not int
+            or value["format"] != 1
             or not isinstance(value["revision"], str)
-            or len(value["revision"]) > 64
+            or not re.fullmatch(r"[a-z0-9-]{1,64}", value["revision"])
+            or value["revision"] == "default"
         ):
             raise ValueError("Invalid policy record")
         options = MemoryOptions.model_validate(value["settings"])
-        return {**value, "settings": options.model_dump()}
-    except (KeyError, ValueError, TypeError):
+        return {
+            "format": 1,
+            "revision": value["revision"],
+            "settings": options.model_dump(),
+            **(
+                {"updated_at": value["updated_at"]}
+                if isinstance(value.get("updated_at"), str) and len(value["updated_at"]) <= 64
+                else {}
+            ),
+        }
+    except (KeyError, ValueError, TypeError, RecursionError):
         raise state.LocalSetupError(
             "memory_policy_damaged",
-            "The saved RAM policy needs recovery. Model work is paused until it can be read safely.",
+            "The saved RAM policy needs repair. New model work is paused until you choose a replacement budget.",
         ) from None
 
 
-def configure(root: Path, change: MemoryChange) -> dict:
+def policy(root: Path) -> dict:
+    try:
+        state._regular(root / "resource-policy", directory=True)
+        return _parse(state.read_bytes(root / "resource-policy" / "memory.json"))
+    except FileNotFoundError:
+        raise state.LocalSetupError(
+            "memory_policy_missing",
+            "The saved RAM policy is missing. Choose a replacement budget before resuming model work.",
+        ) from None
+
+
+def _observed(root: Path) -> tuple[bytes | None, str]:
+    path = root / "resource-policy" / "memory.json"
+    folder = state._regular(root, directory=True)
+    workspace = repr(
+        (folder.st_dev, folder.st_ino, os.path.normcase(str(root.absolute())))
+    ).encode()
+    try:
+        before = state._regular(path)
+        content = state.read_bytes(path)
+        after = state._regular(path)
+
+        def identity(info):
+            return (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+
+        if identity(before) != identity(after):
+            raise state.LocalSetupError(
+                "memory_policy_changed", "The RAM policy changed. Refresh its status."
+            )
+        digest = hashlib.sha256(
+            workspace + repr(identity(after)).encode() + b"\0" + content
+        ).hexdigest()
+        return content, digest
+    except FileNotFoundError:
+        return None, hashlib.sha256(workspace + b"\0missing-memory-policy").hexdigest()
+
+
+def inspection(root: Path) -> dict:
+    """Keep local setup usable without exposing damaged bytes or inventing settings."""
+    try:
+        state.directory(root)
+        if (root / "resource-policy").exists() or (root / "resource-policy").is_symlink():
+            state.directory(root / "resource-policy")
+        content, token = _observed(root)
+        if content is not None:
+            try:
+                return {"memory_policy": _parse(content), "memory_recovery": None}
+            except state.LocalSetupError:
+                pass
+        return {
+            "memory_policy": None,
+            "memory_recovery": {
+                "code": "memory_policy_missing" if content is None else "memory_policy_damaged",
+                "message": "The saved RAM policy is missing."
+                if content is None
+                else "The saved RAM policy cannot be understood.",
+                "repair_token": token,
+            },
+        }
+    except (state.LocalSetupError, OSError):
+        return {
+            "memory_policy": None,
+            "memory_recovery": {
+                "code": "memory_policy_inaccessible",
+                "message": "The RAM policy cannot be read safely. Check that its folder belongs to this OS account, has no links, and its file is readable and no larger than 256 KiB. Refresh after correcting storage access.",
+                "repair_token": None,
+            },
+        }
+
+
+def _configured_directory(root: Path) -> Path:
     state.directory(root)
     if not (root / "configuration.json").exists():
         raise state.LocalSetupError(
             "not_configured", "Create the local workspace before changing its RAM budget."
         )
     state.read(root / "configuration.json")
-    directory = state.directory(root / "resource-policy")
+    return state.directory(root / "resource-policy")
+
+
+def _replacement(options: MemoryOptions) -> dict:
+    return {
+        "format": 1,
+        "revision": uuid4().hex,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "settings": {"mode": options.mode, "limit_mib": options.limit_mib},
+    }
+
+
+def configure(root: Path, change: MemoryChange, *, initial: bool = False) -> dict:
+    directory = _configured_directory(root)
     with state.lock(directory):
+        if initial:
+            value = _replacement(change)
+            state.write(directory / "memory.json", value, replace=False)
+            return value
         current = policy(root)
         if change.expected_revision is not None and change.expected_revision != current["revision"]:
             raise state.LocalSetupError(
                 "memory_policy_changed",
                 "The RAM budget changed in another session. Refresh it before applying your changes.",
             )
-        value = {
-            "format": 1,
-            "revision": uuid4().hex,
-            "updated_at": datetime.now(timezone.utc).isoformat(),
-            "settings": change.model_dump(exclude={"expected_revision"}),
-        }
+        value = _replacement(change)
         state.write(directory / "memory.json", value)
+        return value
+
+
+def repair(root: Path, change: MemoryRepair) -> dict:
+    directory = _configured_directory(root)
+    with state.lock(directory):
+        content, token = _observed(root)
+        if token != change.repair_token:
+            raise state.LocalSetupError(
+                "memory_policy_changed",
+                "The RAM policy changed after inspection. Refresh before repairing it.",
+            )
+        if content is not None:
+            try:
+                _parse(content)
+            except state.LocalSetupError:
+                pass
+            else:
+                raise state.LocalSetupError(
+                    "memory_policy_changed",
+                    "The RAM policy is already valid. Refresh to use its current settings.",
+                )
+        value = _replacement(change)
+        if content is None:
+            state.write(directory / "memory.json", value, replace=False)
+        else:
+            state.replace_damaged(directory / "memory.json", value, expected=content)
         return value
 
 
@@ -124,10 +244,6 @@ class MemoryMonitor:
     def tick(self):
         try:
             value = policy(self.root)
-            if value["revision"] == "default" and self.last_revision not in {"", "default"}:
-                raise state.LocalSetupError(
-                    "memory_policy_missing", "The saved RAM policy is missing."
-                )
             if value["revision"] != self.last_revision:
                 self.last_revision = value["revision"]
                 self.last_write = 0

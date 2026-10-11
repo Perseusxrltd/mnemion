@@ -130,7 +130,7 @@ def inspect(root: Path) -> dict:
         result.update(
             configured=True,
             settings=settings,
-            memory_policy=local_memory.policy(root),
+            **local_memory.inspection(root),
             memory=local_memory.live_status(root),
         )
         if (root / "readiness.json").exists():
@@ -178,7 +178,9 @@ def initialize(root: Path, options: SetupOptions) -> dict:
         "database_port": database_port,
     }
     state.write(root / "configuration.json", value, replace=False)
-    local_memory.configure(root, local_memory.MemoryChange(**options.memory.model_dump()))
+    local_memory.configure(
+        root, local_memory.MemoryChange(**options.memory.model_dump()), initial=True
+    )
     return value
 
 
@@ -250,10 +252,6 @@ def run(
         database = LocalDatabase(root, runtime, settings, credentials)
         registry = registry_for(root, settings)
         saved_policy = local_memory.policy(root)
-        if saved_policy["revision"] == "default":
-            saved_policy = local_memory.configure(
-                root, local_memory.MemoryChange(**settings["memory"], expected_revision="default")
-            )
         budget = MemoryBudget(
             MemoryOptions.model_validate(saved_policy["settings"]),
             revision=saved_policy["revision"],
@@ -565,7 +563,9 @@ def _verify(root: Path, endpoint: str, credentials: dict, settings: dict, regist
 
 
 def arguments(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("action", choices=["status", "initialize", "run", "memory"])
+    parser.add_argument(
+        "action", choices=["status", "initialize", "run", "memory", "memory-repair"]
+    )
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--database-runtime", type=Path)
 
@@ -583,12 +583,16 @@ def dispatch(args) -> int:
         if args.action == "status":
             emit({"event": "status", **inspect(root)})
             return 0
-        if args.action == "memory":
+        if args.action in {"memory", "memory-repair"}:
             line = sys.stdin.buffer.readline(4097)
             if len(line) > 4096:
                 raise ValueError("The RAM policy exceeds its size limit")
-            value = local_memory.configure(
-                root, local_memory.MemoryChange.model_validate_json(line)
+            value = (
+                local_memory.repair(root, local_memory.MemoryRepair.model_validate_json(line))
+                if args.action == "memory-repair"
+                else local_memory.configure(
+                    root, local_memory.MemoryChange.model_validate_json(line)
+                )
             )
             emit({"event": "memory_policy", "policy": value, "apply_within_seconds": 2})
             return 0

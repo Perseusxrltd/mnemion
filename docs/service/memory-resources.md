@@ -61,8 +61,11 @@ mnemion-service local status --root DATA_FOLDER
 ```
 
 The JSON `status` event includes `memory_policy.settings`, its revision and a
-recent `memory` sample when a matching live process exists. It does not return
-the owner's API credential. Inspect the revision before changing a policy.
+recent `memory` sample when a matching live process exists. If the policy needs
+repair, `memory_policy` is `null` and `memory_recovery` explains the problem.
+The status remains available before the engine starts. It does not return the
+owner's API credential or damaged file content. Inspect the revision before
+changing a valid policy.
 
 Run the following command and send one JSON object through standard input:
 
@@ -93,12 +96,61 @@ native budget controller. This endpoint does not change the host policy.
 ## Recovery and remaining validation
 
 A missing or damaged policy retains the running engine's last accepted limit
-and pauses new model work. Preserve the private directory and restore a
-verified policy backup; automated damaged-policy recovery in the app remains
-open work. Never delete the workspace to repair a RAM setting.
+and pauses new model work. A stopped workspace cannot resume until its policy
+is repaired; it never silently resets a missing manual budget to automatic.
+Memories remain in place. An interrupted first setup that saved its workspace
+configuration before its initial policy uses the same explicit repair flow.
+
+In the app, open the local workspace from the welcome screen, or open
+**Setup & this device** while connected. **Repair your RAM budget** explains the
+problem. Choose Automatic or a manual limit and select **Repair and save RAM
+budget**. A running engine adopts the new revision within a few seconds;
+otherwise select **Resume local workspace**. Saving the file does not claim
+that model work has already resumed: hardware pressure and model limits still
+apply. If another session changes the policy, use **Refresh RAM policy** and
+review the current state before retrying. Your chosen replacement budget stays
+in the form while you refresh.
+
+A host agent first reads `local status` and takes its opaque
+`memory_recovery.repair_token`. It then runs:
+
+```text
+mnemion-service local memory-repair --root DATA_FOLDER
+```
+
+Send one JSON object through standard input:
+
+```json
+{"mode":"manual","limit_mib":512,"repair_token":"TOKEN_FROM_MEMORY_RECOVERY"}
+```
+
+Repair requires a token for the current damage. The token binds the inspected workspace, exact bounded
+bytes and file identity; different damage, a replaced file, or a valid restored
+policy rejects an old repair request with `memory_policy_changed`. A missing
+policy has its own recovery token. Normal `local memory` writes cannot bypass
+repair. A successful repair returns the usual `memory_policy` event with the
+new revision and `apply_within_seconds`; read live status to confirm adoption.
+
+Before replacing corrupt bytes, Mnemion durably preserves their exact contents
+in the private `resource-policy/recovery` folder. Successful repairs retain the
+latest eight damage copies, up to 256 KiB each; failed cleanup can retain more.
+These are diagnostic policy copies, not memory backups. A failed preservation
+or atomic replacement retains the original policy and keeps admission paused.
+The operation never moves or replaces the database.
+
+For a linked, foreign/shared, unreadable, redirected or oversized policy file,
+status returns `memory_policy_inaccessible` and a null repair token. The app
+shows the storage remedy and a refresh control, without offering an unsafe
+replacement. Correct the OS storage access or use the host operator to retain
+an oversized file outside the live policy path, then refresh and choose a new
+budget. The supported in-app corruption repair is bounded to 256 KiB, the
+policy record limit; it does not take ownership of foreign files or resolve
+unsafe links. Never delete the workspace to repair a RAM setting.
 
 Local Linux validation has exercised lower/raise/restart behavior with the real
 compiled engine, database and embedding model. The desktop lifecycle tests cover
-concurrent saves, interrupted startup and cancelled shutdown. Packaged native
+concurrent saves and repairs, interrupted startup and cancelled shutdown. The
+operator regression tests cover malformed bytes, missing files, stale tokens,
+private retention, failed replacement and live pause/adoption. Packaged native
 hosting on every supported platform, historical fleet measurements and an
 optional OS-enforced limit remain separate acceptance gates.

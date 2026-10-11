@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Activity, Cpu, PauseCircle } from 'lucide-react';
-import type { LocalResources, MemoryOptions, MemorySnapshot } from '../../../shared/local-workspace';
+import { Activity, Cpu, LoaderCircle, PauseCircle, RefreshCw, ShieldCheck } from 'lucide-react';
+import type { LocalResources, LocalStatus, MemoryOptions, MemorySnapshot } from '../../../shared/local-workspace';
 
 export const memorySize = (bytes: number) => bytes >= 1024 ** 3
   ? `${(bytes / 1024 ** 3).toFixed(1)} GiB`
@@ -21,6 +21,49 @@ export function MemoryFields({ value, onChange, resources, disabled = false }: {
     <p className="ws-memory-caption">{memorySize(resources.effective_memory_bytes)} available to this environment · {memorySize(resources.effective_available_memory_bytes)} currently free. Automatic mode currently targets about {memorySize(resources.recommended_budget_bytes)}.</p>
     <small>This is a working budget. Mnemion adjusts batches and pauses model work when needed; an active calculation finishes safely before memory is released.</small>
   </fieldset>;
+}
+
+export function RepairMemory({ status, onStatus, disabled = false }: {
+  status: LocalStatus; onStatus: (status: LocalStatus, repaired?: boolean) => void; disabled?: boolean;
+}) {
+  const info = status.info!;
+  const recovery = info.memory_recovery!;
+  const live = status.memory || info.memory;
+  const [options, setOptions] = useState<MemoryOptions>(() => live?.mode === 'manual' && live.requested_limit_mib
+    ? { mode: 'manual', limit_mib: live.requested_limit_mib } : { mode: 'auto', limit_mib: null });
+  const [token, setToken] = useState(recovery.repair_token);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const changed = token !== recovery.repair_token;
+  async function refresh() {
+    setBusy(true); setError('');
+    try {
+      const next = await window.mnemion!.localStatus!();
+      setToken(next.info?.memory_recovery?.repair_token ?? null);
+      onStatus(next);
+    } catch (error) { setError(error instanceof Error ? error.message.replace(/^Error invoking remote method '[^']+': (?:Error: )?/, '') : 'Could not refresh the RAM policy.'); }
+    finally { setBusy(false); }
+  }
+  return <section className="ws-device-settings ws-memory-repair" aria-label="Repair RAM budget">
+    <h3>Repair your RAM budget</h3>
+    <div className="ws-notice ws-error" role="alert"><p>{recovery.message}</p><p>New model work stays paused. Your memories are retained.</p></div>
+    {recovery.repair_token && <form onSubmit={async event => {
+      event.preventDefault();
+      if (!token || changed) return;
+      setBusy(true); setError('');
+      try { onStatus(await window.mnemion!.localMemory!({ ...options, repair_token: token }), true); }
+      catch (error) { setError(error instanceof Error ? error.message.replace(/^Error invoking remote method '[^']+': (?:Error: )?/, '') : 'The policy could not be repaired. Refresh before retrying.'); }
+      finally { setBusy(false); }
+    }}>
+      <p>Choose the budget to use from now on. {recovery.code === 'memory_policy_missing' ? 'Repair saves your chosen budget in the missing policy file.' : 'Repair preserves a private copy of the damaged settings before saving your choice.'} It does not change your stored memories.</p>
+      <MemoryFields value={options} onChange={setOptions} resources={info.resources} disabled={busy || disabled} />
+      <button className="ws-button ws-primary" disabled={busy || disabled || changed || !validMemory(options)}>{busy ? <LoaderCircle className="ws-spin" size={16} /> : <ShieldCheck size={16} />}Repair and save RAM budget</button>
+      <p className="ws-memory-caption">{status.state === 'running' ? 'The running engine adopts the repaired budget within a few seconds. Its other memory limits still apply.' : 'After repair, resume the local workspace to apply this budget.'}</p>
+    </form>}
+    {changed && <p className="ws-notice" role="status">The saved policy changed in another session. Refresh its status before repairing it. Your budget choice is retained.</p>}
+    {!!error && <p className="ws-notice ws-error" role="alert">{error}</p>}
+    <button type="button" className="ws-button ws-quiet" disabled={busy || disabled} onClick={() => void refresh()}><RefreshCw size={15} />Refresh RAM policy</button>
+  </section>;
 }
 
 const reasons: Record<string, string> = {

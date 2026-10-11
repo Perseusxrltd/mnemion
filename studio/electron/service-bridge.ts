@@ -251,7 +251,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
   ipcMain.handle('local:status', async event => {
     trusted(event)
     const host = localWorkspace()
-    if (host.status.available && !host.status.info) await host.inspect()
+    if (host.status.available) await host.inspect()
     return { ...host.status, preferences: localPreferences() }
   })
   ipcMain.handle('local:create', async (event, input: unknown) => {
