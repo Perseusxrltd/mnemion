@@ -354,6 +354,13 @@ class Client:
                 if not safe_retry or attempt == self.retries:
                     raise
             else:
+                if response.headers.get("ngrok-error-code") == "ERR_NGROK_3200":
+                    raise MnemionError(
+                        response.status_code,
+                        "tunnel_offline",
+                        "The workspace tunnel is offline. Restart its connection through the host's operator controls; changing the workspace key will not reconnect the host.",
+                        None,
+                    )
                 if response.is_success:
                     if response.status_code == 204:
                         return None

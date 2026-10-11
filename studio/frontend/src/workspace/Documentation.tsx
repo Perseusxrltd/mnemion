@@ -23,6 +23,7 @@ const titles: Record<string, string> = {
   "docs/service/supervision.md": "Background service without systemd",
   "docs/service/managed-updates.md": "Managed server updates",
   "docs/service/workspaces.md": "Connect & remember workspaces",
+  "docs/service/connection-diagnostics.md": "Connection diagnosis & host recovery",
   "docs/implementation/app-onboarding.md": "Complete app setup requirements",
   "docs/STUDIO_DESIGN.md": "Studio design system",
   "docs/BRANDING.md": "Logo & brand assets",
