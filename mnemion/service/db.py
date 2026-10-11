@@ -113,7 +113,12 @@ class Database:
                     for r in conn.execute("SELECT name, sha256 FROM mnemion.schema_migrations")
                 }
                 expected = {
-                    p.name: hashlib.sha256(p.read_bytes()).hexdigest()
+                    # migrate() applies and hashes universal-newline UTF-8
+                    # text. Windows checkouts may package CRLF files; compare
+                    # the executed SQL identity, not different on-disk bytes.
+                    p.name: hashlib.sha256(
+                        p.read_text(encoding="utf-8").encode("utf-8")
+                    ).hexdigest()
                     for p in files("mnemion.service").joinpath("migrations").iterdir()
                     if p.name.endswith(".sql")
                 }
