@@ -26,7 +26,9 @@ hosting or database backup restoration.
   status even when the engine retains its previous revision. A stopped workspace
   remains stopped after repair until **Resume local workspace** is selected.
 - The installer agent's requested Windows ARM disclosure is included beneath
-  local setup: native app/model, PostgreSQL via Windows x64 compatibility.
+  local setup. A follow-up corrected it after dependency review: the app runs
+  natively; the local memory service, model and PostgreSQL use Windows x64
+  compatibility because the pinned psycopg binary lacks Windows ARM wheels.
 
 ## Executed checks
 
