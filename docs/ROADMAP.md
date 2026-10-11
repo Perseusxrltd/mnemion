@@ -32,7 +32,10 @@ agent RAM-policy recovery, and optional trusted-issuer OAuth with individual
 bindings and revocation. Both Linux and both Mac architectures passed installed
 setup, real model save/search, shutdown and automatic workspace reopen. Windows
 path identity and ARM packaging corrections have source/native component checks;
-their complete installers and the extended port-recovery gate are being tested.
+the latest complete run still failed Windows creation and the extended
+port-recovery gate on Linux/macOS. The candidate now keeps address repair
+disabled until engine cleanup finishes and adds bounded setup diagnostics;
+fresh installed acceptance remains required.
 A [Linux stale-focus correction](validation/2026-10-11-linux-update-focus.md) also
 passed controlled real-updater comparisons; public unattended acceptance remains.
 Full integrated native package checks are required before publication. Windows ARM uses a
@@ -98,6 +101,15 @@ administration must not expose personal workspaces. Keep every app workflow
 agent-operable under the same controls. See the
 [multiple-workspace implementation requirements and acceptance tests](implementation/multiple-workspaces.md).
 The existing saved-connection feature does not complete these requirements.
+
+Workspace ownership must survive the agent that installed it. The
+[continuity contract](implementation/workspace-continuity.md) now explicitly
+requires independent human administrators, delegated host operators, an offline
+recovery view, registered recovery hosts and clearly scoped Git/backup recovery.
+A member device must show whether it holds a connection, source mirror or real
+replica; the product must not imply that a remembered connection can replace an
+offline host. Requirements A11–A13 and U11 retain this work and actual Windows
+stress/update acceptance.
 
 ## Implemented for the first shared-platform release
 

@@ -54,6 +54,9 @@ test or source commit is not a shipped feature.
 | A08 | Support hosted-agent OAuth and consent, including safe authorization, expiry and revocation. | Building | [Optional trusted-issuer resource-server foundation](service/oauth.md) implements discovery/challenges, bounded introspection and immutable, revocable individual bindings; not yet published. Built-in simple personal/team sign-in, invitations/onboarding, actual PKCE/consent/registration/refresh flows, recovery/reauthorization and live-provider acceptance remain required. [Issues 4 and 18](https://github.com/Perseusxrltd/mnemion/issues/18). |
 | A09 | Keep memories reliable, recoverable and auditable as hosts and providers change. | Partial | [Backups, recovery ledger and restored-access reconciliation](service/recovery.md) exist. Finish guided backup scheduling, host migration and independent disaster recovery. |
 | A10 | Keep the repository clear, documented and safe to publish. | Partial | Public release inventories, license notices and secret/dependency checks exist. Repeat relevant checks on every release; no private endpoints, keys or personal account material in public evidence. |
+| A11 | Let several authorized owners/admins govern the workspace independently of the agent that created it, with explicit levels of authority. | Building | [Continuity contract](implementation/workspace-continuity.md). Existing organization and space administrators are a foundation; finish individual admin enrolment, ownership/recovery-custodian policy, final-admin protection and delegated host operators. Git repository administration does not silently grant an existing memory key more access. |
+| A12 | Keep administration and recovery understandable from another enrolled device when the primary agent, computer or tunnel is offline. | Building | [Offline recovery view, independent entry point, registered hosts and takeover acceptance](implementation/workspace-continuity.md). Show cached authority and recovery age honestly; implement approved operator actions, endpoint identity checks and safe host migration without two divergent writers. Joining a workspace must not imply that the device already holds a replica. |
+| A13 | Recover available memory from Git or any configured provider without confusing source copies with complete workspace backups. | Partial | Existing source ingestion and verified database restoration cover separate scopes. Finish guided inventory, backup/ledger verification, source-only recovery labeling and reconciliation of writes, permissions and deletion state. |
 
 ## Installation, lifecycle and updates
 
@@ -69,6 +72,7 @@ test or source commit is not a shipped feature.
 | U08 | Keep `main` current with tested work, monitor issues, and keep implementing through new user requests. | Ongoing | New requests extend this checklist and the active queue; they do not silently replace unfinished requirements. Preserve uncommitted work, commit validated milestones and record regressions. |
 | U09 | Keep documentation, release notes, roadmap and in-app help current with updates. | Partial | Offline docs are generated from repository Markdown; release/version checks exist. Update affected requirement IDs, evidence and limitations in every relevant release. |
 | U10 | Deliver an official first release, then continue improving the complete roadmap. | Partial | Shared-platform v1 is published as package series 4.x. The complete requested product remains in progress; a version label does not close this checklist. |
+| U11 | Use the actual Windows installation as a connected, bounded stress-test client for the shared workspace and live automatic updates. | Building | A real unmodified Windows 4.0.9 → 4.0.10 unattended upgrade and relaunch were observed. The saved remote host is currently offline; protected preparation is not a successful connection/load test. Finish scoped preflight, test-space access, bounded load/metrics and recovery/update drills without modifying production notes or exhausting the user's PC. |
 
 ## Models, RAM and memory bandwidth
 
@@ -109,7 +113,7 @@ test or source commit is not a shipped feature.
 
 ## Current implementation queue
 
-1. **Access and continuity:** A01–A08, C04–C07. Diagnose the actual offline host
+1. **Access and continuity:** A01–A09, A11–A13, C04–C07. Diagnose the actual offline host
    and protocol/authentication failures; finish individual sign-in and hosted
    OAuth, administrator invitations, provider setup and independently managed
    remote access. Preserve tenant/space isolation and existing credentials.

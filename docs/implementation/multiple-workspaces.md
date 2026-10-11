@@ -150,6 +150,7 @@ display names and resource identifiers across independent deployments.
   from fixtures and do not describe planned controls as released functionality.
 
 Related requirements: [complete app onboarding](app-onboarding.md),
+[independent administrators and offline recovery](workspace-continuity.md),
 [workspace connections](../service/workspaces.md),
 [organizations and security](../service/organizations.md),
 [agent administration](../service/agent-control.md), and
