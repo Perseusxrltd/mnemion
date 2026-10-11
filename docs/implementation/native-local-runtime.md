@@ -1,8 +1,8 @@
 # Native runtime for local app setup
 
-Current source bundles this runtime and includes guided local workspace creation;
-the complete installed-platform gates are still in progress. Published 4.0.10
-connects to an existing service. Complete setup remains governed by the
+Version 4.0.11 bundles this runtime and includes guided local workspace creation.
+Each published installer must pass the complete installed-platform gates.
+Earlier 4.0.10 connects to an existing service. Complete setup is governed by the
 [app-onboarding requirements](app-onboarding.md).
 
 The local engine uses PostgreSQL and pgvector, retaining the same role and

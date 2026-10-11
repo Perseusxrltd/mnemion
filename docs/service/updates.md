@@ -28,7 +28,10 @@ preserved. A manually managed startup command remains the operator's responsibil
 
 On Windows x64, choose **Intel / AMD (most PCs)**; on a Windows ARM device,
 choose **ARM64**. Run the matching NSIS installer.
-It supports a user installation without installing models or databases. The
+It supports a per-user installation. From 4.0.11, the installer bundles a private
+local engine and database; choosing **Create on this computer** prepares that
+workspace and downloads its CPU model. Choosing an existing team workspace does
+not start a database or download a model on the client. The
 initial installer does not yet carry an OS publisher certificate, so Windows may
 show an unknown-publisher message. Verify its official source; company policy may
 require an administrator-approved deployment. Independent signatures authenticate
@@ -54,9 +57,10 @@ distributions require their FUSE compatibility package. The Debian package is
 available with the release assets for administrator-managed installation. Use
 only an installer matching your architecture.
 
-Studio connects to a shared memory service; it does not install a large model on
-every device. Follow the [deployment guide](deployment.md) to create a workspace,
-or use the workspace address and application key supplied by your administrator.
+From 4.0.11, Studio offers [local creation](local-workspaces.md) or connection to
+an existing shared service. Team clients use the address and individual key
+supplied by their administrator without a model on every device. Independently
+hosted services follow the [deployment guide](deployment.md).
 
 ## Update behavior and resource limits
 
@@ -73,7 +77,7 @@ draft guard. On Mac and Windows, a normal quit cancels a staged update; a later 
 retry it. This prevents a cancelled update from installing after the app exits.
 On AppImage, a downloaded update can also install during a normal quit.
 
-Current source corrects a Linux case where Electron keeps its focused flag on a
+Version 4.0.11 corrects a Linux case where Electron keeps its focused flag on a
 hidden, minimized window. The [controlled comparison](../validation/2026-10-11-linux-update-focus.md)
 passed both architectures without changing the idle or work-safety guards.
 Older installed clients still use their existing restart logic: an affected

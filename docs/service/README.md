@@ -4,7 +4,7 @@ This is the **4.0 shared-memory service**. It provides authenticated spaces,
 versioned source evidence, durable indexing, local multilingual search, HTTP and
 MCP access, and Obsidian exports. The [product page](https://www.perseusxr.com/mnemion)
 provides desktop downloads for Windows, macOS and Linux on x64 and ARM64. The
-[release notes](../releases/4.0.8.md) describe the current package changes and
+[release notes](../releases/4.0.11.md) describe the current package changes and
 remaining work. Complete backup/recovery, v3 import with cutover and rollback,
 and Studio are implemented. Version 4.0.8 adds [managed Unix service patches](managed-updates.md)
 with signed packages, verified backups and runtime rollback. Fleet/Compose upgrades
@@ -12,7 +12,9 @@ and larger concurrent-capacity measurements remain on the roadmap.
 
 Use the [Compose deployment guide](deployment.md) for packaged initialization,
 private runtime credentials, a shared Studio service, operations, and recovery
-cutover. The commands below cover a standalone or managed PostgreSQL installation.
+cutover. For a private workspace on one computer, desktop 4.0.11 provides
+[guided local setup](local-workspaces.md) without Python or Docker installation.
+The commands below cover a standalone or managed PostgreSQL service deployment.
 
 ## Run the service
 
@@ -66,8 +68,8 @@ at `/workspace`; interactive API documentation is at `/docs`. Use `serve --host`
 configure the listener. For network deployment, put the API behind a TLS proxy
 and configure allowed browser origins with `MNEMION_CORS_ORIGINS`.
 
-The development branch also has an [optional trusted-issuer OAuth foundation](oauth.md)
-for hosted agents. It is not in published 4.0.10 binaries. It requires an actual
+Version 4.0.11 adds an [optional trusted-issuer OAuth foundation](oauth.md)
+for hosted agents, with migration 013. It requires an actual
 authorization server and operator-approved workspace; built-in personal/team
 sign-in and guided onboarding remain in development.
 
@@ -136,6 +138,10 @@ a separate Chroma/model installation. From 4.0.9 it can [securely remember and
 reopen workspaces](workspaces.md), with a session-only option when OS-protected
 storage is unavailable. The new desktop defaults to the shared
 workspace; legacy Studio is a separate development compatibility mode.
+From 4.0.11, **Create on this computer** can instead prepare a private local
+workspace through the app, with [RAM controls](memory-resources.md) and
+[address recovery](local-workspaces.md). A client connected to an organization
+does not gain authority to administer that organization's host.
 
 ## Use it from an application
 

@@ -6,10 +6,11 @@ through the app. A terminal command or an external setup guide is not the
 completion path for a required onboarding step. Operating-system permissions
 and provider sign-ins belong in the flow at the step that needs them.
 
-This is work in progress. Published 4.0.10 joins an existing service. Current
-`main` also includes the native local engine, PostgreSQL packaging and guided
-workspace creation; those changes await the complete installed-platform gates
-before publication. Source availability is separate from a released installer.
+The complete requirement remains in progress. Earlier 4.0.10 joins an existing
+service; 4.0.11 adds the native local engine, PostgreSQL packaging and guided
+workspace creation. Each release requires its complete installed-platform gates.
+Use the [official product page](https://www.perseusxr.com/mnemion) for published
+installers; source availability alone is not publication.
 
 ## Entry paths
 

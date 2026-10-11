@@ -1,6 +1,6 @@
 # Hosted OAuth foundation
 
-**Implementation under validation; not part of the published 4.0.10 binaries.**
+**Requires service 4.0.11 or later and migration 013.**
 This optional resource-server path lets an operator connect an existing or
 freely self-hosted authorization server to Mnemion. It retains scoped API keys.
 It does not complete the required simple personal/team sign-in, invitations,

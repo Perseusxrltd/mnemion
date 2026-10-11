@@ -7,8 +7,8 @@ diagnostic is available from version 4.0.10.
 
 From **4.0.4**, agents can discover and use every existing HTTP operation through
 a reviewed catalog, a command-line client and four compact MCP tools. Version
-4.0.5 through published 4.0.10 cover **84 operations**, including durable source-sync controls.
-Current source adds three OAuth binding operations for **87 total**; see the
+4.0.5 through 4.0.10 cover **84 operations**, including durable source-sync controls.
+Version 4.0.11 adds three OAuth binding operations for **87 total**; see the
 [optional organization OAuth guide](oauth.md) for its configuration and limits.
 Schemas load one at a time, so connecting an
 assistant does not put the entire administration API into its context.
@@ -44,11 +44,11 @@ staging, compatible application and automatic-update preferences; see the
 [managed update guide](managed-updates.md). These JSON commands require local
 host access and appropriate private credentials; a remote memory key does not grant it.
 
-Current source also includes local desktop setup, RAM policy/recovery and
+Version 4.0.11 also includes local desktop setup, RAM policy/recovery and
 stopped-workspace address controls. Authorized agents on the host use the same
 typed operator commands as Studio; see [local workspaces](local-workspaces.md)
-and [memory resources](memory-resources.md). These native-hosting changes are
-awaiting complete installed-platform acceptance and are not in published 4.0.10.
+and [memory resources](memory-resources.md). Earlier 4.0.10 desktop clients
+connect to an existing service and do not include these native-hosting controls.
 
 ## Discover through MCP
 

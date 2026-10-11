@@ -1,8 +1,9 @@
 # Local workspace operation and address recovery
 
-Current source includes a private local engine and guided desktop setup. These
-changes are awaiting the complete installed-platform gates; published 4.0.10
-connects to an existing service. See [native packaging](../implementation/native-desktop-packaging.md)
+From **4.0.11**, the desktop includes a private local engine and guided setup.
+Earlier 4.0.10 connects to an existing service. Use the
+[official product page](https://www.perseusxr.com/mnemion) for verified published
+installers. See [native packaging](../implementation/native-desktop-packaging.md)
 and the [app setup requirements](../implementation/app-onboarding.md).
 
 The local workspace belongs to the operating-system account that created it.

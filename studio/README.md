@@ -7,12 +7,14 @@ Windows ARM runner. All three operating systems have x64 and ARM64 targets. Stud
 organizations, scoped spaces, memory editing and review, evidence, search,
 source connections, agents, Obsidian, operations and visual insights/evaluations.
 
-The desktop client includes a sandboxed Electron shell and a small local vault
-refresh executable. It connects to a local or remote service; it does not bundle
-PostgreSQL or silently start a model on every employee's laptop.
+The desktop includes a sandboxed Electron shell and a small local vault-refresh
+executable. From 4.0.11, it also bundles the private engine, PostgreSQL and CPU
+model drivers for guided **Create on this computer** setup. Model weights download
+when local setup is selected. Joining an existing company workspace does not
+start a local database or download a model on every employee's laptop.
 Remote-agent fixes in 4.0.2 and lower model RAM in 4.0.3 require upgrading the memory server;
 the desktop updater cannot replace a separately deployed service. See the
-[patch notes](../docs/releases/4.0.10.md). Version 4.0.5 adds **Sync now**, pending
+[patch notes](../docs/releases/4.0.11.md). Version 4.0.5 adds **Sync now**, pending
 requests and scan results to Sources. Upgrade the server and runner for these
 controls. It retains 4.0.4's agent administration and Linux AppImage login-path
 repair, including preservation of OS startup disable flags and custom commands.
@@ -29,8 +31,9 @@ continues to connect to the service chosen by its user or organization.
 Version 4.0.9 adds [OS-protected workspace connections](../docs/service/workspaces.md):
 reopen a verified workspace after restart, disconnect durably, or forget a device
 bookmark. Locked/unavailable keyrings use a session-only connection and never
-save a plaintext key. Complete database/runtime setup from the app remains on the
-[onboarding plan](../docs/implementation/app-onboarding.md).
+save a plaintext key. Version 4.0.11 adds native local creation, RAM controls and
+occupied API-port recovery. Organization provisioning and full backup recovery
+remain on the [onboarding plan](../docs/implementation/app-onboarding.md).
 
 Version 4.0.8 unifies the interface with Perseus XR, including locally bundled
 Inter/Outfit fonts, gold accents, grouped navigation, responsive charts and offline
@@ -38,9 +41,10 @@ help. The [design guide](../docs/STUDIO_DESIGN.md) documents the shared tokens.
 Its [managed server updater](../docs/service/managed-updates.md) is an independent
 host adoption, with signed patches, verified backups and runtime rollback.
 
-Use the [service deployment guide](../docs/service/deployment.md) first, then
-connect with the service URL and a personal or application credential. Credentials
-remain scoped to the spaces granted to that identity.
+Create a local workspace in the app, or connect to an existing workspace with its
+URL and your personal or application credential. Independently hosted teams use
+the [service deployment guide](../docs/service/deployment.md). Credentials remain
+scoped to the spaces granted to that identity.
 
 [Background and update behavior](../docs/service/updates.md) covers login startup,
 tray/dock access, automatic stable updates and safe restarts. Windows NSIS, macOS
@@ -65,10 +69,14 @@ npm --prefix studio/electron test
 npm --prefix studio/electron run dev
 ```
 
-Create native installers with `npm --prefix studio/electron run dist` on the target
-OS and architecture. The separate locked desktop environment installs no database
-driver or embedding runtime, including on Intel Macs and Windows ARM64. Packaging validates the local client, license inventory and
-payload. `npm --prefix studio/electron run smoke:packaged` opens the real installed
+Prepare the locked client and engine environments and verified database archive
+using the [native packaging guide](../docs/implementation/native-desktop-packaging.md),
+then create installers with `npm --prefix studio/electron run dist` on the target
+OS and architecture. Windows ARM uses a native client and a separately built x64
+engine/database. Packaging validates both components, licenses and inventories.
+`npm --prefix studio/electron run smoke:installed-hosting` exercises real local
+creation, model save/search, restart and address recovery.
+`npm --prefix studio/electron run smoke:packaged` opens the real installed
 payload with an isolated profile; Linux CI uses Xvfb. CI validation artifacts are
 unsigned and are not sent to the automatic update feed.
 

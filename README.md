@@ -13,9 +13,12 @@ never gates downloads, usage or access.
 
 **Mnemion 4.0 is the first release of the rebuilt shared-memory platform.**
 Download published builds from [the official product page](https://www.perseusxr.com/mnemion).
-The [4.0.10 patch](docs/releases/4.0.10.md) adds a [live 3D memory map](docs/service/memory-map.md),
-recorded agent activity and [connection diagnostics](docs/service/connection-diagnostics.md).
-It retains OS-protected saved desktop connections, identity-checked reopening after restart and a clearer connection
+Version [4.0.11](docs/releases/4.0.11.md) adds guided [local workspace creation](docs/service/local-workspaces.md),
+bundled database/model runtimes, [app and agent RAM controls](docs/service/memory-resources.md),
+local recovery and a Linux idle-restart fix. The
+[live 3D memory map](docs/service/memory-map.md), recorded agent activity and
+[connection diagnostics](docs/service/connection-diagnostics.md) introduced in 4.0.10 remain available.
+Studio retains OS-protected saved connections, identity-checked reopening after restart and a clearer connection
 screen. [Workspace controls](docs/service/workspaces.md) explain remembering,
 disconnecting and forgetting a device connection. Complete fresh-machine setup
 through the app remains [active work](docs/implementation/app-onboarding.md).
@@ -48,7 +51,7 @@ An authenticated identity is separate from the person or project a memory is abo
 - A versioned HTTP API, [OpenAPI contract](docs/service/openapi.json),
   Python and TypeScript clients, and authenticated MCP with stdio and Streamable
   HTTP; API and HTTP MCP share one listener by default.
-- [Agent administration](docs/service/agent-control.md): 87 discoverable operations in current source (84 in published 4.0.10),
+- [Agent administration](docs/service/agent-control.md): 87 discoverable operations from 4.0.11 (84 in 4.0.5–4.0.10),
   an offline catalog/CLI, compact MCP tools, private results and safe retry rules.
 - Studio for saving, searching, inspecting evidence and revisions, reviewing
   memories, managing identities/grants, and tracking indexing/deletion activity.
@@ -72,7 +75,12 @@ An authenticated identity is separate from the person or project a memory is abo
 
 ## Run the service
 
-For a complete local or team deployment, follow the
+For a workspace on your own computer, install the desktop and choose **Create
+on this computer** (4.0.11 or later). Follow the guided model, resource and
+workspace checks; Python and Docker are not required. To join an existing team,
+use its workspace address and your individual credential.
+
+For an independently hosted team service, follow the
 [Docker setup and operations guide](docs/service/deployment.md). It includes
 private initialization, Studio, model preparation, backups and verified recovery
 cutover on Windows, macOS and Linux.
@@ -181,7 +189,7 @@ and performance independently verified in this implementation.
 
 Open **Documentation & roadmap** in Studio, or use the setup screen’s help link.
 The offline library ships the same Markdown as this repository. See the
-[product roadmap](docs/ROADMAP.md), [release notes](docs/releases/4.0.10.md), and
+[product roadmap](docs/ROADMAP.md), [release notes](docs/releases/4.0.11.md), and
 [documentation maintenance policy](docs/MAINTENANCE.md). Every release and hotfix
 must include matching release notes and a reviewed roadmap.
 

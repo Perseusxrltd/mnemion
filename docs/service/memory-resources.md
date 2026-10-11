@@ -1,10 +1,10 @@
 # RAM budgets and local resource controls
 
-The native local-host implementation is being validated. It is not included in
-the published 4.0.10 desktop client. These controls apply to a workspace hosted
+These controls require the native local engine in **4.0.11 or later**; they are
+not included in the earlier 4.0.10 desktop client. They apply to a workspace hosted
 by the native engine on this computer; connecting to a company workspace does
 not give a client control over the company's host. See the remaining
-[installation gates](../implementation/app-onboarding.md).
+[complete app setup requirements](../implementation/app-onboarding.md).
 
 ## Choose a budget in the app
 
