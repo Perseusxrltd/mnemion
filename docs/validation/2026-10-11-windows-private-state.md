@@ -73,9 +73,45 @@ probe uses this helper, precreates/rechecks its private data folder like
 production, and emits tool names to locate stages without printing credentials
 or command arguments. The corrected full Linux database probe passes locally.
 
+## Follow-up Unicode path correction
+
+[Native run 38130421406](https://github.com/Perseusxrltd/mnemion/actions/runs/38130421406),
+head `5c0ac681d5d0d5bc0dc5dfccdfa2699d64e63178`, passed all four Unix
+database probes. Both elevated Windows private-state jobs passed 13 tests with
+3 POSIX-only skips. The Windows database initialized and started promptly,
+confirming the process-capture correction, then failed its strict data-directory
+identity check. TLS verification and data checksums were both correct.
+
+A local native-Windows reproduction against the retained CI archive showed
+PostgreSQL reporting `Workspace data quipe` for `Workspace data Équipe`.
+PostgreSQL's Windows tools use narrow command-line arguments and filesystem
+calls; their processes therefore need a UTF-8 active code page to preserve this
+identity. The probe keeps its Unicode directory and exact identity comparison.
+
+The builder now merges a UTF-8 active-code-page application manifest into every
+packaged executable before hashing and packaging. Existing identities, trust
+settings and dependencies must survive the merge, and the actual embedded
+resource must match the verified XML. Executables without an identity receive
+one with their actual PE architecture; DLLs retain the host process's settings.
+The Windows runtime requires Windows 10 version 1903 (build 18362) or later,
+including Windows 11, which implements this manifest setting.
+
+Using Windows SDK 10.0.26100.0 against the retained CI archive, all 42 executable
+manifests embedded and verified. A separate copy of native Python 3.13 also
+passed the existing-manifest preservation check. After recomputing the archive
+inventory, the complete native Windows probe passed locally with both
+executable and data paths accented: exact directory identity, verified TLS,
+checksums, vector search, RLS read/write isolation, gzip backup restore, and
+immediate-shutdown recovery. The production builder still needs its rebuilt CI
+matrix, especially the Windows ARM64 emulation gate.
+
+[Product run 38130421330](https://github.com/Perseusxrltd/mnemion/actions/runs/38130421330)
+passed all 11 jobs at the same head, including both Docker architectures,
+Python 3.12/3.13/3.14 service suites, and both Mac supervision jobs.
+
 ## Remaining gate
 
-The complete database matrix must rerun with those probe/process corrections,
-including the relocated native Windows engine and Windows ARM64 emulation.
+The rebuilt database matrix and Windows ARM64 emulation must pass with the
+manifest fix; the retained-archive experiment does not replace those build gates.
 Passing the ACL checks does not establish complete app installation,
 model/service onboarding, or signed Windows distribution readiness.

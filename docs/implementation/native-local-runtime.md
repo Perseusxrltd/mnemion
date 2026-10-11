@@ -37,10 +37,17 @@ before offering it, and the app must disclose the engine architecture; the
 existing desktop interface remains native ARM64. No ARM database compatibility
 claim follows merely from compiling an x64 binary.
 
+The Windows database runtime requires Windows 10 version 1903 (build 18362) or
+later, including Windows 11. Every packaged executable selects a UTF-8 active
+code page through its application manifest so narrow Windows arguments and
+filesystem calls preserve Unicode workspace paths. Earlier Windows builds
+ignore that setting. The builder merges existing manifest settings, verifies
+the embedded resources, and inventories the resulting bytes before packaging.
+
 ## Native acceptance
 
 `deploy/probe_native_postgres.py` extracts the built archive into a new path with
-spaces, verifies every inventoried file and checks the executable architecture.
+spaces and accented characters, verifies every inventoried file and checks the executable architecture.
 It initializes a private temporary database in a path with accented characters,
 uses SCRAM credentials over certificate-verified loopback TLS, and tests vector
 search and row-level read/write isolation. It creates a gzip-compressed backup,
@@ -79,8 +86,12 @@ private regular files, with bounded reads, so a descendant cannot keep Python
 waiting for pipe EOF; production and probe share this helper. The probe also
 canonicalizes the system temporary parent for macOS's `/var` alias and uses the
 production sequence of precreating/rechecking the private data directory.
-The complete database rerun, including Windows ARM emulation, remains a separate
-acceptance gate pending CI evidence.
+The corrected matrix passed all four Unix targets. Windows then reached its
+identity check and exposed ANSI conversion of the accented data directory;
+UTF-8 executable manifests corrected it. A retained Windows build with those
+manifests passed the complete probe locally, including accented executable and
+data paths. The complete rebuilt matrix, including Windows ARM emulation,
+remains a separate acceptance gate pending CI evidence.
 
 ## Remaining integration
 

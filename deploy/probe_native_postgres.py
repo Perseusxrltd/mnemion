@@ -109,7 +109,7 @@ def executable_architecture(path: Path) -> str:
 
 def probe(archive: Path, output: Path) -> dict:
     with private_probe_directory() as root:
-        install = root / "Memory runtime with spaces"
+        install = root / "Memory runtime with spaces Équipe"
         print("Native database probe: expand and verify archive", file=sys.stderr, flush=True)
         metadata = expand(archive, install)
         suffix = ".exe" if platform.system() == "Windows" else ""
@@ -343,6 +343,7 @@ CREATE INDEX memories_vectors ON memories USING hnsw (embedding vector_cosine_op
                 "runtime_architecture": architecture,
                 "emulated": architecture != host_arch,
                 "relocated_path_with_spaces": True,
+                "unicode_executable_path": True,
                 "unicode_data_path": True,
                 "file_inventory_verified": True,
                 "production_private_directory": True,
