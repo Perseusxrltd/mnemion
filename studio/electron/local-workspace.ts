@@ -62,6 +62,8 @@ export class LocalWorkspace {
   private closing?: Promise<boolean>
   private controls = new Set<ChildProcessWithoutNullStreams>()
   private intentionalStop = false
+  private updateResumeRequested = false
+  private cancelledUpdateStop = false
   private statusValue: LocalStatus
   private disposed = false
 
@@ -213,6 +215,14 @@ export class LocalWorkspace {
       if (this.intentionalStop) this.set({ state: 'stopped', stage: undefined, message: 'Local workspace paused. Your memories remain on this computer.', errorCode: undefined })
       else if (this.statusValue.state !== 'error') this.set({ state: 'error', errorCode: 'engine_stopped', message: code === 0 ? 'The local workspace stopped. Start it again to reconnect.' : 'The local workspace stopped unexpectedly. Retry to resume it; saved data has been retained.' })
       this.set({ memory: undefined })
+      if (this.cancelledUpdateStop && this.updateResumeRequested) {
+        // Let the stop promise finish before reopening after a slow shutdown.
+        setImmediate(() => {
+          if (!this.disposed && !this.closing) void this.cancelUpdateStop().catch(() => {
+            this.set({ state: 'stopped', message: 'The update was cancelled. Resume your local workspace when ready.' })
+          })
+        })
+      }
       if (!this.disposed) void this.inspect().catch(() => {})
     })
     if (options) child.stdin.write(JSON.stringify(options) + '\n')
@@ -268,7 +278,27 @@ export class LocalWorkspace {
     return { ...this.connection }
   }
 
+  async stopForUpdate(): Promise<boolean> {
+    const resume = this.updateResumeRequested || !!this.child
+    const stopping = this.stop()
+    this.updateResumeRequested = resume
+    return stopping
+  }
+
+  async cancelUpdateStop(): Promise<void> {
+    if (!this.updateResumeRequested) return
+    if (this.child && this.statusValue.state === 'stopping') {
+      this.cancelledUpdateStop = true
+      return
+    }
+    this.updateResumeRequested = false
+    this.cancelledUpdateStop = false
+    if (!this.child) await this.start()
+  }
+
   async stop(): Promise<boolean> {
+    this.updateResumeRequested = false
+    this.cancelledUpdateStop = false
     if (this.stopping) return this.stopping
     this.stopping = this.finishStop()
     try { return await this.stopping } finally { this.stopping = undefined }

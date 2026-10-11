@@ -555,10 +555,10 @@ if (!hasSingleInstanceLock) {
       backendPort = await chooseBackendPort()
       startBackend()
       updates = new DesktopUpdates(() => mainWindow, () => localClientBusy() || desktopBridge.localBusy(), async () => {
-        const stopped = await desktopBridge.stopLocal()
+        const stopped = await desktopBridge.stopLocalForUpdate()
         if (stopped) isQuitting = true
         return stopped
-      }, refreshMenus, () => { isQuitting = false; void desktopBridge.bootLocal() })
+      }, refreshMenus, () => { isQuitting = false; void desktopBridge.resumeLocalAfterCancelledUpdate().catch(() => {}) })
       void desktopBridge.bootLocal()
       const backendReady = legacyEnabled ? waitForBackend(`http://127.0.0.1:${backendPort}/api/status`)
         .then(() => writeSmokeStatus('backend-ready'))

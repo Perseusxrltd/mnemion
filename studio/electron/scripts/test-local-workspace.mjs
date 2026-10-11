@@ -210,3 +210,52 @@ test('repair rejects invalid tokens and conflicting revision fields before spawn
   }
   assert.equal(f.commands.length, 0)
 })
+
+test('cancelling an update preserves a workspace that was already paused', async t => {
+  const f = fixture(t)
+  const inspect = f.host.inspect()
+  f.last().reply(info('first'))
+  await inspect
+  assert.equal(await f.host.stopForUpdate(), true)
+  await f.host.cancelUpdateStop()
+  assert.deepEqual(f.commands.map(command => command.action), ['status'])
+})
+
+test('cancelling an update reopens its previously running workspace exactly once', async t => {
+  const f = fixture(t)
+  const engine = await running(f)
+  const stop = f.host.stopForUpdate()
+  await settle()
+  engine.finish()
+  assert.equal(await stop, true)
+  const resume = f.host.cancelUpdateStop()
+  const duplicate = f.host.cancelUpdateStop()
+  f.last().reply(info('first'))
+  await Promise.all([resume, duplicate])
+  assert.equal(f.commands.filter(command => command.action === 'run').length, 2)
+})
+
+test('a cancelled update resumes after a slow stop, unless the user explicitly stops it', async t => {
+  for (const explicitStop of [false, true]) {
+    const f = fixture(t)
+    const engine = await running(f)
+    t.mock.timers.enable({ apis: ['setTimeout'] })
+    const stop = f.host.stopForUpdate()
+    await settle()
+    t.mock.timers.tick(90_000)
+    assert.equal(await stop, false)
+    t.mock.timers.reset()
+    await f.host.cancelUpdateStop()
+    const userStop = explicitStop ? f.host.stop() : null
+    await settle()
+    engine.finish()
+    if (userStop) await userStop
+    if (f.last().action === 'status') f.last().reply(info('first'))
+    await settle()
+    if (f.last().action === 'status' && !f.last().closed) f.last().reply(info('first'))
+    await settle()
+    assert.equal(f.commands.filter(command => command.action === 'run').length, explicitStop ? 1 : 2)
+    for (const command of f.commands) command.finish()
+    await f.host.close()
+  }
+})
