@@ -16,7 +16,7 @@ lifecycle. Desktop automatic updates remain separate.
 - An ordinary, dedicated Linux/macOS account; root adoption is rejected.
 - A working service and database with matching migrations, separate API/worker
   logins, a database owner login for backups, and the `supervision` extra.
-- Python 3.12–3.14; Intel Macs currently require 3.12 or 3.13.
+- Python 3.12–3.14; Intel Macs currently require 3.12 or 3.13 and macOS 11 or newer.
 - The free **uv 0.12.24** installer and matching PostgreSQL client tools.
   Setup copies the reviewed uv executable into private managed state, so a later
   upgrade of the operator's general uv command does not change this installer.
@@ -34,6 +34,22 @@ Install the official 4.0.8 wheel with its extra, or use a checked release checko
 uv sync --locked --no-dev --extra supervision --python 3.13
 uv run --no-sync mnemion-service studio build
 ```
+
+On Intel Macs, upstream no longer provides a binary for the current
+`cryptography` release. The official Mnemion release includes a native wheel
+built with pinned static OpenSSL; no compiler or Homebrew runtime is needed.
+For the initial checkout installation, replace the `uv sync` command above with:
+
+```sh
+uv sync --locked --no-dev --extra supervision --python 3.13 --no-install-package cryptography
+uv pip install --python .venv/bin/python --no-deps \
+  https://github.com/Perseusxrltd/mnemion/releases/download/v4.0.8/cryptography-50.0.2-cp311-abi3-macosx_11_0_x86_64.whl
+```
+
+The wheel's checksum is included in the same release's `SHA256SUMS.txt`. It
+contains upstream licenses and source/build provenance. Future managed patches
+select, authenticate and install the matching dependency automatically; other
+platforms do not download it. The source lock still controls its exact version.
 
 An official wheel already contains Studio, the fonts, guides and notices. Node.js
 is only required to build Studio from Git. Keep the original virtual environment
@@ -94,7 +110,8 @@ The updater checks the official stable release after 1–2 minutes and roughly
 every six hours, with jitter to spread simultaneous organization downloads.
 It checks a separate Ed25519 signature before interpreting the release payload.
 The payload binds version, repository, source commit, wheel/sdist hashes and
-sizes, Python compatibility, the dependency lock and every migration hash.
+sizes, the optional native dependency, Python compatibility, the dependency lock
+and every migration hash.
 Older versions and changed manifests for an already observed version are rejected.
 
 Only a newer version in the same major/minor series, with **identical database
@@ -108,7 +125,8 @@ For an eligible patch, the updater:
 2. Validates archive paths and source/wheel parity, then creates an isolated
    environment with the signed, locked dependencies. It makes no inference calls.
 3. Checks installed version, Studio, migration identity, model generations and
-   the application's exact bytes against the signed wheel.
+   the application's exact bytes against the signed wheel. On Intel Macs it also
+   verifies the native dependency's package, ABI, source-lock identity and bytes.
 4. Creates and independently verifies a database backup **before stopping** the
    running API or worker. A failed backup leaves the running service in place.
 5. Writes a durable recovery journal, drains both processes, changes the active

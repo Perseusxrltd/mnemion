@@ -19,6 +19,7 @@ import time
 from ..version import __version__
 from . import supervision
 from . import update_state as state_io
+from . import runtime_wheels
 from .update_cleanup import KEEP_BACKUPS, SLOT, retain_backup, retain_runtimes
 from .update_manifest import ManifestError, ServiceRelease, verify_manifest, version_tuple
 from .update_packages import copy_inspected_source, verify_installed_package
@@ -413,7 +414,8 @@ def _stage(root: Path, settings: dict) -> dict:
     else:
         state_io.write(slot / "envelope.json", envelope, replace=False)
     artifacts = state_io.directory(slot / "artifacts")
-    for artifact in release.artifacts:
+    native_wheels = runtime_wheels.selected_wheels(release)
+    for artifact in (*release.artifacts, *native_wheels):
         download_artifact(release.version, artifact, artifacts / artifact.name)
     source = slot / "source"
     if source.exists():
@@ -422,6 +424,8 @@ def _stage(root: Path, settings: dict) -> dict:
             raise ManifestError("Service staging source cannot be a symbolic link")
         shutil.rmtree(source)
     copy_inspected_source(artifacts, release, source)
+    for artifact in native_wheels:
+        runtime_wheels.inspect_wheel(artifacts / artifact.name, artifact, source / "uv.lock")
     environment = _environment()
     environment.update(
         {
@@ -445,6 +449,7 @@ def _stage(root: Path, settings: dict) -> dict:
             "supervision",
             "--no-install-project",
             "--no-build",
+            *(["--no-install-package", "cryptography"] if native_wheels else []),
             "--no-python-downloads",
             "--python",
             config["python"],
@@ -465,6 +470,7 @@ def _stage(root: Path, settings: dict) -> dict:
             "--no-deps",
             "--no-index",
             str(artifacts / f"mnemion-{release.version}-py3-none-any.whl"),
+            *(str(artifacts / artifact.name) for artifact in native_wheels),
         ],
         cwd=source,
         environment=environment,
@@ -509,6 +515,7 @@ def _stage(root: Path, settings: dict) -> dict:
         raise ManifestError("The installed runtime did not pass its offline preflight") from None
     runtime["package"] = str(package)
     verify_installed_package(artifacts, release, package)
+    runtime_wheels.verify_installed(artifacts, release, package, source / "uv.lock")
     compatible = (
         runtime["migrations"] == active["migrations"]
         and runtime["generations"] == active["generations"]
@@ -551,6 +558,7 @@ def resolved_runtime(state: Path, *, runtime: dict | None = None) -> dict:
     if not package.resolve().is_relative_to((slot / "venv").resolve()):
         raise ManifestError("Managed application is outside its isolated environment")
     verify_installed_package(slot / "artifacts", release, package)
+    runtime_wheels.verify_installed(slot / "artifacts", release, package, slot / "source/uv.lock")
     return runtime
 
 

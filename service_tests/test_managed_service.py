@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import shutil
 import socket
+import sys
 from threading import Thread
 import time
 from types import SimpleNamespace
@@ -65,6 +66,7 @@ def prepare_managed(tmp_path, managed_database, pg_bin):
         environment,
         {
             "MNEMION_MODEL_OFFLINE": "1",
+            "MNEMION_API_DOCS": "1",
             "MNEMION_MODEL_CACHE": str(tmp_path / "models"),
             "MNEMION_EVALUATIONS_DISABLED": "1",
             "MNEMION_LIBRARIAN_DISABLED": "1",
@@ -91,6 +93,20 @@ def prepare_managed(tmp_path, managed_database, pg_bin):
     # Protocol/process tests do not poll the live release feed.
     updates.preferences(state, False)
     return state, port, owner
+
+
+def assert_installed_process(pid, runtime, module):
+    process = psutil.Process(pid)
+    arguments = process.cmdline()
+    assert arguments[1:4] == ["-I", "-m", module]
+    assert Path(process.cwd()).resolve() == Path(runtime["directory"]).resolve()
+    executables = {Path(runtime["python"]).resolve()}
+    if sys.platform == "darwin":
+        # Framework Python re-execs its app launcher while keeping the venv.
+        executables.add(
+            (Path(sys.base_prefix) / "Resources/Python.app/Contents/MacOS/Python").resolve()
+        )
+    assert Path(arguments[0]).resolve() in executables
 
 
 def test_managed_roles_restart_and_take_a_real_verified_backup(
@@ -207,12 +223,13 @@ def test_signed_locked_install_and_failed_update_preserve_real_accepted_memories
             running = supervision.status(state)
             assert running["ready"]
             api = next(item for item in running["processes"] if item["name"] == "mnemion-api")
-            arguments = psutil.Process(api["pid"]).cmdline()
-            assert arguments[0] == active["python"] and "-I" in arguments
+            assert_installed_process(api["pid"], active, "mnemion.service.cli")
+            schema = client.get("/openapi.json")
+            assert schema.status_code == 200 and schema.json()["info"]["version"] == first
             updater = next(
                 item for item in running["processes"] if item["name"] == "mnemion-updater"
             )
-            assert psutil.Process(updater["pid"]).cmdline()[0] == active["python"]
+            assert_installed_process(updater["pid"], active, "mnemion.service.service_updates")
             assert client.get("/v1/me", headers=auth).status_code == 200
             # Installed code is rechecked at each handoff, not just on download.
             version_file = Path(active["package"]) / "version.py"
@@ -270,6 +287,7 @@ def test_signed_locked_install_and_failed_update_preserve_real_accepted_memories
             assert not worker.is_alive() and "memory_id" in captured
             assert updates.resolved_runtime(state)["version"] == first
             assert supervision.status(state)["ready"]
+            assert client.get("/openapi.json").json()["info"]["version"] == first
             assert updates.apply(state)["status"] == "held_after_failure"
             result = client.post(
                 "/v1/recall",

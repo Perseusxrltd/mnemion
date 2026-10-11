@@ -168,7 +168,9 @@ def main() -> None:
     if tuple(map(int, version.split("."))) >= (4, 0, 8):
         from deploy.service_update_manifest import verify_document
 
-        verify_document(root, args.artifacts)
+        service_release = verify_document(root, args.artifacts)
+        if "x64" in targets.get("macos", []) and not service_release.runtime_wheels:
+            raise ValueError("A release needs its signed Intel Mac service dependency")
     files = [path for path in args.artifacts.iterdir() if path.name != "SHA256SUMS.txt"]
     for architecture in ("x64", "arm64"):
         suffixes = {

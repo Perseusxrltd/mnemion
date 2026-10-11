@@ -23,6 +23,7 @@ from mnemion.service.update_manifest import (
 )
 from mnemion.service.update_packages import inspected_packages
 from mnemion.service.update_trust import SERVICE_UPDATE_PUBLIC_KEY
+from mnemion.service.runtime_wheels import inspect_wheel
 
 
 def _digest(path: Path, maximum: int, *, allow_empty: bool = False) -> tuple[int, str]:
@@ -65,6 +66,10 @@ def payload(
     for name in (f"mnemion-{version}.tar.gz", f"mnemion-{version}-py3-none-any.whl"):
         size, digest = _digest(artifacts / name, MAX_PACKAGE_BYTES)
         packages.append({"name": name, "size": size, "sha256": digest})
+    runtime_wheels = []
+    for path in sorted(artifacts.glob("cryptography-*.whl")):
+        size, digest = _digest(path, MAX_PACKAGE_BYTES)
+        runtime_wheels.append({"name": path.name, "size": size, "sha256": digest})
     migrations = {}
     for path in sorted((root / "mnemion/service/migrations").glob("*.sql")):
         _, migrations[path.name] = _digest(path, 8 * 1024 * 1024)
@@ -82,6 +87,7 @@ def payload(
         "created_at": created_at.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "python_versions": ["3.12", "3.13", "3.14"],
         "artifacts": packages,
+        "runtime_wheels": runtime_wheels,
         "lock_sha256": lock,
         "migrations": migrations,
     }
@@ -99,6 +105,8 @@ def signed_document(
 ) -> bytes:
     value = payload(root, artifacts, commit, repository=repository, created_at=created_at)
     release = validate_payload(value, repository=repository)
+    for artifact in release.runtime_wheels:
+        inspect_wheel(artifacts / artifact.name, artifact, root / "uv.lock")
     with inspected_packages(artifacts, release) as source:
         if (source / "pyproject.toml").read_bytes() != (root / "pyproject.toml").read_bytes():
             raise ManifestError("Packaged project differs from the reviewed checkout")
@@ -151,6 +159,8 @@ def verify_document(root: Path, artifacts: Path, *, public_key: bytes = SERVICE_
         raise ManifestError("Signed service update differs from the release inputs")
     with inspected_packages(artifacts, release):
         pass
+    for artifact in release.runtime_wheels:
+        inspect_wheel(artifacts / artifact.name, artifact, root / "uv.lock")
     return release
 
 

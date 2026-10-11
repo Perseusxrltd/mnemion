@@ -40,8 +40,19 @@ a completed published download.
    both native Macs and Linux 3.12 also perform real signed managed-service
    installation, rollback and accepted-write preservation. Font assets and
    their SIL licenses are part of the frontend inventory.
+   The service suite enforces at least 75% coverage of `mnemion.service`;
+   the retained legacy suite independently enforces at least 45% of the rest
+   of `mnemion`, using `deploy/legacy.coveragerc`. This keeps changes to either
+   implementation from diluting the other suite's coverage measurement.
+   Intel Mac CI builds the current locked `cryptography` from its verified source
+   with static OpenSSL pinned in `deploy/intel-crypto.json`. The builder verifies
+   its architecture, absence of non-system dynamic libraries and Ed25519 operation,
+   bundles licenses/provenance and then runs the actual managed upgrade/rollback
+   against that wheel. Review OpenSSL and Python dependency advisories whenever
+   changing those pins. Compiler tools and publisher keys never reach managed
+   hosts; the signing step is separate from dependency compilation.
    Assemble `service-update.json` from the exact wheel, source, lockfile and
-   migrations using `python -m deploy.service_update_manifest sign --artifacts
+   migrations and the Intel dependency using `python -m deploy.service_update_manifest sign --artifacts
    release-artifacts --commit COMMIT`. The dedicated private key is supplied
    only through the reviewed signing environment. The release verifier checks
    the signature, input parity and hashes before creating a draft.

@@ -13,6 +13,8 @@ concurrency:
 jobs:
   checks:
     uses: ./.github/workflows/ci.yml
+    with:
+      release: true
   native:
     uses: ./.github/workflows/desktop.yml
     with:

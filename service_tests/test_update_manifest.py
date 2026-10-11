@@ -32,6 +32,7 @@ def signed_release():
             ]
         ],
         "lock_sha256": hashlib.sha256(b"locked dependencies").hexdigest(),
+        "runtime_wheels": [],
         "migrations": {"001_initial.sql": hashlib.sha256(b"schema fixture").hexdigest()},
     }
     return key, payload, source, wheel

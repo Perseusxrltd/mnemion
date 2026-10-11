@@ -5,6 +5,7 @@ import csv
 import hashlib
 import io
 import json
+import os
 from pathlib import Path
 import shutil
 import tarfile
@@ -88,6 +89,9 @@ def candidate(
     studio(destination, version)
     artifacts = destination / "artifacts"
     artifacts.mkdir()
+    if runtime_wheels := os.environ.get("MNEMION_TEST_RUNTIME_WHEELS"):
+        for wheel in Path(runtime_wheels).glob("cryptography-*.whl"):
+            shutil.copyfile(wheel, artifacts / wheel.name)
     files = [
         destination / name
         for name in ("pyproject.toml", "uv.lock", "README.md", "LICENSE", "NOTICE")

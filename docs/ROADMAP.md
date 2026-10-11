@@ -128,6 +128,10 @@ where possible and include migration/rollback instructions when needed.
   Rehearse the 4.0.7 supervision setup (6) and 4.0.6 bundled Studio (7) in existing
   deployments, including their actual boot, network and database startup order.
   Desktop automatic updates do not upgrade a separately deployed memory server.
+- Validate 4.0.8's malformed-cursor handling (19) and atomic librarian decision
+  retries (20) in upgraded deployments. Both source-reviewed reports have local
+  PostgreSQL/HTTP regression reproductions; publication and remote-host adoption
+  are recorded separately.
 - Extend the 4.0.4 agent catalog to new operations as they ship. Existing HTTP
   administration is discoverable and callable; host setup, recovery and service
   updates continue to require operator credentials and their separate CLI paths.

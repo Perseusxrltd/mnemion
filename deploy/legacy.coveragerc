@@ -1,0 +1,12 @@
+# The service has a separate >=75% coverage gate. Keep growth of that service
+# from changing the measured coverage of the retained legacy implementation.
+[run]
+source = mnemion
+omit = */mnemion/service/*
+
+[report]
+fail_under = 45
+show_missing = true
+exclude_lines =
+    if __name__
+    pragma: no cover

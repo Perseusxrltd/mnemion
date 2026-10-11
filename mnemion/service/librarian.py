@@ -590,7 +590,7 @@ class LibrarianService:
                             expected_version=memory["version"],
                             reason=f"Librarian proposal {proposal}: {command.action}",
                         ),
-                        "librarian-" + command.action + "-" + str(proposal),
+                        None,  # The enclosing atomic decision owns its idempotency receipt.
                         preserve_evidence=True,
                     )
                     applied, applied_version = UUID(receipt["revision_id"]), receipt["version"]

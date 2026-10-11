@@ -316,7 +316,8 @@ def test_cancel_and_shutdown_close_an_unfinished_async_request(stop):
     provider.close()
 
 
-def test_apply_and_undo_keep_evidence_metadata_and_canonical_content(env):
+@pytest.mark.parametrize("colliding_keys", [False, True])
+def test_apply_and_undo_keep_evidence_metadata_and_canonical_content(env, colliding_keys):
     service, runner = setup(env)
     receipt = save(env)
     memory_id = UUID(receipt["memory_id"])
@@ -339,19 +340,27 @@ def test_apply_and_undo_keep_evidence_metadata_and_canonical_content(env):
         {"memory_id": str(memory_id), "revision_id": original["revision_id"], "memory_version": 1}
     ]
     command = LibrarianDecision(expected_version=1, action="accept")
-    decision = service.decide(env.owner, env.space, UUID(proposal["id"]), command, "apply")
-    assert service.decide(env.owner, env.space, UUID(proposal["id"]), command, "apply") == decision
+    accept_key = "librarian-accept-" + proposal["id"] if colliding_keys else "apply"
+    decision = service.decide(env.owner, env.space, UUID(proposal["id"]), command, accept_key)
+    assert (
+        service.decide(env.owner, env.space, UUID(proposal["id"]), command, accept_key) == decision
+    )
     changed = env.memory.fetch(env.owner, memory_id)
     assert changed["version"] == 2 and changed["subject"] == "Coffee storage"
     assert changed["metadata"]["tags"] == ["existing", "kitchen"]
     assert changed["metadata"]["retain"] == original["metadata"]["retain"]
     assert changed["content"] == original["content"] and changed["evidence"] == original["evidence"]
-    service.decide(
+    undo_key = "librarian-undo-" + proposal["id"] if colliding_keys else "undo"
+    undo_command = LibrarianDecision(expected_version=2, action="undo")
+    undone = service.decide(
         env.owner,
         env.space,
         UUID(proposal["id"]),
-        LibrarianDecision(expected_version=2, action="undo"),
-        "undo",
+        undo_command,
+        undo_key,
+    )
+    assert (
+        service.decide(env.owner, env.space, UUID(proposal["id"]), undo_command, undo_key) == undone
     )
     restored = env.memory.fetch(env.owner, memory_id)
     assert (
@@ -362,6 +371,13 @@ def test_apply_and_undo_keep_evidence_metadata_and_canonical_content(env):
     )
     assert restored["version"] == 3
     with env.db.transaction(env.owner) as conn:
+        assert (
+            conn.execute(
+                "SELECT count(*) AS n FROM mnemion.memory_revisions WHERE memory_id=%s",
+                (memory_id,),
+            ).fetchone()["n"]
+            == 3
+        )
         assert (
             conn.execute(
                 "SELECT count(*) AS n FROM mnemion.sources WHERE space_id=%s", (env.space,)

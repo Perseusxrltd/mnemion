@@ -25,6 +25,9 @@ SIGNATURE_DOMAIN = b"mnemion-service-update-v1\n"
 DEFAULT_REPOSITORY = "Perseusxrltd/mnemion"
 _VERSION = re.compile(r"(0|[1-9][0-9]{0,4})\.(0|[1-9][0-9]{0,4})\.(0|[1-9][0-9]{0,4})")
 _DIGEST = re.compile(r"[a-f0-9]{64}")
+_RUNTIME_WHEEL = re.compile(
+    r"cryptography-([0-9]{1,5}\.[0-9]{1,5}\.[0-9]{1,5})-cp311-abi3-macosx_11_0_x86_64\.whl"
+)
 
 
 class ManifestError(ValueError):
@@ -35,6 +38,14 @@ def version_tuple(value: str) -> tuple[int, int, int]:
     if not isinstance(value, str) or not _VERSION.fullmatch(value):
         raise ManifestError("Expected a bounded stable release version")
     return tuple(map(int, value.split(".")))
+
+
+def runtime_wheel_version(name: str) -> str:
+    match = _RUNTIME_WHEEL.fullmatch(name) if isinstance(name, str) else None
+    if match is None:
+        raise ManifestError("Unsupported managed runtime wheel")
+    version_tuple(match[1])
+    return match[1]
 
 
 def _object(pairs):
@@ -108,6 +119,7 @@ class ServiceRelease:
     artifacts: tuple[Artifact, ...]
     lock_sha256: str
     migrations: tuple[tuple[str, str], ...]
+    runtime_wheels: tuple[Artifact, ...] = ()
 
     @property
     def schema_sha256(self) -> str:
@@ -134,6 +146,7 @@ def validate_payload(value: dict, *, repository: str = DEFAULT_REPOSITORY) -> Se
         "artifacts",
         "lock_sha256",
         "migrations",
+        "runtime_wheels",
     }
     if not isinstance(value, dict) or set(value) != fields:
         raise ManifestError("Unexpected service-update fields")
@@ -194,6 +207,22 @@ def validate_payload(value: dict, *, repository: str = DEFAULT_REPOSITORY) -> Se
             or not _DIGEST.fullmatch(digest)
         ):
             raise ManifestError("Invalid migration name or digest")
+    wheels = value["runtime_wheels"]
+    if not isinstance(wheels, list) or len(wheels) > 1:
+        raise ManifestError("Invalid managed runtime wheel inventory")
+    checked_wheels = []
+    for item in wheels:
+        if not isinstance(item, dict) or set(item) != {"name", "size", "sha256"}:
+            raise ManifestError("Invalid managed runtime wheel fields")
+        runtime_wheel_version(item["name"])
+        if (
+            type(item["size"]) is not int
+            or not 0 < item["size"] <= MAX_PACKAGE_BYTES
+            or not isinstance(item["sha256"], str)
+            or not _DIGEST.fullmatch(item["sha256"])
+        ):
+            raise ManifestError("Invalid managed runtime wheel size or digest")
+        checked_wheels.append(Artifact(**item))
     return ServiceRelease(
         version,
         repository,
@@ -203,6 +232,7 @@ def validate_payload(value: dict, *, repository: str = DEFAULT_REPOSITORY) -> Se
         tuple(checked),
         value["lock_sha256"],
         tuple(sorted(migrations.items())),
+        tuple(checked_wheels),
     )
 
 

@@ -263,7 +263,7 @@ class MemoryService:
         identity: Identity,
         memory: UUID,
         command: RevisionInput,
-        key: str,
+        key: str | None,
         *,
         preserve_evidence: bool = False,
     ) -> dict:
@@ -277,20 +277,24 @@ class MemoryService:
         row = memory_row(conn, memory, review=review)
         space = row["space_id"]
         require_space(conn, space, 20, writing=True)
-        digest, previous = idempotency(
-            conn,
-            identity,
-            space,
-            key,
-            {
-                "kind": "revise",
-                "memory_id": str(memory),
-                **command.model_dump(mode="json", exclude_unset=True),
-                **({"preserve_evidence": True} if preserve_evidence else {}),
-            },
-        )
-        if previous:
-            return previous
+        # An atomic parent operation may own the receipt and its advisory lock.
+        # Its nested revision must not allocate a second caller-visible key.
+        digest = None
+        if key is not None:
+            digest, previous = idempotency(
+                conn,
+                identity,
+                space,
+                key,
+                {
+                    "kind": "revise",
+                    "memory_id": str(memory),
+                    **command.model_dump(mode="json", exclude_unset=True),
+                    **({"preserve_evidence": True} if preserve_evidence else {}),
+                },
+            )
+            if previous:
+                return previous
         row = memory_row(conn, memory, review=review, lock=True)
         _version(row, command.expected_version)
         current = hydrate(conn, row)
@@ -344,7 +348,10 @@ class MemoryService:
                 "reason": command.reason,
             },
         )
-        return remember_receipt(conn, identity, space, key, digest, {**receipt, "version": version})
+        response = json_value({**receipt, "version": version})
+        if key is None:
+            return response
+        return remember_receipt(conn, identity, space, key, digest, response)
 
     def review(self, identity: Identity, memory: UUID, command: ReviewInput) -> dict:
         with self.db.transaction(identity) as conn:
@@ -587,7 +594,17 @@ class MemoryService:
         after, snapshot = UUID(int=0), datetime.now(timezone.utc)
         if cursor:
             try:
-                data = json.loads(base64.urlsafe_b64decode(cursor.encode("ascii")))
+                if not isinstance(cursor, str) or len(cursor) > 512:
+                    raise ValueError()
+                data = json.loads(
+                    base64.b64decode(cursor.encode("ascii"), altchars=b"-_", validate=True)
+                )
+                if (
+                    not isinstance(data, dict)
+                    or set(data) != {"after", "snapshot", "space"}
+                    or any(not isinstance(value, str) for value in data.values())
+                ):
+                    raise ValueError()
                 after, snapshot = UUID(data["after"]), datetime.fromisoformat(data["snapshot"])
                 if data["space"] != str(space) or snapshot.tzinfo is None:
                     raise ValueError()

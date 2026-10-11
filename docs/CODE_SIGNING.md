@@ -61,9 +61,11 @@ key even when no OS publisher certificate is available.
 From 4.0.8, managed service releases use a third, separate Ed25519 key. Its
 public key is embedded in `mnemion/service/update_trust.py`; the release signing
 step receives `MNEMION_SERVICE_UPDATE_PRIVATE_KEY` (a base64 raw 32-byte seed).
-The signed `service-update.json` binds exact Python archives, source commit,
-lockfile and migration hashes. Installation and handoff recheck application
-bytes. No signing key is sent to an installed service. Retain the private recovery
+The signed `service-update.json` binds exact Python archives, the Intel Mac native
+dependency wheel, source commit, lockfile and migration hashes. The native wheel
+contains static OpenSSL, licenses and source provenance, built and tested on a
+native runner before the separate signing step. Installation and handoff recheck
+application and supplied native dependency bytes. No signing key is sent to an installed service. Retain the private recovery
 copy outside Git and plan a tested trust-key transition before any rotation.
 The initial manifest establishes a public baseline; it cannot retroactively add
 an updater to an older server. See [host adoption](service/managed-updates.md).

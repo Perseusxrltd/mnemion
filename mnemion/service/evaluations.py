@@ -65,11 +65,17 @@ def history_page(space: UUID, cursor: str | None, limit: int, maximum: int) -> d
     at = after = None
     if cursor:
         try:
-            if len(cursor) > 512:
+            if not isinstance(cursor, str) or len(cursor) > 512:
                 raise ValueError()
             value = json.loads(
                 base64.b64decode(cursor.encode("ascii"), altchars=b"-_", validate=True)
             )
+            if (
+                not isinstance(value, dict)
+                or set(value) != {"at", "id", "space"}
+                or any(not isinstance(field, str) for field in value.values())
+            ):
+                raise ValueError()
             at, after = datetime.fromisoformat(value["at"]), UUID(value["id"])
             if value["space"] != str(space) or at.tzinfo is None:
                 raise ValueError()
