@@ -176,6 +176,7 @@ def relocate_macos(directory: Path) -> None:
 
 def inspect(directory: Path, operating_system: str) -> dict[str, list[str]]:
     result = {}
+    unavailable = {}
     for path in native_files(directory, operating_system):
         if operating_system == "linux":
             listing = subprocess.check_output(["readelf", "-d", str(path)], text=True)
@@ -213,16 +214,25 @@ def inspect(directory: Path, operating_system: str) -> dict[str, list[str]]:
         else:
             listing = subprocess.check_output(["dumpbin", "/DEPENDENTS", str(path)], text=True)
             libraries = re.findall(r"^\s+([\w.-]+\.dll)\s*$", listing, re.I | re.M)
-            if any(
-                "vcruntime" in lib.lower()
-                or "msvcp" in lib.lower()
-                or "libssl" in lib.lower()
-                or "libcrypto" in lib.lower()
-                or "zlib" in lib.lower()
+            external = [
+                lib
                 for lib in libraries
-            ):
-                raise ValueError("The Windows runtime requires an unbundled redistributable")
+                if (
+                    "vcruntime" in lib.lower()
+                    or "msvcp" in lib.lower()
+                    or "libssl" in lib.lower()
+                    or "libcrypto" in lib.lower()
+                    or "zlib" in lib.lower()
+                )
+            ]
+            if external:
+                unavailable[path.relative_to(directory).as_posix()] = external
         result[path.relative_to(directory).as_posix()] = libraries
+    if unavailable:
+        raise ValueError(
+            "The Windows runtime requires unbundled redistributables: "
+            + json.dumps(unavailable, sort_keys=True)
+        )
     if not result:
         raise ValueError("No native database binaries were built")
     return result
