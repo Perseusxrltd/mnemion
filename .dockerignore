@@ -36,6 +36,9 @@ studio/frontend/*
 !studio/frontend/src/**
 !studio/frontend/public/
 !studio/frontend/public/**
+!studio/shared/
+studio/shared/*
+!studio/shared/local-workspace.d.ts
 !studio/README.md
 !assets/
 assets/*
