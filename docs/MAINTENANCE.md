@@ -140,6 +140,18 @@ Only small JSON results and bounded logs are retained for seven days. Failures
 are visible in Actions and need investigation; they do not silently alter,
 withdraw or republish immutable release artifacts.
 
+For an unexplained Linux restart stall, `Linux updater developer diagnostic`
+provides a separate manual investigation. It verifies and copies the public
+AppImage on fresh hosted runners, extracts it, and enables only the copied
+Electron binary's loopback inspector fuse. The ASAR code, feeds and restart
+guards remain unchanged. The recorded hashes distinguish the instrumented copy
+from the public installer. Bounded snapshots report Electron and X11 inactivity,
+window state, and whether the renderer can answer its draft/transfer safety
+check. Inspector attachment and extraction can affect timing; this workflow is
+**never evidence that a public automatic upgrade passed**. Its helper is not
+included in the desktop application. After a justified fix, use the ordinary
+unmodified public rehearsal for acceptance.
+
 The runner has no user workspace, production memory credentials or signing
 secret. Native fixture checks still cover cancellation, malicious updates,
 interrupted downloads and restart guards before publication. The public rehearsal
