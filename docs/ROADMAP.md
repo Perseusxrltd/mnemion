@@ -32,10 +32,11 @@ agent RAM-policy recovery, and optional trusted-issuer OAuth with individual
 bindings and revocation. Both Linux and both Mac architectures passed installed
 setup, real model save/search, shutdown and automatic workspace reopen. Windows
 path identity and ARM packaging corrections have source/native component checks;
-the latest complete run still failed Windows creation and the extended
-port-recovery gate on Linux/macOS. The candidate now keeps address repair
-disabled until engine cleanup finishes and adds bounded setup diagnostics;
-fresh installed acceptance remains required.
+the next run passed full Linux x64/ARM64 and Mac ARM64 native jobs, including
+address recovery after engine cleanup. Windows reached service startup, where
+[packaged SQL line endings caused a checksum mismatch](validation/2026-10-11-windows-migration-newlines.md).
+The candidate corrects that mismatch and passes LF/CRLF and tamper-rejection
+regressions; fresh installed Windows and complete release acceptance remain required.
 A [Linux stale-focus correction](validation/2026-10-11-linux-update-focus.md) also
 passed controlled real-updater comparisons; public unattended acceptance remains.
 Full integrated native package checks are required before publication. Windows ARM uses a
@@ -110,6 +111,13 @@ A member device must show whether it holds a connection, source mirror or real
 replica; the product must not imply that a remembered connection can replace an
 offline host. Requirements A11–A13 and U11 retain this work and actual Windows
 stress/update acceptance.
+
+The current candidate adds [independent administrator setup](service/organizations.md)
+and removes Studio's accidental requirement for a content-space grant before
+opening administration. [Real API/browser checks](validation/2026-10-11-independent-administration.md)
+retain an independently authenticated administrator after the original identity
+is disabled, preserve ordinary-member defaults and enforce tenant/content limits.
+This does not yet provide offline host control or failover.
 
 ## Implemented for the first shared-platform release
 

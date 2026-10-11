@@ -16,6 +16,49 @@ grants. API and worker database logins have separate restricted roles; the schem
 owner is only for setup, migration and recovery. Do not give assistants an owner
 key merely to simplify configuration. MCP HTTP calls retain each caller's identity.
 
+## Establish independent administrators
+
+The 4.0.11 candidate exposes **Organization role** in **People & apps** and lists
+organization identities separately from space grants. An authenticated
+administrator can open People & apps, Connections, Setup and documentation even
+without a memory-space grant. Administration no longer requires creating a
+private space merely to get past the welcome screen.
+
+1. Open **People & apps**, enter the person's name, choose **Person**, then
+   explicitly choose **Organization administrator**. The default is an ordinary
+   member, including for assistants. Review the authority and select
+   **Create administrator**.
+2. Create that person's individual key. The app selects the new identity in the
+   key form; preserve the displayed key privately and give it only to that person.
+   Do not distribute the original administrator's key.
+3. Verify a fresh connection using the new key, preferably from another device.
+   Confirm that People & apps is available before retiring the original agent or
+   credentials. An active identity in the roster alone does not prove sign-in.
+4. In **Memory space to administer**, explicitly select the compartment and
+   grant only the required role. Organization administrators can manage grants
+   without reading that compartment's contents; they can explicitly grant access
+   under the organization's policy. New administrators receive no content grant
+   automatically. Source-managed compartments retain their connector policy.
+
+Trusted administration agents can receive administrator authority through the
+same explicit choice. Other agents should retain their assigned space roles.
+The existing `principals.create` API/CLI/MCP operation accepts
+`{"name":"Second administrator","kind":"human","administrator":true}`;
+`keys.create` writes the new secret to a private result file. See
+[agent controls](agent-control.md). Non-administrators cannot use that flag to
+promote themselves, and an organization's admin cannot issue another tenant's
+keys.
+
+This establishes independent **workspace administration while the service is
+reachable**. Starting an offline computer, repairing its tunnel and restoring a
+database still require independently held host/operator access. Keep a verified
+backup and current recovery ledger outside that host. The planned
+[offline recovery view and delegated operators](../implementation/workspace-continuity.md)
+remain separate requirements; a Git source mirror is not a complete database
+backup or proof of current workspace authority.
+
+## Identity providers and source access
+
 The [OAuth foundation](oauth.md) in service 4.0.11 adds individually
 revocable external identity bindings for one operator-approved workspace per
 issuer configuration. Other tenants cannot claim those users. It supplements

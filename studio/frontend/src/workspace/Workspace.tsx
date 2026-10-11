@@ -251,6 +251,8 @@ function Shell({
   const [creating, setCreating] = useState(false);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const organizationPage = ['/workspace/team', '/workspace/connections', '/workspace/setup', '/workspace/help']
+    .includes(location.pathname.replace(/\/+$/, ''));
   const role = space?.role ?? "reader";
   const reviewer = ["reviewer", "administrator"].includes(role);
   const links = [
@@ -291,12 +293,12 @@ function Shell({
       setCreating(false);
     }
   }
-  if (spaces.isPending) return <Busy />;
-  if (selected && !spaces.data?.items.some(item => item.id === selected)) {
+  if (spaces.isPending && !organizationPage) return <Busy />;
+  if (!organizationPage && selected && !spaces.data?.items.some(item => item.id === selected)) {
     if (selectedSpace.isPending) return <Busy />;
     if (selectedSpace.isError) return <div className="ws-page"><ErrorNotice error={selectedSpace.error} /><button className="ws-button" onClick={() => setSelected("")}>Return to available spaces</button></div>;
   }
-  if (spaces.isError)
+  if (spaces.isError && !organizationPage)
     return (
       <div className="ws-page">
         <ErrorNotice error={spaces.error} />
@@ -327,6 +329,7 @@ function Shell({
               navigate("/workspace/memories");
             }}
           >
+            {!space && <option value="">No memory space selected</option>}
             {spaces.data?.items
               .filter((item) => item.role)
               .map((item) => (
@@ -358,7 +361,7 @@ function Shell({
             </span>
             <div>
               <strong>{me.name}</strong>
-              <small>{space?.role ?? "No space access"}</small>
+              <small>{me.administrator ? "Organization administrator" : space?.role ?? "No space access"}</small>
             </div>
             <button
               title="Disconnect"
@@ -373,12 +376,22 @@ function Shell({
         </div>
       </aside>
       <main className="ws-main" id="workspace-content" tabIndex={-1}>
-        {!space ? (
+        {organizationPage ? (
+          <>
+            <div className="ws-topbar"><span><Users size={14} />{me.tenant_name}</span><Badge>{me.administrator ? 'Organization administrator' : 'Member'}</Badge><button className="ws-icon-button ws-mobile-disconnect" aria-label="Disconnect workspace" onClick={disconnect}><LogOut size={17} /></button></div>
+            <div className="ws-scroll"><ErrorBoundary key={location.pathname}><Suspense fallback={<Busy />}><Routes>
+              <Route path="team" element={<Team connection={connection} initialSpace={space} />} />
+              <Route path="connections" element={<Connections client={client} administrator={me.administrator} endpoint={connection.endpoint} selectSpace={setSelected} />} />
+              <Route path="setup" element={<Setup endpoint={connection.endpoint} administrator={me.administrator} />} />
+              <Route path="help" element={<Documentation />} />
+            </Routes></Suspense></ErrorBoundary></div>
+          </>
+        ) : !space ? (
           <div className="ws-page">
             <Title title="Welcome to your workspace">
-              Create a private space, or ask your administrator for access to a
-              team space.
+              {me.administrator ? 'Manage your organization now, or create a memory space when you need one.' : 'Ask your administrator for access to a team space.'}
             </Title>
+            {me.administrator && <Link className="ws-button ws-primary" to="/workspace/team"><Users size={16} />Open workspace administration</Link>}
             {me.administrator && (
               <form onSubmit={createSpace} className="ws-card ws-form">
                 <Field label="Space name">
@@ -434,11 +447,7 @@ function Shell({
                 <Route path="obsidian" element={<Obsidian />} />
                 <Route path="models" element={<Suspense fallback={<Busy />}><EmbeddingModels key={space.id} client={client} space={space.id} administrator={space.role === "administrator"} /></Suspense>} />
                 <Route path="librarian" element={<Suspense fallback={<Busy />}><Librarian key={space.id} client={client} space={space.id} reviewer={reviewer} administrator={space.role === "administrator"} /></Suspense>} />
-                <Route path="help" element={<Suspense fallback={<Busy />}><Documentation /></Suspense>} />
-                <Route path="setup" element={<Suspense fallback={<Busy />}><Setup endpoint={connection.endpoint} administrator={me.administrator} /></Suspense>} />
                 <Route path="agents" element={<Agents endpoint={connection.endpoint} space={space.id} />} />
-                <Route path="team" element={<Team />} />
-                <Route path="connections" element={<Connections client={client} administrator={me.administrator} endpoint={connection.endpoint} selectSpace={setSelected} />} />
                 <Route
                   path="*"
                   element={<Navigate to="/workspace/memories" replace />}
@@ -1675,9 +1684,12 @@ function Obsidian() {
   );
 }
 
-function Team() {
-  const { client, space, me } = useSession();
+function Team({ connection, initialSpace }: { connection: Connection; initialSpace?: Space }) {
+  const { client, me } = connection;
   const cache = useQueryClient();
+  const [spaceId, setSpaceId] = useState(initialSpace?.id ?? '');
+  const spaces = useQuery({ queryKey: ['spaces'], queryFn: () => client.spaces(), enabled: me.administrator });
+  const space = spaces.data?.items.find(item => item.id === spaceId);
   const people = useQuery({
     queryKey: ["principals"],
     queryFn: () => client.principals(),
@@ -1689,15 +1701,18 @@ function Team() {
     enabled: me.administrator,
   });
   const grants = useQuery({
-    queryKey: ["grants", space.id],
+    queryKey: ["grants", space?.id],
     queryFn: () =>
       client.request<
         Page<{ principal_id: string; name: string; kind: string; role: Role }>
-      >("GET", `/v1/spaces/${space.id}/grants`),
-    enabled: me.administrator,
+      >("GET", `/v1/spaces/${space!.id}/grants`),
+    enabled: me.administrator && !!space,
   });
   const [name, setName] = useState("");
   const [kind, setKind] = useState<"human" | "application">("application");
+  const [newAdministrator, setNewAdministrator] = useState(false);
+  const [createdIdentity, setCreatedIdentity] = useState<{ name: string; administrator: boolean }>();
+  const keyForm = useRef<HTMLFormElement>(null);
   const [principal, setPrincipal] = useState("");
   const [role, setRole] = useState<Role>("reader");
   const [keyName, setKeyName] = useState("");
@@ -1733,16 +1748,28 @@ function Team() {
         specific spaces.
       </Title>
       <ErrorNotice
-        error={error || people.error || keys.error || grants.error}
+        error={error || people.error || keys.error || grants.error || spaces.error}
       />
+      <section className="ws-card">
+        <div className="ws-section-title"><h2>Independent workspace administration</h2><ShieldCheck size={20} /></div>
+        <p>You are an organization administrator. Give another trusted person their own administrator identity and key, then verify their connection from a second device. Administration will no longer depend on one assistant’s session.</p>
+        <p className="ws-helper">Organization administrators manage identities, keys and space grants. Reading memory still requires a space grant. Starting or recovering a remote host requires separately configured operator access.</p>
+        <Link className="ws-link" to="/workspace/help?doc=docs%2Fservice%2Forganizations.md">Administration and recovery guide<ArrowRight size={13} /></Link>
+      </section>
+      {createdIdentity && <div className="ws-notice" role="status">Created <strong>{createdIdentity.name}</strong> as {createdIdentity.administrator ? 'an organization administrator' : 'a member'}. <button type="button" className="ws-link" onClick={() => { keyForm.current?.scrollIntoView({ block: 'start' }); keyForm.current?.querySelector('select')?.focus({ preventScroll: true }); }}>Create their individual key</button> and verify their connection. Space access is assigned separately.</div>}
       <div className="ws-team-grid">
         <form
           className="ws-card ws-form"
           onSubmit={(event) => {
             event.preventDefault();
             void act(async () => {
-              await client.createPrincipal(name, kind);
+              const person = await client.createPrincipal(name.trim(), kind, { administrator: newAdministrator });
+              setCreatedIdentity(person);
+              setKeyPrincipal(person.id);
+              setKeyName(person.kind === 'human' ? 'Personal access' : 'Application access');
+              setPrincipal(person.id);
               setName("");
+              setNewAdministrator(false);
             });
           }}
         >
@@ -1759,14 +1786,21 @@ function Team() {
           <Field label="Identity type">
             <select
               value={kind}
-              onChange={(event) => setKind(event.target.value as typeof kind)}
+              onChange={(event) => { setKind(event.target.value as typeof kind); setNewAdministrator(false); }}
             >
               <option value="application">Application / assistant</option>
               <option value="human">Person</option>
             </select>
           </Field>
-          <button className="ws-button ws-primary" disabled={busy}>
-            Create identity
+          <Field label="Organization role">
+            <select value={newAdministrator ? 'administrator' : 'member'} onChange={event => setNewAdministrator(event.target.value === 'administrator')}>
+              <option value="member">Member — assigned spaces only</option>
+              <option value="administrator">Organization administrator</option>
+            </select>
+          </Field>
+          {newAdministrator && <p className="ws-helper">This identity will be able to manage organization members, issue keys and change space permissions. {kind === 'application' ? 'Use this authority only for a specifically trusted administration agent.' : 'Give the person their own key; do not share the original administrator’s key.'}</p>}
+          <button className="ws-button ws-primary" disabled={busy || !name.trim()}>
+            {newAdministrator ? 'Create administrator' : 'Create identity'}
           </button>
           <small>
             New identities have no memory access until you grant it.
@@ -1776,10 +1810,16 @@ function Team() {
           className="ws-card ws-form"
           onSubmit={(event) => {
             event.preventDefault();
-            void act(() => client.grant(space.id, principal, role));
+            if (space) void act(() => client.grant(space.id, principal, role));
           }}
         >
-          <h2>Grant access to {space.name}</h2>
+          <h2>Grant access to {space?.name ?? 'a memory space'}</h2>
+          <Field label="Memory space to administer">
+            <select value={spaceId} onChange={event => setSpaceId(event.target.value)} required>
+              <option value="">Choose a memory space</option>
+              {spaces.data?.items.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+            </select>
+          </Field>
           <Field label="Identity">
             <select
               required
@@ -1806,7 +1846,7 @@ function Team() {
               )}
             </select>
           </Field>
-          <button className="ws-button" disabled={busy || !principal}>
+          <button className="ws-button" disabled={busy || !principal || !space}>
             Save access
           </button>
           <small>
@@ -1815,9 +1855,23 @@ function Team() {
           </small>
         </form>
       </div>
+      <section className="ws-card">
+        <div className="ws-section-title"><h2>Organization identities</h2><button type="button" className="ws-button ws-quiet" disabled={busy || people.isFetching} onClick={() => void people.refetch()}><RefreshCw size={14} />Refresh</button></div>
+        {people.isPending ? <Busy /> : <div className="ws-table-wrap"><table className="ws-table">
+          <thead><tr><th>Identity</th><th>Type</th><th>Organization role</th><th>Status</th></tr></thead>
+          <tbody>{people.data?.items.map(person => <tr key={person.id}>
+            <td>{person.name}{person.id === me.principal_id && <small>You</small>}</td>
+            <td>{person.kind === 'human' ? 'Person' : 'Application / assistant'}</td>
+            <td>{person.administrator ? 'Organization administrator' : 'Member'}</td>
+            <td>{person.disabled_at ? 'Disabled' : 'Active identity'}</td>
+          </tr>)}</tbody>
+        </table></div>}
+        <p className="ws-helper">An active identity still needs a valid individual credential. This list does not confirm that its owner has signed in or that the workspace host is recoverable.</p>
+        {(people.data?.items.length ?? 0) >= 1000 && <p className="ws-helper">Showing the first 1,000 identities returned by this server.</p>}
+      </section>
       <div className="ws-card">
         <h2>Space access</h2>
-        {grants.isPending ? (
+        {!space ? <p className="ws-helper">Choose a memory space above to inspect and manage its grants. You do not need to read its memories to administer access.</p> : grants.isPending ? (
           <Busy />
         ) : (
           <div className="ws-table-wrap">
@@ -1859,7 +1913,7 @@ function Team() {
         )}
       </div>
       <div className="ws-team-grid">
-        <form
+        <form id="ws-create-key" ref={keyForm}
           className="ws-card ws-form"
           onSubmit={(event) => {
             event.preventDefault();
@@ -1902,7 +1956,8 @@ function Team() {
           onSubmit={(event) => {
             event.preventDefault();
             void act(async () => {
-              await client.createSpace(newSpace);
+              const created = await client.createSpace(newSpace);
+              setSpaceId(created.id);
               setNewSpace("");
             });
           }}

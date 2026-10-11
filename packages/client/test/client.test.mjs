@@ -47,6 +47,21 @@ test('non-idempotent administrative writes are not silently repeated', async () 
   assert.equal(calls, 1)
 })
 
+test('administrator creation is explicit and never inherited by the next identity', async () => {
+  const calls = []
+  const client = new MnemionClient({ baseUrl: 'https://example.invalid', apiKey: 'fixture', fetch: async (url, options) => {
+    const body = JSON.parse(options.body)
+    calls.push({ url, body })
+    return Response.json({ id: 'fixture', ...body })
+  } })
+  assert.equal((await client.createPrincipal('Second administrator', 'human', { administrator: true })).administrator, true)
+  assert.equal((await client.createPrincipal('Assistant')).administrator, false)
+  assert.deepEqual(calls.map(call => call.body), [
+    { name: 'Second administrator', kind: 'human', administrator: true },
+    { name: 'Assistant', kind: 'application', administrator: false },
+  ])
+})
+
 test('browser fetch is invoked with its required global receiver', async () => {
   const client = new MnemionClient({ baseUrl: 'http://example.test', apiKey: 'dummy', fetch: function () {
     assert.equal(this, globalThis, 'Browser fetch rejects a client-instance receiver')

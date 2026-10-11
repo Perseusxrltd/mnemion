@@ -102,7 +102,10 @@ without making a paid central service mandatory.
    load against an authorized test space; do not alter shared production memory
    for convenience or equate an offline preparation with a completed stress test.
 
-Current foundations are multi-principal/space administration, protected desktop
-connections, local host controls, diagnostics and verified database recovery.
-Independent admin enrolment, cached recovery records, host registration,
+Current source adds explicit administrator creation in the app/SDK, an
+organization roster and administration pages that do not require a memory-space
+grant. Real API and browser checks retain a second administrator after disabling
+the original identity, without implicit content access. Protected desktop
+connections, local host controls, diagnostics and verified database recovery are
+also foundations. Sign-in/invitations, cached recovery records, host registration,
 operator delegation and guided restoration remain required implementation.
