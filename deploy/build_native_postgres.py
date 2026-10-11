@@ -277,7 +277,10 @@ def build(output: Path, cache: Path, work: Path) -> Path:
         # Static OpenSSL needs its private system dependencies. A global
         # prefer_static option incorrectly asks for static Windows OS libraries.
         check.write_text(
-            original.replace(marker, "ssl = dependency('openssl', required: false, static: true)")
+            original.replace(
+                marker,
+                "ssl = dependency('openssl', required: false, static: true, method: 'pkg-config')",
+            )
         )
     install, dependencies = work / "postgres", work / "dependencies"
     environment = dict(os.environ)
@@ -350,9 +353,31 @@ def build(output: Path, cache: Path, work: Path) -> Path:
             f"prefix={dependencies.as_posix()}\nlibdir=${{prefix}}/lib\nincludedir=${{prefix}}/include\n"
             "Name: zlib\nDescription: Pinned static zlib\nVersion: 1.3.2\nLibs: -L${libdir} -lzlib\nCflags: -I${includedir}\n"
         )
+        # OpenSSL's Windows install exports CMake files but no pkg-config
+        # files. Without an explicit descriptor Meson can silently select the
+        # runner's unrelated shared OpenSSL from Program Files.
+        prefix = f"prefix={dependencies.as_posix()}\nlibdir=${{prefix}}/lib\nincludedir=${{prefix}}/include\n"
+        version = configuration["openssl"]["version"]
+        for name, extra in {
+            "libcrypto": "Libs: -L${libdir} -llibcrypto\nLibs.private: -lws2_32 -lgdi32 -ladvapi32 -lcrypt32 -luser32\n",
+            "libssl": "Libs: -L${libdir} -llibssl\nRequires.private: libcrypto\n",
+            "openssl": "Requires: libssl libcrypto\n",
+        }.items():
+            (dependencies / "lib/pkgconfig" / (name + ".pc")).write_text(
+                prefix
+                + f"Name: {name}\nDescription: Pinned static OpenSSL\nVersion: {version}\n"
+                + "Cflags: -I${includedir}\n"
+                + extra
+            )
         environment["PKG_CONFIG_PATH"] = str(dependencies / "lib/pkgconfig")
         environment["PKG_CONFIG_LIBDIR"] = environment["PKG_CONFIG_PATH"]
         environment["PKGCONF_PYPI_EMBEDDED_ONLY"] = "1"
+        environment["PATH"] = str(dependencies / "bin") + os.pathsep + environment.get("PATH", "")
+        found_ssl = subprocess.check_output(
+            [programs["pkgconf"], "--modversion", "openssl"], env=environment, text=True
+        ).strip()
+        if found_ssl != version:
+            raise ValueError("The compiler did not discover the pinned OpenSSL build")
         environment["INCLUDE"] = (
             str(dependencies / "include") + os.pathsep + environment.get("INCLUDE", "")
         )
