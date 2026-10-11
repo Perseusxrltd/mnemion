@@ -71,6 +71,9 @@ function getAssetPath(name: string): string {
 }
 
 function getTrayIconPaths(): string[] {
+  if (process.platform === 'darwin') {
+    return [getAssetPath('icon-trayTemplate.png'), getAssetPath('icon-tray.png')]
+  }
   if (process.platform === 'win32') {
     return [getAssetPath('icon.ico'), getAssetPath('icon-tray.png'), getAssetPath('icon.png')]
   }
@@ -118,7 +121,7 @@ function getTrayImage() {
     const image = nativeImage.createFromPath(iconPath)
     if (image.isEmpty()) continue
     const resized = image.resize({ width: iconSize, height: iconSize, quality: 'best' })
-    resized.setTemplateImage(false)
+    resized.setTemplateImage(process.platform === 'darwin' && iconPath.endsWith('Template.png'))
     trayIconLoaded = true
     trayIconSource = iconPath
     return resized

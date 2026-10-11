@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { LayoutDashboard, Network, FolderOpen, Search, Bot, Plug, Settings, Brain } from 'lucide-react'
+import BrandMark from './BrandMark'
 
 const ITEMS = [
   { to: '/dashboard', icon: LayoutDashboard, title: 'Dashboard  [G D]' },
@@ -19,7 +20,7 @@ export default function Ribbon({ onSearch: _onSearch }: { onSearch?: () => void 
     <div className="ribbon">
       {/* Mnemion logo */}
       <div className="ribbon-icon mb-2" title="Mnemion Studio">
-        <Brain size={18} />
+        <BrandMark />
       </div>
 
       <div className="w-6 h-px mb-2" style={{ background: 'var(--background-modifier-border)' }} />

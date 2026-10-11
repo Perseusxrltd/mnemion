@@ -1,0 +1,58 @@
+{
+  "source": "studio/branding/mnemion.svg",
+  "source_sha256": "89817dc88eb3ec30d1630117d698542587a876f4022c490d5fa9160ace44dff1",
+  "renderer": "sharp 0.35.5",
+  "aliases": {
+    "assets/mnemion_logo.png": "icon.png"
+  },
+  "files": {
+    "mnemion.svg": {
+      "bytes": 453,
+      "sha256": "89817dc88eb3ec30d1630117d698542587a876f4022c490d5fa9160ace44dff1"
+    },
+    "mnemion-symbol.svg": {
+      "bytes": 346,
+      "sha256": "0f6ed972e2bea4e24da77d98afa2476c6482b5a1eb2d9d6f18b90df19b6c8a62"
+    },
+    "icon.png": {
+      "bytes": 35620,
+      "sha256": "3a1b5c39bbd8385a118bf0af59279d70c3706feaa506abf812522d4192e3ea34"
+    },
+    "icon-16.png": {
+      "bytes": 342,
+      "sha256": "f2f106ac8f755e3cc9747cbc79291ff6c2ae0c80ebc883e2ec4d2979786da186"
+    },
+    "icon-32.png": {
+      "bytes": 637,
+      "sha256": "15bccbc173330b9eae045ad2126658537248d594e86dd14d86a99b616bf4e3eb"
+    },
+    "icon-180.png": {
+      "bytes": 4101,
+      "sha256": "c4f06d4c30a413be6a1a3d5abc82a1b8119618ab4986cf1054171c3c2cac7ac1"
+    },
+    "icon-tray.png": {
+      "bytes": 637,
+      "sha256": "15bccbc173330b9eae045ad2126658537248d594e86dd14d86a99b616bf4e3eb"
+    },
+    "icon-tray@2x.png": {
+      "bytes": 1335,
+      "sha256": "18ea5b9871aa5114fa58fb6a65bd712ffdb21c3cc83d28acaf0f26e62295c3d1"
+    },
+    "icon-trayTemplate.png": {
+      "bytes": 226,
+      "sha256": "a58a0547a8bb1225c444deca4a183c356c1c4fb6bc178a4d00914d84211f39f2"
+    },
+    "icon-trayTemplate@2x.png": {
+      "bytes": 405,
+      "sha256": "9a7ec0dd68fd3d9e7b66555025ebf2e4b64f1f2770cbb76f41b4e7362bf841d6"
+    },
+    "icon.ico": {
+      "bytes": 13914,
+      "sha256": "e488d5302ed969a64017acee2d0d09804bc01bc58059d5fdcabbd0d2181f32a3"
+    },
+    "icon.icns": {
+      "bytes": 80695,
+      "sha256": "f9534352cd95b152c7da1825f487341fdcec2b94153b310f8444c45e0f8d98a3"
+    }
+  }
+}

@@ -7,6 +7,8 @@ RUN npm --prefix packages/client ci && npm --prefix packages/client run build
 COPY studio/frontend/package*.json ./studio/frontend/
 RUN npm --prefix studio/frontend ci
 COPY studio/frontend ./studio/frontend
+COPY studio/branding/mnemion.svg studio/branding/assets.json studio/branding/verify.mjs ./studio/branding/
+COPY assets/mnemion_logo.png ./assets/
 COPY docs ./docs
 COPY README.md SECURITY.md CONTRIBUTING.md ./
 COPY studio/README.md ./studio/README.md

@@ -146,6 +146,9 @@ function validate(status) {
   if (process.platform === 'win32' && !String(status.trayIconSource ?? '').endsWith('icon.ico')) {
     fail(`Packaged app did not prefer the Windows tray .ico asset: ${status.trayIconSource}`)
   }
+  if (process.platform === 'darwin' && !String(status.trayIconSource ?? '').endsWith('icon-trayTemplate.png')) {
+    fail('Packaged Mac app did not load its menu-bar template icon')
+  }
   if (!status.windowCreated) fail('Packaged app did not create its window')
   if (status.legacyEnabled) fail('A default launch unexpectedly enabled the legacy backend')
   if (!status.renderer?.workspace || !status.renderer?.serviceBridge || !status.renderer?.vaultBridge) {

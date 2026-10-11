@@ -2,7 +2,8 @@ import { createElement, isValidElement, useEffect, useMemo, useRef, useState, ty
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { ArrowLeft, BookOpen, ExternalLink, Search } from "lucide-react";
+import { ArrowLeft, ExternalLink, Search } from "lucide-react";
+import BrandMark from "../components/BrandMark";
 import { version } from "../../package.json";
 import "./documentation.css";
 
@@ -22,6 +23,7 @@ const titles: Record<string, string> = {
   "docs/service/workspaces.md": "Connect & remember workspaces",
   "docs/implementation/app-onboarding.md": "Complete app setup requirements",
   "docs/STUDIO_DESIGN.md": "Studio design system",
+  "docs/BRANDING.md": "Logo & brand assets",
   "docs/service/connectors.md": "Cloud, Git & messaging sources", "docs/service/agents.md": "Agents, apps & MCP",
   "docs/service/agent-control.md": "Agent administration & CLI",
   "docs/service/capture.md": "Conversation capture", "docs/service/insights.md": "Insights & evaluations",
@@ -92,7 +94,7 @@ export default function Documentation() {
   return <div className="mn-docs">
     <header className="mn-docs-header">
       <Link to="/workspace"><ArrowLeft size={16} /> Workspace</Link>
-      <div><BookOpen size={20} /><strong>Documentation & roadmap</strong><span>Version {version}</span></div>
+      <div><BrandMark /><strong>Documentation & roadmap</strong><span>Version {version}</span></div>
       <a href="https://github.com/Perseusxrltd/mnemion" target="_blank" rel="noreferrer noopener">GitHub <ExternalLink size={14} /></a>
     </header>
     <div className="mn-docs-layout">

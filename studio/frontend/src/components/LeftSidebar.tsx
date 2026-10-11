@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { NavLink, useNavigate, useLocation, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { BrainCircuit, ChevronDown, ChevronRight, FileText, Plus } from 'lucide-react'
+import { ChevronDown, ChevronRight, FileText, Plus } from 'lucide-react'
+import BrandMark from './BrandMark'
 import { api } from '../api/client'
 import { wingColor } from '../types'
 import { useLayoutCtx } from './Layout'
@@ -120,7 +121,7 @@ export default function LeftSidebar({ width = 260 }: { width?: number }) {
           className="flex items-center gap-2 px-3 py-2.5 border-b"
           style={{ borderColor: 'var(--background-modifier-border)' }}
         >
-          <BrainCircuit size={17} style={{ color: 'var(--interactive-accent)', flexShrink: 0 }} />
+          <BrandMark />
           <div className="flex-1 min-w-0">
             <div className="text-[13px] font-semibold truncate">Mnemion</div>
             <div className="text-[10px]" style={{ color: 'var(--text-faint)' }}>Local Memory</div>

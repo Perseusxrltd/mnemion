@@ -1,0 +1,7 @@
+{
+  "name": "mnemion-brand-assets",
+  "private": true,
+  "type": "module",
+  "scripts": { "build": "node generate.mjs" },
+  "devDependencies": { "sharp": "0.35.5" }
+}

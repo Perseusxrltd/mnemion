@@ -1,3 +1,5 @@
+<img src="studio/frontend/public/mnemion.svg" alt="Mnemion logo" width="72" height="72">
+
 # Mnemion
 
 Memory infrastructure for applications, teams, and AI assistants, with Obsidian
