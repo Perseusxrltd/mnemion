@@ -174,6 +174,188 @@ def relocate_macos(directory: Path) -> None:
         subprocess.run(["codesign", "--verify", "--strict", str(path)], check=True)
 
 
+def _windows_has_manifest(path: Path) -> bool:
+    """Inspect resource #1 without executing code or guessing from localized mt errors."""
+    import ctypes as c
+    from ctypes import wintypes as w
+
+    kernel = c.WinDLL("kernel32", use_last_error=True)
+    kernel.LoadLibraryExW.argtypes = [w.LPCWSTR, w.HANDLE, w.DWORD]
+    kernel.LoadLibraryExW.restype = w.HMODULE
+    kernel.FindResourceW.argtypes = [w.HMODULE, c.c_void_p, c.c_void_p]
+    kernel.FindResourceW.restype = w.HRSRC
+    kernel.FreeLibrary.argtypes, kernel.FreeLibrary.restype = [w.HMODULE], w.BOOL
+    # LOAD_LIBRARY_AS_DATAFILE | LOAD_LIBRARY_AS_IMAGE_RESOURCE: no DllMain,
+    # imports or executable startup, including for untrusted resource content.
+    module = kernel.LoadLibraryExW(str(path), None, 0x22)
+    if not module:
+        raise c.WinError(c.get_last_error())
+    try:
+        if kernel.FindResourceW(module, 1, 24):  # CREATEPROCESS_MANIFEST_RESOURCE_ID, RT_MANIFEST
+            return True
+        error = c.get_last_error()
+        if error in {1812, 1813, 1814}:  # No section, type, or resource name.
+            return False
+        raise c.WinError(error)
+    finally:
+        kernel.FreeLibrary(module)
+
+
+def _manifest_features(path: Path):
+    """Compare element content independently of XML prefixes and formatting."""
+    from collections import Counter
+    from xml.etree import ElementTree
+
+    root = ElementTree.parse(path).getroot()
+    if root.tag != "{urn:schemas-microsoft-com:asm.v1}assembly":
+        raise ValueError("The executable has an unexpected application manifest")
+    features = Counter()
+
+    def visit(element, parents):
+        route = (*parents, element.tag)
+        features[(route, tuple(sorted(element.attrib.items())), (element.text or "").strip())] += 1
+        for child in element:
+            visit(child, route)
+
+    visit(root, ())
+    return root, features
+
+
+def _windows_manifest_architecture(path: Path) -> str:
+    """Use the executable's PE machine, including x64 running on an ARM host."""
+    import struct
+
+    with path.open("rb") as stream:
+        header = stream.read(64)
+        if len(header) != 64 or header[:2] != b"MZ":
+            raise ValueError("The native executable has no valid DOS header")
+        offset = struct.unpack_from("<I", header, 60)[0]
+        if not 64 <= offset <= min(path.stat().st_size - 6, 16 * 1024**2):
+            raise ValueError("The native executable has an invalid PE header offset")
+        stream.seek(offset)
+        header = stream.read(6)
+    if len(header) != 6 or header[:4] != b"PE\0\0":
+        raise ValueError("The native executable has no valid PE signature")
+    architecture = {0x8664: "amd64", 0xAA64: "arm64"}.get(struct.unpack_from("<H", header, 4)[0])
+    if architecture is None:
+        raise ValueError("The native executable uses an unsupported Windows architecture")
+    return architecture
+
+
+def configure_windows_utf8(directory: Path, *, mt: str | Path | None = None) -> list[str]:
+    """Embed UTF-8 process settings before signing or inventorying Windows executables.
+
+    Each launcher and child has its own activation context. DLLs inherit their
+    host process code page and must not receive executable manifest resource #1.
+    Existing application settings are merged and checked, never discarded.
+    """
+    import tempfile
+    from xml.etree import ElementTree
+
+    if os.name != "nt":
+        raise ValueError("Windows application manifests must be embedded on Windows")
+    tool = str(mt) if mt is not None else shutil.which("mt.exe")
+    if not tool:
+        raise ValueError("The Windows SDK manifest tool (mt.exe) is required")
+    directory = directory.resolve()
+    source = Path(__file__).with_name("windows-native-runtime.manifest")
+    _manifest_features(source)
+    executables = [
+        path for path in native_files(directory, "windows") if path.suffix.lower() == ".exe"
+    ]
+    if not executables:
+        raise ValueError("No Windows executables were found for UTF-8 manifest preparation")
+
+    def run(*arguments):
+        try:
+            subprocess.run(
+                [tool, "-nologo", *map(str, arguments)],
+                stdin=subprocess.DEVNULL,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                check=True,
+                timeout=30,
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            )
+        except subprocess.CalledProcessError as error:
+            # SDK diagnostics describe build files/settings and are needed to
+            # distinguish malformed XML, locked files and tool failures.
+            detail = "\n".join(
+                str(value)[-4000:] for value in (error.stdout, error.stderr) if value
+            )
+            raise RuntimeError(
+                f"Windows manifest tool failed ({error.returncode}): {detail}"
+            ) from error
+
+    updated = []
+    with tempfile.TemporaryDirectory(prefix="mnemion-native-manifests-") as temporary:
+        temporary = Path(temporary)
+        # mt.exe does not reliably accept a source manifest on a WSL UNC path.
+        # Python can read it safely; hand the SDK a local temporary copy.
+        local_source = temporary / "utf8.manifest"
+        shutil.copyfile(source, local_source)
+        for index, executable in enumerate(sorted(executables)):
+            original = temporary / f"{index}-original.manifest"
+            merged = temporary / f"{index}-merged.manifest"
+            embedded = temporary / f"{index}-embedded.manifest"
+            manifests = [local_source]
+            features = None
+            identity = None
+            if _windows_has_manifest(executable):
+                run(f"-inputresource:{executable};#1", f"-out:{original}")
+                prior, features = _manifest_features(original)
+                identities = prior.findall("{urn:schemas-microsoft-com:asm.v1}assemblyIdentity")
+                if len(identities) > 1:
+                    raise ValueError("The executable has ambiguous application identities")
+                identity = identities[0] if identities else None
+                manifests.insert(0, original)
+            if identity is None:
+                if not re.fullmatch(r"[A-Za-z0-9_.-]+", executable.stem):
+                    raise ValueError(
+                        "Use an ordinary native executable name for its manifest identity"
+                    )
+                identity_manifest = temporary / f"{index}-identity.manifest"
+                identity_root = ElementTree.Element(
+                    "{urn:schemas-microsoft-com:asm.v1}assembly", {"manifestVersion": "1.0"}
+                )
+                ElementTree.SubElement(
+                    identity_root,
+                    "{urn:schemas-microsoft-com:asm.v1}assemblyIdentity",
+                    {
+                        "name": "Mnemion.NativeRuntime." + executable.stem,
+                        "version": "1.0.0.0",
+                        "type": "win32",
+                        "processorArchitecture": _windows_manifest_architecture(executable),
+                    },
+                )
+                ElementTree.ElementTree(identity_root).write(
+                    identity_manifest, encoding="utf-8", xml_declaration=True
+                )
+                manifests.insert(0, identity_manifest)
+            run("-manifest", *manifests, f"-out:{merged}")
+            run("-manifest", merged, "-validate_manifest")
+            root, combined = _manifest_features(merged)
+            codepages = root.findall(
+                ".//{http://schemas.microsoft.com/SMI/2019/WindowsSettings}activeCodePage"
+            )
+            if len(codepages) != 1 or (codepages[0].text or "").strip() != "UTF-8":
+                raise ValueError(
+                    "The merged native manifest does not select exactly one UTF-8 code page"
+                )
+            if features is not None and features - combined:
+                raise ValueError("Manifest merging changed existing native application settings")
+            run("-manifest", merged, f"-outputresource:{executable};#1")
+            # Re-read the actual PE resource before the caller computes hashes.
+            run(f"-inputresource:{executable};#1", f"-out:{embedded}")
+            _, actual = _manifest_features(embedded)
+            if actual != combined:
+                raise ValueError("The embedded native manifest did not match the verified settings")
+            updated.append(executable.relative_to(directory).as_posix())
+    return updated
+
+
 def inspect(directory: Path, operating_system: str) -> dict[str, list[str]]:
     result = {}
     unavailable = {}
@@ -520,6 +702,8 @@ def build(output: Path, cache: Path, work: Path) -> Path:
             path.chmod(mode)
     if operating_system == "macos":
         relocate_macos(install)
+    if operating_system == "windows":
+        configure_windows_utf8(install)
     return package_runtime(install, output, sources, configuration, operating_system, architecture)
 
 
@@ -547,7 +731,10 @@ def package_runtime(
         "source_adjustments": (
             ["libpq permits static OpenSSL's pthread_exit, retaining process-exit rejection"]
             if operating_system != "windows"
-            else ["Meson selects static OpenSSL and its private system dependencies"]
+            else [
+                "Meson selects static OpenSSL and its private system dependencies",
+                "Executable manifests select UTF-8 on Windows 10 version 1903 (build 18362) or later",
+            ]
         )
         + (
             ["libpq permits Apple's _atexit cleanup registration"]
