@@ -223,6 +223,8 @@ def private_process(command, *, directory: Path, input=None, env=None, timeout=6
         result = subprocess.run(
             command,
             input=input,
+            stdin=subprocess.DEVNULL if input is None else None,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
             text=True,
             encoding="utf-8",
             errors="replace",
