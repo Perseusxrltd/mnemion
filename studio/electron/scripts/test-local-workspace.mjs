@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs'
 import { syncBuiltinESMExports } from 'node:module'
 import { PassThrough } from 'node:stream'
 import { test } from 'node:test'
-import { LocalWorkspace, portOptions } from '../dist/local-workspace.js'
+import { LocalWorkspace, portOptions, localDiagnostic } from '../dist/local-workspace.js'
 
 const { version } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
 const root = '/private/test-workspace'
@@ -15,6 +15,18 @@ const info = revision => ({ event: 'status', configured: true, data_directory: r
   resources: { memory_bytes: 4 * 1024 ** 3, available_disk_bytes: 8 * 1024 ** 3 }, memory_policy: policy(revision) })
 const addressChange = { workspace_id: '00000000-0000-4000-8000-000000000001', expected_port: 17400, port: null }
 const addressInfo = port => ({ ...info('first'), settings: { workspace_id: addressChange.workspace_id, port, database_port: 17401 } })
+
+test('setup diagnostics admit bounded code locations and refuse private provider detail', () => {
+  const diagnostic = { category: 'database', sqlstate: '08001', locations: [{ module: 'mnemion.local_database', function: 'start', line: 1 }] }
+  assert.deepEqual(localDiagnostic(diagnostic), diagnostic)
+  assert.notEqual(localDiagnostic(diagnostic), diagnostic)
+  for (const input of [null, [], { ...diagnostic, message: 'private provider error' }, { ...diagnostic, sqlstate: 'private' },
+    { ...diagnostic, errno: -1 }, { ...diagnostic, locations: Array(9).fill(diagnostic.locations[0]) },
+    { ...diagnostic, locations: [{ ...diagnostic.locations[0], module: '/private/path' }] },
+    { ...diagnostic, locations: [{ ...diagnostic.locations[0], source: 'private memory' }] }]) {
+    assert.throws(() => localDiagnostic(input), /Invalid setup diagnostic/)
+  }
+})
 
 class Command extends EventEmitter {
   stdin = new PassThrough()
@@ -104,6 +116,28 @@ test('a running local workspace refuses an address change', async t => {
   await running(f)
   await assert.rejects(f.host.changePort(addressChange), /Pause the local workspace/)
   assert(!f.commands.some(command => command.action === 'port'))
+})
+
+test('a runtime failure remains busy until process cleanup finishes, then permits address repair', async t => {
+  const f = fixture(t)
+  const engine = await running(f)
+  engine.event({ event: 'error', code: 'port_in_use', message: 'Another program is using this workspace address.' })
+  assert.equal(f.host.status.state, 'stopping')
+  assert.equal(f.host.busy, true)
+  await assert.rejects(f.host.changePort(addressChange), /Pause the local workspace/)
+  assert(!f.commands.some(command => command.action === 'port'))
+  engine.finish()
+  f.last().reply(addressInfo(17400))
+  await settle()
+  assert.equal(f.host.status.state, 'error')
+  assert.equal(f.host.status.errorCode, 'port_in_use')
+  assert.equal(f.host.busy, false)
+  const repaired = f.host.changePort(addressChange)
+  f.last().reply(addressInfo(17402))
+  const status = await repaired
+  assert.equal(status.state, 'stopped')
+  assert.equal(status.info.settings.port, 17402)
+  assert.equal(status.errorCode, undefined)
 })
 
 test('inspection waits for an address save before reading the current settings', async t => {

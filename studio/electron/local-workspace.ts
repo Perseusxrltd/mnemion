@@ -1,9 +1,25 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { StringDecoder } from 'node:string_decoder'
-import type { LocalOptions, LocalInfo, LocalStatus, MemoryChange, MemoryWrite, MemorySnapshot, MemoryPolicy, PortChange } from '../shared/local-workspace.js'
+import type { LocalOptions, LocalInfo, LocalStatus, MemoryChange, MemoryWrite, MemorySnapshot, MemoryPolicy, PortChange, LocalDiagnostic } from '../shared/local-workspace.js'
 type Connection = { endpoint: string; credential: string; workspaceId: string; version: string }
 type Options = { executable: string; database: string; root: string; version: string; environment: NodeJS.ProcessEnv; desktopMemory?: () => number }
+
+export function localDiagnostic(input: unknown): LocalDiagnostic | undefined {
+  if (input === undefined) return undefined
+  if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Invalid setup diagnostic')
+  const value = input as LocalDiagnostic
+  if (Object.keys(value).some(key => !['category', 'locations', 'errno', 'winerror', 'sqlstate'].includes(key)) ||
+      !['unexpected', 'memory', 'dependency', 'operating_system', 'timeout', 'database'].includes(value.category) ||
+      [value.errno, value.winerror].some(code => code !== undefined && (!Number.isInteger(code) || code < 0 || code > 4294967295)) ||
+      (value.sqlstate !== undefined && (typeof value.sqlstate !== 'string' || !/^[A-Z0-9]{5}$/.test(value.sqlstate))) ||
+      !Array.isArray(value.locations) || value.locations.length > 8 || value.locations.some(location =>
+        !location || typeof location !== 'object' || Array.isArray(location) || Object.keys(location).sort().join(',') !== 'function,line,module' ||
+        typeof location.module !== 'string' || !/^mnemion(?:\.[a-z_][a-z0-9_]{0,63}){1,4}$/.test(location.module) ||
+        typeof location.function !== 'string' || !/^[A-Za-z_][A-Za-z0-9_]{0,63}$/.test(location.function) ||
+        !Number.isInteger(location.line) || location.line < 1 || location.line > 1000000)) throw new Error('Invalid setup diagnostic')
+  return structuredClone(value)
+}
 
 export function memoryOptions(input: unknown, revision = false): MemoryChange & { repair_token?: string } {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Choose automatic memory management or a RAM budget of at least 256 MiB.')
@@ -178,7 +194,7 @@ export class LocalWorkspace {
     if (info.memory_recovery) throw new Error('Repair the saved RAM budget before resuming this workspace.')
     this.intentionalStop = false
     this.connection = undefined
-    this.set({ state: 'starting', stage: 'starting', message: info.configured ? 'Opening your local workspace…' : 'Creating your local workspace…', errorCode: undefined })
+    this.set({ state: 'starting', stage: 'starting', message: info.configured ? 'Opening your local workspace…' : 'Creating your local workspace…', errorCode: undefined, diagnostic: undefined })
     const child = spawn(this.options.executable, this.command(options ? 'initialize' : 'run'), {
       env: this.options.environment, windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'],
     })
@@ -186,7 +202,7 @@ export class LocalWorkspace {
     const decoder = new StringDecoder('utf8')
     let pending = ''
     const invalid = () => {
-      this.set({ state: 'error', errorCode: 'invalid_runtime_response', message: 'The local runtime returned an invalid response. Your saved data has been retained.' })
+      this.set({ state: 'stopping', errorCode: 'invalid_runtime_response', message: 'The local runtime returned an invalid response. Your saved data has been retained.' })
       child.stdin.end('{"action":"stop"}\n')
     }
     child.stdout.on('data', (chunk: Buffer) => {
@@ -215,7 +231,9 @@ export class LocalWorkspace {
             this.set({ state: 'running', stage: 'ready', message: 'Your local workspace is ready.' })
             void this.inspect().catch(() => {})
           } else if (value.event === 'error' && typeof value.code === 'string' && value.code.length <= 64 && typeof value.message === 'string' && value.message.length <= 1000) {
-            this.set({ state: 'error', errorCode: value.code, message: value.message })
+            // The error can arrive before Python has closed its process/pipes.
+            // Keep repairs and Resume disabled until the host actually exits.
+            this.set({ state: 'stopping', errorCode: value.code, message: value.message, diagnostic: localDiagnostic(value.diagnostic) })
           } else if (value.event !== 'stopped') {
             invalid()
           }
@@ -234,7 +252,7 @@ export class LocalWorkspace {
     memoryTimer.unref()
     child.stderr.resume() // Raw Python/provider diagnostics can include private local paths.
     child.on('error', () => {
-      this.set({ state: 'error', errorCode: 'engine_start', message: 'The local runtime could not start. Reinstall the complete app; your saved data will remain in its separate folder.' })
+      this.set({ state: 'stopping', errorCode: 'engine_start', message: 'The local runtime could not start. Reinstall the complete app; your saved data will remain in its separate folder.' })
     })
     child.on('close', code => {
       clearInterval(memoryTimer)
@@ -242,6 +260,7 @@ export class LocalWorkspace {
       this.child = undefined
       this.connection = undefined
       if (this.intentionalStop) this.set({ state: 'stopped', stage: undefined, message: 'Local workspace paused. Your memories remain on this computer.', errorCode: undefined })
+      else if (this.statusValue.errorCode) this.set({ state: 'error' })
       else if (this.statusValue.state !== 'error') this.set({ state: 'error', errorCode: 'engine_stopped', message: code === 0 ? 'The local workspace stopped. Start it again to reconnect.' : 'The local workspace stopped unexpectedly. Retry to resume it; saved data has been retained.' })
       this.set({ memory: undefined })
       if (this.cancelledUpdateStop && this.updateResumeRequested) {

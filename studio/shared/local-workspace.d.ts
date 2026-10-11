@@ -37,4 +37,10 @@ export type LocalStatus = {
   available: boolean; state: 'new' | 'starting' | 'running' | 'stopping' | 'stopped' | 'error';
   stage?: string; message: string; info?: LocalInfo; errorCode?: string; memory?: MemorySnapshot;
   preferences?: { selected: boolean; startWithApp: boolean };
+  diagnostic?: LocalDiagnostic;
+}
+export type LocalDiagnostic = {
+  category: 'unexpected' | 'memory' | 'dependency' | 'operating_system' | 'timeout' | 'database';
+  errno?: number; winerror?: number; sqlstate?: string;
+  locations: Array<{ module: string; function: string; line: number }>;
 }

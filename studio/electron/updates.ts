@@ -2,7 +2,7 @@ import { app, net, powerMonitor, session, type BrowserWindow } from 'electron'
 import updaterPackage from 'electron-updater'
 import { join } from 'node:path'
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
-import { canRestartForUpdate, desktopExec, updateChannel } from './update-policy.js'
+import { updateRestartBlocker, desktopExec, updateChannel, type UpdateRestartBlocker } from './update-policy.js'
 import { MacUpdateBridge, type MacUpdateEvent } from './macos-updates.js'
 import { WindowsUpdateBridge, type WindowsUpdateEvent, type WindowsUpdateTrust } from './windows-updates.js'
 import { createWindowsUpdateFetch } from './windows-update-network.js'
@@ -19,6 +19,7 @@ export class DesktopUpdates {
   private checking = false
   private checkRequested = false
   private downloaded = false
+  private readyVersion?: string
   private installing = false
   private cancelDownload?: () => void
   private mac?: MacUpdateBridge
@@ -79,6 +80,7 @@ export class DesktopUpdates {
       autoUpdater.on('download-progress', progress => this.setStatus({ state: 'Downloading update', percent: Math.round(progress.percent) }))
       autoUpdater.on('update-downloaded', info => {
         this.downloaded = true
+        this.readyVersion = info.version
         this.setStatus({ state: 'Update ready · waiting for a safe restart', version: info.version })
       })
       autoUpdater.on('appimage-filename-updated', (filename: string) => {
@@ -106,6 +108,7 @@ export class DesktopUpdates {
 
   get enabled() { return this.supported && !this.managed && this.preferences.automaticUpdates }
   get policyManaged() { return this.managed }
+  get canRequestRestart() { return this.enabled && this.downloaded && !this.installing }
   get quitNeedsUpdateCleanup() {
     const updater = this.mac || this.windows
     return !!updater?.active && !updater.installing
@@ -115,6 +118,7 @@ export class DesktopUpdates {
     if (event.state === 'ready') {
       if (!this.enabled) { void (this.mac || this.windows)?.cancel(); return }
       this.downloaded = true
+      this.readyVersion = event.version
       this.setStatus({ state: 'Update ready · waiting for a safe restart', version: event.version })
     } else if (event.state === 'downloading') {
       if (this.enabled) this.setStatus({ state: 'Downloading update', version: event.version, percent: event.percent })
@@ -207,32 +211,53 @@ export class DesktopUpdates {
       if (this.checkRequested) { this.checkRequested = false; queueMicrotask(() => void this.check()) }
     }
   }
-  private async restartIsSafe(): Promise<boolean> {
+  private waitingToRestart(reason: UpdateRestartBlocker | 'window' | null) {
+    if (!this.enabled || !this.downloaded || !reason) return
+    const messages: Partial<Record<UpdateRestartBlocker | 'window', string>> = {
+      busy: 'Update ready · waiting for a workspace operation to finish',
+      work: 'Update ready · save your work and close open editors first',
+      focused: 'Update ready · waiting for Mnemion to be in the background',
+      inactivity: 'Update ready · waiting for 10 minutes of computer inactivity',
+      window: 'Update ready · waiting for the app to respond before checking open work',
+    }
+    const state = messages[reason]
+    if (state && (this.status.state !== state || this.status.version !== this.readyVersion)) {
+      this.setStatus({ state, version: this.readyVersion })
+    }
+  }
+  private async restartIsSafe(requested = false): Promise<boolean> {
     if (!this.enabled || !this.downloaded) return false
     const window = this.window()
     let safe = !window
     try { if (window) safe = await window.webContents.executeJavaScript('window.mnemion?.updateSafety?.() === true') }
-    catch { return false }
-    return canRestartForUpdate({ enabled: this.enabled, downloaded: this.downloaded,
+    catch { this.waitingToRestart('window'); return false }
+    const reason = updateRestartBlocker({ enabled: this.enabled, downloaded: this.downloaded,
       idleSeconds: powerMonitor.getSystemIdleTime(), focused: window?.isFocused() || false,
       visible: window?.isVisible() || false, minimized: window?.isMinimized() || false,
-      safe, busy: this.busy() })
+      safe, busy: this.busy() }, requested)
+    this.waitingToRestart(reason)
+    return reason === null
   }
-  async restartIfSafe() {
-    if (this.installing || !await this.restartIsSafe()) return
+  async restartIfSafe(requested = false) {
+    if (this.installing || !await this.restartIsSafe(requested)) return
     // A second timer can finish its renderer check while the first starts installing.
     if (this.installing) return
     this.installing = true
+    this.changed()
     try {
       // Close the managed service/database before replacing bundled runtimes.
       // Recheck drafts and real inactivity after that asynchronous shutdown.
-      if (!await this.beforeRestart() || !await this.restartIsSafe()) {
+      if (!await this.beforeRestart()) {
+        this.waitingToRestart('busy')
+        this.installing = false; this.restartCancelled(); return
+      }
+      if (!await this.restartIsSafe(requested)) {
         this.installing = false; this.restartCancelled(); return
       }
       if (this.mac) {
         if (!this.mac.install()) { this.installing = false; this.restartCancelled() }
       } else if (this.windows) {
-        const started = await this.windows.install(() => this.restartIsSafe())
+        const started = await this.windows.install(() => this.restartIsSafe(requested))
         if (started) app.quit()
         else { this.installing = false; this.restartCancelled() }
       } else {
@@ -242,6 +267,8 @@ export class DesktopUpdates {
       this.installing = false
       this.restartCancelled()
       this.setStatus({ state: 'Update could not restart safely · retry scheduled' })
+    } finally {
+      this.changed()
     }
   }
 }

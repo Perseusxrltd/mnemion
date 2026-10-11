@@ -23,7 +23,7 @@ export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Re
       do { const value = await check(); if (value) return value; await pause(100); } while (Date.now() < deadline);
       throw new Error(message);
     }
-    const button = text => [...document.querySelectorAll('button')].find(node => (node.querySelector('strong')?.textContent === text || node.textContent.trim() === text) && !node.disabled);
+    const button = text => [...document.querySelectorAll('button')].find(node => (node.querySelector('strong')?.textContent === text || node.textContent.trim() === text) && !node.matches(':disabled') && node.getClientRects().length);
     async function click(text) { (await until(() => button(text), 'Missing enabled control: ' + text)).click(); await pause(100); }
     async function input(selector, value) {
       const field = await until(() => document.querySelector(selector), 'Missing setup field');
@@ -51,7 +51,7 @@ export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Re
       await click('Create workspace');
       await until(async () => {
         const status = await bridge.localStatus();
-        if (status.state === 'error') throw new Error('Installed local setup failed: ' + status.errorCode + ' / ' + status.message);
+        if (status.state === 'error') throw new Error('Installed local setup failed: ' + status.errorCode + ' / stage ' + status.stage + ' / ' + status.message + ' / diagnostic ' + JSON.stringify(status.diagnostic));
         return status.state === 'running';
       }, 'The installed local runtime did not finish setup', 600000);
       await click('Open workspace');
@@ -60,7 +60,7 @@ export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Re
       await until(async () => {
         const status = await bridge.localStatus();
         if (status.state === 'error' && status.errorCode !== 'port_in_use') throw new Error('Unexpected port recovery failure: ' + status.errorCode);
-        return status.errorCode === 'port_in_use';
+        return status.state === 'error' && status.errorCode === 'port_in_use';
       }, 'The occupied local port did not reach its recovery screen', 180000);
       await until(() => document.querySelector('.ws-local-setup')?.textContent.includes('Another program is using this workspace'), 'The UI did not explain the local address conflict');
       await click('Save local address');

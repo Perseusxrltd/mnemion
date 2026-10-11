@@ -227,8 +227,10 @@ function quitApp() {
 
 function updateMenu(): MenuItemConstructorOptions[] {
   return [
-    { label: updates?.status.state || 'Automatic updates', enabled: false },
+    { label: updates?.status.version ? `${updates.status.state} · ${updates.status.version}` : updates?.status.state || 'Automatic updates', enabled: false },
     { label: 'Check for updates', enabled: !!updates?.enabled, click: () => { void updates?.check() } },
+    { label: 'Restart to update', enabled: !!updates?.canRequestRestart,
+      click: () => { void updates?.restartIfSafe(true) } },
     { label: 'Automatic updates and safe restarts', type: 'checkbox', checked: updates?.preferences.automaticUpdates ?? true,
       enabled: !updates?.policyManaged, click: item => updates?.setPreference('automaticUpdates', item.checked) },
     { label: 'Start at login', type: 'checkbox', checked: updates?.preferences.startAtLogin ?? true,

@@ -711,15 +711,18 @@ def dispatch(args) -> int:
                 "data_retained": True,
             }
         )
-    except Exception:
+    except Exception as error:
         # Database, inference and provider exceptions can contain private paths,
         # DSNs or source text. Only reviewed messages cross this operator pipe.
+        from .local_diagnostics import failure_diagnostic
+
         emit(
             {
                 "event": "error",
                 "code": "setup_failed",
                 "message": "Local setup could not finish. Check the network, available memory and disk, then retry. Existing data has been retained.",
                 "data_retained": True,
+                "diagnostic": failure_diagnostic(error),
             }
         )
     return 1

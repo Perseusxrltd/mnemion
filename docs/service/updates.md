@@ -3,7 +3,8 @@
 Platform v1 uses the **4.x** package series. Version **4.0.3** adds Windows ARM64;
 release targets now cover Windows, macOS and Linux on x64 and ARM64. Download published installers from
 [the official product page](https://www.perseusxr.com/mnemion).
-See [the patch notes](../releases/4.0.8.md) for current changes and measured limits.
+See [the published releases](https://github.com/Perseusxrltd/mnemion/releases)
+for changes and measured limits.
 
 Official Studio installations enable automatic stable updates, background mode
 and launch at login by default. Preferences are in the application or tray menu,
@@ -76,6 +77,13 @@ input remains open. Close a completed editor or navigate away to release its
 draft guard. On Mac and Windows, a normal quit cancels a staged update; a later check can
 retry it. This prevents a cancelled update from installing after the app exits.
 On AppImage, a downloaded update can also install during a normal quit.
+
+The 4.0.11 candidate adds **Restart to update** to **Background and updates**
+once a verified update is downloaded. This deliberate restart skips the idle
+and focus wait for that attempt; it still checks unsaved work, active transfers,
+local workspace shutdown and update policy before installation. The menu shows
+the target version and why automatic restart is waiting. A busy or unresponsive
+app keeps the update staged instead of forcing replacement.
 
 Version 4.0.11 corrects a Linux case where Electron keeps its focused flag on a
 hidden, minimized window. The [controlled comparison](../validation/2026-10-11-linux-update-focus.md)
