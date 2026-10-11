@@ -1,0 +1,68 @@
+name: Linux updater developer diagnostic
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Published source version to inspect (this is NOT an acceptance gate)
+        type: string
+        default: v4.0.9
+
+permissions:
+  contents: read
+
+jobs:
+  diagnostic:
+    name: Linux ${{ matrix.arch }} restart guards
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-24.04, arch: x64 }
+          - { os: ubuntu-24.04-arm, arch: arm64 }
+    env:
+      GH_TOKEN: ${{ github.token }}
+      MNEMION_DIAGNOSTIC_TAG: ${{ inputs.tag }}
+      MNEMION_DIAGNOSTIC_ARCH: ${{ matrix.arch }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+      - run: python -m pip install psutil==7.2.2
+      - run: npm --prefix studio/electron ci --ignore-scripts
+      - name: Linux desktop libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb openbox x11-utils dbus-x11 libgtk-3-0 libnss3 libgbm1 libasound2 libnotify4 libfuse2
+      - name: Inspect a separate instrumented copy
+        run: |
+          dbus-run-session -- xvfb-run -a bash -c '
+            set -euo pipefail
+            openbox --sm-disable >"$RUNNER_TEMP/window-manager.log" 2>&1 &
+            mnemion_wm_pid=$!
+            trap '\''kill "$mnemion_wm_pid" 2>/dev/null || true'\'' EXIT
+            mnemion_wm_ready=false
+            for mnemion_attempt in {1..100}; do
+              if xprop -root _NET_SUPPORTING_WM_CHECK 2>/dev/null | rg -q "window id # 0x"; then
+                mnemion_wm_ready=true; break
+              fi
+              sleep 0.2
+            done
+            test "$mnemion_wm_ready" = true
+            python -m deploy.linux_update_diagnostic --tag "$MNEMION_DIAGNOSTIC_TAG" --arch "$MNEMION_DIAGNOSTIC_ARCH" --output "$RUNNER_TEMP/mnemion-update-diagnostic"
+          '
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: developer-update-diagnostic-${{ matrix.arch }}
+          path: |
+            ${{ runner.temp }}/mnemion-update-diagnostic/diagnostic.json
+            ${{ runner.temp }}/mnemion-update-diagnostic/snapshots.jsonl
+            ${{ runner.temp }}/mnemion-update-diagnostic/application.log
+          retention-days: 7
