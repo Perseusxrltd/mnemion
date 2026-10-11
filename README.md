@@ -13,8 +13,9 @@ never gates downloads, usage or access.
 
 **Mnemion 4.0 is the first release of the rebuilt shared-memory platform.**
 Download published builds from [the official product page](https://www.perseusxr.com/mnemion).
-The [4.0.9 patch](docs/releases/4.0.9.md) adds OS-protected saved desktop
-connections, identity-checked reopening after restart and a clearer connection
+The [4.0.10 patch](docs/releases/4.0.10.md) adds a [live 3D memory map](docs/service/memory-map.md),
+recorded agent activity and [connection diagnostics](docs/service/connection-diagnostics.md).
+It retains OS-protected saved desktop connections, identity-checked reopening after restart and a clearer connection
 screen. [Workspace controls](docs/service/workspaces.md) explain remembering,
 disconnecting and forgetting a device connection. Complete fresh-machine setup
 through the app remains [active work](docs/implementation/app-onboarding.md).
@@ -180,7 +181,7 @@ and performance independently verified in this implementation.
 
 Open **Documentation & roadmap** in Studio, or use the setup screen’s help link.
 The offline library ships the same Markdown as this repository. See the
-[product roadmap](docs/ROADMAP.md), [release notes](docs/releases/4.0.9.md), and
+[product roadmap](docs/ROADMAP.md), [release notes](docs/releases/4.0.10.md), and
 [documentation maintenance policy](docs/MAINTENANCE.md). Every release and hotfix
 must include matching release notes and a reviewed roadmap.
 

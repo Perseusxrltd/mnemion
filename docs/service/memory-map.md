@@ -1,7 +1,6 @@
 # Live memory map
 
-The new **Memory map & wiki → Live memory map** view is implemented on `main`
-for the next release after 4.0.9. It is part of the same Studio frontend in the
+From **4.0.10**, use **Memory map & wiki → Live memory map**. It is part of the same Studio frontend in the
 browser and desktop app. Published 4.0.9 still has the earlier evidence graph.
 
 Use the map to follow subjects and ideas into actual memories and their sources.

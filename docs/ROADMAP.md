@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Current distribution: **4.0.9**. Updated: **2026-10-11**.
+Current distribution: **4.0.10**. Updated: **2026-10-11**.
 
 The [complete requirements checklist](PRODUCT_REQUIREMENTS.md) preserves every
 requested product area, its delivery state and remaining acceptance checks.
@@ -9,11 +9,11 @@ native onboarding and RAM controls, company sign-in and independent host access,
 Dot/Grokbot/Claude/Hermes/OpenClaw integrations, automatic cross-app capture and
 the requested live 3D memory/activity map.
 
-New on `main`, pending the next native release: [bounded connection diagnosis](service/connection-diagnostics.md)
+Version 4.0.10 adds: [bounded connection diagnosis](service/connection-diagnostics.md)
 and the [live 3D memory map](service/memory-map.md). The map includes browser/desktop
 orbit, full-screen inspection, evidence links, creator/time filters, recorded
 activity, a compact 2D/list path and periodic authorized refresh. It retains the
-wiki, earlier evidence graph and Obsidian workflows. Public 4.0.9 does not yet
+wiki, earlier evidence graph and Obsidian workflows. Use the official product page for published packages; 4.0.9 does not
 include these additions.
 
 Version 4.0.9 adds OS-encrypted saved desktop connections, authenticated
@@ -34,7 +34,7 @@ downloads. Each architecture requires its complete verified installer/update set
 The rebuilt shared-memory platform is product v1; its package version is 4.x
 to upgrade correctly from the earlier 3.x product. This is a living delivery
 plan, not a claim that every planned capability is available. Release status and
-known limitations are recorded in [the current patch notes](releases/4.0.9.md),
+known limitations are recorded in [the current patch notes](releases/4.0.10.md),
 [the published baseline](releases/4.0.0.md) and
 [validation report](validation/2026-10-11-hotfixes.md).
 

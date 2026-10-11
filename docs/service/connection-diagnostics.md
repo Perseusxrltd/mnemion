@@ -20,7 +20,7 @@ diagnostic below from a machine allowed to reach the workspace.
 
 ## Read-only diagnostic for people and agents
 
-This command is included in the next patch after 4.0.9 (available from `main`).
+This command is included from version 4.0.10.
 Use the private credentials JSON from setup; the key is never a command argument:
 
 ```sh

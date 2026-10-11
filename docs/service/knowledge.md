@@ -1,6 +1,6 @@
 # Evidence wiki, graph and curation
 
-The next patch after 4.0.9 adds the [live 3D memory map](memory-map.md) on `main`,
+Version 4.0.10 adds the [live 3D memory map](memory-map.md),
 with browser/desktop orbit, filters, original evidence, recorded activity and a
 2D/list fallback. The wiki and earlier evidence graph below remain available.
 

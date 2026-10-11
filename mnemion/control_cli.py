@@ -91,7 +91,10 @@ def connection(
             "invalid_api_url",
             "Use a public HTTPS API address or loopback HTTP without credentials, query or fragment",
         ) from None
-    return address.rstrip("/").removesuffix("/v1").removesuffix("/mcp"), key
+    base = address.rstrip("/")
+    if base.endswith(("/v1", "/mcp")):
+        base = base.rsplit("/", 1)[0]
+    return base, key
 
 
 def main(argv: list[str] | None = None) -> int:

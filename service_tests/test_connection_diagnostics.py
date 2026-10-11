@@ -212,6 +212,10 @@ def test_cli_accepts_api_or_mcp_addresses_but_rejects_unsafe_credentials_urls(mo
         assert control_cli.connection(
             None, "https://test.invalid/team" + suffix, require_key=False
         ) == ("https://test.invalid/team", None)
+    assert control_cli.connection(None, "https://test.invalid/mcp/v1", require_key=False) == (
+        "https://test.invalid/mcp",
+        None,
+    )
     for address in (
         "http://test.invalid",
         "https://test.invalid/?key=secret",

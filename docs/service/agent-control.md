@@ -3,7 +3,7 @@
 Use `mnemion-control --credentials /private/workspace.json doctor` for a bounded,
 read-only connection report. See [connection and recovery](connection-diagnostics.md)
 for offline hosts, rejected credentials, space access and MCP checks. This
-diagnostic is available on `main` for the next patch after 4.0.9.
+diagnostic is available from version 4.0.10.
 
 From **4.0.4**, agents can discover and use every existing HTTP operation through
 a reviewed catalog, a command-line client and four compact MCP tools. Version
