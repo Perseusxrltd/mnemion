@@ -161,6 +161,12 @@ process/filesystem observations record the eventual version and installed bytes.
 These modified ASAR copies remain developer experiments, never public-release
 acceptance evidence.
 
+The `launch` comparison keeps the original timers and traces their actual restart
+guard values on both an extracted copy and a mounted diagnostic AppImage. The
+latter retains the verified public runtime prefix and repacks only a private
+copy of its filesystem. Both launch paths use real inactivity and production
+feeds, without a debugger; neither modified copy is public acceptance evidence.
+
 The runner has no user workspace, production memory credentials or signing
 secret. Native fixture checks still cover cancellation, malicious updates,
 interrupted downloads and restart guards before publication. The public rehearsal

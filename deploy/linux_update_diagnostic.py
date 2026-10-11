@@ -16,6 +16,7 @@ import os
 from pathlib import Path
 import platform
 import re
+import shutil
 import subprocess
 import threading
 import time
@@ -99,12 +100,19 @@ def observe(tag: str, architecture: str, root: Path, mode: str = "inspect") -> N
         "mode": mode,
     }
     (root / "diagnostic.json").write_text(json.dumps(evidence, indent=2) + "\n")
-    env.update(APPIMAGE=str(image), APPDIR=str(bundle))
+    if mode == "mounted-guards":
+        repack(image, bundle, env)
+        with image.open("rb") as handle:
+            evidence["diagnostic_appimage_sha256"] = hashlib.file_digest(
+                handle, "sha256"
+            ).hexdigest()
+    else:
+        env.update(APPIMAGE=str(image), APPDIR=str(bundle))
     started = time.time()
     log: deque[bytes] = deque(maxlen=16)
     child = subprocess.Popen(
         [
-            str(bundle / "AppRun"),
+            str(image if mode == "mounted-guards" else bundle / "AppRun"),
             *(["--inspect=127.0.0.1:0"] if mode == "inspect" else []),
             "--background",
         ],
@@ -191,13 +199,56 @@ def process_versions(image: Path, started: float) -> list[str]:
     return sorted(result)
 
 
+def repack(image: Path, bundle: Path, env: dict) -> None:
+    """Retain the copied public runtime and mount a diagnostic-only filesystem."""
+    offset = int(subprocess.check_output([str(image), "--appimage-offset"], env=env, timeout=10))
+    if not 1024 <= offset <= 4 * 1024**2:
+        raise ValueError("Review the changed AppImage runtime boundary")
+    filesystem = bundle.parent / "diagnostic.squashfs"
+    subprocess.run(
+        [
+            "mksquashfs",
+            str(bundle),
+            str(filesystem),
+            "-noappend",
+            "-comp",
+            "gzip",
+            "-processors",
+            "2",
+            "-no-progress",
+        ],
+        check=True,
+        capture_output=True,
+        timeout=180,
+    )
+    replacement = image.with_suffix(".diagnostic")
+    with (
+        image.open("rb") as source,
+        replacement.open("xb") as target,
+        filesystem.open("rb") as payload,
+    ):
+        target.write(source.read(offset))
+        shutil.copyfileobj(payload, target)
+    replacement.chmod(0o755)
+    replacement.replace(image)
+    filesystem.unlink()
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--tag", required=True)
     parser.add_argument("--arch", choices=["x64", "arm64"], required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument(
-        "--mode", choices=["inspect", "original-timers", "referenced-timers"], default="inspect"
+        "--mode",
+        choices=[
+            "inspect",
+            "original-timers",
+            "referenced-timers",
+            "mounted-guards",
+            "extracted-guards",
+        ],
+        default="inspect",
     )
     args = parser.parse_args()
     observe(args.tag, args.arch, args.output, args.mode)

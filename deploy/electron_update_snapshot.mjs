@@ -18,7 +18,7 @@ if (['--prepare', '--prepare-timers'].includes(process.argv[2])) {
     const mode = process.argv[4];
     const trace = resolve(process.argv[5]);
     const tracePath = relative(parent, trace);
-    if (!['original-timers', 'referenced-timers'].includes(mode) || !tracePath || tracePath.startsWith('..') || isAbsolute(tracePath)) {
+    if (!['original-timers', 'referenced-timers', 'mounted-guards', 'extracted-guards'].includes(mode) || !tracePath || tracePath.startsWith('..') || isAbsolute(tracePath)) {
       throw new Error('Invalid isolated timer experiment');
     }
     const { extractAll, createPackageWithOptions } = require('@electron/asar');
@@ -36,6 +36,13 @@ if (['--prepare', '--prepare-timers'].includes(process.argv[2])) {
         const unref = /for \(const timer of this\.timers\)\s*timer\.unref\(\);/g;
         if ([...code.matchAll(unref)].length !== 1) throw new Error('Review the changed timer references');
         code = code.replace(unref, '// Keep the existing timers referenced for this controlled experiment.');
+      }
+      if (mode.endsWith('-guards')) {
+        const guard = /return canRestartForUpdate\((\{[\s\S]*?\})\);/g;
+        if ([...code.matchAll(guard)].length !== 1) throw new Error('Review the changed restart guard implementation');
+        code = code.replace(guard, (_match, decision) => `const diagnosticGuard = ${decision};
+          diagnosticAppend(${JSON.stringify(trace)}, JSON.stringify({ time: Date.now(), stage: 'restart-guards', ...diagnosticGuard }) + '\\n');
+          return canRestartForUpdate(diagnosticGuard);`);
       }
       writeFileSync(module, code);
       await createPackageWithOptions(work, binary, {});

@@ -8,10 +8,10 @@ on:
         type: string
         default: v4.0.9
       experiment:
-        description: Inspector observations or a controlled timer-reference comparison
+        description: Inspector, timer-reference comparison, or mounted/extracted launch comparison
         type: choice
         default: inspect
-        options: [inspect, timers]
+        options: [inspect, timers, launch]
 
 permissions:
   contents: read
@@ -24,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJSON(inputs.experiment == 'timers' && '[{"os":"ubuntu-22.04","arch":"x64","mode":"original-timers"},{"os":"ubuntu-22.04","arch":"x64","mode":"referenced-timers"},{"os":"ubuntu-22.04-arm","arch":"arm64","mode":"original-timers"},{"os":"ubuntu-22.04-arm","arch":"arm64","mode":"referenced-timers"}]' || '[{"os":"ubuntu-22.04","arch":"x64","mode":"inspect"},{"os":"ubuntu-22.04-arm","arch":"arm64","mode":"inspect"}]') }}
+        include: ${{ fromJSON(inputs.experiment == 'launch' && '[{"os":"ubuntu-22.04","arch":"x64","mode":"mounted-guards"},{"os":"ubuntu-22.04","arch":"x64","mode":"extracted-guards"},{"os":"ubuntu-22.04-arm","arch":"arm64","mode":"mounted-guards"},{"os":"ubuntu-22.04-arm","arch":"arm64","mode":"extracted-guards"}]' || inputs.experiment == 'timers' && '[{"os":"ubuntu-22.04","arch":"x64","mode":"original-timers"},{"os":"ubuntu-22.04","arch":"x64","mode":"referenced-timers"},{"os":"ubuntu-22.04-arm","arch":"arm64","mode":"original-timers"},{"os":"ubuntu-22.04-arm","arch":"arm64","mode":"referenced-timers"}]' || '[{"os":"ubuntu-22.04","arch":"x64","mode":"inspect"},{"os":"ubuntu-22.04-arm","arch":"arm64","mode":"inspect"}]') }}
     env:
       GH_TOKEN: ${{ github.token }}
       MNEMION_DIAGNOSTIC_TAG: ${{ inputs.tag }}
@@ -43,7 +43,7 @@ jobs:
       - name: Linux desktop libraries
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb openbox x11-utils dbus-x11 libgtk-3-0 libnss3 libgbm1 libasound2 libnotify4 libfuse2
+          sudo apt-get install -y xvfb openbox x11-utils dbus-x11 libgtk-3-0 libnss3 libgbm1 libasound2 libnotify4 libfuse2 squashfs-tools
       - name: Inspect a separate instrumented copy
         run: |
           dbus-run-session -- xvfb-run -a bash -c '
