@@ -104,6 +104,22 @@ managed-device and OS-version checks continue after this measured baseline.
 Keep source, web and local development paths documented. See the
 [code signing policy](CODE_SIGNING.md).
 
+## Complete setup from the app
+
+Priority added on 2026-10-11: every required installation, configuration and
+recovery step must have a clear, resumable path in Studio. A clean supported
+computer must be able to create a local workspace, join a team, configure an
+organization host or restore a backup without a terminal being the required
+completion path. Models, sources, access, agents, Obsidian, updates and backups
+belong in the same guided flow, with real readiness checks and optional steps
+that can be revisited. Keep equivalent agent/operator operations available.
+
+This is **not complete in 4.0.8**: the desktop client joins an existing service;
+database/runtime installation and several host-only settings still need operator
+setup. Secure resumable connections and native runtime provisioning are the next
+implementation steps. See the [full acceptance requirements](implementation/app-onboarding.md).
+Do not count a setup guide, mock success or disabled button as an implemented flow.
+
 ## Next patches: reliability and operational confidence
 
 Priority is defects found in installation, access control, recovery, migration,
