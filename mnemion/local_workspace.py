@@ -352,9 +352,12 @@ async def _serve(
 
         def process():
             try:
+                # Readiness means the already-open worker can run. A resumed
+                # workspace may have hours of queued indexing; draining that
+                # queue must not prevent access to its durable memories.
+                worker_ready.set()
                 while not worker_stop.is_set():
                     if not processor.run_once():
-                        worker_ready.set()
                         worker_stop.wait(0.25)
             except Exception:
                 worker_failure.set()
@@ -408,6 +411,11 @@ async def _serve(
                         "The local memory service did not become ready. Retry to resume your workspace.",
                     )
                 await asyncio.sleep(0.1)
+            if stop.is_set():
+                raise state.LocalSetupError(
+                    "service_start",
+                    "The local memory service stopped before its checks. Retry to resume your workspace.",
+                )
             endpoint = "http://127.0.0.1:" + str(settings["port"])
             emit(
                 {
@@ -417,6 +425,11 @@ async def _serve(
                 }
             )
             await asyncio.to_thread(_verify, root, endpoint, credentials, settings, registry)
+            if stop.is_set() or worker_failure.is_set() or serving.done():
+                raise state.LocalSetupError(
+                    "service_start",
+                    "The local memory service stopped during its checks. Retry to resume your workspace.",
+                )
             emit(
                 {
                     "event": "ready",
@@ -452,11 +465,12 @@ async def _serve(
 
 
 def _verify(root: Path, endpoint: str, credentials: dict, settings: dict, registry) -> None:
-    from .sdk import Client
+    from .sdk import Client, MnemionError
 
     generation_id = registry.default.generation.id
-    semantic = registry.memory_budget.can_schedule(registry.default)
-    with Client(endpoint, credentials["api_key"]) as client:
+    semantic = False
+    indexed = False
+    with Client(endpoint, credentials["api_key"], retries=0) as client:
         identity = client.request("GET", "/v1/me")
         if (
             identity["tenant_id"] != credentials["tenant_id"]
@@ -470,7 +484,9 @@ def _verify(root: Path, endpoint: str, credentials: dict, settings: dict, regist
             raise state.LocalSetupError(
                 "model_identity", "The workspace model did not match the selected profile."
             )
-        if not (root / "readiness.json").exists():
+        first_start = not (root / "readiness.json").exists()
+        receipt = None
+        if first_start:
             receipt = client.save(
                 credentials["space_id"],
                 "Welcome to your private Mnemion workspace. You can save memories, connect your sources, and give each assistant access to the spaces it needs.",
@@ -479,25 +495,55 @@ def _verify(root: Path, endpoint: str, credentials: dict, settings: dict, regist
                 metadata={"origin": "workspace-setup"},
                 idempotency_key="local-welcome-" + settings["workspace_id"],
             )
-            if semantic:
-                operation = client.wait(str(receipt.operation_id), timeout=60)
-            else:
-                operation = {"state": "accepted"}
-            if semantic and operation["state"] != "ready":
-                raise state.LocalSetupError(
-                    "index_verification",
-                    "Your welcome memory was saved, but indexing needs a retry. Setup will resume without duplicating it.",
-                )
-            found = client.search(
-                "private workspace assistants",
-                [credentials["space_id"]],
-                mode="semantic" if semantic else "lexical",
+
+        # Query on every start, even when a previous readiness record exists.
+        # A restart does not recreate a welcome note the owner may have deleted
+        # or add a new probe to the durable indexing queue.
+        found = client.search("private workspace", [credentials["space_id"]], mode="lexical")
+        if receipt is not None and not any(
+            str(hit.memory_id) == str(receipt.memory_id) for hit in found.hits
+        ):
+            raise state.LocalSetupError(
+                "search_verification",
+                "The saved welcome memory was not returned by keyword search. Retry before adding more sources.",
             )
-            if not any(str(hit.memory_id) == str(receipt.memory_id) for hit in found.hits):
-                raise state.LocalSetupError(
-                    "search_verification",
-                    "The saved welcome memory was not returned by semantic search. Retry before adding more sources.",
+        selected = registry.get(found.index.generation_id)
+        if registry.memory_budget.can_schedule(selected):
+            if receipt is not None:
+                operation = client.wait(str(receipt.operation_id), timeout=60)
+                if operation["state"] != "ready":
+                    raise state.LocalSetupError(
+                        "index_verification",
+                        "Your welcome memory was saved, but indexing needs a retry. Setup will resume without duplicating it.",
+                    )
+            try:
+                found = client.search(
+                    "private workspace", [credentials["space_id"]], mode="semantic"
                 )
+            except MnemionError as error:
+                # A live reduction may arrive after admission. Preserve
+                # keyword access without recording unperformed inference as
+                # successful. Other service errors still fail readiness.
+                reduced = error.code == "embedding_unavailable" and (
+                    not registry.memory_budget.can_schedule(selected)
+                    or (
+                        hasattr(selected, "_model")
+                        and not registry.memory_budget.can_infer(selected)
+                    )
+                )
+                busy = not first_start and error.code == "inference_busy"
+                if not (reduced or busy):
+                    raise
+            else:
+                semantic = True
+                indexed = bool(found.hits)
+                if receipt is not None and not any(
+                    str(hit.memory_id) == str(receipt.memory_id) for hit in found.hits
+                ):
+                    raise state.LocalSetupError(
+                        "search_verification",
+                        "The saved welcome memory was not returned by semantic search. Retry before adding more sources.",
+                    )
         state.write(
             root / "readiness.json",
             {
@@ -510,8 +556,9 @@ def _verify(root: Path, endpoint: str, credentials: dict, settings: dict, regist
                 "separate_database_roles": True,
                 "worker": True,
                 "authenticated_api": True,
+                "lexical_search": True,
                 "model_inference": semantic,
-                "semantic_index": semantic,
+                "semantic_index": indexed,
                 "shared_inference_process": True,
             },
         )
