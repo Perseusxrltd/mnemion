@@ -59,7 +59,10 @@ complete installation or host setup.
    fixed, typed operations rather than arbitrary shell execution.
 2. PostgreSQL, Python and source runners need manual installation. Build and
    validate signed native runtime packages, including the database's vector
-   extension, and make staging resumable with bounded resources.
+   extension, and make staging resumable with bounded resources. The
+   [native database foundation](native-local-runtime.md) now has a source-pinned
+   builder and a passing local Linux runtime probe; the complete platform
+   matrix, signed installer integration and portable service remain required.
 3. Host-only settings currently require environment files or CLI commands.
    Add authenticated operator workflows for model/provider approval, source
    runners, server lifecycle, update adoption, diagnostics and recovery.

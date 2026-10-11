@@ -1,0 +1,107 @@
+name: Native local database
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, 'codex/**']
+    paths:
+      - '.github/workflows/native-runtime.yml'
+      - 'deploy/native-postgres.json'
+      - 'deploy/build_native_postgres.py'
+      - 'deploy/probe_native_postgres.py'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/native-runtime.yml'
+      - 'deploy/native-postgres.json'
+      - 'deploy/build_native_postgres.py'
+      - 'deploy/probe_native_postgres.py'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-runtime-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Database / ${{ matrix.target }} / ${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-22.04, target: linux, arch: x64 }
+          - { os: ubuntu-22.04-arm, target: linux, arch: arm64 }
+          - { os: macos-15, target: macos, arch: arm64 }
+          - { os: macos-15-intel, target: macos, arch: x64 }
+          - { os: windows-2022, target: windows, arch: x64 }
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Linux build tools
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential bison flex perl
+      - name: Mac parser generators
+        if: runner.os == 'macOS'
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: '1'
+        run: |
+          brew install bison flex
+          echo "$(brew --prefix bison)/bin" >> "$GITHUB_PATH"
+          echo "$(brew --prefix flex)/bin" >> "$GITHUB_PATH"
+      - name: Windows compiler environment
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $installation = & "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe" -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $installation) { throw 'A native MSVC compiler is required on the build runner.' }
+          Import-Module "$installation/Common7/Tools/Microsoft.VisualStudio.DevShell.dll"
+          Enter-VsDevShell -VsInstallPath $installation -SkipAutomaticLocation -DevCmdArguments '-arch=x64 -host_arch=x64'
+          foreach ($name in @('PATH', 'INCLUDE', 'LIB', 'LIBPATH', 'VSINSTALLDIR', 'VCINSTALLDIR', 'VCToolsInstallDir', 'WindowsSdkDir', 'WindowsSDKVersion')) {
+            $value = [Environment]::GetEnvironmentVariable($name)
+            if ($value) { "$name=$value" >> $env:GITHUB_ENV }
+          }
+          python -m pip install meson==1.12.1 ninja==1.13.2
+      - name: Compile pinned PostgreSQL, vector extension and static libraries
+        run: python -m deploy.build_native_postgres --work "${{ runner.temp }}/native-postgres-work" --cache "${{ runner.temp }}/native-postgres-sources" --output build-tmp/native-postgres
+      - name: Relocate, initialize, verify TLS and RLS, restore backup and recover a crash
+        run: python -c "import json; from pathlib import Path; from deploy.probe_native_postgres import probe; archives=list(Path('build-tmp/native-postgres').glob('*.zip')); assert len(archives)==1; print(json.dumps(probe(archives[0], Path('build-tmp/native-postgres/probe.json'))))"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: native-postgres-${{ matrix.target }}-${{ matrix.arch }}
+          retention-days: 1
+          if-no-files-found: error
+          path: |
+            build-tmp/native-postgres/*.zip
+            build-tmp/native-postgres/probe.json
+
+  windows_arm:
+    name: Database / Windows ARM host / x64 engine
+    needs: build
+    runs-on: windows-11-arm
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.13'
+          architecture: arm64
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: native-postgres-windows-x64
+          path: build-tmp/native-postgres
+      - name: Verify the actual x64 engine under Windows ARM emulation
+        run: python -c "import json; from pathlib import Path; from deploy.probe_native_postgres import probe; archives=list(Path('build-tmp/native-postgres').glob('*.zip')); assert len(archives)==1; result=probe(archives[0], Path('build-tmp/native-postgres/probe-arm.json')); assert result['emulated'] and result['host_architecture']=='arm64'; print(json.dumps(result))"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: native-postgres-windows-arm-evidence
+          retention-days: 1
+          if-no-files-found: error
+          path: build-tmp/native-postgres/probe-arm.json

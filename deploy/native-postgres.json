@@ -1,0 +1,40 @@
+{
+  "format": 1,
+  "postgresql": {
+    "version": "18.6",
+    "url": "https://ftp.postgresql.org/pub/source/v18.6/postgresql-18.6.tar.bz2",
+    "sha256": "555610c24d53e4316da5b7d3fc25c279d96856d5e0e23ee308c328c5fa881d9f",
+    "root": "postgresql-18.6",
+    "license": "COPYRIGHT"
+  },
+  "pgvector": {
+    "version": "0.8.7",
+    "commit": "f37c13f68b57d2c3472b2214fbcff699d6d34876",
+    "url": "https://codeload.github.com/pgvector/pgvector/tar.gz/f37c13f68b57d2c3472b2214fbcff699d6d34876",
+    "sha256": "83d673c3b287cddbf3879f86215f043f2c2b56c69d37b2a77504910db1ed6e56",
+    "root": "pgvector-f37c13f68b57d2c3472b2214fbcff699d6d34876",
+    "license": "LICENSE"
+  },
+  "zlib": {
+    "version": "1.3.2",
+    "url": "https://github.com/madler/zlib/releases/download/v1.3.2/zlib-1.3.2.tar.gz",
+    "sha256": "bb329a0a2cd0274d05519d61c667c062e06990d72e125ee2dfa8de64f0119d16",
+    "root": "zlib-1.3.2",
+    "license": "LICENSE"
+  },
+  "openssl": {
+    "version": "3.5.9",
+    "url": "https://github.com/openssl/openssl/releases/download/openssl-3.5.9/openssl-3.5.9.tar.gz",
+    "sha256": "603f5602e2eef00d77fbd429d34dcd5822bb301757a1bc9cdb24c670f1eb859a",
+    "root": "openssl-3.5.9",
+    "license": "LICENSE.txt"
+  },
+  "build_tools": {
+    "meson": "1.12.1",
+    "ninja": "1.13.2",
+    "win_flex_bison": {
+      "url": "https://github.com/lexxmark/winflexbison/releases/download/v2.5.25/win_flex_bison-2.5.25.zip",
+      "sha256": "8d324b62be33604b2c45ad1dd34ab93d722534448f55a16ca7292de32b6ac135"
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "date": "2026-10-11",
+  "stage": "development database foundation",
+  "published": false,
+  "signed_runtime_catalog": false,
+  "complete_app_onboarding": false,
+  "local_host": "Ubuntu 24.04 x64 in WSL; not the Linux release baseline",
+  "archive": {
+    "name": "mnemion-postgres-18.6-linux-x64.zip",
+    "bytes": 36122844,
+    "sha256": "b881dce0b5e303c05e610131c40e82538b20c48a0dc29d76e3bb3a64943c6e06"
+  },
+  "archive_policy_tests": 7,
+  "native_database": {
+    "passed": true,
+    "postgresql": "postgres (PostgreSQL) 18.6",
+    "pgvector": "0.8.7",
+    "openssl": "OpenSSL 3.5.9 29 Sep 2026 (Library: OpenSSL 3.5.9 29 Sep 2026)",
+    "platform": "linux",
+    "host_architecture": "x64",
+    "runtime_architecture": "x64",
+    "emulated": false,
+    "relocated_path_with_spaces": true,
+    "unicode_data_path": true,
+    "file_inventory_verified": true,
+    "tls_certificate_verified": true,
+    "data_checksums": true,
+    "vector_search": true,
+    "rls_read_isolation": true,
+    "rls_write_rejected": true,
+    "gzip_backup_restored": true,
+    "immediate_shutdown_recovery": true,
+    "scope": "Disposable local database; app installation and complete service/model setup are separate gates."
+  },
+  "all_platform_matrix": "required; native-runtime.yml"
+}
