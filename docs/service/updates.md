@@ -3,7 +3,7 @@
 Platform v1 uses the **4.x** package series. Version **4.0.3** adds Windows ARM64;
 release targets now cover Windows, macOS and Linux on x64 and ARM64. Download published installers from
 [the official product page](https://www.perseusxr.com/mnemion).
-See [the patch notes](../releases/4.0.5.md) for current changes and measured limits.
+See [the patch notes](../releases/4.0.7.md) for current changes and measured limits.
 
 Official Studio installations enable automatic stable updates, background mode
 and launch at login by default. Preferences are in the application or tray menu,
@@ -104,8 +104,10 @@ deployed **server**, including an installation launched with `uv run`. Updating
 Studio alone cannot patch it. Source deployments can use a reviewed release
 checkout, `uv sync --locked`, and their existing process supervisor; keep the
 previous checkout and deployment backup for rollback. No new database migration
-is introduced in 4.0.2. Managed server update/restart/rollback and non-systemd
-supervision are tracked in issues 6/11 and are not yet an automatic service feature.
+is introduced in 4.0.2. From 4.0.7, the [Supervisor setup](supervision.md) manages
+the API and worker on Linux/macOS without systemd, with crash recovery and
+cron/launchd startup configuration. It does not install new software. Verified
+server update staging, backups and safe rollback remain tracked in issue 11.
 
 Version 4.0.5's source-sync controls require the updated runner and a coordinated
 server upgrade with migration `012_connector_sync_requests.sql`. Follow the

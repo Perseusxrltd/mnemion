@@ -73,6 +73,13 @@ def main(argv: list[str] | None = None) -> int:
         "studio", help="Inspect or build the web Studio without database credentials"
     )
     studio.add_argument("action", choices=["status", "build"], nargs="?", default="status")
+    from .supervision import arguments as supervision_arguments
+
+    supervision_arguments(
+        commands.add_parser(
+            "supervise", help="Manage a private Supervisor instance on Linux/macOS without systemd"
+        )
+    )
     worker = commands.add_parser("worker", help="Run durable indexing and deletion work")
     worker.add_argument("--once", action="store_true")
     prepare = commands.add_parser(
@@ -217,7 +224,11 @@ def main(argv: list[str] | None = None) -> int:
         ):
             if values.get(key):
                 os.environ[variable] = values[key]
-    if args.command == "studio":
+    if args.command == "supervise":
+        from .supervision import execute as supervise
+
+        return supervise(args)
+    elif args.command == "studio":
         from .studio import build_studio, studio_status
 
         print(json.dumps(build_studio() if args.action == "build" else studio_status()))
@@ -422,7 +433,9 @@ def main(argv: list[str] | None = None) -> int:
         from .api import create_app
         from .db import Database
 
-        schema = create_app(Database("dbname=mnemion_schema_only")).openapi()
+        schema = create_app(
+            Database("dbname=mnemion_schema_only"), mcp_enabled=False, studio_enabled=False
+        ).openapi()
         if args.command == "agent-schema":
             from .agent_contract import write_contract
 

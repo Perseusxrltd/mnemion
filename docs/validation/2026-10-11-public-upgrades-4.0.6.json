@@ -1,0 +1,87 @@
+{
+  "from": "v4.0.5",
+  "to": "v4.0.6",
+  "date": "2026-10-11",
+  "workflow_url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38100290358",
+  "results": [
+    {
+      "platform": "linux",
+      "architecture": "arm64",
+      "status": "passed",
+      "elapsed_seconds": 614.5,
+      "profile_preserved": true,
+      "official_feed": true,
+      "unmodified_packages": true,
+      "real_system_idle": true,
+      "main_sandbox_disabled": false,
+      "linux_login_entry_preserved": true,
+      "job_url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38100290358/job/114354690011"
+    },
+    {
+      "platform": "linux",
+      "architecture": "x64",
+      "status": "passed",
+      "elapsed_seconds": 614.76,
+      "profile_preserved": true,
+      "official_feed": true,
+      "unmodified_packages": true,
+      "real_system_idle": true,
+      "main_sandbox_disabled": false,
+      "linux_login_entry_preserved": true,
+      "job_url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38100290358/job/114354689920"
+    },
+    {
+      "platform": "macos",
+      "architecture": "arm64",
+      "status": "passed",
+      "elapsed_seconds": 163.31,
+      "profile_preserved": true,
+      "official_feed": true,
+      "unmodified_packages": true,
+      "real_system_idle": true,
+      "main_sandbox_disabled": false,
+      "linux_login_entry_preserved": null,
+      "job_url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38100290358/job/114354689999"
+    },
+    {
+      "platform": "macos",
+      "architecture": "x64",
+      "status": "passed",
+      "elapsed_seconds": 405.84,
+      "profile_preserved": true,
+      "official_feed": true,
+      "unmodified_packages": true,
+      "real_system_idle": true,
+      "main_sandbox_disabled": false,
+      "linux_login_entry_preserved": null,
+      "job_url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38100290358/job/114354689914"
+    },
+    {
+      "platform": "windows",
+      "architecture": "arm64",
+      "status": "passed",
+      "elapsed_seconds": 454.51,
+      "profile_preserved": true,
+      "official_feed": true,
+      "unmodified_packages": true,
+      "real_system_idle": true,
+      "main_sandbox_disabled": false,
+      "linux_login_entry_preserved": null,
+      "job_url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38100290358/job/114354689932"
+    },
+    {
+      "platform": "windows",
+      "architecture": "x64",
+      "status": "passed",
+      "elapsed_seconds": 115.23,
+      "profile_preserved": true,
+      "official_feed": true,
+      "unmodified_packages": true,
+      "real_system_idle": true,
+      "main_sandbox_disabled": false,
+      "linux_login_entry_preserved": null,
+      "job_url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38100290358/job/114354689944"
+    }
+  ],
+  "scope": "Fresh GitHub-hosted runners, published packages and normal guards; no physical reboot, restricted-company-device or every-OS-version claim."
+}

@@ -3,6 +3,7 @@
 import asyncio
 import logging
 import os
+import re
 from contextlib import AsyncExitStack, asynccontextmanager
 from typing import Annotated
 from uuid import UUID, uuid4
@@ -135,6 +136,7 @@ def create_app(
     registry: ModelRegistry | None = None,
     librarian_registry: LibrarianRegistry | None = None,
     mcp_enabled: bool | None = None,
+    studio_enabled: bool = True,
 ) -> FastAPI:
     owned = database is None
     if database is None:
@@ -332,7 +334,7 @@ def create_app(
         return {"status": "alive", "api_version": "v1"}
 
     @app.get("/health/ready", tags=["Operations"], response_model=c.ReadyStatus)
-    def ready():
+    def ready(response: Response):
         with database.pool.connection() as conn:
             registered = conn.execute(
                 "SELECT id FROM mnemion.embedding_generations WHERE id=%s",
@@ -344,6 +346,10 @@ def create_app(
                 "generation_not_registered",
                 "Run the administration setup for this model generation.",
             )
+        instance = os.environ.get("MNEMION_SUPERVISED_INSTANCE", "")
+        if re.fullmatch(r"mnemion-[a-f0-9]{24}", instance):
+            response.headers["X-Mnemion-Instance"] = instance
+            response.headers["X-Mnemion-Process"] = str(os.getpid())
         return {"status": "ready", "generation_id": embedder.generation.id}
 
     @app.get("/v1/me", tags=["Identity"], response_model=c.IdentityInfo)
@@ -608,7 +614,7 @@ def create_app(
 
     from .studio import resolve_studio
 
-    studio, _ = resolve_studio()
+    studio, _ = resolve_studio() if studio_enabled else (None, "disabled")
     if studio is not None:
         app.mount("/assets", StaticFiles(directory=studio / "assets"), name="studio-assets")
 

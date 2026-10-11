@@ -4,7 +4,7 @@ This is the **4.0 shared-memory service**. It provides authenticated spaces,
 versioned source evidence, durable indexing, local multilingual search, HTTP and
 MCP access, and Obsidian exports. The [product page](https://www.perseusxr.com/mnemion)
 provides desktop downloads for Windows, macOS and Linux on x64 and ARM64. The
-[release notes](../releases/4.0.6.md) describe the current package changes and
+[release notes](../releases/4.0.7.md) describe the current package changes and
 remaining work. Complete backup/recovery, v3 import with cutover and rollback,
 and Studio are implemented. Larger concurrent-capacity measurements and managed
 server updates remain on the roadmap.
@@ -54,6 +54,11 @@ uv run --no-sync mnemion-service \
 uv run --no-sync mnemion-service \
   --credentials .mnemion-run/database.mnemion-credentials.json worker
 ```
+
+For persistent background operation on Linux or macOS, use the
+[Supervisor setup](supervision.md). It works without systemd, keeps the two role
+credentials separate, restarts crashes, and generates cron/launchd startup
+configuration. Windows uses the [Compose deployment](deployment.md).
 
 The API listens on `127.0.0.1:7892`, with authenticated MCP at `/mcp`. Studio opens
 at `/workspace`; interactive API documentation is at `/docs`. Use `serve --host` and `--port` to

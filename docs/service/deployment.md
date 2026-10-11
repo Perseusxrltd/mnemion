@@ -9,6 +9,11 @@ From 4.0.6, the container build includes the complete offline documentation and
 fails if essential guides are missing. Standalone official Python archives also
 include Studio; Git checkouts use the [one-command web build](README.md#studio).
 
+For an existing PostgreSQL installation on Linux or macOS, the optional
+[Supervisor deployment](supervision.md) keeps the API and worker in the background
+without systemd or Docker. It does not replace Compose's resource/container
+isolation or manage PostgreSQL itself.
+
 The release ledger records the platforms and workloads actually validated. This
 guide describes a single-host deployment. High availability, managed PostgreSQL,
 company identity federation, and provider-specific acceptance need their own

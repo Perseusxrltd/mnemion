@@ -34,6 +34,9 @@ a completed published download.
    version, bounded paths/sizes, hashes and dependency notices. The generated
    `mnemion/_studio/` is packaged but not committed. All frontend builds require
    the essential offline guides and the current release notes, including Docker.
+   From 4.0.7, product CI also runs real API/worker Supervisor crash and shutdown
+   checks on native macOS Intel/ARM64, in addition to the Linux service matrix.
+   The dependency audit includes the optional supervision runtime.
 7. Review the concrete draft and publish only when its documented release gates
    pass. Installed supported desktop packages then receive stable updates under
    the [update policy](service/updates.md).

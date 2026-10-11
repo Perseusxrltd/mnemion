@@ -1,6 +1,6 @@
 [project]
 name = "mnemion"
-version = "4.0.6"
+version = "4.0.7"
 description = "Shared memory infrastructure for applications, teams, and AI assistants, with source evidence and Obsidian visualization."
 readme = "README.md"
 requires-python = ">=3.12,<3.15"
@@ -59,6 +59,7 @@ chroma = "mnemion.backends.chroma:ChromaBackend"
 [project.entry-points."mnemion.sources"]
 
 [project.optional-dependencies]
+supervision = ["supervisor==4.3.0; platform_system != 'Windows'"]
 legacy = [
     "chromadb>=0.6.3,<0.7",
     "opentelemetry-exporter-otlp-proto-grpc>=1.40.0,<2.0",
@@ -80,6 +81,7 @@ coreml = ["onnxruntime>=1.20.1; python_version >= '3.10' and platform_system == 
 
 [dependency-groups]
 dev = [
+    "supervisor==4.3.0; platform_system != 'Windows'",
     "pytest>=7.0",
     "pytest-cov>=4.0",
     "ruff>=0.4.0",

@@ -1,3 +1,3 @@
 """Single source of truth for the Mnemion package version."""
 
-__version__ = "4.0.6"
+__version__ = "4.0.7"

@@ -1,6 +1,7 @@
 """Bundled Studio is visible by default without weakening memory authentication."""
 
 import json
+import pytest
 
 from fastapi.testclient import TestClient
 
@@ -59,3 +60,19 @@ def test_unbuilt_source_cli_explains_how_to_enable_studio_without_database(
     main(["serve", "--no-studio"])
     message = json.loads(capsys.readouterr().err)
     assert message["studio"]["source"] == "disabled" and message["help"] is None
+
+
+@pytest.mark.parametrize("command", ["schema", "agent-schema"])
+def test_offline_schema_commands_do_not_require_a_valid_web_build(
+    command, tmp_path, monkeypatch, capsys
+):
+    package = installed(monkeypatch, tmp_path)
+    bundle = package / "_studio"
+    make_bundle(bundle)
+    (bundle / "index.html").write_text("invalidated by a source change")
+    with pytest.raises(ValueError):
+        studio.resolve_studio()
+    output = tmp_path / "contract.json"
+    assert main([command, "--output", str(output)]) == 0
+    assert isinstance(json.loads(output.read_text()), dict)
+    assert "error" not in capsys.readouterr().err

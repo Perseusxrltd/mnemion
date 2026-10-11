@@ -318,3 +318,24 @@ quality. The roadmap and issue queue track those independently.
 - The preceding 4.0.5 release passed all product/native gates and all six public
   4.0.4 → 4.0.5 automatic upgrades. The website updated all six download links
   automatically. Issue 15 is closed; native provider webhooks remain an extension.
+
+## Hotfix 4.0.7, 11 October 2026
+
+- A private Supervisor instance manages API and worker processes on Linux/macOS
+  without systemd. Local JSON lifecycle commands, role-specific files, a Unix
+  control socket and bounded logs make the host operation available to authorized
+  maintenance agents without extending the privileges of a memory API key.
+- Preparation generates a quoted cron entry and a launchd plist. It does not
+  overwrite existing configuration or modify the host's startup registrations.
+  The guide distinguishes user-login startup, host boot, process recovery,
+  PostgreSQL/source-runner lifecycle and resource isolation.
+- Readiness identifies the managed API instance and PID as well as both running
+  processes. A foreign or orphaned HTTP listener cannot satisfy the check.
+  Shutdown waits through the supervisor's draining state; an unresponsive control
+  socket is not reported as a stopped service.
+- Offline schema export is independent of the selected web bundle, while actual
+  serving retains its matching-version and integrity checks.
+- The preceding 4.0.6 release passed both container architectures, every product
+  and native release gate, and all six public 4.0.5 → 4.0.6 automatic upgrades.
+  All six public downloads and automatic website metadata updates were verified.
+  Issue 7 is closed. Server software auto-updates remain separate work in issue 11.

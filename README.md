@@ -9,8 +9,9 @@ never gates downloads, usage or access.
 
 **Mnemion 4.0 is the first release of the rebuilt shared-memory platform.**
 Download published builds from [the official product page](https://www.perseusxr.com/mnemion).
-The [4.0.6 release](docs/releases/4.0.6.md) includes web Studio and offline guides
-in Python packages, with one build command for Git checkouts. It retains 4.0.5's
+The [4.0.7 release](docs/releases/4.0.7.md) adds background API/worker supervision
+on Linux and macOS without systemd. Official Python packages include web Studio
+and offline guides, with one build command for Git checkouts. It retains 4.0.5's
 immediate source-sync requests and scan diagnostics, 4.0.4's agent administration
 and Linux startup repair, and 4.0.3's Windows ARM64 and lower local-model RAM.
 Release targets cover **Windows, macOS and Linux on x64 and ARM64**. Windows and
@@ -167,7 +168,7 @@ and performance independently verified in this implementation.
 
 Open **Documentation & roadmap** in Studio, or use the setup screen’s help link.
 The offline library ships the same Markdown as this repository. See the
-[product roadmap](docs/ROADMAP.md), [release notes](docs/releases/4.0.3.md), and
+[product roadmap](docs/ROADMAP.md), [release notes](docs/releases/4.0.7.md), and
 [documentation maintenance policy](docs/MAINTENANCE.md). Every release and hotfix
 must include matching release notes and a reviewed roadmap.
 

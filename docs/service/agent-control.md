@@ -28,6 +28,10 @@ recovery use the operator's existing `mnemion-service` commands and deployment
 credentials. Their host privileges remain separate from a memory API key.
 An agent with those operator credentials can follow the
 [deployment](deployment.md) and [recovery](recovery.md) procedures.
+From 4.0.7, Unix host operators can also use `mnemion-service supervise` to prepare,
+start, inspect and stop a background API/worker instance. Its JSON output and
+generated startup files are described in [the supervision guide](supervision.md).
+These commands require local host access; a remote memory key does not grant it.
 
 ## Discover through MCP
 
