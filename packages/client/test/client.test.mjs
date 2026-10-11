@@ -87,6 +87,10 @@ test('busy reads respect Retry-After without replaying administrative writes', a
   await assert.rejects(client.createPrincipal('agent'), error =>
     error instanceof MnemionError && error.retryable && error.retryAfterSeconds === 0.35)
   assert.equal(calls, 1)
+  calls = 0
+  await assert.rejects(client.disablePrincipal('retired-agent'), error =>
+    error instanceof MnemionError && error.retryable && error.retryAfterSeconds === 0.35)
+  assert.equal(calls, 1, 'Disabling an identity must not be replayed automatically')
 })
 
 test('retry hints are bounded and non-object proxy errors remain structured', async () => {

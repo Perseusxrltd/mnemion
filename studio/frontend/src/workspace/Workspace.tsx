@@ -1712,6 +1712,8 @@ function Team({ connection, initialSpace }: { connection: Connection; initialSpa
   const [kind, setKind] = useState<"human" | "application">("application");
   const [newAdministrator, setNewAdministrator] = useState(false);
   const [createdIdentity, setCreatedIdentity] = useState<{ name: string; administrator: boolean }>();
+  const [disablingIdentity, setDisablingIdentity] = useState<string>();
+  const [administrationNotice, setAdministrationNotice] = useState("");
   const keyForm = useRef<HTMLFormElement>(null);
   const [principal, setPrincipal] = useState("");
   const [role, setRole] = useState<Role>("reader");
@@ -1741,6 +1743,7 @@ function Team({ connection, initialSpace }: { connection: Connection; initialSpa
     return <Empty title="Organization administrator access required" />;
   const options =
     people.data?.items.filter((person) => !person.disabled_at) ?? [];
+  const retiring = options.find(person => person.id === disablingIdentity && person.id !== me.principal_id);
   return (
     <div className="ws-page">
       <Title title="People & apps">
@@ -1750,6 +1753,7 @@ function Team({ connection, initialSpace }: { connection: Connection; initialSpa
       <ErrorNotice
         error={error || people.error || keys.error || grants.error || spaces.error}
       />
+      {administrationNotice && <div className="ws-notice" role="status">{administrationNotice}</div>}
       <section className="ws-card">
         <div className="ws-section-title"><h2>Independent workspace administration</h2><ShieldCheck size={20} /></div>
         <p>You are an organization administrator. Give another trusted person their own administrator identity and key, then verify their connection from a second device. Administration will no longer depend on one assistant’s session.</p>
@@ -1857,15 +1861,30 @@ function Team({ connection, initialSpace }: { connection: Connection; initialSpa
       </div>
       <section className="ws-card">
         <div className="ws-section-title"><h2>Organization identities</h2><button type="button" className="ws-button ws-quiet" disabled={busy || people.isFetching} onClick={() => void people.refetch()}><RefreshCw size={14} />Refresh</button></div>
-        {people.isPending ? <Busy /> : <div className="ws-table-wrap"><table className="ws-table">
-          <thead><tr><th>Identity</th><th>Type</th><th>Organization role</th><th>Status</th></tr></thead>
-          <tbody>{people.data?.items.map(person => <tr key={person.id}>
-            <td>{person.name}{person.id === me.principal_id && <small>You</small>}</td>
-            <td>{person.kind === 'human' ? 'Person' : 'Application / assistant'}</td>
-            <td>{person.administrator ? 'Organization administrator' : 'Member'}</td>
-            <td>{person.disabled_at ? 'Disabled' : 'Active identity'}</td>
+        {people.isPending ? <Busy /> : <div className="ws-table-wrap"><table className="ws-table ws-identities-table" role="table" aria-label="Organization identities">
+          <thead><tr><th>Identity</th><th>Type</th><th>Organization role</th><th>Status</th><th>Access control</th></tr></thead>
+          <tbody role="rowgroup">{people.data?.items.map(person => <tr key={person.id} role="row">
+            <td role="cell">{person.name}{person.id === me.principal_id && <small>You</small>}</td>
+            <td role="cell" data-label="Type">{person.kind === 'human' ? 'Person' : 'Application / assistant'}</td>
+            <td role="cell" data-label="Authority">{person.administrator ? 'Organization administrator' : 'Member'}</td>
+            <td role="cell" data-label="Status">{person.disabled_at ? 'Disabled' : 'Active identity'}</td>
+            <td role="cell" data-label="Control">{!person.disabled_at && person.id !== me.principal_id && <button type="button" className="ws-button ws-quiet" disabled={busy} aria-label={`Disable ${person.name}`} onClick={() => { setDisablingIdentity(person.id); setAdministrationNotice(""); }}>Disable</button>}{person.id === me.principal_id && <small>Use another administrator to disable this identity.</small>}</td>
           </tr>)}</tbody>
         </table></div>}
+        {retiring && <div className="ws-notice ws-delete-confirm" role="group" aria-label="Confirm disabling identity">
+          <strong>Disable {retiring.name}?</strong>
+          <p>All of this {retiring.kind === 'human' ? 'person’s' : 'application’s'} keys and linked sign-ins will stop working. Its recorded memories and history are retained. Disabling is permanent; future access requires a new identity and explicit grants.</p>
+          {retiring.administrator && <p>Verify another administrator’s independent access before retiring this administrator.</p>}
+          <div className="ws-actions"><button type="button" className="ws-button" disabled={busy} onClick={() => void act(async () => {
+            await client.disablePrincipal(retiring.id);
+            setDisablingIdentity(undefined);
+            setCreatedIdentity(undefined);
+            if (keyPrincipal === retiring.id) setKeyPrincipal("");
+            if (principal === retiring.id) setPrincipal("");
+            if (newKey?.principal_id === retiring.id) setNewKey(undefined);
+            setAdministrationNotice(`Disabled ${retiring.name}. Its keys and linked sign-ins no longer grant access; recorded memories and history are retained.`);
+          })}>Disable identity</button><button type="button" className="ws-button ws-quiet" disabled={busy} onClick={() => setDisablingIdentity(undefined)}>Keep access</button></div>
+        </div>}
         <p className="ws-helper">An active identity still needs a valid individual credential. This list does not confirm that its owner has signed in or that the workspace host is recoverable.</p>
         {(people.data?.items.length ?? 0) >= 1000 && <p className="ws-helper">Showing the first 1,000 identities returned by this server.</p>}
       </section>

@@ -269,6 +269,7 @@ export class MnemionClient {
   createPrincipal(name: string, kind: 'human' | 'application' = 'application', options: { administrator?: boolean } = {}) {
     return this.request<Principal>('POST', '/v1/principals', { body: { name, kind, administrator: options.administrator ?? false } })
   }
+  disablePrincipal(principal: string) { return this.request<{ id: string; disabled_at: string }>('POST', `/v1/principals/${encodeURIComponent(principal)}/disable`) }
   keys() { return this.request<Page<ApiKey>>('GET', '/v1/keys') }
   createKey(principal: string, name: string, expires_at?: string) { return this.request<ApiKey & { api_key: string }>('POST', `/v1/principals/${encodeURIComponent(principal)}/keys`, { body: { name, expires_at } }) }
   revokeKey(key: string) { return this.request<{ id: string; revoked_at: string }>('DELETE', `/v1/keys/${encodeURIComponent(key)}`) }

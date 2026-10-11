@@ -168,18 +168,38 @@ class Database:
                 self._scope(conn, identity.tenant_id, identity.principal_id)
                 # Authentication is rechecked in each new transaction. A request
                 # cannot retain access through a cached Identity after revocation.
-                valid = conn.execute(
-                    """SELECT k.id FROM mnemion.api_keys k JOIN mnemion.principals p
-                         ON p.tenant_id=k.tenant_id AND p.id=k.principal_id
-                       WHERE k.id=%s AND k.principal_id=mnemion.principal()
-                         AND k.revoked_at IS NULL AND p.disabled_at IS NULL
-                         AND (k.expires_at IS NULL OR k.expires_at > now())
-                         AND (%s::double precision IS NULL OR %s > extract(epoch FROM clock_timestamp()))""",
-                    (identity.key_id, identity.expires_at, identity.expires_at),
-                ).fetchone()
-                if not valid:
-                    raise ServiceError(401, "unauthorized", "The API key is no longer valid.")
+                self._check_identity(conn, identity)
                 yield conn
+
+    @staticmethod
+    def _check_identity(conn: psycopg.Connection, identity: Identity) -> None:
+        valid = conn.execute(
+            """SELECT k.id FROM mnemion.api_keys k JOIN mnemion.principals p
+                 ON p.tenant_id=k.tenant_id AND p.id=k.principal_id
+               WHERE k.id=%s AND k.principal_id=mnemion.principal()
+                 AND k.revoked_at IS NULL AND p.disabled_at IS NULL
+                 AND (k.expires_at IS NULL OR k.expires_at > clock_timestamp())
+                 AND (%s::double precision IS NULL OR %s > extract(epoch FROM clock_timestamp()))""",
+            (identity.key_id, identity.expires_at, identity.expires_at),
+        ).fetchone()
+        if not valid:
+            raise ServiceError(401, "unauthorized", "The API key is no longer valid.")
+
+    @contextmanager
+    def administration_transaction(self, identity: Identity) -> Iterator[psycopg.Connection]:
+        """Serialize credential changes across service processes for one tenant.
+
+        A request may wait behind its own revocation. Check current credentials
+        again after admission; transaction-start time is insufficient for expiry.
+        OAuth self-revocation uses the same boundary without requiring an admin.
+        """
+        with self.transaction(identity) as conn:
+            conn.execute(
+                "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+                (f"administrator-access:{identity.tenant_id}",),
+            )
+            self._check_identity(conn, identity)
+            yield conn
 
     @contextmanager
     def worker_transaction(

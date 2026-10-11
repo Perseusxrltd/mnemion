@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
+from .administration import retain_administrator_access
 from .db import Database, Identity, new_token, require_administrator, require_space
 from .errors import ServiceError, not_found
 from .models import GrantInput, KeyInput, PrincipalInput, SpaceInput, json_value
@@ -78,7 +79,7 @@ class IdentityService:
             )
 
     def create_principal(self, identity: Identity, command: PrincipalInput) -> dict:
-        with self.db.transaction(identity) as conn:
+        with self.db.administration_transaction(identity) as conn:
             require_administrator(conn)
             row = conn.execute(
                 """INSERT INTO mnemion.principals(tenant_id, id, name, kind, administrator)
@@ -90,12 +91,18 @@ class IdentityService:
             return json_value(row)
 
     def disable_principal(self, identity: Identity, principal: UUID) -> dict:
-        with self.db.transaction(identity) as conn:
+        with self.db.administration_transaction(identity) as conn:
             require_administrator(conn)
             if principal == identity.principal_id:
                 raise ServiceError(
                     409, "self_disable", "Use another administrator to disable yourself."
                 )
+            previous = conn.execute(
+                "SELECT administrator, disabled_at FROM mnemion.principals WHERE id=%s",
+                (principal,),
+            ).fetchone()
+            if not previous:
+                raise not_found()
             row = conn.execute(
                 """UPDATE mnemion.principals SET disabled_at=coalesce(disabled_at, now())
                    WHERE tenant_id=%s AND id=%s RETURNING id, disabled_at""",
@@ -103,11 +110,13 @@ class IdentityService:
             ).fetchone()
             if not row:
                 raise not_found()
+            if previous["administrator"] and previous["disabled_at"] is None:
+                retain_administrator_access(conn)
             audit(conn, identity, "principal.disabled", principal)
             return json_value(row)
 
     def create_key(self, identity: Identity, principal: UUID, command: KeyInput) -> dict:
-        with self.db.transaction(identity) as conn:
+        with self.db.administration_transaction(identity) as conn:
             require_administrator(conn)
             if not conn.execute(
                 "SELECT id FROM mnemion.principals WHERE id=%s AND disabled_at IS NULL",
@@ -145,8 +154,19 @@ class IdentityService:
             )
 
     def revoke_key(self, identity: Identity, key: UUID) -> dict:
-        with self.db.transaction(identity) as conn:
+        with self.db.administration_transaction(identity) as conn:
             require_administrator(conn)
+            previous = conn.execute(
+                """SELECT p.administrator AND p.disabled_at IS NULL
+                          AND k.revoked_at IS NULL
+                          AND (k.expires_at IS NULL OR k.expires_at > clock_timestamp())
+                          AS active_administrator_access
+                   FROM mnemion.api_keys k JOIN mnemion.principals p
+                     ON p.tenant_id=k.tenant_id AND p.id=k.principal_id WHERE k.id=%s""",
+                (key,),
+            ).fetchone()
+            if not previous:
+                raise not_found()
             row = conn.execute(
                 """UPDATE mnemion.api_keys SET revoked_at=coalesce(revoked_at, now())
                    WHERE id=%s RETURNING id, revoked_at""",
@@ -154,6 +174,8 @@ class IdentityService:
             ).fetchone()
             if not row:
                 raise not_found()
+            if previous["active_administrator_access"]:
+                retain_administrator_access(conn)
             audit(conn, identity, "key.revoked", key)
             return json_value(row)
 

@@ -7,6 +7,7 @@ import psycopg
 from fastapi import Depends
 from pydantic import Field, field_validator
 
+from .administration import retain_administrator_access
 from .db import Identity, new_token, require_administrator
 from .errors import ServiceError, forbidden, not_found
 from .models import Command, json_value
@@ -46,7 +47,7 @@ class OAuthBindings:
             )
 
     def create(self, identity: Identity, command: OAuthBindingInput):
-        with self.db.transaction(identity) as conn:
+        with self.db.administration_transaction(identity) as conn:
             require_administrator(conn)
             if self.settings is None:
                 raise ServiceError(
@@ -111,11 +112,18 @@ class OAuthBindings:
             }
 
     def revoke(self, identity: Identity, binding_id: UUID):
-        with self.db.transaction(identity) as conn:
+        with self.db.administration_transaction(identity) as conn:
             # Owners may revoke their own connection, even without org-admin
             # authority. RLS prevents discovering or revoking someone else's.
             row = conn.execute(
-                "SELECT key_id,principal_id FROM mnemion.oauth_bindings WHERE id=%s",
+                """SELECT b.key_id,b.principal_id,
+                          p.administrator AND p.disabled_at IS NULL AND k.revoked_at IS NULL
+                          AND (k.expires_at IS NULL OR k.expires_at > clock_timestamp())
+                          AS active_administrator_access
+                   FROM mnemion.oauth_bindings b JOIN mnemion.api_keys k
+                     ON k.tenant_id=b.tenant_id AND k.id=b.key_id
+                   JOIN mnemion.principals p ON p.tenant_id=b.tenant_id AND p.id=b.principal_id
+                   WHERE b.id=%s""",
                 (binding_id,),
             ).fetchone()
             if row is None:
@@ -127,6 +135,8 @@ class OAuthBindings:
             result = conn.execute(
                 "SELECT * FROM mnemion.revoke_oauth(%s)", (binding_id,)
             ).fetchone()
+            if row["active_administrator_access"]:
+                retain_administrator_access(conn)
             audit(conn, identity, "oauth.revoked", binding_id)
             return json_value(result)
 

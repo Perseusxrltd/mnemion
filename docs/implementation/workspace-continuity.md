@@ -105,7 +105,10 @@ without making a paid central service mandatory.
 Current source adds explicit administrator creation in the app/SDK, an
 organization roster and administration pages that do not require a memory-space
 grant. Real API and browser checks retain a second administrator after disabling
-the original identity, without implicit content access. Protected desktop
+the original identity, without implicit content access. Named retirement in the
+app and final-current-admin protection across concurrent API/OAuth changes are
+also validated; these cannot verify possession of another key or future renewal.
+Protected desktop
 connections, local host controls, diagnostics and verified database recovery are
 also foundations. Sign-in/invitations, cached recovery records, host registration,
 operator delegation and guided restoration remain required implementation.

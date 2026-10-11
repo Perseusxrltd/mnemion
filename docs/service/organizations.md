@@ -57,6 +57,34 @@ backup and current recovery ledger outside that host. The planned
 remain separate requirements; a Git source mirror is not a complete database
 backup or proof of current workspace authority.
 
+### Retire an identity and retain administrator access
+
+The 4.0.11 candidate adds **Disable** beside other active identities in People &
+apps. Review the named confirmation before disabling a person or application.
+Its API keys and linked sign-ins stop granting access; recorded memories and
+history remain. Disabling is permanent through the application: future access
+requires a new identity with explicit grants. You cannot disable your own
+identity in that session. Use another independently enrolled administrator.
+The existing `principals.disable` API/CLI/MCP operation and TypeScript
+`disablePrincipal(id)` provide equivalent controls.
+
+The same candidate protects removal of the last currently usable organization
+administrator credential. A rejected operation returns HTTP `409` with
+`last_administrator_access`; create and verify replacement access first. A bare
+administrator identity with no key, a disabled identity, and an expired or
+revoked key do not provide a fallback. Key rotation and repeated revocation of
+an already revoked key remain supported. API-key and OAuth-binding revocation
+share a tenant-level database lock, so concurrent requests cannot each remove
+the other's fallback. Authority and real-time expiry are rechecked after waiting.
+
+This check establishes current database authorization. It does not prove that
+somebody has retained the other key, that a configured OAuth issuer is online,
+or that a future expiry will be renewed. Keep independently held human access
+and a protected recovery key, test them before retiring an agent, and monitor
+expiry. A host/database operator can still carry out emergency recovery or
+revocation through the existing operator procedures. These application controls
+do not invent host privileges, bypass an offline server, or grant memory access.
+
 ## Identity providers and source access
 
 The [OAuth foundation](oauth.md) in service 4.0.11 adds individually

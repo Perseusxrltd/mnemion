@@ -1188,3 +1188,15 @@ fieldset.ws-setup-fields { border: 0; padding: 0; min-width: 0; }
  .ws-knowledge-filter { flex-wrap: wrap; }
  .ws-knowledge-filter .ws-field { flex-basis: 100%; }
 }
+@media (max-width: 760px) {
+ .ws-identities-table, .ws-identities-table tbody { display: block; width: 100%; }
+ .ws-identities-table thead { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+ .ws-identities-table tbody tr { display: block; padding: 16px; border-bottom: 1px solid var(--ws-border); }
+ .ws-identities-table tbody tr:last-child { border-bottom: 0; }
+ .ws-identities-table td { display: block; padding: 5px 0; border: 0; }
+ .ws-identities-table td:first-child { padding-top: 0; padding-bottom: 10px; font-size: 14px; font-weight: 600; }
+ .ws-identities-table td[data-label] { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 12px; align-items: start; }
+ .ws-identities-table td[data-label]::before { content: attr(data-label); color: var(--ws-muted); font-size: 12px; }
+ .ws-identities-table td:empty { display: none; }
+ .ws-identities-table td .ws-button { justify-self: start; }
+}

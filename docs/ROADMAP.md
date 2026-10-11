@@ -29,14 +29,13 @@ gates, signed asset verification and automatic live website refresh.
 
 Version [4.0.11](releases/4.0.11.md) integrates native engine/database packaging, app and
 agent RAM-policy recovery, and optional trusted-issuer OAuth with individual
-bindings and revocation. Both Linux and both Mac architectures passed installed
-setup, real model save/search, shutdown and automatic workspace reopen. Windows
-path identity and ARM packaging corrections have source/native component checks;
-the next run passed full Linux x64/ARM64 and Mac ARM64 native jobs, including
-address recovery after engine cleanup. Windows reached service startup, where
-[packaged SQL line endings caused a checksum mismatch](validation/2026-10-11-windows-migration-newlines.md).
-The candidate corrects that mismatch and passes LF/CRLF and tamper-rejection
-regressions; fresh installed Windows and complete release acceptance remain required.
+bindings and revocation. All six architectures passed installed setup, real model
+save/search, shutdown, automatic reopen and occupied-port recovery after fixing
+[Windows packaged SQL line endings](validation/2026-10-11-windows-migration-newlines.md).
+The Windows jobs then failed during disposal of the test installation while NSIS
+still held the folder. A bounded cleanup retry and the integrated administration
+changes require a fresh complete release run. Both Macs and both Linux targets
+completed their full native jobs in the preceding run.
 A [Linux stale-focus correction](validation/2026-10-11-linux-update-focus.md) also
 passed controlled real-updater comparisons; public unattended acceptance remains.
 Full integrated native package checks are required before publication. Windows ARM uses a
@@ -117,6 +116,11 @@ and removes Studio's accidental requirement for a content-space grant before
 opening administration. [Real API/browser checks](validation/2026-10-11-independent-administration.md)
 retain an independently authenticated administrator after the original identity
 is disabled, preserve ordinary-member defaults and enforce tenant/content limits.
+Named retirement controls, a readable mobile roster and
+[final-admin protection across concurrent API/OAuth changes](validation/2026-10-11-administrator-lockout.md)
+are now validated in source. The Windows dogfood setup has
+[protected recovery material and one-click bounded checks](validation/2026-10-11-windows-workspace-preparation.md);
+its saved remote host remains offline, so no live shared-workspace load has run.
 This does not yet provide offline host control or failover.
 
 ## Implemented for the first shared-platform release
