@@ -9,7 +9,9 @@ app.setPath('userData', fixture.userData)
 let updates
 let busy = false
 let idleSeconds = 0
-let restarts = 0
+let shutdowns = 0
+let shutdownAllowed = false
+let cancelled = 0
 let quitting = false
 const sleep = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds))
 function record(event, detail = {}) {
@@ -47,25 +49,27 @@ app.whenReady().then(async () => {
     ))
     // Only system inactivity is simulated; Sparkle and Electron run natively.
     powerMonitor.getSystemIdleTime = () => idleSeconds
-    updates = new DesktopUpdates(() => window, () => busy, () => {
-      restarts += 1
-      record('install-authorized')
-    }, () => {})
+    updates = new DesktopUpdates(() => window, () => busy, async () => {
+      shutdowns += 1
+      await sleep(25)
+      record('workspace-stop', { allowed: shutdownAllowed })
+      return shutdownAllowed
+    }, () => {}, () => { cancelled++; record('restart-cancelled') })
     await updates.check()
     assert(updates.status.version === fixture.expectedVersion, 'The signed update did not become ready')
     assert(updates.status.state.includes('Update ready'), 'The desktop updater is not waiting safely')
 
     idleSeconds = 599
     await updates.restartIfSafe()
-    assert(restarts === 0, 'A restart occurred before the idle threshold')
+    assert(shutdowns === 0, 'A shutdown occurred before the idle threshold')
     idleSeconds = 600
     busy = true
     await updates.restartIfSafe()
-    assert(restarts === 0, 'A restart interrupted an active transfer')
+    assert(shutdowns === 0, 'A shutdown interrupted an active transfer')
     busy = false
     await window.webContents.executeJavaScript('document.querySelector("textarea").value="unfinished draft"')
     await updates.restartIfSafe()
-    assert(restarts === 0, 'A restart discarded a renderer draft')
+    assert(shutdowns === 0, 'A shutdown discarded a renderer draft')
     await window.webContents.executeJavaScript('document.querySelector("textarea").value=""')
     window.show()
     app.focus({ steal: true })
@@ -74,11 +78,14 @@ app.whenReady().then(async () => {
     while (!window.isFocused() && Date.now() < focusDeadline) await sleep(100)
     assert(window.isFocused(), 'The native test window could not be focused')
     await updates.restartIfSafe()
-    assert(restarts === 0, 'A restart interrupted a focused window')
-    record('guards-passed', { idle: true, transfer: true, draft: true, focus: true })
+    assert(shutdowns === 0, 'A shutdown interrupted a focused window')
     window.hide()
     await sleep(100)
     await updates.restartIfSafe()
-    assert(restarts === 1, 'An idle, unfocused, clean session did not authorize installation')
+    assert(shutdowns === 1 && cancelled === 1, 'A failed workspace stop did not cancel the update')
+    record('guards-passed', { idle: true, transfer: true, draft: true, focus: true, shutdown: true })
+    shutdownAllowed = true
+    await updates.restartIfSafe()
+    assert(shutdowns === 2, 'An idle, unfocused, clean session did not retry installation')
   }
 })

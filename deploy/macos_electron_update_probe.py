@@ -173,7 +173,11 @@ def execute(root: Path) -> dict:
         else:
             raise TimeoutError(f"The packaged update did not relaunch; events={events}")
         names = [event["event"] for event in events]
-        if names.count("install-authorized") != 1 or "guards-passed" not in names:
+        if (
+            names.count("workspace-stop") != 2
+            or names.count("restart-cancelled") != 1
+            or "guards-passed" not in names
+        ):
             raise AssertionError("The packaged restart guards were not exercised")
         if relaunched[0]["version"] != target or relaunched[0]["pid"] == child.pid:
             raise AssertionError("The updated application did not start a new process")

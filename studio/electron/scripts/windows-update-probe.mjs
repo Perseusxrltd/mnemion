@@ -230,7 +230,9 @@ try {
   if (!relaunched || relaunched.version !== target || relaunched.pid === child.pid) throw new Error('NSIS did not replace and relaunch the target application')
   process.kill(relaunched.pid, 0)
   const updatedBinaries = await verifyInstalledBinaries(join(output, 'packages', target), installed)
-  if (events.filter(event => event.event === 'install-authorized').length !== 1
+  if (events.filter(event => event.event === 'workspace-stop' && event.allowed).length !== 2
+    || events.filter(event => event.event === 'workspace-stop' && !event.allowed).length !== 1
+    || !events.some(event => event.event === 'restart-cancelled')
     || !events.some(event => event.event === 'guards-passed') || !events.some(event => event.event === 'cancelled-transfer')
     || !events.some(event => event.event === 'native-redirect-verified')) throw new Error('Native Windows guards and recovery checks were incomplete')
   for (const rejected of ['bad-signature', 'wrong-architecture', 'oversized', 'interrupted', 'older', 'cached-tamper']) {

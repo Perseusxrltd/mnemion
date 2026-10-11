@@ -8,7 +8,8 @@ import { createWindowsUpdateFetch } from './dist/windows-update-network.js'
 const fixture = JSON.parse(readFileSync(join(process.resourcesPath, 'update-fixture.json'), 'utf8'))
 app.setPath('userData', fixture.userData)
 let updates, window
-let busy = false, idleSeconds = 0, restarts = 0, quitting = false
+let busy = false, idleSeconds = 0, shutdowns = 0, quitting = false, quitRequests = 0, cancelled = 0
+let shutdownAllowed = true
 const sleep = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds))
 function record(event, detail = {}) {
   appendFileSync(fixture.receipt, JSON.stringify({ event, timestamp: new Date().toISOString(), version: app.getVersion(), pid: process.pid, ...detail }) + '\n')
@@ -28,6 +29,7 @@ process.on('unhandledRejection', error => { record('error', { message: String(er
 app.on('will-quit', () => record('will-quit'))
 process.on('exit', code => record('process-exit', { code }))
 app.on('before-quit', event => {
+  quitRequests++
   if (!updates?.quitNeedsUpdateCleanup) return
   event.preventDefault()
   if (quitting) return
@@ -50,12 +52,17 @@ app.whenReady().then(async () => {
     '<textarea></textarea><script>window.mnemion={updateSafety:()=>document.querySelector("textarea").value===""}</script>',
   ))
   powerMonitor.getSystemIdleTime = () => idleSeconds
-  updates = new DesktopUpdates(() => window, () => busy, () => { restarts++; record('install-authorized') }, () => {})
+  updates = new DesktopUpdates(() => window, () => busy, async () => {
+    shutdowns++
+    await sleep(25)
+    record('workspace-stop', { allowed: shutdownAllowed })
+    return shutdownAllowed
+  }, () => {}, () => { cancelled++; record('restart-cancelled') })
   for (const name of ['bad-signature', 'wrong-architecture', 'oversized', 'interrupted']) {
     await mode(name)
     await updates.check()
     assert(updates.status.state.includes('unavailable'), `${name} was not rejected`)
-    assert(restarts === 0, `${name} started an installer`)
+    assert(shutdowns === 0 && quitRequests === 0, `${name} began installation`)
     record('rejected', { case: name })
   }
   await mode('older')
@@ -69,7 +76,7 @@ app.whenReady().then(async () => {
   updates.setPreference('automaticUpdates', false)
   await transfer
   await until(() => !updates.quitNeedsUpdateCleanup, 'Paused update did not finish cleanup')
-  assert(restarts === 0 && !updates.enabled, 'Pausing the transfer failed')
+  assert(shutdowns === 0 && quitRequests === 0 && !updates.enabled, 'Pausing the transfer failed')
   record('cancelled-transfer')
 
   await mode('valid')
@@ -81,31 +88,39 @@ app.whenReady().then(async () => {
   assert(installer, 'The authenticated installer was not cached')
   writeFileSync(join(cache, installer), 'tampered after ready')
   await updates.restartIfSafe()
-  assert(restarts === 0 && updates.status.state.includes('unavailable'), 'A modified cached installer was launched')
+  assert(quitRequests === 0 && updates.status.state.includes('unavailable'), 'A modified cached installer was launched')
+  assert(shutdowns === 1 && cancelled > 0, 'A rejected installer did not restore the stopped workspace')
   record('rejected', { case: 'cached-tamper' })
+  idleSeconds = 0
   await updates.check()
   assert(updates.status.state.includes('Update ready'), 'A valid update did not recover after cached tampering')
 
   idleSeconds = 599
   await updates.restartIfSafe()
-  assert(restarts === 0, 'A restart occurred before the idle threshold')
+  assert(shutdowns === 1 && quitRequests === 0, 'A restart occurred before the idle threshold')
   idleSeconds = 600
   busy = true
   await updates.restartIfSafe()
-  assert(restarts === 0, 'A restart interrupted an active transfer')
+  assert(shutdowns === 1 && quitRequests === 0, 'A restart interrupted an active transfer')
   busy = false
   await window.webContents.executeJavaScript('document.querySelector("textarea").value="unfinished draft"')
   await updates.restartIfSafe()
-  assert(restarts === 0, 'A restart discarded a renderer draft')
+  assert(shutdowns === 1 && quitRequests === 0, 'A restart discarded a renderer draft')
   await window.webContents.executeJavaScript('document.querySelector("textarea").value=""')
   window.show()
   window.focus()
   await until(() => window.isFocused(), 'The native test window could not be focused', 5000)
   await updates.restartIfSafe()
-  assert(restarts === 0, 'A restart interrupted a focused window')
-  record('guards-passed', { idle: true, transfer: true, draft: true, focus: true })
+  assert(shutdowns === 1 && quitRequests === 0, 'A restart interrupted a focused window')
   window.hide()
   await sleep(100)
+  shutdownAllowed = false
+  const beforeCancellation = cancelled
   await updates.restartIfSafe()
-  assert(restarts === 1, 'An idle clean session did not launch the verified installer')
+  assert(shutdowns === 2 && quitRequests === 0 && cancelled === beforeCancellation + 1,
+    'A failed workspace stop did not cancel installation')
+  record('guards-passed', { idle: true, transfer: true, draft: true, focus: true, shutdown: true })
+  shutdownAllowed = true
+  await updates.restartIfSafe()
+  assert(shutdowns === 3 && quitRequests === 1, 'An idle clean session did not launch the verified installer')
 })
