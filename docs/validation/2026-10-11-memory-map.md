@@ -1,7 +1,9 @@
 # Memory map and connection validation
 
-Date: **2026-10-11**. These checks validate the implementation for the next patch
-after 4.0.9. They do not relabel an unreleased source build as a public installer.
+Date: **2026-10-11**. Version **4.0.10** was published at **09:08 UTC** after
+the implementation checks below, all six native package gates and independent
+verification of the uploaded release files. Source UI journeys and native
+installer/update checks are identified separately.
 
 ## Connection diagnosis
 
@@ -42,12 +44,33 @@ after 4.0.9. They do not relabel an unreleased source build as a public installe
 Screenshots and fixture credentials stayed in the local validation workspace.
 The fixture is not retrieval-quality evidence and did not download a model.
 
-## Remaining gates and limitations
+## Publication and cross-platform checks
 
-The preceding branding/connection commit passed product checks and all six native
-desktop checks. The map itself still needs its corresponding complete native
-packaging/release run before public availability. The published version remains
-4.0.9 until that release is complete.
+- [Product checks](https://github.com/Perseusxrltd/mnemion/actions/runs/38126210499)
+  passed, including Python 3.12/3.13/3.14 service checks, legacy compatibility,
+  SDK/UI builds, dependency audits and native managed-service checks on both Macs.
+- [Native desktop checks](https://github.com/Perseusxrltd/mnemion/actions/runs/38126210504)
+  and the [release workflow](https://github.com/Perseusxrltd/mnemion/actions/runs/38126221958)
+  passed for Windows, macOS and Linux, x64 and ARM64. Gates include the packaged
+  app, private bridge, update guards and platform-specific installation/relaunch.
+- The release targets commit `dea415219e32d214a1a89d5fd4966b004dc468b9`.
+  All **38 uploaded assets** were downloaded and their sizes and SHA-256 hashes
+  matched GitHub's digests and `SHA256SUMS.txt`. The verifier independently checked
+  service and Windows/macOS signatures against the embedded production keys,
+  complete update feeds and packaged web file inventories.
+- [4.0.10 is public](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.0.10).
+  [Release metadata synchronization](https://github.com/Perseusxrltd/mnemion/actions/runs/38127301902)
+  passed automatically. A real browser verified that the existing live
+  [product page](https://www.perseusxr.com/mnemion) adopted 4.0.10, all six download
+  links, current notes/checksums/guides and the live roadmap without a website
+  edit or redeployment. Desktop and 390-pixel layouts had no horizontal overflow
+  or browser errors; the homepage still linked to the product with the same logo.
+- The [public 4.0.9 → 4.0.10 update rehearsal](https://github.com/Perseusxrltd/mnemion/actions/runs/38127301901)
+  started automatically after publication. Its result is separate from the
+  passing native fixture gates and was pending when this publication record
+  was written.
+
+## Remaining limitations
 
 This first map polls bounded snapshots, not deltas. It does not show every event
 in a large workspace, infer semantic similarity from geometry, provide time

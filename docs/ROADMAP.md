@@ -13,13 +13,15 @@ Version 4.0.10 adds: [bounded connection diagnosis](service/connection-diagnosti
 and the [live 3D memory map](service/memory-map.md). The map includes browser/desktop
 orbit, full-screen inspection, evidence links, creator/time filters, recorded
 activity, a compact 2D/list path and periodic authorized refresh. It retains the
-wiki, earlier evidence graph and Obsidian workflows. Use the official product page for published packages; 4.0.9 does not
-include these additions.
+wiki, earlier evidence graph and Obsidian workflows. All six native targets and
+the bundled web app are [published](https://www.perseusxr.com/mnemion).
+The [validation report](validation/2026-10-11-memory-map.md) records the release
+gates, signed asset verification and automatic live website refresh.
 
 Version 4.0.9 adds OS-encrypted saved desktop connections, authenticated
 reconnection after app restart, durable disconnect, device-only forgetting and
-clear session choices. The complete native/product gates are required before
-publication; the product page continues to select only published builds.
+clear session choices. Its native encrypted-restart and product gates passed;
+these capabilities remain available in 4.0.10.
 
 Version 4.0.8 unifies Studio with the Perseus XR design system and adds signed,
 compatible automatic patches for adopted Linux/macOS Python services. Updates
