@@ -100,7 +100,8 @@ def observe(tag: str, architecture: str, root: Path, mode: str = "inspect") -> N
         "mode": mode,
     }
     (root / "diagnostic.json").write_text(json.dumps(evidence, indent=2) + "\n")
-    if mode == "mounted-guards":
+    mounted = mode in {"mounted-guards", "visible-focus"}
+    if mounted:
         repack(image, bundle, env)
         with image.open("rb") as handle:
             evidence["diagnostic_appimage_sha256"] = hashlib.file_digest(
@@ -112,7 +113,7 @@ def observe(tag: str, architecture: str, root: Path, mode: str = "inspect") -> N
     log: deque[bytes] = deque(maxlen=16)
     child = subprocess.Popen(
         [
-            str(image if mode == "mounted-guards" else bundle / "AppRun"),
+            str(image if mounted else bundle / "AppRun"),
             *(["--inspect=127.0.0.1:0"] if mode == "inspect" else []),
             "--background",
         ],
@@ -247,6 +248,7 @@ if __name__ == "__main__":
             "referenced-timers",
             "mounted-guards",
             "extracted-guards",
+            "visible-focus",
         ],
         default="inspect",
     )

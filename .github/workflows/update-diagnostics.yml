@@ -8,23 +8,46 @@ on:
         type: string
         default: v4.0.9
       experiment:
-        description: Inspector, timer-reference comparison, or mounted/extracted launch comparison
+        description: Inspect timers, launch behavior, or the visible-window focus guard
         type: choice
         default: inspect
-        options: [inspect, timers, launch]
+        options: [inspect, timers, launch, focus]
 
 permissions:
   contents: read
 
 jobs:
+  targets:
+    runs-on: ubuntu-22.04
+    outputs:
+      matrix: ${{ steps.select.outputs.matrix }}
+    steps:
+      - id: select
+        env:
+          MNEMION_DIAGNOSTIC_EXPERIMENT: ${{ inputs.experiment }}
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os
+          modes = {
+              'inspect': ['inspect'],
+              'timers': ['original-timers', 'referenced-timers'],
+              'launch': ['mounted-guards', 'extracted-guards'],
+              'focus': ['mounted-guards', 'visible-focus'],
+          }[os.environ['MNEMION_DIAGNOSTIC_EXPERIMENT']]
+          rows = [{'os': system, 'arch': arch, 'mode': mode}
+                  for system, arch in [('ubuntu-22.04', 'x64'), ('ubuntu-22.04-arm', 'arm64')]
+                  for mode in modes]
+          print('matrix=' + json.dumps(rows))
+          PY
   diagnostic:
+    needs: targets
     name: Linux ${{ matrix.arch }} / ${{ matrix.mode }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJSON(inputs.experiment == 'launch' && '[{"os":"ubuntu-22.04","arch":"x64","mode":"mounted-guards"},{"os":"ubuntu-22.04","arch":"x64","mode":"extracted-guards"},{"os":"ubuntu-22.04-arm","arch":"arm64","mode":"mounted-guards"},{"os":"ubuntu-22.04-arm","arch":"arm64","mode":"extracted-guards"}]' || inputs.experiment == 'timers' && '[{"os":"ubuntu-22.04","arch":"x64","mode":"original-timers"},{"os":"ubuntu-22.04","arch":"x64","mode":"referenced-timers"},{"os":"ubuntu-22.04-arm","arch":"arm64","mode":"original-timers"},{"os":"ubuntu-22.04-arm","arch":"arm64","mode":"referenced-timers"}]' || '[{"os":"ubuntu-22.04","arch":"x64","mode":"inspect"},{"os":"ubuntu-22.04-arm","arch":"arm64","mode":"inspect"}]') }}
+        include: ${{ fromJSON(needs.targets.outputs.matrix) }}
     env:
       GH_TOKEN: ${{ github.token }}
       MNEMION_DIAGNOSTIC_TAG: ${{ inputs.tag }}

@@ -167,6 +167,12 @@ latter retains the verified public runtime prefix and repacks only a private
 copy of its filesystem. Both launch paths use real inactivity and production
 feeds, without a debugger; neither modified copy is public acceptance evidence.
 
+The `focus` experiment compares the original focus flag with a guard that treats
+only a visible, restored window as focused. Both mounted copies record the raw
+focus, visibility and minimized state; real inactivity, renderer safety and
+transfer checks remain unchanged. This isolates stale window-manager focus
+reports without claiming that an active window may be interrupted.
+
 The runner has no user workspace, production memory credentials or signing
 secret. Native fixture checks still cover cancellation, malicious updates,
 interrupted downloads and restart guards before publication. The public rehearsal

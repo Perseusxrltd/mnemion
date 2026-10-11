@@ -18,7 +18,7 @@ if (['--prepare', '--prepare-timers'].includes(process.argv[2])) {
     const mode = process.argv[4];
     const trace = resolve(process.argv[5]);
     const tracePath = relative(parent, trace);
-    if (!['original-timers', 'referenced-timers', 'mounted-guards', 'extracted-guards'].includes(mode) || !tracePath || tracePath.startsWith('..') || isAbsolute(tracePath)) {
+    if (!['original-timers', 'referenced-timers', 'mounted-guards', 'extracted-guards', 'visible-focus'].includes(mode) || !tracePath || tracePath.startsWith('..') || isAbsolute(tracePath)) {
       throw new Error('Invalid isolated timer experiment');
     }
     const { extractAll, createPackageWithOptions } = require('@electron/asar');
@@ -37,11 +37,17 @@ if (['--prepare', '--prepare-timers'].includes(process.argv[2])) {
         if ([...code.matchAll(unref)].length !== 1) throw new Error('Review the changed timer references');
         code = code.replace(unref, '// Keep the existing timers referenced for this controlled experiment.');
       }
-      if (mode.endsWith('-guards')) {
+      if (mode === 'visible-focus') {
+        const focus = 'focused: window?.isFocused() || false';
+        if (code.split(focus).length !== 2) throw new Error('Review the changed window focus check');
+        code = code.replace(focus, 'focused: !!window && window.isFocused() && window.isVisible() && !window.isMinimized()');
+      }
+      if (mode.endsWith('-guards') || mode === 'visible-focus') {
         const guard = /return canRestartForUpdate\((\{[\s\S]*?\})\);/g;
         if ([...code.matchAll(guard)].length !== 1) throw new Error('Review the changed restart guard implementation');
         code = code.replace(guard, (_match, decision) => `const diagnosticGuard = ${decision};
-          diagnosticAppend(${JSON.stringify(trace)}, JSON.stringify({ time: Date.now(), stage: 'restart-guards', ...diagnosticGuard }) + '\\n');
+          diagnosticAppend(${JSON.stringify(trace)}, JSON.stringify({ time: Date.now(), stage: 'restart-guards', ...diagnosticGuard,
+            rawFocused: window?.isFocused() || false, visible: window?.isVisible() || false, minimized: window?.isMinimized() || false }) + '\\n');
           return canRestartForUpdate(diagnosticGuard);`);
       }
       writeFileSync(module, code);
@@ -49,7 +55,7 @@ if (['--prepare', '--prepare-timers'].includes(process.argv[2])) {
     } finally { rmSync(work, { recursive: true, force: true }); }
     console.log(JSON.stringify({ developer_diagnostic_only: true, public_upgrade_gate: false, mode,
       original_asar_sha256: original, diagnostic_asar_sha256: createHash('sha256').update(readFileSync(binary)).digest('hex'),
-      debugger: false, changed_behavior: mode === 'referenced-timers' ? 'timer references' : 'trace only' }));
+      debugger: false, changed_behavior: mode === 'referenced-timers' ? 'timer references' : mode === 'visible-focus' ? 'focus requires visible, restored window' : 'trace only' }));
     process.exit(0);
   }
   const { flipFuses, getCurrentFuseWire, FuseVersion, FuseV1Options } = require('@electron/fuses');
