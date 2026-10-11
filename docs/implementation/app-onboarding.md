@@ -63,9 +63,10 @@ UI and all six native encrypted-restart gates passed. This foundation does not
 complete installation or host setup.
 
 1. Current source provides first-run local/remote choices and a fixed, typed
-   native operator bridge. Complete the Windows, Mac and Linux ARM installed
-   wizard/model/reopen checks; the real Linux x64 flow has passed. See
-   [installed-hosting evidence](../validation/2026-10-11-native-installer-bundling.md).
+   native operator bridge. Complete the remaining Windows installed
+   wizard/model/reopen checks. The integrated source at `ac5797b` passed both
+   Linux and both Mac installed flows; Windows startup/ARM packaging fixes are
+   undergoing validation. See [current acceptance](../validation/2026-10-11-local-address-recovery.md).
 2. Current source bundles the Python service, CPU model drivers, PostgreSQL and
    vector extension. The pinned database builds passed on all supported host
    architectures, including explicitly disclosed Windows ARM compatibility.
@@ -89,8 +90,9 @@ prevents a start that was waiting on inspection, and preserves control if the
 engine does not finish within the shutdown deadline. A cancelled update reopens
 only a workspace it actually stopped; an explicit user stop cancels that intent.
 Agent changes refresh the policy revision shown in Studio without replacing
-unsaved form edits. The combined desktop suite passed **60 tests** on 2026-10-11;
-these checks do not establish packaged native hosting on Windows or macOS.
+unsaved form edits. Address writes use the same lifecycle protection. The combined
+desktop suite passed **66 tests** on 2026-10-11; these checks do not establish
+packaged native hosting by themselves.
 See the [integration report](../validation/2026-10-11-native-integration.md).
 
 ## RAM-policy recovery
@@ -106,8 +108,18 @@ with shutdown and updates. Read [RAM recovery](../service/memory-resources.md)
 for agent examples and the explicit unsafe-storage/256 KiB boundary.
 
 This closes recovery for an ordinary damaged local RAM-policy record. It does
-not close backup restoration, changing a saved service port, moving the local
-data folder, or complete packaged installation/model acceptance.
+not close backup restoration, moving the local data folder, or complete packaged
+installation/model acceptance.
+
+## Local address recovery
+
+Current source adds an app recovery screen and a typed local operator `port`
+command for a stopped workspace whose API port is occupied. Automatic or explicit
+port selection retains its identity, credentials, memories, models and RAM
+policy. An external agent's change requires refresh before saving a stale form;
+a saved repair requires explicit Resume. See [the app and agent procedure](../service/local-workspaces.md)
+and [validation scope](../validation/2026-10-11-local-address-recovery.md).
+This does not change the private database port or configure remote exposure.
 
 ## Release evidence
 

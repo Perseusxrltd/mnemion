@@ -280,6 +280,10 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
     trusted(event)
     return desktopLocalStatus(await localWorkspace().changeMemory(input))
   })
+  ipcMain.handle('local:port', async (event, input: unknown) => {
+    trusted(event)
+    return desktopLocalStatus(await localWorkspace().changePort(input))
+  })
   ipcMain.handle('local:open', async event => {
     trusted(event)
     const generation = ++localOpenGeneration

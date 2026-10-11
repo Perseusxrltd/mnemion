@@ -50,6 +50,14 @@ class SetupOptions(BaseModel):
         return value.strip()
 
 
+class PortChange(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    workspace_id: UUID
+    expected_port: int = Field(ge=1024, le=65535)
+    port: int | None = Field(default=None, ge=1024, le=65535)
+
+
 def timestamp() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -136,6 +144,47 @@ def inspect(root: Path) -> dict:
         if (root / "readiness.json").exists():
             result["last_verification"] = state.read(root / "readiness.json")
     return result
+
+
+def change_port(root: Path, change: PortChange) -> dict:
+    """Change only the stopped workspace's loopback API address, under its lock."""
+    with state.lock(root):
+        saved = configuration(root)
+        if (
+            str(change.workspace_id) != saved["workspace_id"]
+            or change.expected_port != saved["port"]
+        ):
+            raise state.LocalSetupError(
+                "settings_changed", "The workspace address changed. Refresh before saving it again."
+            )
+        if change.port == saved["database_port"]:
+            raise state.LocalSetupError(
+                "invalid_port", "This port belongs to the private database. Choose another port."
+            )
+        for _ in range(8):
+            with socket.socket() as reservation:
+                if os.name == "nt":
+                    reservation.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+                else:
+                    reservation.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                try:
+                    reservation.bind(("127.0.0.1", change.port or 0))
+                except OSError:
+                    raise state.LocalSetupError(
+                        "port_in_use",
+                        "This local port is unavailable. Choose another port or use Automatic.",
+                    ) from None
+                port = reservation.getsockname()[1]
+                if port < 1024 or port == saved["database_port"]:
+                    continue
+                updated = {**saved, "port": port}
+                # Keep the address reserved until the atomic settings write
+                # completes. Starting the service still rechecks availability.
+                state.write(root / "configuration.json", updated)
+                return updated
+        raise state.LocalSetupError(
+            "port_in_use", "No suitable local port was found. Retry or choose a port."
+        )
 
 
 def initialize(root: Path, options: SetupOptions) -> dict:
@@ -564,7 +613,7 @@ def _verify(root: Path, endpoint: str, credentials: dict, settings: dict, regist
 
 def arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
-        "action", choices=["status", "initialize", "run", "memory", "memory-repair"]
+        "action", choices=["status", "initialize", "run", "memory", "memory-repair", "port"]
     )
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--database-runtime", type=Path)
@@ -581,6 +630,13 @@ def dispatch(args) -> int:
     stop = threading.Event()
     try:
         if args.action == "status":
+            emit({"event": "status", **inspect(root)})
+            return 0
+        if args.action == "port":
+            line = sys.stdin.buffer.readline(4097)
+            if len(line) > 4096:
+                raise ValueError("The address settings exceed their size limit")
+            change_port(root, PortChange.model_validate_json(line))
             emit({"event": "status", **inspect(root)})
             return 0
         if args.action in {"memory", "memory-repair"}:

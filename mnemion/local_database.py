@@ -23,6 +23,29 @@ from .service.db import migrate, new_token, token_hash
 from .service.embeddings import Generation
 
 
+def _same_path(value: str | Path, expected: Path) -> bool:
+    """Compare real filesystem identities, including Windows short/long aliases."""
+    try:
+        path = Path(value)
+        return path.is_absolute() and path.samefile(expected)
+    except (OSError, ValueError):
+        return False
+
+
+def _data_argument(arguments: list[str], expected: Path) -> bool:
+    directories = []
+    for index, argument in enumerate(arguments[1:], start=1):
+        if argument in {"-D", "--pgdata"}:
+            if index + 1 >= len(arguments):
+                return False
+            directories.append(arguments[index + 1])
+        elif argument.startswith("--pgdata="):
+            directories.append(argument.partition("=")[2])
+        elif argument.startswith("-D"):
+            directories.append(argument[2:])
+    return len(directories) == 1 and _same_path(directories[0], expected)
+
+
 def available_port(preferred: int = 0) -> int:
     with socket.socket() as connection:
         if os.name == "nt":
@@ -227,8 +250,8 @@ class LocalDatabase:
                 try:
                     if (
                         process.info["exe"]
-                        and Path(process.info["exe"]).parent == self.runtime / "bin"
-                        and str(staging) in (process.info["cmdline"] or [])
+                        and _same_path(Path(process.info["exe"]).parent, self.runtime / "bin")
+                        and _data_argument(process.info["cmdline"] or [], staging)
                     ):
                         raise state.LocalSetupError(
                             "setup_finishing",
@@ -270,17 +293,16 @@ class LocalDatabase:
             directory, tls = connection.execute(
                 "SELECT current_setting('data_directory'), (SELECT ssl FROM pg_stat_ssl WHERE pid=pg_backend_pid())"
             ).fetchone()
-            if Path(directory).resolve() != self.data.resolve() or tls is not True:
+            if not _same_path(directory, self.data) or tls is not True:
                 raise state.LocalSetupError(
                     "database_identity", "The local database identity did not match this workspace."
                 )
         pid = int((self.data / "postmaster.pid").read_text().splitlines()[0])
         process = psutil.Process(pid)
         arguments = process.cmdline()
-        if str(self.data) not in arguments or Path(process.exe()).name not in {
-            "postgres",
-            "postgres.exe",
-        }:
+        if not _data_argument(arguments, self.data) or not _same_path(
+            process.exe(), self.tool("postgres")
+        ):
             raise state.LocalSetupError(
                 "database_identity", "The local database process did not match this workspace."
             )
@@ -419,7 +441,11 @@ class LocalDatabase:
         pid, created = self.process_identity
         try:
             process = psutil.Process(pid)
-            if process.create_time() != created or str(self.data) not in process.cmdline():
+            if (
+                process.create_time() != created
+                or not _data_argument(process.cmdline(), self.data)
+                or not _same_path(process.exe(), self.tool("postgres"))
+            ):
                 raise state.LocalSetupError(
                     "database_identity", "The database process changed; it was not stopped."
                 )

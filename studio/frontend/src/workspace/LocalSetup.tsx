@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, Check, Cpu, Database, LoaderCircle, Play, Shield
 import type { LocalOptions, LocalStatus } from '../../../shared/local-workspace';
 import type { WorkspaceSession } from './connection-types';
 import { LiveMemory, MemoryFields, RepairMemory, memorySize, validMemory } from './MemoryControls';
+import LocalAddress from './LocalAddress';
 
 export const localError = (error: unknown) => (error instanceof Error ? error.message : 'The local workspace could not complete this step.')
   .replace(/^Error invoking remote method '[^']+': (?:Error: )?/, '');
@@ -46,8 +47,8 @@ export default function LocalSetup({ initial, onOpen, onBack, autoContinue = fal
   }
   async function open() { const session = await desktop.localOpen!(); if (active.current) onOpen(session); }
   useEffect(() => {
-    // A repair screen requires an explicit resume after saving its new budget.
-    if (status?.info?.memory_recovery) autoStarted.current = true;
+    // Repairs require an explicit resume after saving new settings.
+    if (status?.info?.memory_recovery || status?.state === 'error') autoStarted.current = true;
     if (autoContinue && status?.info?.configured && !status.info.memory_recovery && ['new', 'stopped'].includes(status.state) && !autoStarted.current) {
       autoStarted.current = true;
       void perform(async () => setStatus(await desktop.localStart!()));
@@ -79,6 +80,7 @@ export default function LocalSetup({ initial, onOpen, onBack, autoContinue = fal
     </div>}
     {status?.state === 'running' && <div className="ws-local-ready"><ShieldCheck size={28} /><h3>Your workspace is ready</h3><p>{status.memory?.indexing_paused ? 'You can save and search memories now. Semantic indexing will resume when the RAM budget has room for the model.' : 'Your private workspace is running and its save and search checks passed.'}</p><button className="ws-button ws-primary" disabled={busy} onClick={() => void perform(open)}>{busy ? <LoaderCircle className="ws-spin" size={16} /> : <ArrowRight size={16} />}Open workspace</button></div>}
     {configured && status?.info?.memory_recovery && <RepairMemory status={status} onStatus={setStatus} disabled={busy || working} />}
+    {configured && status && <LocalAddress status={status} disabled={busy || working} onStatus={value => { autoStarted.current = true; setStatus(value); }} />}
     {configured && !status?.info?.memory_recovery && !working && status?.state !== 'running' && <div className="ws-local-resume"><p>Continue with your saved settings and downloaded model files.</p><button className="ws-button ws-primary" disabled={busy} onClick={() => void perform(async () => setStatus(await desktop.localStart!()))}><Play size={16} />Resume local workspace</button></div>}
     {resources && status?.available && !configured && !working && status.state !== 'running' && <form onSubmit={event => {
       event.preventDefault();

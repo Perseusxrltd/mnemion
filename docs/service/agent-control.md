@@ -44,6 +44,12 @@ staging, compatible application and automatic-update preferences; see the
 [managed update guide](managed-updates.md). These JSON commands require local
 host access and appropriate private credentials; a remote memory key does not grant it.
 
+Current source also includes local desktop setup, RAM policy/recovery and
+stopped-workspace address controls. Authorized agents on the host use the same
+typed operator commands as Studio; see [local workspaces](local-workspaces.md)
+and [memory resources](memory-resources.md). These native-hosting changes are
+awaiting complete installed-platform acceptance and are not in published 4.0.10.
+
 ## Discover through MCP
 
 Use the [connection guide](agents.md) to connect with an application key.

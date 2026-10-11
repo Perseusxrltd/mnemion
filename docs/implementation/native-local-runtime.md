@@ -1,13 +1,15 @@
 # Native runtime for local app setup
 
-This is an installation dependency under development. It does **not** yet make
-Studio able to create a local workspace. Complete setup remains governed by the
+Current source bundles this runtime and includes guided local workspace creation;
+the complete installed-platform gates are still in progress. Published 4.0.10
+connects to an existing service. Complete setup remains governed by the
 [app-onboarding requirements](app-onboarding.md).
 
-The local engine will use PostgreSQL and pgvector, retaining the same role and
+The local engine uses PostgreSQL and pgvector, retaining the same role and
 space protections as organization-hosted services. Users must not install a
 compiler, Python, PostgreSQL or a paid desktop container product to use this path.
-The app will download verified packages and retain resumable setup state.
+Installers bundle verified runtime packages; the app downloads the selected
+model and retains resumable setup state.
 
 ## Database package
 
@@ -28,8 +30,9 @@ The build produces a ZIP containing tools, extension SQL, time-zone data and a
 file inventory. Paths are relocatable; no system database installation is
 overwritten. Mac executables use ad-hoc signatures for local integrity, which
 does not establish Apple publisher trust. These CI archives are development
-outputs, **not signed installer downloads**. Publishing and consuming them
-requires the authenticated runtime catalog and app installer still being built.
+outputs, **not signed installer downloads**. The desktop builder verifies their
+inventories and source provenance before bundling them into its authenticated
+installer/update artifacts; see [native packaging](native-desktop-packaging.md).
 
 The matrix builds Linux and macOS x64/ARM64, plus Windows x64. A separate Windows
 ARM host runs the actual x64 database under OS emulation. That gate must pass
@@ -101,11 +104,12 @@ separate gates.
 
 ## Remaining integration
 
-- Build a portable service/Python runtime, including the selected model drivers.
-- Authenticate the catalog and archives before execution; stage atomically,
-  enforce disk/resource budgets and resume interrupted downloads.
-- Add typed local operator operations for initialization, restricted credentials,
-  service/worker lifecycle, recovery and compatible automatic updates.
+- Complete Windows acceptance for the bundled service/Python/model runtime;
+  both Linux and both Mac installed flows passed at `ac5797b`.
+- Finish public installer/update acceptance with verified inventories, compatible
+  replacement and preserved private state; retain disk/resource budgets.
+- Extend the existing typed initialization, lifecycle, RAM recovery and local
+  address commands to the remaining host/source/backup workflows.
 - Finish Studio's Create, Join, Organization and Recover paths with actual
   readiness checks and actionable retry states. Keep agent operation available.
 - Validate the complete flow on every offered platform before release.

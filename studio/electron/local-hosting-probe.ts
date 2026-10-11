@@ -12,8 +12,8 @@ export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Re
   if (!profile || !smoke || dirname(resolve(path)) !== dirname(resolve(profile)) || dirname(resolve(smoke)) !== dirname(resolve(path)) ||
       (await stat(path)).size > 4096) throw new Error('Hosting validation requires an isolated profile and evidence directory')
   const config = JSON.parse(await readFile(path, 'utf8'))
-  if (!['create', 'resume'].includes(config.phase) || !Number.isInteger(config.port) || config.port < 1024 || config.port > 65535 ||
-      (config.phase === 'resume' && !/^[a-f0-9-]{36}$/.test(config.memoryId))) throw new Error('Invalid hosting validation configuration')
+  if (!['create', 'resume', 'recover-port'].includes(config.phase) || !Number.isInteger(config.port) || config.port < 1024 || config.port > 65535 ||
+      (config.phase !== 'create' && !/^[a-f0-9-]{36}$/.test(config.memoryId))) throw new Error('Invalid hosting validation configuration')
   const result = await window.webContents.executeJavaScript(`(async () => {
     const config = ${JSON.stringify(config)};
     const bridge = window.mnemion;
@@ -56,10 +56,27 @@ export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Re
       }, 'The installed local runtime did not finish setup', 600000);
       await click('Open workspace');
     }
+    if (config.phase === 'recover-port') {
+      await until(async () => {
+        const status = await bridge.localStatus();
+        if (status.state === 'error' && status.errorCode !== 'port_in_use') throw new Error('Unexpected port recovery failure: ' + status.errorCode);
+        return status.errorCode === 'port_in_use';
+      }, 'The occupied local port did not reach its recovery screen', 180000);
+      await until(() => document.querySelector('.ws-local-setup')?.textContent.includes('Another program is using this workspace'), 'The UI did not explain the local address conflict');
+      await click('Save local address');
+      await until(() => document.querySelector('.ws-local-setup')?.textContent.includes('Address saved. Resume the workspace when ready.'), 'The UI did not confirm the saved address');
+      const changed = await bridge.localStatus();
+      if (changed.state !== 'stopped' || changed.info.settings.port === config.port) throw new Error('Port repair must retain a stopped workspace at a new address');
+      await click('Resume local workspace');
+      await until(async () => (await bridge.localStatus()).state === 'running', 'The repaired workspace did not resume', 180000);
+      // Saved local workspaces reopen automatically once an explicit Resume
+      // succeeds. Do not wait for a button that disappears as the UI opens.
+    }
     await until(() => document.querySelector('.ws-workspace-name')?.textContent === 'Équipe installed validation',
       'The installed UI did not open or automatically restore its local workspace', 180000);
     const session = (await bridge.workspaceStatus()).active;
     if (!session || session.me.tenant_name !== 'Équipe installed validation') throw new Error('The UI has no authenticated local session');
+    if (config.phase === 'recover-port' && new URL(session.endpoint).port === String(config.port)) throw new Error('The repaired UI reconnected to the occupied old address');
     async function request(method, path, body) {
       const response = await bridge.serviceRequest({ url: session.endpoint + path, method,
         headers: { Authorization: 'Bearer ' + session.sessionToken, 'Content-Type': 'application/json', 'Idempotency-Key': crypto.randomUUID() },
@@ -90,7 +107,7 @@ export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Re
     return { phase: config.phase, memoryId, endpoint: session.endpoint, tenantId: session.me.tenant_id,
       actualSetupControls: config.phase === 'create', uiOpenedWorkspace: true, nativeService: true,
       authenticatedApi: true, realModelInference: true, semanticSaveAndRecall: true,
-      automaticReopen: config.phase === 'resume', savedMemoryPresent: true, memoryPolicyRetained: true };
+      automaticReopen: config.phase === 'resume', recoveredPortConflict: config.phase === 'recover-port', savedMemoryPresent: true, memoryPolicyRetained: true };
   })()`)
   await writeFile(join(dirname(path), config.phase + '-workspace.png'), (await window.webContents.capturePage()).toPNG(), { mode: 0o600 })
   return result

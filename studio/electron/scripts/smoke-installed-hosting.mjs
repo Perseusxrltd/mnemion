@@ -138,16 +138,29 @@ try {
   }
   await stop()
   if (credentialsHash() !== credentials) throw new Error('Application restart replaced the private workspace credentials')
+  // An unrelated listener must lead to an actual recovery screen, never a new
+  // workspace or silent connection to the other program.
+  const occupied = createServer(socket => socket.end())
+  await new Promise((resolve, reject) => { occupied.once('error', reject); occupied.listen(port, '127.0.0.1', resolve) })
+  try {
+    const recovered = await launch({ phase: 'recover-port', port, memoryId: first.memoryId })
+    if (!recovered.recoveredPortConflict || !recovered.savedMemoryPresent || recovered.tenantId !== first.tenantId || recovered.endpoint === first.endpoint) {
+      throw new Error('The installed address recovery did not preserve and reconnect the original workspace')
+    }
+    await stop()
+    if (credentialsHash() !== credentials) throw new Error('Address recovery replaced the private workspace credentials')
+  } finally { await new Promise(resolve => occupied.close(resolve)) }
   const evidence = { passed: true, platform: process.platform, architecture: process.arch, nativeRuntime,
     installer: process.platform === 'win32' ? 'NSIS per-user' : process.platform === 'darwin' ? 'DMG copied application' : 'AppImage portable user installation',
     installationPathWithSpacesAndUnicode: true, actualSetupControls: true, authenticatedApi: true,
     anonymousAccessRefused: true, realSemanticSaveAndRecall: true, automaticWorkspaceReopen: true,
     restartPreservesWorkspaceAndCredentials: true, savedMemorySurvivesRestart: true,
     configuredRamBudgetPersists: true, cleanDatabaseShutdownOnAppExit: true,
+    occupiedApiPortRecoveredThroughApp: true, addressRecoveryPreservesWorkspaceAndCredentials: true,
     scope: 'Locally built installer, new private profile and real model download. Public download acceptance and update migration are separate gates.' }
   mkdirSync(join(root, 'build-tmp'), { recursive: true })
   writeFileSync(evidenceFile, JSON.stringify(evidence, null, 2) + '\n')
-  for (const phase of ['create', 'resume']) copyFileSync(join(temporary, phase + '-workspace.png'), join(root, 'build-tmp/installed-hosting-' + phase + '.png'))
+  for (const phase of ['create', 'resume', 'recover-port']) copyFileSync(join(temporary, phase + '-workspace.png'), join(root, 'build-tmp/installed-hosting-' + phase + '.png'))
   console.log(JSON.stringify(evidence, null, 2))
   succeeded = true
 } catch (error) {

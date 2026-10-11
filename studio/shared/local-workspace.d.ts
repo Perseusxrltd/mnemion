@@ -2,6 +2,7 @@ export type MemoryOptions = { mode: 'auto'; limit_mib: null } | { mode: 'manual'
 export type MemoryChange = MemoryOptions & { expected_revision?: string }
 export type MemoryRepair = MemoryOptions & { repair_token: string }
 export type MemoryWrite = MemoryChange | MemoryRepair
+export type PortChange = { workspace_id: string; expected_port: number; port: number | null }
 export type MemoryRecovery = { code: 'memory_policy_missing' | 'memory_policy_damaged' | 'memory_policy_inaccessible'; message: string; repair_token: string | null }
 export type MemorySnapshot = {
   mode: 'auto' | 'manual'; requested_limit_mib: number | null; revision: string;

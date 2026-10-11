@@ -48,10 +48,23 @@ const databaseArchives = readdirSync(databaseDirectory).filter(name => name.ends
 if (databaseArchives.length !== 1) throw new Error('Supply exactly one verified native PostgreSQL archive for this target')
 mkdirSync(resolve(root, 'build-tmp'), { recursive: true })
 const work = mkdtempSync(resolve(root, 'build-tmp/desktop-native-'))
-run(enginePython, ['-m', 'deploy.build_native_engine', '--work', resolve(work, 'work'), '--output', resolve(work, 'output')])
 const version = JSON.parse(readFileSync(resolve(root, 'studio/electron/package.json'), 'utf8')).version
+const engineName = `mnemion-engine-${version}-${platform}-${engineArch}.zip`
+let engineArchive
+if (process.env.MNEMION_ENGINE_ARCHIVES) {
+  const directory = resolve(root, process.env.MNEMION_ENGINE_ARCHIVES)
+  const archives = readdirSync(directory).filter(name => name.endsWith('.zip'))
+  if (archives.length !== 1 || archives[0] !== engineName) throw new Error('Supply exactly one matching native service archive for this target')
+  engineArchive = resolve(directory, engineName)
+} else {
+  if (process.platform === 'win32' && process.arch === 'arm64') throw new Error('Build the x64 backend on Windows x64 and supply MNEMION_ENGINE_ARCHIVES for the native ARM desktop')
+  run(enginePython, ['-m', 'deploy.build_native_engine', '--work', resolve(work, 'work'), '--output', resolve(work, 'output')])
+  engineArchive = resolve(work, 'output', engineName)
+}
+// Assembly verifies source and lock hashes, version, licenses and every binary's
+// architecture for imported archives exactly as it does for a local build.
 run(enginePython, ['-m', 'deploy.native_resources', '--resources', resolve(work, 'resources'), '--platform', platform, '--arch', process.arch, '--version', version,
-  '--engine-archive', resolve(work, `output/mnemion-engine-${version}-${platform}-${engineArch}.zip`),
+  '--engine-archive', engineArchive,
   '--database-archive', resolve(databaseDirectory, databaseArchives[0])])
 const resources = resolve(root, 'build-tmp/native-resources')
 rmSync(resources, { recursive: true, force: true })

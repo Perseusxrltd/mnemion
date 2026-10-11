@@ -24,7 +24,11 @@ exactly the database targets it needs. Windows x64 and ARM64 share one compiled
 x64 database archive from the same workflow run. Before packaging, the workflow
 checks native database operation, including the Windows ARM emulation gate.
 It installs the repository's locked service dependencies with the
-`native-build` group and freezes the engine from that same checkout.
+`native-build` group and freezes the engine from that same checkout. Both Windows
+desktops also share one x64 service archive built on an x64 Windows runner.
+Freezing an emulated interpreter on ARM can collect ARM system runtime DLLs;
+building the complete x64 backend once avoids that mixed-architecture package.
+Every executable and DLL is still checked before either desktop consumes it.
 
 For a local build on a target OS/architecture:
 
@@ -42,7 +46,10 @@ npm --prefix studio/electron run smoke:installed-hosting
 `MNEMION_BUILD_PYTHON` selects the client build interpreter;
 `MNEMION_ENGINE_PYTHON` selects the service build interpreter.
 `MNEMION_POSTGRES_ARCHIVES` can select another directory containing the verified
-PostgreSQL archive. The service interpreter is x64 on Windows, including an ARM desktop build;
+PostgreSQL archive. `MNEMION_ENGINE_ARCHIVES` selects a directory with exactly one
+matching service ZIP from the same source/version/lock. Windows ARM requires
+that service to have been built on Windows x64; it does not freeze the service
+again on the ARM host. The service interpreter is x64 on Windows, including an ARM desktop build;
 the client interpreter matches Node. Use ordinary
 CPython, or a standalone Python build with its exact native-library licenses
 reviewed in `deploy/license-overrides/native-python.json`.
@@ -83,6 +90,9 @@ real authenticated semantic save/search. The controller requests the app's
 ordinary quit path and checks that PostgreSQL stopped. A second process launch
 must automatically restore the same workspace, retrieve the saved memory and
 retain the credential file and RAM settings. Anonymous API access must fail.
+A third launch occupies the old API port with an unrelated listener, uses the
+real recovery controls to select a new port, explicitly resumes, and retrieves
+the original memory with the same workspace identity and credentials.
 The probe never supplies fake API responses or alternate engine/database paths.
 
 CI retains only `build-tmp/installed-hosting-evidence.json`, a bounded report

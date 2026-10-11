@@ -163,11 +163,14 @@ completion path. Models, sources, access, agents, Obsidian, updates and backups
 belong in the same guided flow, with real readiness checks and optional steps
 that can be revisited. Keep equivalent agent/operator operations available.
 
-This is **not complete in 4.0.9**: the desktop client joins an existing service;
-database/runtime installation and several host-only settings still need operator
-setup. Secure resumable connections shipped in 4.0.9 after all six native
-release gates passed. Native runtime provisioning and guided host operations
-remain the next implementation steps. See the [full acceptance requirements](implementation/app-onboarding.md).
+This is **not complete in published 4.0.10**: the desktop client joins an existing
+service. Current source bundles the local engine/database and guides workspace
+creation, CPU model setup, RAM control and occupied API-port recovery. Integrated
+installed flows passed on both Linux and both Mac architectures; Windows startup
+and ARM packaging fixes are undergoing validation. Organization hosting, provider
+approval and full backup recovery remain open. See the
+[full acceptance requirements](implementation/app-onboarding.md) and
+[current validation scope](validation/2026-10-11-local-address-recovery.md).
 Do not count a setup guide, mock success or disabled button as an implemented flow.
 
 ## Next patches: reliability and operational confidence
@@ -177,7 +180,7 @@ recovery from an agent's availability or model quota. Add clear connectivity
 diagnostics, individual invitations/sign-in and hosted OAuth while continuing
 the native local-runtime and resource work. See [current agent-platform research](research/2026-10-11-agent-platforms.md).
 
-The first [live 3D map](service/memory-map.md) is implemented for the next patch:
+The first [live 3D map](service/memory-map.md) shipped in 4.0.10:
 permission-filtered memories, topics, relationships and real recorded activity,
 with evidence inspection and a lightweight mode. Follow native release validation
 with larger-workspace clustering, incremental subscriptions and time replay.

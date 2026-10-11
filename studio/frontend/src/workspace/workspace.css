@@ -15,6 +15,7 @@
 }
 
 .ws-setup-choices, .ws-setup-fields { display: grid; gap: 18px; margin: 24px 0; }
+fieldset.ws-setup-fields { border: 0; padding: 0; min-width: 0; }
 .ws-setup-choice, .ws-setup-card { display: flex; align-items: center; gap: 16px; width: 100%; padding: 22px; text-align: left; border: 1px solid var(--ws-border); border-radius: 12px; background: var(--ws-panel); color: var(--ws-text); transition: border-color .15s, background .15s; }
 .ws-setup-choice:hover, .ws-setup-card:hover { border-color: var(--ws-accent); background: color-mix(in srgb, var(--ws-panel), var(--ws-accent) 3%); }
 .ws-setup-choice > svg, .ws-setup-card > svg { flex-shrink: 0; color: var(--ws-accent); }

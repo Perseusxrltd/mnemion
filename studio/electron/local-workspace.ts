@@ -1,7 +1,7 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { StringDecoder } from 'node:string_decoder'
-import type { LocalOptions, LocalInfo, LocalStatus, MemoryChange, MemoryWrite, MemorySnapshot, MemoryPolicy } from '../shared/local-workspace.js'
+import type { LocalOptions, LocalInfo, LocalStatus, MemoryChange, MemoryWrite, MemorySnapshot, MemoryPolicy, PortChange } from '../shared/local-workspace.js'
 type Connection = { endpoint: string; credential: string; workspaceId: string; version: string }
 type Options = { executable: string; database: string; root: string; version: string; environment: NodeJS.ProcessEnv; desktopMemory?: () => number }
 
@@ -52,12 +52,23 @@ export function localEnvironment(source: NodeJS.ProcessEnv, root: string): NodeJ
   return { ...environment, HF_HOME: root + '/model-download-cache', HF_HUB_DISABLE_TELEMETRY: '1', HF_HUB_DISABLE_PROGRESS_BARS: '1' }
 }
 
+export function portOptions(input: unknown): PortChange {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Choose a valid local address.')
+  const value = input as PortChange
+  const validPort = (port: unknown) => Number.isInteger(port) && Number(port) >= 1024 && Number(port) <= 65535
+  if (Object.keys(value).some(key => !['workspace_id', 'expected_port', 'port'].includes(key)) ||
+      typeof value.workspace_id !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(value.workspace_id) ||
+      !validPort(value.expected_port) || (value.port !== null && !validPort(value.port))) throw new Error('Choose a valid local address.')
+  return { workspace_id: value.workspace_id, expected_port: value.expected_port, port: value.port }
+}
+
 export class LocalWorkspace {
   private child?: ChildProcessWithoutNullStreams
   private connection?: Connection
   private info?: LocalInfo
   private operation?: Promise<LocalInfo>
   private memoryChange?: Promise<LocalStatus>
+  private configurationChange?: Promise<LocalStatus>
   private stopping?: Promise<boolean>
   private closing?: Promise<boolean>
   private controls = new Set<ChildProcessWithoutNullStreams>()
@@ -73,8 +84,8 @@ export class LocalWorkspace {
   }
 
   get status(): LocalStatus { return { ...this.statusValue, info: this.info } }
-  get active(): boolean { return !!this.child || this.controls.size > 0 || !!this.operation || !!this.memoryChange }
-  get busy(): boolean { return !!this.operation || !!this.memoryChange || this.controls.size > 0 || !!this.stopping || !!this.closing || ['starting', 'stopping'].includes(this.statusValue.state) }
+  get active(): boolean { return !!this.child || this.controls.size > 0 || !!this.operation || !!this.memoryChange || !!this.configurationChange }
+  get busy(): boolean { return !!this.operation || !!this.memoryChange || !!this.configurationChange || this.controls.size > 0 || !!this.stopping || !!this.closing || ['starting', 'stopping'].includes(this.statusValue.state) }
 
   private assertOpen() {
     if (this.disposed || this.closing) throw new Error('The app is closing.')
@@ -101,13 +112,27 @@ export class LocalWorkspace {
   async inspect(): Promise<LocalInfo> {
     this.assertOpen()
     if (!this.status.available) throw new Error('The complete local runtime is missing. Reinstall Mnemion Studio to create a workspace on this computer.')
+    // A concurrent status read must not publish pre-save settings after the
+    // address writer has confirmed its replacement. Refresh even after an
+    // unconfirmed write so callers can recover from a partial completion.
+    if (this.configurationChange) {
+      await this.configurationChange.catch(() => undefined)
+      this.assertOpen()
+    }
     if (this.operation) return this.operation
-    this.operation = new Promise((resolve, reject) => {
-      const child = this.control('status')
-      child.stdin.end()
+    this.operation = this.readInfo('status')
+    try { return await this.operation } finally { this.operation = undefined }
+  }
+
+  private readInfo(action: 'status' | 'port', input?: PortChange): Promise<LocalInfo> {
+    return new Promise((resolve, reject) => {
+      const child = this.control(action)
+      child.stdin.end(input === undefined ? undefined : JSON.stringify(input) + '\n')
       let body = ''
       let failed = false
-      const timer = setTimeout(() => { failed = true; child.kill(); reject(new Error('The local runtime check timed out. Try again.')) }, 20_000)
+      const timer = setTimeout(() => { failed = true; child.kill(); reject(new Error(action === 'port'
+        ? 'The address change could not be confirmed. Refresh its status before retrying.'
+        : 'The local runtime check timed out. Try again.')) }, 20_000)
       child.stdout.on('data', (chunk: Buffer) => {
         body += chunk.toString('utf8')
         if (body.length > 256 * 1024) { failed = true; child.kill(); reject(new Error('The local runtime returned an invalid status.')) }
@@ -119,12 +144,15 @@ export class LocalWorkspace {
         if (failed) return
         try {
           const value = JSON.parse(body)
-          if (code !== 0 || value.event !== 'status') throw new Error(value.event === 'error' ? value.message : 'The local runtime could not read its settings.')
+          if (code !== 0 || value.event !== 'status') throw new Error(value.event === 'error' && typeof value.message === 'string' && value.message.length <= 1000 ? value.message : 'The local runtime could not read its settings.')
           if (value.engine_version !== this.options.version || typeof value.configured !== 'boolean' || value.data_directory !== this.options.root ||
               !value.resources || typeof value.resources.memory_bytes !== 'number' || typeof value.resources.available_disk_bytes !== 'number') {
             throw new Error('The local runtime does not match this app. Reinstall the complete app.')
           }
           const { configured, data_directory, engine_version, resources, settings, last_verification, memory_policy, memory_recovery, memory } = value
+          if (action === 'port' && (!configured || !settings || settings.workspace_id !== input!.workspace_id.toLowerCase() ||
+              !Number.isInteger(settings.port) || settings.port < 1024 || settings.port > 65535 || settings.port === settings.database_port ||
+              (input!.port !== null && settings.port !== input!.port))) throw new Error('The saved local address could not be confirmed. Refresh before retrying.')
           if (memory_recovery && (!['memory_policy_missing', 'memory_policy_damaged', 'memory_policy_inaccessible'].includes(memory_recovery.code) ||
               typeof memory_recovery.message !== 'string' || memory_recovery.message.length > 1000 ||
               (memory_recovery.repair_token !== null && !/^[a-f0-9]{64}$/.test(memory_recovery.repair_token)))) throw new Error('Invalid RAM recovery status')
@@ -135,15 +163,16 @@ export class LocalWorkspace {
         } catch (error) { reject(error instanceof Error ? error : new Error('The local runtime returned an invalid status.')) }
       })
     })
-    try { return await this.operation } finally { this.operation = undefined }
   }
 
   async start(input?: unknown): Promise<LocalStatus> {
     this.assertOpen()
+    if (this.configurationChange) throw new Error('The local address is being saved. Wait for it to finish.')
     if (this.child) return this.status
     const options = input === undefined ? undefined : localOptions(input)
     const info = await this.inspect()
     this.assertOpen()
+    if (this.configurationChange) throw new Error('The local address is being saved. Wait for it to finish.')
     if (this.child) return this.status
     if (!options && !info.configured) throw new Error('Choose the workspace settings before starting.')
     if (info.memory_recovery) throw new Error('Repair the saved RAM budget before resuming this workspace.')
@@ -232,6 +261,7 @@ export class LocalWorkspace {
 
   async changeMemory(input: unknown): Promise<LocalStatus> {
     this.assertOpen()
+    if (this.configurationChange) throw new Error('The local address is being saved. Wait for it to finish.')
     if (this.memoryChange) throw new Error('The RAM budget is already being saved. Wait for it to finish.')
     const change = memoryOptions(input, true)
     this.memoryChange = this.saveMemory(change)
@@ -273,6 +303,23 @@ export class LocalWorkspace {
     return this.status
   }
 
+  async changePort(input: unknown): Promise<LocalStatus> {
+    this.assertOpen()
+    if (!this.status.available) throw new Error('The complete local runtime is missing. Reinstall Mnemion Studio.')
+    if (this.child || this.busy) throw new Error('Pause the local workspace and wait for other changes to finish before changing its address.')
+    const change = portOptions(input)
+    this.configurationChange = this.savePort(change)
+    try { return await this.configurationChange } finally { this.configurationChange = undefined }
+  }
+
+  private async savePort(change: PortChange): Promise<LocalStatus> {
+    await this.readInfo('port', change)
+    if (this.statusValue.state !== 'error' || this.statusValue.errorCode === 'port_in_use') {
+      this.set({ state: 'stopped', errorCode: undefined, stage: undefined, message: 'Local address saved. Resume your workspace when ready.' })
+    }
+    return this.status
+  }
+
   privateConnection(): Connection {
     if (!this.connection || this.statusValue.state !== 'running') throw new Error('Wait for the local workspace checks to finish before opening it.')
     return { ...this.connection }
@@ -307,7 +354,7 @@ export class LocalWorkspace {
   private async finishStop(): Promise<boolean> {
     // A writer must finish before an updater replaces its executable. Starts
     // waiting on inspection recheck the stop/close guard before spawning.
-    await Promise.allSettled([this.operation, this.memoryChange])
+    await Promise.allSettled([this.operation, this.memoryChange, this.configurationChange])
     if (this.controls.size > 0) return false
     const child = this.child
     if (!child) return true

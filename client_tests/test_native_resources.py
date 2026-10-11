@@ -134,10 +134,12 @@ def test_packaging_rejects_an_incomplete_or_wrong_runtime(tmp_path, change):
         verify(tmp_path, "linux", "x64", "4.0.10")
 
 
-def test_arm_windows_cannot_mislabel_an_arm_service_as_the_x64_backend(tmp_path):
+@pytest.mark.parametrize("name", ["mnemion-engine.exe", "_internal/msvcp140.dll"])
+def test_arm_windows_cannot_mislabel_an_arm_service_as_the_x64_backend(tmp_path, name):
     fixture(tmp_path, "windows", "arm64")
     engine = tmp_path / "engine"
-    (engine / "mnemion-engine.exe").write_bytes(binary("windows", "arm64"))
+    (engine / name).parent.mkdir(parents=True, exist_ok=True)
+    (engine / name).write_bytes(binary("windows", "arm64"))
     inventory(engine)
     with pytest.raises(ValueError, match="architecture"):
         verify(tmp_path, "windows", "arm64", "4.0.10")

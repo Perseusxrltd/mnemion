@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs'
 import { syncBuiltinESMExports } from 'node:module'
 import { PassThrough } from 'node:stream'
 import { test } from 'node:test'
-import { LocalWorkspace } from '../dist/local-workspace.js'
+import { LocalWorkspace, portOptions } from '../dist/local-workspace.js'
 
 const { version } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
 const root = '/private/test-workspace'
@@ -13,6 +13,8 @@ const settle = () => new Promise(resolve => setImmediate(resolve))
 const policy = revision => ({ format: 1, revision, settings: { mode: 'manual', limit_mib: 512 } })
 const info = revision => ({ event: 'status', configured: true, data_directory: root, engine_version: version,
   resources: { memory_bytes: 4 * 1024 ** 3, available_disk_bytes: 8 * 1024 ** 3 }, memory_policy: policy(revision) })
+const addressChange = { workspace_id: '00000000-0000-4000-8000-000000000001', expected_port: 17400, port: null }
+const addressInfo = port => ({ ...info('first'), settings: { workspace_id: addressChange.workspace_id, port, database_port: 17401 } })
 
 class Command extends EventEmitter {
   stdin = new PassThrough()
@@ -68,6 +70,77 @@ test('closing during inspection prevents a delayed workspace start', async t => 
   assert.deepEqual(f.commands.map(command => command.action), ['status'])
   assert.equal(f.host.active, false)
   await assert.rejects(f.host.inspect(), /closing/)
+})
+
+test('a stopped local address change is bounded and cannot accept a listener host', () => {
+  assert.deepEqual(portOptions(addressChange), addressChange)
+  for (const change of [{ host: '0.0.0.0' }, { port: true }, { port: '7893' }, { port: 80 }, { port: 65536 }, { workspace_id: 'not-a-workspace' }]) {
+    assert.throws(() => portOptions({ ...addressChange, ...change }), /valid local address/)
+  }
+})
+
+test('an address save blocks startup and another writer and finishes before an update stop', async t => {
+  const f = fixture(t)
+  const change = f.host.changePort(addressChange)
+  assert.equal(f.last().action, 'port')
+  assert.equal(f.host.busy, true)
+  await assert.rejects(f.host.start(), /address is being saved/)
+  await assert.rejects(f.host.changeMemory({ mode: 'auto', limit_mib: null }), /address is being saved/)
+  await assert.rejects(f.host.changePort(addressChange), /wait for other changes/)
+  let finished = false
+  const stop = f.host.stopForUpdate().then(result => { finished = true; return result })
+  await settle()
+  assert.equal(finished, false)
+  f.last().reply(addressInfo(17402))
+  assert.equal((await change).info.settings.port, 17402)
+  assert.equal(await stop, true)
+  await f.host.cancelUpdateStop()
+  assert.equal(f.host.status.state, 'stopped')
+  assert.deepEqual(f.commands.map(command => command.action), ['port'])
+})
+
+test('a running local workspace refuses an address change', async t => {
+  const f = fixture(t)
+  await running(f)
+  await assert.rejects(f.host.changePort(addressChange), /Pause the local workspace/)
+  assert(!f.commands.some(command => command.action === 'port'))
+})
+
+test('inspection waits for an address save before reading the current settings', async t => {
+  const f = fixture(t)
+  const change = f.host.changePort(addressChange)
+  const inspection = f.host.inspect()
+  await settle()
+  assert.deepEqual(f.commands.map(command => command.action), ['port'])
+  f.last().reply(addressInfo(17402))
+  await change
+  await settle()
+  assert.deepEqual(f.commands.map(command => command.action), ['port', 'status'])
+  f.last().reply(addressInfo(17402))
+  assert.equal((await inspection).settings.port, 17402)
+})
+
+test('a closing app drains an address save and refuses later mutations', async t => {
+  const f = fixture(t)
+  const change = f.host.changePort({ ...addressChange, port: 17402 })
+  const close = f.host.close()
+  await assert.rejects(f.host.changePort(addressChange), /closing|stopping/)
+  f.last().reply(addressInfo(17402))
+  await change
+  assert.equal(await close, true)
+  assert.equal(f.host.active, false)
+})
+
+test('an unconfirmed address response cannot replace the displayed workspace settings', async t => {
+  const f = fixture(t)
+  const inspect = f.host.inspect()
+  f.last().reply(addressInfo(17400))
+  await inspect
+  const rejected = assert.rejects(f.host.changePort({ ...addressChange, port: 17402 }), /could not be confirmed/)
+  f.last().reply({ ...addressInfo(17402), settings: { workspace_id: '00000000-0000-4000-8000-000000000002', port: 17402, database_port: 17401 } })
+  await rejected
+  assert.equal(f.host.status.info.settings.port, 17400)
+  assert.equal(f.host.status.info.settings.workspace_id, addressChange.workspace_id)
 })
 
 test('an update stop waits for an in-flight RAM save and blocks later changes', async t => {
