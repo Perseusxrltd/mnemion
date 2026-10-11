@@ -339,3 +339,9 @@ quality. The roadmap and issue queue track those independently.
   and native release gate, and all six public 4.0.5 → 4.0.6 automatic upgrades.
   All six public downloads and automatic website metadata updates were verified.
   Issue 7 is closed. Server software auto-updates remain separate work in issue 11.
+
+- Release 4.0.7 was published after every product, container and native gate
+  passed, including both native Mac supervision/model/audit jobs. All six real
+  public 4.0.6 → 4.0.7 automatic upgrades passed and preserved profiles. The
+  website followed the release automatically. Issue 6 is closed; host-specific
+  boot adoption and verified server software updates remain separate work.
