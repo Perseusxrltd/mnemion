@@ -570,12 +570,15 @@ def main(argv: list[str] | None = None) -> int:
         try:
             registry = ModelRegistry.from_environment()
             process = ModelWorker(database, registry, telemetry=telemetry)
-            if args.once:
-                print(json.dumps({"processed": process.run_once()}))
-            else:
-                while not stop.is_set():
-                    if not process.run_once():
-                        stop.wait(0.5)
+            from .supervision import process_ready
+
+            with process_ready("worker", registry.generation_ids):
+                if args.once:
+                    print(json.dumps({"processed": process.run_once()}))
+                else:
+                    while not stop.is_set():
+                        if not process.run_once():
+                            stop.wait(0.5)
         finally:
             telemetry.stop()
             if "registry" in locals():

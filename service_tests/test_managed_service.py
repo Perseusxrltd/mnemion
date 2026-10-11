@@ -174,8 +174,9 @@ def test_managed_roles_restart_and_take_a_real_verified_backup(
     os.environ.get("MNEMION_TEST_MANAGED_INSTALL") != "1",
     reason="Opt-in real locked runtime installation",
 )
+@pytest.mark.parametrize("legacy_previous", [False, True])
 def test_signed_locked_install_and_failed_update_preserve_real_accepted_memories(
-    managed_database, pg_bin, tmp_path, monkeypatch
+    managed_database, pg_bin, tmp_path, monkeypatch, legacy_previous
 ):
     from mnemion.service import studio
 
@@ -187,7 +188,7 @@ def test_signed_locked_install_and_failed_update_preserve_real_accepted_memories
     major, minor, patch = version_tuple(__version__)
     first, second = f"{major}.{minor}.{patch + 1}", f"{major}.{minor}.{patch + 2}"
     packages, envelope = managed_release_fixture.candidate(
-        bootstrap, tmp_path / "first publisher", first, key
+        bootstrap, tmp_path / "first publisher", first, key, legacy_readiness=legacy_previous
     )
     available = {"packages": packages, "envelope": envelope}
     monkeypatch.setattr(updates, "fetch_manifest", lambda: available["envelope"])
@@ -220,8 +221,10 @@ def test_signed_locked_install_and_failed_update_preserve_real_accepted_memories
             assert updates.apply(state)["status"] == "updated"
             active = updates.resolved_runtime(state)
             assert active["version"] == first and active["isolated"]
+            assert active["readiness_protocol"] == (0 if legacy_previous else 1)
             running = supervision.status(state)
             assert running["ready"]
+            assert running["children_initialized"] is (None if legacy_previous else True)
             api = next(item for item in running["processes"] if item["name"] == "mnemion-api")
             assert_installed_process(api["pid"], active, "mnemion.service.cli")
             schema = client.get("/openapi.json")
@@ -287,6 +290,9 @@ def test_signed_locked_install_and_failed_update_preserve_real_accepted_memories
             assert not worker.is_alive() and "memory_id" in captured
             assert updates.resolved_runtime(state)["version"] == first
             assert supervision.status(state)["ready"]
+            assert supervision.status(state)["children_initialized"] is (
+                None if legacy_previous else True
+            )
             assert client.get("/openapi.json").json()["info"]["version"] == first
             assert updates.apply(state)["status"] == "held_after_failure"
             result = client.post(

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from contextlib import contextmanager
 import hashlib
 import http.client
 import importlib.util
@@ -33,6 +34,8 @@ ROLE_VARIABLES = {
     "MNEMION_API_KEY",
     "MNEMION_CREDENTIALS_FILE",
     "MNEMION_SUPERVISED_INSTANCE",
+    "MNEMION_SUPERVISED_STATE",
+    "MNEMION_SUPERVISED_ROLE",
     "PGPASSWORD",
     "PGPASSFILE",
     "PGSERVICE",
@@ -43,6 +46,10 @@ ROLE_VARIABLES = {
     "PGPORT",
     "PGOPTIONS",
 }
+
+# Persisted during managed staging so older, verified rollback runtimes remain
+# usable. A runtime advertising this protocol must acknowledge both children.
+READINESS_PROTOCOL = 1
 
 
 class SupervisionError(ValueError):
@@ -434,6 +441,100 @@ def _rpc(value: dict):
     return client
 
 
+@contextmanager
+def process_ready(role: str, generations: list[str]):
+    """Acknowledge initialization from the actual service process, after exec/imports.
+
+    Supervisor RUNNING only describes survival past startsecs. A private receipt
+    binds initialization to this process incarnation and the code/models it loaded.
+    Ordinary service commands outside Supervisor do not publish host state.
+    """
+    location = os.environ.get("MNEMION_SUPERVISED_STATE")
+    if location is None:
+        yield
+        return
+    if role not in {"api", "worker"} or os.environ.get("MNEMION_SUPERVISED_ROLE") != role:
+        raise SupervisionError("The service readiness role does not match its supervisor")
+    import psutil
+
+    from . import update_state
+
+    _, value = settings(Path(location))
+    process = psutil.Process()
+    receipt = {
+        "instance": value["identifier"],
+        "role": role,
+        "pid": process.pid,
+        "created": process.create_time(),
+        "version": __version__,
+        "package": str(Path(__file__).resolve().parents[1]),
+        "generations": sorted(set(generations)),
+    }
+    path = Path(value["runtime"]) / f"{role}-ready.json"
+    update_state.write(path, receipt)
+    try:
+        yield
+    finally:
+        # A replacement process may already have published its own receipt.
+        try:
+            if update_state.read(path) == receipt:
+                path.unlink()
+        except (OSError, ValueError):
+            pass
+
+
+def _initialized(state: Path, value: dict, processes: list[dict]) -> bool | None:
+    """Reject old receipts, reused PIDs, and a process from a different runtime."""
+    import psutil
+
+    from . import update_state
+
+    try:
+        runtime = (
+            update_state.read(state / "updates/active.json")
+            if value.get("managed_updates")
+            else {"version": __version__, "readiness_protocol": READINESS_PROTOCOL}
+        )
+        protocol = runtime.get("readiness_protocol", 0)
+        if type(protocol) is not int or protocol not in {0, READINESS_PROTOCOL}:
+            return False
+        if protocol == 0:
+            # Older verified installations predate receipts. Keep their existing
+            # readiness contract available for adoption and runtime rollback.
+            return None
+        models = None
+        for role in ("api", "worker"):
+            info = next(item for item in processes if item["name"] == "mnemion-" + role)
+            if info["statename"] != "RUNNING" or info["pid"] <= 0:
+                return False
+            receipt = update_state.read(Path(value["runtime"]) / f"{role}-ready.json")
+            process = psutil.Process(info["pid"])
+            generations = receipt.get("generations")
+            if (
+                receipt.get("instance") != value["identifier"]
+                or receipt.get("role") != role
+                or receipt.get("pid") != info["pid"]
+                or receipt.get("created") != process.create_time()
+                or receipt.get("version") != runtime["version"]
+                or (
+                    runtime.get("isolated")
+                    and receipt.get("package") != str(Path(runtime["package"]).resolve())
+                )
+                or not process.is_running()
+                or process.status() == psutil.STATUS_ZOMBIE
+                or not isinstance(generations, list)
+                or not generations
+                or not all(isinstance(item, str) for item in generations)
+                or ("generations" in runtime and generations != runtime["generations"])
+                or (models is not None and generations != models)
+            ):
+                return False
+            models = generations
+        return True
+    except (OSError, ValueError, KeyError, StopIteration, psutil.Error):
+        return False
+
+
 def status(state: Path) -> dict:
     state, value = settings(state)
     try:
@@ -467,13 +568,35 @@ def status(state: Path) -> dict:
             ] and response.headers.get("X-Mnemion-Process") == str(api_pid)
     except (OSError, ValueError):
         pass
+    initialized = _initialized(state, value, processes)
+    unchanged = False
+    if ready and instance_matches and initialized is not False:
+        # HTTP and receipt checks must describe the same process snapshot. A
+        # restart during either check cannot make a previous generation ready.
+        def snapshot(items):
+            return sorted(
+                (item["name"], item["pid"], item.get("start"), item["statename"]) for item in items
+            )
+
+        try:
+            with _rpc(value) as client:
+                current = client.supervisor.getAllProcessInfo()
+            unchanged = snapshot(current) == snapshot(processes)
+            processes = current
+        except (OSError, EOFError, xmlrpc.client.Error, http.client.HTTPException):
+            # A supervisor may begin draining between the two observations.
+            # Preserve a not-ready result instead of reporting stale readiness.
+            unchanged = False
     return {
         "running": True,
         "ready": ready
         and instance_matches
+        and initialized is not False
+        and unchanged
         and all(item["statename"] == "RUNNING" for item in processes),
         "http_ready": ready,
         "instance_matches": instance_matches,
+        "children_initialized": initialized,
         "supervisor_pid": pid,
         "processes": [
             {key: item[key] for key in ("name", "statename", "pid", "exitstatus")}
@@ -585,6 +708,8 @@ def child(state: Path, role: str) -> int:
     elif role == "updater":
         raise SupervisionError("This Supervisor instance has no managed updater")
     arguments = ["--credentials", str(state / f"{role}.json")]
+    os.environ["MNEMION_SUPERVISED_STATE"] = str(state)
+    os.environ["MNEMION_SUPERVISED_ROLE"] = role
     if role == "worker":
         arguments.append("worker")
     else:

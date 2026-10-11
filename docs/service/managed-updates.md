@@ -130,7 +130,9 @@ For an eligible patch, the updater:
 4. Creates and independently verifies a database backup **before stopping** the
    running API or worker. A failed backup leaves the running service in place.
 5. Writes a durable recovery journal, drains both processes, changes the active
-   runtime and verifies the new API instance/PID and worker readiness.
+   runtime and verifies the new API instance/PID and worker readiness. Runtimes
+   advertising initialization protocol 1 must provide matching private child
+   receipts; a process waiting during imports or argument parsing cannot pass.
 6. Restarts the updater itself through Supervisor using the newly verified runtime.
 
 There is a short service interruption during cutover. Applications should use
@@ -142,6 +144,9 @@ If startup fails, the previous runtime is restored with the same live database.
 by a candidate before a failed readiness check are not discarded. An interrupted
 cutover is recovered from its journal on the next updater start. A failed version
 is held until an operator explicitly retries it or a newer release is published.
+The protocol capability is recorded during verified staging. Earlier runtimes
+that predate these receipts remain valid rollback targets under their previous
+readiness contract; receipt absence is never accepted for a protocol-1 runtime.
 
 ## Inspect, pause or run a check
 

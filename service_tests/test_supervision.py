@@ -1,6 +1,7 @@
 """Real user-level process supervision without systemd or production data."""
 
 import json
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import nullcontext
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import os
@@ -23,6 +24,7 @@ import pytest
 from mnemion.service import supervision
 from mnemion.service.admin import bootstrap_tenant
 from mnemion.service.db import migrate
+from mnemion.service import update_state
 
 pytestmark = pytest.mark.skipif(os.name != "posix", reason="Supervisor is a Unix process manager")
 
@@ -125,6 +127,8 @@ def test_real_api_and_worker_recover_from_crashes_and_stop_cleanly(
                 == 200
             )
         for role in ("mnemion-worker", "mnemion-api"):
+            receipt_path = runtime / (role.removeprefix("mnemion-") + "-ready.json")
+            previous_receipt = update_state.read(receipt_path)
             previous = next(item["pid"] for item in current["processes"] if item["name"] == role)
             os.kill(previous, signal.SIGKILL)
 
@@ -141,6 +145,14 @@ def test_real_api_and_worker_recover_from_crashes_and_stop_cleanly(
                 )
 
             recovered = wait_until(replacement)
+            replacement_receipt = update_state.read(receipt_path)
+            try:
+                # A live replacement must not inherit readiness from its dead
+                # predecessor, even while HTTP and Supervisor both look healthy.
+                update_state.write(receipt_path, previous_receipt)
+                assert not supervision.status(state)["ready"]
+            finally:
+                update_state.write(receipt_path, replacement_receipt)
             assert recovered["supervisor_pid"] == current["supervisor_pid"]
             recorded += [psutil.Process(item["pid"]) for item in recovered["processes"]]
             current = recovered
@@ -164,6 +176,124 @@ def test_real_api_and_worker_recover_from_crashes_and_stop_cleanly(
             runtime.rmdir()
         except OSError:
             pass
+
+
+def test_worker_blocked_before_initialization_is_not_ready(
+    supervised_database, tmp_path, monkeypatch
+):
+    from mnemion.service import studio
+    from service_tests import managed_release_fixture
+
+    bootstrap = managed_release_fixture.checkout(tmp_path / "blocked bootstrap", bytes(32))
+    monkeypatch.setattr(studio, "source_root", lambda: bootstrap)
+    entered, release = tmp_path / "worker-entered", tmp_path / "release-worker"
+    cli = bootstrap / "mnemion/service/cli.py"
+    marker = "    args = parser.parse_args(argv)"
+    cli.write_text(
+        cli.read_text().replace(
+            marker,
+            marker
+            + '\n    if args.command == "worker":\n'
+            + "        import time\n"
+            + f"        Path({str(entered)!r}).touch()\n"
+            + "        deadline = time.monotonic() + 40\n"
+            + f"        while not Path({str(release)!r}).exists():\n"
+            + "            if time.monotonic() >= deadline:\n"
+            + "                raise RuntimeError('Worker startup fixture timed out')\n"
+            + "            time.sleep(0.05)",
+            1,
+        )
+    )
+    api, worker, _ = supervised_database
+    roles = inputs(tmp_path, api, worker)
+    environment = tmp_path / "environment.json"
+    update_state.write(
+        environment,
+        {
+            "MNEMION_MODEL_OFFLINE": "1",
+            "MNEMION_MODEL_CACHE": str(tmp_path / "models"),
+            "MNEMION_EVALUATIONS_DISABLED": "1",
+            "MNEMION_LIBRARIAN_DISABLED": "1",
+        },
+    )
+    with socket.socket() as listener:
+        listener.bind(("127.0.0.1", 0))
+        port = listener.getsockname()[1]
+    state = tmp_path / "blocked service"
+    supervision.prepare(state, roles, roles, port=port, environment=environment)
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        startup = pool.submit(supervision.start, state)
+        try:
+            wait_until(entered.exists)
+
+            def running_before_initialization():
+                value = supervision.status(state)
+                return (
+                    value
+                    if value.get("http_ready")
+                    and value.get("instance_matches")
+                    and all(item["statename"] == "RUNNING" for item in value["processes"])
+                    else None
+                )
+
+            current = wait_until(running_before_initialization)
+            assert not current["ready"], "A worker waiting before initialization was accepted"
+            release.touch()
+            startup.result(timeout=20)
+            assert wait_until(lambda: supervision.status(state)["ready"])
+        finally:
+            release.touch()
+            try:
+                startup.result(timeout=20)
+            finally:
+                supervision.stop(state)
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("created", 0),
+        ("version", "0.0.0"),
+        ("generations", ["other"]),
+        ("active_generations", ["other"]),
+    ],
+)
+def test_current_pid_cannot_reuse_another_start_time_runtime_or_model_readiness(
+    tmp_path, monkeypatch, field, value
+):
+    roles = inputs(tmp_path)
+    state = tmp_path / "receipts"
+    supervision.prepare(state, roles, roles)
+    _, settings = supervision.settings(state)
+    monkeypatch.setenv("MNEMION_SUPERVISED_STATE", str(state))
+    monkeypatch.setenv("MNEMION_SUPERVISED_ROLE", "api")
+    with supervision.process_ready("api", ["fixture-generation"]):
+        monkeypatch.setenv("MNEMION_SUPERVISED_ROLE", "worker")
+        with supervision.process_ready("worker", ["fixture-generation"]):
+            processes = [
+                {"name": "mnemion-" + role, "statename": "RUNNING", "pid": os.getpid()}
+                for role in ("api", "worker")
+            ]
+            assert supervision._initialized(state, settings, processes)
+            path = Path(settings["runtime"]) / "worker-ready.json"
+            original = update_state.read(path)
+            try:
+                if field == "active_generations":
+                    settings["managed_updates"] = True
+                    update_state.directory(state / "updates")
+                    update_state.write(
+                        state / "updates/active.json",
+                        {
+                            "version": original["version"],
+                            "readiness_protocol": 1,
+                            "generations": value,
+                        },
+                    )
+                else:
+                    update_state.write(path, {**original, field: value})
+                assert not supervision._initialized(state, settings, processes)
+            finally:
+                update_state.write(path, original)
 
 
 @pytest.mark.parametrize("suffix", ["bad;command", "bad#comment", "bad\nsection"])

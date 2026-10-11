@@ -58,7 +58,13 @@ def studio(root: Path, version: str):
 
 
 def candidate(
-    bootstrap: Path, destination: Path, version: str, key, *, fail_worker=False
+    bootstrap: Path,
+    destination: Path,
+    version: str,
+    key,
+    *,
+    fail_worker=False,
+    legacy_readiness=False,
 ) -> tuple[Path, bytes]:
     shutil.copytree(bootstrap, destination)
     project = destination / "pyproject.toml"
@@ -73,6 +79,21 @@ def candidate(
         )
     )
     (destination / "mnemion/version.py").write_text(f'__version__ = "{version}"\n')
+    if legacy_readiness:
+        # Reproduce the pre-receipt lifecycle contract in an otherwise signed,
+        # installed fixture: no child readiness files and protocol zero.
+        lifecycle = destination / "mnemion/service/supervision.py"
+        text = lifecycle.read_text()
+        assert "READINESS_PROTOCOL = 1" in text
+        text = text.replace("READINESS_PROTOCOL = 1", "READINESS_PROTOCOL = 0", 1)
+        start = text.index("@contextmanager\ndef process_ready(")
+        end = text.index("\n\ndef _initialized(", start)
+        text = (
+            text[:start]
+            + "@contextmanager\ndef process_ready(role, generations):\n    yield\n"
+            + text[end:]
+        )
+        lifecycle.write_text(text)
     if fail_worker:
         cli = destination / "mnemion/service/cli.py"
         text = cli.read_text()

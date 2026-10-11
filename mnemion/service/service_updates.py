@@ -272,6 +272,7 @@ def setup(
         state_io.write(root / "owner.json", {"admin_database_url": owner}, replace=False)
         runtime = {
             "version": __version__,
+            "readiness_protocol": supervision.READINESS_PROTOCOL,
             "python": settings["python"],
             "directory": settings["directory"],
             "isolated": False,
@@ -490,8 +491,9 @@ def _stage(root: Path, settings: dict) -> dict:
     code = (
         "import json,mnemion; from pathlib import Path; from mnemion.version import __version__; "
         "from mnemion.service.studio import resolve_studio; "
+        "from mnemion.service import supervision as lifecycle; "
         "from mnemion.service.update_state import local_migrations; "
-        "p,s=resolve_studio(); print(json.dumps({'version':__version__,'studio':p is not None,'migrations':local_migrations(),'package':str(Path(mnemion.__file__).parent)}))"
+        "p,s=resolve_studio(); print(json.dumps({'version':__version__,'studio':p is not None,'migrations':local_migrations(),'package':str(Path(mnemion.__file__).parent),'readiness_protocol':getattr(lifecycle,'READINESS_PROTOCOL',0)}))"
     )
     output = _command(
         [str(python), "-I", "-c", code],
@@ -503,6 +505,9 @@ def _stage(root: Path, settings: dict) -> dict:
     try:
         preflight = json.loads(output)
         package = Path(preflight.pop("package"))
+        protocol = preflight.pop("readiness_protocol")
+        if type(protocol) is not int or protocol not in {0, supervision.READINESS_PROTOCOL}:
+            raise ValueError("readiness protocol")
         if not package.resolve().is_relative_to((slot / "venv").resolve()):
             raise ValueError("package location")
         if preflight != {
@@ -514,6 +519,7 @@ def _stage(root: Path, settings: dict) -> dict:
     except (ValueError, TypeError):
         raise ManifestError("The installed runtime did not pass its offline preflight") from None
     runtime["package"] = str(package)
+    runtime["readiness_protocol"] = protocol
     verify_installed_package(artifacts, release, package)
     runtime_wheels.verify_installed(artifacts, release, package, source / "uv.lock")
     compatible = (

@@ -186,6 +186,9 @@ def create_app(
             async with AsyncExitStack() as stack:
                 if mcp_app is not None:
                     await stack.enter_async_context(mcp_app.router.lifespan_context(mcp_app))
+                from .supervision import process_ready
+
+                stack.enter_context(process_ready("api", registry.generation_ids))
                 yield
         finally:
             librarian_runner.stop()

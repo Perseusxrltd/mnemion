@@ -86,6 +86,14 @@ API instance and PID. An unrelated listener or an orphan from an earlier start
 cannot satisfy it. A timeout talking to Supervisor is an error, not proof that
 the service stopped.
 
+New runtimes also publish private API and worker initialization receipts after
+their actual startup. `children_initialized: true` requires matching process
+IDs, creation times, runtime version/path and model generations, with a second
+Supervisor snapshot to reject a concurrent restart. Merely surviving the
+two-second Supervisor startup threshold is insufficient. Verified older managed
+runtimes retain their previous readiness contract for adoption and rollback;
+their status reports `children_initialized: null`, not a receipt-based check.
+
 The API readiness endpoint checks the database and configured generation; it
 does not prove indexing progress, model quality, or that all provider sources
 are current. Monitor durable operation age and failures in Studio as well.
