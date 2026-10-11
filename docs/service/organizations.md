@@ -52,10 +52,13 @@ keys.
 This establishes independent **workspace administration while the service is
 reachable**. Starting an offline computer, repairing its tunnel and restoring a
 database still require independently held host/operator access. Keep a verified
-backup and current recovery ledger outside that host. The planned
-[offline recovery view and delegated operators](../implementation/workspace-continuity.md)
-remain separate requirements; a Git source mirror is not a complete database
-backup or proof of current workspace authority.
+backup and current recovery ledger outside that host. Version 4.0.11 includes
+[offline saved-workspace details](../validation/2026-10-11-offline-workspace-details.md).
+Registered hosts, delegated operators and complete independent recovery remain
+under the [continuity requirements](../implementation/workspace-continuity.md);
+a Git source mirror is not a complete database backup or proof of current
+workspace authority. The [actual Windows administration and test-lab report](../validation/2026-10-12-workspace-administration.md)
+records a separate human join/reopen and explicitly mapped Git reader access.
 
 ### Retire an identity and retain administrator access
 

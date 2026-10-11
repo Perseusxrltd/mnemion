@@ -63,15 +63,15 @@ reconnection, durable disconnect and device-only forgetting. Local real-service,
 UI and all six native encrypted-restart gates passed. This foundation does not
 complete installation or host setup.
 
-1. Current source provides first-run local/remote choices and a fixed, typed
-   native operator bridge. Complete the remaining Windows installed
-   wizard/model/reopen checks. The integrated source at `ac5797b` passed both
-   Linux and both Mac installed flows; Windows startup/ARM packaging fixes are
-   undergoing validation. See [current acceptance](../validation/2026-10-11-local-address-recovery.md).
-2. Current source bundles the Python service, CPU model drivers, PostgreSQL and
+1. Published 4.0.11 and 4.0.12 provide first-run local/remote choices and a fixed,
+   typed native operator bridge. Installed creation, real model save/search,
+   shutdown, automatic reopen and occupied-port recovery passed on all six
+   targets. [The 4.0.12 release and public update checks](../validation/2026-10-11-v412-release.md)
+   are complete. Broader OS versions and managed-device policy still need testing.
+2. Published installers bundle the Python service, CPU model drivers, PostgreSQL and
    vector extension. The pinned database builds passed on all supported host
    architectures, including explicitly disclosed Windows ARM compatibility.
-   Complete combined installer and update acceptance. Source-runner provisioning
+   Combined installer and public update acceptance passed. Source-runner provisioning
    remains a separate app workflow; a bundled database does not finish it.
 3. Host-only settings currently require environment files or CLI commands.
    Add authenticated operator workflows for model/provider approval, source
@@ -85,7 +85,7 @@ do not substitute an obsolete database or bypass role separation to make a
 platform appear supported. Docker Desktop cannot be a mandatory free-company
 dependency. Existing databases and organization-hosted services remain options.
 
-Current source protects startup, shutdown and RAM-policy writes from overlapping
+Published 4.0.11 protects startup, shutdown and RAM-policy writes from overlapping
 with a desktop replacement. Shutdown waits for an existing policy write,
 prevents a start that was waiting on inspection, and preserves control if the
 engine does not finish within the shutdown deadline. A cancelled update reopens
@@ -98,7 +98,7 @@ See the [integration report](../validation/2026-10-11-native-integration.md).
 
 ## RAM-policy recovery
 
-Current source includes a fixed local operator `memory-repair`
+Published 4.0.11 includes a fixed local operator `memory-repair`
 command and matching app recovery controls on both the local welcome flow and
 **Setup & this device**. Corrupt JSON no longer prevents status inspection.
 Damaged or missing policies pause model admission, preserve the running
@@ -108,13 +108,13 @@ refuses stale or already-valid replacements. The desktop serializes repairs
 with shutdown and updates. Read [RAM recovery](../service/memory-resources.md)
 for agent examples and the explicit unsafe-storage/256 KiB boundary.
 
-This closes recovery for an ordinary damaged local RAM-policy record. It does
-not close backup restoration, moving the local data folder, or complete packaged
-installation/model acceptance.
+This closes recovery for an ordinary damaged local RAM-policy record. Complete
+packaged installation/model checks also passed in the release gates; backup
+restoration and moving the local data folder remain separate work.
 
 ## Local address recovery
 
-Current source adds an app recovery screen and a typed local operator `port`
+Published 4.0.11 adds an app recovery screen and a typed local operator `port`
 command for a stopped workspace whose API port is occupied. Automatic or explicit
 port selection retains its identity, credentials, memories, models and RAM
 policy. An external agent's change requires refresh before saving a stale form;

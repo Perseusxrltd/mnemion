@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Current distribution: **4.0.12**. Updated: **2026-10-11**.
+Current distribution: **4.0.12**. Updated: **2026-10-12**.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
 
@@ -9,8 +9,10 @@ endpoints and prevents cached offline/identity responses from deciding current
 workspace access. Connection diagnostics also support authenticated health
 gateways. [Native Windows and live-host validation](validation/2026-10-11-workspace-gateway.md)
 records the reproduced failures, corrected transport and a successful bounded
-40-search baseline. Installed-app reconnection and the next published automatic
-upgrade remain separate acceptance checks.
+40-search baseline. [Publication and public upgrade acceptance](validation/2026-10-11-v412-release.md)
+are complete on all six desktop targets. The actual Windows app also joined the
+original workspace as an independent human administrator and reauthenticated
+its protected saved connection after a normal quit/reopen.
 
 The [complete requirements checklist](PRODUCT_REQUIREMENTS.md) preserves every
 requested product area, its delivery state and remaining acceptance checks.
@@ -46,8 +48,8 @@ commit `0eb47cf` passed all 30 jobs, including installed workspace and automatic
 update/relaunch checks on all six desktop targets. Artifact/signature verification
 and publication are [also complete](validation/2026-10-11-v411-release.md).
 A [Linux stale-focus correction](validation/2026-10-11-linux-update-focus.md) also
-passed controlled real-updater comparisons; public unattended acceptance remains.
-Full integrated native package checks are required before publication. Windows ARM uses a
+passed controlled real-updater comparisons and the unmodified public
+4.0.11 → 4.0.12 automatic upgrade on both Linux architectures. Windows ARM uses a
 native app with an explicitly disclosed x64 backend; see
 [packaging evidence](validation/2026-10-11-native-installer-bundling.md),
 [policy recovery](validation/2026-10-11-native-policy-recovery.md), and
@@ -120,19 +122,26 @@ replica; the product must not imply that a remembered connection can replace an
 offline host. Requirements A11–A13 and U11 retain this work and actual Windows
 stress/update acceptance.
 
-The current candidate adds [independent administrator setup](service/organizations.md)
+Version 4.0.11 adds [independent administrator setup](service/organizations.md)
 and removes Studio's accidental requirement for a content-space grant before
 opening administration. [Real API/browser checks](validation/2026-10-11-independent-administration.md)
 retain an independently authenticated administrator after the original identity
 is disabled, preserve ordinary-member defaults and enforce tenant/content limits.
 Named retirement controls, a readable mobile roster and
 [final-admin protection across concurrent API/OAuth changes](validation/2026-10-11-administrator-lockout.md)
-are now validated in source. The Windows dogfood setup has
+are published. The Windows dogfood setup has
 [protected recovery material and one-click bounded checks](validation/2026-10-11-windows-workspace-preparation.md);
-its saved remote host remains offline, so no live shared-workspace load has run.
-This does not yet provide offline host control or failover.
+its remote host was subsequently woken through the provider's operator controls,
+without an agent model session. A bounded 40-search baseline passed and the
+released 4.0.12 Windows app now reconnects as a separate human administrator.
+The [connected Windows lab](validation/2026-10-12-workspace-administration.md)
+also passed isolated save, indexing, search, revision/conflict and deletion
+checks, with no production memory changes or cloud model calls. The human's
+Git reader mapping is live and preserves existing agent access. The shared
+server still needs its own verified backup and controlled upgrade from 4.0.0.
+Registered recovery hosts, a complete replica/backup path and failover remain open.
 
-The candidate also adds an [offline saved-workspace view](validation/2026-10-11-offline-workspace-details.md)
+Version 4.0.11 also adds an [offline saved-workspace view](validation/2026-10-11-offline-workspace-details.md)
 with the last verified identity/organization role, verification date and bundled
 recovery guides. The role is encrypted and destination-bound, and viewing it
 does not contact a server or authorize a session. Existing 4.0.10 connections
@@ -149,7 +158,7 @@ complete agent parity are still required.
 | Model choice | E5/BGE CPU profiles, approved Ollama/OpenAI endpoints, per-space candidate indexes, progress/pause/retry, preview/evals and atomic activation/rollback | [Embedding models](service/embeddings.md) |
 | Librarian | Approved local/cloud models, optional schedules, call budgets, exact source revisions, organization proposals, review findings and guarded undo | [Librarian](service/librarian.md) |
 | Sources | Git, selected folders, Google Drive, Slack, rclone and custom adapters; immediate sync requests, timestamped results, checkpoints, leases, review proposals and pauses | [Connectors](service/connectors.md) |
-| Agent compatibility | HTTP/OpenAPI, Python/TypeScript SDKs, authenticated MCP, 84 published operations (87 in current source), CLI/MCP administration, bounded private results, safe retries, conversation capture | [Agents](service/agents.md), [administration](service/agent-control.md), [capture](service/capture.md) |
+| Agent compatibility | HTTP/OpenAPI, Python/TypeScript SDKs, authenticated MCP, 87 published operations, CLI/MCP administration, bounded private results, safe retries, conversation capture | [Agents](service/agents.md), [administration](service/agent-control.md), [capture](service/capture.md) |
 | Human organization | Studio memory review, source evidence, team access, wiki/graph, core context and operations | [Knowledge](service/knowledge.md) |
 | Obsidian | Markdown, stable paths, citations, wikilinks, managed refresh, conflict detection and preservation of personal annotations | [Studio](../studio/README.md) |
 | Reliability | Durable jobs, retries and leases, ingestion/resource limits, verified backup/recovery, v3 archive/import/cutover/rollback | [Recovery](service/recovery.md), [migration](service/migration.md) |
@@ -211,12 +220,11 @@ completion path. Models, sources, access, agents, Obsidian, updates and backups
 belong in the same guided flow, with real readiness checks and optional steps
 that can be revisited. Keep equivalent agent/operator operations available.
 
-This is **not complete in published 4.0.10**: the desktop client joins an existing
-service. Current source bundles the local engine/database and guides workspace
+Published 4.0.11 and 4.0.12 bundle the local engine/database and guide workspace
 creation, CPU model setup, RAM control and occupied API-port recovery. Integrated
-installed flows passed on both Linux and both Mac architectures; Windows startup
-and ARM packaging fixes are undergoing validation. Organization hosting, provider
-approval and full backup recovery remain open. See the
+installed flows, shutdown and automatic reopen passed on all six targets.
+The complete app-only setup requirement remains **partial**: organization
+hosting, provider approval and full backup recovery remain open. See the
 [full acceptance requirements](implementation/app-onboarding.md) and
 [current validation scope](validation/2026-10-11-local-address-recovery.md).
 Do not count a setup guide, mock success or disabled button as an implemented flow.

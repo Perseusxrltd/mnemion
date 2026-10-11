@@ -90,7 +90,9 @@ hidden, minimized window. The [controlled comparison](../validation/2026-10-11-l
 passed both architectures without changing the idle or work-safety guards.
 Older installed clients still use their existing restart logic: an affected
 AppImage may require one **Quit Mnemion Studio** or a new official download.
-Public unattended acceptance of a released fixed client remains required.
+The unmodified public **4.0.11 → 4.0.12** upgrade subsequently passed on both Linux
+architectures and all four Windows/Mac targets; see the
+[publication and update evidence](../validation/2026-10-11-v412-release.md).
 
 The Mac updater limits an archive to 1 GiB and checking/downloading/verifying to
 20 minutes. A staged update waiting for safe restart expires after 24 hours.

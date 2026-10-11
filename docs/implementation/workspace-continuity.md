@@ -102,7 +102,7 @@ without making a paid central service mandatory.
    load against an authorized test space; do not alter shared production memory
    for convenience or equate an offline preparation with a completed stress test.
 
-Current source adds explicit administrator creation in the app/SDK, an
+Published 4.0.11 adds explicit administrator creation in the app/SDK, an
 organization roster and administration pages that do not require a memory-space
 grant. Real API and browser checks retain a second administrator after disabling
 the original identity, without implicit content access. Named retirement in the
@@ -116,3 +116,11 @@ verified database recovery are also foundations. Sign-in/invitations, pending
 unverified connection profiles, registered hosts and backup locations, an
 independent recovery entry point, operator delegation, guided restoration and
 complete agent parity remain required implementation.
+
+The [actual Windows recovery and isolated lab](../validation/2026-10-12-workspace-administration.md)
+subsequently verified provider operator wake without an agent session, separate
+human administration, native 4.0.12 join/reopen, an explicit Git reader mapping
+and bounded synthetic write/index/search/revision/delete checks. The original
+remote service remains on 4.0.0 pending verified backup and migration. This live
+result advances the contract; it does not complete the independent hosting,
+replica, recovery-entry-point or failover requirements above.

@@ -3,8 +3,9 @@
 The unmodified public 4.0.9 → 4.0.10 rehearsal
 [38127301901](https://github.com/Perseusxrltd/mnemion/actions/runs/38127301901)
 downloaded the target on both Linux architectures but did not restart within
-twenty minutes. Both Windows and both Mac targets passed. Issue 21 remains open
-until a released fixed Linux client passes its own public-feed rehearsal.
+twenty minutes. Both Windows and both Mac targets passed. This established the
+requirement for a released fixed Linux client to pass its own public-feed
+rehearsal before closing issue 21.
 
 ## Controlled diagnosis
 
@@ -59,3 +60,11 @@ Mnemion Studio** to apply its downloaded update, or installation of the newer
 official download. A released fixed client must then demonstrate an unattended
 upgrade to a subsequent release using unmodified public files. Developer
 comparison success does not close that acceptance gate.
+
+## Published follow-up
+
+The unmodified public **4.0.11 → 4.0.12** rehearsal subsequently passed on both
+Linux architectures and all four Windows/Mac targets. It retained the normal
+idle/work guards; Linux x64 recorded 620.29 seconds of real X11 inactivity and
+the new running process/version. This completes the issue's remaining acceptance
+gate. See [the release and public upgrade evidence](2026-10-11-v412-release.md).

@@ -33,3 +33,14 @@ target, a live connection to the intended workspace, a dedicated scope for write
 and recovery drills, and end-to-end load/update observations. The private checks
 measure client latency and bounded throughput; they do not establish retrieval
 quality or the server's maximum capacity.
+
+## Connected follow-up
+
+The host was subsequently woken through its provider operator controls, without
+using the unavailable agent. The [4.0.12 release](2026-10-11-v412-release.md)
+fixed the native gateway/cache failures. The [connected administration and lab
+report](2026-10-12-workspace-administration.md) records the actual app join and
+reopen, individual human key, explicit Git reader mapping, scoped test identity
+and successful synthetic save/index/search/revision/delete cycle. This earlier
+offline preparation is retained as the original observation; verified complete
+backups and independent hosting are still required.
