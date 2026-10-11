@@ -205,3 +205,44 @@ def private_output(path: Path):
         except FileNotFoundError:
             pass
         raise
+
+
+def private_process(command, *, directory: Path, input=None, env=None, timeout=60):
+    """Capture a native launcher without waiting for its descendants' pipe EOF.
+
+    The caller supplies an app-owned directory. Windows descendants may keep
+    duplicate output handles after their launcher exits, so use private regular
+    files with delete sharing instead of subprocess PIPE handles.
+    """
+    import subprocess
+    from uuid import uuid4
+
+    prefix = ".process-" + uuid4().hex
+    stdout_path, stderr_path = (Path(directory) / (prefix + ending) for ending in (".out", ".err"))
+    with private_output(stdout_path) as stdout, private_output(stderr_path) as stderr:
+        result = subprocess.run(
+            command,
+            input=input,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            stdout=stdout,
+            stderr=stderr,
+            env=env,
+            timeout=timeout,
+        )
+
+    def captured(path):
+        with path.open("rb") as stream:
+            content = stream.read(4 * 1024**2 + 1)
+        if len(content) > 4 * 1024**2:
+            raise OSError("Native process output exceeded its capture limit")
+        return content.decode("utf-8", errors="replace")
+
+    try:
+        return subprocess.CompletedProcess(
+            result.args, result.returncode, captured(stdout_path), captured(stderr_path)
+        )
+    finally:
+        stdout_path.unlink(missing_ok=True)
+        stderr_path.unlink(missing_ok=True)

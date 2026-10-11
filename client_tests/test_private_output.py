@@ -51,3 +51,71 @@ def test_a_filesystem_that_ignores_private_mode_fails_before_receiving_data(tmp_
         with private_output(path):
             pytest.fail("Unprotected file became writable by the caller")
     assert not path.exists()
+
+
+def test_private_process_returns_while_a_descendant_retains_output_handles(tmp_path):
+    from pathlib import Path
+    import sys
+    import time
+
+    from mnemion.private_output import private_process
+
+    ready, release, exited = (tmp_path / name for name in ("ready", "release", "exited"))
+    child = (
+        "from pathlib import Path; import sys,time\n"
+        "ready,release,exited=map(Path,sys.argv[1:])\n"
+        "ready.touch(); deadline=time.monotonic()+15\n"
+        "while not release.exists() and time.monotonic()<deadline: time.sleep(0.01)\n"
+        "exited.touch()\n"
+    )
+    launcher = (
+        "from pathlib import Path; import subprocess,sys,time\n"
+        "subprocess.Popen([sys.executable,'-c',sys.argv[1],*sys.argv[2:]],close_fds=False)\n"
+        "deadline=time.monotonic()+5\n"
+        "while not Path(sys.argv[2]).exists() and time.monotonic()<deadline: time.sleep(0.01)\n"
+        "print('launcher finished',flush=True); print('launcher diagnostic',file=sys.stderr,flush=True)\n"
+    )
+    try:
+        result = private_process(
+            [sys.executable, "-c", launcher, child, str(ready), str(release), str(exited)],
+            directory=tmp_path,
+            timeout=5,
+        )
+        assert result.returncode == 0
+        assert result.stdout.strip() == "launcher finished"
+        assert result.stderr.strip() == "launcher diagnostic"
+        assert ready.exists() and not exited.exists()
+    finally:
+        release.touch()
+        deadline = time.monotonic() + 5
+        while ready.exists() and not exited.exists() and time.monotonic() < deadline:
+            time.sleep(0.01)
+    assert exited.exists()
+    assert not list(Path(tmp_path).glob(".process-*"))
+
+
+def test_private_process_keeps_timeout_cleanup_bounded(tmp_path):
+    import subprocess
+    import sys
+
+    from mnemion.private_output import private_process
+
+    with pytest.raises(subprocess.TimeoutExpired):
+        private_process(
+            [sys.executable, "-c", "import time; time.sleep(10)"], directory=tmp_path, timeout=0.2
+        )
+    assert not list(tmp_path.glob(".process-*"))
+
+
+def test_private_process_bounds_captured_output(tmp_path):
+    import sys
+
+    from mnemion.private_output import private_process
+
+    with pytest.raises(OSError, match="capture limit"):
+        private_process(
+            [sys.executable, "-c", "import sys; sys.stdout.write('x'*(4*1024**2+1))"],
+            directory=tmp_path,
+            timeout=5,
+        )
+    assert not list(tmp_path.glob(".process-*"))
