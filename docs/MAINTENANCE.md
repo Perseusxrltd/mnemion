@@ -152,6 +152,15 @@ check. Inspector attachment and extraction can affect timing; this workflow is
 included in the desktop application. After a justified fix, use the ordinary
 unmodified public rehearsal for acceptance.
 
+The diagnostic's `timers` experiment compares four fresh runners: each Linux
+architecture with the original timer references and with referenced timers.
+Both copies add the same bounded trace inside the existing restart callback;
+the comparison changes only whether those timers keep Node's loop scheduled.
+It uses no debugger, fake inactivity or changed safety predicate. Passive
+process/filesystem observations record the eventual version and installed bytes.
+These modified ASAR copies remain developer experiments, never public-release
+acceptance evidence.
+
 The runner has no user workspace, production memory credentials or signing
 secret. Native fixture checks still cover cancellation, malicious updates,
 interrupted downloads and restart guards before publication. The public rehearsal

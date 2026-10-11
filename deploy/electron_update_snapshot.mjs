@@ -1,11 +1,11 @@
 // Developer diagnostic only: attach to a disposable local Electron inspector,
 // read restart guards, disconnect. Never use this as a public upgrade gate.
 import { createRequire } from 'node:module';
-import { realpathSync, readFileSync } from 'node:fs';
-import { isAbsolute, relative } from 'node:path';
+import { realpathSync, readFileSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { isAbsolute, relative, dirname, join, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 
-if (process.argv[2] === '--prepare') {
+if (['--prepare', '--prepare-timers'].includes(process.argv[2])) {
   const binary = realpathSync(process.argv[3]);
   const parent = realpathSync(process.env.RUNNER_TEMP || '.');
   const path = relative(parent, binary);
@@ -14,6 +14,37 @@ if (process.argv[2] === '--prepare') {
     throw new Error('Only a disposable Linux runner copy may enable its inspector');
   }
   const require = createRequire(new URL('../studio/electron/package.json', import.meta.url));
+  if (process.argv[2] === '--prepare-timers') {
+    const mode = process.argv[4];
+    const trace = resolve(process.argv[5]);
+    const tracePath = relative(parent, trace);
+    if (!['original-timers', 'referenced-timers'].includes(mode) || !tracePath || tracePath.startsWith('..') || isAbsolute(tracePath)) {
+      throw new Error('Invalid isolated timer experiment');
+    }
+    const { extractAll, createPackageWithOptions } = require('@electron/asar');
+    const original = createHash('sha256').update(readFileSync(binary)).digest('hex');
+    const work = mkdtempSync(join(dirname(binary), 'timer-diagnostic-'));
+    try {
+      extractAll(binary, work);
+      const module = join(work, 'dist/updates.js');
+      let code = readFileSync(module, 'utf8');
+      const timer = 'setInterval(() => void this.restartIfSafe(), 30_000)';
+      if (code.split(timer).length !== 2) throw new Error('Review the changed restart timer implementation');
+      code = "import { appendFileSync as diagnosticAppend } from 'node:fs';\n" + code.replace(timer,
+        `setInterval(() => { diagnosticAppend(${JSON.stringify(trace)}, JSON.stringify({ time: Date.now(), state: this.status.state, downloaded: this.downloaded, enabled: this.enabled, busy: this.busy() }) + '\\n'); void this.restartIfSafe(); }, 30_000)`);
+      if (mode === 'referenced-timers') {
+        const unref = /for \(const timer of this\.timers\)\s*timer\.unref\(\);/g;
+        if ([...code.matchAll(unref)].length !== 1) throw new Error('Review the changed timer references');
+        code = code.replace(unref, '// Keep the existing timers referenced for this controlled experiment.');
+      }
+      writeFileSync(module, code);
+      await createPackageWithOptions(work, binary, {});
+    } finally { rmSync(work, { recursive: true, force: true }); }
+    console.log(JSON.stringify({ developer_diagnostic_only: true, public_upgrade_gate: false, mode,
+      original_asar_sha256: original, diagnostic_asar_sha256: createHash('sha256').update(readFileSync(binary)).digest('hex'),
+      debugger: false, changed_behavior: mode === 'referenced-timers' ? 'timer references' : 'trace only' }));
+    process.exit(0);
+  }
   const { flipFuses, getCurrentFuseWire, FuseVersion, FuseV1Options } = require('@electron/fuses');
   const digest = () => createHash('sha256').update(readFileSync(binary)).digest('hex');
   const beforeHash = digest();

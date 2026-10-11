@@ -7,25 +7,29 @@ on:
         description: Published source version to inspect (this is NOT an acceptance gate)
         type: string
         default: v4.0.9
+      experiment:
+        description: Inspector observations or a controlled timer-reference comparison
+        type: choice
+        default: inspect
+        options: [inspect, timers]
 
 permissions:
   contents: read
 
 jobs:
   diagnostic:
-    name: Linux ${{ matrix.arch }} restart guards
+    name: Linux ${{ matrix.arch }} / ${{ matrix.mode }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - { os: ubuntu-22.04, arch: x64 }
-          - { os: ubuntu-22.04-arm, arch: arm64 }
+        include: ${{ fromJSON(inputs.experiment == 'timers' && '[{"os":"ubuntu-22.04","arch":"x64","mode":"original-timers"},{"os":"ubuntu-22.04","arch":"x64","mode":"referenced-timers"},{"os":"ubuntu-22.04-arm","arch":"arm64","mode":"original-timers"},{"os":"ubuntu-22.04-arm","arch":"arm64","mode":"referenced-timers"}]' || '[{"os":"ubuntu-22.04","arch":"x64","mode":"inspect"},{"os":"ubuntu-22.04-arm","arch":"arm64","mode":"inspect"}]') }}
     env:
       GH_TOKEN: ${{ github.token }}
       MNEMION_DIAGNOSTIC_TAG: ${{ inputs.tag }}
       MNEMION_DIAGNOSTIC_ARCH: ${{ matrix.arch }}
+      MNEMION_DIAGNOSTIC_MODE: ${{ matrix.mode }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
@@ -56,14 +60,15 @@ jobs:
               sleep 0.2
             done
             test "$mnemion_wm_ready" = true
-            python -m deploy.linux_update_diagnostic --tag "$MNEMION_DIAGNOSTIC_TAG" --arch "$MNEMION_DIAGNOSTIC_ARCH" --output "$RUNNER_TEMP/mnemion-update-diagnostic"
+            python -m deploy.linux_update_diagnostic --tag "$MNEMION_DIAGNOSTIC_TAG" --arch "$MNEMION_DIAGNOSTIC_ARCH" --mode "$MNEMION_DIAGNOSTIC_MODE" --output "$RUNNER_TEMP/mnemion-update-diagnostic"
           '
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
-          name: developer-update-diagnostic-${{ matrix.arch }}
+          name: developer-update-diagnostic-${{ matrix.arch }}-${{ matrix.mode }}
           path: |
             ${{ runner.temp }}/mnemion-update-diagnostic/diagnostic.json
             ${{ runner.temp }}/mnemion-update-diagnostic/snapshots.jsonl
+            ${{ runner.temp }}/mnemion-update-diagnostic/timers.jsonl
             ${{ runner.temp }}/mnemion-update-diagnostic/application.log
           retention-days: 7

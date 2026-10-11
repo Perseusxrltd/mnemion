@@ -1,8 +1,9 @@
 """Separate, instrumented Linux investigation; never a public update acceptance gate.
 
-The public AppImage is verified and copied, then extracted. Only the extracted
-Electron binary's inspector fuse changes. App code, feeds and restart guards
-remain unchanged. No real user profile is admitted.
+The public AppImage is verified, copied and extracted. Inspector mode changes
+only the copied runtime's inspector fuse. Timer experiments instead trace the
+existing restart callback, with an optional timer-reference change and no
+debugger. Feeds and safety guards remain unchanged; no user profile is admitted.
 """
 
 from __future__ import annotations
@@ -20,7 +21,9 @@ import threading
 import time
 
 from deploy.public_update_probe import (
+    app_archive,
     app_processes,
+    asar_json,
     child_environment,
     download,
     install,
@@ -32,7 +35,7 @@ from deploy.public_update_probe import (
 )
 
 
-def observe(tag: str, architecture: str, root: Path) -> None:
+def observe(tag: str, architecture: str, root: Path, mode: str = "inspect") -> None:
     import psutil
 
     root = root.resolve()
@@ -73,28 +76,38 @@ def observe(tag: str, architecture: str, root: Path) -> None:
     code = bundle / "resources/app.asar"
     code_digest = hashlib.sha256(code.read_bytes()).hexdigest()
     helper = Path(__file__).with_name("electron_update_snapshot.mjs").resolve()
+    prepare = (
+        ["--prepare", str(bundle / "mnemion-studio")]
+        if mode == "inspect"
+        else ["--prepare-timers", str(code), mode, str(root / "timers.jsonl")]
+    )
     prepared = subprocess.run(
-        ["node", str(helper), "--prepare", str(bundle / "mnemion-studio")],
+        ["node", str(helper), *prepare],
         capture_output=True,
         timeout=30,
         check=True,
         text=True,
     )
-    if hashlib.sha256(code.read_bytes()).hexdigest() != code_digest:
+    if mode == "inspect" and hashlib.sha256(code.read_bytes()).hexdigest() != code_digest:
         raise ValueError("The diagnostic changed application code")
     evidence = {
         **json.loads(prepared.stdout),
         "tag": source["tag_name"],
         "architecture": architecture,
         "source_sha256": asset["digest"],
-        "unchanged_asar_sha256": code_digest,
+        "original_asar_sha256": code_digest,
+        "mode": mode,
     }
     (root / "diagnostic.json").write_text(json.dumps(evidence, indent=2) + "\n")
     env.update(APPIMAGE=str(image), APPDIR=str(bundle))
     started = time.time()
     log: deque[bytes] = deque(maxlen=16)
     child = subprocess.Popen(
-        [str(bundle / "AppRun"), "--inspect=127.0.0.1:0", "--background"],
+        [
+            str(bundle / "AppRun"),
+            *(["--inspect=127.0.0.1:0"] if mode == "inspect" else []),
+            "--background",
+        ],
         env=env,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
@@ -108,32 +121,50 @@ def observe(tag: str, architecture: str, root: Path) -> None:
     try:
         deadline = time.monotonic() + 30
         address = None
-        while time.monotonic() < deadline and child.poll() is None:
+        while mode == "inspect" and time.monotonic() < deadline and child.poll() is None:
             match = re.search(rb"ws://127\.0\.0\.1:[0-9]+/[a-f0-9-]+", b"".join(list(log)))
             if match:
                 address = match[0].decode("ascii")
                 break
             time.sleep(0.2)
-        if not address:
+        if mode == "inspect" and not address:
             raise RuntimeError("The isolated inspector did not start")
         deadline = time.monotonic() + 720
         while time.monotonic() < deadline and child.poll() is None:
-            snapshot = subprocess.run(
-                ["node", str(helper), address], env=env, capture_output=True, text=True, timeout=12
-            )
             row = {
                 "elapsed_seconds": round(time.time() - started, 1),
                 "x11_idle_seconds": linux_idle_seconds(),
                 "developer_diagnostic_only": True,
             }
-            if snapshot.returncode == 0:
-                row["runtime"] = json.loads(snapshot.stdout)
-            else:
-                row["error"] = "snapshot_unavailable"
+            if address:
+                snapshot = subprocess.run(
+                    ["node", str(helper), address],
+                    env=env,
+                    capture_output=True,
+                    text=True,
+                    timeout=12,
+                )
+                if snapshot.returncode == 0:
+                    row["runtime"] = json.loads(snapshot.stdout)
+                else:
+                    row["error"] = "snapshot_unavailable"
+            row["observed_versions"] = process_versions(image, started)
             with (root / "snapshots.jsonl").open("a") as handle:
                 handle.write(json.dumps(row) + "\n")
             print(json.dumps(row), flush=True)
             time.sleep(15)
+        # Passive process/filesystem inspection also records the replacement
+        # after the original launcher exits. It does not wake Electron's loop.
+        if child.poll() is not None:
+            time.sleep(15)
+        evidence["launcher_exit"] = child.poll()
+        evidence["observed_versions"] = process_versions(image, started)
+        evidence["installed_files"] = []
+        for path in image.parent.glob("*.AppImage"):
+            with path.open("rb") as handle:
+                digest = hashlib.file_digest(handle, "sha256").hexdigest()
+            evidence["installed_files"].append({"name": path.name, "sha256": digest})
+        (root / "diagnostic.json").write_text(json.dumps(evidence, indent=2) + "\n")
     finally:
         (root / "application.log").write_bytes(b"".join(list(log))[-32768:])
         for process in app_processes(image, "linux", started):
@@ -148,10 +179,25 @@ def observe(tag: str, architecture: str, root: Path) -> None:
         child.wait(timeout=10)
 
 
+def process_versions(image: Path, started: float) -> list[str]:
+    import psutil
+
+    result = set()
+    for process in app_processes(image, "linux", started):
+        try:
+            result.add(asar_json(app_archive(process, "linux"))["version"])
+        except (OSError, ValueError, KeyError, psutil.Error):
+            pass
+    return sorted(result)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--tag", required=True)
     parser.add_argument("--arch", choices=["x64", "arm64"], required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--mode", choices=["inspect", "original-timers", "referenced-timers"], default="inspect"
+    )
     args = parser.parse_args()
-    observe(args.tag, args.arch, args.output)
+    observe(args.tag, args.arch, args.output, args.mode)
