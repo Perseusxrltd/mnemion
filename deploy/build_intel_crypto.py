@@ -13,7 +13,7 @@ import hashlib
 import io
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import platform
 import shutil
 import subprocess
@@ -85,6 +85,33 @@ def add_provenance(source: Path, output: Path, version: str, provenance: dict, l
     with zipfile.ZipFile(output, "x", compression=zipfile.ZIP_DEFLATED) as archive:
         for name, content in sorted(entries.items()):
             archive.writestr(name, content)
+
+
+def system_dependencies(listing: str, identity_listing: str) -> list[str]:
+    """otool -L includes LC_ID_DYLIB; only subsequent entries are dependencies."""
+    lines = listing.splitlines()
+    identities = identity_listing.splitlines()
+    if not lines or not identities or not lines[0].endswith(":") or len(identities) > 2:
+        raise ValueError("Unexpected native library inspection output")
+    libraries = []
+    for line in lines[1:]:
+        library, separator, _ = line.strip().partition(" (compatibility version ")
+        if not separator:
+            raise ValueError("Unexpected native library dependency entry")
+        libraries.append(library)
+    if len(identities) == 2:
+        identity = identities[1].strip()
+        if not identity or not libraries or libraries[0] != identity:
+            raise ValueError("Native library identity disagrees with its dependency listing")
+        libraries = libraries[1:]
+    if not libraries:
+        raise ValueError("Native library has no inspectable system dependencies")
+    for library in libraries:
+        if ".." in PurePosixPath(library).parts or not library.startswith(
+            ("/usr/lib/", "/System/Library/")
+        ):
+            raise ValueError(f"Built runtime depends on a non-system dynamic library: {library}")
+    return libraries
 
 
 def build(root: Path, output: Path) -> Path:
@@ -182,6 +209,7 @@ def build(root: Path, output: Path) -> Path:
         wheels = list(built.glob("*.whl"))
         if len(wheels) != 1 or wheels[0].name != filename:
             raise ValueError("Built runtime wheel has an unexpected platform or Python ABI")
+        dependencies = {}
         with zipfile.ZipFile(wheels[0]) as archive:
             native = [name for name in archive.namelist() if name.endswith((".so", ".dylib"))]
             if not native:
@@ -194,14 +222,10 @@ def build(root: Path, output: Path) -> Path:
                 ).strip()
                 if architectures != "x86_64":
                     raise ValueError("Built runtime has another architecture")
-                libraries = subprocess.check_output(
-                    ["otool", "-L", str(binary)], text=True
-                ).splitlines()[1:]
-                if any(
-                    not line.strip().split(" ", 1)[0].startswith(("/usr/lib/", "/System/Library/"))
-                    for line in libraries
-                ):
-                    raise ValueError("Built runtime depends on a non-system dynamic library")
+                dependencies[name] = system_dependencies(
+                    subprocess.check_output(["otool", "-L", str(binary)], text=True),
+                    subprocess.check_output(["otool", "-D", str(binary)], text=True),
+                )
         provenance = {
             "format": 1,
             "cryptography_version": version,
@@ -211,6 +235,7 @@ def build(root: Path, output: Path) -> Path:
             "static_openssl": True,
             "target": configuration["target"],
             "maturin": configuration["maturin"],
+            "dynamic_dependencies": dependencies,
         }
         add_provenance(
             wheels[0], target, version, provenance, (openssl / "LICENSE.txt").read_bytes()
@@ -233,6 +258,7 @@ def build(root: Path, output: Path) -> Path:
                 "sha256": hashlib.file_digest(target.open("rb"), "sha256").hexdigest(),
                 "openssl": openssl_version,
                 "static": True,
+                "dynamic_dependencies": dependencies,
             }
         )
     )

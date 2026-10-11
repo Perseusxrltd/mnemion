@@ -78,6 +78,11 @@ checksums, release notes and version-specific guides follow the same release.
 The roadmap link follows `main`, so planning updates are visible between releases.
 Do not edit or redeploy the website for an ordinary hotfix.
 
+The main download recommends a published OS/processor pair using local browser
+hints. When the browser withholds the processor type, visitors choose it; all
+available installers remain in an expandable section that works without
+JavaScript. The recommendation always uses the same verified release metadata.
+
 `.github/workflows/website-release.yml` maintains `deploy/published-release.json`
 after release publication or edits, with a six-hour reconciliation schedule and a
 manual dispatch for recovery. It verifies GitHub's uploaded-asset SHA-256 digests
