@@ -24,9 +24,7 @@ def new_admin(env, name="Independent administrator"):
     person = env.identities.create_principal(
         env.owner, PrincipalInput(name=name, kind="human", administrator=True)
     )
-    key = env.identities.create_key(
-        env.owner, UUID(person["id"]), KeyInput(name="Independent key")
-    )
+    key = env.identities.create_key(env.owner, UUID(person["id"]), KeyInput(name="Independent key"))
     return env.db.authenticate(key["api_key"]), key
 
 
@@ -225,9 +223,13 @@ def test_oauth_and_api_key_revocations_share_the_same_concurrency_boundary(env, 
             futures = [executor.submit(change, value) for value in (True, False)]
             outcomes = [future.result(timeout=10) for future in futures]
     assert sorted(outcomes) == ["changed", "last_administrator_access"]
-    assert sum(row["revoked_at"] is None for row in env.identities.keys(
-        identity if outcomes[0] != "changed" else env.owner
-    )) == 1
+    assert (
+        sum(
+            row["revoked_at"] is None
+            for row in env.identities.keys(identity if outcomes[0] != "changed" else env.owner)
+        )
+        == 1
+    )
 
 
 def test_another_tenants_administrator_never_counts_as_a_recovery_path(env):

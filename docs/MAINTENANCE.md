@@ -29,6 +29,11 @@ a completed published download.
    validation results with the tested version/commit and environment.
 5. Run product and native checks. Inspect in-app help on desktop/mobile widths,
    including internal links, code blocks and offline access in the packaged app.
+   Release preparation first runs a small preflight with the locked formatter,
+   source lint, version/roadmap validation and shell syntax checks. The full
+   product/native matrices start only after it passes, avoiding wasted platform
+   compilation when a cheap source check fails. Preflight does not replace the
+   complete regression, installed-app, signature or update gates.
 6. Prepare immutable, signed and verified artifacts and update feeds. The release
    verifier requires matching versions, release notes, a current roadmap and a
    complete set of installers and update feeds for each OS/architecture selected
