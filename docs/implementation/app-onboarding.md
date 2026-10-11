@@ -81,6 +81,15 @@ do not substitute an obsolete database or bypass role separation to make a
 platform appear supported. Docker Desktop cannot be a mandatory free-company
 dependency. Existing databases and organization-hosted services remain options.
 
+The native-host branch now protects startup, shutdown and RAM-policy writes from
+overlapping with a desktop replacement. Shutdown waits for an existing policy
+write, prevents a start that was waiting on inspection, and preserves control if
+the engine does not finish within the shutdown deadline. Agent changes refresh
+the policy revision shown in Studio without replacing unsaved form edits. Five
+focused lifecycle regressions and the existing desktop suite pass locally
+(52 tests, 2026-10-11); these checks do not establish packaged native hosting on
+Windows or macOS, which remains a release prerequisite.
+
 ## Release evidence
 
 Run clean-install walkthroughs on Windows, macOS and Linux, x64 and ARM64. Record

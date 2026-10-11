@@ -56,7 +56,10 @@ export class LocalWorkspace {
   private connection?: Connection
   private info?: LocalInfo
   private operation?: Promise<LocalInfo>
+  private memoryChange?: Promise<LocalStatus>
   private stopping?: Promise<boolean>
+  private closing?: Promise<boolean>
+  private controls = new Set<ChildProcessWithoutNullStreams>()
   private intentionalStop = false
   private statusValue: LocalStatus
   private disposed = false
@@ -67,8 +70,21 @@ export class LocalWorkspace {
   }
 
   get status(): LocalStatus { return { ...this.statusValue, info: this.info } }
-  get active(): boolean { return !!this.child }
-  get busy(): boolean { return ['starting', 'stopping'].includes(this.statusValue.state) }
+  get active(): boolean { return !!this.child || this.controls.size > 0 || !!this.operation || !!this.memoryChange }
+  get busy(): boolean { return !!this.operation || !!this.memoryChange || this.controls.size > 0 || !!this.stopping || !!this.closing || ['starting', 'stopping'].includes(this.statusValue.state) }
+
+  private assertOpen() {
+    if (this.disposed || this.closing) throw new Error('The app is closing.')
+    if (this.stopping) throw new Error('The local workspace is stopping. Wait for it to finish before trying again.')
+  }
+
+  private control(action: string): ChildProcessWithoutNullStreams {
+    const child = spawn(this.options.executable, this.command(action), { env: this.options.environment, windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] })
+    this.controls.add(child)
+    child.once('close', () => this.controls.delete(child))
+    child.stdin.on('error', () => { /* Command failures are reported by error/close. */ })
+    return child
+  }
 
   private set(value: Partial<LocalStatus>) {
     this.statusValue = { ...this.statusValue, ...value }
@@ -80,10 +96,11 @@ export class LocalWorkspace {
   }
 
   async inspect(): Promise<LocalInfo> {
+    this.assertOpen()
     if (!this.status.available) throw new Error('The complete local runtime is missing. Reinstall Mnemion Studio to create a workspace on this computer.')
     if (this.operation) return this.operation
     this.operation = new Promise((resolve, reject) => {
-      const child = spawn(this.options.executable, this.command('status'), { env: this.options.environment, windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] })
+      const child = this.control('status')
       child.stdin.end()
       let body = ''
       let failed = false
@@ -116,11 +133,11 @@ export class LocalWorkspace {
   }
 
   async start(input?: unknown): Promise<LocalStatus> {
-    if (this.disposed) throw new Error('The app is closing.')
+    this.assertOpen()
     if (this.child) return this.status
     const options = input === undefined ? undefined : localOptions(input)
     const info = await this.inspect()
-    if (this.disposed) throw new Error('The app is closing.')
+    this.assertOpen()
     if (this.child) return this.status
     if (!options && !info.configured) throw new Error('Choose the workspace settings before starting.')
     this.intentionalStop = false
@@ -146,7 +163,9 @@ export class LocalWorkspace {
         try {
           const value = JSON.parse(line)
           if (value.event === 'resources') {
-            this.set({ memory: memorySnapshot(value.memory) })
+            const memory = memorySnapshot(value.memory)
+            this.set({ memory })
+            if (memory.revision !== this.info?.memory_policy?.revision) void this.inspect().catch(() => {})
           } else if (value.event === 'progress' && typeof value.stage === 'string' && value.stage.length <= 64 && typeof value.message === 'string' && value.message.length <= 1000) {
             this.set({ stage: value.stage, message: value.message })
           } else if (value.event === 'ready') {
@@ -196,12 +215,19 @@ export class LocalWorkspace {
   }
 
   async changeMemory(input: unknown): Promise<LocalStatus> {
-    if (this.disposed) throw new Error('The app is closing.')
+    this.assertOpen()
+    if (this.memoryChange) throw new Error('The RAM budget is already being saved. Wait for it to finish.')
     const change = memoryOptions(input, true)
+    this.memoryChange = this.saveMemory(change)
+    try { return await this.memoryChange } finally { this.memoryChange = undefined }
+  }
+
+  private async saveMemory(change: MemoryChange): Promise<LocalStatus> {
     const info = await this.inspect()
+    this.assertOpen()
     if (!info.configured) throw new Error('Create a local workspace first.')
     const policy = await new Promise<MemoryPolicy>((resolve, reject) => {
-      const child = spawn(this.options.executable, this.command('memory'), { env: this.options.environment, windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] })
+      const child = this.control('memory')
       let body = '', failed = false
       const timer = setTimeout(() => { failed = true; child.kill(); reject(new Error('The RAM policy could not be saved in time. Refresh its status before retrying.')) }, 20_000)
       child.stdout.on('data', (chunk: Buffer) => {
@@ -236,23 +262,38 @@ export class LocalWorkspace {
 
   async stop(): Promise<boolean> {
     if (this.stopping) return this.stopping
+    this.stopping = this.finishStop()
+    try { return await this.stopping } finally { this.stopping = undefined }
+  }
+
+  private async finishStop(): Promise<boolean> {
+    // A writer must finish before an updater replaces its executable. Starts
+    // waiting on inspection recheck the stop/close guard before spawning.
+    await Promise.allSettled([this.operation, this.memoryChange])
+    if (this.controls.size > 0) return false
     const child = this.child
     if (!child) return true
     this.intentionalStop = true
     this.set({ state: 'stopping', message: 'Finishing local work and safely closing the database…' })
-    this.stopping = new Promise(resolve => {
+    return new Promise(resolve => {
+      const closed = () => { clearTimeout(timer); resolve(true) }
       const timer = setTimeout(() => {
+        child.removeListener('close', closed)
         this.set({ message: 'Local work is still finishing. Wait a moment and try again.' })
         resolve(false)
       }, 90_000)
-      child.once('close', () => { clearTimeout(timer); resolve(true) })
-      child.stdin.end('{"action":"stop"}\n')
+      child.once('close', closed)
+      if (!child.stdin.destroyed && !child.stdin.writableEnded) child.stdin.end('{"action":"stop"}\n')
     })
-    try { return await this.stopping } finally { this.stopping = undefined }
   }
 
   async close(): Promise<boolean> {
-    this.disposed = true
-    return this.stop()
+    if (this.closing) return this.closing
+    this.closing = this.stop()
+    try {
+      const stopped = await this.closing
+      if (stopped) this.disposed = true
+      return stopped
+    } finally { this.closing = undefined }
   }
 }
