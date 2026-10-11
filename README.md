@@ -18,6 +18,9 @@ bundled database/model runtimes, [app and agent RAM controls](docs/service/memor
 local recovery and a Linux idle-restart fix. The
 [live 3D memory map](docs/service/memory-map.md), recorded agent activity and
 [connection diagnostics](docs/service/connection-diagnostics.md) introduced in 4.0.10 remain available.
+Version [4.0.12](docs/releases/4.0.12.md) corrects native ngrok
+connections, stale offline responses and authenticated health gateways; use the
+product page to distinguish current source from published downloads.
 Studio retains OS-protected saved connections, identity-checked reopening after restart and a clearer connection
 screen. [Workspace controls](docs/service/workspaces.md) explain remembering,
 disconnecting and forgetting a device connection. Complete fresh-machine setup
@@ -189,7 +192,7 @@ and performance independently verified in this implementation.
 
 Open **Documentation & roadmap** in Studio, or use the setup screen’s help link.
 The offline library ships the same Markdown as this repository. See the
-[product roadmap](docs/ROADMAP.md), [release notes](docs/releases/4.0.11.md), and
+[product roadmap](docs/ROADMAP.md), [release notes](docs/releases/4.0.12.md), and
 [documentation maintenance policy](docs/MAINTENANCE.md). Every release and hotfix
 must include matching release notes and a reviewed roadmap.
 

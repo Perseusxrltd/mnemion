@@ -20,6 +20,7 @@ HINTS = {
     "timeout": "The host did not answer within the connection-check budget. Check the host and network, then retry.",
     "redirect": "The address redirected elsewhere. Use the final Mnemion HTTPS address; credentials were not forwarded to the redirect.",
     "unauthorized": "The service rejected the credential. Ask the workspace administrator for current individual access.",
+    "authentication_required": "The host requires authentication for health checks. Supply a private credentials file to verify the connection.",
     "forbidden": "The credential lacks permission for this check. Ask the workspace administrator to review its access.",
     "not_found": "A required route was not found. Check the workspace base address and API/MCP proxy routing.",
     "invalid_response": "This route did not return the expected Mnemion or MCP response. Check proxy sign-in pages, routing and service compatibility.",
@@ -127,7 +128,16 @@ async def diagnose(address: str, key: str | None, *, transport=None) -> dict:
 
     async def health(client, name, path, expected):
         try:
-            value, _ = await _request(client, "GET", address + path)
+            try:
+                value, _ = await _request(client, "GET", address + path)
+            except ProbeError as error:
+                if error.code != "unauthorized":
+                    raise
+                if not key:
+                    raise ProbeError("authentication_required", error.status) from None
+                # Some gateways protect health routes too. Retry only this exact
+                # destination; public/offline/redirect checks still send no key.
+                value, _ = await _request(client, "GET", address + path, key=key)
             if value.get("status") != expected or (
                 name == "service" and value.get("api_version") != "v1"
             ):

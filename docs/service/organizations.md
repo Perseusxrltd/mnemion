@@ -18,7 +18,7 @@ key merely to simplify configuration. MCP HTTP calls retain each caller's identi
 
 ## Establish independent administrators
 
-The 4.0.11 candidate exposes **Organization role** in **People & apps** and lists
+Version 4.0.11 exposes **Organization role** in **People & apps** and lists
 organization identities separately from space grants. An authenticated
 administrator can open People & apps, Connections, Setup and documentation even
 without a memory-space grant. Administration no longer requires creating a
@@ -59,7 +59,7 @@ backup or proof of current workspace authority.
 
 ### Retire an identity and retain administrator access
 
-The 4.0.11 candidate adds **Disable** beside other active identities in People &
+Version 4.0.11 adds **Disable** beside other active identities in People &
 apps. Review the named confirmation before disabling a person or application.
 Its API keys and linked sign-ins stop granting access; recorded memories and
 history remain. Disabling is permanent through the application: future access
@@ -68,7 +68,7 @@ identity in that session. Use another independently enrolled administrator.
 The existing `principals.disable` API/CLI/MCP operation and TypeScript
 `disablePrincipal(id)` provide equivalent controls.
 
-The same candidate protects removal of the last currently usable organization
+The same release protects removal of the last currently usable organization
 administrator credential. A rejected operation returns HTTP `409` with
 `last_administrator_access`; create and verify replacement access first. A bare
 administrator identity with no key, a disabled identity, and an expired or

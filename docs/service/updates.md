@@ -78,7 +78,7 @@ draft guard. On Mac and Windows, a normal quit cancels a staged update; a later 
 retry it. This prevents a cancelled update from installing after the app exits.
 On AppImage, a downloaded update can also install during a normal quit.
 
-The 4.0.11 candidate adds **Restart to update** to **Background and updates**
+Version 4.0.11 adds **Restart to update** to **Background and updates**
 once a verified update is downloaded. This deliberate restart skips the idle
 and focus wait for that attempt; it still checks unsaved work, active transfers,
 local workspace shutdown and update policy before installation. The menu shows

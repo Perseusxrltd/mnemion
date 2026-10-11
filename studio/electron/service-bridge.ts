@@ -6,6 +6,7 @@ import { join } from 'node:path'
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { WorkspaceStore, workspaceIdentity } from './workspace-store.js'
 import { WorkspaceConnections, isWorkspaceSession } from './workspace-connections.js'
+import { workspaceFetch } from './workspace-fetch.js'
 import { LocalWorkspace, localEnvironment, localOptions } from './local-workspace.js'
 import type { LocalStatus } from '../shared/local-workspace.js'
 
@@ -213,7 +214,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
     connections ??= new WorkspaceConnections(new WorkspaceStore(join(app.getPath('userData'), 'workspaces'), workspaceCipher()), async (endpoint, credential) => {
       let response: Response
       try {
-        response = await net.fetch(endpoint + '/v1/me', {
+        response = await workspaceFetch(net.fetch.bind(net), endpoint + '/v1/me', {
           headers: { Authorization: 'Bearer ' + credential, Accept: 'application/json' },
           redirect: 'error', credentials: 'omit', signal: AbortSignal.timeout(15_000),
         })
@@ -334,7 +335,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
     } else {
       url = allowedServiceUrl(request.url)
     }
-    const response = await net.fetch(url.toString(), { method: request.method, headers, body: request.body, redirect: 'error', credentials: 'omit', signal: AbortSignal.timeout(60_000) })
+    const response = await workspaceFetch(net.fetch.bind(net), url.toString(), { method: request.method, headers, body: request.body, signal: AbortSignal.timeout(60_000) })
     return { status: response.status, headers: Object.fromEntries(response.headers.entries()), body: await boundedBody(response) }
   })
 

@@ -4,7 +4,7 @@ This is the **4.0 shared-memory service**. It provides authenticated spaces,
 versioned source evidence, durable indexing, local multilingual search, HTTP and
 MCP access, and Obsidian exports. The [product page](https://www.perseusxr.com/mnemion)
 provides desktop downloads for Windows, macOS and Linux on x64 and ARM64. The
-[release notes](../releases/4.0.11.md) describe the current package changes and
+[release notes](../releases/4.0.12.md) describe the current package changes and
 remaining work. Complete backup/recovery, v3 import with cutover and rollback,
 and Studio are implemented. Version 4.0.8 adds [managed Unix service patches](managed-updates.md)
 with signed packages, verified backups and runtime rollback. Fleet/Compose upgrades

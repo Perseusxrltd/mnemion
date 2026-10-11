@@ -1,8 +1,16 @@
 # Mnemion product roadmap
 
-Current distribution: **4.0.11**. Updated: **2026-10-11**.
+Current distribution: **4.0.12**. Updated: **2026-10-11**.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
+
+Version [4.0.12](releases/4.0.12.md) fixes desktop connections through free ngrok
+endpoints and prevents cached offline/identity responses from deciding current
+workspace access. Connection diagnostics also support authenticated health
+gateways. [Native Windows and live-host validation](validation/2026-10-11-workspace-gateway.md)
+records the reproduced failures, corrected transport and a successful bounded
+40-search baseline. Installed-app reconnection and the next published automatic
+upgrade remain separate acceptance checks.
 
 The [complete requirements checklist](PRODUCT_REQUIREMENTS.md) preserves every
 requested product area, its delivery state and remaining acceptance checks.
@@ -13,7 +21,7 @@ the requested live 3D memory/activity map.
 
 Version 4.0.11 includes an [optional OAuth resource-server foundation](service/oauth.md):
 trusted-issuer introspection, discovery/challenges and individually revocable
-identity bindings. It is not in the published 4.0.10 binaries. Built-in simple
+identity bindings. Version 4.0.11 is published for all six desktop targets. Built-in simple
 personal/team sign-in, invitations, app onboarding, consent, reauthorization,
 independent recovery and live agent-platform acceptance remain in the queue;
 external enterprise identity is an optional deployment path.
@@ -32,10 +40,11 @@ agent RAM-policy recovery, and optional trusted-issuer OAuth with individual
 bindings and revocation. All six architectures passed installed setup, real model
 save/search, shutdown, automatic reopen and occupied-port recovery after fixing
 [Windows packaged SQL line endings](validation/2026-10-11-windows-migration-newlines.md).
-The Windows jobs then failed during disposal of the test installation while NSIS
-still held the folder. A bounded cleanup retry and the integrated administration
-changes require a fresh complete release run. Both Macs and both Linux targets
-completed their full native jobs in the preceding run.
+Bounded installer cleanup and a correction to the native focus-test fixture
+resolved the remaining Windows gate failures. The integrated release run at
+commit `0eb47cf` passed all 30 jobs, including installed workspace and automatic
+update/relaunch checks on all six desktop targets. Artifact/signature verification
+and publication are [also complete](validation/2026-10-11-v411-release.md).
 A [Linux stale-focus correction](validation/2026-10-11-linux-update-focus.md) also
 passed controlled real-updater comparisons; public unattended acceptance remains.
 Full integrated native package checks are required before publication. Windows ARM uses a
@@ -62,8 +71,8 @@ downloads. Each architecture requires its complete verified installer/update set
 The rebuilt shared-memory platform is product v1; its package version is 4.x
 to upgrade correctly from the earlier 3.x product. This is a living delivery
 plan, not a claim that every planned capability is available. Release status and
-known limitations are recorded in [the 4.0.11 patch notes](releases/4.0.11.md),
-[the preceding patch notes](releases/4.0.10.md),
+known limitations are recorded in [the 4.0.12 patch notes](releases/4.0.12.md),
+[the preceding patch notes](releases/4.0.11.md),
 [the published baseline](releases/4.0.0.md) and
 [validation report](validation/2026-10-11-hotfixes.md).
 

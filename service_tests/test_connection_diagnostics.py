@@ -82,6 +82,93 @@ def test_success_reports_only_validated_statuses_counts_and_roles():
         assert private not in serialized
 
 
+def test_authenticated_gateway_health_checks_reuse_only_the_supplied_destination():
+    calls = []
+
+    def handler(request):
+        calls.append(request)
+        if request.url.path.startswith("/health"):
+            if "authorization" not in request.headers:
+                return httpx.Response(401, text=SECRET + PRIVATE)
+            assert request.headers["authorization"] == "Bearer " + SECRET
+            public_request = httpx.Request(request.method, request.url)
+            return successful(public_request)
+        return successful(request)
+
+    report = asyncio.run(
+        doctor.diagnose(
+            "https://private.example.invalid", SECRET, transport=httpx.MockTransport(handler)
+        )
+    )
+    assert report["ready"] and len(calls) == 9
+    assert {request.url.host for request in calls} == {"private.example.invalid"}
+    assert all(report["checks"][name]["ok"] for name in ("service", "readiness", "identity"))
+    for private in (SECRET, PRIVATE, "private.example.invalid"):
+        assert private not in json.dumps(report)
+
+
+def test_protected_health_without_a_key_reports_authentication_required():
+    calls = []
+
+    def handler(request):
+        calls.append(request)
+        return httpx.Response(401, text=SECRET)
+
+    report = asyncio.run(
+        doctor.diagnose("https://test.invalid", None, transport=httpx.MockTransport(handler))
+    )
+    assert not report["ready"] and len(calls) == 2
+    assert all("authorization" not in request.headers for request in calls)
+    for name in ("service", "readiness"):
+        assert report["checks"][name] == {
+            "ok": False,
+            "code": "authentication_required",
+            "http_status": 401,
+        }
+    assert report["checks"]["identity"]["skipped"]
+    assert doctor.HINTS["authentication_required"] in report["guidance"]
+    assert doctor.HINTS["unauthorized"] not in report["guidance"]
+    assert SECRET not in json.dumps(report)
+
+
+@pytest.mark.parametrize("status,code", [(401, "unauthorized"), (403, "forbidden")])
+def test_protected_health_rejection_does_not_claim_readiness(status, code):
+    def handler(request):
+        if request.url.path.startswith("/health"):
+            return httpx.Response(status if "authorization" in request.headers else 401)
+        return successful(request)
+
+    report = asyncio.run(
+        doctor.diagnose("https://test.invalid", SECRET, transport=httpx.MockTransport(handler))
+    )
+    assert not report["ready"]
+    assert report["checks"]["identity"]["ok"]
+    for name in ("service", "readiness"):
+        assert report["checks"][name]["code"] == code
+        assert report["checks"][name]["http_status"] == status
+
+
+def test_authenticated_health_redirect_is_never_followed():
+    calls = []
+
+    def handler(request):
+        calls.append(request)
+        if "authorization" not in request.headers:
+            return httpx.Response(401)
+        return httpx.Response(302, headers={"location": "https://other.invalid/" + SECRET})
+
+    report = asyncio.run(
+        doctor.diagnose("https://test.invalid", SECRET, transport=httpx.MockTransport(handler))
+    )
+    assert not report["ready"] and len(calls) == 2
+    assert {str(request.url) for request in calls} == {"https://test.invalid/health/live"}
+    assert "authorization" not in calls[0].headers
+    assert calls[1].headers["authorization"] == "Bearer " + SECRET
+    assert report["checks"]["service"]["code"] == "redirect"
+    assert report["checks"]["identity"]["skipped"]
+    assert SECRET not in json.dumps(report)
+
+
 @pytest.mark.parametrize(
     "status,headers,code",
     [
