@@ -34,6 +34,11 @@ a completed published download.
    product/native matrices start only after it passes, avoiding wasted platform
    compilation when a cheap source check fails. Preflight does not replace the
    complete regression, installed-app, signature or update gates.
+   Native focus scenarios must establish a visible, restored, focused window
+   before testing foreground restart protection. Windows GUI probes must be
+   allowed to show their window; a hidden startup can report focus without
+   visibility. Retain actual window states around the guard check, and keep
+   hidden/minimized background behavior covered separately.
 6. Prepare immutable, signed and verified artifacts and update feeds. The release
    verifier requires matching versions, release notes, a current roadmap and a
    complete set of installers and update feeds for each OS/architecture selected

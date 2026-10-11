@@ -75,8 +75,10 @@ app.whenReady().then(async () => {
     app.focus({ steal: true })
     window.focus()
     const focusDeadline = Date.now() + 5000
-    while (!window.isFocused() && Date.now() < focusDeadline) await sleep(100)
-    assert(window.isFocused(), 'The native test window could not be focused')
+    const activeWindow = () => window.isFocused() && window.isVisible() && !window.isMinimized()
+    while (!activeWindow() && Date.now() < focusDeadline) await sleep(100)
+    record('focus-window-state', { focused: window.isFocused(), visible: window.isVisible(), minimized: window.isMinimized() })
+    assert(activeWindow(), 'The native test window could not become visible, restored and focused')
     await updates.restartIfSafe()
     assert(shutdowns === 0, 'A shutdown interrupted a focused window')
     window.hide()

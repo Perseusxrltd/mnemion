@@ -210,7 +210,10 @@ try {
   }
   const installedBinaries = await verifyInstalledBinaries(join(output, 'packages', version), installed)
   const electronLog = createWriteStream(join(output, 'electron.log'))
-  child = spawn(executable, [], { stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true, env })
+  // This fixture tests a real foreground GUI. Hiding its initial native window
+  // can leave isFocused() true without a visible window, which is background
+  // state under the production update policy. Installers stay silent above.
+  child = spawn(executable, [], { stdio: ['ignore', 'pipe', 'pipe'], windowsHide: false, env })
   child.stdout.pipe(electronLog, { end: false }); child.stderr.pipe(electronLog, { end: false })
   child.once('close', () => electronLog.end())
   child.on('error', error => { writeFileSync(join(output, 'spawn-error.txt'), error.message) })

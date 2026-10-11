@@ -15,6 +15,9 @@ function record(event, detail = {}) {
   appendFileSync(fixture.receipt, JSON.stringify({ event, timestamp: new Date().toISOString(), version: app.getVersion(), pid: process.pid, ...detail }) + '\n')
 }
 function assert(condition, message) { if (!condition) throw new Error(message) }
+function windowState() {
+  return { focused: window.isFocused(), visible: window.isVisible(), minimized: window.isMinimized() }
+}
 async function mode(value) {
   const response = await fetch(fixture.control + '/' + value)
   assert(response.ok, 'Could not select the isolated fixture case')
@@ -55,7 +58,7 @@ app.whenReady().then(async () => {
   updates = new DesktopUpdates(() => window, () => busy, async () => {
     shutdowns++
     await sleep(25)
-    record('workspace-stop', { allowed: shutdownAllowed })
+    record('workspace-stop', { allowed: shutdownAllowed, window: windowState() })
     return shutdownAllowed
   }, () => {}, () => { cancelled++; record('restart-cancelled') })
   for (const name of ['bad-signature', 'wrong-architecture', 'oversized', 'interrupted']) {
@@ -107,10 +110,15 @@ app.whenReady().then(async () => {
   await updates.restartIfSafe()
   assert(shutdowns === 1 && quitRequests === 0, 'A restart discarded a renderer draft')
   await window.webContents.executeJavaScript('document.querySelector("textarea").value=""')
+  window.restore()
   window.show()
   window.focus()
-  await until(() => window.isFocused(), 'The native test window could not be focused', 5000)
+  try {
+    await until(() => window.isFocused() && window.isVisible() && !window.isMinimized(),
+      'The native test window could not become visible, restored and focused', 5000)
+  } finally { record('focus-window-state', windowState()) }
   await updates.restartIfSafe()
+  record('focus-guard-result', { ...windowState(), shutdowns, quitRequests, status: updates.status.state })
   assert(shutdowns === 1 && quitRequests === 0, 'A restart interrupted a focused window')
   window.hide()
   await sleep(100)
