@@ -1,10 +1,13 @@
 /** Background restarts must never discard a draft or interrupt a vault transfer. */
 export function canRestartForUpdate(value: {
   enabled: boolean; downloaded: boolean; idleSeconds: number;
-  focused: boolean; safe: boolean; busy: boolean;
+  focused: boolean; visible: boolean; minimized: boolean; safe: boolean; busy: boolean;
 }): boolean {
+  // Electron can retain focus after a Linux window is minimized/hidden. Only
+  // an actually visible, restored focused window can represent active use.
+  const activeFocus = value.focused && value.visible && !value.minimized
   return value.enabled && value.downloaded && Number.isFinite(value.idleSeconds)
-    && value.idleSeconds >= 600 && !value.focused && value.safe && !value.busy
+    && value.idleSeconds >= 600 && !activeFocus && value.safe && !value.busy
 }
 
 export function updateChannel(architecture: string): string {

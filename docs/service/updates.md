@@ -67,11 +67,18 @@ downgrades are excluded. Errors remain visible and are retried without blocking
 access to memory. Users can pause updates and administrators can manage them.
 
 Updates install and restart automatically after ten minutes of system inactivity,
-provided Studio is not focused, no vault/API transfer is active, and no edited
+provided Studio has no visible, restored focused window, no vault/API transfer is active, and no edited
 input remains open. Close a completed editor or navigate away to release its
 draft guard. On Mac and Windows, a normal quit cancels a staged update; a later check can
 retry it. This prevents a cancelled update from installing after the app exits.
 On AppImage, a downloaded update can also install during a normal quit.
+
+Current source corrects a Linux case where Electron keeps its focused flag on a
+hidden, minimized window. The [controlled comparison](../validation/2026-10-11-linux-update-focus.md)
+passed both architectures without changing the idle or work-safety guards.
+Older installed clients still use their existing restart logic: an affected
+AppImage may require one **Quit Mnemion Studio** or a new official download.
+Public unattended acceptance of a released fixed client remains required.
 
 The Mac updater limits an archive to 1 GiB and checking/downloading/verifying to
 20 minutes. A staged update waiting for safe restart expires after 24 hours.

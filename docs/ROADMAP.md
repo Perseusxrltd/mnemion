@@ -1,6 +1,7 @@
 # Mnemion product roadmap
 
-Current distribution: **4.0.10**. Updated: **2026-10-11**.
+Current distribution: **4.0.11** (release candidate). Updated: **2026-10-11**.
+Public downloads remain 4.0.10 until the candidate's release gates pass and it is published.
 
 The [complete requirements checklist](PRODUCT_REQUIREMENTS.md) preserves every
 requested product area, its delivery state and remaining acceptance checks.
@@ -25,11 +26,15 @@ the bundled web app are [published](https://www.perseusxr.com/mnemion).
 The [validation report](validation/2026-10-11-memory-map.md) records the release
 gates, signed asset verification and automatic live website refresh.
 
-The next source increment integrates native engine/database packaging, app and
+The [4.0.11 candidate](releases/4.0.11.md) integrates native engine/database packaging, app and
 agent RAM-policy recovery, and optional trusted-issuer OAuth with individual
-bindings and revocation. Linux x64 installed setup, real model save/search,
-shutdown and automatic workspace reopen passed. Full integrated native package
-checks remain required before publishing this increment. Windows ARM uses a
+bindings and revocation. Both Linux and both Mac architectures passed installed
+setup, real model save/search, shutdown and automatic workspace reopen. Windows
+path identity and ARM packaging corrections have source/native component checks;
+their complete installers and the extended port-recovery gate are being tested.
+A [Linux stale-focus correction](validation/2026-10-11-linux-update-focus.md) also
+passed controlled real-updater comparisons; public unattended acceptance remains.
+Full integrated native package checks are required before publication. Windows ARM uses a
 native app with an explicitly disclosed x64 backend; see
 [packaging evidence](validation/2026-10-11-native-installer-bundling.md),
 [policy recovery](validation/2026-10-11-native-policy-recovery.md), and
@@ -53,7 +58,8 @@ downloads. Each architecture requires its complete verified installer/update set
 The rebuilt shared-memory platform is product v1; its package version is 4.x
 to upgrade correctly from the earlier 3.x product. This is a living delivery
 plan, not a claim that every planned capability is available. Release status and
-known limitations are recorded in [the current patch notes](releases/4.0.10.md),
+known limitations are recorded in [the candidate patch notes](releases/4.0.11.md),
+[the published patch notes](releases/4.0.10.md),
 [the published baseline](releases/4.0.0.md) and
 [validation report](validation/2026-10-11-hotfixes.md).
 

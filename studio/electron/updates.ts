@@ -214,7 +214,9 @@ export class DesktopUpdates {
     try { if (window) safe = await window.webContents.executeJavaScript('window.mnemion?.updateSafety?.() === true') }
     catch { return false }
     return canRestartForUpdate({ enabled: this.enabled, downloaded: this.downloaded,
-      idleSeconds: powerMonitor.getSystemIdleTime(), focused: window?.isFocused() || false, safe, busy: this.busy() })
+      idleSeconds: powerMonitor.getSystemIdleTime(), focused: window?.isFocused() || false,
+      visible: window?.isVisible() || false, minimized: window?.isMinimized() || false,
+      safe, busy: this.busy() })
   }
   async restartIfSafe() {
     if (this.installing || !await this.restartIsSafe()) return
