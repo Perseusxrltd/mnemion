@@ -12,7 +12,7 @@ create a hosted memory account with the project maintainer.
 
 Studio sends requests and memory content to the service address you select.
 Browser keys stay in window memory and are cleared on reload or disconnect.
-Desktop keys stay in the main process; from 4.0.9 an optional remembered
+Desktop keys are managed outside the renderer; from 4.0.9 an optional remembered
 connection uses the operating system's secure store. The interface uses a
 temporary handle limited to the selected API. The server records bounded operational counters and audit history for
 authorized administrators; these are not sent to a publisher analytics service.
@@ -49,6 +49,9 @@ the service address locally. From desktop 4.0.9, an opted-in saved connection al
 records its workspace/identity names and identifiers, address, last-use time and
 an OS-encrypted key. Windows protection, macOS Keychain and supported Linux
 keyrings supply encryption; unavailable stores never fall back to plaintext.
+On Windows the bundled local helper uses current-user DPAPI over private process
+pipes, without secrets in arguments or environment variables. Another program
+running as the same OS user is outside this protection boundary.
 Disconnect clears the live credential and pauses reconnection; Forget removes
 the saved device bookmark without revoking the server key or deleting memories.
 Session-only keys disappear on desktop app exit or disconnect. See

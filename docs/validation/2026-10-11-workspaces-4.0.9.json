@@ -2,7 +2,16 @@
   "version": "4.0.9",
   "date": "2026-10-11",
   "stage": "local candidate validation",
-  "desktop_policy_tests": 46,
+  "desktop_policy_tests": 47,
+  "windows_credential_fix": {
+    "cause_reproduced_with_electron": "44.7.0",
+    "cause": "Forced first-process termination before Local State is saved loses Chromium's profile encryption key.",
+    "fix": "Direct current-user Windows DPAPI through bounded private pipes to the bundled local client.",
+    "native_windows_x64_source_tests": { "passed": 3, "skipped": 1 },
+    "separate_process_decryption": true,
+    "modified_ciphertext_rejected": true,
+    "packaged_forced_restart_matrix": "required before publication"
+  },
   "native_real_service_ui": {
     "nativeDesktop": true,
     "realPostgresService": true,

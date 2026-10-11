@@ -24,8 +24,8 @@ export interface WorkspaceBookmark {
 
 export interface CredentialCipher {
   available(): boolean
-  encrypt(value: string): Buffer
-  decrypt(value: Buffer): string
+  encrypt(value: string): Buffer | Promise<Buffer>
+  decrypt(value: Buffer): string | Promise<string>
 }
 
 type StoredWorkspace = WorkspaceBookmark & { sealed: string }
@@ -184,9 +184,9 @@ export class WorkspaceStore {
       }
       // Bind the encrypted credential to its destination and identity. Changing
       // plaintext metadata cannot redirect the saved secret to another host.
-      const sealed = this.cipher.encrypt(JSON.stringify({
+      const sealed = (await this.cipher.encrypt(JSON.stringify({
         format: 1, endpoint, principalId: bookmark.principalId, tenantId: bookmark.tenantId, credential,
-      })).toString('base64')
+      }))).toString('base64')
       await this.write({ activeId: bookmark.id, connections: [...entries.filter(item => item.id !== bookmark.id), { ...bookmark, sealed }] })
       return bookmark
     })
@@ -197,7 +197,7 @@ export class WorkspaceStore {
     if (!this.available()) throw new Error('Unlock the operating system password store to reconnect.')
     const item = (await this.read()).connections.find(item => item.id === id)
     if (!item) throw new Error('That saved workspace is no longer available.')
-    const payload = this.cipher.decrypt(Buffer.from(item.sealed, 'base64'))
+    const payload = await this.cipher.decrypt(Buffer.from(item.sealed, 'base64'))
     if (Buffer.byteLength(payload) > 16384) throw new Error('Invalid saved credential.')
     const decoded = JSON.parse(payload)
     if (!decoded || typeof decoded !== 'object' || decoded.format !== 1 ||

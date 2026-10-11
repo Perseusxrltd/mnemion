@@ -11,6 +11,22 @@ const selections = new Map<string, string>()
 const children = new Set<ChildProcess>()
 
 function workspaceCipher() {
+  // Windows Chromium profile keys are flushed later. Direct current-user DPAPI
+  // keeps a successful save readable even if a new app profile crashes at once.
+  // The bundled helper only accepts fixed operations over private process pipes.
+  if (process.platform === 'win32') return {
+    available: () => app.isReady(),
+    encrypt: async (value: string) => {
+      const result = await runClient(['--credential', 'protect'], { input: JSON.stringify({ value }), credential: true })
+      if (typeof result.value !== 'string' || result.value.length > 16384 || !/^[A-Za-z0-9+/]+={0,2}$/.test(result.value)) throw new Error('Windows did not return a protected connection.')
+      return Buffer.from(result.value, 'base64')
+    },
+    decrypt: async (value: Buffer) => {
+      const result = await runClient(['--credential', 'unprotect'], { input: JSON.stringify({ value: value.toString('base64') }), credential: true })
+      if (typeof result.value !== 'string' || Buffer.byteLength(result.value) > 8192) throw new Error('Windows did not unlock the saved connection.')
+      return result.value
+    },
+  }
   return {
     available: () => {
       try {
@@ -91,23 +107,26 @@ export function clientExecutable(): string {
   return join(process.resourcesPath, 'client', process.platform === 'win32' ? 'mnemion-client.exe' : 'mnemion-client')
 }
 
-async function runClient(args: string[]): Promise<Record<string, unknown>> {
+async function runClient(args: string[], options: { input?: string; credential?: boolean } = {}): Promise<Record<string, unknown>> {
   const command = app.isPackaged ? clientExecutable() : (process.env.MNEMION_BUILD_PYTHON || 'python3')
   const commandArgs = app.isPackaged ? args : [join(app.getAppPath(), '../bridge/main.py'), ...args]
   return new Promise((resolve, reject) => {
-    const child = spawn(command, commandArgs, { stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true })
+    const child = spawn(command, commandArgs, { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true })
     children.add(child)
     let output = ''
     let failure: Error | null = null
     // Wait for close after termination so the archive is not removed while the
     // Windows client still holds it, and all stdout has arrived before parsing.
     const timer = setTimeout(() => {
-      failure = new Error('Vault refresh timed out; refresh again to reconcile its saved progress')
+      failure = new Error(options.credential ? 'Windows credential protection timed out. Try again or connect without remembering.' : 'Vault refresh timed out; refresh again to reconcile its saved progress')
       child.kill()
-    }, 180_000)
+    }, options.credential ? 15_000 : 180_000)
+    // Credentials never enter command-line arguments, environment or a file.
+    child.stdin.on('error', () => { failure ??= new Error('The local client could not receive the request') })
+    child.stdin.end(options.input)
     child.stdout.on('data', (chunk: Buffer) => {
       output += chunk.toString('utf8')
-      if (output.length > 8 * 1024 * 1024) {
+      if (output.length > (options.credential ? 24 * 1024 : 8 * 1024 * 1024)) {
         failure = new Error('The local vault client returned too much output')
         child.kill()
       }

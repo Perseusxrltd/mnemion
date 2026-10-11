@@ -19,6 +19,12 @@ app restart. No embedding or language model is installed just to join a team.
 The main process holds the real key; the interface receives a temporary handle
 that can only call the selected workspace API.
 
+On Windows, protection is bound to your Windows account. The bundled local
+helper calls the operating system directly so an unexpected shutdown cannot lose
+a newly saved profile key. Keys never enter command-line arguments or temporary
+plaintext files. This does not protect against another program already running
+with your Windows account's privileges.
+
 Leave the option unchecked on a shared device or for a temporary connection.
 If the operating system's secure store is locked or unavailable, the app
 explains this and offers a session-only connection. There is no plaintext key

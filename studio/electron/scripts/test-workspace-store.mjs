@@ -18,6 +18,30 @@ test('private encrypted storage survives restart without exposing a token in boo
   assert.equal((await restarted.status()).activeId, saved.id)
 })
 
+test('asynchronous OS protection must finish before a connection is saved', async t => {
+  const f = await fixture(t)
+  let release
+  const gate = new Promise(resolve => { release = resolve })
+  const store = new WorkspaceStore(f.directory, {
+    available: () => true,
+    encrypt: async value => { await gate; return f.cipher.encrypt(value) },
+    decrypt: async value => f.cipher.decrypt(value),
+  })
+  const pending = store.save('https://memory.example.com', credential, f.identity)
+  await new Promise(resolve => setTimeout(resolve, 20))
+  await assert.rejects(lstat(f.path), { code: 'ENOENT' })
+  release()
+  const saved = await pending
+  assert.equal((await store.credential(saved.id)).credential, credential)
+  const failed = new WorkspaceStore(f.directory, {
+    available: () => true, encrypt: async () => { throw new Error('OS store unavailable') },
+    decrypt: async value => f.cipher.decrypt(value),
+  })
+  const before = await readFile(f.path, 'utf8')
+  await assert.rejects(failed.save(saved.endpoint, credential + '_rotated', f.identity), /OS store unavailable/)
+  assert.equal(await readFile(f.path, 'utf8'), before)
+})
+
 test('concurrent connection saves preserve both identities and rotate a key in place', async t => {
   const f = await fixture(t)
   const other = { ...f.identity, principal_id: randomUUID() }
