@@ -282,7 +282,10 @@ class InstalledUpgrade:
             stderr=subprocess.STDOUT,
             start_new_session=os.name != "nt",
         )
-        deadline = time.monotonic() + 720
+        # Only first setup downloads a model. This synthetic, already indexed
+        # workspace should reopen well within five minutes; collect blocked
+        # startup evidence without repeating the download allowance.
+        deadline = time.monotonic() + (720 if config.get("phase") == "create" else 300)
         while time.monotonic() < deadline:
             if self.child.poll() is not None:
                 raise RuntimeError("The installed app exited before UI acceptance")
@@ -307,7 +310,11 @@ class InstalledUpgrade:
         raise TimeoutError("Installed UI acceptance timed out")
 
     def failure_details(self):
-        from deploy.installed_upgrade_diagnostics import inspect_local_status, smoke_reason
+        from deploy.installed_upgrade_diagnostics import (
+            inspect_local_status,
+            inspect_mac_startup,
+            smoke_reason,
+        )
 
         result = {"local_status": inspect_local_status(self.debug_port, self.environment)}
         if self.smoke.is_file() and self.smoke.stat().st_size <= 128 * 1024:
@@ -317,6 +324,10 @@ class InstalledUpgrade:
                 pass
         result["pre_migration_archives"] = len(list((self.workspace / "backups").glob("*.zip")))
         result["database_pid_file_present"] = (self.workspace / "database/postmaster.pid").exists()
+        if self.args.platform == "macos" and self.child and self.child.poll() is None:
+            result["native_startup"] = inspect_mac_startup(
+                self.child.pid, self.root, self.environment
+            )
         return result
 
     def stop(self):
