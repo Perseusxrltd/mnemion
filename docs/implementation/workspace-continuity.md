@@ -138,9 +138,12 @@ without the original agent or re-entering a key; startup and background settings
 were preserved.
 
 A later suspended-host observation exposed a [Linux clock/readiness
-problem](../validation/2026-10-12-host-clock-readiness.md). Source 4.0.14 corrects
+problem](../validation/2026-10-12-host-clock-readiness.md). Published 4.0.14 corrects
 process-birth checks and RAM sampling across a clock change; it does not wake
-a suspended provider or update an older operator executable. The existing
-host-management channel remains necessary for that layer. These live results
+a suspended provider or update an older operator executable. The original host
+then passed an [operator-applied 4.0.13 → 4.0.14 patch and Windows administrator
+reconnection](../validation/2026-10-12-v414-release.md), with preserved keys,
+grants and its public address. The existing host-management channel remains
+necessary for provider suspension. These live results
 advance the contract; they do not complete independent hosting, replicas,
 the recovery entry point, operator delegation or failover.
