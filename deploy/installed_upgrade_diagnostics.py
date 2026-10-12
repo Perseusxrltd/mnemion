@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import json
+import os
+from pathlib import Path
 import re
 import subprocess
+import sys
 
 
 def public_status(value: object) -> dict:
@@ -71,29 +74,37 @@ def inspect_local_status(port: int | None, environment: dict) -> dict:
     # port is enabled only by the disposable installed probe and binds loopback.
     script = r"""
 const port = process.argv[1];
+let phase = 'http', pageCount = 0;
+try {
 const response = await fetch(`http://127.0.0.1:${port}/json/list`, {signal: AbortSignal.timeout(3000)});
 const raw = await response.text();
 if (!response.ok || raw.length > 65536) throw new Error('Unavailable');
+phase = 'pages';
 const pages = JSON.parse(raw).filter(item => item.type === 'page');
+pageCount = pages.length;
 if (pages.length !== 1) throw new Error('Unexpected page inventory');
+phase = 'debugger';
 const url = new URL(pages[0].webSocketDebuggerUrl);
 if (url.protocol !== 'ws:' || url.hostname !== '127.0.0.1' || url.port !== port || url.username || url.password) throw new Error('Unexpected debugger');
+phase = 'socket';
 const result = await new Promise((resolve, reject) => {
   const socket = new WebSocket(url);
   const timer = setTimeout(() => { socket.close(); reject(new Error('Timeout')); }, 4000);
   socket.addEventListener('error', () => { clearTimeout(timer); reject(new Error('Unavailable')); });
-  socket.addEventListener('open', () => socket.send(JSON.stringify({id: 1, method: 'Runtime.evaluate', params: {
+  socket.addEventListener('open', () => { phase = 'runtime'; socket.send(JSON.stringify({id: 1, method: 'Runtime.evaluate', params: {
     expression: '(async () => { const s = await window.mnemion.localStatus(); return {state:s.state,stage:s.stage,errorCode:s.errorCode,diagnostic:s.diagnostic}; })()',
     awaitPromise: true, returnByValue: true,
-  }})));
+  }})); });
   socket.addEventListener('message', event => {
     if (typeof event.data !== 'string' || event.data.length > 131072) { clearTimeout(timer); socket.close(); reject(new Error('Too large')); return; }
     const message = JSON.parse(event.data);
     if (message.id !== 1) return;
+    phase = message.error ? 'protocol' : message.result?.exceptionDetails ? 'javascript' : 'complete';
     clearTimeout(timer); socket.close(); resolve(message.result?.result?.value ?? null);
   });
 });
-process.stdout.write(JSON.stringify(result));
+process.stdout.write(JSON.stringify({phase, pageCount, status: result}));
+} catch { process.stdout.write(JSON.stringify({phase, pageCount, status: null})); }
 """
     try:
         result = subprocess.run(
@@ -106,10 +117,100 @@ process.stdout.write(JSON.stringify(result));
             check=False,
         )
         if result.returncode or len(result.stdout) > 128 * 1024:
+            return {"available": False, "probe": "process"}
+        envelope = json.loads(result.stdout)
+        if not isinstance(envelope, dict):
             return {"available": False}
-        return public_status(json.loads(result.stdout))
-    except (OSError, ValueError, subprocess.TimeoutExpired):
+        evidence = public_status(envelope.get("status"))
+        if isinstance(envelope.get("phase"), str) and envelope["phase"] in {
+            "http",
+            "pages",
+            "debugger",
+            "socket",
+            "runtime",
+            "protocol",
+            "javascript",
+            "complete",
+        }:
+            evidence["probe"] = envelope["phase"]
+        count = envelope.get("pageCount")
+        if type(count) is int and 0 <= count <= 32:
+            evidence["page_count"] = count
+        return evidence
+    except subprocess.TimeoutExpired:
+        return {"available": False, "probe": "process_timeout"}
+    except (OSError, ValueError):
+        return {"available": False, "probe": "process"}
+
+
+MAC_STARTUP_SYMBOLS = (
+    "SecItemCopyMatching",
+    "SecKeychainFindGenericPassword",
+    "SecKeychainItemCopyContent",
+    "SecKeychainItemCopyAttributesAndData",
+    "SecKeychainAddGenericPassword",
+    "KeychainPassword",
+    "GetEncryptionKey",
+    "IsEncryptionAvailable",
+    "EncryptString",
+    "DecryptString",
+    "xpc_connection_send_message_with_reply_sync",
+    "mach_msg2_trap",
+    "mach_msg_trap",
+    "CFRunLoopRun",
+    "uv_run",
+    "BrowserMain",
+    "ContentMain",
+    "ElectronMain",
+    "LaunchServices",
+    "LSApplicationWorkspace",
+)
+
+
+def mac_startup_symbols(value: str) -> list[str]:
+    # Only literal symbols from this allowlist leave the native sample. Never
+    # export its arguments, environment, paths, memory or arbitrary stack text.
+    return [symbol for symbol in MAC_STARTUP_SYMBOLS if symbol in value]
+
+
+def inspect_mac_startup(pid: int, directory: Path, environment: dict) -> dict:
+    if (
+        sys.platform != "darwin"
+        or type(pid) is not int
+        or pid <= 0
+        or os.environ.get("CI") != "true"
+        or os.environ.get("RUNNER_ENVIRONMENT") != "github-hosted"
+        or os.environ.get("GITHUB_REPOSITORY") != "Perseusxrltd/mnemion"
+    ):
         return {"available": False}
+    import psutil
+
+    result = {"available": False}
+    try:
+        result["security_agent_present"] = any(
+            process.info.get("name") == "SecurityAgent" for process in psutil.process_iter(["name"])
+        )
+    except psutil.Error:
+        pass
+    path = directory / "macos-startup.private.sample"
+    try:
+        subprocess.run(
+            ["/usr/bin/sample", str(pid), "1", "10", "-file", str(path)],
+            env=environment,
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            timeout=10,
+            check=False,
+        )
+        if path.is_file() and path.stat().st_size <= 4 * 1024 * 1024:
+            path.chmod(0o600)
+            result.update(
+                available=True,
+                symbols=mac_startup_symbols(path.read_text(encoding="utf-8", errors="replace")),
+            )
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+    return result
 
 
 def smoke_reason(value: object) -> dict:
@@ -117,6 +218,11 @@ def smoke_reason(value: object) -> dict:
         return {}
     result = {}
     if isinstance(value.get("stage"), str) and value["stage"] in {
+        "tray-ready",
+        "backend-spawned",
+        "backend-ready",
+        "client-ready",
+        "hosting-ready",
         "startup-error",
         "uncaught-exception",
         "unhandled-rejection",
