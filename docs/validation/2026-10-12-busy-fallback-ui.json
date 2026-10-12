@@ -1,0 +1,69 @@
+{
+  "format": 1,
+  "scope": "Isolated PostgreSQL with a deterministic busy model; no production data or cloud calls",
+  "search_and_context": {
+    "at": "2026-10-12T11:08:31.166Z",
+    "version": "4.1.2",
+    "defaultRequestCompatible": true,
+    "defaultRetryHint": true,
+    "keywordFallback": true,
+    "semanticFallback": true,
+    "scopePreserved": true,
+    "contextBytesLabeled": true,
+    "contextBytes": 137,
+    "contextBudget": 2048,
+    "viewports": [
+      {
+        "width": 1440,
+        "content": 1440
+      },
+      {
+        "width": 390,
+        "content": 390
+      }
+    ],
+    "browserErrors": [],
+    "fixture": "Isolated PostgreSQL, deterministic busy model, no production data or cloud calls"
+  },
+  "exact_text_context": {
+    "at": "2026-10-12T11:19:10.263Z",
+    "version": "4.1.2",
+    "lexicalContextFallback": true,
+    "scopePreserved": true,
+    "contextBytes": 137,
+    "contextBudget": 2048,
+    "contextBytesLabeled": true,
+    "viewports": [
+      {
+        "width": 1440,
+        "content": 1440
+      },
+      {
+        "width": 390,
+        "content": 390
+      }
+    ],
+    "browserErrors": []
+  },
+  "older_server": {
+    "olderServer": "4.1.1",
+    "optionDisabled": true,
+    "upgradeHint": true,
+    "defaultRequestUnchanged": true,
+    "searchSucceeded": true
+  },
+  "documentation": {
+    "embedding_guide_option_and_warning": true,
+    "release_guide": true,
+    "widths": [
+      {
+        "viewport": 1440,
+        "document": 1440
+      },
+      {
+        "viewport": 390,
+        "document": 390
+      }
+    ]
+  }
+}

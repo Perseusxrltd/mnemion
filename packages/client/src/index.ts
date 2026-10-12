@@ -60,6 +60,7 @@ export interface RecallInput {
   limit?: number; mode?: 'hybrid' | 'lexical' | 'semantic'; include_contested?: boolean
   valid_at?: string | null; known_at?: string | null; metadata_filter?: Record<string, string | number | boolean>
   embedding_generation?: string | null
+  on_inference_busy?: 'error' | 'lexical'
 }
 export interface RecallHit extends Omit<Memory, 'content'> {
   text: string; text_truncated: boolean

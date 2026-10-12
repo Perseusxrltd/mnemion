@@ -121,7 +121,12 @@ class RetrievalService:
                         empty_results=int(
                             not failed and not result.get("hits", result.get("citations", []))
                         ),
-                        fallbacks=int("semantic_unavailable_lexical_only" in warnings),
+                        fallbacks=int(
+                            bool(
+                                {"semantic_unavailable_lexical_only", "inference_busy_lexical_only"}
+                                & set(warnings)
+                            )
+                        ),
                         incomplete_index=int("semantic_index_incomplete" in warnings),
                     )
                 except Exception:
@@ -139,6 +144,7 @@ class RetrievalService:
             groups[generation].append(space)
         warnings = []
         vectors = {}
+        busy_fallback = False
         if command.mode != "lexical":
             for generation in groups:
                 try:
@@ -179,6 +185,20 @@ class RetrievalService:
                         model.query(command.query), model.generation.dimensions
                     )
                 except Exception as exc:
+                    if (
+                        isinstance(exc, ServiceError)
+                        and exc.status == 503
+                        and exc.code == "inference_busy"
+                        and command.on_inference_busy == "lexical"
+                    ):
+                        # A caller opts into a complete keyword-only result,
+                        # including when another generation already returned a
+                        # vector. Keep scope/freshness rechecks below and stop
+                        # requesting model capacity for this call.
+                        vectors.clear()
+                        busy_fallback = True
+                        warnings.append("inference_busy_lexical_only")
+                        break
                     if isinstance(exc, ServiceError) and exc.code not in {
                         "embedding_profile_unavailable",
                         "embedding_processing_paused",
@@ -220,7 +240,7 @@ class RetrievalService:
                     409, "generation_changed", "Space model settings changed; retry the search."
                 )
             lexical, semantic = [], []
-            if command.mode != "semantic":
+            if command.mode != "semantic" or busy_fallback:
                 lexical = conn.execute(
                     ELIGIBLE
                     + """
@@ -290,7 +310,7 @@ class RetrievalService:
                     scores[key] += 1 / (60 + rank)
                     ranks[key][channel] = rank
                     candidates[key] = {**candidates.get(key, {}), **row}
-            channel_count = int(command.mode != "semantic") + int(bool(vectors))
+            channel_count = int(command.mode != "semantic" or busy_fallback) + int(bool(vectors))
             denominator = max(1, channel_count) / 61
             ordered = sorted(scores, key=lambda key: (-scores[key], str(key)))
             hits = []
@@ -372,9 +392,29 @@ class RetrievalService:
         )
 
     def _context(self, identity: Identity, command: ContextInput) -> dict:
-        result = self._recall(identity, RecallInput(**command.model_dump(exclude={"token_budget"})))
+        query = RecallInput(**command.model_dump(exclude={"token_budget"}))
+        result = self._recall(identity, query)
+        try:
+            return self._context_pack(identity, command, result)
+        except ServiceError as exc:
+            if (
+                exc.status != 503
+                or exc.code != "inference_busy"
+                or command.on_inference_busy != "lexical"
+            ):
+                raise
+            # Token counting also uses the local model's admission gate. If
+            # contention starts after retrieval, rebuild from fresh lexical
+            # evidence and count bytes throughout; never mix counting units in
+            # a partly assembled context or bypass the inference/RAM gate.
+            result = self._recall(identity, query.model_copy(update={"mode": "lexical"}))
+            result["warnings"] = sorted({*result["warnings"], "inference_busy_lexical_only"})
+            return self._context_pack(identity, command, result)
+
+    def _context_pack(self, identity: Identity, command: ContextInput, result: dict) -> dict:
         generation = result["index"]["generation_id"]
-        model = self.registry.get(generation) if generation else None
+        busy_fallback = "inference_busy_lexical_only" in result["warnings"]
+        model = self.registry.get(generation) if generation and not busy_fallback else None
         count = model.token_count if model else lambda text: len(text.encode("utf-8"))
         unit = (
             model.generation.configuration.get("token_count_unit", "model_tokens")
@@ -450,6 +490,8 @@ class RetrievalService:
             "token_budget": command.token_budget,
             "tokenizer": model.generation.model
             if model
+            else "UTF-8 bytes (busy inference fallback)"
+            if busy_fallback
             else "UTF-8 bytes (mixed embedding generations)",
             "tokenizer_generation": model.generation.id if model else "utf8-v1",
             "token_count_unit": unit,

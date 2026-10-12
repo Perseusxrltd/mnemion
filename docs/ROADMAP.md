@@ -1,8 +1,15 @@
 # Mnemion product roadmap
 
-Current distribution: **4.1.1**, published on all six desktop targets. Updated: **2026-10-12**.
+Current distribution: **4.1.2**, in release preparation. Published downloads remain **4.1.1** on all six desktop targets. Updated: **2026-10-12**.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
+
+Version [4.1.2](releases/4.1.2.md) adds an explicit keyword fallback when query
+inference is busy, with app/agent controls, visible warnings and preserved access
+checks. [Source and browser validation](validation/2026-10-12-busy-fallback.md)
+passed; native publication remains pending. Default retry behavior is unchanged.
+This implements the remaining overload option from issue 12; the issue stays
+open until publication is verified.
 
 The immediate priority is short hotfix releases for operational reliability:
 connections and administrator access, installation, verified updates, data safety

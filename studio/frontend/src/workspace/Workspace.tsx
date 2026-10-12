@@ -205,6 +205,8 @@ function WarningList({ warnings }: { warnings: string[] }) {
       "Some memories are waiting for semantic indexing. Search results may be incomplete.",
     semantic_unavailable_lexical_only:
       "Semantic search is unavailable. These results use exact text search.",
+    inference_busy_lexical_only:
+      "The model was busy. These results use exact text only; matches based on meaning may be missing.",
     contested_evidence:
       "Some evidence is contested. Check its source before relying on it.",
     semantic_matches_require_evidence_review:
@@ -1068,10 +1070,14 @@ function SourceDetail() {
 }
 
 function SearchMemory() {
-  const { client, space, selectSpace } = useSession();
+  const { client, me, space, selectSpace } = useSession();
   const [allAccessible, setAllAccessible] = useState(true);
   const [text, setText] = useState("");
   const [mode, setMode] = useState<"hybrid" | "lexical" | "semantic">("hybrid");
+  const [busyPolicy, setBusyPolicy] = useState<"error" | "lexical">("error");
+  const serviceParts = me.service_version?.match(/^(\d{1,5})\.(\d{1,5})\.(\d{1,5})$/)?.slice(1).map(Number);
+  const supportsBusyFallback = !!serviceParts && (serviceParts[0] > 4 ||
+    (serviceParts[0] === 4 && (serviceParts[1] > 1 || (serviceParts[1] === 1 && serviceParts[2] >= 2))));
   const [result, setResult] = useState<Recall>();
   const [context, setContext] = useState<ContextPack>();
   const [budget, setBudget] = useState(2048);
@@ -1084,7 +1090,10 @@ function SearchMemory() {
     setContext(undefined);
     setResult(undefined);
     try {
-      const input = { query: text, ...(allAccessible ? { all_accessible: true } : { space_ids: [space.id] }), mode, limit: 20 };
+      const input = {
+        query: text, ...(allAccessible ? { all_accessible: true } : { space_ids: [space.id] }), mode, limit: 20,
+        ...(supportsBusyFallback && busyPolicy === "lexical" ? { on_inference_busy: "lexical" as const } : {}),
+      };
       if (pack)
         setContext(await client.context({ ...input, token_budget: budget }));
       else setResult(await client.search(input));
@@ -1140,6 +1149,16 @@ function SearchMemory() {
             onChange={(event) => setBudget(Number(event.target.value))}
           />
         </Field>
+        <Field label="If the model is busy">
+          <select
+            value={supportsBusyFallback ? busyPolicy : "error"}
+            disabled={busy || !supportsBusyFallback}
+            onChange={event => setBusyPolicy(event.target.value as typeof busyPolicy)}
+          >
+            <option value="error">Wait, then retry</option>
+            <option value="lexical">Use exact text</option>
+          </select>
+        </Field>
         <button
           className="ws-button"
           disabled={busy || !text.trim() || budget < 64 || budget > 32768}
@@ -1149,6 +1168,7 @@ function SearchMemory() {
           Build context
         </button>
       </div>
+      {!supportsBusyFallback && <p className="ws-helper">Exact-text fallback needs workspace server 4.1.2 or later. <Link to="/workspace/setup">Check app & server versions</Link>, then reconnect after the server update.</p>}
       <ErrorNotice error={error} />
       {busy && <Busy />}
       {result && (

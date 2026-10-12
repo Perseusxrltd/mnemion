@@ -18,6 +18,12 @@ Role = Literal["reader", "contributor", "reviewer", "administrator"]
 ClaimStatus = Literal["observed", "verified", "contested", "superseded", "retracted"]
 MemoryKind = Literal["fact", "event", "preference", "procedure", "note"]
 Content = Annotated[str, Field(min_length=1, max_length=65536)]
+InferenceBusyPolicy = Annotated[
+    Literal["error", "lexical"],
+    Field(
+        description="When model capacity is busy, return the retryable error by default, or explicitly use keyword-only retrieval with an inference_busy_lexical_only warning. Context fallback counts UTF-8 bytes. Access and source filters are still enforced.",
+    ),
+]
 
 
 class Command(BaseModel):
@@ -138,6 +144,7 @@ class RecallInput(SpaceSelection):
     kinds: list[MemoryKind] | None = Field(default=None, max_length=5)
     limit: int = Field(default=10, ge=1, le=50)
     mode: Literal["hybrid", "lexical", "semantic"] = "hybrid"
+    on_inference_busy: InferenceBusyPolicy = "error"
     valid_at: AwareDatetime | None = None
     known_at: AwareDatetime | None = None
     include_contested: bool = True

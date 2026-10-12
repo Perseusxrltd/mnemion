@@ -1,6 +1,6 @@
 {
   "name": "@mnemion/client",
-  "version": "4.1.1",
+  "version": "4.1.2",
   "description": "Typed Mnemion memory client for browser and Node.js applications",
   "type": "module",
   "license": "MIT",

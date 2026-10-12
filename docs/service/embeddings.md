@@ -210,14 +210,41 @@ on API and worker hosts, then restart them. A full queue or expired wait returns
 `503 inference_busy` and HTTP `Retry-After: 1`; no inference is started for that
 rejected request. Python and TypeScript SDKs respect server retry hints, capped
 at 30 seconds per delay, only for safe reads or writes with an idempotency key.
-MCP errors carry the retry hint in `structuredContent`. Queue counters in runtime
+MCP errors carry `retryable` and `retry_after_seconds` in `structuredContent`. Queue counters in runtime
 insights report active, waiting, completed, failed and rejected calls plus time
 spent waiting/executing, without memory text or caller labels.
 
+Starting with service **4.1.2**, recall and context can opt into
+`"on_inference_busy": "lexical"`. When query inference is busy, the complete
+result uses keyword retrieval and includes `inference_busy_lexical_only` in
+`warnings`. This applies to hybrid and semantic requests, including searches
+across several generations. Existing authorization, source visibility and
+filters are rechecked after the wait. Unrelated authorization, configuration or
+generation-change errors do not become busy fallbacks. The default `"error"`
+retains the existing retryable response; purely lexical recall needs no model.
+
+```json
+{"query":"billing decision","all_accessible":true,"on_inference_busy":"lexical"}
+```
+
+Studio exposes this choice as **If the model is busy → Use exact text** on the
+search screen. Python `Client.search`/`Client.context`, TypeScript requests,
+MCP `memory_search`/`memory_context` and the agent operation catalog accept the
+same option. Older servers require an update before accepting the new field;
+clients omit it when using default behavior. Keyword fallback may miss
+meaning-based matches, and the app labels its results accordingly.
+
+Fallback context packs use a bounded **UTF-8 byte** count, reported as
+`token_count_unit: "utf8_bytes"`, without acquiring model capacity. If token
+counting becomes busy after retrieval, the service rebuilds from fresh keyword
+evidence using bytes throughout. It never mixes counts from two units in one
+context. A downstream assistant may use a different tokenizer. Insights counts
+each fallback as one fallback event, without collecting query text.
+
 Keep `MNEMION_MODEL_THREADS` at the measured host capacity (default 2). Increasing
 queue length does not make the model execute faster. API and worker processes
-still maintain separate caches; low-memory shared-model operation and idle-model
-unloading remain tracked improvements. Validate with the real corpus, concurrent
+still maintain separate peak caches; [idle-model cleanup](memory-resources.md)
+ships in 4.1.1, while shared-model serving remains open. Validate with the real corpus, concurrent
 agents, source indexing and librarian workload before increasing resource caps.
 
 ## Choosing and activating a model

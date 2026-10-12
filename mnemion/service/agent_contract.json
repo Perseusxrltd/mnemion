@@ -14490,6 +14490,16 @@
                 "title": "Mode",
                 "type": "string"
               },
+              "on_inference_busy": {
+                "default": "error",
+                "description": "When model capacity is busy, return the retryable error by default, or explicitly use keyword-only retrieval with an inference_busy_lexical_only warning. Context fallback counts UTF-8 bytes. Access and source filters are still enforced.",
+                "enum": [
+                  "error",
+                  "lexical"
+                ],
+                "title": "On Inference Busy",
+                "type": "string"
+              },
               "query": {
                 "maxLength": 4000,
                 "minLength": 1,
@@ -14901,6 +14911,16 @@
                   "semantic"
                 ],
                 "title": "Mode",
+                "type": "string"
+              },
+              "on_inference_busy": {
+                "default": "error",
+                "description": "When model capacity is busy, return the retryable error by default, or explicitly use keyword-only retrieval with an inference_busy_lexical_only warning. Context fallback counts UTF-8 bytes. Access and source filters are still enforced.",
+                "enum": [
+                  "error",
+                  "lexical"
+                ],
+                "title": "On Inference Busy",
                 "type": "string"
               },
               "query": {

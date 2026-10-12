@@ -976,6 +976,16 @@
             "title": "Mode",
             "type": "string"
           },
+          "on_inference_busy": {
+            "default": "error",
+            "description": "When model capacity is busy, return the retryable error by default, or explicitly use keyword-only retrieval with an inference_busy_lexical_only warning. Context fallback counts UTF-8 bytes. Access and source filters are still enforced.",
+            "enum": [
+              "error",
+              "lexical"
+            ],
+            "title": "On Inference Busy",
+            "type": "string"
+          },
           "query": {
             "maxLength": 4000,
             "minLength": 1,
@@ -5714,6 +5724,16 @@
             "title": "Mode",
             "type": "string"
           },
+          "on_inference_busy": {
+            "default": "error",
+            "description": "When model capacity is busy, return the retryable error by default, or explicitly use keyword-only retrieval with an inference_busy_lexical_only warning. Context fallback counts UTF-8 bytes. Access and source filters are still enforced.",
+            "enum": [
+              "error",
+              "lexical"
+            ],
+            "title": "On Inference Busy",
+            "type": "string"
+          },
           "query": {
             "maxLength": 4000,
             "minLength": 1,
@@ -7125,7 +7145,7 @@
   "info": {
     "description": "Shared, scoped memory and evidence for apps, teams, and assistants. Saves acknowledge canonical durability; operations report semantic indexing readiness.",
     "title": "Mnemion Memory Service",
-    "version": "4.1.1"
+    "version": "4.1.2"
   },
   "openapi": "3.1.0",
   "paths": {

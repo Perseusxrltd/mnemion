@@ -14,7 +14,7 @@ from ..sdk import ContextPack, Memory, MnemionError, Receipt, Recall
 from ..version import __version__
 from .. import agent_control
 from .contracts import Page, Space
-from .models import MemoryKind, SourceInput
+from .models import InferenceBusyPolicy, MemoryKind, SourceInput
 from .mcp_transport import MnemionMCPServer
 from .oauth import OAuthSettings
 
@@ -353,6 +353,7 @@ def create_mcp(
         limit: Limit = 10,
         subject: Subject = None,
         all_accessible: AllAccessible = False,
+        on_inference_busy: InferenceBusyPolicy = "error",
     ) -> Recall:
         """Recall current authorized evidence with source citations and ranking details."""
         return await invoke(
@@ -363,6 +364,7 @@ def create_mcp(
                 limit=limit,
                 subject=subject,
                 all_accessible=all_accessible,
+                on_inference_busy=on_inference_busy,
             ),
         )
 
@@ -392,6 +394,7 @@ def create_mcp(
             ),
         ] = 2048,
         all_accessible: AllAccessible = False,
+        on_inference_busy: InferenceBusyPolicy = "error",
     ) -> ContextPack:
         """Build a bounded context pack with core blocks, evidence citations, and omissions."""
         return await invoke(
@@ -401,6 +404,7 @@ def create_mcp(
                 [str(s) for s in space_ids],
                 token_budget=token_budget,
                 all_accessible=all_accessible,
+                on_inference_busy=on_inference_busy,
             ),
         )
 

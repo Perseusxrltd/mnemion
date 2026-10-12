@@ -13,7 +13,7 @@ from mnemion.service.embeddings import EmbeddedChunk, Generation
 from mnemion.service.errors import ServiceError
 from mnemion.service.model_registry import ModelRegistry
 from mnemion.service.model_worker import ModelWorker
-from mnemion.service.models import MemoryInput, RecallInput, RevisionInput
+from mnemion.service.models import MemoryInput, RecallInput, RevisionInput, SpaceInput
 from mnemion.service.reindex import ReindexBackfill, ReindexService
 from mnemion.service.retrieval import RetrievalService
 from mnemion.service.worker import Worker
@@ -81,6 +81,58 @@ def finish(env, service, backfill, worker):
         pass
     drain(worker)
     return service.read(env.owner, env.space)
+
+
+def test_busy_generation_discards_earlier_vectors_for_explicit_lexical_fallback(
+    env, models, monkeypatch
+):
+    registry, service, backfill, worker, other = models
+    saved = save(env, "billing candidate evidence")
+    selected = start(env, service)
+    finished = finish(env, service, backfill, worker)
+    service.control(
+        env.owner, env.space, UUID(selected["candidate"]["id"]), "activate", finished["version"]
+    )
+    baseline_space = UUID(env.identities.create_space(env.owner, SpaceInput(name="Baseline"))["id"])
+    baseline = env.memory.save(
+        env.owner, baseline_space, MemoryInput(content="billing baseline evidence"), "baseline-busy"
+    )
+    drain(env.worker)
+    query_calls = []
+    original = env.embedder.query
+
+    def baseline_query(text):
+        query_calls.append("baseline")
+        return original(text)
+
+    def busy(_):
+        query_calls.append("busy")
+        raise ServiceError(503, "inference_busy", "Expected busy fixture")
+
+    monkeypatch.setattr(env.embedder, "query", baseline_query)
+    monkeypatch.setattr(other, "query", busy)
+    result = RetrievalService(env.db, env.embedder, registry=registry).recall(
+        env.owner,
+        RecallInput(
+            query="billing",
+            space_ids=[baseline_space, env.space],
+            mode="semantic",
+            on_inference_busy="lexical",
+        ),
+    )
+    assert query_calls == ["baseline", "busy"]
+    assert result["warnings"] == ["inference_busy_lexical_only"]
+    assert {hit["memory_id"] for hit in result["hits"]} == {
+        baseline["memory_id"],
+        saved["memory_id"],
+    }
+    assert all(set(hit["ranking"]["ranks"]) == {"lexical"} for hit in result["hits"])
+    assert all(hit["ranking"]["cosine_similarity"] is None for hit in result["hits"])
+    assert result["index"]["generation_id"] is None
+    assert set(result["index"]["generation_ids"]) == {
+        env.embedder.generation.id,
+        other.generation.id,
+    }
 
 
 def test_background_candidate_does_not_starve_active_indexing(env, models):

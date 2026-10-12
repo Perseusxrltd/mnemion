@@ -602,7 +602,16 @@ class Client:
     def search(self, query: str, space_ids: list[str] | None = None, **options) -> Recall:
         command = RecallInput(query=query, space_ids=space_ids or [], **options)
         return Recall.model_validate(
-            self.request("POST", "/v1/recall", body=command.model_dump(mode="json"))
+            self.request(
+                "POST",
+                "/v1/recall",
+                body=command.model_dump(
+                    mode="json",
+                    exclude={"on_inference_busy"}
+                    if command.on_inference_busy == "error"
+                    else set(),
+                ),
+            )
         )
 
     def source(self, source_revision_id: str, *, review: bool = False) -> Source:
@@ -638,7 +647,16 @@ class Client:
             query=query, space_ids=space_ids or [], token_budget=token_budget, **options
         )
         return ContextPack.model_validate(
-            self.request("POST", "/v1/context", body=command.model_dump(mode="json"))
+            self.request(
+                "POST",
+                "/v1/context",
+                body=command.model_dump(
+                    mode="json",
+                    exclude={"on_inference_busy"}
+                    if command.on_inference_busy == "error"
+                    else set(),
+                ),
+            )
         )
 
     def revise(
