@@ -129,6 +129,9 @@ try {
   const port = await freePort()
   const first = await launch({ phase: 'create', port, emulated: nativeRuntime.engine_emulation === true })
   if (!first.actualSetupControls || !first.realModelInference) throw new Error('The installed UI did not exercise real setup and inference')
+  if (!first.navigationPreservesUpdateReadiness || !first.unsavedDraftBlocksUpdate || !first.closedEditorRestoresUpdateReadiness) {
+    throw new Error('Installed navigation and unsaved-work update guards did not pass')
+  }
   const anonymous = await fetch(first.endpoint + '/v1/spaces', { signal: AbortSignal.timeout(10000) })
   if (anonymous.status !== 401) throw new Error('The installed local service permits unauthenticated data access')
   await stop()
@@ -157,6 +160,7 @@ try {
     anonymousAccessRefused: true, realSemanticSaveAndRecall: true, automaticWorkspaceReopen: true,
     restartPreservesWorkspaceAndCredentials: true, savedMemorySurvivesRestart: true,
     configuredRamBudgetPersists: true, cleanDatabaseShutdownOnAppExit: true,
+    navigationPreservesUpdateReadiness: true, unsavedDraftBlocksUpdate: true, closedEditorRestoresUpdateReadiness: true,
     occupiedApiPortRecoveredThroughApp: true, addressRecoveryPreservesWorkspaceAndCredentials: true,
     scope: 'Locally built installer, new private profile and real model download. Public download acceptance and update migration are separate gates.' }
   mkdirSync(join(root, 'build-tmp'), { recursive: true })

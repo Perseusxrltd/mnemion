@@ -103,11 +103,23 @@ export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Re
     if (!recalled.hits.some(hit => hit.memory_id === memoryId)) throw new Error('The installed model did not retrieve the saved memory');
     const status = await bridge.localStatus();
     if (status.info?.settings?.memory?.limit_mib !== 2048) throw new Error('The setup RAM policy was not retained');
+    await until(() => bridge.updateSafety(), 'Settled workspace must permit a guarded update');
+    const picker = await until(() => document.querySelector('select[aria-label="Memory space"]'), 'Missing memory-space navigation');
+    picker.dispatchEvent(new Event('change', { bubbles: true }));
+    await until(() => bridge.updateSafety(), 'Memory-space navigation incorrectly blocks updates');
+    location.hash = '/workspace/new';
+    const draft = await until(() => document.querySelector('.ws-page textarea'), 'Missing memory editor');
+    Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(draft, 'Disposable unsaved update-guard check');
+    draft.dispatchEvent(new Event('input', { bubbles: true })); await pause(100);
+    if (bridge.updateSafety()) throw new Error('An unsaved memory permits an update restart');
+    location.hash = '/workspace/memories';
+    await until(() => !draft.isConnected && bridge.updateSafety(), 'Closing the disposable editor did not restore update readiness');
     if (typeof window.require !== 'undefined') throw new Error('The installed renderer is not sandboxed');
     return { phase: config.phase, memoryId, endpoint: session.endpoint, tenantId: session.me.tenant_id,
       actualSetupControls: config.phase === 'create', uiOpenedWorkspace: true, nativeService: true,
       authenticatedApi: true, realModelInference: true, semanticSaveAndRecall: true,
-      automaticReopen: config.phase === 'resume', recoveredPortConflict: config.phase === 'recover-port', savedMemoryPresent: true, memoryPolicyRetained: true };
+      automaticReopen: config.phase === 'resume', recoveredPortConflict: config.phase === 'recover-port', savedMemoryPresent: true, memoryPolicyRetained: true,
+      navigationPreservesUpdateReadiness: true, unsavedDraftBlocksUpdate: true, closedEditorRestoresUpdateReadiness: true };
   })()`)
   await writeFile(join(dirname(path), config.phase + '-workspace.png'), (await window.webContents.capturePage()).toPNG(), { mode: 0o600 })
   return result

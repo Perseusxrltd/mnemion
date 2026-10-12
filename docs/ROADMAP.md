@@ -1,8 +1,17 @@
 # Mnemion product roadmap
 
-Current distribution: **4.1.3**, published on all six desktop targets. Updated: **2026-10-12**.
+Current distribution: **4.1.4**, in release preparation. Updated: **2026-10-12**.
+Published downloads remain **4.1.3** on all six desktop targets until verified 4.1.4 publication.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
+
+Version [4.1.4](releases/4.1.4.md) corrects a
+[reproduced desktop restart blocker](validation/2026-10-12-navigation-update-safety.md):
+the persistent memory-space selector was classified as an unsaved edit. The
+change keeps ordinary navigation compatible with updates while protecting real
+drafts and transfers. The built-interface browser reproduction, fixed behavior,
+real draft protection, Electron tests and version checks passed. Native release
+checks are next.
 
 Version [4.1.3](releases/4.1.3.md) adds the
 [managed connector lifecycle](service/managed-connectors.md) for Git, filesystem,
@@ -11,7 +20,7 @@ launcher follow the verified current runtime, with configuration preserved,
 update coordination, duplicate-run protection and visible versions.
 [Source/process, signed installed-runtime and six-platform release checks](validation/2026-10-12-managed-connectors.md)
 passed, followed by automatic hosted artifact verification and public-feed checks.
-Public 4.1.2 → 4.1.3 desktop upgrade rehearsals are running; the actual shared
+[Public 4.1.2 → 4.1.3 desktop upgrade rehearsals](validation/2026-10-12-v413-public-upgrades.json) passed on all six targets; the actual shared
 host's separately launched connector still needs its one-time managed adoption.
 
 Version [4.1.2](releases/4.1.2.md) adds an explicit keyword fallback when query

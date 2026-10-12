@@ -66,7 +66,7 @@ confirmed the exact source tag, latest stable release, unchanged asset inventory
 and all 12 anonymous metadata/checksum/update feeds. The automatic
 [website synchronization](https://github.com/Perseusxrltd/mnemion/actions/runs/38260961479)
 completed. The [six public 4.1.2 → 4.1.3 upgrade rehearsals](https://github.com/Perseusxrltd/mnemion/actions/runs/38260961324)
-are running; completion is not implied by the prepublication native gates.
+completed successfully at **14:21:38 UTC**. Their [sanitized receipts](2026-10-12-v413-public-upgrades.json) confirm unchanged public packages, official feeds, real system idle, process replacement and preserved profiles on all six targets. This is separate from the prepublication native gates and actual-user deployment.
 
 At **14:13:32 UTC**, [anonymous live HTML checks](2026-10-12-v413-website.json)
 confirmed the product page's visible 4.1.3 label, all six installer links,

@@ -324,6 +324,7 @@ function Shell({
         <label className="ws-space-picker">
           <span>Memory space</span>
           <select
+            data-update-safe
             aria-label="Memory space"
             value={space?.id ?? ""}
             onChange={(event) => {
