@@ -53,6 +53,7 @@ export interface Memory {
   subject: string | null; claim_status: ClaimStatus; review_state: 'ordinary' | 'quarantined'
   valid_from: string | null; valid_to: string | null; recorded_at: string
   created_at: string; updated_at: string; created_by: string; evidence: Evidence
+  can_forget?: boolean | null
 }
 export interface RecallInput {
   query: string; space_ids?: string[]; all_accessible?: boolean; subject?: string | null; kinds?: Kind[]

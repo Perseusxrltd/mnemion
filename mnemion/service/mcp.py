@@ -445,7 +445,7 @@ def create_mcp(
         idempotency_key: IdempotencyKey,
         ctx: Context,
     ) -> Receipt:
-        """Deny future reads immediately and queue content purge; requires reviewer authority."""
+        """Deny reads and queue purge. Reviewers may forget any granted memory; contributors may withdraw their own ordinary, unverified memory only if no other identity has revised it. Other cases return requires_reviewer. Memory details report can_forget; authorization is rechecked on every write."""
         return await invoke(
             ctx,
             lambda client: client.forget(

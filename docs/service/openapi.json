@@ -3510,6 +3510,18 @@
       "Memory": {
         "additionalProperties": true,
         "properties": {
+          "can_forget": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Current withdrawal permission for a fetched memory. Missing/null on older services or views without a permission observation; the write rechecks authorization.",
+            "title": "Can Forget"
+          },
           "claim_status": {
             "enum": [
               "observed",
@@ -7053,7 +7065,7 @@
   "info": {
     "description": "Shared, scoped memory and evidence for apps, teams, and assistants. Saves acknowledge canonical durability; operations report semantic indexing readiness.",
     "title": "Mnemion Memory Service",
-    "version": "4.0.14"
+    "version": "4.1.0"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -11018,6 +11030,7 @@
     },
     "/v1/memories/{memory_id}": {
       "delete": {
+        "description": "Withdraw a memory with reviewer authority or eligible authorship.\n\nContributors may withdraw their own ordinary, unverified memory only\nwhen every revision belongs to them. Otherwise returns requires_reviewer.\nAuthorization and expected_version are checked at the write boundary;\ncan_forget on memory details is an observation, not a reusable grant.",
         "operationId": "forget_v1_memories__memory_id__delete",
         "parameters": [
           {

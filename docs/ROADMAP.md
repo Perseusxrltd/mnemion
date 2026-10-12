@@ -1,8 +1,15 @@
 # Mnemion product roadmap
 
-Current distribution: **4.0.14**. Updated: **2026-10-12**.
+Current distribution: **4.1.0**. Updated: **2026-10-12**.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
+
+Version [4.1.0](releases/4.1.0.md) is in preparation. It adds [scoped author
+withdrawal](service/withdrawal.md), app/agent permission observations and atomic
+erasure of protected librarian findings. The [124 automated checks and browser
+validation](validation/2026-10-12-author-withdrawal.md) passed; native publication
+and coordinated service migration remain required.
+It does not change the already prepared 4.0.14 package or its compatible schema.
 
 Version [4.0.14](releases/4.0.14.md) is in release preparation. It corrects
 [Linux readiness and RAM monitoring after a host clock change](validation/2026-10-12-host-clock-readiness.md).

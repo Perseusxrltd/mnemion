@@ -93,6 +93,10 @@ class MemoryMetadata(ResponseModel):
 
 class Memory(MemoryMetadata):
     content: str
+    can_forget: bool | None = Field(
+        default=None,
+        description="Current withdrawal permission for a fetched memory. Missing/null on older services or views without a permission observation; the write rechecks authorization.",
+    )
 
 
 class MemoryPage(Page[Memory]):

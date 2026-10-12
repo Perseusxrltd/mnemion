@@ -21,6 +21,12 @@ versions. Members can refresh the server observation without receiving host
 privileges. Organization administration, explicit space grants and the host's
 operator account remain separate authorities; see the [update guide](updates.md).
 
+Service 4.1.0 adds [scoped author withdrawal](withdrawal.md): contributors can
+withdraw their own ordinary, unverified memories only when nobody else has
+revised them. It does not grant access to reviewer-only content or permit an
+agent to delete another author's work. This change requires the checked service
+migration; an earlier shared server retains its earlier permission contract.
+
 ## Establish independent administrators
 
 Version 4.0.11 exposes **Organization role** in **People & apps** and lists

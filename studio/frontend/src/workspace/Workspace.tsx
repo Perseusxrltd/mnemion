@@ -911,24 +911,24 @@ function MemoryDetail() {
             </Link>
             <blockquote>{memory.evidence.excerpt.slice(0, 4000)}</blockquote>
           </div>
-          {reviewer && (
+          {(reviewer || memory.can_forget === true) && (
             <div className="ws-card">
-              <h2>Review & lifecycle</h2>
+              <h2>{reviewer ? 'Review & lifecycle' : 'Withdraw your memory'}</h2>
               <p>
-                Quarantined memory stays available to reviewers and is excluded
-                from ordinary search and exports.
+                {reviewer ? 'Quarantined memory stays available to reviewers and is excluded from ordinary search and exports.'
+                  : 'You can withdraw your own ordinary, unverified memory when nobody else has revised it. Other memories require a reviewer.'}
               </p>
               <div className="ws-form">
-                <Field label="Review reason">
+                {reviewer && <Field label="Review reason">
                   <input
                     value={reason}
                     onChange={(event) => setReason(event.target.value)}
                     maxLength={1000}
                     placeholder="Explain this decision"
                   />
-                </Field>
+                </Field>}
                 <div className="ws-actions">
-                  <button
+                  {reviewer && <button
                     className="ws-button"
                     disabled={busy || !reason.trim()}
                     onClick={review}
@@ -936,13 +936,14 @@ function MemoryDetail() {
                     {memory.review_state === "ordinary"
                       ? "Quarantine memory"
                       : "Return to ordinary memory"}
-                  </button>
-                  <button
+                  </button>}
+                  {(memory.can_forget === true || (memory.can_forget == null && reviewer)) && <button
                     className="ws-button ws-danger"
+                    disabled={busy}
                     onClick={() => setConfirmDelete(true)}
                   >
-                    Delete memory
-                  </button>
+                    {reviewer ? 'Delete memory' : 'Withdraw memory'}
+                  </button>}
                 </div>
                 {confirmDelete && (
                   <div className="ws-notice ws-delete-confirm">

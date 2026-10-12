@@ -510,6 +510,13 @@ def create_app(
     def forget(
         memory_id: UUID, identity: Auth, idempotency_key: Key, expected_version: int = Query(ge=1)
     ):
+        """Withdraw a memory with reviewer authority or eligible authorship.
+
+        Contributors may withdraw their own ordinary, unverified memory only
+        when every revision belongs to them. Otherwise returns requires_reviewer.
+        Authorization and expected_version are checked at the write boundary;
+        can_forget on memory details is an observation, not a reusable grant.
+        """
         return memory.forget(
             identity, memory_id, expected_version=expected_version, key=idempotency_key
         )

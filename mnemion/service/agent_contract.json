@@ -8916,6 +8916,18 @@
           "Memory": {
             "additionalProperties": true,
             "properties": {
+              "can_forget": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Current withdrawal permission for a fetched memory. Missing/null on older services or views without a permission observation; the write rechecks authorization.",
+                "title": "Can Forget"
+              },
               "claim_status": {
                 "enum": [
                   "observed",
@@ -11468,6 +11480,18 @@
           "Memory": {
             "additionalProperties": true,
             "properties": {
+              "can_forget": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Current withdrawal permission for a fetched memory. Missing/null on older services or views without a permission observation; the write rechecks authorization.",
+                "title": "Can Forget"
+              },
               "claim_status": {
                 "enum": [
                   "observed",
@@ -11727,6 +11751,18 @@
           "Memory": {
             "additionalProperties": true,
             "properties": {
+              "can_forget": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Current withdrawal permission for a fetched memory. Missing/null on older services or views without a permission observation; the write rechecks authorization.",
+                "title": "Can Forget"
+              },
               "claim_status": {
                 "enum": [
                   "observed",
@@ -12021,6 +12057,18 @@
           "Memory": {
             "additionalProperties": true,
             "properties": {
+              "can_forget": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Current withdrawal permission for a fetched memory. Missing/null on older services or views without a permission observation; the write rechecks authorization.",
+                "title": "Can Forget"
+              },
               "claim_status": {
                 "enum": [
                   "observed",
@@ -12317,6 +12365,18 @@
           "Memory": {
             "additionalProperties": true,
             "properties": {
+              "can_forget": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Current withdrawal permission for a fetched memory. Missing/null on older services or views without a permission observation; the write rechecks authorization.",
+                "title": "Can Forget"
+              },
               "claim_status": {
                 "enum": [
                   "observed",

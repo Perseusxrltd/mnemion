@@ -230,7 +230,10 @@ class MemoryService:
         review: bool = False,
     ) -> dict:
         with self.db.transaction(identity) as conn:
-            return hydrate(conn, memory_row(conn, memory, review=review), revision)
+            from .withdrawal import allowed
+
+            row = memory_row(conn, memory, review=review)
+            return {**hydrate(conn, row, revision), "can_forget": allowed(conn, identity, row)}
 
     def resolve_alias(
         self, identity: Identity, space: UUID, legacy_id: str, *, review: bool = False
@@ -388,7 +391,9 @@ class MemoryService:
     def forget_in_transaction(
         self, conn, identity: Identity, memory: UUID, *, expected_version: int, key: str
     ) -> dict:
-        row = memory_row(conn, memory, review=True, deleted=True)
+        from .withdrawal import target
+
+        row = target(conn, identity, memory)
         space = row["space_id"]
         require_space(conn, space, 20, writing=True)
         digest, previous = idempotency(
@@ -398,9 +403,12 @@ class MemoryService:
             key,
             {"kind": "delete", "memory_id": str(memory), "expected_version": expected_version},
         )
+        # Recheck current authority after idempotency and row-lock waits. A
+        # concurrent revision, quarantine or revocation cannot lend permission.
+        row = target(conn, identity, memory, lock=True)
+        self.db._check_identity(conn, identity)
         if previous:
             return previous
-        row = memory_row(conn, memory, review=True, deleted=True, lock=True)
         if row["deleted_at"]:
             receipt = conn.execute(
                 """SELECT d.operation_id, d.memory_id, d.requested_at, d.purged_at, o.state

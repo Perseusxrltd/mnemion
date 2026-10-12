@@ -201,7 +201,7 @@ contain prefixes and expiry/revocation metadata. Only their digests are stored.
 | Role | Content operations |
 | --- | --- |
 | Reader | Recall, fetch, context, ordinary exports |
-| Contributor | Reader operations plus observed-memory saves and corrections |
+| Contributor | Reader operations plus observed-memory saves and corrections; service 4.1.0 adds [withdrawal of eligible authored memories](withdrawal.md) |
 | Reviewer | Contributor operations plus verification/lifecycle changes, quarantine review, deletion, and core blocks |
 | Space administrator | Reviewer content permissions; organization administration remains separate |
 

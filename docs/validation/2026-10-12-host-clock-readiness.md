@@ -61,3 +61,12 @@ retained by managed patches; an older operator CLI can still apply its older
 readiness interpretation. Inspect new records with the current verified runtime
 or current operator package. Updating runtime readiness does not keep a provider's
 suspended computer or disconnected tunnel online.
+
+At **01:36:53 UTC**, the original host's ordinary startup launcher was checked
+twice after an operator update. It authenticates the active service package and
+delegates startup/readiness to that verified runtime, with the existing startup
+and updater-operation locks, bounded child output, and no inherited database or
+model-provider credentials.
+Both checks retained all existing service processes. This prepares that host to
+use the new readiness logic after 4.0.14 arrives; it does not rewrite older
+bootstrap packages or establish a general remote-host delegation product.
