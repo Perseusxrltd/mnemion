@@ -33,6 +33,11 @@ hashing concurrency and repeated attempts, including unknown accounts, without
 exposing whether a username exists. Do not rely on proxy-supplied client IPs or
 an unbounded in-memory attempt dictionary for protection.
 
+The post-4.1.2 source now contains the [bounded Argon2id foundation](../validation/2026-10-12-password-foundation.md),
+using the existing cryptography dependency. It is not connected to a public login
+endpoint. Account persistence, invitations, attempt throttling, password-strength
+screening, sessions and the app flow still need implementation and validation.
+
 ## Sessions and administration
 
 Each device gets its own revocable session. Access credentials are short-lived;

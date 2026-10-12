@@ -12,7 +12,8 @@ This implements the remaining overload option from issue 12; the issue stays
 open until publication is verified.
 
 Post-4.1.2 access work adds [stable MCP profile identification in source](validation/2026-10-12-mcp-profile.md)
-and the [individual sign-in/invitation contract](implementation/individual-sign-in.md).
+and the [individual sign-in/invitation contract](implementation/individual-sign-in.md),
+with a [tested Argon2id password foundation](validation/2026-10-12-password-foundation.md).
 The frozen 4.1.2 candidate does not contain that next slice. Complete password
 and company sign-in, hosted consent and live provider acceptance remain required.
 

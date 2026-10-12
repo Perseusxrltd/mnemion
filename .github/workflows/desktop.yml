@@ -158,6 +158,19 @@ jobs:
           architecture: ${{ matrix.platform == 'windows' && 'x64' || matrix.arch }}
       - name: Locked native service build dependencies
         run: uv sync --locked --no-default-groups --group native-build --python "${{ steps.engine_python.outputs.python-path }}" --no-managed-python
+      - name: Verify Argon2id support in each native service build runtime
+        shell: bash
+        run: |
+          uv run --no-sync python - <<'PY'
+          import secrets
+          from mnemion.service.passwords import hash_password, verify_password
+          phrase = secrets.token_urlsafe(32)
+          verifier = hash_password(phrase)
+          assert verify_password(phrase, verifier)
+          assert not verify_password(phrase + 'x', verifier)
+          assert not verify_password(phrase, None)
+          print('Bounded Argon2id verification passed in this build runtime')
+          PY
       - name: Download this commit's verified database archive
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
