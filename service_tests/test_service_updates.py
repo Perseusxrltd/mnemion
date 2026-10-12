@@ -145,6 +145,46 @@ def test_watcher_checks_and_applies_by_default_but_pausing_prevents_network(
     assert calls == ([("check", 60), ("stage", 60), ("apply", 60)] if enabled else [])
 
 
+def test_watcher_retries_after_a_managed_scan_instead_of_waiting_six_hours(managed, monkeypatch):
+    elapsed = [0]
+    calls = []
+    lease = state_io.lock(managed.root, shared=True)
+    lease.__enter__()
+    released = False
+
+    def sleep(seconds):
+        nonlocal released
+        elapsed[0] += seconds
+        if elapsed[0] >= 70 and not released:
+            lease.__exit__(None, None, None)
+            released = True
+        if elapsed[0] > 180:
+            raise updates.UpdateInterrupted()
+
+    monkeypatch.setattr(updates, "time", SimpleNamespace(monotonic=lambda: elapsed[0], sleep=sleep))
+    monkeypatch.setattr(updates.random, "uniform", lambda low, high: low)
+    monkeypatch.setattr(
+        updates,
+        "_check",
+        lambda _: (
+            calls.append(elapsed[0])
+            or {
+                "status": "available",
+                "schema_compatible": True,
+                "version_compatible": True,
+            }
+        ),
+    )
+    monkeypatch.setattr(updates, "_stage", lambda *args: {"automatic_compatible": True})
+    monkeypatch.setattr(updates, "_apply", lambda *args: {"status": "updated"})
+    try:
+        assert updates.watch(managed.state) == 0
+        assert len(calls) == 1 and 90 <= calls[0] <= 100
+    finally:
+        if not released:
+            lease.__exit__(None, None, None)
+
+
 def test_changed_schema_is_reported_before_any_process_transition(managed, monkeypatch):
     value = copy.deepcopy(managed.value)
     value["migrations"]["002_new.sql"] = "f" * 64

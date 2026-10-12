@@ -153,6 +153,12 @@ def command(args: list[str], *, maximum=64_000_000, timeout=120, environment=Non
             timed_out = True
             stop()
             process.wait(timeout=5)
+        except BaseException:
+            # Ctrl-C or managed shutdown must also drain a provider command in
+            # its own process group; do not leave Git/rclone holding cache locks.
+            stop()
+            process.wait(timeout=5)
+            raise
         finally:
             for reader in readers:
                 reader.join(5)

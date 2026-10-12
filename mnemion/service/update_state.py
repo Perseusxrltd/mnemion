@@ -12,6 +12,7 @@ from pathlib import Path
 import shutil
 import stat
 import tempfile
+import time
 
 from .update_manifest import ManifestError
 
@@ -117,7 +118,7 @@ def write(path: Path, value: dict, *, replace: bool = True) -> None:
 
 
 @contextmanager
-def lock(root: Path):
+def lock(root: Path, *, shared: bool = False):
     import fcntl
 
     directory(root)
@@ -127,10 +128,13 @@ def lock(root: Path):
         if not stat.S_ISREG(info.st_mode) or info.st_uid != os.getuid() or info.st_mode & 0o077:
             raise ManifestError("The update operation lock must be a private regular file")
         try:
-            fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            mode = fcntl.LOCK_SH if shared else fcntl.LOCK_EX
+            fcntl.flock(descriptor, mode | fcntl.LOCK_NB)
         except BlockingIOError:
             raise OperationBusy("Another managed update operation is already running") from None
-        yield
+        # Managed scans pass this descriptor to their child. An interrupted
+        # launcher cannot release runtime protection while that scan still runs.
+        yield descriptor
     finally:
         os.close(descriptor)
 
@@ -141,6 +145,51 @@ def local_migrations() -> dict[str, str]:
         for path in files("mnemion.service").joinpath("migrations").iterdir()
         if path.name.endswith(".sql")
     }
+
+
+def pause_new_connector_scans(root: Path) -> None:
+    """A live updater announces its turn; existing scans can finish normally."""
+    import psutil
+    from .. import process_identity
+
+    write(
+        root / "connector-update-pending.json",
+        {
+            "format": 1,
+            "process_identity": process_identity.capture(psutil.Process()),
+            "until_monotonic": time.monotonic() + 300,
+        },
+    )
+
+
+def connector_update_waiting(root: Path) -> bool:
+    import psutil
+    from .. import process_identity
+
+    path = root / "connector-update-pending.json"
+    if not path.exists():
+        return False
+    value = read(path)
+    try:
+        remaining = value["until_monotonic"] - time.monotonic()
+        identity = value["process_identity"]
+        process = psutil.Process(identity["pid"])
+        return (
+            value["format"] == 1
+            and 0 < remaining <= 300
+            and process.uids().real == os.getuid()
+            and process.status() != psutil.STATUS_ZOMBIE
+            and process_identity.matches(identity, process)
+        )
+    except (KeyError, TypeError, ValueError, OSError, psutil.Error):
+        return False
+
+
+def clear_connector_pause(root: Path) -> None:
+    path = root / "connector-update-pending.json"
+    if path.exists():
+        read(path)
+        path.unlink(missing_ok=True)
 
 
 def record(root: Path, event: str, **fields) -> None:

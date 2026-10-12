@@ -270,9 +270,12 @@ def setup(
             shutil.copyfileobj(source, destination, length=1024 * 1024)
         pinned_uv.chmod(0o700)
         state_io.write(root / "owner.json", {"admin_database_url": owner}, replace=False)
+        from ..connectors.runner import MANAGED_PROTOCOL
+
         runtime = {
             "version": __version__,
             "readiness_protocol": supervision.READINESS_PROTOCOL,
+            "connector_protocol": MANAGED_PROTOCOL,
             "python": settings["python"],
             "directory": settings["directory"],
             "isolated": False,
@@ -492,8 +495,9 @@ def _stage(root: Path, settings: dict) -> dict:
         "import json,mnemion; from pathlib import Path; from mnemion.version import __version__; "
         "from mnemion.service.studio import resolve_studio; "
         "from mnemion.service import supervision as lifecycle; "
+        "from mnemion.connectors import runner as connector; "
         "from mnemion.service.update_state import local_migrations; "
-        "p,s=resolve_studio(); print(json.dumps({'version':__version__,'studio':p is not None,'migrations':local_migrations(),'package':str(Path(mnemion.__file__).parent),'readiness_protocol':getattr(lifecycle,'READINESS_PROTOCOL',0)}))"
+        "p,s=resolve_studio(); print(json.dumps({'version':__version__,'studio':p is not None,'migrations':local_migrations(),'package':str(Path(mnemion.__file__).parent),'readiness_protocol':getattr(lifecycle,'READINESS_PROTOCOL',0),'connector_protocol':getattr(connector,'MANAGED_PROTOCOL',0)}))"
     )
     output = _command(
         [str(python), "-I", "-c", code],
@@ -506,8 +510,11 @@ def _stage(root: Path, settings: dict) -> dict:
         preflight = json.loads(output)
         package = Path(preflight.pop("package"))
         protocol = preflight.pop("readiness_protocol")
+        connector_protocol = preflight.pop("connector_protocol", 0)
         if type(protocol) is not int or protocol not in {0, supervision.READINESS_PROTOCOL}:
             raise ValueError("readiness protocol")
+        if type(connector_protocol) is not int or connector_protocol not in {0, 1}:
+            raise ValueError("connector protocol")
         if not package.resolve().is_relative_to((slot / "venv").resolve()):
             raise ValueError("package location")
         if preflight != {
@@ -520,6 +527,7 @@ def _stage(root: Path, settings: dict) -> dict:
         raise ManifestError("The installed runtime did not pass its offline preflight") from None
     runtime["package"] = str(package)
     runtime["readiness_protocol"] = protocol
+    runtime["connector_protocol"] = connector_protocol
     verify_installed_package(artifacts, release, package)
     runtime_wheels.verify_installed(artifacts, release, package, source / "uv.lock")
     compatible = (
@@ -569,6 +577,8 @@ def resolved_runtime(state: Path, *, runtime: dict | None = None) -> dict:
 
 
 def status(state: Path) -> dict:
+    from ..connectors.managed import status as connector_status
+
     state, root, settings = _root(state)
     config = _configuration(root)
     active = state_io.read(root / "active.json")
@@ -584,6 +594,7 @@ def status(state: Path) -> dict:
         else None,
         "events": state_io.read(root / "history.json").get("events", []),
         "supervision": supervision.status(state),
+        "connectors": connector_status(root),
     }
 
 
@@ -829,6 +840,8 @@ def watch(state: Path) -> int:
         next_check = time.monotonic() + random.uniform(60, 120)
         while True:
             config = _configuration(root)
+            if not config["enabled"]:
+                state_io.clear_connector_pause(root)
             if (root / "journal.json").exists():
                 try:
                     with state_io.lock(root):
@@ -853,6 +866,7 @@ def watch(state: Path) -> int:
             if config["enabled"] and time.monotonic() >= next_check:
                 try:
                     with state_io.lock(root):
+                        state_io.clear_connector_pause(root)
                         result = _check(root)
                         if result["status"] == "available" and not (
                             result["schema_compatible"] and result["version_compatible"]
@@ -871,6 +885,14 @@ def watch(state: Path) -> int:
                                     # Supervisor starts a fresh updater using the
                                     # newly verified runtime on its next launch.
                                     return 0
+                except state_io.OperationBusy:
+                    # Managed connector scans share the operation lease. Retry
+                    # shortly after a complete scan, rather than losing a whole
+                    # six-hour update window or interrupting source ingestion.
+                    state_io.pause_new_connector_scans(root)
+                    next_check = time.monotonic() + 30
+                    time.sleep(5)
+                    continue
                 except Exception as error:
                     # The bounded private logs retain diagnostics. Public state
                     # never serializes arbitrary provider/subprocess exceptions.

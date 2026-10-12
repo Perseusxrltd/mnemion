@@ -83,6 +83,13 @@ that would detach the copy from the source's access and deletion lifecycle.
    changing access. Add the required identity mappings, then run without
    `--inspect`. Add `--watch` for repeated scans.
 
+On an adopted Linux/macOS service host, use the
+[managed connector launch path](managed-connectors.md) to follow verified
+service hotfixes. A plain `--watch` process keeps its installed runtime; its
+startup record identifies that manual update mode. Scan reports include the
+actual runner version. Stop the old runner before transferring its existing
+configuration to managed mode.
+
 For a local or synchronized vault:
 
 ```json

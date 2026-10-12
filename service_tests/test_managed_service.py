@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import shutil
 import socket
+import subprocess
 import sys
 from threading import Thread
 import time
@@ -19,6 +20,7 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from mnemion.archives import verified_archive
+from mnemion.connectors import managed as managed_connectors
 from mnemion.service import service_updates as updates
 from mnemion.service import supervision
 from mnemion.service import update_state as state_io
@@ -109,6 +111,151 @@ def assert_installed_process(pid, runtime, module):
     assert Path(arguments[0]).resolve() in executables
 
 
+def connector_fixture(client, auth, owner, state, tmp_path):
+    person = client.post("/v1/principals", headers=auth, json={"name": "Managed source fixture"})
+    assert person.status_code == 201
+    principal = person.json()["id"]
+    key = client.post(
+        f"/v1/principals/{principal}/keys", headers=auth, json={"name": "Source only"}
+    )
+    assert key.status_code == 201
+    token = tmp_path / "connector.token"
+    token.write_text(key.json()["api_key"])
+    token.chmod(0o600)
+    connector = client.post(
+        "/v1/connectors",
+        headers=auth,
+        json={
+            "name": "Managed filesystem fixture",
+            "provider": "filesystem",
+            "principal_id": principal,
+            "access_mode": "published",
+        },
+    )
+    assert connector.status_code == 201
+    identifier = connector.json()["id"]
+    binding = client.put(
+        f"/v1/connectors/{identifier}/bindings",
+        headers=auth,
+        json={
+            "external_id": "employee:fixture",
+            "principal_id": owner["principal_id"],
+            "role": "reviewer",
+        },
+    )
+    assert binding.status_code == 200
+    notes = tmp_path / "source notes"
+    notes.mkdir()
+    (notes / "kept.md").write_text("managedconnectorfixtureanchor Keep this source across patches.")
+    (notes / "removed.md").write_text(
+        "managedconnectorfixtureanchor Withdraw this source after rollback."
+    )
+    config = tmp_path / "source.json"
+    state_io.write(
+        config,
+        {
+            "service_url": str(client.base_url).rstrip("/"),
+            "connector_id": identifier,
+            "service_token": {"file": "connector.token"},
+            "remote_sync": False,
+            "provider": {
+                "type": "filesystem",
+                "path": "source notes",
+                "scope_id": "fixture",
+                "name": "Fixture source",
+                "members": ["employee:fixture"],
+                "publish_to_mapped_members": True,
+            },
+        },
+    )
+    root = state / "updates"
+    registry = state_io.directory(root / "connectors")
+    entry = state_io.directory(registry / identifier)
+    return SimpleNamespace(
+        path=config,
+        notes=notes,
+        root=root,
+        entry=entry,
+        identifier=identifier,
+        original=config.read_bytes(),
+    )
+
+
+def connector_scan(fixture, state, version, client, auth):
+    observation = managed_connectors.Observation(fixture.entry, fixture.identifier)
+    with state_io.lock(fixture.entry) as singleton:
+        code = managed_connectors._scan(
+            state,
+            fixture.root,
+            managed_connectors._configuration(fixture.path),
+            fixture.entry,
+            singleton,
+            observation,
+            managed_connectors.Control(),
+        )
+    assert code == 0 and observation.value["scan_version"] == version
+    assert fixture.path.read_bytes() == fixture.original
+    found = client.post(
+        "/v1/recall",
+        headers=auth,
+        json={
+            "query": "managedconnectorfixtureanchor",
+            "all_accessible": True,
+            "mode": "lexical",
+        },
+    )
+    assert found.status_code == 200
+    return {hit["memory_id"] for hit in found.json()["hits"]}
+
+
+def assert_connector_handoff(bootstrap, source, state, active):
+    with (source.entry / "handoff-test.log").open("wb") as output:
+        process = subprocess.Popen(
+            [
+                sys.executable,
+                "-m",
+                "mnemion.connectors.runner",
+                "--config",
+                str(source.path),
+                "--watch",
+                "--managed-state",
+                str(state),
+            ],
+            cwd=bootstrap,
+            env=updates._environment(),
+            stdout=output,
+            stderr=subprocess.STDOUT,
+        )
+        try:
+            deadline = time.monotonic() + 30
+            while time.monotonic() < deadline:
+                assert process.poll() is None, (
+                    "Managed connector exited before its verified handoff"
+                )
+                rows = managed_connectors.status(source.root)["items"]
+                row = next(item for item in rows if item["connector_id"] == source.identifier)
+                if (
+                    row.get("launcher_version") == active["version"]
+                    and row["state"] == "waiting"
+                    and row.get("last_exit_code") == 0
+                ):
+                    break
+                time.sleep(0.25)
+            else:
+                pytest.fail("Managed connector did not finish its verified runtime handoff")
+            assert_installed_process(process.pid, active, "mnemion.connectors.runner")
+            assert "MNEMION_ADMIN_DATABASE_URL" not in psutil.Process(process.pid).environ()
+        finally:
+            process.terminate()
+            try:
+                process.wait(timeout=15)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait(timeout=5)
+        assert process.returncode == 0
+        assert managed_connectors.status(source.root)["items"][0]["state"] == "stopped"
+
+
 def test_managed_roles_restart_and_take_a_real_verified_backup(
     managed_database, pg_bin, tmp_path, monkeypatch
 ):
@@ -132,6 +279,9 @@ def test_managed_roles_restart_and_take_a_real_verified_backup(
         with httpx.Client(base_url=f"http://127.0.0.1:{port}", trust_env=False) as client:
             assert client.get("/v1/me").status_code == 401
             auth = {"Authorization": "Bearer " + owner["api_key"]}
+            source = connector_fixture(client, auth, owner, state, tmp_path)
+            source_ids = connector_scan(source, state, __version__, client, auth)
+            assert len(source_ids) == 2
             saved = client.post(
                 f"/v1/spaces/{owner['space_id']}/memories",
                 headers={**auth, "Idempotency-Key": "managed-update-fixture"},
@@ -155,6 +305,7 @@ def test_managed_roles_restart_and_take_a_real_verified_backup(
             assert updater["statename"] == "RUNNING"
             updates._processes(state, start=True)
             assert client.get("/v1/me", headers=auth).status_code == 200
+            assert connector_scan(source, state, __version__, client, auth) == source_ids
             recalled = client.post(
                 "/v1/recall",
                 headers=auth,
@@ -208,6 +359,9 @@ def test_signed_locked_install_and_failed_update_preserve_real_accepted_memories
         auth = {"Authorization": "Bearer " + owner["api_key"]}
         url = f"http://127.0.0.1:{port}"
         with httpx.Client(base_url=url, trust_env=False, timeout=5) as client:
+            source = connector_fixture(client, auth, owner, state, tmp_path)
+            source_ids = connector_scan(source, state, __version__, client, auth)
+            assert len(source_ids) == 2
             saved = client.post(
                 f"/v1/spaces/{owner['space_id']}/memories",
                 headers={**auth, "Idempotency-Key": "native-managed-before"},
@@ -222,6 +376,9 @@ def test_signed_locked_install_and_failed_update_preserve_real_accepted_memories
             active = updates.resolved_runtime(state)
             assert active["version"] == first and active["isolated"]
             assert active["readiness_protocol"] == (0 if legacy_previous else 1)
+            assert active["connector_protocol"] == 1
+            assert connector_scan(source, state, first, client, auth) == source_ids
+            assert_connector_handoff(bootstrap, source, state, active)
             running = supervision.status(state)
             assert running["ready"]
             assert running["children_initialized"] is (None if legacy_previous else True)
@@ -294,6 +451,9 @@ def test_signed_locked_install_and_failed_update_preserve_real_accepted_memories
                 None if legacy_previous else True
             )
             assert client.get("/openapi.json").json()["info"]["version"] == first
+            (source.notes / "removed.md").unlink()
+            remaining_sources = connector_scan(source, state, first, client, auth)
+            assert len(remaining_sources) == 1 and remaining_sources < source_ids
             assert updates.apply(state)["status"] == "held_after_failure"
             result = client.post(
                 "/v1/recall",

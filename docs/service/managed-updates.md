@@ -135,6 +135,12 @@ For an eligible patch, the updater:
    receipts; a process waiting during imports or argument parsing cannot pass.
 6. Restarts the updater itself through Supervisor using the newly verified runtime.
 
+From 4.1.3, explicitly enrolled [managed source connectors](managed-connectors.md)
+use the same verified runtime for each scan. Their shared operation leases let
+active inventories finish before staging/replacement. An updater waiting for
+the lease pauses new scans and retries shortly. Plain or remotely hosted
+`mnemion-connect --watch` processes retain their own deployment ownership.
+
 There is a short service interruption during cutover. Applications should use
 documented retries and idempotency keys. This does not provide high availability
 or a maintenance-window scheduler.

@@ -13,9 +13,12 @@ import httpx
 from pydantic import ValidationError
 
 from ..sdk import Client, MnemionError
+from ..version import __version__
 from .config import read_config
 from .protocol import ConnectorClient
 from .providers import FilesystemProvider, GitProvider, ProviderError, RcloneProvider
+
+MANAGED_PROTOCOL = 1
 
 
 def provider(config):
@@ -170,6 +173,7 @@ def _stamp(report, started_at, started):
             outcomes[key] = outcomes.get(key, 0) + count
     report.update(
         event="connector_scan",
+        runner_version=__version__,
         started_at=started_at,
         timestamp=datetime.now(timezone.utc).isoformat(),
         duration_seconds=round(time.monotonic() - started, 3),
@@ -263,6 +267,7 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(
         description="Connect company sources to a scoped Mnemion memory service"
     )
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument(
         "--inspect",
@@ -274,9 +279,32 @@ def main(argv=None) -> int:
         action="store_true",
         help="Repeat complete scans; configuration and token files reload between runs",
     )
+    parser.add_argument(
+        "--managed-state",
+        type=Path,
+        help="Use this local managed Linux/macOS service's verified runtime for each scan",
+    )
     args = parser.parse_args(argv)
     if args.inspect and args.watch:
         parser.error("--inspect cannot be combined with --watch")
+    if args.managed_state is not None:
+        if not args.watch:
+            parser.error("--managed-state requires --watch")
+        from .managed import main as managed
+
+        return managed(args.managed_state, args.config)
+    if args.watch:
+        print(
+            json.dumps(
+                {
+                    "event": "connector_runtime",
+                    "runner_version": __version__,
+                    "update_mode": "manual",
+                    "managed_mode": "Use --managed-state on an adopted local Linux/macOS host to follow verified updates",
+                }
+            ),
+            flush=True,
+        )
     trigger = "startup"
     while True:
         started, started_at = time.monotonic(), datetime.now(timezone.utc).isoformat()
@@ -306,6 +334,7 @@ def main(argv=None) -> int:
                 json.dumps(
                     {
                         "event": "connector_scan_failed",
+                        "runner_version": __version__,
                         "error": getattr(exc, "code", "connector_failed"),
                         "started_at": started_at,
                         "timestamp": datetime.now(timezone.utc).isoformat(),

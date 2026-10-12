@@ -1,8 +1,17 @@
 # Mnemion product roadmap
 
-Current distribution: **4.1.2**, published on all six desktop targets. Updated: **2026-10-12**.
+Current distribution: **4.1.3**, in release preparation. Updated: **2026-10-12**.
+Published downloads remain **4.1.2** on all six desktop targets until verified 4.1.3 publication.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
+
+Version [4.1.3](releases/4.1.3.md) adds the
+[managed connector lifecycle](service/managed-connectors.md) for Git, filesystem,
+Drive, Slack and rclone runners on adopted Unix hosts. Scans and the compatible
+launcher follow the verified current runtime, with configuration preserved,
+update coordination, duplicate-run protection and visible versions.
+[Focused source/process checks](validation/2026-10-12-managed-connectors.md)
+passed; signed installed-runtime and six-platform release gates are next.
 
 Version [4.1.2](releases/4.1.2.md) adds an explicit keyword fallback when query
 inference is busy, with app/agent controls, visible warnings and preserved access
@@ -17,20 +26,19 @@ checksum gateway timeout; all tests used the unchanged public installers.
 The new [hosted artifact verifier](validation/2026-10-12-artifact-verification.md)
 also passed, moving future complete release downloads off the operator's PC.
 
-Post-4.1.2 access work adds [stable MCP profile identification in source](validation/2026-10-12-mcp-profile.md)
+The 4.1.3 source also adds [stable MCP profile identification](validation/2026-10-12-mcp-profile.md)
 and the [individual sign-in/invitation contract](implementation/individual-sign-in.md),
 with a [tested Argon2id password foundation](validation/2026-10-12-password-foundation.md).
-The published 4.1.2 release does not contain that next slice. Complete password
+The published 4.1.2 release does not contain this next slice. Complete password
 and company sign-in, hosted consent and live provider acceptance remain required.
 
 The immediate priority is short hotfix releases for operational reliability:
 connections and administrator access, installation, verified updates, data safety
 and resource stability. Broader features follow without removing requirements
 from the checklist. The next reported lifecycle gap is
-[issue 22](https://github.com/Perseusxrltd/mnemion/issues/22): a separately launched
-source connector does not follow the managed server's updated runtime. Its
-managed lifecycle and version visibility need to be completed without changing
-source identities or starting duplicate writers.
+[issue 22](https://github.com/Perseusxrltd/mnemion/issues/22): the separately launched
+source connector needs its one-time managed adoption after the 4.1.3 lifecycle
+fix passes the release gates. Source identities and existing grants are preserved.
 Version [4.1.1](releases/4.1.1.md) ships idle local-model
 cleanup and visible cache statistics, using the existing schema. Its
 [local/product checks and real-model measurements](validation/2026-10-12-model-idle-cleanup.md)
