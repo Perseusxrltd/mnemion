@@ -6,6 +6,7 @@ import { join } from 'node:path'
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { WorkspaceStore, workspaceIdentity } from './workspace-store.js'
 import { WorkspaceConnections, isWorkspaceSession } from './workspace-connections.js'
+import { boundedCredentialCipher } from './workspace-cipher.js'
 import { workspaceFetch } from './workspace-fetch.js'
 import { LocalWorkspace, localEnvironment, localOptions } from './local-workspace.js'
 import type { LocalStatus } from '../shared/local-workspace.js'
@@ -31,6 +32,13 @@ function workspaceCipher() {
       return result.value
     },
   }
+  if (process.platform === 'darwin') return boundedCredentialCipher({
+    // The synchronous API can freeze the entire app while macOS asks whether
+    // a newly updated application may use an existing Keychain item.
+    available: () => safeStorage.isAsyncEncryptionAvailable(),
+    encrypt: value => safeStorage.encryptStringAsync(value),
+    decrypt: async value => (await safeStorage.decryptStringAsync(value)).result,
+  })
   return {
     available: () => {
       try {
@@ -52,7 +60,7 @@ export async function verifyWorkspaceStorage(): Promise<Record<string, unknown>>
     const store = new WorkspaceStore(directory, cipher)
     const credential = randomUUID() + randomUUID()
     const identity = { principal_id: randomUUID(), tenant_id: randomUUID(), name: 'Storage probe', tenant_name: 'Native validation', administrator: false }
-    if (!cipher.available()) {
+    if (!await cipher.available()) {
       let refused = false
       try { await store.save('https://memory.example.invalid', credential, identity) } catch { refused = true }
       if (!refused || (await store.list()).length) throw new Error('Unavailable secure storage must not save a workspace key')

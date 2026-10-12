@@ -9,6 +9,11 @@ withdrawal](service/withdrawal.md), app/agent permission observations and atomic
 erasure of protected librarian findings. The [124 automated checks and browser
 validation](validation/2026-10-12-author-withdrawal.md) passed; native publication
 and coordinated service migration remain required.
+Installed upgrade checks also found a Windows backup flush failure and a
+[macOS Keychain startup wait](validation/2026-10-12-macos-upgrade-startup.md).
+The source corrections include native archive regression checks and bounded,
+asynchronous credential access with an explicit retry screen. Rebuilt installers
+must pass the installed migration gate before this version is published.
 The [installed schema-upgrade workflow](../.github/workflows/installed-upgrade.yml)
 adds a repeatable previous-installer, migration, contributor withdrawal and
 isolated recovery gate; its six native executions are still required.

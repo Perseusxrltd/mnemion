@@ -37,7 +37,7 @@ export class WorkspaceConnections {
 
   async status() {
     await this.queue
-    return { secureStorage: this.store.available(), ...await this.store.status(), active: this.publicSession() }
+    return { secureStorage: await this.store.available(), ...await this.store.status(), active: this.publicSession() }
   }
 
   async inspect(id: string) {

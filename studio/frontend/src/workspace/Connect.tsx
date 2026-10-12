@@ -77,7 +77,8 @@ export default function Connect({ onConnect, initialError }: { onConnect: (conne
         if (generation !== operation.current) return;
         setStatus(saved);
         setRemember(saved.secureStorage);
-        if ((saved.active || saved.activeId) && !initialError) {
+        if (saved.activeId && !initialError) setSelection('join');
+        if ((saved.active || (saved.activeId && saved.secureStorage)) && !initialError) {
           setSelection('join');
           setBusy("Reconnecting to your workspace…");
           const session = await desktop.workspaceResume!();
@@ -168,6 +169,13 @@ export default function Connect({ onConnect, initialError }: { onConnect: (conne
           </div>}
           {selection === 'local' && <LocalSetup initial={local} autoContinue={continueLocal} onOpen={complete} onBack={() => { setContinueLocal(false); setSelection(null); }} />}
           {selection !== 'local' && <>
+          {desktop && status && !status.secureStorage && (selection === 'join' || status.bookmarks.length > 0) && <div className="ws-notice" role="status">
+            <p>Unlock your operating system’s secure store to reopen saved connections. Approve any secure-store prompt, then retry. You can also connect for this session without saving a key.</p>
+            <button type="button" className="ws-button ws-quiet" disabled={!!busy} onClick={() => void run("Checking secure storage…", async () => {
+              const saved = await desktop.workspaceStatus!();
+              setStatus(saved); setRemember(saved.secureStorage);
+            })}>Retry secure storage</button>
+          </div>}
           {!!status?.bookmarks.length && (
             <section className="ws-saved-workspaces" aria-label="Saved workspaces">
               <h3>Continue in a workspace</h3>

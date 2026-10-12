@@ -30,6 +30,15 @@ If the operating system's secure store is locked or unavailable, the app
 explains this and offers a session-only connection. There is no plaintext key
 fallback. Unlock the OS store before opening a previously saved workspace.
 
+Starting with 4.1.0, macOS credential checks use the asynchronous Keychain API
+with bounded waits. A locked Keychain can require approval after an application
+update; it must not freeze the window or prevent the local workspace from
+starting. Approve the operating system's prompt, then choose **Retry secure
+storage** and **Open** beside the saved connection. Existing encrypted bookmarks
+are retained while locked. If the OS has denied access for the current process,
+unlock the store and reopen the app. Resetting saved connections is not required
+for an ordinary Keychain prompt.
+
 The connection list shows each workspace, address and identity. Select **Open**
 to reconnect. **Disconnect** immediately clears the active connection and pauses
 automatic reconnection, including on the next launch. The encrypted bookmark
@@ -48,8 +57,9 @@ the interface alone does not exit the desktop app.
   install a missing server.
 - An expired or revoked key needs a current key from your administrator. A saved
   key that now identifies a different person or workspace is not resumed.
-- A locked keyring needs to be unlocked in the operating system. Connect without
-  remembering the workspace if secure storage is unavailable.
+- A locked keyring needs to be unlocked in the operating system. In 4.1.0, use
+  **Retry secure storage** after unlocking it. Connect without remembering the
+  workspace if secure storage is unavailable.
 - During automatic reconnection, choose **Use another workspace** to stop it and
   enter another address. A delayed response cannot undo that choice.
 - Saved connection data that is corrupt, linked elsewhere or unsafe to read is
@@ -61,11 +71,13 @@ the interface alone does not exit the desktop app.
 
 ## Creating a new installation
 
-This release improves joining and reopening existing workspaces. Complete local
-database/runtime installation, source-provider sign-in and host administration
-through the app are still being implemented. See the
+The complete desktop installers include a local database and the model/runtime
+setup introduced in 4.0.11. Choose **Create on this computer**, review the model
+and RAM allowance, and open the new private workspace. See
+[local workspaces](local-workspaces.md). Source-provider sign-in, company-host
+onboarding and complete guided host recovery remain in the
 [app-setup acceptance requirements](../implementation/app-onboarding.md).
-The current operator installation is described in the
+Operator installation is described in the
 [service guide](README.md) and [deployment guide](deployment.md).
 
 Device encryption protects the saved key, not exported memory. Obsidian exports

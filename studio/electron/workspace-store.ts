@@ -30,7 +30,7 @@ export interface WorkspaceInspection {
 }
 
 export interface CredentialCipher {
-  available(): boolean
+  available(): boolean | Promise<boolean>
   encrypt(value: string): Buffer | Promise<Buffer>
   decrypt(value: Buffer): string | Promise<string>
 }
@@ -164,7 +164,7 @@ export class WorkspaceStore {
     return pending
   }
 
-  available(): boolean { return this.cipher.available() }
+  async available(): Promise<boolean> { return await this.cipher.available() === true }
 
   async status(): Promise<{ activeId: string | null; bookmarks: WorkspaceBookmark[] }> {
     const state = await this.read()
@@ -177,7 +177,7 @@ export class WorkspaceStore {
 
   save(endpoint: string, credential: string, identity: WorkspaceIdentity): Promise<WorkspaceBookmark> {
     return this.serial(async () => {
-      if (!this.available()) throw new Error('Unlock the operating system password store, or connect without remembering this workspace.')
+      if (!await this.available()) throw new Error('Unlock the operating system password store, or connect without remembering this workspace.')
       endpoint = workspaceEndpoint(endpoint)
       identity = workspaceIdentity(identity)
       if (typeof credential !== 'string' || !TOKEN.test(credential) || JSON.stringify(identity).includes(credential)) throw new Error('Invalid workspace credential or identity.')
@@ -203,7 +203,7 @@ export class WorkspaceStore {
   }
 
   private async unseal(item: StoredWorkspace) {
-    if (!this.available()) throw new Error('Unlock the operating system password store to reconnect.')
+    if (!await this.available()) throw new Error('Unlock the operating system password store to reconnect.')
     const payload = await this.cipher.decrypt(Buffer.from(item.sealed, 'base64'))
     if (Buffer.byteLength(payload) > 16384) throw new Error('Invalid saved credential.')
     const decoded = JSON.parse(payload)
@@ -227,7 +227,7 @@ export class WorkspaceStore {
     const item = (await this.read()).connections.find(item => item.id === id)
     if (!item) throw new Error('That saved workspace is no longer available.')
     const { sealed: _sealed, ...bookmark } = item
-    if (!this.available()) return { bookmark, access: null, accessStatus: 'locked' }
+    if (!await this.available()) return { bookmark, access: null, accessStatus: 'locked' }
     try {
       const decoded = await this.unseal(item)
       if (decoded.identity === undefined && decoded.verifiedAt === undefined) {
