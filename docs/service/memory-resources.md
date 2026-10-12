@@ -2,9 +2,9 @@
 
 ## Idle model cleanup in 4.1.1
 
-Source 4.1.1 adds automatic release of local embedding sessions
+Published 4.1.1 adds automatic release of local embedding sessions
 after **300 seconds without inference** in each API or indexing-worker process.
-Native release acceptance remains pending; this is not in published 4.1.0.
+This is available on all six supported desktop targets and compatible managed services.
 Active and queued calculations are protected by the same inference gate used
 for memory-budget changes. Model files, fingerprints, indexes and canonical
 memories stay on disk. The next semantic request reloads the approved model;
@@ -19,8 +19,9 @@ organization administrators and agents. Earlier servers omit that object.
 
 This lowers retained idle memory; it does not combine separate API/worker
 allocations or establish a whole-host RAM cap. Native RAM admission and its
-live controls below remain separate. Real RSS measurements and native release
-acceptance must precede claims about the amount of memory reclaimed.
+live controls below remain separate. The [real RSS measurements](../validation/2026-10-12-model-idle-cleanup.md)
+show that the amount reclaimed depends on the model, allocator and platform;
+some tested cases did not immediately return memory to the operating system.
 
 ## Native local budgets
 

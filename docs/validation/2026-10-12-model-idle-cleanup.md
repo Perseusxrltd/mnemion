@@ -1,8 +1,11 @@
 # Idle model cleanup validation — 2026-10-12
 
-Source version: **4.1.1**. Native release acceptance is pending; product checks
+Published version: **4.1.1**. Product checks
 and the real-model Linux/Intel Mac/Apple Silicon matrix passed in
 [run 38218635340](https://github.com/Perseusxrltd/mnemion/actions/runs/38218635340).
+All six native installer/update gates, independent artifact/signature verification
+and all six public-feed upgrades also passed; see the
+[publication record](2026-10-12-model-idle-release.md).
 
 The API and long-running indexing worker each start one idle-cache monitor.
 After 300 seconds without inference, it releases inactive local sessions while
@@ -52,6 +55,6 @@ on Linux and Apple Silicon showed little or none in this run. API/worker peak
 duplication and broader hardware measurements remain open under
 [issue 13](https://github.com/Perseusxrltd/mnemion/issues/13).
 
-The current published release remains [4.1.0](2026-10-12-v410-release.md).
+The current published release is [4.1.1](2026-10-12-model-idle-release.md).
 See the [resource controls](../service/memory-resources.md) and
 [4.1.1 release notes](../releases/4.1.1.md).

@@ -1,0 +1,48 @@
+{
+  "format": 1,
+  "kind": "isolated_synthetic_memory_cycle",
+  "at": "2026-10-12T10:38:33.511181+00:00",
+  "completed": true,
+  "checks": [
+    "contributor_cannot_inspect_reviewer_model_choices",
+    "independent_key_and_isolated_local_cpu_scope",
+    "duplicate_save_has_one_memory_and_receipt",
+    "three_synthetic_memories_indexed",
+    "lexical_retrieval_returns_expected_synthetic_evidence",
+    "semantic_retrieval_returns_expected_synthetic_evidence",
+    "revision_persists_and_stale_write_is_rejected",
+    "synthetic_memories_deleted_and_unavailable"
+  ],
+  "stop_reason": null,
+  "limits": {
+    "requests": 120,
+    "rate_per_second": 2,
+    "in_flight": 1,
+    "work_seconds": 120,
+    "cleanup_seconds": 45,
+    "response_bytes": 131072,
+    "client_rss_bytes": 201326592,
+    "minimum_free_ram_bytes": 536870912
+  },
+  "production_memory_writes": 0,
+  "cloud_model_calls": 0,
+  "role": "contributor",
+  "model_policy_identity": "independent_human_administrator",
+  "administrator_policy_reads": 8,
+  "service_version": "4.1.1",
+  "elapsed_seconds": 22.583,
+  "requests": 41,
+  "outcomes": {
+    "ok": 41
+  },
+  "latency_ms": {
+    "p50": 199.55,
+    "p95": 683.59,
+    "max": 1651.96
+  },
+  "peak_client_rss_bytes": 44974080,
+  "minimum_free_ram_bytes": 828698624,
+  "cleanup_complete": true,
+  "created_synthetic_memories": 3,
+  "pending_cleanup_count": 0
+}

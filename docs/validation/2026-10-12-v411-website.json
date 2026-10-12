@@ -1,0 +1,38 @@
+{
+  "at": "2026-10-12T10:42:05.547Z",
+  "version": "4.1.1",
+  "url": "https://www.perseusxr.com/mnemion",
+  "automaticallyRefreshed": true,
+  "downloads": [
+    {
+      "label": "Intel / AMD (x64)",
+      "url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.1.1/Mnemion-Studio-4.1.1-windows-x64.exe"
+    },
+    {
+      "label": "ARM64 (Snapdragon)",
+      "url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.1.1/Mnemion-Studio-4.1.1-windows-arm64.exe"
+    },
+    {
+      "label": "Apple silicon (M series)",
+      "url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.1.1/Mnemion-Studio-4.1.1-macos-arm64.dmg"
+    },
+    {
+      "label": "Intel Mac",
+      "url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.1.1/Mnemion-Studio-4.1.1-macos-x64.dmg"
+    },
+    {
+      "label": "Intel / AMD (x64)",
+      "url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.1.1/Mnemion-Studio-4.1.1-linux-x86_64.AppImage"
+    },
+    {
+      "label": "ARM64",
+      "url": "https://github.com/Perseusxrltd/mnemion/releases/download/v4.1.1/Mnemion-Studio-4.1.1-linux-arm64.AppImage"
+    }
+  ],
+  "currentReleaseNotes": true,
+  "currentDocumentation": true,
+  "liveRoadmap": true,
+  "matchingHomepage": true,
+  "desktopAndMobileOverflow": false,
+  "browserErrors": []
+}

@@ -1,16 +1,18 @@
 # Mnemion product roadmap
 
-Current distribution: **4.1.1** (source version). Updated: **2026-10-12**.
+Current distribution: **4.1.1**, published on all six desktop targets. Updated: **2026-10-12**.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
 
 The immediate priority is short hotfix releases for operational reliability:
 connections and administrator access, installation, verified updates, data safety
 and resource stability. Broader features follow without removing requirements
-from the checklist. Version [4.1.1](releases/4.1.1.md) prepares idle local-model
+from the checklist. Version [4.1.1](releases/4.1.1.md) ships idle local-model
 cleanup and visible cache statistics, using the existing schema. Its
 [local/product checks and real-model measurements](validation/2026-10-12-model-idle-cleanup.md)
-passed. Native release acceptance remains required before publication.
+passed. All six native installer/update gates, independent verification of all
+38 release assets and production signatures, and all six public-feed upgrades
+also passed. See the [publication record](validation/2026-10-12-model-idle-release.md).
 
 Version [4.1.0](releases/4.1.0.md) is published on all six desktop targets. It adds [scoped author
 withdrawal](service/withdrawal.md), app/agent permission observations and atomic
@@ -19,9 +21,15 @@ and [macOS Keychain startup and exit waits](validation/2026-10-12-macos-upgrade-
 The final packages passed release and native gates, independent signature/asset
 verification, and all six installed upgrade/recovery checks. The
 [publication record](validation/2026-10-12-v410-release.md) distinguishes those
-completed checks, including all six public-feed upgrades, from the pending original shared-host
-migration. The shared host remains on compatible 4.0.14 until its operator
-connection and fresh-backup preflight permit the controlled schema change.
+completed checks, including all six public-feed upgrades, from host-specific
+deployment. The original shared host completed its controlled 4.0.14 → 4.1.0
+migration on 12 October, preserving all 50 existing data tables, identities,
+keys and grants. Windows verified a fresh encrypted off-host backup before the
+cutover and independently authenticated afterward. The host then picked up
+the compatible 4.1.1 patch automatically. The Windows lab then passed its
+41-request contributor cycle, including author withdrawal and complete cleanup,
+without production writes or cloud calls; see the
+[connected-lab acceptance](validation/2026-10-12-model-idle-release.md).
 The [installed schema-upgrade workflow](../.github/workflows/installed-upgrade.yml)
 provides a repeatable previous-installer, migration, contributor withdrawal and
 isolated recovery gate. Compatible automatic service patches do not apply this
@@ -300,10 +308,10 @@ where possible and include migration/rollback instructions when needed.
   admission with SDK retry guidance (issues 5, 9, 10, 12 and 16).
 - Complete hosted-agent OAuth with PKCE and consent (issues 4 and 18), native
   remote setup (3). Extend 4.0.8 managed service patches to fleet/Compose/Windows
-  rollouts, maintenance windows and migration-bearing upgrades (11). Verify a
-  public service-feed upgrade after its first signed baseline is published.
-  Rehearse the 4.0.7 supervision setup (6) and 4.0.6 bundled Studio (7) in existing
-  deployments, including their actual boot, network and database startup order.
+  rollouts, maintenance windows and migration-bearing upgrades (11). Public
+  service-feed patches have passed on the original shared host, most recently
+  4.1.0 → 4.1.1. Extend the verified managed supervisor and bundled Studio to
+  broader deployments, including actual boot, network and database startup order.
   Desktop automatic updates do not upgrade a separately deployed memory server.
 - Validate 4.0.8's malformed-cursor handling (19) and atomic librarian decision
   retries (20) in upgraded deployments. Both source-reviewed reports have local
@@ -318,8 +326,9 @@ where possible and include migration/rollback instructions when needed.
   recorded comparison while preserving generation, source spans and vectors.
   Native local hosting now includes cooperative budgets and idle-model release;
   independently deployed API/worker processes still need shared model serving
-  and measured memory reclamation. Complete 4.1.0's installed and live acceptance
-  for scoped author withdrawal (14), improve source-space onboarding (8), extend 4.0.5's durable
+  and peak-memory measurements. Scoped author withdrawal (14) passed all six
+  installed migration/recovery gates and the original shared host's Windows
+  contributor exercise. Improve source-space onboarding (8), extend 4.0.5's durable
   sync requests and timestamped diagnostics with provider webhook verification,
   and evaluate natural-language retrieval against keyword baselines (17).
   Track [the issue queue](https://github.com/Perseusxrltd/mnemion/issues) and verify

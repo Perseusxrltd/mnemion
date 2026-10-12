@@ -51,8 +51,8 @@ authorization bypass.
 ## Isolated Windows validation
 
 A dedicated synthetic-test space and a separate application identity were
-created through the human administrator. Its device key has **reviewer access
-only to the test space**, no organization-administrator authority and a
+created through the human administrator. In this initial cycle its device key
+had **reviewer access only to the test space**, no organization-administrator authority and a
 90-day expiry. Fresh checks proved that it cannot list organization principals
 or access either existing production compartment. The key is protected by
 current-user Windows DPAPI. Only the human administrator and that application
@@ -95,6 +95,16 @@ test identifiers, never credentials, private destinations or production memory
 contents.
 
 ## Remaining continuity work
+
+Following the original host's controlled 4.1.0 migration and automatic 4.1.1
+patch, the same lab identity was **reduced to contributor**. A new actual
+Windows cycle passed at **10:38:33 UTC** with 41 requests, including guarded
+read-only policy checks through the separate human administrator. All memory
+operations used contributor authority, all three synthetic memories were
+withdrawn, and cleanup completed. The
+[4.1.1 acceptance record](2026-10-12-model-idle-release.md) preserves the result
+and the two corrected private-harness assumptions without changing the
+historical reviewer measurements above.
 
 The individual human administrator and connected test client remove dependence
 on an agent session for normal use. Host wake still uses the provider's operator
