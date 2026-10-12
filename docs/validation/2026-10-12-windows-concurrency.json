@@ -1,0 +1,92 @@
+{
+  "format": 1,
+  "kind": "bounded_isolated_semantic_concurrency",
+  "at": "2026-10-12T12:05:15.360197+00:00",
+  "completed": true,
+  "stop_reason": null,
+  "service_version": "4.1.1",
+  "requests": 27,
+  "outcomes": {
+    "ok": 27
+  },
+  "semantic_request_attempts": 19,
+  "maximum_client_in_flight": 10,
+  "observed_busy_responses": 0,
+  "stages": [
+    {
+      "name": "warmup",
+      "requested_parallel": 1,
+      "outcomes": {
+        "ok": 1
+      },
+      "latency_ms": {
+        "p50": 2834.11,
+        "p95": 2834.11,
+        "max": 2834.11
+      }
+    },
+    {
+      "name": "parallel_2",
+      "requested_parallel": 2,
+      "outcomes": {
+        "ok": 2
+      },
+      "latency_ms": {
+        "p50": 414.99,
+        "p95": 638.84,
+        "max": 638.84
+      }
+    },
+    {
+      "name": "parallel_5",
+      "requested_parallel": 5,
+      "outcomes": {
+        "ok": 5
+      },
+      "latency_ms": {
+        "p50": 889.12,
+        "p95": 892.73,
+        "max": 892.73
+      }
+    },
+    {
+      "name": "parallel_10",
+      "requested_parallel": 10,
+      "outcomes": {
+        "ok": 10
+      },
+      "latency_ms": {
+        "p50": 465.96,
+        "p95": 891.73,
+        "max": 891.73
+      }
+    },
+    {
+      "name": "recovery",
+      "requested_parallel": 1,
+      "outcomes": {
+        "ok": 1
+      },
+      "latency_ms": {
+        "p50": 385.13,
+        "p95": 385.13,
+        "max": 385.13
+      }
+    }
+  ],
+  "elapsed_seconds": 12.015,
+  "minimum_free_ram_bytes": 872775680,
+  "peak_client_rss_bytes": 45830144,
+  "memory_writes": 0,
+  "model_policy_writes": 0,
+  "selection": "one isolated contributor space with a new unmatched synthetic run filter",
+  "approved_model_policy": "pinned local CPU generation; no cloud profile approved",
+  "limits": {
+    "requests": 32,
+    "parallel": 10,
+    "seconds": 60,
+    "response_bytes": 131072,
+    "client_rss_bytes": 134217728,
+    "minimum_free_ram_bytes": 805306368
+  }
+}

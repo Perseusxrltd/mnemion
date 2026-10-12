@@ -22,11 +22,12 @@ algorithm memory per operation, not a guarantee about total process RSS or the
 whole machine. Database/HTTP attempt throttling is still required before login
 is exposed.
 
-The local run used a 512 MiB / one-CPU process scope. Both Mac CI test jobs now
-include the password suite, and each native build checks the selected service
-runtime's real Argon2id support. Those remote checks are pending; they do not yet
-prove a packaged password-login journey. Lint, formatting and workflow syntax
-checks pass.
+The local run used a 512 MiB / one-CPU process scope. The
+[product checks at `a0aab90`](https://github.com/Perseusxrltd/mnemion/actions/runs/38244575373)
+passed, including Python 3.12/3.13/3.14 and both Mac test jobs with this suite.
+Each native build also checks the selected service runtime's real Argon2id
+support; those native checks are pending. These checks do not prove a packaged
+password-login journey. Lint, formatting and workflow syntax checks pass.
 
 This module does not store accounts, issue sessions, reset passwords, enable
 OAuth or alter existing API-key behavior. Continue with the

@@ -43,6 +43,10 @@ the compatible 4.1.1 patch automatically. The Windows lab then passed its
 41-request contributor cycle, including author withdrawal and complete cleanup,
 without production writes or cloud calls; see the
 [connected-lab acceptance](validation/2026-10-12-model-idle-release.md).
+The subsequent [actual Windows concurrency check](validation/2026-10-12-windows-concurrency.md)
+passed 27 read-only requests with 10 client requests in flight. It also exposed
+another provider sleep, recovered through the independent Computer controls.
+No busy response occurred; this is not a saturation or sustained-capacity result.
 The [installed schema-upgrade workflow](../.github/workflows/installed-upgrade.yml)
 provides a repeatable previous-installer, migration, contributor withdrawal and
 isolated recovery gate. Compatible automatic service patches do not apply this
