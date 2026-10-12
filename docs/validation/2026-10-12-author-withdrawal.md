@@ -1,7 +1,9 @@
 # Author withdrawal with protected derived-data erasure
 
-Recorded **2026-10-12**. This is work for **4.1.0**, not a published capability.
-The independently prepared 4.0.14 clock patch retains its original schema.
+Recorded **2026-10-12**. Published in **4.1.0** after all six installed upgrade
+and recovery gates passed. Shared hosts still require the checked schema
+migration before exposing this capability. Earlier candidate findings below
+are retained as historical evidence.
 
 The initial regression reproduced issue 14: a contributor could save and revise
 an ordinary note but could not withdraw it without reviewer authority. The
@@ -67,6 +69,11 @@ The frontend and embedded documentation build also passed: **303 files,
 disposable static server were closed after verification.
 
 ## Required acceptance
+
+The following sections preserve the earlier candidate findings. Final source
+`4b5df29` passed all six installed upgrades and is now published; see
+[final release acceptance](2026-10-12-v410-release.md). The original shared-host
+schema migration and its Windows contributor lab remain separate pending work.
 
 The [candidate release run](https://github.com/Perseusxrltd/mnemion/actions/runs/38195791683)
 passed all **30 jobs**, including all six native targets. Its immutable source is
@@ -176,3 +183,32 @@ original host and its existing keys intact during coordinated migration.
 The current compatible service patch channel deliberately refuses this schema
 change. Automated migration-bearing fleet updates remain a separate requirement;
 do not label an installed desktop update as a completed service migration.
+
+## Final candidate accepted and published
+
+The final source is `4b5df29131566e26b802ca8e4ef3fa77f06fc57e`. Its
+[release run](https://github.com/Perseusxrltd/mnemion/actions/runs/38208553562)
+passed all 30 jobs, and [installed upgrade/recovery](https://github.com/Perseusxrltd/mnemion/actions/runs/38211935149)
+passed on Windows, macOS and Linux, both x64 and ARM64. Every target used its
+actual previous installer and local model, preserved credentials/identities/
+grants/memories, verified the automatic migration backup, migrated schema 13 to
+14, withdrew and purged the existing contributor's note, reconciled current
+deletions during isolated restoration and shut down cleanly.
+
+At **06:24:43 UTC**, the exact signed final runtime also passed the restored
+shared-host rehearsal. All 50 existing data-table hashes were preserved;
+migration reapplication was a no-op, copied production credentials remained
+revoked and recovery-administrator access remained valid. A temporary restricted
+contributor passed save/index/withdraw/purge/replay and authenticated API/MCP
+diagnostics, followed by credential revocation and clean isolated shutdown.
+Production memory writes and cloud model calls were zero.
+
+The final 38 assets and production update signatures were independently verified
+and [published at 06:45:13 UTC](2026-10-12-v410-release.md). The original shared
+host was still healthy on 4.0.14 at its latest direct observation. Its provider
+control relay interrupted the operator connection before confirmed migration.
+The verified **06:28:23 UTC** encrypted off-host backup and **06:31:18 UTC**
+Windows decryption proof are preserved; the fifteen-minute freshness guard has
+expired, so the operator must capture and verify a new backup before cutover.
+Publication follows the requested policy of shipping verified targets while
+continuing separate deployment acceptance; it does not claim that host migrated.

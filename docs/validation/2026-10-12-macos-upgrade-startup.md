@@ -1,7 +1,9 @@
 # macOS installed-upgrade Keychain diagnosis
 
-Recorded **2026-10-12**. This is unresolved acceptance for the unpublished
-4.1.0 candidate; 4.0.14 remains the published release.
+Recorded **2026-10-12**. Resolved in published **4.1.0**, source `4b5df29`.
+Both macOS architectures passed the complete installed upgrade, restoration
+and final exit. The investigation below preserves the earlier failed candidates;
+the final acceptance is recorded at the end.
 
 Both macOS targets timed out when reopening the preceding install's workspace.
 The [focused ARM64 run](https://github.com/Perseusxrltd/mnemion/actions/runs/38200421201)
@@ -89,5 +91,22 @@ is forcibly stopped. The helper also exits if its private parent pipe closes.
 All **102** desktop checks passed, including twelve helper subprocess checks.
 These cover blocked consent, process reuse/reaping, denied access,
 protocol bounds, lost pipes, provider-error privacy and late results that must
-not write a saved connection. Native installed Mac acceptance remains required;
-4.1.0 remains an unpublished draft until the corrected packages pass.
+not write a saved connection. At this source checkpoint, native installed Mac
+acceptance remained required before publishing the corrected packages.
+
+## Final installed acceptance and publication
+
+Source `4b5df29131566e26b802ca8e4ef3fa77f06fc57e` passed the complete
+[release build](https://github.com/Perseusxrltd/mnemion/actions/runs/38208553562)
+and independent native checks. The [installed upgrade and recovery matrix](https://github.com/Perseusxrltd/mnemion/actions/runs/38211935149)
+passed all six targets. Mac ARM64 completed at **06:21:04 UTC** and Mac x64 at
+**06:22:49 UTC**. Each used the real 4.0.14 installer/model and final 4.1.0
+installer, migrated the existing local workspace from schema 13 to 14, preserved
+its access and memories, withdrew a contributor's note, restored the verified
+backup with the current ledger and exited cleanly. The former final-exit failure
+did not recur. These checks retained the production shutdown and permission paths.
+
+The independently verified final packages were [published at 06:45:13 UTC](2026-10-12-v410-release.md).
+An OS-locked Keychain can still require its normal unlock/approval. The app keeps
+that state visible and offers retry or a temporary connection; publication does
+not imply that OS consent can be bypassed.

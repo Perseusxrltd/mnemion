@@ -412,3 +412,23 @@ the verified encrypted shared-host snapshot, preserving existing table contents,
 revoked copied keys and recovery-administrator access. The live host remains
 4.0.14/schema 13. Complete the final candidate's six installed gates, fresh backup,
 shared-host migration and restricted Windows-lab acceptance before publication.
+
+## Published 4.1.0, 12 October 2026
+
+Final source `4b5df29131566e26b802ca8e4ef3fa77f06fc57e` resolves the macOS exit
+finding with an isolated, bounded credential helper. All release/product/native
+gates and all six installed migration/recovery targets passed, including clean
+exit on both Macs. The independently verified 38-asset release was
+[published at 06:45:13 UTC](../validation/2026-10-12-v410-release.md). Public-feed
+rehearsal passed on all six targets; the release metadata fallback updated itself.
+The actual product page passed desktop/mobile checks with all six current links,
+guides, release notes and the matching homepage feature at 06:51:32 UTC.
+
+The final signed runtime also passed the restored shared-host exercise, retaining
+all 50 existing data-table hashes, recovery access and restricted contributor
+withdrawal. The provider control relay interrupted the live operator session;
+the original service remains on healthy 4.0.14 until a fresh verified backup
+and controlled migration can complete. The earlier migration-before-publication
+plan was adjusted to honor the standing instruction to publish verified targets
+while separate deployment validation continues. This does not mark the live
+host or the broader organization/recovery roadmap complete.

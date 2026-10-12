@@ -1,0 +1,91 @@
+{
+  "run": "https://github.com/Perseusxrltd/mnemion/actions/runs/38214082727",
+  "candidate_commit": "4b5df29131566e26b802ca8e4ef3fa77f06fc57e",
+  "scope": "Public desktop updater on disposable native hosts; original shared-host migration and the personal Windows device are separate acceptance.",
+  "targets": [
+    {
+      "platform": "linux",
+      "architecture": "arm64",
+      "from": "v4.0.14",
+      "to": "v4.1.0",
+      "status": "passed",
+      "elapsed_seconds": 617.47,
+      "official_feed": true,
+      "unmodified_packages": true,
+      "real_system_idle": true,
+      "profile_preserved": true,
+      "main_sandbox_disabled": false,
+      "original_launcher_exit": 0
+    },
+    {
+      "platform": "linux",
+      "architecture": "x64",
+      "from": "v4.0.14",
+      "to": "v4.1.0",
+      "status": "passed",
+      "elapsed_seconds": 614.75,
+      "official_feed": true,
+      "unmodified_packages": true,
+      "real_system_idle": true,
+      "profile_preserved": true,
+      "main_sandbox_disabled": false,
+      "original_launcher_exit": 0
+    },
+    {
+      "platform": "macos",
+      "architecture": "arm64",
+      "from": "v4.0.14",
+      "to": "v4.1.0",
+      "status": "passed",
+      "elapsed_seconds": 409.91,
+      "official_feed": true,
+      "unmodified_packages": true,
+      "real_system_idle": true,
+      "profile_preserved": true,
+      "main_sandbox_disabled": false,
+      "original_launcher_exit": 0
+    },
+    {
+      "platform": "macos",
+      "architecture": "x64",
+      "from": "v4.0.14",
+      "to": "v4.1.0",
+      "status": "passed",
+      "elapsed_seconds": 523.99,
+      "official_feed": true,
+      "unmodified_packages": true,
+      "real_system_idle": true,
+      "profile_preserved": true,
+      "main_sandbox_disabled": false,
+      "original_launcher_exit": 0
+    },
+    {
+      "platform": "windows",
+      "architecture": "arm64",
+      "from": "v4.0.14",
+      "to": "v4.1.0",
+      "status": "passed",
+      "elapsed_seconds": 421.45,
+      "official_feed": true,
+      "unmodified_packages": true,
+      "real_system_idle": true,
+      "profile_preserved": true,
+      "main_sandbox_disabled": false,
+      "original_launcher_exit": 0
+    },
+    {
+      "platform": "windows",
+      "architecture": "x64",
+      "from": "v4.0.14",
+      "to": "v4.1.0",
+      "status": "passed",
+      "elapsed_seconds": 340.49,
+      "official_feed": true,
+      "unmodified_packages": true,
+      "real_system_idle": true,
+      "profile_preserved": true,
+      "main_sandbox_disabled": false,
+      "original_launcher_exit": 0
+    }
+  ]
+}

@@ -1,26 +1,23 @@
 # Mnemion product roadmap
 
-Current distribution: **4.1.0** (source version). Updated: **2026-10-12**.
+Current distribution: **4.1.0** (published). Updated: **2026-10-12**.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
 
-Version [4.1.0](releases/4.1.0.md) is in preparation. It adds [scoped author
+Version [4.1.0](releases/4.1.0.md) is published on all six desktop targets. It adds [scoped author
 withdrawal](service/withdrawal.md), app/agent permission observations and atomic
-erasure of protected librarian findings. The [124 automated checks and browser
-validation](validation/2026-10-12-author-withdrawal.md) passed; native publication
-and coordinated service migration remain required.
-Installed upgrade checks also found a Windows backup flush failure and a
-[macOS Keychain startup wait](validation/2026-10-12-macos-upgrade-startup.md).
-The second candidate passed installed migration/recovery on both Windows and
-both Linux architectures. Both Macs completed migration and restoration but
-stalled during final exit with pending Keychain consent. The source now isolates
-credential operations in a disposable helper while retaining the normal database
-drain, encrypted records and explicit retry screen. Rebuilt installers must pass
-the complete installed migration gate before this version is published.
+erasure of protected librarian findings. It also corrects Windows backup flushing
+and [macOS Keychain startup and exit waits](validation/2026-10-12-macos-upgrade-startup.md).
+The final packages passed release and native gates, independent signature/asset
+verification, and all six installed upgrade/recovery checks. The
+[publication record](validation/2026-10-12-v410-release.md) distinguishes those
+completed checks, including all six public-feed upgrades, from the pending original shared-host
+migration. The shared host remains on compatible 4.0.14 until its operator
+connection and fresh-backup preflight permit the controlled schema change.
 The [installed schema-upgrade workflow](../.github/workflows/installed-upgrade.yml)
-adds a repeatable previous-installer, migration, contributor withdrawal and
-isolated recovery gate; all six must pass against the final candidate.
-It does not change the published 4.0.14 package or its compatible schema.
+provides a repeatable previous-installer, migration, contributor withdrawal and
+isolated recovery gate. Compatible automatic service patches do not apply this
+minor-version/database upgrade; desktop and shared-host ownership stay separate.
 
 Version [4.0.14](releases/4.0.14.md) is published on all six desktop targets. It corrects
 [Linux readiness and RAM monitoring after a host clock change](validation/2026-10-12-host-clock-readiness.md).
@@ -105,8 +102,8 @@ downloads. Each architecture requires its complete verified installer/update set
 The rebuilt shared-memory platform is product v1; its package version is 4.x
 to upgrade correctly from the earlier 3.x product. This is a living delivery
 plan, not a claim that every planned capability is available. Release status and
-known limitations are recorded in [the 4.0.14 patch notes](releases/4.0.14.md),
-[the preceding patch notes](releases/4.0.13.md),
+known limitations are recorded in [the 4.1.0 release notes](releases/4.1.0.md),
+[the preceding patch notes](releases/4.0.14.md),
 [the published baseline](releases/4.0.0.md) and
 [validation report](validation/2026-10-11-hotfixes.md).
 
