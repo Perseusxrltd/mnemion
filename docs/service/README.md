@@ -303,6 +303,11 @@ Use [Connections](connectors.md) for selected vaults, Git, Google Drive, Slack,
 rclone-supported clouds and custom company adapters. The [capture guide](capture.md)
 explains optional conversation normalization and session hooks. [Wiki & graph](knowledge.md)
 provides current evidence-linked topics, relationships and review suggestions.
+Connected sources retain their own access-controlled spaces. To search them
+together with writable team notes, use the explicit
+[all-accessible search scope](connectors.md#connected-sources-and-writable-memory).
+Save new memories into an authorized writable space; imported source permissions
+and deletions remain attached to the provider.
 
 ## Operations and limits
 

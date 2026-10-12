@@ -28,6 +28,41 @@ and let the chosen storage client transport it. Keep the ingestion root and the
 generated visualization separate to avoid feedback loops. A synchronized folder
 is not a replacement for the authoritative database or a verified recovery archive.
 
+## Connected sources and writable memory
+
+A connected Git repository appears in a connector-managed source space. Its
+imported content remains controlled by the repository and the connector's access
+mappings. The same applies to other connected providers. Your team's writable
+memory, such as an **Office** space, remains a separate compartment. This keeps
+source permissions, source changes and provider deletions enforceable.
+
+**Search both together.** First map the person or agent to the source identities
+it is allowed to read. Then use **Search & context → All accessible memory** in
+Studio, or send the following to `POST /v1/recall` or `POST /v1/context`:
+
+```json
+{"query":"What did we decide?","space_ids":[],"all_accessible":true}
+```
+
+MCP `memory_search` and `memory_context` accept the same explicit scope. The
+Python client equivalent is `client.search("What did we decide?",
+all_accessible=True)`. Each returned hit or citation retains its source and
+`space_id`. This searches currently readable spaces in one workspace; it does
+not combine other saved personal/company connections or grant access to an
+unmapped repository.
+
+For a narrower search, supply the selected source and writable space IDs in
+`space_ids` and leave `all_accessible` false. Omitting both scope choices or
+selecting both is rejected with the scope-selection rule. Explicit selection
+prevents an API client from accidentally searching a broader scope than intended.
+
+**Save new notes to a writable space.** Select one with contributor or higher
+access from `memory_spaces` or `GET /v1/spaces`. Searching a source never grants
+permission to write into it, and the connector does not push changes upstream.
+To change the source itself, edit the repository/provider and request a rescan.
+Do not copy its contents into a writable space merely to make search unified;
+that would detach the copy from the source's access and deletion lifecycle.
+
 ## Set up an adapter
 
 1. Create a dedicated **application** principal without organization administrator

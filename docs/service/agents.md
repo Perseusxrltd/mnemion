@@ -129,6 +129,8 @@ Send it to `POST /v1/recall`. Alternatively supply non-empty `space_ids` and lea
 `all_accessible` false. Choosing neither or both returns HTTP 422 with the exact
 scope-selection rule. Saving always selects one writable space; searching both
 source and office spaces never grants write access to a read-only source.
+The [connected-source guide](connectors.md#connected-sources-and-writable-memory)
+explains the Git/source split, identity mappings and unified search workflow.
 
 The gateway bounds request size, authentication time and concurrent calls. Busy
 HTTP requests include `Retry-After`; SDKs respect bounded retry delays for safe
