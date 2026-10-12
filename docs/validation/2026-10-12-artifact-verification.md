@@ -38,7 +38,20 @@ These fixtures exercise orchestration, not real production signatures. The
 first [hosted attempt](https://github.com/Perseusxrltd/mnemion/actions/runs/38249436257)
 resolved the completed release and its source, but its `contents: read` token
 could not discover the draft. It stopped before downloading or validating any
-asset. The corrected permission and complete hosted check remain to be verified.
-Python lint, workflow YAML and shell syntax checks passed. The separate local
-4.1.2 verification checked all 38 assets and production signatures before that
-release was published; the draft-discovery failure did not replace those checks.
+asset. With the corrected permission, the
+[complete hosted check](https://github.com/Perseusxrltd/mnemion/actions/runs/38251760370)
+passed at **12:53:05 UTC** against published 4.1.2, from exact source
+`e01229febc0f791640365649a9653d51ae30b13e`. It downloaded and verified all **38
+assets / 3,864,031,118 bytes**, including the production signature and package
+checks. The [retained public receipt](2026-10-12-v412-hosted-verification.json)
+matches every asset ID, name, size and digest from the independent local
+prepublication inventory. Its checksum digest is
+`9aed15835e4d662b1d1fc067042db0995bf8d46c16eaaea3b48481130825d7d6`.
+
+This verifies manual dispatch and the complete hosted path against a public
+release. The automatic trigger against a future draft still needs its first
+live run; the corrected token has GitHub's required draft-access permission.
+Python lint, workflow YAML and shell syntax checks passed. The
+[full product checks](https://github.com/Perseusxrltd/mnemion/actions/runs/38251655084)
+on the corrected workflow also passed. The separate local 4.1.2 verification
+preceded publication; the draft-discovery failure did not replace those checks.

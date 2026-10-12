@@ -11,8 +11,11 @@ passed, as did all six native gates, independent artifact/signature verification
 and public-feed integrity checks. The live product page updated automatically;
 see the [publication record](validation/2026-10-12-busy-fallback-release.md).
 Default retry behavior is unchanged. This implements the remaining overload
-option from issue 12. Public installation/update rehearsals are still completing;
-a Linux ARM checksum lookup hit a GitHub gateway timeout before installation.
+option from issue 12. [Public automatic upgrades and relaunch](validation/2026-10-12-v412-public-upgrades.json)
+passed on all six targets. Linux ARM passed its targeted retry after a GitHub
+checksum gateway timeout; all tests used the unchanged public installers.
+The new [hosted artifact verifier](validation/2026-10-12-artifact-verification.md)
+also passed, moving future complete release downloads off the operator's PC.
 
 Post-4.1.2 access work adds [stable MCP profile identification in source](validation/2026-10-12-mcp-profile.md)
 and the [individual sign-in/invitation contract](implementation/individual-sign-in.md),
@@ -23,7 +26,12 @@ and company sign-in, hosted consent and live provider acceptance remain required
 The immediate priority is short hotfix releases for operational reliability:
 connections and administrator access, installation, verified updates, data safety
 and resource stability. Broader features follow without removing requirements
-from the checklist. Version [4.1.1](releases/4.1.1.md) ships idle local-model
+from the checklist. The next reported lifecycle gap is
+[issue 22](https://github.com/Perseusxrltd/mnemion/issues/22): a separately launched
+source connector does not follow the managed server's updated runtime. Its
+managed lifecycle and version visibility need to be completed without changing
+source identities or starting duplicate writers.
+Version [4.1.1](releases/4.1.1.md) ships idle local-model
 cleanup and visible cache statistics, using the existing schema. Its
 [local/product checks and real-model measurements](validation/2026-10-12-model-idle-cleanup.md)
 passed. All six native installer/update gates, independent verification of all

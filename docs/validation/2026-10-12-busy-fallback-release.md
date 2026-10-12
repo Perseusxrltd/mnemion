@@ -38,19 +38,29 @@ overflow or uncaught JavaScript errors. See the
 [website record](2026-10-12-v412-website.json). No website edit or deployment was
 needed for this hotfix.
 
-The separate [public 4.1.1 → 4.1.2 update rehearsal](https://github.com/Perseusxrltd/mnemion/actions/runs/38249899263)
-is still completing. Linux ARM stopped before installation because GitHub
-returned HTTP 504 while downloading the public checksum file. The first website
-sync attempt encountered the same gateway failure; its following automatic run
-succeeded. A bounded retry correction for that shared metadata fetcher passed
-27 tests, alongside 29 independent-verifier tests. The targeted Linux ARM
-rehearsal and remaining public upgrade results are not yet claimed complete.
+The separate public **4.1.1 → 4.1.2 automatic update and relaunch passed on all
+six targets**, with preserved profiles, the official feeds, unmodified public
+packages and real system idle. Windows x64/ARM64, macOS Intel/ARM64 and Linux x64
+passed in the [original workflow](https://github.com/Perseusxrltd/mnemion/actions/runs/38249899263).
+Linux ARM stopped before installation because GitHub returned HTTP 504 while
+downloading the public checksum file. Its
+[targeted rerun](https://github.com/Perseusxrltd/mnemion/actions/runs/38251756291)
+passed at **13:03:34 UTC**, using the same public packages and a bounded metadata
+gateway retry correction. The original workflow retains its failed result;
+the [combined six-target receipt](2026-10-12-v412-public-upgrades.json) identifies
+each successful run. The first website sync encountered the same gateway
+failure, followed by its successful automatic run. The shared fetcher's
+27 tests and 29 independent-verifier tests passed, as did the
+[complete product checks](https://github.com/Perseusxrltd/mnemion/actions/runs/38251655084)
+on the pipeline correction.
 
-The independent [hosted verification workflow](2026-10-12-artifact-verification.md)
-is a subsequent pipeline improvement. Its first read-only token could not
-discover the draft, so it stopped before examining any asset. GitHub's required
-draft-access permission is being verified separately; the complete local
-artifact/signature check above preceded publication.
+The subsequent independent
+[hosted verification workflow](2026-10-12-artifact-verification.md) also passed,
+checking all 38 published assets and production signatures on another runner.
+Its [receipt](2026-10-12-v412-hosted-verification.json) exactly matches the complete
+local inventory verified before publication. The initial read-only token could
+not discover the draft; the corrected permission and manual verification passed.
+Its automatic trigger against a future draft remains to be exercised.
 
 The actual Windows desktop was most recently verified at 4.1.0 and the shared
 server at 4.1.1. Their normal schedules are separate from publication and these
