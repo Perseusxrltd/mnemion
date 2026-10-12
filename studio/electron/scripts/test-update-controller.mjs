@@ -41,7 +41,7 @@ after(() => {
   rmSync(temporary, { recursive: true, force: true })
 })
 
-function fixture(t) {
+function fixture(t, { ready = true } = {}) {
   directory = mkdtempSync(join(temporary, 'profile-'))
   mkdirSync(join(directory, '.config'))
   writeFileSync(join(directory, 'desktop-preferences.json'), JSON.stringify({ automaticUpdates: true, startAtLogin: false, background: true }))
@@ -69,7 +69,7 @@ function fixture(t) {
       return true
     },
   }
-  controller.platformEvent({ state: 'ready', version: '4.0.12' })
+  if (ready) controller.platformEvent({ state: 'ready', version: '4.0.12' })
   t.after(() => {
     app.emit('will-quit'); app.removeAllListeners(); automatic.removeAllListeners()
     for (const key of keys) {
@@ -140,4 +140,106 @@ test('overlapping restart requests perform only one drain and installation', asy
   await Promise.all([first, second])
   assert.equal(state.installs, 1)
   assert.equal(quits, 1)
+})
+
+async function advance(t, milliseconds) {
+  t.mock.timers.tick(milliseconds)
+  await new Promise(resolve => setImmediate(resolve))
+}
+
+test('failed checks retry promptly, bound outage traffic and allow a fresh manual attempt', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'setInterval'] })
+  t.mock.method(Math, 'random', () => 0)
+  const { controller } = fixture(t, { ready: false })
+  let checks = 0
+  controller.windows.check = async () => {
+    checks++
+    // A provider event and a rejected download must not schedule two retries.
+    controller.platformEvent({ state: 'error' })
+    throw new Error('Disposable unavailable provider')
+  }
+  await advance(t, 60_000)
+  assert.equal(checks, 1)
+  await advance(t, 59_999)
+  assert.equal(checks, 1)
+  await advance(t, 1)
+  assert.equal(checks, 2)
+  await advance(t, 5 * 60_000)
+  assert.equal(checks, 3)
+  await advance(t, 15 * 60_000)
+  assert.equal(checks, 4)
+  assert.match(controller.status.state, /next scheduled check/)
+  await advance(t, 30 * 60_000)
+  assert.equal(checks, 4)
+  await controller.check()
+  assert.equal(checks, 5)
+  await advance(t, 60_000)
+  assert.equal(checks, 6)
+})
+
+test('a successful retry clears its timer and retains real restart safeguards', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'setInterval'] })
+  t.mock.method(Math, 'random', () => 0)
+  const { controller, state } = fixture(t, { ready: false })
+  let checks = 0
+  controller.windows.check = async () => {
+    checks++
+    controller.platformEvent(checks === 1 ? { state: 'error' } : { state: 'ready', version: '4.0.12' })
+  }
+  await advance(t, 60_000)
+  await advance(t, 60_000)
+  assert.equal(checks, 2)
+  assert.equal(controller.canRequestRestart, true)
+  await advance(t, 20 * 60_000)
+  assert.equal(checks, 2)
+  assert.equal(state.drains, 0)
+  assert.equal(state.installs, 0)
+  assert.match(controller.status.state, /background/)
+})
+
+test('pausing or quitting cancels retry timers, including late failure events', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'setInterval'] })
+  t.mock.method(Math, 'random', () => 0)
+  const { controller } = fixture(t, { ready: false })
+  let checks = 0
+  controller.windows.check = async () => { checks++; controller.platformEvent({ state: 'error' }) }
+  await advance(t, 60_000)
+  assert.equal(checks, 1)
+  controller.setPreference('automaticUpdates', false)
+  await advance(t, 10 * 60_000)
+  await controller.check()
+  assert.equal(checks, 1)
+  controller.setPreference('automaticUpdates', true)
+  await advance(t, 0)
+  assert.equal(checks, 2)
+  app.emit('will-quit')
+  controller.platformEvent({ state: 'error' })
+  await controller.check()
+  await advance(t, 60 * 60_000)
+  assert.equal(checks, 2)
+})
+
+test('a pending provider check never overlaps with a retry or queued manual check', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'setInterval'] })
+  t.mock.method(Math, 'random', () => 0)
+  const { controller } = fixture(t, { ready: false })
+  let checks = 0
+  let release
+  controller.windows.check = async () => {
+    checks++
+    if (checks === 1) {
+      await new Promise(resolve => { release = resolve })
+      controller.platformEvent({ state: 'error' })
+    } else controller.platformEvent({ state: 'current' })
+  }
+  await advance(t, 60_000)
+  await controller.check()
+  await advance(t, 5 * 60_000)
+  assert.equal(checks, 1)
+  release()
+  await advance(t, 0)
+  assert.equal(checks, 2)
+  assert.equal(controller.status.state, 'Up to date')
+  await advance(t, 20 * 60_000)
+  assert.equal(checks, 2)
 })

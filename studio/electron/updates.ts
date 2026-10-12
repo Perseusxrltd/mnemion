@@ -11,6 +11,7 @@ import { refreshLinuxLoginEntry } from './linux-startup.js'
 let autoUpdater: typeof updaterPackage.autoUpdater
 type Preferences = { automaticUpdates: boolean; startAtLogin: boolean; background: boolean }
 const defaults: Preferences = { automaticUpdates: true, startAtLogin: true, background: true }
+const retryDelays = [60_000, 5 * 60_000, 15 * 60_000]
 export type UpdateStatus = { state: string; version?: string; percent?: number; checkedAt?: string }
 
 export class DesktopUpdates {
@@ -25,6 +26,9 @@ export class DesktopUpdates {
   private mac?: MacUpdateBridge
   private windows?: WindowsUpdateBridge
   private timers: NodeJS.Timeout[] = []
+  private retryTimer?: NodeJS.Timeout
+  private retryAttempts = 0
+  private stopped = false
   private readonly path = join(app.getPath('userData'), 'desktop-preferences.json')
   private readonly managed = process.env.MNEMION_AUTO_UPDATE === '0'
   private readonly supported = app.isPackaged && !process.env.MNEMION_STUDIO_SMOKE_FILE
@@ -76,9 +80,13 @@ export class DesktopUpdates {
       autoUpdater.logger = null // Provider errors can contain URLs; expose bounded status only.
       this.applyUpdatePolicy()
       autoUpdater.on('update-available', info => this.setStatus({ state: 'Downloading update', version: info.version }))
-      autoUpdater.on('update-not-available', () => this.setStatus({ state: 'Up to date', checkedAt: new Date().toISOString() }))
+      autoUpdater.on('update-not-available', () => {
+        this.clearRetry()
+        this.setStatus({ state: 'Up to date', checkedAt: new Date().toISOString() })
+      })
       autoUpdater.on('download-progress', progress => this.setStatus({ state: 'Downloading update', percent: Math.round(progress.percent) }))
       autoUpdater.on('update-downloaded', info => {
+        this.clearRetry()
         this.downloaded = true
         this.readyVersion = info.version
         this.setStatus({ state: 'Update ready · waiting for a safe restart', version: info.version })
@@ -92,7 +100,7 @@ export class DesktopUpdates {
         if (this.installing) this.restartCancelled()
         this.downloaded = false
         this.installing = false
-        this.setStatus({ state: 'Update unavailable · retry scheduled' })
+        this.scheduleRetry()
       })
     }
     this.status = { state: this.enabled ? 'Automatic updates enabled' : this.managed ? 'Updates managed by administrator' : !this.supported ? 'Updates managed by installer or package manager' : 'Automatic updates paused' }
@@ -103,7 +111,11 @@ export class DesktopUpdates {
       this.timers.push(setInterval(() => void this.restartIfSafe(), 30_000))
       for (const timer of this.timers) timer.unref()
     }
-    app.on('will-quit', () => { for (const timer of this.timers) clearTimeout(timer) })
+    app.on('will-quit', () => {
+      this.stopped = true
+      this.clearRetry()
+      for (const timer of this.timers) clearTimeout(timer)
+    })
   }
 
   get enabled() { return this.supported && !this.managed && this.preferences.automaticUpdates }
@@ -117,6 +129,7 @@ export class DesktopUpdates {
   private platformEvent(event: MacUpdateEvent | WindowsUpdateEvent) {
     if (event.state === 'ready') {
       if (!this.enabled) { void (this.mac || this.windows)?.cancel(); return }
+      this.clearRetry()
       this.downloaded = true
       this.readyVersion = event.version
       this.setStatus({ state: 'Update ready · waiting for a safe restart', version: event.version })
@@ -125,12 +138,13 @@ export class DesktopUpdates {
     } else if (event.state === 'verifying') {
       if (this.enabled) this.setStatus({ state: 'Verifying update' })
     } else if (event.state === 'current') {
+      this.clearRetry()
       this.setStatus({ state: 'Up to date', checkedAt: new Date().toISOString() })
     } else if (event.state === 'error') {
       if (this.installing) this.restartCancelled()
       this.downloaded = false
       this.installing = false
-      this.setStatus({ state: 'Update unavailable · retry scheduled' })
+      this.scheduleRetry()
     } else if (event.state === 'cancelled') {
       this.downloaded = false
       this.installing = false
@@ -167,6 +181,7 @@ export class DesktopUpdates {
       this.save()
       this.applyUpdatePolicy()
       if (!this.enabled) {
+        this.clearRetry()
         this.cancelDownload?.()
         const updater = this.mac || this.windows
         if (updater) void updater.cancel().then(() => { if (this.enabled) void this.check() })
@@ -193,9 +208,34 @@ export class DesktopUpdates {
     mkdirSync(directory, { recursive: true, mode: 0o700 })
     writeFileSync(path, `[Desktop Entry]\nType=Application\nName=Mnemion Studio\nExec=${desktopExec(executable)}\nTerminal=false\nX-GNOME-Autostart-enabled=true\n`, { mode: 0o600 })
   }
-  async check() {
-    if (!this.enabled || this.downloaded) return
-    if (this.checking) { this.checkRequested = true; return }
+  private clearRetry(resetAttempts = true) {
+    if (this.retryTimer) clearTimeout(this.retryTimer)
+    this.retryTimer = undefined
+    if (resetAttempts) this.retryAttempts = 0
+  }
+  private scheduleRetry() {
+    if (!this.enabled || this.downloaded || this.stopped || this.retryTimer) return
+    const base = retryDelays[this.retryAttempts]
+    if (base === undefined) {
+      this.setStatus({ state: 'Update unavailable · next scheduled check will retry' })
+      return
+    }
+    // Bound retry traffic during outages and spread organization-wide downloads.
+    // Every attempt still passes through the platform's normal signature checks.
+    const delay = Math.round(base * (1 + Math.random() * 0.25))
+    const minutes = Math.ceil(delay / 60_000)
+    this.retryAttempts++
+    this.setStatus({ state: `Update unavailable · retry in about ${minutes} minute${minutes === 1 ? '' : 's'}` })
+    this.retryTimer = setTimeout(() => {
+      this.retryTimer = undefined
+      void this.check(true)
+    }, delay)
+    this.retryTimer.unref()
+  }
+  async check(retrying = false) {
+    if (!this.enabled || this.downloaded || this.stopped) return
+    if (this.checking) { if (!retrying) this.checkRequested = true; return }
+    this.clearRetry(!retrying)
     this.checking = true
     this.setStatus({ state: 'Checking for updates' })
     try {
@@ -205,7 +245,7 @@ export class DesktopUpdates {
       this.cancelDownload = () => result?.cancellationToken?.cancel()
       if (!this.enabled) this.cancelDownload()
       await result?.downloadPromise
-    } catch { this.setStatus({ state: 'Update unavailable · retry scheduled' }) }
+    } catch { this.scheduleRetry() }
     finally {
       this.checking = false
       if (this.checkRequested) { this.checkRequested = false; queueMicrotask(() => void this.check()) }

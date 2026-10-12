@@ -1,0 +1,25 @@
+{
+  "at": "2026-10-12T15:38:53.281315+00:00",
+  "product_html_fetched_at": "2026-10-12T15:38:51.805783+00:00",
+  "version": "4.1.4",
+  "product_url": "https://www.perseusxr.com/mnemion",
+  "validation_method": "anonymous public HTML; script text excluded from visible-version check",
+  "visible_current_version": true,
+  "all_six_installer_links": [
+    "https://github.com/Perseusxrltd/mnemion/releases/download/v4.1.4/Mnemion-Studio-4.1.4-windows-x64.exe",
+    "https://github.com/Perseusxrltd/mnemion/releases/download/v4.1.4/Mnemion-Studio-4.1.4-windows-arm64.exe",
+    "https://github.com/Perseusxrltd/mnemion/releases/download/v4.1.4/Mnemion-Studio-4.1.4-macos-x64.dmg",
+    "https://github.com/Perseusxrltd/mnemion/releases/download/v4.1.4/Mnemion-Studio-4.1.4-macos-arm64.dmg",
+    "https://github.com/Perseusxrltd/mnemion/releases/download/v4.1.4/Mnemion-Studio-4.1.4-linux-x86_64.AppImage",
+    "https://github.com/Perseusxrltd/mnemion/releases/download/v4.1.4/Mnemion-Studio-4.1.4-linux-arm64.AppImage"
+  ],
+  "current_release_notes": "https://github.com/Perseusxrltd/mnemion/releases/tag/v4.1.4",
+  "current_version_guides": true,
+  "checksum_link": true,
+  "roadmap_tracks_main": true,
+  "homepage_product_link": true,
+  "metadata_workflow": "https://github.com/Perseusxrltd/mnemion/actions/runs/38271025181",
+  "website_code_or_deployment_changed": false,
+  "new_visual_render_performed": false,
+  "product_html_sha256": "4f4be7676d33224c1e8d45ef0a01b53b0102db9e4ff4595e5c77ac99458fd9f3"
+}

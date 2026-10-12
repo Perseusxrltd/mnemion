@@ -71,6 +71,13 @@ stable release feed is used. Architectures have separate feeds; prereleases and
 downgrades are excluded. Errors remain visible and are retried without blocking
 access to memory. Users can pause updates and administrators can manage them.
 
+From 4.1.5, a failed desktop check or download schedules up to three additional
+attempts after approximately one, five and fifteen minutes, with 0–25% added
+jitter. Continued failure returns to the regular six-hour schedule. A successful
+check or download clears retries; pausing updates or quitting cancels them.
+**Check for updates** starts a fresh attempt without overlapping a pending check.
+All normal signature, size, timeout and restart checks remain required.
+
 Updates install and restart automatically after ten minutes of system inactivity,
 provided Studio has no visible, restored focused window, no vault/API transfer is active, and no edited
 input remains open. Close a completed editor or navigate away to release its

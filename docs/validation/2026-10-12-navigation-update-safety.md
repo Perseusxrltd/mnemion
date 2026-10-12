@@ -23,8 +23,9 @@ memory write or browser error occurred. See the [before/after receipts](2026-10-
 The installed local-workspace probe now exercises the actual packaged selector,
 verifies that an unsaved memory still blocks update readiness, and closes only
 its disposable editor to confirm readiness returns. The Electron test suite,
-Studio build and version-consistency checks passed. Native release results
-remain pending.
+Studio build and version-consistency checks passed. All six native installed
+gates then passed the new selector and draft scenarios. Version 4.1.4 is
+published; see the [release and actual-session record](2026-10-12-navigation-update-release.md).
 
 The actual Windows installation automatically downloaded the verified 4.1.2
 installer during its normal scheduled check. Its saved independent administrator
