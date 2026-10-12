@@ -134,12 +134,32 @@ unpublished-candidate isolation; the real host's updater remained enabled.
 The [third installed matrix](https://github.com/Perseusxrltd/mnemion/actions/runs/38199057039)
 passed the complete install/migrate/withdraw/restore workflow on Linux x64 and
 ARM64. Both Windows targets reported a failure when reopening the candidate;
-Apple silicon timed out during candidate reopening. These are unresolved
+both macOS architectures timed out during candidate reopening. These are unresolved
 installed-app findings, not accepted upgrades. The harness now offers focused
 reruns and reads only bounded setup codes and code locations through a loopback
 diagnostic connection on its disposable runner. It never exports raw exception
 messages, connection strings, keys, profiles or backup contents. All **18**
 inventory, execution-boundary and diagnostic-privacy checks passed.
+
+The [focused Windows diagnostic](https://github.com/Perseusxrltd/mnemion/actions/runs/38200420078)
+located the failure before migration: backup publication called `fsync` on a
+read-only descriptor, which Windows rejects with `EBADF`. Three focused native
+Windows regressions reproduced that error. The staged file now opens with write
+access, without truncation, before flushing and exclusive publication. All four
+native Windows tests passed after the change: verified archive round-trip,
+complete recovery JSON, failure before publication when flushing fails, and
+concurrent writers retaining exactly one winner. Linux also passed these checks
+with the eighteen installed-harness checks. The new tests run in the native
+client suite and the Windows private-state gate. They use disposable synthetic
+files without starting a local model or changing the installed user profile.
+The four archive checks and ten real-PostgreSQL recovery checks also passed
+together under a 512 MiB / one CPU scope, including later deletion/access-ledger
+reconciliation. No personal workspace was used.
+
+This product fix changes package bytes. The original draft above remains
+unpublished evidence; rebuilt and independently verified packages must pass
+installed migration before publication. The macOS failure remains under
+investigation.
 
 A fresh original-host snapshot and ledger were encrypted and stored off-host at
 **03:19:30 UTC**. Windows independently verified and decrypted both ciphertext

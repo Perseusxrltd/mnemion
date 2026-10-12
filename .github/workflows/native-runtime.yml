@@ -62,7 +62,7 @@ jobs:
       - name: Install small private-state test dependencies
         run: python -m pip install pytest pydantic
       - name: Check ownership, inherited privacy and restricted-token access
-        run: python -m pytest client_tests/test_private_output.py client_tests/test_local_state.py client_tests/test_local_memory.py -q
+        run: python -m pytest client_tests/test_private_output.py client_tests/test_local_state.py client_tests/test_local_memory.py client_tests/test_archive_publication.py -q
 
   build:
     name: Database / ${{ matrix.target }} / ${{ matrix.arch }}

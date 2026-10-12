@@ -45,7 +45,10 @@ def _member(name: str) -> str:
 
 def publish_file(staged: Path, output: Path) -> None:
     """Atomic, exclusive publication on the same filesystem; never clobber."""
-    with staged.open("rb") as source:
+    # Windows' CRT cannot flush a read-only descriptor (_commit reports EBADF).
+    # Reopen the complete staged file for writing without truncating any bytes;
+    # failure still prevents the exclusive link from publishing the backup.
+    with staged.open("r+b") as source:
         os.fsync(source.fileno())
     os.link(staged, output)
     if os.name != "nt":
