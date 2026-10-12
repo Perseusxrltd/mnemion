@@ -17,16 +17,56 @@ on:
         description: Exact 40-character candidate source commit
         required: true
         type: string
+      target:
+        description: All platforms, or a focused diagnostic rerun
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - windows-x64
+          - windows-arm64
+          - macos-x64
+          - macos-arm64
+          - linux-x64
+          - linux-arm64
 
 permissions:
   contents: read
 
 concurrency:
-  group: installed-schema-upgrade-${{ inputs.to_tag }}
+  group: installed-schema-upgrade-${{ inputs.to_tag }}-${{ inputs.target || 'all' }}
   cancel-in-progress: false
 
 jobs:
+  targets:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.select.outputs.matrix }}
+    steps:
+      - id: select
+        env:
+          UPGRADE_TARGET: ${{ inputs.target || 'all' }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          targets = [
+              {"platform": "windows", "arch": "x64", "os": "windows-2022"},
+              {"platform": "windows", "arch": "arm64", "os": "windows-11-arm"},
+              {"platform": "macos", "arch": "x64", "os": "macos-15-intel"},
+              {"platform": "macos", "arch": "arm64", "os": "macos-15"},
+              {"platform": "linux", "arch": "x64", "os": "ubuntu-22.04"},
+              {"platform": "linux", "arch": "arm64", "os": "ubuntu-22.04-arm"},
+          ]
+          selected = os.environ['UPGRADE_TARGET']
+          if selected != 'all':
+              targets = [item for item in targets if item['platform'] + '-' + item['arch'] == selected]
+              assert len(targets) == 1
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as stream:
+              stream.write('matrix=' + json.dumps({'include': targets}) + '\n')
+          PY
   upgrade:
+    needs: targets
     name: ${{ matrix.platform }} / ${{ matrix.arch }} installed migration
     runs-on: ${{ matrix.os }}
     # GitHub omits unpublished drafts from a read-only token's release list.
@@ -36,14 +76,7 @@ jobs:
     timeout-minutes: 35
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - {platform: windows, arch: x64, os: windows-2022}
-          - {platform: windows, arch: arm64, os: windows-11-arm}
-          - {platform: macos, arch: x64, os: macos-15-intel}
-          - {platform: macos, arch: arm64, os: macos-15}
-          - {platform: linux, arch: x64, os: ubuntu-22.04}
-          - {platform: linux, arch: arm64, os: ubuntu-22.04-arm}
+      matrix: ${{ fromJSON(needs.targets.outputs.matrix) }}
     env:
       GH_TOKEN: ${{ github.token }}
       MNEMION_UPGRADE_FROM: ${{ inputs.from_tag }}
@@ -59,6 +92,9 @@ jobs:
         with:
           python-version: '3.13'
           architecture: ${{ matrix.platform == 'windows' && 'x64' || matrix.arch }}
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
       - run: python -m pip install uv==0.12.24
       - name: Install the locked verification runtime
         shell: bash

@@ -131,6 +131,24 @@ unpublished-candidate isolation; the real host's updater remained enabled.
 
 ## Remaining release acceptance
 
+The [third installed matrix](https://github.com/Perseusxrltd/mnemion/actions/runs/38199057039)
+passed the complete install/migrate/withdraw/restore workflow on Linux x64 and
+ARM64. Both Windows targets reported a failure when reopening the candidate;
+Apple silicon timed out during candidate reopening. These are unresolved
+installed-app findings, not accepted upgrades. The harness now offers focused
+reruns and reads only bounded setup codes and code locations through a loopback
+diagnostic connection on its disposable runner. It never exports raw exception
+messages, connection strings, keys, profiles or backup contents. All **18**
+inventory, execution-boundary and diagnostic-privacy checks passed.
+
+A fresh original-host snapshot and ledger were encrypted and stored off-host at
+**03:19:30 UTC**. Windows independently verified and decrypted both ciphertext
+files at **03:23:21 UTC**, using its existing protected recovery identity;
+**50,571,983 encrypted bytes** were checked without writing plaintext backups
+or identity material on Windows. The original host still runs 4.0.14. This
+snapshot is preserved, and the migration freshness guard must be satisfied again
+after the installed-app findings are resolved.
+
 Verify the contributor workflow in an isolated space on a migrated shared
 workspace, including cleanup, without widening the agent's grant. Keep the
 original host and its existing keys intact during coordinated migration.

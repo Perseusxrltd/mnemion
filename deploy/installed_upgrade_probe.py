@@ -181,6 +181,7 @@ class InstalledUpgrade:
         self.executable = None
         self.resources = None
         self.stage = "download"
+        self.debug_port = None
 
     def install(self, source: Path, tag: str):
         system = self.args.platform
@@ -265,8 +266,15 @@ class InstalledUpgrade:
             "MNEMION_AUTO_UPDATE": "0",
             "MNEMION_START_AT_LOGIN": "0",
         }
+        with socket.socket() as debugger:
+            debugger.bind(("127.0.0.1", 0))
+            self.debug_port = debugger.getsockname()[1]
         self.child = subprocess.Popen(
-            [str(self.executable)],
+            [
+                str(self.executable),
+                "--remote-debugging-address=127.0.0.1",
+                "--remote-debugging-port=" + str(self.debug_port),
+            ],
             cwd=self.installed,
             env=environment,
             stdin=subprocess.DEVNULL,
@@ -297,6 +305,19 @@ class InstalledUpgrade:
                     )
             time.sleep(0.2)
         raise TimeoutError("Installed UI acceptance timed out")
+
+    def failure_details(self):
+        from deploy.installed_upgrade_diagnostics import inspect_local_status, smoke_reason
+
+        result = {"local_status": inspect_local_status(self.debug_port, self.environment)}
+        if self.smoke.is_file() and self.smoke.stat().st_size <= 128 * 1024:
+            try:
+                result.update(smoke_reason(json.loads(self.smoke.read_text(encoding="utf-8"))))
+            except (OSError, ValueError):
+                pass
+        result["pre_migration_archives"] = len(list((self.workspace / "backups").glob("*.zip")))
+        result["database_pid_file_present"] = (self.workspace / "database/postmaster.pid").exists()
+        return result
 
     def stop(self):
         if self.child is None:
@@ -675,6 +696,7 @@ def main():
             ],
             "platform": args.platform,
             "architecture": args.arch,
+            "diagnostics": probe.failure_details(),
             "private_diagnostics": "Disposable runner only; no profile, keys or backup uploaded",
         }
     finally:
