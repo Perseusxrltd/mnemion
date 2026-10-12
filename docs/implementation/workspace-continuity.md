@@ -127,6 +127,8 @@ The [actual Windows recovery and isolated lab](../validation/2026-10-12-workspac
 subsequently verified provider operator wake without an agent session, separate
 human administration, native 4.0.12 join/reopen, an explicit Git reader mapping
 and bounded synthetic write/index/search/revision/delete checks. The original
-remote service remains on 4.0.0 pending verified backup and migration. This live
-result advances the contract; it does not complete the independent hosting,
+remote service was then [migrated from 4.0.0 to managed 4.0.12](../validation/2026-10-12-managed-workspace-upgrade.md)
+with a fresh encrypted off-host backup, preserved access and repeated Windows
+checks. Automatic service patches are enabled; a real subsequent patch remains
+separate acceptance. This live result advances the contract; it does not complete the independent hosting,
 replica, recovery-entry-point or failover requirements above.

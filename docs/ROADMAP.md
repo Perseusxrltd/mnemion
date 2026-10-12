@@ -147,7 +147,10 @@ The [connected Windows lab](validation/2026-10-12-workspace-administration.md)
 also passed isolated save, indexing, search, revision/conflict and deletion
 checks, with no production memory changes or cloud model calls. The human's
 Git reader mapping is live and preserves existing agent access. The shared
-server still needs its own verified backup and controlled upgrade from 4.0.0.
+server has now [migrated from 4.0.0 to managed 4.0.12](validation/2026-10-12-managed-workspace-upgrade.md)
+with verified encrypted off-host backups, preserved keys/grants and another
+successful Windows lab cycle. Automatic service patches are enabled; the next
+actual automatic patch remains separate acceptance.
 Registered recovery hosts, a complete replica/backup path and failover remain open.
 
 Version 4.0.11 also adds an [offline saved-workspace view](validation/2026-10-11-offline-workspace-details.md)

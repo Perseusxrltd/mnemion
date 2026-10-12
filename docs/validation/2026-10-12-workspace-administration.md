@@ -1,9 +1,11 @@
 # Independent administration and the connected Windows lab
 
 Recorded on **2026-10-12 Europe/Paris** (2026-10-11 UTC) using the actual Windows
-installation and its original remote workspace. The installed desktop is
-**4.0.12**. The remote shared service is still **4.0.0**; updating a desktop
-does not migrate or update its organization server.
+installation and its original remote workspace. The initial exercise used
+desktop **4.0.12** with shared service **4.0.0**. The original service was
+[subsequently migrated and adopted as a managed 4.0.12 host](2026-10-12-managed-workspace-upgrade.md)
+at 00:06:56 UTC on 12 October. Updating a desktop does not migrate its
+organization server.
 
 ## Recovery without the original agent
 
@@ -100,10 +102,10 @@ controls. A saved client connection or Git Markdown copy is not a complete
 replica, current recovery ledger or independently available server.
 
 The [full encrypted backup and isolated restore/migration](2026-10-12-encrypted-workspace-backup.md)
-passed independently. Controlled cutover of the old shared service, managed host
-updates, scheduled independent backups, registered recovery locations, delegated
-host operators and guided recovery remain required. The existing remote 4.0.0 service does not
-gain later server-side protections simply because Studio is newer. Continue
+passed independently. The [live managed-host migration](2026-10-12-managed-workspace-upgrade.md)
+also passed fresh human/agent authentication, preserved Git access and another
+complete isolated Windows lab cycle. Scheduled independent backups, registered
+recovery locations, delegated host operators and guided recovery remain required. Continue
 [the continuity contract](../implementation/workspace-continuity.md) and
 requirements A06, A11–A13, U06 and U11 without claiming automatic failover or
 the full roadmap complete.

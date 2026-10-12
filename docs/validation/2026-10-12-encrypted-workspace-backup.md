@@ -53,8 +53,10 @@ The [managed-host rehearsal](2026-10-12-administrator-diagnostics.md) also verif
 real API/worker/updater readiness and clean shutdown. It exposed and reproduced
 an administrator space-accounting bug in the connection doctor; the corrected
 candidate client passed authenticated API/MCP checks against the unmodified
-signed server. The live host cutover, post-upgrade client checks and a routinely
-scheduled off-host backup remain separate acceptance steps.
+signed server. The [later live cutover](2026-10-12-managed-workspace-upgrade.md)
+used a second fresh encrypted snapshot/ledger, independently verified on Windows,
+and passed post-upgrade client checks. A routinely scheduled off-host backup
+remains separate acceptance work.
 
 ## Scope and remaining acceptance
 
