@@ -38,7 +38,7 @@ jobs:
       MNEMION_TEST_LOCAL_MODEL: ${{ matrix.python == '3.12' && '1' || '0' }}
       MNEMION_TEST_MANAGED_INSTALL: ${{ matrix.python == '3.12' && '1' || '0' }}
       MNEMION_MODEL_CACHE: ${{ github.workspace }}/.tmp/ci-model-cache
-      MNEMION_TEST_MODEL_REPORT_DIR: ${{ runner.temp }}/mnemion-model-idle
+      MNEMION_TEST_MODEL_REPORT_DIR: ${{ github.workspace }}/.tmp/ci-model-idle
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
@@ -65,7 +65,7 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: model-idle-linux-x64
-          path: ${{ runner.temp }}/mnemion-model-idle/*.json
+          path: ${{ github.workspace }}/.tmp/ci-model-idle/*.json
           if-no-files-found: warn
           retention-days: 14
       - run: uv run --no-sync mnemion-service schema --output /tmp/openapi.json && diff docs/service/openapi.json /tmp/openapi.json
