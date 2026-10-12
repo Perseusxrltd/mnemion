@@ -49,8 +49,15 @@ prepublication inventory. Its checksum digest is
 `9aed15835e4d662b1d1fc067042db0995bf8d46c16eaaea3b48481130825d7d6`.
 
 This verifies manual dispatch and the complete hosted path against a public
-release. The automatic trigger against a future draft still needs its first
-live run; the corrected token has GitHub's required draft-access permission.
+release. The first [automatic draft verification](https://github.com/Perseusxrltd/mnemion/actions/runs/38260497593)
+then passed at **14:07:56 UTC**, after the complete 4.1.3 release workflow.
+It verified all **38 assets / 3,865,169,704 bytes** from source
+`4465755e7119366baa58d5512e18ae58d80a9ba4`, while the release was still a draft.
+The [receipt](2026-10-12-v413-hosted-verification.json) matched the unchanged
+draft before publication; [public delivery checks](2026-10-12-v413-publication.json)
+then confirmed the exact tag, asset inventory and anonymous update feeds.
+The checksum digest is
+`748a57ae4df2b6af5451fbe6aaf592b4c0f6bcacd75e0d27ff1d36e1dbb44073`.
 Python lint, workflow YAML and shell syntax checks passed. The
 [full product checks](https://github.com/Perseusxrltd/mnemion/actions/runs/38251655084)
 on the corrected workflow also passed. The separate local 4.1.2 verification

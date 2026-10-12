@@ -1,6 +1,7 @@
 # MCP profile identification — 2026-10-12
 
-**Post-4.1.2 source work; not published or included in the frozen 4.1.2 candidate.**
+**Published in [4.1.3](../releases/4.1.3.md).** Its [release validation](2026-10-12-managed-connectors.md)
+includes all six native targets, independent artifact verification and public feeds.
 
 The new read-only `memory_profile` tool exposes the authenticated principal's
 existing immutable UUID, display name and workspace label. It carries the

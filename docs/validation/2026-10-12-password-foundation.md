@@ -1,6 +1,6 @@
 # Password hashing foundation — 2026-10-12
 
-**Post-4.1.2 source work, not an enabled sign-in feature.**
+**Bundled in [4.1.3](../releases/4.1.3.md); individual sign-in is not enabled.**
 
 The existing pinned cryptography runtime provides Argon2id and PHC encoding.
 The account foundation uses its implementation with 19 MiB, two iterations,
@@ -27,9 +27,10 @@ The local run used a 512 MiB / one-CPU process scope. The
 passed, including Python 3.12/3.13/3.14 and both Mac test jobs with this suite.
 All six [native build/runtime checks at the same commit](https://github.com/Perseusxrltd/mnemion/actions/runs/38244575949)
 also passed, including real Argon2id support in the selected service runtimes.
-These source builds do not prove a packaged password-login journey or put this
-module into the earlier frozen 4.1.2 release. Lint, formatting and workflow syntax
-checks pass.
+The subsequent [4.1.3 release checks](2026-10-12-managed-connectors.md) passed on
+all six native targets and verified the published packages. This foundation is
+included in those packages; there is no password-login journey yet. Lint,
+formatting and workflow syntax checks pass.
 
 This module does not store accounts, issue sessions, reset passwords, enable
 OAuth or alter existing API-key behavior. Continue with the

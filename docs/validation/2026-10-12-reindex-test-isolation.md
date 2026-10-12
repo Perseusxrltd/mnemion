@@ -18,3 +18,6 @@ This test-only correction follows the frozen 4.1.3 commit. The
 [complete product checks at that release commit](https://github.com/Perseusxrltd/mnemion/actions/runs/38255848416)
 also passed with the original tests. Future main/release runs use the isolated
 queue to remove the timing dependence.
+
+The [complete product checks with the isolated queue](https://github.com/Perseusxrltd/mnemion/actions/runs/38258143825)
+also passed on `a6e27f8`, including all three Python versions and both Macs.
