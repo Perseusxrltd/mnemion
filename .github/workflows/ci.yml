@@ -15,6 +15,12 @@ on:
 permissions:
   contents: read
 
+# Superseded branch checks must not crowd the immutable release's native jobs.
+# Reusable release checks retain their own group and are never cancelled here.
+concurrency:
+  group: product-checks-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}-${{ inputs.release || false }}
+  cancel-in-progress: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
+
 jobs:
   service:
     runs-on: ubuntu-latest
