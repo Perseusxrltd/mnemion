@@ -79,6 +79,21 @@ its enabled compatible patch channel. Windows authenticated the same human
 administrator against 4.1.1 at **10:26:38 UTC**. No manual 4.1.1 check/stage/apply
 command or polling-policy change was issued for this transition.
 
+The [read-only host audit](2026-10-12-shared-host-v411.json), completed at
+**10:54:30 UTC**, verified the active production signature, installed package
+and dependency wheels, unchanged schema and embedding generations, and a
+healthy supervisor with no recovery journal pending. Its recorded automatic
+transition staged 4.1.1 at **10:25:31 UTC** and completed at **10:25:44 UTC**.
+The six-hour polling preference remained unchanged.
+
+The automatic pre-patch backup was independently verified: **52,279,409 bytes**,
+two payload files, 51 table inventories (including schema migrations) and all
+14 schema migrations. No database was restored. Running the normal host startup
+entry point twice selected verified 4.1.1 and retained the same healthy service
+processes. Owner database credentials were absent from API, worker and updater
+environments. This verifies current idempotent startup; it does not claim a new
+machine-reboot or disaster-recovery drill.
+
 ## Connected Windows lab
 
 At **10:25:47 UTC**, the isolated lab identity was reduced from reviewer to

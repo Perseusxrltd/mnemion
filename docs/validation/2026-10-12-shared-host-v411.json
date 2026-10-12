@@ -1,0 +1,46 @@
+{
+  "at": "2026-10-12T10:54:30.623667+00:00",
+  "automatic_prepatch_backup": {
+    "application_version": "4.1.0",
+    "bytes": 52279409,
+    "files": 2,
+    "schema_migrations": 14,
+    "sha256": "ef87ceefbdda2979566009ad1a36d90438f1a35f0787c54fc3dcb2731add3029",
+    "snapshot_at": "2026-10-12T12:25:32.239979+02:00",
+    "tables": 51,
+    "verified": true
+  },
+  "automatic_updates_enabled": true,
+  "children_initialized": true,
+  "cloud_model_calls": 0,
+  "commit": "cd2b8fafe37a810b8b306fc9daf7cede1612f7bd",
+  "completed": true,
+  "database_restored": false,
+  "events": [
+    {
+      "at": "2026-10-12T10:25:31Z",
+      "automatic_compatible": true,
+      "event": "staged",
+      "version": "4.1.1"
+    },
+    {
+      "at": "2026-10-12T10:25:44Z",
+      "database_restored": false,
+      "event": "updated",
+      "from_version": "4.1.0",
+      "version": "4.1.1"
+    }
+  ],
+  "manual_patch_or_poll_change_issued": false,
+  "no_owner_dsn_in_children": true,
+  "poll_interval_seconds": 21600,
+  "previous_version": "4.1.0",
+  "production_memory_writes": 0,
+  "ready": true,
+  "recovery_pending": false,
+  "schema_and_generations_preserved": true,
+  "signed_active_runtime_and_installed_wheels_verified": true,
+  "startup_runtime_version": "4.1.1",
+  "startup_twice_same_processes": true,
+  "version": "4.1.1"
+}
