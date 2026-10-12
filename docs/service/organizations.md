@@ -7,9 +7,10 @@ PostgreSQL row-level policy enforces tenant and space boundaries.
 
 Start with one organization and create separate spaces for departments, projects,
 client engagements and personal work. Grant each employee and integration its own
-identity and revocable key. Reader, writer, reviewer and administrator permissions
-control each operation; searching multiple spaces still checks every requested
-space. Use a shared project space only for knowledge that all its members may read.
+identity and revocable key. Reader, contributor and reviewer space grants, plus
+organization administrator authority, control each operation; searching multiple
+spaces still checks every requested space. Use a shared project space only for
+knowledge that all its members may read.
 
 Use **Team and applications** in Studio to manage principals, credentials and
 grants. API and worker database logins have separate restricted roles; the schema

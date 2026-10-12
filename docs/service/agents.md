@@ -136,9 +136,11 @@ reads and idempotent writes. See [inference admission](embeddings.md#inference-a
 `serve --no-mcp` or `MNEMION_MCP_ENABLED=0` disables the combined endpoint. A
 standalone gateway on port 7893 remains available for existing deployments.
 
-OAuth/browser sign-in is not implemented. Hosted connectors that require OAuth,
-including ChatGPT's connector flow, remain pending issues 4/18; static-header
-compatibility does not imply support for those sign-in flows. From 4.0.8,
+Service 4.0.11 adds [optional trusted-issuer OAuth validation](oauth.md) with
+individual, revocable identity bindings. Built-in browser sign-in and complete
+hosted-connector authorization flows, including ChatGPT's connector flow, remain
+pending issues 4/18; the resource-server foundation and static-header support do
+not establish acceptance of those flows. From 4.0.8,
 [managed Unix server patches](managed-updates.md) are available to authorized
 host operators; a memory key alone cannot grant software-update authority.
 

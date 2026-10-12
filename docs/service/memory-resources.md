@@ -148,9 +148,12 @@ policy record limit; it does not take ownership of foreign files or resolve
 unsafe links. Never delete the workspace to repair a RAM setting.
 
 Local Linux validation has exercised lower/raise/restart behavior with the real
-compiled engine, database and embedding model. The desktop lifecycle tests cover
+compiled engine, database and embedding model. The [RAM-policy recovery checks](../validation/2026-10-11-native-policy-recovery.md)
+also exercise real Windows private-file permissions. The desktop lifecycle tests cover
 concurrent saves and repairs, interrupted startup and cancelled shutdown. The
 operator regression tests cover malformed bytes, missing files, stale tokens,
-private retention, failed replacement and live pause/adoption. Packaged native
-hosting on every supported platform, historical fleet measurements and an
-optional OS-enforced limit remain separate acceptance gates.
+private retention, failed replacement and live pause/adoption. Published
+[4.0.12 installed setup, model save/search and reopen](../validation/2026-10-11-v412-release.md)
+passed on Windows, macOS and Linux, each on x64 and ARM64. This evidence does not
+cover every RAM-policy failure on every OS. Broader hardware measurements,
+historical fleet metrics and an optional OS-enforced limit remain open.

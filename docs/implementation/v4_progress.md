@@ -1,7 +1,8 @@
 # Mnemion v4 implementation status
 
-For current delivery priorities and the platform-v1 freeze, use the
-[product roadmap](../ROADMAP.md) and [4.0.0 release notes](../releases/4.0.0.md).
+For current delivery priorities and publication status, use the
+[product roadmap](../ROADMAP.md), [complete requirements](../PRODUCT_REQUIREMENTS.md)
+and [published downloads](https://www.perseusxr.com/mnemion).
 This chronological ledger also retains earlier checkpoints and the broader
 program acceptance criteria; historical counts are not final-version results.
 
@@ -22,7 +23,7 @@ Requirements and acceptance criteria are defined by the
 
 - Current implementation: `main`. The rebuild and free Mac updater were merged at `da74785f67f96d0fd375e7925d23284c435b6f99`. The original implementation branch was `codex/mnemion-v4`, based on `c670e3039d2f7b43dbb00a2157e420e665203979`.
 - Pre-existing tracked and untracked work was preserved before implementation. A WSL restart on 10 October cleared the temporary backup and fixture directory; the working tree remained intact. A fresh private snapshot now preserves the complete current tree in persistent local validation storage.
-- Local test runs use isolated temporary profiles and an environment installed from the refreshed `uv.lock`. No production memory or personal Obsidian vault has been migrated.
+- Local test runs use isolated temporary profiles and an environment installed from the refreshed `uv.lock`. The later authorized shared-workspace migration and Windows connection checks are recorded in the 12 October entries below.
 - A real local PostgreSQL 16.2 instance with pgvector was verified through a temporary `pgserver` development installation. This binary is test tooling, not the production database distribution.
 
 ## Implemented work, 9 October 2026
@@ -369,3 +370,36 @@ quality. The roadmap and issue queue track those independently.
   public service manifest establishes the baseline for a later real feed upgrade.
   Fleet/Compose/Windows-server updates, schema-changing unattended upgrades and
   physical host boot checks remain open under issue 11 and the deployment roadmap.
+
+## Published workspace and administration updates, 11–12 October 2026
+
+| Release | Delivered behavior and evidence |
+| --- | --- |
+| [4.0.9](../releases/4.0.9.md) | OS-protected desktop connections, destination-bound credentials and identity-checked reconnection. |
+| [4.0.10](../releases/4.0.10.md) | Live 3D memory map, attributed activity, source/author filters and bounded connection diagnostics. |
+| [4.0.11](../releases/4.0.11.md) | Bundled local hosting and guided setup, RAM policy/recovery, independent administrators, final-admin protection, offline workspace details and optional trusted-issuer OAuth validation. |
+| [4.0.12](../validation/2026-10-11-v412-release.md) | Native ngrok/protected-health compatibility, all six installed setup and public update gates, and a real Windows human-administrator join/reopen. |
+| [4.0.13](../validation/2026-10-12-v413-release.md) | Separate app/server versions and administrator diagnostics; the shared server and actual Windows client both completed signed automatic updates. |
+| [4.0.14](../validation/2026-10-12-v414-release.md) | Linux clock-safe process/RAM observations, all six public desktop updates and an operator-applied shared-host patch preserving authority and its address. |
+
+The original shared workspace was [adopted into managed hosting](../validation/2026-10-12-managed-workspace-upgrade.md)
+with a fresh encrypted off-host backup and preserved identities, keys and space
+grants. [Independent Windows backup decryption and isolated restoration](../validation/2026-10-12-encrypted-workspace-backup.md)
+verified a separate recovery path. The [bounded Windows lab](../validation/2026-10-12-workspace-administration.md)
+uses its own restricted identity and synthetic memories. These exercises do not
+complete app-managed backup schedules, registered recovery hosts, operator
+delegation, individual browser sign-in or failover.
+
+## Corrected 4.1.0 candidate, 12 October 2026
+
+[Scoped author withdrawal](../service/withdrawal.md) is implemented with a checked
+schema migration, immutable authorship conditions and protected cleanup. The
+[installed migration checks](../validation/2026-10-12-author-withdrawal.md) found
+a Windows backup flush error and a macOS Keychain wait. Corrected source
+`cbea13f49e6c23e5404d7e831cc0d23365ac3b9a` uses a writable Windows flush handle and
+[bounded asynchronous Mac credential operations](../validation/2026-10-12-macos-upgrade-startup.md).
+
+The [corrected release build](https://github.com/Perseusxrltd/mnemion/actions/runs/38203918134)
+is still in progress at this checkpoint. Complete installed migration/recovery
+on all six targets, the shared-host migration and restricted Windows-lab
+acceptance before publishing it. Version 4.0.14 remains the published release.

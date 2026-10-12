@@ -308,8 +308,10 @@ where possible and include migration/rollback instructions when needed.
 - Continue reducing API/worker resident memory (13). Version 4.0.3 shares one
   tokenizer vocabulary per local model, saving 296 MiB after loading E5 in the
   recorded comparison while preserving generation, source spans and vectors.
-  Separate API/worker model caches and idle unloading remain open. Review policy for an author's
-  own deletions (14), improve source-space onboarding (8), extend 4.0.5's durable
+  Native local hosting now includes cooperative budgets and idle-model release;
+  independently deployed API/worker processes still need shared model serving
+  and measured memory reclamation. Complete 4.1.0's installed and live acceptance
+  for scoped author withdrawal (14), improve source-space onboarding (8), extend 4.0.5's durable
   sync requests and timestamped diagnostics with provider webhook verification,
   and evaluate natural-language retrieval against keyword baselines (17).
   Track [the issue queue](https://github.com/Perseusxrltd/mnemion/issues) and verify

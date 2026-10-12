@@ -21,6 +21,10 @@ local recovery and a Linux idle-restart fix. The
 Version [4.0.12](docs/releases/4.0.12.md) corrects native ngrok
 connections, stale offline responses and authenticated health gateways; use the
 product page to distinguish current source from published downloads.
+Set up [independent human administrators](docs/service/organizations.md#establish-independent-administrators)
+to manage people, applications and space grants without the original agent.
+The [continuity contract](docs/implementation/workspace-continuity.md) tracks the
+remaining host delegation, independent recovery and sign-in workflows.
 Studio retains OS-protected saved connections, identity-checked reopening after restart and a clearer connection
 screen. [Workspace controls](docs/service/workspaces.md) explain remembering,
 disconnecting and forgetting a device connection. Complete fresh-machine setup
@@ -34,9 +38,8 @@ Release targets cover **Windows, macOS and Linux on x64 and ARM64**. Windows and
 Mac updates use independent publisher signatures. The product page lists only
 published, verified builds. Development and
 current documentation live on `main`.
-Implementation and acceptance are tracked in [the release ledger](docs/implementation/v4_progress.md).
-See the [current validation report](docs/validation/2026-10-11-hotfixes.md) for measured
-retrieval results, native checks and remaining limits.
+Implementation, measured results, native checks and remaining acceptance work
+are tracked in [the release ledger](docs/implementation/v4_progress.md).
 The full codebase study, design decisions, and rebuild map are preserved in
 [the research report](docs/research/2026-10-09-mnemion-study/README.md).
 

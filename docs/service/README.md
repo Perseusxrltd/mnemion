@@ -243,15 +243,18 @@ uv run --no-sync mnemion-service serve
 
 Use `http://127.0.0.1:7892/mcp` for MCP and `http://127.0.0.1:7892/v1/` for
 HTTP operations. Every MCP request, including initialization and tool discovery,
-requires the caller's valid Bearer API key; it cannot fall back to a configured
-stdio/owner credential. Revocation is checked on subsequent requests.
+requires the caller's valid Bearer credential: an API key, or an approved external
+token when the [optional OAuth issuer](oauth.md) is configured. It cannot fall back
+to a configured stdio/owner credential. Revocation is checked on subsequent requests.
 For a TLS proxy or tunnel, configure `serve --public-url https://memory.example.com`
 so MCP accepts the exact public host/origin. See [remote agent setup](agents.md#remote-http-connections).
 
 `serve --no-mcp` disables the combined endpoint. The standalone command
 `mnemion-service mcp --transport streamable-http` remains available on port 7893,
 with the same `--public-url` option. Tests exercise both current discovery and
-older initialization flows. OAuth browser sign-in is not implemented yet.
+older initialization flows. The optional trusted-issuer foundation ships in
+4.0.11; built-in browser sign-in, invitations and complete hosted-provider
+authorization flows remain under the [OAuth roadmap](oauth.md).
 
 `mcp --legacy-space SPACE_UUID` also exposes compatibility names for drawer
 save/search/delete and Open Brain capture/search/list/stats/search-fetch. Wing
