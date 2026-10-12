@@ -29,6 +29,10 @@ jobs:
   upgrade:
     name: ${{ matrix.platform }} / ${{ matrix.arch }} installed migration
     runs-on: ${{ matrix.os }}
+    # GitHub omits unpublished drafts from a read-only token's release list.
+    # The probe only downloads, then strips tokens before starting either app.
+    permissions:
+      contents: write
     timeout-minutes: 35
     strategy:
       fail-fast: false
@@ -49,6 +53,8 @@ jobs:
       MNEMION_UPGRADE_ARCH: ${{ matrix.arch }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.13'

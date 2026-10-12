@@ -68,8 +68,17 @@ disposable static server were closed after verification.
 
 ## Required acceptance
 
-Complete the native release matrix and installed previous-version upgrade/recovery
-acceptance before publication.
+The [candidate release run](https://github.com/Perseusxrltd/mnemion/actions/runs/38195791683)
+passed all **30 jobs**, including all six native targets. Its immutable source is
+`2fd88c005743fe344b384d87c8869eb1a1d66f69`; subsequent test-harness and evidence
+updates do not change those packages. All **38 assets, 3,863,359,063 bytes** were
+downloaded independently. The complete checksum inventory, production
+service/Windows/Mac signatures, packaged frontend and exact source commit agreed.
+The checksum-file SHA-256 is
+`eda0b59e8ae8470c4f3d24bd9901fba38b0d49ee0c14d81e355d44f2e10a0c06`.
+
+Installed previous-version upgrade/recovery acceptance remains required before
+publication.
 The [installed upgrade workflow](../../.github/workflows/installed-upgrade.yml)
 now provides the latter gate on six disposable native runners. It verifies a
 published preceding installer and an exact, signed candidate; uses the installed
@@ -82,6 +91,16 @@ and refusal to run on personal or persistent hosts. These eight harness
 checks do not mean that the installed migration has passed; its native runs
 remain required. Personal Windows profiles are not used; the real models run on
 the disposable CI hosts.
+
+The [first installed matrix](https://github.com/Perseusxrltd/mnemion/actions/runs/38198274221)
+failed during release metadata retrieval, before application installation.
+GitHub's read-only token omitted the unpublished draft, and Windows decoded
+UTF-8 release metadata using CP1252. The harness now requests the repository
+permission GitHub requires for draft access, disables checkout credential
+persistence, and explicitly decodes GitHub output as UTF-8. The eight inventory
+and execution-boundary checks passed again. Application children receive no
+GitHub token; this workflow downloads releases and does not publish them.
+The corrected native matrix still has to pass.
 
 Verify the contributor workflow in an isolated space on a migrated shared
 workspace, including cleanup, without widening the agent's grant. Keep the

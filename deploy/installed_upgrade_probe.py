@@ -33,7 +33,12 @@ REPOSITORY = "Perseusxrltd/mnemion"
 
 def gh(*arguments: str) -> str:
     result = subprocess.run(
-        ["gh", *arguments], capture_output=True, text=True, timeout=300, check=False
+        ["gh", *arguments],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        timeout=300,
+        check=False,
     )
     if result.returncode or len(result.stdout) > 16 * 1024**2:
         raise RuntimeError("Release retrieval failed; inspect private runner diagnostics")
@@ -86,7 +91,12 @@ def inventory(release: dict, checksums: bytes, *, tag: str, commit: str | None) 
 
 def release_files(tag: str, system: str, arch: str, root: Path, *, commit=None) -> Path:
     releases = json.loads(gh("api", f"repos/{REPOSITORY}/releases?per_page=100"))
-    release = next(row for row in releases if row.get("tag_name") == tag)
+    matching = [row for row in releases if row.get("tag_name") == tag]
+    if len(matching) != 1:
+        raise RuntimeError(
+            "The selected release is not visible; draft retrieval requires repository write access"
+        )
+    release = matching[0]
     root.mkdir(mode=0o700)
     gh(
         "release",
