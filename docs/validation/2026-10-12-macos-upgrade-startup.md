@@ -1,4 +1,4 @@
-# macOS installed-upgrade startup diagnosis
+# macOS installed-upgrade Keychain diagnosis
 
 Recorded **2026-10-12**. This is unresolved acceptance for the unpublished
 4.1.0 candidate; 4.0.14 remains the published release.
@@ -61,3 +61,33 @@ memory-space grant. Both views were inspected visually, with no horizontal
 overflow, browser errors or external network requests. The browser and its
 disposable static server were closed afterward. This is UI evidence; it does
 not substitute for native Keychain permission or real service authorization.
+
+## Installed migration and remaining exit failure
+
+Candidate `cbea13f` passed its full release build and independent native gates.
+The [six installed-upgrade executions](https://github.com/Perseusxrltd/mnemion/actions/runs/38206660021)
+passed on Windows x64/ARM64 and Linux x64/ARM64. Both Macs passed startup,
+schema migration, scoped withdrawal and isolated backup restoration, then
+exceeded the final 120-second exit deadline. Their diagnostic markers were
+`hosting-ready`; no database PID file remained. Native samples still showed
+Keychain calls and SecurityAgent. This is an exit failure after the database
+drained, rather than the earlier blocked startup.
+
+The next correction runs the same Electron safeStorage APIs in a dedicated
+process with the installed application's identity and a private temporary
+profile. Its bounded pipes accept only availability, encryption and decryption.
+Credentials never appear in arguments, environment variables or logs, and it
+cannot write saved connections, start a service or access a workspace database.
+The parent retains coalesced two-/fifteen-second deadlines and existing record
+validation. A denied provider is discarded so a later retry can observe an
+unlocked store. The helper's reported memory, with a conservative startup
+reservation, is included in desktop RAM accounting.
+
+Final `will-quit` terminates only the disposable credential helper. The existing
+cancellable database/update shutdown path finishes first; no database process
+is forcibly stopped. The helper also exits if its private parent pipe closes.
+All **102** desktop checks passed, including twelve helper subprocess checks.
+These cover blocked consent, process reuse/reaping, denied access,
+protocol bounds, lost pipes, provider-error privacy and late results that must
+not write a saved connection. Native installed Mac acceptance remains required;
+4.1.0 remains an unpublished draft until the corrected packages pass.

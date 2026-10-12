@@ -11,12 +11,15 @@ validation](validation/2026-10-12-author-withdrawal.md) passed; native publicati
 and coordinated service migration remain required.
 Installed upgrade checks also found a Windows backup flush failure and a
 [macOS Keychain startup wait](validation/2026-10-12-macos-upgrade-startup.md).
-The source corrections include native archive regression checks and bounded,
-asynchronous credential access with an explicit retry screen. Rebuilt installers
-must pass the installed migration gate before this version is published.
+The second candidate passed installed migration/recovery on both Windows and
+both Linux architectures. Both Macs completed migration and restoration but
+stalled during final exit with pending Keychain consent. The source now isolates
+credential operations in a disposable helper while retaining the normal database
+drain, encrypted records and explicit retry screen. Rebuilt installers must pass
+the complete installed migration gate before this version is published.
 The [installed schema-upgrade workflow](../.github/workflows/installed-upgrade.yml)
 adds a repeatable previous-installer, migration, contributor withdrawal and
-isolated recovery gate; its six native executions are still required.
+isolated recovery gate; all six must pass against the final candidate.
 It does not change the published 4.0.14 package or its compatible schema.
 
 Version [4.0.14](releases/4.0.14.md) is published on all six desktop targets. It corrects

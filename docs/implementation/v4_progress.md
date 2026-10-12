@@ -400,6 +400,15 @@ a Windows backup flush error and a macOS Keychain wait. Corrected source
 [bounded asynchronous Mac credential operations](../validation/2026-10-12-macos-upgrade-startup.md).
 
 The [corrected release build](https://github.com/Perseusxrltd/mnemion/actions/runs/38203918134)
-is still in progress at this checkpoint. Complete installed migration/recovery
-on all six targets, the shared-host migration and restricted Windows-lab
-acceptance before publishing it. Version 4.0.14 remains the published release.
+passed all 30 jobs, with independent verification of all 38 draft assets and
+production update signatures. Its [installed migration/recovery run](https://github.com/Perseusxrltd/mnemion/actions/runs/38206660021)
+passed both Windows and both Linux architectures. Both Macs completed migration
+and restoration but hung on final exit while Keychain consent remained pending.
+The next source correction isolates credential work in a private helper and
+passes all 102 desktop unit checks; native acceptance remains required.
+
+The same second candidate also passed a separate migration rehearsal against
+the verified encrypted shared-host snapshot, preserving existing table contents,
+revoked copied keys and recovery-administrator access. The live host remains
+4.0.14/schema 13. Complete the final candidate's six installed gates, fresh backup,
+shared-host migration and restricted Windows-lab acceptance before publication.

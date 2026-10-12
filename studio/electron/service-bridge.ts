@@ -6,7 +6,7 @@ import { join } from 'node:path'
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { WorkspaceStore, workspaceIdentity } from './workspace-store.js'
 import { WorkspaceConnections, isWorkspaceSession } from './workspace-connections.js'
-import { boundedCredentialCipher } from './workspace-cipher.js'
+import { macosCredentialCipher, macosCredentialMemory } from './macos-credentials.js'
 import { workspaceFetch } from './workspace-fetch.js'
 import { LocalWorkspace, localEnvironment, localOptions } from './local-workspace.js'
 import type { LocalStatus } from '../shared/local-workspace.js'
@@ -32,13 +32,7 @@ function workspaceCipher() {
       return result.value
     },
   }
-  if (process.platform === 'darwin') return boundedCredentialCipher({
-    // The synchronous API can freeze the entire app while macOS asks whether
-    // a newly updated application may use an existing Keychain item.
-    available: () => safeStorage.isAsyncEncryptionAvailable(),
-    encrypt: value => safeStorage.encryptStringAsync(value),
-    decrypt: async value => (await safeStorage.decryptStringAsync(value)).result,
-  })
+  if (process.platform === 'darwin') return macosCredentialCipher
   return {
     available: () => {
       try {
@@ -212,7 +206,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
       join(process.resourcesPath, 'engine', process.platform === 'win32' ? 'mnemion-engine.exe' : 'mnemion-engine')
     const database = !app.isPackaged && process.env.MNEMION_LOCAL_DATABASE ? process.env.MNEMION_LOCAL_DATABASE : join(process.resourcesPath, 'postgresql')
     local = new LocalWorkspace({ executable, database, root, version: app.getVersion(), environment: localEnvironment(process.env, root),
-      desktopMemory: () => app.getAppMetrics().reduce((sum, metric) => sum + metric.memory.workingSetSize * 1024, 0) }, status => {
+      desktopMemory: () => app.getAppMetrics().reduce((sum, metric) => sum + metric.memory.workingSetSize * 1024, 0) + macosCredentialMemory() }, status => {
       const window = getWindow()
       if (window && !window.webContents.isDestroyed()) window.webContents.send('local:changed', desktopLocalStatus(status))
     })
