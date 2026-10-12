@@ -9,6 +9,7 @@ from pathlib import Path
 import plistlib
 import signal
 import socket
+import sys
 from threading import Thread
 import time
 from types import SimpleNamespace
@@ -256,6 +257,8 @@ def test_worker_blocked_before_initialization_is_not_ready(
         ("version", "0.0.0"),
         ("generations", ["other"]),
         ("active_generations", ["other"]),
+        ("process_identity", None),
+        ("process_birth", None),
     ],
 )
 def test_current_pid_cannot_reuse_another_start_time_runtime_or_model_readiness(
@@ -289,11 +292,41 @@ def test_current_pid_cannot_reuse_another_start_time_runtime_or_model_readiness(
                             "generations": value,
                         },
                     )
+                elif field == "process_birth":
+                    marker = dict(original["process_identity"])
+                    key = "ticks" if marker["kind"] == "linux-start" else "created"
+                    marker[key] += 1
+                    update_state.write(path, {**original, "process_identity": marker})
                 else:
                     update_state.write(path, {**original, field: value})
                 assert not supervision._initialized(state, settings, processes)
             finally:
                 update_state.write(path, original)
+
+
+@pytest.mark.skipif(sys.platform != "linux", reason="Linux derives epoch birth from boot time")
+def test_ready_process_survives_a_realtime_clock_step(tmp_path, monkeypatch):
+    roles = inputs(tmp_path)
+    root = tmp_path / "clock-step"
+    supervision.prepare(root, roles, roles)
+    _, settings = supervision.settings(root)
+    monkeypatch.setenv("MNEMION_SUPERVISED_STATE", str(root))
+    monkeypatch.setenv("MNEMION_SUPERVISED_ROLE", "api")
+    with supervision.process_ready("api", ["fixture-generation"]):
+        monkeypatch.setenv("MNEMION_SUPERVISED_ROLE", "worker")
+        with supervision.process_ready("worker", ["fixture-generation"]):
+            processes = [
+                {"name": "mnemion-" + role, "statename": "RUNNING", "pid": os.getpid()}
+                for role in ("api", "worker")
+            ]
+            assert supervision._initialized(root, settings, processes)
+            original = psutil.Process.create_time
+            # The recovered VM changed its derived boot epoch by exactly 1304s.
+            # No process exits, PID changes, or actual clock changes are made here.
+            monkeypatch.setattr(
+                psutil.Process, "create_time", lambda process: original(process) + 1304
+            )
+            assert supervision._initialized(root, settings, processes)
 
 
 @pytest.mark.parametrize("suffix", ["bad;command", "bad#comment", "bad\nsection"])

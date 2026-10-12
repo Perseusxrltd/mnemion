@@ -88,11 +88,19 @@ the service stopped.
 
 New runtimes also publish private API and worker initialization receipts after
 their actual startup. `children_initialized: true` requires matching process
-IDs, creation times, runtime version/path and model generations, with a second
+IDs, process birth records, runtime version/path and model generations, with a second
 Supervisor snapshot to reject a concurrent restart. Merely surviving the
 two-second Supervisor startup threshold is insufficient. Verified older managed
 runtimes retain their previous readiness contract for adoption and rollback;
 their status reports `children_initialized: null`, not a receipt-based check.
+
+From 4.0.14, new Linux records use the kernel boot ID and raw process start
+counter, which survive realtime clock corrections. Windows and macOS retain
+their native creation times. Earlier records keep their strict epoch comparison;
+a normal process restart under the new runtime creates the new record. Old
+bootstrap/operator packages can retain their older interpretation, so inspect
+new records with the current verified runtime or operator package. See the
+[reproduced host-clock finding](../validation/2026-10-12-host-clock-readiness.md).
 
 The API readiness endpoint checks the database and configured generation; it
 does not prove indexing progress, model quality, or that all provider sources

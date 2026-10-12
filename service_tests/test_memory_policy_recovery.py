@@ -5,6 +5,9 @@ from pathlib import Path
 import subprocess
 import sys
 
+import psutil
+import pytest
+
 from mnemion import local_memory, local_state as state, local_workspace
 from mnemion.service.memory_budget import GIB, MIB, MemoryBudget, MemoryOptions, MemorySample
 
@@ -94,3 +97,36 @@ def test_json_operator_status_repair_and_stale_request_without_database_start(tm
     code, final = command("status")
     assert code == 0 and final["memory_recovery"] is None
     assert final["memory_policy"]["settings"]["limit_mib"] == 512
+
+
+@pytest.mark.skipif(sys.platform != "linux", reason="Linux derives epoch birth from boot time")
+def test_live_ram_status_survives_a_realtime_clock_step(tmp_path, monkeypatch):
+    root, _ = fixture(tmp_path)
+    budget = MemoryBudget(sample=lambda: MemorySample(8 * GIB, 5 * GIB, 100 * MIB))
+    monitor = local_memory.MemoryMonitor(root, budget, lambda _: None)
+    try:
+        monitor.tick()
+        before = local_memory.live_status(root)
+        assert before is not None
+        original = psutil.Process.create_time
+        monkeypatch.setattr(psutil.Process, "create_time", lambda process: original(process) + 1304)
+        assert local_memory.live_status(root) == before
+    finally:
+        monitor.close()
+
+
+def test_ram_sampling_continues_when_the_wall_clock_moves_backward(tmp_path, monkeypatch):
+    root, _ = fixture(tmp_path)
+    budget = MemoryBudget(sample=lambda: MemorySample(8 * GIB, 5 * GIB, 100 * MIB))
+    monitor = local_memory.MemoryMonitor(root, budget, lambda _: None)
+    try:
+        monitor.tick()
+        before = state.read(root / "runtime-memory.json")["sampled_at"]
+        clock = local_memory.time.monotonic()
+        monkeypatch.setattr(local_memory.time, "time", lambda: before - 7200)
+        monkeypatch.setattr(local_memory.time, "monotonic", lambda: clock + 6)
+        monitor.tick()
+        assert local_memory.live_status(root) is not None
+        assert state.read(root / "runtime-memory.json")["sampled_at"] == before - 7200
+    finally:
+        monitor.close()

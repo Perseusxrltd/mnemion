@@ -1,17 +1,21 @@
 # Mnemion product roadmap
 
-Current distribution: **4.0.13**. Updated: **2026-10-12**.
+Current distribution: **4.0.14**. Updated: **2026-10-12**.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
 
-Version [4.0.13](releases/4.0.13.md) is in release preparation. Setup shows the
+Version [4.0.14](releases/4.0.14.md) is in release preparation. It corrects
+[Linux readiness and RAM monitoring after a host clock change](validation/2026-10-12-host-clock-readiness.md).
+Published downloads remain on 4.0.13 until its native release gates pass.
+
+Version [4.0.13](releases/4.0.13.md) is published on all six desktop targets.
+[Signed publication, public desktop upgrades and the original shared server's
+automatic patch](validation/2026-10-12-v413-release.md) passed. Setup shows the
 app and authenticated workspace server versions separately, supports a fresh
 server check and explains older servers without version reporting. Shared hosts
 and desktop clients retain separate update ownership. It also fixes a
 [reproduced administrator diagnostic failure](validation/2026-10-12-administrator-diagnostics.md)
 for visible compartments without a content grant, without broadening access.
-Published downloads remain
-on 4.0.12 until the new release gates pass.
 
 Version [4.0.12](releases/4.0.12.md) fixes desktop connections through free ngrok
 endpoints and prevents cached offline/identity responses from deciding current
@@ -82,8 +86,8 @@ downloads. Each architecture requires its complete verified installer/update set
 The rebuilt shared-memory platform is product v1; its package version is 4.x
 to upgrade correctly from the earlier 3.x product. This is a living delivery
 plan, not a claim that every planned capability is available. Release status and
-known limitations are recorded in [the 4.0.12 patch notes](releases/4.0.12.md),
-[the preceding patch notes](releases/4.0.11.md),
+known limitations are recorded in [the 4.0.13 patch notes](releases/4.0.13.md),
+[the preceding patch notes](releases/4.0.12.md),
 [the published baseline](releases/4.0.0.md) and
 [validation report](validation/2026-10-11-hotfixes.md).
 
@@ -149,8 +153,10 @@ checks, with no production memory changes or cloud model calls. The human's
 Git reader mapping is live and preserves existing agent access. The shared
 server has now [migrated from 4.0.0 to managed 4.0.12](validation/2026-10-12-managed-workspace-upgrade.md)
 with verified encrypted off-host backups, preserved keys/grants and another
-successful Windows lab cycle. Automatic service patches are enabled; the next
-actual automatic patch remains separate acceptance.
+successful Windows lab cycle. Its subsequent [automatic 4.0.13 service patch](validation/2026-10-12-v413-release.md)
+also passed with a reverified backup, preserved identities/keys and unchanged
+grant memberships/roles. The host-clock finding and remaining bootstrap/recovery
+work stay tracked separately.
 Registered recovery hosts, a complete replica/backup path and failover remain open.
 
 Version 4.0.11 also adds an [offline saved-workspace view](validation/2026-10-11-offline-workspace-details.md)

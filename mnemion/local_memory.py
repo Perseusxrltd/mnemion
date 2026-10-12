@@ -15,6 +15,7 @@ from uuid import uuid4
 from pydantic import Field, ValidationError
 
 from . import local_state as state
+from . import process_identity
 from .service.memory_budget import MemoryBudget, MemoryOptions
 
 
@@ -203,11 +204,11 @@ def live_status(root: Path) -> dict | None:
         ):
             return None
         process = psutil.Process(value["pid"])
-        if process.create_time() != value["created_at"]:
+        if not process_identity.matches_record(value, process, legacy_field="created_at"):
             return None
         return value["memory"]
     except (
-        FileNotFoundError,
+        OSError,
         KeyError,
         TypeError,
         ValueError,
@@ -222,7 +223,9 @@ class MemoryMonitor:
         import psutil
 
         self.root, self.budget, self.emit = root, budget, emit
-        self.created_at = psutil.Process().create_time()
+        process = psutil.Process()
+        self.created_at = process.create_time()
+        self.process_identity = process_identity.capture(process)
         self.last_write = 0.0
         self.last_revision = ""
         self.stopped = threading.Event()
@@ -254,7 +257,7 @@ class MemoryMonitor:
             self.budget.policy_unavailable()
         self.budget.trim()
         memory = self.budget.snapshot()
-        now = time.time()
+        now = time.monotonic()
         self.emit({"event": "resources", "memory": memory})
         if now - self.last_write >= 5:
             state.write(
@@ -263,7 +266,8 @@ class MemoryMonitor:
                     "format": 1,
                     "pid": os.getpid(),
                     "created_at": self.created_at,
-                    "sampled_at": now,
+                    "process_identity": self.process_identity,
+                    "sampled_at": time.time(),
                     "memory": memory,
                 },
             )

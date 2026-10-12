@@ -24,6 +24,7 @@ import urllib.request
 import xmlrpc.client
 
 from ..archives import private_json
+from .. import process_identity
 from ..version import __version__
 
 ROLE_VARIABLES = {
@@ -466,6 +467,7 @@ def process_ready(role: str, generations: list[str]):
         "role": role,
         "pid": process.pid,
         "created": process.create_time(),
+        "process_identity": process_identity.capture(process),
         "version": __version__,
         "package": str(Path(__file__).resolve().parents[1]),
         "generations": sorted(set(generations)),
@@ -514,7 +516,7 @@ def _initialized(state: Path, value: dict, processes: list[dict]) -> bool | None
                 receipt.get("instance") != value["identifier"]
                 or receipt.get("role") != role
                 or receipt.get("pid") != info["pid"]
-                or receipt.get("created") != process.create_time()
+                or not process_identity.matches_record(receipt, process, legacy_field="created")
                 or receipt.get("version") != runtime["version"]
                 or (
                     runtime.get("isolated")

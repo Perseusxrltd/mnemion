@@ -1,6 +1,6 @@
 # Organization administration and workspace continuity
 
-Recorded **2026-10-11**. This contract extends requirements A01–A09 with the
+Updated **2026-10-12**. This contract extends requirements A01–A09 with the
 explicit request that another authorized administrator must be able to manage
 and recover a workspace when its original agent is unavailable. It is not a
 claim that the controls below are already released.
@@ -129,6 +129,18 @@ human administration, native 4.0.12 join/reopen, an explicit Git reader mapping
 and bounded synthetic write/index/search/revision/delete checks. The original
 remote service was then [migrated from 4.0.0 to managed 4.0.12](../validation/2026-10-12-managed-workspace-upgrade.md)
 with a fresh encrypted off-host backup, preserved access and repeated Windows
-checks. Automatic service patches are enabled; a real subsequent patch remains
-separate acceptance. This live result advances the contract; it does not complete the independent hosting,
-replica, recovery-entry-point or failover requirements above.
+checks. The original host then completed a [signed automatic 4.0.12 → 4.0.13
+patch](../validation/2026-10-12-v413-release.md), including an independently
+verified pre-patch backup and unchanged membership, keys and space roles.
+The actual Windows desktop also installed and relaunched 4.0.13 after the normal
+ten-minute inactivity interval. Its saved human administrator reconnected
+without the original agent or re-entering a key; startup and background settings
+were preserved.
+
+A later suspended-host observation exposed a [Linux clock/readiness
+problem](../validation/2026-10-12-host-clock-readiness.md). Source 4.0.14 corrects
+process-birth checks and RAM sampling across a clock change; it does not wake
+a suspended provider or update an older operator executable. The existing
+host-management channel remains necessary for that layer. These live results
+advance the contract; they do not complete independent hosting, replicas,
+the recovery entry point, operator delegation or failover.
