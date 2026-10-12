@@ -404,6 +404,8 @@ def test_http_metadata_challenge_tools_and_api_keys_share_the_same_boundary(env)
         assert mcp.status_code == 200, mcp.text
         for tool in mcp.json()["result"]["tools"]:
             assert tool["securitySchemes"] == [{"type": "oauth2", "scopes": [OAUTH_SCOPE]}]
+            if tool["name"] == "memory_profile":
+                assert tool["_meta"]["openai/profile"] is True
 
         def tool(name, arguments):
             response = client.post(
@@ -419,6 +421,17 @@ def test_http_metadata_challenge_tools_and_api_keys_share_the_same_boundary(env)
             assert response.status_code == 200, response.text
             return response.json()["result"]
 
+        profile = tool("memory_profile", {})
+        assert not profile["isError"]
+        assert profile["structuredContent"] == {
+            "id": str(identity.principal_id),
+            "name": "Person",
+            "nickname": "Test team",
+        }
+        # A different accepted external token for the same subject retains its
+        # Mnemion profile; no token/binding identifier becomes the account ID.
+        headers["Authorization"] = "Bearer another-opaque-fixture-token"
+        assert tool("memory_profile", {})["structuredContent"] == profile["structuredContent"]
         save_args = {
             "space_id": str(env.space),
             "content": "Scoped OAuth memory",

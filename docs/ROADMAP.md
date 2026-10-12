@@ -11,6 +11,11 @@ passed; native publication remains pending. Default retry behavior is unchanged.
 This implements the remaining overload option from issue 12; the issue stays
 open until publication is verified.
 
+Post-4.1.2 access work adds [stable MCP profile identification in source](validation/2026-10-12-mcp-profile.md)
+and the [individual sign-in/invitation contract](implementation/individual-sign-in.md).
+The frozen 4.1.2 candidate does not contain that next slice. Complete password
+and company sign-in, hosted consent and live provider acceptance remain required.
+
 The immediate priority is short hotfix releases for operational reliability:
 connections and administrator access, installation, verified updates, data safety
 and resource stability. Broader features follow without removing requirements

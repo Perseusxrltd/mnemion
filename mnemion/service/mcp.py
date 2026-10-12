@@ -8,12 +8,12 @@ from uuid import UUID
 import anyio
 from mcp.server.mcpserver import Context, MCPServer
 from mcp.types import ToolAnnotations
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from ..sdk import ContextPack, Memory, MnemionError, Receipt, Recall
 from ..version import __version__
 from .. import agent_control
-from .contracts import Page, Space
+from .contracts import IdentityInfo, Page, Space
 from .models import InferenceBusyPolicy, MemoryKind, SourceInput
 from .mcp_transport import MnemionMCPServer
 from .oauth import OAuthSettings
@@ -115,6 +115,20 @@ Write = ToolAnnotations(
 Delete = ToolAnnotations(
     readOnlyHint=False, destructiveHint=True, idempotentHint=True, openWorldHint=False
 )
+
+
+class MemoryProfile(BaseModel):
+    """One credential-scoped identity for clients supporting multiple accounts."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(
+        min_length=1,
+        pattern=r"\S",
+        description="Opaque profile identifier, unique within Mnemion and stable across credential refresh, reconnect and display-name changes. Never reassigned to another profile.",
+    )
+    name: str
+    nickname: str
 
 
 def create_mcp(
@@ -291,6 +305,20 @@ def create_mcp(
             effect="write",
             max_response_bytes=max_response_bytes,
         )
+
+    @server.tool(annotations=Read, meta={"openai/profile": True}, structured_output=True)
+    async def memory_profile(ctx: Context) -> MemoryProfile:
+        """Return the current credential's stable profile and workspace label. Requires no memory grant; never selects another account or changes permissions."""
+
+        def profile(client):
+            current = IdentityInfo.model_validate(client.request("GET", "/v1/me"))
+            # Principals already have immutable, globally generated UUIDs.
+            # Credential/binding IDs and names must not become profile IDs.
+            return MemoryProfile(
+                id=current.principal_id, name=current.name, nickname=current.tenant_name
+            )
+
+        return await invoke(ctx, profile)
 
     @server.tool(annotations=Read, structured_output=True)
     async def memory_spaces(ctx: Context) -> Page[Space]:

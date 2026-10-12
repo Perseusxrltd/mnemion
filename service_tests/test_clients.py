@@ -250,6 +250,7 @@ def test_mcp_stdio_negotiation_and_tools_use_http_contract(env):
             async with MCPClient(parameters, read_timeout_seconds=15) as client:
                 names = {tool.name for tool in (await client.list_tools()).tools}
                 assert {
+                    "memory_profile",
                     "memory_spaces",
                     "memory_map",
                     "memory_save",
@@ -262,6 +263,13 @@ def test_mcp_stdio_negotiation_and_tools_use_http_contract(env):
                     "search",
                     "fetch",
                 } <= names
+                profile = await client.call_tool("memory_profile", {})
+                assert not profile.is_error
+                assert profile.structured_content == {
+                    "id": str(env.owner.principal_id),
+                    "name": "Owner",
+                    "nickname": "Test team",
+                }
                 spaces = await client.call_tool("memory_spaces", {})
                 assert not spaces.is_error
                 assert any(
