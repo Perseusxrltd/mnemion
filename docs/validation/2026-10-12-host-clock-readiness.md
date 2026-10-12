@@ -1,8 +1,7 @@
 # Process readiness across a suspended host's clock change
 
-Recorded **2026-10-12**. Source correction is prepared for **4.0.14**; the
-[4.0.13 release](2026-10-12-v413-release.md) remains the published distribution
-until the next immutable release completes its checks.
+Recorded **2026-10-12**. The correction is [published in 4.0.14 and verified on
+the original shared host](2026-10-12-v414-release.md).
 
 ## Actual finding
 
@@ -51,13 +50,14 @@ fresh RAM snapshot. A third failing regression reproduced delayed RAM publicatio
 after moving the wall clock backwards by two hours. The correction passes these
 checks plus malformed/changed birth records, boot/PID reuse, legacy comparisons,
 bounded parsing, private-state handling and existing supervisor controls:
-**35 checks passed; two real service-process tests are deferred to native CI**.
+**35 focused local checks passed**. The subsequent complete native and service
+release gates passed before publication.
 The tests alter test-clock observations only; they do not change the host clock,
 start a local model, or operate the user's workspace.
 
-Native release verification and an actual corrected-host observation remain
-required before calling 4.0.14 deployed. Existing bootstrap installations are
-retained by managed patches; an older operator CLI can still apply its older
+Native release verification and the actual corrected-host observation are
+recorded in the [release evidence](2026-10-12-v414-release.md). Existing bootstrap
+installations are retained by managed patches; an older operator CLI can still apply its older
 readiness interpretation. Inspect new records with the current verified runtime
 or current operator package. Updating runtime readiness does not keep a provider's
 suspended computer or disconnected tunnel online.
@@ -67,6 +67,6 @@ twice after an operator update. It authenticates the active service package and
 delegates startup/readiness to that verified runtime, with the existing startup
 and updater-operation locks, bounded child output, and no inherited database or
 model-provider credentials.
-Both checks retained all existing service processes. This prepares that host to
-use the new readiness logic after 4.0.14 arrives; it does not rewrite older
+Both checks retained all existing service processes. The host subsequently
+updated to 4.0.14 and passed the read-only epoch-shift observation; this does not rewrite older
 bootstrap packages or establish a general remote-host delegation product.

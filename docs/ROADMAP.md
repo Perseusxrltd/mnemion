@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Current distribution: **4.1.0**. Updated: **2026-10-12**.
+Current distribution: **4.1.0** (source version). Updated: **2026-10-12**.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
 
@@ -9,11 +9,15 @@ withdrawal](service/withdrawal.md), app/agent permission observations and atomic
 erasure of protected librarian findings. The [124 automated checks and browser
 validation](validation/2026-10-12-author-withdrawal.md) passed; native publication
 and coordinated service migration remain required.
-It does not change the already prepared 4.0.14 package or its compatible schema.
+The [installed schema-upgrade workflow](../.github/workflows/installed-upgrade.yml)
+adds a repeatable previous-installer, migration, contributor withdrawal and
+isolated recovery gate; its six native executions are still required.
+It does not change the published 4.0.14 package or its compatible schema.
 
-Version [4.0.14](releases/4.0.14.md) is in release preparation. It corrects
+Version [4.0.14](releases/4.0.14.md) is published on all six desktop targets. It corrects
 [Linux readiness and RAM monitoring after a host clock change](validation/2026-10-12-host-clock-readiness.md).
-Published downloads remain on 4.0.13 until its native release gates pass.
+[Publication and the actual shared-host update](validation/2026-10-12-v414-release.md)
+passed, preserving existing administrator access and all space grants.
 
 Version [4.0.13](releases/4.0.13.md) is published on all six desktop targets.
 [Signed publication, public desktop upgrades and the original shared server's
@@ -93,8 +97,8 @@ downloads. Each architecture requires its complete verified installer/update set
 The rebuilt shared-memory platform is product v1; its package version is 4.x
 to upgrade correctly from the earlier 3.x product. This is a living delivery
 plan, not a claim that every planned capability is available. Release status and
-known limitations are recorded in [the 4.0.13 patch notes](releases/4.0.13.md),
-[the preceding patch notes](releases/4.0.12.md),
+known limitations are recorded in [the 4.0.14 patch notes](releases/4.0.14.md),
+[the preceding patch notes](releases/4.0.13.md),
 [the published baseline](releases/4.0.0.md) and
 [validation report](validation/2026-10-11-hotfixes.md).
 

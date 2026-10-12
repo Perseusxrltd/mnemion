@@ -70,6 +70,19 @@ disposable static server were closed after verification.
 
 Complete the native release matrix and installed previous-version upgrade/recovery
 acceptance before publication.
+The [installed upgrade workflow](../../.github/workflows/installed-upgrade.yml)
+now provides the latter gate on six disposable native runners. It verifies a
+published preceding installer and an exact, signed candidate; uses the installed
+UI to create and reopen its real local workspace; checks preserved keys, grants
+and memories; withdraws a note with the existing contributor; and restores the
+automatic pre-migration backup with the current ledger into an isolated database.
+Eight release-inventory and execution-boundary tests passed, including replaced
+bytes, unpinned commits, unpublished predecessors, incomplete/redirected assets
+and refusal to run on personal or persistent hosts. These eight harness
+checks do not mean that the installed migration has passed; its native runs
+remain required. Personal Windows profiles are not used; the real models run on
+the disposable CI hosts.
+
 Verify the contributor workflow in an isolated space on a migrated shared
 workspace, including cleanup, without widening the agent's grant. Keep the
 original host and its existing keys intact during coordinated migration.

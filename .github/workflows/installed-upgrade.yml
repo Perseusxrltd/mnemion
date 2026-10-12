@@ -1,0 +1,110 @@
+name: Installed schema upgrade and recovery
+
+on:
+  workflow_dispatch:
+    inputs:
+      from_tag:
+        description: Published installer before author withdrawal
+        required: true
+        default: v4.0.14
+        type: string
+      to_tag:
+        description: Candidate release, including a complete unpublished draft
+        required: true
+        default: v4.1.0
+        type: string
+      commit:
+        description: Exact 40-character candidate source commit
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: installed-schema-upgrade-${{ inputs.to_tag }}
+  cancel-in-progress: false
+
+jobs:
+  upgrade:
+    name: ${{ matrix.platform }} / ${{ matrix.arch }} installed migration
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {platform: windows, arch: x64, os: windows-2022}
+          - {platform: windows, arch: arm64, os: windows-11-arm}
+          - {platform: macos, arch: x64, os: macos-15-intel}
+          - {platform: macos, arch: arm64, os: macos-15}
+          - {platform: linux, arch: x64, os: ubuntu-22.04}
+          - {platform: linux, arch: arm64, os: ubuntu-22.04-arm}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      MNEMION_UPGRADE_FROM: ${{ inputs.from_tag }}
+      MNEMION_UPGRADE_TO: ${{ inputs.to_tag }}
+      MNEMION_UPGRADE_COMMIT: ${{ inputs.commit }}
+      MNEMION_UPGRADE_PLATFORM: ${{ matrix.platform }}
+      MNEMION_UPGRADE_ARCH: ${{ matrix.arch }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.13'
+          architecture: ${{ matrix.platform == 'windows' && 'x64' || matrix.arch }}
+      - run: python -m pip install uv==0.12.24
+      - name: Install the locked verification runtime
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = macOS ] && [ "$MNEMION_UPGRADE_ARCH" = x64 ]; then
+            uv sync --locked --no-default-groups --extra supervision --python 3.13 --no-managed-python --no-install-package cryptography
+          else
+            uv sync --locked --no-default-groups --extra supervision --python 3.13 --no-managed-python
+          fi
+      - name: Use the verified published Intel cryptography wheel
+        if: matrix.platform == 'macos' && matrix.arch == 'x64'
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib, json, os, subprocess
+          from pathlib import Path
+          from deploy.installed_upgrade_probe import gh, inventory
+          from deploy.published_release import version
+          tag = os.environ['MNEMION_UPGRADE_FROM']
+          version(tag)
+          release = json.loads(gh('api', 'repos/Perseusxrltd/mnemion/releases/tags/' + tag))
+          root = Path(os.environ['RUNNER_TEMP']) / 'installed-upgrade-crypto'
+          root.mkdir()
+          name = 'cryptography-50.0.2-cp312-abi3-macosx_11_0_x86_64.whl'
+          for item in ('SHA256SUMS.txt', name):
+              gh('release', 'download', tag, '--repo', 'Perseusxrltd/mnemion', '--dir', str(root), '--pattern', item)
+          assets = inventory(release, (root / 'SHA256SUMS.txt').read_bytes(), tag=tag, commit=None)
+          wheel = root / name
+          assert wheel.stat().st_size == assets[name]['size']
+          assert 'sha256:' + hashlib.sha256(wheel.read_bytes()).hexdigest() == assets[name]['digest']
+          subprocess.run(['uv', 'pip', 'install', '--python', '.venv/bin/python', '--no-deps', str(wheel)], check=True)
+          PY
+      - name: Linux desktop libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libgtk-3-0 libnss3 libgbm1 libasound2 libnotify4 libfuse2
+      - name: Install, migrate, withdraw and restore using the packaged applications
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = Linux ]; then
+            xvfb-run -a uv run --no-sync python -m deploy.installed_upgrade_probe --from-tag "$MNEMION_UPGRADE_FROM" --to-tag "$MNEMION_UPGRADE_TO" --commit "$MNEMION_UPGRADE_COMMIT" --platform "$MNEMION_UPGRADE_PLATFORM" --arch "$MNEMION_UPGRADE_ARCH" --output "$RUNNER_TEMP/mnemion-installed-upgrade"
+          else
+            uv run --no-sync python -m deploy.installed_upgrade_probe --from-tag "$MNEMION_UPGRADE_FROM" --to-tag "$MNEMION_UPGRADE_TO" --commit "$MNEMION_UPGRADE_COMMIT" --platform "$MNEMION_UPGRADE_PLATFORM" --arch "$MNEMION_UPGRADE_ARCH" --output "$RUNNER_TEMP/mnemion-installed-upgrade"
+          fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: installed-upgrade-${{ matrix.platform }}-${{ matrix.arch }}
+          path: |
+            ${{ runner.temp }}/mnemion-installed-upgrade/result.json
+            ${{ runner.temp }}/mnemion-installed-upgrade/create-workspace.png
+            ${{ runner.temp }}/mnemion-installed-upgrade/resume-workspace.png
+          if-no-files-found: ignore
+          retention-days: 7
