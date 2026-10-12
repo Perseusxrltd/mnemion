@@ -178,6 +178,16 @@ class MemoryBudgetSnapshot(ResponseModel):
     model_evictions: int
 
 
+class ModelCacheSnapshot(ResponseModel):
+    scope: Literal["this_process"]
+    idle_seconds: int = Field(ge=0, le=86400)
+    idle_cleanup_enabled: bool
+    idle_cleanup_running: bool
+    idle_model_evictions: int = Field(ge=0)
+    cleanup_failures: int = Field(ge=0)
+    loaded_local_models: int = Field(ge=0)
+
+
 class RuntimeInsights(ResponseModel):
     observed_at: str
     scope: Literal["this_api_process"]
@@ -192,4 +202,5 @@ class RuntimeInsights(ResponseModel):
     pool: dict
     resources: dict
     memory_budget: MemoryBudgetSnapshot | None = None
+    model_cache: ModelCacheSnapshot | None = None
     notices: list[str] = Field(default_factory=list)

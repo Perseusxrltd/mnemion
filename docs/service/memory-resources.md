@@ -1,5 +1,29 @@
 # RAM budgets and local resource controls
 
+## Idle model cleanup in 4.1.1
+
+Source 4.1.1 adds automatic release of local embedding sessions
+after **300 seconds without inference** in each API or indexing-worker process.
+Native release acceptance remains pending; this is not in published 4.1.0.
+Active and queued calculations are protected by the same inference gate used
+for memory-budget changes. Model files, fingerprints, indexes and canonical
+memories stay on disk. The next semantic request reloads the approved model;
+this can add cold-start latency. Keyword retrieval needs no loaded model.
+
+Host operators can set `MNEMION_MODEL_IDLE_SECONDS` to **10–86400** before
+starting a service, or **0** to retain warm models. Five minutes is the default.
+**Insights & evaluations → Models & resources** reports the current API process's setting,
+loaded-model count, idle releases and cleanup retries. The same values appear
+in the optional `model_cache` object from `GET /v1/insights/runtime` for authorized
+organization administrators and agents. Earlier servers omit that object.
+
+This lowers retained idle memory; it does not combine separate API/worker
+allocations or establish a whole-host RAM cap. Native RAM admission and its
+live controls below remain separate. Real RSS measurements and native release
+acceptance must precede claims about the amount of memory reclaimed.
+
+## Native local budgets
+
 These controls require the native local engine in **4.0.11 or later**; they are
 not included in the earlier 4.0.10 desktop client. They apply to a workspace hosted
 by the native engine on this computer; connecting to a company workspace does

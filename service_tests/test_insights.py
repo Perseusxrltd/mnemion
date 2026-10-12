@@ -173,6 +173,11 @@ def test_metrics_and_cached_snapshots_require_current_reviewer_access(env):
         )
         assert response.status_code == 200, response.text
         assert response.json()["resources"]["rss_bytes"] > 0
+        cache = response.json()["model_cache"]
+        assert cache["scope"] == "this_process" and cache["idle_seconds"] == 300
+        assert cache["idle_cleanup_enabled"] and cache["idle_cleanup_running"]
+        assert cache["loaded_local_models"] == 0
+        assert cache["idle_model_evictions"] == 0 and cache["cleanup_failures"] == 0
         assert (
             client.get(
                 f"/v1/spaces/{uuid4()}/insights", headers={"Authorization": "Bearer " + env.token}

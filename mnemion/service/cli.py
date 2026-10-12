@@ -569,6 +569,8 @@ def main(argv: list[str] | None = None) -> int:
             signal.signal(sig, lambda *_: stop.set())
         try:
             registry = ModelRegistry.from_environment()
+            if not args.once:
+                registry.start_idle_cleanup()
             process = ModelWorker(database, registry, telemetry=telemetry)
             from .supervision import process_ready
 

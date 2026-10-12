@@ -4450,6 +4450,56 @@
         "title": "MetricsWindow",
         "type": "object"
       },
+      "ModelCacheSnapshot": {
+        "additionalProperties": true,
+        "properties": {
+          "cleanup_failures": {
+            "minimum": 0.0,
+            "title": "Cleanup Failures",
+            "type": "integer"
+          },
+          "idle_cleanup_enabled": {
+            "title": "Idle Cleanup Enabled",
+            "type": "boolean"
+          },
+          "idle_cleanup_running": {
+            "title": "Idle Cleanup Running",
+            "type": "boolean"
+          },
+          "idle_model_evictions": {
+            "minimum": 0.0,
+            "title": "Idle Model Evictions",
+            "type": "integer"
+          },
+          "idle_seconds": {
+            "maximum": 86400.0,
+            "minimum": 0.0,
+            "title": "Idle Seconds",
+            "type": "integer"
+          },
+          "loaded_local_models": {
+            "minimum": 0.0,
+            "title": "Loaded Local Models",
+            "type": "integer"
+          },
+          "scope": {
+            "const": "this_process",
+            "title": "Scope",
+            "type": "string"
+          }
+        },
+        "required": [
+          "scope",
+          "idle_seconds",
+          "idle_cleanup_enabled",
+          "idle_cleanup_running",
+          "idle_model_evictions",
+          "cleanup_failures",
+          "loaded_local_models"
+        ],
+        "title": "ModelCacheSnapshot",
+        "type": "object"
+      },
       "Node": {
         "additionalProperties": true,
         "properties": {
@@ -6226,6 +6276,16 @@
             "title": "Model",
             "type": "string"
           },
+          "model_cache": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelCacheSnapshot"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "model_loaded": {
             "anyOf": [
               {
@@ -7065,7 +7125,7 @@
   "info": {
     "description": "Shared, scoped memory and evidence for apps, teams, and assistants. Saves acknowledge canonical durability; operations report semantic indexing readiness.",
     "title": "Mnemion Memory Service",
-    "version": "4.1.0"
+    "version": "4.1.1"
   },
   "openapi": "3.1.0",
   "paths": {

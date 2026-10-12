@@ -8,8 +8,9 @@ import psycopg
 import pytest
 
 from mnemion.service.admin import register_generation
-from mnemion.service.embeddings import LocalEmbedder
+from mnemion.service.embeddings import DEFAULT_GENERATION, LocalEmbedder
 from mnemion.service.model_catalog import BGE_SMALL_GENERATION
+from mnemion.service.model_registry import ModelRegistry
 from mnemion.service.memory import MemoryService
 from mnemion.service.models import MemoryInput, RecallInput
 from mnemion.service.retrieval import RetrievalService
@@ -112,3 +113,66 @@ def test_real_small_english_cpu_model_and_source_spans():
     chunks = model.document(source)
     assert len(chunks) > 1 and chunks[0].start == 0 and chunks[-1].end == len(source)
     assert all(a.end >= b.start for a, b in zip(chunks, chunks[1:]))
+
+
+@pytest.mark.parametrize(
+    "profile,generation", [("e5-small", DEFAULT_GENERATION), ("bge-small", BGE_SMALL_GENERATION)]
+)
+def test_real_idle_cleanup_and_reload_preserve_vectors_and_source_spans(profile, generation):
+    import json
+    import platform
+    import time
+    from datetime import datetime, timezone
+
+    import psutil
+
+    model = LocalEmbedder(Path(os.environ["MNEMION_MODEL_CACHE"]), generation=generation)
+    models = ModelRegistry(model, {profile: model}, idle_seconds=10)
+    process = psutil.Process()
+    query = "Which database stores the team's billing records?"
+    source = "PostgreSQL stores billing records. Le café coûte cinq euros. 中文笔记。"
+    report = {
+        "at": datetime.now(timezone.utc).isoformat(),
+        "platform": platform.system(),
+        "architecture": platform.machine(),
+        "profile": profile,
+        "generation_id": generation.id,
+        "scope": "Current test process; excludes separate workers and database processes",
+        "idle_seconds": 10,
+        "rss_before_model_bytes": process.memory_info().rss,
+    }
+    try:
+        original_query = model.query(query)
+        original_chunks = model.document(source)
+        report["rss_loaded_bytes"] = process.memory_info().rss
+        models.start_idle_cleanup()
+        deadline = time.monotonic() + 30
+        while models.cache_status()["idle_model_evictions"] == 0 and time.monotonic() < deadline:
+            time.sleep(0.1)
+        assert models.cache_status()["idle_model_evictions"] == 1
+        assert model._model is None and model._tokenizer is None
+        report["rss_after_idle_bytes"] = process.memory_info().rss
+        assert model.generation.id == generation.id
+
+        # Network-free reload proves that the approved on-disk model survived.
+        model.offline = True
+        started = time.monotonic()
+        assert model.query(query) == pytest.approx(original_query, abs=1e-6)
+        report["reload_query_ms"] = round((time.monotonic() - started) * 1000, 2)
+        reloaded_chunks = model.document(source)
+        assert [(c.start, c.end) for c in reloaded_chunks] == [
+            (c.start, c.end) for c in original_chunks
+        ]
+        for original, reloaded in zip(original_chunks, reloaded_chunks, strict=True):
+            assert reloaded.vector == pytest.approx(original.vector, abs=1e-6)
+        report["rss_reloaded_bytes"] = process.memory_info().rss
+        report["background_eviction_and_offline_reload_verified"] = True
+    finally:
+        models.close()
+    assert not models.cache_status()["idle_cleanup_running"]
+    report["monitor_stopped"] = True
+    directory = os.environ.get("MNEMION_TEST_MODEL_REPORT_DIR")
+    if directory:
+        folder = Path(directory)
+        folder.mkdir(parents=True, exist_ok=True)
+        (folder / f"{profile}.json").write_text(json.dumps(report, indent=2) + "\n")

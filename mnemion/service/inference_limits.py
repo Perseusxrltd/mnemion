@@ -38,6 +38,7 @@ class InferenceGate:
         self._admitted = threading.BoundedSemaphore(max_queued + 1)
         self._executing = threading.BoundedSemaphore(1)
         self._lock = threading.Lock()
+        self._last_used = time.monotonic()
         self._stats = {
             "active": 0,
             "queued": 0,
@@ -66,9 +67,19 @@ class InferenceGate:
         return ServiceError(503, "inference_busy", "Model capacity is busy; retry shortly.")
 
     @contextmanager
-    def maintenance(self):
+    def maintenance(self, *, minimum_idle_seconds: float = 0):
         """Nonblocking exclusive access for cache eviction, never preemption."""
         acquired = self._executing.acquire(blocking=False)
+        if acquired and minimum_idle_seconds > 0:
+            with self._lock:
+                idle = (
+                    not self._stats["active"]
+                    and not self._stats["queued"]
+                    and time.monotonic() - self._last_used >= minimum_idle_seconds
+                )
+            if not idle:
+                self._executing.release()
+                acquired = False
         try:
             yield acquired
         finally:
@@ -92,6 +103,8 @@ class InferenceGate:
                 self._stats["queued"] -= 1
                 self._stats["wait_ms"] += (time.monotonic() - started) * 1000
                 self._stats["active"] += int(executing)
+                if executing:
+                    self._last_used = time.monotonic()
             if not executing:
                 with self._lock:
                     self._stats["rejected"] += 1
@@ -105,5 +118,6 @@ class InferenceGate:
                     self._stats["active"] -= 1
                     self._stats["failed" if failed else "completed"] += 1
                     self._stats["execution_ms"] += (time.monotonic() - started) * 1000
+                    self._last_used = time.monotonic()
                 self._executing.release()
             self._admitted.release()

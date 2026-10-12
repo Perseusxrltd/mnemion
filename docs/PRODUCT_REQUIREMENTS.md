@@ -114,6 +114,11 @@ test or source commit is not a shipped feature.
 
 ## Current implementation queue
 
+**Hotfix-first cadence:** prioritize a working base across connection/admin
+access, installation, automatic updates, data safety and RAM stability. Ship
+small verified fixes promptly, then advance the feature queue below. A passing
+release does not close unfinished provider or recovery requirements.
+
 1. **Access and continuity:** A01–A09, A11–A13, C04–C07. Build on verified independent
    human access and native reconnection; finish individual sign-in and hosted
    OAuth, administrator invitations, provider setup and independently managed
