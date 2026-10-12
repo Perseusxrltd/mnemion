@@ -17,8 +17,11 @@ def release():
     checksums = (digest + "  installer.exe\n").encode()
 
     def asset(name, value):
+        asset_id = 1 if name == "installer.exe" else 2
         return {
             "name": name,
+            "id": asset_id,
+            "url": f"https://api.github.com/repos/{REPOSITORY}/releases/assets/{asset_id}",
             "state": "uploaded",
             "size": len(value),
             "digest": "sha256:" + hashlib.sha256(value).hexdigest(),
@@ -60,7 +63,18 @@ def test_an_unpublished_previous_version_cannot_count_as_public_upgrade_acceptan
     assert inventory(record, checksums, tag="v4.1.0", commit=None)
 
 
-@pytest.mark.parametrize("mutation", ["missing", "duplicate", "different_repository", "unfinished"])
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "missing",
+        "duplicate",
+        "different_repository",
+        "unfinished",
+        "different_api_repository",
+        "duplicate_asset_id",
+        "different_temporary_tag",
+    ],
+)
 def test_partial_or_redirected_release_assets_are_rejected(release, mutation):
     record, checksums = release
     if mutation == "missing":
@@ -69,10 +83,35 @@ def test_partial_or_redirected_release_assets_are_rejected(release, mutation):
         record["assets"].append(copy.deepcopy(record["assets"][0]))
     elif mutation == "different_repository":
         record["assets"][0]["browser_download_url"] = "https://example.test/installer.exe"
-    else:
+    elif mutation == "unfinished":
         record["assets"][0]["state"] = "uploading"
+    elif mutation == "different_api_repository":
+        record["assets"][0]["url"] = "https://api.github.com/repos/other/repo/releases/assets/1"
+    elif mutation == "duplicate_asset_id":
+        record["assets"][0]["id"] = 2
+        record["assets"][0]["url"] = record["assets"][1]["url"]
+    else:
+        record["assets"][0]["browser_download_url"] = (
+            f"https://github.com/{REPOSITORY}/releases/download/untagged-{'b' * 20}/installer.exe"
+        )
     with pytest.raises(ValueError):
         inventory(record, checksums, tag="v4.1.0", commit="a" * 40)
+
+
+def test_github_draft_download_identity_preserves_the_pinned_commit_and_asset_inventory(release):
+    record, checksums = release
+    for row in record["assets"]:
+        row["browser_download_url"] = row["browser_download_url"].replace(
+            "/v4.1.0/", "/untagged-" + "b" * 20 + "/"
+        )
+    assert inventory(record, checksums, tag="v4.1.0", commit="a" * 40)
+    with pytest.raises(ValueError, match="pinned source"):
+        inventory(record, checksums, tag="v4.1.0", commit="b" * 40)
+    record.update(draft=False, published_at="2026-10-12T00:00:00Z")
+    with pytest.raises(ValueError, match="asset identity"):
+        inventory(record, checksums, tag="v4.1.0", commit="a" * 40)
+    with pytest.raises(ValueError, match="asset identity"):
+        inventory(record, checksums, tag="v4.1.0", commit=None)
 
 
 @pytest.mark.parametrize("ci,runner", [("false", "github-hosted"), ("true", "self-hosted")])

@@ -100,7 +100,36 @@ permission GitHub requires for draft access, disables checkout credential
 persistence, and explicitly decodes GitHub output as UTF-8. The eight inventory
 and execution-boundary checks passed again. Application children receive no
 GitHub token; this workflow downloads releases and does not publish them.
-The corrected native matrix still has to pass.
+The [second matrix](https://github.com/Perseusxrltd/mnemion/actions/runs/38198627930)
+reached the candidate inventory and rejected GitHub's provisional `untagged-*`
+download addresses, again before installation. Draft validation now accepts that
+repository-bound provisional address while requiring exact, unique asset API
+identities, one consistent download identity, the pinned source commit and all
+checksums. Published releases still require their ordinary tag URLs. All **12**
+expanded safety checks and both actual 38-asset release inventories passed.
+The corrected installed matrix still has to pass.
+
+## Restored shared-host rehearsal
+
+At **03:09:46 UTC**, the exact signed candidate was independently installed and
+its source, wheel and installed package bytes verified on the existing remote
+host without changing its live runtime or database.
+
+At **03:11:06 UTC**, the candidate migrated only the previously restored isolated
+copy from thirteen migrations to fourteen. All **50 existing data tables** kept
+their pre-migration content hashes; reapplying the migration was a no-op. The
+existing recovery login still authenticated, and copied production keys remained
+revoked. A temporary contributor could access only its test space, save and
+index its own note, withdraw it, replay the deletion receipt and observe physical
+revision erasure. Authenticated API/MCP diagnostics passed; the temporary key was
+revoked and the isolated supervisor shut down cleanly.
+
+The original **4.0.14** service stayed ready with unchanged authority, schema and
+runtime. This rehearsal made no production memory writes or cloud model calls.
+Automatic updates were verified as the temporary host's default, then paused for
+unpublished-candidate isolation; the real host's updater remained enabled.
+
+## Remaining release acceptance
 
 Verify the contributor workflow in an isolated space on a migrated shared
 workspace, including cleanup, without widening the agent's grant. Keep the

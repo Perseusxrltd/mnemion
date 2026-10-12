@@ -55,20 +55,42 @@ def inventory(release: dict, checksums: bytes, *, tag: str, commit: str | None) 
     elif not re.fullmatch(r"[a-f0-9]{40}", commit) or release.get("target_commitish") != commit:
         raise ValueError("The candidate release differs from its pinned source commit")
     assets = {}
+    identifiers = set()
+    download_tags = set()
     for row in release.get("assets", []):
         name = row.get("name", "")
+        asset_id = row.get("id")
+        download = row.get("browser_download_url", "")
+        matched = re.fullmatch(
+            rf"https://github\.com/{REPOSITORY}/releases/download/([^/]+)/{re.escape(name)}",
+            download,
+        )
+        download_tag = matched[1] if matched else ""
+        temporary_draft = (
+            commit is not None
+            and release.get("draft") is True
+            and re.fullmatch(r"untagged-[a-f0-9]{20,40}", download_tag)
+        )
         if (
             not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._+-]{0,254}", name)
             or name in assets
+            or type(asset_id) is not int
+            or asset_id <= 0
+            or asset_id in identifiers
+            or row.get("url")
+            != f"https://api.github.com/repos/{REPOSITORY}/releases/assets/{asset_id}"
             or row.get("state") != "uploaded"
             or type(row.get("size")) is not int
             or not 0 < row["size"] <= 2 * 1024**3
             or not re.fullmatch(r"sha256:[a-f0-9]{64}", row.get("digest", ""))
-            or row.get("browser_download_url")
-            != f"https://github.com/{REPOSITORY}/releases/download/{tag}/{name}"
+            or (download_tag != tag and not temporary_draft)
         ):
             raise ValueError("Invalid release asset identity")
+        identifiers.add(asset_id)
+        download_tags.add(download_tag)
         assets[name] = row
+    if len(download_tags) != 1:
+        raise ValueError("Release assets have inconsistent download identities")
     checksum = assets.get("SHA256SUMS.txt", {})
     if (
         not 0 < len(checksums) <= 1024**2
