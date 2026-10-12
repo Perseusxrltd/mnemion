@@ -1,0 +1,71 @@
+name: Verify uploaded release artifacts
+
+on:
+  workflow_run:
+    workflows: [Prepare signed release]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      release_run:
+        description: Completed Prepare signed release run ID
+        required: true
+        type: string
+
+# This workflow cannot publish, replace releases or access signing keys.
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: artifact-verification-${{ github.event.workflow_run.id || inputs.release_run }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          path: verifier
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+      - name: Resolve the completed repository release and all its gates
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MNEMION_RELEASE_RUN: ${{ github.event.workflow_run.id || inputs.release_run }}
+        run: >-
+          python verifier/deploy/verify_artifacts.py --resolve
+          --repo "$GITHUB_REPOSITORY" --run "$MNEMION_RELEASE_RUN" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ steps.source.outputs.commit }}
+          path: release-source
+          persist-credentials: false
+      - name: Install the release validator's pinned libraries
+        run: python -m pip install PyYAML==6.0.3 cryptography==50.0.2
+      - name: Verify every uploaded byte, production signature and complete feed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MNEMION_RELEASE_RUN: ${{ github.event.workflow_run.id || inputs.release_run }}
+        run: >-
+          python verifier/deploy/verify_artifacts.py
+          --repo "$GITHUB_REPOSITORY" --run "$MNEMION_RELEASE_RUN"
+          --source release-source --output "$RUNNER_TEMP/verified-release"
+      - name: Retain the bounded verification receipt, without duplicate binaries
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: verified-release-artifacts
+          path: ${{ runner.temp }}/verified-release/release-verification.json
+          if-no-files-found: error
+          retention-days: 7

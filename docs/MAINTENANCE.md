@@ -18,9 +18,12 @@ a completed published download.
    version in the frontend npm lock, and regenerate the OpenAPI/agent schemas.
    Run `python deploy/release.py` before the expensive build matrix; it checks
    these version boundaries as well as release notes and the roadmap.
-2. Add `docs/releases/<version>.md`. Include the shipping status, changes, fixes,
+2. Add `docs/releases/<version>.md`. Include changes, fixes,
    compatibility/migration impact, verification evidence and known limitations.
-   Do not overwrite an earlier version's release notes.
+   Keep changing publication status in the roadmap and dated validation record;
+   a permanent "publication pending" sentence in the packaged notes becomes
+   stale as soon as that same build ships. Preserve earlier versions' behavior
+   and migration notes when recording completed publication evidence.
 3. Review `docs/ROADMAP.md`, set its current distribution and update date, and move
    only verified work into the implemented section. Keep unfinished commitments
    visible; update priorities when evidence changes them.
@@ -81,8 +84,21 @@ a completed published download.
    only through the reviewed signing environment. The release verifier checks
    the signature, input parity and hashes before creating a draft.
 7. Review the concrete draft and publish only when its documented release gates
-   pass. Installed supported desktop packages then receive stable updates under
-   the [update policy](service/updates.md).
+   pass. [Verify uploaded release artifacts](../.github/workflows/verify-artifacts.yml)
+   runs automatically after a successful release-preparation workflow. It checks
+   every uploaded byte on a separate GitHub runner, invokes the production
+   signature/feed/package validator from the exact release commit, and rechecks
+   the asset IDs, sizes and digests afterward. It has only repository/actions
+   read permissions and no signing keys or release-write permission. Download
+   its small `verified-release-artifacts` receipt instead of downloading every
+   installer again on the operator's computer. The receipt's source, release run
+   and asset inventory must match the concrete draft; do not reuse a receipt
+   after replacing draft assets. The workflow also accepts a completed release
+   run ID for manual verification of a draft or already published release.
+   Its [validation record](validation/2026-10-12-artifact-verification.md)
+   distinguishes guard tests from actual hosted verification. Installed
+   supported desktop packages receive stable updates under the
+   [update policy](service/updates.md).
 
 Update the release-target version with every patch. Add a new architecture only
 after its native installation/update checks pass. Keep update feeds for every previously
