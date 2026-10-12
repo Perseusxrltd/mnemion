@@ -3,10 +3,13 @@
 from uuid import UUID, uuid4
 
 import psycopg
+from psycopg import sql
+from psycopg.conninfo import make_conninfo
 import pytest
 from fastapi.testclient import TestClient
 
 from mnemion.service.admin import register_generation
+from mnemion.service.db import migrate
 from mnemion.service.api import create_app
 from mnemion.service.embedding_api import ReindexInput
 from mnemion.service.embeddings import EmbeddedChunk, Generation
@@ -39,6 +42,26 @@ class OtherModel:
 
     def token_count(self, text):
         return len(text.split())
+
+
+@pytest.fixture
+def postgres(postgres):
+    # These tests assert that a worker cannot claim any more eligible work.
+    # A per-test tenant is insufficient: claim_job deliberately spans tenants,
+    # and another test's old 120-second lease may expire after a queue drain.
+    # Preserve the real non-owner roles while isolating this queue/database.
+    name = "reindex_" + uuid4().hex
+    with psycopg.connect(postgres[0], autocommit=True) as connection:
+        connection.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(name)))
+    isolated = tuple(make_conninfo(dsn, dbname=name) for dsn in postgres)
+    try:
+        migrate(isolated[0])
+        yield isolated
+    finally:
+        with psycopg.connect(postgres[0], autocommit=True) as connection:
+            connection.execute(
+                sql.SQL("DROP DATABASE {} WITH (FORCE)").format(sql.Identifier(name))
+            )
 
 
 @pytest.fixture

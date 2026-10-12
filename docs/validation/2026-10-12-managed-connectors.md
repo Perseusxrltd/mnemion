@@ -32,8 +32,16 @@ The real signed/locked installation tests have also been extended to ingest
 source documents before and after installation, preserve source IDs, execute
 the real launcher handoff, stop cleanly, and process a source deletion after a
 failed candidate restores the previous runtime. These two opt-in installation
-cases run on Linux and both native Macs in CI; their results and the release's
-native/public delivery gates remain to be collected.
+cases passed on Linux and both native Macs in the [complete product checks](https://github.com/Perseusxrltd/mnemion/actions/runs/38255848416) at `4465755e7119366baa58d5512e18ae58d80a9ba4`. Python 3.12/3.13/3.14, both containers, the web build, legacy tests and dependency audits also passed. The separate release native/public delivery gates remain to be collected.
+
+The production Studio bundle contains 321 files / 2,755,078 bytes, with 125
+licensed components in its notices. A real browser at **13:43:57 UTC** displayed
+the connector guide at 1440 px and 390 px without page overflow or JavaScript
+errors. Guide search, selection, the internal service-guide link and 4.1.3 notes
+worked while all external and workspace requests were blocked. Both screenshots
+were visually reviewed. This [browser record](2026-10-12-v413-docs.json) checks
+the built local assets without a running workspace backend; native installer
+and public update tests remain separate.
 
 This is host-managed lifecycle support. It does not silently adopt an existing
 unmanaged process, deploy to another computer, add Windows/Compose fleet control,
