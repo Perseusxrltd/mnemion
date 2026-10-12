@@ -9,8 +9,8 @@ connections and administrator access, installation, verified updates, data safet
 and resource stability. Broader features follow without removing requirements
 from the checklist. Version [4.1.1](releases/4.1.1.md) prepares idle local-model
 cleanup and visible cache statistics, using the existing schema. Its
-[local checks](validation/2026-10-12-model-idle-cleanup.md) passed. Native release
-and real-model measurements remain required before publication.
+[local/product checks and real-model measurements](validation/2026-10-12-model-idle-cleanup.md)
+passed. Native release acceptance remains required before publication.
 
 Version [4.1.0](releases/4.1.0.md) is published on all six desktop targets. It adds [scoped author
 withdrawal](service/withdrawal.md), app/agent permission observations and atomic

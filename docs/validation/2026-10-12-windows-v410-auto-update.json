@@ -1,0 +1,19 @@
+{
+  "from_version": "4.0.13",
+  "to_version": "4.1.0",
+  "confirmed_at": "2026-10-12T07:56:05.292075+00:00",
+  "original_process_exited": true,
+  "new_version_relaunched": true,
+  "automatic_update_preferences_preserved": {
+    "automaticUpdates": true,
+    "background": true,
+    "startAtLogin": true
+  },
+  "observer_changed_no_policy_or_input": true,
+  "independent_administrator_rechecked_at": "2026-10-12T08:05:32.094686+00:00",
+  "independent_administrator_verified": true,
+  "shared_service_version": "4.0.14",
+  "reconnect_http_requests": 2,
+  "reconnect_memory_writes": 0,
+  "reconnect_model_requests": 0
+}
