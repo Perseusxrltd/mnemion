@@ -32,7 +32,12 @@ def fetch(url: str, *, api: bool = False) -> bytes:
     """Bound the transfer and never forward API credentials to an asset host."""
     opener = build_opener(NoRedirects())
     deadline = time.monotonic() + 45
-    for _ in range(4):
+    redirects = 0
+    retries = 0
+    while True:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise ValueError("Release metadata exceeds its transfer limit")
         target = urlsplit(url)
         hosts = (
             {"api.github.com"} if api else {"github.com", "release-assets.githubusercontent.com"}
@@ -54,13 +59,23 @@ def fetch(url: str, *, api: bool = False) -> bytes:
             if token := os.environ.get("GH_TOKEN"):
                 headers["Authorization"] = f"Bearer {token}"
         try:
-            response = opener.open(Request(url, headers=headers), timeout=15)
+            response = opener.open(Request(url, headers=headers), timeout=min(15, remaining))
         except HTTPError as error:
             location = error.headers.get("Location")
             status = error.code
             error.close()
             if not api and status in {301, 302, 303, 307, 308} and location:
+                if redirects >= 3:
+                    raise ValueError("Too many release redirects") from None
+                redirects += 1
                 url = location
+                continue
+            if status in {502, 503, 504} and retries < 2:
+                delay = 1 << retries
+                if time.monotonic() + delay >= deadline:
+                    raise ValueError("Release metadata exceeds its transfer limit") from None
+                retries += 1
+                time.sleep(delay)
                 continue
             raise RuntimeError(f"Release lookup failed (HTTP {status})") from None
         with response:
@@ -74,8 +89,9 @@ def fetch(url: str, *, api: bool = False) -> bytes:
                 result.extend(chunk)
                 if len(result) > MAX_BYTES or time.monotonic() > deadline:
                     raise ValueError("Release metadata exceeds its transfer limit")
+            if time.monotonic() > deadline:
+                raise ValueError("Release metadata exceeds its transfer limit")
             return bytes(result)
-    raise ValueError("Too many release redirects")
 
 
 def version(tag: str) -> tuple[int, int, int]:

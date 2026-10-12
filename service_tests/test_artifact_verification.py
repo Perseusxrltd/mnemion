@@ -115,6 +115,7 @@ def fixture(tmp_path, monkeypatch):
         ]
         assert kwargs["cwd"] == source and kwargs["check"] is True
         state.validations.append(args)
+        state.validation_environment = kwargs["env"]
         if state.during_validation:
             state.during_validation(output / "artifacts")
         return SimpleNamespace(returncode=0)
@@ -302,3 +303,16 @@ def test_total_download_and_asset_count_are_bounded(fixture):
     ]
     with pytest.raises(ValueError, match="total bound"):
         subject.inventory(original, "4.1.2", COMMIT)
+
+
+def test_release_validator_does_not_inherit_github_credentials(fixture, monkeypatch):
+    credentials = {"GH_TOKEN", "GITHUB_TOKEN", "GH_ENTERPRISE_TOKEN", "GITHUB_ENTERPRISE_TOKEN"}
+    for name in credentials:
+        monkeypatch.setenv(name, "fixture-only-credential")
+    monkeypatch.setenv("MNEMION_VERIFICATION_FIXTURE", "keep ordinary environment")
+    subject.verify(REPO, 99, fixture.source, fixture.output)
+    assert credentials.isdisjoint(fixture.validation_environment)
+    assert (
+        fixture.validation_environment["MNEMION_VERIFICATION_FIXTURE"]
+        == "keep ordinary environment"
+    )

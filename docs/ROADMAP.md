@@ -1,20 +1,23 @@
 # Mnemion product roadmap
 
-Current distribution: **4.1.2**, in release preparation. Published downloads remain **4.1.1** on all six desktop targets. Updated: **2026-10-12**.
+Current distribution: **4.1.2**, published on all six desktop targets. Updated: **2026-10-12**.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
 
 Version [4.1.2](releases/4.1.2.md) adds an explicit keyword fallback when query
 inference is busy, with app/agent controls, visible warnings and preserved access
 checks. [Source and browser validation](validation/2026-10-12-busy-fallback.md)
-passed; native publication remains pending. Default retry behavior is unchanged.
-This implements the remaining overload option from issue 12; the issue stays
-open until publication is verified.
+passed, as did all six native gates, independent artifact/signature verification
+and public-feed integrity checks. The live product page updated automatically;
+see the [publication record](validation/2026-10-12-busy-fallback-release.md).
+Default retry behavior is unchanged. This implements the remaining overload
+option from issue 12. Public installation/update rehearsals are still completing;
+a Linux ARM checksum lookup hit a GitHub gateway timeout before installation.
 
 Post-4.1.2 access work adds [stable MCP profile identification in source](validation/2026-10-12-mcp-profile.md)
 and the [individual sign-in/invitation contract](implementation/individual-sign-in.md),
 with a [tested Argon2id password foundation](validation/2026-10-12-password-foundation.md).
-The frozen 4.1.2 candidate does not contain that next slice. Complete password
+The published 4.1.2 release does not contain that next slice. Complete password
 and company sign-in, hosted consent and live provider acceptance remain required.
 
 The immediate priority is short hotfix releases for operational reliability:

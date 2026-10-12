@@ -1,8 +1,10 @@
 """A public website snapshot must never promote drafts or unauthenticated assets."""
 
 import hashlib
+import io
 import json
 import sys
+from urllib.error import HTTPError, URLError
 
 import pytest
 
@@ -122,3 +124,87 @@ def test_main_uses_official_endpoints_and_never_replaces_a_newer_snapshot(tmp_pa
     with pytest.raises(ValueError, match="newer published"):
         publisher.main()
     assert output.read_bytes() == before
+
+
+class FetchResponse(io.BytesIO):
+    headers = {}
+
+
+def transport(monkeypatch, results):
+    calls = []
+    delays = []
+
+    class Opener:
+        def open(self, request, *, timeout):
+            calls.append((request.full_url, dict(request.header_items()), timeout))
+            result = results.pop(0)
+            if isinstance(result, Exception):
+                raise result
+            return FetchResponse(result)
+
+    monkeypatch.setattr(publisher, "build_opener", lambda *_: Opener())
+    monkeypatch.setattr(publisher.time, "sleep", delays.append)
+    return calls, delays
+
+
+def failure(status, headers=None):
+    return HTTPError(publisher.API, status, "fixture error", headers or {}, io.BytesIO())
+
+
+def test_temporary_gateway_failures_retry_without_forwarding_api_credentials(monkeypatch):
+    monkeypatch.setenv("GH_TOKEN", "fixture-api-credential")
+    destination = "https://release-assets.githubusercontent.com/fixture"
+    calls, delays = transport(
+        monkeypatch,
+        [
+            failure(302, {"Location": destination}),
+            failure(504),
+            failure(503),
+            b"verified bytes",
+        ],
+    )
+    assert (
+        publisher.fetch(publisher.ORIGIN + "/releases/download/v4.1.2/SHA256SUMS.txt")
+        == b"verified bytes"
+    )
+    assert len(calls) == 4 and delays == [1, 2]
+    assert [row[0] for row in calls[1:]] == [destination] * 3
+    assert all("Authorization" not in row[1] for row in calls)
+
+
+@pytest.mark.parametrize("status", [502, 503, 504])
+def test_gateway_retry_budget_is_finite(monkeypatch, status):
+    calls, delays = transport(monkeypatch, [failure(status)] * 3)
+    with pytest.raises(RuntimeError, match=f"HTTP {status}"):
+        publisher.fetch(publisher.API, api=True)
+    assert len(calls) == 3 and delays == [1, 2]
+
+
+@pytest.mark.parametrize("error", [failure(403), failure(404), URLError("certificate rejected")])
+def test_permanent_or_certificate_errors_are_not_retried(monkeypatch, error):
+    calls, delays = transport(monkeypatch, [error])
+    with pytest.raises((RuntimeError, URLError)):
+        publisher.fetch(publisher.API, api=True)
+    assert len(calls) == 1 and not delays
+
+
+def test_retry_preserves_host_and_api_redirect_boundaries(monkeypatch):
+    calls, delays = transport(
+        monkeypatch, [failure(504), failure(302, {"Location": "https://example.com/"})]
+    )
+    with pytest.raises(ValueError, match="approved GitHub hosts"):
+        publisher.fetch(publisher.ORIGIN + "/releases/download/v4.1.2/SHA256SUMS.txt")
+    assert len(calls) == 2 and delays == [1]
+    calls, delays = transport(monkeypatch, [failure(302, {"Location": "https://github.com/"})])
+    with pytest.raises(RuntimeError, match="HTTP 302"):
+        publisher.fetch(publisher.API, api=True)
+    assert len(calls) == 1 and not delays
+
+
+def test_exhausted_deadline_prevents_backoff_and_another_request(monkeypatch):
+    ticks = iter([0, 0, 45])
+    monkeypatch.setattr(publisher.time, "monotonic", lambda: next(ticks))
+    calls, delays = transport(monkeypatch, [failure(504)])
+    with pytest.raises(ValueError, match="transfer limit"):
+        publisher.fetch(publisher.API, api=True)
+    assert len(calls) == 1 and not delays

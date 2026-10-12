@@ -88,8 +88,11 @@ a completed published download.
    runs automatically after a successful release-preparation workflow. It checks
    every uploaded byte on a separate GitHub runner, invokes the production
    signature/feed/package validator from the exact release commit, and rechecks
-   the asset IDs, sizes and digests afterward. It has only repository/actions
-   read permissions and no signing keys or release-write permission. Download
+   the asset IDs, sizes and digests afterward. GitHub requires repository push
+   access to discover unpublished drafts, so this job needs `contents: write`
+   and `actions: read`. Its code only reads/downloads releases, receives no
+   signing keys, and strips GitHub credentials from the source validator's
+   subprocess environment. Neither checkout persists credentials. Download
    its small `verified-release-artifacts` receipt instead of downloading every
    installer again on the operator's computer. The receipt's source, release run
    and asset inventory must match the concrete draft; do not reuse a receipt
@@ -124,6 +127,14 @@ available installers remain in an expandable section that works without
 JavaScript. The recommendation always uses the same verified release metadata.
 
 `.github/workflows/website-release.yml` maintains `deploy/published-release.json`
+using the same bounded metadata fetcher as public update rehearsals. GitHub
+gateway errors (502/503/504) get two retries with one- and two-second backoffs
+inside the original 45-second transfer budget. Redirect, approved-host, size,
+credential-separation and checksum checks remain enforced. Other HTTP errors
+and certificate failures are not retried. This corrects the observed checksum
+gateway timeout during 4.1.2 publication without hiding an integrity failure.
+
+The workflow maintains this fallback
 after release publication or edits, with a six-hour reconciliation schedule and a
 manual dispatch for recovery. It verifies GitHub's uploaded-asset SHA-256 digests
 against the published `SHA256SUMS.txt`, rejects drafts and older generations, and

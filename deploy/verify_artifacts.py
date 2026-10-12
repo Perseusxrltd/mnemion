@@ -6,6 +6,7 @@ import argparse
 import concurrent.futures
 import hashlib
 import json
+import os
 import re
 import subprocess
 import sys
@@ -192,6 +193,12 @@ def verify(repo: str, run_id: int, source: Path, output: Path) -> dict:
         cwd=source,
         check=True,
         timeout=600,
+        env={
+            key: value
+            for key, value in os.environ.items()
+            if key
+            not in {"GH_TOKEN", "GITHUB_TOKEN", "GH_ENTERPRISE_TOKEN", "GITHUB_ENTERPRISE_TOKEN"}
+        },
     )
     if checksums.read_bytes() != original:
         raise ValueError("Recomputed checksum inventory differs from uploaded bytes")

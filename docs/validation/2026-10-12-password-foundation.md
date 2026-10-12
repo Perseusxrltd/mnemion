@@ -25,9 +25,11 @@ is exposed.
 The local run used a 512 MiB / one-CPU process scope. The
 [product checks at `a0aab90`](https://github.com/Perseusxrltd/mnemion/actions/runs/38244575373)
 passed, including Python 3.12/3.13/3.14 and both Mac test jobs with this suite.
-Each native build also checks the selected service runtime's real Argon2id
-support; those native checks are pending. These checks do not prove a packaged
-password-login journey. Lint, formatting and workflow syntax checks pass.
+All six [native build/runtime checks at the same commit](https://github.com/Perseusxrltd/mnemion/actions/runs/38244575949)
+also passed, including real Argon2id support in the selected service runtimes.
+These source builds do not prove a packaged password-login journey or put this
+module into the earlier frozen 4.1.2 release. Lint, formatting and workflow syntax
+checks pass.
 
 This module does not store accounts, issue sessions, reset passwords, enable
 OAuth or alter existing API-key behavior. Continue with the

@@ -1,7 +1,8 @@
 # Busy inference fallback validation — 2026-10-12
 
-Source version: **4.1.2**, in release preparation. Public downloads remain
-**4.1.1** until native release gates and artifact verification pass.
+Version **4.1.2** is published for all six desktop targets. The
+[publication record](2026-10-12-busy-fallback-release.md) covers the subsequent
+native gates, artifact/signature verification and public delivery checks.
 
 Search and context requests can explicitly choose `on_inference_busy: "lexical"`.
 The default preserves the retryable `503 inference_busy` response and retry
@@ -42,8 +43,8 @@ Local validation passed:
 These are correctness and compatibility checks using deterministic model
 responses, not throughput measurements or model-quality evaluations. They use no
 production memories, cloud model calls or downloaded model weights. Existing
-real-model and all six native installation/update gates run in the release
-pipeline. Peak API/worker memory duplication remains open under issue 13.
+real-model and all six native installation/update gates also passed in the
+release pipeline. Peak API/worker memory duplication remains open under issue 13.
 
 See the [release notes](../releases/4.1.2.md) and
 [embedding and resource guide](../service/embeddings.md).

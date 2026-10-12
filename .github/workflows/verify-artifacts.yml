@@ -11,9 +11,10 @@ on:
         required: true
         type: string
 
-# This workflow cannot publish, replace releases or access signing keys.
+# GitHub hides drafts from tokens without push access. The verifier performs
+# read operations only, receives no signing keys, and never publishes a release.
 permissions:
-  contents: read
+  contents: write
   actions: read
 
 concurrency:
