@@ -34,6 +34,11 @@ a completed published download.
    product/native matrices start only after it passes, avoiding wasted platform
    compilation when a cheap source check fails. Preflight does not replace the
    complete regression, installed-app, signature or update gates.
+   Native database source downloads allow three attempts for transient DNS,
+   connection, timeout and selected HTTP failures, with two- and four-second
+   backoffs. Each attempt verifies the pinned digest and size limit; certificate,
+   integrity and permanent HTTP failures stop immediately. Partial-file cleanup
+   applies only to the current download's own file.
    Native focus scenarios must establish a visible, restored, focused window
    before testing foreground restart protection. Windows GUI probes must be
    allowed to show their window; a hidden startup can report focus without

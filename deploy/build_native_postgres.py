@@ -9,16 +9,20 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import http.client
 import json
 import os
 from pathlib import Path, PurePosixPath
 import platform
 import re
 import shutil
+import socket
 import stat
 import subprocess
 import sysconfig
 import tarfile
+import time
+import urllib.error
 import urllib.request
 import zipfile
 
@@ -30,6 +34,15 @@ LIMIT = 128 * 1024 * 1024
 def digest(path: Path) -> str:
     with path.open("rb") as stream:
         return hashlib.file_digest(stream, "sha256").hexdigest()
+
+
+def retryable_download(error: Exception) -> bool:
+    if isinstance(error, urllib.error.HTTPError):
+        return error.code in {429, 500, 502, 503, 504}
+    cause = error.reason if isinstance(error, urllib.error.URLError) else error
+    return isinstance(
+        cause, (socket.gaierror, TimeoutError, ConnectionError, http.client.IncompleteRead)
+    )
 
 
 def fetch(spec: dict, cache: Path) -> Path:
@@ -60,20 +73,40 @@ def fetch(spec: dict, cache: Path) -> Path:
         return target
     request = urllib.request.Request(url, headers={"User-Agent": "Mnemion-native-builder"})
     temporary = target.with_suffix(".download")
-    try:
-        with urllib.request.urlopen(request, timeout=30) as response, temporary.open("xb") as out:
-            total = 0
-            while chunk := response.read(1024 * 1024):
-                total += len(chunk)
-                if total > LIMIT:
-                    raise ValueError("Native runtime source exceeds its size budget")
-                out.write(chunk)
-        if digest(temporary) != checksum:
-            raise ValueError("Native runtime source differs from its pinned digest")
-        temporary.rename(target)
-    finally:
-        temporary.unlink(missing_ok=True)
-    return target
+    for attempt in range(3):
+        owned = False
+        try:
+            with (
+                urllib.request.urlopen(request, timeout=30) as response,
+                temporary.open("xb") as out,
+            ):
+                owned = True
+                total = 0
+                while chunk := response.read(1024 * 1024):
+                    total += len(chunk)
+                    if total > LIMIT:
+                        raise ValueError("Native runtime source exceeds its size budget")
+                    out.write(chunk)
+            if digest(temporary) != checksum:
+                raise ValueError("Native runtime source differs from its pinned digest")
+            temporary.rename(target)
+            return target
+        except (
+            urllib.error.URLError,
+            TimeoutError,
+            ConnectionError,
+            http.client.IncompleteRead,
+        ) as error:
+            if attempt == 2 or not retryable_download(error):
+                raise
+            if isinstance(error, urllib.error.HTTPError):
+                error.close()
+        finally:
+            # Never remove another download's file if exclusive creation failed.
+            if owned:
+                temporary.unlink(missing_ok=True)
+        time.sleep(2 ** (attempt + 1))
+    raise RuntimeError("Native runtime download attempts exhausted")
 
 
 def extract(source: Path, destination: Path, prefix: str | None) -> Path:
