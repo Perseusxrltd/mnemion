@@ -150,7 +150,7 @@ class IdentityService:
             return json_value(
                 conn.execute(
                     """SELECT id, principal_id, name, prefix, expires_at, revoked_at, created_at
-                       FROM mnemion.api_keys ORDER BY created_at, id LIMIT 1000"""
+                       FROM mnemion.api_keys WHERE NOT session_key ORDER BY created_at, id LIMIT 1000"""
                 ).fetchall()
             )
 
@@ -160,6 +160,7 @@ class IdentityService:
             previous = conn.execute(
                 """SELECT p.administrator AND p.disabled_at IS NULL
                           AND k.revoked_at IS NULL
+                          AND NOT k.session_key
                           AND (k.expires_at IS NULL OR k.expires_at > clock_timestamp())
                           AS active_administrator_access
                    FROM mnemion.api_keys k JOIN mnemion.principals p

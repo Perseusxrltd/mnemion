@@ -303,14 +303,20 @@ class Client:
         )
 
     def __init__(
-        self, base_url: str, api_key: str, *, timeout: float = 30, retries: int = 2, transport=None
+        self,
+        base_url: str,
+        api_key: str | None,
+        *,
+        timeout: float = 30,
+        retries: int = 2,
+        transport=None,
     ):
         if not 0 <= retries <= 5:
             raise ValueError("Retries must be between 0 and 5")
         self._http = httpx.Client(
             base_url=base_url.rstrip("/"),
             timeout=timeout,
-            headers={"Authorization": "Bearer " + api_key},
+            headers={"Authorization": "Bearer " + api_key} if api_key is not None else {},
             transport=transport,
             follow_redirects=False,
         )

@@ -28,6 +28,19 @@ keys.revoke DELETE /v1/keys/{key_id}
 oauth.bindings GET /v1/oauth/bindings
 oauth.bind POST /v1/oauth/bindings
 oauth.revoke DELETE /v1/oauth/bindings/{binding_id}
+sign_in.configuration GET /v1/sign-in/configuration
+sign_in.account GET /v1/sign-in/account
+sign_in.set_password PUT /v1/sign-in/account
+sign_in.login POST /v1/sign-in/login
+sign_in.refresh POST /v1/sign-in/refresh
+sign_in.logout POST /v1/sign-in/logout
+sign_in.sessions GET /v1/sign-in/sessions
+sign_in.revoke_session DELETE /v1/sign-in/sessions/{session_id}
+sign_in.invitations GET /v1/sign-in/invitations
+sign_in.create_invitation POST /v1/sign-in/invitations
+sign_in.preview_invitation POST /v1/sign-in/invitations/preview
+sign_in.accept_invitation POST /v1/sign-in/invitations/accept
+sign_in.revoke_invitation DELETE /v1/sign-in/invitations/{invitation_id}
 grants.list GET /v1/spaces/{space_id}/grants
 grants.set PUT /v1/spaces/{space_id}/grants/{principal_id}
 grants.revoke DELETE /v1/spaces/{space_id}/grants/{principal_id}
@@ -109,9 +122,32 @@ READ_POST = frozenset(
         "knowledge.map",
         "obsidian.export",
         "evaluations.compare",
+        "sign_in.preview_invitation",
     }
 )
 DOWNLOADS = frozenset({"sources.attachment", "obsidian.export", "evaluations.export"})
+PRIVATE_INPUTS = frozenset(
+    {
+        "sign_in.set_password",
+        "sign_in.login",
+        "sign_in.refresh",
+        "sign_in.logout",
+        "sign_in.preview_invitation",
+        "sign_in.accept_invitation",
+    }
+)
+# These operations prove identity with their private input, not another user's
+# bearer credential. Every route remains reviewed; none is silently omitted.
+PUBLIC_AUTH = frozenset(
+    {
+        "sign_in.configuration",
+        "sign_in.login",
+        "sign_in.refresh",
+        "sign_in.logout",
+        "sign_in.preview_invitation",
+        "sign_in.accept_invitation",
+    }
+)
 CONTRACT_PATH = Path(__file__).with_name("agent_contract.json")
 DISCOVERY = frozenset(
     {
@@ -228,7 +264,14 @@ def build_contract(openapi: dict) -> dict:
                 if "idempotency_key" in properties
                 else "inspect_before_retry",
                 "download": name in DOWNLOADS,
-                "sensitive_result": name == "keys.create",
+                "sensitive_input": name in PRIVATE_INPUTS,
+                "sensitive_result": name in PRIVATE_INPUTS
+                or name in {"keys.create", "sign_in.create_invitation"},
+                "authentication": "body"
+                if name in PUBLIC_AUTH - {"sign_in.configuration"}
+                else "none"
+                if name == "sign_in.configuration"
+                else "bearer",
                 "parameter_locations": locations,
                 "input_schema": _standalone(input_schema, definitions),
                 "output_schema": _standalone(response_schema, definitions)

@@ -3,6 +3,7 @@ import {
   Fragment,
   useContext,
   useMemo,
+  useEffect,
   useRef,
   useState,
   lazy,
@@ -80,6 +81,7 @@ const Documentation = lazy(() => import("./Documentation"));
 const EmbeddingModels = lazy(() => import("./EmbeddingModels"));
 const Librarian = lazy(() => import("./Librarian"));
 const Setup = lazy(() => import("./Setup"));
+const Account = lazy(() => import("./Account"));
 
 type Me = Awaited<ReturnType<MnemionClient["me"]>>;
 type Session = Connection & {
@@ -253,7 +255,7 @@ function Shell({
   const [creating, setCreating] = useState(false);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const organizationPage = ['/workspace/team', '/workspace/connections', '/workspace/setup', '/workspace/help']
+  const organizationPage = ['/workspace/team', '/workspace/connections', '/workspace/setup', '/workspace/help', '/workspace/account']
     .includes(location.pathname.replace(/\/+$/, ''));
   const role = space?.role ?? "reader";
   const reviewer = ["reviewer", "administrator"].includes(role);
@@ -271,6 +273,7 @@ function Shell({
     { to: "agents", label: "Agents & apps", icon: Plug },
     { to: "help", label: "Documentation & roadmap", icon: FileText },
     { to: "setup", label: "Setup & this device", icon: Settings },
+    { to: "account", label: "Account & sessions", icon: ShieldCheck },
     ...(me.administrator
       ? [{ to: "connections", label: "Connections", icon: Plug }, { to: "team", label: "People & apps", icon: Users }]
       : []),
@@ -278,7 +281,7 @@ function Shell({
   const navigationGroups = [
     { label: "01 / Memory", pages: ["memories", "search", "knowledge", "blocks", "review"] },
     { label: "02 / Intelligence", pages: ["operations", "insights", "librarian", "models"] },
-    { label: "03 / Workspace", pages: ["setup", "obsidian", "agents", "connections", "team", "help"] },
+    { label: "03 / Workspace", pages: ["setup", "account", "obsidian", "agents", "connections", "team", "help"] },
   ];
   async function createSpace(event: FormEvent) {
     event.preventDefault();
@@ -367,8 +370,8 @@ function Shell({
               <small>{me.administrator ? "Organization administrator" : space?.role ?? "No space access"}</small>
             </div>
             <button
-              title="Disconnect"
-              aria-label="Disconnect"
+              title={connection.authentication === 'password' ? 'Sign out' : 'Disconnect'}
+              aria-label={connection.authentication === 'password' ? 'Sign out' : 'Disconnect'}
               className="ws-icon-button"
               onClick={disconnect}
             >
@@ -384,6 +387,7 @@ function Shell({
             <div className="ws-topbar"><span><Users size={14} />{me.tenant_name}</span><Badge>{me.administrator ? 'Organization administrator' : 'Member'}</Badge><button className="ws-icon-button ws-mobile-disconnect" aria-label="Disconnect workspace" onClick={disconnect}><LogOut size={17} /></button></div>
             <div className="ws-scroll"><ErrorBoundary key={location.pathname}><Suspense fallback={<Busy />}><Routes>
               <Route path="team" element={<Team connection={connection} initialSpace={space} />} />
+              <Route path="account" element={<Account connection={connection} disconnect={disconnect} />} />
               <Route path="connections" element={<Connections client={client} administrator={me.administrator} endpoint={connection.endpoint} selectSpace={setSelected} />} />
               <Route path="setup" element={<Setup client={client} endpoint={connection.endpoint} administrator={me.administrator} />} />
               <Route path="help" element={<Documentation />} />
@@ -2099,6 +2103,7 @@ function Team({ connection, initialSpace }: { connection: Connection; initialSpa
 export default function Workspace() {
   const [connection, setConnection] = useState<Connection>();
   const [disconnectError, setDisconnectError] = useState<unknown>();
+  const disconnecting = useRef<Connection | null>(null);
   const queryClient = useMemo(
     () =>
       new QueryClient({
@@ -2106,6 +2111,7 @@ export default function Workspace() {
       }),
     [connection],
   );
+  useEffect(() => () => { queryClient.clear(); connection?.close?.(); }, [connection, queryClient]);
   return (
     <div className="workspace">
       {connection ? (
@@ -2113,12 +2119,15 @@ export default function Workspace() {
           <Shell
             connection={connection}
             disconnect={async () => {
+              if (disconnecting.current) return;
+              disconnecting.current = connection;
               void queryClient.cancelQueries();
               queryClient.clear();
               setDisconnectError(undefined);
-              try { await window.mnemion?.workspaceDisconnect?.(); }
+              try { await connection.signOut?.(); await window.mnemion?.workspaceDisconnect?.(); }
               catch (error) { setDisconnectError(error); }
-              setConnection(undefined);
+              setConnection(current => current === connection ? undefined : current);
+              if (disconnecting.current === connection) disconnecting.current = null;
             }}
           />
         </QueryClientProvider>

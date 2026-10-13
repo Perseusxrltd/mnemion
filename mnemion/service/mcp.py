@@ -268,10 +268,10 @@ def create_mcp(
 
     def tool_operation(name, request, effect):
         operation, _ = agent_control.prepare(name, request, effect=effect)
-        if operation["download"] or operation["sensitive_result"]:
+        if operation["download"] or operation["sensitive_result"] or operation["sensitive_input"]:
             raise agent_control.ControlError(
                 "private_file_required",
-                "Use mnemion-control call with --output for downloads or --result-file for new API keys; these results must not enter an agent transcript",
+                "Use mnemion-control call with --output for downloads, --result-file for issued credentials and --input for a private credential file; passwords, invitations and session tokens must not enter an agent transcript",
             )
 
     @server.tool(annotations=Read, structured_output=True)

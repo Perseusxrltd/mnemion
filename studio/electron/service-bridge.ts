@@ -6,6 +6,7 @@ import { join } from 'node:path'
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { WorkspaceStore, workspaceIdentity } from './workspace-store.js'
 import { WorkspaceConnections, isWorkspaceSession } from './workspace-connections.js'
+import { WorkspacePasswordAuth } from './workspace-auth.js'
 import { macosCredentialCipher, macosCredentialMemory } from './macos-credentials.js'
 import { workspaceFetch } from './workspace-fetch.js'
 import { LocalWorkspace, localEnvironment, localOptions } from './local-workspace.js'
@@ -230,7 +231,26 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
       const bytes = await boundedBody(response, 128 * 1024)
       try { return workspaceIdentity(JSON.parse(Buffer.from(bytes).toString('utf8'))) }
       catch { throw new Error('This address did not return a Mnemion workspace identity.') }
-    })
+    }, new WorkspacePasswordAuth(async (endpoint, operation, input) => {
+      let response: Response
+      try {
+        response = await workspaceFetch(net.fetch.bind(net), endpoint + '/v1/sign-in/' + operation, {
+          method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify(input), signal: AbortSignal.timeout(20_000),
+        })
+      } catch { throw new Error('The workspace could not confirm this sign-in request. Check the connection and sign in again.') }
+      if (!response.ok) {
+        await response.body?.cancel()
+        if (response.status === 404) throw new Error('Update this workspace server to use individual sign-in. Existing workspace keys still work.')
+        if (response.status === 429) throw new Error('Too many sign-in attempts. Wait a few minutes and try again.')
+        if (response.status === 401 || response.status === 403) throw new Error('Sign-in could not be completed. Check your login or ask for a new invitation.')
+        if (response.status === 409) throw new Error('This account or login changed. Choose another login name or ask an administrator to check your sessions.')
+        if (response.status === 422) throw new Error('Check the fields. Choose a unique password of at least 15 characters, such as several unrelated words.')
+        throw new Error('The workspace could not complete the sign-in request. Try again when it is ready.')
+      }
+      try { return JSON.parse(Buffer.from(await boundedBody(response, 128 * 1024)).toString('utf8')) }
+      catch { throw new Error('The workspace returned an invalid sign-in response.') }
+    }))
     return connections
   }
   function trusted(event: IpcMainInvokeEvent) {
@@ -247,6 +267,26 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
     return workspaceConnections().inspect(id)
   })
   ipcMain.handle('workspaces:resume', event => { trusted(event); return workspaceConnections().resume() })
+  ipcMain.handle('workspaces:invitation-preview', (event, input: unknown) => {
+    trusted(event)
+    if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Paste a complete invitation.')
+    const value = input as { endpoint: string; invitation: string }
+    if (typeof value.endpoint !== 'string' || typeof value.invitation !== 'string' ||
+        Object.keys(value).some(key => !['endpoint', 'invitation'].includes(key))) throw new Error('Paste a complete invitation.')
+    return workspaceConnections().previewInvitation(value.endpoint, value.invitation)
+  })
+  for (const action of ['sign-in', 'invitation-accept'] as const) {
+    ipcMain.handle('workspaces:' + action, (event, input: unknown) => {
+      trusted(event)
+      if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Invalid sign-in request.')
+      const value = input as { endpoint: string; credentials: unknown; remember: boolean }
+      if (typeof value.endpoint !== 'string' || typeof value.remember !== 'boolean' ||
+          Object.keys(value).some(key => !['endpoint', 'credentials', 'remember'].includes(key))) throw new Error('Invalid sign-in request.')
+      deselectLocal()
+      return action === 'sign-in' ? workspaceConnections().signIn(value.endpoint, value.credentials, value.remember) :
+        workspaceConnections().acceptInvitation(value.endpoint, value.credentials, value.remember)
+    })
+  }
   ipcMain.handle('workspaces:connect', (event, input: unknown) => {
     trusted(event)
     if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Invalid workspace connection.')
@@ -333,7 +373,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
     }
     const authorization = headers.get('authorization')
     if (authorization && isWorkspaceSession(authorization)) {
-      headers.set('authorization', workspaceConnections().authorization(url, authorization))
+      headers.set('authorization', await workspaceConnections().authorization(url, authorization))
     } else {
       url = allowedServiceUrl(request.url)
     }

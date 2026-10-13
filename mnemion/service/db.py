@@ -28,6 +28,7 @@ class Identity:
     principal_id: UUID
     key_id: UUID
     expires_at: float | None = None
+    session_id: UUID | None = None
 
 
 def token_hash(token: str) -> str:
@@ -138,6 +139,18 @@ class Database:
             row = conn.execute(
                 "SELECT * FROM mnemion.authenticate(%s)", (token_hash(token),)
             ).fetchone()
+            if not row:
+                session = conn.execute(
+                    "SELECT * FROM mnemion.authenticate_session(%s)", (token_hash(token),)
+                ).fetchone()
+                if session:
+                    return Identity(
+                        session["tenant_id"],
+                        session["principal_id"],
+                        session["key_id"],
+                        session["expires_at"].timestamp(),
+                        session["session_id"],
+                    )
         if not row:
             raise ServiceError(401, "unauthorized", "A valid Mnemion API key is required.")
         return Identity(row["tenant_id"], row["principal_id"], row["key_id"])

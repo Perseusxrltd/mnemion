@@ -26,6 +26,9 @@ contextBridge.exposeInMainWorld('mnemion', {
   workspaceInspect: (id: string) => transfer('workspaces:inspect', id),
   workspaceResume: () => transfer('workspaces:resume'),
   workspaceConnect: (input: unknown) => transfer('workspaces:connect', input),
+  workspaceSignIn: (input: unknown) => transfer('workspaces:sign-in', input),
+  workspaceInvitationPreview: (input: unknown) => transfer('workspaces:invitation-preview', input),
+  workspaceInvitationAccept: (input: unknown) => transfer('workspaces:invitation-accept', input),
   workspaceRestore: (id: string) => transfer('workspaces:restore', id),
   workspaceForget: (id: string) => transfer('workspaces:forget', id),
   workspaceDisconnect: () => transfer('workspaces:disconnect'),
@@ -46,7 +49,7 @@ contextBridge.exposeInMainWorld('mnemion', {
   refreshVault: (selection: string, bytes: Uint8Array) => transfer('vault:refresh', selection, bytes),
   updateSafety: () => {
     for (const element of edited) if (!element.isConnected) edited.delete(element)
-    return pending === 0 && edited.size === 0
+    return pending === 0 && edited.size === 0 && document.querySelector('[data-update-pending]') === null
   },
   onNavigate: (callback: (route: string) => void) => {
     const listener = (_event: IpcRendererEvent, route: unknown) => {

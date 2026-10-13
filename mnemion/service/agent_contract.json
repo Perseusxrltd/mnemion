@@ -2,6 +2,7 @@
   "api_version": "v1",
   "operations": [
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "core-context",
@@ -91,10 +92,12 @@
       },
       "path": "/v1/spaces/{space_id}/blocks",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Blocks"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "core-context",
@@ -195,10 +198,12 @@
       },
       "path": "/v1/spaces/{space_id}/blocks/{key}",
       "retry": "inspect_before_retry",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Put Block"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "connectors",
@@ -345,10 +350,12 @@
       },
       "path": "/v1/connector-scopes/{space_id}/runs",
       "retry": "inspect_before_retry",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Begin Run"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "connectors",
@@ -463,10 +470,12 @@
       },
       "path": "/v1/connectors/{connector_id}/bindings",
       "retry": "inspect_before_retry",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Bind"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "connectors",
@@ -550,10 +559,12 @@
       },
       "path": "/v1/connectors/{connector_id}/bindings",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Bindings"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "connectors",
@@ -675,10 +686,12 @@
       "parameter_locations": {},
       "path": "/v1/connectors",
       "retry": "inspect_before_retry",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Create Connector"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "connectors",
@@ -772,10 +785,12 @@
       },
       "path": "/v1/connectors/{connector_id}",
       "retry": "inspect_before_retry",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Disable Connector"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "connectors",
@@ -869,10 +884,12 @@
       },
       "path": "/v1/connectors/{connector_id}/enable",
       "retry": "inspect_before_retry",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Enable Connector"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "connectors",
@@ -979,10 +996,12 @@
       },
       "path": "/v1/connector-scopes/{space_id}/runs/{run_id}/finish",
       "retry": "inspect_before_retry",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Finish Run"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "connectors",
@@ -1073,10 +1092,12 @@
       "parameter_locations": {},
       "path": "/v1/connectors",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Connectors"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "connectors",
@@ -1441,10 +1462,12 @@
       },
       "path": "/v1/connector-scopes/{space_id}/runs/{run_id}/pages",
       "retry": "inspect_before_retry",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Commit Page"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "connectors",
@@ -1739,10 +1762,12 @@
       },
       "path": "/v1/spaces/{space_id}/connector-proposals",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Proposals"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "connectors",
@@ -1939,10 +1964,12 @@
       },
       "path": "/v1/connectors/{connector_id}/scopes",
       "retry": "inspect_before_retry",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Refresh Scope"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "connectors",
@@ -2047,10 +2074,12 @@
       },
       "path": "/v1/memories/{memory_id}/connector-proposal",
       "retry": "inspect_before_retry",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Resolve Proposal"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "connectors",
@@ -2113,10 +2142,12 @@
       },
       "path": "/v1/connector-scopes/{space_id}/resume",
       "retry": "inspect_before_retry",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Resume Scope"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "connectors",
@@ -2308,10 +2339,12 @@
       },
       "path": "/v1/connectors/{connector_id}/scopes",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Scopes"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "connectors",
@@ -2399,10 +2432,12 @@
       },
       "path": "/v1/connector-scopes/{space_id}/suspend",
       "retry": "inspect_before_retry",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Suspend Scope"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "connectors",
@@ -2629,10 +2664,12 @@
       },
       "path": "/v1/connectors/{connector_id}/sync/report",
       "retry": "inspect_before_retry",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Report Connector Sync"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "connectors",
@@ -2809,10 +2846,12 @@
       },
       "path": "/v1/connectors/{connector_id}/sync",
       "retry": "inspect_before_retry",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Request Connector Sync"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "connectors",
@@ -2967,10 +3006,12 @@
       },
       "path": "/v1/connectors/{connector_id}/sync",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Connector Sync Status"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "connectors",
@@ -3085,10 +3126,12 @@
       },
       "path": "/v1/connectors/{connector_id}/bindings",
       "retry": "inspect_before_retry",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Unbind"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "embedding-models",
@@ -3193,10 +3236,12 @@
       },
       "path": "/v1/spaces/{space_id}/embedding/choices",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Choices"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "embedding-models",
@@ -3489,10 +3534,12 @@
       },
       "path": "/v1/spaces/{space_id}/embedding/reindex/{run_id}/{action}",
       "retry": "inspect_before_retry",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Control"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "embedding-models",
@@ -3778,10 +3825,12 @@
       },
       "path": "/v1/spaces/{space_id}/embedding/reindex",
       "retry": "idempotency_key",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Start"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "embedding-models",
@@ -4054,10 +4103,12 @@
       },
       "path": "/v1/spaces/{space_id}/embedding/resume",
       "retry": "inspect_before_retry",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Resume Processing"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "embedding-models",
@@ -4304,10 +4355,12 @@
       },
       "path": "/v1/spaces/{space_id}/embedding",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Read"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "evaluations",
@@ -4486,10 +4539,12 @@
       },
       "path": "/v1/spaces/{space_id}/evaluations/runs/{run_id}/results/{position}/assessment",
       "retry": "inspect_before_retry",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Assess"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "evaluations",
@@ -4653,10 +4708,12 @@
       },
       "path": "/v1/spaces/{space_id}/evaluations/runs/{run_id}/cancel",
       "retry": "inspect_before_retry",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Cancel"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "evaluations",
@@ -4879,10 +4936,12 @@
       },
       "path": "/v1/spaces/{space_id}/evaluations/compare",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Compare"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "evaluations",
@@ -5259,10 +5318,12 @@
       },
       "path": "/v1/spaces/{space_id}/evaluations/datasets",
       "retry": "inspect_before_retry",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Create Dataset"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "evaluations",
@@ -5497,10 +5558,12 @@
       },
       "path": "/v1/spaces/{space_id}/evaluations/datasets/{dataset_id}",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Dataset"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "evaluations",
@@ -5766,10 +5829,12 @@
       },
       "path": "/v1/spaces/{space_id}/evaluations/datasets",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Datasets"
     },
     {
+      "authentication": "bearer",
       "download": true,
       "effect": "read",
       "group": "evaluations",
@@ -5821,10 +5886,12 @@
       },
       "path": "/v1/spaces/{space_id}/evaluations/runs/{run_id}/export",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Export"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "evaluations",
@@ -5866,10 +5933,12 @@
       },
       "path": "/v1/spaces/{space_id}/evaluations/datasets/{dataset_id}",
       "retry": "inspect_before_retry",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Remove Dataset"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "evaluations",
@@ -6042,10 +6111,12 @@
       },
       "path": "/v1/spaces/{space_id}/evaluations/runs/{run_id}/results",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Results"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "evaluations",
@@ -6215,10 +6286,12 @@
       },
       "path": "/v1/spaces/{space_id}/evaluations/runs/{run_id}",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Run"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "evaluations",
@@ -6413,10 +6486,12 @@
       },
       "path": "/v1/spaces/{space_id}/evaluations/runs",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Runs"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "evaluations",
@@ -6671,10 +6746,12 @@
       },
       "path": "/v1/spaces/{space_id}/evaluations/runs",
       "retry": "idempotency_key",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Create Run"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "spaces",
@@ -6774,10 +6851,12 @@
       },
       "path": "/v1/spaces/{space_id}/grants",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Grants"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "spaces",
@@ -6848,10 +6927,12 @@
       },
       "path": "/v1/spaces/{space_id}/grants/{principal_id}",
       "retry": "inspect_before_retry",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Revoke Grant"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "spaces",
@@ -6953,10 +7034,12 @@
       },
       "path": "/v1/spaces/{space_id}/grants/{principal_id}",
       "retry": "inspect_before_retry",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Grant"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "operations",
@@ -7007,10 +7090,12 @@
       "parameter_locations": {},
       "path": "/health/live",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Live"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "operations",
@@ -7060,10 +7145,12 @@
       "parameter_locations": {},
       "path": "/health/ready",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Ready"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "identity",
@@ -7137,10 +7224,12 @@
       "parameter_locations": {},
       "path": "/v1/me",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Me"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "insights",
@@ -7497,10 +7586,12 @@
       "parameter_locations": {},
       "path": "/v1/insights/runtime",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Runtime Statistics"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "insights",
@@ -8425,10 +8516,12 @@
       },
       "path": "/v1/spaces/{space_id}/insights",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Space Insights"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "identity",
@@ -8564,10 +8657,12 @@
       },
       "path": "/v1/principals/{principal_id}/keys",
       "retry": "inspect_before_retry",
+      "sensitive_input": false,
       "sensitive_result": true,
       "summary": "Create Key"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "identity",
@@ -8661,10 +8756,12 @@
       "parameter_locations": {},
       "path": "/v1/keys",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Keys"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "identity",
@@ -8722,10 +8819,12 @@
       },
       "path": "/v1/keys/{key_id}",
       "retry": "inspect_before_retry",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Revoke Key"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "knowledge",
@@ -9230,10 +9329,12 @@
       "parameter_locations": {},
       "path": "/v1/knowledge",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Knowledge"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "librarian",
@@ -9438,10 +9539,12 @@
       },
       "path": "/v1/spaces/{space_id}/librarian/runs/{run_id}/cancel",
       "retry": "inspect_before_retry",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Cancel"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "librarian",
@@ -9676,10 +9779,12 @@
       },
       "path": "/v1/spaces/{space_id}/librarian",
       "retry": "inspect_before_retry",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Configure"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "librarian",
@@ -9806,10 +9911,12 @@
       },
       "path": "/v1/spaces/{space_id}/librarian/proposals/{proposal_id}/decision",
       "retry": "idempotency_key",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Decide"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "librarian",
@@ -9923,10 +10030,12 @@
       },
       "path": "/v1/spaces/{space_id}/librarian/runs/{run_id}/items",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Run Items"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "librarian",
@@ -10059,10 +10168,12 @@
       },
       "path": "/v1/spaces/{space_id}/librarian/models",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Models"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "librarian",
@@ -10446,10 +10557,12 @@
       },
       "path": "/v1/spaces/{space_id}/librarian/proposals",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Proposals"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "librarian",
@@ -10654,10 +10767,12 @@
       },
       "path": "/v1/spaces/{space_id}/librarian/runs/{run_id}",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Run"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "librarian",
@@ -10893,10 +11008,12 @@
       },
       "path": "/v1/spaces/{space_id}/librarian/runs",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Runs"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "librarian",
@@ -11058,10 +11175,12 @@
       },
       "path": "/v1/spaces/{space_id}/librarian",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Settings"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "librarian",
@@ -11297,10 +11416,12 @@
       },
       "path": "/v1/spaces/{space_id}/librarian/runs",
       "retry": "idempotency_key",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Create Run"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "memory",
@@ -11437,10 +11558,12 @@
       },
       "path": "/v1/memories/{memory_id}",
       "retry": "idempotency_key",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Forget"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "memory",
@@ -11720,10 +11843,12 @@
       },
       "path": "/v1/memories/{memory_id}",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Fetch"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "memory",
@@ -12007,10 +12132,12 @@
       },
       "path": "/v1/memories/{memory_id}/revisions",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "History"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "memory",
@@ -12327,10 +12454,12 @@
       },
       "path": "/v1/spaces/{space_id}/memories",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "List Memories"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "memory",
@@ -12605,10 +12734,12 @@
       },
       "path": "/v1/spaces/{space_id}/resolve",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Resolve Alias"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "memory",
@@ -12712,10 +12843,12 @@
       },
       "path": "/v1/memories/{memory_id}/review",
       "retry": "inspect_before_retry",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Review"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "memory",
@@ -13027,10 +13160,12 @@
       },
       "path": "/v1/memories/{memory_id}/revisions",
       "retry": "idempotency_key",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Revise"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "memory",
@@ -13329,10 +13464,12 @@
       },
       "path": "/v1/spaces/{space_id}/memories",
       "retry": "idempotency_key",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Save"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "identity",
@@ -13396,10 +13533,12 @@
       "parameter_locations": {},
       "path": "/v1/oauth/bindings",
       "retry": "inspect_before_retry",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Create Binding"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "identity",
@@ -13418,10 +13557,12 @@
       "parameter_locations": {},
       "path": "/v1/oauth/bindings",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Bindings"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "identity",
@@ -13460,10 +13601,12 @@
       },
       "path": "/v1/oauth/bindings/{binding_id}",
       "retry": "inspect_before_retry",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Revoke Binding"
     },
     {
+      "authentication": "bearer",
       "download": true,
       "effect": "read",
       "group": "obsidian",
@@ -13515,10 +13658,12 @@
       "parameter_locations": {},
       "path": "/v1/exports",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Export"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "operations",
@@ -13659,10 +13804,12 @@
       },
       "path": "/v1/spaces/{space_id}/activity",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Activity"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "operations",
@@ -13794,10 +13941,12 @@
       },
       "path": "/v1/operations/{operation_id}",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Operation"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "operations",
@@ -13973,10 +14122,12 @@
       },
       "path": "/v1/spaces/{space_id}/operations",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "List Operations"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "operations",
@@ -14035,10 +14186,12 @@
       },
       "path": "/v1/operations/{operation_id}/retry",
       "retry": "inspect_before_retry",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Retry Operation"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "operations",
@@ -14147,10 +14300,12 @@
       },
       "path": "/v1/spaces/{space_id}/status",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Space Status"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "identity",
@@ -14258,10 +14413,12 @@
       "parameter_locations": {},
       "path": "/v1/principals",
       "retry": "inspect_before_retry",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Create Principal"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "identity",
@@ -14319,10 +14476,12 @@
       },
       "path": "/v1/principals/{principal_id}/disable",
       "retry": "inspect_before_retry",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Disable Principal"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "identity",
@@ -14408,10 +14567,12 @@
       "parameter_locations": {},
       "path": "/v1/principals",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Principals"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "retrieval",
@@ -14831,10 +14992,12 @@
       "parameter_locations": {},
       "path": "/v1/context",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Context"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "retrieval",
@@ -15429,10 +15592,973 @@
       "parameter_locations": {},
       "path": "/v1/recall",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Recall"
     },
     {
+      "authentication": "body",
+      "download": false,
+      "effect": "write",
+      "group": "sign-in",
+      "input_schema": {
+        "$defs": {
+          "InvitationAcceptInput": {
+            "additionalProperties": false,
+            "properties": {
+              "device_name": {
+                "maxLength": 100,
+                "minLength": 1,
+                "title": "Device Name",
+                "type": "string"
+              },
+              "invitation": {
+                "format": "password",
+                "maxLength": 200,
+                "minLength": 40,
+                "title": "Invitation",
+                "type": "string",
+                "writeOnly": true
+              },
+              "password": {
+                "format": "password",
+                "maxLength": 128,
+                "minLength": 15,
+                "title": "Password",
+                "type": "string",
+                "writeOnly": true
+              },
+              "remember": {
+                "default": false,
+                "title": "Remember",
+                "type": "boolean"
+              },
+              "transport": {
+                "enum": [
+                  "native",
+                  "browser"
+                ],
+                "title": "Transport",
+                "type": "string"
+              },
+              "username": {
+                "maxLength": 128,
+                "minLength": 3,
+                "title": "Username",
+                "type": "string"
+              }
+            },
+            "required": [
+              "invitation",
+              "username",
+              "password",
+              "device_name",
+              "transport"
+            ],
+            "title": "InvitationAcceptInput",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/InvitationAcceptInput"
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "POST",
+      "name": "sign_in.accept_invitation",
+      "output_schema": {
+        "$defs": {
+          "SessionTokens": {
+            "additionalProperties": true,
+            "properties": {
+              "access_expires_at": {
+                "format": "date-time",
+                "title": "Access Expires At",
+                "type": "string"
+              },
+              "access_token": {
+                "title": "Access Token",
+                "type": "string"
+              },
+              "csrf_token": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Csrf Token"
+              },
+              "expires_at": {
+                "format": "date-time",
+                "title": "Expires At",
+                "type": "string"
+              },
+              "persistence": {
+                "enum": [
+                  "native",
+                  "cookie",
+                  "memory"
+                ],
+                "title": "Persistence",
+                "type": "string"
+              },
+              "principal_id": {
+                "format": "uuid",
+                "title": "Principal Id",
+                "type": "string"
+              },
+              "refresh_token": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Refresh Token"
+              },
+              "rotation": {
+                "maximum": 4096.0,
+                "minimum": 0.0,
+                "title": "Rotation",
+                "type": "integer"
+              },
+              "session_id": {
+                "format": "uuid",
+                "title": "Session Id",
+                "type": "string"
+              },
+              "tenant_id": {
+                "format": "uuid",
+                "title": "Tenant Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "session_id",
+              "tenant_id",
+              "principal_id",
+              "access_token",
+              "access_expires_at",
+              "expires_at",
+              "persistence",
+              "rotation"
+            ],
+            "title": "SessionTokens",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/SessionTokens"
+      },
+      "parameter_locations": {},
+      "path": "/v1/sign-in/invitations/accept",
+      "retry": "inspect_before_retry",
+      "sensitive_input": true,
+      "sensitive_result": true,
+      "summary": "Accept Invitation"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "read",
+      "group": "sign-in",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {},
+        "type": "object"
+      },
+      "method": "GET",
+      "name": "sign_in.account",
+      "output_schema": {
+        "additionalProperties": true,
+        "title": "Response Account V1 Sign In Account Get",
+        "type": "object"
+      },
+      "parameter_locations": {},
+      "path": "/v1/sign-in/account",
+      "retry": "read",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Account"
+    },
+    {
+      "authentication": "none",
+      "download": false,
+      "effect": "read",
+      "group": "sign-in",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {},
+        "type": "object"
+      },
+      "method": "GET",
+      "name": "sign_in.configuration",
+      "output_schema": {
+        "additionalProperties": true,
+        "title": "Response Configuration V1 Sign In Configuration Get",
+        "type": "object"
+      },
+      "parameter_locations": {},
+      "path": "/v1/sign-in/configuration",
+      "retry": "read",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Configuration"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "write",
+      "group": "sign-in",
+      "input_schema": {
+        "$defs": {
+          "InvitationInput": {
+            "additionalProperties": false,
+            "properties": {
+              "expires_in_seconds": {
+                "default": 86400,
+                "maximum": 604800.0,
+                "minimum": 60.0,
+                "title": "Expires In Seconds",
+                "type": "integer"
+              },
+              "principal_id": {
+                "format": "uuid",
+                "title": "Principal Id",
+                "type": "string"
+              },
+              "purpose": {
+                "default": "enroll",
+                "enum": [
+                  "enroll",
+                  "reset"
+                ],
+                "title": "Purpose",
+                "type": "string"
+              }
+            },
+            "required": [
+              "principal_id"
+            ],
+            "title": "InvitationInput",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/InvitationInput"
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "POST",
+      "name": "sign_in.create_invitation",
+      "output_schema": {
+        "additionalProperties": true,
+        "title": "Response Create Invitation V1 Sign In Invitations Post",
+        "type": "object"
+      },
+      "parameter_locations": {},
+      "path": "/v1/sign-in/invitations",
+      "retry": "inspect_before_retry",
+      "sensitive_input": false,
+      "sensitive_result": true,
+      "summary": "Create Invitation"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "read",
+      "group": "sign-in",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {},
+        "type": "object"
+      },
+      "method": "GET",
+      "name": "sign_in.invitations",
+      "output_schema": {
+        "additionalProperties": true,
+        "title": "Response Invitations V1 Sign In Invitations Get",
+        "type": "object"
+      },
+      "parameter_locations": {},
+      "path": "/v1/sign-in/invitations",
+      "retry": "read",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Invitations"
+    },
+    {
+      "authentication": "body",
+      "download": false,
+      "effect": "write",
+      "group": "sign-in",
+      "input_schema": {
+        "$defs": {
+          "SignInInput": {
+            "additionalProperties": false,
+            "properties": {
+              "device_name": {
+                "maxLength": 100,
+                "minLength": 1,
+                "title": "Device Name",
+                "type": "string"
+              },
+              "password": {
+                "format": "password",
+                "maxLength": 128,
+                "minLength": 1,
+                "title": "Password",
+                "type": "string",
+                "writeOnly": true
+              },
+              "remember": {
+                "default": false,
+                "title": "Remember",
+                "type": "boolean"
+              },
+              "transport": {
+                "enum": [
+                  "native",
+                  "browser"
+                ],
+                "title": "Transport",
+                "type": "string"
+              },
+              "username": {
+                "maxLength": 128,
+                "minLength": 3,
+                "title": "Username",
+                "type": "string"
+              },
+              "workspace_id": {
+                "format": "uuid",
+                "title": "Workspace Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "workspace_id",
+              "username",
+              "password",
+              "device_name",
+              "transport"
+            ],
+            "title": "SignInInput",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/SignInInput"
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "POST",
+      "name": "sign_in.login",
+      "output_schema": {
+        "$defs": {
+          "SessionTokens": {
+            "additionalProperties": true,
+            "properties": {
+              "access_expires_at": {
+                "format": "date-time",
+                "title": "Access Expires At",
+                "type": "string"
+              },
+              "access_token": {
+                "title": "Access Token",
+                "type": "string"
+              },
+              "csrf_token": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Csrf Token"
+              },
+              "expires_at": {
+                "format": "date-time",
+                "title": "Expires At",
+                "type": "string"
+              },
+              "persistence": {
+                "enum": [
+                  "native",
+                  "cookie",
+                  "memory"
+                ],
+                "title": "Persistence",
+                "type": "string"
+              },
+              "principal_id": {
+                "format": "uuid",
+                "title": "Principal Id",
+                "type": "string"
+              },
+              "refresh_token": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Refresh Token"
+              },
+              "rotation": {
+                "maximum": 4096.0,
+                "minimum": 0.0,
+                "title": "Rotation",
+                "type": "integer"
+              },
+              "session_id": {
+                "format": "uuid",
+                "title": "Session Id",
+                "type": "string"
+              },
+              "tenant_id": {
+                "format": "uuid",
+                "title": "Tenant Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "session_id",
+              "tenant_id",
+              "principal_id",
+              "access_token",
+              "access_expires_at",
+              "expires_at",
+              "persistence",
+              "rotation"
+            ],
+            "title": "SessionTokens",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/SessionTokens"
+      },
+      "parameter_locations": {},
+      "path": "/v1/sign-in/login",
+      "retry": "inspect_before_retry",
+      "sensitive_input": true,
+      "sensitive_result": true,
+      "summary": "Login"
+    },
+    {
+      "authentication": "body",
+      "download": false,
+      "effect": "write",
+      "group": "sign-in",
+      "input_schema": {
+        "$defs": {
+          "RefreshInput": {
+            "additionalProperties": false,
+            "properties": {
+              "refresh_token": {
+                "anyOf": [
+                  {
+                    "format": "password",
+                    "maxLength": 200,
+                    "minLength": 40,
+                    "type": "string",
+                    "writeOnly": true
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Refresh Token"
+              },
+              "session_id": {
+                "anyOf": [
+                  {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Session Id"
+              },
+              "transport": {
+                "enum": [
+                  "native",
+                  "browser"
+                ],
+                "title": "Transport",
+                "type": "string"
+              },
+              "workspace_id": {
+                "format": "uuid",
+                "title": "Workspace Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "workspace_id",
+              "transport"
+            ],
+            "title": "RefreshInput",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/RefreshInput"
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "POST",
+      "name": "sign_in.logout",
+      "output_schema": {
+        "additionalProperties": true,
+        "title": "Response Logout V1 Sign In Logout Post",
+        "type": "object"
+      },
+      "parameter_locations": {},
+      "path": "/v1/sign-in/logout",
+      "retry": "inspect_before_retry",
+      "sensitive_input": true,
+      "sensitive_result": true,
+      "summary": "Logout"
+    },
+    {
+      "authentication": "body",
+      "download": false,
+      "effect": "read",
+      "group": "sign-in",
+      "input_schema": {
+        "$defs": {
+          "InvitationSecret": {
+            "additionalProperties": false,
+            "properties": {
+              "invitation": {
+                "format": "password",
+                "maxLength": 200,
+                "minLength": 40,
+                "title": "Invitation",
+                "type": "string",
+                "writeOnly": true
+              }
+            },
+            "required": [
+              "invitation"
+            ],
+            "title": "InvitationSecret",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/InvitationSecret"
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "POST",
+      "name": "sign_in.preview_invitation",
+      "output_schema": {
+        "additionalProperties": true,
+        "title": "Response Preview Invitation V1 Sign In Invitations Preview Post",
+        "type": "object"
+      },
+      "parameter_locations": {},
+      "path": "/v1/sign-in/invitations/preview",
+      "retry": "read",
+      "sensitive_input": true,
+      "sensitive_result": true,
+      "summary": "Preview Invitation"
+    },
+    {
+      "authentication": "body",
+      "download": false,
+      "effect": "write",
+      "group": "sign-in",
+      "input_schema": {
+        "$defs": {
+          "RefreshInput": {
+            "additionalProperties": false,
+            "properties": {
+              "refresh_token": {
+                "anyOf": [
+                  {
+                    "format": "password",
+                    "maxLength": 200,
+                    "minLength": 40,
+                    "type": "string",
+                    "writeOnly": true
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Refresh Token"
+              },
+              "session_id": {
+                "anyOf": [
+                  {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Session Id"
+              },
+              "transport": {
+                "enum": [
+                  "native",
+                  "browser"
+                ],
+                "title": "Transport",
+                "type": "string"
+              },
+              "workspace_id": {
+                "format": "uuid",
+                "title": "Workspace Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "workspace_id",
+              "transport"
+            ],
+            "title": "RefreshInput",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/RefreshInput"
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "POST",
+      "name": "sign_in.refresh",
+      "output_schema": {
+        "$defs": {
+          "SessionTokens": {
+            "additionalProperties": true,
+            "properties": {
+              "access_expires_at": {
+                "format": "date-time",
+                "title": "Access Expires At",
+                "type": "string"
+              },
+              "access_token": {
+                "title": "Access Token",
+                "type": "string"
+              },
+              "csrf_token": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Csrf Token"
+              },
+              "expires_at": {
+                "format": "date-time",
+                "title": "Expires At",
+                "type": "string"
+              },
+              "persistence": {
+                "enum": [
+                  "native",
+                  "cookie",
+                  "memory"
+                ],
+                "title": "Persistence",
+                "type": "string"
+              },
+              "principal_id": {
+                "format": "uuid",
+                "title": "Principal Id",
+                "type": "string"
+              },
+              "refresh_token": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Refresh Token"
+              },
+              "rotation": {
+                "maximum": 4096.0,
+                "minimum": 0.0,
+                "title": "Rotation",
+                "type": "integer"
+              },
+              "session_id": {
+                "format": "uuid",
+                "title": "Session Id",
+                "type": "string"
+              },
+              "tenant_id": {
+                "format": "uuid",
+                "title": "Tenant Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "session_id",
+              "tenant_id",
+              "principal_id",
+              "access_token",
+              "access_expires_at",
+              "expires_at",
+              "persistence",
+              "rotation"
+            ],
+            "title": "SessionTokens",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/SessionTokens"
+      },
+      "parameter_locations": {},
+      "path": "/v1/sign-in/refresh",
+      "retry": "inspect_before_retry",
+      "sensitive_input": true,
+      "sensitive_result": true,
+      "summary": "Refresh"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "write",
+      "group": "sign-in",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "invitation_id": {
+                "format": "uuid",
+                "title": "Invitation Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "invitation_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters"
+        ],
+        "type": "object"
+      },
+      "method": "DELETE",
+      "name": "sign_in.revoke_invitation",
+      "output_schema": {
+        "additionalProperties": true,
+        "title": "Response Revoke Invitation V1 Sign In Invitations  Invitation Id  Delete",
+        "type": "object"
+      },
+      "parameter_locations": {
+        "invitation_id": "path"
+      },
+      "path": "/v1/sign-in/invitations/{invitation_id}",
+      "retry": "inspect_before_retry",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Revoke Invitation"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "write",
+      "group": "sign-in",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "session_id": {
+                "format": "uuid",
+                "title": "Session Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "session_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters"
+        ],
+        "type": "object"
+      },
+      "method": "DELETE",
+      "name": "sign_in.revoke_session",
+      "output_schema": {
+        "additionalProperties": true,
+        "title": "Response Revoke Session V1 Sign In Sessions  Session Id  Delete",
+        "type": "object"
+      },
+      "parameter_locations": {
+        "session_id": "path"
+      },
+      "path": "/v1/sign-in/sessions/{session_id}",
+      "retry": "inspect_before_retry",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Revoke Session"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "read",
+      "group": "sign-in",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {},
+        "type": "object"
+      },
+      "method": "GET",
+      "name": "sign_in.sessions",
+      "output_schema": {
+        "additionalProperties": true,
+        "title": "Response Sessions V1 Sign In Sessions Get",
+        "type": "object"
+      },
+      "parameter_locations": {},
+      "path": "/v1/sign-in/sessions",
+      "retry": "read",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Sessions"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "write",
+      "group": "sign-in",
+      "input_schema": {
+        "$defs": {
+          "PasswordInput": {
+            "additionalProperties": false,
+            "properties": {
+              "current_password": {
+                "anyOf": [
+                  {
+                    "format": "password",
+                    "maxLength": 128,
+                    "type": "string",
+                    "writeOnly": true
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Current Password"
+              },
+              "password": {
+                "format": "password",
+                "maxLength": 128,
+                "minLength": 15,
+                "title": "Password",
+                "type": "string",
+                "writeOnly": true
+              },
+              "username": {
+                "maxLength": 128,
+                "minLength": 3,
+                "title": "Username",
+                "type": "string"
+              }
+            },
+            "required": [
+              "username",
+              "password"
+            ],
+            "title": "PasswordInput",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/PasswordInput"
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "PUT",
+      "name": "sign_in.set_password",
+      "output_schema": {
+        "additionalProperties": true,
+        "title": "Response Set Password V1 Sign In Account Put",
+        "type": "object"
+      },
+      "parameter_locations": {},
+      "path": "/v1/sign-in/account",
+      "retry": "inspect_before_retry",
+      "sensitive_input": true,
+      "sensitive_result": true,
+      "summary": "Set Password"
+    },
+    {
+      "authentication": "bearer",
       "download": true,
       "effect": "read",
       "group": "evidence",
@@ -15480,10 +16606,12 @@
       },
       "path": "/v1/sources/{source_revision_id}/attachments/{attachment_id}",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Attachment"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "evidence",
@@ -15630,10 +16758,12 @@
       },
       "path": "/v1/sources/{source_revision_id}",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Source"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "write",
       "group": "spaces",
@@ -15730,10 +16860,12 @@
       "parameter_locations": {},
       "path": "/v1/spaces",
       "retry": "inspect_before_retry",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Create Space"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "spaces",
@@ -15819,10 +16951,12 @@
       },
       "path": "/v1/spaces/{space_id}",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Get Space"
     },
     {
+      "authentication": "bearer",
       "download": false,
       "effect": "read",
       "group": "spaces",
@@ -15905,6 +17039,7 @@
       "parameter_locations": {},
       "path": "/v1/spaces",
       "retry": "read",
+      "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Spaces"
     }

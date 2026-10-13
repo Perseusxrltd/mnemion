@@ -2,6 +2,7 @@ import io
 import json
 import os
 import zipfile
+from pydantic import SecretStr
 from uuid import UUID, uuid4
 
 import psycopg
@@ -533,3 +534,134 @@ def test_restore_requires_fresh_model_endpoint_consent(
     finally:
         restored.close()
         registry.close()
+
+
+@pytest.mark.parametrize("transport", ["native", "browser"])
+def test_restore_invalidates_passwords_invitations_and_rotating_sessions(
+    env, postgres, pg_bin, tmp_path, destination, transport
+):
+    from mnemion.service.identity import IdentityService
+    from mnemion.service.sign_in import (
+        InvitationAcceptInput,
+        InvitationInput,
+        PasswordInput,
+        SignInInput,
+        SignInService,
+    )
+
+    original_password = "acorn comet satin harbour apricot"
+    changed_password = "birch lantern cocoa summit calypso"
+    restored_password = "paper orbit glacier meadow lantern"
+    with psycopg.connect(env.admin_dsn) as conn:
+        conn.execute("DELETE FROM mnemion.sign_in_attempts")
+    service = SignInService(env.db)
+    service.set_password(env.owner, PasswordInput(username="owner", password=original_password))
+    login = SignInInput(
+        workspace_id=env.owner.tenant_id,
+        username="owner",
+        password=original_password,
+        device_name="Before restore",
+        transport=transport,
+    )
+    first = service.sign_in(login)
+    current = service.refresh(
+        first["refresh_token"],
+        transport=transport,
+        csrf=first["csrf_token"],
+        workspace=env.owner.tenant_id,
+    )
+    person = env.identities.create_principal(
+        env.owner, PrincipalInput(name="Pending recipient", kind="human")
+    )
+    invite = service.create_invitation(env.owner, InvitationInput(principal_id=UUID(person["id"])))
+    saved = env.memory.save(
+        env.owner,
+        env.space,
+        MemoryInput(content="A durable memory before account recovery"),
+        "account-recovery-memory",
+    )
+    archive, ledger, credentials = (
+        tmp_path / name for name in ("accounts.mnemion", "ledger.json", "owner.json")
+    )
+    recovery.create_backup(env.admin_dsn, archive, pg_bin=pg_bin)
+    service.set_password(
+        env.owner,
+        PasswordInput(
+            username="owner", password=changed_password, current_password=original_password
+        ),
+    )
+    service.revoke_invitation(env.owner, UUID(invite["id"]))
+    recovery.export_ledger(env.admin_dsn, ledger)
+    recovery.restore_backup(
+        env.admin_dsn,
+        archive,
+        database_name=destination,
+        deletion_ledger=ledger,
+        credentials_output=credentials,
+        pg_bin=pg_bin,
+    )
+    database = Database(make_conninfo(postgres[1], dbname=destination))
+    database.open()
+    try:
+        restored = SignInService(database)
+        for token in (env.token, first["access_token"], current["access_token"]):
+            with pytest.raises(ServiceError) as rejected:
+                database.authenticate(token)
+            assert rejected.value.status == 401
+        for issued in (first, current):
+            with pytest.raises(ServiceError) as rejected:
+                restored.refresh(
+                    issued["refresh_token"],
+                    transport=transport,
+                    csrf=issued["csrf_token"],
+                    workspace=env.owner.tenant_id,
+                )
+            assert rejected.value.status == 401
+        for password in (original_password, changed_password):
+            with pytest.raises(ServiceError) as rejected:
+                restored.sign_in(login.model_copy(update={"password": SecretStr(password)}))
+            assert rejected.value.status == 401
+        with pytest.raises(ServiceError):
+            restored.preview_invitation(invite["invitation_token"])
+        with pytest.raises(ServiceError):
+            restored.accept_invitation(
+                InvitationAcceptInput(
+                    invitation=invite["invitation_token"],
+                    username="pending",
+                    password=restored_password,
+                    device_name="Stale invitation",
+                    transport=transport,
+                )
+            )
+        owner = next(
+            row
+            for row in json.loads(credentials.read_text())["organizations"]
+            if row["tenant_id"] == str(env.owner.tenant_id)
+        )
+        identity = database.authenticate(owner["api_key"])
+        assert identity.principal_id == env.owner.principal_id
+        assert restored.account(identity)["account"]["reset_required"] is True
+        fresh = restored.create_invitation(
+            identity, InvitationInput(principal_id=identity.principal_id, purpose="reset")
+        )
+        issued = restored.accept_invitation(
+            InvitationAcceptInput(
+                invitation=fresh["invitation_token"],
+                username="owner",
+                password=restored_password,
+                device_name="After restore",
+                transport=transport,
+            )
+        )
+        new_identity = database.authenticate(issued["access_token"])
+        assert new_identity.principal_id == identity.principal_id
+        assert IdentityService(database).me(new_identity)["administrator"]
+        assert (
+            MemoryService(database, env.embedder.generation).fetch(
+                new_identity, UUID(saved["memory_id"])
+            )["content"]
+            == "A durable memory before account recovery"
+        )
+        assert database.authenticate(owner["api_key"]) == identity
+    finally:
+        database.close()

@@ -1,6 +1,7 @@
 import type { AgentsResponse, ConnectorStatus, CoreMemory, DrawerDetail, DrawerSummary, KGGraph, ObsidianStatus, RecentDrawer, SearchHit, Status, StudioConfig, Taxonomy, TrustStats } from '../types'
 import type { WorkspaceInspection, WorkspaceSession, WorkspaceStatus } from '../workspace/connection-types'
 import type { LocalOptions, LocalStatus, MemoryWrite, PortChange } from '../../../shared/local-workspace'
+import type { SignInCredentials, InvitationCredentials, InvitationPreview } from '@mnemion/client'
 
 declare global {
   interface Window {
@@ -14,6 +15,9 @@ declare global {
       workspaceInspect?: (id: string) => Promise<WorkspaceInspection>
       workspaceResume?: () => Promise<WorkspaceSession | null>
       workspaceConnect?: (input: { endpoint: string; credential: string; remember: boolean }) => Promise<WorkspaceSession>
+      workspaceSignIn?: (input: { endpoint: string; credentials: SignInCredentials; remember: boolean }) => Promise<WorkspaceSession>
+      workspaceInvitationPreview?: (input: { endpoint: string; invitation: string }) => Promise<InvitationPreview>
+      workspaceInvitationAccept?: (input: { endpoint: string; credentials: InvitationCredentials; remember: boolean }) => Promise<WorkspaceSession>
       workspaceRestore?: (id: string) => Promise<WorkspaceSession>
       workspaceForget?: (id: string) => Promise<void>
       workspaceDisconnect?: () => Promise<void>

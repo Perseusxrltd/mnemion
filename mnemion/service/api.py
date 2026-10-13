@@ -57,6 +57,7 @@ from .librarian_runner import LibrarianRunner
 from .agent_api import attach_agents
 from .oauth import OAuthSettings, OAuthVerifier, unauthorized
 from .oauth_api import attach_oauth
+from .sign_in_api import attach_sign_in
 
 logger = logging.getLogger(__name__)
 
@@ -359,6 +360,7 @@ def create_app(
     attach_librarian(app, librarian, authenticated)
     attach_agents(app, authenticated)
     attach_oauth(app, database, authenticated, oauth_settings)
+    attach_sign_in(app, database, authenticated)
 
     if oauth_settings:
 

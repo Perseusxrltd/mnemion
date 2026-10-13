@@ -78,7 +78,17 @@ def catalog(*, group: str | None = None, query: str | None = None, offset=0, lim
             or query.casefold() in (operation["name"] + " " + operation["summary"]).casefold()
         )
     ]
-    fields = ("name", "group", "summary", "effect", "retry", "download", "sensitive_result")
+    fields = (
+        "name",
+        "group",
+        "summary",
+        "effect",
+        "retry",
+        "download",
+        "sensitive_input",
+        "sensitive_result",
+        "authentication",
+    )
     return {
         "schema_version": 1,
         "api_version": "v1",

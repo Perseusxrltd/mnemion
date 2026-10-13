@@ -1,6 +1,7 @@
 /** Volatile credentials stay in the main process; renderer handles are origin-bound. */
 import { randomBytes } from 'node:crypto'
 import { WorkspaceStore, workspaceEndpoint, workspaceIdentity, type WorkspaceIdentity, type WorkspaceBookmark } from './workspace-store.js'
+import { WorkspacePasswordAuth, type PasswordTokens, type PasswordSession, type InvitationPreview } from './workspace-auth.js'
 
 export interface WorkspaceSession {
   endpoint: string
@@ -8,25 +9,36 @@ export interface WorkspaceSession {
   me: WorkspaceIdentity
   remembered: boolean
   bookmarkId?: string
+  authentication?: 'password'
 }
-
-type Active = WorkspaceSession & { credential: string }
+type Active = WorkspaceSession & { credential: string; password?: PasswordTokens }
 type VerifyIdentity = (endpoint: string, credential: string) => Promise<WorkspaceIdentity>
 const PREFIX = 'mnm_session_'
 export const isWorkspaceSession = (header: string): boolean => header.startsWith('Bearer ' + PREFIX)
+const sessionMetadata = (tokens: PasswordTokens): PasswordSession => ({
+  sessionId: tokens.sessionId, expiresAt: tokens.expiresAt, refreshPending: false,
+})
 
 export class WorkspaceConnections {
   private active: Active | null = null
   private generation = 0
   private queue: Promise<void> = Promise.resolve()
   private resuming: Promise<WorkspaceSession | null> | null = null
+  private refreshing: Promise<void> | null = null
 
-  constructor(private readonly store: WorkspaceStore, private readonly verify: VerifyIdentity) {}
+  constructor(private readonly store: WorkspaceStore, private readonly verify: VerifyIdentity,
+    private readonly passwords?: WorkspacePasswordAuth) {}
+
+  private passwordAuth(): WorkspacePasswordAuth {
+    if (!this.passwords) throw new Error('This installation does not support individual sign-in.')
+    return this.passwords
+  }
 
   private publicSession(): WorkspaceSession | null {
     if (!this.active) return null
-    const { credential: _credential, ...session } = this.active
-    return structuredClone(session)
+    const { endpoint, sessionToken, me, remembered, bookmarkId, authentication } = this.active
+    // Explicit allowlist: neither access nor refresh secrets cross into the renderer.
+    return structuredClone({ endpoint, sessionToken, me, remembered, bookmarkId, ...(authentication ? { authentication } : {}) })
   }
 
   private serial<T>(operation: () => Promise<T>): Promise<T> {
@@ -45,20 +57,25 @@ export class WorkspaceConnections {
     return this.store.inspect(id)
   }
 
-  private async activate(endpoint: string, credential: string, remember: boolean, generation: number, expected?: WorkspaceBookmark): Promise<WorkspaceSession> {
+  private async activate(endpoint: string, credential: string, remember: boolean, generation: number,
+    expected?: WorkspaceBookmark, password?: PasswordTokens): Promise<WorkspaceSession> {
     endpoint = workspaceEndpoint(endpoint)
     if (typeof credential !== 'string' || !/^[A-Za-z0-9_.~+/=-]{16,1024}$/.test(credential)) throw new Error('Enter a valid workspace key.')
     const me = workspaceIdentity(await this.verify(endpoint, credential))
-    if (JSON.stringify(me).includes(credential)) throw new Error('The workspace returned an invalid identity.')
-    if (expected && (expected.tenantId !== me.tenant_id || expected.principalId !== me.principal_id)) {
-      throw new Error('This key now identifies a different workspace or person. Connect again to review its access.')
+    if (JSON.stringify(me).includes(credential) || (password && JSON.stringify(me).includes(password.refreshToken))) throw new Error('The workspace returned an invalid identity.')
+    if ((expected && (expected.tenantId !== me.tenant_id || expected.principalId !== me.principal_id)) ||
+        (password && (password.tenantId !== me.tenant_id || password.principalId !== me.principal_id))) {
+      throw new Error('This credential now identifies a different workspace or person. Connect again to review its access.')
     }
     return this.serial(async () => {
       if (generation !== this.generation) throw new Error('A newer connection was selected.')
-      const bookmark = remember ? await this.store.save(endpoint, credential, me) : undefined
+      const bookmark = remember ? await this.store.save(endpoint, password?.refreshToken ?? credential, me,
+        password ? sessionMetadata(password) : undefined) : undefined
       if (!remember) await this.store.select(null)
       if (generation !== this.generation) throw new Error('A newer connection was selected.')
-      this.active = { endpoint, credential, me, remembered: !!bookmark, bookmarkId: bookmark?.id, sessionToken: PREFIX + randomBytes(32).toString('base64url') }
+      this.active = { endpoint, credential, me, remembered: !!bookmark, bookmarkId: bookmark?.id,
+        sessionToken: PREFIX + randomBytes(32).toString('base64url'),
+        ...(password ? { authentication: 'password' as const, password } : {}) }
       return this.publicSession()!
     })
   }
@@ -67,11 +84,47 @@ export class WorkspaceConnections {
     return this.activate(endpoint, credential, remember, ++this.generation)
   }
 
+  async previewInvitation(endpoint: string, invitation: unknown): Promise<InvitationPreview> {
+    return this.passwordAuth().preview(endpoint, invitation)
+  }
+
+  private async activatePassword(endpoint: string, tokens: PasswordTokens, remember: boolean, generation: number,
+    expected?: WorkspaceBookmark): Promise<WorkspaceSession> {
+    try {
+      return await this.activate(endpoint, tokens.accessToken, remember, generation, expected, tokens)
+    } catch (error) {
+      await this.passwordAuth().signOut(endpoint, tokens.refreshToken, sessionMetadata(tokens), tokens.tenantId).catch(() => {})
+      throw error
+    }
+  }
+
+  async signIn(endpoint: string, input: unknown, remember: boolean): Promise<WorkspaceSession> {
+    const generation = ++this.generation
+    endpoint = workspaceEndpoint(endpoint)
+    const tokens = await this.passwordAuth().signIn(endpoint, input)
+    return this.activatePassword(endpoint, tokens, remember, generation)
+  }
+
+  async acceptInvitation(endpoint: string, input: unknown, remember: boolean): Promise<WorkspaceSession> {
+    const generation = ++this.generation
+    endpoint = workspaceEndpoint(endpoint)
+    const invitation = input && typeof input === 'object' ? (input as { invitation?: unknown }).invitation : undefined
+    const preview = await this.passwordAuth().preview(endpoint, invitation)
+    const tokens = await this.passwordAuth().accept(endpoint, input, preview)
+    return this.activatePassword(endpoint, tokens, remember, generation)
+  }
+
   async restore(id: string): Promise<WorkspaceSession> {
     const generation = ++this.generation
-    const { bookmark, credential } = await this.store.credential(id)
+    const { bookmark, credential, session } = await this.store.credential(id)
     if (generation !== this.generation) throw new Error('A newer connection was selected.')
-    return this.activate(bookmark.endpoint, credential, true, generation, bookmark)
+    if (!session) return this.activate(bookmark.endpoint, credential, true, generation, bookmark)
+    await this.serial(async () => {
+      if (generation !== this.generation) throw new Error('A newer connection was selected.')
+      await this.store.markRefreshPending(id)
+    })
+    const tokens = await this.passwordAuth().refresh(bookmark.endpoint, credential, session, bookmark)
+    return this.activatePassword(bookmark.endpoint, tokens, true, generation, bookmark)
   }
 
   async resume(): Promise<WorkspaceSession | null> {
@@ -95,9 +148,21 @@ export class WorkspaceConnections {
     this.active = null
   }
 
-  disconnect(): Promise<void> {
+  async disconnect(): Promise<void> {
+    const previous = this.active
     this.lock()
-    return this.serial(() => this.store.select(null))
+    await this.serial(async () => {
+      await this.store.select(null)
+      if (previous?.password && previous.bookmarkId) await this.store.remove(previous.bookmarkId)
+    })
+    if (previous?.password) {
+      try {
+        await this.passwordAuth().signOut(previous.endpoint, previous.password.refreshToken,
+          sessionMetadata(previous.password), previous.me.tenant_id)
+      } catch {
+        throw new Error('Signed out on this device. The workspace could not confirm revocation; revoke this device in Account & sessions when it is reachable.')
+      }
+    }
   }
 
   async forget(id: string): Promise<void> {
@@ -111,7 +176,45 @@ export class WorkspaceConnections {
     return this.serial(() => this.store.reset())
   }
 
-  authorization(url: URL, header: string): string {
+  private async refreshActive(): Promise<void> {
+    if (this.refreshing) return this.refreshing
+    const active = this.active
+    if (!active?.password) return
+    const generation = this.generation
+    const pending = (async () => {
+      let advanced: PasswordTokens | undefined
+      try {
+        if (active.remembered && active.bookmarkId) {
+          await this.serial(async () => {
+            if (generation !== this.generation) throw new Error('A newer connection was selected.')
+            await this.store.markRefreshPending(active.bookmarkId!)
+          })
+        }
+        advanced = await this.passwordAuth().refresh(active.endpoint, active.password!.refreshToken,
+          sessionMetadata(active.password!), { tenantId: active.me.tenant_id, principalId: active.me.principal_id })
+        const me = workspaceIdentity(await this.verify(active.endpoint, advanced.accessToken))
+        if (me.tenant_id !== active.me.tenant_id || me.principal_id !== active.me.principal_id ||
+            JSON.stringify(me).includes(advanced.accessToken) || JSON.stringify(me).includes(advanced.refreshToken)) {
+          throw new Error('The refreshed login identified a different account. Sign in again.')
+        }
+        await this.serial(async () => {
+          if (generation !== this.generation || this.active !== active) throw new Error('A newer connection was selected.')
+          if (active.remembered) await this.store.save(active.endpoint, advanced!.refreshToken, me, sessionMetadata(advanced!))
+          if (generation !== this.generation || this.active !== active) throw new Error('A newer connection was selected.')
+          this.active = { ...active, me, credential: advanced!.accessToken, password: advanced }
+        })
+      } catch (error) {
+        if (this.active === active) this.active = null
+        if (advanced) await this.passwordAuth().signOut(active.endpoint, advanced.refreshToken,
+          sessionMetadata(advanced), active.me.tenant_id).catch(() => {})
+        throw error
+      }
+    })()
+    this.refreshing = pending
+    try { await pending } finally { if (this.refreshing === pending) this.refreshing = null }
+  }
+
+  async authorization(url: URL, header: string): Promise<string> {
     if (!isWorkspaceSession(header)) return header
     if (!this.active || header !== 'Bearer ' + this.active.sessionToken) throw new Error('Reconnect to your workspace before continuing.')
     const endpoint = new URL(this.active.endpoint)
@@ -120,6 +223,8 @@ export class WorkspaceConnections {
         !(url.pathname.startsWith(prefix + '/v1/') || [prefix + '/health/live', prefix + '/health/ready'].includes(url.pathname))) {
       throw new Error('A saved connection can only access its own workspace API.')
     }
+    if (this.active.password && Date.parse(this.active.password.accessExpiresAt) <= Date.now() + 60_000) await this.refreshActive()
+    if (!this.active || header !== 'Bearer ' + this.active.sessionToken) throw new Error('Reconnect to your workspace before continuing.')
     return 'Bearer ' + this.active.credential
   }
 }

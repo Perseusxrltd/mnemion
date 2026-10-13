@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { constants, type Stats } from 'node:fs'
 import { chmod, lstat, mkdir, open, rename, rm } from 'node:fs/promises'
 import { isAbsolute, join } from 'node:path'
+import { passwordSession, type PasswordSession } from './workspace-auth.js'
 
 export interface WorkspaceIdentity {
   principal_id: string
@@ -175,12 +176,16 @@ export class WorkspaceStore {
     return (await this.status()).bookmarks
   }
 
-  save(endpoint: string, credential: string, identity: WorkspaceIdentity): Promise<WorkspaceBookmark> {
+  save(endpoint: string, credential: string, identity: WorkspaceIdentity, session?: PasswordSession): Promise<WorkspaceBookmark> {
     return this.serial(async () => {
       if (!await this.available()) throw new Error('Unlock the operating system password store, or connect without remembering this workspace.')
       endpoint = workspaceEndpoint(endpoint)
       identity = workspaceIdentity(identity)
       if (typeof credential !== 'string' || !TOKEN.test(credential) || JSON.stringify(identity).includes(credential)) throw new Error('Invalid workspace credential or identity.')
+      if (session) {
+        session = passwordSession(session)
+        if (!/^mnm_r_[A-Za-z0-9_-]{43}$/.test(credential)) throw new Error('Invalid saved login.')
+      }
       const { connections: entries } = await this.read()
       const previous = entries.find(item => item.endpoint === endpoint && item.principalId === identity.principal_id && item.tenantId === identity.tenant_id)
       if (!previous && entries.length >= 32) throw new Error('Remove a saved connection before adding another workspace.')
@@ -195,7 +200,7 @@ export class WorkspaceStore {
         format: 1, endpoint, principalId: bookmark.principalId, tenantId: bookmark.tenantId, credential,
         // Older clients ignore additional encrypted fields. Keep the outer
         // bookmark format unchanged so rollback can still open the connection.
-        identity, verifiedAt: bookmark.updatedAt,
+        identity, verifiedAt: bookmark.updatedAt, ...(session ? { passwordSession: session } : {}),
       }))).toString('base64')
       await this.write({ activeId: bookmark.id, connections: [...entries.filter(item => item.id !== bookmark.id), { ...bookmark, sealed }] })
       return bookmark
@@ -214,12 +219,29 @@ export class WorkspaceStore {
   }
 
   /** Only the main-process connection manager may receive the decrypted secret. */
-  async credential(id: string): Promise<{ bookmark: WorkspaceBookmark; credential: string }> {
+  async credential(id: string): Promise<{ bookmark: WorkspaceBookmark; credential: string; session?: PasswordSession }> {
     const item = (await this.read()).connections.find(item => item.id === id)
     if (!item) throw new Error('That saved workspace is no longer available.')
     const decoded = await this.unseal(item)
     const { sealed: _sealed, ...bookmark } = item
-    return { bookmark, credential: decoded.credential }
+    return { bookmark, credential: decoded.credential,
+      ...(decoded.passwordSession === undefined ? {} : { session: passwordSession(decoded.passwordSession) }) }
+  }
+
+  /** Commit before sending a one-use refresh, so a crash cannot replay it. */
+  markRefreshPending(id: string): Promise<void> {
+    return this.serial(async () => {
+      const state = await this.read()
+      const item = state.connections.find(item => item.id === id)
+      if (!item) throw new Error('That saved workspace is no longer available.')
+      const decoded = await this.unseal(item)
+      const session = passwordSession(decoded.passwordSession)
+      if (session.refreshPending) throw new Error('The previous login refresh was interrupted. Sign in again.')
+      if (Date.parse(session.expiresAt) <= Date.now()) throw new Error('This saved login has expired. Sign in again.')
+      decoded.passwordSession = { ...session, refreshPending: true }
+      item.sealed = (await this.cipher.encrypt(JSON.stringify(decoded))).toString('base64')
+      await this.write(state)
+    })
   }
 
   /** Read recovery context locally, without contacting or selecting a server. */

@@ -469,7 +469,10 @@ async function createWindow() {
             const filter = document.createElement('select'); filter.dataset.updateSafe = ''; document.body.append(filter);
             filter.dispatchEvent(new Event('change', { bubbles: true }));
             const viewChanged = window.mnemion?.updateSafety?.(); filter.remove();
-            return { clean, edited, removed, viewChanged };
+            const receipt = document.createElement('section'); receipt.dataset.updatePending = ''; document.body.append(receipt);
+            const pendingReceipt = window.mnemion?.updateSafety?.(); receipt.remove();
+            const acknowledgedReceipt = window.mnemion?.updateSafety?.();
+            return { clean, edited, removed, viewChanged, pendingReceipt, acknowledgedReceipt };
           })(),
           nodeAvailable: typeof window.require !== 'undefined',
           route: location.hash

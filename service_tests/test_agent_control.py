@@ -324,6 +324,35 @@ def test_control_and_combined_mcp_reuse_live_permissions_and_keep_sensitive_resu
                         and private.structured_content["code"] == "private_file_required"
                     )
                     assert private.structured_content["retryable"] is False
+                    for operation, body in (
+                        (
+                            "sign_in.create_invitation",
+                            {"principal_id": str(env.owner.principal_id)},
+                        ),
+                        (
+                            "sign_in.login",
+                            {
+                                "workspace_id": str(env.owner.tenant_id),
+                                "username": "fixture",
+                                "password": "synthetic-private-password",
+                                "transport": "native",
+                                "device_name": "Blocked tool fixture",
+                            },
+                        ),
+                        ("sign_in.preview_invitation", {"invitation": "mnm_i_" + "x" * 43}),
+                    ):
+                        blocked = await client.call_tool(
+                            "mnemion_read"
+                            if operation == "sign_in.preview_invitation"
+                            else "mnemion_write",
+                            {"operation": operation, "request": {"body": body}},
+                        )
+                        assert blocked.is_error
+                        assert blocked.structured_content["code"] == "private_file_required"
+                        assert "synthetic-private-password" not in json.dumps(
+                            blocked.structured_content
+                        )
+                        assert "mnm_i_" not in json.dumps(blocked.structured_content)
 
             async with httpx2.AsyncClient(
                 headers={"Authorization": "Bearer " + key["api_key"]}

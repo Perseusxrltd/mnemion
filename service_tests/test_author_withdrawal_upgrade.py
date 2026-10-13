@@ -23,10 +23,17 @@ def inventory(dsn):
         ).fetchall()
         result = {}
         for (table,) in tables:
+            # 015 adds a false-by-default session marker to existing keys.
+            # Compare every original field, and check that new field below.
+            value = (
+                sql.SQL("to_jsonb(t) - 'session_key'")
+                if table == "api_keys"
+                else sql.SQL("to_jsonb(t)")
+            )
             rows = connection.execute(
-                sql.SQL(
-                    "SELECT row_to_json(t)::text AS value FROM mnemion.{} t ORDER BY value"
-                ).format(sql.Identifier(table))
+                sql.SQL("SELECT ({})::text AS value FROM mnemion.{} t ORDER BY value").format(
+                    value, sql.Identifier(table)
+                )
             ).fetchall()
             result[table] = hashlib.sha256("\n".join(row[0] for row in rows).encode()).hexdigest()
         return result
@@ -84,9 +91,26 @@ def test_previous_schema_upgrade_preserves_keys_grants_and_existing_memory(
                 rejected.open()
         finally:
             rejected.close()
-        assert db.migrate(admin_dsn) == ["014_author_withdrawal.sql"]
+        assert db.migrate(admin_dsn) == ["014_author_withdrawal.sql", "015_individual_sign_in.sql"]
         assert db.migrate(admin_dsn) == []
-        assert inventory(admin_dsn) == before
+        after = inventory(admin_dsn)
+        assert {table: after[table] for table in before} == before
+        added = set(after) - set(before)
+        assert added == {
+            "password_accounts",
+            "sign_in_sessions",
+            "spent_refresh_tokens",
+            "sign_in_invitations",
+            "sign_in_attempts",
+        }
+        assert all(after[table] == hashlib.sha256(b"").hexdigest() for table in added)
+        with psycopg.connect(admin_dsn) as connection:
+            assert (
+                connection.execute(
+                    "SELECT count(*) FROM mnemion.api_keys WHERE session_key"
+                ).fetchone()[0]
+                == 0
+            )
         database = db.Database(app_dsn)
         database.open()
         assert database.authenticate(setup["api_key"]) == owner

@@ -17,6 +17,7 @@ def retain_administrator_access(conn) -> None:
                ON k.tenant_id=p.tenant_id AND k.principal_id=p.id
              WHERE p.tenant_id=mnemion.tenant() AND p.administrator
                AND p.disabled_at IS NULL AND k.revoked_at IS NULL
+               AND NOT k.session_key
                AND (k.expires_at IS NULL OR k.expires_at > clock_timestamp())
            ) AS available"""
     ).fetchone()["available"]:

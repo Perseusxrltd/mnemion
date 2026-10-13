@@ -89,6 +89,21 @@ def hash_password(password: str) -> str:
         ).derive_phc_encoded(value)
 
 
+def screen_password(password: str, *, context: list[str] | None = None) -> None:
+    """Reject readily guessed passwords locally, without a breach lookup service."""
+    from zxcvbn import zxcvbn
+
+    _password_bytes(password, creating=True)
+    with _hashing_slot():
+        result = zxcvbn(password, user_inputs=context or [], max_length=MAX_CHARACTERS)
+    if result["score"] < 3:
+        raise ServiceError(
+            422,
+            "weak_password",
+            "Choose a less predictable password, such as several unrelated words.",
+        )
+
+
 def verify_password(password: str, encoded: str | None) -> bool:
     """Use None for an unknown account; missing/invalid verifiers never succeed.
 

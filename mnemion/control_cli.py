@@ -23,6 +23,7 @@ from .agent_control import (
     prepare,
 )
 from .private_output import private_output
+from .private_input import read_private
 from .sdk import Client
 
 
@@ -127,7 +128,7 @@ def main(argv: list[str] | None = None) -> int:
     call.add_argument(
         "--result-file",
         type=Path,
-        help="New private JSON result file; required when creating API keys",
+        help="New private JSON result file; required for passwords, invitations and issued credentials",
     )
     call.add_argument(
         "--max-response-bytes", type=int, help="Default: 64 KiB JSON or 1 GiB streamed download"
@@ -156,11 +157,19 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "describe":
             result = describe(args.operation)
         else:
+            classification = describe(args.operation)
             raw = b"{}"
+            if classification["sensitive_input"] and (not args.input or str(args.input) == "-"):
+                raise ControlError(
+                    "private_input_required",
+                    "Use --input with an owner-only credential file; never put passwords or tokens in command arguments or transcripts",
+                )
             if args.input:
                 raw = (
                     sys.stdin.buffer.read(INPUT_LIMIT + 1)
                     if str(args.input) == "-"
+                    else read_private(args.input, maximum=65536)
+                    if classification["sensitive_input"]
                     else _read(args.input, INPUT_LIMIT)
                 )
             if len(raw) > INPUT_LIMIT:
@@ -177,7 +186,11 @@ def main(argv: list[str] | None = None) -> int:
                     "private_result_required",
                     "This operation requires --result-file; newly issued credentials are never printed",
                 )
-            address, key = connection(args.credentials, args.url)
+            address, key = connection(
+                args.credentials, args.url, require_key=operation["authentication"] == "bearer"
+            )
+            if operation["authentication"] != "bearer":
+                key = None
             destination = args.output or args.result_file
             maximum = (
                 args.max_response_bytes
@@ -198,17 +211,49 @@ def main(argv: list[str] | None = None) -> int:
                     stored = result
                     if operation["sensitive_result"]:
                         issued = result["result"]
-                        if not isinstance(issued, dict) or not isinstance(
-                            issued.get("api_key"), str
+                        if not isinstance(issued, dict) or (
+                            args.operation == "keys.create"
+                            and not isinstance(issued.get("api_key"), str)
                         ):
                             raise ControlError(
                                 "invalid_response",
-                                "The key response was invalid; inspect issued keys before retrying",
+                                "The credential response was invalid; inspect account access before retrying",
                                 outcome="unknown",
                             )
                         # Newly issued files can be used directly by mnemion-agent,
                         # mnemion-service and this CLI without printing/copying keys.
                         stored = {**issued, "api_url": address}
+                        if args.operation in {
+                            "sign_in.login",
+                            "sign_in.refresh",
+                            "sign_in.accept_invitation",
+                        }:
+                            from .service.sign_in_api import SessionTokens
+
+                            try:
+                                tokens = SessionTokens.model_validate(issued)
+                                if (
+                                    tokens.persistence != "native"
+                                    or not re.fullmatch(
+                                        r"mnm_s_[A-Za-z0-9_-]{43}", tokens.access_token
+                                    )
+                                    or not isinstance(tokens.refresh_token, str)
+                                    or not re.fullmatch(
+                                        r"mnm_r_[A-Za-z0-9_-]{43}", tokens.refresh_token
+                                    )
+                                ):
+                                    raise ValueError()
+                            except ValueError:
+                                raise ControlError(
+                                    "invalid_response",
+                                    "The session response was invalid; sign in again instead of replaying a refresh",
+                                    outcome="unknown",
+                                ) from None
+                            stored = {
+                                **tokens.model_dump(mode="json"),
+                                "api_key": tokens.access_token,
+                                "api_url": address,
+                            }
                     output.write((json.dumps(stored, allow_nan=False) + "\n").encode())
                     result = {key: value for key, value in result.items() if key != "result"}
                 if destination:
