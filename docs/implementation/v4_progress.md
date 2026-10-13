@@ -454,10 +454,23 @@ subsequently passed on all six targets at 14:37:29 UTC. The independent shared
 host requires its own backed-up
 015 migration; a desktop release does not apply it.
 
-The 4.2.1 follow-up reduces retained Linux/glibc model heap pages, with
+Published 4.2.1 reduces retained Linux/glibc model heap pages, with
 [real offline measurements](../validation/2026-10-13-idle-heap-reclaim.md) and
 focused/native checks passed. Source also adds exact native database cache keys,
 fresh cache-hit probes and continuously current release-status/roadmap links.
-Its signed packages and public updates remain pending. The complete request
+It was published at 15:13:05 UTC after all 30 signed release jobs, 11 separate
+product jobs and independent uploaded-byte verification passed. The
+[publication receipt](../validation/2026-10-13-v4_2_1-publication.json) records
+the immutable source and assets. [Anonymous live website verification](../validation/2026-10-13-v4_2_1-website.json)
+passed for the current version, all six installers, guides, notes and roadmap;
+public upgrade tests are running. All five
+cache hits passed fresh full database probes, with
+[paired job measurements](../validation/2026-10-13-native-cache.json).
+
+The 4.2.2 source follow-up implements bounded exact-ID/filename candidates and
+transparent subject/path weighting. Its
+[validation record](../validation/2026-10-13-exact-identifiers.md) separates
+synthetic ranking regression from general retrieval quality. Issue 27 remains
+open until the correction is verified and published. The complete request
 list remains 64 items, with 17 shipped and 40 partial; this is scope coverage,
 not a weighted effort estimate or a claim that the product is ready to freeze.

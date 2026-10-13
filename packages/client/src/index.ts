@@ -68,7 +68,14 @@ export interface RecallHit extends Omit<Memory, 'content'> {
   text: string; text_truncated: boolean
   memory_span: { start: number; end: number; offset_unit: 'unicode_codepoints' }
   relevance_score: number; score_method: 'normalized_rrf_k60'
-  ranking: { ranks: { lexical?: number; semantic?: number }; rrf: number; lexical_rank: number | null; cosine_similarity: number | null }
+  ranking: {
+    ranks: { lexical?: number; semantic?: number }; rrf: number
+    lexical_rank: number | null; cosine_similarity: number | null
+    identifier?: {
+      rank: number; label_rank: number | null; matched: number; requested: number
+      label_matches: number; weight: number; label_weight: number
+    } | null
+  }
 }
 export interface IndexState {
   generation_id: string | null; generation_ids?: string[]; space_generations?: Record<string, string>

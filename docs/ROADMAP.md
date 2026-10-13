@@ -1,17 +1,27 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.2.1**. Roadmap updated: **2026-10-13**.
+Reviewed source distribution: **4.2.2**. Roadmap updated: **2026-10-13**.
 The [current published distribution and release gates](RELEASE_STATUS.md) are updated automatically.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
 
-The [4.2.1 follow-up](releases/4.2.1.md) is in development. It returns freed
+Published [4.2.1](releases/4.2.1.md) returns freed
 model heap pages on glibc-based Linux after idle or budget-triggered eviction.
 [37 focused checks and two offline model comparisons](validation/2026-10-13-idle-heap-reclaim.md)
-passed, followed by a complete native desktop check. Release validation remains.
+passed, followed by all 30 signed release jobs, 11 separate product jobs and
+[independent uploaded-asset verification](validation/2026-10-13-v4_2_1-artifacts.json).
 Unchanged native database builds can now be reused with fresh security/recovery
-probes; [hosted cache measurements](implementation/native-local-runtime.md#reusing-a-verified-database-build)
-are still pending. Peak RAM and API/worker duplication remain open under issue 13.
+probes. [Paired hosted cache measurements](implementation/native-local-runtime.md#reusing-a-verified-database-build)
+reduced the five database jobs from 261–780 seconds to 12–40 seconds; application
+and release gates still run. Peak RAM and API/worker duplication remain open
+under issue 13. Public automatic-upgrade results are recorded in live release status.
+
+The [4.2.2 follow-up](releases/4.2.2.md) is in development. Exact task IDs and
+filenames enter scoped candidates directly; subject/path matches receive higher
+priority. [Regression evidence](validation/2026-10-13-exact-identifiers.md)
+includes published-source comparison, access boundaries and correction races.
+This addresses issue 27's ranking failure without declaring the broader
+natural-language, threshold or recency requirements complete.
 
 Published [4.2.0](releases/4.2.0.md) implements personal
 passwords, scoped invitations, revocable device sessions, protected desktop and
@@ -28,8 +38,8 @@ onboarding and live named-provider acceptance remain separate unfinished work.
 The same release corrects search excerpts from long documents: matching
 passages carry exact source offsets and preserve smaller context budgets.
 [Thirteen focused retrieval checks](validation/2026-10-13-matched-evidence.md)
-and the release/installed-upgrade gates passed; issue 35 is closed. Recency,
-exact-identifier ranking and calibrated relevance are still separate open work.
+and the release/installed-upgrade gates passed; issue 35 is closed. Recency and
+calibrated relevance remain open; exact-identifier ranking is under validation.
 
 The actual Windows app completed automatic 4.1.4 → 4.1.6 → 4.1.7 installation
 and relaunch. That exercise identified a locked-screen focus wait; published

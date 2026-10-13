@@ -74,8 +74,24 @@ emulation. Every release still builds, signs and tests its application packages.
 A bad cached archive fails validation; a maintainer can remove that exact cache
 entry and rerun to compile again. No release gate is skipped after a cache hit.
 
-The cache and archive tests passed **37 checks** on 2026-10-13. Hosted cold-build
-and cache-hit measurements remain pending; no speedup has yet been measured.
+The cache and archive tests passed **37 checks** on 2026-10-13. The first paired
+hosted runs then passed all five cold builds and all five restored-archive
+probes. Compilation was skipped only on the exact cache hits. Observed complete
+database job durations were:
+
+| Database target | Cold job | Restored archive job |
+| --- | ---: | ---: |
+| Linux x64 | 261 s | 12 s |
+| Linux ARM64 | 266 s | 15 s |
+| macOS x64 | 780 s | 31 s |
+| macOS ARM64 | 276 s | 19 s |
+| Windows x64 | 759 s | 40 s |
+
+[Job IDs, timestamps and step outcomes](../validation/2026-10-13-native-cache.json)
+link the cold native run and the 4.2.1 signed release. The Windows ARM host also
+passed its fresh emulation probe. These are single paired job observations,
+not complete release times, a reproducible-build claim or a guaranteed speedup.
+Application packaging, signing, installation and update gates still run.
 
 ## Native acceptance
 

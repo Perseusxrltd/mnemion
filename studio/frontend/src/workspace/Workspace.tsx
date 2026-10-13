@@ -1221,6 +1221,14 @@ function SearchMemory() {
                       ? `Semantic rank ${hit.ranking.ranks.semantic}.`
                       : ""}
                   </p>
+                  {hit.ranking.identifier && (
+                    <p>
+                      Matched {hit.ranking.identifier.matched} of{" "}
+                      {hit.ranking.identifier.requested} exact IDs or filenames.
+                      {hit.ranking.identifier.label_matches > 0 &&
+                        ` ${hit.ranking.identifier.label_matches} matched the subject or file path, which gives this result higher priority.`}
+                    </p>
+                  )}
                   <blockquote>{hit.evidence.excerpt}</blockquote>
                 </details>
               </article>

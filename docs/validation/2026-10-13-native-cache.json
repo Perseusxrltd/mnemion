@@ -1,0 +1,130 @@
+{
+  "observed_at": "2026-10-13T15:11:50.820042+00:00",
+  "runs": {
+    "cold": "https://github.com/Perseusxrltd/mnemion/actions/runs/38412591747",
+    "warm": "https://github.com/Perseusxrltd/mnemion/actions/runs/38415713280"
+  },
+  "scope": "Single paired native database job measurements; not complete release duration or a general benchmark.",
+  "targets": {
+    "linux/arm64": {
+      "cold": {
+        "cache_restore": "success",
+        "cache_save": "success",
+        "compile": "success",
+        "completed_at": "2026-10-13T14:26:37Z",
+        "conclusion": "success",
+        "duration_seconds": 266.0,
+        "fresh_complete_probe": "success",
+        "job_id": 115348991754,
+        "started_at": "2026-10-13T14:22:11Z"
+      },
+      "warm": {
+        "cache_restore": "success",
+        "cache_save": "skipped",
+        "compile": "skipped",
+        "completed_at": "2026-10-13T14:44:19Z",
+        "conclusion": "success",
+        "duration_seconds": 15.0,
+        "fresh_complete_probe": "success",
+        "job_id": 115360089992,
+        "started_at": "2026-10-13T14:44:04Z"
+      }
+    },
+    "linux/x64": {
+      "cold": {
+        "cache_restore": "success",
+        "cache_save": "success",
+        "compile": "success",
+        "completed_at": "2026-10-13T14:26:30Z",
+        "conclusion": "success",
+        "duration_seconds": 261.0,
+        "fresh_complete_probe": "success",
+        "job_id": 115348992040,
+        "started_at": "2026-10-13T14:22:09Z"
+      },
+      "warm": {
+        "cache_restore": "success",
+        "cache_save": "skipped",
+        "compile": "skipped",
+        "completed_at": "2026-10-13T14:44:13Z",
+        "conclusion": "success",
+        "duration_seconds": 12.0,
+        "fresh_complete_probe": "success",
+        "job_id": 115360090164,
+        "started_at": "2026-10-13T14:44:01Z"
+      }
+    },
+    "macos/arm64": {
+      "cold": {
+        "cache_restore": "success",
+        "cache_save": "success",
+        "compile": "success",
+        "completed_at": "2026-10-13T14:26:48Z",
+        "conclusion": "success",
+        "duration_seconds": 276.0,
+        "fresh_complete_probe": "success",
+        "job_id": 115348991625,
+        "started_at": "2026-10-13T14:22:12Z"
+      },
+      "warm": {
+        "cache_restore": "success",
+        "cache_save": "skipped",
+        "compile": "skipped",
+        "completed_at": "2026-10-13T14:46:29Z",
+        "conclusion": "success",
+        "duration_seconds": 19.0,
+        "fresh_complete_probe": "success",
+        "job_id": 115360090121,
+        "started_at": "2026-10-13T14:46:10Z"
+      }
+    },
+    "macos/x64": {
+      "cold": {
+        "cache_restore": "success",
+        "cache_save": "success",
+        "compile": "success",
+        "completed_at": "2026-10-13T14:35:11Z",
+        "conclusion": "success",
+        "duration_seconds": 780.0,
+        "fresh_complete_probe": "success",
+        "job_id": 115348991905,
+        "started_at": "2026-10-13T14:22:11Z"
+      },
+      "warm": {
+        "cache_restore": "success",
+        "cache_save": "skipped",
+        "compile": "skipped",
+        "completed_at": "2026-10-13T14:46:01Z",
+        "conclusion": "success",
+        "duration_seconds": 31.0,
+        "fresh_complete_probe": "success",
+        "job_id": 115360090206,
+        "started_at": "2026-10-13T14:45:30Z"
+      }
+    },
+    "windows/x64": {
+      "cold": {
+        "cache_restore": "success",
+        "cache_save": "success",
+        "compile": "success",
+        "completed_at": "2026-10-13T14:34:48Z",
+        "conclusion": "success",
+        "duration_seconds": 759.0,
+        "fresh_complete_probe": "success",
+        "job_id": 115348991811,
+        "started_at": "2026-10-13T14:22:09Z"
+      },
+      "warm": {
+        "cache_restore": "success",
+        "cache_save": "skipped",
+        "compile": "skipped",
+        "completed_at": "2026-10-13T14:44:41Z",
+        "conclusion": "success",
+        "duration_seconds": 40.0,
+        "fresh_complete_probe": "success",
+        "job_id": 115360090258,
+        "started_at": "2026-10-13T14:44:01Z"
+      }
+    }
+  }
+}

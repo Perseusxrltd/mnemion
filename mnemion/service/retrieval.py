@@ -13,6 +13,12 @@ from psycopg.types.json import Jsonb
 from .db import Database, Identity, require_space, resolve_spaces
 from .embeddings import Embedder, vector_literal
 from .errors import ServiceError
+from .identifiers import (
+    IDENTIFIER_CANDIDATES,
+    IDENTIFIER_LABEL_WEIGHT,
+    IDENTIFIER_WEIGHT,
+    query_identifiers,
+)
 from .models import ContextInput, RecallInput, json_value
 from .model_registry import ModelRegistry
 from .model_state import selected_generations
@@ -225,6 +231,12 @@ class RetrievalService:
             "limit": min(250, max(30, command.limit * 5)),
             "metadata": Jsonb(command.metadata_filter),
         }
+        identifiers = query_identifiers(command.query)
+        identifier_channel = bool(identifiers.terms) and (
+            command.mode != "semantic" or busy_fallback
+        )
+        if identifiers.truncated and (command.mode != "semantic" or busy_fallback):
+            warnings.append("identifier_query_truncated")
         with self.db.transaction(identity) as conn:
             # Recheck after model inference, including revoked keys and grants.
             params["spaces"] = resolve_spaces(conn, command)
@@ -240,7 +252,7 @@ class RetrievalService:
                 raise ServiceError(
                     409, "generation_changed", "Space model settings changed; retry the search."
                 )
-            lexical, semantic = [], []
+            lexical, semantic, exact = [], [], []
             if command.mode != "semantic" or busy_fallback:
                 lexical = conn.execute(
                     ELIGIBLE
@@ -253,6 +265,11 @@ class RetrievalService:
                     ORDER BY lexical_rank DESC, e.memory_id LIMIT %(limit)s
                 """,
                     params,
+                ).fetchall()
+            if identifier_channel:
+                exact = conn.execute(
+                    ELIGIBLE + IDENTIFIER_CANDIDATES,
+                    {**params, "identifier_patterns": list(identifiers.patterns)},
                 ).fetchall()
             for generation, group_spaces in groups.items():
                 if generation not in vectors:
@@ -303,15 +320,39 @@ class RetrievalService:
                 warnings.append("semantic_index_incomplete")
             scores = defaultdict(float)
             candidates, ranks = {}, defaultdict(dict)
-            for channel, rows in (("lexical", lexical), ("semantic", semantic)):
+            identifier_ranks = {}
+            for channel, rows, weight in (
+                ("lexical", lexical, 1),
+                ("identifier", exact, IDENTIFIER_WEIGHT),
+                ("semantic", semantic, 1),
+            ):
                 for rank, row in enumerate(rows, 1):
                     if channel == "semantic":
                         rank = row["generation_rank"]
+                    elif channel == "identifier":
+                        rank = row["identifier_rank"]
                     key = row["memory_id"]
-                    scores[key] += 1 / (60 + rank)
-                    ranks[key][channel] = rank
+                    # Do not mix a correction's new revision with ranks or
+                    # embedding offsets observed for its preceding revision.
+                    if key in candidates and candidates[key]["revision_id"] != row["revision_id"]:
+                        scores[key] = 0
+                        ranks[key].clear()
+                        identifier_ranks.pop(key, None)
+                        candidates[key] = {}
+                    scores[key] += weight / (60 + rank)
+                    if channel == "identifier":
+                        identifier_ranks[key] = rank
+                        if row["identifier_label_rank"] is not None:
+                            scores[key] += IDENTIFIER_LABEL_WEIGHT / (
+                                60 + row["identifier_label_rank"]
+                            )
+                    else:
+                        ranks[key][channel] = rank
                     candidates[key] = {**candidates.get(key, {}), **row}
             channel_count = int(command.mode != "semantic" or busy_fallback) + int(bool(vectors))
+            channel_count += (
+                IDENTIFIER_WEIGHT + IDENTIFIER_LABEL_WEIGHT if identifier_channel else 0
+            )
             denominator = max(1, channel_count) / 61
             ordered = sorted(scores, key=lambda key: (-scores[key], str(key)))
             hits = []
@@ -358,6 +399,16 @@ class RetrievalService:
                     if "distance" in candidate
                     else None,
                 }
+                if memory in identifier_ranks:
+                    hit["ranking"]["identifier"] = {
+                        "rank": identifier_ranks[memory],
+                        "label_rank": candidate["identifier_label_rank"],
+                        "matched": candidate["identifier_matches"],
+                        "requested": len(identifiers.terms),
+                        "label_matches": candidate["identifier_label_matches"],
+                        "weight": IDENTIFIER_WEIGHT,
+                        "label_weight": IDENTIFIER_LABEL_WEIGHT,
+                    }
                 hit["embedding_generation"] = routing[row["space_id"]]
                 if hit["claim_status"] == "contested":
                     warnings.append("contested_evidence")
@@ -384,7 +435,13 @@ class RetrievalService:
                     "pending_records": missing,
                     "observed_at": datetime.now(timezone.utc),
                 },
-                "score_description": "Rank fusion relevance, not a truth probability. Semantic ranks are computed separately within each embedding generation.",
+                "score_description": "Rank fusion relevance, not a truth probability. "
+                + (
+                    "Exact identifiers in subjects/paths use weight 3; identifier coverage, lexical and semantic ranks use weight 1. "
+                    if identifier_channel
+                    else ""
+                )
+                + "Semantic ranks are computed separately within each embedding generation.",
                 "timing_ms": round((time.monotonic() - started) * 1000, 2),
             }
         )

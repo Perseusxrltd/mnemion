@@ -1,4 +1,46 @@
-# Search passages and source evidence
+# Search ranking, passages and source evidence
+
+## Exact identifiers and filenames
+
+Service 4.2.2 adds a literal candidate channel for task IDs, quote numbers and
+filenames in lexical and hybrid searches. An exact filename can enter the
+results even when the memory body does not contain every word of the query,
+or the semantic candidate window would omit it. Explicit semantic-only
+searches retain their existing behavior. This is a source-version description;
+check [release status](../RELEASE_STATUS.md) for publication.
+
+Matches are case insensitive and literal, with identifier boundaries:
+`TASK-7312` can match `reports/TASK-7312_result.md`, but not `TASK-73120`.
+Filename matching accepts Windows or Unix path separators and NFC or NFD
+Unicode. Repetition within a memory does not add identifier coverage.
+The query parser recognizes at most eight distinct identifiers or filenames,
+each at most 256 characters. Excess identifiers produce the explicit
+`identifier_query_truncated` warning. Plain prose, standalone numbers and
+queries containing explicit exclusions such as `-billing` continue through
+the existing lexical and semantic channels. The new positive-ID channel cannot
+reintroduce a result excluded by lexical query syntax.
+
+Candidates are selected from the currently authorized spaces and eligible
+revisions before ranking. Source removal, quarantine, withdrawal, time and
+metadata filters apply to the literal channel. A single additional SQL query
+selects two bounded windows: identifier coverage and subject/path matches.
+Each window has the existing candidate cap of `min(250, max(30, limit * 5))`.
+There is no additional embedding or language-model call.
+
+Reciprocal-rank fusion retains `k = 60`. A subject or path match has weight 3;
+literal coverage, lexical rank and semantic rank each have weight 1.
+The relevance score divides the sum by the maximum available channel weight
+at rank 1. It is a ranking score, not an answer probability. Existing
+`ranking.ranks.lexical`, `ranking.ranks.semantic` and `score_method` remain
+compatible. Optional `ranking.identifier` reports the literal rank, label
+rank, matched and requested counts, label matches and weights. The app shows
+the matched counts under **Why this result?**
+
+The query still examines the eligible corpus; the candidate cap bounds returned
+rows, not database scan work. Large-corpus capacity, natural-language quality,
+no-match thresholds and recency ranking remain separate evaluation work.
+
+## Passages and citations
 
 Search returns bounded passages so people and agents can inspect a result
 without downloading every full memory. The matched-passage correction for

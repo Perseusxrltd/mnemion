@@ -111,11 +111,22 @@ class Span(ResponseModel):
     offset_unit: Literal["unicode_codepoints"]
 
 
+class IdentifierRanking(ResponseModel):
+    rank: int = Field(ge=1)
+    label_rank: int | None = Field(default=None, ge=1)
+    matched: int = Field(ge=1, le=8)
+    requested: int = Field(ge=1, le=8)
+    label_matches: int = Field(ge=0, le=8)
+    weight: float = Field(gt=0)
+    label_weight: float = Field(gt=0)
+
+
 class Ranking(ResponseModel):
     ranks: dict[Literal["lexical", "semantic"], int]
     rrf: float
     lexical_rank: float | None
     cosine_similarity: float | None
+    identifier: IdentifierRanking | None = None
 
 
 class RecallHit(MemoryMetadata):

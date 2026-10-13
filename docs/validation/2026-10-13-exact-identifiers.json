@@ -1,0 +1,98 @@
+{
+  "observed_at": "2026-10-13T15:18:54.233092+00:00",
+  "scope": "Synthetic ranking-mechanics regression using real PostgreSQL and a deterministic four-dimensional protocol fixture, not an embedding-quality benchmark or customer workload.",
+  "published_source": "af7f9b795bc94b36c432810148e80a82fd1ce340",
+  "candidate_source_sha256": {
+    "mnemion/service/retrieval.py": "f1129644f4d77b782c5bff5a85ef18c459a864e9db458b8814f11b9787e69c4d",
+    "mnemion/service/identifiers.py": "a2ced1e3205fbea5ed0685f65e7303453f8668f24c799f63a9d4b2776281464d"
+  },
+  "corpus": {
+    "records": 49,
+    "generic_semantic_distractors": 42,
+    "broad_ledgers": 6,
+    "target_files": 1
+  },
+  "query": "TASK-7312 billing confirmation QX-2026-7312",
+  "top_k": 6,
+  "samples_per_variant": 12,
+  "order": "alternating; same warm database, corpus and fixture model",
+  "query_embedding_calls_per_recall": 1,
+  "plain_query_ids_scores_ranking_unchanged": true,
+  "results": {
+    "published_4_2_0": {
+      "target_positions": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "latency_ms": {
+        "minimum": 211.166,
+        "median": 230.201,
+        "maximum": 247.961
+      },
+      "samples_ms": [
+        213.395,
+        216.31,
+        211.166,
+        219.64,
+        221.709,
+        233.167,
+        240.692,
+        227.235,
+        247.206,
+        247.961,
+        245.624,
+        238.739
+      ]
+    },
+    "candidate_4_2_2": {
+      "target_positions": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "latency_ms": {
+        "minimum": 251.189,
+        "median": 277.247,
+        "maximum": 306.397
+      },
+      "samples_ms": [
+        266.925,
+        263.306,
+        251.189,
+        260.838,
+        292.505,
+        277.387,
+        280.345,
+        277.107,
+        292.65,
+        303.87,
+        306.397,
+        266.188
+      ]
+    }
+  },
+  "local_limits": {
+    "memory_mib": 512,
+    "cpu_quota_percent": 100,
+    "network_model_calls": 0
+  }
+}

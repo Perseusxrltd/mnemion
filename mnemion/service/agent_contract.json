@@ -15242,6 +15242,66 @@
             "title": "Evidence",
             "type": "object"
           },
+          "IdentifierRanking": {
+            "additionalProperties": true,
+            "properties": {
+              "label_matches": {
+                "maximum": 8.0,
+                "minimum": 0.0,
+                "title": "Label Matches",
+                "type": "integer"
+              },
+              "label_rank": {
+                "anyOf": [
+                  {
+                    "minimum": 1.0,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Label Rank"
+              },
+              "label_weight": {
+                "exclusiveMinimum": 0.0,
+                "title": "Label Weight",
+                "type": "number"
+              },
+              "matched": {
+                "maximum": 8.0,
+                "minimum": 1.0,
+                "title": "Matched",
+                "type": "integer"
+              },
+              "rank": {
+                "minimum": 1.0,
+                "title": "Rank",
+                "type": "integer"
+              },
+              "requested": {
+                "maximum": 8.0,
+                "minimum": 1.0,
+                "title": "Requested",
+                "type": "integer"
+              },
+              "weight": {
+                "exclusiveMinimum": 0.0,
+                "title": "Weight",
+                "type": "number"
+              }
+            },
+            "required": [
+              "rank",
+              "matched",
+              "requested",
+              "label_matches",
+              "weight",
+              "label_weight"
+            ],
+            "title": "IdentifierRanking",
+            "type": "object"
+          },
           "IndexState": {
             "additionalProperties": true,
             "properties": {
@@ -15310,6 +15370,16 @@
                   }
                 ],
                 "title": "Cosine Similarity"
+              },
+              "identifier": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/IdentifierRanking"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "lexical_rank": {
                 "anyOf": [
