@@ -1,15 +1,20 @@
 # Mnemion product roadmap
 
-Current distribution: **4.1.6**, in release preparation. Updated: **2026-10-13**.
-Published downloads remain **4.1.5** on all six desktop targets until verified 4.1.6 publication.
+Current distribution: **4.1.6**, published on all six desktop targets. Updated: **2026-10-13**.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
 
-Version [4.1.6](releases/4.1.6.md) prepares Git revisions tied to individual file
+Version [4.1.6](releases/4.1.6.md) ships Git revisions tied to individual file
 changes, accurate managed scan reasons, query-only MCP defaults with current
 permission checks, small version diagnostics and connection migration guidance.
 [All 80 focused tests](validation/2026-10-13-agent-ingestion-stabilization.md)
-passed. Native release and public delivery validation are next.
+passed, along with all 30 release jobs, independent verification of 38 assets,
+public feeds, the automatically refreshed live website and all six public
+4.1.5 → 4.1.6 upgrade rehearsals. See the
+[publication record](validation/2026-10-13-agent-ingestion-release.md).
+The actual Windows app also completed an observed automatic 4.1.3 → 4.1.4
+installation and relaunch after entering the tray; its saved independent human
+administrator authenticated again, and its 4.1.6 download was verified.
 
 Version [4.1.5](releases/4.1.5.md) adds [bounded desktop update retries](validation/2026-10-12-update-retries.md) after failed checks and downloads. All 106 Electron tests passed, including recovery, outage limits, cancellation and overlapping-check cases. All six native gates, independent artifact verification, public feeds and the automatically refreshed live website passed; see the [publication record](validation/2026-10-13-update-retry-release.md). [Public 4.1.4 → 4.1.5 upgrades](validation/2026-10-13-v4_1_5-public-upgrades.json) also passed on all six targets.
 
@@ -58,10 +63,11 @@ acceptance remain required.
 The immediate priority is short hotfix releases for operational reliability:
 connections and administrator access, installation, verified updates, data safety
 and resource stability. Broader features follow without removing requirements
-from the checklist. The remaining reported stabilization work includes
-[Git re-ingestion and scan labels](https://github.com/Perseusxrltd/mnemion/issues/30),
-[MCP search defaults](https://github.com/Perseusxrltd/mnemion/issues/24), connection
-migration guidance, small version diagnostics and measured retrieval quality.
+from the checklist. The remaining reported stabilization work includes MCP
+client/discovery compatibility and measured retrieval quality: exact identifiers,
+relevance, natural-language queries and recency. Version 4.1.6 delivers the
+reported Git revision/scan-label, MCP default-scope, version-diagnostic and
+connection-guidance fixes.
 The separate encrypted secrets-vault request is retained under A04; it must
 never enter ordinary memory search, capture or model context.
 Version [4.1.1](releases/4.1.1.md) ships idle local-model

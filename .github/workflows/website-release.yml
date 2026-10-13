@@ -49,3 +49,12 @@ jobs:
             git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' rebase origin/main
           done
           exit 1
+      - name: Verify live downloads, version, guides and roadmap
+        run: python -m deploy.verify_website
+      - name: Retain the public website verification receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: public-website-verification
+          path: output/website-verification.json
+          if-no-files-found: error
+          retention-days: 30
