@@ -432,3 +432,32 @@ and controlled migration can complete. The earlier migration-before-publication
 plan was adjusted to honor the standing instruction to publish verified targets
 while separate deployment validation continues. This does not mark the live
 host or the broader organization/recovery roadmap complete.
+
+## Personal access and continued hotfixes, 13 October 2026
+
+The shared host subsequently completed its controlled 4.1.0 migration and
+automatic 4.1.1 patch; [Windows contributor and backup acceptance](../validation/2026-10-12-model-idle-release.md)
+passed. Later verified releases added managed connector adoption, inference
+fallback, MCP scope/diagnostics, Git revision stabilization and update fixes.
+The [4.1.7 publication record](../validation/2026-10-13-managed-update-schedule.md)
+links all six public automatic-upgrade results. Actual Windows then completed
+[automatic 4.1.4 → 4.1.6 → 4.1.7 updates](../validation/2026-10-13-locked-desktop-updates.md).
+
+Source `af7f9b795bc94b36c432810148e80a82fd1ce340` was
+[published as 4.2.0 at 14:26:07 UTC](../validation/2026-10-13-personal-access-release.md).
+All 30 release jobs, 11 separate product jobs and six installed schema-upgrade/
+recovery targets passed. All 38 assets, public feeds and live website links
+were verified. Personal sign-in, invitations, revocable device sessions,
+13 additional private agent operations, matching search passages and locked-
+desktop restart handling are delivered. Public automatic-update rehearsals
+subsequently passed on all six targets at 14:37:29 UTC. The independent shared
+host requires its own backed-up
+015 migration; a desktop release does not apply it.
+
+The 4.2.1 follow-up reduces retained Linux/glibc model heap pages, with
+[real offline measurements](../validation/2026-10-13-idle-heap-reclaim.md) and
+focused/native checks passed. Source also adds exact native database cache keys,
+fresh cache-hit probes and continuously current release-status/roadmap links.
+Its signed packages and public updates remain pending. The complete request
+list remains 64 items, with 17 shipped and 40 partial; this is scope coverage,
+not a weighted effort estimate or a claim that the product is ready to freeze.

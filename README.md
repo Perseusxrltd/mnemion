@@ -23,9 +23,9 @@ activity and [connection diagnostics](docs/service/connection-diagnostics.md).
 Set up [independent human administrators](docs/service/organizations.md#establish-independent-administrators)
 to manage people, applications and space grants without the original agent.
 The [continuity contract](docs/implementation/workspace-continuity.md) tracks the
-remaining host delegation, independent recovery and sign-in workflows.
-The 4.2.0 source includes [individual sign-in, invitations and device sessions](docs/service/sign-in.md);
-its release validation is tracked separately from the published distribution.
+remaining host delegation, independent recovery and company sign-in workflows.
+Published 4.2.0 includes [individual sign-in, invitations and device sessions](docs/service/sign-in.md),
+with [six-platform installed migration and recovery acceptance](docs/validation/2026-10-13-personal-access-release.md).
 Studio retains OS-protected saved connections, identity-checked reopening after restart and a clearer connection
 screen. [Workspace controls](docs/service/workspaces.md) explain remembering,
 disconnecting and forgetting a device connection. Complete fresh-machine setup
@@ -58,7 +58,7 @@ An authenticated identity is separate from the person or project a memory is abo
 - A versioned HTTP API, [OpenAPI contract](docs/service/openapi.json),
   Python and TypeScript clients, and authenticated MCP with stdio and Streamable
   HTTP; API and HTTP MCP share one listener by default.
-- [Agent administration](docs/service/agent-control.md): 100 reviewed operations in the 4.2.0 source (87 published from 4.0.11),
+- [Agent administration](docs/service/agent-control.md): 100 reviewed operations from 4.2.0,
   an offline catalog/CLI, compact MCP tools, private results and safe retry rules.
 - Studio for saving, searching, inspecting evidence and revisions, reviewing
   memories, managing identities/grants, and tracking indexing/deletion activity.

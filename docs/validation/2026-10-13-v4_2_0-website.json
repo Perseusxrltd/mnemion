@@ -1,0 +1,32 @@
+{
+  "at": "2026-10-13T14:28:07.965699+00:00",
+  "version": "4.2.0",
+  "product_url": "https://www.perseusxr.com/mnemion",
+  "validation_method": "anonymous public HTML; script/style/template text excluded",
+  "visible_current_version": true,
+  "current_version_guides": true,
+  "checksum_link": true,
+  "roadmap_tracks_main": true,
+  "homepage_product_link": true,
+  "current_release_notes": true,
+  "all_published_installer_links": true,
+  "all_installer_links": [
+    "https://github.com/Perseusxrltd/mnemion/releases/download/v4.2.0/Mnemion-Studio-4.2.0-linux-arm64.AppImage",
+    "https://github.com/Perseusxrltd/mnemion/releases/download/v4.2.0/Mnemion-Studio-4.2.0-linux-x86_64.AppImage",
+    "https://github.com/Perseusxrltd/mnemion/releases/download/v4.2.0/Mnemion-Studio-4.2.0-macos-arm64.dmg",
+    "https://github.com/Perseusxrltd/mnemion/releases/download/v4.2.0/Mnemion-Studio-4.2.0-macos-x64.dmg",
+    "https://github.com/Perseusxrltd/mnemion/releases/download/v4.2.0/Mnemion-Studio-4.2.0-windows-arm64.exe",
+    "https://github.com/Perseusxrltd/mnemion/releases/download/v4.2.0/Mnemion-Studio-4.2.0-windows-x64.exe"
+  ],
+  "release_notes_url": "https://github.com/Perseusxrltd/mnemion/releases/tag/v4.2.0",
+  "current_guide_links": [
+    "https://github.com/Perseusxrltd/mnemion/blob/v4.2.0/docs/service/updates.md",
+    "https://github.com/Perseusxrltd/mnemion/blob/v4.2.0/docs/service/deployment.md",
+    "https://github.com/Perseusxrltd/mnemion/blob/v4.2.0/docs/service/connectors.md",
+    "https://github.com/Perseusxrltd/mnemion/blob/v4.2.0/docs/service/agents.md",
+    "https://github.com/Perseusxrltd/mnemion/blob/v4.2.0/docs/service/README.md"
+  ],
+  "product_html_sha256": "02d56c1c159b2a456b1a12149fc0c13b97716fc7d102468855c01ae2096b00ec",
+  "website_code_or_deployment_changed": false,
+  "new_visual_render_performed": false
+}

@@ -8,31 +8,34 @@ published downloads; source and release preparation can precede publication.
 The [4.2.1 follow-up](releases/4.2.1.md) is in development. It returns freed
 model heap pages on glibc-based Linux after idle or budget-triggered eviction.
 [37 focused checks and two offline model comparisons](validation/2026-10-13-idle-heap-reclaim.md)
-passed. Full native release validation remains; this does not replace or delay
-the separate frozen 4.2.0 candidate. Peak RAM and API/worker duplication remain
-open under issue 13.
+passed, followed by a complete native desktop check. Release validation remains.
+Unchanged native database builds can now be reused with fresh security/recovery
+probes; [hosted cache measurements](implementation/native-local-runtime.md#reusing-a-verified-database-build)
+are still pending. Peak RAM and API/worker duplication remain open under issue 13.
 
-Version [4.2.0](releases/4.2.0.md) is in validation. It implements personal
+Published [4.2.0](releases/4.2.0.md) implements personal
 passwords, scoped invitations, revocable device sessions, protected desktop and
 browser remembering, and 13 private-aware agent operations. The
 [sign-in guide](service/sign-in.md) covers user, administrator and agent flows;
-[current source/browser evidence](validation/2026-10-13-individual-sign-in.md)
-does not yet establish six-platform installed acceptance or public delivery.
+[release evidence](validation/2026-10-13-personal-access-release.md) records all
+30 signed release jobs, 11 separate product jobs, six installed schema
+migration/recovery targets, verified public assets and the updated live website.
+[Public 4.1.7 → 4.2.0 automatic updates](validation/2026-10-13-v4_2_0-public-upgrades.json)
+also passed on all six targets with preserved profiles and real idle safeguards.
 Migration 015 requires a guarded service upgrade. Hosted OAuth, company SSO
 onboarding and live named-provider acceptance remain separate unfinished work.
 
-The same candidate corrects search excerpts from long documents: matching
+The same release corrects search excerpts from long documents: matching
 passages carry exact source offsets and preserve smaller context budgets.
 [Thirteen focused retrieval checks](validation/2026-10-13-matched-evidence.md)
-passed for issue 35. Final release and installed-upgrade acceptance remain
-required; recency, exact-identifier ranking and calibrated relevance are still
-separate open retrieval work.
+and the release/installed-upgrade gates passed; issue 35 is closed. Recency,
+exact-identifier ranking and calibrated relevance are still separate open work.
 
 The actual Windows app completed automatic 4.1.4 → 4.1.6 → 4.1.7 installation
-and relaunch. That exercise identified a locked-screen focus wait; the 4.2.0
-candidate handles an OS-reported lock while preserving all other restart
+and relaunch. That exercise identified a locked-screen focus wait; published
+4.2.0 handles an OS-reported lock while preserving all other restart
 guards. [Local validation](validation/2026-10-13-locked-desktop-updates.md)
-passed 129 desktop checks; final native release acceptance remains required.
+passed 129 desktop checks, and all six native release targets passed.
 
 Version [4.1.7](releases/4.1.7.md) fixes managed update scheduling after a host
 resumes from suspension, adds actual next-check/overdue diagnostics, and retains
@@ -95,8 +98,8 @@ also passed, moving future complete release downloads off the operator's PC.
 Version 4.1.3 also ships [stable MCP profile identification](validation/2026-10-12-mcp-profile.md)
 and the [individual sign-in/invitation contract](implementation/individual-sign-in.md),
 with a [tested Argon2id password foundation](validation/2026-10-12-password-foundation.md).
-The 4.2.0 personal-password implementation is undergoing release validation.
-Company sign-in, hosted consent and live provider acceptance remain required.
+The personal-password implementation is published in 4.2.0. Company SSO,
+hosted consent and live provider acceptance remain required.
 
 The immediate priority is short hotfix releases for operational reliability:
 connections and administrator access, installation, verified updates, data safety

@@ -1,10 +1,12 @@
 # Individual sign-in validation — 2026-10-13
 
-This is unreleased implementation and acceptance work on
-`codex/individual-signin`, beginning with checkpoint `70f0fbc`. It does not
-change the published product's completion count or claim that individual
-sign-in, company SSO or hosted OAuth is available in 4.1.7. Migration 015
-requires the next minor release and its installed-upgrade checks.
+This records implementation and acceptance checkpoints on
+`codex/individual-signin`, beginning with `70f0fbc`. The final implementation
+is now [published in 4.2.0](2026-10-13-personal-access-release.md), after all six
+installed personal-access and schema-migration/recovery gates passed. Earlier
+pending statements below describe their dated checkpoints. Individual sign-in
+requires migration 015 and is unavailable in 4.1.7; company SSO and hosted OAuth
+remain separate unfinished work.
 
 The combined service, HTTP, agent-control, recovery and private-input group
 passed **66 tests**, with two Windows-only private-input scenarios skipped on

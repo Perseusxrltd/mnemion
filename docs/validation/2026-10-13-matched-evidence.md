@@ -1,7 +1,8 @@
 # Matched evidence validation — 13 October 2026
 
-Unreleased 4.2.0 correction for
-[issue 35](https://github.com/Perseusxrltd/mnemion/issues/35).
+Published [4.2.0 correction](2026-10-13-personal-access-release.md) for
+[issue 35](https://github.com/Perseusxrltd/mnemion/issues/35), with native release,
+installed migration/recovery and public-delivery checks passed.
 
 The focused group passed **13 checks** using real isolated PostgreSQL
 and deterministic fixture embeddings. It includes existing retrieval and source

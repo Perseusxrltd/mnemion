@@ -10,7 +10,7 @@ a reviewed catalog, a command-line client and four compact MCP tools. Version
 4.0.5 through 4.0.10 cover **84 operations**, including durable source-sync controls.
 Version 4.0.11 adds three OAuth binding operations for **87 total**; see the
 [optional organization OAuth guide](oauth.md) for its configuration and limits.
-The **4.2.0 source** adds 13 [personal sign-in operations](sign-in.md) for
+Published **4.2.0** adds 13 [personal sign-in operations](sign-in.md) for
 **100 total**. Check [release status](../RELEASE_STATUS.md) before requiring a
 version from users. These operations declare `authentication`, `sensitive_input`
 and `mcp_available`; passwords, private invitations and rotating credentials use
