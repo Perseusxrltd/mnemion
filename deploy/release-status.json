@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "checked_at": "2026-10-13T14:37:45+00:00",
+  "checked_at": "2026-10-13T14:54:32+00:00",
   "tag_name": "v4.2.0",
   "source_commit": "af7f9b795bc94b36c432810148e80a82fd1ce340",
   "published_at": "2026-10-13T14:26:07Z",
@@ -79,9 +79,9 @@
   ],
   "requirements": {
     "total": 64,
-    "Shipped": 16,
+    "Shipped": 17,
     "Partial": 40,
-    "Building": 2,
+    "Building": 1,
     "Planned": 2,
     "Ongoing": 3,
     "External": 1
