@@ -59,9 +59,19 @@ rotations. Each person can have up to 32 active sessions. A device name is a
 user-supplied label, not a hardware attestation. Multiple tabs coordinate a
 remembered browser session; signing it out closes its access in the other tabs.
 
+Expired session metadata and invitation permission snapshots become eligible
+for removal 30 days after expiry. The API host cleans them in bounded batches
+each minute, including when the person never logs in again. Spent refresh
+digests are removed after their session expires or is revoked. Cleanup resumes
+after an offline period; a large backlog may take several batches. Stable audit
+and job identities remain in the database under the workspace's audit policy.
+
 If a refresh response is lost, Mnemion asks for a new login. It does not replay
 the old one-use refresh token. Restarting or selecting another connection cannot
 silently replace the verified person with the local owner's account.
+If another request rotates access during an ordinary read, the client can retry
+once after confirming that the credential changed. Unchanged or revoked
+credentials and password/refresh submissions do not enter an automatic retry loop.
 
 ## Manage your access
 

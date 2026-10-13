@@ -76,6 +76,44 @@ test('authorization failure has a stable error and is not retried', async () => 
   assert.equal(calls, 1)
 })
 
+test('a safe request catches up with one observed credential rotation', async () => {
+  let credential = 'before-rotation'
+  const sent = []
+  const client = new MnemionClient({ baseUrl: 'https://example.invalid', apiKey: async () => credential,
+    fetch: async (_, options) => {
+      sent.push(options.headers.Authorization)
+      if (sent.length === 1) {
+        credential = 'after-rotation'
+        return Response.json({ error: { code: 'unauthorized' } }, { status: 401 })
+      }
+      return Response.json({ principal_id: 'same-person' })
+    },
+  })
+  assert.equal((await client.me()).principal_id, 'same-person')
+  assert.deepEqual(sent, ['Bearer before-rotation', 'Bearer after-rotation'])
+})
+
+test('rotation recovery never loops, reuses a rejected token or repeats an unsafe write', async () => {
+  for (const mode of ['unchanged', 'repeated-rejection', 'write', 'no-retries', 'provider-failure']) {
+    let credential = 'first', calls = 0, acquisitions = 0
+    const client = new MnemionClient({ baseUrl: 'https://example.invalid', retries: mode === 'no-retries' ? 0 : 5,
+      apiKey: async () => {
+        acquisitions++
+        if (mode === 'provider-failure' && acquisitions > 1) throw new Error('Sign in again')
+        return credential
+      },
+      fetch: async () => {
+        calls++
+        if (mode !== 'unchanged') credential += '-rotated'
+        return Response.json({ error: { code: 'unauthorized' } }, { status: 401 })
+      },
+    })
+    await assert.rejects(mode === 'write' ? client.createPrincipal('person') : client.me())
+    assert.equal(calls, mode === 'repeated-rejection' ? 2 : 1, mode)
+    assert.ok(acquisitions <= 2, mode)
+  }
+})
+
 test('non-idempotent administrative writes are not silently repeated', async () => {
   let calls = 0
   const client = new MnemionClient({ baseUrl: 'http://example.test', apiKey: 'dummy', fetch: async () => {

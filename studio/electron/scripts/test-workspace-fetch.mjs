@@ -56,3 +56,44 @@ test('a protected gateway returns API responses and enforces current authorizati
   await assert.rejects(workspaceFetch(fetch, endpoint + '/redirect', { ...options, redirect: 'follow' }))
   assert.equal(forwarded, 0, 'credentials must never follow a redirect')
 })
+
+test('native requests recover only after a confirmed session rotation', async () => {
+  const requests = []
+  const original = new Headers({ Authorization: 'Bearer original' })
+  const response = await workspaceFetch(async (_, options) => {
+    requests.push({ authorization: options.headers.get('authorization'), body: options.body,
+      cache: options.cache, redirect: options.redirect, credentials: options.credentials })
+    return requests.length === 1 ? new Response('', { status: 401 }) : Response.json({ hits: [] })
+  }, 'https://example.invalid/team/v1/recall', { method: 'POST', headers: original, body: '{"query":"memory"}' },
+  async () => 'Bearer rotated')
+  assert.equal(response.status, 200)
+  assert.deepEqual(requests.map(item => item.authorization), ['Bearer original', 'Bearer rotated'])
+  assert.ok(requests.every(item => item.body === '{"query":"memory"}' && item.cache === 'no-store' && item.redirect === 'error' && item.credentials === 'omit'))
+  assert.equal(original.get('authorization'), 'Bearer original')
+})
+
+test('native revocation, unsafe writes and repeated rejection never loop', async () => {
+  for (const mode of ['unchanged', 'write', 'repeated-rejection', 'forbidden']) {
+    let calls = 0, acquisitions = 0
+    const response = await workspaceFetch(async () => {
+      calls++; return new Response('', { status: mode === 'forbidden' ? 403 : 401 })
+    }, 'https://example.invalid/v1/principals', { method: mode === 'write' ? 'POST' : 'GET',
+      headers: { Authorization: 'Bearer original' } }, async () => {
+      acquisitions++; return mode === 'unchanged' ? 'Bearer original' : 'Bearer rotated'
+    })
+    assert.equal(response.status, mode === 'forbidden' ? 403 : 401)
+    assert.equal(calls, mode === 'repeated-rejection' ? 2 : 1, mode)
+    assert.equal(acquisitions, ['write', 'forbidden'].includes(mode) ? 0 : 1, mode)
+  }
+})
+
+test('a stalled native rotation observation cannot outlive the request deadline', async () => {
+  const abort = new AbortController()
+  let calls = 0
+  const pending = workspaceFetch(async () => { calls++; return new Response('', { status: 401 }) },
+    'https://example.invalid/v1/me', { headers: { Authorization: 'Bearer original' }, signal: abort.signal },
+    () => new Promise(() => {}))
+  const timer = setTimeout(() => abort.abort(new Error('Request ended')), 20)
+  try { await assert.rejects(pending, /Request ended/) } finally { clearTimeout(timer) }
+  assert.equal(calls, 1)
+})

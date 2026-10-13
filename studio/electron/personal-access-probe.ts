@@ -12,7 +12,8 @@ export async function verifyPersonalAccess(window: BrowserWindow, config: Record
       throw new Error(message);
     }
     const button = text => [...document.querySelectorAll('button')].find(node =>
-      (node.querySelector('strong')?.textContent === text || node.textContent.trim() === text) && !node.matches(':disabled') && node.getClientRects().length);
+      (node.getAttribute('aria-label') === text || node.getAttribute('title') === text ||
+        node.querySelector('strong')?.textContent === text || node.textContent.trim() === text) && !node.matches(':disabled') && node.getClientRects().length);
     async function click(text) { (await until(() => button(text), 'Missing personal-access control: ' + text)).click(); await pause(100); }
     async function input(label, value) {
       const field = await until(() => [...document.querySelectorAll('label.ws-field')].find(node => node.querySelector('span')?.textContent === label)?.querySelector('input'), 'Missing personal-access field: ' + label);

@@ -82,7 +82,47 @@ still need to pass on the six native runners; compilation is not that evidence.
 
 Remaining release acceptance includes native password sign-in and secure-store
 reopening on every packaged target, the full service/client matrix, packaged
-dependency notices, migration/recovery from the published installer, and review
-of auth-data retention and concurrent access refresh.
+dependency notices and migration/recovery from the published installer.
 Provider OAuth, company identity/SSO, remote host ownership and other full
 product requirements remain separate open work.
+
+## Retention and concurrent access follow-up
+
+The post-checkpoint source adds periodic authentication-history cleanup. Each
+batch can remove at most 2,048 retired refresh digests, 128 expired session rows
+without remaining digests and 128 expired invitations. Session and invitation
+metadata has a 30-day post-expiry review window. Active authority, independent
+keys and audit/job anchors are retained. Database statements have a two-second
+limit and overlapping API hosts use a nonblocking shared lock. The maintenance
+task stops before its database pool closes.
+
+**39 service checks passed** for retention, personal access and HTTP behavior.
+Real PostgreSQL cases verify active access and private invitation preservation,
+expired metadata removal, retained audit anchors, bounded digest-first deletion,
+overlapping-host exclusion and denial to the worker role. HTTP lifespan checks
+exercise the new task alongside ordinary sign-in and shutdown.
+
+The TypeScript client and native bridge retry a safe request after `401` only
+when their current credential differs from the rejected one. Unchanged and
+revoked credentials, repeated rejection, non-idempotent writes and interrupted
+credential acquisition terminate without a retry loop. **14 SDK checks and 123
+Electron checks passed**, including these cases and native request deadlines.
+
+The first full hosted service matrix on `f1ef6db` found two receipt assertions
+that assumed the next globally queued job belonged to that test's tenant.
+The tests now drain the real worker with a deadline and inspect their own
+receipt; successful indexing is still required. The corrected full-suite run
+and native validation remain pending at this checkpoint.
+
+The full local suite was stopped by its isolated 512 MiB memory limit; the user
+service and desktop were not test processes. The user journal recorded
+`oom-kill`, and no pytest or private PostgreSQL process remained from that run.
+The corrected focused run passed **39 checks**, including deliberately queued
+earlier memories and an isolated retention-batch baseline. Full-suite validation
+continues on the hosted runners.
+
+All six first native jobs reached installation but stopped at the new probe's
+Disconnect lookup: the actual control exposes its name through `aria-label`
+and `title`, while the probe initially inspected text content only. The probe
+now recognizes those accessible names and compiles. This is a corrected test
+driver, not evidence that the remaining native sign-in phases passed.

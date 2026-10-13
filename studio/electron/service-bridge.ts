@@ -372,12 +372,14 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
       headers.set(name, value)
     }
     const authorization = headers.get('authorization')
+    let currentAuthorization: (() => Promise<string>) | undefined
     if (authorization && isWorkspaceSession(authorization)) {
-      headers.set('authorization', await workspaceConnections().authorization(url, authorization))
+      currentAuthorization = () => workspaceConnections().authorization(url, authorization)
+      headers.set('authorization', await currentAuthorization())
     } else {
       url = allowedServiceUrl(request.url)
     }
-    const response = await workspaceFetch(net.fetch.bind(net), url.toString(), { method: request.method, headers, body: request.body, signal: AbortSignal.timeout(60_000) })
+    const response = await workspaceFetch(net.fetch.bind(net), url.toString(), { method: request.method, headers, body: request.body, signal: AbortSignal.timeout(60_000) }, currentAuthorization)
     return { status: response.status, headers: Object.fromEntries(response.headers.entries()), body: await boundedBody(response) }
   })
 

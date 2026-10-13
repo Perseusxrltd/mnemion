@@ -1,6 +1,7 @@
 """Real PostgreSQL authorization and password/session lifecycle regression tests."""
 
 from concurrent.futures import ThreadPoolExecutor
+import time
 from uuid import UUID, uuid4
 
 import psycopg
@@ -54,6 +55,26 @@ def assert_unauthorized(env, token):
     assert rejected.value.status == 401
 
 
+def finish_committed_memory(env, identity, operation_id):
+    # The full suite shares a database across tenant fixtures. A worker may
+    # claim another tenant's earlier job before this operation, just as on a
+    # real multi-tenant host. Verify this receipt instead of the next queue item.
+    deadline = time.monotonic() + 30
+    for _ in range(1000):
+        with env.db.transaction(identity) as conn:
+            state = conn.execute(
+                "SELECT state FROM mnemion.operations WHERE id=%s", (operation_id,)
+            ).fetchone()["state"]
+        if state == "ready":
+            return
+        assert state in {"accepted", "indexing"}
+        if time.monotonic() >= deadline:
+            break
+        if not env.worker.run_once():
+            time.sleep(0.01)
+    pytest.fail("The committed memory did not finish indexing within the bounded worker drain")
+
+
 def test_password_account_separates_session_credentials_and_retains_recovery(env):
     service = enroll(env)
     issued = sign_in(env, service)
@@ -87,6 +108,12 @@ def test_password_account_separates_session_credentials_and_retains_recovery(env
 
 
 def test_refresh_retains_job_authority_and_replay_revokes_the_family(env):
+    env.memory.save(
+        env.owner,
+        env.space,
+        MemoryInput(content="An earlier queued memory."),
+        "older-before-refresh",
+    )
     service = enroll(env)
     issued = sign_in(env, service)
     identity = env.db.authenticate(issued["access_token"])
@@ -100,7 +127,7 @@ def test_refresh_retains_job_authority_and_replay_revokes_the_family(env):
     updated = env.db.authenticate(refreshed["access_token"])
     assert updated.key_id == identity.key_id and updated.session_id == identity.session_id
     assert_unauthorized(env, issued["access_token"])
-    assert env.worker.run_once()
+    finish_committed_memory(env, updated, saved["operation_id"])
     with env.db.transaction(updated) as conn:
         assert (
             conn.execute(
@@ -379,6 +406,12 @@ def test_sign_in_cannot_revive_a_password_invalidated_by_recovery(env):
 
 
 def test_logout_preserves_committed_memories_and_service_owned_indexing(env):
+    env.memory.save(
+        env.owner,
+        env.space,
+        MemoryInput(content="An earlier queued memory."),
+        "older-before-logout",
+    )
     service = enroll(env)
     issued = sign_in(env, service)
     identity = env.db.authenticate(issued["access_token"])
@@ -386,7 +419,7 @@ def test_logout_preserves_committed_memories_and_service_owned_indexing(env):
         identity, env.space, MemoryInput(content="Revoked before indexing"), "revoked-session-job"
     )
     service.revoke(env.owner, identity.session_id)
-    assert env.worker.run_once()
+    finish_committed_memory(env, env.owner, saved["operation_id"])
     with env.db.transaction(env.owner) as conn:
         assert (
             conn.execute(

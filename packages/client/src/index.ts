@@ -188,6 +188,8 @@ export class MnemionClient {
 
   async request<T>(method: string, path: string, options: RequestOptions = {}): Promise<T> {
     const safeRetry = method === 'GET' || !!options.key || ['/v1/recall', '/v1/context', '/v1/knowledge'].includes(path)
+    let rejectedCredential: { value: string; error: MnemionError } | undefined
+    let checkedRotation = false
     for (let attempt = 0; attempt <= this.#retries; attempt++) {
       let retryDelay = Math.min(2000, 200 * 2 ** attempt)
       const timeout = new AbortController()
@@ -197,6 +199,10 @@ export class MnemionClient {
       try {
         const apiKey = await this.#credential(signal)
         credentialReady = true
+        if (rejectedCredential) {
+          if (apiKey === rejectedCredential.value) throw rejectedCredential.error
+          rejectedCredential = undefined
+        }
         const response = await this.#fetch(this.baseUrl + path, {
           method, signal, redirect: 'error',
           headers: { 'Authorization': `Bearer ${apiKey}`, ...(options.body === undefined ? {} : { 'Content-Type': 'application/json' }),
@@ -216,9 +222,17 @@ export class MnemionClient {
         } catch { /* Non-JSON proxy errors have a stable fallback. */ }
         const retryAfterSeconds = retryAfter(response.headers.get('Retry-After'))
         if (retryAfterSeconds !== undefined) retryDelay = Math.max(retryDelay, retryAfterSeconds * 1000)
-        if (!(safeRetry && [408, 429, 502, 503, 504].includes(response.status) && attempt < this.#retries)) {
-          throw new MnemionError(response.status, payload.error?.code ?? 'http_error',
-            payload.error?.message ?? `Mnemion returned HTTP ${response.status}`, payload.request_id ?? response.headers.get('X-Request-ID') ?? undefined, retryAfterSeconds)
+        const error = new MnemionError(response.status, payload.error?.code ?? 'http_error',
+          payload.error?.message ?? `Mnemion returned HTTP ${response.status}`, payload.request_id ?? response.headers.get('X-Request-ID') ?? undefined, retryAfterSeconds)
+        if (response.status === 401 && safeRetry && typeof this.#apiKey === 'function' && !checkedRotation && attempt < this.#retries) {
+          // A concurrent request/tab may have rotated this access credential.
+          // Retry only after observing a different one; revoked credentials and
+          // uncertain refresh failures must never cause a retry loop.
+          checkedRotation = true
+          rejectedCredential = { value: apiKey, error }
+          retryDelay = 0
+        } else if (!(safeRetry && [408, 429, 502, 503, 504].includes(response.status) && attempt < this.#retries)) {
+          throw error
         }
       } catch (error) {
         if (!credentialReady || error instanceof MnemionError || options.signal?.aborted || !safeRetry || attempt === this.#retries) throw error

@@ -45,6 +45,7 @@ CREATE TABLE mnemion.sign_in_sessions (
     CHECK (access_expires_at <= expires_at AND expires_at <= created_at + interval '30 days')
 );
 CREATE INDEX sign_in_sessions_owner ON mnemion.sign_in_sessions(tenant_id,principal_id);
+CREATE INDEX sign_in_sessions_expiry ON mnemion.sign_in_sessions(expires_at,id);
 CREATE TABLE mnemion.spent_refresh_tokens (
     token_hash text PRIMARY KEY CHECK (token_hash ~ '^[0-9a-f]{64}$'),
     session_id uuid NOT NULL REFERENCES mnemion.sign_in_sessions(id) ON DELETE CASCADE
@@ -66,6 +67,43 @@ CREATE TABLE mnemion.sign_in_invitations (
     FOREIGN KEY (tenant_id,issued_by) REFERENCES mnemion.principals(tenant_id,id),
     CHECK (expires_at > created_at AND expires_at <= created_at + interval '7 days')
 );
+CREATE INDEX sign_in_invitations_expiry ON mnemion.sign_in_invitations(expires_at,id);
+
+-- Fixed, bounded retention is independent of a person logging in again. Keep
+-- the stable key/audit anchors for historical jobs; remove expired device
+-- labels and invitation permission snapshots after the review window.
+CREATE FUNCTION mnemion.prune_sign_in_history()
+    RETURNS TABLE(spent_tokens integer,sessions integer,invitations integer)
+    LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE instant timestamptz := clock_timestamp();
+BEGIN
+    spent_tokens := 0; sessions := 0; invitations := 0;
+    IF NOT pg_try_advisory_xact_lock(591020146006) THEN RETURN NEXT; RETURN; END IF;
+    WITH retired AS (
+      SELECT h.token_hash FROM mnemion.spent_refresh_tokens h
+      JOIN mnemion.sign_in_sessions s ON s.id=h.session_id
+      JOIN mnemion.api_keys k ON k.id=s.key_id AND k.tenant_id=s.tenant_id
+      WHERE s.expires_at<=instant OR k.revoked_at IS NOT NULL
+      LIMIT 2048 FOR UPDATE OF h SKIP LOCKED
+    ) DELETE FROM mnemion.spent_refresh_tokens h USING retired r WHERE h.token_hash=r.token_hash;
+    GET DIAGNOSTICS spent_tokens = ROW_COUNT;
+    WITH retired AS (
+      SELECT s.id FROM mnemion.sign_in_sessions s
+      WHERE s.expires_at<=instant-interval '30 days'
+        AND NOT EXISTS (SELECT FROM mnemion.spent_refresh_tokens h WHERE h.session_id=s.id)
+      ORDER BY s.expires_at,s.id LIMIT 128 FOR UPDATE OF s SKIP LOCKED
+    ) DELETE FROM mnemion.sign_in_sessions s USING retired r WHERE s.id=r.id;
+    GET DIAGNOSTICS sessions = ROW_COUNT;
+    WITH retired AS (
+      SELECT i.id FROM mnemion.sign_in_invitations i
+      WHERE i.expires_at<=instant-interval '30 days'
+      ORDER BY i.expires_at,i.id LIMIT 128 FOR UPDATE OF i SKIP LOCKED
+    ) DELETE FROM mnemion.sign_in_invitations i USING retired r WHERE i.id=r.id;
+    GET DIAGNOSTICS invitations = ROW_COUNT;
+    RETURN NEXT;
+END $$;
+REVOKE ALL ON FUNCTION mnemion.prune_sign_in_history() FROM PUBLIC,mnemion_worker;
+GRANT EXECUTE ON FUNCTION mnemion.prune_sign_in_history() TO mnemion_app;
 
 ALTER TABLE mnemion.password_accounts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE mnemion.sign_in_sessions ENABLE ROW LEVEL SECURITY;

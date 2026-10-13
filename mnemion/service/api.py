@@ -186,6 +186,11 @@ def create_app(
         try:
             registry.start_idle_cleanup()
             async with AsyncExitStack() as stack:
+                from .sign_in_maintenance import maintain_history
+
+                maintenance = await stack.enter_async_context(anyio.create_task_group())
+                stack.callback(maintenance.cancel_scope.cancel)
+                maintenance.start_soon(maintain_history, database)
                 if mcp_app is not None:
                     await stack.enter_async_context(mcp_app.router.lifespan_context(mcp_app))
                 from .supervision import process_ready
