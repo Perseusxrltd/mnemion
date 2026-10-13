@@ -122,7 +122,13 @@ def test_watcher_checks_and_applies_by_default_but_pausing_prevents_network(
         if elapsed[0] > 120:
             raise updates.UpdateInterrupted()
 
-    monkeypatch.setattr(updates, "time", SimpleNamespace(monotonic=lambda: elapsed[0], sleep=sleep))
+    monkeypatch.setattr(
+        updates,
+        "time",
+        SimpleNamespace(
+            monotonic=lambda: elapsed[0], time=lambda: 1_791_872_000 + elapsed[0], sleep=sleep
+        ),
+    )
     monkeypatch.setattr(updates.random, "uniform", lambda low, high: low)
     real_check = updates._check
 
@@ -161,7 +167,13 @@ def test_watcher_retries_after_a_managed_scan_instead_of_waiting_six_hours(manag
         if elapsed[0] > 180:
             raise updates.UpdateInterrupted()
 
-    monkeypatch.setattr(updates, "time", SimpleNamespace(monotonic=lambda: elapsed[0], sleep=sleep))
+    monkeypatch.setattr(
+        updates,
+        "time",
+        SimpleNamespace(
+            monotonic=lambda: elapsed[0], time=lambda: 1_791_872_000 + elapsed[0], sleep=sleep
+        ),
+    )
     monkeypatch.setattr(updates.random, "uniform", lambda low, high: low)
     monkeypatch.setattr(
         updates,
@@ -183,6 +195,52 @@ def test_watcher_retries_after_a_managed_scan_instead_of_waiting_six_hours(manag
     finally:
         if not released:
             lease.__exit__(None, None, None)
+
+
+@pytest.mark.parametrize("correction", ["suspended", "backwards"])
+def test_running_watcher_checks_after_clock_correction_without_waiting_another_interval(
+    managed, monkeypatch, correction
+):
+    clock = {"monotonic": 0, "wall": 1_791_872_000}
+    calls = []
+    corrected = False
+
+    def sleep(seconds):
+        nonlocal corrected
+        if len(calls) == 2:
+            raise updates.UpdateInterrupted()
+        clock["monotonic"] += seconds
+        clock["wall"] += seconds
+        if calls and not corrected:
+            corrected = True
+            if correction == "suspended":
+                clock["monotonic"] += 5 * 3600
+                clock["wall"] += 16 * 3600
+            else:
+                clock["monotonic"] += 6 * 3600
+                clock["wall"] -= 86400
+        if clock["monotonic"] > 30000:
+            raise AssertionError("The running watcher did not check promptly after resume")
+
+    def check(_):
+        calls.append(dict(clock))
+        return {"status": "current"}
+
+    monkeypatch.setattr(
+        updates,
+        "time",
+        SimpleNamespace(
+            monotonic=lambda: clock["monotonic"], time=lambda: clock["wall"], sleep=sleep
+        ),
+    )
+    monkeypatch.setattr(updates.random, "uniform", lambda low, high: low)
+    monkeypatch.setattr(updates, "_check", check)
+    assert updates.watch(managed.state) == 0
+    assert len(calls) == 2 and calls[0]["monotonic"] == 60
+    # The second check is the first normal loop after resume/correction.
+    assert calls[1]["monotonic"] == (18070 if correction == "suspended" else 21670)
+    schedule = state_io.read(managed.root / "schedule.json")
+    assert schedule["reason"] == "periodic" and schedule["last_attempt_at"]
 
 
 def test_changed_schema_is_reported_before_any_process_transition(managed, monkeypatch):

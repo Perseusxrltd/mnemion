@@ -25,6 +25,7 @@ from .update_manifest import ManifestError, ServiceRelease, verify_manifest, ver
 from .update_packages import copy_inspected_source, verify_installed_package
 from .update_transport import UpdateNotPublished, download_artifact, fetch_manifest
 from .update_trust import SERVICE_UPDATE_PUBLIC_KEY
+from .update_schedule import UpdateSchedule, schedule_status
 
 UV_VERSION = "0.12.24"
 DEFAULT_INTERVAL = 6 * 60 * 60
@@ -582,6 +583,9 @@ def status(state: Path) -> dict:
     state, root, settings = _root(state)
     config = _configuration(root)
     active = state_io.read(root / "active.json")
+    last_check = (
+        state_io.read(root / "last-check.json") if (root / "last-check.json").exists() else None
+    )
     return {
         "enabled": config["enabled"],
         "current_version": active["version"],
@@ -589,9 +593,13 @@ def status(state: Path) -> dict:
         "schema_policy": "identical",
         "retained_backups": KEEP_BACKUPS,
         "recovery_pending": (root / "journal.json").exists(),
-        "last_check": state_io.read(root / "last-check.json")
-        if (root / "last-check.json").exists()
-        else None,
+        "last_check": last_check,
+        **schedule_status(
+            root,
+            enabled=config["enabled"],
+            interval=config["interval_seconds"],
+            last_check=last_check,
+        ),
         "events": state_io.read(root / "history.json").get("events", []),
         "supervision": supervision.status(state),
         "connectors": connector_status(root),
@@ -837,7 +845,8 @@ def watch(state: Path) -> int:
         sig: signal.signal(sig, shutdown) for sig in (signal.SIGTERM, signal.SIGINT)
     }
     try:
-        next_check = time.monotonic() + random.uniform(60, 120)
+        schedule = UpdateSchedule(root, clock=time)
+        schedule.after(random.uniform(60, 120), reason="startup")
         while True:
             config = _configuration(root)
             if not config["enabled"]:
@@ -863,10 +872,11 @@ def watch(state: Path) -> int:
                             else "Inspect the private recovery journal before retrying",
                         )
                     return 1
-            if config["enabled"] and time.monotonic() >= next_check:
+            if config["enabled"] and schedule.due():
                 try:
                     with state_io.lock(root):
                         state_io.clear_connector_pause(root)
+                        schedule.attempt()
                         result = _check(root)
                         if result["status"] == "available" and not (
                             result["schema_compatible"] and result["version_compatible"]
@@ -890,7 +900,7 @@ def watch(state: Path) -> int:
                     # shortly after a complete scan, rather than losing a whole
                     # six-hour update window or interrupting source ingestion.
                     state_io.pause_new_connector_scans(root)
-                    next_check = time.monotonic() + 30
+                    schedule.after(30, reason="operation_busy")
                     time.sleep(5)
                     continue
                 except Exception as error:
@@ -907,8 +917,8 @@ def watch(state: Path) -> int:
                             )
                     except ManifestError:
                         pass
-                next_check = time.monotonic() + config["interval_seconds"] * random.uniform(
-                    0.9, 1.1
+                schedule.after(
+                    config["interval_seconds"] * random.uniform(0.9, 1.1), reason="periodic"
                 )
             time.sleep(10)
     except UpdateInterrupted:

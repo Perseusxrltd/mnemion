@@ -2,8 +2,10 @@
 
 Version 4.1.6 addresses the reported Git revision/scan-label issue 30, MCP search
 defaults in issue 24, small version diagnostics in issue 29 and standalone-port
-migration guidance in issue 23. It is in release preparation; native and public
-delivery checks remain required before publication.
+migration guidance in issue 23. It was published on all six desktop targets at
+08:34:34 UTC. The [publication record](2026-10-13-agent-ingestion-release.md)
+records all 30 release jobs, independent asset verification, public feeds,
+the live website and all six successful public automatic upgrades.
 
 The focused suite passed **80 tests in 36.12 seconds** under a 512 MiB process
 scope and one CPU quota. It used disposable PostgreSQL with restricted roles,

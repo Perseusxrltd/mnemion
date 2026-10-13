@@ -6,6 +6,16 @@ enable checking by default. The API, worker and updater run under the private
 [Supervisor instance](supervision.md); systemd and paid services are unnecessary.
 An authorized host agent can perform every step through JSON CLI commands.
 
+From **4.1.7**, the running updater checks promptly after a suspended host
+resumes, even when that host's monotonic clock stopped. It uses both wall time
+and monotonic time, retains startup and periodic jitter, and limits retries
+after clock corrections. `updates status` includes `next_check_at`, `overdue`
+and `last_attempt_at`. A deadline inferred from an older successful check is
+marked `schedule_estimated`; it uses the latest deadline allowed by normal
+10% jitter. An overdue deadline can also mean the updater is waiting for a
+connector lease or completing a check. Disabling automatic updates reports no
+scheduled check and prevents automatic network requests.
+
 This first managed updater covers compatible Python service patches. Existing
 servers require one explicit adoption. Containers, Windows servers, PostgreSQL,
 Python itself, source runners and reverse proxies retain their deployment

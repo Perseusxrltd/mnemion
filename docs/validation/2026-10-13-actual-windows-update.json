@@ -1,0 +1,20 @@
+{
+  "observed_relaunch_at": "2026-10-13T08:39:22.024804+00:00",
+  "platform": "windows",
+  "architecture": "x64",
+  "from": "4.1.3",
+  "to": "4.1.4",
+  "ordinary_hide_to_tray_used": true,
+  "restart_requested": false,
+  "real_idle_seconds_at_relaunch": 702,
+  "new_main_process_observed": true,
+  "automatic_updates_background_startup_enabled": true,
+  "profile_and_credential_preserved": true,
+  "independent_human_admin_authenticated_at": "2026-10-13T08:42:10.937495+00:00",
+  "workspace_server_version": "4.1.5",
+  "next_installer_cached_and_verified": "4.1.6",
+  "next_installer_sha256": "sha256:5db78a65628d069b990823abf91162e4888d2dd61d7592803caa3116e0c4d0a4",
+  "installed_4_1_6_claimed": false,
+  "production_memory_writes": 0,
+  "model_calls": 0
+}

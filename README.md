@@ -2,7 +2,7 @@
 
 # Mnemion
 
-[Product roadmap](docs/ROADMAP.md) · [Complete requirements and progress](docs/PRODUCT_REQUIREMENTS.md)
+[Current release status](docs/RELEASE_STATUS.md) · [Product roadmap](docs/ROADMAP.md) · [Complete requirements and progress](docs/PRODUCT_REQUIREMENTS.md)
 
 Memory infrastructure for applications, teams, and AI assistants, with Obsidian
 as a local visualization and inspection surface.
@@ -11,16 +11,15 @@ as a local visualization and inspection surface.
 and updates are included; optional [support](docs/SUPPORT.md) starts at €5 and
 never gates downloads, usage or access.
 
-**Mnemion 4.0 is the first release of the rebuilt shared-memory platform.**
-Download published builds from [the official product page](https://www.perseusxr.com/mnemion).
-Version [4.0.11](docs/releases/4.0.11.md) adds guided [local workspace creation](docs/service/local-workspaces.md),
+**Mnemion 4.0 began the rebuilt shared-memory platform's v1 release line.**
+Download current published builds from [the official product page](https://www.perseusxr.com/mnemion).
+The automatically reconciled [release status](docs/RELEASE_STATUS.md) records
+the version, available platforms and release-gate evidence. It distinguishes
+published capability from the unfinished full product roadmap.
+Studio includes guided [local workspace creation](docs/service/local-workspaces.md),
 bundled database/model runtimes, [app and agent RAM controls](docs/service/memory-resources.md),
-local recovery and a Linux idle-restart fix. The
-[live 3D memory map](docs/service/memory-map.md), recorded agent activity and
-[connection diagnostics](docs/service/connection-diagnostics.md) introduced in 4.0.10 remain available.
-Version [4.0.12](docs/releases/4.0.12.md) corrects native ngrok
-connections, stale offline responses and authenticated health gateways; use the
-product page to distinguish current source from published downloads.
+local recovery, a [live 3D memory map](docs/service/memory-map.md), recorded agent
+activity and [connection diagnostics](docs/service/connection-diagnostics.md).
 Set up [independent human administrators](docs/service/organizations.md#establish-independent-administrators)
 to manage people, applications and space grants without the original agent.
 The [continuity contract](docs/implementation/workspace-continuity.md) tracks the
@@ -30,7 +29,7 @@ screen. [Workspace controls](docs/service/workspaces.md) explain remembering,
 disconnecting and forgetting a device connection. Complete fresh-machine setup
 through the app remains [active work](docs/implementation/app-onboarding.md).
 The Perseus XR design and [signed Linux/macOS service updater](docs/service/managed-updates.md)
-from 4.0.8 remain available, with backup verification and data-preserving rollback.
+include backup verification and data-preserving rollback.
 Official Python packages include web Studio, local fonts and offline guides.
 Source-sync controls, agent administration, Obsidian compatibility and the earlier
 native-update and model-memory improvements are retained.
