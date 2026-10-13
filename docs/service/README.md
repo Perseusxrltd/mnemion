@@ -4,7 +4,7 @@ This is the **4.x shared-memory service**. It provides authenticated spaces,
 versioned source evidence, durable indexing, local multilingual search, HTTP and
 MCP access, and Obsidian exports. The [product page](https://www.perseusxr.com/mnemion)
 provides desktop downloads for Windows, macOS and Linux on x64 and ARM64. The
-[release notes](../releases/4.1.1.md) describe the current published package changes and
+[release status](../RELEASE_STATUS.md) links the current published package changes and
 remaining work. Complete backup/recovery, v3 import with cutover and rollback,
 and Studio are implemented. Version 4.0.8 adds [managed Unix service patches](managed-updates.md)
 with signed packages, verified backups and runtime rollback. Fleet/Compose upgrades
@@ -96,6 +96,9 @@ jobs, optional schedules, durable daily call limits, evidence checks and human
 review; no language model or schedule is enabled by default.
 
 ## Studio
+
+See [search passages and evidence](retrieval.md) for the distinction between a
+memory passage, a source citation and a complete fetched revision.
 
 Official Python wheel and source archives from **4.0.6** include the matching
 web Studio, offline guides, roadmap and dependency notices. Installing one of

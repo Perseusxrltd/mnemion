@@ -17,6 +17,7 @@ from .models import ContextInput, RecallInput, json_value
 from .model_registry import ModelRegistry
 from .model_state import selected_generations
 from .model_state import settings as model_settings
+from .passages import evidence_passage, passage_span
 from .repository import hydrate, memory_row
 from .telemetry import Telemetry
 
@@ -331,13 +332,12 @@ class RetrievalService:
                 # Recheck grant changes before exposing hydrated source content.
                 require_space(conn, row["space_id"])
                 content = hit.pop("content")
-                start = candidate.get("start_offset", 0)
-                end = candidate.get("end_offset", min(len(content), 4000))
-                if "semantic" not in ranks[memory]:
-                    terms = command.query.casefold().split()
-                    positions = [content.casefold().find(term) for term in terms]
-                    first = min((p for p in positions if p >= 0), default=0)
-                    start, end = max(0, first - 300), min(len(content), max(0, first - 300) + 4000)
+                preferred = (
+                    (candidate["start_offset"], candidate["end_offset"])
+                    if "semantic" in ranks[memory]
+                    else None
+                )
+                start, end = passage_span(content, command.query, preferred)
                 hit["text"] = content[start:end]
                 hit["memory_span"] = {
                     "start": start,
@@ -345,9 +345,7 @@ class RetrievalService:
                     "offset_unit": "unicode_codepoints",
                 }
                 hit["text_truncated"] = start != 0 or end != len(content)
-                excerpt = hit["evidence"]["excerpt"]
-                hit["evidence"]["excerpt"] = excerpt[:4000]
-                hit["evidence"]["excerpt_truncated"] = len(excerpt) > 4000
+                evidence_passage(hit["evidence"], command.query, content, (start, end))
                 hit["relevance_score"] = round(scores[memory] / denominator, 8)
                 hit["score_method"] = "normalized_rrf_k60"
                 hit["ranking"] = {
@@ -473,8 +471,8 @@ class RetrievalService:
                             "revision_id": hit["revision_id"],
                             "space_id": hit["space_id"],
                             "source_revision_id": fresh["evidence"]["source_revision_id"],
-                            "source_start": fresh["evidence"]["start"],
-                            "source_end": fresh["evidence"]["end"],
+                            "source_start": hit["evidence"]["start"],
+                            "source_end": hit["evidence"]["end"],
                             "memory_span": span,
                         }
                     )

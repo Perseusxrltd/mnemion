@@ -27,6 +27,7 @@ const titles: Record<string, string> = {
   "docs/service/oauth.md": "Organization OAuth & agent access",
   "docs/service/connection-diagnostics.md": "Connection diagnosis & host recovery",
   "docs/service/memory-map.md": "Live 3D memory map",
+  "docs/service/retrieval.md": "Search passages & source evidence",
   "docs/service/memory-resources.md": "RAM budgets & local agent controls",
   "docs/implementation/app-onboarding.md": "Complete app setup requirements",
   "docs/STUDIO_DESIGN.md": "Studio design system",
