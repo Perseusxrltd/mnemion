@@ -127,7 +127,7 @@ release does not close unfinished provider or recovery requirements.
 
 1. **Reported stabilization:** the [published 4.1.7 update-scheduler fix](validation/2026-10-13-managed-update-schedule.md)
    for suspended hosts (issue 33) passed source, native package, independent
-   artifact, public-feed and live website checks. Public upgrade rehearsals are running.
+   artifact, public-feed, live website and all six public automatic-upgrade checks.
    4.1.6 delivers Git commit-wide re-ingestion and managed scan
    label fixes (issue 30), MCP search defaults (24), connection migration guidance
    (23) and bounded version diagnostics (29). Assess MCP client reports (25–26)

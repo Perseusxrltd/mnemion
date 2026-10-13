@@ -49,9 +49,14 @@ latest stable release and all 12 anonymous checksum and update feeds.
 completed automatically. The [live HTML receipt](2026-10-13-v4_1_7-website.json)
 confirms the visible version, every primary installer, current notes and guides,
 checksums, roadmap on `main` and homepage product link. No new website design
-or visual render is claimed. The six [public 4.1.6 → 4.1.7 upgrade rehearsals](https://github.com/Perseusxrltd/mnemion/actions/runs/38381497073)
-are running separately; publication is not evidence that an existing user's
-desktop or separately hosted server has already installed the patch.
+or visual render is claimed. All six [public 4.1.6 → 4.1.7 upgrade rehearsals](https://github.com/Perseusxrltd/mnemion/actions/runs/38381497073)
+passed by **10:21:17 UTC**. Their [sanitized receipts](2026-10-13-v4_1_7-public-upgrades.json)
+confirm unchanged official packages, real system idle, process replacement,
+preserved profiles and active sandboxes; both Linux login entries track the
+newly installed image. Starting installer hashes match the independently
+verified 4.1.6 packages for the corresponding platform and architecture.
+Issue 33 is closed. These hosted checks do not claim that the user's desktop
+or separately hosted server has already installed the patch.
 
 The [full product checklist](../PRODUCT_REQUIREMENTS.md) remains open, including
 individual sign-in, hosted OAuth, independent host recovery, connected capture,

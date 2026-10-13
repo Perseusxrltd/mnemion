@@ -9,7 +9,8 @@ resumes from suspension, adds actual next-check/overdue diagnostics, and retains
 update and ingestion safeguards. [Source and release validation](validation/2026-10-13-managed-update-schedule.md)
 passed: 60 focused checks, all 30 release jobs, independent verification of all
 38 assets, public update feeds and the automatically refreshed live website.
-Public 4.1.6 → 4.1.7 upgrade rehearsals are running separately on all six targets.
+[Public 4.1.6 → 4.1.7 upgrades](validation/2026-10-13-v4_1_7-public-upgrades.json)
+also passed on all six targets, preserving profiles and the ordinary idle safeguards.
 
 Version [4.1.6](releases/4.1.6.md) ships Git revisions tied to individual file
 changes, accurate managed scan reasons, query-only MCP defaults with current
