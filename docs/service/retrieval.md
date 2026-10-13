@@ -1,10 +1,9 @@
 # Search passages and source evidence
 
 Search returns bounded passages so people and agents can inspect a result
-without downloading every full memory. The matched-passage correction is in
-development for [issue 35](https://github.com/Perseusxrltd/mnemion/issues/35);
-check [release status](../RELEASE_STATUS.md) before assuming a published server
-includes it.
+without downloading every full memory. The matched-passage correction for
+[issue 35](https://github.com/Perseusxrltd/mnemion/issues/35) requires service 4.2.0.
+Check [release status](../RELEASE_STATUS.md) for the published server version.
 
 `POST /v1/recall` and MCP `memory_search` use the same retrieval service. Each
 hit has two independently meaningful spans:

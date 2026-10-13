@@ -10,7 +10,7 @@ from mnemion.service.retrieval import RetrievalService
 
 @pytest.mark.parametrize("mode", ["lexical", "hybrid", "semantic"])
 def test_search_shows_matching_passage_near_end_of_large_git_part(env, mode):
-    answer = "T-0045 D1 CLOS — relance envoyée, réponse avocate reçue."
+    answer = "TASK-7312 D3 APPROUVÉ — relance envoyée, réponse équipe reçue."
     content = "# Earlier rounds\n" + "Archive without the answer.\n" * 1600 + answer
     saved = env.memory.save(env.owner, env.space, MemoryInput(content=content), "matched-git-part")
     while env.worker.run_once():
@@ -18,7 +18,7 @@ def test_search_shows_matching_passage_near_end_of_large_git_part(env, mode):
     service = RetrievalService(env.db, env.embedder)
     result = service.recall(
         env.owner,
-        RecallInput(query="T-0045 D1 relance avocate", space_ids=[env.space], mode=mode),
+        RecallInput(query="TASK-7312 D3 relance équipe", space_ids=[env.space], mode=mode),
     )
     hit = result["hits"][0]
     assert hit["memory_id"] == saved["memory_id"]
@@ -40,25 +40,25 @@ def test_search_shows_matching_passage_near_end_of_large_git_part(env, mode):
 
 def test_source_passage_uses_original_offsets_not_derived_memory_or_casefold_offsets(env):
     prefix = "Outside cited span: private context.\n"
-    cited = "Straße İ 😀 ancien historique.\n" * 1800 + "Réponse avocate : T-0045 CLOS."
+    cited = "Straße İ 😀 ancien historique.\n" * 1800 + "Réponse équipe : TASK-7312 APPROUVÉ."
     source = prefix + cited + "\nOutside cited span: unrelated conclusion."
     saved = env.memory.save(
         env.owner,
         env.space,
         MemoryInput(
-            content="The avocate confirmed T-0045 is CLOS.",
+            content="The équipe confirmed TASK-7312 is APPROUVÉ.",
             source=SourceInput(content=source, start=len(prefix), end=len(prefix) + len(cited)),
         ),
         "derived-with-source",
     )
     service = RetrievalService(env.db, env.embedder)
-    command = RecallInput(query="avocate T-0045 CLOS", space_ids=[env.space], mode="lexical")
+    command = RecallInput(query="équipe TASK-7312 APPROUVÉ", space_ids=[env.space], mode="lexical")
     hit = service.recall(env.owner, command)["hits"][0]
     evidence = hit["evidence"]
     assert evidence["start"] > len(prefix)
     assert evidence["end"] <= len(prefix) + len(cited)
     assert evidence["excerpt"] == source[evidence["start"] : evidence["end"]]
-    assert "Réponse avocate : T-0045 CLOS." in evidence["excerpt"]
+    assert "Réponse équipe : TASK-7312 APPROUVÉ." in evidence["excerpt"]
     assert "Outside cited span" not in evidence["excerpt"]
     assert hit["memory_span"]["start"] == 0
     packed = service.context(env.owner, ContextInput(**command.model_dump(), token_budget=4000))
@@ -69,9 +69,9 @@ def test_source_passage_uses_original_offsets_not_derived_memory_or_casefold_off
 
 
 def test_passage_prefers_joint_query_coverage_over_first_common_word():
-    answer = "avocate T-0045 D1 CLOS"
-    content = "avocate\n" + "old unrelated material.\n" * 1000 + answer + "\n" * 200
-    start, end = passage_span(content, "avocate T-0045 D1 CLOS")
+    answer = "équipe TASK-7312 D3 APPROUVÉ"
+    content = "équipe\n" + "old unrelated material.\n" * 1000 + answer + "\n" * 200
+    start, end = passage_span(content, "équipe TASK-7312 D3 APPROUVÉ")
     assert start > 0
     assert answer in content[start:end]
     assert end - start <= 4000
@@ -110,7 +110,7 @@ def test_semantic_only_match_keeps_the_selected_embedding_passage(env, monkeypat
 def test_a_matched_passage_does_not_expand_the_semantic_chunk_budget(env, monkeypatch):
     while env.worker.run_once():
         pass
-    answer = "T-0045 received the avocate response."
+    answer = "TASK-7312 received the équipe response."
     content = "Earlier unrelated context.\n" * 100 + answer
     monkeypatch.setattr(
         env.embedder,
@@ -121,7 +121,7 @@ def test_a_matched_passage_does_not_expand_the_semantic_chunk_budget(env, monkey
     while env.worker.run_once():
         pass
     hit = RetrievalService(env.db, env.embedder).recall(
-        env.owner, RecallInput(query="T-0045 avocate", space_ids=[env.space])
+        env.owner, RecallInput(query="TASK-7312 équipe", space_ids=[env.space])
     )["hits"][0]
     assert answer in hit["text"]
     assert len(hit["text"]) <= 800

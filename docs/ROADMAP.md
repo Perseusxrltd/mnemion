@@ -14,6 +14,19 @@ does not yet establish six-platform installed acceptance or public delivery.
 Migration 015 requires a guarded service upgrade. Hosted OAuth, company SSO
 onboarding and live named-provider acceptance remain separate unfinished work.
 
+The same candidate corrects search excerpts from long documents: matching
+passages carry exact source offsets and preserve smaller context budgets.
+[Thirteen focused retrieval checks](validation/2026-10-13-matched-evidence.md)
+passed for issue 35. Final release and installed-upgrade acceptance remain
+required; recency, exact-identifier ranking and calibrated relevance are still
+separate open retrieval work.
+
+The actual Windows app completed automatic 4.1.4 → 4.1.6 → 4.1.7 installation
+and relaunch. That exercise identified a locked-screen focus wait; the 4.2.0
+candidate handles an OS-reported lock while preserving all other restart
+guards. [Local validation](validation/2026-10-13-locked-desktop-updates.md)
+passed 129 desktop checks; final native release acceptance remains required.
+
 Version [4.1.7](releases/4.1.7.md) fixes managed update scheduling after a host
 resumes from suspension, adds actual next-check/overdue diagnostics, and retains
 update and ingestion safeguards. [Source and release validation](validation/2026-10-13-managed-update-schedule.md)

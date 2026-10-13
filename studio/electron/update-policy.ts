@@ -2,6 +2,7 @@
 export type UpdateRestartState = {
   enabled: boolean; downloaded: boolean; idleSeconds: number;
   focused: boolean; visible: boolean; minimized: boolean; safe: boolean; busy: boolean;
+  locked?: boolean;
 }
 export type UpdateRestartBlocker = 'disabled' | 'not-downloaded' | 'busy' | 'work' | 'focused' | 'inactivity'
 
@@ -13,7 +14,9 @@ export function updateRestartBlocker(value: UpdateRestartState, requested = fals
   if (requested) return null
   // Electron can retain focus after a Linux window is minimized/hidden. Only
   // an actually visible, restored focused window can represent active use.
-  const activeFocus = value.focused && value.visible && !value.minimized
+  // A window shown by an updater can retain focus behind the OS lock screen.
+  // The locked session still needs the same real inactivity and work guards.
+  const activeFocus = value.focused && value.visible && !value.minimized && !value.locked
   if (activeFocus) return 'focused'
   if (!Number.isFinite(value.idleSeconds) || value.idleSeconds < 600) return 'inactivity'
   return null

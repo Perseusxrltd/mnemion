@@ -31,6 +31,14 @@ test('a user-requested restart does not require leaving the computer idle or hid
     assert.equal(canRestartForUpdate({ ...workingAtComputer, ...guard }, true), false)
   }
 })
+test('a locked desktop does not preserve active window focus or bypass work and inactivity guards', () => {
+  const locked = { ...ready, focused: true, locked: true }
+  assert.equal(canRestartForUpdate(locked), true)
+  for (const guard of [{ enabled: false }, { downloaded: false }, { idleSeconds: 599 },
+    { idleSeconds: NaN }, { idleSeconds: Infinity }, { safe: false }, { busy: true }, { locked: false }]) {
+    assert.equal(canRestartForUpdate({ ...locked, ...guard }), false)
+  }
+})
 test('restart diagnostics identify blockers without weakening either restart path', () => {
   const cases = [
     [{ enabled: false }, 'disabled'], [{ downloaded: false }, 'not-downloaded'],

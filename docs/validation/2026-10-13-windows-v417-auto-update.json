@@ -1,0 +1,53 @@
+{
+  "date": "2026-10-13",
+  "platform": "windows",
+  "architecture": "x64",
+  "source": "Actual installed application; ordinary background controls and read-only observation",
+  "from_version": "4.1.4",
+  "via_version": "4.1.6",
+  "to_version": "4.1.7",
+  "automatic_installation_and_relaunch_observed": true,
+  "operator_actions": [
+    "Requested the ordinary update check",
+    "Minimized the application",
+    "Used normal Close with background mode already enabled after the locked-screen wait"
+  ],
+  "forced_installer": false,
+  "idle_simulation": false,
+  "preferences_changed": false,
+  "profile_reset": false,
+  "session_locked_observed": true,
+  "authenticated_reconnection_in_this_observation": false,
+  "observations": [
+    {
+      "at": "2026-10-13T12:44:03.780105+00:00",
+      "installed_version": "4.1.4",
+      "application_processes_running": true,
+      "system_idle_seconds": 542.891
+    },
+    {
+      "at": "2026-10-13T12:45:33.949725+00:00",
+      "installed_version": null,
+      "application_processes_running": false,
+      "system_idle_seconds": 635.984
+    },
+    {
+      "at": "2026-10-13T12:46:04.035516+00:00",
+      "installed_version": "4.1.6",
+      "application_processes_running": false,
+      "system_idle_seconds": 666.063
+    },
+    {
+      "at": "2026-10-13T12:46:34.143829+00:00",
+      "installed_version": "4.1.6",
+      "application_processes_running": true,
+      "system_idle_seconds": 696.188
+    },
+    {
+      "at": "2026-10-13T12:57:10.776322+00:00",
+      "installed_version": "4.1.7",
+      "application_processes_running": true,
+      "system_idle_seconds": 1330.656
+    }
+  ]
+}

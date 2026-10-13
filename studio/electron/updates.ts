@@ -273,6 +273,7 @@ export class DesktopUpdates {
     catch { this.waitingToRestart('window'); return false }
     const reason = updateRestartBlocker({ enabled: this.enabled, downloaded: this.downloaded,
       idleSeconds: powerMonitor.getSystemIdleTime(), focused: window?.isFocused() || false,
+      locked: powerMonitor.getSystemIdleState(600) === 'locked',
       visible: window?.isVisible() || false, minimized: window?.isMinimized() || false,
       safe, busy: this.busy() }, requested)
     this.waitingToRestart(reason)

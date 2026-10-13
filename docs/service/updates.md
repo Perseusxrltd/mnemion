@@ -83,6 +83,12 @@ provided Studio has no visible, restored focused window, no vault/API transfer i
 input remains open. Close a completed editor or navigate away to release its
 draft guard. On Mac and Windows, a normal quit cancels a staged update; a later check can
 retry it. This prevents a cancelled update from installing after the app exits.
+
+Version 4.2.0 also recognizes an OS-reported locked session: a window
+reopened behind the lock screen no longer holds an otherwise safe update on
+its focused flag. The same inactivity and work checks still apply, and unlocking
+is rechecked before installation. Older versions can use the normal Close
+button to return to their enabled background mode and release that focus wait.
 On AppImage, a downloaded update can also install during a normal quit.
 
 Version 4.0.11 adds **Restart to update** to **Background and updates**

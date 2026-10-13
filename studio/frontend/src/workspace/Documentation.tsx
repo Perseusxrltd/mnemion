@@ -17,6 +17,7 @@ const titles: Record<string, string> = {
   "README.md": "Mnemion overview", "SECURITY.md": "Security policy",
   "CONTRIBUTING.md": "Contributing", "studio/README.md": "Desktop setup & builds",
   "docs/ROADMAP.md": "Product roadmap", "docs/service/README.md": "Quick start & API",
+  "docs/RELEASE_STATUS.md": "Published release & validation status",
   "docs/PRODUCT_REQUIREMENTS.md": "Complete requirements & implementation checklist",
   "docs/research/2026-10-11-agent-platforms.md": "Dot, Grokbot, Claude, Hermes & OpenClaw",
   "docs/service/deployment.md": "Self-hosted deployment", "docs/service/organizations.md": "Organizations, spaces & security",
@@ -118,6 +119,9 @@ export default function Documentation() {
         <small>Bundled with this version. Updated guides and release notes arrive with each app update.</small>
       </aside>
       <article className="mn-docs-article" ref={article} aria-label={selected?.title ?? "Documentation"}>
+        {selected?.path === "docs/RELEASE_STATUS.md" && <p>
+          This is the status snapshot bundled with Mnemion {version}. <a href={repository + "docs/RELEASE_STATUS.md"} target="_blank" rel="noreferrer noopener">View live release status</a> for later updates.
+        </p>}
         {loading && <p role="status">Loading guide…</p>}
         {error && <p role="alert">{error}</p>}
         <Markdown remarkPlugins={[remarkGfm]} skipHtml components={{

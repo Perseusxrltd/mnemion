@@ -135,11 +135,11 @@ both container architectures, both Mac supervision targets, Studio, legacy
 compatibility, static checks and dependency review.
 
 The accompanying native run passed both Linux packages, Apple Silicon and
-Windows x64, including installed invitation acceptance, contributor access,
+both Windows architectures, including installed invitation acceptance, contributor access,
 protected remembering, same-session reopening, revocation and updater checks.
 Its Intel Mac package stopped while detaching the temporary installer image:
-`hdiutil` reported a busy device. Windows ARM and a successful Intel Mac package
-remain required; this partial run is not six-platform acceptance.
+`hdiutil` reported a busy device. A successful Intel Mac package remains
+required; this five-platform result is not six-platform acceptance.
 
 The next source also sends a scoped native session-ended notification when a
 password refresh fails or the server rejects the current access credential.
@@ -156,3 +156,11 @@ ignored, the matching closure returned to sign-in, the old workspace disappeared
 the workspace link remained, and the event listener was released. There were no
 page errors or external network requests. That browser fixture substitutes the
 native bridge; it does not substitute for the final packaged OS tests.
+
+The combined 4.2.0 preflight passed **68 service/HTTP/agent/retention/retrieval
+checks**. The passage fixtures use synthetic task identifiers and source text;
+their final focused group passed all 13 checks. The later lock-screen updater
+follow-up passed **129 Electron checks**. The final production frontend build,
+404-file Python formatting check, static checks and release-version consistency
+check also passed. The immutable release candidate still needs its complete
+package and installed schema-upgrade gates.

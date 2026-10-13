@@ -11,6 +11,7 @@ const previousResources = process.resourcesPath
 process.resourcesPath = temporary
 let directory = temporary
 let idle = 0
+let idleState = 'active'
 let quits = 0
 const app = Object.assign(new EventEmitter(), {
   isPackaged: true,
@@ -27,7 +28,7 @@ class PlatformBridge {
   async check() {}
   async cancel() {}
 }
-mock.module('electron', { namedExports: { app, powerMonitor: { getSystemIdleTime: () => idle },
+mock.module('electron', { namedExports: { app, powerMonitor: { getSystemIdleTime: () => idle, getSystemIdleState: () => idleState },
   net: { request: () => { throw new Error('Unit tests must never start a download') } },
   session: { fromPartition: () => ({}) } } })
 mock.module('electron-updater', { defaultExport: { autoUpdater: automatic } })
@@ -49,7 +50,7 @@ function fixture(t, { ready = true } = {}) {
   const previous = Object.fromEntries(keys.map(key => [key, process.env[key]]))
   for (const key of keys) delete process.env[key]
   process.env.APPIMAGE = join(directory, 'fixture.AppImage')
-  idle = 0; quits = 0
+  idle = 0; idleState = 'active'; quits = 0
   const state = { safe: true, focused: true, busy: false, drains: 0, cancelled: 0, attempts: 0, installs: 0,
     drain: async () => true, beforeFinalGuard: () => {} }
   const window = { isFocused: () => state.focused, isVisible: () => true, isMinimized: () => false,
@@ -92,6 +93,31 @@ test('a deliberate restart works while focused and active, after all work checks
   assert.equal(state.installs, 1)
   assert.equal(quits, 1)
   assert.equal(controller.canRequestRestart, false)
+})
+
+test('an idle locked desktop permits a safe automatic restart even with retained app focus', async t => {
+  const { state, controller } = fixture(t)
+  idle = 600; idleState = 'locked'
+  await controller.restartIfSafe()
+  assert.equal(state.focused, true)
+  assert.equal(state.drains, 1)
+  assert.equal(state.installs, 1)
+  assert.equal(quits, 1)
+})
+
+test('unlocking during shutdown or at the final installer guard cancels an automatic restart', async t => {
+  for (const phase of ['shutdown', 'installer']) {
+    const { state, controller } = fixture(t)
+    idle = 600; idleState = 'locked'
+    const unlock = () => { idle = 0; idleState = 'active' }
+    if (phase === 'shutdown') state.drain = async () => { unlock(); return true }
+    else state.beforeFinalGuard = unlock
+    await controller.restartIfSafe()
+    assert.equal(state.drains, 1, phase)
+    assert.equal(state.installs, 0, phase)
+    assert.equal(state.cancelled, 1, phase)
+    assert.equal(quits, 0, phase)
+  }
 })
 
 test('a draft opened during shutdown cancels replacement and does not leave a sticky manual request', async t => {

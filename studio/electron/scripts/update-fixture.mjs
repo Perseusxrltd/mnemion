@@ -9,6 +9,7 @@ app.setPath('userData', fixture.userData)
 let updates
 let busy = false
 let idleSeconds = 0
+let screenLocked = false
 let shutdowns = 0
 let shutdownAllowed = false
 let cancelled = 0
@@ -47,8 +48,9 @@ app.whenReady().then(async () => {
     await window.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(
       '<textarea></textarea><script>window.mnemion={updateSafety:()=>document.querySelector("textarea").value===""}</script>',
     ))
-    // Only system inactivity is simulated; Sparkle and Electron run natively.
+    // Inactivity and lock state are controlled; Sparkle and Electron run natively.
     powerMonitor.getSystemIdleTime = () => idleSeconds
+    powerMonitor.getSystemIdleState = () => screenLocked ? 'locked' : idleSeconds >= 600 ? 'idle' : 'active'
     updates = new DesktopUpdates(() => window, () => busy, async () => {
       shutdowns += 1
       await sleep(25)
@@ -81,11 +83,15 @@ app.whenReady().then(async () => {
     assert(activeWindow(), 'The native test window could not become visible, restored and focused')
     await updates.restartIfSafe()
     assert(shutdowns === 0, 'A shutdown interrupted a focused window')
+    screenLocked = true
+    await updates.restartIfSafe()
+    assert(shutdowns === 1 && cancelled === 1, 'A locked desktop retained app focus or skipped shutdown safety')
+    screenLocked = false
+    await updates.restartIfSafe()
+    assert(shutdowns === 1, 'Unlocking a focused app did not restore its activity guard')
     window.hide()
     await sleep(100)
-    await updates.restartIfSafe()
-    assert(shutdowns === 1 && cancelled === 1, 'A failed workspace stop did not cancel the update')
-    record('guards-passed', { idle: true, transfer: true, draft: true, focus: true, shutdown: true })
+    record('guards-passed', { idle: true, transfer: true, draft: true, focus: true, locked: true, shutdown: true })
     shutdownAllowed = true
     await updates.restartIfSafe()
     assert(shutdowns === 2, 'An idle, unfocused, clean session did not retry installation')
