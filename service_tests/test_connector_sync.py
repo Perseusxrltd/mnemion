@@ -227,6 +227,7 @@ def test_git_deletion_after_requested_scan_is_removed_and_counted(env, tmp_path)
         assert requested.pending
         result = sync(config, client=client)
         assert result["completed"] and result["removed"] == 1
+        assert result["changed"] == 0 and result["unchanged"] == 1
         state = service.sync_status(operator, connection)
         assert not state["pending"] and state["last_removed"] == 1
         with env.db.transaction(operator) as conn:
@@ -235,6 +236,7 @@ def test_git_deletion_after_requested_scan_is_removed_and_counted(env, tmp_path)
             ).fetchall()
         assert len(rows) == 1
         assert "Postgres" in env.memory.fetch(operator, rows[0]["id"])["content"]
+        assert env.memory.fetch(operator, rows[0]["id"])["version"] == 1
 
 
 def test_watch_control_wakes_without_source_poll_and_backs_off_failures():

@@ -369,7 +369,7 @@ def create_app(
 
     @app.get("/health/live", tags=["Operations"], response_model=c.LiveStatus)
     def live():
-        return {"status": "alive", "api_version": "v1"}
+        return {"status": "alive", "api_version": "v1", "service_version": __version__}
 
     @app.get("/health/ready", tags=["Operations"], response_model=c.ReadyStatus)
     def ready(response: Response):
@@ -388,7 +388,11 @@ def create_app(
         if re.fullmatch(r"mnemion-[a-f0-9]{24}", instance):
             response.headers["X-Mnemion-Instance"] = instance
             response.headers["X-Mnemion-Process"] = str(os.getpid())
-        return {"status": "ready", "generation_id": embedder.generation.id}
+        return {
+            "status": "ready",
+            "generation_id": embedder.generation.id,
+            "service_version": __version__,
+        }
 
     @app.get("/v1/me", tags=["Identity"], response_model=c.IdentityInfo)
     def me(identity: Auth):

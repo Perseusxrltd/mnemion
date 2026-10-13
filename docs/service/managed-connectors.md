@@ -76,6 +76,12 @@ needs its own deployment/update ownership; a memory-service URL or API key
 does not grant control of that machine. Windows/Compose fleet management and
 app-based host enrollment remain on the [roadmap](../ROADMAP.md).
 
+From 4.1.6, managed scans retain their reason across the one-shot scanner
+boundary: `startup` for the first scan, `poll` for the normal interval and
+`requested` for **Sync now**. Waiting for an update or handing the launcher to
+the next compatible runtime preserves the pending reason. Older restored
+scanners can still run; their older logging behavior may report `startup`.
+
 There are at most 64 managed connector registrations per host. Stop a retired
 runner before removing only its corresponding private
 `updates/connectors/<connector-id>` directory. This local bookkeeping does not

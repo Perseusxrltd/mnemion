@@ -6,6 +6,31 @@ from mnemion.service.api import create_app
 from mnemion.service.models import KeyInput, PrincipalInput
 from mnemion.service.errors import ServiceError
 from mnemion.service.retrieval import RetrievalService
+from mnemion.version import __version__
+
+
+def test_health_reports_running_version_without_exposing_workspace_or_update_details(env):
+    from mnemion.service.contracts import LiveStatus, ReadyStatus
+
+    with TestClient(create_app(env.db, env.embedder)) as client:
+        live = client.get("/health/live")
+        ready = client.get("/health/ready")
+    assert live.status_code == ready.status_code == 200
+    assert live.json() == {"status": "alive", "api_version": "v1", "service_version": __version__}
+    assert ready.json() == {
+        "status": "ready",
+        "generation_id": env.embedder.generation.id,
+        "service_version": __version__,
+    }
+    assert len(live.content) < 256 and len(ready.content) < 512
+    # Existing clients must still be able to connect to older hosts.
+    assert (
+        LiveStatus.model_validate({"status": "alive", "api_version": "v1"}).service_version is None
+    )
+    assert (
+        ReadyStatus.model_validate({"status": "ready", "generation_id": "older"}).service_version
+        is None
+    )
 
 
 def test_missing_and_conflicting_scopes_explain_the_fix_without_echoing_query(env):

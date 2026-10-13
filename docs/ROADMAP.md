@@ -1,10 +1,17 @@
 # Mnemion product roadmap
 
-Current distribution: **4.1.5**, published on all six desktop targets. Updated: **2026-10-13**.
+Current distribution: **4.1.6**, in release preparation. Updated: **2026-10-13**.
+Published downloads remain **4.1.5** on all six desktop targets until verified 4.1.6 publication.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
 
-Version [4.1.5](releases/4.1.5.md) adds [bounded desktop update retries](validation/2026-10-12-update-retries.md) after failed checks and downloads. All 106 Electron tests passed, including recovery, outage limits, cancellation and overlapping-check cases. All six native gates, independent artifact verification, public feeds and the automatically refreshed live website passed; see the [publication record](validation/2026-10-13-update-retry-release.md). Public 4.1.4 → 4.1.5 upgrade rehearsals are running.
+Version [4.1.6](releases/4.1.6.md) prepares Git revisions tied to individual file
+changes, accurate managed scan reasons, query-only MCP defaults with current
+permission checks, small version diagnostics and connection migration guidance.
+[All 80 focused tests](validation/2026-10-13-agent-ingestion-stabilization.md)
+passed. Native release and public delivery validation are next.
+
+Version [4.1.5](releases/4.1.5.md) adds [bounded desktop update retries](validation/2026-10-12-update-retries.md) after failed checks and downloads. All 106 Electron tests passed, including recovery, outage limits, cancellation and overlapping-check cases. All six native gates, independent artifact verification, public feeds and the automatically refreshed live website passed; see the [publication record](validation/2026-10-13-update-retry-release.md). [Public 4.1.4 → 4.1.5 upgrades](validation/2026-10-13-v4_1_5-public-upgrades.json) also passed on all six targets.
 
 Version [4.1.4](releases/4.1.4.md) corrects a
 [reproduced desktop restart blocker](validation/2026-10-12-navigation-update-safety.md):

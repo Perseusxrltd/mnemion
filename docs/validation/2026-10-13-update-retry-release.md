@@ -25,8 +25,12 @@ confirmed the visible version, all six installer links, current notes, guides
 and checksums, the roadmap on `main`, and the homepage product link. The website
 layout was unchanged; no new visual render is claimed.
 
-The [public 4.1.4 → 4.1.5 update rehearsal](https://github.com/Perseusxrltd/mnemion/actions/runs/38363270715)
-is running. Its result is separate from the completed prepublication native gates.
+The [public 4.1.4 → 4.1.5 update rehearsals](https://github.com/Perseusxrltd/mnemion/actions/runs/38363270715)
+passed on all six targets at **07:43:23 UTC**. The
+[sanitized receipts](2026-10-13-v4_1_5-public-upgrades.json) confirm official feeds,
+unchanged public packages, real system idle, process replacement and preserved
+profiles. The starting installer digests match the independently verified 4.1.4
+release. These results are separate from the prepublication native gates.
 
 At **07:30 UTC**, the actual Windows installation was 4.1.3, with automatic
 updates, background operation and login startup enabled. Its saved independent

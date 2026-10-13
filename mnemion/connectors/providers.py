@@ -337,24 +337,45 @@ class GitProvider:
             if not re.fullmatch(r"[0-9a-f]{40}|[0-9a-f]{64}", blob):
                 raise ProviderError("invalid_git_object")
             data = self.git("cat-file", "blob", blob, maximum=self.config.max_file_bytes)
+            # Pin evidence to the last change of this path in the selected
+            # snapshot. A repository-wide HEAD is not a document revision:
+            # putting it in metadata or the URI revises every memory on every
+            # unrelated commit. Literal pathspecs also handle names such as
+            # "[draft].md" without accidentally selecting another document.
+            source_commit = (
+                self.git(
+                    "--literal-pathspecs",
+                    "log",
+                    "-1",
+                    "--format=%H",
+                    "--no-show-signature",
+                    "--no-patch",
+                    self.commit,
+                    "--",
+                    rel,
+                    maximum=128,
+                )
+                .decode("ascii")
+                .strip()
+            )
+            if not re.fullmatch(r"[0-9a-f]{40}|[0-9a-f]{64}", source_commit):
+                raise ProviderError("invalid_git_source_commit")
             uri = (
                 self.config.web_url.rstrip("/")
                 + "/blob/"
-                + self.commit
+                + source_commit
                 + "/"
                 + quote(rel, safe="/")
                 if self.config.web_url
-                else "mnemion-source://git/" + self.commit + "/" + quote(rel, safe="/")
+                else "mnemion-source://git/" + source_commit + "/" + quote(rel, safe="/")
             )
-            # Commit provenance changes with a repository snapshot, while the
-            # immutable source revision identifies this exact blob and commit.
             result = document(
                 self.config,
                 rel,
                 data,
-                self.commit + ":" + blob,
+                source_commit + ":" + blob,
                 uri,
-                metadata={"git_commit": self.commit, "git_blob": blob},
+                metadata={"git_commit": source_commit, "git_blob": blob},
             )
             if result:
                 yield result

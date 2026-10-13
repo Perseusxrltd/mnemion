@@ -44,7 +44,9 @@ Studio, or send the following to `POST /v1/recall` or `POST /v1/context`:
 {"query":"What did we decide?","space_ids":[],"all_accessible":true}
 ```
 
-MCP `memory_search` and `memory_context` accept the same explicit scope. The
+MCP `memory_search` and `memory_context` accept the same explicit scope. From
+4.1.6, omitting their `space_ids` also selects currently accessible spaces;
+explicitly selected IDs still narrow the request. The
 Python client equivalent is `client.search("What did we decide?",
 all_accessible=True)`. Each returned hit or citation retains its source and
 `space_id`. This searches currently readable spaces in one workspace; it does
@@ -52,9 +54,20 @@ not combine other saved personal/company connections or grant access to an
 unmapped repository.
 
 For a narrower search, supply the selected source and writable space IDs in
-`space_ids` and leave `all_accessible` false. Omitting both scope choices or
-selecting both is rejected with the scope-selection rule. Explicit selection
+`space_ids` and leave `all_accessible` false. In the HTTP API, omitting both
+scope choices or selecting both is rejected with the scope-selection rule. Explicit selection
 prevents an API client from accidentally searching a broader scope than intended.
+
+**Git revisions follow individual paths.** From 4.1.6, a Git document's revision,
+`git_commit` metadata and immutable evidence URL use the last change of that
+path within the selected repository snapshot. Unrelated commits do not revise
+the document, queue its embeddings again or refresh its memory timestamp.
+The recorded commit can therefore precede the watched branch's current HEAD.
+It still identifies the exact cited file contents. Changed, renamed and deleted
+paths continue through the existing complete-inventory and permission rules.
+The first scan after upgrading can update older commit-wide provenance once;
+later unchanged paths retain their existing revisions. Rewriting Git history
+or changing connector extraction settings may also legitimately revise evidence.
 
 **Save new notes to a writable space.** Select one with contributor or higher
 access from `memory_spaces` or `GET /v1/spaces`. Searching a source never grants

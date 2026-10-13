@@ -21,7 +21,7 @@ from ..service import service_updates, supervision, update_state
 from ..service.update_manifest import ManifestError, version_tuple
 from ..version import __version__
 from .config import read_config
-from .runner import wait_for_sync
+from .runner import SCAN_TRIGGER_ENV, scan_trigger, wait_for_sync
 
 MAX_CONNECTORS = 64
 STATES = {"starting", "scanning", "waiting", "waiting_for_update", "service_unavailable", "stopped"}
@@ -32,8 +32,9 @@ class Stopped(Exception):
 
 
 class Handoff(Exception):
-    def __init__(self, runtime: dict):
+    def __init__(self, runtime: dict, trigger: str = "startup"):
         self.runtime = runtime
+        self.trigger = trigger
 
 
 class Control:
@@ -119,7 +120,12 @@ def _configuration(path: Path, identifier: str | None = None):
 def _environment(config) -> dict[str, str]:
     # Keep the operator's Git/SSH/proxy and referenced provider configuration,
     # but do not give the source runner a database or memory-owner login.
-    blocked = supervision.ROLE_VARIABLES | {"PYTHONPATH", "PYTHONHOME", "PYTHONSTARTUP"}
+    blocked = supervision.ROLE_VARIABLES | {
+        "PYTHONPATH",
+        "PYTHONHOME",
+        "PYTHONSTARTUP",
+        SCAN_TRIGGER_ENV,
+    }
     tokens = [config.service_token]
     if hasattr(config.provider, "token"):
         tokens.append(config.provider.token)
@@ -215,7 +221,9 @@ class Observation:
         )
 
 
-def _scan(state, root, config, entry, singleton, observation, control, *, handoff=False):
+def _scan(
+    state, root, config, entry, singleton, observation, control, *, handoff=False, trigger="startup"
+):
     with update_state.lock(root, shared=True) as runtime_lease:
         if (root / "journal.json").exists() or update_state.connector_update_waiting(root):
             observation.record("waiting_for_update")
@@ -234,13 +242,14 @@ def _scan(state, root, config, entry, singleton, observation, control, *, handof
         ):
             # The verified runtime explicitly advertises the launcher protocol.
             # Older rollback targets still run their ordinary one-shot scanner.
-            raise Handoff(runtime)
+            raise Handoff(runtime, trigger)
         snapshot = entry / "scan.json"
         # Absolute file references retain the original configuration's meaning.
         # Replacement is atomic and this connector's singleton owns the snapshot.
         _snapshot(snapshot, config)
         environment = _environment(config)
         environment["PYTHONUNBUFFERED"] = "1"
+        environment[SCAN_TRIGGER_ENV] = trigger
         command = [
             runtime["python"],
             *(["-I"] if runtime["isolated"] else []),
@@ -295,6 +304,7 @@ def run(state: Path, config_path: Path, control: Control) -> int:
     with update_state.lock(entry) as singleton:
         observation = Observation(entry, identifier)
         observation.record("starting")
+        trigger = scan_trigger()
         try:
             while True:
                 if control.stopped:
@@ -302,7 +312,15 @@ def run(state: Path, config_path: Path, control: Control) -> int:
                 config = _configuration(config_path, identifier)
                 try:
                     code = _scan(
-                        state, root, config, entry, singleton, observation, control, handoff=True
+                        state,
+                        root,
+                        config,
+                        entry,
+                        singleton,
+                        observation,
+                        control,
+                        handoff=True,
+                        trigger=trigger,
                     )
                 except update_state.OperationBusy:
                     observation.record("waiting_for_update")
@@ -310,7 +328,7 @@ def run(state: Path, config_path: Path, control: Control) -> int:
                 if code is None:
                     control.sleep(5)
                 else:
-                    wait_for_sync(config, failed=code != 0, sleep=control.sleep)
+                    trigger = wait_for_sync(config, failed=code != 0, sleep=control.sleep)
         finally:
             observation.record("stopped")
 
@@ -326,6 +344,7 @@ def main(state: Path, config: Path) -> int:
         except Handoff as handoff:
             runtime = handoff.runtime
             environment = _environment(_configuration(config.expanduser().absolute()))
+            environment[SCAN_TRIGGER_ENV] = handoff.trigger
             os.chdir(runtime["directory"])
             os.execve(
                 runtime["python"],

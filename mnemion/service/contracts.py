@@ -36,11 +36,13 @@ class ErrorResponse(ResponseModel):
 class LiveStatus(ResponseModel):
     status: Literal["alive"]
     api_version: Literal["v1"]
+    service_version: str | None = None
 
 
 class ReadyStatus(ResponseModel):
     status: Literal["ready"]
     generation_id: str
+    service_version: str | None = None
 
 
 class Receipt(ResponseModel):

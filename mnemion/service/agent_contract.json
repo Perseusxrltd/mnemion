@@ -6977,6 +6977,17 @@
                 "title": "Api Version",
                 "type": "string"
               },
+              "service_version": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Service Version"
+              },
               "status": {
                 "const": "alive",
                 "title": "Status",
@@ -7018,6 +7029,17 @@
               "generation_id": {
                 "title": "Generation Id",
                 "type": "string"
+              },
+              "service_version": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Service Version"
               },
               "status": {
                 "const": "ready",

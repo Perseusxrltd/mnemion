@@ -170,6 +170,108 @@ def test_real_git_snapshot_ignores_uncommitted_work_and_never_executes_hooks(tmp
     assert provider.access(scope).members == ["user:alice"]
 
 
+def test_git_document_revisions_survive_unrelated_commits_merges_and_rollback(tmp_path):
+    def git(*args):
+        return (
+            subprocess.run(
+                [
+                    "git",
+                    "-c",
+                    "user.name=Fixture",
+                    "-c",
+                    "user.email=fixture@example.invalid",
+                    "-c",
+                    "commit.gpgsign=false",
+                    "-c",
+                    "core.hooksPath=" + str(tmp_path / "no-hooks"),
+                    "-C",
+                    str(tmp_path),
+                    *args,
+                ],
+                check=True,
+                capture_output=True,
+                timeout=10,
+            )
+            .stdout.decode()
+            .strip()
+        )
+
+    def snapshot(ref="HEAD"):
+        provider = GitProvider(
+            GitConfig(
+                path=tmp_path, ref=ref, web_url="https://example.invalid/team/memory", **published()
+            )
+        )
+        return {doc.external_id: doc for doc in provider.documents(provider.scopes()[0]) if doc}
+
+    git("init")
+    for name in ("keep.md", "[draft].md", "d.md", "old.md"):
+        (tmp_path / name).write_text(f"Original evidence in {name}")
+    git("add", ".")
+    git("commit", "-m", "Initial evidence")
+    initial = git("rev-parse", "HEAD")
+    branch = git("branch", "--show-current")
+    before = snapshot()
+    (tmp_path / "d.md").write_text("Updated d evidence")
+    (tmp_path / "new.md").write_text("New evidence")
+    git("mv", "old.md", "renamed.md")
+    git("add", ".")
+    git("commit", "-m", "Change selected paths")
+    after = snapshot()
+    assert set(after) == {"keep.md", "[draft].md", "d.md", "new.md", "renamed.md"}
+    for name in ("keep.md", "[draft].md"):
+        assert list(after[name].items()) == list(before[name].items())
+        assert f"/blob/{initial}/" in after[name].uri
+    assert after["d.md"].revision != before["d.md"].revision
+    assert (
+        next(after["renamed.md"].items()).external_id != next(before["old.md"].items()).external_id
+    )
+    git("commit", "--allow-empty", "-m", "No source changes")
+    assert snapshot() == after
+    assert snapshot(initial) == before
+
+    git("checkout", "-b", "fixture-side", initial)
+    (tmp_path / "keep.md").write_text("Evidence changed on the side branch")
+    git("add", "keep.md")
+    git("commit", "-m", "Side branch evidence")
+    git("checkout", branch)
+    git("merge", "--no-ff", "fixture-side", "-m", "Merge evidence")
+    merged = snapshot()
+    assert merged["keep.md"].revision != after["keep.md"].revision
+    assert merged["[draft].md"] == after["[draft].md"]
+    assert merged["d.md"] == after["d.md"]
+    for name, doc in merged.items():
+        assert git("show", f"{doc.metadata['git_commit']}:{name}") == doc.text
+
+
+@pytest.mark.parametrize("reason", ["startup", "poll", "requested", "private-invalid-sentinel"])
+@pytest.mark.parametrize("watch", [False, True])
+def test_runner_reports_managed_scan_reason_but_plain_watch_starts_fresh(
+    tmp_path, monkeypatch, capsys, reason, watch
+):
+    from types import SimpleNamespace
+    from mnemion.connectors import runner
+
+    monkeypatch.setenv(runner.SCAN_TRIGGER_ENV, reason)
+    monkeypatch.setattr(runner, "read_config", lambda _: SimpleNamespace(poll_seconds=30))
+    monkeypatch.setattr(runner, "sync", lambda *args, **kwargs: {"completed": True})
+
+    def stop(*args, **kwargs):
+        raise KeyboardInterrupt()
+
+    monkeypatch.setattr(runner, "wait_for_sync", stop)
+    code = runner.main(
+        ["--config", str(tmp_path / "fixture.json"), *(["--watch"] if watch else [])]
+    )
+    assert code == (130 if watch else 0)
+    output = capsys.readouterr().out
+    report = json.loads(output.splitlines()[-1])
+    assert report["trigger"] == (
+        "startup" if watch or reason == "private-invalid-sentinel" else reason
+    )
+    assert "private-invalid-sentinel" not in output
+
+
 def test_rclone_uses_read_only_commands_and_checks_remote_hashes(tmp_path, monkeypatch):
     calls = []
     data = b"# A cloud note\n"

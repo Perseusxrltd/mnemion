@@ -251,7 +251,11 @@ so MCP accepts the exact public host/origin. See [remote agent setup](agents.md#
 
 `serve --no-mcp` disables the combined endpoint. The standalone command
 `mnemion-service mcp --transport streamable-http` remains available on port 7893,
-with the same `--public-url` option. Tests exercise both current discovery and
+with the same `--public-url` option. It runs only when separately launched;
+`serve` itself listens on 7892. Existing clients using 7893 can retain that
+standalone process or change to the combined endpoint. See the
+[port and proxy migration guide](agents.md#migrating-a-separate-mcp-listener).
+Tests exercise both current discovery and
 older initialization flows. The optional trusted-issuer foundation ships in
 4.0.11; built-in browser sign-in, invitations and complete hosted-provider
 authorization flows remain under the [OAuth roadmap](oauth.md).
@@ -312,7 +316,12 @@ and deletions remain attached to the provider.
 ## Operations and limits
 
 `/health/live` reports process liveness. `/health/ready` checks database access
-and the configured model generation. Readiness does not imply that a worker is
+and the configured model generation. From 4.1.6, both small responses include
+`service_version` for the running API, without requiring OpenAPI discovery.
+Authenticated `GET /v1/me` also reports this version on earlier releases that
+support it. Managed connector versions and update state remain in the
+authorized host's [managed status](managed-connectors.md#observe-the-runner),
+not the unauthenticated health payload. Readiness does not imply that a worker is
 running or that every memory is semantically indexed. Per-space status and
 operation receipts expose that distinction. Worker lease recovery, retries,
 terminal failures, and reviewer-triggered retries are implemented.

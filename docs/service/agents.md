@@ -62,8 +62,13 @@ restart is needed after configuration changes. The tool does not install hooks.
 Ask the assistant to call `memory_spaces`, then recall a known decision.
 The primary tools are `memory_spaces`, `memory_save`, `memory_search`,
 `memory_fetch`, `memory_context`, `memory_map`, `memory_revise` and
-`memory_forget`. Global search/context/map use `space_ids: []` with
-`all_accessible: true`; saving always selects a writable space. Map results
+`memory_forget`. From 4.1.6, search/context/map default to all currently
+accessible spaces when `space_ids` is omitted. A query-only `memory_search`
+therefore includes connected sources with current access. Provide IDs to narrow
+the search, or `space_ids: []` with `all_accessible: true` for explicit global
+retrieval. An explicit empty list without that flag remains an error; an
+inaccessible selected space never causes a broader fallback. Saving always
+selects a writable space. Map results
 contain topic/evidence links rather than a second unbounded context dump.
 
 Revisions and deletion require a current version. Reuse the same idempotency
@@ -137,6 +142,33 @@ HTTP requests include `Retry-After`; SDKs respect bounded retry delays for safe
 reads and idempotent writes. See [inference admission](embeddings.md#inference-admission).
 `serve --no-mcp` or `MNEMION_MCP_ENABLED=0` disables the combined endpoint. A
 standalone gateway on port 7893 remains available for existing deployments.
+
+### Migrating a separate MCP listener
+
+The combined listener has been available since 4.0.2. It does not start the
+separate port 7893 listener. If an old startup command launched that standalone
+gateway and a replacement startup command launches only `serve`, existing
+clients can still point at a port where no process is listening.
+
+| Deployment | MCP URL | What to run or change |
+| --- | --- | --- |
+| Combined API and MCP | `http://127.0.0.1:7892/mcp` | Run `mnemion-service serve`; point local clients and the proxy at port 7892. |
+| Keep existing standalone clients | `http://127.0.0.1:7893/mcp` | Also run `mnemion-service mcp --transport streamable-http --port 7893`, with `MNEMION_API_URL` pointing at the API origin. Retain it in the host's process manager. |
+| Public HTTPS origin | `https://memory.example.com/mcp` | Forward the chosen local listener, set its matching `--public-url`, and update the client's saved origin when it changes. |
+
+Mnemion does not silently bind the old port or install a cross-origin redirect.
+Keeping the standalone command preserves callers that cannot yet change their
+URL. Every HTTP caller still supplies its own `Authorization: Bearer …` header;
+an endpoint move does not revoke or replace its key. A refused connection means
+the listener or forwarding path needs attention. HTTP 401 instead means the
+presented credential was not accepted.
+
+Custom Streamable HTTP clients should send `Content-Type: application/json`
+and `Accept: application/json, text/event-stream`. Use cleartext HTTP for the
+loopback listener and HTTPS for the TLS proxy; sending TLS directly to a
+cleartext port produces an HTTP parsing error. This migration guidance also
+applies to managed-host startup changes; see
+[issue 23](https://github.com/Perseusxrltd/mnemion/issues/23).
 
 Service 4.0.11 adds [optional trusted-issuer OAuth validation](oauth.md) with
 individual, revocable identity bindings. Built-in browser sign-in and complete

@@ -62,6 +62,7 @@ def executable(tmp_path, version, body=""):
         "config = json.loads(Path(sys.argv[2]).read_text())\n"
         "with Path(os.environ['MNEMION_FIXTURE_RECEIPT']).open('a') as out:\n"
         f" out.write(json.dumps({{'version': {version!r}, 'config': config, 'pid': os.getpid(), "
+        "'trigger': os.environ.get('MNEMION_CONNECTOR_SCAN_TRIGGER'), "
         "'database_inherited': 'MNEMION_ADMIN_DATABASE_URL' in os.environ, "
         "'owner_inherited': 'MNEMION_API_KEY' in os.environ, "
         "'ssh_preserved': os.environ.get('SSH_AUTH_SOCK') == 'fixture-agent'}) + '\\n')\n"
@@ -89,7 +90,7 @@ def test_each_scan_uses_current_verified_runtime_including_rollback(setup, tmp_p
     config = managed._configuration(setup.path)
     observation = managed.Observation(setup.entry, setup.identifier)
     with update_state.lock(setup.entry) as singleton:
-        for _ in range(3):
+        for trigger in ("startup", "poll", "requested"):
             assert (
                 managed._scan(
                     setup.state,
@@ -99,11 +100,13 @@ def test_each_scan_uses_current_verified_runtime_including_rollback(setup, tmp_p
                     singleton,
                     observation,
                     managed.Control(),
+                    trigger=trigger,
                 )
                 == 0
             )
     rows = [json.loads(line) for line in receipt.read_text().splitlines()]
     assert [row["version"] for row in rows] == ["4.1.2", "4.1.3", "4.1.2"]
+    assert [row["trigger"] for row in rows] == ["startup", "poll", "requested"]
     assert len({row["pid"] for row in rows}) == 3
     for row in rows:
         assert row["config"]["connector_id"] == setup.identifier
@@ -117,6 +120,36 @@ def test_each_scan_uses_current_verified_runtime_including_rollback(setup, tmp_p
     assert row["scan_version"] == "4.1.2" and row["launcher_version"] == __version__
     assert row["state"] == "waiting" and row["running"] and not row["scan_running"]
     assert "private.token" not in json.dumps(row) and "service_url" not in row
+
+
+def test_managed_watch_preserves_poll_and_requested_reasons_through_update_waits(
+    setup, tmp_path, monkeypatch
+):
+    runtime = executable(tmp_path, "4.1.5")
+    monkeypatch.setattr(service_updates, "resolved_runtime", lambda _: runtime)
+    receipt = tmp_path / "triggers.jsonl"
+    monkeypatch.setenv("MNEMION_FIXTURE_RECEIPT", str(receipt))
+    monkeypatch.delenv(runner.SCAN_TRIGGER_ENV, raising=False)
+    reasons = iter(("poll", "requested"))
+    scans = 0
+
+    def wait(*args, **kwargs):
+        nonlocal scans
+        scans += 1
+        if scans == 3:
+            raise managed.Stopped()
+        return next(reasons)
+
+    # A blocked runtime must retain the already pending requested scan reason.
+    waiting = iter((False, False, True, False))
+    monkeypatch.setattr(update_state, "connector_update_waiting", lambda _: next(waiting))
+    monkeypatch.setattr(managed, "wait_for_sync", wait)
+    control = managed.Control()
+    monkeypatch.setattr(control, "sleep", lambda _: time.sleep(0.001))
+    with pytest.raises(managed.Stopped):
+        managed.run(setup.state, setup.path, control)
+    rows = [json.loads(line) for line in receipt.read_text().splitlines()]
+    assert [row["trigger"] for row in rows] == ["startup", "poll", "requested"]
 
 
 def test_shared_scan_lease_allows_peers_and_blocks_updates_until_child_exits(tmp_path):
@@ -376,8 +409,10 @@ def test_supported_verified_runtime_requests_launcher_handoff(setup, tmp_path, m
             managed.Observation(setup.entry, setup.identifier),
             managed.Control(),
             handoff=True,
+            trigger="requested",
         )
     assert result.value.runtime is runtime
+    assert result.value.trigger == "requested"
     with update_state.lock(setup.root):
         pass
 
@@ -394,7 +429,7 @@ def test_handoff_preserves_original_paths_and_only_connector_environment(
     captured = {}
 
     def handoff(*args):
-        raise managed.Handoff(runtime)
+        raise managed.Handoff(runtime, "requested")
 
     class Executed(BaseException):
         pass
@@ -421,3 +456,4 @@ def test_handoff_preserves_original_paths_and_only_connector_environment(
         str(setup.state),
     ]
     assert "MNEMION_ADMIN_DATABASE_URL" not in captured["environment"]
+    assert captured["environment"][runner.SCAN_TRIGGER_ENV] == "requested"

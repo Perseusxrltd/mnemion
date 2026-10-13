@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 from datetime import datetime, timezone
@@ -19,6 +20,14 @@ from .protocol import ConnectorClient
 from .providers import FilesystemProvider, GitProvider, ProviderError, RcloneProvider
 
 MANAGED_PROTOCOL = 1
+SCAN_TRIGGER_ENV = "MNEMION_CONNECTOR_SCAN_TRIGGER"
+
+
+def scan_trigger() -> str:
+    # Managed one-shot scans inherit their watcher's reason. Older runtimes
+    # simply ignore this optional environment value, preserving rollback.
+    value = os.environ.get(SCAN_TRIGGER_ENV, "startup")
+    return value if value in {"startup", "poll", "requested"} else "startup"
 
 
 def provider(config):
@@ -305,7 +314,7 @@ def main(argv=None) -> int:
             ),
             flush=True,
         )
-    trigger = "startup"
+    trigger = "startup" if args.watch or args.inspect else scan_trigger()
     while True:
         started, started_at = time.monotonic(), datetime.now(timezone.utc).isoformat()
         try:
