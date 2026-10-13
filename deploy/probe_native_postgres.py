@@ -110,11 +110,20 @@ def executable_architecture(path: Path) -> str:
     return result
 
 
+def verify_database_sources(metadata: dict) -> None:
+    """A cached binary must declare the exact currently approved dependencies."""
+    configuration = json.loads(Path(__file__).with_name("native-postgres.json").read_text())
+    expected = {name: configuration[name] for name in ("postgresql", "pgvector", "openssl", "zlib")}
+    if metadata.get("sources") != expected:
+        raise ValueError("Native database sources differ from the current pinned configuration")
+
+
 def probe(archive: Path, output: Path) -> dict:
     with private_probe_directory() as root:
         install = root / "Memory runtime with spaces Équipe"
         print("Native database probe: expand and verify archive", file=sys.stderr, flush=True)
         metadata = expand(archive, install)
+        verify_database_sources(metadata)
         suffix = ".exe" if platform.system() == "Windows" else ""
         binaries = install / "bin"
         architecture = executable_architecture(binaries / ("postgres" + suffix))

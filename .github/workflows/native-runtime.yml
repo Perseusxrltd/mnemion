@@ -8,32 +8,9 @@ on:
         description: Native database build targets selected by desktop packaging
         type: string
         default: '[{"os":"ubuntu-22.04","target":"linux","arch":"x64"},{"os":"ubuntu-22.04-arm","target":"linux","arch":"arm64"},{"os":"macos-15","target":"macos","arch":"arm64"},{"os":"macos-15-intel","target":"macos","arch":"x64"},{"os":"windows-2022","target":"windows","arch":"x64"}]'
-  push:
-    branches: [main, 'codex/**']
-    paths:
-      - '.github/workflows/native-runtime.yml'
-      - 'deploy/native-postgres.json'
-      - 'deploy/build_native_postgres.py'
-      - 'deploy/windows-native-runtime.manifest'
-      - 'deploy/probe_native_postgres.py'
-      - 'mnemion/local_state.py'
-      - 'mnemion/private_output.py'
-      - 'client_tests/test_local_state.py'
-      - 'client_tests/test_private_output.py'
-      - 'client_tests/windows_acl.py'
-  pull_request:
-    branches: [main]
-    paths:
-      - '.github/workflows/native-runtime.yml'
-      - 'deploy/native-postgres.json'
-      - 'deploy/build_native_postgres.py'
-      - 'deploy/windows-native-runtime.manifest'
-      - 'deploy/probe_native_postgres.py'
-      - 'mnemion/local_state.py'
-      - 'mnemion/private_output.py'
-      - 'client_tests/test_local_state.py'
-      - 'client_tests/test_private_output.py'
-      - 'client_tests/windows_acl.py'
+# Desktop checks already call this matrix for every relevant push and PR.
+# Keep direct dispatch for focused database verification without running a
+# second identical compiler matrix on the same source event.
 
 permissions:
   contents: read
@@ -78,13 +55,27 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.12'
+      - name: Fingerprint the database sources, compiler image and build instructions
+        id: database-cache-key
+        shell: bash
+        run: python -m deploy.native_database_cache >> "$GITHUB_OUTPUT"
+      - name: Restore an exact database build from the repository cache
+        id: database-cache
+        if: >-
+          steps.database-cache-key.outputs.eligible == 'true' &&
+          github.event_name != 'pull_request' &&
+          (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/'))
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: build-tmp/native-postgres/*.zip
+          key: ${{ steps.database-cache-key.outputs.key }}
       - name: Linux build tools
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && steps.database-cache.outputs.cache-hit != 'true'
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential bison flex perl
       - name: Mac parser generators
-        if: runner.os == 'macOS'
+        if: runner.os == 'macOS' && steps.database-cache.outputs.cache-hit != 'true'
         env:
           HOMEBREW_NO_AUTO_UPDATE: '1'
         run: |
@@ -92,7 +83,7 @@ jobs:
           echo "$(brew --prefix bison)/bin" >> "$GITHUB_PATH"
           echo "$(brew --prefix flex)/bin" >> "$GITHUB_PATH"
       - name: Windows compiler environment
-        if: runner.os == 'Windows'
+        if: runner.os == 'Windows' && steps.database-cache.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
           $installation = & "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe" -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
@@ -105,6 +96,7 @@ jobs:
           }
           python -m pip install meson==1.12.1 ninja==1.13.2 pkgconf==3.0.7.post0
       - name: Compile pinned PostgreSQL, vector extension and static libraries
+        if: steps.database-cache.outputs.cache-hit != 'true'
         run: python -m deploy.build_native_postgres --work "${{ runner.temp }}/native-postgres-work" --cache "${{ runner.temp }}/native-postgres-sources" --output build-tmp/native-postgres
       - name: Retain the compiled Windows archive for probe diagnosis
         if: runner.os == 'Windows'
@@ -117,6 +109,15 @@ jobs:
       - name: Relocate, initialize, verify TLS and RLS, restore backup and recover a crash
         timeout-minutes: 10
         run: python -c "import json; from pathlib import Path; from deploy.probe_native_postgres import probe; archives=list(Path('build-tmp/native-postgres').glob('*.zip')); assert len(archives)==1; print(json.dumps(probe(archives[0], Path('build-tmp/native-postgres/probe.json'))))"
+      - name: Cache the successfully probed database for later releases
+        if: >-
+          github.ref == 'refs/heads/main' && github.event_name != 'pull_request' &&
+          steps.database-cache-key.outputs.eligible == 'true' &&
+          steps.database-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: build-tmp/native-postgres/*.zip
+          key: ${{ steps.database-cache-key.outputs.key }}
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: native-postgres-${{ matrix.target }}-${{ matrix.arch }}

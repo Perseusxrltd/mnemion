@@ -47,6 +47,36 @@ filesystem calls preserve Unicode workspace paths. Earlier Windows builds
 ignore that setting. The builder merges existing manifest settings, verifies
 the embedded resources, and inventories the resulting bytes before packaging.
 
+## Reusing a verified database build
+
+Desktop checks call the database workflow for every relevant push and pull
+request. Direct database dispatch remains available; a second independent
+compiler matrix is no longer started for the same push.
+
+The database workflow can reuse an exact archive from this repository's normal
+GitHub Actions cache. The key includes the operating system, CPU architecture,
+runner image name and version, Python patch version, pinned dependencies, native
+builder, Windows manifest and workflow instructions. A changed input or missing
+runner image metadata takes the ordinary compilation path. There are no partial
+cache matches. This avoids repeating compilation when application-only changes
+leave those inputs unchanged; it is not a reproducible-build claim.
+
+Only the main branch saves an archive, after the full database probe passes.
+Main and release branches may restore it; pull requests compile independently.
+Only the ZIP enters the cache. Database contents, credentials, signing keys and
+old probe receipts are excluded. Cache capacity and billing settings are not
+changed; eviction simply requires a fresh build.
+
+Every restored archive must pass fresh inventory and pinned-source checks before
+its binaries run, then complete the same TLS, permissions, vector, backup and
+crash-recovery probe. Windows ARM still runs the actual x64 database under
+emulation. Every release still builds, signs and tests its application packages.
+A bad cached archive fails validation; a maintainer can remove that exact cache
+entry and rerun to compile again. No release gate is skipped after a cache hit.
+
+The cache and archive tests passed **37 checks** on 2026-10-13. Hosted cold-build
+and cache-hit measurements remain pending; no speedup has yet been measured.
+
 ## Native acceptance
 
 `deploy/probe_native_postgres.py` extracts the built archive into a new path with
@@ -104,12 +134,15 @@ separate gates.
 
 ## Remaining integration
 
-- Complete Windows acceptance for the bundled service/Python/model runtime;
-  both Linux and both Mac installed flows passed at `ac5797b`.
-- Finish public installer/update acceptance with verified inventories, compatible
-  replacement and preserved private state; retain disk/resource budgets.
+The published 4.1.7 release passed installed local setup/reopen and public
+automatic upgrades on all six desktop targets; see the
+[release evidence](../validation/2026-10-13-managed-update-schedule.md).
+The 4.2.0 personal sign-in migration has separate
+[validation and publication requirements](../validation/2026-10-13-individual-sign-in.md).
+
 - Extend the existing typed initialization, lifecycle, RAM recovery and local
   address commands to the remaining host/source/backup workflows.
-- Finish Studio's Create, Join, Organization and Recover paths with actual
-  readiness checks and actionable retry states. Keep agent operation available.
-- Validate the complete flow on every offered platform before release.
+- Complete organization-managed hosting, provider sign-in and recovery entry
+  points with actionable retry states and equivalent agent operations.
+- Extend the hardware, supported OS-version and restricted company-device
+  matrix, retaining the complete installed gates for every offered platform.
