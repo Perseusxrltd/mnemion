@@ -110,6 +110,37 @@ test('a lost refresh response cannot be replayed by the running app or a restart
   assert.equal(f.server.refreshes, 1)
 })
 
+test('a managed host must be ready before a saved refresh token is consumed', async t => {
+  const f = await setup(t)
+  const session = await f.open(true)
+  f.broker.lock()
+  const ready = deferred()
+  const entered = deferred()
+  const reopened = new WorkspaceConnections(f.store, f.verify, f.auth, async bookmark => {
+    assert.equal(bookmark.tenantId, f.identity.tenant_id)
+    entered.resolve(); await ready.promise
+  })
+  const resumed = reopened.resume()
+  await entered.promise
+  assert.equal(f.server.refreshes, 0)
+  assert.equal((await f.store.credential(session.bookmarkId)).session.refreshPending, false)
+  ready.resolve()
+  assert.equal((await resumed).me.principal_id, f.identity.principal_id)
+  assert.equal(f.server.refreshes, 1)
+})
+
+test('failed host startup leaves the saved credential available for a later resume', async t => {
+  const f = await setup(t)
+  const session = await f.open(true)
+  f.broker.lock()
+  const reopened = new WorkspaceConnections(f.store, f.verify, f.auth, async () => { throw new Error('Local workspace is paused') })
+  await assert.rejects(reopened.resume(), /paused/)
+  assert.equal(f.server.refreshes, 0)
+  assert.equal((await f.store.credential(session.bookmarkId)).session.refreshPending, false)
+  const afterRecovery = new WorkspaceConnections(f.store, f.verify, f.auth)
+  assert.equal((await afterRecovery.resume()).me.principal_id, f.identity.principal_id)
+})
+
 test('refresh persistence failure clears the live connection and revokes the newly issued session', async t => {
   const f = await setup(t)
   const session = await f.open(true)

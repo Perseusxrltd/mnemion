@@ -1,8 +1,9 @@
 # Connect and remember a workspace
 
-Open Mnemion and enter the **Workspace address** and **Workspace key** supplied
-by your administrator. Mnemion checks the service and your identity before
-opening its memory spaces. A remote workspace needs HTTPS; local services can
+Open Mnemion and choose **Join a workspace**. With service and Studio 4.2.0,
+use an [individual login or invitation](sign-in.md); a scoped workspace key is
+also available for existing deployments and applications. Mnemion checks the
+service and your identity before opening its memory spaces. A remote workspace needs HTTPS; local services can
 use a loopback address such as `http://127.0.0.1:7892`.
 
 The address is the service's base address. Leave `/v1`, `/mcp` and individual
@@ -10,7 +11,7 @@ API routes off the end. An organization can provide a base path, for example
 `https://memory.example.com/team`; desktop requests stay within that API path.
 Do not put a key in an address or share a key in public messages.
 
-## Remember this device
+## Remember a connection using a key
 
 From desktop version 4.0.9, **Remember this workspace on this device** saves an
 encrypted connection using Windows protection, the macOS Keychain, or a
@@ -50,6 +51,9 @@ Browser Studio keeps the key in the current window's memory. Reloading or
 disconnecting clears it. Both clients may remember the service address locally.
 Desktop session-only connections last until disconnect or app exit; reloading
 the interface alone does not exit the desktop app.
+
+Personal password sessions have separate sign-out, expiry and revocation
+behavior. See [remembering a login and managing sessions](sign-in.md#sign-in-and-remember-a-device).
 
 ## If a connection fails
 

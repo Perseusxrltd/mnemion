@@ -7,7 +7,7 @@ PostgreSQL row-level policy enforces tenant and space boundaries.
 
 Start with one organization and create separate spaces for departments, projects,
 client engagements and personal work. Grant each employee and integration its own
-identity and revocable key. Reader, contributor and reviewer space grants, plus
+identity and either personal sign-in or a revocable application key. Reader, contributor and reviewer space grants, plus
 organization administrator authority, control each operation; searching multiple
 spaces still checks every requested space. Use a shared project space only for
 knowledge that all its members may read.
@@ -42,7 +42,9 @@ private space merely to get past the welcome screen.
    **Create administrator**.
 2. Create that person's individual key. The app selects the new identity in the
    key form; preserve the displayed key privately and give it only to that person.
-   Do not distribute the original administrator's key.
+   Do not distribute the original administrator's key. With service and Studio
+   4.2.0, use a [private invitation](sign-in.md) so the person can choose their
+   own password. Keep an independently held recovery key and host access.
 3. Verify a fresh connection using the new key, preferably from another device.
    Confirm that People & apps is available before retiring the original agent or
    credentials. An active identity in the roster alone does not prove sign-in.
@@ -105,8 +107,10 @@ do not invent host privileges, bypass an offline server, or grant memory access.
 The [OAuth foundation](oauth.md) in service 4.0.11 adds individually
 revocable external identity bindings for one operator-approved workspace per
 issuer configuration. Other tenants cannot claim those users. It supplements
-existing keys; built-in personal/company sign-in, invitations and the complete
-app-managed access and recovery flows remain required work.
+existing keys. The 4.2.0 source adds [personal passwords, invitations and device
+sessions](sign-in.md), with release validation tracked in [current status](../RELEASE_STATUS.md).
+Complete company identity-provider onboarding, hosted-agent consent and
+app-managed host recovery remain required work.
 
 Each source connection belongs to a space, has an explicit provider configuration,
 tracks a checkpoint and runs under an authorized identity. Git, local folders,

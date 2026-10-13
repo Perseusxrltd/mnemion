@@ -10,6 +10,11 @@ a reviewed catalog, a command-line client and four compact MCP tools. Version
 4.0.5 through 4.0.10 cover **84 operations**, including durable source-sync controls.
 Version 4.0.11 adds three OAuth binding operations for **87 total**; see the
 [optional organization OAuth guide](oauth.md) for its configuration and limits.
+The **4.2.0 source** adds 13 [personal sign-in operations](sign-in.md) for
+**100 total**. Check [release status](../RELEASE_STATUS.md) before requiring a
+version from users. These operations declare `authentication`, `sensitive_input`
+and `mcp_available`; passwords, private invitations and rotating credentials use
+private CLI input/results instead of generic MCP calls.
 Schemas load one at a time, so connecting an
 assistant does not put the entire administration API into its context.
 
@@ -23,6 +28,7 @@ subsequent operations. Source-derived read-only spaces retain their policy.
 | Area | Operations |
 | --- | --- |
 | Identity and teams | Inspect identity, create/list spaces and principals, issue/revoke keys, manage grants |
+| Personal access (4.2.0) | Configure passwords, invite/reset people, log in, refresh, list/revoke device sessions and invitations |
 | Memory and evidence | Save, fetch, revise, review, forget, retrieve history, inspect source evidence and attachments |
 | Retrieval and knowledge | Search, construct bounded context, explore the knowledge map, maintain core blocks |
 | Source connectors | Register, enable/disable, bind access, list/refresh scopes, request/monitor scans, suspend/resume, run sync pages and resolve proposals |
@@ -131,6 +137,14 @@ key. The resulting JSON includes top-level `api_url` and `api_key`, so it can
 be passed directly to `mnemion-agent`, `mnemion-service --credentials`, or
 `mnemion-control --credentials` without printing or copying the secret.
 Other `--result-file` operations retain the ordinary JSON result envelope.
+
+From 4.2.0, sensitive sign-in operations also require a private result file.
+Login, refresh and invitation acceptance use `transport: "native"` in private
+input files and write session metadata with `api_url` and a short-lived
+`api_key` alias. Use the new file with `--credentials`; refresh is explicit and
+is never automatically retried. Invitation creation writes its private receipt
+to `--result-file`. See [agent sign-in controls](sign-in.md#agent-and-operator-controls)
+for file privacy and lost-response handling.
 
 Files are created exclusively. An existing file, symlink or invalid filename
 is never overwritten. Failed downloads are removed. Unix outputs use mode 0600;

@@ -250,7 +250,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
       }
       try { return JSON.parse(Buffer.from(await boundedBody(response, 128 * 1024)).toString('utf8')) }
       catch { throw new Error('The workspace returned an invalid sign-in response.') }
-    }))
+    }), bookmark => localWorkspace().prepareSavedConnection(bookmark.endpoint, bookmark.tenantId, localPreferences().startWithApp))
     return connections
   }
   function trusted(event: IpcMainInvokeEvent) {

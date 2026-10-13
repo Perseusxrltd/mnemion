@@ -27,7 +27,8 @@ export class WorkspaceConnections {
   private refreshing: Promise<void> | null = null
 
   constructor(private readonly store: WorkspaceStore, private readonly verify: VerifyIdentity,
-    private readonly passwords?: WorkspacePasswordAuth) {}
+    private readonly passwords?: WorkspacePasswordAuth,
+    private readonly beforeRestore?: (bookmark: WorkspaceBookmark) => Promise<void>) {}
 
   private passwordAuth(): WorkspacePasswordAuth {
     if (!this.passwords) throw new Error('This installation does not support individual sign-in.')
@@ -117,6 +118,7 @@ export class WorkspaceConnections {
   async restore(id: string): Promise<WorkspaceSession> {
     const generation = ++this.generation
     const { bookmark, credential, session } = await this.store.credential(id)
+    await this.beforeRestore?.(bookmark)
     if (generation !== this.generation) throw new Error('A newer connection was selected.')
     if (!session) return this.activate(bookmark.endpoint, credential, true, generation, bookmark)
     await this.serial(async () => {

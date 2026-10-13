@@ -196,7 +196,7 @@ jobs:
         run: npm --prefix studio/electron run smoke:installed-hosting
       - name: Installed Linux app creates, searches and reopens a real local workspace
         if: runner.os == 'Linux'
-        run: xvfb-run -a npm --prefix studio/electron run smoke:installed-hosting
+        run: dbus-run-session -- xvfb-run -a bash deploy/native-keyring-test.sh installed-hosting
       - name: Sign and verify the free Windows update manifest
         if: (inputs.release || (github.event_name == 'workflow_dispatch' && inputs.sign_windows)) && runner.os == 'Windows'
         env:

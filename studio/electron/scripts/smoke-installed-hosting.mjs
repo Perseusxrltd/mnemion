@@ -84,7 +84,8 @@ async function launch(config) {
   rmSync(smokeFile, { force: true }); rmSync(quitFile, { force: true })
   writeFileSync(probeFile, JSON.stringify(config), { mode: 0o600 })
   stdout = ''; stderr = ''
-  child = spawn(executable, [], { cwd: installed, detached: process.platform !== 'win32', windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'],
+  const args = process.platform === 'linux' && process.env.MNEMION_NATIVE_KEYRING_REQUIRED === '1' ? ['--password-store=gnome-libsecret'] : []
+  child = spawn(executable, args, { cwd: installed, detached: process.platform !== 'win32', windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'],
     env: { ...environment, MNEMION_STUDIO_USER_DATA: userData, MNEMION_STUDIO_SMOKE_FILE: smokeFile,
       MNEMION_STUDIO_HOSTING_PROBE: probeFile, MNEMION_AUTO_UPDATE: '0', MNEMION_START_AT_LOGIN: '0', ELECTRON_ENABLE_LOGGING: '1' } })
   let spawnError
@@ -146,14 +147,33 @@ try {
   // workspace or silent connection to the other program.
   const occupied = createServer(socket => socket.end())
   await new Promise((resolve, reject) => { occupied.once('error', reject); occupied.listen(port, '127.0.0.1', resolve) })
+  let recovered
   try {
-    const recovered = await launch({ phase: 'recover-port', port, memoryId: first.memoryId })
+    recovered = await launch({ phase: 'recover-port', port, memoryId: first.memoryId })
     if (!recovered.recoveredPortConflict || !recovered.savedMemoryPresent || recovered.tenantId !== first.tenantId || recovered.endpoint === first.endpoint) {
       throw new Error('The installed address recovery did not preserve and reconnect the original workspace')
     }
     await stop()
     if (credentialsHash() !== credentials) throw new Error('Address recovery replaced the private workspace credentials')
   } finally { await new Promise(resolve => occupied.close(resolve)) }
+  const currentPort = Number(new URL(recovered.endpoint).port)
+  const personal = await launch({ phase: 'sign-in', port: currentPort, memoryId: first.memoryId })
+  if (!personal.uiInvitationAccepted || !personal.passwordSession || !personal.remembered || !personal.memberMemoryAccess || !personal.administratorAccessDenied) {
+    throw new Error('The installed app did not complete a scoped invitation with the actual OS credential store')
+  }
+  const savedConnections = join(userData, 'workspaces/connections.json')
+  if (!existsSync(savedConnections) || /mnm_[rsi]_|harbour comet mitten glacier tapestry/.test(readFileSync(savedConnections, 'utf8'))) {
+    throw new Error('A remembered password session must exist without plaintext credentials')
+  }
+  await stop()
+  const reopened = await launch({ phase: 'sign-in-resume', port: currentPort, memoryId: first.memoryId,
+    tenantId: personal.tenantId, principalId: personal.principalId, sessionId: personal.sessionId })
+  if (!reopened.sameDeviceSessionRestored || !reopened.administratorAccessDenied || !reopened.memberMemoryAccess ||
+      !reopened.uiSessionRevoked || !reopened.staleNativeHandleRejected || !reopened.independentOwnerKeyPreserved) {
+    throw new Error('The installed app did not preserve and revoke the correct individual device session')
+  }
+  await stop()
+  if (credentialsHash() !== credentials) throw new Error('Individual sign-in or revocation replaced the independent workspace credentials')
   const evidence = { passed: true, platform: process.platform, architecture: process.arch, nativeRuntime,
     installer: process.platform === 'win32' ? 'NSIS per-user' : process.platform === 'darwin' ? 'DMG copied application' : 'AppImage portable user installation',
     installationPathWithSpacesAndUnicode: true, actualSetupControls: true, authenticatedApi: true,
@@ -162,10 +182,14 @@ try {
     configuredRamBudgetPersists: true, cleanDatabaseShutdownOnAppExit: true,
     navigationPreservesUpdateReadiness: true, unsavedDraftBlocksUpdate: true, closedEditorRestoresUpdateReadiness: true,
     occupiedApiPortRecoveredThroughApp: true, addressRecoveryPreservesWorkspaceAndCredentials: true,
+    scopedInvitationAcceptedThroughApp: true, passwordSessionProtectedByNativeCredentialStore: true,
+    sameIndividualSessionRestoredAfterRestart: true, contributorCannotAdministerOrganization: true,
+    ownHostReadyBeforeSavedLoginRefresh: true, currentSessionRevokedThroughApp: true,
+    revokedHandleRejected: true, independentOwnerKeyPreserved: true,
     scope: 'Locally built installer, new private profile and real model download. Public download acceptance and update migration are separate gates.' }
   mkdirSync(join(root, 'build-tmp'), { recursive: true })
   writeFileSync(evidenceFile, JSON.stringify(evidence, null, 2) + '\n')
-  for (const phase of ['create', 'resume', 'recover-port']) copyFileSync(join(temporary, phase + '-workspace.png'), join(root, 'build-tmp/installed-hosting-' + phase + '.png'))
+  for (const phase of ['create', 'resume', 'recover-port', 'sign-in', 'sign-in-resume']) copyFileSync(join(temporary, phase + '-workspace.png'), join(root, 'build-tmp/installed-hosting-' + phase + '.png'))
   console.log(JSON.stringify(evidence, null, 2))
   succeeded = true
 } catch (error) {

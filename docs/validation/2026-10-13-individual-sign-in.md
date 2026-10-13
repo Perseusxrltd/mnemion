@@ -58,9 +58,31 @@ The frontend production build passed with a 768 MiB process-group memory
 limit, no swap and one CPU. A previous 512 MiB limit was too small for the
 compiler; that build failure was an observed limit, not an application crash.
 
+The source now identifies itself as 4.2.0, with regenerated OpenAPI and the
+100-operation agent contract, matching Python/npm locks and reviewed release
+notes. The release consistency check passes. The latest Electron suite passed
+**120 checks** (111 ordinary checks and nine update-controller checks). New
+cases verify that local startup completes before consuming a saved refresh
+token, that startup failure preserves the credential, and that a different
+workspace at the same local address is rejected. The native probe compiles and
+its runner passes JavaScript and shell syntax checks.
+
+The 4.2.0 preflight passed another **54 focused checks** covering local readiness,
+sign-in HTTP and agent boundaries, and release-status reporting. The updated
+production frontend build and Python static checks also passed. The new zxcvbn
+4.5.0 dependency contains its MIT license text. Full notice generation must use
+the locked build runtime: the operator's broader local test environment includes
+unrelated packages and is not the packaged dependency inventory.
+
+The installed acceptance gate now includes real invitation acceptance through
+the UI, contributor-only access, protected native persistence, automatic restart
+and same-session refresh, current-session revocation and independent owner-key
+verification. Linux uses an isolated Secret Service keyring. These additions
+still need to pass on the six native runners; compilation is not that evidence.
+
 Remaining release acceptance includes native password sign-in and secure-store
-reopening on every packaged target, the full service/client matrix, refreshed
-client dependency locks and notices, migration/recovery from the published
-installer, and review of auth-data retention and concurrent access refresh.
+reopening on every packaged target, the full service/client matrix, packaged
+dependency notices, migration/recovery from the published installer, and review
+of auth-data retention and concurrent access refresh.
 Provider OAuth, company identity/SSO, remote host ownership and other full
 product requirements remain separate open work.

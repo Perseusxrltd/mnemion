@@ -24,6 +24,8 @@ Set up [independent human administrators](docs/service/organizations.md#establis
 to manage people, applications and space grants without the original agent.
 The [continuity contract](docs/implementation/workspace-continuity.md) tracks the
 remaining host delegation, independent recovery and sign-in workflows.
+The 4.2.0 source includes [individual sign-in, invitations and device sessions](docs/service/sign-in.md);
+its release validation is tracked separately from the published distribution.
 Studio retains OS-protected saved connections, identity-checked reopening after restart and a clearer connection
 screen. [Workspace controls](docs/service/workspaces.md) explain remembering,
 disconnecting and forgetting a device connection. Complete fresh-machine setup
@@ -56,7 +58,7 @@ An authenticated identity is separate from the person or project a memory is abo
 - A versioned HTTP API, [OpenAPI contract](docs/service/openapi.json),
   Python and TypeScript clients, and authenticated MCP with stdio and Streamable
   HTTP; API and HTTP MCP share one listener by default.
-- [Agent administration](docs/service/agent-control.md): 87 discoverable operations from 4.0.11 (84 in 4.0.5–4.0.10),
+- [Agent administration](docs/service/agent-control.md): 100 reviewed operations in the 4.2.0 source (87 published from 4.0.11),
   an offline catalog/CLI, compact MCP tools, private results and safe retry rules.
 - Studio for saving, searching, inspecting evidence and revisions, reviewing
   memories, managing identities/grants, and tracking indexing/deletion activity.

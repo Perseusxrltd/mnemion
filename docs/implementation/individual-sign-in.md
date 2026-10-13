@@ -34,9 +34,13 @@ exposing whether a username exists. Do not rely on proxy-supplied client IPs or
 an unbounded in-memory attempt dictionary for protection.
 
 Published 4.1.3 includes the [bounded Argon2id foundation](../validation/2026-10-12-password-foundation.md),
-using the existing cryptography dependency. It is not connected to a public login
-endpoint. Account persistence, invitations, attempt throttling, password-strength
-screening, sessions and the app flow still need implementation and validation.
+using the existing cryptography dependency. That release did not connect it to
+a public login endpoint. The 4.2.0 source now implements account persistence,
+invitations, attempt throttling, password-strength screening, sessions,
+protected persistence and app and CLI flows.
+[Source and browser checks](../validation/2026-10-13-individual-sign-in.md)
+have passed; native installed acceptance and public delivery are still required.
+The [user and operator guide](../service/sign-in.md) documents that implementation.
 
 ## Sessions and administration
 

@@ -64,11 +64,48 @@ async function running(f) {
   await start
   const engine = f.last()
   engine.event({ event: 'ready', endpoint: 'http://127.0.0.1:17400', credential: 'mnm_' + 'a'.repeat(48),
-    workspace_id: '00000000-0000-4000-8000-000000000001', engine_version: version })
+    workspace_id: '00000000-0000-4000-8000-000000000001', tenant_id: '00000000-0000-4000-8000-000000000003', engine_version: version })
   f.last().reply(info('first'))
   await settle()
   return engine
 }
+
+test('remote saved connections do not start or inspect a local engine', async t => {
+  const f = fixture(t)
+  await f.host.prepareSavedConnection('https://memory.example.test', addressChange.workspace_id, true)
+  assert.deepEqual(f.commands, [])
+})
+
+test('a paused managed host preserves the operator choice before saved authentication', async t => {
+  const f = fixture(t)
+  const prepared = f.host.prepareSavedConnection('http://127.0.0.1:17400', '00000000-0000-4000-8000-000000000003', false)
+  const denied = assert.rejects(prepared, /paused/)
+  f.last().reply(addressInfo(17400))
+  await denied
+  assert.deepEqual(f.commands.map(command => command.action), ['status'])
+})
+
+test('saved authentication waits for verified local readiness and the correct tenant', async t => {
+  const f = fixture(t)
+  let ready = false
+  const prepared = f.host.prepareSavedConnection('http://127.0.0.1:17400', '00000000-0000-4000-8000-000000000003', true).then(() => { ready = true })
+  f.last().reply(addressInfo(17400))
+  await settle()
+  f.last().reply(addressInfo(17400))
+  await settle()
+  const engine = f.last()
+  assert.equal(engine.action, 'run')
+  assert.equal(ready, false)
+  engine.event({ event: 'ready', endpoint: 'http://127.0.0.1:17400', credential: 'mnm_' + 'a'.repeat(48),
+    workspace_id: addressChange.workspace_id, tenant_id: '00000000-0000-4000-8000-000000000003', engine_version: version })
+  f.last().reply(addressInfo(17400))
+  await prepared
+  assert.equal(ready, true)
+  const wrongTenant = f.host.prepareSavedConnection('http://127.0.0.1:17400', addressChange.workspace_id, true)
+  const denied = assert.rejects(wrongTenant, /another workspace/)
+  f.last().reply(addressInfo(17400))
+  await denied
+})
 
 test('closing during inspection prevents a delayed workspace start', async t => {
   const f = fixture(t)

@@ -2,7 +2,7 @@ import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { StringDecoder } from 'node:string_decoder'
 import type { LocalOptions, LocalInfo, LocalStatus, MemoryChange, MemoryWrite, MemorySnapshot, MemoryPolicy, PortChange, LocalDiagnostic } from '../shared/local-workspace.js'
-type Connection = { endpoint: string; credential: string; workspaceId: string; version: string }
+type Connection = { endpoint: string; credential: string; workspaceId: string; tenantId: string; version: string }
 type Options = { executable: string; database: string; root: string; version: string; environment: NodeJS.ProcessEnv; desktopMemory?: () => number }
 
 export function localDiagnostic(input: unknown): LocalDiagnostic | undefined {
@@ -225,9 +225,10 @@ export class LocalWorkspace {
             const endpoint = new URL(value.endpoint)
             if (endpoint.protocol !== 'http:' || endpoint.hostname !== '127.0.0.1' || !endpoint.port || endpoint.pathname !== '/' || endpoint.username || endpoint.password || endpoint.search || endpoint.hash ||
                 typeof value.credential !== 'string' || !/^mnm_[A-Za-z0-9_-]{40,100}$/.test(value.credential) ||
-                typeof value.workspace_id !== 'string' || !/^[a-f0-9-]{36}$/.test(value.workspace_id) || value.engine_version !== this.options.version) throw new Error('Invalid private connection')
+                typeof value.workspace_id !== 'string' || !/^[a-f0-9-]{36}$/.test(value.workspace_id) ||
+                typeof value.tenant_id !== 'string' || !/^[a-f0-9-]{36}$/.test(value.tenant_id) || value.engine_version !== this.options.version) throw new Error('Invalid private connection')
             if (this.intentionalStop) { child.stdin.end('{"action":"stop"}\n'); continue }
-            this.connection = { endpoint: endpoint.origin, credential: value.credential, workspaceId: value.workspace_id, version: value.engine_version }
+            this.connection = { endpoint: endpoint.origin, credential: value.credential, workspaceId: value.workspace_id, tenantId: value.tenant_id, version: value.engine_version }
             this.set({ state: 'running', stage: 'ready', message: 'Your local workspace is ready.' })
             void this.inspect().catch(() => {})
           } else if (value.event === 'error' && typeof value.code === 'string' && value.code.length <= 64 && typeof value.message === 'string' && value.message.length <= 1000) {
@@ -342,6 +343,29 @@ export class LocalWorkspace {
   privateConnection(): Connection {
     if (!this.connection || this.statusValue.state !== 'running') throw new Error('Wait for the local workspace checks to finish before opening it.')
     return { ...this.connection }
+  }
+
+  /** Never consume a saved refresh token while its own managed host is booting. */
+  async prepareSavedConnection(endpoint: string, tenantId: string, startWithApp: boolean): Promise<void> {
+    const url = new URL(endpoint)
+    if (url.protocol !== 'http:' || url.hostname !== '127.0.0.1' || url.pathname !== '/' || !this.status.available) return
+    const info = await this.inspect()
+    if (!info.configured || info.settings?.port !== Number(url.port)) return
+    if (this.status.state !== 'running') {
+      if (!startWithApp) throw new Error('This local workspace is paused. Resume it in Setup before reopening your login.')
+      await this.start()
+    }
+    const deadline = performance.now() + 180000
+    while (this.status.state !== 'running') {
+      this.assertOpen()
+      if (this.status.state !== 'starting') throw new Error(this.status.message)
+      if (performance.now() >= deadline) throw new Error('The local workspace is still starting. Reopen the saved login when Setup reports it is ready.')
+      await new Promise(resolve => setTimeout(resolve, 100))
+    }
+    const ready = this.privateConnection()
+    if (ready.endpoint !== endpoint || ready.tenantId !== tenantId) {
+      throw new Error('The saved login belongs to another workspace. Choose its original address or sign in to the current workspace.')
+    }
   }
 
   async stopForUpdate(): Promise<boolean> {

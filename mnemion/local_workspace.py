@@ -483,6 +483,7 @@ async def _serve(
                     "endpoint": endpoint,
                     "credential": credentials["api_key"],
                     "workspace_id": settings["workspace_id"],
+                    "tenant_id": credentials["tenant_id"],
                     "engine_version": __version__,
                 }
             )

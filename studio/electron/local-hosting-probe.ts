@@ -3,6 +3,7 @@ import type { BrowserWindow } from 'electron'
 import { readFile, stat, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
+import { verifyPersonalAccess } from './personal-access-probe.js'
 
 export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Record<string, unknown> | null> {
   const path = process.env.MNEMION_STUDIO_HOSTING_PROBE
@@ -12,8 +13,14 @@ export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Re
   if (!profile || !smoke || dirname(resolve(path)) !== dirname(resolve(profile)) || dirname(resolve(smoke)) !== dirname(resolve(path)) ||
       (await stat(path)).size > 4096) throw new Error('Hosting validation requires an isolated profile and evidence directory')
   const config = JSON.parse(await readFile(path, 'utf8'))
-  if (!['create', 'resume', 'recover-port'].includes(config.phase) || !Number.isInteger(config.port) || config.port < 1024 || config.port > 65535 ||
+  if (!['create', 'resume', 'recover-port', 'sign-in', 'sign-in-resume'].includes(config.phase) || !Number.isInteger(config.port) || config.port < 1024 || config.port > 65535 ||
       (config.phase !== 'create' && !/^[a-f0-9-]{36}$/.test(config.memoryId))) throw new Error('Invalid hosting validation configuration')
+  if (config.phase === 'sign-in-resume' && !['tenantId', 'principalId', 'sessionId'].every(key => /^[a-f0-9-]{36}$/.test(config[key]))) throw new Error('Invalid personal-access validation identity')
+  if (config.phase.startsWith('sign-in')) {
+    const result = await verifyPersonalAccess(window, config)
+    await writeFile(join(dirname(path), config.phase + '-workspace.png'), (await window.webContents.capturePage()).toPNG(), { mode: 0o600 })
+    return result
+  }
   const result = await window.webContents.executeJavaScript(`(async () => {
     const config = ${JSON.stringify(config)};
     const bridge = window.mnemion;

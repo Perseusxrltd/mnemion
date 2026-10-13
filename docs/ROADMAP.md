@@ -1,9 +1,18 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.1.7**. Roadmap updated: **2026-10-13**.
+Reviewed source distribution: **4.2.0**. Roadmap updated: **2026-10-13**.
 The [current published distribution and release gates](RELEASE_STATUS.md) are updated automatically.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
+
+Version [4.2.0](releases/4.2.0.md) is in validation. It implements personal
+passwords, scoped invitations, revocable device sessions, protected desktop and
+browser remembering, and 13 private-aware agent operations. The
+[sign-in guide](service/sign-in.md) covers user, administrator and agent flows;
+[current source/browser evidence](validation/2026-10-13-individual-sign-in.md)
+does not yet establish six-platform installed acceptance or public delivery.
+Migration 015 requires a guarded service upgrade. Hosted OAuth, company SSO
+onboarding and live named-provider acceptance remain separate unfinished work.
 
 Version [4.1.7](releases/4.1.7.md) fixes managed update scheduling after a host
 resumes from suspension, adds actual next-check/overdue diagnostics, and retains
@@ -66,8 +75,8 @@ also passed, moving future complete release downloads off the operator's PC.
 Version 4.1.3 also ships [stable MCP profile identification](validation/2026-10-12-mcp-profile.md)
 and the [individual sign-in/invitation contract](implementation/individual-sign-in.md),
 with a [tested Argon2id password foundation](validation/2026-10-12-password-foundation.md).
-Complete password and company sign-in, hosted consent and live provider
-acceptance remain required.
+The 4.2.0 personal-password implementation is undergoing release validation.
+Company sign-in, hosted consent and live provider acceptance remain required.
 
 The immediate priority is short hotfix releases for operational reliability:
 connections and administrator access, installation, verified updates, data safety
