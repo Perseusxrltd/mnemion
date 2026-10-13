@@ -1,0 +1,26 @@
+{
+  "all_asset_ids_sizes_digests_unchanged_since_signature_verification": true,
+  "assets": 38,
+  "at": "2026-10-13T10:10:07.757382+00:00",
+  "bytes": 3865704241,
+  "checksum_sha256": "6d22ff09c45e42099ef76da1cd2a36c9fbb4e2e256e903de7101747c0c50d48b",
+  "latest_stable_release": true,
+  "public_feeds_match_verified_digests": [
+    "SHA256SUMS.txt",
+    "latest-arm64-linux-arm64.yml",
+    "latest-arm64-mac.xml",
+    "latest-arm64-mac.yml",
+    "latest-arm64-windows.json",
+    "latest-arm64.yml",
+    "latest-x64-linux.yml",
+    "latest-x64-mac.xml",
+    "latest-x64-mac.yml",
+    "latest-x64-windows.json",
+    "latest-x64.yml",
+    "service-update.json"
+  ],
+  "published_at": "2026-10-13T10:10:04Z",
+  "release_url": "https://github.com/Perseusxrltd/mnemion/releases/tag/v4.1.7",
+  "source_commit": "6ffe57feeadc5bac87a4ea49fc0c0b76a9357a70",
+  "version": "4.1.7"
+}

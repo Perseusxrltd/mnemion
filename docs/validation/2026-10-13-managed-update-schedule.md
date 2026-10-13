@@ -27,8 +27,32 @@ versions, generated API version and changed documentation links also passed.
 This is a controlled clock simulation, not a claim of suspending the user's
 actual VM or installing the new release there.
 
-Release packaging, independent uploaded-artifact verification, public-feed
-upgrades and live product-page checks remain separate publication gates.
+[Mnemion 4.1.7](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.1.7)
+was published at **10:10:04 UTC** from
+`6ffe57feeadc5bac87a4ea49fc0c0b76a9357a70`.
+All 30 [release jobs](https://github.com/Perseusxrltd/mnemion/actions/runs/38376759129)
+passed, including the six installed workspace and automatic-update targets.
+The separate [product checks](https://github.com/Perseusxrltd/mnemion/actions/runs/38376736278)
+also passed. The duplicate native push workflow was intentionally cancelled;
+the release workflow's complete native gates passed.
+
+The [independent verifier](https://github.com/Perseusxrltd/mnemion/actions/runs/38381310385)
+validated all 38 uploaded assets against the production validator from that
+exact source commit. Its [receipt](2026-10-13-v4_1_7-hosted-verification.json)
+records **3,865,704,241 bytes** with unchanged asset IDs, sizes and digests.
+The checksum inventory SHA-256 is
+`6d22ff09c45e42099ef76da1cd2a36c9fbb4e2e256e903de7101747c0c50d48b`.
+The [10:10:07 public check](2026-10-13-v4_1_7-publication.json) confirmed the tag,
+latest stable release and all 12 anonymous checksum and update feeds.
+
+[Website synchronization and verification](https://github.com/Perseusxrltd/mnemion/actions/runs/38381497133)
+completed automatically. The [live HTML receipt](2026-10-13-v4_1_7-website.json)
+confirms the visible version, every primary installer, current notes and guides,
+checksums, roadmap on `main` and homepage product link. No new website design
+or visual render is claimed. The six [public 4.1.6 → 4.1.7 upgrade rehearsals](https://github.com/Perseusxrltd/mnemion/actions/runs/38381497073)
+are running separately; publication is not evidence that an existing user's
+desktop or separately hosted server has already installed the patch.
+
 The [full product checklist](../PRODUCT_REQUIREMENTS.md) remains open, including
 individual sign-in, hosted OAuth, independent host recovery, connected capture,
 retrieval quality and the encrypted secrets vault.

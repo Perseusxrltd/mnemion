@@ -1,13 +1,15 @@
 # Mnemion product roadmap
 
-Current distribution: **4.1.7**, in release preparation; 4.1.6 remains published on all six desktop targets. Updated: **2026-10-13**.
+Current distribution: **4.1.7**, published on all six desktop targets. Updated: **2026-10-13**.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
 
 Version [4.1.7](releases/4.1.7.md) fixes managed update scheduling after a host
 resumes from suspension, adds actual next-check/overdue diagnostics, and retains
-update and ingestion safeguards. [43 focused source tests](validation/2026-10-13-managed-update-schedule.md)
-passed; hosted packaging and public delivery remain separate release gates.
+update and ingestion safeguards. [Source and release validation](validation/2026-10-13-managed-update-schedule.md)
+passed: 60 focused checks, all 30 release jobs, independent verification of all
+38 assets, public update feeds and the automatically refreshed live website.
+Public 4.1.6 → 4.1.7 upgrade rehearsals are running separately on all six targets.
 
 Version [4.1.6](releases/4.1.6.md) ships Git revisions tied to individual file
 changes, accurate managed scan reasons, query-only MCP defaults with current
