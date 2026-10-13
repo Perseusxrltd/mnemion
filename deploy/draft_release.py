@@ -23,7 +23,15 @@ def publication_notes(notes: Path, root: Path, repo: str, version: str) -> str:
         relative = path.relative_to(root.resolve())
         if not path.is_file():
             raise ValueError(f"Release documentation does not exist: {relative}")
-        url = f"https://github.com/{repo}/blob/v{version}/{quote(relative.as_posix())}"
+        # Instructions stay tied to their release; changing availability and
+        # plans must lead readers to the continuously maintained documents.
+        ref = (
+            "main"
+            if relative.as_posix()
+            in {"docs/RELEASE_STATUS.md", "docs/ROADMAP.md", "docs/PRODUCT_REQUIREMENTS.md"}
+            else f"v{version}"
+        )
+        url = f"https://github.com/{repo}/blob/{ref}/{quote(relative.as_posix())}"
         if target.fragment:
             url += "#" + target.fragment
         return f"]({url})"
