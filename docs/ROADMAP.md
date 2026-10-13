@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Current published distribution: **4.1.5** on all six desktop targets. Updated: **2026-10-13**.
+Current distribution: **4.1.5**, published on all six desktop targets. Updated: **2026-10-13**.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
 
