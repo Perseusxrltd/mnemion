@@ -28,6 +28,44 @@ test('uncertain saves retry with the same idempotency key and body', async () =>
   assert.ok(!JSON.stringify(client).includes('dummy-key'))
 })
 
+test('credential providers refresh their result for a retried idempotent request', async () => {
+  let acquisitions = 0
+  const calls = []
+  const client = new MnemionClient({ baseUrl: 'https://example.invalid', apiKey: async () => 'fixture-' + (++acquisitions), fetch: async (url, options) => {
+    calls.push(options)
+    if (calls.length === 1) throw new TypeError('Lost response after acceptance')
+    return Response.json({ state: 'accepted' })
+  } })
+  await client.save('space', { content: 'One idempotent memory' })
+  assert.equal(acquisitions, 2)
+  assert.equal(calls[0].headers.Authorization, 'Bearer fixture-1')
+  assert.equal(calls[1].headers.Authorization, 'Bearer fixture-2')
+  assert.equal(calls[0].headers['Idempotency-Key'], calls[1].headers['Idempotency-Key'])
+  assert.equal(calls[0].body, calls[1].body)
+  assert.ok(!JSON.stringify(client).includes('fixture-'))
+})
+
+test('credential acquisition failures are not retried even for reads', async () => {
+  let acquisitions = 0, requests = 0
+  const client = new MnemionClient({ baseUrl: 'https://example.invalid', retries: 5, apiKey: async () => {
+    acquisitions++; throw new Error('Protected store is locked')
+  }, fetch: async () => { requests++; return Response.json({}) } })
+  await assert.rejects(client.me(), /Protected store is locked/)
+  assert.equal(acquisitions, 1)
+  assert.equal(requests, 0)
+})
+
+test('a stalled credential provider is bounded by the request deadline', async () => {
+  let acquisitions = 0, requests = 0
+  const client = new MnemionClient({ baseUrl: 'https://example.invalid', timeoutMs: 20, retries: 5,
+    apiKey: () => { acquisitions++; return new Promise(() => {}) },
+    fetch: async () => { requests++; return Response.json({}) },
+  })
+  await assert.rejects(client.me(), /timed out/)
+  assert.equal(acquisitions, 1)
+  assert.equal(requests, 0)
+})
+
 test('authorization failure has a stable error and is not retried', async () => {
   let calls = 0
   const client = new MnemionClient({ baseUrl: 'http://example.test', apiKey: 'invalid', fetch: async () => {

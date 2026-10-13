@@ -15,7 +15,7 @@ from .contracts import ResponseModel
 from .db import Identity
 from .errors import ServiceError
 from .models import Command
-from .oauth import https_url
+from .mcp_transport import transport_security
 from .sign_in import (
     InvitationAcceptInput,
     InvitationInput,
@@ -53,16 +53,15 @@ class BrowserPolicy:
     def __init__(self, public_url: str | None):
         self.public_origin = None
         if public_url:
-            parsed = urlsplit(https_url(public_url))
-            if parsed.path not in {"", "/", "/mcp", "/mcp/"}:
-                raise ValueError(
-                    "The public sign-in address must be an HTTPS origin or /mcp endpoint"
-                )
+            # This setting is shared with MCP. Preserve its supported loopback
+            # HTTP and internationalized-host configurations during upgrades.
+            transport_security(public_url)
+            parsed = urlsplit(public_url)
             self.public_origin = self._canonical_origin(parsed)
 
     @staticmethod
     def _canonical_origin(parsed):
-        host = parsed.hostname.lower()
+        host = parsed.hostname.encode("idna").decode("ascii").lower()
         if ":" in host:
             host = f"[{host}]"
         port = parsed.port

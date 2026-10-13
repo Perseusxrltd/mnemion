@@ -43,11 +43,11 @@ export default function Account({ connection, disconnect }: { connection: Connec
   const signInLink = endpoint + '/workspace?workspace=' + me.tenant_id
   const humans = people.data?.items.filter(p => p.kind === 'human' && !p.disabled_at) ?? []
   const visibleSessions = (sessions.data?.items ?? []).filter(s => allPeople || s.principal_id === me.principal_id)
-  async function run(action: () => Promise<void>) {
+  async function run(action: () => Promise<void>, refresh = true) {
     setBusy(true); setError(undefined); setNotice('')
     try {
       await action()
-      await Promise.all([
+      if (refresh) await Promise.all([
         cache.invalidateQueries({ queryKey: ['password-account'] }),
         cache.invalidateQueries({ queryKey: ['device-sessions'] }),
         cache.invalidateQueries({ queryKey: ['sign-in-invitations'] }),
@@ -63,7 +63,7 @@ export default function Account({ connection, disconnect }: { connection: Connec
       setPasswordFormRevision(value => value + 1)
       setNotice('Login saved. Device sessions have been signed out. Your independent API keys remain available.')
       if (connection.authentication === 'password') disconnect()
-    })
+    }, connection.authentication !== 'password')
   }
   const sessionToRevoke = sessions.data?.items.find(s => s.id === pendingRevoke)
   return <div className="ws-page">
@@ -107,7 +107,7 @@ export default function Account({ connection, disconnect }: { connection: Connec
         <button type="button" className="ws-button" disabled={busy} onClick={() => void run(async () => {
           await client.revokeSession(sessionToRevoke.id); setPendingRevoke(undefined)
           if (sessionToRevoke.current) disconnect(); else setNotice('The device session has been revoked.')
-        })}>Revoke access</button><button type="button" className="ws-button ws-quiet" disabled={busy} onClick={() => setPendingRevoke(undefined)}>Keep session</button>
+        }, !sessionToRevoke.current)}>Revoke access</button><button type="button" className="ws-button ws-quiet" disabled={busy} onClick={() => setPendingRevoke(undefined)}>Keep session</button>
       </div>}
     </section>
     {me.administrator && <>

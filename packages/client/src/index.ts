@@ -168,6 +168,24 @@ export class MnemionClient {
     if (this.#retries < 0 || this.#retries > 5) throw new Error('Retries must be between 0 and 5')
   }
 
+  #credential(signal: AbortSignal): Promise<string> {
+    const reason = () => signal.reason ?? new Error('Credential acquisition was cancelled')
+    if (signal.aborted) return Promise.reject(reason())
+    return new Promise((resolve, reject) => {
+      const abort = () => reject(reason())
+      signal.addEventListener('abort', abort, { once: true })
+      Promise.resolve().then(() => {
+        if (signal.aborted) throw reason()
+        return typeof this.#apiKey === 'function' ? this.#apiKey() : this.#apiKey
+      }).then(value => {
+        signal.removeEventListener('abort', abort)
+        if (typeof value !== 'string' || !/^[\x21-\x7e]{1,4096}$/.test(value)) {
+          reject(new Error('The credential provider returned an invalid credential'))
+        } else resolve(value)
+      }, error => { signal.removeEventListener('abort', abort); reject(error) })
+    })
+  }
+
   async request<T>(method: string, path: string, options: RequestOptions = {}): Promise<T> {
     const safeRetry = method === 'GET' || !!options.key || ['/v1/recall', '/v1/context', '/v1/knowledge'].includes(path)
     for (let attempt = 0; attempt <= this.#retries; attempt++) {
@@ -175,8 +193,10 @@ export class MnemionClient {
       const timeout = new AbortController()
       const timer = setTimeout(() => timeout.abort(new Error('Mnemion request timed out')), this.#timeout)
       const signal = options.signal ? AbortSignal.any([options.signal, timeout.signal]) : timeout.signal
+      let credentialReady = false
       try {
-        const apiKey = typeof this.#apiKey === 'function' ? await this.#apiKey() : this.#apiKey
+        const apiKey = await this.#credential(signal)
+        credentialReady = true
         const response = await this.#fetch(this.baseUrl + path, {
           method, signal, redirect: 'error',
           headers: { 'Authorization': `Bearer ${apiKey}`, ...(options.body === undefined ? {} : { 'Content-Type': 'application/json' }),
@@ -201,7 +221,7 @@ export class MnemionClient {
             payload.error?.message ?? `Mnemion returned HTTP ${response.status}`, payload.request_id ?? response.headers.get('X-Request-ID') ?? undefined, retryAfterSeconds)
         }
       } catch (error) {
-        if (error instanceof MnemionError || options.signal?.aborted || !safeRetry || attempt === this.#retries) throw error
+        if (!credentialReady || error instanceof MnemionError || options.signal?.aborted || !safeRetry || attempt === this.#retries) throw error
       } finally { clearTimeout(timer) }
       await waitForRetry(retryDelay, options.signal)
     }

@@ -1,7 +1,7 @@
 import type { MnemionClient } from "@mnemion/client";
 
 export type WorkspaceIdentity = Awaited<ReturnType<MnemionClient["me"]>>;
-export type Connection = { client: MnemionClient; me: WorkspaceIdentity; endpoint: string; authentication?: 'password'; signOut?: () => Promise<void>; close?: () => void };
+export type Connection = { client: MnemionClient; me: WorkspaceIdentity; endpoint: string; authentication?: 'password'; signOut?: () => Promise<void>; close?: () => void; subscribeClosed?: (listener: () => void) => () => void };
 export type WorkspaceBookmark = {
   id: string;
   endpoint: string;

@@ -2,6 +2,7 @@ import {
   createContext,
   Fragment,
   useContext,
+  useCallback,
   useMemo,
   useEffect,
   useRef,
@@ -69,6 +70,7 @@ import {
 import "./workspace.css";
 import Connect from "./Connect";
 import type { Connection } from "./connection-types";
+import type { JoinLink } from "./sign-in";
 import { version } from "../../package.json";
 import BrandMark from "../components/BrandMark";
 import ErrorBoundary from "../components/ErrorBoundary";
@@ -2103,7 +2105,16 @@ function Team({ connection, initialSpace }: { connection: Connection; initialSpa
 export default function Workspace() {
   const [connection, setConnection] = useState<Connection>();
   const [disconnectError, setDisconnectError] = useState<unknown>();
+  const [returnTo, setReturnTo] = useState<JoinLink | null>(null);
+  const [leaving, setLeaving] = useState(false);
   const disconnecting = useRef<Connection | null>(null);
+  const connect = useCallback((next: Connection) => {
+    setDisconnectError(undefined);
+    setReturnTo(next.authentication === 'password' ? {
+      endpoint: next.endpoint, workspaceId: next.me.tenant_id,
+    } : null);
+    setConnection(next);
+  }, []);
   const queryClient = useMemo(
     () =>
       new QueryClient({
@@ -2111,28 +2122,38 @@ export default function Workspace() {
       }),
     [connection],
   );
-  useEffect(() => () => { queryClient.clear(); connection?.close?.(); }, [connection, queryClient]);
+  useEffect(() => {
+    const unsubscribe = connection?.subscribeClosed?.(() => {
+      if (disconnecting.current === connection) return;
+      void queryClient.cancelQueries();
+      setDisconnectError(new Error('Your session has ended. Sign in again to continue.'));
+      setConnection(current => current === connection ? undefined : current);
+    });
+    return () => { unsubscribe?.(); queryClient.clear(); connection?.close?.(); };
+  }, [connection, queryClient]);
   return (
     <div className="workspace">
-      {connection ? (
+      {leaving ? <div className="ws-loading" role="status">Signing out of your workspace…</div> : connection ? (
         <QueryClientProvider client={queryClient}>
           <Shell
             connection={connection}
             disconnect={async () => {
               if (disconnecting.current) return;
               disconnecting.current = connection;
+              setLeaving(true);
               void queryClient.cancelQueries();
-              queryClient.clear();
               setDisconnectError(undefined);
               try { await connection.signOut?.(); await window.mnemion?.workspaceDisconnect?.(); }
               catch (error) { setDisconnectError(error); }
+              queryClient.clear();
               setConnection(current => current === connection ? undefined : current);
+              setLeaving(false);
               if (disconnecting.current === connection) disconnecting.current = null;
             }}
           />
         </QueryClientProvider>
       ) : (
-        <Connect onConnect={setConnection} initialError={disconnectError} />
+        <Connect onConnect={connect} initialError={disconnectError} initialJoin={returnTo} />
       )}
     </div>
   );

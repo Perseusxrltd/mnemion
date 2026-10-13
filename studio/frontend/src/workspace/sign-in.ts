@@ -171,6 +171,7 @@ export class BrowserSignIn {
   #pending: Promise<void> | null = null
   #channel?: BroadcastChannel
   #listeners = new Set<() => void>()
+  #closedListeners = new Set<() => void>()
 
   private constructor(readonly endpoint: string, bookmark: BrowserBookmark, tokens: Tokens | null) {
     ownOrigin(endpoint)
@@ -201,10 +202,13 @@ export class BrowserSignIn {
   }
   #publish(): void { if (this.#cookie && this.#tokens) this.#channel?.postMessage({ kind: 'access', tokens: this.#tokens }) }
   #close(): void {
+    if (this.#closed) return
     this.#closed = true; this.#tokens = null
     for (const done of this.#listeners) done()
     this.#channel?.close()
     this.#channel = undefined
+    for (const done of this.#closedListeners) done()
+    this.#closedListeners.clear()
   }
   async #lock<T>(action: () => Promise<T>): Promise<T> {
     return this.#cookie ? browserLock(this.#bookmark.workspaceId, action) : action()
@@ -263,7 +267,11 @@ export class BrowserSignIn {
     if ([me.name, me.tenant_name].some(value => typeof value !== 'string' || value.length > 256)) throw failed('Invalid workspace identity.')
     this.#bookmark = { ...this.#bookmark, name: me.name, workspaceName: me.tenant_name }
     if (this.#cookie) saveBookmark(this.#bookmark)
-    return { client: this.client, me, endpoint: this.endpoint, authentication: 'password', signOut: () => this.signOut(), close: () => this.#close() }
+    return { client: this.client, me, endpoint: this.endpoint, authentication: 'password', signOut: () => this.signOut(), close: () => this.#close(),
+      subscribeClosed: listener => {
+        if (this.#closed) listener(); else this.#closedListeners.add(listener)
+        return () => { this.#closedListeners.delete(listener) }
+      } }
   }
   static async signIn(endpoint: string, input: SignInCredentials | InvitationCredentials, remember: boolean, preview?: InvitationPreview): Promise<Connection> {
     ownOrigin(endpoint)

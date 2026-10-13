@@ -4,8 +4,9 @@ import type { InvitationPreview } from '@mnemion/client'
 import type { Connection, WorkspaceSession } from './connection-types'
 import { BrowserSignIn, browserBookmarks, canRememberBrowser, forgetBrowserBookmark, joinLink, previewBrowserInvitation, type JoinLink } from './sign-in'
 
-export default function SignInForm({ method, incoming, initialEndpoint, secureStorage, busy, onBusy, onConnect, onNativeConnect }: {
+export default function SignInForm({ method, incoming, initialEndpoint, initialError, secureStorage, busy, onBusy, onConnect, onNativeConnect }: {
   method: 'password' | 'invitation'; incoming: JoinLink | null; initialEndpoint: string
+  initialError?: unknown
   secureStorage: boolean; busy: boolean; onBusy: (value: string) => void
   onConnect: (connection: Connection) => void; onNativeConnect: (session: WorkspaceSession) => void
 }) {
@@ -21,7 +22,8 @@ export default function SignInForm({ method, incoming, initialEndpoint, secureSt
   const [preview, setPreview] = useState<InvitationPreview>()
   const [previewEndpoint, setPreviewEndpoint] = useState('')
   const [previewSecret, setPreviewSecret] = useState('')
-  const [error, setError] = useState<unknown>()
+  const [error, setError] = useState<unknown>(initialError)
+  useEffect(() => { if (initialError) setError(initialError) }, [initialError])
   const [saved, setSaved] = useState(browserBookmarks)
   const mounted = useRef(true)
   useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
@@ -30,7 +32,7 @@ export default function SignInForm({ method, incoming, initialEndpoint, secureSt
   async function run(label: string, action: () => Promise<void>) {
     onBusy(label); setError(undefined)
     try { await action() } catch (error) { if (mounted.current) setError(error) }
-    finally { if (mounted.current) onBusy('') }
+    finally { if (mounted.current) { setSaved(browserBookmarks()); onBusy('') } }
   }
   function target(): JoinLink {
     if (method === 'invitation' && /^https?:\/\//i.test(invitation.trim())) return joinLink(invitation)

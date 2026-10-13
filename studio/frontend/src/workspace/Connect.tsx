@@ -10,7 +10,7 @@ import type { LocalStatus } from '../../../shared/local-workspace';
 import LocalSetup from './LocalSetup';
 import WorkspaceRecovery from './WorkspaceRecovery';
 import SignInForm from './SignInForm';
-import { browserBookmarks, initialJoinLink } from './sign-in';
+import { browserBookmarks, initialJoinLink, type JoinLink } from './sign-in';
 
 function errorMessage(error: unknown): string {
   const message = error instanceof Error ? error.message : "The connection could not be completed.";
@@ -38,9 +38,9 @@ function nativeConnection(session: WorkspaceSession): Connection {
   };
 }
 
-export default function Connect({ onConnect, initialError }: { onConnect: (connection: Connection) => void; initialError?: unknown }) {
+export default function Connect({ onConnect, initialError, initialJoin }: { onConnect: (connection: Connection) => void; initialError?: unknown; initialJoin?: JoinLink | null }) {
   const desktop = window.mnemion?.workspaceConnect ? window.mnemion : undefined;
-  const [incoming] = useState(initialJoinLink);
+  const [incoming] = useState(() => initialJoinLink() ?? initialJoin ?? null);
   const [joinMethod, setJoinMethod] = useState<'key' | 'password' | 'invitation'>(() => incoming?.invitation ? 'invitation' : incoming?.workspaceId || (!desktop && browserBookmarks().length) ? 'password' : 'key');
   const [endpoint, setEndpoint] = useState(() => incoming?.endpoint ?? savedAddress());
   const [key, setKey] = useState("");
@@ -52,7 +52,7 @@ export default function Connect({ onConnect, initialError }: { onConnect: (conne
   const [inspecting, setInspecting] = useState<string>();
   const [storageIssue, setStorageIssue] = useState(false);
   const [resetConfirm, setResetConfirm] = useState(false);
-  const [selection, setSelection] = useState<'join' | 'local' | null>(desktop?.localStatus ? null : 'join');
+  const [selection, setSelection] = useState<'join' | 'local' | null>(incoming ? 'join' : desktop?.localStatus ? null : 'join');
   const [local, setLocal] = useState<LocalStatus>();
   const [continueLocal, setContinueLocal] = useState(false);
   const operation = useRef(0);
@@ -70,7 +70,7 @@ export default function Connect({ onConnect, initialError }: { onConnect: (conne
         if (generation !== operation.current) return;
         if (localResult.status === 'fulfilled' && localResult.value) {
           setLocal(localResult.value);
-          if (localResult.value.preferences?.selected && localResult.value.available && !initialError) {
+          if (localResult.value.preferences?.selected && localResult.value.available && !initialError && !incoming) {
             setContinueLocal(true); setSelection('local');
             if (savedResult.status === 'fulfilled') setStatus(savedResult.value);
             return;
@@ -83,7 +83,7 @@ export default function Connect({ onConnect, initialError }: { onConnect: (conne
         setStatus(saved);
         setRemember(saved.secureStorage);
         if (saved.activeId && !initialError) setSelection('join');
-        if ((saved.active || (saved.activeId && saved.secureStorage)) && !initialError) {
+        if ((saved.active || (saved.activeId && saved.secureStorage)) && !initialError && !incoming) {
           setSelection('join');
           setBusy("Reconnecting to your workspace…");
           const session = await desktop.workspaceResume!();
@@ -216,7 +216,7 @@ export default function Connect({ onConnect, initialError }: { onConnect: (conne
             <button type="button" className={`ws-button ${joinMethod === 'invitation' ? 'ws-primary' : 'ws-quiet'}`} disabled={!!busy} onClick={() => setJoinMethod('invitation')}>Use invitation</button>
             <button type="button" className={`ws-button ${joinMethod === 'key' ? 'ws-primary' : 'ws-quiet'}`} disabled={!!busy} onClick={() => setJoinMethod('key')}>Workspace key</button>
           </div>}
-          {selection === 'join' && joinMethod !== 'key' && <SignInForm key={joinMethod} method={joinMethod} incoming={incoming} initialEndpoint={endpoint} secureStorage={!!status?.secureStorage} busy={!!busy} onBusy={setBusy} onConnect={onConnect} onNativeConnect={complete} />}
+          {selection === 'join' && joinMethod !== 'key' && <SignInForm key={joinMethod} method={joinMethod} incoming={incoming} initialEndpoint={endpoint} initialError={error} secureStorage={!!status?.secureStorage} busy={!!busy} onBusy={setBusy} onConnect={onConnect} onNativeConnect={complete} />}
           {selection === 'join' && joinMethod === 'key' && <form className="ws-join-form" onSubmit={connect} aria-label="Connect a workspace">
             {desktop?.localStatus && <button type="button" className="ws-button ws-quiet" disabled={!!busy} onClick={() => setSelection(null)}>Choose another setup</button>}
             {!!status?.bookmarks.length && <h3>Join another workspace</h3>}

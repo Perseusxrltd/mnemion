@@ -8,7 +8,7 @@ from mnemion.service.admin import bootstrap_tenant
 from mnemion.service.api import create_app
 from mnemion.service.models import PrincipalInput
 from mnemion.service.sign_in import PasswordInput, SignInService
-from mnemion.service.sign_in_api import cookie_names
+from mnemion.service.sign_in_api import BrowserPolicy, cookie_names
 
 PASSWORD = "birch lantern cocoa summit calypso"
 ORIGIN = "https://memory.example.test"
@@ -182,10 +182,14 @@ def test_refresh_workspace_substitution_cannot_change_or_revoke_the_original_ide
 
 
 @pytest.mark.parametrize("remember", [False, True])
+@pytest.mark.parametrize("public_url", [None, "http://127.0.0.1:7892/mcp"])
 def test_loopback_browser_keeps_credentials_in_memory_without_insecure_cookies(
-    env, service, monkeypatch, remember
+    env, service, monkeypatch, remember, public_url
 ):
-    monkeypatch.delenv("MNEMION_PUBLIC_URL")
+    if public_url:
+        monkeypatch.setenv("MNEMION_PUBLIC_URL", public_url)
+    else:
+        monkeypatch.delenv("MNEMION_PUBLIC_URL")
     origin = "http://127.0.0.1:7892"
     with TestClient(create_app(env.db, env.embedder, mcp_enabled=False), base_url=origin) as client:
         configuration = client.get("/v1/sign-in/configuration").json()
@@ -209,6 +213,25 @@ def test_loopback_browser_keeps_credentials_in_memory_without_insecure_cookies(
             },
         )
         assert refreshed.status_code == 200 and refreshed.json()["persistence"] == "memory"
+
+
+def test_sign_in_preserves_configured_public_origin_compatibility():
+    assert BrowserPolicy("http://[::1]:7892/mcp").public_origin == "http://[::1]:7892"
+    assert BrowserPolicy("http://localhost:80").public_origin == "http://localhost"
+    assert (
+        BrowserPolicy("https://mémoire.example/mcp").public_origin
+        == "https://xn--mmoire-bva.example"
+    )
+    for invalid in (
+        "http://remote.example",
+        "http://localhost@remote.example",
+        "http://localhost:0",
+        "http://localhost/other",
+        "http://localhost?next=elsewhere",
+        "http://localhost\n",
+    ):
+        with pytest.raises(ValueError):
+            BrowserPolicy(invalid)
 
 
 def test_native_mode_cannot_be_used_by_cross_origin_browser_requests(env, service):
