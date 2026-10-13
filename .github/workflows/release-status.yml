@@ -1,0 +1,55 @@
+name: Reconcile public release status
+
+on:
+  release:
+    types: [published, edited]
+  workflow_run:
+    workflows: [Product checks, Prepare signed release, Verify uploaded release artifacts, Public desktop update rehearsal, Synchronize public release metadata]
+    types: [completed]
+  schedule:
+    - cron: '53 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-release-status
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    if: github.repository == 'Perseusxrltd/mnemion'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      # Read trusted code from main, never a pull-request artifact or event text.
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: main
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Reconcile publication, exact-source gates and scope
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python -m deploy.release_status
+      - name: Update the single public status record
+        run: |
+          git add -- deploy/release-status.json docs/RELEASE_STATUS.md
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -m 'docs: synchronize public release status'
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            git fetch origin main
+            git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' rebase origin/main
+          done
+          exit 1
