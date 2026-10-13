@@ -16,6 +16,7 @@ from typing import Callable, Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .errors import ServiceError
+from .heap_memory import release_unused_heap
 from .resources import cgroup_limits
 
 MIB = 1024**2
@@ -265,6 +266,7 @@ class MemoryBudget:
                 released += 1
         if released:
             gc.collect()
+            release_unused_heap()
             with self._lock:
                 self._evictions += released
                 self._sample_at = 0

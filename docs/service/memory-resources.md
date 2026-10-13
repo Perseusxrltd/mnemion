@@ -23,6 +23,11 @@ live controls below remain separate. The [real RSS measurements](../validation/2
 show that the amount reclaimed depends on the model, allocator and platform;
 some tested cases did not immediately return memory to the operating system.
 
+The **unreleased 4.2.1 follow-up** also asks glibc on Linux to return freed
+allocator pages after idle or memory-budget eviction. It retains ordinary
+cleanup on other platforms. [Measured results and remaining checks](../validation/2026-10-13-idle-heap-reclaim.md)
+distinguish that implementation from the currently published versions.
+
 ## Native local budgets
 
 These controls require the native local engine in **4.0.11 or later**; they are

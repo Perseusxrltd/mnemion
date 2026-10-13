@@ -1,9 +1,16 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.2.0**. Roadmap updated: **2026-10-13**.
+Reviewed source distribution: **4.2.1**. Roadmap updated: **2026-10-13**.
 The [current published distribution and release gates](RELEASE_STATUS.md) are updated automatically.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
+
+The [4.2.1 follow-up](releases/4.2.1.md) is in development. It returns freed
+model heap pages on glibc-based Linux after idle or budget-triggered eviction.
+[37 focused checks and two offline model comparisons](validation/2026-10-13-idle-heap-reclaim.md)
+passed. Full native release validation remains; this does not replace or delay
+the separate frozen 4.2.0 candidate. Peak RAM and API/worker duplication remain
+open under issue 13.
 
 Version [4.2.0](releases/4.2.0.md) is in validation. It implements personal
 passwords, scoped invitations, revocable device sessions, protected desktop and

@@ -10,6 +10,7 @@ from urllib.parse import urlsplit
 
 from .embeddings import Embedder, LocalEmbedder
 from .errors import ServiceError
+from .heap_memory import release_unused_heap
 from .http_embeddings import HttpEmbedder
 from .inference_limits import InferenceGate
 from .model_catalog import LOCAL_GENERATIONS, MODEL_CATALOG
@@ -94,9 +95,14 @@ class ModelRegistry:
                 # Preserve successful release observations if a later model's
                 # cleanup needs another attempt.
                 if released:
-                    with self._idle_lock:
-                        self._idle_evictions += released
-                    gc.collect()
+                    try:
+                        gc.collect()
+                        release_unused_heap()
+                    finally:
+                        # Publish completion after allocator cleanup, so memory
+                        # observations cannot race ahead of the actual release.
+                        with self._idle_lock:
+                            self._idle_evictions += released
         return released
 
     def cache_status(self) -> dict:

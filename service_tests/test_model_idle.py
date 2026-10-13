@@ -159,6 +159,34 @@ def test_partial_cleanup_preserves_successful_release_counts(tmp_path, monkeypat
     models.close()
 
 
+def test_idle_completion_waits_for_heap_release_and_keeps_native_exclusion(tmp_path, monkeypatch):
+    models = registry(tmp_path)
+    models.inference_gate._last_used -= 60
+    entered, finish = threading.Event(), threading.Event()
+    calls = []
+
+    def release():
+        assert models.default._model is None and models.default._tokenizer is None
+        calls.append(True)
+        entered.set()
+        assert finish.wait(2)
+
+    monkeypatch.setattr("mnemion.service.model_registry.release_unused_heap", release)
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        pending = pool.submit(models.release_idle)
+        try:
+            assert entered.wait(2)
+            assert models.cache_status()["idle_model_evictions"] == 0
+            with models.inference_gate.maintenance() as acquired:
+                assert not acquired
+        finally:
+            finish.set()
+        assert pending.result(timeout=2) == 1
+    assert models.cache_status()["idle_model_evictions"] == 1
+    assert models.release_idle() == 0 and calls == [True]
+    models.close()
+
+
 @pytest.mark.parametrize("value", [-1, 1, 9, 86401, True, None, 30.5])
 def test_invalid_idle_policy_fails_before_a_monitor_starts(tmp_path, value):
     with pytest.raises(ValueError, match="idle cleanup"):

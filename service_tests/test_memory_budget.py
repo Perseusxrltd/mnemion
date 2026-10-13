@@ -34,7 +34,7 @@ def test_automatic_budget_leaves_headroom_and_does_not_shrink_as_own_model_loads
     assert requested == 256 * MIB
 
 
-def test_lowering_budget_never_unloads_an_active_native_call(tmp_path):
+def test_lowering_budget_never_unloads_an_active_native_call(tmp_path, monkeypatch):
     model = LocalEmbedder(tmp_path)
     registry = ModelRegistry(model)
     budget = MemoryBudget(
@@ -44,6 +44,13 @@ def test_lowering_budget_never_unloads_an_active_native_call(tmp_path):
     budget.attach(registry)
     model._model = object()
     active, finish = threading.Event(), threading.Event()
+    releases = []
+
+    def release():
+        assert model._model is None
+        releases.append(True)
+
+    monkeypatch.setattr("mnemion.service.memory_budget.release_unused_heap", release)
 
     def query(_):
         budget.admit(model)
@@ -60,11 +67,13 @@ def test_lowering_budget_never_unloads_an_active_native_call(tmp_path):
             budget.configure(MemoryOptions(mode="manual", limit_mib=256), "changed")
             assert not budget.trim()
             assert model._model is not None
+            assert releases == []
         finally:
             finish.set()
         assert future.result(timeout=5) == [1.0]
     assert budget.trim()
     assert model._model is None
+    assert releases == [True]
     with pytest.raises(ServiceError) as caught:
         model.prepare()
     assert caught.value.code == "inference_memory_budget"
