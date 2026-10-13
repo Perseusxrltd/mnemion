@@ -506,13 +506,19 @@ class InstalledUpgrade:
             expected=202,
         )
         self.await_operation(endpoint, author_key, saved["operation_id"])
-        self.request(
-            endpoint,
-            author_key,
-            "DELETE",
-            "/v1/memories/" + saved["memory_id"] + "?expected_version=1",
-            expected=403,
-        )
+        previous_withdrawal = version(self.args.from_tag) >= (4, 1, 0)
+        if previous_withdrawal:
+            detail = self.request(endpoint, author_key, "GET", "/v1/memories/" + saved["memory_id"])
+            if detail.get("can_forget") is not True:
+                raise ValueError("The previous service lost its published author withdrawal")
+        else:
+            self.request(
+                endpoint,
+                author_key,
+                "DELETE",
+                "/v1/memories/" + saved["memory_id"] + "?expected_version=1",
+                expected=403,
+            )
         before = self.snapshot()
         self.stop()
         self.stage = "candidate-install"
@@ -621,6 +627,7 @@ class InstalledUpgrade:
             "real_candidate_installer_and_reopen": True,
             "migrations_before": len(before["schema"]),
             "migrations_after": len(after["schema"]),
+            "previous_contributor_withdrawal_available": previous_withdrawal,
             "credentials_identities_grants_memories_preserved": True,
             "existing_contributor_withdrawal_and_purge": True,
             "automatic_pre_migration_backup_verified": True,

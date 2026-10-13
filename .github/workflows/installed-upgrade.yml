@@ -4,14 +4,14 @@ on:
   workflow_dispatch:
     inputs:
       from_tag:
-        description: Published installer before author withdrawal
+        description: Published installer before the candidate schema migration
         required: true
-        default: v4.0.14
+        default: v4.1.7
         type: string
       to_tag:
         description: Candidate release, including a complete unpublished draft
         required: true
-        default: v4.1.0
+        default: v4.2.0
         type: string
       commit:
         description: Exact 40-character candidate source commit

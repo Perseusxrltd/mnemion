@@ -164,3 +164,21 @@ follow-up passed **129 Electron checks**. The final production frontend build,
 404-file Python formatting check, static checks and release-version consistency
 check also passed. The immutable release candidate still needs its complete
 package and installed schema-upgrade gates.
+
+The final application source is frozen at
+`af7f9b795bc94b36c432810148e80a82fd1ce340` on `release/4.2.0`.
+[Signed release preparation](https://github.com/Perseusxrltd/mnemion/actions/runs/38402533389)
+is running. This is not publication evidence.
+
+The separate installed-migration driver now supports a previous installer that
+already includes author withdrawal. For 4.1.7 it checks the contributor's existing
+permission without deleting the note before the migration; the earlier 4.0.x
+denial check remains for those baselines. The candidate must still preserve
+identities, grants, credentials and content, apply the actual schema change,
+withdraw afterward, and pass backup restoration with the current deletion
+ledger. The intended acceptance path is the published 4.1.7 installer to the
+exact 4.2.0 draft above. These driver changes do not alter the frozen packages.
+The driver's existing inventory and diagnostic checks passed all **25 tests**.
+[Product checks on the exact frozen source](https://github.com/Perseusxrltd/mnemion/actions/runs/38402470751)
+also passed all 11 jobs. Final packages, uploaded-artifact verification and
+installed migration/recovery remain pending.
