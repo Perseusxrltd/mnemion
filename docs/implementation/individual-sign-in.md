@@ -1,6 +1,6 @@
 # Individual sign-in, invitations and hosted agents
 
-Implementation contract updated **2026-10-12** for A01–A03, A07–A08, A11–A13
+Implementation contract updated **2026-10-13** for A01–A03, A07–A08, A11–A13
 and C04–C07. The full flow below is not published. It builds on the existing
 [authorization boundary](../service/organizations.md),
 [OAuth resource server](../service/oauth.md) and
@@ -33,7 +33,7 @@ hashing concurrency and repeated attempts, including unknown accounts, without
 exposing whether a username exists. Do not rely on proxy-supplied client IPs or
 an unbounded in-memory attempt dictionary for protection.
 
-The post-4.1.2 source now contains the [bounded Argon2id foundation](../validation/2026-10-12-password-foundation.md),
+Published 4.1.3 includes the [bounded Argon2id foundation](../validation/2026-10-12-password-foundation.md),
 using the existing cryptography dependency. It is not connected to a public login
 endpoint. Account persistence, invitations, attempt throttling, password-strength
 screening, sessions and the app flow still need implementation and validation.
@@ -101,16 +101,19 @@ require actual email verification and an appropriate UserInfo endpoint; never
 infer them from a typed email or an invitation label. The profile declaration
 does not enable OAuth or establish live provider compatibility.
 
-## Account identification already in source
+## Published account identification
 
-The unreleased `memory_profile` MCP tool uses the existing immutable principal
+The `memory_profile` MCP tool, published in 4.1.3, uses the existing immutable principal
 UUID as an opaque profile ID. Different credentials for that principal retain
 the ID; distinct principals and organizations do not share it. Display-name
 changes only change labels. The tool requires current authentication but no
 memory grant, returns only `id`, `name` and `nickname`, and declares
 `_meta["openai/profile"]: true` with a strict output schema. It adds no login,
-consent or account-linking authority. This is post-4.1.2 source work; the frozen
-4.1.2 release candidate does not contain it.
+consent or account-linking authority. The
+[profile validation](../validation/2026-10-12-mcp-profile.md) and
+[4.1.3 publication record](../validation/2026-10-12-managed-connectors.md)
+record its completed source, native and delivery checks. The complete individual
+sign-in flow above remains required.
 
 ## Acceptance before publication
 
