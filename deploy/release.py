@@ -15,6 +15,15 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 
 
+def verify_roadmap(roadmap: str, version: str) -> None:
+    """Require source-specific documentation without asserting publication."""
+    reviewed = re.findall(
+        r"^Reviewed source distribution: \*\*(\d+\.\d+\.\d+)\*\*\.", roadmap, re.MULTILINE
+    )
+    if reviewed != [version]:
+        raise ValueError("Review and update the roadmap for this source version")
+
+
 def verify_ed25519(archive: Path, signature: str, public_key: str) -> None:
     if archive.is_symlink() or not archive.is_file() or not 0 < archive.stat().st_size <= 1024**3:
         raise ValueError("Missing, unsafe or oversized signed update archive")
@@ -148,8 +157,7 @@ def main() -> None:
     ):
         raise ValueError("Add release notes for this version before shipping")
     roadmap = (root / "docs" / "ROADMAP.md").read_text(encoding="utf-8")
-    if f"Current distribution: **{version}**" not in roadmap:
-        raise ValueError("Review and update the roadmap for this release")
+    verify_roadmap(roadmap, version)
     client_version = tomllib.loads((root / "studio/client/pyproject.toml").read_text())["project"][
         "version"
     ]

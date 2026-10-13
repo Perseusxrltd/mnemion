@@ -5,10 +5,29 @@ from copy import deepcopy
 import pytest
 
 from deploy import release_status as status
+from deploy.release import verify_roadmap
 
 SOURCE = "a" * 40
 PUBLISHED = "2026-10-13T10:10:04Z"
 UPLOADED = "2026-10-13T10:08:14Z"
+
+
+def test_source_roadmap_review_is_independent_of_published_availability():
+    verify_roadmap("Reviewed source distribution: **4.2.0**.\nPublished release: 4.1.7.\n", "4.2.0")
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Current distribution: **4.2.0**",
+        "Reviewed source distribution: **4.1.7**.",
+        "Example: Reviewed source distribution: **4.2.0**.",
+        "Reviewed source distribution: **4.2.0**.\nReviewed source distribution: **4.1.7**.",
+    ],
+)
+def test_roadmap_requires_one_current_source_review(text):
+    with pytest.raises(ValueError, match="Review and update"):
+        verify_roadmap(text, "4.2.0")
 
 
 def run(workflow="ci.yml", **overrides):

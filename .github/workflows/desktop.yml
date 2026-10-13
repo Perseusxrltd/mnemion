@@ -23,6 +23,8 @@ on:
       - '.github/workflows/native-runtime.yml'
       - 'deploy/license-overrides/**'
       - 'deploy/release*'
+      - '!deploy/release_status.py'
+      - '!deploy/release-status.json'
   pull_request:
     branches: [main]
   workflow_dispatch:
