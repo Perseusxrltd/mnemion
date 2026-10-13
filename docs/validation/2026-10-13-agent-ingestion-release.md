@@ -66,8 +66,13 @@ and bounded; short retries allow the website cache to catch up.
 The verifier and existing metadata publisher passed **44 tests**. These include
 stale or missing links, a version present only in scripts/styles/templates,
 partial publications, drafts, unrelated destinations and a stale-cache retry.
-The new verifier also passed against the actual 4.1.6 page. Its hosted workflow
-run is recorded separately after the updated workflow is pushed.
+The new verifier also passed against the actual 4.1.6 page. The
+[hosted workflow](https://github.com/Perseusxrltd/mnemion/actions/runs/38372661566)
+passed from `ccebcf1030dbfb68a4293688314781f55f563080`; its
+[08:55:51 UTC receipt](2026-10-13-v4_1_6-hosted-website.json) confirms the
+published page and all six installers. The
+[product checks for that source](https://github.com/Perseusxrltd/mnemion/actions/runs/38372424505)
+also passed.
 
 The full product checklist remains open. This hotfix does not complete company
 sign-in, hosted OAuth, independent host recovery, broader capture, retrieval
