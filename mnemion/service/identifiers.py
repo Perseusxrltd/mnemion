@@ -65,7 +65,7 @@ def query_identifiers(query: str) -> IdentifierQuery:
 # counts once, so repetition cannot manufacture additional identifier coverage.
 IDENTIFIER_CANDIDATES = r"""
  , identifier_matches AS MATERIALIZED (
-SELECT e.memory_id, e.space_id, e.revision_id,
+SELECT e.memory_id, e.space_id, e.revision_id, e.rank_time,
        matches.matched AS identifier_matches,
        matches.labelled AS identifier_label_matches
 FROM eligible e JOIN mnemion.memory_revisions r

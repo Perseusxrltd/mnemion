@@ -49,9 +49,9 @@ the embedded resources, and inventories the resulting bytes before packaging.
 
 ## Reusing a verified database build
 
-Desktop checks call the database workflow for every relevant push and pull
-request. Direct database dispatch remains available; a second independent
-compiler matrix is no longer started for the same push.
+Desktop checks call the database workflow for every pull request and release.
+Direct desktop and database dispatch remain available. Main pushes run product
+CI; they no longer duplicate the release's complete six-platform native build.
 
 The database workflow can reuse an exact archive from this repository's normal
 GitHub Actions cache. The key includes the operating system, CPU architecture,
@@ -63,6 +63,8 @@ leave those inputs unchanged; it is not a reproducible-build claim.
 
 Only the main branch saves an archive, after the full database probe passes.
 Main and release branches may restore it; pull requests compile independently.
+After compiler inputs or runner images change, a manual desktop or database run
+on main can populate the new cache. A release without that cache compiles normally.
 Only the ZIP enters the cache. Database contents, credentials, signing keys and
 old probe receipts are excluded. Cache capacity and billing settings are not
 changed; eviction simply requires a fresh build.

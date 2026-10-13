@@ -214,7 +214,7 @@ function WarningList({ warnings }: { warnings: string[] }) {
     contested_evidence:
       "Some evidence is contested. Check its source before relying on it.",
     semantic_matches_require_evidence_review:
-      "These matches are based on meaning. Check the evidence for your question.",
+      "Related memories, with no exact text or ID match. Check the evidence before treating these as an answer.",
     context_budget_or_freshness_limited:
       "Some items were omitted to fit the context budget or because their source changed.",
   };
@@ -1082,9 +1082,20 @@ function SearchMemory() {
   const [text, setText] = useState("");
   const [mode, setMode] = useState<"hybrid" | "lexical" | "semantic">("hybrid");
   const [busyPolicy, setBusyPolicy] = useState<"error" | "lexical">("error");
+  const [sort, setSort] = useState<"relevance" | "recent">("relevance");
+  const [recordedAfter, setRecordedAfter] = useState("");
+  const [minScore, setMinScore] = useState("");
+  const [minSimilarity, setMinSimilarity] = useState("");
   const serviceParts = me.service_version?.match(/^(\d{1,5})\.(\d{1,5})\.(\d{1,5})$/)?.slice(1).map(Number);
   const supportsBusyFallback = !!serviceParts && (serviceParts[0] > 4 ||
     (serviceParts[0] === 4 && (serviceParts[1] > 1 || (serviceParts[1] === 1 && serviceParts[2] >= 2))));
+  const supportsSearchControls = !!serviceParts && (serviceParts[0] > 4 ||
+    (serviceParts[0] === 4 && (serviceParts[1] > 2 || (serviceParts[1] === 2 && serviceParts[2] >= 3))));
+  const optionsValid = !supportsSearchControls || (
+    (!recordedAfter || Number.isFinite(new Date(recordedAfter).getTime())) &&
+    (!minScore || (Number.isFinite(Number(minScore)) && Number(minScore) >= 0 && Number(minScore) <= 1)) &&
+    (!minSimilarity || (Number.isFinite(Number(minSimilarity)) && Number(minSimilarity) >= -1 && Number(minSimilarity) <= 1))
+  );
   const [result, setResult] = useState<Recall>();
   const [context, setContext] = useState<ContextPack>();
   const [budget, setBudget] = useState(2048);
@@ -1092,6 +1103,7 @@ function SearchMemory() {
   const [error, setError] = useState<unknown>();
   async function search(event?: FormEvent, pack = false) {
     event?.preventDefault();
+    if (!optionsValid) return;
     setBusy(true);
     setError(undefined);
     setContext(undefined);
@@ -1100,6 +1112,12 @@ function SearchMemory() {
       const input = {
         query: text, ...(allAccessible ? { all_accessible: true } : { space_ids: [space.id] }), mode, limit: 20,
         ...(supportsBusyFallback && busyPolicy === "lexical" ? { on_inference_busy: "lexical" as const } : {}),
+        ...(supportsSearchControls ? {
+          sort,
+          ...(recordedAfter ? { recorded_after: new Date(recordedAfter).toISOString() } : {}),
+          ...(minScore ? { min_score: Number(minScore) } : {}),
+          ...(minSimilarity ? { min_similarity: Number(minSimilarity) } : {}),
+        } : {}),
       };
       if (pack)
         setContext(await client.context({ ...input, token_budget: budget }));
@@ -1130,7 +1148,7 @@ function SearchMemory() {
         </div>
         <button
           className="ws-button ws-primary"
-          disabled={busy || !text.trim()}
+          disabled={busy || !text.trim() || !optionsValid}
         >
           Search
         </button>
@@ -1168,7 +1186,7 @@ function SearchMemory() {
         </Field>
         <button
           className="ws-button"
-          disabled={busy || !text.trim() || budget < 64 || budget > 32768}
+          disabled={busy || !text.trim() || !optionsValid || budget < 64 || budget > 32768}
           onClick={() => search(undefined, true)}
         >
           <BookOpen size={16} />
@@ -1176,6 +1194,29 @@ function SearchMemory() {
         </button>
       </div>
       {!supportsBusyFallback && <p className="ws-helper">Exact-text fallback needs workspace server 4.1.2 or later. <Link to="/workspace/setup">Check app & server versions</Link>, then reconnect after the server update.</p>}
+      <details className="ws-details">
+        <summary>Search order and match filters</summary>
+        <div className="ws-search-options">
+          <Field label="Result order">
+            <select value={sort} disabled={busy || !supportsSearchControls} onChange={event => setSort(event.target.value as typeof sort)}>
+              <option value="relevance">Best matches</option>
+              <option value="recent">Newest source date</option>
+            </select>
+          </Field>
+          <Field label="Recorded in Mnemion since">
+            <input type="datetime-local" value={recordedAfter} disabled={busy || !supportsSearchControls} onChange={event => setRecordedAfter(event.target.value)} />
+          </Field>
+          <Field label="Minimum rank score (0–1)">
+            <input type="number" min={0} max={1} step={0.01} placeholder="No minimum" value={minScore} disabled={busy || !supportsSearchControls} onChange={event => setMinScore(event.target.value)} />
+          </Field>
+          <Field label="Minimum semantic similarity (−1–1)">
+            <input type="number" min={-1} max={1} step={0.01} placeholder="No minimum" value={minSimilarity} disabled={busy || !supportsSearchControls} onChange={event => setMinSimilarity(event.target.value)} />
+          </Field>
+        </div>
+        <p className="ws-helper">Newest source date orders matching candidates by their source modification date, falling back to when the memory was recorded. Similarity filters apply to meaning-only matches; exact text and ID matches remain eligible. Scores are not confidence percentages. Use your workspace evaluations to choose a useful minimum.</p>
+        {!supportsSearchControls && <p className="ws-helper">These controls need workspace server 4.2.3 or later. <Link to="/workspace/setup">Check app & server versions</Link>, then reconnect after the server update.</p>}
+        {!optionsValid && <p role="alert" className="ws-helper">Enter a valid date and scores within the indicated ranges.</p>}
+      </details>
       <ErrorNotice error={error} />
       {busy && <Busy />}
       {result && (
@@ -1185,13 +1226,16 @@ function SearchMemory() {
             {result.hits.length} results · {result.timing_ms.toFixed(0)} ms ·{" "}
             {result.index.indexed_records}/{result.index.eligible_records}{" "}
             memories indexed
+            {!!result.filtered_candidates && ` · ${result.filtered_candidates} candidates excluded by match filters`}
           </div>
           {result.hits.length ? (
             result.hits.map((hit) => (
               <article className="ws-card ws-search-result" key={hit.memory_id}>
                 <div className="ws-card-top">
                   <Badge>{hit.claim_status}</Badge>
-                  <time>{date(hit.recorded_at)}</time>
+                  <time title={sort === "recent" && typeof hit.metadata.source_modified_at === "string" ? "Source modification date (reported by source)" : "Recorded in Mnemion"}>
+                    {date(sort === "recent" && typeof hit.metadata.source_modified_at === "string" && Number.isFinite(Date.parse(hit.metadata.source_modified_at)) ? hit.metadata.source_modified_at : hit.recorded_at)}
+                  </time>
                 </div>
                 <h2>
                   <Link to={`/workspace/memory/${hit.memory_id}`} onClick={() => selectSpace(hit.space_id)}>
@@ -1235,7 +1279,7 @@ function SearchMemory() {
             ))
           ) : (
             <Empty title="No matching evidence">
-              Try another phrase or check that the memory belongs to this space.
+              Try another phrase, adjust the match filters, or check the selected search scope.
             </Empty>
           )}
         </>

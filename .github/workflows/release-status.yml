@@ -39,7 +39,7 @@ jobs:
         run: python -m deploy.release_status
       - name: Update the single public status record
         run: |
-          git add -- deploy/release-status.json docs/RELEASE_STATUS.md
+          git add -- deploy/release-status.json docs/RELEASE_STATUS.md docs/validation/releases
           if git diff --cached --quiet; then
             exit 0
           fi

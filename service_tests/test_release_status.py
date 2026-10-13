@@ -53,6 +53,7 @@ def gate(runs, workflow="ci.yml"):
         SOURCE,
         published_at=PUBLISHED,
         assets_updated_at=UPLOADED,
+        published_tag="v4.2.3",
     )
 
 
@@ -88,6 +89,40 @@ def test_dispatch_or_prepublication_run_cannot_claim_all_public_updates():
             gate([run("public-updates.yml", **patch)], "public-updates.yml")["status"]
             == "not recorded"
         )
+
+
+def test_source_tagged_complete_dispatch_counts_but_partial_selection_does_not():
+    values = {
+        "event": "workflow_dispatch",
+        "head_branch": "v4.2.3",
+        "display_title": "Public updates / v4.2.3 / all / all",
+    }
+    assert gate([run("public-updates.yml", **values)], "public-updates.yml")["status"] == "passed"
+    for patch in (
+        {"head_branch": "main"},
+        {"display_title": "Public updates / v4.2.3 / linux / all"},
+        {"display_title": "Public updates / v4.2.2 / all / all"},
+    ):
+        assert (
+            gate([run("public-updates.yml", **{**values, **patch})], "public-updates.yml")["status"]
+            == "not recorded"
+        )
+
+
+def test_automatic_verification_names_its_actual_release_source():
+    values = {
+        "event": "workflow_run",
+        "head_sha": "b" * 40,
+        "display_title": "Verify release / " + SOURCE,
+    }
+    assert (
+        gate([run("verify-artifacts.yml", **values)], "verify-artifacts.yml")["status"] == "passed"
+    )
+    values["display_title"] = "Verify release / " + "c" * 40
+    assert (
+        gate([run("verify-artifacts.yml", **values)], "verify-artifacts.yml")["status"]
+        == "not recorded"
+    )
 
 
 @pytest.mark.parametrize(

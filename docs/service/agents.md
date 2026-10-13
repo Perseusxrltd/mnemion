@@ -94,6 +94,38 @@ repeat an uncertain administrative change without checking its result.
 
 ## Remote HTTP connections
 
+### Compact discovery and session compatibility
+
+Version 4.2.3 adds `search` and `fetch` aliases alongside existing tools. For a
+client with a small tool-discovery budget, set `MNEMION_MCP_TOOL_PROFILE=compact`
+in the gateway's environment and restart it. Discovery advertises only `search`,
+`fetch`, `mnemion` and `memory_profile`, with validation bounds retained and full
+operation schemas fetched on demand. The default is `full` for existing clients.
+The profile changes discovery, not permissions or which operations are authorized.
+
+Call `mnemion` with `action: "list"` (the default) to browse operations; pass the
+returned `next_offset` as `offset` to continue, or `query` to filter the catalog.
+Use `action: "describe", operation: "..."` for its schema, then explicit
+`action: "read"` or `"write"` with that operation's `request` shape. Read mode
+rejects writes. Credentials, private inputs and downloads retain the CLI/private
+file requirement. Mutation annotations remain conservative; discovery does not
+grant blanket permission to perform the listed operations.
+
+HTTP remains stateless by default. Clients that require `Mcp-Session-Id` can use
+`MNEMION_MCP_SESSIONS=1` on the server and restart the gateway. Initialization
+then creates a native SDK session; subsequent requests send its header together
+with the current bearer credential. Sessions are bound to the exact creating
+credential, capped at 128 per gateway process and expire after 15 idle minutes.
+Rotation, expiry or server restart requires reinitialization. A different device
+key cannot reuse the session, even for the same principal. Every request still
+checks credential validity and every operation checks current grants.
+
+Session storage is process-local; deployments with several workers need session
+affinity. Stateless clients need neither this mode nor sticky routing. Optional
+sessions do not provide hosting, tunnel recovery or offline access. Proxy setups
+must preserve the session header. The two settings are independent and work with
+the same `/mcp` endpoint; existing host/origin and request-size limits remain.
+
 From 4.0.2, `mnemion-service serve` exposes both `/v1/` and `/mcp` on port 7892.
 One TLS reverse proxy or tunnel can forward the entire origin to that listener:
 

@@ -1,4 +1,5 @@
 name: Verify uploaded release artifacts
+run-name: Verify release / ${{ github.event.workflow_run.head_sha || inputs.release_run }}
 
 on:
   workflow_run:
@@ -11,8 +12,8 @@ on:
         required: true
         type: string
 
-# GitHub hides drafts from tokens without push access. The verifier performs
-# read operations only, receives no signing keys, and never publishes a release.
+# GitHub hides drafts from tokens without push access. The verification job is
+# read-only; the separate dependent publication job has no signing credentials.
 permissions:
   contents: write
   actions: read
@@ -70,3 +71,48 @@ jobs:
           path: ${{ runner.temp }}/verified-release/release-verification.json
           if-no-files-found: error
           retention-days: 7
+
+  publish:
+    needs: verify
+    if: github.event_name == 'workflow_run'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      actions: write
+    concurrency:
+      group: verified-release-publication
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: main
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.13'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: verified-release-artifacts
+          path: ${{ runner.temp }}/publication-receipt
+      - name: Publish unchanged verified assets and dispatch public follow-ups
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          python -m deploy.release_automation publish --repo "$GITHUB_REPOSITORY"
+          --verification-run "$GITHUB_RUN_ID"
+          --receipt "$RUNNER_TEMP/publication-receipt/release-verification.json"
+      - name: Retain release evidence on main
+        run: |
+          git add -- docs/validation/releases
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'docs: record verified release publication'
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            git fetch origin main
+            git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' rebase origin/main
+          done
+          exit 1

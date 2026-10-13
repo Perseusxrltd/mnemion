@@ -167,6 +167,10 @@ def test_real_git_snapshot_ignores_uncommitted_work_and_never_executes_hooks(tmp
     docs = [doc for doc in provider.documents(scope) if doc]
     assert len(docs) == 1 and docs[0].text == "Committed decision"
     assert docs[0].metadata["git_commit"] == git("rev-parse", "HEAD").decode().strip()
+    assert (
+        docs[0].metadata["source_modified_at"]
+        == git("log", "-1", "--format=%cI", "--", "Decision.md").decode().strip()
+    )
     assert provider.access(scope).members == ["user:alice"]
 
 
@@ -242,6 +246,7 @@ def test_git_document_revisions_survive_unrelated_commits_merges_and_rollback(tm
     assert merged["d.md"] == after["d.md"]
     for name, doc in merged.items():
         assert git("show", f"{doc.metadata['git_commit']}:{name}") == doc.text
+        assert doc.metadata["source_modified_at"] == git("log", "-1", "--format=%cI", "--", name)
 
 
 @pytest.mark.parametrize("reason", ["startup", "poll", "requested", "private-invalid-sentinel"])

@@ -463,14 +463,33 @@ product jobs and independent uploaded-byte verification passed. The
 [publication receipt](../validation/2026-10-13-v4_2_1-publication.json) records
 the immutable source and assets. [Anonymous live website verification](../validation/2026-10-13-v4_2_1-website.json)
 passed for the current version, all six installers, guides, notes and roadmap;
-public upgrade tests are running. All five
+[public 4.2.0 → 4.2.1 upgrades](../validation/2026-10-13-v4_2_1-public-upgrades.json)
+subsequently passed on all six targets. All five
 cache hits passed fresh full database probes, with
 [paired job measurements](../validation/2026-10-13-native-cache.json).
 
-The 4.2.2 source follow-up implements bounded exact-ID/filename candidates and
+Published 4.2.2 implements bounded exact-ID/filename candidates and
 transparent subject/path weighting. Its
 [validation record](../validation/2026-10-13-exact-identifiers.md) separates
-synthetic ranking regression from general retrieval quality. Issue 27 remains
-open until the correction is verified and published. The complete request
+synthetic ranking regression from general retrieval quality. All six desktop
+release gates and independent artifact verification passed. It was published
+at 16:06:26 UTC; the website updated automatically and issue 27 is closed.
+The complete request
 list remains 64 items, with 17 shipped and 40 partial; this is scope coverage,
 not a weighted effort estimate or a claim that the product is ready to freeze.
+
+## Combined search, agent and release-automation batch, 13 October 2026
+
+Source 4.2.3 combines compact discovery, standard search/fetch aliases, native
+credential-bound MCP sessions, recency and match-filter controls in the API,
+SDKs, MCP and app, with a one-time Git source-date backfill. The
+[validation record](../validation/2026-10-13-search-agent-batch.md) records focused
+checks and limitations. No new migration is added after 015.
+
+The user's faster-delivery direction is retained as policy: coherent batches,
+focused local checks, one full release run and additional checks only for a
+failure or concrete risk. Scripts maintain version/contract boundaries, freeze
+already integrated source, avoid duplicate release dispatch, publish unchanged
+verified assets, start downstream public checks and retain per-version evidence.
+The native push matrix no longer duplicates the release matrix. These automation
+changes do not remove any of the 64 product requirements or invent completion.

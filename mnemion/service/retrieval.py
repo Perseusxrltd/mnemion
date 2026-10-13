@@ -37,7 +37,12 @@ logger = logging.getLogger(__name__)
 # in a space before matching the revision ID; RLS still applies to both tables.
 ELIGIBLE = """
 WITH eligible AS MATERIALIZED (
-    SELECT m.id AS memory_id, m.space_id, r.id AS revision_id
+    SELECT m.id AS memory_id, m.space_id, r.id AS revision_id,
+           coalesce(CASE WHEN %(recent)s AND pg_input_is_valid(r.metadata->>'source_modified_at', 'timestamptz')
+             THEN CASE WHEN (r.metadata->>'source_modified_at')::timestamptz
+                        BETWEEN timestamptz '0001-01-02 00:00:00+00' AND timestamptz '9999-12-30 00:00:00+00'
+                       THEN (r.metadata->>'source_modified_at')::timestamptz END
+             END, r.recorded_at) AS rank_time
     FROM mnemion.memories m
     JOIN LATERAL (
         SELECT rr.* FROM mnemion.memory_revisions rr
@@ -58,6 +63,7 @@ WITH eligible AS MATERIALIZED (
       AND (%(subject)s::text IS NULL OR r.subject=%(subject)s)
       AND (%(kinds)s::text[] IS NULL OR r.kind=ANY(%(kinds)s::text[]))
       AND r.metadata @> %(metadata)s::jsonb
+      AND (%(recorded_after)s::timestamptz IS NULL OR r.recorded_at>=%(recorded_after)s::timestamptz)
       AND r.claim_status IN ('observed', 'verified', 'contested')
       AND (r.claim_status<>'contested' OR %(contested)s)
       AND (r.valid_from IS NULL OR r.valid_from<=coalesce(%(valid_at)s::timestamptz, now()))
@@ -230,6 +236,8 @@ class RetrievalService:
             "query": command.query,
             "limit": min(250, max(30, command.limit * 5)),
             "metadata": Jsonb(command.metadata_filter),
+            "recorded_after": command.recorded_after,
+            "recent": command.sort == "recent",
         }
         identifiers = query_identifiers(command.query)
         identifier_channel = bool(identifiers.terms) and (
@@ -257,12 +265,13 @@ class RetrievalService:
                 lexical = conn.execute(
                     ELIGIBLE
                     + """
-                    SELECT e.memory_id, e.space_id, e.revision_id,
+                    SELECT e.memory_id, e.space_id, e.revision_id, e.rank_time,
                            ts_rank_cd(r.search_text, websearch_to_tsquery('simple', %(query)s)) AS lexical_rank
                     FROM eligible e JOIN mnemion.memory_revisions r
                       ON r.tenant_id=mnemion.tenant() AND r.space_id=e.space_id AND r.id=e.revision_id
                     WHERE r.search_text @@ websearch_to_tsquery('simple', %(query)s)
-                    ORDER BY lexical_rank DESC, e.memory_id LIMIT %(limit)s
+                    ORDER BY CASE WHEN %(recent)s THEN e.rank_time END DESC NULLS LAST,
+                             lexical_rank DESC, e.memory_id LIMIT %(limit)s
                 """,
                     params,
                 ).fetchall()
@@ -278,7 +287,7 @@ class RetrievalService:
                     ELIGIBLE
                     + """
                     , distances AS (
-                        SELECT e.memory_id, e.space_id, e.revision_id, v.start_offset, v.end_offset,
+                        SELECT e.memory_id, e.space_id, e.revision_id, e.rank_time, v.start_offset, v.end_offset,
                                v.embedding <=> %(vector)s::vector AS distance,
                                row_number() OVER (PARTITION BY e.revision_id
                                    ORDER BY v.embedding <=> %(vector)s::vector, v.chunk_index) AS part
@@ -355,9 +364,26 @@ class RetrievalService:
             )
             denominator = max(1, channel_count) / 61
             ordered = sorted(scores, key=lambda key: (-scores[key], str(key)))
+            if command.sort == "recent":
+                ordered.sort(
+                    key=lambda key: (candidates[key]["rank_time"], scores[key]), reverse=True
+                )
             hits = []
+            filtered = 0
             for memory in ordered:
                 candidate = candidates[memory]
+                score = round(scores[memory] / denominator, 8)
+                if score < command.min_score or (
+                    command.min_similarity is not None
+                    and "lexical" not in ranks[memory]
+                    and memory not in identifier_ranks
+                    and (
+                        "distance" not in candidate
+                        or 1 - candidate["distance"] < command.min_similarity
+                    )
+                ):
+                    filtered += 1
+                    continue
                 try:
                     row = memory_row(conn, memory)
                     if (
@@ -387,7 +413,7 @@ class RetrievalService:
                 }
                 hit["text_truncated"] = start != 0 or end != len(content)
                 evidence_passage(hit["evidence"], command.query, content, (start, end))
-                hit["relevance_score"] = round(scores[memory] / denominator, 8)
+                hit["relevance_score"] = score
                 hit["score_method"] = "normalized_rrf_k60"
                 hit["ranking"] = {
                     "ranks": ranks[memory],
@@ -415,12 +441,19 @@ class RetrievalService:
                 hits.append(hit)
                 if len(hits) == command.limit:
                     break
-        if not lexical and semantic:
+        matched = any(
+            hit["ranking"]["ranks"].get("lexical") or hit["ranking"].get("identifier")
+            for hit in hits
+        )
+        match_status = "empty" if not hits else "matched" if matched else "semantic_only"
+        if match_status == "semantic_only":
             warnings.append("semantic_matches_require_evidence_review")
         return json_value(
             {
                 "request_id": uuid4(),
                 "query": command.query,
+                "match_status": match_status,
+                "filtered_candidates": filtered,
                 "hits": hits,
                 "warnings": sorted(set(warnings)),
                 "index": {

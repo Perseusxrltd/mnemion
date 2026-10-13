@@ -122,7 +122,7 @@ partial feature do not automatically mark its whole requirement complete.
 
 **Hotfix-first cadence:** prioritize a working base across connection/admin
 access, installation, automatic updates, data safety and RAM stability. Ship
-small verified fixes promptly, then advance the feature queue below. A passing
+related verified fixes together, then advance the feature queue below. A passing
 release does not close unfinished provider or recovery requirements.
 
 1. **Reported stabilization:** the [published 4.1.7 update-scheduler fix](validation/2026-10-13-managed-update-schedule.md)
@@ -130,9 +130,11 @@ release does not close unfinished provider or recovery requirements.
    artifact, public-feed, live website and all six public automatic-upgrade checks.
    4.1.6 delivers Git commit-wide re-ingestion and managed scan
    label fixes (issue 30), MCP search defaults (24), connection migration guidance
-   (23) and bounded version diagnostics (29). Assess MCP client reports (25–26)
-   against the supported protocol. Validate retrieval relevance, exact identifiers
-   and recency (17, 27–28, 31) with measured examples and authorization checks.
+   (23) and bounded version diagnostics (29). Published 4.2.2 closes exact-ID
+   ranking issue 27. The 4.2.3 batch implements compact discovery/session options
+   (25–26), match filters (28), and recency with per-file Git dates (31), with
+   focused validation and normal release gates. Natural-language quality (17),
+   dated-section chunking and model-specific threshold calibration remain.
    Published 4.2.0 closes issue 35 with the matching-excerpt correction, after
    complete release and six-platform installed migration/recovery acceptance.
 2. **Access and continuity:** A01–A09, A11–A13, C04–C07. Build on verified independent

@@ -2,13 +2,13 @@
 
 import hashlib
 import json
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 from uuid import UUID
 
 import anyio
 from mcp.server.mcpserver import Context, MCPServer
 from mcp.types import ToolAnnotations
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
 from ..sdk import ContextPack, Memory, MnemionError, Receipt, Recall
 from ..version import __version__
@@ -168,6 +168,7 @@ def create_mcp(
         ),
         log_level="WARNING",
     )
+
     if legacy_space:
         legacy_space = str(UUID(legacy_space))
 
@@ -392,6 +393,11 @@ def create_mcp(
         subject: Subject = None,
         all_accessible: AllAccessible = None,
         on_inference_busy: InferenceBusyPolicy = "error",
+        mode: Literal["hybrid", "lexical", "semantic"] = "hybrid",
+        sort: Literal["relevance", "recent"] = "relevance",
+        recorded_after: AwareDatetime | None = None,
+        min_score: Annotated[float, Field(ge=0, le=1, allow_inf_nan=False)] = 0,
+        min_similarity: Annotated[float | None, Field(ge=-1, le=1, allow_inf_nan=False)] = None,
     ) -> Recall:
         """Recall current authorized evidence with source citations and ranking details."""
         selected_spaces, accessible = _retrieval_scope(space_ids, all_accessible)
@@ -404,6 +410,11 @@ def create_mcp(
                 subject=subject,
                 all_accessible=accessible,
                 on_inference_busy=on_inference_busy,
+                mode=mode,
+                sort=sort,
+                recorded_after=recorded_after.isoformat() if recorded_after else None,
+                min_score=min_score,
+                min_similarity=min_similarity,
             ),
         )
 
@@ -434,6 +445,11 @@ def create_mcp(
         ] = 2048,
         all_accessible: AllAccessible = None,
         on_inference_busy: InferenceBusyPolicy = "error",
+        mode: Literal["hybrid", "lexical", "semantic"] = "hybrid",
+        sort: Literal["relevance", "recent"] = "relevance",
+        recorded_after: AwareDatetime | None = None,
+        min_score: Annotated[float, Field(ge=0, le=1, allow_inf_nan=False)] = 0,
+        min_similarity: Annotated[float | None, Field(ge=-1, le=1, allow_inf_nan=False)] = None,
     ) -> ContextPack:
         """Build a bounded context pack with core blocks, evidence citations, and omissions."""
         selected_spaces, accessible = _retrieval_scope(space_ids, all_accessible)
@@ -445,6 +461,11 @@ def create_mcp(
                 token_budget=token_budget,
                 all_accessible=accessible,
                 on_inference_busy=on_inference_busy,
+                mode=mode,
+                sort=sort,
+                recorded_after=recorded_after.isoformat() if recorded_after else None,
+                min_score=min_score,
+                min_similarity=min_similarity,
             ),
         )
 
@@ -631,5 +652,50 @@ def create_mcp(
                 )
 
             return await invoke(ctx, delete)
+
+    @server.tool(name="search", annotations=Read, structured_output=True)
+    async def search_alias(
+        query: Query, ctx: Context, space_ids: SpaceIds = None, limit: Limit = 10
+    ) -> Recall:
+        """Search current authorized memory; omit spaces to use all accessible memory."""
+        return await memory_search(query, ctx, space_ids=space_ids, limit=limit)
+
+    @server.tool(name="fetch", annotations=Read, structured_output=True)
+    async def fetch_alias(
+        memory_id: MemoryId, ctx: Context, revision_id: RevisionId = None
+    ) -> Memory:
+        """Fetch a memory and its original evidence using current permissions."""
+        return await memory_fetch(memory_id, ctx, revision_id=revision_id)
+
+    @server.tool(
+        name="mnemion",
+        annotations=ToolAnnotations(
+            readOnlyHint=False, destructiveHint=True, idempotentHint=False, openWorldHint=True
+        ),
+        structured_output=True,
+    )
+    async def compact_control(
+        ctx: Context,
+        action: Literal["list", "describe", "read", "write"] = "list",
+        operation: OperationName | None = None,
+        request: OperationRequest = None,
+        offset: Annotated[int, Field(ge=0, le=10000)] = 0,
+        query: Annotated[str | None, Field(max_length=200)] = None,
+    ) -> dict[str, Any]:
+        """Discover operations, inspect a schema, or explicitly execute a read/write with current access."""
+        if action == "list":
+            if operation is not None or request is not None:
+                raise MnemionError(422, "invalid_arguments", "List takes no operation or request.")
+            return await mnemion_operations(ctx, offset=offset, query=query)
+        if offset != 0 or query is not None:
+            raise MnemionError(422, "invalid_arguments", "Offset and query apply only to list.")
+        if operation is None:
+            raise MnemionError(422, "invalid_arguments", "Choose an operation from the catalog.")
+        if action == "describe":
+            if request is not None:
+                raise MnemionError(422, "invalid_arguments", "Describe takes no request.")
+            return await mnemion_operation(operation, ctx)
+        function = mnemion_read if action == "read" else mnemion_write
+        return await function(operation, ctx, request=request, max_response_bytes=16384)
 
     return server

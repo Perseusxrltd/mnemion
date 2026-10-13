@@ -13,6 +13,21 @@ tags from checked commits. Users must have access to OS/architecture pairs that
 are ready while others are tested; a pending architecture is not a reason to hide
 a completed published download.
 
+Ship coherent batches of related fixes. During implementation, run focused checks
+for changed behavior, then rely on one complete automated release run. Repeat or
+broaden local checks only for a failure, a new change or a specific unresolved
+risk. Main retains product CI; the full native matrix runs for pull requests,
+manual requests and releases, without a duplicate native build on every push.
+
+Use `python -m deploy.release_automation prepare X.Y.Z` after writing release notes
+and updating the affected guides/roadmap. It updates package and lock versions,
+regenerates both contracts and runs version validation. Commit/push reviewed
+source to main, then run `python -m deploy.release_automation start` to freeze that
+source and dispatch the full release once. A dirty checkout, source absent from
+main, conflicting frozen branch or existing run is handled without a duplicate
+build. The [automation guide](implementation/release-automation.md) documents
+publication, downstream checks, evidence retention and failure recovery.
+
 1. Change the canonical version and dependent package metadata/lockfiles together.
    Include both `uv.lock` and `studio/client/uv.lock`, the nested local client
    version in the frontend npm lock, and regenerate the OpenAPI/agent schemas.
@@ -83,14 +98,14 @@ a completed published download.
    release-artifacts --commit COMMIT`. The dedicated private key is supplied
    only through the reviewed signing environment. The release verifier checks
    the signature, input parity and hashes before creating a draft.
-7. Review the concrete draft and publish only when its documented release gates
-   pass. [Verify uploaded release artifacts](../.github/workflows/verify-artifacts.yml)
+7. Publish only when the concrete draft's documented release gates pass.
+   [Verify uploaded release artifacts](../.github/workflows/verify-artifacts.yml)
    runs automatically after a successful release-preparation workflow. It checks
    every uploaded byte on a separate GitHub runner, invokes the production
    signature/feed/package validator from the exact release commit, and rechecks
    the asset IDs, sizes and digests afterward. GitHub requires repository push
    access to discover unpublished drafts, so this job needs `contents: write`
-   and `actions: read`. Its code only reads/downloads releases, receives no
+   and `actions: read`. Its verification job only reads/downloads releases, receives no
    signing keys, and strips GitHub credentials from the source validator's
    subprocess environment. Neither checkout persists credentials. Download
    its small `verified-release-artifacts` receipt instead of downloading every
@@ -98,6 +113,13 @@ a completed published download.
    and asset inventory must match the concrete draft; do not reuse a receipt
    after replacing draft assets. The workflow also accepts a completed release
    run ID for manual verification of a draft or already published release.
+   After automatic verification, a separate publication job checks the completed
+   source, main ancestry, current asset inventory, tag and latest stable version.
+   It publishes the unchanged draft and explicitly starts website and complete
+   public-upgrade checks; token-based publication alone does not trigger release
+   events. It commits bounded publication/verification receipts on main. Manual
+   verifier dispatch stays read-only. The status reconciler retains each version's
+   observed gates and scope counts under `docs/validation/releases/` automatically.
    Its [validation record](validation/2026-10-12-artifact-verification.md)
    distinguishes guard tests from actual hosted verification. Installed
    supported desktop packages receive stable updates under the

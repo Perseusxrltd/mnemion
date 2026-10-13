@@ -2,7 +2,6 @@
 
 from contextlib import contextmanager
 import copy
-from fnmatch import fnmatch
 import json
 from pathlib import Path
 
@@ -110,21 +109,12 @@ def test_native_database_changes_still_trigger_the_complete_desktop_gate():
     native = yaml.load(
         (ROOT / ".github/workflows/native-runtime.yml").read_text(), Loader=yaml.BaseLoader
     )
+    release = yaml.load(
+        (ROOT / ".github/workflows/release.yml").read_text(), Loader=yaml.BaseLoader
+    )
     assert desktop["jobs"]["native_database"]["uses"] == "./.github/workflows/native-runtime.yml"
     assert set(native["on"]) == {"workflow_call", "workflow_dispatch"}
-    assert desktop["on"]["pull_request"]["branches"] == ["main"]
-    patterns = desktop["on"]["push"]["paths"]
-    for name in (
-        *INPUTS,
-        "deploy/probe_native_postgres.py",
-        "mnemion/local_state.py",
-        "mnemion/private_output.py",
-        "client_tests/test_local_state.py",
-        "client_tests/test_private_output.py",
-        "client_tests/windows_acl.py",
-    ):
-        matched = False
-        for pattern in patterns:
-            if fnmatch(name, pattern.lstrip("!")):
-                matched = not pattern.startswith("!")
-        assert matched, f"The desktop gate must cover {name}"
+    assert set(desktop["on"]) == {"pull_request", "workflow_call", "workflow_dispatch"}
+    assert desktop["on"]["pull_request"] == {"branches": ["main"]}
+    assert release["jobs"]["native"]["uses"] == "./.github/workflows/desktop.yml"
+    assert release["jobs"]["native"]["with"]["release"] == "true"

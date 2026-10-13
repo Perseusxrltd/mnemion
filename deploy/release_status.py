@@ -68,7 +68,13 @@ def installers(published: dict) -> list[dict]:
 
 
 def gate(
-    runs: dict, workflow: str, source: str, *, published_at: str, assets_updated_at: str
+    runs: dict,
+    workflow: str,
+    source: str,
+    *,
+    published_at: str,
+    assets_updated_at: str,
+    published_tag: str | None = None,
 ) -> dict:
     """Only same-repository, exact-source runs can become passing evidence."""
     result = {
@@ -78,17 +84,37 @@ def gate(
     }
     candidates = []
     for run in runs.get("workflow_runs", []):
+        source_matches = run.get("head_sha") == source or (
+            workflow == "verify-artifacts.yml"
+            and run.get("event") == "workflow_run"
+            and run.get("display_title") == f"Verify release / {source}"
+        )
         if (
-            run.get("head_sha") != source
+            not source_matches
             or run.get("head_repository", {}).get("full_name") != REPOSITORY
             or run.get("path", "").partition("@")[0] != f".github/workflows/{workflow}"
             or run.get("event") not in {"push", "release", "workflow_dispatch", "workflow_run"}
         ):
             continue
-        # Dispatches can select only one target, or another version. A complete
-        # release-event rehearsal is the automatic all-published-target gate.
+        # Automatic token-based publication explicitly dispatches these jobs.
+        # Accept only a source-tagged dispatch whose workflow title identifies
+        # this exact version and, for upgrades, the complete platform selection.
+        tag = published_tag
+        dispatch_matches = (
+            run.get("event") == "workflow_dispatch"
+            and isinstance(tag, str)
+            and re.fullmatch(r"v\d+\.\d+\.\d+", tag) is not None
+            and run.get("head_branch") == tag
+            and run.get("display_title")
+            == (
+                f"Public updates / {tag} / all / all"
+                if workflow == "public-updates.yml"
+                else f"Public website / {tag}"
+            )
+        )
         if workflow in {"public-updates.yml", "website-release.yml"} and (
-            run.get("event") != "release" or timestamp(run["created_at"]) < timestamp(published_at)
+            (run.get("event") != "release" and not dispatch_matches)
+            or timestamp(run["created_at"]) < timestamp(published_at)
         ):
             continue
         if type(run.get("id")) is not int or run["id"] <= 0:
@@ -157,13 +183,19 @@ def collect(root: Path) -> dict:
     targets = installers(published)
     gates = []
     for workflow in WORKFLOWS:
-        runs = api(f"actions/workflows/{workflow}/runs?head_sha={source}&per_page=10")
+        selection = (
+            "per_page=30"
+            if workflow == "verify-artifacts.yml"
+            else f"head_sha={source}&per_page=10"
+        )
+        runs = api(f"actions/workflows/{workflow}/runs?{selection}")
         result = gate(
             runs,
             workflow,
             source,
             published_at=published["published_at"],
             assets_updated_at=assets_updated,
+            published_tag=tag,
         )
         if workflow == "public-updates.yml" and result["status"] == "passed":
             result = public_upgrade_coverage(
@@ -287,6 +319,14 @@ def main() -> None:
         raise ValueError("Refusing to replace a newer release status")
     output.write_text(json.dumps(data, indent=2, ensure_ascii=True) + "\n", encoding="utf-8")
     document.write_text(markdown(data), encoding="utf-8")
+    # Retain each version's final observed gates even after the live record
+    # advances; future releases need no hand-copied status JSON or percentages.
+    archive = root / "docs/validation/releases"
+    archive.mkdir(parents=True, exist_ok=True)
+    snapshot = archive / (data["tag_name"][1:] + "-status.json")
+    if snapshot.is_symlink():
+        raise ValueError("Release evidence must be an ordinary file")
+    snapshot.write_text(json.dumps(data, indent=2, ensure_ascii=True) + "\n", encoding="utf-8")
     print(f"Release status: {data['tag_name']}, {data['release_checks']}")
 
 

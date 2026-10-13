@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.2.2**. Roadmap updated: **2026-10-13**.
+Reviewed source distribution: **4.2.3**. Roadmap updated: **2026-10-13**.
 The [current published distribution and release gates](RELEASE_STATUS.md) are updated automatically.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
@@ -14,14 +14,26 @@ Unchanged native database builds can now be reused with fresh security/recovery
 probes. [Paired hosted cache measurements](implementation/native-local-runtime.md#reusing-a-verified-database-build)
 reduced the five database jobs from 261–780 seconds to 12–40 seconds; application
 and release gates still run. Peak RAM and API/worker duplication remain open
-under issue 13. Public automatic-upgrade results are recorded in live release status.
+under issue 13. [Public automatic upgrades from 4.2.0](validation/2026-10-13-v4_2_1-public-upgrades.json)
+passed on all six targets, preserving profiles and ordinary idle safeguards.
 
-The [4.2.2 follow-up](releases/4.2.2.md) is in development. Exact task IDs and
+Published [4.2.2](releases/4.2.2.md) lets exact task IDs and
 filenames enter scoped candidates directly; subject/path matches receive higher
 priority. [Regression evidence](validation/2026-10-13-exact-identifiers.md)
 includes published-source comparison, access boundaries and correction races.
-This addresses issue 27's ranking failure without declaring the broader
-natural-language, threshold or recency requirements complete.
+All six native release targets, the product checks and independent uploaded-byte
+verification passed. [Publication](validation/2026-10-13-v4_2_2-publication.json)
+and [automatic live website verification](validation/2026-10-13-v4_2_2-website.json)
+are recorded; issue 27 is closed. General natural-language quality remains open.
+
+The [4.2.3 batch](releases/4.2.3.md) combines compact MCP discovery and aliases,
+optional credential-bound sessions, newest-first/recorded-since retrieval and
+explicit match filters, including app controls. [Focused validation](validation/2026-10-13-search-agent-batch.md)
+passed; publication follows the normal gates. It addresses issues 25, 26, 28 and
+31 without declaring all provider integrations or retrieval quality complete.
+Release version preparation, verified publication, follow-up dispatch and retained
+per-version status are now scripted. Full native builds are no longer duplicated
+on main pushes; failed gates still stop the pipeline.
 
 Published [4.2.0](releases/4.2.0.md) implements personal
 passwords, scoped invitations, revocable device sessions, protected desktop and
@@ -111,7 +123,7 @@ with a [tested Argon2id password foundation](validation/2026-10-12-password-foun
 The personal-password implementation is published in 4.2.0. Company SSO,
 hosted consent and live provider acceptance remain required.
 
-The immediate priority is short hotfix releases for operational reliability:
+The immediate priority is coherent batches for operational reliability:
 connections and administrator access, installation, verified updates, data safety
 and resource stability. Broader features follow without removing requirements
 from the checklist. The remaining reported stabilization work includes MCP

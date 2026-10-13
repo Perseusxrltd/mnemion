@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 import logging
+import hashlib
+import hmac
+import os
+import time
 from urllib.parse import urlsplit
 from uuid import uuid4
 
@@ -20,6 +24,133 @@ from .models import SCOPE_SELECTION_MESSAGE
 from .oauth import OAUTH_SCOPE
 
 logger = logging.getLogger(__name__)
+
+
+def compact_schema(schema):
+    """Remove explanatory schema metadata without changing validation keywords."""
+    if not isinstance(schema, dict):
+        return schema
+    maps = {"properties", "$defs", "definitions", "patternProperties", "dependentSchemas"}
+    singles = {
+        "items",
+        "additionalProperties",
+        "contains",
+        "not",
+        "if",
+        "then",
+        "else",
+        "propertyNames",
+        "unevaluatedProperties",
+    }
+    sequences = {"anyOf", "oneOf", "allOf", "prefixItems"}
+    result = {}
+    for key, value in schema.items():
+        if key in {"description", "title", "examples"}:
+            continue
+        if key in maps and isinstance(value, dict):
+            value = {name: compact_schema(item) for name, item in value.items()}
+        elif key in singles:
+            value = compact_schema(value)
+        elif key in sequences and isinstance(value, list):
+            value = [compact_schema(item) for item in value]
+        result[key] = value
+    return result
+
+
+async def compact_tool_metadata(ctx, call_next):
+    result = await call_next(ctx)
+    if ctx.method != "tools/list" or not isinstance(result, dict):
+        return result
+    descriptions = {
+        "search": "Search authorized memory. Omit space_ids to use current accessible spaces.",
+        "fetch": "Fetch a memory and its source evidence by memory_id.",
+        "mnemion": "List operations (query, offset/next_offset), describe one, or explicitly read/write with operation and request. Private credentials require the CLI.",
+        "memory_profile": "Identify the current account and workspace.",
+    }
+    tools = {tool["name"]: tool for tool in result.get("tools", [])}
+    compact = []
+    for name, description in descriptions.items():
+        tool = tools[name]
+        compact.append(
+            {
+                **{
+                    key: value
+                    for key, value in tool.items()
+                    if key not in {"outputSchema", "description", "title"}
+                },
+                "description": description,
+                "inputSchema": compact_schema(tool["inputSchema"]),
+            }
+        )
+    return {**result, "tools": compact}
+
+
+class MCPSessionBindings:
+    """Bind native SDK sessions to the bearer that created them; never cache access."""
+
+    def __init__(self, app, *, maximum=128, idle_seconds=900):
+        self.app = app
+        self.maximum = maximum
+        self.idle_seconds = idle_seconds
+        self.bindings = {}
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            return await self.app(scope, receive, send)
+        headers = scope.get("headers", [])
+        sessions = [value for name, value in headers if name.lower() == b"mcp-session-id"]
+        credentials = [value for name, value in headers if name.lower() == b"authorization"]
+        now = time.monotonic()
+        self.bindings = {
+            key: value for key, value in self.bindings.items() if now - value[1] < self.idle_seconds
+        }
+        session = sessions[0] if len(sessions) == 1 and 1 <= len(sessions[0]) <= 128 else None
+        owner = hashlib.sha256(credentials[0]).digest() if len(credentials) == 1 else None
+        binding = self.bindings.get(session)
+        if sessions and (
+            session is None
+            or binding is None
+            or owner is None
+            or not hmac.compare_digest(binding[0], owner)
+        ):
+            return await JSONResponse(
+                {
+                    "error": {
+                        "code": "mcp_session_unavailable",
+                        "message": "Initialize a new MCP session with your current credential.",
+                    }
+                },
+                status_code=404,
+                headers={"Cache-Control": "no-store"},
+            )(scope, receive, send)
+        if not sessions and len(self.bindings) >= self.maximum:
+            return await JSONResponse(
+                {
+                    "error": {
+                        "code": "mcp_session_capacity",
+                        "message": "The session limit is reached; retry shortly.",
+                    }
+                },
+                status_code=503,
+                headers={"Cache-Control": "no-store", "Retry-After": "1"},
+            )(scope, receive, send)
+        if session is not None:
+            self.bindings[session] = (owner, now)
+
+        async def bound_send(message):
+            if message["type"] == "http.response.start":
+                status = message["status"]
+                if session is not None and (
+                    status == 404 or (scope["method"] == "DELETE" and 200 <= status < 300)
+                ):
+                    self.bindings.pop(session, None)
+                elif 200 <= status < 300:
+                    for name, value in message.get("headers", []):
+                        if name.lower() == b"mcp-session-id" and owner is not None:
+                            self.bindings[value] = (owner, time.monotonic())
+            await send(message)
+
+        await self.app(scope, receive, bound_send)
 
 
 async def oauth_tool_metadata(ctx, call_next):
@@ -276,6 +407,12 @@ class MnemionMCPServer(MCPServer):
     def __init__(
         self, *args, api_url, api_app=None, public_url=None, oauth_settings=None, **kwargs
     ):
+        profile = os.environ.get("MNEMION_MCP_TOOL_PROFILE", "full")
+        if profile not in {"full", "compact"}:
+            raise ValueError("MNEMION_MCP_TOOL_PROFILE must be full or compact")
+        self.tool_profile = profile
+        if profile == "compact":
+            kwargs["middleware"] = [*(kwargs.get("middleware") or []), compact_tool_metadata]
         if oauth_settings:
             kwargs["middleware"] = [*(kwargs.get("middleware") or []), oauth_tool_metadata]
         super().__init__(*args, **kwargs)
@@ -318,8 +455,22 @@ class MnemionMCPServer(MCPServer):
         kwargs["max_request_body_size"] = min(
             kwargs.get("max_request_body_size", 2_000_000), 2_000_000
         )
+        sessions = os.environ.get("MNEMION_MCP_SESSIONS", "0")
+        if sessions not in {"0", "1"}:
+            raise ValueError("MNEMION_MCP_SESSIONS must be 0 or 1")
+        if sessions == "1":
+            kwargs["stateless_http"] = False
+        if not kwargs.get("stateless_http", False):
+            kwargs["max_sessions"] = 128
+            kwargs["session_idle_timeout"] = 900
         app = super().streamable_http_app(**kwargs)
         app.add_middleware(BodyLimitMiddleware)
+        if not kwargs.get("stateless_http", False):
+            app.add_middleware(
+                MCPSessionBindings,
+                maximum=kwargs.get("max_sessions", 128),
+                idle_seconds=kwargs.get("session_idle_timeout", 900),
+            )
         app.add_middleware(
             MCPBearerMiddleware, authenticate=self.authenticate, oauth_settings=self.oauth_settings
         )

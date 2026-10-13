@@ -12,6 +12,7 @@ import signal
 import subprocess
 import tempfile
 import threading
+from datetime import datetime
 from pathlib import Path, PurePosixPath
 from urllib.parse import quote
 
@@ -342,24 +343,33 @@ class GitProvider:
             # putting it in metadata or the URI revises every memory on every
             # unrelated commit. Literal pathspecs also handle names such as
             # "[draft].md" without accidentally selecting another document.
-            source_commit = (
+            commit_details = (
                 self.git(
                     "--literal-pathspecs",
                     "log",
                     "-1",
-                    "--format=%H",
+                    "--format=%H%n%cI",
                     "--no-show-signature",
                     "--no-patch",
                     self.commit,
                     "--",
                     rel,
-                    maximum=128,
+                    maximum=256,
                 )
                 .decode("ascii")
                 .strip()
+                .splitlines()
             )
+            if len(commit_details) != 2:
+                raise ProviderError("invalid_git_source_commit")
+            source_commit, source_modified = commit_details
             if not re.fullmatch(r"[0-9a-f]{40}|[0-9a-f]{64}", source_commit):
                 raise ProviderError("invalid_git_source_commit")
+            try:
+                if datetime.fromisoformat(source_modified).utcoffset() is None:
+                    raise ValueError
+            except ValueError:
+                raise ProviderError("invalid_git_source_time") from None
             uri = (
                 self.config.web_url.rstrip("/")
                 + "/blob/"
@@ -373,9 +383,14 @@ class GitProvider:
                 self.config,
                 rel,
                 data,
-                source_commit + ":" + blob,
+                # Backfill the new date once, then retain per-file stability.
+                source_commit + ":" + blob + ":source-time-v1",
                 uri,
-                metadata={"git_commit": source_commit, "git_blob": blob},
+                metadata={
+                    "git_commit": source_commit,
+                    "git_blob": blob,
+                    "source_modified_at": source_modified,
+                },
             )
             if result:
                 yield result

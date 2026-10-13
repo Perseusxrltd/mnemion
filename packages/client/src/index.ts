@@ -63,6 +63,8 @@ export interface RecallInput {
   valid_at?: string | null; known_at?: string | null; metadata_filter?: Record<string, string | number | boolean>
   embedding_generation?: string | null
   on_inference_busy?: 'error' | 'lexical'
+  sort?: 'relevance' | 'recent'; recorded_after?: string | null
+  min_score?: number; min_similarity?: number | null
 }
 export interface RecallHit extends Omit<Memory, 'content'> {
   text: string; text_truncated: boolean
@@ -85,6 +87,7 @@ export interface IndexState {
 export interface Recall {
   request_id: string; query: string; hits: RecallHit[]; warnings: string[]
   index: IndexState; timing_ms: number; score_description: string
+  match_status?: 'matched' | 'semantic_only' | 'empty'; filtered_candidates?: number
 }
 export interface ContextPack {
   request_id: string; text: string; token_count: number; token_budget: number; tokenizer: string

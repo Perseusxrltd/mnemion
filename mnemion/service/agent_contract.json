@@ -14663,6 +14663,26 @@
                 "title": "Metadata Filter",
                 "type": "object"
               },
+              "min_score": {
+                "default": 0,
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "title": "Min Score",
+                "type": "number"
+              },
+              "min_similarity": {
+                "anyOf": [
+                  {
+                    "maximum": 1.0,
+                    "minimum": -1.0,
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Min Similarity"
+              },
               "mode": {
                 "default": "hybrid",
                 "enum": [
@@ -14687,6 +14707,27 @@
                 "maxLength": 4000,
                 "minLength": 1,
                 "title": "Query",
+                "type": "string"
+              },
+              "recorded_after": {
+                "anyOf": [
+                  {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Recorded After"
+              },
+              "sort": {
+                "default": "relevance",
+                "enum": [
+                  "relevance",
+                  "recent"
+                ],
+                "title": "Sort",
                 "type": "string"
               },
               "space_ids": {
@@ -15088,6 +15129,26 @@
                 "title": "Metadata Filter",
                 "type": "object"
               },
+              "min_score": {
+                "default": 0,
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "title": "Min Score",
+                "type": "number"
+              },
+              "min_similarity": {
+                "anyOf": [
+                  {
+                    "maximum": 1.0,
+                    "minimum": -1.0,
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Min Similarity"
+              },
               "mode": {
                 "default": "hybrid",
                 "enum": [
@@ -15112,6 +15173,27 @@
                 "maxLength": 4000,
                 "minLength": 1,
                 "title": "Query",
+                "type": "string"
+              },
+              "recorded_after": {
+                "anyOf": [
+                  {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Recorded After"
+              },
+              "sort": {
+                "default": "relevance",
+                "enum": [
+                  "relevance",
+                  "recent"
+                ],
+                "title": "Sort",
                 "type": "string"
               },
               "space_ids": {
@@ -15422,6 +15504,12 @@
           "Recall": {
             "additionalProperties": true,
             "properties": {
+              "filtered_candidates": {
+                "default": 0,
+                "minimum": 0.0,
+                "title": "Filtered Candidates",
+                "type": "integer"
+              },
               "hits": {
                 "items": {
                   "$ref": "#/$defs/RecallHit"
@@ -15431,6 +15519,16 @@
               },
               "index": {
                 "$ref": "#/$defs/IndexState"
+              },
+              "match_status": {
+                "default": "matched",
+                "enum": [
+                  "matched",
+                  "semantic_only",
+                  "empty"
+                ],
+                "title": "Match Status",
+                "type": "string"
               },
               "query": {
                 "title": "Query",

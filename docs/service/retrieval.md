@@ -37,8 +37,47 @@ rank, matched and requested counts, label matches and weights. The app shows
 the matched counts under **Why this result?**
 
 The query still examines the eligible corpus; the candidate cap bounds returned
-rows, not database scan work. Large-corpus capacity, natural-language quality,
-no-match thresholds and recency ranking remain separate evaluation work.
+rows, not database scan work. Large-corpus capacity and natural-language quality
+remain separate evaluation work. Version 4.2.3 adds the controls below.
+
+## Order and match controls
+
+From service 4.2.3, recall and context requests, SDKs and the full MCP
+`memory_search`/`memory_context` tools accept:
+
+| Input | Behavior |
+| --- | --- |
+| `sort: "relevance"` | Existing rank-fusion order; the default. |
+| `sort: "recent"` | Order matching candidates by `metadata.source_modified_at` when parseable, otherwise the selected revision's `recorded_at`; rank score breaks ties. |
+| `recorded_after` | Inclusive timezone-aware timestamp filter on when the revision was recorded in Mnemion. Applied before candidate selection; distinct from the source date. |
+| `min_score` | Minimum normalized rank-fusion score, 0–1; default 0. It is a rank score, not answer confidence. |
+| `min_similarity` | Optional cosine floor, −1–1, for candidates supported only by semantic retrieval. Exact text or identifier matches remain eligible; `min_score` still applies to them. |
+
+The app exposes these in **Search order and match filters**, including for context
+packs. On an older server the new controls are disabled and their fields are not
+sent. Simple `search` aliases stay small; agents can discover `retrieval.search`
+through the administration catalog for the full HTTP contract.
+
+Recall returns `match_status`: `empty` means no eligible hit passed the requested
+filters; `semantic_only` means the returned hits have no literal-channel match;
+`matched` means at least one returned hit has a lexical or identifier match.
+Semantic-only responses retain the evidence-review warning. None of these states
+asserts that an answer is true or that every returned hit answers the question.
+`filtered_candidates` counts threshold rejections examined before filling the
+requested result limit, not the number of rejected memories in the whole corpus.
+
+Recency remains bounded by the candidate windows. The lexical window prioritizes
+date before its limit; semantic and identifier windows retain their own candidate
+selection before the final recency sort. A recent unrelated document is not added
+solely because it is recent. Source dates are provider-supplied metadata, not an
+independent authenticity guarantee. Use workspace evaluations to choose score
+floors; different embedding models do not share a universally calibrated cutoff.
+
+Git connectors now record the last file-changing commit's strict ISO timestamp
+as `source_modified_at`. Their source revision format changes once to backfill
+this metadata on the next scan, which can temporarily queue re-indexing. Unchanged
+files remain stable across subsequent commits, merges and rollback scans. Date
+sorting does not itself resolve contradictions or split appended logs by section.
 
 ## Passages and citations
 

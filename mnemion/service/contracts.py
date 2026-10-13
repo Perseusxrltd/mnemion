@@ -156,6 +156,8 @@ class Recall(ResponseModel):
     index: IndexState
     timing_ms: float
     score_description: str
+    match_status: Literal["matched", "semantic_only", "empty"] = "matched"
+    filtered_candidates: int = Field(default=0, ge=0)
 
 
 class Citation(ResponseModel):

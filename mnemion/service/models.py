@@ -145,6 +145,10 @@ class RecallInput(SpaceSelection):
     limit: int = Field(default=10, ge=1, le=50)
     mode: Literal["hybrid", "lexical", "semantic"] = "hybrid"
     on_inference_busy: InferenceBusyPolicy = "error"
+    sort: Literal["relevance", "recent"] = "relevance"
+    recorded_after: AwareDatetime | None = None
+    min_score: float = Field(default=0, ge=0, le=1, allow_inf_nan=False)
+    min_similarity: float | None = Field(default=None, ge=-1, le=1, allow_inf_nan=False)
     valid_at: AwareDatetime | None = None
     known_at: AwareDatetime | None = None
     include_contested: bool = True
