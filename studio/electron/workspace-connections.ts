@@ -28,7 +28,8 @@ export class WorkspaceConnections {
 
   constructor(private readonly store: WorkspaceStore, private readonly verify: VerifyIdentity,
     private readonly passwords?: WorkspacePasswordAuth,
-    private readonly beforeRestore?: (bookmark: WorkspaceBookmark) => Promise<void>) {}
+    private readonly beforeRestore?: (bookmark: WorkspaceBookmark) => Promise<void>,
+    private readonly closed?: (sessionToken: string) => void) {}
 
   private passwordAuth(): WorkspacePasswordAuth {
     if (!this.passwords) throw new Error('This installation does not support individual sign-in.')
@@ -178,6 +179,28 @@ export class WorkspaceConnections {
     return this.serial(() => this.store.reset())
   }
 
+  private sessionEnded(active: Active): void {
+    // Do not cancel a newer connection whose identity check is still running.
+    // Explicit disconnect/lock has that authority; a late server denial does not.
+    this.active = null
+    try { this.closed?.(active.sessionToken) } catch { /* A closing renderer must not prevent credential cleanup. */ }
+  }
+
+  /** A final server rejection must still belong to this exact native login. */
+  async rejectedAuthorization(header: string, rejected: string): Promise<void> {
+    // A request sent before rotation can finish after it. Wait for an existing
+    // rotation, then compare the actual rejected credential before closing.
+    await this.refreshing?.catch(() => {})
+    await this.serial(async () => {
+      const active = this.active
+      if (this.refreshing || !active?.password || header !== 'Bearer ' + active.sessionToken ||
+          rejected !== 'Bearer ' + active.credential) return
+      this.sessionEnded(active)
+      if (active.bookmarkId) await this.store.remove(active.bookmarkId)
+      else await this.store.select(null)
+    })
+  }
+
   private async refreshActive(): Promise<void> {
     if (this.refreshing) return this.refreshing
     const active = this.active
@@ -206,7 +229,9 @@ export class WorkspaceConnections {
           this.active = { ...active, me, credential: advanced!.accessToken, password: advanced }
         })
       } catch (error) {
-        if (this.active === active) this.active = null
+        if (this.active === active) {
+          this.sessionEnded(active)
+        }
         if (advanced) await this.passwordAuth().signOut(active.endpoint, advanced.refreshToken,
           sessionMetadata(advanced), active.me.tenant_id).catch(() => {})
         throw error

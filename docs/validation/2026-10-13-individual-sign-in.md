@@ -126,3 +126,33 @@ Disconnect lookup: the actual control exposes its name through `aria-label`
 and `title`, while the probe initially inspected text content only. The probe
 now recognizes those accessible names and compiles. This is a corrected test
 driver, not evidence that the remaining native sign-in phases passed.
+
+## Completed hosted product checks and native session closure
+
+[Product checks on `e913cc6`](https://github.com/Perseusxrltd/mnemion/actions/runs/38395863116)
+passed all 11 jobs: the full service matrix on Python 3.12, 3.13 and 3.14,
+both container architectures, both Mac supervision targets, Studio, legacy
+compatibility, static checks and dependency review.
+
+The accompanying native run passed both Linux packages, Apple Silicon and
+Windows x64, including installed invitation acceptance, contributor access,
+protected remembering, same-session reopening, revocation and updater checks.
+Its Intel Mac package stopped while detaching the temporary installer image:
+`hdiutil` reported a busy device. Windows ARM and a successful Intel Mac package
+remain required; this partial run is not six-platform acceptance.
+
+The next source also sends a scoped native session-ended notification when a
+password refresh fails or the server rejects the current access credential.
+The old screen and query cache are cleared, and the workspace sign-in link is
+retained. The bridge compares the exact rejected credential and renderer handle;
+an old request cannot end a valid rotated session or cancel a newer connection
+whose identity check is in progress. The notification contains an opaque native
+handle, never the password, access credential or refresh credential.
+
+**126 Electron checks passed** after this follow-up. The production frontend
+build passed within 768 MiB and one CPU. Built-interface browser checks passed
+at 1,440 and 390 pixels: a scoped member reopened, an unrelated closure was
+ignored, the matching closure returned to sign-in, the old workspace disappeared,
+the workspace link remained, and the event listener was released. There were no
+page errors or external network requests. That browser fixture substitutes the
+native bridge; it does not substitute for the final packaged OS tests.

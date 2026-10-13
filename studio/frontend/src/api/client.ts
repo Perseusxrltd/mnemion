@@ -22,6 +22,7 @@ declare global {
       workspaceForget?: (id: string) => Promise<void>
       workspaceDisconnect?: () => Promise<void>
       workspaceReset?: () => Promise<void>
+      onWorkspaceClosed?: (callback: (sessionToken: string) => void) => () => void
       localStatus?: () => Promise<LocalStatus>
       localCreate?: (input: LocalOptions) => Promise<LocalStatus>
       localStart?: () => Promise<LocalStatus>

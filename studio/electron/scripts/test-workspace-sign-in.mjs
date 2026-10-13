@@ -16,7 +16,7 @@ async function setup(t) {
   const fixture = await workspaceFixture(t)
   const id = randomUUID()
   const expires = new Date(Date.now() + 30 * 86400_000).toISOString()
-  const server = { current: null, spent: new Set(), refreshes: 0, signouts: 0, revoked: false, loseResponse: false, responseOverride: null, gate: null }
+  const server = { current: null, spent: new Set(), refreshes: 0, signouts: 0, revoked: false, loseResponse: false, responseOverride: null, gate: null, verifyGate: null }
   function issue(seconds) {
     return { session_id: id, tenant_id: fixture.identity.tenant_id, principal_id: fixture.identity.principal_id,
       access_token: secret('mnm_s_'), refresh_token: secret('mnm_r_'), csrf_token: null,
@@ -51,13 +51,15 @@ async function setup(t) {
   const verify = async (address, credential) => {
     assert.equal(address, endpoint)
     if (server.revoked || credential !== server.current.access_token) throw new Error('Session revoked')
+    if (server.verifyGate) { server.verifyGate.started.resolve(); await server.verifyGate.finished.promise }
     return fixture.identity
   }
-  const broker = new WorkspaceConnections(fixture.store, verify, auth)
+  const closed = []
+  const broker = new WorkspaceConnections(fixture.store, verify, auth, undefined, token => closed.push(token))
   const input = { workspace_id: fixture.identity.tenant_id, username: 'person',
     password: 'harbour comet mitten glacier tapestry', device_name: 'Test device' }
   const open = remember => broker.signIn(endpoint, input, remember)
-  return { ...fixture, server, auth, verify, broker, input, open }
+  return { ...fixture, server, auth, verify, broker, input, open, closed }
 }
 
 test('native password sign-in keeps both credentials out of the renderer and plaintext state', async t => {
@@ -108,6 +110,61 @@ test('a lost refresh response cannot be replayed by the running app or a restart
   const reopened = new WorkspaceConnections(new WorkspaceStore(f.directory, f.cipher), f.verify, f.auth)
   await assert.rejects(reopened.resume(), /interrupted/)
   assert.equal(f.server.refreshes, 1)
+  assert.deepEqual(f.closed, [session.sessionToken])
+})
+
+test('a confirmed native password rejection closes the screen and removes only that saved login', async t => {
+  const f = await setup(t)
+  const session = await f.open(true)
+  const header = 'Bearer ' + session.sessionToken
+  const credential = await f.broker.authorization(api, header)
+  f.server.revoked = true
+  await f.broker.rejectedAuthorization(header, credential)
+  const status = await f.broker.status()
+  assert.equal(status.active, null)
+  assert.equal(status.activeId, null)
+  assert.deepEqual(status.bookmarks, [])
+  assert.deepEqual(f.closed, [session.sessionToken])
+  assert.ok(!JSON.stringify(f.closed).includes(f.server.current.access_token))
+  assert.ok(!JSON.stringify(f.closed).includes(f.server.current.refresh_token))
+  await assert.rejects(f.broker.authorization(api, header), /Reconnect/)
+  assert.equal(await f.broker.resume(), null)
+})
+
+test('a delayed rejection cannot close a rotating password session or a newer connection', async t => {
+  const f = await setup(t)
+  const session = await f.open(true)
+  const header = 'Bearer ' + session.sessionToken
+  const old = 'Bearer ' + f.server.current.access_token
+  f.server.gate = { started: deferred(), finished: deferred() }
+  const rotating = f.broker.authorization(api, header)
+  await f.server.gate.started.promise
+  const rejected = f.broker.rejectedAuthorization(header, old)
+  f.server.gate.finished.resolve()
+  await Promise.all([rotating, rejected])
+  assert.equal((await f.broker.status()).active.sessionToken, session.sessionToken)
+  await f.broker.rejectedAuthorization(header, old)
+  assert.deepEqual(f.closed, [])
+  f.server.gate = null
+  const newer = await f.open(true)
+  await f.broker.rejectedAuthorization(header, 'Bearer ' + f.server.current.access_token)
+  assert.equal((await f.broker.status()).active.sessionToken, newer.sessionToken)
+  assert.deepEqual(f.closed, [])
+})
+
+test('a rejected old login cannot cancel a newer connection still verifying its identity', async t => {
+  const f = await setup(t)
+  const old = await f.open(true)
+  const credential = 'Bearer ' + f.server.current.access_token
+  f.server.verifyGate = { started: deferred(), finished: deferred() }
+  const connecting = f.open(true)
+  await f.server.verifyGate.started.promise
+  await f.broker.rejectedAuthorization('Bearer ' + old.sessionToken, credential)
+  f.server.verifyGate.finished.resolve()
+  const newer = await connecting
+  assert.notEqual(newer.sessionToken, old.sessionToken)
+  assert.equal((await f.broker.status()).active.sessionToken, newer.sessionToken)
+  assert.deepEqual(f.closed, [old.sessionToken])
 })
 
 test('a managed host must be ready before a saved refresh token is consumed', async t => {

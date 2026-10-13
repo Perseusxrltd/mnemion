@@ -72,6 +72,10 @@ silently replace the verified person with the local owner's account.
 If another request rotates access during an ordinary read, the client can retry
 once after confirming that the credential changed. Unchanged or revoked
 credentials and password/refresh submissions do not enter an automatic retry loop.
+When the desktop observes rejection of the current password session, it removes
+that saved login, clears the workspace view and returns to sign-in. The workspace
+link remains available. A late rejection from an older credential cannot close
+a successfully rotated login or cancel a newer connection.
 
 ## Manage your access
 

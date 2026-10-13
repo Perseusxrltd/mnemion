@@ -30,11 +30,28 @@ function rememberAddress(address: string): void {
 }
 
 function nativeConnection(session: WorkspaceSession): Connection {
+  let closed = false;
+  let unsubscribe: (() => void) | undefined;
+  const listeners = new Set<() => void>();
+  const listen = () => {
+    unsubscribe ??= window.mnemion?.onWorkspaceClosed?.(token => {
+      if (token !== session.sessionToken || closed) return;
+      closed = true;
+      for (const listener of listeners) listener();
+    });
+  };
+  listen();
   return {
     endpoint: session.endpoint,
     me: session.me,
     authentication: session.authentication,
     client: new MnemionClient({ baseUrl: session.endpoint, apiKey: session.sessionToken, fetch: nativeFetch }),
+    subscribeClosed: listener => {
+      listen(); listeners.add(listener);
+      if (closed) queueMicrotask(() => { if (listeners.has(listener)) listener(); });
+      return () => { listeners.delete(listener); };
+    },
+    close: () => { unsubscribe?.(); unsubscribe = undefined; listeners.clear(); },
   };
 }
 

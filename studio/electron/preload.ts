@@ -33,6 +33,13 @@ contextBridge.exposeInMainWorld('mnemion', {
   workspaceForget: (id: string) => transfer('workspaces:forget', id),
   workspaceDisconnect: () => transfer('workspaces:disconnect'),
   workspaceReset: () => transfer('workspaces:reset'),
+  onWorkspaceClosed: (callback: (sessionToken: string) => void) => {
+    const listener = (_event: IpcRendererEvent, sessionToken: unknown) => {
+      if (typeof sessionToken === 'string' && /^mnm_session_[A-Za-z0-9_-]{43}$/.test(sessionToken)) callback(sessionToken)
+    }
+    ipcRenderer.on('workspaces:closed', listener)
+    return () => ipcRenderer.removeListener('workspaces:closed', listener)
+  },
   localStatus: () => transfer('local:status'),
   localCreate: (input: unknown) => transfer('local:create', input),
   localStart: () => transfer('local:start'),

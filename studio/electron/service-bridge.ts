@@ -250,7 +250,10 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
       }
       try { return JSON.parse(Buffer.from(await boundedBody(response, 128 * 1024)).toString('utf8')) }
       catch { throw new Error('The workspace returned an invalid sign-in response.') }
-    }), bookmark => localWorkspace().prepareSavedConnection(bookmark.endpoint, bookmark.tenantId, localPreferences().startWithApp))
+    }), bookmark => localWorkspace().prepareSavedConnection(bookmark.endpoint, bookmark.tenantId, localPreferences().startWithApp), sessionToken => {
+      const window = getWindow()
+      if (window && !window.webContents.isDestroyed()) window.webContents.send('workspaces:closed', sessionToken)
+    })
     return connections
   }
   function trusted(event: IpcMainInvokeEvent) {
@@ -379,7 +382,16 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
     } else {
       url = allowedServiceUrl(request.url)
     }
-    const response = await workspaceFetch(net.fetch.bind(net), url.toString(), { method: request.method, headers, body: request.body, signal: AbortSignal.timeout(60_000) }, currentAuthorization)
+    let rejected: string | null = null
+    const response = await workspaceFetch(async (address, options) => {
+      const credential = new Headers(options.headers).get('authorization')
+      const result = await net.fetch(address, options)
+      if (result.status === 401) rejected = credential
+      return result
+    }, url.toString(), { method: request.method, headers, body: request.body, signal: AbortSignal.timeout(60_000) }, currentAuthorization)
+    if (response.status === 401 && authorization && isWorkspaceSession(authorization) && rejected) {
+      await workspaceConnections().rejectedAuthorization(authorization, rejected)
+    }
     return { status: response.status, headers: Object.fromEntries(response.headers.entries()), body: await boundedBody(response) }
   })
 
