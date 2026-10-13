@@ -1,6 +1,7 @@
 """Upgrade the preceding immutable SQL schema without changing workspace data."""
 
 import hashlib
+from types import SimpleNamespace
 from uuid import UUID, uuid4
 
 import psycopg
@@ -8,6 +9,7 @@ from psycopg import sql
 from psycopg.conninfo import make_conninfo
 import pytest
 
+from deploy.installed_upgrade_probe import InstalledUpgrade
 from mnemion.service import db
 from mnemion.service.admin import bootstrap_tenant
 from mnemion.service.identity import IdentityService
@@ -39,18 +41,19 @@ def inventory(dsn):
         return result
 
 
+@pytest.mark.parametrize("previous_count", [13, 14])
 def test_previous_schema_upgrade_preserves_keys_grants_and_existing_memory(
-    postgres, tmp_path, monkeypatch
+    postgres, tmp_path, monkeypatch, previous_count
 ):
-    # Existing migrations are immutable. Package the actual preceding thirteen
+    # Existing migrations are immutable. Package the actual preceding scripts
     # scripts, rather than removing constraints or rewriting an applied script.
     previous = tmp_path / "previous-service"
     migrations = previous / "migrations"
     migrations.mkdir(parents=True)
     for path in db.files("mnemion.service").joinpath("migrations").iterdir():
-        if path.suffix == ".sql" and path.name < "014_author_withdrawal.sql":
+        if path.suffix == ".sql" and int(path.name[:3]) <= previous_count:
             (migrations / path.name).write_bytes(path.read_bytes())
-    assert len(list(migrations.iterdir())) == 13
+    assert len(list(migrations.iterdir())) == previous_count
     name = "mnemion_author_upgrade_" + uuid4().hex
     admin_dsn, app_dsn, _ = (make_conninfo(dsn, dbname=name) for dsn in postgres)
     with psycopg.connect(postgres[0], autocommit=True) as connection:
@@ -60,7 +63,7 @@ def test_previous_schema_upgrade_preserves_keys_grants_and_existing_memory(
         embedder = FixtureEmbedder()
         with monkeypatch.context() as legacy:
             legacy.setattr(db, "files", lambda _: previous)
-            assert len(db.migrate(admin_dsn)) == 13
+            assert len(db.migrate(admin_dsn)) == previous_count
             setup = bootstrap_tenant(
                 admin_dsn,
                 tenant_name="Previous workspace",
@@ -83,6 +86,11 @@ def test_previous_schema_upgrade_preserves_keys_grants_and_existing_memory(
             database.close()
             database = None
         before = inventory(admin_dsn)
+        # Exercise the installed gate's actual row hashing on both supported
+        # preceding schemas without constructing or launching an installer.
+        probe = object.__new__(InstalledUpgrade)
+        monkeypatch.setattr(probe, "database", lambda: SimpleNamespace(dsn=lambda: admin_dsn))
+        before_installed = probe.snapshot(legacy_api_keys=True)
         # The current runtime must not admit the new permission on an old
         # schema lacking atomic derived-data erasure.
         rejected = db.Database(app_dsn)
@@ -91,8 +99,23 @@ def test_previous_schema_upgrade_preserves_keys_grants_and_existing_memory(
                 rejected.open()
         finally:
             rejected.close()
-        assert db.migrate(admin_dsn) == ["014_author_withdrawal.sql", "015_individual_sign_in.sql"]
+        expected = ["014_author_withdrawal.sql", "015_individual_sign_in.sql"]
+        assert db.migrate(admin_dsn) == expected[previous_count - 13 :]
         assert db.migrate(admin_dsn) == []
+        after_installed = probe.snapshot()
+        assert after_installed["schema"] != before_installed["schema"]
+        assert all(
+            after_installed[table] == digest
+            for table, digest in before_installed.items()
+            if table != "schema"
+        )
+        # An erroneous session-key conversion must still fail the comparison;
+        # the candidate's actual marker may never be replaced by a default.
+        with psycopg.connect(admin_dsn) as connection:
+            connection.execute("UPDATE mnemion.api_keys SET session_key=true")
+        assert probe.snapshot()["api_keys"] != before_installed["api_keys"]
+        with psycopg.connect(admin_dsn) as connection:
+            connection.execute("UPDATE mnemion.api_keys SET session_key=false")
         after = inventory(admin_dsn)
         assert {table: after[table] for table in before} == before
         added = set(after) - set(before)
