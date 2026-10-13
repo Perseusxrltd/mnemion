@@ -125,7 +125,9 @@ access, installation, automatic updates, data safety and RAM stability. Ship
 small verified fixes promptly, then advance the feature queue below. A passing
 release does not close unfinished provider or recovery requirements.
 
-1. **Reported stabilization:** 4.1.6 delivers Git commit-wide re-ingestion and managed scan
+1. **Reported stabilization:** the [4.1.7 update-scheduler fix](validation/2026-10-13-managed-update-schedule.md)
+   for suspended hosts (issue 33) has passed source checks and is in release validation.
+   4.1.6 delivers Git commit-wide re-ingestion and managed scan
    label fixes (issue 30), MCP search defaults (24), connection migration guidance
    (23) and bounded version diagnostics (29). Assess MCP client reports (25–26)
    against the supported protocol. Validate retrieval relevance, exact identifiers
