@@ -168,7 +168,8 @@ package and installed schema-upgrade gates.
 The final application source is frozen at
 `af7f9b795bc94b36c432810148e80a82fd1ce340` on `release/4.2.0`.
 [Signed release preparation](https://github.com/Perseusxrltd/mnemion/actions/runs/38402533389)
-is running. This is not publication evidence.
+passed all 30 jobs, including the six installed local-workspace and personal
+access checks. This is not publication evidence.
 
 The separate installed-migration driver now supports a previous installer that
 already includes author withdrawal. For 4.1.7 it checks the contributor's existing
@@ -182,3 +183,16 @@ The driver's existing inventory and diagnostic checks passed all **25 tests**.
 [Product checks on the exact frozen source](https://github.com/Perseusxrltd/mnemion/actions/runs/38402470751)
 also passed all 11 jobs. Final packages, uploaded-artifact verification and
 installed migration/recovery remain pending.
+
+The [uploaded-artifact verifier](https://github.com/Perseusxrltd/mnemion/actions/runs/38409308511)
+then passed for the unchanged 38-asset draft. The first
+[4.1.7 to 4.2.0 installed migration run](https://github.com/Perseusxrltd/mnemion/actions/runs/38409557275)
+reopened the workspace and captured a pre-migration backup on all six targets,
+but failed its full-row comparison: migration 015 adds the expected
+`session_key=false` column to existing API keys. The driver now adds that default
+only to the previous-schema snapshot. It retains every original field and
+compares the candidate's actual column, so an erroneous conversion to a session
+key still fails. The **27 focused tests** passed, including real PostgreSQL
+upgrades from both schemas 013 and 014 and deliberate session-marker corruption.
+The frozen application packages are unchanged. All six installed migration and
+recovery checks must pass with the corrected driver before publication.

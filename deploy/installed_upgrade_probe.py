@@ -353,7 +353,7 @@ class InstalledUpgrade:
             local_state.read(self.workspace / "credentials.json"),
         )
 
-    def snapshot(self):
+    def snapshot(self, *, legacy_api_keys=False):
         import psycopg
         from psycopg import sql
 
@@ -373,10 +373,16 @@ class InstalledUpgrade:
                 "memories",
                 "memory_revisions",
             ):
+                # Migration 015 adds session_key=false to existing keys. Add
+                # that expected value only to the *previous* schema snapshot;
+                # never discard or overwrite the candidate's actual value.
+                value = sql.SQL("to_jsonb(t)")
+                if table == "api_keys" and legacy_api_keys:
+                    value = sql.SQL("jsonb_build_object('session_key',false) || to_jsonb(t)")
                 rows = connection.execute(
                     sql.SQL(
-                        'SELECT to_jsonb(t)::text FROM mnemion.{} t ORDER BY to_jsonb(t)::text COLLATE "C"'
-                    ).format(sql.Identifier(table))
+                        'SELECT ({})::text FROM mnemion.{} t ORDER BY ({})::text COLLATE "C"'
+                    ).format(value, sql.Identifier(table), value)
                 ).fetchall()
                 result[table] = hashlib.sha256(
                     "\n".join(row[0] for row in rows).encode()
@@ -519,7 +525,7 @@ class InstalledUpgrade:
                 "/v1/memories/" + saved["memory_id"] + "?expected_version=1",
                 expected=403,
             )
-        before = self.snapshot()
+        before = self.snapshot(legacy_api_keys=version(self.args.from_tag) < (4, 2, 0))
         self.stop()
         self.stage = "candidate-install"
         self.install(candidate, self.args.to_tag)
