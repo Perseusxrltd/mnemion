@@ -1,0 +1,34 @@
+{
+  "at": "2026-10-13T07:36:55.343343+00:00",
+  "product_html_fetched_at": "2026-10-13T07:36:55.212375+00:00",
+  "version": "4.1.5",
+  "product_url": "https://www.perseusxr.com/mnemion",
+  "validation_method": "anonymous public HTML; script/style text excluded from visible-version check",
+  "visible_current_version": true,
+  "current_version_guides": true,
+  "checksum_link": true,
+  "roadmap_tracks_main": true,
+  "homepage_product_link": true,
+  "all_six_installer_links": [
+    "https://github.com/Perseusxrltd/mnemion/releases/download/v4.1.5/Mnemion-Studio-4.1.5-windows-x64.exe",
+    "https://github.com/Perseusxrltd/mnemion/releases/download/v4.1.5/Mnemion-Studio-4.1.5-windows-arm64.exe",
+    "https://github.com/Perseusxrltd/mnemion/releases/download/v4.1.5/Mnemion-Studio-4.1.5-macos-x64.dmg",
+    "https://github.com/Perseusxrltd/mnemion/releases/download/v4.1.5/Mnemion-Studio-4.1.5-macos-arm64.dmg",
+    "https://github.com/Perseusxrltd/mnemion/releases/download/v4.1.5/Mnemion-Studio-4.1.5-linux-x86_64.AppImage",
+    "https://github.com/Perseusxrltd/mnemion/releases/download/v4.1.5/Mnemion-Studio-4.1.5-linux-arm64.AppImage"
+  ],
+  "current_release_notes": "https://github.com/Perseusxrltd/mnemion/releases/tag/v4.1.5",
+  "current_guide_links": [
+    "https://github.com/Perseusxrltd/mnemion/blob/v4.1.5/docs/service/updates.md",
+    "https://github.com/Perseusxrltd/mnemion/blob/v4.1.5/docs/service/updates.md",
+    "https://github.com/Perseusxrltd/mnemion/blob/v4.1.5/docs/service/deployment.md",
+    "https://github.com/Perseusxrltd/mnemion/blob/v4.1.5/docs/service/connectors.md",
+    "https://github.com/Perseusxrltd/mnemion/blob/v4.1.5/docs/service/agents.md",
+    "https://github.com/Perseusxrltd/mnemion/blob/v4.1.5/docs/service/README.md",
+    "https://github.com/Perseusxrltd/mnemion/blob/v4.1.5/docs/service/updates.md"
+  ],
+  "metadata_workflow": "https://github.com/Perseusxrltd/mnemion/actions/runs/38363270717",
+  "website_code_or_deployment_changed": false,
+  "new_visual_render_performed": false,
+  "product_html_sha256": "75fb1d9f880cdf09fe68e6dcdf98bf7749ec562ba36dbe2bde48543ec8167d2e"
+}

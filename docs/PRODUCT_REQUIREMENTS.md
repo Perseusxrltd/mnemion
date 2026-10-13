@@ -1,6 +1,6 @@
 # Complete product requirements
 
-Updated **2026-10-12**. This is the persistent checklist for the Mnemion rebuild,
+Updated **2026-10-13**. This is the persistent checklist for the Mnemion rebuild,
 including additions made during implementation. The [roadmap](ROADMAP.md)
 explains delivery order; this file preserves the complete requested scope.
 The current published distribution and release evidence are linked there.
@@ -12,6 +12,12 @@ requirement is retained without a completed implementation. **External** means
 a provider or publisher prerequisite is unresolved. **Ongoing** identifies a
 standing product or maintenance commitment. A passing prototype, mock
 test or source commit is not a shipped feature.
+
+Current strict completion: **16 of 64 requirements shipped (25%)**; 40 partial,
+2 building, 2 planned, 3 ongoing and 1 external. These broad requirements are
+not equally sized. This is coverage of the full requested scope, not a measure
+of engineering effort or the usability of the published app. Hotfixes to a
+partial feature do not automatically mark its whole requirement complete.
 
 ## Foundation and compatibility
 
@@ -47,7 +53,7 @@ test or source commit is not a shipped feature.
 | A01 | Let an organization set up a workspace once and make joining straightforward for its users. | Partial | [Remembered desktop connections](service/workspaces.md) ship. Finish invitations, individual sign-in and guided organization setup. |
 | A02 | Provide specific individual logins or an equivalent simple, secure sign-in, rather than shared administrator credentials. | Building | The [individual sign-in implementation contract](implementation/individual-sign-in.md) specifies scoped invitations, private passwords, revocable sessions, recovery and hosted consent. Implement and verify the complete app/agent flow; add company identity/SSO without removing scoped machine credentials. |
 | A03 | Give administrators clear control over people, agents, permitted spaces and connections. | Partial | [People, applications, keys and space grants](service/organizations.md) exist. Add session/device visibility, consent, connection policy and independent recovery access. |
-| A04 | Compartmentalize private, team, project and company memory in secured vaults. | Partial | Tenant/space authorization is enforced. Finish the app-managed encryption/key/backup experience; ordinary Obsidian exports remain plaintext and must be described accurately. |
+| A04 | Compartmentalize private, team, project and company memory in secured vaults. | Partial | Tenant/space authorization is enforced. Finish the app-managed encryption/key/backup experience; ordinary Obsidian exports remain plaintext and must be described accurately. The [separate secrets-vault request](https://github.com/Perseusxrltd/mnemion/issues/32) adds encrypted credential storage, scoped read/write/list, access auditing, export/recovery and configurable remote exposure. Secrets must stay outside searchable memory, embeddings, source synchronization and automatic model context; optional KeePass compatibility remains to assess. |
 | A05 | Make remote workspaces reachable through stable, supported connection options. | Building | HTTPS/API/MCP and proxy configuration exist. [Bounded connection diagnostics](service/connection-diagnostics.md) ship in 4.0.10; 4.0.12 adds protected-health compatibility and a [validated native fix for ngrok browser warnings and stale offline responses](validation/2026-10-11-workspace-gateway.md). Finish native remote setup, tunnel supervision, stable links and private-network options. [Issue 3](https://github.com/Perseusxrltd/mnemion/issues/3). |
 | A06 | Keep access and configuration available when an agent is unavailable or out of tokens. | Partial | Independent human administration and provider operator wake were exercised without the original agent session; the actual Windows app reconnects as a separate administrator. Encrypted snapshot/ledger restoration, managed host adoption and signed automatic service patches passed with preserved access. The original host also completed the [controlled 4.1.0 migration and automatic 4.1.1 patch](validation/2026-10-12-model-idle-release.md), with a fresh Windows-verified encrypted backup and independent administrator reconnect. Finish the product-managed host inventory, recovery entry point and scheduled independent backups. A stopped computer still requires its host-management channel. |
 | A07 | Provide an online workspace entry point and management UI as well as the desktop app. | Partial | Web Studio ships with the service. Finish company sign-in, invitations, connection status and management; use company-controlled hosting rather than requiring a central paid service. |
@@ -67,8 +73,8 @@ test or source commit is not a shipped feature.
 | U02 | Configure sources, agents, models, access, Obsidian, resources, backups and recovery from the app. | Partial | Published workspace screens include RAM-policy repair and [occupied API-port recovery](service/local-workspaces.md), with agent parity and preserved private state. Provider approval, remaining host operations and full backup recovery still need complete, resumable UI flows. |
 | U03 | Run in the background and system tray/menu bar where supported. | Shipped | [Desktop lifecycle](service/updates.md). Linux shells without a tray retain an accessible minimized window. |
 | U04 | Start automatically and recover after restart on every supported OS. | Partial | Desktop login startup, Unix service supervision and native local workspace automatic reopen are available. [Installed restart checks passed on all six targets](validation/2026-10-11-v412-release.md). Broader machine-boot, unattended server startup and fleet policy acceptance remain. |
-| U05 | Enable automatic verified updates by default and restart safely without losing work. | Shipped | Verified updates are enabled by default in supported desktop packages. The latest public [4.1.3 → 4.1.4 upgrade/relaunch passed on all six targets](validation/2026-10-12-v4_1_4-public-upgrades.json), with unchanged public packages and preserved profiles. The preceding 4.1.0 release also passed separate installed schema-migration/recovery checks. Normal idle, draft and transfer guards remain. A [reproduced false unsaved-work blocker after space navigation](validation/2026-10-12-navigation-update-safety.md) is corrected in published 4.1.4, with the fixed browser scenario, all six native gates and artifact/public-feed checks passed. [Bounded failed-check retries](validation/2026-10-12-update-retries.md) are in 4.1.5 preparation. Older affected AppImages may need one normal Quit or current download; organization deployment policies and shared-server updates are separate. |
-| U06 | Deliver hotfixes to shared servers as well as desktop clients. | Partial | [Managed Unix service patches](service/managed-updates.md) exist after explicit host adoption. The original shared server completed a [verified automatic 4.0.12 → 4.0.13 patch](validation/2026-10-12-v413-release.md), including backup/runtime verification and preserved access. Setup shows separate app/server versions. Published 4.0.14 corrects the [host-clock readiness finding](validation/2026-10-12-host-clock-readiness.md); the original host passed an [operator-applied patch and current-runtime verification](validation/2026-10-12-v414-release.md) with preserved access. The original host subsequently completed its [controlled 4.1.0 migration and automatic 4.1.1 patch](validation/2026-10-12-model-idle-release.md), preserving the independent Windows administrator. Published 4.1.3 adds [managed connector lifecycle and version visibility](service/managed-connectors.md) for issue 22. [Source, signed-runtime, all six native release gates, automatic artifact verification and public delivery checks](validation/2026-10-12-managed-connectors.md) passed; actual host adoption remains. The original reporter confirmed automatic API/worker updates, closing issue 11. Windows/fleet/Compose policy, app-managed operator entry points and automatic migration-bearing upgrades also remain. |
+| U05 | Enable automatic verified updates by default and restart safely without losing work. | Shipped | Verified updates are enabled by default in supported desktop packages. The latest public [4.1.3 → 4.1.4 upgrade/relaunch passed on all six targets](validation/2026-10-12-v4_1_4-public-upgrades.json), with unchanged public packages and preserved profiles. The preceding 4.1.0 release also passed separate installed schema-migration/recovery checks. Normal idle, draft and transfer guards remain. A [reproduced false unsaved-work blocker after space navigation](validation/2026-10-12-navigation-update-safety.md) is corrected in published 4.1.4, with the fixed browser scenario, all six native gates and artifact/public-feed checks passed. [Bounded failed-check retries](validation/2026-10-12-update-retries.md) are published in [4.1.5](validation/2026-10-13-update-retry-release.md), with all six native release gates and public artifact/feed verification passed. Older affected AppImages may need one normal Quit or current download; organization deployment policies and shared-server updates are separate. |
+| U06 | Deliver hotfixes to shared servers as well as desktop clients. | Partial | [Managed Unix service patches](service/managed-updates.md) exist after explicit host adoption. The original shared server completed a [verified automatic 4.0.12 → 4.0.13 patch](validation/2026-10-12-v413-release.md), including backup/runtime verification and preserved access. Setup shows separate app/server versions. Published 4.0.14 corrects the [host-clock readiness finding](validation/2026-10-12-host-clock-readiness.md); the original host passed an [operator-applied patch and current-runtime verification](validation/2026-10-12-v414-release.md) with preserved access. The original host subsequently completed its [controlled 4.1.0 migration and automatic 4.1.1 patch](validation/2026-10-12-model-idle-release.md), preserving the independent Windows administrator. Published 4.1.3 adds [managed connector lifecycle and version visibility](service/managed-connectors.md) for issue 22. [Source, signed-runtime, all six native release gates, automatic artifact verification and public delivery checks](validation/2026-10-12-managed-connectors.md) passed. The [actual shared connector was subsequently adopted and completed a 4.1.4 scan](validation/2026-10-13-managed-connector-adoption.md), preserving its existing configuration and source identity; the independent Windows administrator reauthenticated on 13 October. The original reporter confirmed automatic API/worker updates, closing issue 11. Windows/fleet/Compose policy, app-managed operator entry points and automatic migration-bearing upgrades also remain. |
 | U07 | Ship ready platforms promptly while validating the remaining platforms. | Shipped | [Release process](MAINTENANCE.md) publishes only complete verified installer/update sets and preserves already available targets. |
 | U08 | Keep `main` current with tested work, monitor issues, and keep implementing through new user requests. | Ongoing | New requests extend this checklist and the active queue; they do not silently replace unfinished requirements. Preserve uncommitted work, commit validated milestones and record regressions. |
 | U09 | Keep documentation, release notes, roadmap and in-app help current with updates. | Partial | Offline docs are generated from repository Markdown; release/version checks exist. Update affected requirement IDs, evidence and limitations in every relevant release. |
@@ -119,19 +125,24 @@ access, installation, automatic updates, data safety and RAM stability. Ship
 small verified fixes promptly, then advance the feature queue below. A passing
 release does not close unfinished provider or recovery requirements.
 
-1. **Access and continuity:** A01–A09, A11–A13, C04–C07. Build on verified independent
+1. **Reported stabilization:** resolve Git commit-wide re-ingestion and managed scan
+   labels (issue 30), MCP search defaults (24), connection migration guidance
+   (23) and bounded version diagnostics (29). Assess MCP client reports (25–26)
+   against the supported protocol. Validate retrieval relevance, exact identifiers
+   and recency (17, 27–28, 31) with measured examples and authorization checks.
+2. **Access and continuity:** A01–A09, A11–A13, C04–C07. Build on verified independent
    human access and native reconnection; finish individual sign-in and hosted
    OAuth, administrator invitations, provider setup and independently managed
    remote access. Preserve tenant/space isolation and existing credentials.
-2. **Native onboarding and hardware:** U01–U02, U04, R02–R04. Extend published
+3. **Native onboarding and hardware:** U01–U02, U04, R02–R04. Extend published
    local-runtime/RAM setup with broader hardware measurements, company-host onboarding, browser/desktop
    recovery journeys and fleet startup policy.
-3. **Release reliability:** U05–U09, V07. Maintain the passing public update
+4. **Release reliability:** U05–U09, V07. Maintain the passing public update
    rehearsals, publish validated changes for every platform, and keep `main`,
    release evidence and documentation aligned.
-4. **Connected capture:** C01–C09, R06. Finish per-provider capture, reconnect,
+5. **Connected capture:** C01–C09, R06. Finish per-provider capture, reconnect,
    exclusions, review and durable incremental synchronization with clear coverage.
-5. **Live knowledge visibility:** V01–V05. Build the 3D/browser/desktop view on the
+6. **Live knowledge visibility:** V01–V05. Build the 3D/browser/desktop view on the
    authorized knowledge and activity contracts, then validate usefulness and
    hardware budgets with real workloads.
 

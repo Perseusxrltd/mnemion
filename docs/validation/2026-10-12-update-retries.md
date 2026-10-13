@@ -27,6 +27,9 @@ controller with controlled timers and a synthetic platform transport:
   its successful follow-up clears the failed attempt's timer.
 
 These tests do not bypass or replace native signature, installer or public-feed
-checks. The 4.1.5 release gates and actual installed retry observation remain
-pending. The preceding Windows download used an explicit retry; it is not
-presented as proof of the new automatic retry behavior.
+checks. All 4.1.5 release gates, independent artifact verification and public
+delivery checks subsequently passed; see the
+[13 October publication record](2026-10-13-update-retry-release.md).
+Actual installed retry observation remains pending. The preceding Windows
+download used an explicit retry; it is not presented as proof of the new
+automatic retry behavior.

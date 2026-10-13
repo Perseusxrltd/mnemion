@@ -1,11 +1,10 @@
 # Mnemion product roadmap
 
-Current distribution: **4.1.5**, in release preparation. Updated: **2026-10-12**.
-Published downloads remain **4.1.4** on all six desktop targets until verified 4.1.5 publication.
+Current published distribution: **4.1.5** on all six desktop targets. Updated: **2026-10-13**.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
 
-Version [4.1.5](releases/4.1.5.md) adds [bounded desktop update retries](validation/2026-10-12-update-retries.md) after failed checks and downloads. All 106 Electron tests passed, including recovery, outage limits, cancellation and overlapping-check cases. Native release validation is next.
+Version [4.1.5](releases/4.1.5.md) adds [bounded desktop update retries](validation/2026-10-12-update-retries.md) after failed checks and downloads. All 106 Electron tests passed, including recovery, outage limits, cancellation and overlapping-check cases. All six native gates, independent artifact verification, public feeds and the automatically refreshed live website passed; see the [publication record](validation/2026-10-13-update-retry-release.md). Public 4.1.4 → 4.1.5 upgrade rehearsals are running.
 
 Version [4.1.4](releases/4.1.4.md) corrects a
 [reproduced desktop restart blocker](validation/2026-10-12-navigation-update-safety.md):
@@ -25,7 +24,10 @@ update coordination, duplicate-run protection and visible versions.
 [Source/process, signed installed-runtime and six-platform release checks](validation/2026-10-12-managed-connectors.md)
 passed, followed by automatic hosted artifact verification and public-feed checks.
 [Public 4.1.2 → 4.1.3 desktop upgrade rehearsals](validation/2026-10-12-v413-public-upgrades.json) passed on all six targets; the actual shared
-host's separately launched connector still needs its one-time managed adoption.
+host's separately launched connector subsequently completed its
+[controlled adoption and successful 4.1.4 scan](validation/2026-10-13-managed-connector-adoption.md),
+preserving its configuration and source identity. The saved independent Windows
+administrator authenticated again on 13 October.
 
 Version [4.1.2](releases/4.1.2.md) adds an explicit keyword fallback when query
 inference is busy, with app/agent controls, visible warnings and preserved access
@@ -49,10 +51,12 @@ acceptance remain required.
 The immediate priority is short hotfix releases for operational reliability:
 connections and administrator access, installation, verified updates, data safety
 and resource stability. Broader features follow without removing requirements
-from the checklist. The next reported lifecycle gap is
-[issue 22](https://github.com/Perseusxrltd/mnemion/issues/22): the separately launched
-source connector needs its one-time managed adoption of the published 4.1.3
-lifecycle fix. The adoption must preserve source identities and existing grants.
+from the checklist. The remaining reported stabilization work includes
+[Git re-ingestion and scan labels](https://github.com/Perseusxrltd/mnemion/issues/30),
+[MCP search defaults](https://github.com/Perseusxrltd/mnemion/issues/24), connection
+migration guidance, small version diagnostics and measured retrieval quality.
+The separate encrypted secrets-vault request is retained under A04; it must
+never enter ordinary memory search, capture or model context.
 Version [4.1.1](releases/4.1.1.md) ships idle local-model
 cleanup and visible cache statistics, using the existing schema. Its
 [local/product checks and real-model measurements](validation/2026-10-12-model-idle-cleanup.md)

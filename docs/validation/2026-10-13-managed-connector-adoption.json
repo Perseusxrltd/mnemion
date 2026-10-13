@@ -1,0 +1,55 @@
+{
+  "source": "controlled operator observations on the existing shared Linux host; independent saved Windows administrator checks",
+  "connector_adoption": {
+    "at": "2026-10-12T15:45:49.514775+00:00",
+    "old_runner_version": "4.0.12",
+    "stable_launcher_version": "4.1.4",
+    "first_managed_scan_version": "4.1.1",
+    "existing_configuration_preserved": true,
+    "existing_connector_identity_preserved": true,
+    "existing_provider_credentials_referenced": true,
+    "existing_process_manager_preserved": true,
+    "prior_runner_stopped_after_idle_observation": true,
+    "single_managed_registration": true
+  },
+  "service_update": {
+    "at": "2026-10-12T15:50:51.168990+00:00",
+    "from": "4.1.1",
+    "to": "4.1.4",
+    "mode": "operator-applied verified compatible managed patch",
+    "service_ready": true,
+    "recovery_pending": false
+  },
+  "post_update_scan": {
+    "at": "2026-10-12T15:54:32.391605+00:00",
+    "service_version": "4.1.4",
+    "launcher_version": "4.1.4",
+    "scan_version": "4.1.4",
+    "runner_alive": true,
+    "last_exit_code": 0,
+    "complete_inventory": true,
+    "checkpoint_committed": true,
+    "configuration_bytes_preserved": true,
+    "automatic_service_updates_enabled": true
+  },
+  "independent_windows_check": {
+    "at": "2026-10-13T07:30:15.423735+00:00",
+    "installed_desktop_version": "4.1.3",
+    "service_version": "4.1.4",
+    "human_administrator_authenticated": true,
+    "saved_identity_and_credential_preserved": true,
+    "automatic_updates": true,
+    "background": true,
+    "start_at_login": true,
+    "gui_actions": 0,
+    "model_calls": 0,
+    "production_memory_writes": 0
+  },
+  "limits": [
+    "Host adoption and the 4.1.4 service cutover were operator actions, not automatic enrollment.",
+    "Normal connector reconciliation included upstream source changes; this was not a read-only connector exercise.",
+    "The initiation of the observed Windows 4.1.3 installation was not observed.",
+    "Managed scan trigger labels and Git commit-wide re-ingestion remain tracked in issue 30.",
+    "This does not implement independent host inventory, fleet enrollment or company sign-in."
+  ]
+}

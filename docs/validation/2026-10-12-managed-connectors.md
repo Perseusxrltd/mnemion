@@ -77,7 +77,8 @@ no new visual render is claimed.
 This is host-managed lifecycle support. It does not silently adopt an existing
 unmanaged process, deploy to another computer, add Windows/Compose fleet control,
 provide company sign-in or configure an OS startup entry. The actual shared
-host's old runner still needs its one-time controlled adoption. Its successful
-automatic API/worker patch was independently confirmed by the original reporter,
-so [issue 11](https://github.com/Perseusxrltd/mnemion/issues/11) is closed. The
-separate connector issue 22 remains open until that adoption is verified.
+host subsequently completed its [controlled adoption and 4.1.4 scan](2026-10-13-managed-connector-adoption.md),
+preserving its configuration, source identity and independent Windows administrator.
+Its earlier automatic API/worker patch was independently confirmed by the original
+reporter, closing [issue 11](https://github.com/Perseusxrltd/mnemion/issues/11).
+The separate Git re-ingestion and trigger-label report remains tracked in issue 30.
