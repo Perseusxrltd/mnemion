@@ -39,8 +39,11 @@ verification dispatches remain read-only. No package is rebuilt after verificati
 When a gate fails, inspect that run and fix its concrete cause. A failed full run
 is not an invitation to bypass it or repeatedly exercise unrelated passing gates.
 Re-run the failed workflow only when a fix or resolved transient error justifies
-it. If frozen source must change, prepare a new version; immutable public assets
-and source branches are not overwritten by this automation.
+it. For a corrected version that has **never been published**, commit and push
+the fix to main, then use `python -m deploy.release_automation start --attempt 2`
+(or the next attempt number). This freezes a separate `release/X.Y.Z-r2` branch;
+the failed attempt's source is preserved. A published version requires a new
+version number. Immutable public assets and source branches are never overwritten.
 
 To inspect a real receipt without publication or dispatch, use:
 

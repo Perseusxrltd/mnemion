@@ -115,7 +115,7 @@ def tag_commit(repo: str, target: dict) -> str:
     raise ValueError("The release tag must identify an ordinary commit")
 
 
-def start(root: Path, repo: str) -> dict:
+def start(root: Path, repo: str, *, attempt: int = 1) -> dict:
     """Freeze the clean main source and start its one complete release run."""
     if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repo):
         raise ValueError("Use a repository owner/name")
@@ -128,9 +128,15 @@ def start(root: Path, repo: str) -> dict:
     commit = git("rev-parse", "HEAD")
     version = tomllib.loads((root / "pyproject.toml").read_text())["project"]["version"]
     semver(version)
+    if type(attempt) is not int or not 1 <= attempt <= 100:
+        raise ValueError("Use a release attempt from 1 to 100")
+    if attempt > 1 and semver(api(repo, "releases/latest")["tag_name"].removeprefix("v")) >= semver(
+        version
+    ):
+        raise ValueError("Corrected attempts cannot replace a published version")
     if api(repo, f"compare/{commit}...main").get("status") not in {"ahead", "identical"}:
         raise ValueError("Push this source to main before starting its release")
-    branch = "release/" + version
+    branch = "release/" + version + (f"-r{attempt}" if attempt > 1 else "")
     refs = json.loads(gh("api", f"repos/{repo}/git/matching-refs/heads/{branch}"))
     if not isinstance(refs, list) or len(refs) > 128:
         raise ValueError("Invalid release branch inventory")
@@ -283,6 +289,7 @@ def main():
     prepare_command.add_argument("version")
     start_command = commands.add_parser("start")
     start_command.add_argument("--repo", default="Perseusxrltd/mnemion")
+    start_command.add_argument("--attempt", type=int, default=1)
     publish_command = commands.add_parser("publish")
     publish_command.add_argument("--repo", required=True)
     publish_command.add_argument("--receipt", type=Path, required=True)
@@ -306,7 +313,7 @@ def main():
             subprocess.run([sys.executable, *arguments], cwd=root, check=True)
         print(json.dumps({"version": args.version, "changed": changed}))
     elif args.command == "start":
-        print(json.dumps(start(root, args.repo)))
+        print(json.dumps(start(root, args.repo, attempt=args.attempt)))
     else:
         if (
             args.receipt.is_symlink()

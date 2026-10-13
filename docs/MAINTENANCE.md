@@ -27,6 +27,9 @@ source and dispatch the full release once. A dirty checkout, source absent from
 main, conflicting frozen branch or existing run is handled without a duplicate
 build. The [automation guide](implementation/release-automation.md) documents
 publication, downstream checks, evidence retention and failure recovery.
+For a corrected unpublished release, `start --attempt 2` preserves the first
+frozen source and starts a separate attempt. Published releases require a new
+version number.
 
 1. Change the canonical version and dependent package metadata/lockfiles together.
    Include both `uv.lock` and `studio/client/uv.lock`, the nested local client

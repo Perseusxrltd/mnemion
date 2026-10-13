@@ -276,3 +276,52 @@ def test_release_start_requires_committed_integrated_source_and_never_repeats_a_
         assert result["existing_run"] == 99 if case == "already_running" else result["dispatched"]
     mutations = [call for call in calls if call[:2] in {("api", "--method"), ("workflow", "run")}]
     assert len(mutations) == (2 if case == "clean" else 0)
+
+
+@pytest.mark.parametrize("published", ["4.2.2", "4.2.3", "4.2.4"])
+def test_corrected_attempt_preserves_frozen_source_and_cannot_replace_a_public_version(
+    tmp_path, monkeypatch, fixture, published
+):
+    (tmp_path / "pyproject.toml").write_text('[project]\nversion = "4.2.3"\n')
+    fixture.latest["tag_name"] = "v" + published
+    monkeypatch.setattr(
+        subject.subprocess,
+        "check_output",
+        lambda args, **kwargs: "" if args[1] == "status" else COMMIT,
+    )
+    calls = []
+
+    def gh(*args):
+        calls.append(args)
+        if args[:2] == ("api", f"repos/{REPO}/git/matching-refs/heads/release/4.2.3-r2"):
+            return "[]"
+        assert args[:2] in {("api", "--method"), ("workflow", "run")}
+        return ""
+
+    monkeypatch.setattr(subject, "gh", gh)
+    if published != "4.2.2":
+        with pytest.raises(ValueError, match="cannot replace a published version"):
+            subject.start(tmp_path, REPO, attempt=2)
+        assert calls == []
+        return
+    result = subject.start(tmp_path, REPO, attempt=2)
+    assert result["branch"] == "release/4.2.3-r2" and result["dispatched"]
+    assert calls[1] == (
+        "api",
+        "--method",
+        "POST",
+        f"repos/{REPO}/git/refs",
+        "-f",
+        "ref=refs/heads/release/4.2.3-r2",
+        "-f",
+        "sha=" + COMMIT,
+    )
+    assert calls[2] == (
+        "workflow",
+        "run",
+        "release.yml",
+        "--repo",
+        REPO,
+        "--ref",
+        "release/4.2.3-r2",
+    )

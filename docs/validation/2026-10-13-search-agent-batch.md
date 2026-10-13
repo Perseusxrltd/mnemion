@@ -40,6 +40,17 @@ regenerated both contracts and passed version validation; source lint and format
 checks passed. This does not claim that the first live automatic publication has finished;
 its workflow and retained receipts provide that evidence after release.
 
+The first complete release attempt (`38429792683`, source `7c5375e`) exposed
+missing descriptions on new full-profile MCP fields and a Git-date test oracle
+that expanded a literal bracketed filename as a wildcard. That attempt was
+cancelled and did not publish. Full-schema descriptions are restored; the test
+now uses literal paths and distinct deterministic commit times. The three checks
+covering the original failures and compact discovery passed after correction.
+The corrected attempt guards and deterministic Git fixture passed 20 focused
+checks; version preparation, source lint and patch whitespace checks also passed.
+Corrected unpublished attempts use a new frozen branch; the successful release
+receipt, rather than the cancelled run, determines publication readiness.
+
 Remaining limits: no universal calibrated confidence threshold, no guarantee that
 recency resolves conflicting evidence, no dated-section chunking, no distributed
 MCP session store and no claim of live acceptance in every named agent product.

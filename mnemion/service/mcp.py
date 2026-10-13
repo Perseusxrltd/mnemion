@@ -34,6 +34,40 @@ Query = Annotated[
         description="Natural-language query used to retrieve relevant authorized evidence.",
     ),
 ]
+SearchMode = Annotated[
+    Literal["hybrid", "lexical", "semantic"],
+    Field(description="Use meaning and exact text together, exact text only, or meaning only."),
+]
+SearchSort = Annotated[
+    Literal["relevance", "recent"],
+    Field(
+        description="Rank by relevance, or order matched candidates by source date with recorded-time fallback."
+    ),
+]
+RecordedAfter = Annotated[
+    AwareDatetime | None,
+    Field(
+        description="Optional inclusive timezone-aware cutoff for when a revision was recorded in Mnemion; filters before ranking."
+    ),
+]
+MinimumScore = Annotated[
+    float,
+    Field(
+        ge=0,
+        le=1,
+        allow_inf_nan=False,
+        description="Minimum normalized rank score, 0–1. This is not an answer-confidence percentage.",
+    ),
+]
+MinimumSimilarity = Annotated[
+    float | None,
+    Field(
+        ge=-1,
+        le=1,
+        allow_inf_nan=False,
+        description="Optional cosine floor for semantic-only matches; literal text and ID matches remain eligible.",
+    ),
+]
 IdempotencyKey = Annotated[
     str,
     Field(
@@ -393,11 +427,11 @@ def create_mcp(
         subject: Subject = None,
         all_accessible: AllAccessible = None,
         on_inference_busy: InferenceBusyPolicy = "error",
-        mode: Literal["hybrid", "lexical", "semantic"] = "hybrid",
-        sort: Literal["relevance", "recent"] = "relevance",
-        recorded_after: AwareDatetime | None = None,
-        min_score: Annotated[float, Field(ge=0, le=1, allow_inf_nan=False)] = 0,
-        min_similarity: Annotated[float | None, Field(ge=-1, le=1, allow_inf_nan=False)] = None,
+        mode: SearchMode = "hybrid",
+        sort: SearchSort = "relevance",
+        recorded_after: RecordedAfter = None,
+        min_score: MinimumScore = 0,
+        min_similarity: MinimumSimilarity = None,
     ) -> Recall:
         """Recall current authorized evidence with source citations and ranking details."""
         selected_spaces, accessible = _retrieval_scope(space_ids, all_accessible)
@@ -445,11 +479,11 @@ def create_mcp(
         ] = 2048,
         all_accessible: AllAccessible = None,
         on_inference_busy: InferenceBusyPolicy = "error",
-        mode: Literal["hybrid", "lexical", "semantic"] = "hybrid",
-        sort: Literal["relevance", "recent"] = "relevance",
-        recorded_after: AwareDatetime | None = None,
-        min_score: Annotated[float, Field(ge=0, le=1, allow_inf_nan=False)] = 0,
-        min_similarity: Annotated[float | None, Field(ge=-1, le=1, allow_inf_nan=False)] = None,
+        mode: SearchMode = "hybrid",
+        sort: SearchSort = "relevance",
+        recorded_after: RecordedAfter = None,
+        min_score: MinimumScore = 0,
+        min_similarity: MinimumSimilarity = None,
     ) -> ContextPack:
         """Build a bounded context pack with core blocks, evidence citations, and omissions."""
         selected_spaces, accessible = _retrieval_scope(space_ids, all_accessible)
@@ -676,11 +710,34 @@ def create_mcp(
     )
     async def compact_control(
         ctx: Context,
-        action: Literal["list", "describe", "read", "write"] = "list",
-        operation: OperationName | None = None,
+        action: Annotated[
+            Literal["list", "describe", "read", "write"],
+            Field(
+                description="List or describe operations, or explicitly execute an authorized read or write."
+            ),
+        ] = "list",
+        operation: Annotated[
+            str | None,
+            Field(
+                min_length=1,
+                max_length=100,
+                description="Operation name from the catalog; required for describe, read and write.",
+            ),
+        ] = None,
         request: OperationRequest = None,
-        offset: Annotated[int, Field(ge=0, le=10000)] = 0,
-        query: Annotated[str | None, Field(max_length=200)] = None,
+        offset: Annotated[
+            int,
+            Field(
+                ge=0, le=10000, description="List pagination offset from the previous next_offset."
+            ),
+        ] = 0,
+        query: Annotated[
+            str | None,
+            Field(
+                max_length=200,
+                description="Optional name or summary filter for list; omitted for other actions.",
+            ),
+        ] = None,
     ) -> dict[str, Any]:
         """Discover operations, inspect a schema, or explicitly execute a read/write with current access."""
         if action == "list":

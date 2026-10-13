@@ -175,7 +175,15 @@ def test_real_git_snapshot_ignores_uncommitted_work_and_never_executes_hooks(tmp
 
 
 def test_git_document_revisions_survive_unrelated_commits_merges_and_rollback(tmp_path):
+    commit_sequence = 0
+
     def git(*args):
+        nonlocal commit_sequence
+        environment = os.environ.copy()
+        if args[0] in {"commit", "merge"}:
+            commit_sequence += 1
+            timestamp = f"{1790000000 + commit_sequence} +0000"
+            environment.update(GIT_AUTHOR_DATE=timestamp, GIT_COMMITTER_DATE=timestamp)
         return (
             subprocess.run(
                 [
@@ -195,6 +203,7 @@ def test_git_document_revisions_survive_unrelated_commits_merges_and_rollback(tm
                 check=True,
                 capture_output=True,
                 timeout=10,
+                env=environment,
             )
             .stdout.decode()
             .strip()
@@ -228,6 +237,10 @@ def test_git_document_revisions_survive_unrelated_commits_merges_and_rollback(tm
         assert f"/blob/{initial}/" in after[name].uri
     assert after["d.md"].revision != before["d.md"].revision
     assert (
+        after["d.md"].metadata["source_modified_at"]
+        != after["[draft].md"].metadata["source_modified_at"]
+    )
+    assert (
         next(after["renamed.md"].items()).external_id != next(before["old.md"].items()).external_id
     )
     git("commit", "--allow-empty", "-m", "No source changes")
@@ -246,7 +259,9 @@ def test_git_document_revisions_survive_unrelated_commits_merges_and_rollback(tm
     assert merged["d.md"] == after["d.md"]
     for name, doc in merged.items():
         assert git("show", f"{doc.metadata['git_commit']}:{name}") == doc.text
-        assert doc.metadata["source_modified_at"] == git("log", "-1", "--format=%cI", "--", name)
+        assert doc.metadata["source_modified_at"] == git(
+            "--literal-pathspecs", "log", "-1", "--format=%cI", "--", name
+        )
 
 
 @pytest.mark.parametrize("reason", ["startup", "poll", "requested", "private-invalid-sentinel"])
