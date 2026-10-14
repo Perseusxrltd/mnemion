@@ -63,15 +63,16 @@
   ],
   "runs": [
     {
-      "id": 38559073557,
+      "id": 38568567319,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "44e4ebdc80d8811a1314305500b87a765caa30af",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-14T12:01:09Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38559073557"
+      "source_commit": "f654a07cb390000e3795f9bcec4ec5c01c30c655",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-14T13:04:11Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38568567319",
+      "failed_jobs": []
     },
     {
       "id": 38563825863,
@@ -96,6 +97,40 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38559090340"
     },
     {
+      "id": 38563469356,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.2.5",
+      "source_commit": "a26520a0477606c5b163fa6a751a48d540f69a20",
+      "status": "completed",
+      "conclusion": "failure",
+      "updated_at": "2026-10-14T12:45:45Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38563469356",
+      "failed_jobs": [
+        {
+          "name": "checks / supervision (macos-15)",
+          "id": 115850783826,
+          "steps": [
+            "Verify managed installation, signed updates and rollback with real processes"
+          ]
+        },
+        {
+          "name": "checks / supervision (macos-15-intel)",
+          "id": 115850783847,
+          "steps": [
+            "Verify managed installation, signed updates and rollback with real processes"
+          ]
+        },
+        {
+          "name": "native / windows-2022 / x64",
+          "id": 115851916180,
+          "steps": [
+            "Native Windows installation, authenticated upgrade and relaunch"
+          ]
+        }
+      ]
+    },
+    {
       "id": 38566308962,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
@@ -118,5 +153,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38563821954"
     }
   ],
-  "observed_at": "2026-10-14T12:46:09+00:00"
+  "observed_at": "2026-10-14T13:04:25+00:00"
 }
