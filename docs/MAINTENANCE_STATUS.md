@@ -1,8 +1,8 @@
 # Automated maintenance status
 
-Observed: 2026-10-14T19:55:08+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-14T19:56:40+00:00. Updated by repository events and the scheduled status workflow.
 
-Published release: [v4.3.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.3.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
+Published release: [v4.3.1](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.3.1). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
 This inventory reports GitHub state; issue closure does not prove that an entire product requirement is complete. Build observations cover the latest 100 runs, retaining the latest relevant run per workflow and branch. Active builds are checked for failed jobs at each observation; completed failures are inspected once per changed attempt. This automation never retries a build or publishes a release.
 
@@ -23,8 +23,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
 | ci\.yml | main | success | [Run 38622014374](https://github.com/Perseusxrltd/mnemion/actions/runs/38622014374) |
-| public-updates\.yml | v4\.3\.0 | success | [Run 38623872452](https://github.com/Perseusxrltd/mnemion/actions/runs/38623872452) |
-| release\.yml | release/4\.3\.0-r3 | success | [Run 38618970349](https://github.com/Perseusxrltd/mnemion/actions/runs/38618970349) |
+| public-updates\.yml | v4\.3\.1 | in\_progress | [Run 38627812073](https://github.com/Perseusxrltd/mnemion/actions/runs/38627812073) |
 | release\.yml | release/4\.3\.1 | success | [Run 38622161374](https://github.com/Perseusxrltd/mnemion/actions/runs/38622161374) |
-| verify-artifacts\.yml | main | in\_progress | [Run 38627612791](https://github.com/Perseusxrltd/mnemion/actions/runs/38627612791) |
-| website-release\.yml | v4\.3\.0 | success | [Run 38623867607](https://github.com/Perseusxrltd/mnemion/actions/runs/38623867607) |
+| verify-artifacts\.yml | main | success | [Run 38627612791](https://github.com/Perseusxrltd/mnemion/actions/runs/38627612791) |
+| website-release\.yml | v4\.3\.1 | success | [Run 38627807701](https://github.com/Perseusxrltd/mnemion/actions/runs/38627807701) |
