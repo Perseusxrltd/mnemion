@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-14T11:47:19+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-14T11:50:16+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.2.3](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.2.3). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -16,15 +16,16 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | [#17](https://github.com/Perseusxrltd/mnemion/issues/17) | Natural-language questions retrieve much worse than keyword queries | 2026-10-13T20:00:14Z |
 | [#18](https://github.com/Perseusxrltd/mnemion/issues/18) | OAuth 2\.1 MCP auth so ChatGPT custom connectors can connect \(spec for \#4\) | 2026-10-10T20:58:20Z |
 | [#32](https://github.com/Perseusxrltd/mnemion/issues/32) | Feature: encrypted secrets vault, kept apart from searchable memory | 2026-10-13T05:57:12Z |
-| [#36](https://github.com/Perseusxrltd/mnemion/issues/36) | Managed host on 4\.1\.x can't reach 4\.2\.x: no guided schema upgrade, and status doesn't show the blocked update | 2026-10-14T07:54:57Z |
+| [#36](https://github.com/Perseusxrltd/mnemion/issues/36) | Managed host on 4\.1\.x can't reach 4\.2\.x: no guided schema upgrade, and status doesn't show the blocked update | 2026-10-14T11:50:00Z |
 
 ## Relevant builds
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 38432705831](https://github.com/Perseusxrltd/mnemion/actions/runs/38432705831) |
+| ci\.yml | main | in\_progress | [Run 38559073557](https://github.com/Perseusxrltd/mnemion/actions/runs/38559073557) |
 | public-updates\.yml | v4\.2\.3 | success | [Run 38436415685](https://github.com/Perseusxrltd/mnemion/actions/runs/38436415685) |
 | release\.yml | release/4\.2\.3-r2 | success | [Run 38432717233](https://github.com/Perseusxrltd/mnemion/actions/runs/38432717233) |
+| release\.yml | release/4\.2\.4 | in\_progress | [Run 38559090340](https://github.com/Perseusxrltd/mnemion/actions/runs/38559090340) |
 | verify-artifacts\.yml | main | success | [Run 38436199163](https://github.com/Perseusxrltd/mnemion/actions/runs/38436199163) |
 | website-release\.yml | main | success | [Run 38516147515](https://github.com/Perseusxrltd/mnemion/actions/runs/38516147515) |
 | website-release\.yml | v4\.2\.3 | success | [Run 38436410364](https://github.com/Perseusxrltd/mnemion/actions/runs/38436410364) |

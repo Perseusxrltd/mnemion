@@ -63,22 +63,22 @@
     {
       "number": 36,
       "title": "Managed host on 4.1.x can't reach 4.2.x: no guided schema upgrade, and status doesn't show the blocked update",
-      "updated_at": "2026-10-14T07:54:57Z",
+      "updated_at": "2026-10-14T11:50:00Z",
       "url": "https://github.com/Perseusxrltd/mnemion/issues/36",
       "labels": []
     }
   ],
   "runs": [
     {
-      "id": 38432705831,
+      "id": 38559073557,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "ae8f389f1fdf4fcc26ae79014aa7ef32bf8ee6cc",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-13T16:56:07Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38432705831"
+      "source_commit": "44e4ebdc80d8811a1314305500b87a765caa30af",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-14T11:47:42Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38559073557"
     },
     {
       "id": 38436415685,
@@ -101,6 +101,17 @@
       "conclusion": "success",
       "updated_at": "2026-10-13T17:08:11Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38432717233"
+    },
+    {
+      "id": 38559090340,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.2.4",
+      "source_commit": "44e4ebdc80d8811a1314305500b87a765caa30af",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-14T11:49:29Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38559090340"
     },
     {
       "id": 38436199163,
@@ -136,5 +147,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38436410364"
     }
   ],
-  "observed_at": "2026-10-14T11:47:19+00:00"
+  "observed_at": "2026-10-14T11:50:16+00:00"
 }
