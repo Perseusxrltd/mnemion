@@ -132,23 +132,15 @@
     },
     {
       "id": 38571557139,
-      "attempt": 1,
+      "attempt": 2,
       "workflow": "release.yml",
       "branch": "release/4.2.5-r2",
       "source_commit": "b869b0c1ce3071d8848748469abfe145d0187184",
-      "status": "completed",
-      "conclusion": "failure",
-      "updated_at": "2026-10-14T13:48:26Z",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-14T13:49:13Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38571557139",
-      "failed_jobs": [
-        {
-          "name": "native / ubuntu-22.04-arm / arm64",
-          "id": 115879182624,
-          "steps": [
-            "Run npm --prefix studio/electron run dist"
-          ]
-        }
-      ]
+      "failed_jobs": []
     },
     {
       "id": 38574927450,
@@ -173,5 +165,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38563821954"
     }
   ],
-  "observed_at": "2026-10-14T13:48:52+00:00"
+  "observed_at": "2026-10-14T13:49:24+00:00"
 }
