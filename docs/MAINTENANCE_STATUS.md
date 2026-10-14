@@ -1,12 +1,12 @@
 # Automated maintenance status
 
-Observed: 2026-10-14T20:51:30+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-14T21:02:48+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.3.2](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.3.2). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
 This inventory reports GitHub state; issue closure does not prove that an entire product requirement is complete. Build observations cover the latest 100 runs, retaining the latest relevant run per workflow and branch. Active builds are checked for failed jobs at each observation; completed failures are inspected once per changed attempt. This automation never retries a build or publishes a release.
 
-## Open issues (7)
+## Open issues (6)
 
 | Issue | Report | Last activity |
 | --- | --- | --- |
@@ -16,14 +16,13 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | [#18](https://github.com/Perseusxrltd/mnemion/issues/18) | OAuth 2\.1 MCP auth so ChatGPT custom connectors can connect \(spec for \#4\) | 2026-10-10T20:58:20Z |
 | [#31](https://github.com/Perseusxrltd/mnemion/issues/31) | Recall has no recency signal: older 'open question' memories outrank the newer answer | 2026-10-14T19:51:04Z |
 | [#32](https://github.com/Perseusxrltd/mnemion/issues/32) | Feature: encrypted secrets vault, kept apart from searchable memory | 2026-10-13T05:57:12Z |
-| [#37](https://github.com/Perseusxrltd/mnemion/issues/37) | Git connector bare cache: refs/heads/main can stay on an old tip while remote\_sync indexes HEAD | 2026-10-14T19:51:00Z |
 
 ## Relevant builds
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
 | ci\.yml | main | success | [Run 38630915722](https://github.com/Perseusxrltd/mnemion/actions/runs/38630915722) |
-| public-updates\.yml | v4\.3\.2 | queued | [Run 38635523232](https://github.com/Perseusxrltd/mnemion/actions/runs/38635523232) |
+| public-updates\.yml | v4\.3\.2 | success | [Run 38635523232](https://github.com/Perseusxrltd/mnemion/actions/runs/38635523232) |
 | release\.yml | release/4\.3\.2 | success | [Run 38631058336](https://github.com/Perseusxrltd/mnemion/actions/runs/38631058336) |
 | verify-artifacts\.yml | main | success | [Run 38635331062](https://github.com/Perseusxrltd/mnemion/actions/runs/38635331062) |
 | website-release\.yml | v4\.3\.2 | success | [Run 38635518363](https://github.com/Perseusxrltd/mnemion/actions/runs/38635518363) |

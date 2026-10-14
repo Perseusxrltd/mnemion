@@ -59,13 +59,6 @@
       "updated_at": "2026-10-13T05:57:12Z",
       "url": "https://github.com/Perseusxrltd/mnemion/issues/32",
       "labels": []
-    },
-    {
-      "number": 37,
-      "title": "Git connector bare cache: refs/heads/main can stay on an old tip while remote_sync indexes HEAD",
-      "updated_at": "2026-10-14T19:51:00Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/issues/37",
-      "labels": []
     }
   ],
   "runs": [
@@ -86,11 +79,10 @@
       "workflow": "public-updates.yml",
       "branch": "v4.3.2",
       "source_commit": "0b60e6fb417245708954c965477fa887b205b5d5",
-      "status": "queued",
-      "conclusion": null,
-      "updated_at": "2026-10-14T20:51:18Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38635523232",
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-14T21:02:25Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38635523232"
     },
     {
       "id": 38631058336,
@@ -126,5 +118,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38635518363"
     }
   ],
-  "observed_at": "2026-10-14T20:51:30+00:00"
+  "observed_at": "2026-10-14T21:02:48+00:00"
 }
