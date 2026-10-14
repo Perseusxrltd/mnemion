@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-14T13:25:58+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-14T13:38:12+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.2.4](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.2.4). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -21,11 +21,11 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | in\_progress | [Run 38571539351](https://github.com/Perseusxrltd/mnemion/actions/runs/38571539351) |
+| ci\.yml | main | success | [Run 38571539351](https://github.com/Perseusxrltd/mnemion/actions/runs/38571539351) |
 | public-updates\.yml | v4\.2\.4 | success | [Run 38563825863](https://github.com/Perseusxrltd/mnemion/actions/runs/38563825863) |
 | release\.yml | release/4\.2\.4 | success | [Run 38559090340](https://github.com/Perseusxrltd/mnemion/actions/runs/38559090340) |
 | release\.yml | release/4\.2\.5 | failure | [Run 38563469356](https://github.com/Perseusxrltd/mnemion/actions/runs/38563469356) |
-| release\.yml | release/4\.2\.5-r2 | queued | [Run 38571557139](https://github.com/Perseusxrltd/mnemion/actions/runs/38571557139) |
+| release\.yml | release/4\.2\.5-r2 | in\_progress | [Run 38571557139](https://github.com/Perseusxrltd/mnemion/actions/runs/38571557139) |
 | verify-artifacts\.yml | main | skipped | [Run 38566308962](https://github.com/Perseusxrltd/mnemion/actions/runs/38566308962) |
 | website-release\.yml | v4\.2\.4 | success | [Run 38563821954](https://github.com/Perseusxrltd/mnemion/actions/runs/38563821954) |
 
@@ -34,3 +34,4 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 - [Run 38563469356](https://github.com/Perseusxrltd/mnemion/actions/runs/38563469356): checks / supervision \(macos-15\). Steps: Verify managed installation, signed updates and rollback with real processes.
 - [Run 38563469356](https://github.com/Perseusxrltd/mnemion/actions/runs/38563469356): checks / supervision \(macos-15-intel\). Steps: Verify managed installation, signed updates and rollback with real processes.
 - [Run 38563469356](https://github.com/Perseusxrltd/mnemion/actions/runs/38563469356): native / windows-2022 / x64. Steps: Native Windows installation, authenticated upgrade and relaunch.
+- [Run 38571557139](https://github.com/Perseusxrltd/mnemion/actions/runs/38571557139): native / ubuntu-22\.04-arm / arm64. Steps: Run npm --prefix studio/electron run dist.
