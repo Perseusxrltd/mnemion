@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import errno
 import hashlib
 import json
 import os
 import shutil
 import tempfile
+import sys
 import zipfile
 from contextlib import contextmanager
 from pathlib import Path, PurePosixPath
@@ -43,6 +45,31 @@ def _member(name: str) -> str:
     return name
 
 
+def _rename_exclusive(staged: Path, output: Path) -> None:
+    """Publish on filesystems without hard links, without a check/rename race."""
+    if os.name == "nt":
+        # Windows rename refuses an existing destination, including on exFAT.
+        os.rename(staged, output)
+        return
+    import ctypes
+
+    library = ctypes.CDLL(None, use_errno=True)
+    if sys.platform == "darwin":
+        function = getattr(library, "renamex_np", None)
+        arguments = [os.fsencode(staged), os.fsencode(output), 4]  # RENAME_EXCL
+        signature = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_uint]
+    else:
+        function = getattr(library, "renameat2", None)
+        arguments = [-100, os.fsencode(staged), -100, os.fsencode(output), 1]  # RENAME_NOREPLACE
+        signature = [ctypes.c_int, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p, ctypes.c_uint]
+    if function is None:
+        raise OSError(errno.ENOTSUP, "This filesystem cannot publish backups exclusively")
+    function.argtypes, function.restype = signature, ctypes.c_int
+    if function(*arguments) != 0:
+        error = ctypes.get_errno()
+        raise OSError(error, "The backup could not be published exclusively", str(output))
+
+
 def publish_file(staged: Path, output: Path) -> None:
     """Atomic, exclusive publication on the same filesystem; never clobber."""
     # Windows' CRT cannot flush a read-only descriptor (_commit reports EBADF).
@@ -50,7 +77,18 @@ def publish_file(staged: Path, output: Path) -> None:
     # failure still prevents the exclusive link from publishing the backup.
     with staged.open("r+b") as source:
         os.fsync(source.fileno())
-    os.link(staged, output)
+    try:
+        os.link(staged, output)
+    except OSError as error:
+        if error.errno not in {
+            errno.EPERM,
+            errno.EOPNOTSUPP,
+            errno.ENOSYS,
+            errno.EXDEV,
+            errno.EINVAL,
+        }:
+            raise
+        _rename_exclusive(staged, output)
     if os.name != "nt":
         descriptor = os.open(output.parent, os.O_RDONLY)
         try:

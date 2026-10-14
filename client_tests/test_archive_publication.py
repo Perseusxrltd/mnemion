@@ -78,3 +78,42 @@ def test_concurrent_publishers_cannot_overwrite_the_winning_backup(tmp_path):
     winners = [value for value in results if value is not None]
     assert len(winners) == 1
     assert output.read_bytes() == winners[0]
+
+
+def test_filesystem_without_hard_links_uses_exclusive_native_publication(tmp_path, monkeypatch):
+    def unavailable(*args):
+        raise OSError(errno.EOPNOTSUPP, "Synthetic filesystem without hard links")
+
+    monkeypatch.setattr("mnemion.archives.os.link", unavailable)
+    staged, output = tmp_path / "staged", tmp_path / "published"
+    staged.write_bytes(b"Verified recovery bytes")
+    publish_file(staged, output)
+    assert output.read_bytes() == b"Verified recovery bytes"
+    assert not staged.exists()
+    staged.write_bytes(b"Another backup")
+    with pytest.raises(FileExistsError):
+        publish_file(staged, output)
+    assert staged.read_bytes() == b"Another backup"
+    assert output.read_bytes() == b"Verified recovery bytes"
+
+
+def test_no_link_fallback_preserves_exclusion_between_concurrent_publishers(tmp_path, monkeypatch):
+    def unavailable(*args):
+        raise OSError(errno.EOPNOTSUPP, "Synthetic filesystem without hard links")
+
+    monkeypatch.setattr("mnemion.archives.os.link", unavailable)
+    test_concurrent_publishers_cannot_overwrite_the_winning_backup(tmp_path)
+
+
+def test_failed_atomic_fallback_never_uses_an_overwriting_rename(tmp_path, monkeypatch):
+    def unavailable(*args):
+        raise OSError(errno.EOPNOTSUPP, "Synthetic unsupported filesystem")
+
+    monkeypatch.setattr("mnemion.archives.os.link", unavailable)
+    monkeypatch.setattr("mnemion.archives._rename_exclusive", unavailable)
+    staged, output = tmp_path / "staged", tmp_path / "published"
+    staged.write_bytes(b"Retained complete source")
+    with pytest.raises(OSError):
+        publish_file(staged, output)
+    assert staged.read_bytes() == b"Retained complete source"
+    assert not output.exists()
