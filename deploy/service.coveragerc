@@ -1,0 +1,15 @@
+# Measure shared service and native-host behavior with their owning test suite.
+# Native modules are not silently omitted from both coverage gates.
+[run]
+source = mnemion
+
+[report]
+include =
+    */mnemion/service/*
+    */mnemion/local_*.py
+    */mnemion/backup_encryption.py
+fail_under = 75
+show_missing = true
+exclude_lines =
+    if __name__
+    pragma: no cover

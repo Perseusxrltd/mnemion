@@ -1,8 +1,11 @@
-# The service has a separate >=75% coverage gate. Keep growth of that service
-# from changing the measured coverage of the retained legacy implementation.
+# Service and native-host modules are measured by the separate >=75% gate.
+# Keep their growth out of the retained legacy implementation's denominator.
 [run]
 source = mnemion
-omit = */mnemion/service/*
+omit =
+    */mnemion/service/*
+    */mnemion/local_*.py
+    */mnemion/backup_encryption.py
 
 [report]
 fail_under = 45

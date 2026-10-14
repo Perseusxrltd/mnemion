@@ -65,7 +65,7 @@ jobs:
       - name: Check release versions before building clients and running the service matrix
         run: uv run --no-sync python deploy/release.py
       - run: npm --prefix packages/client ci && npm --prefix packages/client test
-      - run: uv run --no-sync python -m pytest service_tests -q --cov=mnemion.service --cov-report=term-missing --cov-fail-under=75
+      - run: uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75
       - name: Preserve measured real-model idle cleanup and reload results
         if: always() && matrix.python == '3.12'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
