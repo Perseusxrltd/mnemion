@@ -27,12 +27,20 @@ from mnemion.service.worker import Worker
 
 
 @pytest.fixture(autouse=True)
-def managed_process_diagnostics(monkeypatch):
+def managed_process_diagnostics(monkeypatch, tmp_path_factory):
     if os.environ.get("MNEMION_TEST_PROCESS_DIAGNOSTICS") != "1":
         return
     from mnemion.service import supervision
     from service_tests.process_diagnostics import report
 
+    support = tmp_path_factory.mktemp("managed-trace-support")
+    (support / "sitecustomize.py").write_text(
+        "import faulthandler, signal\n"
+        "if hasattr(signal, 'SIGUSR2'):\n"
+        "    faulthandler.register(signal.SIGUSR2, all_threads=True)\n"
+    )
+    inherited = os.environ.get("PYTHONPATH")
+    monkeypatch.setenv("PYTHONPATH", str(support) + (os.pathsep + inherited if inherited else ""))
     start = supervision.start
 
     def observed_start(state, **kwargs):

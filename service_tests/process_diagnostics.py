@@ -10,7 +10,7 @@ def failure_locations(content: str) -> dict:
 
     locations = []
     for path, line, function in re.findall(
-        r'File "([^"\n]{1,2048})", line ([0-9]{1,7}), in ([A-Za-z_][A-Za-z0-9_]{0,63})',
+        r'File "([^"\n]{1,2048})", line ([0-9]{1,7}),? in ([A-Za-z_][A-Za-z0-9_]{0,63})',
         content,
     ):
         relative = path.replace("\\", "/").rpartition("/mnemion/")[2]
@@ -34,6 +34,10 @@ def failure_locations(content: str) -> dict:
 
 
 def report(state: Path, status: dict) -> None:
+    import os
+    import signal
+    import time
+
     import psutil
     from mnemion import process_identity
     from mnemion.service import supervision, update_state
@@ -57,6 +61,30 @@ def report(state: Path, status: dict) -> None:
     result["broker_address_published"] = (state / "model-broker/address.json").is_file()
     result["readiness"] = {}
     previous_models = None
+    requested_trace = False
+    for item in status.get("processes", []):
+        if (
+            item.get("name") not in {"mnemion-api", "mnemion-worker"}
+            or item.get("statename") != "RUNNING"
+        ):
+            continue
+        try:
+            process = psutil.Process(item["pid"])
+            command = process.cmdline()
+            # Only the disposable, non-isolated bootstrap loads our temporary
+            # sitecustomize hook. Never signal an isolated signed runtime.
+            if (
+                "mnemion.service.supervision" in command
+                and "-I" not in command
+                and "-S" not in command
+                and str(state) in command
+            ):
+                os.kill(process.pid, signal.SIGUSR2)
+                requested_trace = True
+        except (OSError, psutil.Error):
+            pass
+    if requested_trace:
+        time.sleep(0.1)
     for role in ("api", "worker"):
         path = Path(settings["runtime"]) / (role + "-ready.json")
         checks = {"receipt_exists": path.is_file()}
