@@ -180,12 +180,21 @@ class MemoryBudgetSnapshot(ResponseModel):
 
 class ModelCacheSnapshot(ResponseModel):
     scope: Literal["this_process"]
+    local_model_owner: Literal["this_process", "worker"] = "this_process"
     idle_seconds: int = Field(ge=0, le=86400)
     idle_cleanup_enabled: bool
     idle_cleanup_running: bool
     idle_model_evictions: int = Field(ge=0)
     cleanup_failures: int = Field(ge=0)
     loaded_local_models: int = Field(ge=0)
+
+
+class SharedModelWorkerSnapshot(ResponseModel):
+    scope: Literal["indexing_worker"]
+    available: bool
+    model_cache: ModelCacheSnapshot | None = None
+    resources: dict = Field(default_factory=dict)
+    inference: dict | None = None
 
 
 class RuntimeInsights(ResponseModel):
@@ -202,5 +211,6 @@ class RuntimeInsights(ResponseModel):
     pool: dict
     resources: dict
     memory_budget: MemoryBudgetSnapshot | None = None
+    shared_model_worker: SharedModelWorkerSnapshot | None = None
     model_cache: ModelCacheSnapshot | None = None
     notices: list[str] = Field(default_factory=list)

@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.2.4**. Roadmap updated: **2026-10-14**.
+Reviewed source distribution: **4.2.5**. Roadmap updated: **2026-10-14**.
 The [current published distribution and release gates](RELEASE_STATUS.md) are updated automatically.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
@@ -13,8 +13,8 @@ passed, followed by all 30 signed release jobs, 11 separate product jobs and
 Unchanged native database builds can now be reused with fresh security/recovery
 probes. [Paired hosted cache measurements](implementation/native-local-runtime.md#reusing-a-verified-database-build)
 reduced the five database jobs from 261–780 seconds to 12–40 seconds; application
-and release gates still run. Peak RAM and API/worker duplication remain open
-under issue 13. [Public automatic upgrades from 4.2.0](validation/2026-10-13-v4_2_1-public-upgrades.json)
+and release gates still run. Managed API/worker duplication is addressed by
+4.2.5 below; broader peak RAM measurements remain open. [Public automatic upgrades from 4.2.0](validation/2026-10-13-v4_2_1-public-upgrades.json)
 passed on all six targets, preserving profiles and ordinary idle safeguards.
 
 Published [4.2.2](releases/4.2.2.md) lets exact task IDs and
@@ -47,6 +47,15 @@ enrolled source identities. Shared-host and public delivery evidence remain
 separate. The [maintenance board](MAINTENANCE_STATUS.md) now tracks issue activity
 and build failures through scripts and GitHub events; normal source integration
 also handles generated-metadata races without rewriting released source.
+
+[4.2.5](releases/4.2.5.md) adds one worker-owned local model cache for managed
+search and indexing, restart-safe pinned loopback transport and separate worker
+resource gauges. The [offline E5 comparison](validation/2026-10-14-shared-model-runtime.md)
+measured 37% lower combined model-process RSS with identical vectors and source
+spans. Native engines already share a registry; independent containers and
+fleet resource policy remain separate. Reviewed issue resolutions now receive
+fixing-release labels and close automatically only after verified publication.
+Reopened reports stay open. Public delivery evidence remains in release status.
 
 Published [4.2.0](releases/4.2.0.md) implements personal
 passwords, scoped invitations, revocable device sessions, protected desktop and
@@ -469,8 +478,9 @@ where possible and include migration/rollback instructions when needed.
   tokenizer vocabulary per local model, saving 296 MiB after loading E5 in the
   recorded comparison while preserving generation, source spans and vectors.
   Native local hosting now includes cooperative budgets and idle-model release;
-  independently deployed API/worker processes still need shared model serving
-  and peak-memory measurements. Scoped author withdrawal (14) passed all six
+  4.2.5 adds managed worker ownership and separate worker gauges, with an offline
+  comparison measuring 37% lower combined model-process RSS. Independent
+  containers, fleet policy and broader peak-memory measurements remain. Scoped author withdrawal (14) passed all six
   installed migration/recovery gates and the original shared host's Windows
   contributor exercise. Improve source-space onboarding (8), extend 4.0.5's durable
   sync requests and timestamped diagnostics with provider webhook verification,

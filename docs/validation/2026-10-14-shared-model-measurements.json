@@ -1,0 +1,88 @@
+{
+  "observed_at": "2026-10-14T12:18:13.031943+00:00",
+  "scope": "two isolated model processes; excludes database, desktop and other host processes",
+  "source_base_commit": "44e4ebdc80d8811a1314305500b87a765caa30af",
+  "source_files": {
+    "mnemion/service/model_broker.py": "b71250d222921a180d077b3514da4f69606011fa316bb28b6be8ae4cbe25ddc2",
+    "mnemion/service/model_registry.py": "3cd85159b90f98290f8e6121967ef108b3848af0a666e9c03251649599c86e9b",
+    "mnemion/service/embeddings.py": "4657a580f699636b864cfed6d149a175eaad9ddafcaffb327e11aeb6ead0aa43",
+    "benchmarks/shared_model_resources.py": "c046324357b09069f678a4a4dfceb23e7682ad2b8445da993c64c14fa35542ff"
+  },
+  "platform": "Linux",
+  "architecture": "x86_64",
+  "python": "3.12.3",
+  "runtime_versions": {
+    "fastembed": "0.9.0",
+    "onnxruntime": "1.31.0",
+    "tokenizers": "0.23.3",
+    "httpx": "0.28.1"
+  },
+  "profile": "e5-small",
+  "generation_id": "ce98fcc87e3bb78d0dc8976eaa9592e0025a7021bff866515923f40ebb39aea0",
+  "threads_per_model": 1,
+  "source_sha256": "7746e94ff2a001d51835e095892fa3d98026ef559ca1d2b5290acc35b15f2f6a",
+  "offline": true,
+  "production_memory_writes": 0,
+  "cloud_model_calls": 0,
+  "baseline": {
+    "worker": {
+      "chunks": 11,
+      "source_tokens": 3411,
+      "vectors_and_spans_sha256": "a8a2217f5ff7772e80860898a6ebccec1a4e1e6669f0aff1e670c8ba85f03a92",
+      "seconds": 4.1803,
+      "memory": {
+        "rss_bytes": 727568384,
+        "uss_bytes": 678309888,
+        "pss_bytes": 699301888
+      }
+    },
+    "api": {
+      "query_vector_sha256": "0f94a1f8f2452e7bd1cb7ceba9bca058305302a9e1e578cabb830fec227d5bd8",
+      "seconds": 1.6818,
+      "memory": {
+        "rss_bytes": 526835712,
+        "uss_bytes": 477630464,
+        "pss_bytes": 498629632
+      }
+    },
+    "total": {
+      "rss_bytes": 1254404096,
+      "uss_bytes": 1155940352,
+      "pss_bytes": 1197931520
+    }
+  },
+  "shared": {
+    "worker": {
+      "chunks": 11,
+      "source_tokens": 3411,
+      "vectors_and_spans_sha256": "a8a2217f5ff7772e80860898a6ebccec1a4e1e6669f0aff1e670c8ba85f03a92",
+      "seconds": 3.6156,
+      "memory": {
+        "rss_bytes": 741081088,
+        "uss_bytes": 724033536,
+        "pss_bytes": 728858624
+      }
+    },
+    "api": {
+      "query_vector_sha256": "0f94a1f8f2452e7bd1cb7ceba9bca058305302a9e1e578cabb830fec227d5bd8",
+      "seconds": 0.051,
+      "memory": {
+        "rss_bytes": 44638208,
+        "uss_bytes": 29151232,
+        "pss_bytes": 33384448
+      }
+    },
+    "total": {
+      "rss_bytes": 785719296,
+      "uss_bytes": 753184768,
+      "pss_bytes": 762243072
+    }
+  },
+  "savings_percent": {
+    "rss_bytes": 37.36,
+    "uss_bytes": 34.84,
+    "pss_bytes": 36.37
+  },
+  "query_document_vectors_and_unicode_spans_identical": true,
+  "api_keeps_no_local_model_or_tokenizer": true
+}

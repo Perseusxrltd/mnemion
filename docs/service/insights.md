@@ -11,6 +11,13 @@ keyboard inspection, legends, tooltips and paged numeric tables. Missing samples
 remain gaps; counters do not invent provider prices, hardware bandwidth or scores.
 Runtime histories are bounded samples in the current browser session.
 
+From 4.2.5, **Models & resources** also identifies supervised worker ownership
+and displays its measured RSS, loaded model count, inference pressure and idle
+cleanup. API gauges remain separate. These worker observations require the same
+organization administrator access as API runtime diagnostics; they can include
+other organizations using that host. Busy or unavailable worker samples remain
+unavailable, and monitoring does not load a model or reset its idle timer.
+
 Telemetry stores numerical aggregates, count/error/latency histograms and queue
 status. It does not store memory text or query strings. Collection is bounded,
 expires old buckets, and drops diagnostics under overload instead of making

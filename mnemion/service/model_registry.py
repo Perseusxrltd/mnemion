@@ -51,7 +51,7 @@ class ModelRegistry:
                 model._inference_gate = gate
 
     @classmethod
-    def from_environment(cls) -> "ModelRegistry":
+    def from_environment(cls, *, shared_models=True) -> "ModelRegistry":
         raw_idle = os.environ.get("MNEMION_MODEL_IDLE_SECONDS", "300")
         if not raw_idle.isascii() or not raw_idle.isdigit() or len(raw_idle) > 5:
             raise ValueError("Model idle cleanup must be disabled with 0 or use 10–86400 seconds")
@@ -60,9 +60,15 @@ class ModelRegistry:
         config = EmbeddingConfiguration.from_file(Path(path)) if path else EmbeddingConfiguration()
         cache = os.environ.get("MNEMION_MODEL_CACHE", str(Path.home() / ".cache/mnemion/models"))
         offline = os.environ.get("MNEMION_MODEL_OFFLINE") == "1"
+        broker = os.environ.get("MNEMION_MODEL_BROKER") if shared_models else None
+        factory, arguments = LocalEmbedder, [cache]
+        if broker:
+            from .model_broker import SharedLocalEmbedder
+
+            factory, arguments = SharedLocalEmbedder, [Path(broker), cache]
         models = {
-            name: LocalEmbedder(
-                cache,
+            name: factory(
+                *arguments,
                 threads=int(os.environ.get("MNEMION_MODEL_THREADS", "2")),
                 offline=offline,
                 generation=LOCAL_GENERATIONS[name],
@@ -77,8 +83,8 @@ class ModelRegistry:
     def release_idle(self) -> int:
         """Discard only inactive local sessions, retaining approved model files.
 
-        API and worker processes each maintain their own cache. This reduces
-        retained idle memory; it does not merge their peak inference allocations.
+        The process that owns each local session releases it. Managed APIs
+        proxy inference to their worker, whose idle policy governs that cache.
         """
         if not self.idle_seconds:
             return 0
@@ -109,6 +115,11 @@ class ModelRegistry:
         with self._idle_lock:
             return {
                 "scope": "this_process",
+                "local_model_owner": "worker"
+                if any(
+                    getattr(model, "shared_model", False) for model in self._by_generation.values()
+                )
+                else "this_process",
                 "idle_seconds": self.idle_seconds,
                 "idle_cleanup_enabled": self.idle_seconds > 0,
                 "idle_cleanup_running": bool(self._idle_thread and self._idle_thread.is_alive()),
@@ -122,6 +133,17 @@ class ModelRegistry:
 
     def _idle_interval(self) -> float:
         return min(15, self.idle_seconds / 4)
+
+    def shared_worker_status(self) -> dict | None:
+        model = next(
+            (
+                model
+                for model in self._by_generation.values()
+                if getattr(model, "shared_model", False)
+            ),
+            None,
+        )
+        return model.worker_status() if model is not None else None
 
     def start_idle_cleanup(self) -> None:
         if not self.idle_seconds:

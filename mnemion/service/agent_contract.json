@@ -7443,6 +7443,15 @@
                 "title": "Loaded Local Models",
                 "type": "integer"
               },
+              "local_model_owner": {
+                "default": "this_process",
+                "enum": [
+                  "this_process",
+                  "worker"
+                ],
+                "title": "Local Model Owner",
+                "type": "string"
+              },
               "scope": {
                 "const": "this_process",
                 "title": "Scope",
@@ -7558,6 +7567,16 @@
                 "title": "Scope",
                 "type": "string"
               },
+              "shared_model_worker": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/SharedModelWorkerSnapshot"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "telemetry": {
                 "additionalProperties": true,
                 "title": "Telemetry",
@@ -7578,6 +7597,53 @@
               "resources"
             ],
             "title": "RuntimeInsights",
+            "type": "object"
+          },
+          "SharedModelWorkerSnapshot": {
+            "additionalProperties": true,
+            "properties": {
+              "available": {
+                "title": "Available",
+                "type": "boolean"
+              },
+              "inference": {
+                "anyOf": [
+                  {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Inference"
+              },
+              "model_cache": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/ModelCacheSnapshot"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "resources": {
+                "additionalProperties": true,
+                "title": "Resources",
+                "type": "object"
+              },
+              "scope": {
+                "const": "indexing_worker",
+                "title": "Scope",
+                "type": "string"
+              }
+            },
+            "required": [
+              "scope",
+              "available"
+            ],
+            "title": "SharedModelWorkerSnapshot",
             "type": "object"
           }
         },

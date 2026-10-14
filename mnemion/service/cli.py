@@ -8,6 +8,7 @@ import os
 import re
 import signal
 import threading
+from contextlib import ExitStack
 from pathlib import Path
 
 from .model_registry import ModelRegistry
@@ -227,6 +228,10 @@ def main(argv: list[str] | None = None) -> int:
     vault.add_argument("--dry-run", action="store_true")
     vault.add_argument("--open", action="store_true")
     args = parser.parse_args(argv)
+    if args.command in {"serve", "worker"}:
+        from .model_broker import configure_managed_sharing
+
+        configure_managed_sharing(args.command)
     for path in args.credentials:
         values = json.loads(path.read_text(encoding="utf-8"))
         for key, variable in (
@@ -568,13 +573,18 @@ def main(argv: list[str] | None = None) -> int:
         for sig in (signal.SIGINT, signal.SIGTERM):
             signal.signal(sig, lambda *_: stop.set())
         try:
-            registry = ModelRegistry.from_environment()
+            registry = ModelRegistry.from_environment(shared_models=False)
             if not args.once:
                 registry.start_idle_cleanup()
             process = ModelWorker(database, registry, telemetry=telemetry)
             from .supervision import process_ready
 
-            with process_ready("worker", registry.generation_ids):
+            with ExitStack() as stack:
+                if broker := os.environ.get("MNEMION_MODEL_BROKER"):
+                    from .model_broker import ModelBroker
+
+                    stack.enter_context(ModelBroker(registry, Path(broker)))
+                stack.enter_context(process_ready("worker", registry.generation_ids))
                 if args.once:
                     print(json.dumps({"processed": process.run_once()}))
                 else:

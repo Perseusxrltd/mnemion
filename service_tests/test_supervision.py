@@ -127,6 +127,14 @@ def test_real_api_and_worker_recover_from_crashes_and_stop_cleanly(
                 ).status_code
                 == 200
             )
+            runtime_report = client.get(
+                "/v1/insights/runtime", headers={"Authorization": "Bearer " + owner["api_key"]}
+            ).json()
+            assert runtime_report["model_cache"]["local_model_owner"] == "worker"
+            assert runtime_report["model_cache"]["loaded_local_models"] == 0
+            assert runtime_report["shared_model_worker"]["available"]
+            assert runtime_report["shared_model_worker"]["model_cache"]["loaded_local_models"] == 0
+        first_identity = update_state.read(state / "model-broker/address.json")
         for role in ("mnemion-worker", "mnemion-api"):
             receipt_path = runtime / (role.removeprefix("mnemion-") + "-ready.json")
             previous_receipt = update_state.read(receipt_path)
@@ -157,6 +165,8 @@ def test_real_api_and_worker_recover_from_crashes_and_stop_cleanly(
             assert recovered["supervisor_pid"] == current["supervisor_pid"]
             recorded += [psutil.Process(item["pid"]) for item in recovered["processes"]]
             current = recovered
+        replacement_identity = update_state.read(state / "model-broker/address.json")
+        assert first_identity["certificate"] != replacement_identity["certificate"]
         with httpx.Client(base_url=f"http://127.0.0.1:{port}", trust_env=False) as client:
             assert (
                 client.get(
@@ -164,6 +174,9 @@ def test_real_api_and_worker_recover_from_crashes_and_stop_cleanly(
                 ).status_code
                 == 200
             )
+            assert client.get(
+                "/v1/insights/runtime", headers={"Authorization": "Bearer " + owner["api_key"]}
+            ).json()["shared_model_worker"]["available"]
         assert (runtime / "control.sock").stat().st_mode & 0o777 == 0o600
         assert all(path.stat().st_mode & 0o077 == 0 for path in state.glob("*.json"))
         assert supervision.stop(state) == {"stopped": True}

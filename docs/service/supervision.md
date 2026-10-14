@@ -29,6 +29,11 @@ wheel, select its `supervision` extra, for example
 `python -m pip install './mnemion-4.0.8-py3-none-any.whl[supervision]'`.
 Use the [official downloads](https://github.com/Perseusxrltd/mnemion/releases).
 The extra is optional and adds no model or paid service.
+From 4.2.5, the worker owns the local model cache for both managed processes.
+API semantic requests use authenticated, pinned TLS over loopback; the model
+generation and database are unchanged. Worker RSS and cache state are visible
+in administrator insights. Native local workspaces already use a shared registry.
+See [model sharing, queue behavior and the compatibility opt-out](memory-resources.md).
 Intel Mac servers require Python 3.12 or 3.13. The package selects ONNX Runtime
 1.23.2 there, the newest version publishing compatible Intel wheels; other
 platforms retain their newer locked runtime. This does not change E5/BGE weights

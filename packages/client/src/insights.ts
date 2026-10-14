@@ -46,10 +46,15 @@ export interface MemoryBudgetSnapshot {
   background_paused: boolean; indexing_paused: boolean; minimum_model_budget_bytes: number
   batch_size: number; rejected_inferences: number; model_evictions: number
 }
+export interface ModelCacheSnapshot {
+  scope: 'this_process'; local_model_owner?: 'this_process' | 'worker'; idle_seconds: number; idle_cleanup_enabled: boolean;
+  idle_cleanup_running: boolean; idle_model_evictions: number; cleanup_failures: number; loaded_local_models: number
+}
 export interface RuntimeInsights {
   memory_budget?: MemoryBudgetSnapshot | null
-  model_cache?: { scope: 'this_process'; idle_seconds: number; idle_cleanup_enabled: boolean;
-    idle_cleanup_running: boolean; idle_model_evictions: number; cleanup_failures: number; loaded_local_models: number } | null
+  model_cache?: ModelCacheSnapshot | null
+  shared_model_worker?: { scope: 'indexing_worker'; available: boolean; model_cache?: ModelCacheSnapshot | null;
+    resources: RuntimeInsights['resources']; inference?: RuntimeInsights['inference'] } | null
   models?: { generation_id: string; model: string; model_loaded: boolean | null; configuration: Record<string, unknown>;
     provider: { requests: number; failed_requests: number; request_bytes: number; response_bytes: number; token_count_unit: string } | null }[]
   observed_at: string; scope: 'this_api_process'; model: string; generation_id: string; dimensions: number

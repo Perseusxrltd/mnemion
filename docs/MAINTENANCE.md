@@ -37,6 +37,10 @@ source changes stop for review. `python -m deploy.maintenance_snapshot` gives on
 bounded issue/build update; the [maintenance board](MAINTENANCE_STATUS.md) updates
 automatically on GitHub issue and workflow events. Use these scripts instead of
 repeating manual version edits, job inventories and metadata-only rebase sequences.
+Record fully resolved issue numbers in `deploy/issue-releases.json`; the same
+workflow labels and closes them only after their release has passed and is
+public. Reopened labeled reports remain open. Use
+`python -m deploy.issue_releases` for a read-only preview.
 
 1. Change the canonical version and dependent package metadata/lockfiles together.
    Include both `uv.lock` and `studio/client/uv.lock`, the nested local client

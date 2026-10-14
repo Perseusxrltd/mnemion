@@ -23,8 +23,11 @@ The desktop client needs no embedding weights or GPU. The model runs on the
 memory server or configured endpoint. Download size does not equal resident RAM.
 The registry serializes inference within each API/worker process, defaults to two
 CPU threads for local models, and loads local weights only when used. Two enabled
-local models may both remain cached in that process; API and worker processes have
-separate memory. Set container/service CPU and memory caps for the actual host.
+local models may both remain cached in the owning process. From 4.2.5, supervised
+Linux/macOS services delegate local inference to one worker cache; native local
+workspaces already share their engine's registry. Independently deployed
+containers retain separate caches. See [shared models and RAM controls](memory-resources.md).
+Set container/service CPU and memory caps for the actual host.
 
 From 4.0.3, each local model shares one tokenizer vocabulary between source
 counting/chunking and inference. A lock restores the model's original padding
@@ -34,8 +37,8 @@ This changes memory allocation, not the embedding generation, and requires no
 reindex. The [resource comparison](../validation/2026-10-11.md) measured E5 loading
 at 788.4 → 492.4 MiB and a 35-chunk document at 1342.9 → 1059.1 MiB of process RSS.
 Those are one controlled CPU run per implementation, not universal RAM limits or
-retrieval-quality claims. API and worker remain separate processes; their models
-are not shared across process boundaries.
+retrieval-quality claims. The later 4.2.5 managed-worker comparison measures
+cross-process sharing separately.
 
 Mnemion does not start an Ollama daemon, pull remote-server models, provision a
 cloud account, or make a paid call during configuration or model preparation.
@@ -200,7 +203,8 @@ published as a completed index revision.
 ## Inference admission
 
 Each API or worker process shares one admission gate across its approved embedding
-profiles. It executes **one inference at a time**, with at most **16 waiting
+profiles. With managed model sharing, local search and indexing additionally use
+the worker's common gate. It executes **one inference at a time**, with at most **16 waiting
 callers** and a **2-second admission wait** by default. This absorbs short bursts
 without allocating concurrent model activations. These are queue settings, not
 a promise of a particular requests-per-second rate or loaded-model RAM limit.
@@ -242,9 +246,10 @@ context. A downstream assistant may use a different tokenizer. Insights counts
 each fallback as one fallback event, without collecting query text.
 
 Keep `MNEMION_MODEL_THREADS` at the measured host capacity (default 2). Increasing
-queue length does not make the model execute faster. API and worker processes
-still maintain separate peak caches; [idle-model cleanup](memory-resources.md)
-ships in 4.1.1, while shared-model serving remains open. Validate with the real corpus, concurrent
+queue length does not make the model execute faster. [Idle cleanup and managed
+model sharing](memory-resources.md) reduce retained and duplicate allocations.
+Independently deployed services still need their own resource policy.
+Validate with the real corpus, concurrent
 agents, source indexing and librarian workload before increasing resource caps.
 
 ## Choosing and activating a model

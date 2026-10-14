@@ -1,5 +1,40 @@
 # RAM budgets and local resource controls
 
+## Shared local models in 4.2.5
+
+Linux/macOS services launched by `mnemion-service supervise` now keep local
+embedding models in the indexing worker. API search, context token counting and
+evaluation requests use that same cache. The API keeps no second model or
+tokenizer copy. Native local workspaces already share one registry within their
+engine; independently deployed containers and external model servers retain
+their own lifecycle.
+
+Sharing is enabled by default for supervised API/worker children, including
+children launched by an older managed bootstrap after a verified runtime update.
+The internal connection uses loopback only, a private per-worker credential and
+a pinned TLS certificate. Worker restart rotates both and the API reconnects.
+An unavailable worker returns a retryable model error; it never starts a second
+local model as a fallback. Keyword retrieval remains available.
+
+The worker's shared inference gate also serializes search against indexing.
+Existing queue limits and `on_inference_busy: "lexical"` still apply. The worker
+owns idle cleanup and preserves active calculations. Generation fingerprints,
+source spans and stored vectors are unchanged; no reindex is required.
+
+**Insights & evaluations → Models & resources → Shared model worker** shows
+worker RSS, loaded models, queue pressure and idle cleanup. API memory remains
+separately identified. Authorized administrators and agents receive the same
+optional `shared_model_worker` object from `GET /v1/insights/runtime`. A busy or
+restarting worker is shown as unavailable, without inventing a zero measurement.
+
+The [offline comparison](../validation/2026-10-14-shared-model-runtime.md) measured
+37% lower combined model-process RSS for E5, with identical vectors and Unicode
+spans. This excludes the database and desktop; broader hardware and workload
+limits remain under evaluation. For compatibility troubleshooting, operators
+can set `MNEMION_MODEL_SHARING=0` in the saved Supervisor environment before
+starting its children. This restores separate model owners and higher RAM use.
+Do not publish the private `model-broker` state directory or expose its listener.
+
 ## Idle model cleanup in 4.1.1
 
 Published 4.1.1 adds automatic release of local embedding sessions
@@ -17,16 +52,18 @@ loaded-model count, idle releases and cleanup retries. The same values appear
 in the optional `model_cache` object from `GET /v1/insights/runtime` for authorized
 organization administrators and agents. Earlier servers omit that object.
 
-This lowers retained idle memory; it does not combine separate API/worker
-allocations or establish a whole-host RAM cap. Native RAM admission and its
+Idle cleanup lowers retained memory; it does not establish a whole-host RAM cap.
+Managed model sharing above additionally removes duplicate API allocations.
+Native RAM admission and its
 live controls below remain separate. The [real RSS measurements](../validation/2026-10-12-model-idle-cleanup.md)
 show that the amount reclaimed depends on the model, allocator and platform;
 some tested cases did not immediately return memory to the operating system.
 
-The **unreleased 4.2.1 follow-up** also asks glibc on Linux to return freed
+Published **4.2.1** also asks glibc on Linux to return freed
 allocator pages after idle or memory-budget eviction. It retains ordinary
-cleanup on other platforms. [Measured results and remaining checks](../validation/2026-10-13-idle-heap-reclaim.md)
-distinguish that implementation from the currently published versions.
+cleanup on other platforms. [Measured results](../validation/2026-10-13-idle-heap-reclaim.md)
+describe its allocator-specific effect; [release status](../RELEASE_STATUS.md)
+records published versions separately.
 
 ## Native local budgets
 

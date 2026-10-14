@@ -44,6 +44,16 @@ is data only, never a command. Unchanged observations do not rewrite the board.
 Failed job details are reused until that attempt changes. The script starts no
 builds, sends no messages and makes no feature-completion decisions.
 
+For a completely addressed issue, add its number to the reviewed version entry
+in `deploy/issue-releases.json`. The status workflow runs
+`python -m deploy.issue_releases --apply` after publication reconciliation. It
+requires passing public release evidence and a matching GitHub release before
+adding a `fixed-in:X.Y.Z` label with the download URL and closing an open report.
+Already labeled reports that a user reopens stay open. No comments or other
+messages are posted. Without `--apply`, the command only reports eligible and
+pending associations. Engineering review still determines whether the fix is
+complete; issue text cannot authorize a release or close a requirement.
+
 For CI or a deliberate initial refresh, `python -m deploy.maintenance_snapshot --write`
 updates the generated JSON and Markdown. Normal local inspection is read-only.
 GitHub issue listing paginates up to 1,000 open issues; reaching that cap stops

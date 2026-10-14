@@ -4708,6 +4708,15 @@
             "title": "Loaded Local Models",
             "type": "integer"
           },
+          "local_model_owner": {
+            "default": "this_process",
+            "enum": [
+              "this_process",
+              "worker"
+            ],
+            "title": "Local Model Owner",
+            "type": "string"
+          },
           "scope": {
             "const": "this_process",
             "title": "Scope",
@@ -6735,6 +6744,16 @@
             "title": "Scope",
             "type": "string"
           },
+          "shared_model_worker": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SharedModelWorkerSnapshot"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "telemetry": {
             "additionalProperties": true,
             "title": "Telemetry",
@@ -6916,6 +6935,53 @@
           "rotation"
         ],
         "title": "SessionTokens",
+        "type": "object"
+      },
+      "SharedModelWorkerSnapshot": {
+        "additionalProperties": true,
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "inference": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inference"
+          },
+          "model_cache": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelCacheSnapshot"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "resources": {
+            "additionalProperties": true,
+            "title": "Resources",
+            "type": "object"
+          },
+          "scope": {
+            "const": "indexing_worker",
+            "title": "Scope",
+            "type": "string"
+          }
+        },
+        "required": [
+          "scope",
+          "available"
+        ],
+        "title": "SharedModelWorkerSnapshot",
         "type": "object"
       },
       "SignInInput": {
@@ -7664,7 +7730,7 @@
   "info": {
     "description": "Shared, scoped memory and evidence for apps, teams, and assistants. Saves acknowledge canonical durability; operations report semantic indexing readiness.",
     "title": "Mnemion Memory Service",
-    "version": "4.2.4"
+    "version": "4.2.5"
   },
   "openapi": "3.1.0",
   "paths": {
