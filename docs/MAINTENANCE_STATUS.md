@@ -1,12 +1,12 @@
 # Automated maintenance status
 
-Observed: 2026-10-14T12:34:39+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-14T12:46:09+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.2.4](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.2.4). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
 This inventory reports GitHub state; issue closure does not prove that an entire product requirement is complete. Build observations cover the latest 100 runs, retaining the latest relevant run per workflow and branch. A failed job is inspected once per changed attempt; this automation never retries a build or publishes a release.
 
-## Open issues (7)
+## Open issues (6)
 
 | Issue | Report | Last activity |
 | --- | --- | --- |
@@ -16,15 +16,13 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | [#17](https://github.com/Perseusxrltd/mnemion/issues/17) | Natural-language questions retrieve much worse than keyword queries | 2026-10-13T20:00:14Z |
 | [#18](https://github.com/Perseusxrltd/mnemion/issues/18) | OAuth 2\.1 MCP auth so ChatGPT custom connectors can connect \(spec for \#4\) | 2026-10-10T20:58:20Z |
 | [#32](https://github.com/Perseusxrltd/mnemion/issues/32) | Feature: encrypted secrets vault, kept apart from searchable memory | 2026-10-13T05:57:12Z |
-| [#36](https://github.com/Perseusxrltd/mnemion/issues/36) | Managed host on 4\.1\.x can't reach 4\.2\.x: no guided schema upgrade, and status doesn't show the blocked update | 2026-10-14T11:50:00Z |
 
 ## Relevant builds
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
 | ci\.yml | main | success | [Run 38559073557](https://github.com/Perseusxrltd/mnemion/actions/runs/38559073557) |
-| public-updates\.yml | v4\.2\.4 | in\_progress | [Run 38563825863](https://github.com/Perseusxrltd/mnemion/actions/runs/38563825863) |
+| public-updates\.yml | v4\.2\.4 | success | [Run 38563825863](https://github.com/Perseusxrltd/mnemion/actions/runs/38563825863) |
 | release\.yml | release/4\.2\.4 | success | [Run 38559090340](https://github.com/Perseusxrltd/mnemion/actions/runs/38559090340) |
-| release\.yml | release/4\.2\.5 | in\_progress | [Run 38563469356](https://github.com/Perseusxrltd/mnemion/actions/runs/38563469356) |
-| verify-artifacts\.yml | main | success | [Run 38563638955](https://github.com/Perseusxrltd/mnemion/actions/runs/38563638955) |
+| verify-artifacts\.yml | main | skipped | [Run 38566308962](https://github.com/Perseusxrltd/mnemion/actions/runs/38566308962) |
 | website-release\.yml | v4\.2\.4 | success | [Run 38563821954](https://github.com/Perseusxrltd/mnemion/actions/runs/38563821954) |

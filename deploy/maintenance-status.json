@@ -59,13 +59,6 @@
       "updated_at": "2026-10-13T05:57:12Z",
       "url": "https://github.com/Perseusxrltd/mnemion/issues/32",
       "labels": []
-    },
-    {
-      "number": 36,
-      "title": "Managed host on 4.1.x can't reach 4.2.x: no guided schema upgrade, and status doesn't show the blocked update",
-      "updated_at": "2026-10-14T11:50:00Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/issues/36",
-      "labels": []
     }
   ],
   "runs": [
@@ -86,9 +79,9 @@
       "workflow": "public-updates.yml",
       "branch": "v4.2.4",
       "source_commit": "44e4ebdc80d8811a1314305500b87a765caa30af",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-14T12:28:39Z",
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-14T12:38:05Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38563825863"
     },
     {
@@ -103,26 +96,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38559090340"
     },
     {
-      "id": 38563469356,
-      "attempt": 1,
-      "workflow": "release.yml",
-      "branch": "release/4.2.5",
-      "source_commit": "a26520a0477606c5b163fa6a751a48d540f69a20",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-14T12:30:35Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38563469356"
-    },
-    {
-      "id": 38563638955,
+      "id": 38566308962,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "a26520a0477606c5b163fa6a751a48d540f69a20",
+      "source_commit": "c1d76e23a8a4c1efab6670f0c0ac31f1396426eb",
       "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-14T12:26:41Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38563638955"
+      "conclusion": "skipped",
+      "updated_at": "2026-10-14T12:45:50Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38566308962"
     },
     {
       "id": 38563821954,
@@ -136,5 +118,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38563821954"
     }
   ],
-  "observed_at": "2026-10-14T12:34:39+00:00"
+  "observed_at": "2026-10-14T12:46:09+00:00"
 }
