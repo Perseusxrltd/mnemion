@@ -25,6 +25,16 @@ after the walkthrough; no actual workspace or cloud model was used.
 These deterministic fixtures establish behavior and authorization boundaries,
 not general language quality.
 
+The first release candidate's complete service checks caught a missing MCP
+input description for `keyword_fallback`. The Python 3.13 run had 947 passing
+tests, 10 skipped and this one failure. Both search and context now describe
+the option in their tool schemas; the existing combined HTTP/MCP contract and
+query-default checks passed **2 tests** in 8.26 seconds after the correction.
+This changes tool metadata, not retrieval scoring. Publication still requires
+the corrected source to pass the complete release gates. The first candidate
+also failed during the Intel Mac installed app's initial model download; this
+platform gate must pass on the corrected candidate before publication.
+
 ## Previously evaluated public-corpus regression
 
 The [machine-readable aggregate](2026-10-14-question-regression.json) records

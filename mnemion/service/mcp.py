@@ -74,6 +74,12 @@ SearchRankingPolicy = Annotated[
         description="Optional relevance ordering preferences (server 4.3.1+). Defaults favour recent source dates and demote archive/archives directories. Set recency_weight=0 and archive_weight=1 for pure rank fusion; source dates do not prove a claim is current."
     ),
 ]
+QuestionKeywordFallback = Annotated[
+    bool | None,
+    Field(
+        description="Optional support from individual question terms during hybrid search (server 4.3.3+, enabled by default). Applies when complete lexical or ID matches are absent and query embeddings are available; semantic similarity thresholds still apply. False disables it."
+    ),
+]
 IdempotencyKey = Annotated[
     str,
     Field(
@@ -439,7 +445,7 @@ def create_mcp(
         min_score: MinimumScore = 0,
         min_similarity: MinimumSimilarity = None,
         ranking_policy: SearchRankingPolicy = None,
-        keyword_fallback: bool | None = None,
+        keyword_fallback: QuestionKeywordFallback = None,
     ) -> Recall:
         """Recall current authorized evidence with source citations and ranking details."""
         selected_spaces, accessible = _retrieval_scope(space_ids, all_accessible)
@@ -495,7 +501,7 @@ def create_mcp(
         min_score: MinimumScore = 0,
         min_similarity: MinimumSimilarity = None,
         ranking_policy: SearchRankingPolicy = None,
-        keyword_fallback: bool | None = None,
+        keyword_fallback: QuestionKeywordFallback = None,
     ) -> ContextPack:
         """Build a bounded context pack with core blocks, evidence citations, and omissions."""
         selected_spaces, accessible = _retrieval_scope(space_ids, all_accessible)
