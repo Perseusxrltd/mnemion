@@ -24,6 +24,7 @@ from .model_registry import ModelRegistry
 from .model_state import selected_generations
 from .model_state import settings as model_settings
 from .passages import evidence_passage, passage_span
+from .ranking import adjustment
 from .repository import hydrate, memory_row
 from .telemetry import Telemetry
 
@@ -38,7 +39,9 @@ logger = logging.getLogger(__name__)
 ELIGIBLE = """
 WITH eligible AS MATERIALIZED (
     SELECT m.id AS memory_id, m.space_id, r.id AS revision_id,
-           coalesce(CASE WHEN %(recent)s AND pg_input_is_valid(r.metadata->>'source_modified_at', 'timestamptz')
+           CASE WHEN jsonb_typeof(r.metadata->'path')='string'
+                THEN r.metadata->>'path' END AS rank_path,
+           coalesce(CASE WHEN pg_input_is_valid(r.metadata->>'source_modified_at', 'timestamptz')
              THEN CASE WHEN (r.metadata->>'source_modified_at')::timestamptz
                         BETWEEN timestamptz '0001-01-02 00:00:00+00' AND timestamptz '9999-12-30 00:00:00+00'
                        THEN (r.metadata->>'source_modified_at')::timestamptz END
@@ -147,6 +150,7 @@ class RetrievalService:
 
     def _recall(self, identity: Identity, command: RecallInput) -> dict:
         started = time.monotonic()
+        ranking_reference = command.known_at or command.valid_at or datetime.now(timezone.utc)
         with self.db.transaction(identity) as conn:
             spaces = resolve_spaces(conn, command)
             routing = selected_generations(
@@ -265,7 +269,7 @@ class RetrievalService:
                 lexical = conn.execute(
                     ELIGIBLE
                     + """
-                    SELECT e.memory_id, e.space_id, e.revision_id, e.rank_time,
+                    SELECT e.memory_id, e.space_id, e.revision_id, e.rank_time, e.rank_path,
                            ts_rank_cd(r.search_text, websearch_to_tsquery('simple', %(query)s)) AS lexical_rank
                     FROM eligible e JOIN mnemion.memory_revisions r
                       ON r.tenant_id=mnemion.tenant() AND r.space_id=e.space_id AND r.id=e.revision_id
@@ -287,7 +291,7 @@ class RetrievalService:
                     ELIGIBLE
                     + """
                     , distances AS (
-                        SELECT e.memory_id, e.space_id, e.revision_id, e.rank_time, v.start_offset, v.end_offset,
+                        SELECT e.memory_id, e.space_id, e.revision_id, e.rank_time, e.rank_path, v.start_offset, v.end_offset,
                                v.embedding <=> %(vector)s::vector AS distance,
                                row_number() OVER (PARTITION BY e.revision_id
                                    ORDER BY v.embedding <=> %(vector)s::vector, v.chunk_index) AS part
@@ -363,7 +367,27 @@ class RetrievalService:
                 IDENTIFIER_WEIGHT + IDENTIFIER_LABEL_WEIGHT if identifier_channel else 0
             )
             denominator = max(1, channel_count) / 61
-            ordered = sorted(scores, key=lambda key: (-scores[key], str(key)))
+            adjustments = (
+                {
+                    key: adjustment(
+                        score / denominator,
+                        candidates[key]["rank_time"],
+                        candidates[key]["rank_path"],
+                        ranking_reference,
+                        command.ranking_policy,
+                    )
+                    for key, score in scores.items()
+                }
+                if command.sort == "relevance"
+                else {}
+            )
+            ordered = sorted(
+                scores,
+                key=lambda key: (
+                    -adjustments[key]["score"] if adjustments else -scores[key],
+                    str(key),
+                ),
+            )
             if command.sort == "recent":
                 ordered.sort(
                     key=lambda key: (candidates[key]["rank_time"], scores[key]), reverse=True
@@ -425,6 +449,8 @@ class RetrievalService:
                     if "distance" in candidate
                     else None,
                 }
+                if adjustments:
+                    hit["ranking"]["adjustment"] = adjustments[memory]
                 if memory in identifier_ranks:
                     hit["ranking"]["identifier"] = {
                         "rank": identifier_ranks[memory],
@@ -454,6 +480,8 @@ class RetrievalService:
                 "query": command.query,
                 "match_status": match_status,
                 "filtered_candidates": filtered,
+                "ranking_policy": command.ranking_policy.model_dump(),
+                "ranking_reference_time": ranking_reference,
                 "hits": hits,
                 "warnings": sorted(set(warnings)),
                 "index": {
@@ -474,7 +502,13 @@ class RetrievalService:
                     if identifier_channel
                     else ""
                 )
-                + "Semantic ranks are computed separately within each embedding generation.",
+                + "Semantic ranks are computed separately within each embedding generation. "
+                + (
+                    "Ordering uses ranking.adjustment.score with bounded source-age and archive-path factors; "
+                    "relevance_score and min_score retain unadjusted rank fusion."
+                    if command.sort == "relevance"
+                    else "Newest-first ordering does not apply age or archive factors."
+                ),
                 "timing_ms": round((time.monotonic() - started) * 1000, 2),
             }
         )

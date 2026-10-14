@@ -1086,16 +1086,28 @@ function SearchMemory() {
   const [recordedAfter, setRecordedAfter] = useState("");
   const [minScore, setMinScore] = useState("");
   const [minSimilarity, setMinSimilarity] = useState("");
+  const [recencyWeight, setRecencyWeight] = useState("25");
+  const [halfLifeDays, setHalfLifeDays] = useState("3");
+  const [archiveWeight, setArchiveWeight] = useState("35");
+  const [archiveDirectories, setArchiveDirectories] = useState("archive, archives");
   const serviceParts = me.service_version?.match(/^(\d{1,5})\.(\d{1,5})\.(\d{1,5})$/)?.slice(1).map(Number);
   const supportsBusyFallback = !!serviceParts && (serviceParts[0] > 4 ||
     (serviceParts[0] === 4 && (serviceParts[1] > 1 || (serviceParts[1] === 1 && serviceParts[2] >= 2))));
   const supportsSearchControls = !!serviceParts && (serviceParts[0] > 4 ||
     (serviceParts[0] === 4 && (serviceParts[1] > 2 || (serviceParts[1] === 2 && serviceParts[2] >= 3))));
-  const optionsValid = !supportsSearchControls || (
+  const supportsRankingPolicy = !!serviceParts && (serviceParts[0] > 4 ||
+    (serviceParts[0] === 4 && (serviceParts[1] > 3 || (serviceParts[1] === 3 && serviceParts[2] >= 1))));
+  const archiveSegments = archiveDirectories.split(",").map(part => part.trim()).filter(Boolean);
+  const rankingValid = !supportsRankingPolicy || sort === "recent" || (
+    [recencyWeight, archiveWeight].every(value => value.trim() !== "" && Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= 100) &&
+    halfLifeDays.trim() !== "" && Number.isFinite(Number(halfLifeDays)) && Number(halfLifeDays) >= 1 / 24 && Number(halfLifeDays) <= 36500 &&
+    archiveSegments.length <= 16 && archiveSegments.every(part => part.length <= 128 && !/[\\/\x00]/.test(part))
+  );
+  const optionsValid = rankingValid && (!supportsSearchControls || (
     (!recordedAfter || Number.isFinite(new Date(recordedAfter).getTime())) &&
     (!minScore || (Number.isFinite(Number(minScore)) && Number(minScore) >= 0 && Number(minScore) <= 1)) &&
     (!minSimilarity || (Number.isFinite(Number(minSimilarity)) && Number(minSimilarity) >= -1 && Number(minSimilarity) <= 1))
-  );
+  ));
   const [result, setResult] = useState<Recall>();
   const [context, setContext] = useState<ContextPack>();
   const [budget, setBudget] = useState(2048);
@@ -1117,6 +1129,14 @@ function SearchMemory() {
           ...(recordedAfter ? { recorded_after: new Date(recordedAfter).toISOString() } : {}),
           ...(minScore ? { min_score: Number(minScore) } : {}),
           ...(minSimilarity ? { min_similarity: Number(minSimilarity) } : {}),
+        } : {}),
+        ...(supportsRankingPolicy && sort === "relevance" ? {
+          ranking_policy: {
+            recency_weight: Number(recencyWeight) / 100,
+            half_life_days: Number(halfLifeDays),
+            archive_weight: Number(archiveWeight) / 100,
+            archive_path_segments: archiveSegments,
+          },
         } : {}),
       };
       if (pack)
@@ -1206,16 +1226,33 @@ function SearchMemory() {
           <Field label="Recorded in Mnemion since">
             <input type="datetime-local" value={recordedAfter} disabled={busy || !supportsSearchControls} onChange={event => setRecordedAfter(event.target.value)} />
           </Field>
-          <Field label="Minimum rank score (0–1)">
+          <Field label="Minimum relevance score (0–1)">
             <input type="number" min={0} max={1} step={0.01} placeholder="No minimum" value={minScore} disabled={busy || !supportsSearchControls} onChange={event => setMinScore(event.target.value)} />
           </Field>
           <Field label="Minimum semantic similarity (−1–1)">
             <input type="number" min={-1} max={1} step={0.01} placeholder="No minimum" value={minSimilarity} disabled={busy || !supportsSearchControls} onChange={event => setMinSimilarity(event.target.value)} />
           </Field>
         </div>
+        {supportsRankingPolicy && <>
+          <div className="ws-search-options">
+            <Field label="Recency influence (%)">
+              <input type="number" min={0} max={100} step={1} value={recencyWeight} disabled={busy || sort === "recent"} onChange={event => setRecencyWeight(event.target.value)} />
+            </Field>
+            <Field label="Recency half-life (days)">
+              <input type="number" min={1 / 24} max={36500} step="any" value={halfLifeDays} disabled={busy || sort === "recent"} onChange={event => setHalfLifeDays(event.target.value)} />
+            </Field>
+            <Field label="Archived match weight (%)">
+              <input type="number" min={0} max={100} step={1} value={archiveWeight} disabled={busy || sort === "recent"} onChange={event => setArchiveWeight(event.target.value)} />
+            </Field>
+            <Field label="Archive directories (comma separated)">
+              <input value={archiveDirectories} maxLength={2063} disabled={busy || sort === "recent"} onChange={event => setArchiveDirectories(event.target.value)} placeholder="archive, archives" />
+            </Field>
+          </div>
+          <p className="ws-helper">Best matches favours newer source dates and lowers the priority of archive directories. Recency influence caps the age adjustment; half of that adjustment applies at the chosen half-life. Nothing is excluded by these preferences. Use 0% recency influence and 100% archived weight for pure relevance. A source date does not prove that a claim is current.</p>
+        </>}
         <p className="ws-helper">Newest source date orders matching candidates by their source modification date, falling back to when the memory was recorded. Similarity filters apply to meaning-only matches; exact text and ID matches remain eligible. Scores are not confidence percentages. Use your workspace evaluations to choose a useful minimum.</p>
         {!supportsSearchControls && <p className="ws-helper">These controls need workspace server 4.2.3 or later. <Link to="/workspace/setup">Check app & server versions</Link>, then reconnect after the server update.</p>}
-        {!optionsValid && <p role="alert" className="ws-helper">Enter a valid date and scores within the indicated ranges.</p>}
+        {!optionsValid && <p role="alert" className="ws-helper">Enter values within the indicated ranges and at most 16 archive directory names, without slashes.</p>}
       </details>
       <ErrorNotice error={error} />
       {busy && <Busy />}
@@ -1233,8 +1270,8 @@ function SearchMemory() {
               <article className="ws-card ws-search-result" key={hit.memory_id}>
                 <div className="ws-card-top">
                   <Badge>{hit.claim_status}</Badge>
-                  <time title={sort === "recent" && typeof hit.metadata.source_modified_at === "string" ? "Source modification date (reported by source)" : "Recorded in Mnemion"}>
-                    {date(sort === "recent" && typeof hit.metadata.source_modified_at === "string" && Number.isFinite(Date.parse(hit.metadata.source_modified_at)) ? hit.metadata.source_modified_at : hit.recorded_at)}
+                  <time title={hit.ranking.adjustment ? "Ranking source date, with recorded-time fallback" : sort === "recent" && typeof hit.metadata.source_modified_at === "string" ? "Source modification date (reported by source)" : "Recorded in Mnemion"}>
+                    {date(hit.ranking.adjustment?.date ?? (sort === "recent" && typeof hit.metadata.source_modified_at === "string" && Number.isFinite(Date.parse(hit.metadata.source_modified_at)) ? hit.metadata.source_modified_at : hit.recorded_at))}
                   </time>
                 </div>
                 <h2>
@@ -1257,6 +1294,13 @@ function SearchMemory() {
                     rank measures a match to your question, not whether the
                     claim is true.
                   </p>
+                  {hit.ranking.adjustment && <p>
+                    Order score: {hit.ranking.adjustment.score.toFixed(3)}.
+                    {" "}Source-age factor: {hit.ranking.adjustment.recency_factor.toFixed(3)}
+                    {hit.ranking.adjustment.archive_segment !== null && ` · archive factor: ${hit.ranking.adjustment.archive_factor.toFixed(3)} (${hit.ranking.adjustment.archive_segment})`}.
+                    {" "}Ranking date: {date(hit.ranking.adjustment.date)}.
+                    {" "}The minimum relevance filter uses the original score before these factors.
+                  </p>}
                   <p>
                     {hit.ranking.ranks.lexical
                       ? `Exact-text rank ${hit.ranking.ranks.lexical}. `

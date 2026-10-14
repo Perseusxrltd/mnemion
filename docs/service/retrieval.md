@@ -47,7 +47,7 @@ From service 4.2.3, recall and context requests, SDKs and the full MCP
 
 | Input | Behavior |
 | --- | --- |
-| `sort: "relevance"` | Existing rank-fusion order; the default. |
+| `sort: "relevance"` | Rank fusion with the source-age and archive preferences below from 4.3.1; the default. Earlier servers use pure rank fusion. |
 | `sort: "recent"` | Order matching candidates by `metadata.source_modified_at` when parseable, otherwise the selected revision's `recorded_at`; rank score breaks ties. |
 | `recorded_after` | Inclusive timezone-aware timestamp filter on when the revision was recorded in Mnemion. Applied before candidate selection; distinct from the source date. |
 | `min_score` | Minimum normalized rank-fusion score, 0–1; default 0. It is a rank score, not answer confidence. |
@@ -66,9 +66,9 @@ asserts that an answer is true or that every returned hit answers the question.
 `filtered_candidates` counts threshold rejections examined before filling the
 requested result limit, not the number of rejected memories in the whole corpus.
 
-Recency remains bounded by the candidate windows. The lexical window prioritizes
-date before its limit; semantic and identifier windows retain their own candidate
-selection before the final recency sort. A recent unrelated document is not added
+Recency remains bounded by the candidate windows. With `sort: "recent"`, the lexical
+window prioritizes date before its limit; semantic and identifier windows retain
+their own candidate selection before the final recency sort. A recent unrelated document is not added
 solely because it is recent. Source dates are provider-supplied metadata, not an
 independent authenticity guarantee. Use workspace evaluations to choose score
 floors; different embedding models do not share a universally calibrated cutoff.
@@ -78,6 +78,67 @@ as `source_modified_at`. Their source revision format changes once to backfill
 this metadata on the next scan, which can temporarily queue re-indexing. Unchanged
 files remain stable across subsequent commits, merges and rollback scans. Date
 sorting does not itself resolve contradictions or split appended logs by section.
+
+## Current-state ranking preferences
+
+Service 4.3.1 adds a bounded source-age preference to the default relevance order
+and lowers the priority of matches in directories named `archive` or `archives`.
+This addresses current answers being buried under similarly relevant older
+reports or archived task files with a strong filename match. Archive matches
+remain available; `done` is not treated as an archive directory.
+
+The API, Python/TypeScript clients, `memory_search`, `memory_context` and the app's
+**Search order and match filters** accept a `ranking_policy` object:
+
+| Field | Default | Meaning |
+| --- | --- | --- |
+| `recency_weight` | `0.25` | Maximum fractional age reduction, 0–1. Zero disables it. |
+| `half_life_days` | `3` | At this age, half of the maximum reduction applies. Range: 1 hour–36,500 days. |
+| `archive_weight` | `0.35` | Multiplier for archived candidates, 0–1. One disables the reduction; zero puts them last without excluding them. |
+| `archive_path_segments` | `["archive", "archives"]` | Up to 16 literal directory names of 1–128 characters each. An empty list disables matching. |
+
+Directory matching uses `metadata.path`, accepts Windows/Unix separators and
+normalizes case and Unicode. It matches complete directory names, never a
+substring, file name or memory body. No user regex or filesystem access is involved.
+
+For example, a current-state query can use the defaults:
+
+```json
+{"query":"TASK-7312 current status","all_accessible":true,"limit":5}
+```
+
+For historical research or an exact baseline, request pure relevance explicitly:
+
+```json
+{"query":"TASK-7312","all_accessible":true,"ranking_policy":{"recency_weight":0,"archive_weight":1}}
+```
+
+The ordering score is `relevance_score × age_factor × archive_factor`, where
+`age_factor = 1 - recency_weight × (1 - 2^(-age_days / half_life_days))`.
+Defaults therefore reduce a match by at most 25% due to age. Age can reorder
+comparably relevant hits within that bounded share of the existing score.
+The source date is parsed from `source_modified_at`, with invalid, missing or
+unsupported dates falling back to the selected revision's `recorded_at`.
+Future source dates receive the same maximum age weight as today's dates.
+The reference is `known_at`, otherwise `valid_at`, otherwise the request's start
+time, so historical queries do not acquire an age penalty based on today's date.
+
+Each relevance hit exposes `ranking.adjustment`: ordering score, ranking date,
+age, both factors and the matched archive directory. The response echoes the
+policy and `ranking_reference_time`; the app displays the factors under
+**Why this result?**. `relevance_score`, `score_method: normalized_rrf_k60` and
+`min_score` remain unadjusted, keeping existing quality thresholds comparable.
+Result relevance scores can consequently be out of descending order.
+`sort: "recent"` continues to order by date and bypasses these preferences.
+
+Access, source leases, quarantine, validity and query filters still run before
+ranking. These preferences add no model call, re-index or candidate-window
+expansion. Old servers receive no new field unless a caller requests it; the app
+enables the controls only for a compatible workspace server. Source dates and
+archive paths remain source-supplied hints, not proof of supersession or truth.
+Read cited evidence for current-state decisions. Dated-section chunking,
+contradiction resolution and broader held-out quality evaluations remain in the
+[roadmap](../PRODUCT_REQUIREMENTS.md).
 
 ## Passages and citations
 

@@ -613,9 +613,10 @@ class Client:
                 "/v1/recall",
                 body=command.model_dump(
                     mode="json",
-                    exclude={"on_inference_busy"}
-                    if command.on_inference_busy == "error"
-                    else set(),
+                    exclude=(
+                        {"on_inference_busy"} if command.on_inference_busy == "error" else set()
+                    )
+                    | ({"ranking_policy"} if "ranking_policy" not in options else set()),
                 ),
             )
         )
@@ -658,9 +659,10 @@ class Client:
                 "/v1/context",
                 body=command.model_dump(
                     mode="json",
-                    exclude={"on_inference_busy"}
-                    if command.on_inference_busy == "error"
-                    else set(),
+                    exclude=(
+                        {"on_inference_busy"} if command.on_inference_busy == "error" else set()
+                    )
+                    | ({"ranking_policy"} if "ranking_policy" not in options else set()),
                 ),
             )
         )

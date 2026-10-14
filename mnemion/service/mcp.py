@@ -14,7 +14,7 @@ from ..sdk import ContextPack, Memory, MnemionError, Receipt, Recall
 from ..version import __version__
 from .. import agent_control
 from .contracts import IdentityInfo, Page, Space
-from .models import InferenceBusyPolicy, MemoryKind, SourceInput
+from .models import InferenceBusyPolicy, MemoryKind, RankingPolicy, SourceInput
 from .mcp_transport import MnemionMCPServer
 from .oauth import OAuthSettings
 
@@ -66,6 +66,12 @@ MinimumSimilarity = Annotated[
         le=1,
         allow_inf_nan=False,
         description="Optional cosine floor for semantic-only matches; literal text and ID matches remain eligible.",
+    ),
+]
+SearchRankingPolicy = Annotated[
+    RankingPolicy | None,
+    Field(
+        description="Optional relevance ordering preferences (server 4.3.1+). Defaults favour recent source dates and demote archive/archives directories. Set recency_weight=0 and archive_weight=1 for pure rank fusion; source dates do not prove a claim is current."
     ),
 ]
 IdempotencyKey = Annotated[
@@ -432,6 +438,7 @@ def create_mcp(
         recorded_after: RecordedAfter = None,
         min_score: MinimumScore = 0,
         min_similarity: MinimumSimilarity = None,
+        ranking_policy: SearchRankingPolicy = None,
     ) -> Recall:
         """Recall current authorized evidence with source citations and ranking details."""
         selected_spaces, accessible = _retrieval_scope(space_ids, all_accessible)
@@ -449,6 +456,7 @@ def create_mcp(
                 recorded_after=recorded_after.isoformat() if recorded_after else None,
                 min_score=min_score,
                 min_similarity=min_similarity,
+                **({"ranking_policy": ranking_policy.model_dump()} if ranking_policy else {}),
             ),
         )
 
@@ -484,6 +492,7 @@ def create_mcp(
         recorded_after: RecordedAfter = None,
         min_score: MinimumScore = 0,
         min_similarity: MinimumSimilarity = None,
+        ranking_policy: SearchRankingPolicy = None,
     ) -> ContextPack:
         """Build a bounded context pack with core blocks, evidence citations, and omissions."""
         selected_spaces, accessible = _retrieval_scope(space_ids, all_accessible)
@@ -500,6 +509,7 @@ def create_mcp(
                 recorded_after=recorded_after.isoformat() if recorded_after else None,
                 min_score=min_score,
                 min_similarity=min_similarity,
+                **({"ranking_policy": ranking_policy.model_dump()} if ranking_policy else {}),
             ),
         )
 

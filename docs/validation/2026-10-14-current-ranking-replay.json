@@ -1,0 +1,57 @@
+{
+  "observation": "offline ordering replay of a bounded read-only live result sample",
+  "source_version": "4.2.5",
+  "observed_at": "2026-10-14T18:59:12.343884+00:00",
+  "queries_requested_limit": 30,
+  "policy": {
+    "recency_weight": 0.25,
+    "half_life_days": 3,
+    "archive_weight": 0.35,
+    "archive_path_segments": [
+      "archive",
+      "archives"
+    ]
+  },
+  "new_service_executed_on_host": false,
+  "target_selection": "first existing hit for each reported filename",
+  "cases": [
+    {
+      "query": "T-0053 Proton \u00e9tat actuel",
+      "targets": [
+        {
+          "target": "current_report",
+          "old_rank": 6,
+          "raw_score": 0.71129426,
+          "order_score": 0.6925118,
+          "archived": false,
+          "new_rank": 1
+        }
+      ],
+      "archived_in_top_five_before": 2,
+      "archived_in_top_five_after": 0
+    },
+    {
+      "query": "T-0057 relecture traces bot OpenAI statut clos",
+      "targets": [
+        {
+          "target": "DONE.MD",
+          "old_rank": 4,
+          "raw_score": 0.3180189,
+          "order_score": 0.3031219,
+          "archived": false,
+          "new_rank": 2
+        },
+        {
+          "target": "HANDOFF.MD",
+          "old_rank": 5,
+          "raw_score": 0.30593607,
+          "order_score": 0.29820044,
+          "archived": false,
+          "new_rank": 3
+        }
+      ],
+      "archived_in_top_five_before": 2,
+      "archived_in_top_five_after": 0
+    }
+  ]
+}

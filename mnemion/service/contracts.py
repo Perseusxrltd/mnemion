@@ -8,7 +8,7 @@ from typing import Any, Generic, Literal, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from .models import ClaimStatus, MemoryKind, Role
+from .models import ClaimStatus, MemoryKind, RankingPolicy, Role
 
 OperationState = Literal["accepted", "indexing", "ready", "failed", "cancelled"]
 ReviewState = Literal["ordinary", "quarantined"]
@@ -121,12 +121,22 @@ class IdentifierRanking(ResponseModel):
     label_weight: float = Field(gt=0)
 
 
+class RankingAdjustment(ResponseModel):
+    score: float = Field(ge=0, le=1)
+    date: str
+    age_days: float = Field(ge=0)
+    recency_factor: float = Field(ge=0, le=1)
+    archive_factor: float = Field(ge=0, le=1)
+    archive_segment: str | None = None
+
+
 class Ranking(ResponseModel):
     ranks: dict[Literal["lexical", "semantic"], int]
     rrf: float
     lexical_rank: float | None
     cosine_similarity: float | None
     identifier: IdentifierRanking | None = None
+    adjustment: RankingAdjustment | None = None
 
 
 class RecallHit(MemoryMetadata):
@@ -158,6 +168,8 @@ class Recall(ResponseModel):
     score_description: str
     match_status: Literal["matched", "semantic_only", "empty"] = "matched"
     filtered_candidates: int = Field(default=0, ge=0)
+    ranking_policy: RankingPolicy | None = None
+    ranking_reference_time: str | None = None
 
 
 class Citation(ResponseModel):

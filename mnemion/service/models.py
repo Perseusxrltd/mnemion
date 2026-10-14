@@ -138,6 +138,51 @@ class SpaceSelection(Command):
         return self
 
 
+class RankingPolicy(Command):
+    """Bounded ordering preferences; they never change access or claim validity."""
+
+    recency_weight: float = Field(
+        default=0.25,
+        ge=0,
+        le=1,
+        allow_inf_nan=False,
+        description="Maximum fractional reduction in ordering score due to source age; 0 disables it.",
+    )
+    half_life_days: float = Field(
+        default=3,
+        ge=1 / 24,
+        le=36500,
+        allow_inf_nan=False,
+        description="Age in days at which half of the maximum recency reduction applies.",
+    )
+    archive_weight: float = Field(
+        default=0.35,
+        ge=0,
+        le=1,
+        allow_inf_nan=False,
+        description="Multiplier for matches in archive directories; 1 leaves their priority unchanged. Does not exclude evidence.",
+    )
+    archive_path_segments: list[Annotated[str, Field(min_length=1, max_length=128)]] = Field(
+        default_factory=lambda: ["archive", "archives"],
+        max_length=16,
+        description="Literal directory names, case insensitive; Windows/Unix separators and Unicode normalization are supported. Empty disables archive matching.",
+    )
+
+    @field_validator("archive_path_segments")
+    @classmethod
+    def bounded_segments(cls, values: list[str]) -> list[str]:
+        import unicodedata
+
+        result = []
+        for value in values:
+            value = unicodedata.normalize("NFC", value.strip()).casefold()
+            if not 1 <= len(value) <= 128 or any(c in value for c in "/\\\x00"):
+                raise ValueError("Archive segments must be directory names of 1–128 characters")
+            if value not in result:
+                result.append(value)
+        return result
+
+
 class RecallInput(SpaceSelection):
     query: str = Field(min_length=1, max_length=4000)
     subject: str | None = Field(default=None, max_length=500)
@@ -146,6 +191,7 @@ class RecallInput(SpaceSelection):
     mode: Literal["hybrid", "lexical", "semantic"] = "hybrid"
     on_inference_busy: InferenceBusyPolicy = "error"
     sort: Literal["relevance", "recent"] = "relevance"
+    ranking_policy: RankingPolicy = Field(default_factory=RankingPolicy)
     recorded_after: AwareDatetime | None = None
     min_score: float = Field(default=0, ge=0, le=1, allow_inf_nan=False)
     min_similarity: float | None = Field(default=None, ge=-1, le=1, allow_inf_nan=False)

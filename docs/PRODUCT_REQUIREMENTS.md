@@ -133,7 +133,10 @@ release does not close unfinished provider or recovery requirements.
    (23) and bounded version diagnostics (29). Published 4.2.2 closes exact-ID
    ranking issue 27. The 4.2.3 batch implements compact discovery/session options
    (25–26), match filters (28), and recency with per-file Git dates (31), with
-   focused validation and normal release gates. Natural-language quality (17),
+   focused validation and normal release gates. Issue 31 was reopened with
+   fresh 4.2.5 examples; [4.3.1](releases/4.3.1.md) adds bounded age/archive
+   preferences with visible factors and a pure-relevance option.
+   Natural-language quality (17),
    dated-section chunking and model-specific threshold calibration remain.
    Published 4.2.0 closes issue 35 with the matching-excerpt correction, after
    complete release and six-platform installed migration/recovery acceptance.

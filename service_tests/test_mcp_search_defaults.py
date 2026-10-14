@@ -69,15 +69,21 @@ def test_query_only_mcp_reads_current_sources_and_never_widens_explicit_scope(en
                                 first_memory,
                                 second_memory,
                             }
+                            assert (
+                                result.structured_content["ranking_policy"]["recency_weight"]
+                                == 0.25
+                            )
 
                     scoped = await client.call_tool(
                         "memory_search",
                         {
                             "query": "billing",
                             "space_ids": [str(first)],
+                            "ranking_policy": {"recency_weight": 0, "archive_weight": 1},
                         },
                     )
                     assert not scoped.is_error
+                    assert scoped.structured_content["ranking_policy"]["recency_weight"] == 0
                     assert [hit["memory_id"] for hit in scoped.structured_content["hits"]] == [
                         first_memory
                     ]

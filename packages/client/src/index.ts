@@ -57,6 +57,10 @@ export interface Memory {
   created_at: string; updated_at: string; created_by: string; evidence: Evidence
   can_forget?: boolean | null
 }
+export interface RankingPolicy {
+  recency_weight?: number; half_life_days?: number; archive_weight?: number
+  archive_path_segments?: string[]
+}
 export interface RecallInput {
   query: string; space_ids?: string[]; all_accessible?: boolean; subject?: string | null; kinds?: Kind[]
   limit?: number; mode?: 'hybrid' | 'lexical' | 'semantic'; include_contested?: boolean
@@ -65,6 +69,7 @@ export interface RecallInput {
   on_inference_busy?: 'error' | 'lexical'
   sort?: 'relevance' | 'recent'; recorded_after?: string | null
   min_score?: number; min_similarity?: number | null
+  ranking_policy?: RankingPolicy
 }
 export interface RecallHit extends Omit<Memory, 'content'> {
   text: string; text_truncated: boolean
@@ -77,6 +82,10 @@ export interface RecallHit extends Omit<Memory, 'content'> {
       rank: number; label_rank: number | null; matched: number; requested: number
       label_matches: number; weight: number; label_weight: number
     } | null
+    adjustment?: {
+      score: number; date: string; age_days: number
+      recency_factor: number; archive_factor: number; archive_segment: string | null
+    } | null
   }
 }
 export interface IndexState {
@@ -88,6 +97,7 @@ export interface Recall {
   request_id: string; query: string; hits: RecallHit[]; warnings: string[]
   index: IndexState; timing_ms: number; score_description: string
   match_status?: 'matched' | 'semantic_only' | 'empty'; filtered_candidates?: number
+  ranking_policy?: RankingPolicy | null; ranking_reference_time?: string | null
 }
 export interface ContextPack {
   request_id: string; text: string; token_count: number; token_budget: number; tokenizer: string

@@ -1012,6 +1012,9 @@
             "title": "Query",
             "type": "string"
           },
+          "ranking_policy": {
+            "$ref": "#/components/schemas/RankingPolicy"
+          },
           "recorded_after": {
             "anyOf": [
               {
@@ -5777,6 +5780,16 @@
       "Ranking": {
         "additionalProperties": true,
         "properties": {
+          "adjustment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RankingAdjustment"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "cosine_similarity": {
             "anyOf": [
               {
@@ -5834,6 +5847,101 @@
           "cosine_similarity"
         ],
         "title": "Ranking",
+        "type": "object"
+      },
+      "RankingAdjustment": {
+        "additionalProperties": true,
+        "properties": {
+          "age_days": {
+            "minimum": 0.0,
+            "title": "Age Days",
+            "type": "number"
+          },
+          "archive_factor": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Archive Factor",
+            "type": "number"
+          },
+          "archive_segment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archive Segment"
+          },
+          "date": {
+            "title": "Date",
+            "type": "string"
+          },
+          "recency_factor": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Recency Factor",
+            "type": "number"
+          },
+          "score": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Score",
+            "type": "number"
+          }
+        },
+        "required": [
+          "score",
+          "date",
+          "age_days",
+          "recency_factor",
+          "archive_factor"
+        ],
+        "title": "RankingAdjustment",
+        "type": "object"
+      },
+      "RankingPolicy": {
+        "additionalProperties": false,
+        "description": "Bounded ordering preferences; they never change access or claim validity.",
+        "properties": {
+          "archive_path_segments": {
+            "description": "Literal directory names, case insensitive; Windows/Unix separators and Unicode normalization are supported. Empty disables archive matching.",
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 16,
+            "title": "Archive Path Segments",
+            "type": "array"
+          },
+          "archive_weight": {
+            "default": 0.35,
+            "description": "Multiplier for matches in archive directories; 1 leaves their priority unchanged. Does not exclude evidence.",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Archive Weight",
+            "type": "number"
+          },
+          "half_life_days": {
+            "default": 3,
+            "description": "Age in days at which half of the maximum recency reduction applies.",
+            "maximum": 36500.0,
+            "minimum": 0.041666666666666664,
+            "title": "Half Life Days",
+            "type": "number"
+          },
+          "recency_weight": {
+            "default": 0.25,
+            "description": "Maximum fractional reduction in ordering score due to source age; 0 disables it.",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Recency Weight",
+            "type": "number"
+          }
+        },
+        "title": "RankingPolicy",
         "type": "object"
       },
       "ReadyStatus": {
@@ -5899,6 +6007,27 @@
           "query": {
             "title": "Query",
             "type": "string"
+          },
+          "ranking_policy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RankingPolicy"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ranking_reference_time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ranking Reference Time"
           },
           "request_id": {
             "title": "Request Id",
@@ -6225,6 +6354,9 @@
             "minLength": 1,
             "title": "Query",
             "type": "string"
+          },
+          "ranking_policy": {
+            "$ref": "#/components/schemas/RankingPolicy"
           },
           "recorded_after": {
             "anyOf": [
@@ -7895,7 +8027,7 @@
   "info": {
     "description": "Shared, scoped memory and evidence for apps, teams, and assistants. Saves acknowledge canonical durability; operations report semantic indexing readiness.",
     "title": "Mnemion Memory Service",
-    "version": "4.3.0"
+    "version": "4.3.1"
   },
   "openapi": "3.1.0",
   "paths": {

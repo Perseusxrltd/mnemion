@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.3.0**. Roadmap updated: **2026-10-14**.
+Reviewed source distribution: **4.3.1**. Roadmap updated: **2026-10-14**.
 The [current published distribution and release gates](RELEASE_STATUS.md) are updated automatically.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
@@ -32,7 +32,8 @@ explicit match filters, including app controls. [Focused validation](validation/
 passed, followed by all 30 release jobs, independent uploaded-byte verification,
 automatic publication, website verification and all six public upgrades.
 [Automatically retained evidence](validation/releases/4.2.3-status.json) records
-the result. Issues 25, 26, 28 and 31 are closed; broader provider integrations,
+the result. Issues 25, 26 and 28 are closed; issue 31 was reopened with fresh
+default-ranking examples on 4.2.5. Broader provider integrations,
 dated-section chunking and natural-language quality remain incomplete.
 Release version preparation, verified publication, follow-up dispatch and retained
 per-version status are now scripted. Full native builds are no longer duplicated
@@ -72,6 +73,13 @@ gateway availability. Existing application-key setup remains accessible.
 The same authenticated capability is available through the agent catalog and
 TypeScript client; other tenants' issuer configuration is withheld. Host
 configuration and live named-provider acceptance remain separate work.
+
+[4.3.1](releases/4.3.1.md) adds bounded source-age and configurable archive-path
+preferences to default relevance ordering, with the original relevance score
+preserved for thresholds and visible ordering factors. The app, API, SDKs and
+MCP search/context controls share the policy. [Focused evidence](validation/2026-10-14-current-state-ranking.md)
+tracks the reopened current-state issue; automatic contradiction resolution,
+dated-section chunking and representative quality calibration remain open.
 
 Published [4.2.0](releases/4.2.0.md) implements personal
 passwords, scoped invitations, revocable device sessions, protected desktop and
