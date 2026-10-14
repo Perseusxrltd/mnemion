@@ -68,11 +68,19 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "21a8a5b8cdf84660ee8b90b730a9f4f53ceefc86",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-14T23:18:33Z",
+      "status": "completed",
+      "conclusion": "failure",
+      "updated_at": "2026-10-14T23:33:41Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38653158236",
-      "failed_jobs": []
+      "failed_jobs": [
+        {
+          "name": "legacy",
+          "id": 116156840243,
+          "steps": [
+            "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
+          ]
+        }
+      ]
     },
     {
       "id": 38645535752,
@@ -131,5 +139,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38645529408"
     }
   ],
-  "observed_at": "2026-10-14T23:18:44+00:00"
+  "observed_at": "2026-10-14T23:34:04+00:00"
 }
