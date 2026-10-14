@@ -13,6 +13,11 @@ on:
   schedule:
     - cron: '53 */6 * * *'
   workflow_dispatch:
+    inputs:
+      completed_run:
+        description: Optional public-upgrade run to await before recording its result
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -38,6 +43,28 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.12'
+      - name: Await the public-upgrade handoff
+        if: github.event_name == 'workflow_dispatch' && inputs.completed_run != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MNEMION_COMPLETED_RUN: ${{ inputs.completed_run }}
+        run: |
+          python - <<'PY'
+          import json, os, re, subprocess, time
+          run_id = os.environ['MNEMION_COMPLETED_RUN']
+          if not re.fullmatch(r'[1-9][0-9]{0,19}', run_id):
+              raise SystemExit('Invalid public-upgrade run identifier')
+          endpoint = f"repos/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{run_id}"
+          for attempt in range(24):
+              run = json.loads(subprocess.check_output(['gh', 'api', endpoint], text=True))
+              if run.get('path', '').partition('@')[0] != '.github/workflows/public-updates.yml':
+                  raise SystemExit('The handoff must identify a public-upgrade run')
+              if run.get('status') == 'completed':
+                  break
+              if attempt == 23:
+                  raise SystemExit('Public-upgrade run did not finish within the handoff window')
+              time.sleep(5)
+          PY
       - name: Reconcile publication, exact-source gates and scope
         if: github.event_name != 'issues' && github.event_name != 'issue_comment'
         env:

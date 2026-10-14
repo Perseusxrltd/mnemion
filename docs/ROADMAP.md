@@ -43,8 +43,10 @@ on main pushes; failed gates still stop the pipeline.
 bootstrap tools, visible migration blockers and journaled forward recovery.
 [Focused and real installed-runtime validation](validation/2026-10-14-managed-upgrade-automation.md)
 covers backup, PostgreSQL migration, Supervisor restart, retained keys and
-enrolled source identities. Shared-host and public delivery evidence remain
-separate. The [maintenance board](MAINTENANCE_STATUS.md) now tracks issue activity
+enrolled source identities. The [actual shared host](validation/2026-10-14-shared-workspace-upgrade.md)
+completed the guarded 4.1.7 → 4.2.4 migration and then automatically installed
+4.2.5, preserving its connector and independent Windows administrator access.
+The [maintenance board](MAINTENANCE_STATUS.md) now tracks issue activity
 and build failures through scripts and GitHub events; normal source integration
 also handles generated-metadata races without rewriting released source.
 

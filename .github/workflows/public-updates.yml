@@ -102,3 +102,18 @@ jobs:
             ${{ runner.temp }}/public-mnemion-upgrade/failure-*.png
           if-no-files-found: ignore
           retention-days: 7
+
+  reconcile:
+    needs: [select, upgrade]
+    if: always() && github.repository == 'Perseusxrltd/mnemion'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    steps:
+      # Explicit dispatch avoids depending on a further workflow_run chain.
+      # The receiver waits for this run to finish before assessing its gates.
+      - name: Hand the final result to release-status reconciliation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run release-status.yml --repo "$GITHUB_REPOSITORY" --ref main -f completed_run="$GITHUB_RUN_ID"

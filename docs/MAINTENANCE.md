@@ -46,6 +46,12 @@ in the background. It emits only changes after its first observation, reuses
 completed failure evidence, checks active jobs once a minute and stops after the
 requested duration. It does not retry jobs, edit issues or publish anything.
 
+The public-upgrade workflow explicitly dispatches status reconciliation after
+its platform jobs, including failed runs. Reconciliation waits for the
+initiating run to finish before reading its gates. This keeps final upgrade
+results and eligible issue closures current without relying on another chained
+workflow event. The scheduled reconciliation remains a fallback.
+
 The maintenance board retains failures that finish after a release is published,
 including builds of the next version that started earlier. It also inspects active
 runs for failed jobs. For a managed-runtime failure, dispatch **Managed runtime
