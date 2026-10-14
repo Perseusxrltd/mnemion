@@ -41,6 +41,10 @@ Record fully resolved issue numbers in `deploy/issue-releases.json`; the same
 workflow labels and closes them only after their release has passed and is
 public. Reopened labeled reports remain open. Use
 `python -m deploy.issue_releases` for a read-only preview.
+For a release session, run `python -m deploy.maintenance_snapshot --watch-seconds 3600`
+in the background. It emits only changes after its first observation, reuses
+completed failure evidence, checks active jobs once a minute and stops after the
+requested duration. It does not retry jobs, edit issues or publish anything.
 
 The maintenance board retains failures that finish after a release is published,
 including builds of the next version that started earlier. It also inspects active
@@ -80,6 +84,10 @@ does not count as a passing product or release gate.
    backoffs. Each attempt verifies the pinned digest and size limit; certificate,
    integrity and permanent HTTP failures stop immediately. Partial-file cleanup
    applies only to the current download's own file.
+   Desktop packaging also retries once when Electron's downloader reports HTTP
+   500/502/503/504. Compilation, signature/integrity, disk-space and other
+   failures stop immediately. The actual build exit status remains the gate;
+   package verification and installed-app checks still run normally afterward.
    Native focus scenarios must establish a visible, restored, focused window
    before testing foreground restart protection. Windows GUI probes must be
    allowed to show their window; a hidden startup can report focus without

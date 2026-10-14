@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 import json
 from pathlib import Path
 import re
+import time
 
 from .published_release import REPOSITORY
 from .release_automation import gh, semver
@@ -231,17 +232,35 @@ def main():
     parser.add_argument(
         "--write", action="store_true", help="Refresh the repository's generated snapshot and guide"
     )
+    parser.add_argument(
+        "--watch-seconds",
+        type=int,
+        default=0,
+        help="Observe changes for up to 43200 seconds; 0 performs one observation",
+    )
+    parser.add_argument("--interval", type=int, default=60, help="Watch interval, 30–60 seconds")
     args = parser.parse_args()
+    if not 0 <= args.watch_seconds <= 43200 or not 30 <= args.interval <= 60:
+        parser.error("Use 0–43200 watch seconds and a 30–60 second interval")
     root = Path(__file__).resolve().parents[1]
     path = root / "deploy/maintenance-status.json"
     previous = json.loads(path.read_text()) if path.exists() else {}
-    current = collect(previous)
-    summary = changes(previous, current)
-    if args.write and summary["changed"]:
-        current["observed_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
-        path.write_text(json.dumps(current, indent=2) + "\n")
-        (root / "docs/MAINTENANCE_STATUS.md").write_text(markdown(current))
-    print(json.dumps(summary))
+    deadline = time.monotonic() + args.watch_seconds
+    first = True
+    while first or time.monotonic() < deadline:
+        current = collect(previous)
+        summary = changes(previous, current)
+        if args.write and summary["changed"]:
+            current["observed_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+            path.write_text(json.dumps(current, indent=2) + "\n")
+            (root / "docs/MAINTENANCE_STATUS.md").write_text(markdown(current))
+        if first or summary["changed"]:
+            print(json.dumps(summary), flush=True)
+        previous, first = current, False
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        time.sleep(min(args.interval, remaining))
 
 
 if __name__ == "__main__":
