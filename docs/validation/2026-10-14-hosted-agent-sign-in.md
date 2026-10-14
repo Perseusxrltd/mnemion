@@ -42,8 +42,17 @@ reached the approval controls. Browser local storage held no credential or
 pending authorization proof. No real provider account or production workspace
 was used.
 
+The app's **Account & sessions** page also displayed the revoked app, its
+connection date and person, separately from the active browser device session.
 The TypeScript client and production Studio build passed. OpenAPI and the
 reviewed agent catalog are regenerated during release preparation.
+
+The first full release run found that the older upgrade fixture still expected
+migration 015 and only its new tables. The fixture now verifies transitions
+from schemas 013, 014 and 015, including the actual installed gate's row hashes,
+existing keys, grants and memory, and empty new OAuth tables. Its acceptance
+criteria retain data-preservation and schema-race checks.
+All three real PostgreSQL upgrade cases passed after the fixture correction.
 
 ## Compatibility and remaining acceptance
 

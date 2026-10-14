@@ -41,12 +41,12 @@ def inventory(dsn):
         return result
 
 
-@pytest.mark.parametrize("previous_count", [13, 14])
+@pytest.mark.parametrize("previous_count", [13, 14, 15])
 def test_previous_schema_upgrade_preserves_keys_grants_and_existing_memory(
     postgres, tmp_path, monkeypatch, previous_count
 ):
     # Existing migrations are immutable. Package the actual preceding scripts
-    # scripts, rather than removing constraints or rewriting an applied script.
+    # rather than removing constraints or rewriting an applied script.
     previous = tmp_path / "previous-service"
     migrations = previous / "migrations"
     migrations.mkdir(parents=True)
@@ -86,20 +86,23 @@ def test_previous_schema_upgrade_preserves_keys_grants_and_existing_memory(
             database.close()
             database = None
         before = inventory(admin_dsn)
-        # Exercise the installed gate's actual row hashing on both supported
+        # Exercise the installed gate's actual row hashing on the supported
         # preceding schemas without constructing or launching an installer.
         probe = object.__new__(InstalledUpgrade)
         monkeypatch.setattr(probe, "database", lambda: SimpleNamespace(dsn=lambda: admin_dsn))
         before_installed = probe.snapshot(legacy_api_keys=True)
-        # The current runtime must not admit the new permission on an old
-        # schema lacking atomic derived-data erasure.
+        # The current runtime must not admit requests against an old schema.
         rejected = db.Database(app_dsn)
         try:
             with pytest.raises(RuntimeError, match="Database migrations do not match"):
                 rejected.open()
         finally:
             rejected.close()
-        expected = ["014_author_withdrawal.sql", "015_individual_sign_in.sql"]
+        expected = sorted(
+            path.name
+            for path in db.files("mnemion.service").joinpath("migrations").iterdir()
+            if path.suffix == ".sql" and int(path.name[:3]) > previous_count
+        )
         previous_schema = {
             path.name: hashlib.sha256(path.read_bytes()).hexdigest()
             for path in migrations.iterdir()
@@ -107,7 +110,7 @@ def test_previous_schema_upgrade_preserves_keys_grants_and_existing_memory(
         with pytest.raises(RuntimeError, match="schema changed after"):
             db.migrate(admin_dsn, expected={})
         assert inventory(admin_dsn) == before
-        assert db.migrate(admin_dsn, expected=previous_schema) == expected[previous_count - 13 :]
+        assert db.migrate(admin_dsn, expected=previous_schema) == expected
         assert db.migrate(admin_dsn) == []
         after_installed = probe.snapshot()
         assert after_installed["schema"] != before_installed["schema"]
@@ -126,13 +129,21 @@ def test_previous_schema_upgrade_preserves_keys_grants_and_existing_memory(
         after = inventory(admin_dsn)
         assert {table: after[table] for table in before} == before
         added = set(after) - set(before)
-        assert added == {
-            "password_accounts",
-            "sign_in_sessions",
-            "spent_refresh_tokens",
-            "sign_in_invitations",
-            "sign_in_attempts",
+        expected_tables = {
+            "oauth_local_attempts",
+            "oauth_local_clients",
+            "oauth_local_requests",
+            "oauth_local_connections",
         }
+        if previous_count < 15:
+            expected_tables |= {
+                "password_accounts",
+                "sign_in_sessions",
+                "spent_refresh_tokens",
+                "sign_in_invitations",
+                "sign_in_attempts",
+            }
+        assert added == expected_tables
         assert all(after[table] == hashlib.sha256(b"").hexdigest() for table in added)
         with psycopg.connect(admin_dsn) as connection:
             assert (
