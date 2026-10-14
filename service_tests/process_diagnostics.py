@@ -34,6 +34,11 @@ def failure_locations(content: str) -> dict:
 
 
 def report(state: Path, status: dict) -> None:
+    import psutil
+    from mnemion import process_identity
+    from mnemion.service import supervision, update_state
+    from mnemion.version import __version__
+
     result = {
         "status": {
             key: status[key]
@@ -48,6 +53,34 @@ def report(state: Path, status: dict) -> None:
             if key in status
         }
     }
+    _, settings = supervision.settings(state)
+    result["broker_address_published"] = (state / "model-broker/address.json").is_file()
+    result["readiness"] = {}
+    previous_models = None
+    for role in ("api", "worker"):
+        path = Path(settings["runtime"]) / (role + "-ready.json")
+        checks = {"receipt_exists": path.is_file()}
+        result["readiness"][role] = checks
+        if not path.is_file():
+            continue
+        try:
+            receipt = update_state.read(path)
+            info = next(item for item in status["processes"] if item["name"] == "mnemion-" + role)
+            process = psutil.Process(info["pid"])
+            checks.update(
+                instance_matches=receipt.get("instance") == settings["identifier"],
+                role_matches=receipt.get("role") == role,
+                pid_matches=receipt.get("pid") == info["pid"],
+                birth_matches=process_identity.matches_record(
+                    receipt, process, legacy_field="created"
+                ),
+                version_matches=receipt.get("version") == __version__,
+                models_match=previous_models is None
+                or previous_models == receipt.get("generations"),
+            )
+            previous_models = receipt.get("generations")
+        except (OSError, ValueError, KeyError, StopIteration, psutil.Error):
+            checks["inspection_failed"] = True
     for role in ("api", "worker"):
         path = state / "logs" / (role + ".log")
         if path.is_symlink() or not path.is_file():
