@@ -12,6 +12,8 @@ from uuid import UUID, uuid4
 
 from psycopg.types.json import Jsonb
 
+from mnemion.version import __version__
+
 from .db import Database, Identity, require_space
 from .errors import ServiceError
 from .evaluation_metrics import ranking_metrics, summarize_results
@@ -191,6 +193,13 @@ class EvaluationRunner:
                     409, "reference_unavailable", "Evaluation references are no longer available."
                 )
             config = job["configuration"]
+            execution_version = job["manifest"].get("execution", {}).get("service_version")
+            if execution_version is not None and execution_version != __version__:
+                raise ServiceError(
+                    409,
+                    "evaluation_error",
+                    "The service changed during this evaluation. Start a new run to compare one version at a time.",
+                )
             selected_generations(
                 conn, [job["space_id"]], self.retrieval.embedder.generation.id, job["generation_id"]
             )
@@ -208,6 +217,10 @@ class EvaluationRunner:
                 manifest["corpus_start"] = snapshot["sha256"]
                 manifest["index_start"] = snapshot
                 manifest["started_at"] = datetime.now(timezone.utc).isoformat()
+                manifest["execution"] = {
+                    **manifest.get("execution", {}),
+                    "service_version": __version__,
+                }
                 manifest["frozen_manifest_hash"] = digest(manifest)
                 conn.execute(
                     "UPDATE mnemion.evaluation_runs SET manifest=%s WHERE space_id=%s AND id=%s",
@@ -300,6 +313,9 @@ class EvaluationRunner:
             valid_at=case["valid_at"],
             known_at=case["known_at"],
             embedding_generation=config.get("embedding_generation"),
+            # Runs queued before this option existed retain their original channels.
+            keyword_fallback=config.get("keyword_fallback", False),
+            ranking_policy=config.get("ranking_policy", {}),
         )
         started = time.monotonic()
         try:
@@ -364,6 +380,8 @@ class EvaluationRunner:
                 }
                 for h in recall["hits"]
             ],
+            "ranking_reference_time": recall.get("ranking_reference_time"),
+            "retrieval_service_version": __version__,
             "context_recall": len(cited & relevant.keys()) / len(relevant)
             if context and relevant
             else None,

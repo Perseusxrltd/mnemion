@@ -19,6 +19,7 @@ from .identifiers import (
     IDENTIFIER_WEIGHT,
     query_identifiers,
 )
+from .keywords import KEYWORD_CANDIDATES, KEYWORD_WEIGHT, permits_keyword_fallback
 from .models import ContextInput, RecallInput, json_value
 from .model_registry import ModelRegistry
 from .model_state import selected_generations
@@ -264,7 +265,7 @@ class RetrievalService:
                 raise ServiceError(
                     409, "generation_changed", "Space model settings changed; retry the search."
                 )
-            lexical, semantic, exact = [], [], []
+            lexical, semantic, exact, keywords = [], [], [], []
             if command.mode != "semantic" or busy_fallback:
                 lexical = conn.execute(
                     ELIGIBLE
@@ -284,6 +285,18 @@ class RetrievalService:
                     ELIGIBLE + IDENTIFIER_CANDIDATES,
                     {**params, "identifier_patterns": list(identifiers.patterns)},
                 ).fetchall()
+            if (
+                command.keyword_fallback
+                and command.mode == "hybrid"
+                and bool(vectors)
+                and not busy_fallback
+                and not lexical
+                and not identifier_channel
+                and permits_keyword_fallback(command.query)
+            ):
+                keywords = conn.execute(ELIGIBLE + KEYWORD_CANDIDATES, params).fetchall()
+                if keywords:
+                    warnings.append("partial_keyword_support")
             for generation, group_spaces in groups.items():
                 if generation not in vectors:
                     continue
@@ -333,10 +346,11 @@ class RetrievalService:
                 warnings.append("semantic_index_incomplete")
             scores = defaultdict(float)
             candidates, ranks = {}, defaultdict(dict)
-            identifier_ranks = {}
+            identifier_ranks, keyword_ranks = {}, {}
             for channel, rows, weight in (
                 ("lexical", lexical, 1),
                 ("identifier", exact, IDENTIFIER_WEIGHT),
+                ("keywords", keywords, KEYWORD_WEIGHT),
                 ("semantic", semantic, 1),
             ):
                 for rank, row in enumerate(rows, 1):
@@ -351,6 +365,7 @@ class RetrievalService:
                         scores[key] = 0
                         ranks[key].clear()
                         identifier_ranks.pop(key, None)
+                        keyword_ranks.pop(key, None)
                         candidates[key] = {}
                     scores[key] += weight / (60 + rank)
                     if channel == "identifier":
@@ -359,6 +374,8 @@ class RetrievalService:
                             scores[key] += IDENTIFIER_LABEL_WEIGHT / (
                                 60 + row["identifier_label_rank"]
                             )
+                    elif channel == "keywords":
+                        keyword_ranks[key] = rank
                     else:
                         ranks[key][channel] = rank
                     candidates[key] = {**candidates.get(key, {}), **row}
@@ -461,6 +478,14 @@ class RetrievalService:
                         "weight": IDENTIFIER_WEIGHT,
                         "label_weight": IDENTIFIER_LABEL_WEIGHT,
                     }
+                if memory in keyword_ranks:
+                    hit["ranking"]["keywords"] = {
+                        "rank": keyword_ranks[memory],
+                        "matched": candidate["keyword_matches"],
+                        "requested": candidate["keyword_requested"],
+                        "terms": candidate["keyword_terms"],
+                        "weight": KEYWORD_WEIGHT,
+                    }
                 hit["embedding_generation"] = routing[row["space_id"]]
                 if hit["claim_status"] == "contested":
                     warnings.append("contested_evidence")
@@ -503,6 +528,12 @@ class RetrievalService:
                     else ""
                 )
                 + "Semantic ranks are computed separately within each embedding generation. "
+                + (
+                    "Partial key-term support uses weight 0.5 in place of the absent full lexical channel; "
+                    "it does not establish a complete query match. "
+                    if keywords
+                    else ""
+                )
                 + (
                     "Ordering uses ranking.adjustment.score with bounded source-age and archive-path factors; "
                     "relevance_score and min_score retain unadjusted rank fusion."

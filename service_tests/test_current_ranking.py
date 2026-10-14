@@ -149,9 +149,17 @@ def test_sdk_omits_new_policy_on_old_servers_unless_the_caller_requests_it(metho
     with Client(
         "https://example.invalid", "fixture-key", transport=httpx.MockTransport(unavailable)
     ) as client:
-        for options in ({}, {"ranking_policy": {"recency_weight": 0, "archive_weight": 1}}):
+        for options in (
+            {},
+            {
+                "ranking_policy": {"recency_weight": 0, "archive_weight": 1},
+                "keyword_fallback": False,
+            },
+        ):
             with pytest.raises(MnemionError):
                 getattr(client, method)("billing", all_accessible=True, **options)
     assert "ranking_policy" not in bodies[0]
+    assert "keyword_fallback" not in bodies[0]
     assert bodies[-1]["ranking_policy"]["recency_weight"] == 0
     assert bodies[-1]["ranking_policy"]["archive_weight"] == 1
+    assert bodies[-1]["keyword_fallback"] is False

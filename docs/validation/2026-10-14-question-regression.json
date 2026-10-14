@@ -1,0 +1,42 @@
+{
+  "scope": "regression comparison of the previously evaluated public corpus; not a new held-out evaluation",
+  "observed_at": "2026-10-14T20:37:04.626633+00:00",
+  "query_count": 60,
+  "fallback_used": 43,
+  "dataset_sha256": "d6f21ea9d60a0d56f34a05b609c79c88a451d2ae03597821ea3d5a9678c3a442",
+  "generation_id": "ce98fcc87e3bb78d0dc8976eaa9592e0025a7021bff866515923f40ebb39aea0",
+  "model": "intfloat/multilingual-e5-small",
+  "model_threads": 2,
+  "cloud_calls": 0,
+  "production_writes": 0,
+  "source_database_unchanged": true,
+  "source_hashes": {
+    "mnemion/service/keywords.py": "9e6f00e246f13a342584acf512012bb12344af207fd1c500d6ed41ac643c22d4",
+    "mnemion/service/retrieval.py": "f9369f0a5f29c60501ae17543e270ea8e21deffde89302ee45fcdf19a94a6ef5"
+  },
+  "aggregate": {
+    "baseline": {
+      "recall_at_5": 0.9032738095238095,
+      "ndcg_at_5": 0.8770737363530061,
+      "mrr_at_5": 0.8898809523809523,
+      "recall_at_10": 0.9657738095238095,
+      "ndcg_at_10": 0.8988672121874502,
+      "mrr_at_10": 0.8968962585034014,
+      "p50_latency_ms": 191.929
+    },
+    "fallback": {
+      "recall_at_5": 0.9523809523809523,
+      "ndcg_at_5": 0.9018299637803483,
+      "mrr_at_5": 0.8958333333333334,
+      "recall_at_10": 0.9657738095238095,
+      "ndcg_at_10": 0.9066726807420143,
+      "mrr_at_10": 0.8980654761904762,
+      "p50_latency_ms": 213.2705
+    }
+  },
+  "paired": {
+    "improved_at_5": 4,
+    "regressed_at_5": 0,
+    "unchanged_at_5": 52
+  }
+}

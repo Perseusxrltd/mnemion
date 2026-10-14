@@ -30,7 +30,7 @@ function editorPayload(value: unknown): EvaluationDatasetInput {
   return value as EvaluationDatasetInput;
 }
 
-export default function Evaluations({ client, space }: { client: MnemionClient; space: string }) {
+export default function Evaluations({ client, space, serviceVersion }: { client: MnemionClient; space: string; serviceVersion?: string | null }) {
   const cache = useQueryClient();
   const [params, setParams] = useSearchParams();
   const selected = params.get("run") || "";
@@ -57,7 +57,7 @@ export default function Evaluations({ client, space }: { client: MnemionClient; 
     </div>
     {current && <button className="ins-running-banner" onClick={() => choose(current.id)}><LoaderCircle size={19} className="ws-spin" /><div><strong>{current.state === "queued" ? "Evaluation queued" : "Evaluation in progress"}</strong><span>{current.progress} / {current.total} case-mode checks · {label(current.configuration.split)}</span></div><progress value={current.progress} max={current.total} /><ArrowRight size={17} /></button>}
     {!!error && <div className="ws-notice ws-error" role="alert">{errorText(error)}</div>}
-    {launch && <RunForm client={client} space={space} datasets={datasets.data.items.filter(item => item.state === "active")} close={() => setLaunch(false)} created={run => { setLaunch(false); void refresh(); choose(run.id); }} />}
+    {launch && <RunForm client={client} space={space} serviceVersion={serviceVersion} datasets={datasets.data.items.filter(item => item.state === "active")} close={() => setLaunch(false)} created={run => { setLaunch(false); void refresh(); choose(run.id); }} />}
     <div className="ins-subtabs" role="group" aria-label="Evaluation sections">{[
       { key: "runs", title: "Runs", icon: FlaskConical, count: runs.data.items.length },
       { key: "datasets", title: "Test sets", icon: Layers, count: datasets.data.items.length },
@@ -152,7 +152,7 @@ function DatasetEditor({ client, space, initial, close, saved }: { client: Mnemi
   </Panel>;
 }
 
-function RunForm({ client, space, datasets, close, created }: { client: MnemionClient; space: string; datasets: EvaluationDataset[]; close: () => void; created: (run: EvaluationRun) => void }) {
+function RunForm({ client, space, serviceVersion, datasets, close, created }: { client: MnemionClient; space: string; serviceVersion?: string | null; datasets: EvaluationDataset[]; close: () => void; created: (run: EvaluationRun) => void }) {
   const [params] = useSearchParams();
   const [generation, setGeneration] = useState(params.get("generation") || "");
   const models = useQuery({ queryKey: ["embedding-choices", space], queryFn: () => client.embeddingChoices(space), retry: 1 });
@@ -160,6 +160,12 @@ function RunForm({ client, space, datasets, close, created }: { client: MnemionC
   const [dataset, setDataset] = useState(datasets[0]?.id || ""), [split, setSplit] = useState<EvaluationSplit>("development");
   const [modes, setModes] = useState<EvaluationMode[]>(["hybrid"]), [cutoffs, setCutoffs] = useState("5, 10, 20");
   const [context, setContext] = useState(true), [tokens, setTokens] = useState(2048), [seconds, setSeconds] = useState(300), [interval, setInterval] = useState(1);
+  const [keywordFallback, setKeywordFallback] = useState(true);
+  const [recencyWeight, setRecencyWeight] = useState("25"), [halfLifeDays, setHalfLifeDays] = useState("3");
+  const [archiveWeight, setArchiveWeight] = useState("35"), [archiveDirectories, setArchiveDirectories] = useState("archive, archives");
+  const serviceParts = serviceVersion?.match(/^(\d{1,5})\.(\d{1,5})\.(\d{1,5})$/)?.slice(1).map(Number);
+  const supportsRankingOptions = !!serviceParts && (serviceParts[0] > 4 ||
+    (serviceParts[0] === 4 && (serviceParts[1] > 3 || (serviceParts[1] === 3 && serviceParts[2] >= 3))));
   const [error, setError] = useState<unknown>(), [submitting, setSubmitting] = useState(false);
   const key = useRef({ body: "", key: "" });
   const chosen = datasets.find(item => item.id === dataset), count = chosen ? split === "development" ? chosen.development_count : chosen.held_out_count : 0;
@@ -168,7 +174,18 @@ function RunForm({ client, space, datasets, close, created }: { client: MnemionC
     try {
       const ks = cutoffs.split(",").map(value => Number(value.trim()));
       if (!ks.length || ks.length > 5 || ks.some(k => !Number.isInteger(k) || k < 1 || k > 50) || new Set(ks).size !== ks.length) throw new Error("Choose up to five distinct K values from 1 to 50.");
-      const body = { dataset_id: dataset, split, modes, cutoffs: ks, context, token_budget: tokens, max_seconds: seconds, interval_seconds: interval, embedding_generation: generation || null };
+      const archiveSegments = archiveDirectories.split(",").map(part => part.trim()).filter(Boolean);
+      if (supportsRankingOptions && (
+        [recencyWeight, archiveWeight].some(value => !value.trim() || !Number.isFinite(Number(value)) || Number(value) < 0 || Number(value) > 100) ||
+        !halfLifeDays.trim() || !Number.isFinite(Number(halfLifeDays)) || Number(halfLifeDays) < 1 / 24 || Number(halfLifeDays) > 36500 ||
+        archiveSegments.length > 16 || archiveSegments.some(part => part.length > 128 || /[\\/\x00]/.test(part))
+      )) throw new Error("Use percentages from 0 to 100, a half-life from one hour to 36,500 days, and at most 16 archive directory names without slashes.");
+      const body = { dataset_id: dataset, split, modes, cutoffs: ks, context, token_budget: tokens, max_seconds: seconds, interval_seconds: interval, embedding_generation: generation || null,
+        ...(supportsRankingOptions ? { keyword_fallback: keywordFallback, ranking_policy: {
+          recency_weight: Number(recencyWeight) / 100, half_life_days: Number(halfLifeDays),
+          archive_weight: Number(archiveWeight) / 100, archive_path_segments: archiveSegments,
+        } } : {}),
+      };
       const signature = JSON.stringify(body); if (key.current.body !== signature) key.current = { body: signature, key: crypto.randomUUID() };
       created(await client.startEvaluation(space, body, key.current.key));
     } catch (error) { setError(error); } finally { setSubmitting(false); }
@@ -179,6 +196,16 @@ function RunForm({ client, space, datasets, close, created }: { client: MnemionC
     <div className="ins-form-grid"><label className="ws-field"><span>Test-set version</span><select value={dataset} onChange={event => setDataset(event.target.value)}>{datasets.map(item => <option key={item.id} value={item.id}>{item.name} · v{item.version} · {item.case_count} questions</option>)}</select></label><label className="ws-field"><span>Split</span><select value={split} onChange={event => setSplit(event.target.value as EvaluationSplit)}><option value="development">Development</option><option value="held_out">Held out</option></select></label></div>
     <div className="ins-form-grid"><fieldset className="ins-mode-picker"><legend>Retrieval modes</legend>{(["lexical", "semantic", "hybrid"] as EvaluationMode[]).map(mode => <label key={mode}><input type="checkbox" checked={modes.includes(mode)} onChange={event => setModes(event.target.checked ? [...modes, mode] : modes.filter(item => item !== mode))} /><span>{label(mode)}</span></label>)}</fieldset><label className="ws-field"><span>Evaluate at K</span><input value={cutoffs} onChange={event => setCutoffs(event.target.value)} placeholder="5, 10, 20" /><small>Top results to assess at each cutoff; at most 50.</small></label></div>
     <div className="ins-form-grid"><label className="ins-live-control"><input type="checkbox" checked={context} onChange={event => setContext(event.target.checked)} />Also evaluate bounded context</label><label className="ws-field"><span>Context {selectedModel?.token_count_unit === "utf8_bytes" ? "UTF-8 byte" : "token"} budget</span><input type="number" min={128} max={16000} step={1} disabled={!context} value={tokens} onChange={event => setTokens(Number(event.target.value))} /></label></div>
+    {supportsRankingOptions && <details className="ins-inline-details"><summary>Ranking preferences</summary>
+      <label className="ins-live-control"><input type="checkbox" checked={keywordFallback} onChange={event => setKeywordFallback(event.target.checked)} />Use key terms when a question has no complete text match</label>
+      <div className="ins-form-grid">
+        <label className="ws-field"><span>Recency influence (%)</span><input type="number" min={0} max={100} step={1} value={recencyWeight} onChange={event => setRecencyWeight(event.target.value)} /></label>
+        <label className="ws-field"><span>Recency half-life (days)</span><input type="number" min={1 / 24} max={36500} step="any" value={halfLifeDays} onChange={event => setHalfLifeDays(event.target.value)} /></label>
+        <label className="ws-field"><span>Archived match weight (%)</span><input type="number" min={0} max={100} step={1} value={archiveWeight} onChange={event => setArchiveWeight(event.target.value)} /></label>
+        <label className="ws-field"><span>Archive directories (comma separated)</span><input maxLength={2063} value={archiveDirectories} onChange={event => setArchiveDirectories(event.target.value)} /></label>
+      </div><p className="ins-footnote">These settings are saved with the run. Key-term support applies to hybrid search. Use 0% recency influence and 100% archived weight to assess relevance without age or archive adjustments. Compare runs on the same test set and unchanged memories.</p>
+    </details>}
+    {!supportsRankingOptions && <p className="ins-footnote">Configurable ranking evaluations need workspace server 4.3.3 or later. This run will use your server's existing settings.</p>}
     <details className="ins-inline-details"><summary>Execution budget</summary><div className="ins-form-grid"><label className="ws-field"><span>Maximum run duration · seconds</span><input type="number" min={10} max={3600} value={seconds} onChange={event => setSeconds(Number(event.target.value))} /></label><label className="ws-field"><span>Delay between case-mode checks · seconds</span><input type="number" min={.25} max={60} step={.25} value={interval} onChange={event => setInterval(Number(event.target.value))} /></label></div><p className="ins-footnote">One evaluation runs at a time across the deployment. Calls use the selected service model. The runner does not download or launch new local models.</p></details>
     {split === "held_out" && <p className="ins-note">Keep this split for assessing final choices. Repeated tuning on held-out results makes the evaluation less independent.</p>}
     {!!error && <p className="ws-notice ws-error" role="alert">{errorText(error)}</p>}

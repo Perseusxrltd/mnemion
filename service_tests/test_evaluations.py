@@ -7,6 +7,7 @@ import threading
 from uuid import UUID
 
 import psycopg
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
@@ -37,6 +38,7 @@ from mnemion.service.retrieval import RetrievalService
         {"token_budget": 512.0},
         {"max_seconds": "300"},
         {"interval_seconds": True},
+        {"keyword_fallback": "false"},
     ],
 )
 def test_run_options_do_not_silently_coerce_resource_or_scoring_settings(options):
@@ -148,6 +150,52 @@ def test_ranking_metrics_do_not_count_duplicates_and_report_absence_honestly():
     assert not scores["complete"]
     assert ranking_metrics(["unrelated"], {}, 10)["recall"] is None
     assert wilson(45, 45)[0] < 0.93 and wilson(0, 0) is None
+
+
+def test_a_hotfix_cannot_mix_service_versions_inside_one_new_evaluation(env, monkeypatch):
+    from mnemion.service import evaluation_runner
+
+    service, dataset, _ = setup(env)
+    run = service.create_run(
+        env.owner, env.space, EvaluationInput(dataset_id=UUID(dataset["id"])), "versioned-run"
+    )
+    runner = EvaluationRunner(env.db, RetrievalService(env.db, env.embedder))
+    assert runner.run_once()
+    initial = service.run(env.owner, env.space, UUID(run["id"]))
+    assert initial["state"] == "running" and initial["progress"] == 1
+    assert initial["manifest"]["execution"]["service_version"] == evaluation_runner.__version__
+    monkeypatch.setattr(evaluation_runner, "__version__", "99.0.0")
+    assert runner.run_once()
+    final = service.run(env.owner, env.space, UUID(run["id"]))
+    assert final["state"] == "failed" and final["error_code"] == "evaluation_error"
+    assert final["progress"] == 1
+
+
+def test_sdk_keeps_new_evaluation_options_optional_for_older_services():
+    from mnemion.sdk import Client, MnemionError
+
+    bodies = []
+
+    def unavailable(request):
+        bodies.append(json.loads(request.content))
+        return httpx.Response(503, json={"error": {"code": "fixture", "message": "Unavailable"}})
+
+    with Client(
+        "https://example.invalid",
+        "fixture-key",
+        retries=0,
+        transport=httpx.MockTransport(unavailable),
+    ) as client:
+        for options in ({}, {"keyword_fallback": False, "ranking_policy": {"recency_weight": 0}}):
+            with pytest.raises(MnemionError):
+                client.start_evaluation(
+                    "00000000-0000-0000-0000-000000000001",
+                    "00000000-0000-0000-0000-000000000002",
+                    **options,
+                )
+    assert "keyword_fallback" not in bodies[0] and "ranking_policy" not in bodies[0]
+    assert bodies[-1]["keyword_fallback"] is False
+    assert bodies[-1]["ranking_policy"]["recency_weight"] == 0
 
 
 def test_versioned_labels_stay_out_of_retrieval_and_runs_have_real_denominators(env):

@@ -493,3 +493,13 @@ already integrated source, avoid duplicate release dispatch, publish unchanged
 verified assets, start downstream public checks and retain per-version evidence.
 The native push matrix no longer duplicates the release matrix. These automation
 changes do not remove any of the 64 product requirements or invent completion.
+
+## Question retrieval and evaluation controls, 14 October 2026
+
+Source 4.3.3 combines optional question-term support, app/SDK/MCP controls,
+transparent matched-term explanations and saved evaluation ranking preferences.
+New runs record the executing service version and cannot silently resume across
+a hotfix. [Focused checks and the existing-corpus regression](../validation/2026-10-14-question-retrieval.md)
+passed; the regression is not a new independent held-out claim. Broader question
+quality and current shared-office acceptance remain open. The strict tracker
+still records 17 of 64 requirements shipped and 40 partial.

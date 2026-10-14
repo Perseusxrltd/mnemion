@@ -7,7 +7,15 @@ from datetime import datetime
 from typing import Annotated, Any, Literal
 from uuid import UUID
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    Field,
+    StrictBool,
+    field_validator,
+    model_validator,
+)
 from pydantic_core import PydanticCustomError
 
 SCOPE_SELECTION_MESSAGE = (
@@ -189,6 +197,10 @@ class RecallInput(SpaceSelection):
     kinds: list[MemoryKind] | None = Field(default=None, max_length=5)
     limit: int = Field(default=10, ge=1, le=50)
     mode: Literal["hybrid", "lexical", "semantic"] = "hybrid"
+    keyword_fallback: StrictBool = Field(
+        default=True,
+        description="In hybrid search with no full lexical or identifier match, add bounded key-term support for a plain prose query. Does not relax similarity thresholds or explicit search syntax.",
+    )
     on_inference_busy: InferenceBusyPolicy = "error"
     sort: Literal["relevance", "recent"] = "relevance"
     ranking_policy: RankingPolicy = Field(default_factory=RankingPolicy)

@@ -70,6 +70,7 @@ export interface RecallInput {
   sort?: 'relevance' | 'recent'; recorded_after?: string | null
   min_score?: number; min_similarity?: number | null
   ranking_policy?: RankingPolicy
+  keyword_fallback?: boolean
 }
 export interface RecallHit extends Omit<Memory, 'content'> {
   text: string; text_truncated: boolean
@@ -86,6 +87,7 @@ export interface RecallHit extends Omit<Memory, 'content'> {
       score: number; date: string; age_days: number
       recency_factor: number; archive_factor: number; archive_segment: string | null
     } | null
+    keywords?: { rank: number; matched: number; requested: number; terms: string[]; weight: number } | null
   }
 }
 export interface IndexState {

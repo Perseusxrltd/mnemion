@@ -215,6 +215,8 @@ function WarningList({ warnings }: { warnings: string[] }) {
       "Some evidence is contested. Check its source before relying on it.",
     semantic_matches_require_evidence_review:
       "Related memories, with no exact text or ID match. Check the evidence before treating these as an answer.",
+    partial_keyword_support:
+      "Some results match individual terms from your question. Review the source for the full answer.",
     context_budget_or_freshness_limited:
       "Some items were omitted to fit the context budget or because their source changed.",
   };
@@ -452,7 +454,7 @@ function Shell({
                 <Route path="review" element={<Memories review />} />
                 <Route path="blocks" element={<CoreContext />} />
                 <Route path="operations" element={<Operations />} />
-                <Route path="insights" element={<Suspense fallback={<Busy />}><InsightsView client={client} space={space.id} reviewer={reviewer} administrator={me.administrator} /></Suspense>} />
+                <Route path="insights" element={<Suspense fallback={<Busy />}><InsightsView client={client} space={space.id} reviewer={reviewer} administrator={me.administrator} serviceVersion={me.service_version} /></Suspense>} />
                 <Route path="obsidian" element={<Obsidian />} />
                 <Route path="models" element={<Suspense fallback={<Busy />}><EmbeddingModels key={space.id} client={client} space={space.id} administrator={space.role === "administrator"} /></Suspense>} />
                 <Route path="librarian" element={<Suspense fallback={<Busy />}><Librarian key={space.id} client={client} space={space.id} reviewer={reviewer} administrator={space.role === "administrator"} /></Suspense>} />
@@ -1090,6 +1092,7 @@ function SearchMemory() {
   const [halfLifeDays, setHalfLifeDays] = useState("3");
   const [archiveWeight, setArchiveWeight] = useState("35");
   const [archiveDirectories, setArchiveDirectories] = useState("archive, archives");
+  const [keywordFallback, setKeywordFallback] = useState(true);
   const serviceParts = me.service_version?.match(/^(\d{1,5})\.(\d{1,5})\.(\d{1,5})$/)?.slice(1).map(Number);
   const supportsBusyFallback = !!serviceParts && (serviceParts[0] > 4 ||
     (serviceParts[0] === 4 && (serviceParts[1] > 1 || (serviceParts[1] === 1 && serviceParts[2] >= 2))));
@@ -1097,6 +1100,8 @@ function SearchMemory() {
     (serviceParts[0] === 4 && (serviceParts[1] > 2 || (serviceParts[1] === 2 && serviceParts[2] >= 3))));
   const supportsRankingPolicy = !!serviceParts && (serviceParts[0] > 4 ||
     (serviceParts[0] === 4 && (serviceParts[1] > 3 || (serviceParts[1] === 3 && serviceParts[2] >= 1))));
+  const supportsQuestionTerms = !!serviceParts && (serviceParts[0] > 4 ||
+    (serviceParts[0] === 4 && (serviceParts[1] > 3 || (serviceParts[1] === 3 && serviceParts[2] >= 3))));
   const archiveSegments = archiveDirectories.split(",").map(part => part.trim()).filter(Boolean);
   const rankingValid = !supportsRankingPolicy || sort === "recent" || (
     [recencyWeight, archiveWeight].every(value => value.trim() !== "" && Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= 100) &&
@@ -1123,6 +1128,7 @@ function SearchMemory() {
     try {
       const input = {
         query: text, ...(allAccessible ? { all_accessible: true } : { space_ids: [space.id] }), mode, limit: 20,
+        ...(supportsQuestionTerms ? { keyword_fallback: keywordFallback } : {}),
         ...(supportsBusyFallback && busyPolicy === "lexical" ? { on_inference_busy: "lexical" as const } : {}),
         ...(supportsSearchControls ? {
           sort,
@@ -1216,6 +1222,7 @@ function SearchMemory() {
       {!supportsBusyFallback && <p className="ws-helper">Exact-text fallback needs workspace server 4.1.2 or later. <Link to="/workspace/setup">Check app & server versions</Link>, then reconnect after the server update.</p>}
       <details className="ws-details">
         <summary>Search order and match filters</summary>
+        {supportsQuestionTerms && <label className="ws-checkbox"><input type="checkbox" checked={keywordFallback} disabled={busy || mode !== "hybrid"} onChange={event => setKeywordFallback(event.target.checked)} />Use key terms when a question has no complete text match</label>}
         <div className="ws-search-options">
           <Field label="Result order">
             <select value={sort} disabled={busy || !supportsSearchControls} onChange={event => setSort(event.target.value as typeof sort)}>
@@ -1250,7 +1257,7 @@ function SearchMemory() {
           </div>
           <p className="ws-helper">Best matches favours newer source dates and lowers the priority of archive directories. Recency influence caps the age adjustment; half of that adjustment applies at the chosen half-life. Nothing is excluded by these preferences. Use 0% recency influence and 100% archived weight for pure relevance. A source date does not prove that a claim is current.</p>
         </>}
-        <p className="ws-helper">Newest source date orders matching candidates by their source modification date, falling back to when the memory was recorded. Similarity filters apply to meaning-only matches; exact text and ID matches remain eligible. Scores are not confidence percentages. Use your workspace evaluations to choose a useful minimum.</p>
+        <p className="ws-helper">Newest source date orders matching candidates by their source modification date, falling back to when the memory was recorded. Similarity filters apply when there is no full text or ID match, including partial key-term matches. Scores are not confidence percentages. Use your workspace evaluations to choose a useful minimum.</p>
         {!supportsSearchControls && <p className="ws-helper">These controls need workspace server 4.2.3 or later. <Link to="/workspace/setup">Check app & server versions</Link>, then reconnect after the server update.</p>}
         {!optionsValid && <p role="alert" className="ws-helper">Enter values within the indicated ranges and at most 16 archive directory names, without slashes.</p>}
       </details>
@@ -1317,6 +1324,7 @@ function SearchMemory() {
                         ` ${hit.ranking.identifier.label_matches} matched the subject or file path, which gives this result higher priority.`}
                     </p>
                   )}
+                  {hit.ranking.keywords && <p>Matched {hit.ranking.keywords.matched} of {hit.ranking.keywords.requested} key terms: {hit.ranking.keywords.terms.join(", ")}. These partial matches support the ordering; they do not establish an answer.</p>}
                   <blockquote>{hit.evidence.excerpt}</blockquote>
                 </details>
               </article>

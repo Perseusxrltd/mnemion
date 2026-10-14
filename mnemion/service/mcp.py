@@ -439,6 +439,7 @@ def create_mcp(
         min_score: MinimumScore = 0,
         min_similarity: MinimumSimilarity = None,
         ranking_policy: SearchRankingPolicy = None,
+        keyword_fallback: bool | None = None,
     ) -> Recall:
         """Recall current authorized evidence with source citations and ranking details."""
         selected_spaces, accessible = _retrieval_scope(space_ids, all_accessible)
@@ -457,6 +458,7 @@ def create_mcp(
                 min_score=min_score,
                 min_similarity=min_similarity,
                 **({"ranking_policy": ranking_policy.model_dump()} if ranking_policy else {}),
+                **({"keyword_fallback": keyword_fallback} if keyword_fallback is not None else {}),
             ),
         )
 
@@ -493,6 +495,7 @@ def create_mcp(
         min_score: MinimumScore = 0,
         min_similarity: MinimumSimilarity = None,
         ranking_policy: SearchRankingPolicy = None,
+        keyword_fallback: bool | None = None,
     ) -> ContextPack:
         """Build a bounded context pack with core blocks, evidence citations, and omissions."""
         selected_spaces, accessible = _retrieval_scope(space_ids, all_accessible)
@@ -510,6 +513,7 @@ def create_mcp(
                 min_score=min_score,
                 min_similarity=min_similarity,
                 **({"ranking_policy": ranking_policy.model_dump()} if ranking_policy else {}),
+                **({"keyword_fallback": keyword_fallback} if keyword_fallback is not None else {}),
             ),
         )
 

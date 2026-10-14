@@ -62,6 +62,25 @@ preserved API access, not a new desktop installation or named-provider OAuth
 acceptance. [All six public 4.3.0 upgrade checks](releases/4.3.0-status.json)
 passed separately.
 
+## Actual Windows unattended desktop update
+
+A passive observer subsequently recorded the installed desktop changing from
+4.2.3 to 4.2.5. At **20:21:46 UTC**, the old application processes had exited.
+At **20:22:31 UTC**, the installed archive reported 4.2.5. At **20:23:16 UTC**,
+new application processes were running with fresh process creation times.
+The recorded system-idle interval increased continuously through the transition.
+No installer, restart command, update-check button or UI input was sent by the
+observer. This establishes an unattended installation and relaunch on the
+actual Windows desktop, separate from the CI update rehearsals.
+
+At **20:27:54 UTC**, three bounded reads again verified the independent human
+administrator and restricted contributor against the unchanged shared 4.3.0
+service. Their protected profiles were byte-identical, with no memory writes
+or model calls. Desktop preferences still enabled automatic updates, startup
+and background operation. The 4.3.1 Windows installer was already cached;
+download availability alone does not prove its installation. Further updates
+remain subject to the normal idle, draft, activity and focus safeguards.
+
 ## Limits
 
 The schema transition required independent host-operator access and explicit

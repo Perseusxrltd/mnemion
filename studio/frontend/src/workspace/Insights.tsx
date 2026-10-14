@@ -42,8 +42,8 @@ function seriesPoints(data: Insights, field: keyof MetricValues, transform = (va
   return [...points.values()];
 }
 
-export default function InsightsView({ client, space, reviewer, administrator }: {
-  client: MnemionClient; space: string; reviewer: boolean; administrator: boolean;
+export default function InsightsView({ client, space, reviewer, administrator, serviceVersion }: {
+  client: MnemionClient; space: string; reviewer: boolean; administrator: boolean; serviceVersion?: string | null;
 }) {
   const [params, setParams] = useSearchParams();
   const page = useRef<HTMLDivElement>(null);
@@ -85,7 +85,7 @@ export default function InsightsView({ client, space, reviewer, administrator }:
     </header>
     <nav className="ins-tabs" aria-label="Insights views">{views.map(item => <button key={item.id} className={view === item.id ? "active" : ""} aria-current={view === item.id ? "page" : undefined} onClick={() => change("view", item.id)}><item.icon size={16} />{item.label}</button>)}</nav>
     {!online && <p className="ws-notice" role="status">Connection is offline. Automatic updates pause; displayed results are the last observed data. Reconnect to refresh measurements or run evaluations.</p>}
-    {view === "evaluations" ? <Suspense fallback={<div className="ws-loading"><LoaderCircle className="ws-spin" size={18} />Loading evaluations…</div>}><Evaluations client={client} space={space} /></Suspense> : <>
+    {view === "evaluations" ? <Suspense fallback={<div className="ws-loading"><LoaderCircle className="ws-spin" size={18} />Loading evaluations…</div>}><Evaluations client={client} space={space} serviceVersion={serviceVersion} /></Suspense> : <>
       <div className="ins-toolbar"><div className="ins-window" role="group" aria-label="Time window">{[[1, "1 hour"], [6, "6 hours"], [24, "24 hours"], [168, "7 days"], [720, "30 days"]].map(([value, title]) => <button key={value} aria-pressed={hours === value} onClick={() => change("hours", String(value))}>{title}</button>)}</div>
         <label className="ins-select"><span>Traffic</span><select value={origin} onChange={event => setOrigin(event.target.value as MetricOrigin)}><option value="all">All activity</option><option value="interactive">Applications</option><option value="background">Background work</option><option value="evaluation">Evaluations</option></select></label>
         <label className="ins-live-control"><input type="checkbox" checked={live} onChange={event => setLive(event.target.checked)} />Auto refresh</label>

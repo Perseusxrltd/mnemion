@@ -43,6 +43,26 @@ Cancellation, credential revocation, source deletion and time limits stop or
 invalidate affected work. Human assessments use optimistic concurrency so two
 reviewers do not silently overwrite one another.
 
+From server 4.3.3, **Ranking preferences** records `keyword_fallback` and the
+complete `ranking_policy` with each run. Compare question-term support on/off,
+or use 0% recency influence and 100% archive weight to measure relevance without
+age/archive adjustments. The same options are available to agents through the
+evaluation API and SDKs. Dataset, split, corpus, index coverage, modes, cutoffs
+and context budget must still satisfy the comparison checks; ranking preferences
+and model generations may deliberately differ.
+
+New manifests record the queuing service version and the worker version that
+starts execution. Per-case results record the service version and ranking
+reference time. If a new run resumes on another version after a hotfix, it stops
+with `evaluation_error`; start a new run rather than mixing implementations.
+Older saved runs have no guaranteed runtime pin. Runs queued before the
+question-term option existed retain disabled term support when resumed.
+Current-state queries still use their actual request time; use explicit temporal
+filters, or disable recency, for comparisons requiring a fixed age reference.
+
+Older servers retain their existing run form and behavior. Updated SDKs omit the
+new options unless the caller supplies them, preserving older-server contracts.
+
 ## Interpret results
 
 Recall measures coverage of labeled references; precision uses the configured

@@ -55,6 +55,8 @@ def test_query_only_mcp_reads_current_sources_and_never_widens_explicit_scope(en
                     read_timeout_seconds=15,
                 ) as client:
                     tools = {tool.name: tool for tool in (await client.list_tools()).tools}
+                    assert "keyword_fallback" in tools["memory_search"].input_schema["properties"]
+                    assert "keyword_fallback" in tools["memory_context"].input_schema["properties"]
                     for name in ("memory_search", "memory_context", "memory_map"):
                         assert "space_ids" not in tools[name].input_schema.get("required", [])
                         args = {} if name == "memory_map" else {"query": "billing"}
@@ -87,6 +89,22 @@ def test_query_only_mcp_reads_current_sources_and_never_widens_explicit_scope(en
                     assert [hit["memory_id"] for hit in scoped.structured_content["hits"]] == [
                         first_memory
                     ]
+                    for enabled in (False, True):
+                        prose = await client.call_tool(
+                            "memory_search",
+                            {
+                                "query": "Where is the billing evidence stored?",
+                                "space_ids": [str(first)],
+                                "keyword_fallback": enabled,
+                            },
+                        )
+                        assert not prose.is_error
+                        assert (
+                            "partial_keyword_support" in prose.structured_content["warnings"]
+                        ) is enabled
+                        assert {hit["memory_id"] for hit in prose.structured_content["hits"]} == {
+                            first_memory
+                        }
                     for selection in (
                         {"space_ids": []},
                         {"all_accessible": False},

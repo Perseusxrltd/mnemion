@@ -1,9 +1,17 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.3.2**. Roadmap updated: **2026-10-14**.
+Reviewed source distribution: **4.3.3**. Roadmap updated: **2026-10-14**.
 The [current published distribution and release gates](RELEASE_STATUS.md) are updated automatically.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
+
+[4.3.3](releases/4.3.3.md) adds explainable, optional key-term support for questions
+without a full text match, plus saved evaluation ranking preferences and
+protection against mixing service versions within a run. The
+[60-question regression and focused checks](validation/2026-10-14-question-retrieval.md)
+record measured improvement and its limits. Natural-language quality, dated
+sections and actual shared-office acceptance remain open; this batch does not
+mark their broader requirements complete.
 
 Published [4.2.1](releases/4.2.1.md) returns freed
 model heap pages on glibc-based Linux after idle or budget-triggered eviction.

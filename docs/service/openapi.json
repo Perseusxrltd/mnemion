@@ -907,6 +907,12 @@
             "title": "Include Contested",
             "type": "boolean"
           },
+          "keyword_fallback": {
+            "default": true,
+            "description": "In hybrid search with no full lexical or identifier match, add bounded key-term support for a plain prose query. Does not relax similarity thresholds or explicit search syntax.",
+            "title": "Keyword Fallback",
+            "type": "boolean"
+          },
           "kinds": {
             "anyOf": [
               {
@@ -1799,6 +1805,11 @@
             "title": "Interval Seconds",
             "type": "number"
           },
+          "keyword_fallback": {
+            "default": true,
+            "title": "Keyword Fallback",
+            "type": "boolean"
+          },
           "max_seconds": {
             "default": 300,
             "maximum": 3600.0,
@@ -1819,6 +1830,9 @@
             "minItems": 1,
             "title": "Modes",
             "type": "array"
+          },
+          "ranking_policy": {
+            "$ref": "#/components/schemas/RankingPolicy"
           },
           "split": {
             "default": "development",
@@ -2820,6 +2834,50 @@
           "name"
         ],
         "title": "KeyInput",
+        "type": "object"
+      },
+      "KeywordRanking": {
+        "additionalProperties": true,
+        "properties": {
+          "matched": {
+            "maximum": 24.0,
+            "minimum": 1.0,
+            "title": "Matched",
+            "type": "integer"
+          },
+          "rank": {
+            "minimum": 1.0,
+            "title": "Rank",
+            "type": "integer"
+          },
+          "requested": {
+            "maximum": 24.0,
+            "minimum": 2.0,
+            "title": "Requested",
+            "type": "integer"
+          },
+          "terms": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Terms",
+            "type": "array"
+          },
+          "weight": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 1.0,
+            "title": "Weight",
+            "type": "number"
+          }
+        },
+        "required": [
+          "rank",
+          "matched",
+          "requested",
+          "terms",
+          "weight"
+        ],
+        "title": "KeywordRanking",
         "type": "object"
       },
       "Knowledge": {
@@ -5811,6 +5869,16 @@
               }
             ]
           },
+          "keywords": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/KeywordRanking"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "lexical_rank": {
             "anyOf": [
               {
@@ -6248,6 +6316,12 @@
           "include_contested": {
             "default": true,
             "title": "Include Contested",
+            "type": "boolean"
+          },
+          "keyword_fallback": {
+            "default": true,
+            "description": "In hybrid search with no full lexical or identifier match, add bounded key-term support for a plain prose query. Does not relax similarity thresholds or explicit search syntax.",
+            "title": "Keyword Fallback",
             "type": "boolean"
           },
           "kinds": {
@@ -8060,7 +8134,7 @@
   "info": {
     "description": "Shared, scoped memory and evidence for apps, teams, and assistants. Saves acknowledge canonical durability; operations report semantic indexing readiness.",
     "title": "Mnemion Memory Service",
-    "version": "4.3.2"
+    "version": "4.3.3"
   },
   "openapi": "3.1.0",
   "paths": {

@@ -186,6 +186,8 @@
 .ins-dataset-card > footer { display: flex; gap: 10px; justify-content: space-between; border-top: 1px solid var(--line-soft); padding-top: 11px; margin-top: 16px; }
 .ins-dataset-card > footer .ws-button { padding: 4px 0; font-size: 10px; min-height: 28px; }
 .ins-editor, .ins-run-form { border-color: var(--gold-bright); background: var(--surface-overlay); }
+.ins-run-form .ins-live-control { white-space: normal; align-items: flex-start; }
+.ins-run-form .ins-live-control input { margin-top: 2px; }
 .ins-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; margin-bottom: 19px; }
 .ins-page .ws-field > span { font-size: 11px; color: var(--ivory-muted); }
 .ins-page .ws-field input, .ins-page .ws-field textarea, .ins-page .ws-field select { font-size: 12px; background: var(--surface-overlay); border-color: var(--line-soft); color: var(--ivory); }

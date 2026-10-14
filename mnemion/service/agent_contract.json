@@ -6637,6 +6637,11 @@
                 "title": "Interval Seconds",
                 "type": "number"
               },
+              "keyword_fallback": {
+                "default": true,
+                "title": "Keyword Fallback",
+                "type": "boolean"
+              },
               "max_seconds": {
                 "default": 300,
                 "maximum": 3600.0,
@@ -6657,6 +6662,9 @@
                 "minItems": 1,
                 "title": "Modes",
                 "type": "array"
+              },
+              "ranking_policy": {
+                "$ref": "#/$defs/RankingPolicy"
               },
               "split": {
                 "default": "development",
@@ -6679,6 +6687,49 @@
               "dataset_id"
             ],
             "title": "EvaluationInput",
+            "type": "object"
+          },
+          "RankingPolicy": {
+            "additionalProperties": false,
+            "description": "Bounded ordering preferences; they never change access or claim validity.",
+            "properties": {
+              "archive_path_segments": {
+                "description": "Literal directory names, case insensitive; Windows/Unix separators and Unicode normalization are supported. Empty disables archive matching.",
+                "items": {
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "maxItems": 16,
+                "title": "Archive Path Segments",
+                "type": "array"
+              },
+              "archive_weight": {
+                "default": 0.35,
+                "description": "Multiplier for matches in archive directories; 1 leaves their priority unchanged. Does not exclude evidence.",
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "title": "Archive Weight",
+                "type": "number"
+              },
+              "half_life_days": {
+                "default": 3,
+                "description": "Age in days at which half of the maximum recency reduction applies.",
+                "maximum": 36500.0,
+                "minimum": 0.041666666666666664,
+                "title": "Half Life Days",
+                "type": "number"
+              },
+              "recency_weight": {
+                "default": 0.25,
+                "description": "Maximum fractional reduction in ordering score due to source age; 0 disables it.",
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "title": "Recency Weight",
+                "type": "number"
+              }
+            },
+            "title": "RankingPolicy",
             "type": "object"
           }
         },
@@ -15026,6 +15077,12 @@
                 "title": "Include Contested",
                 "type": "boolean"
               },
+              "keyword_fallback": {
+                "default": true,
+                "description": "In hybrid search with no full lexical or identifier match, add bounded key-term support for a plain prose query. Does not relax similarity thresholds or explicit search syntax.",
+                "title": "Keyword Fallback",
+                "type": "boolean"
+              },
               "kinds": {
                 "anyOf": [
                   {
@@ -15581,6 +15638,12 @@
                 "title": "Include Contested",
                 "type": "boolean"
               },
+              "keyword_fallback": {
+                "default": true,
+                "description": "In hybrid search with no full lexical or identifier match, add bounded key-term support for a plain prose query. Does not relax similarity thresholds or explicit search syntax.",
+                "title": "Keyword Fallback",
+                "type": "boolean"
+              },
               "kinds": {
                 "anyOf": [
                   {
@@ -15953,6 +16016,50 @@
             "title": "IndexState",
             "type": "object"
           },
+          "KeywordRanking": {
+            "additionalProperties": true,
+            "properties": {
+              "matched": {
+                "maximum": 24.0,
+                "minimum": 1.0,
+                "title": "Matched",
+                "type": "integer"
+              },
+              "rank": {
+                "minimum": 1.0,
+                "title": "Rank",
+                "type": "integer"
+              },
+              "requested": {
+                "maximum": 24.0,
+                "minimum": 2.0,
+                "title": "Requested",
+                "type": "integer"
+              },
+              "terms": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Terms",
+                "type": "array"
+              },
+              "weight": {
+                "exclusiveMinimum": 0.0,
+                "maximum": 1.0,
+                "title": "Weight",
+                "type": "number"
+              }
+            },
+            "required": [
+              "rank",
+              "matched",
+              "requested",
+              "terms",
+              "weight"
+            ],
+            "title": "KeywordRanking",
+            "type": "object"
+          },
           "Ranking": {
             "additionalProperties": true,
             "properties": {
@@ -15981,6 +16088,16 @@
                 "anyOf": [
                   {
                     "$ref": "#/$defs/IdentifierRanking"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "keywords": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/KeywordRanking"
                   },
                   {
                     "type": "null"

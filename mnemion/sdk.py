@@ -465,7 +465,14 @@ class Client:
             self.request(
                 "POST",
                 self._evaluation_path(space_id) + "/runs",
-                body=command.model_dump(mode="json"),
+                body=command.model_dump(
+                    mode="json",
+                    exclude={
+                        field
+                        for field in ("keyword_fallback", "ranking_policy")
+                        if field not in options
+                    },
+                ),
                 key=idempotency_key or str(uuid4()),
             )
         )
@@ -616,7 +623,8 @@ class Client:
                     exclude=(
                         {"on_inference_busy"} if command.on_inference_busy == "error" else set()
                     )
-                    | ({"ranking_policy"} if "ranking_policy" not in options else set()),
+                    | ({"ranking_policy"} if "ranking_policy" not in options else set())
+                    | ({"keyword_fallback"} if "keyword_fallback" not in options else set()),
                 ),
             )
         )
@@ -662,7 +670,8 @@ class Client:
                     exclude=(
                         {"on_inference_busy"} if command.on_inference_busy == "error" else set()
                     )
-                    | ({"ranking_policy"} if "ranking_policy" not in options else set()),
+                    | ({"ranking_policy"} if "ranking_policy" not in options else set())
+                    | ({"keyword_fallback"} if "keyword_fallback" not in options else set()),
                 ),
             )
         )

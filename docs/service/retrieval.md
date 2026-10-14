@@ -40,6 +40,45 @@ The query still examines the eligible corpus; the candidate cap bounds returned
 rows, not database scan work. Large-corpus capacity and natural-language quality
 remain separate evaluation work. Version 4.2.3 adds the controls below.
 
+## Natural-language question support
+
+From service 4.3.3, hybrid search defaults to `keyword_fallback: true`.
+When a plain question has no complete lexical match and no identifier channel,
+individual key terms can add candidates alongside semantic search. For example,
+“Where will we keep the Atlas backup copy?” can give an Atlas document useful
+text support even though the document does not repeat the complete question.
+
+The fallback accepts 3–32 query words and 2–24 distinct non-stopword lexemes.
+PostgreSQL's bundled English and French dictionaries remove common words; the
+remaining terms retain their original lexical form. This is not automatic
+translation or a general language-understanding model. Quotes, exclusions,
+explicit `OR`, identifier queries, short queries, explicit lexical/semantic
+modes and inference-busy exact-text fallback keep their existing behavior.
+
+Each matching term counts once per eligible memory. Rarer terms and subject
+matches receive more weight, with a small length adjustment. Document-frequency
+statistics use only the authorized, filtered inventory. The returned candidate
+window remains `min(250, max(30, limit * 5))`; database work still scales with
+the eligible inventory. No model download, extra embedding call or re-index is
+required. Representative large-workspace capacity remains evaluation work.
+
+Key-term candidates use rank-fusion weight 0.5 in place of the absent full
+lexical channel. `ranking.keywords` exposes the matched terms, matched/requested
+counts, rank and weight. `partial_keyword_support` explicitly marks the fallback;
+the app explains it under **Why this result?**. It does not establish a full
+query match. The existing `semantic_only` match status and evidence-review
+warning remain when no full lexical or identifier hit exists. Similarity floors
+still apply to partial-term candidates, including those with no semantic rank.
+
+Disable it with `keyword_fallback: false` in recall/context, Python or TypeScript
+clients, full MCP search/context tools, or **Search order and match filters**.
+Older workspace servers receive no new field from the app; the Python SDK sends
+the option only when explicitly supplied. [Evaluations](insights.md) can compare
+the option and age/archive preferences on the same private test set.
+The [60-question regression](../validation/2026-10-14-question-retrieval.md)
+records the measured improvement and its limits; broader question quality and
+live shared-workspace acceptance remain open.
+
 ## Order and match controls
 
 From service 4.2.3, recall and context requests, SDKs and the full MCP
@@ -51,7 +90,7 @@ From service 4.2.3, recall and context requests, SDKs and the full MCP
 | `sort: "recent"` | Order matching candidates by `metadata.source_modified_at` when parseable, otherwise the selected revision's `recorded_at`; rank score breaks ties. |
 | `recorded_after` | Inclusive timezone-aware timestamp filter on when the revision was recorded in Mnemion. Applied before candidate selection; distinct from the source date. |
 | `min_score` | Minimum normalized rank-fusion score, 0–1; default 0. It is a rank score, not answer confidence. |
-| `min_similarity` | Optional cosine floor, −1–1, for candidates supported only by semantic retrieval. Exact text or identifier matches remain eligible; `min_score` still applies to them. |
+| `min_similarity` | Optional cosine floor, −1–1, for candidates without a full lexical or identifier match, including partial key-term candidates. Exact text or identifier matches remain eligible; `min_score` still applies to them. |
 
 The app exposes these in **Search order and match filters**, including for context
 packs. On an older server the new controls are disabled and their fields are not

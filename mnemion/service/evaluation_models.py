@@ -16,7 +16,7 @@ from pydantic import (
 )
 
 from .contracts import ResponseModel
-from .models import Command
+from .models import Command, RankingPolicy
 
 Mode = Literal["lexical", "semantic", "hybrid"]
 Split = Literal["development", "held_out"]
@@ -74,6 +74,8 @@ class EvaluationInput(Command):
         default_factory=lambda: [5, 10, 20], min_length=1, max_length=5
     )
     context: StrictBool = True
+    keyword_fallback: StrictBool = True
+    ranking_policy: RankingPolicy = Field(default_factory=RankingPolicy)
     token_budget: StrictInt = Field(default=2048, ge=128, le=16000)
     max_seconds: StrictInt = Field(default=300, ge=10, le=3600)
     interval_seconds: StrictFloat = Field(default=1, ge=0.25, le=60, allow_inf_nan=False)

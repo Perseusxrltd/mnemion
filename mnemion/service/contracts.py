@@ -130,6 +130,14 @@ class RankingAdjustment(ResponseModel):
     archive_segment: str | None = None
 
 
+class KeywordRanking(ResponseModel):
+    rank: int = Field(ge=1)
+    matched: int = Field(ge=1, le=24)
+    requested: int = Field(ge=2, le=24)
+    terms: list[str]
+    weight: float = Field(gt=0, le=1)
+
+
 class Ranking(ResponseModel):
     ranks: dict[Literal["lexical", "semantic"], int]
     rrf: float
@@ -137,6 +145,7 @@ class Ranking(ResponseModel):
     cosine_similarity: float | None
     identifier: IdentifierRanking | None = None
     adjustment: RankingAdjustment | None = None
+    keywords: KeywordRanking | None = None
 
 
 class RecallHit(MemoryMetadata):

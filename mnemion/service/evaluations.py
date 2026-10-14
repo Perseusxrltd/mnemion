@@ -12,6 +12,8 @@ from uuid import UUID, uuid4
 
 from psycopg.types.json import Jsonb
 
+from mnemion.version import __version__
+
 from .db import Database, Identity, require_space
 from .embeddings import Embedder
 from .errors import ServiceError, not_found
@@ -415,7 +417,8 @@ class EvaluationService:
                     "dimensions": model.generation.dimensions,
                     "configuration": model.generation.configuration,
                 },
-                "retrieval": "scoped_exact_cosine_lexical_rrf_k60",
+                "retrieval": "scoped_exact_cosine_lexical_optional_keywords_rrf_k60",
+                "queued_service_version": __version__,
                 "selected_cases": [case["id"] for case in selected],
                 "configuration": payload,
                 "corpus_start": None,
