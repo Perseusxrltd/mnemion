@@ -42,6 +42,15 @@ workflow labels and closes them only after their release has passed and is
 public. Reopened labeled reports remain open. Use
 `python -m deploy.issue_releases` for a read-only preview.
 
+The maintenance board retains failures that finish after a release is published,
+including builds of the next version that started earlier. It also inspects active
+runs for failed jobs. For a managed-runtime failure, dispatch **Managed runtime
+diagnostics** on the affected Mac or Linux runner to check the shared-model
+transport and a real API/worker restart without rebuilding desktop installers.
+Failed startup fixtures report bounded code locations and exception classes;
+private paths, credentials and log messages are excluded. This focused workflow
+does not count as a passing product or release gate.
+
 1. Change the canonical version and dependent package metadata/lockfiles together.
    Include both `uv.lock` and `studio/client/uv.lock`, the nested local client
    version in the frontend npm lock, and regenerate the OpenAPI/agent schemas.

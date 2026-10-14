@@ -47,10 +47,78 @@ def test_run_window_discards_foreign_and_superseded_evidence():
         "id": 4,
         "head_branch": "release/4.2.2",
         "created_at": "2026-10-13T10:00:00Z",
+        "updated_at": "2026-10-13T10:01:00Z",
     }
     assert [item["id"] for item in subject.run_rows([row, newer, foreign, obsolete], release)] == [
         2
     ]
+
+
+def test_new_build_failure_is_retained_when_it_started_before_an_older_release_published():
+    release = {"published_at": "2026-10-14T12:26:00Z", "target_commitish": "a" * 40}
+    row = {
+        "id": 5,
+        "path": ".github/workflows/release.yml",
+        "head_repository": {"full_name": subject.REPOSITORY},
+        "head_branch": "release/4.2.5",
+        "head_sha": "b" * 40,
+        "status": "completed",
+        "conclusion": "failure",
+        "created_at": "2026-10-14T12:23:00Z",
+        "updated_at": "2026-10-14T12:45:00Z",
+    }
+    assert [item["id"] for item in subject.run_rows([row], release)] == [5]
+
+
+def test_active_runs_surface_failed_jobs_and_only_completed_attempts_reuse_job_evidence(
+    monkeypatch,
+):
+    release = {
+        "tag_name": "v4.2.4",
+        "published_at": "2026-10-14T12:26:00Z",
+        "target_commitish": "a" * 40,
+        "draft": False,
+        "prerelease": False,
+    }
+    run = {
+        "id": 5,
+        "path": ".github/workflows/release.yml",
+        "head_repository": {"full_name": subject.REPOSITORY},
+        "head_branch": "release/4.2.5",
+        "head_sha": "b" * 40,
+        "status": "in_progress",
+        "conclusion": None,
+        "created_at": "2026-10-14T12:23:00Z",
+        "updated_at": "2026-10-14T12:24:00Z",
+    }
+    observed = []
+
+    def remote(*arguments):
+        if arguments[0] == "issue":
+            return []
+        endpoint = arguments[1].split(subject.REPOSITORY + "/", 1)[1]
+        if endpoint == "releases/latest":
+            return release
+        if endpoint == "actions/runs?per_page=100":
+            return {"workflow_runs": [run]}
+        assert endpoint == "actions/runs/5/jobs?filter=latest&per_page=100"
+        observed.append(endpoint)
+        return {
+            "total_count": 1,
+            "jobs": [{"id": 50, "name": "Mac startup", "conclusion": "failure", "steps": []}],
+        }
+
+    monkeypatch.setattr(subject, "object_from_gh", remote)
+    first = subject.collect({})
+    assert subject.changes({}, first)["failed_runs"] == 1
+    assert subject.changes({}, first)["active_runs"] == 1
+    second = subject.collect(first)
+    assert len(observed) == 2
+    run.update(status="completed", conclusion="failure", updated_at="2026-10-14T12:45:00Z")
+    completed = subject.collect(second)
+    assert len(observed) == 3
+    assert subject.collect(completed) == completed
+    assert len(observed) == 3
 
 
 def test_generated_titles_are_text_instead_of_remote_images_or_html():

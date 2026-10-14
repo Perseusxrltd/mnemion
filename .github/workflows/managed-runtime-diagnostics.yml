@@ -1,0 +1,42 @@
+name: Managed runtime diagnostics
+
+on:
+  workflow_dispatch:
+    inputs:
+      runner:
+        description: Native platform for focused service diagnostics
+        type: choice
+        options: [macos-15, macos-15-intel, ubuntu-latest]
+        default: macos-15
+
+permissions:
+  contents: read
+
+jobs:
+  runtime:
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - run: python -m pip install uv==0.12.24
+      - name: Build the current Intel cryptography runtime with static OpenSSL
+        if: inputs.runner == 'macos-15-intel'
+        run: python -m deploy.build_intel_crypto --output "$RUNNER_TEMP/mnemion-runtime-wheels"
+      - name: Install the locked runtime
+        run: |
+          if [ "${{ inputs.runner }}" = "macos-15-intel" ]; then
+            uv sync --locked --python 3.12 --group dev --no-install-package cryptography
+            uv pip install --python .venv/bin/python --no-deps --no-index "$RUNNER_TEMP"/mnemion-runtime-wheels/*.whl
+          else
+            uv sync --locked --python 3.12 --group dev
+          fi
+      - name: Verify shared model transport and real supervised restart
+        env:
+          MNEMION_TEST_PROCESS_DIAGNOSTICS: '1'
+        run: >-
+          uv run --no-sync python -m pytest -q --maxfail=1
+          service_tests/test_model_broker.py
+          service_tests/test_supervision.py::test_real_api_and_worker_recover_from_crashes_and_stop_cleanly

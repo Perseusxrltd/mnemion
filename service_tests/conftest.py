@@ -26,6 +26,24 @@ from mnemion.service.memory import MemoryService
 from mnemion.service.worker import Worker
 
 
+@pytest.fixture(autouse=True)
+def managed_process_diagnostics(monkeypatch):
+    if os.environ.get("MNEMION_TEST_PROCESS_DIAGNOSTICS") != "1":
+        return
+    from mnemion.service import supervision
+    from service_tests.process_diagnostics import report
+
+    start = supervision.start
+
+    def observed_start(state):
+        result = start(state)
+        if not result.get("ready"):
+            report(Path(state))
+        return result
+
+    monkeypatch.setattr(supervision, "start", observed_start)
+
+
 class FixtureEmbedder:
     """A deterministic protocol fixture, never a retrieval quality baseline."""
 

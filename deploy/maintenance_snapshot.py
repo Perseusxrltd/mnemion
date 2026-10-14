@@ -61,7 +61,7 @@ def run_rows(rows: list[dict], release: dict) -> list[dict]:
         )
         if (
             row["status"] == "completed"
-            and row["created_at"] < release["published_at"]
+            and row["updated_at"] < release["published_at"]
             and not source_matches
         ):
             continue
@@ -108,11 +108,12 @@ def collect(previous: dict) -> dict:
     rows = run_rows(runs["workflow_runs"], release)
     old_runs = {row["id"]: row for row in previous.get("runs", [])}
     for row in rows:
-        if row["conclusion"] != "failure":
+        if row["status"] == "completed" and row["conclusion"] != "failure":
             continue
         old = old_runs.get(row["id"], {})
         if (
-            all(
+            row["status"] == "completed"
+            and all(
                 old.get(field) == row[field]
                 for field in ("attempt", "updated_at", "status", "conclusion")
             )
@@ -166,7 +167,10 @@ def changes(previous: dict, current: dict) -> dict:
         ],
         "closed_issues": sorted(old_issues.keys() - new_issues.keys()),
         "changed_runs": [row for row in current["runs"] if old_runs.get(row["id"]) != row],
-        "failed_runs": sum(row["conclusion"] == "failure" for row in current["runs"]),
+        "failed_runs": sum(
+            row["conclusion"] == "failure" or bool(row.get("failed_jobs"))
+            for row in current["runs"]
+        ),
         "active_runs": sum(row["status"] != "completed" for row in current["runs"]),
     }
 
@@ -186,7 +190,8 @@ def markdown(data: dict) -> str:
         "",
         "This inventory reports GitHub state; issue closure does not prove that an entire product requirement is complete. "
         f"Build observations cover the latest {data['run_window']} runs, retaining the latest relevant run per workflow and branch. "
-        "A failed job is inspected once per changed attempt; this automation never retries a build or publishes a release.",
+        "Active builds are checked for failed jobs at each observation; completed failures are inspected once per changed attempt. "
+        "This automation never retries a build or publishes a release.",
         "",
         f"## Open issues ({len(data['issues'])})",
         "",
