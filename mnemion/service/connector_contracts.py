@@ -34,6 +34,9 @@ class SyncStatus(ResponseModel):
     last_removed: int
     last_unchanged: int
     last_error_code: str | None
+    scanned_commit: str | None = None
+    scanned_at: str | None = None
+    scanned_space_id: str | None = None
 
 
 class BindingResult(Binding):

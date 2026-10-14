@@ -174,23 +174,44 @@ def test_live_runner_acknowledges_only_requests_visible_before_scan(env, connect
         assert client.connector_sync_status(str(connection)).completed_generation == 2
 
 
-def test_git_deletion_after_requested_scan_is_removed_and_counted(env, tmp_path):
+@pytest.mark.parametrize("remote_cache", [False, True])
+def test_git_deletion_after_requested_scan_is_removed_and_counted(
+    env, tmp_path, monkeypatch, remote_cache
+):
+    from mnemion.connectors.providers import GitProvider, ProviderError
     from mnemion.service.connectors import ConnectorService
 
     def git(*args):
-        subprocess.run(
-            ["git", "-c", "user.name=Mnemion test", "-c", "user.email=test@example.invalid", *args],
-            cwd=tmp_path,
-            check=True,
-            capture_output=True,
-            timeout=10,
+        return (
+            subprocess.run(
+                [
+                    "git",
+                    "-c",
+                    "user.name=Mnemion test",
+                    "-c",
+                    "user.email=test@example.invalid",
+                    *args,
+                ],
+                cwd=tmp_path,
+                check=True,
+                capture_output=True,
+                timeout=10,
+            )
+            .stdout.decode()
+            .strip()
         )
 
-    git("init")
+    git("init", "--initial-branch=main")
     (tmp_path / "keep.md").write_text("# Keep\nPostgres remains the database.")
     (tmp_path / "remove.md").write_text("# Remove\nThis source is being withdrawn.")
     git("add", ".")
     git("commit", "-m", "Initial source")
+    first_commit = git("rev-parse", "HEAD")
+    cache = tmp_path / "cache.git"
+    remote = "https://source.example.invalid/office.git"
+    if remote_cache:
+        git("clone", "--bare", str(tmp_path), str(cache))
+        git("-C", str(cache), "remote", "set-url", "origin", remote)
     identity = env.identities.create_principal(env.owner, PrincipalInput(name="Git runner"))
     token = env.identities.create_key(env.owner, UUID(identity["id"]), KeyInput(name="Git"))[
         "api_key"
@@ -212,24 +233,57 @@ def test_git_deletion_after_requested_scan_is_removed_and_counted(env, tmp_path)
         connection,
         provider={
             "type": "git",
-            "path": str(tmp_path),
+            "path": str(cache if remote_cache else tmp_path),
+            "remote": remote if remote_cache else None,
+            "ref": "main",
             "scope_id": "repo",
             "name": "Repository",
             "members": [],
             "publish_to_mapped_members": True,
         },
     )
+    adapter = GitProvider(config.provider)
+    if remote_cache:
+        original = adapter.git
+
+        def local_fetch(*args, **kwargs):
+            if args[0] == "fetch":
+                # Real Git bare-cache/FETCH_HEAD behavior with fixture transport
+                # only. Production file remotes remain prohibited.
+                return original(
+                    "-c",
+                    "protocol.file.allow=always",
+                    "fetch",
+                    "--no-tags",
+                    str(tmp_path),
+                    config.provider.ref,
+                    **kwargs,
+                )
+            return original(*args, **kwargs)
+
+        monkeypatch.setattr(adapter, "git", local_fetch)
     with serve(create_app(env.db, env.embedder)) as url, Client(url, token) as client:
-        assert sync(config, client=client)["changed"] == 2
+        assert client.connector_sync_status(str(connection)).scanned_commit is None
+        first = sync(config, adapter=adapter, client=client)
+        assert first["changed"] == 2 and first["scanned_commit"] == first_commit
+        snapshot = client.connector_sync_status(str(connection))
+        assert snapshot.scanned_commit == first_commit and snapshot.scanned_at
+        assert snapshot.scanned_space_id == first["scopes"][0]["space_id"]
         git("rm", "remove.md")
         git("commit", "-m", "Withdraw source")
+        next_commit = git("rev-parse", "HEAD")
         requested = client.request_connector_sync(str(connection), expected_generation=0)
         assert requested.pending
-        result = sync(config, client=client)
+        result = sync(config, adapter=adapter, client=client)
         assert result["completed"] and result["removed"] == 1
+        assert result["scanned_commit"] == next_commit != first_commit
         assert result["changed"] == 0 and result["unchanged"] == 1
         state = service.sync_status(operator, connection)
         assert not state["pending"] and state["last_removed"] == 1
+        assert state["scanned_commit"] == next_commit
+        if remote_cache:
+            assert git("-C", str(cache), "rev-parse", "refs/heads/main") == first_commit
+            assert git("-C", str(cache), "rev-parse", "FETCH_HEAD") == next_commit
         with env.db.transaction(operator) as conn:
             rows = conn.execute(
                 "SELECT id FROM mnemion.memories WHERE deleted_at IS NULL"
@@ -237,6 +291,18 @@ def test_git_deletion_after_requested_scan_is_removed_and_counted(env, tmp_path)
         assert len(rows) == 1
         assert "Postgres" in env.memory.fetch(operator, rows[0]["id"])["content"]
         assert env.memory.fetch(operator, rows[0]["id"])["version"] == 1
+        git("commit", "--allow-empty", "-m", "Unfinished later snapshot")
+
+        def interrupted(_):
+            raise ProviderError("fixture_inventory_interrupted")
+
+        monkeypatch.setattr(adapter, "documents", interrupted)
+        failed = sync(config, adapter=adapter, client=client)
+        assert not failed["completed"] and "scanned_commit" not in failed
+        after_failure = client.connector_sync_status(str(connection))
+        assert after_failure.last_successful is False
+        assert after_failure.scanned_commit == next_commit
+        assert after_failure.scanned_at == state["scanned_at"]
 
 
 def test_watch_control_wakes_without_source_poll_and_backs_off_failures():

@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.3.1**. Roadmap updated: **2026-10-14**.
+Reviewed source distribution: **4.3.2**. Roadmap updated: **2026-10-14**.
 The [current published distribution and release gates](RELEASE_STATUS.md) are updated automatically.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
@@ -80,6 +80,12 @@ preserved for thresholds and visible ordering factors. The app, API, SDKs and
 MCP search/context controls share the policy. [Focused evidence](validation/2026-10-14-current-state-ranking.md)
 tracks the reopened current-state issue; automatic contradiction resolution,
 dated-section chunking and representative quality calibration remain open.
+
+[4.3.2](releases/4.3.2.md) adds completed Git snapshot provenance across the app,
+API, agents and managed host status, addressing misleading bare-cache branch
+freshness (issue 37). It reuses durable checkpoints and preserves per-file dates,
+failed-scan boundaries and older-runtime compatibility. [Validation](validation/2026-10-14-git-snapshot-freshness.md)
+records source and delivery evidence without marking all source coverage complete.
 
 Published [4.2.0](releases/4.2.0.md) implements personal
 passwords, scoped invitations, revocable device sessions, protected desktop and

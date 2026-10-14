@@ -17,10 +17,12 @@ from ..sdk import Client, MnemionError
 from ..version import __version__
 from .config import read_config
 from .protocol import ConnectorClient
+from .provenance import git_commit
 from .providers import FilesystemProvider, GitProvider, ProviderError, RcloneProvider
 
 MANAGED_PROTOCOL = 1
 SCAN_TRIGGER_ENV = "MNEMION_CONNECTOR_SCAN_TRIGGER"
+SCAN_REPORT_ENV = "MNEMION_CONNECTOR_REPORT_PATH"
 
 
 def scan_trigger() -> str:
@@ -76,6 +78,9 @@ def _scan(config, *, inspect=False, adapter=None, client=None) -> dict:
         identifiers = list(adapter.scopes())
         if len(set(identifiers)) != len(identifiers):
             raise ProviderError("ambiguous_scope_inventory")
+        # Pin the scan's repository snapshot independently of each file's last
+        # change. The service commits this cursor only after complete inventory.
+        checkpoint = f"git:{adapter.commit}" if isinstance(adapter, GitProvider) else None
         for identifier in identifiers:
             target = previous.get(identifier)
             try:
@@ -107,7 +112,9 @@ def _scan(config, *, inspect=False, adapter=None, client=None) -> dict:
                         adapter.access(identifier), lease_seconds=config.access_lease_seconds
                     )
 
-                result = bridge.sync(target["space_id"], items(), heartbeat=heartbeat)
+                result = bridge.sync(
+                    target["space_id"], items(), checkpoint=checkpoint, heartbeat=heartbeat
+                )
                 report["scopes"].append({"external_id": identifier, **result})
             except (ProviderError, OSError, ValueError, MnemionError, httpx.HTTPError) as exc:
                 report["completed"] = False
@@ -137,6 +144,8 @@ def _scan(config, *, inspect=False, adapter=None, client=None) -> dict:
                         "reason": "not_in_current_catalog",
                     }
                 )
+        if not inspect and report["completed"] and git_commit(checkpoint):
+            report["scanned_commit"] = git_commit(checkpoint)
         return report
     except ProviderError:
         # A catalog/authentication failure denies known scopes immediately when
@@ -214,6 +223,26 @@ def _report_control(client, connector, control, report):
         report["control_reported"] = True
     except (MnemionError, OSError, ValueError, httpx.HTTPError):
         report["control_reported"] = False
+
+
+def _report_managed(report):
+    """Optional private receipt; old rollback runtimes safely ignore the env."""
+    destination = os.environ.get(SCAN_REPORT_ENV)
+    if not destination or os.name != "posix":
+        return
+    from ..service import update_state
+
+    update_state.write(
+        Path(destination),
+        {
+            "format": 1,
+            "connector_id": report["connector_id"],
+            "runner_version": __version__,
+            "completed": report["completed"],
+            "scanned_commit": git_commit("git:" + str(report.get("scanned_commit", ""))),
+            "scanned_at": report["timestamp"],
+        },
+    )
 
 
 def sync(config, *, inspect=False, adapter=None, client=None) -> dict:
@@ -322,6 +351,8 @@ def main(argv=None) -> int:
             report = sync(config, inspect=args.inspect)
             report["trigger"] = trigger
             report["poll_seconds"] = config.poll_seconds
+            if not args.inspect:
+                _report_managed(report)
             print(json.dumps(report, ensure_ascii=False), flush=True)
             code = 0 if report["completed"] and report.get("control_reported") is not False else 2
         except ValidationError as exc:

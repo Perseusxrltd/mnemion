@@ -7964,6 +7964,39 @@
           "requested_generation": {
             "title": "Requested Generation",
             "type": "integer"
+          },
+          "scanned_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scanned At"
+          },
+          "scanned_commit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scanned Commit"
+          },
+          "scanned_space_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scanned Space Id"
           }
         },
         "required": [
@@ -8027,7 +8060,7 @@
   "info": {
     "description": "Shared, scoped memory and evidence for apps, teams, and assistants. Saves acknowledge canonical durability; operations report semantic indexing readiness.",
     "title": "Mnemion Memory Service",
-    "version": "4.3.1"
+    "version": "4.3.2"
   },
   "openapi": "3.1.0",
   "paths": {

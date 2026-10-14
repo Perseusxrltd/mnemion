@@ -41,6 +41,27 @@ does not establish that this particular desktop has updated; desktop update
 acceptance is recorded separately. Release 4.2.5's public-upgrade matrix passed
 for Windows, macOS and Linux on both x64 and ARM64.
 
+## Later 4.3.0 observation
+
+The same host's retained update history records staging 4.3.0 at **19:45:06 UTC**
+as requiring a schema upgrade, followed by the 4.2.5 → 4.3.0 transition at
+**19:47:08 UTC** with migration `016_hosted_oauth.sql` and a pre-update backup.
+No database restore was recorded. A later operator inspection found the host
+ready on 4.3.0, automatic updates enabled, no pending recovery, and its one
+managed connector running a successful 4.3.0 scan.
+
+The initiating operator was not observed in this session. A concurrent upgrade
+preflight correctly refused its obsolete 4.2.5 assumption before staging or
+changing anything. This evidence does not label the schema upgrade automatic.
+
+At **19:57:21 UTC**, three bounded authenticated Windows reads verified the
+independent human administrator, the restricted contributor's single granted
+space and service version 4.3.0. Both protected connection profiles remained
+byte-identical; no memory was written and no model was called. This verifies
+preserved API access, not a new desktop installation or named-provider OAuth
+acceptance. [All six public 4.3.0 upgrade checks](releases/4.3.0-status.json)
+passed separately.
+
 ## Limits
 
 The schema transition required independent host-operator access and explicit

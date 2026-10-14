@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from itertools import islice
 import os
 from pathlib import Path
@@ -21,7 +22,8 @@ from ..service import service_updates, supervision, update_state
 from ..service.update_manifest import ManifestError, version_tuple
 from ..version import __version__
 from .config import read_config
-from .runner import SCAN_TRIGGER_ENV, scan_trigger, wait_for_sync
+from .provenance import git_commit
+from .runner import SCAN_REPORT_ENV, SCAN_TRIGGER_ENV, scan_trigger, wait_for_sync
 
 MAX_CONNECTORS = 64
 STATES = {"starting", "scanning", "waiting", "waiting_for_update", "service_unavailable", "stopped"}
@@ -91,6 +93,7 @@ def status(root: Path) -> dict:
                     version_tuple(value[key])
             running = _alive(value.get("process_identity"))
             scan_running = _alive(value.get("scan_identity"))
+            commit = git_commit("git:" + str(value.get("scanned_commit", "")))
             row.update(
                 state=value["state"] if running else "orphan_scan" if scan_running else "stopped",
                 running=running,
@@ -99,6 +102,8 @@ def status(root: Path) -> dict:
                 scan_version=value.get("scan_version"),
                 updated_at=value["updated_at"],
                 last_exit_code=value.get("last_exit_code"),
+                scanned_commit=commit,
+                scanned_at=value.get("scanned_at") if commit else None,
             )
         entries.append(row)
     return {
@@ -125,6 +130,7 @@ def _environment(config) -> dict[str, str]:
         "PYTHONHOME",
         "PYTHONSTARTUP",
         SCAN_TRIGGER_ENV,
+        SCAN_REPORT_ENV,
     }
     tokens = [config.service_token]
     if hasattr(config.provider, "token"):
@@ -250,6 +256,9 @@ def _scan(
         environment = _environment(config)
         environment["PYTHONUNBUFFERED"] = "1"
         environment[SCAN_TRIGGER_ENV] = trigger
+        receipt = entry / "scan-result.json"
+        receipt.unlink(missing_ok=True)
+        environment[SCAN_REPORT_ENV] = str(receipt)
         command = [
             runtime["python"],
             *(["-I"] if runtime["isolated"] else []),
@@ -276,7 +285,30 @@ def _scan(
             code = process.wait()
         finally:
             _stop(process)
-        observation.record("waiting", scan_identity=None, last_exit_code=code)
+        source = {}
+        if code == 0:
+            # Never mistake an old receipt, a failed scan, or an older runtime
+            # without receipts for newly verified source freshness.
+            source = {"scanned_commit": None, "scanned_at": None}
+            if receipt.exists():
+                try:
+                    value = update_state.read(receipt)
+                    commit = git_commit("git:" + str(value.get("scanned_commit", "")))
+                    if (
+                        value.get("format") == 1
+                        and value.get("connector_id") == str(config.connector_id)
+                        and value.get("runner_version") == runtime["version"]
+                        and value.get("completed") is True
+                        and commit
+                    ):
+                        observed = datetime.fromisoformat(value["scanned_at"])
+                        if observed.utcoffset() is not None:
+                            source = {"scanned_commit": commit, "scanned_at": observed.isoformat()}
+                except (KeyError, TypeError, ValueError, OSError):
+                    # Missing/invalid optional provenance cannot claim freshness
+                    # or prevent the next source scan from running.
+                    pass
+        observation.record("waiting", scan_identity=None, last_exit_code=code, **source)
         return code
 
 

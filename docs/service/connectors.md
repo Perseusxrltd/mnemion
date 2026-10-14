@@ -152,6 +152,37 @@ from a document title. Provision OAuth/workload credentials with read permission
 for the selected sources. Google access tokens must be refreshed by the operator's
 credential provider. The runner does not implement an interactive OAuth consent UI.
 
+## Git snapshot freshness
+
+From 4.3.2, **Connections → Source status** and
+`GET /v1/connectors/{id}/sync` expose `scanned_commit`, `scanned_at` and
+`scanned_space_id` for the latest completed Git scope. Ordinary scan output also
+includes `scanned_commit`; [managed host status](managed-connectors.md) retains
+the last successfully observed scan's commit and date. These fields are empty
+until a compatible runner completes an inventory. The API and CLI agent controls
+use the same status and authorization as the app.
+
+A remote Git connector fetches its configured reference and pins that scan to
+the fetched commit. A bare cache's `refs/heads/main` can still point to the
+original clone: the connector does not rewrite branches that another local tool
+may use. Compare the reported **scanned commit** with the upstream tip at the
+observation time. `FETCH_HEAD` is a fetch observation and can advance before a
+scan succeeds; it is not a completed-ingestion receipt. No extra fetch is made
+by reading status.
+
+The complete-inventory checkpoint advances only after all pages and the removal
+sweep finish. A failed scan leaves the previous commit and completion time;
+`last_successful`, access state and pending requests still show the current
+attempt's outcome. A completed scan means the source inventory was processed;
+local corrections can still await review and embeddings can still be pending.
+Use source proposals and index status for those separate states.
+
+Per-memory `metadata.git_commit` and `source_modified_at` continue to describe
+that file's last change. They should not all equal the scanned repository tip.
+This separation preserves unchanged-file revisions and meaningful recency.
+Existing checkpoints and optional response fields provide the new observation
+without a database migration or re-index.
+
 ## Scan timing and immediate requests
 
 From 4.0.5, **Connections → Source status → Sync now** requests a complete scan by

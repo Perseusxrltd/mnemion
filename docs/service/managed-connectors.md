@@ -69,6 +69,15 @@ PID. `scan_version` describes the most recent scan, so it can lag during the
 normal interval before the next scan. A surviving child whose launcher exited
 appears as `orphan_scan` until it finishes.
 
+From 4.3.2, a completed Git scan also records `scanned_commit` and `scanned_at`
+in `connectors.items`. This is the scanned repository snapshot, distinct from
+each file's last-change commit. The parent accepts a private, bounded receipt
+only from the just-completed process with the matching connector and runtime.
+A failed attempt retains the previous successful observation and reports its
+nonzero exit code. A successful older runner without receipts clears the commit
+observation; an old receipt is never reused. These local observations are
+independent of the service's [durable complete-inventory checkpoint](connectors.md#git-snapshot-freshness).
+
 Ordinary scan reports include `runner_version`. Plain `--watch` also states
 `update_mode: "manual"` at startup. The host status explicitly reports that it
 does not inventory unmanaged processes. A connector running on another machine

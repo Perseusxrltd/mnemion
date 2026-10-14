@@ -103,6 +103,7 @@ export function Connections({ client, administrator, endpoint, selectSpace }: {
         {syncStatus.data && <div className="ws-connector-heading">
           <div><p>{syncStatus.data.pending ? `Sync requested ${when(syncStatus.data.requested_at)}. Waiting for a complete scan.` : syncStatus.data.last_attempt_at ? (syncStatus.data.last_successful ? "Source scan complete." : "The last source scan was incomplete.") : "No scan reported yet."}</p>
             {syncStatus.data.last_attempt_at && <p className="ws-helper">Last report {when(syncStatus.data.last_attempt_at)} · {syncStatus.data.last_changed} changed · {syncStatus.data.last_removed} removed · {syncStatus.data.last_unchanged} unchanged · {syncStatus.data.last_duration_seconds?.toFixed(1)} seconds{syncStatus.data.last_successful === false ? ". Counts cover completed scopes." : ""}</p>}
+            {connection.provider === "git" && (syncStatus.data.scanned_commit ? <p className="ws-helper">Last complete Git snapshot · {when(syncStatus.data.scanned_at ?? null)}<br /><code style={{ overflowWrap: "anywhere" }}>{syncStatus.data.scanned_commit}</code></p> : <p className="ws-helper">The scanned Git commit will appear after a complete scan with runner 4.3.2 or later.</p>)}
             {syncStatus.data.pending && <p className="ws-helper">The source runner must be running and connected. Requests do not change source permissions.</p>}
           </div>
           <button className="ws-button" disabled={busy || !!connection.disabled_at} onClick={() => void act(async () => {

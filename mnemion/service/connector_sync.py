@@ -2,6 +2,7 @@
 
 from uuid import UUID
 
+from ..connectors.provenance import git_commit
 from .connector_models import SyncReportInput, SyncRequestInput
 from .db import Identity
 from .errors import ServiceError, not_found
@@ -49,6 +50,20 @@ def _state(conn, connector: UUID) -> dict:
         )
     row.pop("tenant_id", None)
     row["pending"] = row["requested_generation"] > row["completed_generation"]
+    snapshot = conn.execute(
+        """SELECT s.space_id,s.checkpoint,s.completed_at
+           FROM mnemion.connector_scopes s
+           JOIN mnemion.connectors c ON c.tenant_id=s.tenant_id AND c.id=s.connector_id
+           WHERE s.connector_id=%s AND c.provider='git' AND s.completed_at IS NOT NULL
+           ORDER BY s.completed_at DESC,s.space_id LIMIT 1""",
+        (connector,),
+    ).fetchone()
+    commit = git_commit(snapshot["checkpoint"]) if snapshot else None
+    row.update(
+        scanned_commit=commit,
+        scanned_at=snapshot["completed_at"] if commit else None,
+        scanned_space_id=snapshot["space_id"] if commit else None,
+    )
     return json_value(row)
 
 

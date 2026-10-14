@@ -136,6 +136,8 @@ release does not close unfinished provider or recovery requirements.
    focused validation and normal release gates. Issue 31 was reopened with
    fresh 4.2.5 examples; [4.3.1](releases/4.3.1.md) adds bounded age/archive
    preferences with visible factors and a pure-relevance option.
+   [4.3.2](releases/4.3.2.md) adds the last completed Git snapshot to app/API/host
+   status for misleading bare-cache freshness (37), without revising unchanged files.
    Natural-language quality (17),
    dated-section chunking and model-specific threshold calibration remain.
    Published 4.2.0 closes issue 35 with the matching-excerpt correction, after

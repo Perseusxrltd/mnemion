@@ -152,6 +152,45 @@ def test_managed_watch_preserves_poll_and_requested_reasons_through_update_waits
     assert [row["trigger"] for row in rows] == ["startup", "poll", "requested"]
 
 
+def test_scan_commit_receipt_is_private_and_not_reused_after_rollback(setup, tmp_path, monkeypatch):
+    current = executable(
+        tmp_path,
+        "4.3.2",
+        "receipt = Path(os.environ['MNEMION_CONNECTOR_REPORT_PATH'])\n"
+        "receipt.write_text(json.dumps({'format': 1, 'connector_id': config['connector_id'], "
+        "'runner_version': '4.3.2', 'completed': True, 'scanned_commit': 'a' * 40, "
+        "'scanned_at': '2026-10-14T19:00:00+00:00'}))\n"
+        "receipt.chmod(0o600)\n",
+    )
+    failed = executable(tmp_path, "4.3.3", "raise SystemExit(2)\n")
+    older = executable(tmp_path, "4.1.2")
+    runtimes = iter((current, failed, older))
+    monkeypatch.setattr(service_updates, "resolved_runtime", lambda _: next(runtimes))
+    monkeypatch.setenv("MNEMION_FIXTURE_RECEIPT", str(tmp_path / "receipt.jsonl"))
+    monkeypatch.setenv(runner.SCAN_REPORT_ENV, "unrelated-path-must-not-be-used")
+    config = managed._configuration(setup.path)
+    observation = managed.Observation(setup.entry, setup.identifier)
+    with update_state.lock(setup.entry) as singleton:
+        for expected_code, expected_commit in ((0, "a" * 40), (2, "a" * 40), (0, None)):
+            assert (
+                managed._scan(
+                    setup.state,
+                    setup.root,
+                    config,
+                    setup.entry,
+                    singleton,
+                    observation,
+                    managed.Control(),
+                )
+                == expected_code
+            )
+            row = managed.status(setup.root)["items"][0]
+            assert row["scanned_commit"] == expected_commit
+            assert row["last_exit_code"] == expected_code
+            assert (row["scanned_at"] is not None) == (expected_commit is not None)
+            assert "service_token" not in json.dumps(row)
+
+
 def test_shared_scan_lease_allows_peers_and_blocks_updates_until_child_exits(tmp_path):
     root = update_state.directory(tmp_path / "updates")
     with update_state.lock(root, shared=True) as descriptor:

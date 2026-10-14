@@ -2636,6 +2636,39 @@
               "requested_generation": {
                 "title": "Requested Generation",
                 "type": "integer"
+              },
+              "scanned_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Scanned At"
+              },
+              "scanned_commit": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Scanned Commit"
+              },
+              "scanned_space_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Scanned Space Id"
               }
             },
             "required": [
@@ -2818,6 +2851,39 @@
               "requested_generation": {
                 "title": "Requested Generation",
                 "type": "integer"
+              },
+              "scanned_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Scanned At"
+              },
+              "scanned_commit": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Scanned Commit"
+              },
+              "scanned_space_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Scanned Space Id"
               }
             },
             "required": [
@@ -2978,6 +3044,39 @@
               "requested_generation": {
                 "title": "Requested Generation",
                 "type": "integer"
+              },
+              "scanned_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Scanned At"
+              },
+              "scanned_commit": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Scanned Commit"
+              },
+              "scanned_space_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Scanned Space Id"
               }
             },
             "required": [
