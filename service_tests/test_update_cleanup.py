@@ -52,7 +52,8 @@ def test_replaced_backup_is_never_deleted_or_followed(tmp_path):
     assert first.is_symlink() and outside.read_bytes() == b"keep me"
 
 
-def test_signed_runtime_cleanup_keeps_active_previous_pending_and_journal(tmp_path):
+@pytest.mark.parametrize("journal", ["journal.json", "upgrade-journal.json"])
+def test_signed_runtime_cleanup_keeps_active_previous_pending_and_journal(tmp_path, journal):
     root = state_io.directory(tmp_path / "updates")
     releases = state_io.directory(root / "releases")
     publisher = tmp_path / "publisher"
@@ -72,7 +73,7 @@ def test_signed_runtime_cleanup_keeps_active_previous_pending_and_journal(tmp_pa
     state_io.write(root / "active.json", {"slot": slots[1].name})
     state_io.write(root / "previous.json", {"slot": slots[0].name})
     state_io.write(
-        root / "journal.json",
+        root / journal,
         {"previous": {"slot": slots[2].name}, "candidate": {"slot": slots[3].name}},
     )
     untrusted = state_io.directory(releases / f"4.0.14-{'b' * 12}")
@@ -88,6 +89,19 @@ def test_signed_runtime_cleanup_keeps_active_previous_pending_and_journal(tmp_pa
     assert all(path.exists() for path in slots[:5])
     assert not slots[5].exists()
     assert untrusted.exists() and foreign.exists() and linked.is_symlink() and outside.exists()
+
+
+def test_pending_upgrade_backup_survives_retention(tmp_path):
+    root = state_io.directory(tmp_path / "updates")
+    backups = state_io.directory(root / "backups")
+    names = [f"pre-update-4.1.7-to-4.2.4-{index:032x}.zip" for index in range(5)]
+    state_io.write(root / "upgrade-journal.json", {"backup": names[0]})
+    for name in names:
+        path = backups / name
+        path.write_bytes(b"verified fixture")
+        path.chmod(0o600)
+        cleanup.retain_backup(root, name)
+    assert {path.name for path in backups.iterdir()} == {names[0], *names[-2:]}
 
 
 @pytest.mark.parametrize("existed", [True, False])

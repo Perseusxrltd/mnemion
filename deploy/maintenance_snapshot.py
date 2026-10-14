@@ -1,0 +1,243 @@
+"""Collect bounded issue/build changes once; never start jobs or decide feature completion."""
+
+from __future__ import annotations
+
+import argparse
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone
+import json
+from pathlib import Path
+import re
+
+from .published_release import REPOSITORY
+from .release_automation import gh, semver
+from .release_status import WORKFLOWS
+
+LIMIT = 100
+ISSUE_LIMIT = 1000
+
+
+def object_from_gh(*arguments):
+    return json.loads(gh(*arguments))
+
+
+def issue_rows(rows: list[dict]) -> list[dict]:
+    # Never infer that missing issues closed from a truncated first page.
+    if not isinstance(rows, list) or len(rows) >= ISSUE_LIMIT:
+        raise ValueError(
+            "Issue inventory needs pagination before it can replace the saved snapshot"
+        )
+    result = []
+    for row in rows:
+        number = row.get("number")
+        if type(number) is not int or number <= 0:
+            raise ValueError("Invalid issue number")
+        result.append(
+            {
+                "number": number,
+                "title": " ".join(row["title"].split())[:300],
+                "updated_at": row["updatedAt"],
+                "url": f"https://github.com/{REPOSITORY}/issues/{number}",
+                "labels": sorted(label["name"] for label in row.get("labels", [])),
+            }
+        )
+    if len({row["number"] for row in result}) != len(result):
+        raise ValueError("Duplicate issue number")
+    return sorted(result, key=lambda row: row["number"])
+
+
+def run_rows(rows: list[dict], release: dict) -> list[dict]:
+    latest = {}
+    for row in rows:
+        workflow = row.get("path", "").partition("@")[0].removeprefix(".github/workflows/")
+        if (
+            workflow not in WORKFLOWS
+            or (row.get("head_repository") or {}).get("full_name") != REPOSITORY
+        ):
+            continue
+        source_matches = row["head_sha"] == release["target_commitish"] or (
+            workflow == "verify-artifacts.yml"
+            and row.get("display_title") == f"Verify release / {release['target_commitish']}"
+        )
+        if (
+            row["status"] == "completed"
+            and row["created_at"] < release["published_at"]
+            and not source_matches
+        ):
+            continue
+        key = (workflow, row["head_branch"])
+        if key in latest and latest[key]["id"] >= row["id"]:
+            continue
+        latest[key] = {
+            "id": row["id"],
+            "attempt": row.get("run_attempt", 1),
+            "workflow": workflow,
+            "branch": row["head_branch"],
+            "source_commit": row["head_sha"],
+            "status": row["status"],
+            "conclusion": row.get("conclusion"),
+            "updated_at": row["updated_at"],
+            "url": f"https://github.com/{REPOSITORY}/actions/runs/{row['id']}",
+        }
+    return sorted(latest.values(), key=lambda row: (row["workflow"], row["branch"] or ""))
+
+
+def collect(previous: dict) -> dict:
+    requests = (
+        (
+            "issue",
+            "list",
+            "--repo",
+            REPOSITORY,
+            "--state",
+            "open",
+            "--limit",
+            str(ISSUE_LIMIT),
+            "--json",
+            "number,title,updatedAt,labels",
+        ),
+        ("api", f"repos/{REPOSITORY}/actions/runs?per_page={LIMIT}"),
+        ("api", f"repos/{REPOSITORY}/releases/latest"),
+    )
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        futures = [pool.submit(object_from_gh, *arguments) for arguments in requests]
+        issues, runs, release = (future.result() for future in futures)
+    semver(release["tag_name"].removeprefix("v"))
+    if release["draft"] or release["prerelease"] or not release["published_at"]:
+        raise ValueError("The stable release must already be published")
+    rows = run_rows(runs["workflow_runs"], release)
+    old_runs = {row["id"]: row for row in previous.get("runs", [])}
+    for row in rows:
+        if row["conclusion"] != "failure":
+            continue
+        old = old_runs.get(row["id"], {})
+        if (
+            all(
+                old.get(field) == row[field]
+                for field in ("attempt", "updated_at", "status", "conclusion")
+            )
+            and "failed_jobs" in old
+        ):
+            row["failed_jobs"] = old["failed_jobs"]
+            continue
+        jobs = object_from_gh(
+            "api", f"repos/{REPOSITORY}/actions/runs/{row['id']}/jobs?filter=latest&per_page=100"
+        )
+        if jobs["total_count"] > 100:
+            raise ValueError("This run needs paginated job inspection")
+        row["failed_jobs"] = [
+            {
+                "name": job["name"],
+                "id": job["id"],
+                "steps": [
+                    step["name"]
+                    for step in job.get("steps", [])
+                    if step.get("conclusion") == "failure"
+                ],
+            }
+            for job in jobs["jobs"]
+            if job.get("conclusion") == "failure"
+        ]
+    return {
+        "schema": 1,
+        "repository": REPOSITORY,
+        "run_window": LIMIT,
+        "release": {
+            "version": release["tag_name"],
+            "published_at": release["published_at"],
+            "url": f"https://github.com/{REPOSITORY}/releases/tag/{release['tag_name']}",
+        },
+        "issues": issue_rows(issues),
+        "runs": rows,
+    }
+
+
+def changes(previous: dict, current: dict) -> dict:
+    old_issues = {row["number"]: row for row in previous.get("issues", [])}
+    new_issues = {row["number"]: row for row in current["issues"]}
+    old_runs = {row["id"]: row for row in previous.get("runs", [])}
+    comparable = {key: value for key, value in previous.items() if key != "observed_at"}
+    return {
+        "changed": comparable != current,
+        "release": current["release"]["version"],
+        "open_issues": len(new_issues),
+        "new_or_updated_issues": [
+            key for key, row in new_issues.items() if old_issues.get(key) != row
+        ],
+        "closed_issues": sorted(old_issues.keys() - new_issues.keys()),
+        "changed_runs": [row for row in current["runs"] if old_runs.get(row["id"]) != row],
+        "failed_runs": sum(row["conclusion"] == "failure" for row in current["runs"]),
+        "active_runs": sum(row["status"] != "completed" for row in current["runs"]),
+    }
+
+
+def escaped(value: str) -> str:
+    return re.sub(r"([\\`*_{}\[\]()#+.!|<>])", r"\\\1", " ".join(value.split()))
+
+
+def markdown(data: dict) -> str:
+    lines = [
+        "# Automated maintenance status",
+        "",
+        f"Observed: {data['observed_at']}. Updated by repository events and the scheduled status workflow.",
+        "",
+        f"Published release: [{data['release']['version']}]({data['release']['url']}). "
+        "[Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).",
+        "",
+        "This inventory reports GitHub state; issue closure does not prove that an entire product requirement is complete. "
+        f"Build observations cover the latest {data['run_window']} runs, retaining the latest relevant run per workflow and branch. "
+        "A failed job is inspected once per changed attempt; this automation never retries a build or publishes a release.",
+        "",
+        f"## Open issues ({len(data['issues'])})",
+        "",
+        "| Issue | Report | Last activity |",
+        "| --- | --- | --- |",
+    ]
+    lines.extend(
+        f"| [#{row['number']}]({row['url']}) | {escaped(row['title'])} | {row['updated_at']} |"
+        for row in data["issues"]
+    )
+    lines.extend(
+        [
+            "",
+            "## Relevant builds",
+            "",
+            "| Workflow | Branch | State | Evidence |",
+            "| --- | --- | --- | --- |",
+        ]
+    )
+    lines.extend(
+        f"| {escaped(row['workflow'])} | {escaped(row['branch'] or 'detached')} | {escaped(row['conclusion'] or row['status'])} | [Run {row['id']}]({row['url']}) |"
+        for row in data["runs"]
+    )
+    failures = [row for row in data["runs"] if row.get("failed_jobs")]
+    if failures:
+        lines.extend(["", "## Failed jobs", ""])
+        for row in failures:
+            lines.extend(
+                f"- [Run {row['id']}]({row['url']}): {escaped(job['name'])}. Steps: {escaped(', '.join(job['steps']))}."
+                for job in row["failed_jobs"]
+            )
+    return "\n".join(lines) + "\n"
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--write", action="store_true", help="Refresh the repository's generated snapshot and guide"
+    )
+    args = parser.parse_args()
+    root = Path(__file__).resolve().parents[1]
+    path = root / "deploy/maintenance-status.json"
+    previous = json.loads(path.read_text()) if path.exists() else {}
+    current = collect(previous)
+    summary = changes(previous, current)
+    if args.write and summary["changed"]:
+        current["observed_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        path.write_text(json.dumps(current, indent=2) + "\n")
+        (root / "docs/MAINTENANCE_STATUS.md").write_text(markdown(current))
+    print(json.dumps(summary))
+
+
+if __name__ == "__main__":
+    main()

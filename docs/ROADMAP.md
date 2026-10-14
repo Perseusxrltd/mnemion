@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.2.3**. Roadmap updated: **2026-10-13**.
+Reviewed source distribution: **4.2.4**. Roadmap updated: **2026-10-14**.
 The [current published distribution and release gates](RELEASE_STATUS.md) are updated automatically.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
@@ -26,14 +26,27 @@ verification passed. [Publication](validation/2026-10-13-v4_2_2-publication.json
 and [automatic live website verification](validation/2026-10-13-v4_2_2-website.json)
 are recorded; issue 27 is closed. General natural-language quality remains open.
 
-The [4.2.3 batch](releases/4.2.3.md) combines compact MCP discovery and aliases,
+Published [4.2.3](releases/4.2.3.md) combines compact MCP discovery and aliases,
 optional credential-bound sessions, newest-first/recorded-since retrieval and
 explicit match filters, including app controls. [Focused validation](validation/2026-10-13-search-agent-batch.md)
-passed; publication follows the normal gates. It addresses issues 25, 26, 28 and
-31 without declaring all provider integrations or retrieval quality complete.
+passed, followed by all 30 release jobs, independent uploaded-byte verification,
+automatic publication, website verification and all six public upgrades.
+[Automatically retained evidence](validation/releases/4.2.3-status.json) records
+the result. Issues 25, 26, 28 and 31 are closed; broader provider integrations,
+dated-section chunking and natural-language quality remain incomplete.
 Release version preparation, verified publication, follow-up dispatch and retained
 per-version status are now scripted. Full native builds are no longer duplicated
 on main pushes; failed gates still stop the pipeline.
+
+[4.2.4](releases/4.2.4.md) adds the
+[guarded managed-host upgrade](service/managed-upgrades.md), a bridge for older
+bootstrap tools, visible migration blockers and journaled forward recovery.
+[Focused and real installed-runtime validation](validation/2026-10-14-managed-upgrade-automation.md)
+covers backup, PostgreSQL migration, Supervisor restart, retained keys and
+enrolled source identities. Shared-host and public delivery evidence remain
+separate. The [maintenance board](MAINTENANCE_STATUS.md) now tracks issue activity
+and build failures through scripts and GitHub events; normal source integration
+also handles generated-metadata races without rewriting released source.
 
 Published [4.2.0](releases/4.2.0.md) implements personal
 passwords, scoped invitations, revocable device sessions, protected desktop and
@@ -50,8 +63,9 @@ onboarding and live named-provider acceptance remain separate unfinished work.
 The same release corrects search excerpts from long documents: matching
 passages carry exact source offsets and preserve smaller context budgets.
 [Thirteen focused retrieval checks](validation/2026-10-13-matched-evidence.md)
-and the release/installed-upgrade gates passed; issue 35 is closed. Recency and
-calibrated relevance remain open; exact-identifier ranking is under validation.
+and the release/installed-upgrade gates passed; issue 35 is closed. Subsequent
+4.2.2/4.2.3 releases add exact identifiers and recency controls. Calibrated
+relevance and broader natural-language ranking remain open.
 
 The actual Windows app completed automatic 4.1.4 → 4.1.6 → 4.1.7 installation
 and relaunch. That exercise identified a locked-screen focus wait; published

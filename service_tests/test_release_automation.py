@@ -325,3 +325,28 @@ def test_corrected_attempt_preserves_frozen_source_and_cannot_replace_a_public_v
         "--ref",
         "release/4.2.3-r2",
     )
+
+
+@pytest.mark.parametrize("problem", ["dirty", "source_changed", "frozen"])
+def test_integration_never_pushes_unreviewed_source_or_rebases_a_frozen_release(
+    tmp_path, monkeypatch, problem
+):
+    calls = []
+
+    def git(root, *args, check=True):
+        calls.append(args)
+        result = ""
+        if args[0] == "status" and problem == "dirty":
+            result = " M changed.py"
+        elif args[0] == "symbolic-ref":
+            result = "release/4.2.3" if problem == "frozen" else "codex/reviewed-batch"
+        elif args[0] == "remote":
+            result = "https://github.com/Perseusxrltd/mnemion.git"
+        elif args[0] == "diff":
+            result = "mnemion/service/changed.py\n"
+        return SimpleNamespace(stdout=result, returncode=0)
+
+    monkeypatch.setattr(subject, "_integration_git", git)
+    with pytest.raises(ValueError):
+        subject.integrate(tmp_path, "Perseusxrltd/mnemion")
+    assert not any(args[0] in {"rebase", "push", "merge"} for args in calls)

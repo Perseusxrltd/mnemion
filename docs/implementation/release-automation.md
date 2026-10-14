@@ -10,8 +10,12 @@ gates; no paid service, model call or new signing credential is required.
    environment. It updates the Python/npm packages, project lock entries, release
    targets and reviewed-source marker, generates OpenAPI and agent contracts, and
    validates the version boundaries. Unrelated dependency pins are preserved.
-3. Run checks appropriate to the change, then commit and push reviewed source to
-   main. `python -m deploy.release_automation start` freezes its `release/X.Y.Z`
+3. Run checks appropriate to the change, then commit reviewed source.
+   `python -m deploy.release_automation integrate` pushes it normally to main,
+   rebasing only incoming generated metadata; incoming source changes need review.
+   It also fast-forwards a clean local main worktree. It never stashes user work,
+   force-pushes or rebases a frozen release branch.
+   `python -m deploy.release_automation start` freezes its `release/X.Y.Z`
    branch and starts the complete release workflow once. Existing matching runs
    are reported, not repeated; a different frozen source is rejected.
 4. The release workflow runs product/native gates and creates a draft. The
@@ -30,6 +34,20 @@ gates; no paid service, model call or new signing credential is required.
    observed gates, targets and scope counts there and refreshes
    [current release status](../RELEASE_STATUS.md). The website continues to read
    the published release and current roadmap automatically.
+
+`python -m deploy.maintenance_snapshot` reports the current published release,
+new/updated/closed issues, changed builds and failed job steps as bounded JSON.
+The existing status workflow refreshes the
+[maintenance board](../MAINTENANCE_STATUS.md) on issue/comment changes, completed
+release workflows and its schedule. It reads trusted code from main; issue text
+is data only, never a command. Unchanged observations do not rewrite the board.
+Failed job details are reused until that attempt changes. The script starts no
+builds, sends no messages and makes no feature-completion decisions.
+
+For CI or a deliberate initial refresh, `python -m deploy.maintenance_snapshot --write`
+updates the generated JSON and Markdown. Normal local inspection is read-only.
+GitHub issue listing paginates up to 1,000 open issues; reaching that cap stops
+before replacing the saved inventory, so truncated results cannot mark issues closed.
 
 The verification job remains read-only and receives no signing secrets. The
 separate publication job has repository write and workflow-dispatch permission,

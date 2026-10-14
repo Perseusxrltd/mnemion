@@ -41,11 +41,20 @@ def new_token() -> tuple[str, str]:
     return token, token_hash(token)
 
 
-def migrate(dsn: str) -> list[str]:
+def migrate(dsn: str, *, expected: dict[str, str] | None = None) -> list[str]:
     """Apply immutable, checksummed migrations under a database advisory lock."""
     applied = []
     with psycopg.connect(dsn) as conn:
+        if expected is not None:
+            conn.execute("SET LOCAL lock_timeout='15s'")
+            conn.execute("SET LOCAL statement_timeout='10min'")
         conn.execute("SELECT pg_advisory_xact_lock(731293284009)")
+        if expected is not None:
+            current = dict(
+                conn.execute("SELECT name, sha256 FROM mnemion.schema_migrations").fetchall()
+            )
+            if current != expected:
+                raise RuntimeError("Database schema changed after the managed upgrade was planned")
         conn.execute("CREATE SCHEMA IF NOT EXISTS mnemion")
         conn.execute(
             """CREATE TABLE IF NOT EXISTS mnemion.schema_migrations (

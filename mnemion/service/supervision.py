@@ -591,6 +591,15 @@ def status(state: Path) -> dict:
             unchanged = False
     return {
         "running": True,
+        "service_ready": ready
+        and instance_matches
+        and initialized is not False
+        and unchanged
+        and all(
+            item["statename"] == "RUNNING"
+            for item in processes
+            if item["name"] in {"mnemion-api", "mnemion-worker"}
+        ),
         "ready": ready
         and instance_matches
         and initialized is not False

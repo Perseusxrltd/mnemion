@@ -153,8 +153,10 @@ the API and worker on Linux/macOS without systemd, with crash recovery and
 cron/launchd startup configuration. From 4.0.8, the separate
 [managed setup](managed-updates.md) adds signed stable service patches, isolated
 staging, verified backups and runtime rollback. This requires local host adoption;
-existing memory keys cannot grant it. Containers, Windows servers, schema changes
-and broader fleet policy remain tracked in issue 11.
+existing memory keys cannot grant it. From 4.2.4, the
+[guarded managed-host upgrade](managed-upgrades.md) handles schema/minor-version
+boundaries and older bootstrap tools without running a second stack. Containers,
+Windows servers and broader fleet policy remain on the product roadmap.
 
 Version 4.0.5's source-sync controls require the updated runner and a coordinated
 server upgrade with migration `012_connector_sync_requests.sql`. Follow the

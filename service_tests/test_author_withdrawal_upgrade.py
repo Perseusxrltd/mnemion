@@ -100,7 +100,14 @@ def test_previous_schema_upgrade_preserves_keys_grants_and_existing_memory(
         finally:
             rejected.close()
         expected = ["014_author_withdrawal.sql", "015_individual_sign_in.sql"]
-        assert db.migrate(admin_dsn) == expected[previous_count - 13 :]
+        previous_schema = {
+            path.name: hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in migrations.iterdir()
+        }
+        with pytest.raises(RuntimeError, match="schema changed after"):
+            db.migrate(admin_dsn, expected={})
+        assert inventory(admin_dsn) == before
+        assert db.migrate(admin_dsn, expected=previous_schema) == expected[previous_count - 13 :]
         assert db.migrate(admin_dsn) == []
         after_installed = probe.snapshot()
         assert after_installed["schema"] != before_installed["schema"]

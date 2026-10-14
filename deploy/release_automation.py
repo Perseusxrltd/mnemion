@@ -115,6 +115,105 @@ def tag_commit(repo: str, target: dict) -> str:
     raise ValueError("The release tag must identify an ordinary commit")
 
 
+def _integration_git(root: Path, *arguments: str, check=True):
+    return subprocess.run(
+        [
+            "git",
+            "-c",
+            "user.name=Perseusxrltd",
+            "-c",
+            "user.email=226232767+Perseusxrltd@users.noreply.github.com",
+            "-c",
+            "credential.helper=",
+            "-c",
+            "credential.helper=!gh auth git-credential",
+            *arguments,
+        ],
+        cwd=root,
+        text=True,
+        capture_output=True,
+        timeout=120,
+        check=check,
+    )
+
+
+def integrate(root: Path, repo: str) -> dict:
+    """Push reviewed commits normally; automatically rebase only generated metadata races."""
+    if repo != "Perseusxrltd/mnemion":
+        raise ValueError("This integration policy is configured only for the Mnemion repository")
+
+    def git(*arguments, check=True):
+        return _integration_git(root, *arguments, check=check)
+
+    if git("status", "--porcelain").stdout.strip():
+        raise ValueError("Commit the reviewed source before integrating")
+    branch = git("symbolic-ref", "--short", "HEAD").stdout.strip()
+    if branch.startswith("release/"):
+        raise ValueError("Frozen release branches cannot be rebased by integration")
+    origin = git("remote", "get-url", "origin").stdout.strip()
+    if origin not in {
+        f"https://github.com/{repo}",
+        f"https://github.com/{repo}.git",
+        f"git@github.com:{repo}.git",
+    }:
+        raise ValueError("Origin does not match the authorized repository")
+    generated = {
+        "deploy/published-release.json",
+        "deploy/release-status.json",
+        "docs/RELEASE_STATUS.md",
+        "deploy/maintenance-status.json",
+        "docs/MAINTENANCE_STATUS.md",
+    }
+    for attempt in range(1, 4):
+        git("fetch", "origin", "main")
+        incoming = git("diff", "--name-only", "HEAD...origin/main").stdout.splitlines()
+        if any(
+            path not in generated
+            and not re.fullmatch(
+                r"docs/validation/releases/[0-9]+\.[0-9]+\.[0-9]+-[a-z-]+\.json", path
+            )
+            for path in incoming
+        ):
+            raise ValueError(
+                "Main contains source changes; review and integrate them before publication"
+            )
+        if git("merge-base", "--is-ancestor", "origin/main", "HEAD", check=False).returncode:
+            git("rebase", "origin/main")
+        commit = git("rev-parse", "HEAD").stdout.strip()
+        if git("push", "origin", "HEAD:main", check=False).returncode:
+            continue
+        local_main = None
+        for block in git("worktree", "list", "--porcelain", "-z").stdout.split("\0\0"):
+            fields = block.split("\0")
+            if "branch refs/heads/main" not in fields:
+                continue
+            location = Path(
+                next(
+                    field.removeprefix("worktree ")
+                    for field in fields
+                    if field.startswith("worktree ")
+                )
+            )
+            if location.resolve() == root.resolve():
+                local_main = True
+            elif not _integration_git(location, "status", "--porcelain").stdout.strip():
+                local_main = (
+                    _integration_git(location, "merge", "--ff-only", commit, check=False).returncode
+                    == 0
+                )
+            else:
+                local_main = False
+        return {
+            "source_commit": commit,
+            "pushed_to": "main",
+            "attempts": attempt,
+            "local_main_updated": local_main,
+        }
+    raise RuntimeError(
+        "Main could not be updated after three normal push attempts; inspect the remote"
+    )
+
+
 def start(root: Path, repo: str, *, attempt: int = 1) -> dict:
     """Freeze the clean main source and start its one complete release run."""
     if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repo):
@@ -287,6 +386,8 @@ def main():
     commands = parser.add_subparsers(dest="command", required=True)
     prepare_command = commands.add_parser("prepare")
     prepare_command.add_argument("version")
+    integrate_command = commands.add_parser("integrate")
+    integrate_command.add_argument("--repo", default="Perseusxrltd/mnemion")
     start_command = commands.add_parser("start")
     start_command.add_argument("--repo", default="Perseusxrltd/mnemion")
     start_command.add_argument("--attempt", type=int, default=1)
@@ -312,6 +413,8 @@ def main():
         ):
             subprocess.run([sys.executable, *arguments], cwd=root, check=True)
         print(json.dumps({"version": args.version, "changed": changed}))
+    elif args.command == "integrate":
+        print(json.dumps(integrate(root, args.repo)))
     elif args.command == "start":
         print(json.dumps(start(root, args.repo, attempt=args.attempt)))
     else:

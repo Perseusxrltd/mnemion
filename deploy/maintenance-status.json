@@ -1,0 +1,140 @@
+{
+  "schema": 1,
+  "repository": "Perseusxrltd/mnemion",
+  "run_window": 100,
+  "release": {
+    "version": "v4.2.3",
+    "published_at": "2026-10-13T17:09:43Z",
+    "url": "https://github.com/Perseusxrltd/mnemion/releases/tag/v4.2.3"
+  },
+  "issues": [
+    {
+      "number": 3,
+      "title": "No built-in remote access option; operators must bring their own reverse proxy / tunnel",
+      "updated_at": "2026-10-11T03:04:30Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/issues/3",
+      "labels": [
+        "enhancement"
+      ]
+    },
+    {
+      "number": 4,
+      "title": "No OAuth for hosted agents; static bearer tokens only",
+      "updated_at": "2026-10-10T20:55:33Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/issues/4",
+      "labels": [
+        "enhancement"
+      ]
+    },
+    {
+      "number": 13,
+      "title": "Worker idles at ~1.6 GB RSS and API at ~0.8 GB: models loaded twice, hard on small hosts",
+      "updated_at": "2026-10-13T12:03:25Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/issues/13",
+      "labels": [
+        "bug"
+      ]
+    },
+    {
+      "number": 17,
+      "title": "Natural-language questions retrieve much worse than keyword queries",
+      "updated_at": "2026-10-13T20:00:14Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/issues/17",
+      "labels": [
+        "enhancement"
+      ]
+    },
+    {
+      "number": 18,
+      "title": "OAuth 2.1 MCP auth so ChatGPT custom connectors can connect (spec for #4)",
+      "updated_at": "2026-10-10T20:58:20Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/issues/18",
+      "labels": [
+        "enhancement"
+      ]
+    },
+    {
+      "number": 32,
+      "title": "Feature: encrypted secrets vault, kept apart from searchable memory",
+      "updated_at": "2026-10-13T05:57:12Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/issues/32",
+      "labels": []
+    },
+    {
+      "number": 36,
+      "title": "Managed host on 4.1.x can't reach 4.2.x: no guided schema upgrade, and status doesn't show the blocked update",
+      "updated_at": "2026-10-14T07:54:57Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/issues/36",
+      "labels": []
+    }
+  ],
+  "runs": [
+    {
+      "id": 38432705831,
+      "attempt": 1,
+      "workflow": "ci.yml",
+      "branch": "main",
+      "source_commit": "ae8f389f1fdf4fcc26ae79014aa7ef32bf8ee6cc",
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-13T16:56:07Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38432705831"
+    },
+    {
+      "id": 38436415685,
+      "attempt": 1,
+      "workflow": "public-updates.yml",
+      "branch": "v4.2.3",
+      "source_commit": "ae8f389f1fdf4fcc26ae79014aa7ef32bf8ee6cc",
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-13T17:21:12Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38436415685"
+    },
+    {
+      "id": 38432717233,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.2.3-r2",
+      "source_commit": "ae8f389f1fdf4fcc26ae79014aa7ef32bf8ee6cc",
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-13T17:08:11Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38432717233"
+    },
+    {
+      "id": 38436199163,
+      "attempt": 1,
+      "workflow": "verify-artifacts.yml",
+      "branch": "main",
+      "source_commit": "edd3772ba117dc660f9a9f491dfefcdb20afce06",
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-13T17:09:55Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38436199163"
+    },
+    {
+      "id": 38516147515,
+      "attempt": 1,
+      "workflow": "website-release.yml",
+      "branch": "main",
+      "source_commit": "69cc40033bbfbc72e264eb525107909a0cf882f7",
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-14T05:21:15Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38516147515"
+    },
+    {
+      "id": 38436410364,
+      "attempt": 1,
+      "workflow": "website-release.yml",
+      "branch": "v4.2.3",
+      "source_commit": "ae8f389f1fdf4fcc26ae79014aa7ef32bf8ee6cc",
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-13T17:10:01Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38436410364"
+    }
+  ],
+  "observed_at": "2026-10-14T11:47:19+00:00"
+}

@@ -31,6 +31,13 @@ For a corrected unpublished release, `start --attempt 2` preserves the first
 frozen source and starts a separate attempt. Published releases require a new
 version number.
 
+After committing reviewed source, `python -m deploy.release_automation integrate`
+handles normal pushes and generated-metadata races without force. Incoming
+source changes stop for review. `python -m deploy.maintenance_snapshot` gives one
+bounded issue/build update; the [maintenance board](MAINTENANCE_STATUS.md) updates
+automatically on GitHub issue and workflow events. Use these scripts instead of
+repeating manual version edits, job inventories and metadata-only rebase sequences.
+
 1. Change the canonical version and dependent package metadata/lockfiles together.
    Include both `uv.lock` and `studio/client/uv.lock`, the nested local client
    version in the frontend npm lock, and regenerate the OpenAPI/agent schemas.

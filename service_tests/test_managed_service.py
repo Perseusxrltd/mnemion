@@ -276,6 +276,11 @@ def test_managed_roles_restart_and_take_a_real_verified_backup(
         }
         for process in before:
             assert "MNEMION_ADMIN_DATABASE_URL" not in process.environ()
+        updates._processes(state, start=False, updater_only=True)
+        paused_updater = supervision.status(state)
+        assert paused_updater["service_ready"] and not paused_updater["ready"]
+        updates._processes(state, start=True, service_only=True)
+        updates._processes(state, start=True, updater_only=True)
         with httpx.Client(base_url=f"http://127.0.0.1:{port}", trust_env=False) as client:
             assert client.get("/v1/me").status_code == 401
             auth = {"Authorization": "Bearer " + owner["api_key"]}
@@ -317,6 +322,68 @@ def test_managed_roles_restart_and_take_a_real_verified_backup(
         assert supervision.stop(state)["stopped"]
         for process in before:
             assert not process.is_running() or process.status() == psutil.STATUS_ZOMBIE
+    finally:
+        supervision.stop(state)
+
+
+@pytest.mark.skipif(
+    os.environ.get("MNEMION_TEST_MANAGED_INSTALL") != "1",
+    reason="Opt-in real locked runtime installation",
+)
+def test_signed_operator_upgrade_runs_real_candidate_migration_and_keeps_enrolled_sources(
+    managed_database, pg_bin, tmp_path, monkeypatch
+):
+    from mnemion.service import managed_upgrade, studio
+
+    key = Ed25519PrivateKey.generate()
+    public = key.public_key().public_bytes_raw()
+    bootstrap = managed_release_fixture.checkout(tmp_path / "fixture bootstrap", public)
+    monkeypatch.setattr(studio, "source_root", lambda: bootstrap)
+    monkeypatch.setattr(updates, "SERVICE_UPDATE_PUBLIC_KEY", public)
+    major, minor, _ = version_tuple(__version__)
+    target = f"{major}.{minor + 1}.0"
+    packages, envelope = managed_release_fixture.candidate(
+        bootstrap,
+        tmp_path / "operator publisher",
+        target,
+        key,
+        extra_migrations={
+            "016_managed_fixture.sql": "CREATE TABLE mnemion.managed_upgrade_fixture (value integer PRIMARY KEY);\n"
+        },
+    )
+    monkeypatch.setattr(updates, "fetch_manifest", lambda: envelope)
+
+    def download(version, artifact, destination):
+        source = packages / artifact.name
+        artifact.verify_file(source)
+        shutil.copyfile(source, destination)
+        destination.chmod(0o600)
+        artifact.verify_file(destination)
+
+    monkeypatch.setattr(updates, "download_artifact", download)
+    state, port, owner = prepare_managed(tmp_path, managed_database, pg_bin)
+    try:
+        assert supervision.start(state)["ready"]
+        with httpx.Client(
+            base_url=f"http://127.0.0.1:{port}", trust_env=False, timeout=5
+        ) as client:
+            auth = {"Authorization": "Bearer " + owner["api_key"]}
+            source = connector_fixture(client, auth, owner, state, tmp_path)
+            source_ids = connector_scan(source, state, __version__, client, auth)
+            assert len(source_ids) == 2
+            assert managed_upgrade.plan(state)["migrations"] == ["016_managed_fixture.sql"]
+            outcome = managed_upgrade.upgrade(state, version=target, allow_migration=True)
+            assert outcome["status"] == "upgraded" and outcome["database_restored"] is False
+            active = updates.resolved_runtime(state)
+            assert active["version"] == target
+            assert supervision.status(state)["ready"]
+            assert client.get("/v1/me", headers=auth).status_code == 200
+            assert connector_scan(source, state, target, client, auth) == source_ids
+            with psycopg.connect(managed_database[0]) as connection:
+                assert connection.execute(
+                    "SELECT to_regclass('mnemion.managed_upgrade_fixture')"
+                ).fetchone()[0]
+            assert not (state / "updates/upgrade-journal.json").exists()
     finally:
         supervision.stop(state)
 

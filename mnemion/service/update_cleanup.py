@@ -52,8 +52,18 @@ def retain_backup(root: Path, name: str) -> None:
     entries = [entry for entry in entries if entry["name"] != name]
     entries.append({"name": name, "identity": _identity(backups / name)})
     state_io.write(index, {"backups": entries})
+    protected = {
+        state_io.read(root / journal).get("backup")
+        for journal in ("journal.json", "upgrade-journal.json")
+        if (root / journal).exists()
+    }
     while len(entries) > KEEP_BACKUPS:
-        entry = entries[0]
+        removable = next(
+            (i for i, entry in enumerate(entries) if entry["name"] not in protected), None
+        )
+        if removable is None:
+            break
+        entry = entries[removable]
         path = backups / entry["name"]
         try:
             unchanged = _identity(path) == entry["identity"]
@@ -63,7 +73,7 @@ def retain_backup(root: Path, name: str) -> None:
             path.unlink()
         # A replaced, moved or modified backup belongs to the operator. Stop
         # managing it; never follow a link or delete a replacement by filename.
-        entries.pop(0)
+        entries.pop(removable)
         state_io.write(index, {"backups": entries})
 
 
@@ -74,10 +84,11 @@ def retain_runtimes(root: Path, public_key: bytes, *, pending: str) -> int:
         path = root / name
         if path.exists():
             keep.add(state_io.read(path).get("slot"))
-    journal = root / "journal.json"
-    if journal.exists():
-        value = state_io.read(journal)
-        keep.update(value[key].get("slot") for key in ("previous", "candidate"))
+    for name in ("journal.json", "upgrade-journal.json"):
+        journal = root / name
+        if journal.exists():
+            value = state_io.read(journal)
+            keep.update(value[key].get("slot") for key in ("previous", "candidate"))
     removed = 0
     for slot in state_io.directory(root / "releases").iterdir():
         if slot.name in keep or not SLOT.fullmatch(slot.name) or slot.is_symlink():

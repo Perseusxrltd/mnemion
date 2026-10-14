@@ -367,6 +367,10 @@ def _check(root: Path) -> dict:
                 "version_compatible": version_tuple(release.version)[:2]
                 == version_tuple(active["version"])[:2],
             }
+            if not (result["schema_compatible"] and result["version_compatible"]):
+                from .managed_upgrade import pending_update
+
+                result.update(pending_update(active, release))
     state_io.write(root / "last-check.json", {**result, "checked_at": state_io.timestamp()})
     return result
 
@@ -386,6 +390,10 @@ def _validate_python(release: ServiceRelease) -> None:
 def stage(state: Path) -> dict:
     state, root, settings = _root(state)
     with state_io.lock(root):
+        if (root / "upgrade-journal.json").exists():
+            raise ManifestError(
+                "Resume the pending managed schema upgrade before staging another release"
+            )
         return _stage(root, settings)
 
 
@@ -586,13 +594,19 @@ def status(state: Path) -> dict:
     last_check = (
         state_io.read(root / "last-check.json") if (root / "last-check.json").exists() else None
     )
+    from .managed_upgrade import pending_update, upgrade_status
+
+    pending = pending_update(active, _release(root)) if (root / "candidate.json").exists() else None
     return {
         "enabled": config["enabled"],
         "current_version": active["version"],
         "interval_seconds": config["interval_seconds"],
         "schema_policy": "identical",
         "retained_backups": KEEP_BACKUPS,
-        "recovery_pending": (root / "journal.json").exists(),
+        "recovery_pending": (root / "journal.json").exists()
+        or (root / "upgrade-journal.json").exists(),
+        "pending_update": pending,
+        "upgrade": upgrade_status(root),
         "last_check": last_check,
         **schedule_status(
             root,
@@ -616,7 +630,9 @@ def preferences(state: Path, enabled: bool) -> dict:
     return {"enabled": enabled}
 
 
-def _processes(state: Path, *, start: bool, updater_only: bool = False) -> None:
+def _processes(
+    state: Path, *, start: bool, updater_only: bool = False, service_only: bool = False
+) -> None:
     """Operate only the two known service children, keeping the updater alive."""
     import xmlrpc.client
 
@@ -641,7 +657,7 @@ def _processes(state: Path, *, start: bool, updater_only: bool = False) -> None:
         if start:
             if any(processes[name]["statename"] == "FATAL" for name in names):
                 raise ManifestError("A service child could not start after the update")
-            if supervision.status(state)["ready"]:
+            if supervision.status(state)["service_ready" if service_only else "ready"]:
                 return
         elif all(processes[name]["statename"] in {"STOPPED", "EXITED", "FATAL"} for name in names):
             return
@@ -649,7 +665,14 @@ def _processes(state: Path, *, start: bool, updater_only: bool = False) -> None:
     raise ManifestError("The managed service did not complete its requested process transition")
 
 
-def _backup(root: Path, settings: dict, previous: dict, release: ServiceRelease) -> str:
+def _backup(
+    root: Path,
+    settings: dict,
+    previous: dict,
+    release: ServiceRelease,
+    *,
+    allow_migration: bool = False,
+) -> str:
     from uuid import uuid4
     import psycopg
 
@@ -668,7 +691,9 @@ def _backup(root: Path, settings: dict, previous: dict, release: ServiceRelease)
             connection.execute("SELECT name, sha256 FROM mnemion.schema_migrations").fetchall()
         )
         size = connection.execute("SELECT pg_database_size(current_database())").fetchone()[0]
-    if schema != previous["migrations"] or schema != dict(release.migrations):
+    if schema != previous["migrations"] or (
+        not allow_migration and schema != dict(release.migrations)
+    ):
         raise ManifestError("Database schema changed; automatic cutover is not permitted")
     if shutil.disk_usage(root).free < max(MIN_FREE_BYTES, size * 2):
         raise ManifestError("There is not enough free disk space for a verified pre-update backup")
@@ -743,6 +768,8 @@ def _recover(state: Path, root: Path) -> None:
 def apply(state: Path, *, retry: bool = False) -> dict:
     state, root, settings = _root(state)
     with state_io.lock(root):
+        if (root / "upgrade-journal.json").exists():
+            raise ManifestError("Resume the pending managed schema upgrade before applying a patch")
         _recover(state, root)
         result = _apply(state, root, settings, retry=retry)
     if result["status"] == "updated":
@@ -849,6 +876,10 @@ def watch(state: Path) -> int:
         schedule.after(random.uniform(60, 120), reason="startup")
         while True:
             config = _configuration(root)
+            if (root / "upgrade-journal.json").exists():
+                # An operator-owned migration may change the live schema. Its
+                # explicit recovery command must finish before patch automation.
+                return 1
             if not config["enabled"]:
                 state_io.clear_connector_pause(root)
             if (root / "journal.json").exists():
@@ -930,7 +961,18 @@ def watch(state: Path) -> int:
 
 def arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
-        "action", choices=("setup", "status", "check", "stage", "apply", "preferences", "watch")
+        "action",
+        choices=(
+            "setup",
+            "status",
+            "check",
+            "stage",
+            "apply",
+            "plan",
+            "upgrade",
+            "preferences",
+            "watch",
+        ),
     )
     parser.add_argument("--state-dir", type=Path, required=True)
     parser.add_argument("--api-credentials", type=Path)
@@ -944,6 +986,13 @@ def arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--public-url")
     parser.add_argument("--enabled", choices=("true", "false"))
     parser.add_argument("--retry", action="store_true")
+    parser.add_argument("--version", help="Exact signed target version for an operator upgrade")
+    parser.add_argument(
+        "--allow-migration",
+        action="store_true",
+        help="Authorize the planned schema/minor-version upgrade",
+    )
+    parser.add_argument("--resume", action="store_true", help="Resume a journaled operator upgrade")
 
 
 def execute(args: argparse.Namespace) -> int:
@@ -976,10 +1025,35 @@ def execute(args: argparse.Namespace) -> int:
             result = preferences(args.state_dir, args.enabled == "true")
         elif args.action == "apply":
             result = apply(args.state_dir, retry=args.retry)
+        elif args.action in {"plan", "upgrade"}:
+            from .managed_upgrade import plan, upgrade
+
+            result = (
+                plan(args.state_dir)
+                if args.action == "plan"
+                else upgrade(
+                    args.state_dir,
+                    version=args.version,
+                    allow_migration=args.allow_migration,
+                    resume=args.resume,
+                )
+            )
         else:
             result = {"status": status, "check": check, "stage": stage}[args.action](args.state_dir)
         print(json.dumps(result))
         return 0
+    except state_io.OperationBusy:
+        print(
+            json.dumps(
+                {
+                    "status": "deferred",
+                    "reason": "operation_in_progress",
+                    "retry_after_seconds": 30,
+                    "message": "The updater or a managed source scan is busy; retry shortly. Status remains available.",
+                }
+            )
+        )
+        return 75
     except Exception as error:
         message = (
             str(error)

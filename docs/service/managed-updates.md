@@ -6,6 +6,13 @@ enable checking by default. The API, worker and updater run under the private
 [Supervisor instance](supervision.md); systemd and paid services are unnecessary.
 An authorized host agent can perform every step through JSON CLI commands.
 
+From **4.2.4**, a [guided operator upgrade](managed-upgrades.md) handles an
+existing 4.1.x host's schema/minor-version boundary in place, with a signed staged
+runtime, verified backup, migration journal and forward recovery. The guide
+includes the bridge for older command-line tools and existing source runners.
+`updates status` identifies a blocked newer version and links to that procedure;
+a busy check returns a structured defer instead of an ambiguous failure.
+
 From **4.1.7**, the running updater checks promptly after a suspended host
 resumes, even when that host's monotonic clock stopped. It uses both wall time
 and monotonic time, retains startup and periodic jitter, and limits retries
@@ -126,8 +133,9 @@ Older versions and changed manifests for an already observed version are rejecte
 
 Only a newer version in the same major/minor series, with **identical database
 migrations and embedding-generation identities**, can cut over automatically.
-Changed schema, model identity or major/minor versions require operator planning.
-No model is silently replaced and no database migration is run.
+Changed schema or minor versions use the explicit [upgrade plan and command](managed-upgrades.md).
+Changed model identities or major versions require a separate migration procedure.
+Automatic patch checks never silently replace a model or run a database migration.
 
 For an eligible patch, the updater:
 

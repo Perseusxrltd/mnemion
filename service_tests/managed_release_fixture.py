@@ -65,8 +65,11 @@ def candidate(
     *,
     fail_worker=False,
     legacy_readiness=False,
+    extra_migrations: dict[str, str] | None = None,
 ) -> tuple[Path, bytes]:
     shutil.copytree(bootstrap, destination)
+    for name, script in (extra_migrations or {}).items():
+        (destination / "mnemion/service/migrations" / name).write_text(script)
     project = destination / "pyproject.toml"
     old = tomllib.loads(project.read_text())["project"]["version"]
     project.write_text(
