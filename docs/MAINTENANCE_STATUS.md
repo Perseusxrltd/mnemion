@@ -1,8 +1,8 @@
 # Automated maintenance status
 
-Observed: 2026-10-14T23:38:39+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-14T23:40:15+00:00. Updated by repository events and the scheduled status workflow.
 
-Published release: [v4.3.3](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.3.3). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
+Published release: [v4.4.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.4.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
 This inventory reports GitHub state; issue closure does not prove that an entire product requirement is complete. Build observations cover the latest 100 runs, retaining the latest relevant run per workflow and branch. Active builds are checked for failed jobs at each observation; completed failures are inspected once per changed attempt. This automation never retries a build or publishes a release.
 
@@ -21,13 +21,8 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | failure | [Run 38653158236](https://github.com/Perseusxrltd/mnemion/actions/runs/38653158236) |
-| public-updates\.yml | v4\.3\.3 | success | [Run 38645535752](https://github.com/Perseusxrltd/mnemion/actions/runs/38645535752) |
-| release\.yml | release/4\.3\.3-r2 | success | [Run 38640749546](https://github.com/Perseusxrltd/mnemion/actions/runs/38640749546) |
+| ci\.yml | main | cancelled | [Run 38650928171](https://github.com/Perseusxrltd/mnemion/actions/runs/38650928171) |
+| public-updates\.yml | v4\.4\.0 | queued | [Run 38655462084](https://github.com/Perseusxrltd/mnemion/actions/runs/38655462084) |
 | release\.yml | release/4\.4\.0 | success | [Run 38651001133](https://github.com/Perseusxrltd/mnemion/actions/runs/38651001133) |
-| verify-artifacts\.yml | main | in\_progress | [Run 38655307480](https://github.com/Perseusxrltd/mnemion/actions/runs/38655307480) |
-| website-release\.yml | v4\.3\.3 | success | [Run 38645529408](https://github.com/Perseusxrltd/mnemion/actions/runs/38645529408) |
-
-## Failed jobs
-
-- [Run 38653158236](https://github.com/Perseusxrltd/mnemion/actions/runs/38653158236): legacy. Steps: Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
+| verify-artifacts\.yml | main | success | [Run 38655307480](https://github.com/Perseusxrltd/mnemion/actions/runs/38655307480) |
+| website-release\.yml | v4\.4\.0 | success | [Run 38655459186](https://github.com/Perseusxrltd/mnemion/actions/runs/38655459186) |
