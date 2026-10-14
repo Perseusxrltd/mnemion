@@ -47,7 +47,7 @@
     {
       "number": 31,
       "title": "Recall has no recency signal: older 'open question' memories outrank the newer answer",
-      "updated_at": "2026-10-14T15:57:49Z",
+      "updated_at": "2026-10-14T19:51:04Z",
       "url": "https://github.com/Perseusxrltd/mnemion/issues/31",
       "labels": [
         "fixed-in:4.2.3"
@@ -58,6 +58,13 @@
       "title": "Feature: encrypted secrets vault, kept apart from searchable memory",
       "updated_at": "2026-10-13T05:57:12Z",
       "url": "https://github.com/Perseusxrltd/mnemion/issues/32",
+      "labels": []
+    },
+    {
+      "number": 37,
+      "title": "Git connector bare cache: refs/heads/main can stay on an old tip while remote_sync indexes HEAD",
+      "updated_at": "2026-10-14T19:51:00Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/issues/37",
       "labels": []
     }
   ],
@@ -103,7 +110,7 @@
       "source_commit": "bf922d5f38b66326dde12c365748eb0e229867e5",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-14T19:33:20Z",
+      "updated_at": "2026-10-14T19:50:48Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38622161374",
       "failed_jobs": []
     },
@@ -130,5 +137,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38623867607"
     }
   ],
-  "observed_at": "2026-10-14T19:39:46+00:00"
+  "observed_at": "2026-10-14T19:51:20+00:00"
 }
