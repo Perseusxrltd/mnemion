@@ -45,6 +45,15 @@
       ]
     },
     {
+      "number": 31,
+      "title": "Recall has no recency signal: older 'open question' memories outrank the newer answer",
+      "updated_at": "2026-10-14T15:57:49Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/issues/31",
+      "labels": [
+        "fixed-in:4.2.3"
+      ]
+    },
+    {
       "number": 32,
       "title": "Feature: encrypted secrets vault, kept apart from searchable memory",
       "updated_at": "2026-10-13T05:57:12Z",
@@ -149,5 +158,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38576711324"
     }
   ],
-  "observed_at": "2026-10-14T15:27:29+00:00"
+  "observed_at": "2026-10-14T15:58:08+00:00"
 }
