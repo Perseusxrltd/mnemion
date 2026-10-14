@@ -63,15 +63,38 @@
   ],
   "runs": [
     {
-      "id": 38630915722,
+      "id": 38638447679,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "0b60e6fb417245708954c965477fa887b205b5d5",
+      "source_commit": "2634ad5460ccb22727c858e8386f0624e5f4d34f",
       "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-14T20:31:13Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38630915722"
+      "conclusion": "failure",
+      "updated_at": "2026-10-14T21:24:55Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38638447679",
+      "failed_jobs": [
+        {
+          "name": "service (3.13)",
+          "id": 116107532220,
+          "steps": [
+            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion.service --cov-report=term-missing --cov-fail-under=75"
+          ]
+        },
+        {
+          "name": "service (3.14)",
+          "id": 116107532228,
+          "steps": [
+            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion.service --cov-report=term-missing --cov-fail-under=75"
+          ]
+        },
+        {
+          "name": "service (3.12)",
+          "id": 116107532489,
+          "steps": [
+            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion.service --cov-report=term-missing --cov-fail-under=75"
+          ]
+        }
+      ]
     },
     {
       "id": 38635523232,
@@ -96,6 +119,40 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38631058336"
     },
     {
+      "id": 38638518650,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.3.3",
+      "source_commit": "2634ad5460ccb22727c858e8386f0624e5f4d34f",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-14T21:19:42Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38638518650",
+      "failed_jobs": [
+        {
+          "name": "checks / service (3.12)",
+          "id": 116107865566,
+          "steps": [
+            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion.service --cov-report=term-missing --cov-fail-under=75"
+          ]
+        },
+        {
+          "name": "checks / service (3.14)",
+          "id": 116107865597,
+          "steps": [
+            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion.service --cov-report=term-missing --cov-fail-under=75"
+          ]
+        },
+        {
+          "name": "checks / service (3.13)",
+          "id": 116107865645,
+          "steps": [
+            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion.service --cov-report=term-missing --cov-fail-under=75"
+          ]
+        }
+      ]
+    },
+    {
       "id": 38635331062,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
@@ -118,5 +175,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38635518363"
     }
   ],
-  "observed_at": "2026-10-14T21:02:48+00:00"
+  "observed_at": "2026-10-14T21:25:18+00:00"
 }

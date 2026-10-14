@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-14T21:02:48+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-14T21:25:18+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.3.2](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.3.2). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -21,8 +21,18 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 38630915722](https://github.com/Perseusxrltd/mnemion/actions/runs/38630915722) |
+| ci\.yml | main | failure | [Run 38638447679](https://github.com/Perseusxrltd/mnemion/actions/runs/38638447679) |
 | public-updates\.yml | v4\.3\.2 | success | [Run 38635523232](https://github.com/Perseusxrltd/mnemion/actions/runs/38635523232) |
 | release\.yml | release/4\.3\.2 | success | [Run 38631058336](https://github.com/Perseusxrltd/mnemion/actions/runs/38631058336) |
+| release\.yml | release/4\.3\.3 | in\_progress | [Run 38638518650](https://github.com/Perseusxrltd/mnemion/actions/runs/38638518650) |
 | verify-artifacts\.yml | main | success | [Run 38635331062](https://github.com/Perseusxrltd/mnemion/actions/runs/38635331062) |
 | website-release\.yml | v4\.3\.2 | success | [Run 38635518363](https://github.com/Perseusxrltd/mnemion/actions/runs/38635518363) |
+
+## Failed jobs
+
+- [Run 38638447679](https://github.com/Perseusxrltd/mnemion/actions/runs/38638447679): service \(3\.13\). Steps: Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion\.service --cov-report=term-missing --cov-fail-under=75.
+- [Run 38638447679](https://github.com/Perseusxrltd/mnemion/actions/runs/38638447679): service \(3\.14\). Steps: Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion\.service --cov-report=term-missing --cov-fail-under=75.
+- [Run 38638447679](https://github.com/Perseusxrltd/mnemion/actions/runs/38638447679): service \(3\.12\). Steps: Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion\.service --cov-report=term-missing --cov-fail-under=75.
+- [Run 38638518650](https://github.com/Perseusxrltd/mnemion/actions/runs/38638518650): checks / service \(3\.12\). Steps: Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion\.service --cov-report=term-missing --cov-fail-under=75.
+- [Run 38638518650](https://github.com/Perseusxrltd/mnemion/actions/runs/38638518650): checks / service \(3\.14\). Steps: Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion\.service --cov-report=term-missing --cov-fail-under=75.
+- [Run 38638518650](https://github.com/Perseusxrltd/mnemion/actions/runs/38638518650): checks / service \(3\.13\). Steps: Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion\.service --cov-report=term-missing --cov-fail-under=75.
