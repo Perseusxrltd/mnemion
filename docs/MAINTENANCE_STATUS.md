@@ -1,8 +1,8 @@
 # Automated maintenance status
 
-Observed: 2026-10-14T13:59:04+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-14T14:01:18+00:00. Updated by repository events and the scheduled status workflow.
 
-Published release: [v4.2.4](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.2.4). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
+Published release: [v4.2.5](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.2.5). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
 This inventory reports GitHub state; issue closure does not prove that an entire product requirement is complete. Build observations cover the latest 100 runs, retaining the latest relevant run per workflow and branch. Active builds are checked for failed jobs at each observation; completed failures are inspected once per changed attempt. This automation never retries a build or publishes a release.
 
@@ -22,15 +22,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
 | ci\.yml | main | in\_progress | [Run 38574693922](https://github.com/Perseusxrltd/mnemion/actions/runs/38574693922) |
-| public-updates\.yml | v4\.2\.4 | success | [Run 38563825863](https://github.com/Perseusxrltd/mnemion/actions/runs/38563825863) |
-| release\.yml | release/4\.2\.4 | success | [Run 38559090340](https://github.com/Perseusxrltd/mnemion/actions/runs/38559090340) |
-| release\.yml | release/4\.2\.5 | failure | [Run 38563469356](https://github.com/Perseusxrltd/mnemion/actions/runs/38563469356) |
+| public-updates\.yml | v4\.2\.5 | in\_progress | [Run 38576717811](https://github.com/Perseusxrltd/mnemion/actions/runs/38576717811) |
 | release\.yml | release/4\.2\.5-r2 | success | [Run 38571557139](https://github.com/Perseusxrltd/mnemion/actions/runs/38571557139) |
-| verify-artifacts\.yml | main | in\_progress | [Run 38576410392](https://github.com/Perseusxrltd/mnemion/actions/runs/38576410392) |
-| website-release\.yml | v4\.2\.4 | success | [Run 38563821954](https://github.com/Perseusxrltd/mnemion/actions/runs/38563821954) |
-
-## Failed jobs
-
-- [Run 38563469356](https://github.com/Perseusxrltd/mnemion/actions/runs/38563469356): checks / supervision \(macos-15\). Steps: Verify managed installation, signed updates and rollback with real processes.
-- [Run 38563469356](https://github.com/Perseusxrltd/mnemion/actions/runs/38563469356): checks / supervision \(macos-15-intel\). Steps: Verify managed installation, signed updates and rollback with real processes.
-- [Run 38563469356](https://github.com/Perseusxrltd/mnemion/actions/runs/38563469356): native / windows-2022 / x64. Steps: Native Windows installation, authenticated upgrade and relaunch.
+| verify-artifacts\.yml | main | success | [Run 38576410392](https://github.com/Perseusxrltd/mnemion/actions/runs/38576410392) |
+| website-release\.yml | v4\.2\.5 | success | [Run 38576711324](https://github.com/Perseusxrltd/mnemion/actions/runs/38576711324) |
