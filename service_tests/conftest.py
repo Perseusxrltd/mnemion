@@ -35,10 +35,10 @@ def managed_process_diagnostics(monkeypatch):
 
     start = supervision.start
 
-    def observed_start(state):
-        result = start(state)
+    def observed_start(state, **kwargs):
+        result = start(state, **kwargs)
         if not result.get("ready"):
-            report(Path(state))
+            report(Path(state), result)
         return result
 
     monkeypatch.setattr(supervision, "start", observed_start)

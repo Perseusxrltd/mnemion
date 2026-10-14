@@ -261,12 +261,9 @@ try {
     diagnostic.updatedBinaries = await verifyInstalledBinaries(join(output, 'packages', target), installed)
   } catch (failure) { diagnostic.binaryVerification = failure.message }
   const processEnvironment = { ...env, MNEMION_PROBE_OUTPUT_DIRECTORY: output }
-  const processes = spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
-    '$ErrorActionPreference="Stop"; Get-CimInstance Win32_Process | Where-Object { '
-    + '$_.ExecutablePath -like ($env:MNEMION_PROBE_OUTPUT_DIRECTORY+"\\*") -or '
-    + '($_.CommandLine -and $_.CommandLine.Contains($env:MNEMION_PROBE_OUTPUT_DIRECTORY)) } '
-    + '| Select-Object ProcessId,ParentProcessId,Name,ExecutablePath | ConvertTo-Json -Compress'],
-  { env: processEnvironment, encoding: 'utf8', timeout: 15_000, windowsHide: true, maxBuffer: 32_768 })
+  const processes = spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-File',
+    join(scripts, 'windows-installer-observation.ps1')],
+  { env: processEnvironment, encoding: 'utf8', timeout: 20_000, windowsHide: true, maxBuffer: 65_536 })
   try { diagnostic.processes = JSON.parse(processes.stdout || '[]') } catch { diagnostic.processInspectionFailed = true }
   writeFileSync(join(output, 'upgrade-failure.json'), JSON.stringify(diagnostic, null, 2))
   throw error

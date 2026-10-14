@@ -787,13 +787,17 @@ def execute(args: argparse.Namespace) -> int:
             return 0 if result.get("ready") else 2
         return 0 if result.get("stopped", True) else 2
     except (OSError, ValueError, subprocess.SubprocessError, xmlrpc.client.Error) as error:
+        from ..local_diagnostics import failure_diagnostic
+
         # Third-party errors may contain a DSN, environment value or private path.
         message = (
             str(error)
             if isinstance(error, SupervisionError)
             else "Supervision command failed; inspect private settings and logs."
         )
-        print(json.dumps({"error": message}), file=sys.stderr)
+        print(
+            json.dumps({"error": message, "diagnostic": failure_diagnostic(error)}), file=sys.stderr
+        )
         return 2
 
 
