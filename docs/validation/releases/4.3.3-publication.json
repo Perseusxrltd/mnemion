@@ -1,0 +1,17 @@
+{
+  "version": "4.3.3",
+  "source_commit": "50b9423f0aa92b7a9f79559f724a3fd92602d2e9",
+  "published_at": "2026-10-14T22:08:28Z",
+  "release_id": 413225795,
+  "release_url": "https://github.com/Perseusxrltd/mnemion/releases/tag/v4.3.3",
+  "assets": 38,
+  "checksum_digest": "sha256:eb411078f04a5b91a5561d9b20bb1706e962c267a72574be91a3e0885436832a",
+  "release_run": 38640749546,
+  "verification_run": 38645366267,
+  "uploaded_inventory_unchanged_at_publication": true,
+  "tag_matches_verified_source": true,
+  "followups": {
+    "website-release.yml": "dispatched",
+    "public-updates.yml": "dispatched"
+  }
+}
