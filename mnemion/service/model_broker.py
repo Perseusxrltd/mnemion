@@ -14,6 +14,7 @@ from contextlib import ExitStack
 from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from socketserver import TCPServer
 from typing import Literal
 
 import httpx
@@ -140,6 +141,13 @@ class BrokerServer(ThreadingHTTPServer):
         self.socket = context.wrap_socket(
             self.socket, server_side=True, do_handshake_on_connect=False
         )
+
+    def server_bind(self):
+        # HTTPServer normally reverse-resolves its listening address here.
+        # Darwin's resolver can stall in a daemonized managed service. This
+        # private listener has a fixed numeric identity and never needs DNS.
+        TCPServer.server_bind(self)
+        self.server_name, self.server_port = self.server_address
 
     def get_request(self):
         connection, address = super().get_request()

@@ -51,6 +51,19 @@ def proxy(directory, tmp_path):
     )
 
 
+def test_offline_loopback_startup_does_not_depend_on_reverse_dns(tmp_path, monkeypatch):
+    def unavailable_resolver(*args):
+        raise AssertionError("Local model startup attempted a reverse DNS lookup")
+
+    monkeypatch.setattr("socket.getfqdn", unavailable_resolver)
+    _, registry = owner(tmp_path)
+    directory = tmp_path / "broker"
+    client = proxy(directory, tmp_path)
+    with ModelBroker(registry, directory):
+        assert client.query("offline local memory") == [1.0, 0.0, 0.0, 0.0]
+    client.close()
+
+
 def test_search_indexing_and_counting_share_one_loaded_model_and_preserve_unicode_spans(tmp_path):
     model, registry = owner(tmp_path)
     directory = tmp_path / "broker"
