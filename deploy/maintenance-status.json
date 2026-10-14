@@ -63,15 +63,15 @@
   ],
   "runs": [
     {
-      "id": 38568567319,
+      "id": 38569666477,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "f654a07cb390000e3795f9bcec4ec5c01c30c655",
+      "source_commit": "ee0ed319856c87abd6101dea1a0254f28a21ba53",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-14T13:04:11Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38568567319",
+      "updated_at": "2026-10-14T13:12:07Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38569666477",
       "failed_jobs": []
     },
     {
@@ -153,5 +153,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38563821954"
     }
   ],
-  "observed_at": "2026-10-14T13:04:25+00:00"
+  "observed_at": "2026-10-14T13:12:21+00:00"
 }
