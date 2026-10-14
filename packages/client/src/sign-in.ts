@@ -16,6 +16,19 @@ export interface DeviceSession {
   revoked_at: string | null
   current: boolean
 }
+export interface OAuthConnection {
+  session_id: string
+  principal_id: string
+  client_id: string
+  issuer: string
+  resource: string
+  scopes: string[]
+  device_name: string
+  created_at: string
+  last_refreshed_at: string
+  expires_at: string
+  revoked_at: string | null
+}
 export interface SignInInvitation {
   id: string
   principal_id: string

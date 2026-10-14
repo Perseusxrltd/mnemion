@@ -203,10 +203,10 @@ applies to managed-host startup changes; see
 [issue 23](https://github.com/Perseusxrltd/mnemion/issues/23).
 
 Service 4.0.11 adds [optional trusted-issuer OAuth validation](oauth.md) with
-individual, revocable identity bindings. Built-in browser sign-in and complete
-hosted-connector authorization flows, including ChatGPT's connector flow, remain
-pending issues 4/18; the resource-server foundation and static-header support do
-not establish acceptance of those flows. From 4.0.8,
+individual, revocable identity bindings. Service 4.3.0 adds
+[personal-account agent sign-in](hosted-agent-sign-in.md), including public-client
+registration, PKCE, consent, refresh and revocation. Live ChatGPT, Dot and other
+provider acceptance remains separate under issues 4/18. From 4.0.8,
 [managed Unix server patches](managed-updates.md) are available to authorized
 host operators; a memory key alone cannot grant software-update authority.
 

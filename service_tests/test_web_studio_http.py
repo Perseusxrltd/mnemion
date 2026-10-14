@@ -25,7 +25,7 @@ def test_packaged_studio_serves_routes_and_assets_but_never_private_api(env, tmp
     assert studio.studio_status()["source"] == "bundled"
     assert studio.studio_status()["build_command"] is None
     with TestClient(create_app(env.db, env.embedder)) as client:
-        for route in ("/", "/workspace", "/workspace/help", "/help"):
+        for route in ("/", "/workspace", "/workspace/help", "/help", "/oauth/consent"):
             page = client.get(route)
             assert page.status_code == 200 and 'src="/assets/app.js"' in page.text
             assert "frame-ancestors 'none'" in page.headers["Content-Security-Policy"]

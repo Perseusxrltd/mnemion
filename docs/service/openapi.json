@@ -1407,6 +1407,26 @@
         "title": "DisabledPrincipal",
         "type": "object"
       },
+      "Disconnected": {
+        "additionalProperties": true,
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "revoked": {
+            "title": "Revoked",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "revoked"
+        ],
+        "title": "Disconnected",
+        "type": "object"
+      },
       "Edge": {
         "additionalProperties": true,
         "properties": {
@@ -4817,6 +4837,103 @@
         "title": "OAuthBindingInput",
         "type": "object"
       },
+      "OAuthConnection": {
+        "additionalProperties": true,
+        "properties": {
+          "client_id": {
+            "title": "Client Id",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "device_name": {
+            "title": "Device Name",
+            "type": "string"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "issuer": {
+            "title": "Issuer",
+            "type": "string"
+          },
+          "last_refreshed_at": {
+            "format": "date-time",
+            "title": "Last Refreshed At",
+            "type": "string"
+          },
+          "principal_id": {
+            "format": "uuid",
+            "title": "Principal Id",
+            "type": "string"
+          },
+          "resource": {
+            "title": "Resource",
+            "type": "string"
+          },
+          "revoked_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revoked At"
+          },
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Scopes",
+            "type": "array"
+          },
+          "session_id": {
+            "format": "uuid",
+            "title": "Session Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "principal_id",
+          "client_id",
+          "issuer",
+          "resource",
+          "scopes",
+          "device_name",
+          "created_at",
+          "last_refreshed_at",
+          "expires_at",
+          "revoked_at"
+        ],
+        "title": "OAuthConnection",
+        "type": "object"
+      },
+      "OAuthConnections": {
+        "additionalProperties": true,
+        "properties": {
+          "connections": {
+            "items": {
+              "$ref": "#/components/schemas/OAuthConnection"
+            },
+            "title": "Connections",
+            "type": "array"
+          }
+        },
+        "required": [
+          "connections"
+        ],
+        "title": "OAuthConnections",
+        "type": "object"
+      },
       "Operation": {
         "additionalProperties": true,
         "properties": {
@@ -7730,7 +7847,7 @@
   "info": {
     "description": "Shared, scoped memory and evidence for apps, teams, and assistants. Saves acknowledge canonical durability; operations report semantic indexing readiness.",
     "title": "Mnemion Memory Service",
-    "version": "4.2.5"
+    "version": "4.3.0"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -13019,6 +13136,270 @@
           }
         ],
         "summary": "Revoke Binding",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/v1/oauth/connections": {
+      "get": {
+        "operationId": "connections_v1_oauth_connections_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthConnections"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "408": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request Timeout"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Connections",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/v1/oauth/connections/{session_id}/revoke": {
+      "post": {
+        "operationId": "disconnect_v1_oauth_connections__session_id__revoke_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Session Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Disconnected"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "408": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request Timeout"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Disconnect",
         "tags": [
           "Identity"
         ]

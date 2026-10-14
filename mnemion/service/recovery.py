@@ -414,6 +414,7 @@ def _recover_access(conn, ledger: dict, backup_id: str) -> dict:
     conn.execute("UPDATE mnemion.password_accounts SET reset_required=true")
     conn.execute("UPDATE mnemion.sign_in_invitations SET revoked_at=coalesce(revoked_at,now())")
     conn.execute("DELETE FROM mnemion.spent_refresh_tokens")
+    conn.execute("DELETE FROM mnemion.oauth_local_requests")
     credentials = []
     for tenant in conn.execute("SELECT id, name FROM mnemion.tenants ORDER BY id").fetchall():
         owner = conn.execute(

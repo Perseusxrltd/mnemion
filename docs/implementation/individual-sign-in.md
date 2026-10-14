@@ -1,7 +1,9 @@
 # Individual sign-in, invitations and hosted agents
 
-Implementation contract updated **2026-10-13** for A01–A03, A07–A08, A11–A13
-and C04–C07. The full flow below is not published. It builds on the existing
+Implementation contract updated **2026-10-14** for A01–A03, A07–A08, A11–A13
+and C04–C07. Personal sign-in and invitations are published in 4.2.0; the 4.3.0
+implementation adds hosted consent. Company SSO onboarding and named-provider
+acceptance remain open. It builds on the existing
 [authorization boundary](../service/organizations.md),
 [OAuth resource server](../service/oauth.md) and
 [workspace continuity contract](workspace-continuity.md).
@@ -39,7 +41,7 @@ a public login endpoint. The 4.2.0 source now implements account persistence,
 invitations, attempt throttling, password-strength screening, sessions,
 protected persistence and app and CLI flows.
 [Source and browser checks](../validation/2026-10-13-individual-sign-in.md)
-have passed; native installed acceptance and public delivery are still required.
+passed, followed by [native acceptance and public delivery](../validation/2026-10-13-personal-access-release.md).
 The [user and operator guide](../service/sign-in.md) documents that implementation.
 
 ## Sessions and administration
@@ -77,7 +79,7 @@ invitations and OAuth authorization codes before clients are admitted.
 
 ## Hosted-agent authorization
 
-The next authorization-server implementation must provide discovery, S256 PKCE,
+The 4.3.0 authorization-server implementation provides discovery, S256 PKCE,
 exact redirect validation, resource binding, explicit consent, one-use codes,
 refresh rotation, revocation and durable client registration. Reuse maintained
 protocol handlers; test their actual metadata and behavior. Offer a public-client
@@ -117,7 +119,8 @@ consent or account-linking authority. The
 [profile validation](../validation/2026-10-12-mcp-profile.md) and
 [4.1.3 publication record](../validation/2026-10-12-managed-connectors.md)
 record its completed source, native and delivery checks. The complete individual
-sign-in flow above remains required.
+sign-in flow has since shipped; hosted consent, company enrollment and named-provider
+acceptance retain their separate [validation boundaries](../validation/2026-10-14-hosted-agent-sign-in.md).
 
 ## Acceptance before publication
 

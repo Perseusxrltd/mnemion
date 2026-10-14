@@ -13630,6 +13630,191 @@
     {
       "authentication": "bearer",
       "download": false,
+      "effect": "read",
+      "group": "identity",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {},
+        "type": "object"
+      },
+      "method": "GET",
+      "name": "oauth.connections",
+      "output_schema": {
+        "$defs": {
+          "OAuthConnection": {
+            "additionalProperties": true,
+            "properties": {
+              "client_id": {
+                "title": "Client Id",
+                "type": "string"
+              },
+              "created_at": {
+                "format": "date-time",
+                "title": "Created At",
+                "type": "string"
+              },
+              "device_name": {
+                "title": "Device Name",
+                "type": "string"
+              },
+              "expires_at": {
+                "format": "date-time",
+                "title": "Expires At",
+                "type": "string"
+              },
+              "issuer": {
+                "title": "Issuer",
+                "type": "string"
+              },
+              "last_refreshed_at": {
+                "format": "date-time",
+                "title": "Last Refreshed At",
+                "type": "string"
+              },
+              "principal_id": {
+                "format": "uuid",
+                "title": "Principal Id",
+                "type": "string"
+              },
+              "resource": {
+                "title": "Resource",
+                "type": "string"
+              },
+              "revoked_at": {
+                "anyOf": [
+                  {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Revoked At"
+              },
+              "scopes": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Scopes",
+                "type": "array"
+              },
+              "session_id": {
+                "format": "uuid",
+                "title": "Session Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "session_id",
+              "principal_id",
+              "client_id",
+              "issuer",
+              "resource",
+              "scopes",
+              "device_name",
+              "created_at",
+              "last_refreshed_at",
+              "expires_at",
+              "revoked_at"
+            ],
+            "title": "OAuthConnection",
+            "type": "object"
+          },
+          "OAuthConnections": {
+            "additionalProperties": true,
+            "properties": {
+              "connections": {
+                "items": {
+                  "$ref": "#/$defs/OAuthConnection"
+                },
+                "title": "Connections",
+                "type": "array"
+              }
+            },
+            "required": [
+              "connections"
+            ],
+            "title": "OAuthConnections",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/OAuthConnections"
+      },
+      "parameter_locations": {},
+      "path": "/v1/oauth/connections",
+      "retry": "read",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Connections"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "write",
+      "group": "identity",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "session_id": {
+                "format": "uuid",
+                "title": "Session Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "session_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters"
+        ],
+        "type": "object"
+      },
+      "method": "POST",
+      "name": "oauth.disconnect",
+      "output_schema": {
+        "$defs": {
+          "Disconnected": {
+            "additionalProperties": true,
+            "properties": {
+              "id": {
+                "format": "uuid",
+                "title": "Id",
+                "type": "string"
+              },
+              "revoked": {
+                "title": "Revoked",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "id",
+              "revoked"
+            ],
+            "title": "Disconnected",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/Disconnected"
+      },
+      "parameter_locations": {
+        "session_id": "path"
+      },
+      "path": "/v1/oauth/connections/{session_id}/revoke",
+      "retry": "inspect_before_retry",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Disconnect"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
       "effect": "write",
       "group": "identity",
       "input_schema": {

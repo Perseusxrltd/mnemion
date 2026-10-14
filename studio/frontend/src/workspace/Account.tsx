@@ -21,6 +21,8 @@ export default function Account({ connection, disconnect }: { connection: Connec
   const cache = useQueryClient()
   const account = useQuery({ queryKey: ['password-account'], queryFn: () => client.passwordAccount() })
   const sessions = useQuery({ queryKey: ['device-sessions'], queryFn: () => client.deviceSessions() })
+  const apps = useQuery({ queryKey: ['oauth-connections'], queryFn: () => client.oauthConnections(), enabled: account.isSuccess,
+    retry: (count, error) => !(error instanceof MnemionError && error.status === 404) && count < 1 })
   const people = useQuery({ queryKey: ['account-people'], queryFn: () => client.principals(), enabled: me.administrator })
   const invitations = useQuery({ queryKey: ['sign-in-invitations'], queryFn: () => client.signInInvitations(), enabled: me.administrator })
   const [username, setUsername] = useState('')
@@ -32,7 +34,9 @@ export default function Account({ connection, disconnect }: { connection: Connec
   const [expiry, setExpiry] = useState(86400)
   const [issued, setIssued] = useState<InvitationReceipt>()
   const [pendingRevoke, setPendingRevoke] = useState<string>()
+  const [pendingApp, setPendingApp] = useState<string>()
   const [allPeople, setAllPeople] = useState(false)
+  const [allApps, setAllApps] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<unknown>()
   const [notice, setNotice] = useState('')
@@ -42,7 +46,9 @@ export default function Account({ connection, disconnect }: { connection: Connec
   const unsupported = account.error instanceof MnemionError && account.error.status === 404
   const signInLink = endpoint + '/workspace?workspace=' + me.tenant_id
   const humans = people.data?.items.filter(p => p.kind === 'human' && !p.disabled_at) ?? []
-  const visibleSessions = (sessions.data?.items ?? []).filter(s => allPeople || s.principal_id === me.principal_id)
+  const appSessions = new Set(apps.data?.connections.map(app => app.session_id) ?? [])
+  const visibleSessions = (sessions.data?.items ?? []).filter(s => !appSessions.has(s.id) && (allPeople || s.principal_id === me.principal_id))
+  const visibleApps = (apps.data?.connections ?? []).filter(app => allApps || app.principal_id === me.principal_id)
   async function run(action: () => Promise<void>, refresh = true) {
     setBusy(true); setError(undefined); setNotice('')
     try {
@@ -50,6 +56,7 @@ export default function Account({ connection, disconnect }: { connection: Connec
       if (refresh) await Promise.all([
         cache.invalidateQueries({ queryKey: ['password-account'] }),
         cache.invalidateQueries({ queryKey: ['device-sessions'] }),
+        cache.invalidateQueries({ queryKey: ['oauth-connections'] }),
         cache.invalidateQueries({ queryKey: ['sign-in-invitations'] }),
       ])
     } catch (error) { setError(error) } finally { setBusy(false) }
@@ -66,6 +73,7 @@ export default function Account({ connection, disconnect }: { connection: Connec
     }, connection.authentication !== 'password')
   }
   const sessionToRevoke = sessions.data?.items.find(s => s.id === pendingRevoke)
+  const appToRevoke = apps.data?.connections.find(app => app.session_id === pendingApp)
   return <div className="ws-page">
     <header className="ws-page-heading"><div><p className="ws-eyebrow">Your access</p><h1>Account & sessions</h1>
       <p>Use your own login on every device. Keep recovery access and assistant keys independently controlled.</p></div></header>
@@ -83,7 +91,7 @@ export default function Account({ connection, disconnect }: { connection: Connec
       {account.data.account?.reset_required ? <p className="ws-notice">An administrator must issue a new reset invitation for this account.</p> : <>
         <label className="ws-field"><span>Login name</span><input value={username} onChange={event => setUsername(event.target.value)} required minLength={3} maxLength={128} autoComplete="username" autoCapitalize="none" spellCheck={false} disabled={busy} /></label>
         {account.data.account && <label className="ws-field"><span>Current password</span><input type="password" value={currentPassword} onChange={event => setCurrentPassword(event.target.value)} required autoComplete="current-password" disabled={busy} /></label>}
-        <label className="ws-field"><span>New password</span><input type="password" value={password} onChange={event => setPassword(event.target.value)} required minLength={15} maxLength={256} autoComplete="new-password" disabled={busy} /></label>
+        <label className="ws-field"><span>New password</span><input type="password" value={password} onChange={event => setPassword(event.target.value)} required minLength={15} maxLength={128} autoComplete="new-password" disabled={busy} /></label>
         <small>Use at least 15 characters, such as several unrelated words.</small>
         <label className="ws-field"><span>Confirm new password</span><input type="password" value={confirm} onChange={event => setConfirm(event.target.value)} required autoComplete="new-password" disabled={busy} /></label>
         <p className="ws-helper">Saving signs out all of your password sessions. Keep your independent recovery key in a safe place.</p>
@@ -110,6 +118,18 @@ export default function Account({ connection, disconnect }: { connection: Connec
         }, !sessionToRevoke.current)}>Revoke access</button><button type="button" className="ws-button ws-quiet" disabled={busy} onClick={() => setPendingRevoke(undefined)}>Keep session</button>
       </div>}
     </section>
+    {apps.data && <section className="ws-card"><div className="ws-section-title"><h2>Connected apps</h2><button type="button" className="ws-button ws-quiet" disabled={busy || apps.isFetching} onClick={() => void apps.refetch()}><RefreshCw size={14} />Refresh</button></div>
+      <p>Apps you approved use your account’s permissions. Revoking an app ends its access immediately; your other connections keep working.</p>
+      {me.administrator && <label className="ws-checkbox"><input type="checkbox" data-update-safe checked={allApps} onChange={event => setAllApps(event.target.checked)} />Show everyone’s connected apps</label>}
+      <div className="ws-table-wrap"><table className="ws-table"><thead><tr><th>App</th><th>Person</th><th>Last renewed</th><th>Expires</th><th>Access</th></tr></thead><tbody>
+        {visibleApps.map(app => <tr key={app.session_id}><td><strong>{app.device_name.replace(/^Agent: /, '')}</strong><small>Connected {date(app.created_at)}</small></td><td>{app.principal_id === me.principal_id ? me.name : humans.find(person => person.id === app.principal_id)?.name ?? app.principal_id}</td><td>{date(app.last_refreshed_at)}</td><td>{date(app.expires_at)}</td><td>{app.revoked_at ? 'Revoked' : Date.parse(app.expires_at) <= Date.now() ? 'Expired' : <button type="button" className="ws-button ws-quiet" disabled={busy} onClick={() => setPendingApp(app.session_id)}>Revoke app</button>}</td></tr>)}
+      </tbody></table></div>
+      {visibleApps.length === 0 && <p>No connected apps to show.</p>}
+      {apps.data.connections.length >= 1000 && <p>Showing the latest 1,000 app connections returned by the server.</p>}
+      {appToRevoke && <div className="ws-notice" role="group" aria-label="Confirm app revocation"><p>Revoke <strong>{appToRevoke.device_name.replace(/^Agent: /, '')}</strong>? It will need a new approval before connecting again.</p>
+        <button type="button" className="ws-button" disabled={busy} onClick={() => void run(async () => { await client.revokeOAuthConnection(appToRevoke.session_id); setPendingApp(undefined); setNotice('The app connection has been revoked.') })}>Revoke access</button><button type="button" className="ws-button ws-quiet" disabled={busy} onClick={() => setPendingApp(undefined)}>Keep connection</button></div>}
+    </section>}
+    {apps.error && !(apps.error instanceof MnemionError && apps.error.status === 404) && <div className="ws-notice ws-error" role="alert">Connected apps could not be loaded. <button type="button" className="ws-button ws-quiet" onClick={() => void apps.refetch()}>Retry</button></div>}
     {me.administrator && <>
       <form key={invitationFormRevision} className="ws-card ws-form" onSubmit={event => {
         event.preventDefault()

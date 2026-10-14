@@ -28,6 +28,8 @@ keys.revoke DELETE /v1/keys/{key_id}
 oauth.bindings GET /v1/oauth/bindings
 oauth.bind POST /v1/oauth/bindings
 oauth.revoke DELETE /v1/oauth/bindings/{binding_id}
+oauth.connections GET /v1/oauth/connections
+oauth.disconnect POST /v1/oauth/connections/{session_id}/revoke
 sign_in.configuration GET /v1/sign-in/configuration
 sign_in.account GET /v1/sign-in/account
 sign_in.set_password PUT /v1/sign-in/account

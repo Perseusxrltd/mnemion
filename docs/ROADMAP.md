@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.2.5**. Roadmap updated: **2026-10-14**.
+Reviewed source distribution: **4.3.0**. Roadmap updated: **2026-10-14**.
 The [current published distribution and release gates](RELEASE_STATUS.md) are updated automatically.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
@@ -59,6 +59,13 @@ fleet resource policy remain separate. Reviewed issue resolutions now receive
 fixing-release labels and close automatically only after verified publication.
 Reopened reports stay open. Public delivery evidence remains in release status.
 
+[4.3.0](releases/4.3.0.md) adds [personal-account agent authorization](service/hosted-agent-sign-in.md):
+MCP discovery, public-client registration, PKCE, a responsive consent page,
+rotating credentials and connected-app revocation. Real PostgreSQL, recovery,
+HTTPS browser and MCP checks cover the implemented flow. Company SSO setup,
+provider-specific acceptance and full guided host configuration remain open;
+publication and platform evidence are tracked in release status.
+
 Published [4.2.0](releases/4.2.0.md) implements personal
 passwords, scoped invitations, revocable device sessions, protected desktop and
 browser remembering, and 13 private-aware agent operations. The
@@ -68,8 +75,8 @@ browser remembering, and 13 private-aware agent operations. The
 migration/recovery targets, verified public assets and the updated live website.
 [Public 4.1.7 → 4.2.0 automatic updates](validation/2026-10-13-v4_2_0-public-upgrades.json)
 also passed on all six targets with preserved profiles and real idle safeguards.
-Migration 015 requires a guarded service upgrade. Hosted OAuth, company SSO
-onboarding and live named-provider acceptance remain separate unfinished work.
+Migration 015 requires a guarded service upgrade. The 4.3.0 OAuth flow extends
+these accounts; company SSO onboarding and live named-provider acceptance remain open.
 
 The same release corrects search excerpts from long documents: matching
 passages carry exact source offsets and preserve smaller context budgets.
@@ -461,7 +468,7 @@ where possible and include migration/rollback instructions when needed.
   endpoint, connection-time authentication, explicit scope diagnostics,
   described tool fields, compact structured errors and bounded inference
   admission with SDK retry guidance (issues 5, 9, 10, 12 and 16).
-- Complete hosted-agent OAuth with PKCE and consent (issues 4 and 18), native
+- Complete provider acceptance and guided setup of the 4.3.0 hosted-agent OAuth flow (issues 4 and 18), native
   remote setup (3). Extend 4.0.8 managed service patches to fleet/Compose/Windows
   rollouts, maintenance windows and migration-bearing upgrades (11). Public
   service-feed patches have passed on the original shared host, most recently

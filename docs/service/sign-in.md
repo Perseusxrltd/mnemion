@@ -86,6 +86,13 @@ returns the app to sign-in. **Sign out** ends that password session and removes
 its saved credential from this device. Other independent sessions and keys have
 their own revocation controls.
 
+From service/Studio 4.3.0, **Connected apps** lists applications approved through
+the optional [hosted-agent sign-in flow](hosted-agent-sign-in.md). People can
+revoke their own app connections; administrators can manage their organization's
+connections. These are separate from the device list, but share the account's
+session limits and password-reset/recovery protection. Revocation stops that
+application's access and refresh credentials immediately.
+
 An existing human key holder can set up their own password in this page.
 Changing an existing password requires the current password. The change revokes
 that person's password sessions and outstanding invitations. Sign in again with
@@ -118,10 +125,11 @@ Desktop native sign-in uses the service's authenticated HTTPS boundary; loopback
 HTTP is supported for a local workspace. Rate and password-hashing concurrency
 limits bound sign-in work; repeated attempts can return `429`.
 
-This feature supplies Mnemion personal passwords and sessions. Hosted-agent
-OAuth consent, company identity-provider enrollment and provider-specific
-connection flows are tracked separately in the [OAuth guide](oauth.md) and
-[complete requirements](../PRODUCT_REQUIREMENTS.md).
+This feature supplies Mnemion personal passwords and sessions. Optional
+[hosted-agent OAuth consent](hosted-agent-sign-in.md) is available from 4.3.0.
+Company identity-provider enrollment and live provider-specific acceptance
+remain in the [complete requirements](../PRODUCT_REQUIREMENTS.md); an existing
+company authorization server can use [external issuer mode](oauth.md).
 
 ## Agent and operator controls
 

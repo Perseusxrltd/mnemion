@@ -1,11 +1,11 @@
-# Hosted OAuth foundation
+# External authorization-server integration
 
 **Requires service 4.0.11 or later and migration 013.**
 This optional resource-server path lets an operator connect an existing or
 freely self-hosted authorization server to Mnemion. It retains scoped API keys.
-It does not complete the required simple personal/team sign-in, invitations,
-app onboarding or account-recovery experience. Those remain in
-[A01–A08](../PRODUCT_REQUIREMENTS.md).
+For Mnemion's own personal-account authorization and consent flow in 4.3.0,
+use [hosted-agent sign-in](hosted-agent-sign-in.md). Personal passwords and
+invitations are described in [individual sign-in](sign-in.md).
 
 Mnemion exposes protected-resource discovery, challenges and authenticated MCP
 tools. The chosen authorization server must provide the actual user login,
@@ -179,5 +179,4 @@ configuration and live acceptance; none is marked complete by this foundation.
 MCP access lets an agent use permitted memory tools. Automatic conversation
 capture additionally needs an approved provider API, export/event feed or local
 hook, checkpoints, exclusions and retention handling. It remains a separate
-acceptance track, alongside built-in personal/company login, invitations,
-resumable app onboarding, consent management and recovery.
+acceptance track, alongside company identity-provider setup and complete host onboarding.

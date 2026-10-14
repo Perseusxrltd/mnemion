@@ -15,6 +15,8 @@ Published **4.2.0** adds 13 [personal sign-in operations](sign-in.md) for
 version from users. These operations declare `authentication`, `sensitive_input`
 and `mcp_available`; passwords, private invitations and rotating credentials use
 private CLI input/results instead of generic MCP calls.
+Version **4.3.0** adds `oauth.connections` and `oauth.disconnect` for **102 total**,
+with the same permission checks as [personal agent consent](hosted-agent-sign-in.md).
 Schemas load one at a time, so connecting an
 assistant does not put the entire administration API into its context.
 

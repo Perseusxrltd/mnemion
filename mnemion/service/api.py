@@ -57,6 +57,13 @@ from .librarian_runner import LibrarianRunner
 from .agent_api import attach_agents
 from .oauth import OAuthSettings, OAuthVerifier, unauthorized
 from .oauth_api import attach_oauth
+from .hosted_oauth import HostedOAuth, HostedOAuthSettings
+from .hosted_oauth_api import (
+    PROTOCOL_PATHS,
+    attach_hosted_connections,
+    attach_hosted_oauth,
+    oauth_error,
+)
 from .sign_in_api import attach_sign_in
 
 logger = logging.getLogger(__name__)
@@ -71,6 +78,8 @@ class BodyLimitMiddleware:
         self.timeout = timeout
 
     async def reject(self, scope, receive, send, status, code, message):
+        if scope.get("path") in PROTOCOL_PATHS:
+            return await oauth_error("invalid_request", message, status)(scope, receive, send)
         response = JSONResponse(
             {
                 "error": {"code": code, "message": message},
@@ -83,6 +92,9 @@ class BodyLimitMiddleware:
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
             return await self.app(scope, receive, send)
+        limit = (
+            min(self.limit, 32768) if scope.get("path", "").startswith("/oauth/") else self.limit
+        )
         lengths = [
             value for name, value in scope.get("headers", []) if name.lower() == b"content-length"
         ]
@@ -91,9 +103,14 @@ class BodyLimitMiddleware:
                 return await self.reject(
                     scope, receive, send, 400, "invalid_content_length", "Invalid request length."
                 )
-            if int(lengths[0]) > self.limit:
+            if int(lengths[0]) > limit:
                 return await self.reject(
-                    scope, receive, send, 413, "body_too_large", "Request body exceeds 2 MB."
+                    scope,
+                    receive,
+                    send,
+                    413,
+                    "body_too_large",
+                    "Request body exceeds its size limit.",
                 )
         # A size cap alone does not stop slow clients holding every connection.
         # A single bounded buffer also avoids per-chunk memory overhead.
@@ -105,14 +122,14 @@ class BodyLimitMiddleware:
                     if message["type"] == "http.disconnect":
                         return
                     chunk = message.get("body", b"")
-                    if len(body) + len(chunk) > self.limit:
+                    if len(body) + len(chunk) > limit:
                         return await self.reject(
                             scope,
                             receive,
                             send,
                             413,
                             "body_too_large",
-                            "Request body exceeds 2 MB.",
+                            "Request body exceeds its size limit.",
                         )
                     body.extend(chunk)
                     if not message.get("more_body", False):
@@ -143,10 +160,13 @@ def create_app(
     studio_enabled: bool = True,
     oauth: OAuthVerifier | None = None,
 ) -> FastAPI:
-    if oauth is None:
+    builtin_settings = HostedOAuthSettings.from_environment()
+    if builtin_settings and oauth is not None:
+        raise ValueError("Choose the built-in or external authorization server")
+    if oauth is None and builtin_settings is None:
         settings = OAuthSettings.from_environment()
         oauth = OAuthVerifier(settings) if settings else None
-    oauth_settings = oauth.settings if oauth else None
+    oauth_settings = builtin_settings or (oauth.settings if oauth else None)
     owned = database is None
     if database is None:
         dsn = os.environ.get("MNEMION_DATABASE_URL")
@@ -155,6 +175,7 @@ def create_app(
                 "Set MNEMION_DATABASE_URL to the non-owner application database login"
             )
         database = Database(dsn, max_size=int(os.environ.get("MNEMION_DB_POOL_SIZE", "10")))
+    hosted_oauth = HostedOAuth(database, builtin_settings) if builtin_settings else None
     registry = registry or (
         ModelRegistry(embedder) if embedder is not None else ModelRegistry.from_environment()
     )
@@ -264,6 +285,15 @@ def create_app(
 
     @app.exception_handler(ServiceError)
     async def service_error(request: Request, exc: ServiceError):
+        if request.url.path in PROTOCOL_PATHS:
+            response = oauth_error(
+                "temporarily_unavailable" if exc.status in {429, 503} else "invalid_request",
+                exc.message,
+                exc.status,
+            )
+            if exc.status == 429:
+                response.headers["Retry-After"] = "60"
+            return response
         headers = {"WWW-Authenticate": "Bearer"} if exc.status == 401 else {}
         if oauth_settings and (exc.status == 401 or exc.code == "insufficient_scope"):
             headers["WWW-Authenticate"] = oauth_settings.challenge(exc.code)
@@ -303,6 +333,10 @@ def create_app(
         logger.warning(
             "Database request %s failed (%s)", request.state.request_id, type(exc).__name__
         )
+        if request.url.path in PROTOCOL_PATHS:
+            return oauth_error(
+                "temporarily_unavailable", "Authorization is temporarily unavailable.", 503
+            )
         return JSONResponse(
             {
                 "error": {
@@ -321,6 +355,8 @@ def create_app(
     @app.exception_handler(Exception)
     async def internal_error(request: Request, exc: Exception):
         logger.error("Request %s failed (%s)", request.state.request_id, type(exc).__name__)
+        if request.url.path in PROTOCOL_PATHS:
+            return oauth_error("server_error", "Authorization could not be completed.", 500)
         return JSONResponse(
             {
                 "error": {
@@ -347,6 +383,8 @@ def create_app(
         ):
             raise unauthorized()
         token = credentials.credentials
+        if hosted_oauth and token.startswith("mnmo_"):
+            return await hosted_oauth.authenticate(token)
         # Reserve the local key prefix. Never send a Mnemion API key to an issuer.
         if token.startswith("mnm_") or oauth is None:
             return await anyio.to_thread.run_sync(database.authenticate, token)
@@ -364,7 +402,10 @@ def create_app(
     attach_embeddings(app, database, registry, authenticated)
     attach_librarian(app, librarian, authenticated)
     attach_agents(app, authenticated)
-    attach_oauth(app, database, authenticated, oauth_settings)
+    attach_oauth(app, database, authenticated, oauth.settings if oauth else None)
+    attach_hosted_connections(app, database, authenticated)
+    if hosted_oauth:
+        attach_hosted_oauth(app, hosted_oauth, authenticated)
     attach_sign_in(app, database, authenticated)
 
     if oauth_settings:
@@ -680,6 +721,7 @@ def create_app(
 
         @app.get("/", include_in_schema=False)
         @app.get("/help", include_in_schema=False)
+        @app.get("/oauth/consent", include_in_schema=False)
         @app.get("/workspace", include_in_schema=False)
         @app.get("/workspace/{route:path}", include_in_schema=False)
         def studio_page(route: str = ""):

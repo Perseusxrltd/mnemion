@@ -28,7 +28,14 @@ def test_reviewed_catalog_matches_every_public_operation_and_standalone_schema()
     contract = build_contract(schema)
     assert contract == json.loads(CONTRACT_PATH.read_text())
     operations = control.catalog(limit=100)
-    assert operations["total"] >= 81 and operations["next_offset"] is None
+    assert operations["total"] == len(contract["operations"]) >= 81
+    received = 0
+    for offset in range(0, operations["total"], 100):
+        page = operations if offset == 0 else control.catalog(offset=offset, limit=100)
+        received += len(page["items"])
+        expected_next = received if received < operations["total"] else None
+        assert page["next_offset"] == expected_next
+    assert received == operations["total"]
     assert control.catalog(limit=1)["next_offset"] == 1
     assert len(control.catalog(query="keys.create")["items"]) == 1
     for operation in contract["operations"]:

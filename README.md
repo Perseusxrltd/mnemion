@@ -58,10 +58,12 @@ An authenticated identity is separate from the person or project a memory is abo
 - A versioned HTTP API, [OpenAPI contract](docs/service/openapi.json),
   Python and TypeScript clients, and authenticated MCP with stdio and Streamable
   HTTP; API and HTTP MCP share one listener by default.
-- [Agent administration](docs/service/agent-control.md): 100 reviewed operations from 4.2.0,
+- [Agent administration](docs/service/agent-control.md): 102 reviewed operations from 4.3.0,
   an offline catalog/CLI, compact MCP tools, private results and safe retry rules.
 - Studio for saving, searching, inspecting evidence and revisions, reviewing
   memories, managing identities/grants, and tracking indexing/deletion activity.
+- [Personal agent sign-in](docs/service/hosted-agent-sign-in.md): explicit consent,
+  scoped account authority, rotating OAuth credentials and connected-app revocation.
 - [Visual insights and evaluations](docs/service/insights.md): resource and retrieval
   diagnostics, private versioned test sets, bounded runs, comparisons and exports.
 - [Configurable librarian](docs/service/librarian.md): approved local/cloud models,
