@@ -640,6 +640,9 @@ def arguments(parser: argparse.ArgumentParser) -> None:
             "port",
             "remote",
             "remote-check",
+            "backup",
+            "backup-ledger",
+            "backup-inspect",
         ],
     )
     parser.add_argument("--root", type=Path, required=True)
@@ -659,6 +662,10 @@ def dispatch(args) -> int:
         if args.action == "status":
             emit({"event": "status", **inspect(root)})
             return 0
+        if args.action in {"backup", "backup-ledger", "backup-inspect"}:
+            from .local_backup import dispatch as backup_dispatch
+
+            return backup_dispatch(root, args.database_runtime, args.action, emit)
         if args.action == "port":
             line = sys.stdin.buffer.readline(4097)
             if len(line) > 4096:

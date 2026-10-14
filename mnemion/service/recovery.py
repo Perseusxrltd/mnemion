@@ -8,6 +8,7 @@ keys, and only then publishes the requested database name.
 from __future__ import annotations
 
 import hashlib
+from contextlib import contextmanager
 import json
 import os
 import re
@@ -15,9 +16,11 @@ import shutil
 import subprocess
 import tempfile
 import time
+import threading
 from datetime import datetime
 from importlib.resources import files
 from pathlib import Path
+from typing import Callable
 from uuid import UUID, uuid4
 
 import psycopg
@@ -34,6 +37,46 @@ from .models import json_value
 
 BACKUP_FORMAT = "mnemion-postgres-backup"
 LEDGER_FORMAT = "mnemion-recovery-ledger"
+
+
+class RecoveryCancelled(RuntimeError):
+    pass
+
+
+def _cancel(cancelled: Callable[[], bool] | None) -> None:
+    if cancelled is not None and cancelled():
+        raise RecoveryCancelled("The backup or recovery operation was cancelled.")
+
+
+@contextmanager
+def _cancel_queries(conn, cancelled):
+    """Cancel only this operation's SQL connection, including a long sort."""
+    if cancelled is None:
+        yield
+        return
+    done = threading.Event()
+
+    def observe():
+        while not done.wait(0.25):
+            if cancelled():
+                try:
+                    conn.cancel_safe(timeout=5)
+                except psycopg.Error:
+                    pass
+                return
+
+    observer = threading.Thread(target=observe, name="mnemion-recovery-cancel", daemon=True)
+    observer.start()
+    try:
+        _cancel(cancelled)
+        yield
+        _cancel(cancelled)
+    except psycopg.errors.QueryCanceled:
+        _cancel(cancelled)
+        raise
+    finally:
+        done.set()
+        observer.join(timeout=6)
 
 
 def _pg_environment(dsn: str) -> dict[str, str]:
@@ -85,19 +128,45 @@ def _pg_tool(name: str, pg_bin: Path | None) -> str:
     return result
 
 
-def _run_pg(name: str, dsn: str, arguments: list[str], pg_bin: Path | None) -> None:
-    result = subprocess.run(
+def _run_pg(
+    name: str,
+    dsn: str,
+    arguments: list[str],
+    pg_bin: Path | None,
+    *,
+    cancelled: Callable[[], bool] | None = None,
+    maximum_seconds: float = 3600,
+) -> None:
+    _cancel(cancelled)
+    started = time.monotonic()
+    process = subprocess.Popen(
         [_pg_tool(name, pg_bin), *arguments],
         env=_pg_environment(dsn),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        check=False,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
     )
-    if result.returncode:
+    try:
+        while True:
+            _cancel(cancelled)
+            remaining = maximum_seconds - (time.monotonic() - started)
+            if remaining <= 0:
+                raise TimeoutError("The database backup or recovery tool exceeded its time limit.")
+            try:
+                code = process.wait(timeout=min(0.25, remaining))
+                break
+            except subprocess.TimeoutExpired:
+                continue
+    finally:
+        if process.poll() is None:
+            process.kill()
+            process.wait(timeout=10)
+    if code:
         # pg_dump/restore can include source text in diagnostic SQL. Do not emit
         # it into ordinary logs or leak a database connection string.
         raise RuntimeError(
-            f"{name} failed (exit {result.returncode}); check the PostgreSQL server log and client/server versions"
+            f"{name} failed (exit {code}); check the PostgreSQL server log and client/server versions"
         )
 
 
@@ -170,8 +239,8 @@ def _ledger(conn) -> dict:
     return {**payload, "sha256": hashlib.sha256(canonical_json(payload)).hexdigest()}
 
 
-def export_ledger(dsn: str, output: Path) -> dict:
-    with psycopg.connect(dsn, row_factory=dict_row) as conn:
+def export_ledger(dsn: str, output: Path, *, cancelled=None) -> dict:
+    with psycopg.connect(dsn, row_factory=dict_row) as conn, _cancel_queries(conn, cancelled):
         conn.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY")
         payload = _ledger(conn)
     private_json(output, payload)
@@ -232,14 +301,29 @@ def read_ledger(path: Path) -> dict:
     return {**payload, "sha256": digest}
 
 
-def create_backup(dsn: str, output: Path, *, pg_bin: Path | None = None) -> dict:
+def create_backup(
+    dsn: str,
+    output: Path,
+    *,
+    pg_bin: Path | None = None,
+    context: dict | None = None,
+    temporary_directory: Path | None = None,
+    cancelled: Callable[[], bool] | None = None,
+) -> dict:
     started = time.monotonic()
     _pg_tool("pg_dump", pg_bin)
     if output.exists():
         raise FileExistsError("Backup output already exists")
-    with tempfile.TemporaryDirectory(prefix="mnemion-backup-") as directory:
+    if context is not None and (
+        not isinstance(context, dict) or len(canonical_json(context)) > 16 * 1024
+    ):
+        raise ValueError("Backup context must be a bounded metadata object")
+    _cancel(cancelled)
+    with tempfile.TemporaryDirectory(
+        prefix="mnemion-backup-", dir=temporary_directory
+    ) as directory:
         root = Path(directory)
-        with psycopg.connect(dsn, row_factory=dict_row) as conn:
+        with psycopg.connect(dsn, row_factory=dict_row) as conn, _cancel_queries(conn, cancelled):
             conn.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY")
             snapshot = conn.execute("SELECT pg_export_snapshot() AS id").fetchone()["id"]
             ledger = _ledger(conn)
@@ -261,7 +345,9 @@ def create_backup(dsn: str, output: Path, *, pg_bin: Path | None = None) -> dict
                     "--file=" + str(root / "database.dump"),
                 ],
                 pg_bin,
+                **({"cancelled": cancelled} if cancelled is not None else {}),
             )
+        _cancel(cancelled)
         (root / "deletions.json").write_bytes(canonical_json(ledger))
         manifest = write_archive(
             output,
@@ -279,6 +365,7 @@ def create_backup(dsn: str, output: Path, *, pg_bin: Path | None = None) -> dict
                 "schema": schema,
                 "tables": tables,
                 "tenant_ids": ledger["tenant_ids"],
+                **({"context": context} if context is not None else {}),
             },
         )
     return {

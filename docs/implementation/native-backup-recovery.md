@@ -6,8 +6,10 @@ implements the backup/recovery portion of A04, A06, A09, U01 and U02 in the
 remain open until their own acceptance evidence is available.
 
 The [streaming encryption and publication foundation](../validation/2026-10-15-backup-foundation.md)
-is implemented and under focused validation. The full workflow below remains
-in progress; it must not be described as shipped from these module checks alone.
+is implemented. [Local operator capture and inspection](../validation/2026-10-15-native-backup-capture.md)
+now pass real PostgreSQL snapshot, later-deletion ledger and isolated recovery
+checks in unreleased source. The full workflow below remains in progress; it
+must not be described as shipped from these module checks alone.
 
 ## User workflow
 
