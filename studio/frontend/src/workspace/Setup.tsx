@@ -7,6 +7,7 @@ import { version } from '../../package.json';
 import type { LocalStatus, MemoryOptions } from '../../../shared/local-workspace';
 import { LiveMemory, MemoryFields, RepairMemory, validMemory } from './MemoryControls';
 import { localError } from './LocalSetup';
+import RemoteAccess from './RemoteAccess';
 
 export default function Setup({ client, endpoint, administrator }: { client: MnemionClient; endpoint: string; administrator: boolean }) {
   const desktop = window.mnemion;
@@ -60,6 +61,7 @@ export default function Setup({ client, endpoint, administrator }: { client: Mne
       <Link className="ws-link" to="/workspace/help?doc=docs%2Fservice%2Fupdates.md">Update and host administration guide<ArrowRight size={13} /></Link>
     </section>
     {!!error && <div className="ws-notice ws-error" role="alert">{localError(error)}</div>}
+    {status?.info?.configured && <RemoteAccess status={status} onStatus={setStatus} connected={endpoint === `http://127.0.0.1:${status.info.settings?.port}`} />}
     {status?.info?.configured && <section className="ws-device-settings">
       <div className="ws-memory-heading"><h2>RAM on this computer</h2><span className="ws-badge">{status.state === 'running' ? 'Local workspace running' : status.state}</span></div>
       <p>These controls manage <strong>{status.info.settings?.workspace_name}</strong> on this device. A workspace hosted elsewhere uses that host’s resource settings.</p>

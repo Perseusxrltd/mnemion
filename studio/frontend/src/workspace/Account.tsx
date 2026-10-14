@@ -20,6 +20,7 @@ export default function Account({ connection, disconnect }: { connection: Connec
   const { client, me, endpoint } = connection
   const cache = useQueryClient()
   const account = useQuery({ queryKey: ['password-account'], queryFn: () => client.passwordAccount() })
+  const signInConfiguration = useQuery({ queryKey: ['sign-in-configuration', endpoint], queryFn: () => client.signInConfiguration(), enabled: account.isSuccess, retry: false })
   const sessions = useQuery({ queryKey: ['device-sessions'], queryFn: () => client.deviceSessions() })
   const apps = useQuery({ queryKey: ['oauth-connections'], queryFn: () => client.oauthConnections(), enabled: account.isSuccess,
     retry: (count, error) => !(error instanceof MnemionError && error.status === 404) && count < 1 })
@@ -44,7 +45,12 @@ export default function Account({ connection, disconnect }: { connection: Connec
   const [invitationFormRevision, setInvitationFormRevision] = useState(0)
   useEffect(() => { setUsername(account.data?.account?.username ?? '') }, [account.data?.account?.username])
   const unsupported = account.error instanceof MnemionError && account.error.status === 404
-  const signInLink = endpoint + '/workspace?workspace=' + me.tenant_id
+  let signInOrigin = endpoint
+  try {
+    const configured = new URL(signInConfiguration.data?.public_origin ?? endpoint)
+    if (configured.protocol === 'https:' && !configured.username && !configured.password && configured.pathname === '/' && !configured.search && !configured.hash) signInOrigin = configured.origin
+  } catch { /* An invalid optional origin cannot replace the connected address. */ }
+  const signInLink = signInOrigin + '/workspace?workspace=' + me.tenant_id
   const humans = people.data?.items.filter(p => p.kind === 'human' && !p.disabled_at) ?? []
   const appSessions = new Set(apps.data?.connections.map(app => app.session_id) ?? [])
   const visibleSessions = (sessions.data?.items ?? []).filter(s => !appSessions.has(s.id) && (allPeople || s.principal_id === me.principal_id))

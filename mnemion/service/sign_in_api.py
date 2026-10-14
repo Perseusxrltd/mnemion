@@ -188,9 +188,9 @@ def refresh_credentials(request: Request, command: RefreshInput, policy: Browser
     return refresh, csrf, cookie
 
 
-def attach_sign_in(app, database, authenticated):
+def attach_sign_in(app, database, authenticated, *, public_url: str | None = None):
     service = SignInService(database)
-    policy = BrowserPolicy(os.environ.get("MNEMION_PUBLIC_URL"))
+    policy = BrowserPolicy(public_url or os.environ.get("MNEMION_PUBLIC_URL"))
     Auth = Annotated[Identity, Depends(authenticated)]
 
     @app.get("/v1/sign-in/configuration", tags=["Sign-in"], response_model=dict)

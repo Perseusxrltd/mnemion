@@ -109,6 +109,7 @@ export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Re
     const recalled = await request('POST', '/v1/recall', { query: 'assistants share memory across applications', space_ids: [spaces[0].id], mode: 'semantic' });
     if (!recalled.hits.some(hit => hit.memory_id === memoryId)) throw new Error('The installed model did not retrieve the saved memory');
     const status = await bridge.localStatus();
+    if (status.info?.resources?.remote_access?.ngrok_sdk !== '1.7.0') throw new Error('The installed engine cannot load its reviewed ngrok SDK');
     if (status.info?.settings?.memory?.limit_mib !== 2048) throw new Error('The setup RAM policy was not retained');
     await until(() => bridge.updateSafety(), 'Settled workspace must permit a guarded update');
     const picker = await until(() => document.querySelector('select[aria-label="Memory space"]'), 'Missing memory-space navigation');
@@ -124,7 +125,7 @@ export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Re
     if (typeof window.require !== 'undefined') throw new Error('The installed renderer is not sandboxed');
     return { phase: config.phase, memoryId, endpoint: session.endpoint, tenantId: session.me.tenant_id,
       actualSetupControls: config.phase === 'create', uiOpenedWorkspace: true, nativeService: true,
-      authenticatedApi: true, realModelInference: true, semanticSaveAndRecall: true,
+      authenticatedApi: true, realModelInference: true, semanticSaveAndRecall: true, nativeNgrokSdkLoaded: true,
       automaticReopen: config.phase === 'resume', recoveredPortConflict: config.phase === 'recover-port', savedMemoryPresent: true, memoryPolicyRetained: true,
       navigationPreservesUpdateReadiness: true, unsavedDraftBlocksUpdate: true, closedEditorRestoresUpdateReadiness: true };
   })()`)

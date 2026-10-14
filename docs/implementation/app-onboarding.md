@@ -76,8 +76,12 @@ complete installation or host setup.
 3. Host-only settings currently require environment files or CLI commands.
    Add authenticated operator workflows for model/provider approval, source
    runners, server lifecycle, update adoption, diagnostics and recovery.
-4. Remote sharing and hosted OAuth remain open roadmap work. Expose only tested
-   connection methods and finish their identity, consent and revocation flows.
+4. Source 4.4.0 adds [guided local-host remote access](../service/remote-access.md),
+   managed ngrok supervision, existing HTTPS proxy checks, public invitation
+   addresses and the 4.3.0 hosted OAuth flow. The
+   [real local TLS/controller walkthrough](../validation/2026-10-15-native-remote-access.md)
+   covers configuration, restart and outage/recovery. Live provider acceptance,
+   guided remote-host adoption and company SSO remain open.
 
 Source 4.0.13 adds separate app/server version reporting and a fresh authenticated
 server check in Setup, with explicit older-server and failed-check states. This

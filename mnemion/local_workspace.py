@@ -27,7 +27,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_valida
 
 from . import local_state as state
 from .local_database import LocalDatabase, available_port, prepare_credentials
-from . import local_memory
+from . import local_memory, local_remote
 from .service.memory_budget import MemoryBudget, MemoryOptions, sample_memory, working_target
 from .version import __version__
 
@@ -85,6 +85,7 @@ def resources(root: Path) -> dict:
         "platform": sys.platform,
         "architecture": platform.machine(),
         "gpu_required": False,
+        "remote_access": local_remote.capabilities(),
         "minimum_free_disk_bytes": 2 * 1024**3,
         "profiles": [
             {
@@ -140,6 +141,7 @@ def inspect(root: Path) -> dict:
             settings=settings,
             **local_memory.inspection(root),
             memory=local_memory.live_status(root),
+            remote_access=local_remote.inspection(root, settings["workspace_id"]),
         )
         if (root / "readiness.json").exists():
             result["last_verification"] = state.read(root / "readiness.json")
@@ -410,7 +412,16 @@ async def _serve(
                 worker_failure.set()
                 stop.set()
 
-        app = create_app(database=api, registry=registry, mcp_enabled=True, studio_enabled=False)
+        remote = local_remote.RemoteAccess(root, settings, credentials["tenant_id"], emit)
+        app = create_app(
+            database=api,
+            registry=registry,
+            mcp_enabled=True,
+            studio_enabled=True,
+            hosted_oauth_settings=remote.oauth,
+            public_url=remote.public_url,
+        )
+        remote.attach(app)
         original_lifespan = app.router.lifespan_context
 
         @asynccontextmanager
@@ -443,6 +454,7 @@ async def _serve(
             )
         )
         serving = asyncio.create_task(server.serve(sockets=[listener]))
+        remote_task = None
         try:
             deadline = time.monotonic() + 30
             while not server.started or not worker_ready.is_set():
@@ -487,6 +499,7 @@ async def _serve(
                     "engine_version": __version__,
                 }
             )
+            remote_task = asyncio.create_task(remote.run())
             next_resources = 0.0
             while not stop.is_set() and not serving.done():
                 if time.monotonic() >= next_resources:
@@ -501,6 +514,9 @@ async def _serve(
                 )
         finally:
             worker_stop.set()
+            if remote_task is not None:
+                remote_task.cancel()
+                await asyncio.gather(remote_task, return_exceptions=True)
             server.should_exit = True
             await serving
     finally:
@@ -614,7 +630,17 @@ def _verify(root: Path, endpoint: str, credentials: dict, settings: dict, regist
 
 def arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
-        "action", choices=["status", "initialize", "run", "memory", "memory-repair", "port"]
+        "action",
+        choices=[
+            "status",
+            "initialize",
+            "run",
+            "memory",
+            "memory-repair",
+            "port",
+            "remote",
+            "remote-check",
+        ],
     )
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--database-runtime", type=Path)
@@ -638,6 +664,27 @@ def dispatch(args) -> int:
             if len(line) > 4096:
                 raise ValueError("The address settings exceed their size limit")
             change_port(root, PortChange.model_validate_json(line))
+            emit({"event": "status", **inspect(root)})
+            return 0
+        if args.action in {"remote", "remote-check"}:
+            line = sys.stdin.buffer.readline(4097)
+            try:
+                if len(line) > 4096:
+                    raise ValueError("Remote settings exceed their size limit")
+                change = (
+                    local_remote.RemoteCheck
+                    if args.action == "remote-check"
+                    else local_remote.RemoteChange
+                ).model_validate_json(line)
+            except (ValueError, ValidationError):
+                raise state.LocalSetupError(
+                    "invalid_remote_options",
+                    "Check the sharing method, HTTPS address, provider token and current settings revision.",
+                ) from None
+            if args.action == "remote-check":
+                local_remote.request_check(root, change)
+            else:
+                local_remote.configure(root, change)
             emit({"event": "status", **inspect(root)})
             return 0
         if args.action in {"memory", "memory-repair"}:

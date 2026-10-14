@@ -147,3 +147,13 @@ grants and its public address. The existing host-management channel remains
 necessary for provider suspension. These live results
 advance the contract; they do not complete independent hosting, replicas,
 the recovery entry point, operator delegation or failover.
+
+Source 4.4.0 adds [app-managed remote access](../service/remote-access.md) for a
+locally hosted workspace: an owned ngrok session or existing HTTPS proxy,
+supervised route checks, hosted web/consent pages, public invitation links and
+equivalent private operator commands. A real local proxy outage left local
+authorization available and recovered after reconnection. This advances
+independence from an agent session while the computer is running; it does not
+create host inventory, power management, a replica, operator delegation or an
+independent recovery portal. Ordinary memory administrator authority still
+cannot reconfigure another computer.

@@ -35,6 +35,15 @@ the corrected source to pass the complete release gates. The first candidate
 also failed during the Intel Mac installed app's initial model download; this
 platform gate must pass on the corrected candidate before publication.
 
+The corrected source `50b9423f0aa92b7a9f79559f724a3fd92602d2e9` subsequently passed
+[product checks](https://github.com/Perseusxrltd/mnemion/actions/runs/38640597748)
+and the [complete release/native gates](https://github.com/Perseusxrltd/mnemion/actions/runs/38640749546).
+[Uploaded artifact verification and publication](https://github.com/Perseusxrltd/mnemion/actions/runs/38645366267)
+and the [live website check](https://github.com/Perseusxrltd/mnemion/actions/runs/38645529408)
+passed. [Public automatic upgrades](https://github.com/Perseusxrltd/mnemion/actions/runs/38645535752)
+passed on all six targets at 22:20:01 UTC on 14 October. The failed original
+candidate remains frozen; these results belong to the corrected release.
+
 ## Previously evaluated public-corpus regression
 
 The [machine-readable aggregate](2026-10-14-question-regression.json) records

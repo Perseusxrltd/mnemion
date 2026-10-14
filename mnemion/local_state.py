@@ -205,17 +205,19 @@ def _sync_directory(path: Path) -> None:
             os.close(descriptor)
 
 
-def replace_damaged(path: Path, value: dict, *, expected: bytes) -> Path:
+def replace_damaged(path: Path, value: dict, *, expected: bytes, kind: str = "memory") -> Path:
     """Explicit repair only: preserve exact private bytes before atomic replacement.
 
     The caller owns the policy lock and has validated a matching recovery token.
     Ordinary write() still refuses malformed records. Links, unsafe ownership,
     unreadable/oversized records and failed preservation never reach replacement.
     """
+    if kind not in {"memory", "remote"}:
+        raise ValueError("Unsupported private recovery record")
     directory(path.parent)
     if read_bytes(path) != expected:
         raise LocalSetupError("state_changed", "The saved record changed. Refresh before repair.")
-    archive = directory(path.parent / "recovery") / ("memory-" + uuid4().hex + ".bin")
+    archive = directory(path.parent / "recovery") / (kind + "-" + uuid4().hex + ".bin")
     with private_output(archive) as stream:
         stream.write(expected)
     _sync_directory(archive.parent)
@@ -231,7 +233,7 @@ def replace_damaged(path: Path, value: dict, *, expected: bytes) -> Path:
         copies = [
             candidate
             for candidate in archive.parent.iterdir()
-            if re.fullmatch(r"memory-[a-f0-9]{32}\.bin", candidate.name)
+            if re.fullmatch(kind + r"-[a-f0-9]{32}\.bin", candidate.name)
         ]
         copies.sort(key=lambda candidate: _regular(candidate).st_mtime_ns, reverse=True)
         retained = {archive, *[copy for copy in copies if copy != archive][:7]}

@@ -1,6 +1,6 @@
 import type { AgentsResponse, ConnectorStatus, CoreMemory, DrawerDetail, DrawerSummary, KGGraph, ObsidianStatus, RecentDrawer, SearchHit, Status, StudioConfig, Taxonomy, TrustStats } from '../types'
 import type { WorkspaceInspection, WorkspaceSession, WorkspaceStatus } from '../workspace/connection-types'
-import type { LocalOptions, LocalStatus, MemoryWrite, PortChange } from '../../../shared/local-workspace'
+import type { LocalOptions, LocalStatus, MemoryWrite, PortChange, RemoteChange, RemoteCheck } from '../../../shared/local-workspace'
 import type { SignInCredentials, InvitationCredentials, InvitationPreview } from '@mnemion/client'
 
 declare global {
@@ -30,6 +30,8 @@ declare global {
       localStop?: () => Promise<boolean>
       localMemory?: (input: MemoryWrite) => Promise<LocalStatus>
       localPort?: (input: PortChange) => Promise<LocalStatus>
+      localRemote?: (input: RemoteChange) => Promise<LocalStatus>
+      localRemoteCheck?: (input: RemoteCheck) => Promise<LocalStatus>
       onLocalStatus?: (callback: (status: LocalStatus) => void) => () => void
       chooseVault?: () => Promise<{ id: string; path: string } | null>
       refreshVault?: (selection: string, bytes: Uint8Array) => Promise<{ completed: boolean; file_count: number; pruned_files: number; detached_annotations: string[]; conflicts: Array<{ path: string; proposal_path?: string }>; vault_path: string }>

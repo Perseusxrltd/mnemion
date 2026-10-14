@@ -10,6 +10,12 @@ The local workspace belongs to the operating-system account that created it.
 Its API listens only on `127.0.0.1`, with a separate private PostgreSQL port.
 An ordinary memory API key does not grant permission to administer the host.
 
+From **4.4.0**, **Setup & this device → Remote access** configures an owned ngrok
+connection or an existing HTTPS proxy, hosted-agent consent and public join
+addresses. The [remote access guide](remote-access.md) covers the app flow,
+provider limits, route checks and equivalent private operator commands. The
+local API remains on loopback; remote sharing forwards to that same workspace.
+
 ## Recover an occupied API port in Studio
 
 If another program occupies the saved local address, startup stops and shows

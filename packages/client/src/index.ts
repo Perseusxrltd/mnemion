@@ -270,6 +270,7 @@ export class MnemionClient {
   deviceSessions() { return this.request<{ items: DeviceSession[] }>('GET', '/v1/sign-in/sessions') }
   revokeSession(id: string) { return this.request<{ id: string; revoked: boolean }>('DELETE', '/v1/sign-in/sessions/' + encodeURIComponent(id)) }
   oauthConfiguration() { return this.request<OAuthConfiguration>('GET', '/v1/oauth/configuration') }
+  signInConfiguration() { return this.request<{ password_sign_in: boolean; public_origin: string | null; browser_sign_in: boolean; remember_browser: boolean; minimum_password_characters: number }>('GET', '/v1/sign-in/configuration') }
   oauthConnections() { return this.request<{ connections: OAuthConnection[] }>('GET', '/v1/oauth/connections') }
   revokeOAuthConnection(id: string) { return this.request<{ id: string; revoked: boolean }>('POST', '/v1/oauth/connections/' + encodeURIComponent(id) + '/revoke') }
   signInInvitations() { return this.request<{ items: SignInInvitation[] }>('GET', '/v1/sign-in/invitations') }

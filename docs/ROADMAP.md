@@ -1,9 +1,17 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.3.3**. Roadmap updated: **2026-10-14**.
+Reviewed source distribution: **4.4.0**. Roadmap updated: **2026-10-14**.
 The [current published distribution and release gates](RELEASE_STATUS.md) are updated automatically.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
+
+[4.4.0](releases/4.4.0.md) adds [guided remote access for local workspaces](service/remote-access.md):
+an owned ngrok connection or existing HTTPS proxy, supervised route checks,
+hosted browser and consent pages, public invitation links and local operator
+commands. [Focused checks and a real local TLS walkthrough](validation/2026-10-15-native-remote-access.md)
+cover configuration, restart and outage/recovery. Live provider acceptance,
+independent host recovery and company hosting/SSO remain open; publication and
+all-platform delivery evidence are tracked automatically above.
 
 [4.3.3](releases/4.3.3.md) adds explainable, optional key-term support for questions
 without a full text match, plus saved evaluation ranking preferences and

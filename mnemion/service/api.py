@@ -159,8 +159,10 @@ def create_app(
     mcp_enabled: bool | None = None,
     studio_enabled: bool = True,
     oauth: OAuthVerifier | None = None,
+    hosted_oauth_settings: HostedOAuthSettings | None = None,
+    public_url: str | None = None,
 ) -> FastAPI:
-    builtin_settings = HostedOAuthSettings.from_environment()
+    builtin_settings = hosted_oauth_settings or HostedOAuthSettings.from_environment()
     if builtin_settings and oauth is not None:
         raise ValueError("Choose the built-in or external authorization server")
     if oauth is None and builtin_settings is None:
@@ -418,7 +420,12 @@ def create_app(
     )
     if hosted_oauth:
         attach_hosted_oauth(app, hosted_oauth, authenticated)
-    attach_sign_in(app, database, authenticated)
+    attach_sign_in(
+        app,
+        database,
+        authenticated,
+        public_url=oauth_settings.resource if oauth_settings else public_url,
+    )
 
     if oauth_settings:
 
@@ -712,7 +719,7 @@ def create_app(
             api_app=app,
             public_url=oauth_settings.resource
             if oauth_settings
-            else os.environ.get("MNEMION_PUBLIC_URL"),
+            else public_url or os.environ.get("MNEMION_PUBLIC_URL"),
         )
         mcp_app = gateway.streamable_http_app(stateless_http=True, json_response=True)
         # Preserve the exact /mcp URL without Mount's trailing-slash redirect.

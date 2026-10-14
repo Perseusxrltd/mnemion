@@ -130,6 +130,13 @@ try {
   const port = await freePort()
   const first = await launch({ phase: 'create', port, emulated: nativeRuntime.engine_emulation === true })
   if (!first.actualSetupControls || !first.realModelInference) throw new Error('The installed UI did not exercise real setup and inference')
+  if (!first.nativeNgrokSdkLoaded) throw new Error('The installed engine did not load its remote connection runtime')
+  const hostedPage = await fetch(first.endpoint + '/oauth/consent', { signal: AbortSignal.timeout(10000) })
+  const hostedHtml = await hostedPage.text()
+  const hostedAsset = hostedHtml.match(/src="(\/assets\/[^"<>]+\.js)"/)
+  if (hostedPage.status !== 200 || !hostedAsset) throw new Error('The installed service omitted its browser/consent interface')
+  const script = await fetch(first.endpoint + hostedAsset[1], { signal: AbortSignal.timeout(10000) })
+  if (script.status !== 200 || !(await script.text()).length) throw new Error('The installed hosted interface cannot load its scripts')
   if (!first.navigationPreservesUpdateReadiness || !first.unsavedDraftBlocksUpdate || !first.closedEditorRestoresUpdateReadiness) {
     throw new Error('Installed navigation and unsaved-work update guards did not pass')
   }
@@ -177,6 +184,7 @@ try {
   const evidence = { passed: true, platform: process.platform, architecture: process.arch, nativeRuntime,
     installer: process.platform === 'win32' ? 'NSIS per-user' : process.platform === 'darwin' ? 'DMG copied application' : 'AppImage portable user installation',
     installationPathWithSpacesAndUnicode: true, actualSetupControls: true, authenticatedApi: true,
+    nativeNgrokSdkLoaded: true, hostedBrowserAndConsentAssets: true,
     anonymousAccessRefused: true, realSemanticSaveAndRecall: true, automaticWorkspaceReopen: true,
     restartPreservesWorkspaceAndCredentials: true, savedMemorySurvivesRestart: true,
     configuredRamBudgetPersists: true, cleanDatabaseShutdownOnAppExit: true,

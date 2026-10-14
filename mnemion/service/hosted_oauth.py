@@ -49,13 +49,18 @@ class HostedOAuthSettings:
             for name in ("ISSUER", "INTROSPECTION_URL", "CLIENT_ID", "CLIENT_SECRET_FILE")
         ):
             raise ValueError("Choose the built-in or external authorization server")
-        public = urlsplit(https_url(os.environ.get("MNEMION_PUBLIC_URL", "")))
-        if public.path not in {"", "/", "/mcp", "/mcp/"}:
-            raise ValueError("Use the public HTTPS origin or its /mcp endpoint")
         try:
             tenant = UUID(os.environ.get("MNEMION_OAUTH_TENANT_ID", ""))
         except ValueError:
             raise ValueError("Select the workspace UUID for hosted sign-in") from None
+        return cls.for_workspace(os.environ.get("MNEMION_PUBLIC_URL", ""), tenant)
+
+    @classmethod
+    def for_workspace(cls, public_url: str, tenant: UUID):
+        """Build settings from explicit host-operator configuration."""
+        public = urlsplit(https_url(public_url))
+        if public.path not in {"", "/", "/mcp", "/mcp/"}:
+            raise ValueError("Use the public HTTPS origin or its /mcp endpoint")
         host = public.hostname.lower()
         if ":" in host:
             host = f"[{host}]"

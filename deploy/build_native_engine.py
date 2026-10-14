@@ -58,6 +58,14 @@ def build(work: Path, output: Path) -> Path:
         raise ValueError("Use the reviewed PyInstaller 6.22.3 build environment")
     if importlib.metadata.version("fastembed") != "0.9.0":
         raise ValueError("The frozen engine must use the pinned inference runtime")
+    if importlib.metadata.version("ngrok") != "1.7.0":
+        raise ValueError("The frozen engine must use the reviewed ngrok SDK")
+    from deploy.bundle_studio import build as build_studio, build_lock
+
+    # The hosted browser and consent page use the matching web build. The
+    # Electron file:// build remains a separate resource with its own base.
+    with build_lock(ROOT / "build-tmp"):
+        build_studio(ROOT)
     work.mkdir(parents=True)
     output.mkdir(parents=True)
     command = [
@@ -85,8 +93,12 @@ def build(work: Path, output: Path) -> Path:
         "fastembed",
         "--collect-data",
         "mnemion.service",
+        "--collect-all",
+        "ngrok",
+        "--add-data",
+        str(ROOT / "mnemion/_studio") + os.pathsep + "mnemion/_studio",
     ]
-    for distribution in ("fastembed", "onnxruntime", "tokenizers", "huggingface_hub"):
+    for distribution in ("fastembed", "onnxruntime", "tokenizers", "huggingface_hub", "ngrok"):
         command += ["--copy-metadata", distribution]
     for excluded in ("chromadb", "torch", "pytest", "tkinter"):
         command += ["--exclude-module", excluded]

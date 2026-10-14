@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import RemoteAccess from './RemoteAccess';
 import { ArrowLeft, ArrowRight, Check, Cpu, Database, LoaderCircle, Play, ShieldCheck } from 'lucide-react';
 import type { LocalOptions, LocalStatus } from '../../../shared/local-workspace';
 import type { WorkspaceSession } from './connection-types';
@@ -94,5 +95,6 @@ export default function LocalSetup({ initial, onOpen, onBack, autoContinue = fal
       <div className="ws-setup-actions">{step > 0 && <button type="button" className="ws-button ws-quiet" disabled={busy} onClick={() => setStep(step - 1)}>Back</button>}<button className="ws-button ws-primary" disabled={busy || !options.workspace_name.trim() || !options.owner_name.trim() || !validMemory(options.memory) || (step === 2 && resources.available_disk_bytes < resources.minimum_free_disk_bytes)}>{busy ? <LoaderCircle className="ws-spin" size={16} /> : <ArrowRight size={16} />}{step === 2 ? 'Create workspace' : 'Continue'}</button></div>
     </form>}
     {status?.memory && <LiveMemory value={status.memory} />}
+    {configured && status && <RemoteAccess status={status} onStatus={setStatus} />}
   </section>;
 }

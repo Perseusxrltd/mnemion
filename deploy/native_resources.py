@@ -22,7 +22,9 @@ def source_digest(root: Path) -> str:
     paths += [
         p
         for p in (root / "mnemion").rglob("*")
-        if p.is_file() and p.suffix in {".py", ".sql", ".json", ".yaml", ".yml"}
+        if p.is_file()
+        and p.suffix in {".py", ".sql", ".json", ".yaml", ".yml"}
+        and not p.is_relative_to(root / "mnemion/_studio")
     ]
     for path in sorted(paths):
         digest.update(path.relative_to(root).as_posix().encode() + b"\0")

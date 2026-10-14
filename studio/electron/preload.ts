@@ -47,6 +47,8 @@ contextBridge.exposeInMainWorld('mnemion', {
   localStop: () => transfer('local:stop'),
   localMemory: (input: unknown) => transfer('local:memory', input),
   localPort: (input: unknown) => transfer('local:port', input),
+  localRemote: (input: unknown) => transfer('local:remote', input),
+  localRemoteCheck: (input: unknown) => transfer('local:remote-check', input),
   onLocalStatus: (callback: (status: unknown) => void) => {
     const listener = (_event: IpcRendererEvent, status: unknown) => callback(status)
     ipcRenderer.on('local:changed', listener)

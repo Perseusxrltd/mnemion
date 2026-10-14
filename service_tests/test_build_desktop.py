@@ -1,6 +1,21 @@
 import sys
 
 from deploy.build_desktop import build, transient_download
+from deploy.native_resources import source_digest
+
+
+def test_imported_native_engine_source_does_not_depend_on_generated_web_staging(tmp_path):
+    for name in ("studio/engine/main.py", "pyproject.toml", "uv.lock", "mnemion/example.py"):
+        target = tmp_path / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text("fixture\n")
+    original = source_digest(tmp_path)
+    staged = tmp_path / "mnemion/_studio"
+    staged.mkdir()
+    (staged / "release.json").write_text('{"generated":true}\n')
+    assert source_digest(tmp_path) == original
+    (tmp_path / "mnemion/example.py").write_text("changed source\n")
+    assert source_digest(tmp_path) != original
 
 
 def test_transient_download_retries_once_and_propagates_the_actual_build_result(tmp_path):

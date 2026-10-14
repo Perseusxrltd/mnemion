@@ -341,6 +341,14 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
     trusted(event)
     return desktopLocalStatus(await localWorkspace().changePort(input))
   })
+  ipcMain.handle('local:remote', async (event, input: unknown) => {
+    trusted(event)
+    return desktopLocalStatus(await localWorkspace().changeRemote(input))
+  })
+  ipcMain.handle('local:remote-check', async (event, input: unknown) => {
+    trusted(event)
+    return desktopLocalStatus(await localWorkspace().checkRemote(input))
+  })
   ipcMain.handle('local:open', async event => {
     trusted(event)
     const generation = ++localOpenGeneration

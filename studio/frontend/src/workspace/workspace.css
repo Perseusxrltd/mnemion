@@ -107,6 +107,18 @@ fieldset.ws-setup-fields { border: 0; padding: 0; min-width: 0; }
 .ws-device-settings > p { color: var(--ws-muted); font-size: 13px; margin-top: 12px; }
 .ws-device-settings .ws-live-memory { margin: 22px 0; }
 .ws-device-settings .ws-setup-actions > .ws-primary { margin-left: 0; }
+.ws-remote-access h2 { display: flex; align-items: center; gap: 10px; }
+.ws-remote-access .ws-checkbox { align-items: flex-start; white-space: normal; }
+.ws-remote-access .ws-checkbox input { flex: 0 0 16px; margin-top: 2px; }
+.ws-remote-provider { display: grid; gap: 12px; }
+.ws-remote-provider p, .ws-remote-hint { color: var(--ws-muted); font-size: 13px; line-height: 1.6; }
+.ws-remote-access .ws-notice small { display: block; margin-top: 6px; }
+.ws-remote-access code, .ws-remote-access a { overflow-wrap: anywhere; }
+.ws-remote-addresses { display: grid; gap: 14px; margin: 22px 0; }
+.ws-remote-addresses .ws-field { margin: 0; min-width: 0; }
+.ws-remote-addresses .ws-field > div { display: flex; align-items: center; gap: 8px; }
+.ws-remote-addresses input { min-width: 0; flex: 1; }
+.ws-remote-addresses > p { display: flex; flex-wrap: wrap; gap: 18px; }
 .ws-software-versions dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; margin: 22px 0 0; }
 .ws-software-versions dt { display: flex; align-items: center; gap: 8px; color: var(--ws-muted); font-size: 12px; }
 .ws-software-versions dd { margin: 8px 0 0; font-size: 20px; font-weight: 500; overflow-wrap: anywhere; }

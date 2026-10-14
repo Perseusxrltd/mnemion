@@ -62,6 +62,15 @@ does not enable OAuth, alter grants or fetch an external provider's metadata.
 
 ## Enable on a host
 
+For a desktop-hosted workspace from **4.4.0**, use **Setup & this device → Remote
+access** and enable **Allow hosted agents to request personal sign-in and consent
+(OAuth)**. The [guided setup](remote-access.md) supplies the public HTTPS origin,
+selects that local workspace and restarts its engine. The bundled browser assets
+serve the login and consent flow. Live acceptance in each named provider still
+requires separate validation.
+
+For an independently managed service, use the persistent host configuration below.
+
 Apply the release's migrations through the normal guarded
 [deployment](deployment.md) or [managed upgrade](managed-upgrades.md). Configure
 the API process's persistent environment:
@@ -83,8 +92,8 @@ put the two `MNEMION_OAUTH_*` settings in the private JSON supplied to
 `supervise prepare --environment` or `updates setup --environment`, and supply
 the same `--public-url`. Existing hosts need their operator to update the
 persisted environment and restart the API. An interactive shell's variables
-alone do not reconfigure an existing supervisor. Guided host/SSO configuration
-in Studio remains separate work.
+alone do not reconfigure an existing supervisor. Guided remote-host adoption
+and company SSO configuration in Studio remain separate work.
 
 Do not combine this mode with external issuer, introspection or client-secret
 settings. Incomplete or conflicting configuration prevents API startup.

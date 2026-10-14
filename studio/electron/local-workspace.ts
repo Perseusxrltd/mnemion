@@ -1,7 +1,7 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { StringDecoder } from 'node:string_decoder'
-import type { LocalOptions, LocalInfo, LocalStatus, MemoryChange, MemoryWrite, MemorySnapshot, MemoryPolicy, PortChange, LocalDiagnostic } from '../shared/local-workspace.js'
+import type { LocalOptions, LocalInfo, LocalStatus, MemoryChange, MemoryWrite, MemorySnapshot, MemoryPolicy, PortChange, LocalDiagnostic, RemoteChange, RemoteAccess, RemoteCheck } from '../shared/local-workspace.js'
 type Connection = { endpoint: string; credential: string; workspaceId: string; tenantId: string; version: string }
 type Options = { executable: string; database: string; root: string; version: string; environment: NodeJS.ProcessEnv; desktopMemory?: () => number }
 
@@ -78,6 +78,51 @@ export function portOptions(input: unknown): PortChange {
   return { workspace_id: value.workspace_id, expected_port: value.expected_port, port: value.port }
 }
 
+const remoteRevision = /^(?:not-configured|[a-f0-9-]{36}|[a-f0-9]{64})$/
+
+function remoteOrigin(input: unknown): string {
+  try {
+    if (typeof input !== 'string' || input.length > 2048 || /[\s\\]/.test(input)) throw new Error()
+    const url = new URL(input)
+    if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash ||
+        !['/', '/mcp', '/mcp/'].includes(url.pathname)) throw new Error()
+    return url.origin
+  } catch { throw new Error('Enter an HTTPS origin without credentials, a query or a path.') }
+}
+
+export function remoteOptions(input: unknown): RemoteChange {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Check the remote access settings.')
+  const value = input as RemoteChange
+  if (Object.keys(value).some(key => !['workspace_id', 'expected_revision', 'mode', 'public_url', 'personal_sign_in', 'ngrok_authtoken'].includes(key)) ||
+      typeof value.workspace_id !== 'string' || !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(value.workspace_id) ||
+      typeof value.expected_revision !== 'string' || !remoteRevision.test(value.expected_revision) ||
+      !['disabled', 'ngrok', 'proxy'].includes(value.mode) || typeof value.personal_sign_in !== 'boolean' ||
+      (value.ngrok_authtoken != null && (typeof value.ngrok_authtoken !== 'string' || !/^[\x21-\x7e]{16,256}$/.test(value.ngrok_authtoken)))) {
+    throw new Error('Check the remote access settings and refresh their current revision.')
+  }
+  const public_url = value.mode === 'disabled' ? null : remoteOrigin(value.public_url)
+  if (value.mode === 'ngrok' && new URL(public_url!).port) throw new Error('Use your ngrok HTTPS domain without a port.')
+  return { ...value, workspace_id: value.workspace_id.toLowerCase(), public_url,
+    ngrok_authtoken: value.mode === 'ngrok' ? value.ngrok_authtoken ?? null : null }
+}
+
+export function remoteSnapshot(input: unknown): RemoteAccess {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Invalid remote access status')
+  const value = input as RemoteAccess
+  if (Object.keys(value).some(key => !['mode', 'public_url', 'personal_sign_in', 'has_ngrok_authtoken', 'revision', 'repairable', 'state', 'message', 'checked_at', 'verified_at', 'provider_code'].includes(key)) ||
+      !['disabled', 'ngrok', 'proxy'].includes(value.mode) || typeof value.personal_sign_in !== 'boolean' ||
+      typeof value.has_ngrok_authtoken !== 'boolean' || typeof value.repairable !== 'boolean' ||
+      typeof value.revision !== 'string' || !(remoteRevision.test(value.revision) || value.revision === 'unreadable') ||
+      !['disabled', 'unchecked', 'stopped', 'configuration_error', 'connecting', 'online', 'unavailable'].includes(value.state) ||
+      typeof value.message !== 'string' || value.message.length > 512 ||
+      (value.public_url !== null && remoteOrigin(value.public_url) !== value.public_url) ||
+      [value.checked_at, value.verified_at].some(stamp => stamp != null && (typeof stamp !== 'string' || stamp.length > 40 || !Number.isFinite(Date.parse(stamp)))) ||
+      (value.provider_code != null && (typeof value.provider_code !== 'string' || !/^ERR_NGROK_[0-9]{1,8}$/.test(value.provider_code)))) {
+    throw new Error('Invalid remote access status')
+  }
+  return structuredClone(value)
+}
+
 export class LocalWorkspace {
   private child?: ChildProcessWithoutNullStreams
   private connection?: Connection
@@ -140,14 +185,14 @@ export class LocalWorkspace {
     try { return await this.operation } finally { this.operation = undefined }
   }
 
-  private readInfo(action: 'status' | 'port', input?: PortChange): Promise<LocalInfo> {
+  private readInfo(action: 'status' | 'port' | 'remote' | 'remote-check', input?: PortChange | RemoteChange | RemoteCheck): Promise<LocalInfo> {
     return new Promise((resolve, reject) => {
       const child = this.control(action)
       child.stdin.end(input === undefined ? undefined : JSON.stringify(input) + '\n')
       let body = ''
       let failed = false
-      const timer = setTimeout(() => { failed = true; child.kill(); reject(new Error(action === 'port'
-        ? 'The address change could not be confirmed. Refresh its status before retrying.'
+      const timer = setTimeout(() => { failed = true; child.kill(); reject(new Error(action !== 'status'
+        ? 'The host settings change could not be confirmed. Refresh its status before retrying.'
         : 'The local runtime check timed out. Try again.')) }, 20_000)
       child.stdout.on('data', (chunk: Buffer) => {
         body += chunk.toString('utf8')
@@ -166,13 +211,21 @@ export class LocalWorkspace {
             throw new Error('The local runtime does not match this app. Reinstall the complete app.')
           }
           const { configured, data_directory, engine_version, resources, settings, last_verification, memory_policy, memory_recovery, memory } = value
+          const remote_access = value.remote_access === undefined ? undefined : remoteSnapshot(value.remote_access)
+          const address = input as PortChange
           if (action === 'port' && (!configured || !settings || settings.workspace_id !== input!.workspace_id.toLowerCase() ||
               !Number.isInteger(settings.port) || settings.port < 1024 || settings.port > 65535 || settings.port === settings.database_port ||
-              (input!.port !== null && settings.port !== input!.port))) throw new Error('The saved local address could not be confirmed. Refresh before retrying.')
+              (address.port !== null && settings.port !== address.port))) throw new Error('The saved local address could not be confirmed. Refresh before retrying.')
+          const sharing = input as RemoteChange
+          if (action === 'remote' && (!configured || !settings || settings.workspace_id !== sharing.workspace_id ||
+              !remote_access || remote_access.state === 'configuration_error' || remote_access.revision === sharing.expected_revision ||
+              remote_access.mode !== sharing.mode || remote_access.public_url !== sharing.public_url ||
+              remote_access.personal_sign_in !== sharing.personal_sign_in ||
+              (sharing.mode === 'ngrok' && !remote_access.has_ngrok_authtoken))) throw new Error('The saved remote settings could not be confirmed. Refresh before retrying.')
           if (memory_recovery && (!['memory_policy_missing', 'memory_policy_damaged', 'memory_policy_inaccessible'].includes(memory_recovery.code) ||
               typeof memory_recovery.message !== 'string' || memory_recovery.message.length > 1000 ||
               (memory_recovery.repair_token !== null && !/^[a-f0-9]{64}$/.test(memory_recovery.repair_token)))) throw new Error('Invalid RAM recovery status')
-          const info = { configured, data_directory, engine_version, resources, settings, last_verification, memory_policy, memory_recovery, memory }
+          const info = { configured, data_directory, engine_version, resources, settings, last_verification, memory_policy, memory_recovery, memory, remote_access }
           this.info = info
           this.changed(this.status)
           resolve(info)
@@ -191,6 +244,10 @@ export class LocalWorkspace {
     if (this.configurationChange) throw new Error('The local address is being saved. Wait for it to finish.')
     if (this.child) return this.status
     if (!options && !info.configured) throw new Error('Choose the workspace settings before starting.')
+    return this.launch(info, options)
+  }
+
+  private launch(info: LocalInfo, options?: LocalOptions): LocalStatus {
     if (info.memory_recovery) throw new Error('Repair the saved RAM budget before resuming this workspace.')
     this.intentionalStop = false
     this.connection = undefined
@@ -219,6 +276,9 @@ export class LocalWorkspace {
             this.set({ memory })
             if ((memory.reason === 'policy_unavailable') !== !!this.info?.memory_recovery ||
                 (memory.reason !== 'policy_unavailable' && memory.revision !== this.info?.memory_policy?.revision)) void this.inspect().catch(() => {})
+          } else if (value.event === 'remote_access' && this.info) {
+            this.info = { ...this.info, remote_access: remoteSnapshot(value.remote_access) }
+            this.changed(this.status)
           } else if (value.event === 'progress' && typeof value.stage === 'string' && value.stage.length <= 64 && typeof value.message === 'string' && value.message.length <= 1000) {
             this.set({ stage: value.stage, message: value.message })
           } else if (value.event === 'ready') {
@@ -340,6 +400,47 @@ export class LocalWorkspace {
     return this.status
   }
 
+  async changeRemote(input: unknown): Promise<LocalStatus> {
+    this.assertOpen()
+    if (!this.status.available) throw new Error('The complete local runtime is missing. Reinstall Mnemion Studio.')
+    if (this.busy) throw new Error('Wait for the current local operation before changing remote access.')
+    const change = remoteOptions(input)
+    this.configurationChange = this.saveRemote(change)
+    try { return await this.configurationChange } finally { this.configurationChange = undefined }
+  }
+
+  async checkRemote(input: unknown): Promise<LocalStatus> {
+    this.assertOpen()
+    if (!this.child || this.statusValue.state !== 'running' || this.busy) throw new Error('Wait for the local host to be running before checking remote access.')
+    if (!input || typeof input !== 'object' || Array.isArray(input) || Object.keys(input).sort().join(',') !== 'expected_revision,workspace_id') throw new Error('Choose the current remote access settings.')
+    const change = input as RemoteCheck
+    if (change.workspace_id !== this.info?.settings?.workspace_id || change.expected_revision !== this.info?.remote_access?.revision) throw new Error('Remote settings changed. Refresh before checking them.')
+    await this.readInfo('remote-check', change)
+    return this.status
+  }
+
+  private async saveRemote(change: RemoteChange): Promise<LocalStatus> {
+    const before = await this.readInfo('status')
+    if (before.settings?.workspace_id !== change.workspace_id || before.remote_access?.revision !== change.expected_revision) {
+      throw new Error('Remote settings changed. Refresh before saving them again.')
+    }
+    const resume = !!this.child
+    // Own the entire drain/write/reopen operation. External stop/close waits
+    // for it and prevents the reopen; it cannot race the private state write.
+    if (resume && !await this.stopChild()) throw new Error('The local workspace is still stopping. Refresh before retrying.')
+    try {
+      const updated = await this.readInfo('remote', change)
+      this.set({ state: 'stopped', stage: undefined, errorCode: undefined, message: 'Remote settings saved.' })
+      if (resume && !this.stopping && !this.closing && !this.disposed) return this.launch(updated)
+      return this.status
+    } catch (error) {
+      if (resume && !this.child && !this.stopping && !this.closing && !this.disposed && !this.controls.size) {
+        try { this.launch(await this.readInfo('status')) } catch { /* Saved settings remain available for an explicit resume. */ }
+      }
+      throw error
+    }
+  }
+
   privateConnection(): Connection {
     if (!this.connection || this.statusValue.state !== 'running') throw new Error('Wait for the local workspace checks to finish before opening it.')
     return { ...this.connection }
@@ -399,6 +500,10 @@ export class LocalWorkspace {
     // waiting on inspection recheck the stop/close guard before spawning.
     await Promise.allSettled([this.operation, this.memoryChange, this.configurationChange])
     if (this.controls.size > 0) return false
+    return this.stopChild()
+  }
+
+  private async stopChild(): Promise<boolean> {
     const child = this.child
     if (!child) return true
     this.intentionalStop = true

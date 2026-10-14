@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs'
 import { syncBuiltinESMExports } from 'node:module'
 import { PassThrough } from 'node:stream'
 import { test } from 'node:test'
-import { LocalWorkspace, portOptions, localDiagnostic } from '../dist/local-workspace.js'
+import { LocalWorkspace, portOptions, localDiagnostic, remoteOptions, remoteSnapshot } from '../dist/local-workspace.js'
 
 const { version } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
 const root = '/private/test-workspace'
@@ -15,6 +15,23 @@ const info = revision => ({ event: 'status', configured: true, data_directory: r
   resources: { memory_bytes: 4 * 1024 ** 3, available_disk_bytes: 8 * 1024 ** 3 }, memory_policy: policy(revision) })
 const addressChange = { workspace_id: '00000000-0000-4000-8000-000000000001', expected_port: 17400, port: null }
 const addressInfo = port => ({ ...info('first'), settings: { workspace_id: addressChange.workspace_id, port, database_port: 17401 } })
+const sharing = (revision = 'not-configured', mode = 'disabled') => ({ revision, mode,
+  public_url: mode === 'disabled' ? null : 'https://memory.example.test', personal_sign_in: true,
+  has_ngrok_authtoken: false, repairable: true, state: mode === 'disabled' ? 'disabled' : 'unchecked', message: 'Fixture host status' })
+const sharingInfo = (revision = 'not-configured', mode = 'disabled') => ({ ...addressInfo(17400), remote_access: sharing(revision, mode) })
+const sharingChange = { workspace_id: addressChange.workspace_id, expected_revision: 'not-configured',
+  mode: 'proxy', public_url: 'https://memory.example.test', personal_sign_in: true, ngrok_authtoken: null }
+const savedSharingRevision = '00000000-0000-4000-8000-000000000009'
+
+test('remote controls accept only explicit HTTPS routes and never return provider credentials', () => {
+  assert.equal(remoteOptions({ ...sharingChange, public_url: 'https://memory.example.test/mcp' }).public_url, 'https://memory.example.test')
+  for (const public_url of ['http://memory.example.test', 'https://user:secret@memory.example.test', 'https://memory.example.test/private', 'https://memory.example.test/?secret=value', 'https://memory.example.test/#secret']) {
+    assert.throws(() => remoteOptions({ ...sharingChange, public_url }))
+  }
+  assert.throws(() => remoteOptions({ ...sharingChange, executable: 'unreviewed-command' }))
+  assert.throws(() => remoteSnapshot({ ...sharing(), ngrok_authtoken: 'private-provider-sentinel' }))
+  assert.deepEqual(remoteSnapshot(sharing()), sharing())
+})
 
 test('setup diagnostics admit bounded code locations and refuse private provider detail', () => {
   const diagnostic = { category: 'database', sqlstate: '08001', locations: [{ module: 'mnemion.local_database', function: 'start', line: 1 }] }
@@ -69,6 +86,69 @@ async function running(f) {
   await settle()
   return engine
 }
+
+test('remote changes drain the old host before writing and reopen the same local workspace', async t => {
+  const f = fixture(t)
+  const engine = await running(f)
+  const changed = f.host.changeRemote(sharingChange)
+  f.last().reply(sharingInfo())
+  await settle()
+  assert.equal(f.host.status.state, 'stopping')
+  assert.equal(f.host.busy, true)
+  assert.equal(f.commands.filter(command => command.action === 'remote').length, 0)
+  engine.finish()
+  await settle()
+  assert.equal(f.last().action, 'remote')
+  f.last().reply(sharingInfo(savedSharingRevision, 'proxy'))
+  const result = await changed
+  assert.equal(result.state, 'starting')
+  assert.equal(result.info.settings.workspace_id, sharingChange.workspace_id)
+  assert.equal(f.commands.filter(command => command.action === 'run').length, 2)
+  assert.equal(result.info.remote_access.revision, savedSharingRevision)
+})
+
+test('an explicit stop during a remote settings change prevents its automatic reopen', async t => {
+  const f = fixture(t)
+  const engine = await running(f)
+  const changed = f.host.changeRemote(sharingChange)
+  f.last().reply(sharingInfo())
+  await settle()
+  const stopped = f.host.stop()
+  engine.finish()
+  await settle()
+  assert.equal(f.last().action, 'remote')
+  f.last().reply(sharingInfo(savedSharingRevision, 'proxy'))
+  await changed
+  assert.equal(await stopped, true)
+  assert.equal(f.host.status.state, 'stopped')
+  assert.equal(f.commands.filter(command => command.action === 'run').length, 1)
+})
+
+test('a stale remote form cannot stop the running host or overwrite another operator', async t => {
+  const f = fixture(t)
+  await running(f)
+  const changed = f.host.changeRemote(sharingChange)
+  const refused = assert.rejects(changed, /Remote settings changed/)
+  f.last().reply(sharingInfo(savedSharingRevision, 'proxy'))
+  await refused
+  assert.equal(f.host.status.state, 'running')
+  assert.equal(f.commands.filter(command => command.action === 'remote').length, 0)
+})
+
+test('private check requests use the current workspace and never restart its engine', async t => {
+  const f = fixture(t)
+  await running(f)
+  const inspection = f.host.inspect()
+  f.last().reply(sharingInfo(savedSharingRevision, 'proxy'))
+  await inspection
+  const checked = f.host.checkRemote({ workspace_id: sharingChange.workspace_id, expected_revision: savedSharingRevision })
+  assert.equal(f.last().action, 'remote-check')
+  f.last().reply(sharingInfo(savedSharingRevision, 'proxy'))
+  await checked
+  assert.equal(f.host.status.state, 'running')
+  assert.equal(f.commands.filter(command => command.action === 'run').length, 1)
+  await assert.rejects(f.host.checkRemote({ workspace_id: sharingChange.workspace_id, expected_revision: 'not-configured' }), /settings changed/)
+})
 
 test('remote saved connections do not start or inspect a local engine', async t => {
   const f = fixture(t)

@@ -503,3 +503,15 @@ a hotfix. [Focused checks and the existing-corpus regression](../validation/2026
 passed; the regression is not a new independent held-out claim. Broader question
 quality and current shared-office acceptance remain open. The strict tracker
 still records 17 of 64 requirements shipped and 40 partial.
+
+## Guided native remote access, 15 October 2026
+
+Source 4.4.0 combines local host sharing, an owned ngrok SDK connection,
+existing HTTPS proxy checks, matching hosted browser/consent assets, public
+invitation links and private operator command parity. The app serializes
+configuration with restart, stop and update operations. The
+[validation record](../validation/2026-10-15-native-remote-access.md) separates
+focused checks and a real local TLS/CPU-model walkthrough from native release
+gates and live provider acceptance. No database migration is added. Independent
+hosting/recovery and named provider acceptance remain open; the strict tracker
+still has 17 of 64 requirements shipped and 40 partial.

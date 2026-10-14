@@ -1,6 +1,6 @@
 [project]
 name = "mnemion"
-version = "4.3.3"
+version = "4.4.0"
 description = "Shared memory infrastructure for applications, teams, and AI assistants, with source evidence and Obsidian visualization."
 readme = "README.md"
 requires-python = ">=3.12,<3.15"
@@ -42,6 +42,7 @@ dependencies = [
     "pyyaml>=6.0.3,<7",
     "tomlkit>=0.13.3,<1",
     "psutil>=7.2.2,<8",
+    "ngrok==1.7.0",
 ]
 
 [project.urls]
