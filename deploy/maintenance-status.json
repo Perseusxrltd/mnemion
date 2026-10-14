@@ -59,11 +59,19 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "7dc459355ce7c2875e26928cb87ac6c1e508b2a4",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-14T14:54:38Z",
+      "status": "completed",
+      "conclusion": "failure",
+      "updated_at": "2026-10-14T15:12:17Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38584476141",
-      "failed_jobs": []
+      "failed_jobs": [
+        {
+          "name": "service (3.12)",
+          "id": 115923414486,
+          "steps": [
+            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion.service --cov-report=term-missing --cov-fail-under=75"
+          ]
+        }
+      ]
     },
     {
       "id": 38576717811,
@@ -104,11 +112,19 @@
       "workflow": "release.yml",
       "branch": "release/4.3.0-r2",
       "source_commit": "7dc459355ce7c2875e26928cb87ac6c1e508b2a4",
-      "status": "queued",
+      "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-14T14:54:42Z",
+      "updated_at": "2026-10-14T15:02:21Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38584694712",
-      "failed_jobs": []
+      "failed_jobs": [
+        {
+          "name": "checks / service (3.12)",
+          "id": 115923535740,
+          "steps": [
+            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion.service --cov-report=term-missing --cov-fail-under=75"
+          ]
+        }
+      ]
     },
     {
       "id": 38584382486,
@@ -133,5 +149,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38576711324"
     }
   ],
-  "observed_at": "2026-10-14T14:54:49+00:00"
+  "observed_at": "2026-10-14T15:12:44+00:00"
 }
