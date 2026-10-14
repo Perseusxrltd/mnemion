@@ -63,38 +63,16 @@
   ],
   "runs": [
     {
-      "id": 38638447679,
+      "id": 38640597748,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "2634ad5460ccb22727c858e8386f0624e5f4d34f",
-      "status": "completed",
-      "conclusion": "failure",
-      "updated_at": "2026-10-14T21:24:55Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38638447679",
-      "failed_jobs": [
-        {
-          "name": "service (3.13)",
-          "id": 116107532220,
-          "steps": [
-            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion.service --cov-report=term-missing --cov-fail-under=75"
-          ]
-        },
-        {
-          "name": "service (3.14)",
-          "id": 116107532228,
-          "steps": [
-            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion.service --cov-report=term-missing --cov-fail-under=75"
-          ]
-        },
-        {
-          "name": "service (3.12)",
-          "id": 116107532489,
-          "steps": [
-            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion.service --cov-report=term-missing --cov-fail-under=75"
-          ]
-        }
-      ]
+      "source_commit": "50b9423f0aa92b7a9f79559f724a3fd92602d2e9",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-14T21:29:09Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38640597748",
+      "failed_jobs": []
     },
     {
       "id": 38635523232,
@@ -124,44 +102,21 @@
       "workflow": "release.yml",
       "branch": "release/4.3.3",
       "source_commit": "2634ad5460ccb22727c858e8386f0624e5f4d34f",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-14T21:19:42Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38638518650",
-      "failed_jobs": [
-        {
-          "name": "checks / service (3.12)",
-          "id": 116107865566,
-          "steps": [
-            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion.service --cov-report=term-missing --cov-fail-under=75"
-          ]
-        },
-        {
-          "name": "checks / service (3.14)",
-          "id": 116107865597,
-          "steps": [
-            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion.service --cov-report=term-missing --cov-fail-under=75"
-          ]
-        },
-        {
-          "name": "checks / service (3.13)",
-          "id": 116107865645,
-          "steps": [
-            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion.service --cov-report=term-missing --cov-fail-under=75"
-          ]
-        }
-      ]
+      "status": "completed",
+      "conclusion": "cancelled",
+      "updated_at": "2026-10-14T21:29:48Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38638518650"
     },
     {
-      "id": 38635331062,
+      "id": 38640707150,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "bfeb5997cad41dbaa7b26e834a722a5d726d35e3",
+      "source_commit": "50b9423f0aa92b7a9f79559f724a3fd92602d2e9",
       "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-14T20:51:10Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38635331062"
+      "conclusion": "skipped",
+      "updated_at": "2026-10-14T21:29:52Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38640707150"
     },
     {
       "id": 38635518363,
@@ -175,5 +130,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38635518363"
     }
   ],
-  "observed_at": "2026-10-14T21:25:18+00:00"
+  "observed_at": "2026-10-14T21:30:09+00:00"
 }
