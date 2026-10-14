@@ -29,6 +29,12 @@ export interface OAuthConnection {
   expires_at: string
   revoked_at: string | null
 }
+export interface OAuthConfiguration {
+  mode: 'disabled' | 'personal' | 'external'
+  mcp_enabled: boolean
+  resource: string | null
+  issuer: string | null
+}
 export interface SignInInvitation {
   id: string
   principal_id: string

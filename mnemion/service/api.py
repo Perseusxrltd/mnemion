@@ -167,6 +167,11 @@ def create_app(
         settings = OAuthSettings.from_environment()
         oauth = OAuthVerifier(settings) if settings else None
     oauth_settings = builtin_settings or (oauth.settings if oauth else None)
+    gateway_enabled = (
+        mcp_enabled
+        if mcp_enabled is not None
+        else os.environ.get("MNEMION_MCP_ENABLED", "1") == "1"
+    )
     owned = database is None
     if database is None:
         dsn = os.environ.get("MNEMION_DATABASE_URL")
@@ -403,7 +408,14 @@ def create_app(
     attach_librarian(app, librarian, authenticated)
     attach_agents(app, authenticated)
     attach_oauth(app, database, authenticated, oauth.settings if oauth else None)
-    attach_hosted_connections(app, database, authenticated)
+    attach_hosted_connections(
+        app,
+        database,
+        authenticated,
+        oauth_settings,
+        personal=hosted_oauth is not None,
+        mcp_enabled=gateway_enabled,
+    )
     if hosted_oauth:
         attach_hosted_oauth(app, hosted_oauth, authenticated)
     attach_sign_in(app, database, authenticated)
@@ -692,11 +704,7 @@ def create_app(
             headers={"Content-Disposition": 'attachment; filename="mnemion-obsidian.zip"'},
         )
 
-    if (
-        mcp_enabled
-        if mcp_enabled is not None
-        else os.environ.get("MNEMION_MCP_ENABLED", "1") == "1"
-    ):
+    if gateway_enabled:
         from .mcp import create_mcp
 
         gateway = create_mcp(

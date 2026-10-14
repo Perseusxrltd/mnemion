@@ -456,7 +456,7 @@ function Shell({
                 <Route path="obsidian" element={<Obsidian />} />
                 <Route path="models" element={<Suspense fallback={<Busy />}><EmbeddingModels key={space.id} client={client} space={space.id} administrator={space.role === "administrator"} /></Suspense>} />
                 <Route path="librarian" element={<Suspense fallback={<Busy />}><Librarian key={space.id} client={client} space={space.id} reviewer={reviewer} administrator={space.role === "administrator"} /></Suspense>} />
-                <Route path="agents" element={<Agents endpoint={connection.endpoint} space={space.id} />} />
+                <Route path="agents" element={<Agents connection={connection} space={space.id} />} />
                 <Route
                   path="*"
                   element={<Navigate to="/workspace/memories" replace />}

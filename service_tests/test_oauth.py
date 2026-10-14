@@ -115,15 +115,15 @@ def test_configuration_is_opt_in_complete_and_does_not_disclose_secret(tmp_path,
         {"aud": [settings().resource, 123]},
         {"aud": None},
         {"resource": "https://wrong.example.test/mcp"},
-        {"exp": time.time() - 1},
+        {"exp": lambda: time.time() - 1},
         {"exp": None},
         {"exp": True},
         {"exp": float("nan")},
         {"exp": float("inf")},
         {"exp": 10**1000},
-        {"nbf": time.time() + 300},
+        {"nbf": lambda: time.time() + 300},
         {"nbf": "0"},
-        {"iat": time.time() + 300},
+        {"iat": lambda: time.time() + 300},
         {"sub": ""},
         {"sub": "a\nb"},
         {"sub": "x" * 256},
@@ -136,6 +136,8 @@ def test_configuration_is_opt_in_complete_and_does_not_disclose_secret(tmp_path,
     ],
 )
 def test_invalid_claims_are_rejected_without_claims_in_error(changes):
+    # Collection can precede this test by several minutes during real-model CI.
+    changes = {key: value() if callable(value) else value for key, value in changes.items()}
     with pytest.raises(ServiceError) as caught:
         verifier().validate(claims(**changes))
     assert caught.value.status == 401

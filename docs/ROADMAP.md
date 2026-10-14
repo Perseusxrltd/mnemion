@@ -66,6 +66,13 @@ HTTPS browser and MCP checks cover the implemented flow. Company SSO setup,
 provider-specific acceptance and full guided host configuration remain open;
 publication and platform evidence are tracked in release status.
 
+The same release adds in-app discovery of the current workspace's
+personal/company agent sign-in mode, its configured public MCP address and
+gateway availability. Existing application-key setup remains accessible.
+The same authenticated capability is available through the agent catalog and
+TypeScript client; other tenants' issuer configuration is withheld. Host
+configuration and live named-provider acceptance remain separate work.
+
 Published [4.2.0](releases/4.2.0.md) implements personal
 passwords, scoped invitations, revocable device sessions, protected desktop and
 browser remembering, and 13 private-aware agent operations. The

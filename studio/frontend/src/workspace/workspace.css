@@ -1232,3 +1232,9 @@ fieldset.ws-setup-fields { border: 0; padding: 0; min-width: 0; }
  .ws-identities-table td:empty { display: none; }
  .ws-identities-table td .ws-button { justify-self: start; }
 }
+.ws-agent-key-setup > summary { cursor: pointer; padding: 1rem 0; font-size: 1.1rem; font-weight: 600; }
+.ws-agent-key-setup > .ws-card { margin-top: 1rem; }
+.ws-agent-sign-in .ws-section-title { flex-wrap: wrap; }
+.ws-agent-sign-in h2 { min-width: 12rem; }
+.ws-agent-steps { list-style: decimal; padding-left: 1.4rem; margin: 1rem 0; }
+.ws-agent-steps li { padding-left: .2rem; margin: .45rem 0; }

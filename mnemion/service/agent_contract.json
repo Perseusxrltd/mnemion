@@ -13638,6 +13638,78 @@
         "type": "object"
       },
       "method": "GET",
+      "name": "oauth.configuration",
+      "output_schema": {
+        "$defs": {
+          "OAuthConfiguration": {
+            "additionalProperties": true,
+            "properties": {
+              "issuer": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Issuer"
+              },
+              "mcp_enabled": {
+                "title": "Mcp Enabled",
+                "type": "boolean"
+              },
+              "mode": {
+                "enum": [
+                  "disabled",
+                  "personal",
+                  "external"
+                ],
+                "title": "Mode",
+                "type": "string"
+              },
+              "resource": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Resource"
+              }
+            },
+            "required": [
+              "mode",
+              "mcp_enabled",
+              "resource",
+              "issuer"
+            ],
+            "title": "OAuthConfiguration",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/OAuthConfiguration"
+      },
+      "parameter_locations": {},
+      "path": "/v1/oauth/configuration",
+      "retry": "read",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Configuration"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "read",
+      "group": "identity",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {},
+        "type": "object"
+      },
+      "method": "GET",
       "name": "oauth.connections",
       "output_schema": {
         "$defs": {

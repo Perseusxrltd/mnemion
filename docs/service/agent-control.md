@@ -15,7 +15,7 @@ Published **4.2.0** adds 13 [personal sign-in operations](sign-in.md) for
 version from users. These operations declare `authentication`, `sensitive_input`
 and `mcp_available`; passwords, private invitations and rotating credentials use
 private CLI input/results instead of generic MCP calls.
-Version **4.3.0** adds `oauth.connections` and `oauth.disconnect` for **102 total**,
+Version **4.3.0** adds `oauth.configuration`, `oauth.connections` and `oauth.disconnect` for **103 total**,
 with the same permission checks as [personal agent consent](hosted-agent-sign-in.md).
 Schemas load one at a time, so connecting an
 assistant does not put the entire administration API into its context.
@@ -24,6 +24,9 @@ Every call uses the application's own credential and the existing tenant,
 space and role checks. Catalog visibility describes capabilities; it does not
 grant permission to use them. Revoking a key or a space grant takes effect on
 subsequent operations. Source-derived read-only spaces retain their policy.
+
+`oauth.configuration` inspects the authenticated workspace's agent sign-in mode
+and MCP availability without exposing another tenant's issuer settings.
 
 ## Available operations
 

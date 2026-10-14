@@ -4,7 +4,7 @@ import hashlib
 import hmac
 import re
 import secrets
-from typing import Annotated
+from typing import Annotated, Literal
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from uuid import UUID
 
@@ -61,6 +61,13 @@ class OAuthConnection(ResponseModel):
 
 class OAuthConnections(ResponseModel):
     connections: list[OAuthConnection]
+
+
+class OAuthConfiguration(ResponseModel):
+    mode: Literal["disabled", "personal", "external"]
+    mcp_enabled: bool
+    resource: str | None
+    issuer: str | None
 
 
 class Disconnected(ResponseModel):
@@ -241,9 +248,22 @@ def attach_hosted_oauth(app, provider: HostedOAuth, authenticated):
         return {"redirect": await provider.cancel(ticket, value)}
 
 
-def attach_hosted_connections(app, database, authenticated):
+def attach_hosted_connections(
+    app, database, authenticated, settings=None, *, personal=False, mcp_enabled=True
+):
     Auth = Annotated[Identity, Depends(authenticated)]
     sign_in = SignInService(database)
+
+    @app.get("/v1/oauth/configuration", tags=["Identity"], response_model=OAuthConfiguration)
+    def configuration(identity: Auth):
+        """Return this workspace's connection mode, without another tenant's configuration."""
+        selected = settings is not None and identity.tenant_id == settings.tenant_id
+        return OAuthConfiguration(
+            mode=("personal" if personal else "external") if selected else "disabled",
+            mcp_enabled=mcp_enabled,
+            resource=settings.resource if selected else None,
+            issuer=settings.issuer if selected else None,
+        )
 
     @app.get("/v1/oauth/connections", tags=["Identity"], response_model=OAuthConnections)
     def connections(identity: Auth):

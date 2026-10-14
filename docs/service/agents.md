@@ -1,6 +1,19 @@
 # Connect assistants and applications
 
-Use **Agents & apps** in Studio for a setup template. Give each application its
+From service/Studio **4.3.0**, open **Agents & apps** to check the workspace's
+actual sign-in mode. When personal OAuth is enabled, copy its verified public
+MCP address, add it to the agent's connector settings and choose OAuth. Sign in
+on the workspace's page and approve the displayed permissions. Manage or revoke
+the connection under **Account & sessions**. The
+[personal-agent guide](hosted-agent-sign-in.md) explains permissions and host setup.
+
+The page also identifies an external company issuer, a disabled MCP gateway,
+an unconfigured workspace or a server too old to report this capability.
+**Check availability** refreshes the observation. It never enables hosting or
+grants permissions. Named-client acceptance still needs its own validation.
+
+For a separately managed identity, expand **Connect with a dedicated application
+key**. Give each application its
 own principal and API key, then grant the spaces it needs. Keys are revocable and
 can expire. Do not give every agent the organization owner's credential.
 

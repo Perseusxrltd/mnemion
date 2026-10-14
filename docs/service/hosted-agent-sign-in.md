@@ -29,6 +29,11 @@ Need a login or a password reset? Ask an administrator for a
 ten minutes. After expiry or a reload, start again from the agent. Signing in
 alone does not grant access; approval is explicit.
 
+From service/Studio 4.3.0, **Agents & apps** checks these connection options and
+provides the configured MCP address directly. **Check availability** refreshes
+the result after a host configuration change. The page distinguishes personal
+login, an external company issuer and an unavailable or disabled gateway.
+
 ## Inspect and revoke
 
 Open **Account & sessions → Connected apps** to inspect creation, last renewal,
@@ -48,6 +53,12 @@ The same permission checks protect these agent controls:
 - `GET /v1/oauth/connections` — catalog operation `oauth.connections`.
 - `POST /v1/oauth/connections/{session_id}/revoke` — `oauth.disconnect`.
 - TypeScript: `oauthConnections()` and `revokeOAuthConnection(sessionId)`.
+
+From 4.3.0, `GET /v1/oauth/configuration` (catalog `oauth.configuration`,
+TypeScript `oauthConfiguration()`) reports `mode`, `mcp_enabled`, `resource` and
+`issuer` for the authenticated workspace. A different tenant receives no
+selected workspace's issuer or resource. This read requires authentication and
+does not enable OAuth, alter grants or fetch an external provider's metadata.
 
 ## Enable on a host
 

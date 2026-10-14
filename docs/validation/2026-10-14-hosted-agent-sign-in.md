@@ -54,6 +54,18 @@ existing keys, grants and memory, and empty new OAuth tables. Its acceptance
 criteria retain data-preservation and schema-race checks.
 All three real PostgreSQL upgrade cases passed after the fixture correction.
 
+The subsequent long Linux/model run exposed two external-OAuth test timestamps
+computed during collection. More than five minutes later they were no longer
+future timestamps. The fixtures now calculate their invalid timestamps when
+each case runs; production validation and its limits are unchanged.
+
+Eight authenticated configuration checks cover personal/external/disabled
+sign-in, the actual gateway switch, anonymous rejection and withholding another
+tenant's issuer/resource. The expanded 103-operation catalog passed schema and
+pagination validation. A scripted HTTPS browser flow checked the selected MCP
+address, personal-login guidance, preserved application-key setup, and desktop
+and 390-pixel mobile layouts without horizontal overflow.
+
 ## Compatibility and remaining acceptance
 
 Migration 016 adds bounded client/authorization storage and connection records,
