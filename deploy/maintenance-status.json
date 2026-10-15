@@ -63,15 +63,15 @@
   ],
   "runs": [
     {
-      "id": 38714828463,
+      "id": 38716767000,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "45551aa814dda14ca1db6ef9f85f5c38e82864fd",
-      "status": "queued",
+      "source_commit": "0d4e489fecba8701335ac7db7d34d235f3882cee",
+      "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-15T09:42:09Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38714828463",
+      "updated_at": "2026-10-15T09:58:05Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38716767000",
       "failed_jobs": []
     },
     {
@@ -124,22 +124,21 @@
       "workflow": "release.yml",
       "branch": "release/4.8.0-r3",
       "source_commit": "45551aa814dda14ca1db6ef9f85f5c38e82864fd",
-      "status": "queued",
-      "conclusion": null,
-      "updated_at": "2026-10-15T09:42:04Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38714843998",
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "cancelled",
+      "updated_at": "2026-10-15T09:57:44Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38714843998"
     },
     {
-      "id": 38714343348,
+      "id": 38716802493,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "e3acf26121d06e6ee69e35cd707c7b619a111148",
+      "source_commit": "0d4e489fecba8701335ac7db7d34d235f3882cee",
       "status": "completed",
       "conclusion": "skipped",
-      "updated_at": "2026-10-15T09:37:48Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38714343348"
+      "updated_at": "2026-10-15T09:57:48Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38716802493"
     },
     {
       "id": 38690298719,
@@ -153,5 +152,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38690298719"
     }
   ],
-  "observed_at": "2026-10-15T09:42:37+00:00"
+  "observed_at": "2026-10-15T09:58:09+00:00"
 }
