@@ -130,20 +130,28 @@
       "source_commit": "8abe8bf27a7f87f484bc196582edb182ec94b8dd",
       "status": "queued",
       "conclusion": null,
-      "updated_at": "2026-10-15T12:23:09Z",
+      "updated_at": "2026-10-15T12:23:22Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38734167677",
-      "failed_jobs": []
+      "failed_jobs": [
+        {
+          "name": "checks / container (ubuntu-22.04)",
+          "id": 116419389784,
+          "steps": [
+            "Build the actual deployment image with its documentation"
+          ]
+        }
+      ]
     },
     {
-      "id": 38726654937,
+      "id": 38734228777,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "f4f6e78fd9cb3aaf38183d690e6edd1cfdd690f5",
+      "source_commit": "8abe8bf27a7f87f484bc196582edb182ec94b8dd",
       "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-15T11:22:41Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38726654937"
+      "conclusion": "skipped",
+      "updated_at": "2026-10-15T12:23:13Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38734228777"
     },
     {
       "id": 38731918836,
@@ -168,5 +176,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38726877979"
     }
   ],
-  "observed_at": "2026-10-15T12:23:13+00:00"
+  "observed_at": "2026-10-15T12:23:38+00:00"
 }
