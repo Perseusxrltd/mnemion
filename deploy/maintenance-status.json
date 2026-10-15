@@ -63,24 +63,15 @@
   ],
   "runs": [
     {
-      "id": 38658993151,
+      "id": 38660538626,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "c28840c2347efa909002c3d92d539fe0b7348ead",
+      "source_commit": "4ba863506ef3be4bd3eb5750605136a0574d802a",
       "status": "completed",
-      "conclusion": "failure",
-      "updated_at": "2026-10-15T00:30:23Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38658993151",
-      "failed_jobs": [
-        {
-          "name": "lint",
-          "id": 116175483449,
-          "steps": [
-            "Run uv run --no-sync ruff format --check ."
-          ]
-        }
-      ]
+      "conclusion": "success",
+      "updated_at": "2026-10-15T00:46:48Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38660538626"
     },
     {
       "id": 38655462084,
@@ -127,5 +118,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38655459186"
     }
   ],
-  "observed_at": "2026-10-15T00:30:46+00:00"
+  "observed_at": "2026-10-15T00:47:09+00:00"
 }
