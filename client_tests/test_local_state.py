@@ -173,23 +173,13 @@ def test_windows_refuses_existing_foreign_owned_folder_without_taking_ownership(
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows junction rejection")
 def test_windows_refuses_redirected_workspace_parent(tmp_path):
+    import _winapi
+
     root = state.directory(tmp_path / "retained-folder")
     junction = tmp_path / "redirected-folder"
-    subprocess.run(
-        [
-            "powershell.exe",
-            "-NoProfile",
-            "-NonInteractive",
-            "-Command",
-            "$ErrorActionPreference='Stop'; New-Item -ItemType Junction "
-            "-Path $env:MNEMION_ACL_LINK -Target $env:MNEMION_ACL_TARGET | Out-Null",
-        ],
-        env={**os.environ, "MNEMION_ACL_LINK": str(junction), "MNEMION_ACL_TARGET": str(root)},
-        capture_output=True,
-        text=True,
-        timeout=15,
-        check=True,
-    )
+    # CPython's native helper creates the same directory reparse point without
+    # making this security check depend on cold PowerShell startup on CI hosts.
+    _winapi.CreateJunction(str(root), str(junction))
     try:
         with pytest.raises(state.LocalSetupError, match="redirected"):
             state.directory(junction / "nested")

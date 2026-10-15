@@ -38,3 +38,17 @@ Only disposable local files were used. The installed Windows app, production
 workspace and user backups were not modified by the reproduction. Consult
 [release status](../RELEASE_STATUS.md) for published artifacts and native gates;
 these focused results do not themselves establish an installed release pass.
+
+## Windows test fixture startup
+
+The 4.6.0 retry passed both early encrypted-file jobs. Its Windows x64 private
+state job then timed out while starting PowerShell to create a junction fixture
+(`116234712004`); 40 checks passed and three were skipped. No failing permission
+assertion was reported. The equivalent ARM job passed.
+
+Future runs create that same directory reparse point through CPython's native
+`_winapi.CreateJunction` helper. The redirected-parent rejection and absence of
+writes through the link are still required. This focused test passed on the
+actual Windows Python 3.13 installation in 0.03 seconds. The frozen release is
+retried only at the failed job and its blocked dependents; a fixture timeout does
+not justify disabling its security assertions or repackaging already passed jobs.
