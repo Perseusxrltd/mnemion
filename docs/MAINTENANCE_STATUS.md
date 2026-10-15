@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-15T02:20:10+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-15T02:34:46+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.4.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.4.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -21,13 +21,14 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | failure | [Run 38669019524](https://github.com/Perseusxrltd/mnemion/actions/runs/38669019524) |
+| ci\.yml | main | in\_progress | [Run 38669019524](https://github.com/Perseusxrltd/mnemion/actions/runs/38669019524) |
 | public-updates\.yml | v4\.4\.0 | success | [Run 38655462084](https://github.com/Perseusxrltd/mnemion/actions/runs/38655462084) |
 | release\.yml | release/4\.4\.0 | success | [Run 38651001133](https://github.com/Perseusxrltd/mnemion/actions/runs/38651001133) |
-| release\.yml | release/4\.5\.0 | queued | [Run 38669057276](https://github.com/Perseusxrltd/mnemion/actions/runs/38669057276) |
-| verify-artifacts\.yml | main | success | [Run 38655307480](https://github.com/Perseusxrltd/mnemion/actions/runs/38655307480) |
+| release\.yml | release/4\.5\.0 | failure | [Run 38669057276](https://github.com/Perseusxrltd/mnemion/actions/runs/38669057276) |
+| verify-artifacts\.yml | main | skipped | [Run 38671703159](https://github.com/Perseusxrltd/mnemion/actions/runs/38671703159) |
 | website-release\.yml | v4\.4\.0 | success | [Run 38655459186](https://github.com/Perseusxrltd/mnemion/actions/runs/38655459186) |
 
 ## Failed jobs
 
-- [Run 38669019524](https://github.com/Perseusxrltd/mnemion/actions/runs/38669019524): supervision \(macos-15-intel\). Steps: Verify managed installation, signed updates and rollback with real processes.
+- [Run 38669057276](https://github.com/Perseusxrltd/mnemion/actions/runs/38669057276): native / windows-11-arm / arm64. Steps: Installed app creates, searches and reopens a real local workspace.
+- [Run 38669057276](https://github.com/Perseusxrltd/mnemion/actions/runs/38669057276): native / windows-2022 / x64. Steps: Installed app creates, searches and reopens a real local workspace.

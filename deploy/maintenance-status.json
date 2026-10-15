@@ -64,23 +64,15 @@
   "runs": [
     {
       "id": 38669019524,
-      "attempt": 1,
+      "attempt": 2,
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "80a9979616568f813bf4635b6b71e0fe256b537c",
-      "status": "completed",
-      "conclusion": "failure",
-      "updated_at": "2026-10-15T02:19:48Z",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-15T02:28:19Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38669019524",
-      "failed_jobs": [
-        {
-          "name": "supervision (macos-15-intel)",
-          "id": 116207465663,
-          "steps": [
-            "Verify managed installation, signed updates and rollback with real processes"
-          ]
-        }
-      ]
+      "failed_jobs": []
     },
     {
       "id": 38655462084,
@@ -110,22 +102,37 @@
       "workflow": "release.yml",
       "branch": "release/4.5.0",
       "source_commit": "80a9979616568f813bf4635b6b71e0fe256b537c",
-      "status": "queued",
-      "conclusion": null,
-      "updated_at": "2026-10-15T02:20:00Z",
+      "status": "completed",
+      "conclusion": "failure",
+      "updated_at": "2026-10-15T02:34:23Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38669057276",
-      "failed_jobs": []
+      "failed_jobs": [
+        {
+          "name": "native / windows-11-arm / arm64",
+          "id": 116211997150,
+          "steps": [
+            "Installed app creates, searches and reopens a real local workspace"
+          ]
+        },
+        {
+          "name": "native / windows-2022 / x64",
+          "id": 116211997186,
+          "steps": [
+            "Installed app creates, searches and reopens a real local workspace"
+          ]
+        }
+      ]
     },
     {
-      "id": 38655307480,
+      "id": 38671703159,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "416ac0037fa0e9497f4eb10fac3289e96214e862",
+      "source_commit": "38f11ffd1c26a0373e47a6cc87ac129912510464",
       "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-14T23:39:59Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38655307480"
+      "conclusion": "skipped",
+      "updated_at": "2026-10-15T02:34:26Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38671703159"
     },
     {
       "id": 38655459186,
@@ -139,5 +146,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38655459186"
     }
   ],
-  "observed_at": "2026-10-15T02:20:10+00:00"
+  "observed_at": "2026-10-15T02:34:46+00:00"
 }
