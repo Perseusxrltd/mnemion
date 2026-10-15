@@ -1,8 +1,8 @@
 # Automated maintenance status
 
-Observed: 2026-10-15T04:56:07+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-15T04:57:32+00:00. Updated by repository events and the scheduled status workflow.
 
-Published release: [v4.4.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.4.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
+Published release: [v4.6.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.6.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
 This inventory reports GitHub state; issue closure does not prove that an entire product requirement is complete. Build observations cover the latest 100 runs, retaining the latest relevant run per workflow and branch. Active builds are checked for failed jobs at each observation; completed failures are inspected once per changed attempt. This automation never retries a build or publishes a release.
 
@@ -21,21 +21,9 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 38681850251](https://github.com/Perseusxrltd/mnemion/actions/runs/38681850251) |
-| public-updates\.yml | v4\.4\.0 | success | [Run 38655462084](https://github.com/Perseusxrltd/mnemion/actions/runs/38655462084) |
-| release\.yml | release/4\.4\.0 | success | [Run 38651001133](https://github.com/Perseusxrltd/mnemion/actions/runs/38651001133) |
-| release\.yml | release/4\.5\.0 | failure | [Run 38669057276](https://github.com/Perseusxrltd/mnemion/actions/runs/38669057276) |
-| release\.yml | release/4\.5\.0-r2 | failure | [Run 38674242209](https://github.com/Perseusxrltd/mnemion/actions/runs/38674242209) |
-| release\.yml | release/4\.6\.0 | cancelled | [Run 38675510809](https://github.com/Perseusxrltd/mnemion/actions/runs/38675510809) |
-| release\.yml | release/4\.6\.0-r2 | cancelled | [Run 38677594445](https://github.com/Perseusxrltd/mnemion/actions/runs/38677594445) |
+| ci\.yml | main | success | [Run 38679996018](https://github.com/Perseusxrltd/mnemion/actions/runs/38679996018) |
+| public-updates\.yml | v4\.6\.0 | in\_progress | [Run 38684157633](https://github.com/Perseusxrltd/mnemion/actions/runs/38684157633) |
 | release\.yml | release/4\.6\.0-r3 | success | [Run 38680133894](https://github.com/Perseusxrltd/mnemion/actions/runs/38680133894) |
-| release\.yml | release/4\.7\.0 | queued | [Run 38681887978](https://github.com/Perseusxrltd/mnemion/actions/runs/38681887978) |
-| verify-artifacts\.yml | main | in\_progress | [Run 38684052387](https://github.com/Perseusxrltd/mnemion/actions/runs/38684052387) |
-| website-release\.yml | v4\.4\.0 | success | [Run 38655459186](https://github.com/Perseusxrltd/mnemion/actions/runs/38655459186) |
-
-## Failed jobs
-
-- [Run 38669057276](https://github.com/Perseusxrltd/mnemion/actions/runs/38669057276): native / windows-11-arm / arm64. Steps: Installed app creates, searches and reopens a real local workspace.
-- [Run 38669057276](https://github.com/Perseusxrltd/mnemion/actions/runs/38669057276): native / windows-2022 / x64. Steps: Installed app creates, searches and reopens a real local workspace.
-- [Run 38674242209](https://github.com/Perseusxrltd/mnemion/actions/runs/38674242209): native / windows-2022 / x64. Steps: Installed app creates, searches and reopens a real local workspace.
-- [Run 38674242209](https://github.com/Perseusxrltd/mnemion/actions/runs/38674242209): native / windows-11-arm / arm64. Steps: Installed app creates, searches and reopens a real local workspace.
+| release\.yml | release/4\.7\.0 | in\_progress | [Run 38681887978](https://github.com/Perseusxrltd/mnemion/actions/runs/38681887978) |
+| verify-artifacts\.yml | main | success | [Run 38684052387](https://github.com/Perseusxrltd/mnemion/actions/runs/38684052387) |
+| website-release\.yml | v4\.6\.0 | success | [Run 38684155620](https://github.com/Perseusxrltd/mnemion/actions/runs/38684155620) |
