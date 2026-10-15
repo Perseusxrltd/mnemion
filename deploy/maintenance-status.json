@@ -63,31 +63,16 @@
   ],
   "runs": [
     {
-      "id": 38734143996,
+      "id": 38735024776,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "8abe8bf27a7f87f484bc196582edb182ec94b8dd",
+      "source_commit": "6a096bd309e7e5a69a78f5662e02e802078bd4ff",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-15T12:22:58Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38734143996",
-      "failed_jobs": [
-        {
-          "name": "container (ubuntu-22.04-arm)",
-          "id": 116419156919,
-          "steps": [
-            "Build the actual deployment image with its documentation"
-          ]
-        },
-        {
-          "name": "container (ubuntu-22.04)",
-          "id": 116419157007,
-          "steps": [
-            "Build the actual deployment image with its documentation"
-          ]
-        }
-      ]
+      "updated_at": "2026-10-15T12:29:56Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38735024776",
+      "failed_jobs": []
     },
     {
       "id": 38726882226,
@@ -167,5 +152,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38726877979"
     }
   ],
-  "observed_at": "2026-10-15T12:27:23+00:00"
+  "observed_at": "2026-10-15T12:30:15+00:00"
 }
