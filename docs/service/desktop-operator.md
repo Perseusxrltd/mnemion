@@ -1,7 +1,7 @@
 # Local desktop controls for agents
 
-Introduced in the 4.6.0 source after the 4.5.0 backup/recovery batch.
-The 4.7.0 source adds retention configuration, inventory and reviewed cleanup.
+The base interface requires 4.6.0 or later. Retention configuration, inventory
+and reviewed cleanup require 4.7.0 or later.
 Check [release status](../RELEASE_STATUS.md) for the available installers and
 native acceptance. This interface complements the shared workspace's
 [agent API, CLI and MCP](agent-control.md).

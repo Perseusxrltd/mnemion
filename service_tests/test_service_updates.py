@@ -1,10 +1,12 @@
 """Managed updates preserve runtime identity and never roll back accepted data."""
 
 import copy
+from contextlib import nullcontext
 import os
 import subprocess
 import sys
 from types import SimpleNamespace
+import xmlrpc.client
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 import pytest
@@ -19,13 +21,13 @@ pytestmark = pytest.mark.skipif(os.name != "posix", reason="Managed Supervisor u
 
 
 @pytest.fixture
-def managed(tmp_path, monkeypatch):
+def managed(tmp_path, monkeypatch, request):
     state = state_io.directory(tmp_path / "managed")
     root = state_io.directory(state / "updates")
     for name in ("logs", "releases", "backups", "cache"):
         state_io.directory(root / name)
     inputs = tmp_path / "publisher"
-    artifacts = package_inputs(inputs)
+    artifacts = package_inputs(inputs, version=getattr(request, "param", "4.0.8"))
     value = payload(inputs, artifacts, "a" * 40)
     key = Ed25519PrivateKey.generate()
     envelope = sign_manifest(value, key.private_bytes_raw())
@@ -110,6 +112,7 @@ def test_same_signed_version_cannot_change_its_immutable_manifest(managed, monke
 
 
 @pytest.mark.parametrize("enabled", [True, False])
+@pytest.mark.parametrize("managed", ["4.1.0"], indirect=True)
 def test_watcher_checks_and_applies_by_default_but_pausing_prevents_network(
     managed, monkeypatch, enabled
 ):
@@ -269,10 +272,24 @@ def staged(managed, monkeypatch):
     return runtime
 
 
+@pytest.mark.parametrize("managed", ["4.0.8", "4.1.0"], indirect=True)
 def test_successful_cutover_takes_backup_before_stopping_and_preserves_previous(
     managed, monkeypatch
 ):
     candidate = staged(managed, monkeypatch)
+    assert updates.check(managed.state)["version_compatible"]
+    if candidate["version"] == "4.1.0":
+        # A slot staged by the old patch-only policy remains usable after the
+        # policy update. Its saved classification is not a permanent blocker.
+        state_io.write(
+            managed.root / "releases" / candidate["slot"] / "ready.json",
+            {"runtime": candidate, "automatic_compatible": False},
+        )
+    assert updates.stage(managed.state)["automatic_compatible"]
+    state_io.write(managed.root / "history.json", {"events": []})
+    status = updates.status(managed.state)
+    assert status["version_policy"] == "same_major"
+    assert status["pending_update"]["operator_required"] is False
     events = []
     monkeypatch.setattr(updates, "_backup", lambda *args: events.append("backup") or "verified.zip")
 
@@ -286,6 +303,30 @@ def test_successful_cutover_takes_backup_before_stopping_and_preserves_previous(
     assert events == ["backup", "stop", "start", "updater-stop", "updater-start"]
     assert result["status"] == "updated" and result["database_restored"] is False
     assert state_io.read(managed.root / "previous.json") == managed.old
+    assert not (managed.root / "journal.json").exists()
+
+
+@pytest.mark.parametrize("managed", ["4.1.0"], indirect=True)
+@pytest.mark.parametrize("changed", ["major", "schema", "models"])
+def test_cached_minor_release_cannot_bypass_current_compatibility_guards(
+    managed, monkeypatch, changed
+):
+    staged(managed, monkeypatch)
+    current = copy.deepcopy(managed.old)
+    if changed == "major":
+        current["version"] = "3.9.9"
+    elif changed == "schema":
+        current["migrations"]["002_operator_change.sql"] = "f" * 64
+    else:
+        current["generations"] = ["different-generation"]
+    state_io.write(managed.root / "active.json", current)
+    monkeypatch.setattr(updates, "_backup", lambda *args: pytest.fail("Must refuse before backup"))
+    monkeypatch.setattr(
+        updates, "_processes", lambda *args, **kwargs: pytest.fail("Must not stop any process")
+    )
+    assert updates.stage(managed.state)["automatic_compatible"] is False
+    assert updates.apply(managed.state)["status"] == "operator_required"
+    assert state_io.read(managed.root / "active.json") == current
     assert not (managed.root / "journal.json").exists()
 
 
@@ -367,6 +408,84 @@ def test_subprocess_output_is_bounded_private_and_has_no_inherited_credentials(
     assert len(output) == updates.MAX_COMMAND_LOG_BYTES
     assert log.stat().st_size == updates.MAX_COMMAND_LOG_BYTES
     assert log.stat().st_mode & 0o077 == 0
+
+
+@pytest.mark.parametrize(
+    ("start", "where"),
+    [(start, where) for start in (True, False) for where in ("connect", "command", "observe")]
+    + [(True, "readiness")],
+)
+def test_process_transition_recovers_from_busy_supervisor_and_lost_replies(
+    tmp_path, monkeypatch, start, where
+):
+    states = dict.fromkeys(("mnemion-api", "mnemion-worker"), "STOPPED" if start else "RUNNING")
+    target = "RUNNING" if start else "STOPPED"
+    changed = dict.fromkeys(states, 0)
+    failed = False
+
+    def busy(point):
+        nonlocal failed
+        if point == where and not failed:
+            failed = True
+            raise TimeoutError("Fixture supervisor busy")
+
+    def command(name, wait):
+        assert wait is False
+        if states[name] == target:
+            raise xmlrpc.client.Fault(60 if start else 70, "Already in the requested state")
+        states[name] = target
+        changed[name] += 1
+        busy("command")  # The action happened but its acknowledgement was lost.
+
+    def observe():
+        busy("observe")
+        return [{"name": name, "statename": state} for name, state in states.items()]
+
+    def rpc(settings):
+        busy("connect")
+        return nullcontext(
+            SimpleNamespace(
+                supervisor=SimpleNamespace(
+                    startProcess=command, stopProcess=command, getAllProcessInfo=observe
+                )
+            )
+        )
+
+    def readiness(state):
+        busy("readiness")
+        return {"ready": all(value == target for value in states.values())}
+
+    monkeypatch.setattr(updates.supervision, "settings", lambda state: (state, {}))
+    monkeypatch.setattr(updates.supervision, "_rpc", rpc)
+    monkeypatch.setattr(updates.supervision, "status", readiness)
+    monkeypatch.setattr(updates.time, "sleep", lambda duration: None)
+    updates._processes(tmp_path, start=start)
+    assert failed
+    assert all(value == target for value in states.values())
+    assert set(changed.values()) == {1}
+
+
+@pytest.mark.parametrize("identity_error", [False, True])
+def test_process_transition_keeps_its_deadline_and_does_not_retry_identity_failures(
+    tmp_path, monkeypatch, identity_error
+):
+    calls = []
+    clock = iter(range(0, 200, 10))
+
+    def rpc(settings):
+        calls.append(True)
+        if identity_error:
+            raise updates.supervision.SupervisionError("Different supervisor instance")
+        raise TimeoutError("Fixture remains busy")
+
+    monkeypatch.setattr(updates.supervision, "settings", lambda state: (state, {}))
+    monkeypatch.setattr(updates.supervision, "_rpc", rpc)
+    monkeypatch.setattr(updates.time, "monotonic", lambda: next(clock))
+    monkeypatch.setattr(updates.time, "sleep", lambda duration: None)
+    error = updates.supervision.SupervisionError if identity_error else ManifestError
+    with pytest.raises(error, match="Different supervisor|requested process transition"):
+        updates._processes(tmp_path, start=True)
+    assert len(calls) == (1 if identity_error else 5)
 
 
 def test_subprocess_timeout_terminates_work_and_retains_a_bounded_log(tmp_path):

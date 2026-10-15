@@ -1,10 +1,16 @@
 # Managed server updates
 
 From **4.0.8**, a Linux or macOS service can adopt independently signed,
-automatic patch updates using `mnemion-service updates`. New managed instances
+automatic updates using `mnemion-service updates`. New managed instances
 enable checking by default. The API, worker and updater run under the private
 [Supervisor instance](supervision.md); systemd and paid services are unnecessary.
 An authorized host agent can perform every step through JSON CLI commands.
+
+From **4.7.1**, compatible minor releases in the same stable major version are
+also eligible automatically. Earlier updaters restrict automatic application to
+their current minor series. The [release status](../RELEASE_STATUS.md) identifies
+published versions; an older host may need one [operator upgrade](managed-upgrades.md)
+to reach the new policy. Its saved enabled/paused preference is preserved.
 
 From **4.2.4**, a [guided operator upgrade](managed-upgrades.md) handles an
 existing 4.1.x host's schema/minor-version boundary in place, with a signed staged
@@ -23,7 +29,7 @@ marked `schedule_estimated`; it uses the latest deadline allowed by normal
 connector lease or completing a check. Disabling automatic updates reports no
 scheduled check and prevents automatic network requests.
 
-This first managed updater covers compatible Python service patches. Existing
+The managed updater covers compatible Python service releases. Existing
 servers require one explicit adoption. Containers, Windows servers, PostgreSQL,
 Python itself, source runners and reverse proxies retain their deployment
 lifecycle. Desktop automatic updates remain separate.
@@ -131,13 +137,19 @@ sizes, the optional native dependency, Python compatibility, the dependency lock
 and every migration hash.
 Older versions and changed manifests for an already observed version are rejected.
 
-Only a newer version in the same major/minor series, with **identical database
-migrations and embedding-generation identities**, can cut over automatically.
-Changed schema or minor versions use the explicit [upgrade plan and command](managed-upgrades.md).
-Changed model identities or major versions require a separate migration procedure.
-Automatic patch checks never silently replace a model or run a database migration.
+Only a newer version in the same stable major series, with **identical database
+migrations and embedding-generation identities**, can cut over automatically
+from 4.7.1. For example, a 4.7.x host can take 4.8.0 automatically when those
+identities match. Initial-development 0.x releases remain within their minor
+series. The version policy is reported as `version_policy: "same_major"`.
 
-For an eligible patch, the updater:
+Changed schema uses the explicit [upgrade plan and command](managed-upgrades.md).
+Changed model identities or major versions require their own migration procedure.
+Automatic updates do not silently replace a model or run a database migration.
+Cached staging eligibility is re-evaluated against the current runtime;
+installed bytes and live model configuration are verified again before cutover.
+
+For an eligible release, the updater:
 
 1. Downloads bounded, hash-verified wheel and source archives into private state.
 2. Validates archive paths and source/wheel parity, then creates an isolated

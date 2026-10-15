@@ -1,8 +1,10 @@
 # Desktop backups and independent recovery
 
-Status: backup/recovery and desktop agent controls are in the 4.6.0 candidate;
-configurable retention is added in the 4.7.0 source. Native release acceptance
-remains required. Check [release status](../RELEASE_STATUS.md) for public availability.
+Backup/recovery and desktop agent controls require 4.6.0 or later; configurable
+retention requires 4.7.0 or later. Check [release status](../RELEASE_STATUS.md) for
+verified public availability on each platform. The
+[4.6.0 publication record](../validation/2026-10-15-native-backup-release.md)
+records the first complete native release of this workflow.
 
 ## Protect a local workspace
 

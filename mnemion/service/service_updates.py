@@ -323,6 +323,24 @@ def _slot(root: Path, release: ServiceRelease) -> Path:
     return root / "releases" / f"{release.version}-{release.commit[:12]}"
 
 
+def compatible_version(previous: str, candidate: str) -> bool:
+    """Stable minor releases retain their major API contract; 0.x stays narrow.
+
+    This classifies versions only. Callers still require a newer signed runtime,
+    identical migrations and model generations, and verified backup/readiness.
+    """
+    before, after = version_tuple(previous), version_tuple(candidate)
+    return before[0] == after[0] and (before[0] != 0 or before[1] == after[1])
+
+
+def _automatic_compatible(previous: dict, candidate: dict) -> bool:
+    return (
+        candidate["migrations"] == previous["migrations"]
+        and candidate["generations"] == previous["generations"]
+        and compatible_version(previous["version"], candidate["version"])
+    )
+
+
 def check(state: Path) -> dict:
     state, root, settings = _root(state)
     with state_io.lock(root):
@@ -364,8 +382,7 @@ def _check(root: Path) -> dict:
                 "current_version": active["version"],
                 "available_version": release.version,
                 "schema_compatible": dict(release.migrations) == active["migrations"],
-                "version_compatible": version_tuple(release.version)[:2]
-                == version_tuple(active["version"])[:2],
+                "version_compatible": compatible_version(active["version"], release.version),
             }
             if not (result["schema_compatible"] and result["version_compatible"]):
                 from .managed_upgrade import pending_update
@@ -409,7 +426,12 @@ def _stage(root: Path, settings: dict) -> dict:
         return {
             "status": "staged",
             "version": release.version,
-            "automatic_compatible": state_io.read(receipt)["automatic_compatible"],
+            # Eligibility belongs to the current runtime and policy, not a
+            # cached decision made before another update or by an older client.
+            # Apply re-verifies installed bytes and live models before stopping.
+            "automatic_compatible": _automatic_compatible(
+                active, state_io.read(receipt)["runtime"]
+            ),
         }
     # Remove only authenticated, obsolete managed slots. Operator files and
     # both runtimes in a recovery journal are always preserved.
@@ -539,11 +561,7 @@ def _stage(root: Path, settings: dict) -> dict:
     runtime["connector_protocol"] = connector_protocol
     verify_installed_package(artifacts, release, package)
     runtime_wheels.verify_installed(artifacts, release, package, source / "uv.lock")
-    compatible = (
-        runtime["migrations"] == active["migrations"]
-        and runtime["generations"] == active["generations"]
-        and version_tuple(runtime["version"])[:2] == version_tuple(active["version"])[:2]
-    )
+    compatible = _automatic_compatible(active, runtime)
     state_io.write(receipt, {"runtime": runtime, "automatic_compatible": compatible}, replace=False)
     state_io.record(root, "staged", version=release.version, automatic_compatible=compatible)
     return {"status": "staged", "version": release.version, "automatic_compatible": compatible}
@@ -601,6 +619,7 @@ def status(state: Path) -> dict:
         "enabled": config["enabled"],
         "current_version": active["version"],
         "interval_seconds": config["interval_seconds"],
+        "version_policy": "same_major",
         "schema_policy": "identical",
         "retained_backups": KEEP_BACKUPS,
         "recovery_pending": (root / "journal.json").exists()
@@ -638,31 +657,47 @@ def _processes(
 
     _, settings = supervision.settings(state)
     names = ("mnemion-updater",) if updater_only else ("mnemion-api", "mnemion-worker")
-    with supervision._rpc(settings) as client:
-        for name in names:
-            try:
-                if start:
-                    client.supervisor.startProcess(name, False)
-                else:
-                    client.supervisor.stopProcess(name, False)
-            except xmlrpc.client.Fault as error:
-                if error.faultCode != (60 if start else 70):  # ALREADY_STARTED / NOT_RUNNING
-                    raise
     deadline = time.monotonic() + (60 if start else 90)
+    transition_error = "The managed service did not complete its requested process transition"
+    # A busy supervisor can miss the short socket deadline during a restart.
+    # Reconnect with fresh identity checks inside the original transition budget.
+    # These named start/stop requests are idempotent, including a lost reply.
     while time.monotonic() < deadline:
-        with supervision._rpc(settings) as client:
-            processes = {item["name"]: item for item in client.supervisor.getAllProcessInfo()}
-        if not set(names).issubset(processes):
-            raise ManifestError("The managed supervisor is missing a service child")
-        if start:
-            if any(processes[name]["statename"] == "FATAL" for name in names):
-                raise ManifestError("A service child could not start after the update")
-            if supervision.status(state)["service_ready" if service_only else "ready"]:
+        try:
+            with supervision._rpc(settings) as client:
+                for name in names:
+                    try:
+                        if start:
+                            client.supervisor.startProcess(name, False)
+                        else:
+                            client.supervisor.stopProcess(name, False)
+                    except xmlrpc.client.Fault as error:
+                        if error.faultCode != (60 if start else 70):
+                            raise
+            break
+        except TimeoutError:
+            time.sleep(0.25)
+    else:
+        raise ManifestError(transition_error)
+    while time.monotonic() < deadline:
+        try:
+            with supervision._rpc(settings) as client:
+                processes = {item["name"]: item for item in client.supervisor.getAllProcessInfo()}
+            if not set(names).issubset(processes):
+                raise ManifestError("The managed supervisor is missing a service child")
+            if start:
+                if any(processes[name]["statename"] == "FATAL" for name in names):
+                    raise ManifestError("A service child could not start after the update")
+                if supervision.status(state)["service_ready" if service_only else "ready"]:
+                    return
+            elif all(
+                processes[name]["statename"] in {"STOPPED", "EXITED", "FATAL"} for name in names
+            ):
                 return
-        elif all(processes[name]["statename"] in {"STOPPED", "EXITED", "FATAL"} for name in names):
-            return
+        except TimeoutError:
+            pass
         time.sleep(0.25)
-    raise ManifestError("The managed service did not complete its requested process transition")
+    raise ManifestError(transition_error)
 
 
 def _backup(
@@ -796,12 +831,7 @@ def _apply(state: Path, root: Path, settings: dict, *, retry: bool = False) -> d
     slot = _slot(root, release)
     receipt = state_io.read(slot / "ready.json")
     candidate = resolved_runtime(state, runtime=receipt["runtime"])
-    if (
-        not receipt["automatic_compatible"]
-        or candidate["migrations"] != previous["migrations"]
-        or candidate["generations"] != previous["generations"]
-        or version_tuple(candidate["version"])[:2] != version_tuple(previous["version"])[:2]
-    ):
+    if not _automatic_compatible(previous, candidate):
         return {
             "status": "operator_required",
             "version": release.version,

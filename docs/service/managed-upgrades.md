@@ -1,4 +1,4 @@
-# Upgrade a managed host across a schema or minor-version boundary
+# Upgrade a managed host across a schema boundary
 
 From 4.2.4, an adopted Linux/macOS Supervisor host has an explicit, JSON-speaking
 upgrade command. It stages one signed runtime, verifies a backup, stops the API
@@ -7,7 +7,13 @@ not start a second service or load a second set of embedding models for a
 rehearsal. Existing organization IDs, API keys, source configuration, vaults and
 database role credentials are retained.
 
-Automatic compatible patches remain enabled according to the saved preference.
+The command also handles minor-version boundaries for older updaters. From
+4.7.1, an enabled updater can apply newer minor releases in the same major series
+when migrations and model generations are identical. A host using the older
+patch-only policy may need this procedure once to reach 4.7.1. The automatic
+path retains its verified backup, readiness and rollback checks.
+
+Automatic compatible updates remain enabled according to the saved preference.
 They never opt into a schema migration. An operator or authorized host agent
 chooses the exact new version and supplies `--allow-migration` for this path.
 The ordinary tenant administrator's memory key does not grant OS or database
@@ -139,7 +145,7 @@ If interrupted, the durable journal identifies the same recovery path.
 **A database backup is never restored automatically.** A new API can accept a
 write before another child fails its readiness check; restoring the older backup
 would lose that write. Unknown schema state also requires operator recovery.
-The new updater refuses ordinary patch work while this journal is pending.
+The new updater refuses ordinary automatic updates while this journal is pending.
 
 For a separately chosen database rollback, keep the current database, upgrade
 journal and backups. Use the [verified recovery procedure](recovery.md) to

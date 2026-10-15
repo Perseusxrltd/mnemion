@@ -22,7 +22,7 @@ def pending_update(active: dict, release) -> dict | None:
     reasons = []
     if dict(release.migrations) != active["migrations"]:
         reasons.append("schema_changed")
-    if version_tuple(release.version)[:2] != version_tuple(active["version"])[:2]:
+    if not updates.compatible_version(active["version"], release.version):
         reasons.append("version_series_changed")
     return {
         "available_version": release.version,

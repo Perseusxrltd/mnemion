@@ -404,7 +404,13 @@ def test_signed_locked_install_and_failed_update_preserve_real_accepted_memories
     monkeypatch.setattr(studio, "source_root", lambda: bootstrap)
     monkeypatch.setattr(updates, "SERVICE_UPDATE_PUBLIC_KEY", public)
     major, minor, patch = version_tuple(__version__)
-    first, second = f"{major}.{minor}.{patch + 1}", f"{major}.{minor}.{patch + 2}"
+    # Keep the legacy-readiness patch path, and exercise a same-schema minor
+    # upgrade plus failed following patch with the current installed protocol.
+    first, second = (
+        (f"{major}.{minor}.{patch + 1}", f"{major}.{minor}.{patch + 2}")
+        if legacy_previous
+        else (f"{major}.{minor + 1}.0", f"{major}.{minor + 1}.1")
+    )
     packages, envelope = managed_release_fixture.candidate(
         bootstrap, tmp_path / "first publisher", first, key, legacy_readiness=legacy_previous
     )

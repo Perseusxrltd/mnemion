@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.7.0**. Roadmap updated: **2026-10-15**.
+Reviewed source distribution: **4.7.1**. Roadmap updated: **2026-10-15**.
 The [current published distribution and release gates](RELEASE_STATUS.md) are updated automatically.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
@@ -13,7 +13,7 @@ cover configuration, restart and outage/recovery. Live provider acceptance,
 independent host recovery and company hosting/SSO remain open; publication and
 all-platform delivery evidence are tracked automatically above.
 
-The 4.6.0 candidate carries [desktop backups and independent recovery](service/native-backups.md)
+Published [4.6.0](releases/4.6.0.md) carries [desktop backups and independent recovery](service/native-backups.md)
 from the unpublished 4.5.0 batch:
 encrypted snapshots and frequent deletion/access ledgers, OS-protected scheduled
 keys, cancellation, persistent failure notices, disk admission, verified separate
@@ -22,20 +22,21 @@ controller checks have passed. Installed Windows checks exposed directory-owner
 and path/handle timestamp differences. The corrections include an
 [actual Windows encryption failure/recovery comparison](validation/2026-10-15-windows-backup-metadata.md).
 [Source and desktop walkthrough evidence](validation/2026-10-15-native-backup-workflow.md)
-records the checks and their limits. Cloud delivery verification and independent
-host management remain open; configurable retention is implemented in the
-4.7.0 source described below. The strict
-full-scope count remains **17 of 64 shipped (26.6%)** until corresponding public
-acceptance is complete.
+records the checks and their limits. [All 32 release jobs, uploaded-package
+verification, live website delivery and six public automatic upgrades passed](validation/2026-10-15-native-backup-release.md).
+Cloud delivery verification and independent host management remain open;
+configurable retention is implemented in the 4.7.0 source described below.
+The strict full-scope count remains **17 of 64 shipped (26.6%)** because these
+broad requirements still have unfinished acceptance criteria.
 
-The 4.6.0 source adds [local desktop operator controls](service/desktop-operator.md)
+Published 4.6.0 adds [local desktop operator controls](service/desktop-operator.md)
 for agents: discovery, setup, RAM, remote access, protected backup schedules,
 inspection, independent restoration and copy selection. The app supplies a
 credential-free setup description; commands use an authenticated private OS pipe
 under the owning account and share the UI's mutation guards. Unsaved edits block
 agent-requested switches; successful switches reconnect the app to its selected
 workspace. [154 desktop checks and real source-app/CLI recovery](validation/2026-10-15-desktop-operator.md)
-passed. Native release acceptance remains separate from these source checks.
+passed, followed by the native release acceptance linked above.
 
 The [4.7.0 source](releases/4.7.0.md) adds opt-in backup retention, recorded
 inventory and reviewed cleanup in both the app and local agent interface.
@@ -46,6 +47,19 @@ passed. It also fixes [native database identity after Linux clock adjustments](v
 and prevents failed shutdown from being reported as automatic-update readiness.
 Installed acceptance, provider delivery, permanent per-file cleanup audit history
 and independent host recovery remain open; the strict completion count is unchanged.
+The unpublished 4.7.0 candidate is superseded by 4.7.1, which carries these
+features together with the restart correction below.
+
+The [4.7.1 source](releases/4.7.1.md) allows managed servers to automatically
+accept newer minor versions within the same stable major series when schema
+hashes and model generations match. It also keeps temporary supervisor timeouts
+within the existing restart deadline, with fresh instance checks and idempotent
+process commands. [Focused and installed recovery evidence](validation/2026-10-15-compatible-minor-updates.md)
+tracks these changes. Older patch-only installations need one explicit upgrade
+to reach this policy; automatic migrations and company fleet controls remain open.
+The [original shared host was independently restored and upgraded to 4.4.0](validation/2026-10-15-shared-host-upgrade.md),
+with preserved access and real Windows queries. It remains a separately operated
+installation; neither a source commit nor a desktop publication upgrades it by itself.
 
 [4.3.3](releases/4.3.3.md) adds explainable, optional key-term support for questions
 without a full text match, plus saved evaluation ranking preferences and
