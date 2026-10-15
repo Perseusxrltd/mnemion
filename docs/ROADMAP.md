@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.6.0**. Roadmap updated: **2026-10-15**.
+Reviewed source distribution: **4.7.0**. Roadmap updated: **2026-10-15**.
 The [current published distribution and release gates](RELEASE_STATUS.md) are updated automatically.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
@@ -22,8 +22,9 @@ controller checks have passed. Installed Windows checks exposed directory-owner
 and path/handle timestamp differences. The corrections include an
 [actual Windows encryption failure/recovery comparison](validation/2026-10-15-windows-backup-metadata.md).
 [Source and desktop walkthrough evidence](validation/2026-10-15-native-backup-workflow.md)
-records the checks and their limits. Configurable retention, cloud delivery
-verification and independent host management remain open. The strict
+records the checks and their limits. Cloud delivery verification and independent
+host management remain open; configurable retention is implemented in the
+4.7.0 source described below. The strict
 full-scope count remains **17 of 64 shipped (26.6%)** until corresponding public
 acceptance is complete.
 
@@ -35,6 +36,16 @@ under the owning account and share the UI's mutation guards. Unsaved edits block
 agent-requested switches; successful switches reconnect the app to its selected
 workspace. [154 desktop checks and real source-app/CLI recovery](validation/2026-10-15-desktop-operator.md)
 passed. Native release acceptance remains separate from these source checks.
+
+The [4.7.0 source](releases/4.7.0.md) adds opt-in backup retention, recorded
+inventory and reviewed cleanup in both the app and local agent interface.
+Keep-all remains the default. Cleanup protects two verified snapshot/ledger
+pairs, the latest access state, other keys and untracked files.
+[Actual Windows file operations, PostgreSQL recovery and a source-app walkthrough](validation/2026-10-15-backup-retention.md)
+passed. It also fixes [native database identity after Linux clock adjustments](validation/2026-10-15-native-clock-shutdown.md)
+and prevents failed shutdown from being reported as automatic-update readiness.
+Installed acceptance, provider delivery, permanent per-file cleanup audit history
+and independent host recovery remain open; the strict completion count is unchanged.
 
 [4.3.3](releases/4.3.3.md) adds explainable, optional key-term support for questions
 without a full text match, plus saved evaluation ranking preferences and

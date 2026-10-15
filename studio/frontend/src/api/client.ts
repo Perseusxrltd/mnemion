@@ -1,6 +1,6 @@
 import type { AgentsResponse, ConnectorStatus, CoreMemory, DrawerDetail, DrawerSummary, KGGraph, ObsidianStatus, RecentDrawer, SearchHit, Status, StudioConfig, Taxonomy, TrustStats } from '../types'
 import type { WorkspaceInspection, WorkspaceSession, WorkspaceStatus } from '../workspace/connection-types'
-import type { LocalOptions, LocalStatus, MemoryWrite, PortChange, RemoteChange, RemoteCheck, BackupView, BackupSettingsInput, BackupReceipt, BackupInspectionData, BackupRestoreInput, RecoveryReceipt } from '../../../shared/local-workspace'
+import type { LocalOptions, LocalStatus, MemoryWrite, PortChange, RemoteChange, RemoteCheck, BackupView, BackupSettingsInput, BackupReceipt, BackupInspectionData, BackupRestoreInput, RecoveryReceipt, BackupInventory, BackupRetentionResult } from '../../../shared/local-workspace'
 import type { SignInCredentials, InvitationCredentials, InvitationPreview } from '@mnemion/client'
 
 declare global {
@@ -37,6 +37,8 @@ declare global {
       localBackupChoose?: (kind: 'folder' | 'file') => Promise<{ id: string; path: string } | null>
       localBackupConfigure?: (input: BackupSettingsInput) => Promise<BackupView>
       localBackupRun?: (input: { ledger_only?: boolean; recovery_key?: string }) => Promise<BackupReceipt>
+      localBackupInventory?: () => Promise<BackupInventory>
+      localBackupPrune?: (input: { expected_revision: string; plan_token: string; confirm: boolean }) => Promise<BackupRetentionResult>
       localBackupCancel?: () => Promise<LocalStatus>
       localBackupInspect?: (input: { selection_id: string; recovery_key: string }) => Promise<BackupInspectionData>
       localBackupRestore?: (input: BackupRestoreInput) => Promise<{ id: string; receipt: RecoveryReceipt }>

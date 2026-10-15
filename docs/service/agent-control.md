@@ -2,7 +2,8 @@
 
 For local host and app controls, the following source adds a
 [private desktop operator interface](desktop-operator.md) under the owning OS
-account, including backup schedules and independent recovery. The guide keeps
+account, including backup schedules, independent recovery and, in 4.7.0 source,
+recorded inventory and reviewed retention cleanup. The guide keeps
 its native release boundary explicit. Memory API credentials retain the scope
 described below.
 

@@ -94,9 +94,14 @@ alone is not proof that those features exist.
 
 ## Remaining acceptance and scope
 
-The current implementation keeps every backup; configurable automatic retention
-is still open. Metadata checks detect missing/resized files, while native cloud
-delivery receipts and real disconnected-provider acceptance remain separate.
+The 4.7.0 source adds keep-all/default and bounded configurable retention, private
+ownership inventory, preserved snapshot/ledger pairs, reviewed manual cleanup and
+equivalent app/agent controls. Full capture alone triggers automatic cleanup;
+untracked copies and other keys remain protected. Source checks include retained
+PostgreSQL restoration, actual Windows file removal and a real desktop walkthrough.
+Installed acceptance remains required. Metadata checks detect missing/resized files,
+while native cloud delivery receipts, permanent per-file cleanup history and real
+disconnected-provider acceptance remain separate.
 The [following desktop operator source](../service/desktop-operator.md) implements
 schedule configuration and persistent desktop copy selection through the same
 controllers, with private OS-pipe access and separate native acceptance.

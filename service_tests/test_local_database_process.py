@@ -128,6 +128,57 @@ def test_database_process_executable_must_be_the_bundled_file(tmp_path):
     assert not _same_path(second / "postgres.exe", first / "postgres.exe")
 
 
+@pytest.mark.skipif(
+    sys.platform != "linux", reason="Linux kernel birth counters and realtime adjustment"
+)
+def test_native_database_clock_adjustment_preserves_memory_accounting_and_verified_shutdown(
+    pg_bin, tmp_path, monkeypatch
+):
+    from mnemion.local_database import available_port, prepare_credentials
+    from mnemion.service.memory_budget import sample_memory
+    import psutil._pslinux as linux
+
+    postgres = pg_bin / "postgres"
+    if (
+        not postgres.is_file()
+        or " 18."
+        not in subprocess.run(
+            [str(postgres), "--version"], capture_output=True, text=True, check=True, timeout=10
+        ).stdout
+    ):
+        pytest.skip("This native lifecycle check requires the bundled PostgreSQL 18 runtime")
+    root = directory(tmp_path / "Clock-safe native workspace équipe")
+    database = LocalDatabase(
+        root, pg_bin.parent, {"database_port": available_port()}, prepare_credentials(root)
+    )
+    try:
+        database.start()
+        pid = int((database.data / "postmaster.pid").read_text().splitlines()[0])
+        original_created = psutil.Process(pid).create_time()
+        original_boot = linux.boot_time
+        with monkeypatch.context() as clock:
+            # Change only this Python observer, never the computer's clock.
+            clock.setattr(linux, "boot_time", lambda: original_boot() + 60)
+            assert psutil.Process(pid).create_time() != original_created
+            sample = sample_memory(database_identity=database.process_identity)
+            assert sample.complete and sample.database > 0
+            changed = {**database.process_identity, "ticks": database.process_identity["ticks"] + 1}
+            invalid = sample_memory(database_identity=changed)
+            assert not invalid.complete and invalid.database == 0
+            original = database.process_identity
+            database.process_identity = changed
+            with pytest.raises(LocalSetupError, match="process changed"):
+                database.stop()
+            assert (database.data / "postmaster.pid").is_file()
+            database.process_identity = original
+            database.stop()
+            assert not (database.data / "postmaster.pid").exists()
+    finally:
+        if (database.data / "postmaster.pid").exists():
+            database._verify_server()
+            database.stop()
+
+
 @pytest.mark.skipif(sys.platform != "win32", reason="Actual Windows file aliases")
 def test_windows_database_identity_accepts_slashes_case_and_short_paths(tmp_path):
     import ctypes

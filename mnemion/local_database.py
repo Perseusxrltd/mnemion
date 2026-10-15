@@ -16,7 +16,7 @@ import psycopg
 from psycopg import sql
 from psycopg.conninfo import make_conninfo
 
-from . import local_state as state
+from . import local_state as state, process_identity as birth
 from .private_output import private_output, private_process
 from .service.admin import register_generation
 from .service.db import migrate, new_token, token_hash
@@ -165,7 +165,7 @@ class LocalDatabase:
         self.data = root / "database"
         self.suffix = ".exe" if os.name == "nt" else ""
         self.started = False
-        self.process_identity: tuple[int, float] | None = None
+        self.process_identity: dict | None = None
         self.environment = {
             k: v
             for k, v in os.environ.items()
@@ -306,7 +306,7 @@ class LocalDatabase:
             raise state.LocalSetupError(
                 "database_identity", "The local database process did not match this workspace."
             )
-        self.process_identity = (pid, process.create_time())
+        self.process_identity = birth.capture(process)
         self.started = True
 
     def start(self) -> None:
@@ -438,11 +438,11 @@ class LocalDatabase:
             return
         import psutil
 
-        pid, created = self.process_identity
+        pid = self.process_identity["pid"]
         try:
             process = psutil.Process(pid)
             if (
-                process.create_time() != created
+                not birth.matches(self.process_identity, process)
                 or not _data_argument(process.cmdline(), self.data)
                 or not _same_path(process.exe(), self.tool("postgres"))
             ):

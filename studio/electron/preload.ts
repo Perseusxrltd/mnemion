@@ -54,6 +54,8 @@ contextBridge.exposeInMainWorld('mnemion', {
   localBackupChoose: (kind: 'folder' | 'file') => transfer('local:backup-choose', kind),
   localBackupConfigure: (input: unknown) => transfer('local:backup-configure', input),
   localBackupRun: (input: unknown) => transfer('local:backup-run', input),
+  localBackupInventory: () => transfer('local:backup-inventory'),
+  localBackupPrune: (input: unknown) => transfer('local:backup-prune', input),
   localBackupCancel: () => transfer('local:backup-cancel'),
   localBackupInspect: (input: unknown) => transfer('local:backup-inspect', input),
   localBackupRestore: (input: unknown) => transfer('local:backup-restore', input),

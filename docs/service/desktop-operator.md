@@ -1,6 +1,7 @@
 # Local desktop controls for agents
 
 Introduced in the 4.6.0 source after the 4.5.0 backup/recovery batch.
+The 4.7.0 source adds retention configuration, inventory and reviewed cleanup.
 Check [release status](../RELEASE_STATUS.md) for the available installers and
 native acceptance. This interface complements the shared workspace's
 [agent API, CLI and MCP](agent-control.md).
@@ -73,6 +74,7 @@ engine** so it uses the Windows account and named-pipe implementation.
 | `local.preferences` | Set `start_with_app` for the selected workspace; OS login startup remains a separate app preference. |
 | `backup.status`, `backup.key` | Read schedules/receipts or generate a new key into a private result file. Saved keys are never returned. |
 | `backup.configure`, `backup.run`, `backup.cancel` | Configure protected schedules, capture a snapshot/ledger, or cancel an active recovery operation. |
+| `backup.inventory`, `backup.prune` | From 4.7.0, review tracked files and apply the saved retention policy with explicit plan confirmation. The database may be stopped. |
 | `backup.inspect`, `backup.restore` | Authenticate selected encrypted files and restore into a new managed private copy. |
 | `recovery.list`, `recovery.use` | Discover verified copies, select one, or return to the original workspace. |
 
@@ -114,6 +116,16 @@ configuration also needs `recovery_key` and explicit `key_saved: true`; keep the
 key outside the backup folder. Read fresh status before writing its revision.
 Use `backup.run` with `{"ledger_only": true}` for a current deletion/access ledger.
 
+In 4.7.0, `backup.configure` also accepts `retention`, for example
+`{"mode":"limited","snapshots":7,"ledgers":96}`. Omitting this field preserves
+an existing policy; old settings default to `keep_all`. Read `backup.inventory`
+with the current `expected_workspace_id`. To clean up, submit `backup.prune`
+with `expected_revision` from `backup.status.configuration`, `plan_token` from
+that inventory and `confirm: true`. Neither operation requires a recovery key.
+Plans are bound to the current recorded scope and policy; stale plans are refused.
+See [retention safeguards](native-backups.md#retention-and-inventory-470-source)
+for protected pairs, other keys, untracked copies and cloud deletion behavior.
+
 Generate a key with `{"action":"backup.key"}` and **`--result-file NEW_PRIVATE_FILE`**.
 The CLI requires this option for new keys and reserves the owner-only file before
 requesting one. It never replaces an existing result file. Keep secrets on private
@@ -142,13 +154,15 @@ twice. These bounded replies are not a durable job journal and do not promise
 replay after eviction or app restart.
 
 The CLI waits 30 minutes by default; `--timeout` accepts 1–14400 seconds.
-Disconnecting cancels backup, inspection and restoration work owned by that
+Disconnecting cancels backup, cleanup, inspection and restoration work owned by that
 request, including private staging cleanup. A configuration save or lifecycle
 operation may already have completed when its response is lost. Read current
 status, revisions and receipts before retrying a change; the client does not
 automatically resend mutations. Any authorized local operator can also submit
 `backup.cancel` while another request is running. Automatic app updates wait
 for local mutations; shutdown cancels/drains owned recovery work.
+Completed cleanup removals cannot be undone by disconnecting; read the latest
+cleanup result and fresh inventory before retrying.
 
 After an app restart, rediscover its current pipe. A dead process's endpoint is
 replaced on startup; a second live process cannot overwrite its discovery record.

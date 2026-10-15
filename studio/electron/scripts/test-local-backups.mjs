@@ -71,6 +71,60 @@ test('scheduled keys remain protected across reopen and never appear in status',
   assert.ok((await reopened.status()).last_snapshot.snapshot.authenticated)
 })
 
+test('legacy settings keep every copy, and later schedule edits preserve the chosen retention', async t => {
+  const f = await fixture(t)
+  await f.manager.configure(f.settings)
+  const path = join(f.root, 'backup-policy.json')
+  const raw = JSON.parse(await readFile(path, 'utf8'))
+  delete raw.retention
+  await writeFile(path, JSON.stringify(raw), { mode: 0o600 })
+  const legacy = await f.manager.status()
+  assert.deepEqual(legacy.configuration.retention, { mode: 'keep_all', snapshots: 7, ledgers: 96 })
+  const policy = { mode: 'limited', snapshots: 3, ledgers: 12 }
+  const limited = await f.manager.configure({ ...f.settings, expected_revision: legacy.configuration.revision, retention: policy })
+  const edited = await f.manager.configure({ ...f.settings, expected_revision: limited.configuration.revision, snapshot_hours: 12 })
+  assert.deepEqual(edited.configuration.retention, policy)
+  await f.manager.run()
+  assert.deepEqual(f.calls[0].input.retention, policy)
+})
+
+test('offline inventory works with a locked key store and excludes concurrent configuration', async t => {
+  const f = await fixture(t)
+  const configured = await f.manager.configure(f.settings)
+  f.locked(true); f.host.status.state = 'stopped'
+  let release, entered
+  const inside = new Promise(resolve => { entered = resolve })
+  f.host.runBackup = async (action, input) => {
+    assert.equal(action, 'backup-inventory')
+    assert.equal(input.key_id, recoveryKeyId(f.key))
+    assert.ok(!JSON.stringify(input).includes(f.key))
+    entered(); await new Promise(resolve => { release = resolve })
+    return { state: 'keep_all' }
+  }
+  const pending = f.manager.inventory()
+  await inside
+  await assert.rejects(f.manager.configure({ ...f.settings, expected_revision: configured.configuration.revision }), /Another local operation/)
+  release()
+  assert.equal((await pending).state, 'keep_all')
+  assert.equal(f.manager.busy, false)
+})
+
+test('manual cleanup requires a current policy revision, reviewed plan and explicit confirmation', async t => {
+  const f = await fixture(t)
+  const configured = await f.manager.configure({ ...f.settings, retention: { mode: 'limited', snapshots: 2, ledgers: 2 } })
+  const input = { expected_revision: configured.configuration.revision, plan_token: 'a'.repeat(64), confirm: true }
+  f.host.runBackup = async (action, request) => { f.calls.push({ action, input: request }); return { state: 'complete', deleted_files: 2 } }
+  await assert.rejects(f.manager.prune({ ...input, confirm: false }), /confirm/)
+  await assert.rejects(f.manager.prune({ ...input, expected_revision: randomUUID() }), /confirm/)
+  await assert.rejects(f.manager.prune({ ...input, plan_token: 'invalid' }), /confirm/)
+  assert.equal(f.calls.length, 0)
+  f.locked(true); f.host.status.state = 'stopped'
+  assert.equal((await f.manager.prune(input)).deleted_files, 2)
+  assert.equal(f.calls[0].action, 'backup-prune')
+  assert.ok(!JSON.stringify(f.calls[0]).includes(f.key))
+  assert.equal(f.calls[0].input.plan_token, input.plan_token)
+})
+
 test('unavailable secure storage refuses scheduled plaintext fallback but permits a supplied manual key', async t => {
   const f = await fixture(t)
   f.locked(true)

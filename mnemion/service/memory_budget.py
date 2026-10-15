@@ -15,6 +15,7 @@ from typing import Callable, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from mnemion import process_identity
 from .errors import ServiceError
 from .heap_memory import release_unused_heap
 from .resources import cgroup_limits
@@ -52,7 +53,7 @@ class MemorySample:
 
 
 def sample_memory(
-    *, database_identity: tuple[int, float] | None = None, desktop_bytes: int = 0
+    *, database_identity: dict | tuple[int, float] | None = None, desktop_bytes: int = 0
 ) -> MemorySample:
     """Sample only this service and its explicitly identified database tree.
 
@@ -72,8 +73,14 @@ def sample_memory(
     complete = True
     if database_identity:
         try:
-            root = psutil.Process(database_identity[0])
-            if root.create_time() != database_identity[1]:
+            stable = isinstance(database_identity, dict)
+            root = psutil.Process(database_identity["pid"] if stable else database_identity[0])
+            matches = (
+                process_identity.matches(database_identity, root)
+                if stable
+                else root.create_time() == database_identity[1]
+            )
+            if not matches:
                 complete = False
             else:
                 for child in [root, *root.children(recursive=True)]:
@@ -83,7 +90,7 @@ def sample_memory(
                         pass
                     except psutil.Error:
                         complete = False
-        except psutil.Error:
+        except (psutil.Error, KeyError, TypeError, ValueError, OSError):
             complete = False
     return MemorySample(
         total=total,

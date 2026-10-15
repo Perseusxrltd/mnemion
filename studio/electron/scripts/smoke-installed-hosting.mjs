@@ -157,7 +157,7 @@ try {
   for (const [phase, required] of [
     ['backup-capture', ['nativeEncryptedSnapshot', 'laterDeletionLedger', 'protectedKeySaved', 'backupFormRestoresUpdateReadiness', 'nativeOperatorPipe', 'operatorScheduleAndUiAgree', 'operatorRetryDoesNotRepeat', 'operatorStaleIdentityRefused', 'operatorRefreshesLedger', 'operatorInspectsEncryptedFiles', 'operatorRestoresIndependentCopy']],
     ['backup-recover', ['protectedKeyReopened', 'realRecoveryControls', 'separateRecoveryCopy', 'originalOrganizationRetained', 'retainedMemoryReadable', 'postSnapshotDeletionPreserved', 'freshAdministratorConnected', 'nativeOperatorPipe']],
-    ['backup-resume', ['recoveredCopyReopened', 'deletionPreservedAfterReopen', 'originalWorkspaceReopened', 'nativeOperatorPipe', 'operatorRecoverySelection', 'operatorOriginalSelection', 'operatorPreservesUnsavedDraft']],
+    ['backup-resume', ['recoveredCopyReopened', 'deletionPreservedAfterReopen', 'originalWorkspaceReopened', 'nativeOperatorPipe', 'operatorRecoverySelection', 'operatorOriginalSelection', 'operatorPreservesUnsavedDraft', 'nativeBackupRetention', 'retentionKeepsVerifiedPairs', 'retentionControlsAndAgentAgree']],
   ]) {
     const backup = await launch({ phase, port, memoryId: first.memoryId })
     if (required.some(field => backup[field] !== true)) throw new Error('Installed backup/recovery acceptance failed: ' + phase)

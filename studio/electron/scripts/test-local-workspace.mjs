@@ -53,7 +53,7 @@ class Command extends EventEmitter {
   constructor(action) { super(); this.action = action }
   reply(value) { this.stdout.write(JSON.stringify(value)); this.finish() }
   event(value) { this.stdout.write(JSON.stringify(value) + '\n') }
-  finish() { if (!this.closed) { this.closed = true; this.emit('close', 0) } }
+  finish(code = 0) { if (!this.closed) { this.closed = true; this.emit('close', code) } }
   kill() { this.finish(); return true }
 }
 
@@ -523,6 +523,35 @@ test('cancelling an update preserves a workspace that was already paused', async
   assert.equal(await f.host.stopForUpdate(), true)
   await f.host.cancelUpdateStop()
   assert.deepEqual(f.commands.map(command => command.action), ['status'])
+})
+
+test('failed host shutdown blocks updates and keeps its diagnostic until a clean restart and stop', async t => {
+  const f = fixture(t)
+  const engine = await running(f)
+  const stop = f.host.stopForUpdate()
+  await settle()
+  engine.event({ event: 'error', code: 'database_identity', message: 'The database process changed; it was not stopped.' })
+  engine.finish(1)
+  assert.equal(await stop, false)
+  assert.equal(f.host.status.state, 'error')
+  assert.equal(f.host.status.errorCode, 'database_identity')
+  if (f.last().action === 'status') f.last().reply(info('first'))
+  await settle()
+  assert.equal(await f.host.stopForUpdate(), false)
+  const restarted = await running(f)
+  const clean = f.host.stop()
+  await settle(); restarted.finish()
+  assert.equal(await clean, true)
+  assert.equal(f.host.status.state, 'stopped')
+})
+
+test('an unexplained nonzero exit cannot confirm an intentional database stop', async t => {
+  const f = fixture(t)
+  const engine = await running(f)
+  const stop = f.host.stop()
+  await settle(); engine.finish(1)
+  assert.equal(await stop, false)
+  assert.equal(f.host.status.state, 'error')
 })
 
 test('cancelling an update reopens its previously running workspace exactly once', async t => {

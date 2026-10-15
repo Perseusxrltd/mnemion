@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Archive, Copy, FolderOpen, KeyRound, LoaderCircle, RefreshCw, ShieldCheck, Square } from 'lucide-react';
-import type { BackupView, LocalStatus } from '../../../shared/local-workspace';
+import { Archive, Copy, FolderOpen, KeyRound, LoaderCircle, RefreshCw, ShieldCheck, Square, Trash2 } from 'lucide-react';
+import type { BackupView, LocalStatus, BackupInventory, BackupRetentionPolicy } from '../../../shared/local-workspace';
 import { memorySize } from './MemoryControls';
 import { localError } from './LocalSetup';
 import './backups.css';
@@ -20,6 +20,9 @@ export default function Backups({ status, onStatus }: { status: LocalStatus; onS
   const [enabled, setEnabled] = useState(true);
   const [hours, setHours] = useState(24);
   const [minutes, setMinutes] = useState(15);
+  const [retention, setRetention] = useState<BackupRetentionPolicy>({ mode: 'keep_all', snapshots: 7, ledgers: 96 });
+  const [inventory, setInventory] = useState<BackupInventory>();
+  const [cleanupConfirmed, setCleanupConfirmed] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>();
@@ -40,7 +43,11 @@ export default function Backups({ status, onStatus }: { status: LocalStatus; onS
     setEnabled(view.configuration?.enabled ?? view.secure_storage);
     setHours(view.configuration?.snapshot_hours ?? 24);
     setMinutes(view.configuration?.ledger_minutes ?? 15);
+    setRetention(view.configuration?.retention ?? { mode: 'keep_all', snapshots: 7, ledgers: 96 });
   }, [view, dirty]);
+  useEffect(() => {
+    setInventory(undefined); setCleanupConfirmed(false);
+  }, [view?.configuration?.revision, view?.last_snapshot?.operation_id, view?.last_ledger?.operation_id, view?.last_retention?.completed_at]);
 
   if (!desktop?.localBackupStatus || !status.info?.configured) return null;
   const configuration = view?.configuration;
@@ -55,6 +62,8 @@ export default function Backups({ status, onStatus }: { status: LocalStatus; onS
     {notice && <p className="ws-notice" role="status">{notice}</p>}
     {view?.last_error && !error && <p className="ws-notice ws-error" role="alert">Last attempt: {view.last_error}</p>}
     {view?.retry_at && view.last_error && configuration?.enabled && <p className="ws-helper">Automatic retry after {stamp(view.retry_at)}. You can also retry manually.</p>}
+    {view?.last_snapshot?.retention_warning && <p className="ws-notice ws-error" role="alert">{view.last_snapshot.retention_warning}</p>}
+    {view?.last_retention && <p className={`ws-notice ${['blocked', 'partial'].includes(view.last_retention.state) ? 'ws-error' : ''}`} role="status">Last cleanup: {stamp(view.last_retention.completed_at)}. {view.last_retention.message} {view.last_retention.deleted_files.toLocaleString()} files removed ({fileSize(view.last_retention.deleted_bytes)}).</p>}
     <div className="ws-backup-facts">
       <div><span>Latest verified snapshot</span><strong>{stamp(view?.last_snapshot?.verified_at)}</strong>{snapshot && <small>{snapshot.memory_count.toLocaleString()} memories · {fileSize(snapshot.bytes)}</small>}</div>
       <div><span>Latest verified access ledger</span><strong>{stamp(view?.last_ledger?.verified_at)}</strong>{view?.last_ledger && <small>{view.last_ledger.tenant_count} organization{view.last_ledger.tenant_count === 1 ? '' : 's'} · {fileSize(view.last_ledger.ledger.bytes)}</small>}</div>
@@ -67,7 +76,7 @@ export default function Backups({ status, onStatus }: { status: LocalStatus; onS
       try {
         const next = await desktop.localBackupConfigure!({ expected_revision: configuration?.revision ?? null,
           destination_selection: folder?.id ?? null, enabled, snapshot_hours: hours, ledger_minutes: minutes,
-          recovery_key: key || undefined, key_saved: keySaved });
+          recovery_key: key || undefined, key_saved: keySaved, retention });
         setView(next); setDirty(false); setFolder(undefined);
         if (!enabled && key) setManualKey(key);
         setKey(''); setKeySaved(false);
@@ -91,7 +100,12 @@ export default function Backups({ status, onStatus }: { status: LocalStatus; onS
       <label className="ws-backup-check"><input data-update-safe type="checkbox" checked={enabled} disabled={working} onChange={event => { setEnabled(event.target.checked); changed(); }} />Back up automatically while this workspace is running</label>
       {enabled && <div className="ws-backup-grid"><label className="ws-field"><span>Full snapshot</span><select data-update-safe disabled={working} value={hours} onChange={event => { setHours(Number(event.target.value)); changed(); }}><option value={6}>Every 6 hours</option><option value={12}>Every 12 hours</option><option value={24}>Daily</option><option value={168}>Weekly</option></select></label><label className="ws-field"><span>Deletion & access ledger</span><select data-update-safe disabled={working} value={minutes} onChange={event => { setMinutes(Number(event.target.value)); changed(); }}><option value={15}>Every 15 minutes</option><option value={30}>Every 30 minutes</option><option value={60}>Hourly</option><option value={240}>Every 4 hours</option></select></label></div>}
       {!view?.secure_storage && <p className="ws-notice">The OS secure store is unavailable or locked. Unlock it for scheduled backups, or use manual backups with a key for each run.</p>}
-      <p className="ws-helper">All backup files are retained. Manage older copies in your storage. Missed runs are coalesced after sleep; this schedule cannot wake a powered-off computer.</p>
+      <label className="ws-field"><span>Backup retention</span><select data-update-safe value={retention.mode} disabled={working} onChange={event => { setRetention({ ...retention, mode: event.target.value as BackupRetentionPolicy['mode'] }); changed(); }}><option value="keep_all">Keep all copies</option><option value="limited">Keep recent recovery points</option></select></label>
+      {retention.mode === 'limited' && <>
+        <div className="ws-backup-grid"><label className="ws-field"><span>Full snapshots to keep</span><input data-update-safe type="number" min={2} max={365} step={1} required value={retention.snapshots} disabled={working} onChange={event => { setRetention({ ...retention, snapshots: Number(event.target.value) }); changed(); }} /></label><label className="ws-field"><span>Recent access ledgers to keep</span><input data-update-safe type="number" min={2} max={10000} step={1} required value={retention.ledgers} disabled={working} onChange={event => { setRetention({ ...retention, ledgers: Number(event.target.value) }); changed(); }} /></label></div>
+        <p className="ws-helper">After each successful full backup, Mnemion verifies two recent recovery points before removing older recorded copies. Ledgers paired with retained snapshots also stay. Cleanup removes up to 200 files per run; deletions may sync to your cloud storage.</p>
+      </>}
+      <p className="ws-helper">Untracked files and copies using older keys are always retained. Missed runs are coalesced after sleep; this schedule cannot wake a powered-off computer.</p>
       <div className="ws-setup-actions"><button className="ws-button ws-primary" disabled={working || !view || (!folder && !configuration) || (!configuration && !key) || (!!key && !keySaved) || (!dirty && !!configuration)}><ShieldCheck size={16} />Save backup settings</button>{dirty && configuration && <button type="button" className="ws-button ws-quiet" disabled={working} onClick={() => { setDirty(false); setFolder(undefined); setKey(''); setKeySaved(false); setNotice(''); }}>Discard changes</button>}</div>
     </form>
     {configuration && <div className="ws-backup-run" data-update-pending={manualKey ? '' : undefined}>
@@ -103,6 +117,31 @@ export default function Backups({ status, onStatus }: { status: LocalStatus; onS
       }}>{working ? <LoaderCircle className="ws-spin" size={15} /> : <Archive size={15} />}{ledger ? 'Refresh ledger' : 'Back up now'}</button>)}</div>
       {status.state !== 'running' && <p className="ws-helper">Resume this local workspace to create its next backup.</p>}
     </div>}
+    {configuration && desktop.localBackupInventory && <section className="ws-backup-inventory" aria-labelledby="backup-inventory-title">
+      <div className="ws-memory-heading"><h3 id="backup-inventory-title">Backup inventory</h3><button type="button" className="ws-button" disabled={working || dirty} onClick={async () => {
+        setBusy(true); setError(undefined); setCleanupConfirmed(false);
+        try { setInventory(await desktop.localBackupInventory!()); } catch (error) { setError(error); } finally { setBusy(false); }
+      }}><RefreshCw size={15} />Review stored copies</button></div>
+      <p className="ws-helper">Available even when this local workspace is stopped. The inventory lists files recorded by this installation; it does not prove delivery to a cloud provider.</p>
+      {inventory && <>
+        <div className="ws-backup-facts"><div><span>Recorded with this key</span><strong>{inventory.tracked_snapshots.toLocaleString()} snapshots · {inventory.tracked_ledgers.toLocaleString()} ledgers</strong><small>{fileSize(inventory.tracked_bytes)} recorded · {inventory.other_key_files.toLocaleString()} files using other keys retained</small></div><div><span>Eligible for cleanup</span><strong>{inventory.candidate_files.toLocaleString()} files · {fileSize(inventory.candidate_bytes)}</strong><small>{inventory.message}</small></div></div>
+        {inventory.recent.length > 0 && <>
+          <p className="ws-helper">Latest {inventory.recent.length} recorded files. Availability checks presence and size; cleanup verifies file contents again before removal.</p>
+          <div className="ws-backup-table" role="region" aria-label="Recorded backup files" tabIndex={0}><table><thead><tr><th>Recovery file</th><th>Verified locally</th><th>Size</th><th>Available</th><th>Retention</th></tr></thead><tbody>{inventory.recent.map(file => <tr key={file.name}><td>{file.kind === 'snapshot' ? 'Full snapshot' : 'Access ledger'}<small title={file.name}>{file.name}</small></td><td>{stamp(file.verified_at)}</td><td>{fileSize(file.bytes)}</td><td>{file.availability}</td><td>{file.protected ? 'Keep' : 'Eligible'}</td></tr>)}</tbody></table></div>
+        </>}
+        {inventory.state === 'ready' && inventory.batch_files > 0 && <div className="ws-backup-cleanup" data-update-pending={cleanupConfirmed ? '' : undefined}>
+          <label className="ws-backup-check"><input data-update-safe type="checkbox" checked={cleanupConfirmed} disabled={working || dirty} onChange={event => setCleanupConfirmed(event.target.checked)} />Remove up to {inventory.batch_files.toLocaleString()} older recorded files ({fileSize(inventory.batch_bytes)}) from this folder. Cloud synchronization may also remove their remote copies.</label>
+          <button type="button" className="ws-button" disabled={working || dirty || !cleanupConfirmed} onClick={async () => {
+            setBusy(true); setError(undefined); setNotice('');
+            try {
+              const result = await desktop.localBackupPrune!({ expected_revision: configuration.revision, plan_token: inventory.plan_token, confirm: true });
+              setNotice(`${result.message} ${result.deleted_files.toLocaleString()} files removed (${fileSize(result.deleted_bytes)}).`);
+              setInventory(undefined); setCleanupConfirmed(false); await refresh();
+            } catch (error) { setError(error); setCleanupConfirmed(false); } finally { setBusy(false); }
+          }}><Trash2 size={15} />Clean up reviewed copies</button>
+        </div>}
+      </>}
+    </section>}
     <p><Link className="ws-link" to="/help?doc=docs%2Fservice%2Fnative-backups.md">Recovery guide</Link> · Recover a separate copy from the welcome screen’s <strong>Recover a workspace</strong> option.</p>
   </section>;
 }

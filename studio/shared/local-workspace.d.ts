@@ -59,7 +59,7 @@ export type DesktopOperatorStatus = {
   state: 'starting' | 'ready' | 'unavailable'; message: string; control_directory: string;
   command: { executable: string; arguments: string[] };
 }
-export type BackupAction = 'backup' | 'backup-ledger' | 'backup-inspect' | 'backup-restore';
+export type BackupAction = 'backup' | 'backup-ledger' | 'backup-inspect' | 'backup-restore' | 'backup-inventory' | 'backup-prune';
 export type BackupActivity = {
   action: BackupAction; state: 'running' | 'cancelling' | 'complete' | 'cancelled' | 'error';
   stage: string; message: string; started_at: string; finished_at?: string;
@@ -70,7 +70,23 @@ export type BackupReceipt = {
   tenant_count: number; ledger_at: string; application_version: string; verified_at: string;
   snapshot?: BackupFile & { backup_id: string; snapshot_at: string; memory_count: number };
   ledger: BackupFile;
+  retention?: BackupRetentionResult; retention_warning?: string;
 }
+export type BackupRetentionPolicy = { mode: 'keep_all' | 'limited'; snapshots: number; ledgers: number };
+export type BackupInventory = {
+  format: 1; workspace_id: string; key_id: string; folder: string; policy: BackupRetentionPolicy;
+  state: 'keep_all' | 'untracked' | 'ready' | 'insufficient_recovery'; message: string; plan_token: string;
+  tracked_snapshots: number; tracked_ledgers: number; tracked_bytes: number; other_key_files: number;
+  candidate_files: number; candidate_bytes: number; batch_files: number; batch_bytes: number; recent_limit: number;
+  recent: Array<{ name: string; kind: 'snapshot' | 'ledger'; key_id: string; bytes: number; verified_at: string;
+    availability: 'present' | 'missing' | 'changed' | 'unavailable'; protected: boolean }>;
+};
+export type BackupRetentionResult = {
+  format: 1; workspace_id: string; key_id: string; folder: string; policy: BackupRetentionPolicy;
+  state: 'complete' | 'partial' | 'blocked' | 'cancelled'; message: string; completed_at: string;
+  deleted_files: number; deleted_bytes: number; skipped_files: number; remaining_candidates: number;
+};
+export type BackupOperationResult = BackupReceipt | BackupInspectionData | RecoveryReceipt | BackupInventory | BackupRetentionResult;
 export type BackupInspectionData = {
   kind: 'snapshot' | 'ledger'; key_id: string; encrypted_bytes: number; sha256: string;
   authenticated: true; ledger_at: string; tenant_count: number; deletion_count?: number;
@@ -87,17 +103,18 @@ export type RecoveryReceipt = {
 }
 export type BackupConfiguration = {
   revision: string; workspace_id: string; destination: string; key_id: string;
-  enabled: boolean; snapshot_hours: number; ledger_minutes: number; protected_key: boolean;
+  enabled: boolean; snapshot_hours: number; ledger_minutes: number; protected_key: boolean; retention: BackupRetentionPolicy;
 }
 export type BackupView = {
   configuration?: BackupConfiguration; secure_storage: boolean; last_snapshot?: BackupReceipt; last_ledger?: BackupReceipt;
   last_error?: string; retry_at?: string; next_snapshot_at?: string; next_ledger_at?: string;
   snapshot_availability?: 'present' | 'missing' | 'changed' | 'unavailable';
   ledger_availability?: 'present' | 'missing' | 'changed' | 'unavailable';
+  last_retention?: BackupRetentionResult;
 }
 export type BackupSettings = {
   expected_revision: string | null; destination: string; enabled: boolean;
-  snapshot_hours: number; ledger_minutes: number; recovery_key?: string; key_saved: boolean;
+  snapshot_hours: number; ledger_minutes: number; recovery_key?: string; key_saved: boolean; retention?: BackupRetentionPolicy;
 }
 export type BackupSettingsInput = Omit<BackupSettings, 'destination'> & { destination_selection: string | null };
 export type BackupRestoreInput = {

@@ -658,6 +658,8 @@ def arguments(parser: argparse.ArgumentParser) -> None:
             "backup-ledger",
             "backup-inspect",
             "backup-restore",
+            "backup-inventory",
+            "backup-prune",
         ],
     )
     parser.add_argument("--root", type=Path, required=True)
@@ -677,7 +679,14 @@ def dispatch(args) -> int:
         if args.action == "status":
             emit({"event": "status", **inspect(root)})
             return 0
-        if args.action in {"backup", "backup-ledger", "backup-inspect", "backup-restore"}:
+        if args.action in {
+            "backup",
+            "backup-ledger",
+            "backup-inspect",
+            "backup-restore",
+            "backup-inventory",
+            "backup-prune",
+        }:
             from .local_backup import dispatch as backup_dispatch
 
             return backup_dispatch(root, args.database_runtime, args.action, emit)

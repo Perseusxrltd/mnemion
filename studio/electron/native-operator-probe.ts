@@ -43,6 +43,8 @@ async function success(action: string, input: Record<string, unknown> = {}, work
   return result.result
 }
 
+export { success as callNativeOperator }
+
 async function ui(window: BrowserWindow, expression: string): Promise<void> {
   await window.webContents.executeJavaScript(`(async()=>{
     const end = Date.now() + 90000;

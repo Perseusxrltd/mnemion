@@ -1,5 +1,5 @@
 import { isAbsolute } from 'node:path'
-import type { BackupAction, BackupFile, BackupInspectionData, BackupReceipt, RecoveryReceipt } from '../shared/local-workspace.js'
+import type { BackupAction, BackupFile, BackupInspectionData, BackupReceipt, BackupOperationResult, BackupRetentionPolicy, BackupRetentionResult } from '../shared/local-workspace.js'
 
 const uuid = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i
 const digest = /^[a-f0-9]{64}$/
@@ -27,9 +27,53 @@ function file(input: unknown): BackupFile {
   return { file: value.file, bytes: value.bytes, sha256: value.sha256, key_id: value.key_id, authenticated: true }
 }
 
-/** Project explicit fields only: extra native output never reaches the UI. */
-export function backupResult(action: BackupAction, input: unknown, workspaceId?: string): BackupReceipt | BackupInspectionData | RecoveryReceipt {
+export function retentionPolicy(input: unknown): BackupRetentionPolicy {
+  const value = input === undefined ? {} : object(input)
+  const mode = value.mode ?? 'keep_all', snapshots = value.snapshots ?? 7, ledgers = value.ledgers ?? 96
+  if (Object.keys(value).some(key => !['mode', 'snapshots', 'ledgers'].includes(key)) ||
+      !['keep_all', 'limited'].includes(mode) || !count(snapshots, 365) || snapshots < 2 ||
+      !count(ledgers, 10000) || ledgers < 2) throw new Error('Keep at least two snapshots and two access ledgers, or choose Keep all.')
+  return { mode, snapshots, ledgers }
+}
+
+export function retentionResult(input: unknown, workspaceId?: string): BackupRetentionResult {
   const value = object(input)
+  if (value.format !== 1 || !identity(value.workspace_id) || value.workspace_id !== workspaceId ||
+      !keyId(value.key_id) || !text(value.folder) || !isAbsolute(value.folder) ||
+      !['complete', 'partial', 'blocked', 'cancelled'].includes(value.state) || !text(value.message, 1000) ||
+      !date(value.completed_at) || !['deleted_files', 'deleted_bytes', 'skipped_files', 'remaining_candidates'].every(key => count(value[key]))) throw new Error('Invalid backup cleanup result')
+  return { format: 1, workspace_id: value.workspace_id, key_id: value.key_id, folder: value.folder,
+    policy: retentionPolicy(value.policy), state: value.state, message: value.message, completed_at: value.completed_at,
+    deleted_files: value.deleted_files, deleted_bytes: value.deleted_bytes, skipped_files: value.skipped_files,
+    remaining_candidates: value.remaining_candidates }
+}
+
+/** Project explicit fields only: extra native output never reaches the UI. */
+export function backupResult(action: BackupAction, input: unknown, workspaceId?: string): BackupOperationResult {
+  const value = object(input)
+  if (action === 'backup-prune') return retentionResult(value, workspaceId)
+  if (action === 'backup-inventory') {
+    if (value.format !== 1 || !identity(value.workspace_id) || value.workspace_id !== workspaceId ||
+        !keyId(value.key_id) || !text(value.folder) || !isAbsolute(value.folder) || !checksum(value.plan_token) ||
+        !['keep_all', 'untracked', 'ready', 'insufficient_recovery'].includes(value.state) || !text(value.message, 1000) ||
+        !['tracked_snapshots', 'tracked_ledgers', 'tracked_bytes', 'other_key_files', 'candidate_files', 'candidate_bytes', 'batch_files', 'batch_bytes'].every(key => count(value[key])) ||
+        value.batch_files > 200 || value.batch_files > value.candidate_files || value.recent_limit !== 100 ||
+        !Array.isArray(value.recent) || value.recent.length > 100) throw new Error('Invalid backup inventory')
+    return { format: 1, workspace_id: value.workspace_id, key_id: value.key_id, folder: value.folder,
+      policy: retentionPolicy(value.policy), state: value.state, message: value.message, plan_token: value.plan_token,
+      tracked_snapshots: value.tracked_snapshots, tracked_ledgers: value.tracked_ledgers, tracked_bytes: value.tracked_bytes,
+      other_key_files: value.other_key_files, candidate_files: value.candidate_files, candidate_bytes: value.candidate_bytes,
+      batch_files: value.batch_files, batch_bytes: value.batch_bytes, recent_limit: 100,
+      recent: value.recent.map((raw: unknown) => {
+        const row = object(raw)
+        if (!text(row.name, 100) || !/^(snapshot|ledger)-\d{8}T\d{6}Z-[a-f0-9]{32}\.mnemion\.enc$/.test(row.name) ||
+            !['snapshot', 'ledger'].includes(row.kind) || !row.name.startsWith(row.kind + '-') || row.key_id !== value.key_id ||
+            !count(row.bytes, 50 * 1024 ** 3 + 2048) || !date(row.verified_at) || typeof row.protected !== 'boolean' ||
+            !['present', 'missing', 'changed', 'unavailable'].includes(row.availability)) throw new Error('Invalid backup inventory entry')
+        return { name: row.name, kind: row.kind, key_id: row.key_id, bytes: row.bytes, verified_at: row.verified_at,
+          protected: row.protected, availability: row.availability }
+      }) }
+  }
   if (action === 'backup' || action === 'backup-ledger') {
     if (value.format !== 1 || !/^[a-f0-9]{32}$/.test(value.operation_id) || !identity(value.workspace_id) ||
         value.workspace_id !== workspaceId || value.scope !== 'complete_local_database' || !count(value.tenant_count) ||
@@ -41,6 +85,11 @@ export function backupResult(action: BackupAction, input: unknown, workspaceId?:
       const snapshot = object(value.snapshot)
       if (!identity(snapshot.backup_id) || !date(snapshot.snapshot_at) || !count(snapshot.memory_count)) throw new Error('Invalid snapshot receipt')
       result.snapshot = { ...file(snapshot), backup_id: snapshot.backup_id, snapshot_at: snapshot.snapshot_at, memory_count: snapshot.memory_count }
+      if (value.retention !== undefined) result.retention = retentionResult(value.retention, workspaceId)
+      if (value.retention_warning !== undefined) {
+        if (!text(value.retention_warning, 1000)) throw new Error('Invalid backup cleanup notice')
+        result.retention_warning = value.retention_warning
+      }
     }
     return result
   }

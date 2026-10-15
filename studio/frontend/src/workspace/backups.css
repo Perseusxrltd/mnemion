@@ -10,6 +10,15 @@
 .ws-backup-check { display: flex; align-items: flex-start; gap: 10px; margin: 16px 0; cursor: pointer; }
 .ws-backup-check input { width: 17px; height: 17px; margin-top: 3px; flex-shrink: 0; accent-color: var(--ws-accent); }
 .ws-backup-key code { overflow-wrap: anywhere; }
+.ws-backup-inventory { border-top: 1px solid var(--ws-border); padding-top: 20px; margin-top: 22px; }
+.ws-backup-inventory h3 { margin: 0; font-size: 16px; font-weight: 500; }
+.ws-backup-table { overflow: auto; max-height: 380px; border: 1px solid var(--ws-border); border-radius: 8px; }
+.ws-backup-table:focus-visible { outline: 2px solid var(--ws-accent); outline-offset: 3px; }
+.ws-backup-table table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
+.ws-backup-table th, .ws-backup-table td { padding: 12px; border-bottom: 1px solid var(--ws-border); vertical-align: top; }
+.ws-backup-table th { color: var(--ws-muted); font-weight: 500; }
+.ws-backup-table td small { display: block; max-width: 30ch; overflow: hidden; text-overflow: ellipsis; color: var(--ws-muted); margin-top: 4px; }
+.ws-backup-cleanup { padding-top: 8px; }
 .ws-recovery-choice { width: 100%; margin: 8px 0 18px; justify-content: center; }
 .ws-recover-workspace .ws-setup-fields { margin: 20px 0; }
 .ws-recover-workspace .ws-setup-review dl { overflow-wrap: anywhere; }

@@ -451,7 +451,13 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
     const destination = value.destination_selection == null ? (await manager.status()).configuration?.destination : backupSelection(value.destination_selection, 'folder')
     if (!destination) throw new Error('Choose the backup folder first.')
     return manager.configure({ expected_revision: value.expected_revision, destination, enabled: value.enabled,
-      snapshot_hours: value.snapshot_hours, ledger_minutes: value.ledger_minutes, recovery_key: value.recovery_key, key_saved: value.key_saved })
+      snapshot_hours: value.snapshot_hours, ledger_minutes: value.ledger_minutes, recovery_key: value.recovery_key, key_saved: value.key_saved, retention: value.retention })
+  })
+  ipcMain.handle('local:backup-inventory', event => { trusted(event); requireLocalSteady(); return localBackups().inventory() })
+  ipcMain.handle('local:backup-prune', (event, input: unknown) => {
+    trusted(event); requireLocalSteady()
+    const value = backupInput(input)
+    return localBackups().prune({ expected_revision: value.expected_revision, plan_token: value.plan_token, confirm: value.confirm })
   })
   ipcMain.handle('local:backup-run', async (event, input: unknown) => {
     trusted(event)
@@ -594,6 +600,10 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
         case 'backup.run':
           if (input.ledger_only !== undefined && typeof input.ledger_only !== 'boolean') throw new Error('Choose a snapshot or ledger backup.')
           return localBackups().run(input.ledger_only === true, input.recovery_key === undefined ? undefined : recoveryKey(input.recovery_key), signal)
+        case 'backup.inventory': return localBackups().inventory(signal)
+        case 'backup.prune':
+          if (typeof input.expected_revision !== 'string' || typeof input.plan_token !== 'string' || typeof input.confirm !== 'boolean') throw new Error('Review and confirm the current cleanup plan.')
+          return localBackups().prune({ expected_revision: input.expected_revision, plan_token: input.plan_token, confirm: input.confirm }, signal)
         case 'backup.cancel': localBackups().cancel(); return desktopLocalStatus(localWorkspace().status)
         case 'backup.inspect': return localWorkspace().runBackup('backup-inspect', { source: operatorPath(input.source), recovery_key: recoveryKey(input.recovery_key) }, signal)
         case 'backup.restore': return restoreBackup(input, operatorPath(input.source), operatorPath(input.ledger_source), signal)

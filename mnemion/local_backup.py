@@ -17,8 +17,10 @@ from uuid import UUID, uuid4
 import psycopg
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator
 
-from . import backup_encryption as encryption, local_state as state
+from . import backup_catalog as catalog, backup_encryption as encryption
+from . import backup_retention as retention, local_state as state
 from .archives import verified_archive
+from .backup_retention import RetentionPolicy
 from .local_database import LocalDatabase, prepare_credentials
 from .service import recovery
 from .version import __version__
@@ -49,6 +51,7 @@ class BackupRequest(BaseModel):
     destination: str = Field(min_length=1, max_length=4096)
     recovery_key: SecretStr
     watch_parent: bool = False
+    retention: RetentionPolicy = Field(default_factory=RetentionPolicy)
 
     @field_validator("destination")
     @classmethod
@@ -61,6 +64,32 @@ class BackupRequest(BaseModel):
     @classmethod
     def key(cls, value):
         encryption.key_id(value.get_secret_value())
+        return value
+
+
+class BackupInventoryRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    workspace_id: UUID
+    destination: str = Field(min_length=1, max_length=4096)
+    key_id: str = Field(pattern=r"^[a-f0-9]{24}$")
+    policy: RetentionPolicy = Field(default_factory=RetentionPolicy)
+    watch_parent: bool = False
+
+    @field_validator("destination")
+    @classmethod
+    def folder(cls, value):
+        return BackupRequest.folder(value)
+
+
+class BackupPruneRequest(BackupInventoryRequest):
+    plan_token: str = Field(pattern=r"^[a-f0-9]{64}$")
+    confirm: bool
+
+    @field_validator("confirm")
+    @classmethod
+    def confirmed(cls, value):
+        if value is not True:
+            raise ValueError("Review and confirm removal of the older tracked copies")
         return value
 
 
@@ -107,7 +136,7 @@ def _control(root: Path):
     return state.directory(root / "backup-operations")
 
 
-def _destination(root: Path, selection: str, workspace_id: str) -> Path:
+def _destination(root: Path, selection: str, workspace_id: str, *, create=True) -> Path:
     base = Path(selection).resolve(strict=True)
     if not base.is_dir():
         raise state.LocalSetupError("backup_destination", "Choose an existing backup folder.")
@@ -117,8 +146,14 @@ def _destination(root: Path, selection: str, workspace_id: str) -> Path:
             "backup_destination", "Choose a backup folder outside this workspace's data folder."
         )
     for directory in (destination.parent, destination):
-        directory.mkdir(mode=0o700, exist_ok=True)
-        info = directory.lstat()
+        if create:
+            directory.mkdir(mode=0o700, exist_ok=True)
+        try:
+            info = directory.lstat()
+        except FileNotFoundError:
+            if not create:
+                return destination
+            raise
         if (
             not directory.is_dir()
             or directory.is_symlink()
@@ -270,14 +305,57 @@ def capture(
                 cancelled,
             )
             record["verified_at"] = _now()
+            catalog.register(root, destination, record)
             state.write(
                 root / "last-ledger.json",
                 {key: value for key, value in record.items() if key != "snapshot"},
             )
             if snapshot is not None:
                 state.write(root / "last-backup.json", record)
+                # Pruning follows a verified full capture. Ledger-only runs
+                # never repeatedly hash large snapshots or remove history.
+                if request.retention.mode == "limited":
+                    try:
+                        record["retention"] = retention.cleanup(
+                            root,
+                            destination,
+                            settings["workspace_id"],
+                            encryption.key_id(key),
+                            request.retention,
+                            cancelled=cancelled,
+                            emit=emit,
+                        )
+                    except (OSError, state.LocalSetupError):
+                        record["retention_warning"] = (
+                            "The new snapshot and access ledger were verified. Cleanup could not finish; review the backup inventory."
+                        )
+                    state.write(root / "last-backup.json", record)
             progress("complete", "Encrypted recovery files were saved and verified locally.")
             return record
+
+
+def inspect_inventory(
+    root: Path, request: BackupInventoryRequest, *, prune=False, cancelled=None, emit=None
+):
+    """Offline owner control: no database start, decryption key or provider login."""
+    from .local_workspace import configuration
+
+    with state.lock(_control(root)):
+        encryption._cancel(cancelled)
+        settings = configuration(root)
+        if settings["workspace_id"] != str(request.workspace_id):
+            raise state.LocalSetupError("settings_changed", "Choose the current local workspace.")
+        folder = _destination(root, request.destination, settings["workspace_id"], create=False)
+        arguments = (root, folder, settings["workspace_id"], request.key_id, request.policy)
+        if prune:
+            if not isinstance(request, BackupPruneRequest) or request.confirm is not True:
+                raise state.LocalSetupError(
+                    "backup_confirmation", "Review and confirm the current cleanup plan."
+                )
+            return retention.cleanup(
+                *arguments, expected_plan=request.plan_token, cancelled=cancelled, emit=emit
+            )
+        return retention.inventory(*arguments)
 
 
 def inspect_file(root: Path, request: BackupInspection, *, cancelled=None) -> dict:
@@ -372,6 +450,8 @@ def dispatch(root: Path, runtime: Path | None, action: str, emit) -> int:
             from .local_recovery import RecoveryRequest
 
             model = RecoveryRequest
+        elif action in {"backup-inventory", "backup-prune"}:
+            model = BackupPruneRequest if action == "backup-prune" else BackupInventoryRequest
         else:
             model = BackupInspection if action == "backup-inspect" else BackupRequest
         request = model.model_validate_json(line)
@@ -411,6 +491,17 @@ def dispatch(root: Path, runtime: Path | None, action: str, emit) -> int:
                 )
             result = restore(root, runtime, request, cancelled=stop.is_set, emit=emit)
             emit({"event": "recovery", "engine_version": __version__, "receipt": result})
+        elif action in {"backup-inventory", "backup-prune"}:
+            result = inspect_inventory(
+                root, request, prune=action == "backup-prune", cancelled=stop.is_set, emit=emit
+            )
+            emit(
+                {
+                    "event": "backup_retention" if action == "backup-prune" else "backup_inventory",
+                    "engine_version": __version__,
+                    "receipt": result,
+                }
+            )
         else:
             if runtime is None:
                 raise state.LocalSetupError(
@@ -430,7 +521,7 @@ def dispatch(root: Path, runtime: Path | None, action: str, emit) -> int:
         emit(
             {
                 "event": "cancelled",
-                "message": "The backup operation was cancelled. Existing recovery files were retained.",
+                "message": "The backup operation stopped. Verified recovery points remain available; any completed cleanup removals are recorded in the inventory.",
                 "data_retained": True,
             }
         )

@@ -162,6 +162,67 @@ def test_capture_refuses_busy_or_cancelled_work_without_changing_last_success(
     assert not list(destination.iterdir())
 
 
+def test_automatic_retention_preserves_a_restorable_snapshot_and_newest_ledger(
+    env, pg_bin, tmp_path, monkeypatch
+):
+    from mnemion.backup_retention import RetentionPolicy
+
+    root, _, _, _, request = owner_adapter(env, tmp_path, monkeypatch)
+    saved = env.memory.save(
+        env.owner,
+        env.space,
+        MemoryInput(content="Retained recovery point from the retention acceptance fixture"),
+        "retention-recovery-memory",
+    )
+    original = [backup.capture(root, pg_bin.parent, request) for _ in range(3)]
+    limited = request.model_copy(
+        update={"retention": RetentionPolicy(mode="limited", snapshots=2, ledgers=2)}
+    )
+    ledger = backup.capture(root, pg_bin.parent, limited, ledger_only=True)
+    assert "retention" not in ledger
+    assert all(Path(record["snapshot"]["file"]).exists() for record in original)
+    latest = backup.capture(root, pg_bin.parent, limited)
+    assert latest["retention"]["state"] == "complete"
+    assert latest["retention"]["deleted_files"] == 4
+    assert state.read(root / "last-backup.json") == latest
+    assert not Path(original[0]["snapshot"]["file"]).exists()
+    assert not Path(original[1]["snapshot"]["file"]).exists()
+    assert Path(original[2]["snapshot"]["file"]).exists()
+    key = request.recovery_key.get_secret_value()
+    snapshot_file, ledger_file = tmp_path / "retained.snapshot", tmp_path / "retained.ledger"
+    encryption.decrypt_file(
+        Path(latest["snapshot"]["file"]), snapshot_file, key, expected_kind="snapshot"
+    )
+    encryption.decrypt_file(
+        Path(latest["ledger"]["file"]), ledger_file, key, expected_kind="ledger"
+    )
+    database = "retention_restored_" + uuid4().hex
+    try:
+        restored = recovery.restore_backup(
+            env.admin_dsn,
+            snapshot_file,
+            database_name=database,
+            deletion_ledger=ledger_file,
+            credentials_output=tmp_path / "retained-owner.json",
+            pg_bin=pg_bin,
+        )
+        assert restored["keys_rotated"]
+        with psycopg.connect(make_conninfo(env.admin_dsn, dbname=database)) as connection:
+            assert (
+                connection.execute(
+                    "SELECT r.content FROM mnemion.memories m JOIN mnemion.memory_revisions r "
+                    "ON r.tenant_id=m.tenant_id AND r.id=m.current_revision_id WHERE m.id=%s",
+                    (saved["memory_id"],),
+                ).fetchone()[0]
+                == "Retained recovery point from the retention acceptance fixture"
+            )
+    finally:
+        with psycopg.connect(env.admin_dsn, autocommit=True) as connection:
+            connection.execute(
+                sql.SQL("DROP DATABASE IF EXISTS {} WITH (FORCE)").format(sql.Identifier(database))
+            )
+
+
 def test_destination_is_outside_local_data_and_never_follows_managed_links(tmp_path):
     root = state.directory(tmp_path / "host")
     identifier = str(uuid4())

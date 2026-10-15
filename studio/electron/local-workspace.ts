@@ -2,7 +2,7 @@ import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { StringDecoder } from 'node:string_decoder'
 import { backupResult } from './local-backup-protocol.js'
-import type { BackupAction, BackupReceipt, BackupInspectionData, RecoveryReceipt } from '../shared/local-workspace.js'
+import type { BackupAction, BackupOperationResult } from '../shared/local-workspace.js'
 import type { LocalOptions, LocalInfo, LocalStatus, MemoryChange, MemoryWrite, MemorySnapshot, MemoryPolicy, PortChange, LocalDiagnostic, RemoteChange, RemoteAccess, RemoteCheck } from '../shared/local-workspace.js'
 type Connection = { endpoint: string; credential: string; workspaceId: string; tenantId: string; version: string }
 type Options = { executable: string; database: string; root: string; version: string; environment: NodeJS.ProcessEnv; desktopMemory?: () => number }
@@ -132,7 +132,8 @@ export class LocalWorkspace {
   private operation?: Promise<LocalInfo>
   private memoryChange?: Promise<LocalStatus>
   private configurationChange?: Promise<LocalStatus>
-  private backupWork?: Promise<BackupReceipt | BackupInspectionData | RecoveryReceipt>
+  private backupWork?: Promise<BackupOperationResult>
+  private shutdownFailed = false
   private backupChild?: ChildProcessWithoutNullStreams
   private stopping?: Promise<boolean>
   private closing?: Promise<boolean>
@@ -177,13 +178,13 @@ export class LocalWorkspace {
     return ['local', action, '--root', this.options.root, '--database-runtime', this.options.database]
   }
 
-  async runBackup(action: BackupAction, input: Record<string, unknown>, signal?: AbortSignal): Promise<BackupReceipt | BackupInspectionData | RecoveryReceipt> {
+  async runBackup(action: BackupAction, input: Record<string, unknown>, signal?: AbortSignal): Promise<BackupOperationResult> {
     // A read-only status refresh must not make a just-opened recovery form fail.
     // Recheck mutation/stop guards after that refresh has actually drained.
     if (this.operation) await this.waitForInspection()
     signal?.throwIfAborted()
     this.assertOpen()
-    if (!['backup', 'backup-ledger', 'backup-inspect', 'backup-restore'].includes(action)) throw new Error('Choose a supported backup operation.')
+    if (!['backup', 'backup-ledger', 'backup-inspect', 'backup-restore', 'backup-inventory', 'backup-prune'].includes(action)) throw new Error('Choose a supported backup operation.')
     if (!this.status.available) throw new Error('Install the complete desktop app to use local backups and recovery.')
     if (this.backupWork || this.configurationChange || this.memoryChange || this.operation) throw new Error('Another local operation is finishing. Try again when it completes.')
     if (['backup', 'backup-ledger'].includes(action) && this.status.state !== 'running') throw new Error('Start the local workspace before backing it up.')
@@ -191,7 +192,7 @@ export class LocalWorkspace {
     if (Buffer.byteLength(body) > 16384) throw new Error('The backup request is too large.')
     const started_at = new Date().toISOString()
     this.set({ backup: { action, state: 'running', stage: 'starting', message: 'Preparing the recovery operation…', started_at } })
-    const pending = new Promise<BackupReceipt | BackupInspectionData | RecoveryReceipt>((resolve, reject) => {
+    const pending = new Promise<BackupOperationResult>((resolve, reject) => {
       const child = this.control(action)
       this.backupChild = child
       const abort = () => { if (this.backupChild === child) this.cancelBackup() }
@@ -215,12 +216,12 @@ export class LocalWorkspace {
           } else if (value.event === 'cancelled') {
             cancelled = true
           } else {
-            const event = action === 'backup-inspect' ? 'backup_inspection' : action === 'backup-restore' ? 'recovery' : 'backup'
+            const event = action === 'backup-inspect' ? 'backup_inspection' : action === 'backup-restore' ? 'recovery' : action === 'backup-inventory' ? 'backup_inventory' : action === 'backup-prune' ? 'backup_retention' : 'backup'
             if (result !== undefined || value.event !== event || value.engine_version !== this.options.version) throw new Error()
             result = backupResult(action, action === 'backup-inspect' ? value.inspection : value.receipt, String(input.workspace_id ?? ''))
           }
         } catch {
-          failure = new Error('The native runtime returned an invalid recovery result. Existing files were retained.')
+          failure = new Error('The native runtime returned an invalid recovery result. Review the saved backup inventory before retrying.')
           this.cancelBackup()
         }
       }
@@ -247,9 +248,9 @@ export class LocalWorkspace {
         const finished_at = new Date().toISOString()
         if (code === 0 && result !== undefined && !failure) {
           this.set({ backup: { action, state: 'complete', stage: 'complete', message: 'Recovery operation verified and complete.', started_at, finished_at } })
-          resolve(result as BackupReceipt | BackupInspectionData | RecoveryReceipt)
+          resolve(result as BackupOperationResult)
         } else {
-          const message = cancelled ? 'Operation cancelled. Existing data and verified recovery files were retained.' : failure?.message ?? 'The recovery operation could not finish. Existing data was retained.'
+          const message = cancelled ? 'Operation cancelled. Verified recovery points remain available; review the inventory for any completed cleanup removals.' : failure?.message ?? 'The recovery operation could not finish. Existing workspace data was retained.'
           this.set({ backup: { action, state: cancelled ? 'cancelled' : 'error', stage: cancelled ? 'cancelled' : 'error', message, started_at, finished_at } })
           reject(new Error(message))
         }
@@ -350,6 +351,7 @@ export class LocalWorkspace {
   private launch(info: LocalInfo, options?: LocalOptions): LocalStatus {
     if (info.memory_recovery) throw new Error('Repair the saved RAM budget before resuming this workspace.')
     this.intentionalStop = false
+    this.shutdownFailed = false
     this.connection = undefined
     this.set({ state: 'starting', stage: 'starting', message: info.configured ? 'Opening your local workspace…' : 'Creating your local workspace…', errorCode: undefined, diagnostic: undefined })
     const child = spawn(this.options.executable, this.command(options ? 'initialize' : 'run'), {
@@ -420,7 +422,8 @@ export class LocalWorkspace {
       if (this.child !== child) return
       this.child = undefined
       this.connection = undefined
-      if (this.intentionalStop) this.set({ state: 'stopped', stage: undefined, message: 'Local workspace paused. Your memories remain on this computer.', errorCode: undefined })
+      this.shutdownFailed = code !== 0 || !!this.statusValue.errorCode
+      if (this.intentionalStop && !this.shutdownFailed) this.set({ state: 'stopped', stage: undefined, message: 'Local workspace paused. Your memories remain on this computer.', errorCode: undefined })
       else if (this.statusValue.errorCode) this.set({ state: 'error' })
       else if (this.statusValue.state !== 'error') this.set({ state: 'error', errorCode: 'engine_stopped', message: code === 0 ? 'The local workspace stopped. Start it again to reconnect.' : 'The local workspace stopped unexpectedly. Retry to resume it; saved data has been retained.' })
       this.set({ memory: undefined })
@@ -614,11 +617,11 @@ export class LocalWorkspace {
 
   private async stopChild(): Promise<boolean> {
     const child = this.child
-    if (!child) return true
+    if (!child) return !this.shutdownFailed
     this.intentionalStop = true
     this.set({ state: 'stopping', message: 'Finishing local work and safely closing the database…' })
     return new Promise(resolve => {
-      const closed = () => { clearTimeout(timer); resolve(true) }
+      const closed = () => { clearTimeout(timer); resolve(!this.shutdownFailed) }
       const timer = setTimeout(() => {
         child.removeListener('close', closed)
         this.set({ message: 'Local work is still finishing. Wait a moment and try again.' })
