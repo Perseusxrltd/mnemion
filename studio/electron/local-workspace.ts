@@ -177,10 +177,11 @@ export class LocalWorkspace {
     return ['local', action, '--root', this.options.root, '--database-runtime', this.options.database]
   }
 
-  async runBackup(action: BackupAction, input: Record<string, unknown>): Promise<BackupReceipt | BackupInspectionData | RecoveryReceipt> {
+  async runBackup(action: BackupAction, input: Record<string, unknown>, signal?: AbortSignal): Promise<BackupReceipt | BackupInspectionData | RecoveryReceipt> {
     // A read-only status refresh must not make a just-opened recovery form fail.
     // Recheck mutation/stop guards after that refresh has actually drained.
     if (this.operation) await this.waitForInspection()
+    signal?.throwIfAborted()
     this.assertOpen()
     if (!['backup', 'backup-ledger', 'backup-inspect', 'backup-restore'].includes(action)) throw new Error('Choose a supported backup operation.')
     if (!this.status.available) throw new Error('Install the complete desktop app to use local backups and recovery.')
@@ -193,6 +194,8 @@ export class LocalWorkspace {
     const pending = new Promise<BackupReceipt | BackupInspectionData | RecoveryReceipt>((resolve, reject) => {
       const child = this.control(action)
       this.backupChild = child
+      const abort = () => { if (this.backupChild === child) this.cancelBackup() }
+      signal?.addEventListener('abort', abort, { once: true })
       const decoder = new StringDecoder('utf8')
       let line = '', total = 0, failure: Error | undefined, result: unknown, cancelled = false
       const timer = setTimeout(() => {
@@ -237,6 +240,7 @@ export class LocalWorkspace {
       child.stderr.resume()
       child.once('error', () => { failure = new Error('The native recovery runtime could not start. Reinstall the complete app.') })
       child.once('close', code => {
+        signal?.removeEventListener('abort', abort)
         clearTimeout(timer)
         if (this.backupChild === child) this.backupChild = undefined
         accept(line + decoder.end())

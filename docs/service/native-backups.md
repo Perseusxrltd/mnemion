@@ -119,8 +119,11 @@ the primary organization ID and explicit trust confirmation. Automation can keep
 stdin open with `watch_parent: true` and send `{"action":"cancel"}`; closing that
 watched pipe also cancels owned work. One-shot JSON followed by EOF remains supported.
 
-Native schedule configuration and persistent app selection do not yet have
-complete standalone agent controls. Company recovery custodians, independently
+The following [desktop operator source](desktop-operator.md) adds private
+same-account commands for schedule configuration, capture, inspection, independent
+restoration and persistent app selection. It shares the app controllers and
+retains separate native release acceptance; it is not part of the frozen 4.5.0
+release source. Company recovery custodians, independently
 managed host inventory, continuous replication, provider power management and
 automatic failover retain their separate
 [workspace-continuity requirements](../implementation/workspace-continuity.md).

@@ -20,9 +20,29 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--version", action="store_true")
     parser.add_argument("--credential", choices=["protect", "unprotect"])
+    parser.add_argument("--desktop-control", action="store_true")
     parser.add_argument("--archive", type=Path)
     parser.add_argument("--vault", type=Path)
     args = parser.parse_args(argv)
+    if args.desktop_control:
+        if args.credential or args.archive or args.vault or args.version:
+            parser.error("Desktop control publication cannot be combined with other operations")
+        from mnemion.desktop_operator import publish_request
+
+        try:
+            result = publish_request(sys.stdin.buffer.read(16385))
+        except (ValueError, OSError, RuntimeError):
+            print(
+                json.dumps(
+                    {
+                        "error": "desktop_control_unavailable",
+                        "message": "The private desktop control endpoint could not be published.",
+                    }
+                )
+            )
+            return 1
+        print(json.dumps(result))
+        return 0
     if args.credential:
         if args.archive or args.vault or args.version:
             parser.error("Credential operations cannot be combined with other operations")

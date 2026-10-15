@@ -1,8 +1,9 @@
 import { app, dialog, ipcMain, net, safeStorage, type BrowserWindow, type IpcMainInvokeEvent } from 'electron'
 import { spawn, type ChildProcess } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
+import { AsyncLocalStorage } from 'node:async_hooks'
 import { lstat, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { isAbsolute, join } from 'node:path'
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { WorkspaceStore, workspaceIdentity } from './workspace-store.js'
 import { WorkspaceConnections, isWorkspaceSession } from './workspace-connections.js'
@@ -12,7 +13,9 @@ import { workspaceFetch } from './workspace-fetch.js'
 import { LocalWorkspace, localEnvironment, localOptions } from './local-workspace.js'
 import { LocalBackups, createRecoveryKey, readBackupDocument, recoveryKey } from './local-backups.js'
 import { backupResult } from './local-backup-protocol.js'
-import type { LocalStatus, RecoveryReceipt } from '../shared/local-workspace.js'
+import { DesktopOperator, type DesktopRequest } from './desktop-operator.js'
+import { desktopAction, desktopActions } from './desktop-actions.js'
+import type { BackupSettings, DesktopOperatorStatus, LocalStatus, RecoveryReceipt } from '../shared/local-workspace.js'
 
 const MAX_BYTES = 120 * 1024 * 1024
 const selections = new Map<string, string>()
@@ -173,8 +176,19 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
   const backupSelections = new Map<string, { kind: 'folder' | 'file'; path: string }>()
   let localOpenGeneration = 0
   let localSwitching = false
+  let operator: DesktopOperator | undefined
+  let operatorInfo: DesktopOperatorStatus | undefined
+  let operatorMutation: string | undefined
+  let operatorWork: Promise<unknown> | undefined
+  let operatorSelectionChanged = false
+  const operatorContext = new AsyncLocalStorage<string>()
   function requireLocalSteady(): void {
     if (localSwitching) throw new Error('The local workspace is switching. Wait for it to finish.')
+    if (operatorMutation && operatorContext.getStore() !== operatorMutation) throw new Error('A local agent operation is finishing. Wait for it to finish or cancel the backup.')
+  }
+  async function disconnectForLocalSelection(): Promise<void> {
+    await workspaceConnections().disconnect()
+    if (operatorMutation && operatorContext.getStore() === operatorMutation) operatorSelectionChanged = true
   }
   type LocalPreferences = { selected: boolean; startWithApp: boolean; recoveryRoot?: string }
   function localPreferences(): LocalPreferences {
@@ -201,7 +215,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
   function desktopLocalStatus(status: LocalStatus): LocalStatus {
     // The desktop may be native while its service uses OS compatibility. Add
     // this trusted observation only to IPC, without mutating engine state.
-    return { ...status, preferences: { ...localPreferences(), originalAvailable: existsSync(join(localBase(), 'mnemion-local-workspace', 'configuration.json')) }, info: status.info ? {
+    return { ...status, operator: operatorInfo, preferences: { ...localPreferences(), originalAvailable: existsSync(join(localBase(), 'mnemion-local-workspace', 'configuration.json')) }, info: status.info ? {
       ...status.info, resources: { ...status.info.resources, desktop_architecture: process.arch },
     } : undefined }
   }
@@ -216,8 +230,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
     if (local) return local
     const selected = localPreferences().recoveryRoot
     const root = selected ? join(localBase(), 'mnemion-recovered-workspaces', selected) : join(localBase(), 'mnemion-local-workspace')
-    const executable = !app.isPackaged && process.env.MNEMION_LOCAL_ENGINE ? process.env.MNEMION_LOCAL_ENGINE :
-      join(process.resourcesPath, 'engine', process.platform === 'win32' ? 'mnemion-engine.exe' : 'mnemion-engine')
+    const executable = engineExecutable()
     const database = !app.isPackaged && process.env.MNEMION_LOCAL_DATABASE ? process.env.MNEMION_LOCAL_DATABASE : join(process.resourcesPath, 'postgresql')
     local = new LocalWorkspace({ executable, database, root, version: app.getVersion(), environment: localEnvironment(process.env, root),
       desktopMemory: () => app.getAppMetrics().reduce((sum, metric) => sum + metric.memory.workingSetSize * 1024, 0) + macosCredentialMemory() }, status => {
@@ -232,6 +245,10 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
     return local
   }
   function localBackups(): LocalBackups { localWorkspace(); return backups! }
+  function engineExecutable(): string {
+    return !app.isPackaged && process.env.MNEMION_LOCAL_ENGINE ? process.env.MNEMION_LOCAL_ENGINE :
+      join(process.resourcesPath, 'engine', process.platform === 'win32' ? 'mnemion-engine.exe' : 'mnemion-engine')
+  }
   function workspaceConnections(): WorkspaceConnections {
     connections ??= new WorkspaceConnections(new WorkspaceStore(join(app.getPath('userData'), 'workspaces'), workspaceCipher()), async (endpoint, credential) => {
       let response: Response
@@ -332,29 +349,30 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
   ipcMain.handle('workspaces:disconnect', event => { trusted(event); deselectLocal(); return workspaceConnections().disconnect() })
   ipcMain.handle('workspaces:reset', event => { trusted(event); return workspaceConnections().reset() })
 
-  ipcMain.handle('local:status', async event => {
-    trusted(event)
+  async function localStatus(): Promise<LocalStatus> {
     const host = localWorkspace()
     if (localSwitching) return desktopLocalStatus({ ...host.status, state: 'starting', stage: 'recovery_switch', message: 'Switching to the selected local workspace…' })
     if (host.status.available) await host.inspect()
     return desktopLocalStatus(host.status)
-  })
-  ipcMain.handle('local:create', async (event, input: unknown) => {
-    trusted(event)
+  }
+  ipcMain.handle('local:status', event => { trusted(event); return localStatus() })
+  async function createLocal(input: unknown): Promise<LocalStatus> {
     requireLocalSteady()
     const options = localOptions(input)
-    ++localOpenGeneration
+    const host = localWorkspace(), generation = ++localOpenGeneration
     saveLocalPreferences({ selected: true, startWithApp: true })
-    await workspaceConnections().disconnect()
-    return desktopLocalStatus(await localWorkspace().start(options))
-  })
-  ipcMain.handle('local:start', async event => {
-    trusted(event)
+    await disconnectForLocalSelection()
+    if (generation !== localOpenGeneration) throw new Error('Another workspace connection was selected.')
+    return desktopLocalStatus(await host.start(options))
+  }
+  ipcMain.handle('local:create', (event, input: unknown) => { trusted(event); return createLocal(input) })
+  async function startLocal(): Promise<LocalStatus> {
     requireLocalSteady()
     ++localOpenGeneration
     saveLocalPreferences({ ...localPreferences(), startWithApp: true })
     return desktopLocalStatus(await localWorkspace().start())
-  })
+  }
+  ipcMain.handle('local:start', event => { trusted(event); return startLocal() })
   ipcMain.handle('local:memory', async (event, input: unknown) => {
     trusted(event)
     requireLocalSteady()
@@ -385,23 +403,24 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
     saveLocalPreferences({ ...localPreferences(), selected: true })
     return session
   })
-  ipcMain.handle('local:stop', async event => {
-    trusted(event)
+  async function stopLocal(): Promise<boolean> {
     requireLocalSteady()
     if (backups?.busy && !local?.backupActive) throw new Error('Finish or cancel the backup settings operation before stopping the workspace.')
+    const host = localWorkspace()
     ++localOpenGeneration
     const selected = localPreferences().selected
     saveLocalPreferences({ selected: false, startWithApp: false })
-    if (selected) await workspaceConnections().disconnect()
-    return localWorkspace().stop()
-  })
+    if (selected) await disconnectForLocalSelection()
+    return host.stop()
+  }
+  ipcMain.handle('local:stop', event => { trusted(event); return stopLocal() })
 
-  ipcMain.handle('local:backup-status', async event => {
-    trusted(event)
+  async function backupStatus() {
     const host = localWorkspace()
     if (!host.status.info && !host.busy) await host.inspect()
     return localBackups().status()
-  })
+  }
+  ipcMain.handle('local:backup-status', event => { trusted(event); return backupStatus() })
   ipcMain.handle('local:backup-key', event => { trusted(event); return createRecoveryKey() })
   ipcMain.handle('local:backup-choose', async (event, kind: unknown) => {
     trusted(event)
@@ -450,20 +469,24 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
     const value = backupInput(input)
     return localWorkspace().runBackup('backup-inspect', { source: backupSelection(value.selection_id, 'file'), recovery_key: recoveryKey(value.recovery_key) })
   })
-  ipcMain.handle('local:backup-restore', async (event, input: unknown) => {
-    trusted(event)
+  async function restoreBackup(value: Record<string, any>, source: string, ledger_source: string, signal?: AbortSignal) {
     requireLocalSteady()
-    const value = backupInput(input), host = localWorkspace()
+    const host = localWorkspace()
     await host.waitForInspection()
+    signal?.throwIfAborted()
     if (backups?.busy || host.busy) throw new Error('Finish the current local operation before restoring.')
-    const source = backupSelection(value.snapshot_selection, 'file'), ledger_source = backupSelection(value.ledger_selection, 'file')
     const id = randomUUID(), parent = join(localBase(), 'mnemion-recovered-workspaces')
     await mkdir(parent, { recursive: true, mode: 0o700 })
     const receipt = await host.runBackup('backup-restore', { source, ledger_source, destination: join(parent, id),
       recovery_key: recoveryKey(value.recovery_key), ledger_key: value.ledger_key == null ? null : recoveryKey(value.ledger_key),
       snapshot_sha256: value.snapshot_sha256, ledger_sha256: value.ledger_sha256,
-      primary_tenant_id: value.primary_tenant_id, trusted_backup_confirmed: value.trusted_backup_confirmed }) as RecoveryReceipt
+      primary_tenant_id: value.primary_tenant_id, trusted_backup_confirmed: value.trusted_backup_confirmed }, signal) as RecoveryReceipt
     return { id, receipt }
+  }
+  ipcMain.handle('local:backup-restore', (event, input: unknown) => {
+    trusted(event)
+    const value = backupInput(input)
+    return restoreBackup(value, backupSelection(value.snapshot_selection, 'file'), backupSelection(value.ledger_selection, 'file'))
   })
   async function recoveryCopy(id: unknown): Promise<RecoveryReceipt> {
     if (typeof id !== 'string' || !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(id)) throw new Error('Choose a verified recovery copy.')
@@ -474,8 +497,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
     if (receipt.data_directory !== root) throw new Error('The recovery copy does not match its saved location.')
     return receipt
   }
-  ipcMain.handle('local:recovery-copies', async event => {
-    trusted(event)
+  async function recoveryCopies() {
     const parent = join(localBase(), 'mnemion-recovered-workspaces')
     let entries
     try { entries = await readdir(parent, { withFileTypes: true }) } catch (error) {
@@ -487,9 +509,9 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
       try { return { id: entry.name, receipt: await recoveryCopy(entry.name) } } catch { return null }
     }))
     return copies.filter(copy => copy !== null).sort((a, b) => b.receipt.restored_at.localeCompare(a.receipt.restored_at))
-  })
-  ipcMain.handle('local:recovery-use', async (event, id: unknown) => {
-    trusted(event)
+  }
+  ipcMain.handle('local:recovery-copies', event => { trusted(event); return recoveryCopies() })
+  async function useRecovery(id: unknown): Promise<LocalStatus> {
     requireLocalSteady()
     const host = localWorkspace()
     localSwitching = true
@@ -503,13 +525,120 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
           (receipt && configuration.workspace_id !== receipt.workspace_id)) throw new Error('This local workspace is unavailable. The current workspace has been kept open.')
       if (!await host.close()) throw new Error('The current workspace is still stopping. Its data was retained.')
       ++localOpenGeneration
-      await workspaceConnections().disconnect()
+      await disconnectForLocalSelection()
       backups?.close()
       local = undefined; backups = undefined
       saveLocalPreferences({ selected: true, startWithApp: true, recoveryRoot: id === null ? undefined : id as string })
       return desktopLocalStatus(await localWorkspace().start())
     } finally { localSwitching = false }
-  })
+  }
+  ipcMain.handle('local:recovery-use', (event, id: unknown) => { trusted(event); return useRecovery(id) })
+
+  function operatorPath(value: unknown): string {
+    if (typeof value !== 'string' || !isAbsolute(value) || value.length > 4096 || /[\x00-\x1f\x7f]/.test(value)) throw new Error('Use an absolute local file or folder path without control characters.')
+    return value
+  }
+  async function executeOperator(request: DesktopRequest, signal: AbortSignal): Promise<unknown> {
+    let selecting = false
+    const spec = desktopAction(request.action, request.input)
+    if (spec.mutation && operatorMutation) throw new Error('Another local agent operation is finishing. Read status or cancel its backup before continuing.')
+    if (spec.workspace) {
+      const check = () => {
+        if (request.action === 'backup.cancel') {
+          if (localSwitching) throw new Error('The selected workspace is switching. Wait for it to finish.')
+        } else requireLocalSteady()
+      }
+      check()
+      const host = localWorkspace()
+      if (!host.status.info && !host.busy) await host.inspect()
+      await host.waitForInspection()
+      signal.throwIfAborted()
+      check()
+      const actual = host.status.info?.settings?.workspace_id ?? null
+      if (host !== local || !Object.hasOwn(request, 'expected_workspace_id') || request.expected_workspace_id !== actual) throw new Error('The selected workspace changed. Read desktop status and confirm its workspace identity before retrying.')
+      if (request.action === 'local.create' && actual !== null) throw new Error('This desktop already has a local workspace. Use its start or recovery controls.')
+    }
+    const run = async (): Promise<unknown> => {
+      signal.throwIfAborted()
+      const input = request.input
+      if (request.action === 'local.create' || request.action === 'recovery.use' ||
+          (request.action === 'local.stop' && localPreferences().selected)) {
+        const window = getWindow()
+        if (window && !window.webContents.isDestroyed() &&
+            !await window.webContents.executeJavaScript('window.mnemion?.updateSafety?.() === true')) {
+          throw new Error('Save or discard edits and finish pending requests in the app before changing its workspace.')
+        }
+        signal.throwIfAborted()
+        selecting = true
+        if (window && !window.webContents.isDestroyed()) window.webContents.send('local:selection-changed', 'changing')
+      }
+      switch (request.action) {
+        case 'catalog': return { protocol: 1, scope: 'owning_os_account', version: app.getVersion(), operations: desktopActions,
+          request_limit_bytes: 16384, response_limit_bytes: 262144, same_request_replay_seconds: 600,
+          guide: 'https://github.com/Perseusxrltd/mnemion/blob/main/docs/service/desktop-operator.md' }
+        case 'status': return localStatus()
+        case 'local.create': return createLocal(input)
+        case 'local.start': return startLocal()
+        case 'local.stop': return { stopped: await stopLocal() }
+        case 'local.memory': return desktopLocalStatus(await localWorkspace().changeMemory(input))
+        case 'local.port': return desktopLocalStatus(await localWorkspace().changePort(input))
+        case 'local.remote': return desktopLocalStatus(await localWorkspace().changeRemote(input))
+        case 'local.remote-check': return desktopLocalStatus(await localWorkspace().checkRemote(input))
+        case 'local.preferences':
+          if (typeof input.start_with_app !== 'boolean') throw new Error('Choose whether this workspace starts with the app.')
+          saveLocalPreferences({ ...localPreferences(), startWithApp: input.start_with_app })
+          return desktopLocalStatus(localWorkspace().status)
+        case 'backup.status': return backupStatus()
+        case 'backup.key': return { recovery_key: createRecoveryKey() }
+        case 'backup.configure': return localBackups().configure({ ...input, destination: operatorPath(input.destination) } as BackupSettings, signal)
+        case 'backup.run':
+          if (input.ledger_only !== undefined && typeof input.ledger_only !== 'boolean') throw new Error('Choose a snapshot or ledger backup.')
+          return localBackups().run(input.ledger_only === true, input.recovery_key === undefined ? undefined : recoveryKey(input.recovery_key), signal)
+        case 'backup.cancel': localBackups().cancel(); return desktopLocalStatus(localWorkspace().status)
+        case 'backup.inspect': return localWorkspace().runBackup('backup-inspect', { source: operatorPath(input.source), recovery_key: recoveryKey(input.recovery_key) }, signal)
+        case 'backup.restore': return restoreBackup(input, operatorPath(input.source), operatorPath(input.ledger_source), signal)
+        case 'recovery.list': return recoveryCopies()
+        case 'recovery.use': return useRecovery(input.id)
+        default: throw new Error('Choose an operation from the desktop catalog.')
+      }
+    }
+    if (!spec.mutation) return run()
+    // The renderer and operator share one mutation gate, including across awaits.
+    if (operatorMutation) throw new Error('Another local agent operation started. Refresh status before continuing.')
+    operatorMutation = request.request_id
+    const work = operatorContext.run(request.request_id, run)
+    operatorWork = work
+    try { return await work } finally {
+      if (operatorWork === work) { operatorWork = undefined; operatorMutation = undefined }
+      const window = getWindow()
+      if (window && !window.webContents.isDestroyed()) window.webContents.send('local:changed', desktopLocalStatus(localWorkspace().status))
+      if (selecting || operatorSelectionChanged) {
+        const phase = operatorSelectionChanged ? 'changed' : 'unchanged'
+        operatorSelectionChanged = false
+        if (window && !window.webContents.isDestroyed()) window.webContents.send('local:selection-changed', phase)
+      }
+    }
+  }
+
+  async function bootOperator(): Promise<void> {
+    if (operatorInfo) return
+    const directory = join(localBase(), 'mnemion-desktop-control')
+    operatorInfo = { state: 'starting', message: 'Starting private controls for local agents.', control_directory: directory,
+      command: { executable: engineExecutable(), arguments: ['desktop-control', '--control-directory', directory] } }
+    operator = new DesktopOperator({ directory, version: app.getVersion(), execute: executeOperator,
+      publish: async input => {
+        const result = await runClient(['--desktop-control'], { input: JSON.stringify(input), credential: true })
+        if (result.format !== 1 || result.protected !== true || result.session_id !== input.endpoint.session_id) throw new Error('The private desktop control endpoint could not be confirmed.')
+      } })
+    try {
+      await operator.start()
+      operatorInfo = { ...operatorInfo, state: 'ready', message: 'Authorized agents running under this OS account can manage this desktop through its private pipe.' }
+    } catch {
+      operatorInfo = { ...operatorInfo, state: 'unavailable', message: 'Private desktop controls could not start. Check the local operator guide and restart the app.' }
+    }
+    const window = getWindow()
+    if (window && !window.webContents.isDestroyed()) window.webContents.send('local:changed', desktopLocalStatus(localWorkspace().status))
+  }
 
   ipcMain.handle('service:request', async (event, input: unknown) => {
     trusted(event)
@@ -579,15 +708,22 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
     selections.clear()
     backupSelections.clear()
   })
-  app.on('will-quit', () => backups?.close())
+  app.on('will-quit', () => { backups?.close(); void operator?.close() })
 
   return {
-    localBusy: () => localSwitching || !!backups?.busy || (local?.busy ?? false),
-    localActive: () => localSwitching || !!backups?.busy || (local?.active ?? false),
+    localBusy: () => localSwitching || !!operatorMutation || !!backups?.busy || (local?.busy ?? false),
+    localActive: () => localSwitching || !!operatorMutation || !!backups?.busy || (local?.active ?? false),
     stopLocal: () => local?.stop() ?? Promise.resolve(true),
     stopLocalForUpdate: () => localSwitching ? Promise.resolve(false) : local?.stopForUpdate() ?? Promise.resolve(true),
     resumeLocalAfterCancelledUpdate: () => local?.cancelUpdateStop() ?? Promise.resolve(),
-    closeLocal: () => localSwitching || backups?.busy && !local?.backupActive ? Promise.resolve(false) : local?.close() ?? Promise.resolve(true),
+    closeLocal: async () => {
+      if (localSwitching) return false
+      operator?.cancel()
+      const stopped = await (local?.close() ?? Promise.resolve(true))
+      if (operatorWork) await Promise.race([operatorWork.catch(() => {}), new Promise(resolve => setTimeout(resolve, 5000))])
+      return stopped && !operatorMutation && !backups?.busy
+    },
+    bootOperator,
     bootLocal: async () => {
       const host = localWorkspace()
       if (!host.status.available) return

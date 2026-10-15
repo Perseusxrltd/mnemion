@@ -97,7 +97,9 @@ alone is not proof that those features exist.
 The current implementation keeps every backup; configurable automatic retention
 is still open. Metadata checks detect missing/resized files, while native cloud
 delivery receipts and real disconnected-provider acceptance remain separate.
-Standalone agent controls for schedule configuration and persistent desktop copy
-selection need completion. Additional organizations retain private administrator
+The [following desktop operator source](../service/desktop-operator.md) implements
+schedule configuration and persistent desktop copy selection through the same
+controllers, with private OS-pipe access and separate native acceptance.
+Additional organizations retain private administrator
 credentials, with guided distribution still open. Native OS-store and installed
 capture/restore/reopen checks must pass before public release claims.

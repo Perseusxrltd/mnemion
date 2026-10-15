@@ -53,6 +53,11 @@ export type LocalStatus = {
   preferences?: { selected: boolean; startWithApp: boolean; recoveryRoot?: string; originalAvailable?: boolean };
   diagnostic?: LocalDiagnostic;
   backup?: BackupActivity;
+  operator?: DesktopOperatorStatus;
+}
+export type DesktopOperatorStatus = {
+  state: 'starting' | 'ready' | 'unavailable'; message: string; control_directory: string;
+  command: { executable: string; arguments: string[] };
 }
 export type BackupAction = 'backup' | 'backup-ledger' | 'backup-inspect' | 'backup-restore';
 export type BackupActivity = {

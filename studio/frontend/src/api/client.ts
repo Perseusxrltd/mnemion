@@ -44,6 +44,7 @@ declare global {
       localRecoveryUse?: (id: string | null) => Promise<LocalStatus>
       onBackupStatus?: (callback: () => void) => () => void
       onLocalStatus?: (callback: (status: LocalStatus) => void) => () => void
+      onLocalSelection?: (callback: (phase: 'changing' | 'changed' | 'unchanged') => void) => () => void
       chooseVault?: () => Promise<{ id: string; path: string } | null>
       refreshVault?: (selection: string, bytes: Uint8Array) => Promise<{ completed: boolean; file_count: number; pruned_files: number; detached_annotations: string[]; conflicts: Array<{ path: string; proposal_path?: string }>; vault_path: string }>
       onNavigate?: (callback: (route: string) => void) => () => void

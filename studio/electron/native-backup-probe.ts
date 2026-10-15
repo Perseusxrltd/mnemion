@@ -2,6 +2,7 @@
 import { dialog, type BrowserWindow } from 'electron'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
+import { verifyNativeOperator } from './native-operator-probe.js'
 
 export async function verifyNativeBackups(window: BrowserWindow, config: Record<string, unknown>, probePath: string): Promise<Record<string, unknown>> {
   const base = dirname(probePath), fixturePath = join(base, 'native-backup-fixture.json')
@@ -153,6 +154,6 @@ export async function verifyNativeBackups(window: BrowserWindow, config: Record<
       if (policy.includes(fixture.key)) throw new Error('A native backup recovery key was saved in plaintext')
     }
     if (choices.length) throw new Error('The recovery workflow did not use its expected native file selections')
-    return result
+    return { ...result, ...await verifyNativeOperator(window, String(config.phase)) }
   } finally { dialog.showOpenDialog = originalDialog }
 }

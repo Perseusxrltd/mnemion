@@ -47,6 +47,14 @@ def main(argv: list[str] | None = None) -> int:
             help="Create or run an app-managed private local workspace using a bundled database",
         )
     )
+    from ..desktop_operator import arguments as desktop_arguments
+
+    desktop_arguments(
+        commands.add_parser(
+            "desktop-control",
+            help="Control this OS account's running Studio through its private local pipe; JSON on stdin",
+        )
+    )
     commands.add_parser(
         "migrate", help="Apply checked database migrations with administration credentials"
     )
@@ -316,6 +324,10 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(result))
     elif args.command == "local":
         from ..local_workspace import dispatch
+
+        return dispatch(args)
+    elif args.command == "desktop-control":
+        from ..desktop_operator import dispatch
 
         return dispatch(args)
     elif args.command == "migrate":

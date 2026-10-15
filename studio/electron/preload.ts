@@ -69,6 +69,13 @@ contextBridge.exposeInMainWorld('mnemion', {
     ipcRenderer.on('local:changed', listener)
     return () => ipcRenderer.removeListener('local:changed', listener)
   },
+  onLocalSelection: (callback: (phase: 'changing' | 'changed' | 'unchanged') => void) => {
+    const listener = (_event: IpcRendererEvent, phase: unknown) => {
+      if (phase === 'changing' || phase === 'changed' || phase === 'unchanged') callback(phase)
+    }
+    ipcRenderer.on('local:selection-changed', listener)
+    return () => ipcRenderer.removeListener('local:selection-changed', listener)
+  },
   chooseVault: () => transfer('vault:choose'),
   refreshVault: (selection: string, bytes: Uint8Array) => transfer('vault:refresh', selection, bytes),
   updateSafety: () => {

@@ -6,6 +6,7 @@ import type { WorkspaceSession } from './connection-types';
 import { LiveMemory, MemoryFields, RepairMemory, memorySize, validMemory } from './MemoryControls';
 import LocalAddress from './LocalAddress';
 import Backups from './Backups';
+import LocalOperator from './LocalOperator';
 
 export const localError = (error: unknown) => (error instanceof Error ? error.message : 'The local workspace could not complete this step.')
   .replace(/^Error invoking remote method '[^']+': (?:Error: )?/, '');
@@ -96,6 +97,7 @@ export default function LocalSetup({ initial, onOpen, onBack, autoContinue = fal
       <div className="ws-setup-actions">{step > 0 && <button type="button" className="ws-button ws-quiet" disabled={busy} onClick={() => setStep(step - 1)}>Back</button>}<button className="ws-button ws-primary" disabled={busy || !options.workspace_name.trim() || !options.owner_name.trim() || !validMemory(options.memory) || (step === 2 && resources.available_disk_bytes < resources.minimum_free_disk_bytes)}>{busy ? <LoaderCircle className="ws-spin" size={16} /> : <ArrowRight size={16} />}{step === 2 ? 'Create workspace' : 'Continue'}</button></div>
     </form>}
     {status?.memory && <LiveMemory value={status.memory} />}
+    {status && <LocalOperator status={status} />}
     {configured && status && <RemoteAccess status={status} onStatus={setStatus} />}
     {configured && status && <Backups status={status} onStatus={setStatus} />}
   </section>;

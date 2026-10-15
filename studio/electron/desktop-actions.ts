@@ -1,0 +1,29 @@
+/** Discoverable native operations; each also uses the app's typed controller. */
+export const desktopActions = {
+  status: { workspace: false, mutation: false, fields: [] },
+  catalog: { workspace: false, mutation: false, fields: [] },
+  'local.create': { workspace: true, mutation: true, fields: ['workspace_name', 'owner_name', 'embedding_profile', 'threads', 'port', 'memory'] },
+  'local.start': { workspace: true, mutation: true, fields: [] },
+  'local.stop': { workspace: true, mutation: true, fields: [] },
+  'local.memory': { workspace: true, mutation: true, fields: ['mode', 'limit_mib', 'expected_revision', 'repair_token'] },
+  'local.port': { workspace: true, mutation: true, fields: ['workspace_id', 'expected_port', 'port'] },
+  'local.remote': { workspace: true, mutation: true, fields: ['workspace_id', 'expected_revision', 'mode', 'public_url', 'personal_sign_in', 'ngrok_authtoken'] },
+  'local.remote-check': { workspace: true, mutation: true, fields: ['workspace_id', 'expected_revision'] },
+  'local.preferences': { workspace: true, mutation: true, fields: ['start_with_app'] },
+  'backup.status': { workspace: false, mutation: false, fields: [] },
+  'backup.key': { workspace: false, mutation: false, fields: [], sensitive_result: true },
+  'backup.configure': { workspace: true, mutation: true, fields: ['expected_revision', 'destination', 'enabled', 'snapshot_hours', 'ledger_minutes', 'recovery_key', 'key_saved'] },
+  'backup.run': { workspace: true, mutation: true, fields: ['ledger_only', 'recovery_key'] },
+  'backup.cancel': { workspace: true, mutation: false, fields: [] },
+  'backup.inspect': { workspace: true, mutation: true, fields: ['source', 'recovery_key'] },
+  'backup.restore': { workspace: true, mutation: true, fields: ['source', 'ledger_source', 'recovery_key', 'ledger_key', 'snapshot_sha256', 'ledger_sha256', 'primary_tenant_id', 'trusted_backup_confirmed'] },
+  'recovery.list': { workspace: false, mutation: false, fields: [] },
+  'recovery.use': { workspace: true, mutation: true, fields: ['id'] },
+} as const
+
+export function desktopAction(name: string, input: Record<string, unknown>) {
+  if (!Object.hasOwn(desktopActions, name)) throw new Error('Choose an operation from the desktop catalog.')
+  const spec = desktopActions[name as keyof typeof desktopActions]
+  if (Object.keys(input).some(key => !(spec.fields as readonly string[]).includes(key))) throw new Error('The desktop operation contains unsupported input fields. Read its catalog before retrying.')
+  return spec
+}

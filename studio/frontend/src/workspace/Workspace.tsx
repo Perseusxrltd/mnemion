@@ -2211,6 +2211,8 @@ export default function Workspace() {
   const [disconnectError, setDisconnectError] = useState<unknown>();
   const [returnTo, setReturnTo] = useState<JoinLink | null>(null);
   const [leaving, setLeaving] = useState(false);
+  const [localSelection, setLocalSelection] = useState(0);
+  const [localTransition, setLocalTransition] = useState(false);
   const disconnecting = useRef<Connection | null>(null);
   const connect = useCallback((next: Connection) => {
     setDisconnectError(undefined);
@@ -2235,9 +2237,22 @@ export default function Workspace() {
     });
     return () => { unsubscribe?.(); queryClient.clear(); connection?.close?.(); };
   }, [connection, queryClient]);
+  useEffect(() => window.mnemion?.onLocalSelection?.(phase => {
+    setLocalTransition(phase === 'changing');
+    if (phase !== 'changed') {
+      if (phase === 'changing') void queryClient.cancelQueries();
+      return;
+    }
+    void queryClient.cancelQueries();
+    queryClient.clear();
+    setDisconnectError(undefined);
+    setReturnTo(null);
+    setConnection(undefined);
+    setLocalSelection(value => value + 1);
+  }), [queryClient]);
   return (
     <div className="workspace">
-      {leaving ? <div className="ws-loading" role="status">Signing out of your workspace…</div> : connection ? (
+      {localTransition ? <div className="ws-loading" role="status">An authorized local agent is changing this device’s workspace…</div> : leaving ? <div className="ws-loading" role="status">Signing out of your workspace…</div> : connection ? (
         <QueryClientProvider client={queryClient}>
           <Shell
             connection={connection}
@@ -2257,7 +2272,7 @@ export default function Workspace() {
           />
         </QueryClientProvider>
       ) : (
-        <Connect onConnect={connect} initialError={disconnectError} initialJoin={returnTo} />
+        <Connect key={localSelection} onConnect={connect} initialError={disconnectError} initialJoin={returnTo} />
       )}
     </div>
   );

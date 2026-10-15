@@ -566,6 +566,7 @@ if (!hasSingleInstanceLock) {
         return stopped
       }, refreshMenus, () => { isQuitting = false; void desktopBridge.resumeLocalAfterCancelledUpdate().catch(() => {}) })
       void desktopBridge.bootLocal()
+      void desktopBridge.bootOperator()
       const backendReady = legacyEnabled ? waitForBackend(`http://127.0.0.1:${backendPort}/api/status`)
         .then(() => writeSmokeStatus('backend-ready'))
         .catch((e) => writeSmokeStatus('backend-timeout', { error: String(e) })) : Promise.resolve()

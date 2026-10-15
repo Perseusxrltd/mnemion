@@ -148,7 +148,8 @@ export class LocalBackups {
     }
     return result
   }
-  async configure(input: BackupSettings): Promise<BackupView> {
+  async configure(input: BackupSettings, signal?: AbortSignal): Promise<BackupView> {
+    signal?.throwIfAborted()
     if (this.closed || this.busy) throw new Error('Another local operation is finishing. Try again when it completes.')
     if (!input || typeof input !== 'object' || typeof input.enabled !== 'boolean' || typeof input.key_saved !== 'boolean' ||
         ![6, 12, 24, 168].includes(input.snapshot_hours) || ![15, 30, 60, 240].includes(input.ledger_minutes) ||
@@ -157,6 +158,7 @@ export class LocalBackups {
     ++this.generation
     try {
       await this.host.waitForInspection()
+      signal?.throwIfAborted()
       if (this.closed || this.host.busy) throw new Error('Another local operation is finishing. Try again when it completes.')
       const previous = await this.configuration()
       if ((previous?.revision ?? null) !== input.expected_revision) throw new Error('Backup settings changed. Refresh them before saving.')
@@ -180,6 +182,7 @@ export class LocalBackups {
       const configuration: Stored = { format: 1, revision: randomUUID(), workspace_id: this.workspaceId(), destination,
         enabled: input.enabled, snapshot_hours: input.snapshot_hours, ledger_minutes: input.ledger_minutes, key_id, sealed_key }
       if (this.closed || ((await this.configuration())?.revision ?? null) !== input.expected_revision) throw new Error('Backup settings changed before the save finished. Refresh and retry.')
+      signal?.throwIfAborted()
       await writeDocument(this.file, configuration)
       this.error = undefined
       this.retryAt = 0
@@ -200,21 +203,24 @@ export class LocalBackups {
     if (clear.workspace_id !== configuration.workspace_id || recoveryKeyId(clear.key) !== configuration.key_id) throw new Error('The protected recovery key does not match this workspace.')
     return clear.key
   }
-  async run(ledgerOnly = false, suppliedKey?: string): Promise<BackupReceipt> {
+  async run(ledgerOnly = false, suppliedKey?: string, signal?: AbortSignal): Promise<BackupReceipt> {
+    signal?.throwIfAborted()
     if (this.closed || this.busy) throw new Error('Another local operation is finishing. Try again when it completes.')
     this.running = true
     const generation = ++this.generation
     let configuration: Stored | undefined
     try {
       await this.host.waitForInspection()
+      signal?.throwIfAborted()
       if (this.closed || this.host.busy || generation !== this.generation) throw new Error('Another local operation is finishing. Try again when it completes.')
       configuration = await this.configuration()
       if (!configuration) throw new Error('Choose the backup folder and recovery key first.')
       const key = await this.key(configuration, suppliedKey)
+      signal?.throwIfAborted()
       if (this.closed || generation !== this.generation) throw new Error('Backup cancelled. Existing recovery files were retained.')
       const result = await this.host.runBackup(ledgerOnly ? 'backup-ledger' : 'backup', {
         workspace_id: configuration.workspace_id, destination: configuration.destination, recovery_key: key,
-      }) as BackupReceipt
+      }, signal) as BackupReceipt
       this.error = undefined; this.retryAt = 0
       await unlink(this.failureFile).catch(error => {
         if ((error as NodeJS.ErrnoException).code !== 'ENOENT') this.error = 'Backup verified, but its previous failure notice could not be cleared.'

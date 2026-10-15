@@ -1,5 +1,11 @@
 # Agent administration and operation discovery
 
+For local host and app controls, the following source adds a
+[private desktop operator interface](desktop-operator.md) under the owning OS
+account, including backup schedules and independent recovery. The guide keeps
+its native release boundary explicit. Memory API credentials retain the scope
+described below.
+
 Use `mnemion-control --credentials /private/workspace.json doctor` for a bounded,
 read-only connection report. See [connection and recovery](connection-diagnostics.md)
 for offline hosts, rejected credentials, space access and MCP checks. This

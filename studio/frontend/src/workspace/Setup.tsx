@@ -9,6 +9,7 @@ import { LiveMemory, MemoryFields, RepairMemory, validMemory } from './MemoryCon
 import { localError } from './LocalSetup';
 import RemoteAccess from './RemoteAccess';
 import Backups from './Backups';
+import LocalOperator from './LocalOperator';
 
 export default function Setup({ client, endpoint, administrator }: { client: MnemionClient; endpoint: string; administrator: boolean }) {
   const desktop = window.mnemion;
@@ -62,6 +63,7 @@ export default function Setup({ client, endpoint, administrator }: { client: Mne
       <Link className="ws-link" to="/workspace/help?doc=docs%2Fservice%2Fupdates.md">Update and host administration guide<ArrowRight size={13} /></Link>
     </section>
     {!!error && <div className="ws-notice ws-error" role="alert">{localError(error)}</div>}
+    {status && <LocalOperator status={status} />}
     {status?.info?.configured && <RemoteAccess status={status} onStatus={setStatus} connected={endpoint === `http://127.0.0.1:${status.info.settings?.port}`} />}
     {status?.info?.configured && <Backups status={status} onStatus={setStatus} />}
     {status?.info?.configured && <section className="ws-device-settings">
