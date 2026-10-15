@@ -46,3 +46,12 @@ restoration. Streaming encryption alone does not establish a whole-workspace
 RAM bound. This run does not validate a real cloud sync destination, Windows or
 macOS app recovery, or company failover, and does not close the broader roadmap
 requirements.
+
+The first complete CI run exposed a test-isolation assumption: its shared
+database already contained 165 memories from other tenant fixtures, while the
+new test expected one. The backup correctly reported the complete database.
+The test now compares memory counts and reconciled deletions with the actual
+source inventory and ledger. All 20 recovery/capture tests passed in the
+focused rerun, including the reversed file order. The original Python 3.12 CI
+run passed 1009 other tests and measured 85.71% service/native coverage; fresh
+CI must confirm the corrected assertion across supported Python versions.

@@ -65,6 +65,14 @@ def test_encrypted_snapshot_and_newer_ledger_restore_deleted_state_without_sourc
         MemoryInput(content="Recover this synthetic project memory"),
         "native-backup-memory",
     )
+    # Hosted CI shares one database between tenant fixtures. A native-owner
+    # snapshot intentionally contains that complete database, including other
+    # fixtures' memories and deletion history.
+    with psycopg.connect(env.admin_dsn) as connection:
+        source_memories = {
+            (str(tenant), str(identifier))
+            for tenant, identifier in connection.execute("SELECT tenant_id,id FROM mnemion.memories")
+        }
     original_configuration = (root / "configuration.json").read_bytes()
     original_credentials = (root / "credentials.json").read_bytes()
     progress = []
@@ -72,7 +80,7 @@ def test_encrypted_snapshot_and_newer_ledger_restore_deleted_state_without_sourc
     key = request.recovery_key.get_secret_value()
     selected = backup.BackupInspection(source=snapshot["snapshot"]["file"], recovery_key=key)
     inspected = backup.inspect_file(root, selected)
-    assert inspected["archive_verified"] and inspected["memory_count"] == 1
+    assert inspected["archive_verified"] and inspected["memory_count"] == len(source_memories)
     assert inspected["context"]["local_workspace"]["workspace_id"] == settings["workspace_id"]
     assert inspected["context"]["local_workspace"]["primary_tenant_id"] == str(env.owner.tenant_id)
     assert progress[-1]["stage"] == "complete"
@@ -83,6 +91,8 @@ def test_encrypted_snapshot_and_newer_ledger_restore_deleted_state_without_sourc
         key="deleted-after-native-snapshot",
     )
     latest = backup.capture(root, pg_bin.parent, request, ledger_only=True)
+    with psycopg.connect(env.admin_dsn, row_factory=psycopg.rows.dict_row) as connection:
+        current_ledger = recovery._ledger(connection)
     assert "snapshot" not in latest
     assert state.read(root / "last-backup.json") == snapshot
     assert state.read(root / "last-ledger.json") == latest
@@ -90,7 +100,7 @@ def test_encrypted_snapshot_and_newer_ledger_restore_deleted_state_without_sourc
         backup.inspect_file(
             root, backup.BackupInspection(source=latest["ledger"]["file"], recovery_key=key)
         )["deletion_count"]
-        == 1
+        == len(current_ledger["deletions"])
     )
     raw_snapshot, raw_ledger = tmp_path / "unlocked-snapshot", tmp_path / "unlocked-ledger"
     encryption.decrypt_file(
@@ -107,7 +117,11 @@ def test_encrypted_snapshot_and_newer_ledger_restore_deleted_state_without_sourc
             credentials_output=tmp_path / "new-owner.json",
             pg_bin=pg_bin,
         )
-        assert restored["keys_rotated"] and restored["deletions_reconciled"] == 1
+        assert restored["keys_rotated"]
+        assert restored["deletions_reconciled"] == sum(
+            (entry["tenant_id"], entry["memory_id"]) in source_memories
+            for entry in current_ledger["deletions"]
+        )
         with psycopg.connect(make_conninfo(env.admin_dsn, dbname=database)) as connection:
             assert connection.execute(
                 "SELECT deleted_at IS NOT NULL FROM mnemion.memories WHERE id=%s",
