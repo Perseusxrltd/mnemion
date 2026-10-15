@@ -12,6 +12,7 @@ import sys
 import zipfile
 from contextlib import contextmanager
 from pathlib import Path, PurePosixPath
+from typing import Callable
 
 from .portable_paths import path_key, portable_part
 
@@ -23,10 +24,28 @@ def canonical_json(value) -> bytes:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
 
 
-def file_hash(path: Path) -> str:
+def _checkpoint(check_cancelled: Callable[[], None] | None) -> None:
+    if check_cancelled is not None:
+        check_cancelled()
+
+
+def _copy(source, destination, check_cancelled=None) -> None:
+    while True:
+        _checkpoint(check_cancelled)
+        block = source.read(1024 * 1024)
+        if not block:
+            return
+        destination.write(block)
+
+
+def file_hash(path: Path, *, check_cancelled=None) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as source:
-        for block in iter(lambda: source.read(1024 * 1024), b""):
+        while True:
+            _checkpoint(check_cancelled)
+            block = source.read(1024 * 1024)
+            if not block:
+                break
             digest.update(block)
     return digest.hexdigest()
 
@@ -112,7 +131,15 @@ def private_json(output: Path, value: dict) -> None:
         staged.unlink(missing_ok=True)
 
 
-def write_archive(output: Path, members: dict[str, Path], metadata: dict) -> dict:
+def write_archive(
+    output: Path,
+    members: dict[str, Path],
+    metadata: dict,
+    *,
+    check_cancelled=None,
+    temporary_directory: Path | None = None,
+) -> dict:
+    _checkpoint(check_cancelled)
     output = Path(output)
     if output.exists():
         raise FileExistsError("Backup output already exists")
@@ -123,7 +150,10 @@ def write_archive(output: Path, members: dict[str, Path], metadata: dict) -> dic
         _member(name)
         if not path.is_file() or path.is_symlink():
             raise ValueError("Archive input must be a regular file")
-        inventory[name] = {"size": path.stat().st_size, "sha256": file_hash(path)}
+        inventory[name] = {
+            "size": path.stat().st_size,
+            "sha256": file_hash(path, check_cancelled=check_cancelled),
+        }
     if sum(item["size"] for item in inventory.values()) > MAX_ARCHIVE_BYTES:
         raise ValueError("Archive exceeds the 50 GiB local archive limit")
     manifest = {**metadata, "files": inventory}
@@ -136,12 +166,26 @@ def write_archive(output: Path, members: dict[str, Path], metadata: dict) -> dic
             staged, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=1
         ) as archive:
             for name, path in sorted(members.items()):
-                archive.write(path, name)
+                _checkpoint(check_cancelled)
+                info = zipfile.ZipInfo.from_file(path, name)
+                info.compress_type = zipfile.ZIP_DEFLATED
+                # ZipInfo's public compress_level property requires Python 3.13.
+                # This is the same field ZipFile.write uses on supported 3.11/3.12.
+                info._compresslevel = 1
+                with path.open("rb") as source, archive.open(info, "w", force_zip64=True) as target:
+                    _copy(source, target, check_cancelled)
             archive.writestr(MANIFEST, canonical_json(manifest))
         # A changing input is not a consistent backup. Verify the bytes actually
         # archived, not just the preliminary inventory.
-        with verified_archive(staged, metadata["format"], metadata["version"]):
+        with verified_archive(
+            staged,
+            metadata["format"],
+            metadata["version"],
+            check_cancelled=check_cancelled,
+            temporary_directory=temporary_directory,
+        ):
             pass
+        _checkpoint(check_cancelled)
         publish_file(staged, output)
     finally:
         staged.unlink(missing_ok=True)
@@ -149,14 +193,24 @@ def write_archive(output: Path, members: dict[str, Path], metadata: dict) -> dic
 
 
 @contextmanager
-def verified_archive(path: Path, format_name: str, version: int = 1):
+def verified_archive(
+    path: Path,
+    format_name: str,
+    version: int = 1,
+    *,
+    check_cancelled=None,
+    temporary_directory: Path | None = None,
+):
     """Fully validate and unpack into an isolated directory, then yield it.
 
     Digests detect corruption, not an attacker who can replace both the payload
     and its manifest. Administrative database backups must come from a trusted
     backup location.
     """
-    with tempfile.TemporaryDirectory(prefix="mnemion-verified-") as directory:
+    _checkpoint(check_cancelled)
+    with tempfile.TemporaryDirectory(
+        prefix="mnemion-verified-", dir=temporary_directory
+    ) as directory:
         root = Path(directory)
         try:
             with zipfile.ZipFile(path) as archive:
@@ -178,9 +232,13 @@ def verified_archive(path: Path, format_name: str, version: int = 1):
                 inventory = manifest.get("files")
                 if not isinstance(inventory, dict) or set(names) != {MANIFEST, *inventory}:
                     raise ValueError("Archive does not match its complete file manifest")
-                if sum(i.file_size for i in archive.infolist()) > MAX_ARCHIVE_BYTES:
+                unpacked_bytes = sum(i.file_size for i in archive.infolist())
+                if unpacked_bytes > MAX_ARCHIVE_BYTES:
                     raise ValueError("Archive exceeds the 50 GiB local archive limit")
+                if shutil.disk_usage(root).free < unpacked_bytes + 64 * 1024**2:
+                    raise ValueError("Free more disk space to verify this archive")
                 for name, entry in inventory.items():
+                    _checkpoint(check_cancelled)
                     _member(name)
                     info = archive.getinfo(name)
                     if not isinstance(entry, dict) or info.file_size != entry.get("size"):
@@ -188,9 +246,10 @@ def verified_archive(path: Path, format_name: str, version: int = 1):
                     target = root / name
                     target.parent.mkdir(parents=True, exist_ok=True)
                     with archive.open(name) as source, target.open("xb") as destination:
-                        shutil.copyfileobj(source, destination, 1024 * 1024)
-                    if file_hash(target) != entry.get("sha256"):
+                        _copy(source, destination, check_cancelled)
+                    if file_hash(target, check_cancelled=check_cancelled) != entry.get("sha256"):
                         raise ValueError("Archive member checksum mismatch")
         except (zipfile.BadZipFile, KeyError, TypeError, json.JSONDecodeError) as exc:
             raise ValueError("Invalid or incomplete archive") from exc
+        _checkpoint(check_cancelled)
         yield manifest, root

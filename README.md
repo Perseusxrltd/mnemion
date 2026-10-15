@@ -16,6 +16,8 @@ Download current published builds from [the official product page](https://www.p
 The automatically reconciled [release status](docs/RELEASE_STATUS.md) records
 the version, available platforms and release-gate evidence. It distinguishes
 published capability from the unfinished full product roadmap.
+The next source release adds [encrypted desktop backups and independent
+recovery](docs/service/native-backups.md); its native release checks are pending.
 Studio includes guided [local workspace creation](docs/service/local-workspaces.md),
 bundled database/model runtimes, [app and agent RAM controls](docs/service/memory-resources.md),
 local recovery, a [live 3D memory map](docs/service/memory-map.md), recorded agent

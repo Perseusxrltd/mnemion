@@ -8,8 +8,11 @@ remain open until their own acceptance evidence is available.
 The [streaming encryption and publication foundation](../validation/2026-10-15-backup-foundation.md)
 is implemented. [Local operator capture and inspection](../validation/2026-10-15-native-backup-capture.md)
 now pass real PostgreSQL snapshot, later-deletion ledger and isolated recovery
-checks in unreleased source. The full workflow below remains in progress; it
-must not be described as shipped from these module checks alone.
+checks in unreleased source. Desktop scheduling, protected keys, cancellation,
+inspection, isolated restoration and persistent copy selection are now implemented;
+see the [user guide](../service/native-backups.md). Installed acceptance is being
+extended across all six targets. The full workflow remains in progress and is
+not shipped from these module checks alone.
 
 ## User workflow
 
@@ -88,3 +91,13 @@ Independent host inventory, operator delegation, provider power management,
 continuous replication and automatic failover retain their own requirements in
 [workspace continuity](workspace-continuity.md). A successful local restoration
 alone is not proof that those features exist.
+
+## Remaining acceptance and scope
+
+The current implementation keeps every backup; configurable automatic retention
+is still open. Metadata checks detect missing/resized files, while native cloud
+delivery receipts and real disconnected-provider acceptance remain separate.
+Standalone agent controls for schedule configuration and persistent desktop copy
+selection need completion. Additional organizations retain private administrator
+credentials, with guided distribution still open. Native OS-store and installed
+capture/restore/reopen checks must pass before public release claims.

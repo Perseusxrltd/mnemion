@@ -1,6 +1,6 @@
 import type { AgentsResponse, ConnectorStatus, CoreMemory, DrawerDetail, DrawerSummary, KGGraph, ObsidianStatus, RecentDrawer, SearchHit, Status, StudioConfig, Taxonomy, TrustStats } from '../types'
 import type { WorkspaceInspection, WorkspaceSession, WorkspaceStatus } from '../workspace/connection-types'
-import type { LocalOptions, LocalStatus, MemoryWrite, PortChange, RemoteChange, RemoteCheck } from '../../../shared/local-workspace'
+import type { LocalOptions, LocalStatus, MemoryWrite, PortChange, RemoteChange, RemoteCheck, BackupView, BackupSettingsInput, BackupReceipt, BackupInspectionData, BackupRestoreInput, RecoveryReceipt } from '../../../shared/local-workspace'
 import type { SignInCredentials, InvitationCredentials, InvitationPreview } from '@mnemion/client'
 
 declare global {
@@ -32,6 +32,17 @@ declare global {
       localPort?: (input: PortChange) => Promise<LocalStatus>
       localRemote?: (input: RemoteChange) => Promise<LocalStatus>
       localRemoteCheck?: (input: RemoteCheck) => Promise<LocalStatus>
+      localBackupStatus?: () => Promise<BackupView>
+      localBackupKey?: () => Promise<string>
+      localBackupChoose?: (kind: 'folder' | 'file') => Promise<{ id: string; path: string } | null>
+      localBackupConfigure?: (input: BackupSettingsInput) => Promise<BackupView>
+      localBackupRun?: (input: { ledger_only?: boolean; recovery_key?: string }) => Promise<BackupReceipt>
+      localBackupCancel?: () => Promise<LocalStatus>
+      localBackupInspect?: (input: { selection_id: string; recovery_key: string }) => Promise<BackupInspectionData>
+      localBackupRestore?: (input: BackupRestoreInput) => Promise<{ id: string; receipt: RecoveryReceipt }>
+      localRecoveryCopies?: () => Promise<Array<{ id: string; receipt: RecoveryReceipt }>>
+      localRecoveryUse?: (id: string | null) => Promise<LocalStatus>
+      onBackupStatus?: (callback: () => void) => () => void
       onLocalStatus?: (callback: (status: LocalStatus) => void) => () => void
       chooseVault?: () => Promise<{ id: string; path: string } | null>
       refreshVault?: (selection: string, bytes: Uint8Array) => Promise<{ completed: boolean; file_count: number; pruned_files: number; detached_annotations: string[]; conflicts: Array<{ path: string; proposal_path?: string }>; vault_path: string }>

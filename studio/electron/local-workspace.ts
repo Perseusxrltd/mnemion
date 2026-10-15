@@ -1,6 +1,8 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { StringDecoder } from 'node:string_decoder'
+import { backupResult } from './local-backup-protocol.js'
+import type { BackupAction, BackupReceipt, BackupInspectionData, RecoveryReceipt } from '../shared/local-workspace.js'
 import type { LocalOptions, LocalInfo, LocalStatus, MemoryChange, MemoryWrite, MemorySnapshot, MemoryPolicy, PortChange, LocalDiagnostic, RemoteChange, RemoteAccess, RemoteCheck } from '../shared/local-workspace.js'
 type Connection = { endpoint: string; credential: string; workspaceId: string; tenantId: string; version: string }
 type Options = { executable: string; database: string; root: string; version: string; environment: NodeJS.ProcessEnv; desktopMemory?: () => number }
@@ -130,6 +132,8 @@ export class LocalWorkspace {
   private operation?: Promise<LocalInfo>
   private memoryChange?: Promise<LocalStatus>
   private configurationChange?: Promise<LocalStatus>
+  private backupWork?: Promise<BackupReceipt | BackupInspectionData | RecoveryReceipt>
+  private backupChild?: ChildProcessWithoutNullStreams
   private stopping?: Promise<boolean>
   private closing?: Promise<boolean>
   private controls = new Set<ChildProcessWithoutNullStreams>()
@@ -145,8 +149,11 @@ export class LocalWorkspace {
   }
 
   get status(): LocalStatus { return { ...this.statusValue, info: this.info } }
-  get active(): boolean { return !!this.child || this.controls.size > 0 || !!this.operation || !!this.memoryChange || !!this.configurationChange }
-  get busy(): boolean { return !!this.operation || !!this.memoryChange || !!this.configurationChange || this.controls.size > 0 || !!this.stopping || !!this.closing || ['starting', 'stopping'].includes(this.statusValue.state) }
+  get dataDirectory(): string { return this.options.root }
+  get backupActive(): boolean { return !!this.backupWork }
+  async waitForInspection(): Promise<void> { await this.operation }
+  get active(): boolean { return !!this.child || this.controls.size > 0 || !!this.operation || !!this.memoryChange || !!this.configurationChange || !!this.backupWork }
+  get busy(): boolean { return !!this.operation || !!this.memoryChange || !!this.configurationChange || !!this.backupWork || this.controls.size > 0 || !!this.stopping || !!this.closing || ['starting', 'stopping'].includes(this.statusValue.state) }
 
   private assertOpen() {
     if (this.disposed || this.closing) throw new Error('The app is closing.')
@@ -168,6 +175,94 @@ export class LocalWorkspace {
 
   private command(action: string): string[] {
     return ['local', action, '--root', this.options.root, '--database-runtime', this.options.database]
+  }
+
+  async runBackup(action: BackupAction, input: Record<string, unknown>): Promise<BackupReceipt | BackupInspectionData | RecoveryReceipt> {
+    // A read-only status refresh must not make a just-opened recovery form fail.
+    // Recheck mutation/stop guards after that refresh has actually drained.
+    if (this.operation) await this.waitForInspection()
+    this.assertOpen()
+    if (!['backup', 'backup-ledger', 'backup-inspect', 'backup-restore'].includes(action)) throw new Error('Choose a supported backup operation.')
+    if (!this.status.available) throw new Error('Install the complete desktop app to use local backups and recovery.')
+    if (this.backupWork || this.configurationChange || this.memoryChange || this.operation) throw new Error('Another local operation is finishing. Try again when it completes.')
+    if (['backup', 'backup-ledger'].includes(action) && this.status.state !== 'running') throw new Error('Start the local workspace before backing it up.')
+    const body = JSON.stringify({ ...input, watch_parent: true }) + '\n'
+    if (Buffer.byteLength(body) > 16384) throw new Error('The backup request is too large.')
+    const started_at = new Date().toISOString()
+    this.set({ backup: { action, state: 'running', stage: 'starting', message: 'Preparing the recovery operation…', started_at } })
+    const pending = new Promise<BackupReceipt | BackupInspectionData | RecoveryReceipt>((resolve, reject) => {
+      const child = this.control(action)
+      this.backupChild = child
+      const decoder = new StringDecoder('utf8')
+      let line = '', total = 0, failure: Error | undefined, result: unknown, cancelled = false
+      const timer = setTimeout(() => {
+        failure = new Error('The recovery operation exceeded its time limit and is stopping safely.')
+        this.cancelBackup()
+      }, 4 * 60 * 60 * 1000)
+      const accept = (text: string) => {
+        if (!text.trim() || failure) return
+        try {
+          const value = JSON.parse(text)
+          if (value.event === 'backup_progress') {
+            if (typeof value.stage !== 'string' || !/^[a-z_]{1,64}$/.test(value.stage) ||
+                typeof value.message !== 'string' || value.message.length > 1000) throw new Error()
+            this.set({ backup: { action, state: this.statusValue.backup?.state === 'cancelling' ? 'cancelling' : 'running', stage: value.stage, message: value.message, started_at } })
+          } else if (value.event === 'error') {
+            failure = new Error(typeof value.message === 'string' && value.message.length <= 1000 ? value.message : 'The recovery operation could not finish.')
+          } else if (value.event === 'cancelled') {
+            cancelled = true
+          } else {
+            const event = action === 'backup-inspect' ? 'backup_inspection' : action === 'backup-restore' ? 'recovery' : 'backup'
+            if (result !== undefined || value.event !== event || value.engine_version !== this.options.version) throw new Error()
+            result = backupResult(action, action === 'backup-inspect' ? value.inspection : value.receipt, String(input.workspace_id ?? ''))
+          }
+        } catch {
+          failure = new Error('The native runtime returned an invalid recovery result. Existing files were retained.')
+          this.cancelBackup()
+        }
+      }
+      child.stdout.on('data', (chunk: Buffer) => {
+        total += chunk.length
+        if (total > 1024 * 1024) {
+          failure ??= new Error('The recovery inventory is too large for this view. Existing data was retained.')
+          this.cancelBackup()
+          return
+        }
+        line += decoder.write(chunk)
+        let boundary: number
+        while ((boundary = line.indexOf('\n')) !== -1) {
+          accept(line.slice(0, boundary)); line = line.slice(boundary + 1)
+        }
+      })
+      child.stderr.resume()
+      child.once('error', () => { failure = new Error('The native recovery runtime could not start. Reinstall the complete app.') })
+      child.once('close', code => {
+        clearTimeout(timer)
+        if (this.backupChild === child) this.backupChild = undefined
+        accept(line + decoder.end())
+        const finished_at = new Date().toISOString()
+        if (code === 0 && result !== undefined && !failure) {
+          this.set({ backup: { action, state: 'complete', stage: 'complete', message: 'Recovery operation verified and complete.', started_at, finished_at } })
+          resolve(result as BackupReceipt | BackupInspectionData | RecoveryReceipt)
+        } else {
+          const message = cancelled ? 'Operation cancelled. Existing data and verified recovery files were retained.' : failure?.message ?? 'The recovery operation could not finish. Existing data was retained.'
+          this.set({ backup: { action, state: cancelled ? 'cancelled' : 'error', stage: cancelled ? 'cancelled' : 'error', message, started_at, finished_at } })
+          reject(new Error(message))
+        }
+      })
+      child.stdin.write(body)
+    })
+    this.backupWork = pending
+    try { return await pending } finally { if (this.backupWork === pending) this.backupWork = undefined }
+  }
+
+  cancelBackup(): LocalStatus {
+    const child = this.backupChild
+    if (child && !child.stdin.destroyed && !child.stdin.writableEnded) {
+      child.stdin.write('{"action":"cancel"}\n')
+      if (this.statusValue.backup) this.set({ backup: { ...this.statusValue.backup, state: 'cancelling', message: 'Stopping safely and cleaning private temporary files…' } })
+    }
+    return this.status
   }
 
   async inspect(): Promise<LocalInfo> {
@@ -236,6 +331,7 @@ export class LocalWorkspace {
 
   async start(input?: unknown): Promise<LocalStatus> {
     this.assertOpen()
+    if (this.backupWork) throw new Error('Finish or cancel the recovery operation before starting the workspace.')
     if (this.configurationChange) throw new Error('The local address is being saved. Wait for it to finish.')
     if (this.child) return this.status
     const options = input === undefined ? undefined : localOptions(input)
@@ -499,6 +595,15 @@ export class LocalWorkspace {
     // A writer must finish before an updater replaces its executable. Starts
     // waiting on inspection recheck the stop/close guard before spawning.
     await Promise.allSettled([this.operation, this.memoryChange, this.configurationChange])
+    if (this.backupWork) {
+      this.cancelBackup()
+      const stopped = await new Promise<boolean>(resolve => {
+        const timer = setTimeout(() => resolve(false), 90_000)
+        const done = () => { clearTimeout(timer); resolve(true) }
+        void this.backupWork!.then(done, done)
+      })
+      if (!stopped) return false
+    }
     if (this.controls.size > 0) return false
     return this.stopChild()
   }

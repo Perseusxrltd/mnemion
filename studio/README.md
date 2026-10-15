@@ -36,6 +36,11 @@ save a plaintext key. Version 4.0.11 adds native local creation, RAM controls an
 occupied API-port recovery. Organization provisioning and full backup recovery
 remain on the [onboarding plan](../docs/implementation/app-onboarding.md).
 
+The next source release adds [encrypted desktop backups and independent
+recovery](../docs/service/native-backups.md): protected schedules, manual copies,
+current deletion ledgers and restoration into a separate local workspace.
+Installed acceptance remains pending; use the public release status for availability.
+
 Version 4.0.8 unifies the interface with Perseus XR, including locally bundled
 Inter/Outfit fonts, gold accents, grouped navigation, responsive charts and offline
 help. The [design guide](../docs/STUDIO_DESIGN.md) documents the shared tokens.
@@ -76,7 +81,8 @@ then create installers with `npm --prefix studio/electron run dist` on the targe
 OS and architecture. Windows ARM uses a native client and a separately built x64
 engine/database. Packaging validates both components, licenses and inventories.
 `npm --prefix studio/electron run smoke:installed-hosting` exercises real local
-creation, model save/search, restart and address recovery.
+creation, model save/search, restart, address recovery and encrypted backup/restore
+with the platform's actual credential store.
 `npm --prefix studio/electron run smoke:packaged` opens the real installed
 payload with an isolated profile; Linux CI uses Xvfb. CI validation artifacts are
 unsigned and are not sent to the automatic update feed.

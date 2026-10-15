@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.4.0**. Roadmap updated: **2026-10-15**.
+Reviewed source distribution: **4.5.0**. Roadmap updated: **2026-10-15**.
 The [current published distribution and release gates](RELEASE_STATUS.md) are updated automatically.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
@@ -12,6 +12,17 @@ commands. [Focused checks and a real local TLS walkthrough](validation/2026-10-1
 cover configuration, restart and outage/recovery. Live provider acceptance,
 independent host recovery and company hosting/SSO remain open; publication and
 all-platform delivery evidence are tracked automatically above.
+
+The next source batch implements [desktop backups and independent recovery](service/native-backups.md):
+encrypted snapshots and frequent deletion/access ledgers, OS-protected scheduled
+keys, cancellation, persistent failure notices, disk admission, verified separate
+recovery copies and selection across restarts. PostgreSQL recovery and desktop
+controller checks have passed; installed acceptance is being extended across all
+six targets. [Source and desktop walkthrough evidence](validation/2026-10-15-native-backup-workflow.md)
+records the checks and their limits. Configurable retention, complete agent schedule controls, cloud
+delivery verification and independent host management remain open. The strict
+full-scope count remains **17 of 64 shipped (26.6%)** until corresponding public
+acceptance is complete.
 
 [4.3.3](releases/4.3.3.md) adds explainable, optional key-term support for questions
 without a full text match, plus saved evaluation ranking preferences and

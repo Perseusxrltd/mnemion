@@ -1,0 +1,21 @@
+.ws-backup-panel h2 { display: flex; align-items: center; gap: 9px; }
+.ws-backup-facts, .ws-backup-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 18px 0; }
+.ws-backup-facts > div { border: 1px solid var(--ws-border); border-radius: 8px; padding: 16px; min-width: 0; }
+.ws-backup-facts span, .ws-backup-facts small { display: block; color: var(--ws-muted); font-size: 12px; }
+.ws-backup-facts strong { display: block; font-weight: 500; margin: 5px 0; overflow-wrap: anywhere; }
+.ws-backup-folder { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; }
+.ws-backup-folder > span { min-width: 0; overflow-wrap: anywhere; }
+.ws-backup-folder .ws-button { flex-shrink: 0; }
+.ws-backup-key, .ws-backup-run { border-top: 1px solid var(--ws-border); margin-top: 18px; padding-top: 18px; }
+.ws-backup-check { display: flex; align-items: flex-start; gap: 10px; margin: 16px 0; cursor: pointer; }
+.ws-backup-check input { width: 17px; height: 17px; margin-top: 3px; flex-shrink: 0; accent-color: var(--ws-accent); }
+.ws-backup-key code { overflow-wrap: anywhere; }
+.ws-recovery-choice { width: 100%; margin: 8px 0 18px; justify-content: center; }
+.ws-recover-workspace .ws-setup-fields { margin: 20px 0; }
+.ws-recover-workspace .ws-setup-review dl { overflow-wrap: anywhere; }
+.ws-recover-workspace .ws-setup-advanced .ws-backup-folder { padding: 12px 0; border-bottom: 1px solid var(--ws-border); }
+@media (max-width: 620px) {
+  .ws-backup-facts, .ws-backup-grid { grid-template-columns: 1fr; }
+  .ws-backup-folder { align-items: stretch; flex-direction: column; }
+  .ws-backup-folder .ws-button { align-self: flex-start; }
+}

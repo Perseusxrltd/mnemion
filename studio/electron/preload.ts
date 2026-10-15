@@ -49,6 +49,21 @@ contextBridge.exposeInMainWorld('mnemion', {
   localPort: (input: unknown) => transfer('local:port', input),
   localRemote: (input: unknown) => transfer('local:remote', input),
   localRemoteCheck: (input: unknown) => transfer('local:remote-check', input),
+  localBackupStatus: () => transfer('local:backup-status'),
+  localBackupKey: () => transfer('local:backup-key'),
+  localBackupChoose: (kind: 'folder' | 'file') => transfer('local:backup-choose', kind),
+  localBackupConfigure: (input: unknown) => transfer('local:backup-configure', input),
+  localBackupRun: (input: unknown) => transfer('local:backup-run', input),
+  localBackupCancel: () => transfer('local:backup-cancel'),
+  localBackupInspect: (input: unknown) => transfer('local:backup-inspect', input),
+  localBackupRestore: (input: unknown) => transfer('local:backup-restore', input),
+  localRecoveryCopies: () => transfer('local:recovery-copies'),
+  localRecoveryUse: (id: string | null) => transfer('local:recovery-use', id),
+  onBackupStatus: (callback: () => void) => {
+    const listener = () => callback()
+    ipcRenderer.on('local:backups-changed', listener)
+    return () => ipcRenderer.removeListener('local:backups-changed', listener)
+  },
   onLocalStatus: (callback: (status: unknown) => void) => {
     const listener = (_event: IpcRendererEvent, status: unknown) => callback(status)
     ipcRenderer.on('local:changed', listener)

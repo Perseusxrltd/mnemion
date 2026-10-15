@@ -201,7 +201,21 @@ def initialize(root: Path, options: SetupOptions) -> dict:
                 "This local workspace already has saved settings. Resume it before changing its configuration.",
             )
         return saved
-    if any(path.name != "operator.lock" for path in root.iterdir()):
+
+    # Inspection can run from the welcome screen before a workspace exists.
+    # A completed inspection leaves only its private lock directory behind;
+    # that must not make ordinary first-time setup impossible.
+    def completed_inspection(path: Path) -> bool:
+        if path.name != "backup-operations" or not path.is_dir() or path.is_symlink():
+            return False
+        if getattr(path.lstat(), "st_file_attributes", 0) & 0x400:
+            return False
+        with state.lock(path):
+            return all(child.name == "operator.lock" for child in path.iterdir())
+
+    if any(
+        path.name != "operator.lock" and not completed_inspection(path) for path in root.iterdir()
+    ):
         raise state.LocalSetupError(
             "existing_data",
             "This folder already contains data. Recover the existing workspace instead of creating one over it.",
@@ -643,6 +657,7 @@ def arguments(parser: argparse.ArgumentParser) -> None:
             "backup",
             "backup-ledger",
             "backup-inspect",
+            "backup-restore",
         ],
     )
     parser.add_argument("--root", type=Path, required=True)
@@ -662,7 +677,7 @@ def dispatch(args) -> int:
         if args.action == "status":
             emit({"event": "status", **inspect(root)})
             return 0
-        if args.action in {"backup", "backup-ledger", "backup-inspect"}:
+        if args.action in {"backup", "backup-ledger", "backup-inspect", "backup-restore"}:
             from .local_backup import dispatch as backup_dispatch
 
             return backup_dispatch(root, args.database_runtime, args.action, emit)

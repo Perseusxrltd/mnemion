@@ -8,6 +8,7 @@ import { nativeFetch } from "./native";
 import type { Connection, WorkspaceSession, WorkspaceStatus } from "./connection-types";
 import type { LocalStatus } from '../../../shared/local-workspace';
 import LocalSetup from './LocalSetup';
+import RecoverWorkspace from './RecoverWorkspace';
 import WorkspaceRecovery from './WorkspaceRecovery';
 import SignInForm from './SignInForm';
 import { browserBookmarks, initialJoinLink, type JoinLink } from './sign-in';
@@ -69,7 +70,7 @@ export default function Connect({ onConnect, initialError, initialJoin }: { onCo
   const [inspecting, setInspecting] = useState<string>();
   const [storageIssue, setStorageIssue] = useState(false);
   const [resetConfirm, setResetConfirm] = useState(false);
-  const [selection, setSelection] = useState<'join' | 'local' | null>(incoming ? 'join' : desktop?.localStatus ? null : 'join');
+  const [selection, setSelection] = useState<'join' | 'local' | 'recover' | null>(incoming ? 'join' : desktop?.localStatus ? null : 'join');
   const [local, setLocal] = useState<LocalStatus>();
   const [continueLocal, setContinueLocal] = useState(false);
   const operation = useRef(0);
@@ -190,7 +191,9 @@ export default function Connect({ onConnect, initialError, initialJoin }: { onCo
             {local && !local.available && <small>This installation does not include the local engine. You can join an existing workspace.</small>}
           </div>}
           {selection === 'local' && <LocalSetup initial={local} autoContinue={continueLocal} onOpen={complete} onBack={() => { setContinueLocal(false); setSelection(null); }} />}
-          {selection !== 'local' && <>
+          {selection === 'recover' && <RecoverWorkspace onBack={() => setSelection(null)} onUse={value => { setLocal(value); setContinueLocal(true); setSelection('local'); }} />}
+          {selection === null && desktop?.localBackupRestore && <button className="ws-button ws-recovery-choice" type="button" disabled={!!busy} onClick={() => setSelection('recover')}>Recover a workspace from an encrypted backup</button>}
+          {selection !== 'local' && selection !== 'recover' && <>
           {desktop && status && !status.secureStorage && (selection === 'join' || status.bookmarks.length > 0) && <div className="ws-notice" role="status">
             <p>Unlock your operating system’s secure store to reopen saved connections. Approve any secure-store prompt, then retry. You can also connect for this session without saving a key.</p>
             <button type="button" className="ws-button ws-quiet" disabled={!!busy} onClick={() => void run("Checking secure storage…", async () => {

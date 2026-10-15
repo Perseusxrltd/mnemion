@@ -5,6 +5,7 @@ import type { LocalOptions, LocalStatus } from '../../../shared/local-workspace'
 import type { WorkspaceSession } from './connection-types';
 import { LiveMemory, MemoryFields, RepairMemory, memorySize, validMemory } from './MemoryControls';
 import LocalAddress from './LocalAddress';
+import Backups from './Backups';
 
 export const localError = (error: unknown) => (error instanceof Error ? error.message : 'The local workspace could not complete this step.')
   .replace(/^Error invoking remote method '[^']+': (?:Error: )?/, '');
@@ -96,5 +97,6 @@ export default function LocalSetup({ initial, onOpen, onBack, autoContinue = fal
     </form>}
     {status?.memory && <LiveMemory value={status.memory} />}
     {configured && status && <RemoteAccess status={status} onStatus={setStatus} />}
+    {configured && status && <Backups status={status} onStatus={setStatus} />}
   </section>;
 }

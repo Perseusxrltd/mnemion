@@ -119,6 +119,10 @@ async function stop() {
   if (child.exitCode !== 0) throw new Error('The installed application did not finish a clean shutdown')
   const pidFile = join(userData, 'mnemion-local-workspace/database/postmaster.pid')
   if (existsSync(pidFile)) throw new Error('The installed app left its private PostgreSQL cluster running')
+  const recovered = join(userData, 'mnemion-recovered-workspaces')
+  if (existsSync(recovered) && readdirSync(recovered).some(id => existsSync(join(recovered, id, 'database/postmaster.pid')))) {
+    throw new Error('The installed app left a recovered PostgreSQL cluster running')
+  }
 }
 
 function credentialsHash() {
@@ -150,6 +154,16 @@ try {
   }
   await stop()
   if (credentialsHash() !== credentials) throw new Error('Application restart replaced the private workspace credentials')
+  for (const [phase, required] of [
+    ['backup-capture', ['nativeEncryptedSnapshot', 'laterDeletionLedger', 'protectedKeySaved', 'backupFormRestoresUpdateReadiness']],
+    ['backup-recover', ['protectedKeyReopened', 'realRecoveryControls', 'separateRecoveryCopy', 'originalOrganizationRetained', 'retainedMemoryReadable', 'postSnapshotDeletionPreserved', 'freshAdministratorConnected']],
+    ['backup-resume', ['recoveredCopyReopened', 'deletionPreservedAfterReopen', 'originalWorkspaceReopened']],
+  ]) {
+    const backup = await launch({ phase, port, memoryId: first.memoryId })
+    if (required.some(field => backup[field] !== true)) throw new Error('Installed backup/recovery acceptance failed: ' + phase)
+    await stop()
+    if (credentialsHash() !== credentials) throw new Error('Recovery modified the original workspace credentials')
+  }
   // An unrelated listener must lead to an actual recovery screen, never a new
   // workspace or silent connection to the other program.
   const occupied = createServer(socket => socket.end())
@@ -185,6 +199,9 @@ try {
     installer: process.platform === 'win32' ? 'NSIS per-user' : process.platform === 'darwin' ? 'DMG copied application' : 'AppImage portable user installation',
     installationPathWithSpacesAndUnicode: true, actualSetupControls: true, authenticatedApi: true,
     nativeNgrokSdkLoaded: true, hostedBrowserAndConsentAssets: true,
+    nativeEncryptedSnapshotAndLedger: true, backupKeyProtectedAndReopenedByOsStore: true,
+    recoveryThroughActualAppControls: true, recoveredCopyReopenedAfterRestart: true,
+    postSnapshotDeletionPreservedByRecovery: true, originalWorkspacePreservedAndReopened: true,
     anonymousAccessRefused: true, realSemanticSaveAndRecall: true, automaticWorkspaceReopen: true,
     restartPreservesWorkspaceAndCredentials: true, savedMemorySurvivesRestart: true,
     configuredRamBudgetPersists: true, cleanDatabaseShutdownOnAppExit: true,
@@ -197,7 +214,7 @@ try {
     scope: 'Locally built installer, new private profile and real model download. Public download acceptance and update migration are separate gates.' }
   mkdirSync(join(root, 'build-tmp'), { recursive: true })
   writeFileSync(evidenceFile, JSON.stringify(evidence, null, 2) + '\n')
-  for (const phase of ['create', 'resume', 'recover-port', 'sign-in', 'sign-in-resume']) copyFileSync(join(temporary, phase + '-workspace.png'), join(root, 'build-tmp/installed-hosting-' + phase + '.png'))
+  for (const phase of ['create', 'resume', 'backup-capture', 'backup-recover', 'backup-resume', 'recover-port', 'sign-in', 'sign-in-resume']) copyFileSync(join(temporary, phase + '-workspace.png'), join(root, 'build-tmp/installed-hosting-' + phase + '.png'))
   console.log(JSON.stringify(evidence, null, 2))
   succeeded = true
 } catch (error) {

@@ -3,8 +3,9 @@
 This is **unreleased source work** following the published 4.4.0 remote-access
 batch. It implements local operator capture/inspection toward the
 [guided native recovery workflow](../implementation/native-backup-recovery.md).
-The app screens, protected scheduled key storage, retention and managed restore
-are not complete.
+The follow-on [desktop workflow](../service/native-backups.md) implements app
+screens, protected scheduled keys and independent native restore in source.
+Configurable retention and complete native release acceptance remain open.
 
 `mnemion-service local backup`, `backup-ledger` and `backup-inspect` accept a
 bounded JSON request on private stdin. Capture requires the selected local
@@ -37,15 +38,14 @@ real owned child processes and SQL connections. PostgreSQL child output is
 discarded instead of accumulated, preventing SQL/credential diagnostics from
 crossing the operator pipe.
 
-Cancellation currently reaches database queries, owned PostgreSQL tools and
-streaming encryption; archive packing/verification still requires checkpoints
-before it can support prompt cancellation throughout a large app operation.
-The complete native workflow must also keep archive verification under its
-private staging root, add disk/resource admission and provide guided isolated
-restoration. Streaming encryption alone does not establish a whole-workspace
-RAM bound. This run does not validate a real cloud sync destination, Windows or
-macOS app recovery, or company failover, and does not close the broader roadmap
-requirements.
+Follow-on work extends cancellation through archive packing, extraction and
+hashing, keeps archive verification in private staging and adds disk admission
+and guided isolated restoration. Streaming encryption alone does not establish
+a whole-workspace RAM bound. This capture run does not validate a real cloud
+sync destination, Windows or macOS app recovery, or company failover, and does
+not close the broader roadmap requirements. See the
+[current native workflow guide](../service/native-backups.md) for implementation
+status and the retained limits.
 
 The first complete CI run exposed a test-isolation assumption: its shared
 database already contained 165 memories from other tenant fixtures, while the

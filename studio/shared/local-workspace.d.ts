@@ -50,8 +50,54 @@ export type LocalInfo = {
 export type LocalStatus = {
   available: boolean; state: 'new' | 'starting' | 'running' | 'stopping' | 'stopped' | 'error';
   stage?: string; message: string; info?: LocalInfo; errorCode?: string; memory?: MemorySnapshot;
-  preferences?: { selected: boolean; startWithApp: boolean };
+  preferences?: { selected: boolean; startWithApp: boolean; recoveryRoot?: string; originalAvailable?: boolean };
   diagnostic?: LocalDiagnostic;
+  backup?: BackupActivity;
+}
+export type BackupAction = 'backup' | 'backup-ledger' | 'backup-inspect' | 'backup-restore';
+export type BackupActivity = {
+  action: BackupAction; state: 'running' | 'cancelling' | 'complete' | 'cancelled' | 'error';
+  stage: string; message: string; started_at: string; finished_at?: string;
+}
+export type BackupFile = { file: string; bytes: number; sha256: string; key_id: string; authenticated: true };
+export type BackupReceipt = {
+  format: 1; operation_id: string; workspace_id: string; scope: 'complete_local_database';
+  tenant_count: number; ledger_at: string; application_version: string; verified_at: string;
+  snapshot?: BackupFile & { backup_id: string; snapshot_at: string; memory_count: number };
+  ledger: BackupFile;
+}
+export type BackupInspectionData = {
+  kind: 'snapshot' | 'ledger'; key_id: string; encrypted_bytes: number; sha256: string;
+  authenticated: true; ledger_at: string; tenant_count: number; deletion_count?: number;
+  backup_id?: string; snapshot_at?: string; memory_count?: number; application_version?: string;
+  server_version?: number; archive_verified?: true; tenant_ids?: string[];
+  context?: { local_workspace?: { workspace_id: string; primary_tenant_id: string; workspace_name: string; owner_name: string; embedding_profile: string; threads: number; application_version: string } };
+}
+export type RecoveryReceipt = {
+  format: 1; state: 'restored'; started_at: string; restored_at: string; workspace_id: string;
+  source_workspace_id: string | null; backup_id: string; snapshot_sha256: string; ledger_sha256: string;
+  data_directory: string; tenant_id: string; tenant_count: number; keys_rotated: true;
+  verified_tables: number; deletions_reconciled: number; ledger_at: string;
+  external_connections_require_review: true;
+}
+export type BackupConfiguration = {
+  revision: string; workspace_id: string; destination: string; key_id: string;
+  enabled: boolean; snapshot_hours: number; ledger_minutes: number; protected_key: boolean;
+}
+export type BackupView = {
+  configuration?: BackupConfiguration; secure_storage: boolean; last_snapshot?: BackupReceipt; last_ledger?: BackupReceipt;
+  last_error?: string; retry_at?: string; next_snapshot_at?: string; next_ledger_at?: string;
+  snapshot_availability?: 'present' | 'missing' | 'changed' | 'unavailable';
+  ledger_availability?: 'present' | 'missing' | 'changed' | 'unavailable';
+}
+export type BackupSettings = {
+  expected_revision: string | null; destination: string; enabled: boolean;
+  snapshot_hours: number; ledger_minutes: number; recovery_key?: string; key_saved: boolean;
+}
+export type BackupSettingsInput = Omit<BackupSettings, 'destination'> & { destination_selection: string | null };
+export type BackupRestoreInput = {
+  snapshot_selection: string; ledger_selection: string; recovery_key: string; ledger_key?: string | null;
+  snapshot_sha256: string; ledger_sha256: string; primary_tenant_id: string; trusted_backup_confirmed: boolean;
 }
 export type LocalDiagnostic = {
   category: 'unexpected' | 'memory' | 'dependency' | 'operating_system' | 'timeout' | 'database';

@@ -10,6 +10,7 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 import json
 from pathlib import Path
+import shutil
 import tempfile
 from typing import Literal
 from uuid import UUID, uuid4
@@ -86,6 +87,20 @@ class BackupInspection(BaseModel):
 
 def _now():
     return datetime.now(timezone.utc).isoformat()
+
+
+def _require_space(location: Path, required: int) -> None:
+    if shutil.disk_usage(location).free < required + 64 * 1024**2:
+        raise state.LocalSetupError(
+            "disk_budget",
+            "Free more disk space or choose another drive before this backup operation.",
+        )
+
+
+def _decrypt_space(control: Path, *sources: str) -> None:
+    # File sizes are admission hints only. The encryption reader still checks
+    # regular files, identities, authenticated lengths and every encrypted byte.
+    _require_space(control, sum(Path(source).stat().st_size for source in sources))
 
 
 def _control(root: Path):
@@ -196,6 +211,14 @@ def capture(
         recovery._cancel(cancelled)
         database, settings, credentials = _database(root, runtime, request.workspace_id)
         destination = _destination(root, request.destination, settings["workspace_id"])
+        estimate = 0
+        if not ledger_only:
+            with psycopg.connect(database.dsn(), options="-c statement_timeout=5000") as connection:
+                estimate = connection.execute(
+                    "SELECT pg_database_size(current_database())"
+                ).fetchone()[0]
+        _require_space(control, estimate * 4)
+        _require_space(destination, estimate * 2)
         key = request.recovery_key.get_secret_value()
         identifier = uuid4().hex
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
@@ -262,6 +285,7 @@ def capture(
 def inspect_file(root: Path, request: BackupInspection, *, cancelled=None) -> dict:
     """Authenticate and inspect a selected file; never execute database SQL."""
     control = _control(root)
+    _decrypt_space(control, request.source)
     with (
         state.lock(control),
         tempfile.TemporaryDirectory(prefix="inspect-", dir=control) as directory,
@@ -293,7 +317,12 @@ def inspect_file(root: Path, request: BackupInspection, *, cancelled=None) -> di
             raise state.LocalSetupError(
                 "backup_format", "Choose a supported encrypted snapshot or access ledger."
             )
-        with verified_archive(unlocked, recovery.BACKUP_FORMAT) as (manifest, members):
+        with verified_archive(
+            unlocked,
+            recovery.BACKUP_FORMAT,
+            temporary_directory=scratch,
+            check_cancelled=lambda: recovery._cancel(cancelled),
+        ) as (manifest, members):
             if set(manifest["files"]) != {"database.dump", "deletions.json"}:
                 raise state.LocalSetupError("backup_format", "The database backup is incomplete.")
             ledger = recovery.read_ledger(members / "deletions.json")
@@ -318,6 +347,7 @@ def inspect_file(root: Path, request: BackupInspection, *, cancelled=None) -> di
                 "snapshot_at": manifest["snapshot_at"],
                 "ledger_at": ledger["snapshot_at"],
                 "tenant_count": len(manifest["tenant_ids"]),
+                "tenant_ids": manifest["tenant_ids"],
                 "memory_count": manifest["tables"].get("memories", {}).get("count", 0),
                 "application_version": manifest["application_version"],
                 "server_version": manifest["server_version"],
@@ -341,9 +371,13 @@ def dispatch(root: Path, runtime: Path | None, action: str, emit) -> int:
     try:
         if len(line) > 16384:
             raise ValueError("Oversized request")
-        request = (
-            BackupInspection if action == "backup-inspect" else BackupRequest
-        ).model_validate_json(line)
+        if action == "backup-restore":
+            from .local_recovery import RecoveryRequest
+
+            model = RecoveryRequest
+        else:
+            model = BackupInspection if action == "backup-inspect" else BackupRequest
+        request = model.model_validate_json(line)
     except (ValueError, ValidationError):
         raise state.LocalSetupError(
             "backup_options",
@@ -368,7 +402,18 @@ def dispatch(root: Path, runtime: Path | None, action: str, emit) -> int:
     try:
         if action == "backup-inspect":
             result = inspect_file(root, request, cancelled=stop.is_set)
-            emit({"event": "backup_inspection", "inspection": result})
+            emit(
+                {"event": "backup_inspection", "engine_version": __version__, "inspection": result}
+            )
+        elif action == "backup-restore":
+            from .local_recovery import restore
+
+            if runtime is None:
+                raise state.LocalSetupError(
+                    "missing_runtime", "The bundled database tools are required for recovery."
+                )
+            result = restore(root, runtime, request, cancelled=stop.is_set, emit=emit)
+            emit({"event": "recovery", "engine_version": __version__, "receipt": result})
         else:
             if runtime is None:
                 raise state.LocalSetupError(
@@ -382,7 +427,7 @@ def dispatch(root: Path, runtime: Path | None, action: str, emit) -> int:
                 cancelled=stop.is_set,
                 emit=emit,
             )
-            emit({"event": "backup", "receipt": result})
+            emit({"event": "backup", "engine_version": __version__, "receipt": result})
         return 0
     except (recovery.RecoveryCancelled, encryption.EncryptionCancelled):
         emit(

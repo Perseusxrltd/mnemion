@@ -87,6 +87,86 @@ async function running(f) {
   return engine
 }
 
+test('an update waits for backup cancellation and database shutdown before replacing the runtime', async t => {
+  const f = fixture(t)
+  const engine = await running(f)
+  const work = f.host.runBackup('backup', { workspace_id: addressChange.workspace_id, destination: '/separate/backups' })
+  const cancelled = assert.rejects(work, /cancelled/)
+  const helper = f.last()
+  await assert.rejects(f.host.start(), /recovery operation/)
+  await assert.rejects(f.host.changeRemote(sharingChange), /operation|changes|finishing/)
+  let complete = false
+  const stopping = f.host.stopForUpdate().then(value => { complete = true; return value })
+  await settle()
+  assert.equal(complete, false)
+  assert.equal(engine.stdin.writableEnded, false)
+  assert.equal(f.host.status.backup.state, 'cancelling')
+  helper.event({ event: 'cancelled' })
+  helper.finish()
+  await cancelled
+  await settle()
+  assert.equal(engine.stdin.writableEnded, true)
+  assert.equal(complete, false)
+  engine.finish()
+  await settle()
+  if (f.last().action === 'status') f.last().reply(info('first'))
+  assert.equal(await stopping, true)
+  assert.equal(f.host.status.backup.state, 'cancelled')
+})
+
+test('recovery results stay private until the matching runtime has finished successfully', async t => {
+  const f = fixture(t)
+  const work = f.host.runBackup('backup-inspect', { source: '/separate/ledger.enc', recovery_key: 'private-input-sentinel' })
+  const helper = f.last()
+  const inspection = { kind: 'ledger', key_id: 'a'.repeat(24), encrypted_bytes: 100, sha256: 'b'.repeat(64),
+    authenticated: true, ledger_at: new Date().toISOString(), tenant_count: 1, deletion_count: 1, private_key: 'private-output-sentinel' }
+  helper.event({ event: 'backup_inspection', engine_version: version, inspection })
+  assert.equal(f.host.backupActive, true)
+  assert.equal(f.host.status.backup.state, 'running')
+  helper.finish()
+  const result = await work
+  assert.equal(result.deletion_count, 1)
+  assert.equal(result.private_key, undefined)
+  assert.ok(!JSON.stringify(f.host.status).includes('sentinel'))
+  assert.equal(f.host.backupActive, false)
+
+  const mismatch = f.host.runBackup('backup-inspect', { source: '/separate/ledger.enc' })
+  const denied = assert.rejects(mismatch, /invalid recovery result/)
+  f.last().event({ event: 'backup_inspection', engine_version: '0.0.0', inspection })
+  f.last().finish()
+  await denied
+})
+
+test('excessive recovery output cancels the helper without reporting success or stopping the host', async t => {
+  const f = fixture(t)
+  await running(f)
+  const work = f.host.runBackup('backup', { workspace_id: addressChange.workspace_id })
+  const denied = assert.rejects(work, /too large/)
+  f.last().stdout.write(Buffer.alloc(1024 * 1024 + 1, 32))
+  assert.equal(f.host.status.backup.state, 'cancelling')
+  assert.equal(f.host.status.state, 'running')
+  f.last().finish()
+  await denied
+  assert.equal(f.host.status.backup.state, 'error')
+})
+
+test('a recovery click waits for the welcome screen status refresh before starting its helper', async t => {
+  const f = fixture(t)
+  const status = f.host.inspect()
+  const work = f.host.runBackup('backup-inspect', { source: '/separate/ledger.enc' })
+  assert.equal(f.last().action, 'status')
+  f.last().reply(info('first'))
+  await status
+  await settle()
+  assert.equal(f.last().action, 'backup-inspect')
+  f.last().event({ event: 'backup_inspection', engine_version: version, inspection: {
+    kind: 'ledger', key_id: 'a'.repeat(24), encrypted_bytes: 100, sha256: 'b'.repeat(64),
+    authenticated: true, ledger_at: new Date().toISOString(), tenant_count: 1, deletion_count: 1,
+  } })
+  f.last().finish()
+  assert.equal((await work).authenticated, true)
+})
+
 test('remote changes drain the old host before writing and reopen the same local workspace', async t => {
   const f = fixture(t)
   const engine = await running(f)

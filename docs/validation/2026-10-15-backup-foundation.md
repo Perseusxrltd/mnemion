@@ -2,8 +2,10 @@
 
 This is **unreleased source work** toward the
 [native backup/recovery contract](../implementation/native-backup-recovery.md),
-following the 4.4.0 remote-access batch. It does not yet provide the complete
-app workflow, scheduling, protected key persistence or native restoration.
+following the 4.4.0 remote-access batch. This record covers the foundation.
+The follow-on [desktop workflow](../service/native-backups.md) now implements
+scheduling, protected keys and native restoration in source; native release
+acceptance remains in progress.
 
 The portable envelope uses streaming AES-256-GCM with random 256-bit recovery
 keys and 96-bit nonces. It authenticates the complete versioned header and
@@ -15,8 +17,8 @@ archive limit remains; each I/O block is bounded to 1 MiB.
 Encryption publishes only ciphertext. Verification reads all encrypted bytes
 without retaining plaintext; decryption publishes a private file only after the
 GCM tag and source-file identity checks pass. Cancellation and failures remove
-only this operation's staging file. The eventual app must keep its key outside
-the backup folder and use the native protected store for scheduling.
+only this operation's staging file. The desktop workflow keeps its exported key
+outside the backup folder and uses the native protected store for scheduling.
 
 Archive publication now falls back from hard links to an exclusive native
 rename: Windows rename, macOS `renamex_np(RENAME_EXCL)`, or Linux

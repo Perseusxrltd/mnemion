@@ -1,5 +1,9 @@
 # Backup, recovery, and the v3 preservation boundary
 
+The new [desktop backup and independent recovery guide](native-backups.md)
+covers the app workflow being prepared after 4.4.0. The service-level procedures
+below also support independently managed servers and existing installations.
+
 Mnemion's service backup contains its complete PostgreSQL schema and data: tenants,
 principals, grants, key hashes, immutable sources/revisions, embeddings and their
 generation, jobs, idempotency receipts, core-block history, audit events, aliases,
@@ -11,6 +15,12 @@ The commands run locally with `MNEMION_ADMIN_DATABASE_URL`. Keep that credential
 out of the API and worker processes. Install PostgreSQL's `pg_dump` and `pg_restore`
 from the same major version as the server or a compatible newer client; use
 `--pg-bin /path/to/postgresql/bin` when they are not on PATH.
+
+New snapshots retain the source database timezone so calendar-day constraints
+remain valid when restoring across hosts and daylight-saving boundaries. For
+older service archives without this metadata, use the original timezone in the
+restore connection's `options` (for example `-c TimeZone=Europe/Paris`). Do not
+guess another timezone when a restore reports a session-expiry constraint error.
 
 ## Service snapshot and denial ledger
 

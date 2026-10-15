@@ -38,8 +38,10 @@ for other host operations and finish before the app exits or replaces itself.
 The OS can allocate a saved port to another program before a later start;
 startup checks availability again and offers the same recovery path.
 
-This flow changes the API port only. Database-port recovery, moving the data
-folder and guided backup restoration remain separate work. It does not expose
+This flow changes the API port only. Database-port recovery and moving the data
+folder remain separate work. The next source release adds a separate
+[encrypted backup and restoration flow](native-backups.md), with installed release
+acceptance pending. Changing the local API port does not expose
 the computer to a network or recover a stopped remote host.
 
 ## Equivalent local operator command

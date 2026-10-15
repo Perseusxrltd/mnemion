@@ -4,7 +4,9 @@ import errno
 import json
 import os
 from concurrent.futures import ThreadPoolExecutor
-from threading import Barrier
+from threading import Barrier, Event
+from types import SimpleNamespace
+import zipfile
 
 import pytest
 
@@ -41,6 +43,19 @@ def test_recovery_json_is_complete_private_and_exclusive(tmp_path):
         private_json(output, {"replacement": True})
     assert output.read_bytes() == original
     assert not list(tmp_path.glob(".mnemion-json-*"))
+
+
+def test_archive_admits_staging_capacity_before_extracting_any_payload(tmp_path, monkeypatch):
+    source, output = tmp_path / "source", tmp_path / "backup.zip"
+    source.write_bytes(b"retained archive evidence")
+    write_archive(output, {"source": source}, {"format": "disk-check", "version": 1})
+    before = output.read_bytes()
+    monkeypatch.setattr("mnemion.archives.shutil.disk_usage", lambda path: SimpleNamespace(free=0))
+    with pytest.raises(ValueError, match="disk space"):
+        with verified_archive(output, "disk-check", temporary_directory=tmp_path):
+            pytest.fail("A full staging drive must not publish extracted data")
+    assert output.read_bytes() == before
+    assert not list(tmp_path.glob("mnemion-verified-*"))
 
 
 def test_failed_flush_does_not_publish_or_remove_staged_bytes(tmp_path, monkeypatch):
@@ -117,3 +132,70 @@ def test_failed_atomic_fallback_never_uses_an_overwriting_rename(tmp_path, monke
         publish_file(staged, output)
     assert staged.read_bytes() == b"Retained complete source"
     assert not output.exists()
+
+
+def test_cancellation_after_one_archive_block_never_publishes_partial_output(tmp_path, monkeypatch):
+    source, output = tmp_path / "source", tmp_path / "cancelled.zip"
+    source.write_bytes(bytes(range(256)) * (12 * 1024))
+    stopped = Event()
+    original = zipfile._ZipWriteFile.write
+    chunks = []
+
+    def written(stream, data):
+        result = original(stream, data)
+        chunks.append(len(data))
+        stopped.set()
+        return result
+
+    def checkpoint():
+        if stopped.is_set():
+            raise InterruptedError("Requested archive cancellation")
+
+    monkeypatch.setattr(zipfile._ZipWriteFile, "write", written)
+    with pytest.raises(InterruptedError):
+        write_archive(
+            output,
+            {"source": source},
+            {"format": "cancel-test", "version": 1},
+            check_cancelled=checkpoint,
+        )
+    assert chunks == [1024 * 1024]
+    assert source.stat().st_size == 3 * 1024 * 1024
+    assert not output.exists() and not list(tmp_path.glob(".mnemion-archive-*"))
+
+
+def test_cancelled_verification_removes_only_its_private_staging(tmp_path, monkeypatch):
+    source, output = tmp_path / "source", tmp_path / "verified.zip"
+    source.write_bytes(bytes(range(256)) * (12 * 1024))
+    write_archive(output, {"source": source}, {"format": "cancel-test", "version": 1})
+    before = output.read_bytes()
+    scratch = tmp_path / "Private verification"
+    scratch.mkdir(mode=0o700)
+    retained = scratch / "retained"
+    retained.write_bytes(b"Existing unrelated private data")
+    stopped = Event()
+    locations = []
+    original = zipfile.ZipExtFile.read
+
+    def reading(stream, size=-1):
+        data = original(stream, size)
+        if stream.name == "source" and data:
+            locations.extend(scratch.glob("mnemion-verified-*"))
+            stopped.set()
+        return data
+
+    def checkpoint():
+        if stopped.is_set():
+            raise InterruptedError("Requested verification cancellation")
+
+    monkeypatch.setattr(zipfile.ZipExtFile, "read", reading)
+    with (
+        pytest.raises(InterruptedError),
+        verified_archive(
+            output, "cancel-test", temporary_directory=scratch, check_cancelled=checkpoint
+        ),
+    ):
+        pytest.fail("Cancelled verification must not expose unpacked data")
+    assert locations and all(path.parent == scratch and not path.exists() for path in locations)
+    assert retained.read_bytes() == b"Existing unrelated private data"
+    assert output.read_bytes() == before

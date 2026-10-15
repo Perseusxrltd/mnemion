@@ -136,12 +136,16 @@ def _run_pg(
     *,
     cancelled: Callable[[], bool] | None = None,
     maximum_seconds: float = 3600,
+    timezone: str | None = None,
 ) -> None:
     _cancel(cancelled)
     started = time.monotonic()
+    environment = _pg_environment(dsn)
+    if timezone is not None:
+        environment["PGTZ"] = timezone
     process = subprocess.Popen(
         [_pg_tool(name, pg_bin), *arguments],
-        env=_pg_environment(dsn),
+        env=environment,
         stdin=subprocess.DEVNULL,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
@@ -243,6 +247,7 @@ def export_ledger(dsn: str, output: Path, *, cancelled=None) -> dict:
     with psycopg.connect(dsn, row_factory=dict_row) as conn, _cancel_queries(conn, cancelled):
         conn.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY")
         payload = _ledger(conn)
+    _cancel(cancelled)
     private_json(output, payload)
     return {
         "ledger_file": str(output),
@@ -325,6 +330,9 @@ def create_backup(
         root = Path(directory)
         with psycopg.connect(dsn, row_factory=dict_row) as conn, _cancel_queries(conn, cancelled):
             conn.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY")
+            database_timezone = conn.execute(
+                "SELECT current_setting('TimeZone') AS zone"
+            ).fetchone()["zone"]
             snapshot = conn.execute("SELECT pg_export_snapshot() AS id").fetchone()["id"]
             ledger = _ledger(conn)
             tables = inventory(conn)
@@ -362,11 +370,14 @@ def create_backup(
                 "backup_id": str(uuid4()),
                 "snapshot_at": ledger["snapshot_at"],
                 "server_version": server_version,
+                "database_timezone": database_timezone,
                 "schema": schema,
                 "tables": tables,
                 "tenant_ids": ledger["tenant_ids"],
                 **({"context": context} if context is not None else {}),
             },
+            check_cancelled=lambda: _cancel(cancelled),
+            temporary_directory=root,
         )
     return {
         "backup_file": str(output),
@@ -556,6 +567,8 @@ def restore_backup(
     deletion_ledger: Path,
     credentials_output: Path,
     pg_bin: Path | None = None,
+    temporary_directory: Path | None = None,
+    cancelled: Callable[[], bool] | None = None,
 ) -> dict:
     started = time.monotonic()
     if not re.fullmatch(r"[a-z][a-z0-9_]{0,62}", database_name):
@@ -564,7 +577,12 @@ def restore_backup(
         raise FileExistsError("Recovery credentials output already exists")
     _pg_tool("pg_restore", pg_bin)
     ledger = read_ledger(deletion_ledger)
-    with verified_archive(archive, BACKUP_FORMAT) as (manifest, root):
+    with verified_archive(
+        archive,
+        BACKUP_FORMAT,
+        temporary_directory=temporary_directory,
+        check_cancelled=lambda: _cancel(cancelled),
+    ) as (manifest, root):
         if set(manifest["files"]) != {"database.dump", "deletions.json"}:
             raise ValueError("Incomplete database backup")
         if _time(ledger["snapshot_at"]) < _time(manifest["snapshot_at"]):
@@ -590,7 +608,10 @@ def restore_backup(
         temporary = "mnemion_restore_" + uuid4().hex
         staged_dsn = make_conninfo(dsn, dbname=temporary)
         created = published = False
-        with psycopg.connect(dsn, autocommit=True, row_factory=dict_row) as administration:
+        with (
+            psycopg.connect(dsn, autocommit=True, row_factory=dict_row) as administration,
+            _cancel_queries(administration, cancelled),
+        ):
             if administration.execute(
                 "SELECT 1 FROM pg_database WHERE datname=%s", (database_name,)
             ).fetchone():
@@ -606,7 +627,33 @@ def restore_backup(
                     )
                 )
                 created = True
-                with psycopg.connect(staged_dsn) as conn:
+                # Calendar-day constraints (including session expiry across DST)
+                # must be replayed with the source database's timezone. Content
+                # inventory still canonicalizes timestamps to UTC separately.
+                zone = manifest.get("database_timezone")
+                if zone is not None:
+                    if (
+                        not isinstance(zone, str)
+                        or not 1 <= len(zone) <= 100
+                        or any(ord(c) < 32 for c in zone)
+                    ):
+                        raise ValueError("Invalid backup database timezone")
+                    administration.execute(
+                        sql.SQL("ALTER DATABASE {} SET TimeZone TO {}").format(
+                            sql.Identifier(temporary), sql.Literal(zone)
+                        )
+                    )
+                    # A restore operator may also have PGTZ or a timezone in
+                    # libpq options. Pin this restore connection explicitly,
+                    # retaining other options and escaping libpq whitespace.
+                    escaped_zone = "".join(
+                        "\\" + c if c.isspace() or c == "\\" else c for c in zone
+                    )
+                    previous_options = conninfo_to_dict(staged_dsn).get("options", "")
+                    staged_dsn = make_conninfo(
+                        staged_dsn, options=previous_options + " -c TimeZone=" + escaped_zone
+                    )
+                with psycopg.connect(staged_dsn) as conn, _cancel_queries(conn, cancelled):
                     conn.execute("CREATE EXTENSION vector")
                     for role in ("mnemion_app", "mnemion_worker"):
                         if not conn.execute(
@@ -627,14 +674,24 @@ def restore_backup(
                         str(root / "database.dump"),
                     ],
                     pg_bin,
+                    timezone=zone,
+                    **({"cancelled": cancelled} if cancelled is not None else {}),
                 )
-                with psycopg.connect(staged_dsn, row_factory=dict_row) as conn:
+                with (
+                    psycopg.connect(staged_dsn, row_factory=dict_row) as conn,
+                    _cancel_queries(conn, cancelled),
+                ):
                     if inventory(conn) != manifest["tables"]:
                         raise ValueError(
                             "Restored table counts or content hashes do not match the backup"
                         )
                 migrate(staged_dsn)
-                with psycopg.connect(staged_dsn, row_factory=dict_row) as conn:
+                with (
+                    psycopg.connect(staged_dsn, row_factory=dict_row) as conn,
+                    _cancel_queries(conn, cancelled),
+                ):
+                    if zone is not None:
+                        conn.execute("SELECT set_config('TimeZone', %s, true)", (zone,))
                     _restore_permissions(conn)
                     denied = _reconcile_deletions(conn, ledger)
                     conn.execute(
