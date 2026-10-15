@@ -6,7 +6,9 @@ from contextlib import contextmanager
 import json
 import os
 from pathlib import Path
+import shutil
 import stat
+import tempfile
 from uuid import uuid4
 
 from .private_output import private_output
@@ -124,7 +126,7 @@ def _windows_directory(path: Path) -> None:
         kernel.CloseHandle(handle)
 
 
-def directory(path: Path) -> Path:
+def directory(path: Path, *, exist_ok: bool = True) -> Path:
     """Create one app-owned level; its parent must already exist."""
     path = Path(path).absolute()
     # Refuse symlink/junction parents, including cloud redirection of app data.
@@ -138,13 +140,49 @@ def directory(path: Path) -> Path:
     if os.name == "nt":
         from .private_output import _windows_create_directory
 
-        _windows_create_directory(path)
+        if not _windows_create_directory(path) and not exist_ok:
+            raise FileExistsError("The private directory already exists")
     else:
-        path.mkdir(mode=0o700, exist_ok=True)
+        path.mkdir(mode=0o700, exist_ok=exist_ok)
     _regular(path, directory=True)
     if os.name == "nt":
         _windows_directory(path)
     return path
+
+
+@contextmanager
+def temporary_directory(*, prefix: str = "mnemion-", dir: Path | None = None):
+    """Create private staging with the current OS owner before writing any data.
+
+    Elevated Windows processes can give ordinary temporary directories an
+    Administrators owner. Create with explicit ownership and an inheritable
+    private DACL instead; never adopt or clean up a pre-existing directory.
+    """
+    if (
+        not prefix
+        or len(prefix) > 64
+        or any(
+            character not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
+            for character in prefix
+        )
+    ):
+        raise ValueError("Use a portable temporary-directory prefix")
+    parent = Path(dir).absolute() if dir is not None else Path(tempfile.gettempdir()).resolve()
+    root = directory(parent / (prefix + uuid4().hex), exist_ok=False)
+    original = _regular(root, directory=True)
+    try:
+        yield root
+    finally:
+        try:
+            current = _regular(root, directory=True)
+        except FileNotFoundError:
+            pass
+        else:
+            if (current.st_dev, current.st_ino) != (original.st_dev, original.st_ino):
+                raise LocalSetupError(
+                    "unsafe_location", "The private staging folder changed; it was retained."
+                )
+            shutil.rmtree(root)
 
 
 def read_bytes(path: Path) -> bytes:

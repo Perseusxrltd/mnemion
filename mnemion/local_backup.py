@@ -11,7 +11,6 @@ from datetime import datetime, timezone
 import json
 from pathlib import Path
 import shutil
-import tempfile
 from typing import Literal
 from uuid import UUID, uuid4
 
@@ -222,8 +221,7 @@ def capture(
         key = request.recovery_key.get_secret_value()
         identifier = uuid4().hex
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-        with tempfile.TemporaryDirectory(prefix="capture-", dir=control) as directory:
-            scratch = state.directory(Path(directory))
+        with state.temporary_directory(prefix="capture-", dir=control) as scratch:
             snapshot = None
             if not ledger_only:
                 progress("snapshot", "Saving a consistent database snapshot…")
@@ -288,9 +286,8 @@ def inspect_file(root: Path, request: BackupInspection, *, cancelled=None) -> di
     _decrypt_space(control, request.source)
     with (
         state.lock(control),
-        tempfile.TemporaryDirectory(prefix="inspect-", dir=control) as directory,
+        state.temporary_directory(prefix="inspect-", dir=control) as scratch,
     ):
-        scratch = state.directory(Path(directory))
         unlocked = scratch / "unlocked"
         receipt = encryption.decrypt_file(
             Path(request.source),

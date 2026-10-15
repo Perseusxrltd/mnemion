@@ -85,6 +85,7 @@ export async function verifyNativeBackups(window: BrowserWindow, config: Record<
         await click('Back up now');
         const backed = await until(async () => {
           const view = await bridge.localBackupStatus();
+          if (view.last_error) throw new Error('Native encrypted backup: ' + view.last_error.slice(0, 1000));
           return view.last_snapshot?.snapshot && view;
         }, 'The native encrypted snapshot did not finish', 180000);
         const deletion = await request('DELETE', '/v1/memories/' + discarded.memory_id + '?expected_version=1', undefined, 202);

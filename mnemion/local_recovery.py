@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import shutil
-import tempfile
 from typing import Literal
 from uuid import UUID
 import zipfile
@@ -89,9 +88,8 @@ def restore(
     _decrypt_space(control, request.source, request.ledger_source)
     with (
         state.lock(control),
-        tempfile.TemporaryDirectory(prefix="restore-", dir=control) as directory,
+        state.temporary_directory(prefix="restore-", dir=control) as scratch,
     ):
-        scratch = state.directory(Path(directory))
         progress("authenticating", "Authenticating the snapshot and the selected access ledger…")
         snapshot = encryption.decrypt_file(
             Path(request.source),
@@ -139,8 +137,7 @@ def restore(
             )
         recovery._cancel(cancelled)
         # Exclusive creation is the final check, including concurrent callers.
-        target.mkdir(mode=0o700)
-        state.directory(target)
+        state.directory(target, exist_ok=False)
         with state.lock(target):
             settings = initialize(
                 target,

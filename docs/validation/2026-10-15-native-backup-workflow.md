@@ -77,6 +77,24 @@ Only the platform file picker is replaced with deterministic selections inside
 the disposable fixture. Forms, IPC, encryption, database, model and persistence
 remain real. A failed phase blocks that platform's acceptance.
 
+The first 4.5.0 release attempt passed all four Mac/Linux installed targets but
+failed encrypted capture on both Windows targets. Its error presentation hid
+the underlying failure from the acceptance probe. The corrected source exposes
+that error and replaces ordinary temporary-directory creation with atomic
+current-account ownership and private inherited permissions. The same creation
+path covers new recovery roots, whose previous exclusive `mkdir` had the same
+elevated-Windows ownership problem. Existing folders are never adopted for a new
+restore, and staging cleanup refuses a substituted root.
+
+The focused private-state/archive run passed **24 checks**, with four Windows
+checks skipped on Linux. A separate native Windows Python 3.13 probe passed
+current-owner creation, inherited file privacy, access with administrator-group
+privileges removed, and cleanup. That local account was not elevated; the native
+Windows CI checks retain elevated-account coverage. This source correction still
+requires the complete installed release attempt; it is not a Windows release pass.
+The corrected staging path also passed **27 real PostgreSQL backup/recovery
+checks**, including native independent restoration into bundled PostgreSQL 18.
+
 Real cloud delivery, configurable pruning, complete agent schedule/root-selection
 controls, broad hardware/storage workloads, recovery-custodian onboarding and
 company failover remain open. No live user memories or production hosts are

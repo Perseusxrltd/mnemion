@@ -60,6 +60,68 @@ def test_local_operator_lock_is_exclusive_across_processes_and_released(tmp_path
     assert subprocess.run(command, env=environment, capture_output=True, timeout=10).returncode == 0
 
 
+@pytest.mark.parametrize("interrupted", [False, True])
+def test_private_staging_is_owned_before_use_and_removed_after_exit(tmp_path, interrupted):
+    root = state.directory(tmp_path / "Private backups Équipe")
+
+    def capture():
+        with state.temporary_directory(prefix="capture-", dir=root) as staging:
+            # Native backup code must be able to validate the folder immediately,
+            # including when Windows' default owner would be Administrators.
+            assert state.directory(staging) == staging
+            if os.name == "nt":
+                from client_tests.windows_acl import assert_private_acl, assert_restricted_access
+
+                assert_private_acl(staging, directory=True)
+            else:
+                assert staging.stat().st_uid == os.getuid()
+                assert staging.stat().st_mode & 0o077 == 0
+            state.write(staging / "ledger.json", {"private": True})
+            dump = staging / "database.dump"
+            dump.write_bytes(b"private database fixture")
+            if os.name == "nt":
+                assert_private_acl(dump, inherited=True)
+                assert_restricted_access(staging, dump, staging / "ledger.json")
+            if interrupted:
+                raise RuntimeError("Interrupted capture")
+
+    if interrupted:
+        with pytest.raises(RuntimeError, match="Interrupted capture"):
+            capture()
+    else:
+        capture()
+    assert list(root.iterdir()) == []
+
+
+def test_private_staging_never_adopts_an_existing_directory(tmp_path, monkeypatch):
+    from uuid import UUID
+
+    identifier = UUID("bd0a7b14-a7dd-4d13-8278-ae30bd8fddf1")
+    existing = state.directory(tmp_path / ("capture-" + identifier.hex))
+    retained = existing / "retained.txt"
+    retained.write_text("Existing user data")
+    monkeypatch.setattr(state, "uuid4", lambda: identifier)
+    with pytest.raises(FileExistsError):
+        with state.temporary_directory(prefix="capture-", dir=tmp_path):
+            pytest.fail("Existing directory was adopted")
+    assert retained.read_text() == "Existing user data"
+    with pytest.raises(FileExistsError):
+        state.directory(existing, exist_ok=False)
+    assert retained.read_text() == "Existing user data"
+
+
+def test_private_staging_does_not_delete_a_replacement_directory(tmp_path):
+    moved = tmp_path / "retained-original"
+    with pytest.raises(state.LocalSetupError, match="staging folder changed"):
+        with state.temporary_directory(dir=tmp_path) as staging:
+            (staging / "original.txt").write_text("Original data")
+            staging.rename(moved)
+            state.directory(staging, exist_ok=False)
+            (staging / "replacement.txt").write_text("Replacement data")
+    assert (staging / "replacement.txt").read_text() == "Replacement data"
+    assert (moved / "original.txt").read_text() == "Original data"
+
+
 @pytest.mark.skipif(os.name == "nt", reason="POSIX ownership and private directory modes")
 def test_shared_or_redirected_state_folder_is_refused(tmp_path):
     shared = tmp_path / "shared"

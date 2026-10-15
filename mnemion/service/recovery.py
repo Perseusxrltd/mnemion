@@ -14,7 +14,6 @@ import os
 import re
 import shutil
 import subprocess
-import tempfile
 import time
 import threading
 from datetime import datetime
@@ -30,6 +29,7 @@ from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
 from ..archives import canonical_json, private_json, verified_archive, write_archive
+from ..local_state import temporary_directory as private_temporary_directory
 from ..version import __version__
 from .db import migrate, new_token
 from .lifecycle import purge_memory
@@ -324,10 +324,7 @@ def create_backup(
     ):
         raise ValueError("Backup context must be a bounded metadata object")
     _cancel(cancelled)
-    with tempfile.TemporaryDirectory(
-        prefix="mnemion-backup-", dir=temporary_directory
-    ) as directory:
-        root = Path(directory)
+    with private_temporary_directory(prefix="mnemion-backup-", dir=temporary_directory) as root:
         with psycopg.connect(dsn, row_factory=dict_row) as conn, _cancel_queries(conn, cancelled):
             conn.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY")
             database_timezone = conn.execute(

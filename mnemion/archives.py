@@ -15,6 +15,7 @@ from pathlib import Path, PurePosixPath
 from typing import Callable
 
 from .portable_paths import path_key, portable_part
+from .local_state import temporary_directory as private_temporary_directory
 
 MANIFEST = "manifest.json"
 MAX_ARCHIVE_BYTES = 50 * 1024**3
@@ -208,10 +209,7 @@ def verified_archive(
     backup location.
     """
     _checkpoint(check_cancelled)
-    with tempfile.TemporaryDirectory(
-        prefix="mnemion-verified-", dir=temporary_directory
-    ) as directory:
-        root = Path(directory)
+    with private_temporary_directory(prefix="mnemion-verified-", dir=temporary_directory) as root:
         try:
             with zipfile.ZipFile(path) as archive:
                 names = archive.namelist()

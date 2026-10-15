@@ -53,7 +53,7 @@ export default function Backups({ status, onStatus }: { status: LocalStatus; onS
     <p>Protect <strong>{status.info.settings?.workspace_name}</strong> on this computer. Snapshots include the complete local database, with a separate ledger for later deletions and access changes.</p>
     {!!error && <p className="ws-notice ws-error" role="alert">{localError(error)}</p>}
     {notice && <p className="ws-notice" role="status">{notice}</p>}
-    {view?.last_error && !error && <p className="ws-notice ws-error">Last attempt: {view.last_error}</p>}
+    {view?.last_error && !error && <p className="ws-notice ws-error" role="alert">Last attempt: {view.last_error}</p>}
     {view?.retry_at && view.last_error && configuration?.enabled && <p className="ws-helper">Automatic retry after {stamp(view.retry_at)}. You can also retry manually.</p>}
     <div className="ws-backup-facts">
       <div><span>Latest verified snapshot</span><strong>{stamp(view?.last_snapshot?.verified_at)}</strong>{snapshot && <small>{snapshot.memory_count.toLocaleString()} memories · {fileSize(snapshot.bytes)}</small>}</div>
