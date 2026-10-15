@@ -86,7 +86,9 @@ mnemion-control --credentials /private/workspace.json call recovery.directory --
 mnemion-service recovery-kit --record-file /private/recovery-record.json --passphrase-file /private/kit-passphrase --endpoint https://memory.example.org --workspace-name "Company memory" --output /private/company-recovery.html
 ```
 
-Use appropriate private paths for your OS. The record and passphrase files must
+Use appropriate private paths for your OS. Write one passphrase line; a final
+file line ending is accepted, but embedded line breaks are rejected because a
+browser password field cannot preserve them. The record and passphrase files must
 belong to, and be readable only by, the current OS account. The command accepts
 the control CLI's result envelope or a raw API response, makes no network calls,
 and exclusively creates a private output file; it never overwrites an existing

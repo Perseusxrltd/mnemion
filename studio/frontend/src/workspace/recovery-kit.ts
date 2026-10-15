@@ -7,7 +7,7 @@ const base64 = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes));
 /** Never send this passphrase or a workspace credential to a server. */
 export async function exportRecoveryKit(record: RecoveryDirectoryRecord, passphrase: string, endpoint: string, name: string): Promise<void> {
   const directory = recoveryRecord(record);
-  if ([...passphrase].length < 15 || new TextEncoder().encode(passphrase).length > 4096 || passphrase.includes('\0')) throw new Error('Use a separate kit passphrase of at least 15 characters.');
+  if ([...passphrase].length < 15 || new TextEncoder().encode(passphrase).length > 4096 || /[\u0000\r\n]/.test(passphrase)) throw new Error('Use a separate, single-line kit passphrase of at least 15 characters.');
   if (!globalThis.crypto?.subtle) throw new Error('Use the desktop app or the workspace’s HTTPS address to encrypt a recovery kit.');
   const address = new URL(endpoint);
   if ((address.protocol !== 'https:' && !(address.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(address.hostname))) || address.username || address.password || address.search || address.hash || /[\s\\]/.test(endpoint) || endpoint.length > 4096) throw new Error('Use the verified workspace address.');

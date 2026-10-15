@@ -59,9 +59,11 @@ def render_kit(record: dict, passphrase: str, *, endpoint: str, workspace_name: 
         not isinstance(passphrase, str)
         or len(passphrase) < 15
         or len(passphrase.encode("utf-8")) > 4096
-        or "\0" in passphrase
+        or any(character in passphrase for character in "\0\r\n")
     ):
-        raise ValueError("Use a separate recovery-kit passphrase of at least 15 characters")
+        raise ValueError(
+            "Use a separate, single-line recovery-kit passphrase of at least 15 characters"
+        )
     clear = json.dumps(
         payload(record, endpoint=endpoint, workspace_name=workspace_name),
         ensure_ascii=False,
@@ -110,7 +112,7 @@ def arguments(parser):
         "--passphrase-file",
         type=Path,
         required=True,
-        help="Owner-only UTF-8 passphrase file; never a command-line secret",
+        help="Owner-only UTF-8 file containing one passphrase line; never a command-line secret",
     )
     parser.add_argument("--endpoint", required=True)
     parser.add_argument("--workspace-name", required=True)
@@ -150,7 +152,7 @@ def execute(args) -> int:
             json.dumps(
                 {
                     "created": False,
-                    "error": "Check the private record/passphrase files, verified address and workspace name, and choose a new output path. The passphrase needs at least 15 characters.",
+                    "error": "Check the private record/passphrase files, verified address and workspace name, and choose a new output path. Use one passphrase line of at least 15 characters.",
                 }
             )
         )

@@ -73,6 +73,8 @@ def test_portable_kit_has_authenticated_ciphertext_and_a_self_contained_viewer()
     [
         {"passphrase": "too short"},
         {"passphrase": "a" * 4097},
+        {"passphrase": "unenterable\nfixture passphrase"},
+        {"passphrase": "unenterable\rfixture passphrase"},
         {"endpoint": "https://person:secret@example.org"},
         {"endpoint": "http://remote.example.org"},
         {"workspace_name": "bad\x00name"},

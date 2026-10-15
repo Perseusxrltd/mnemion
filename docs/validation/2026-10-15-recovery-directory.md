@@ -66,8 +66,9 @@ No provider console or real recovery storage was contacted.
 Kit tests cover authenticated ciphertext, a changed authentication tag, incorrect
 passwords, removal of unknown response fields, the inline CSP hash, bounded
 inputs, private output, and refusal to overwrite an existing kit. A final focused
-kit run covers the control CLI's private result envelope and escaped Unicode near
-the directory limit. The shared generated viewer includes the canonical logo
+kit run covers the control CLI's private result envelope, escaped Unicode near
+the directory limit and rejection of embedded CR/LF passphrases that a browser
+password field cannot preserve. The shared generated viewer includes the canonical logo
 and the same validator as the desktop; desktop builds check its consistency.
 
 ## Scope still open
