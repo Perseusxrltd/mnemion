@@ -15047,6 +15047,889 @@
     {
       "authentication": "bearer",
       "download": false,
+      "effect": "write",
+      "group": "recovery",
+      "input_schema": {
+        "$defs": {
+          "RecoveryContact": {
+            "additionalProperties": false,
+            "properties": {
+              "channel": {
+                "maxLength": 300,
+                "minLength": 1,
+                "title": "Channel",
+                "type": "string"
+              },
+              "id": {
+                "format": "uuid",
+                "title": "Id",
+                "type": "string"
+              },
+              "name": {
+                "maxLength": 120,
+                "minLength": 1,
+                "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+                "title": "Name",
+                "type": "string"
+              },
+              "responsibility": {
+                "default": "",
+                "maxLength": 300,
+                "title": "Responsibility",
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "channel"
+            ],
+            "title": "RecoveryContact",
+            "type": "object"
+          },
+          "RecoveryDirectory": {
+            "additionalProperties": false,
+            "properties": {
+              "contacts": {
+                "items": {
+                  "$ref": "#/$defs/RecoveryContact"
+                },
+                "maxItems": 16,
+                "title": "Contacts",
+                "type": "array"
+              },
+              "hosts": {
+                "items": {
+                  "$ref": "#/$defs/RecoveryHost"
+                },
+                "maxItems": 16,
+                "title": "Hosts",
+                "type": "array"
+              },
+              "independent_url": {
+                "anyOf": [
+                  {
+                    "maxLength": 2048,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Independent Url"
+              },
+              "instructions": {
+                "default": "",
+                "maxLength": 2000,
+                "title": "Instructions",
+                "type": "string"
+              },
+              "materials": {
+                "items": {
+                  "$ref": "#/$defs/RecoveryMaterial"
+                },
+                "maxItems": 16,
+                "title": "Materials",
+                "type": "array"
+              }
+            },
+            "title": "RecoveryDirectory",
+            "type": "object"
+          },
+          "RecoveryDirectoryInput": {
+            "additionalProperties": false,
+            "properties": {
+              "directory": {
+                "$ref": "#/$defs/RecoveryDirectory"
+              },
+              "expected_revision": {
+                "maximum": 2147483646.0,
+                "minimum": 0.0,
+                "title": "Expected Revision",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "expected_revision",
+              "directory"
+            ],
+            "title": "RecoveryDirectoryInput",
+            "type": "object"
+          },
+          "RecoveryHost": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "format": "uuid",
+                "title": "Id",
+                "type": "string"
+              },
+              "name": {
+                "maxLength": 120,
+                "minLength": 1,
+                "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+                "title": "Name",
+                "type": "string"
+              },
+              "notes": {
+                "default": "",
+                "maxLength": 600,
+                "title": "Notes",
+                "type": "string"
+              },
+              "operator": {
+                "default": "",
+                "maxLength": 200,
+                "title": "Operator",
+                "type": "string"
+              },
+              "operator_url": {
+                "anyOf": [
+                  {
+                    "maxLength": 2048,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Operator Url"
+              },
+              "platform": {
+                "default": "other",
+                "enum": [
+                  "windows",
+                  "macos",
+                  "linux",
+                  "managed",
+                  "other"
+                ],
+                "title": "Platform",
+                "type": "string"
+              },
+              "role": {
+                "default": "primary",
+                "enum": [
+                  "primary",
+                  "recovery",
+                  "ingestion"
+                ],
+                "title": "Role",
+                "type": "string"
+              },
+              "workspace_url": {
+                "anyOf": [
+                  {
+                    "maxLength": 2048,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Workspace Url"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "title": "RecoveryHost",
+            "type": "object"
+          },
+          "RecoveryMaterial": {
+            "additionalProperties": false,
+            "properties": {
+              "access_url": {
+                "anyOf": [
+                  {
+                    "maxLength": 2048,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Access Url"
+              },
+              "id": {
+                "format": "uuid",
+                "title": "Id",
+                "type": "string"
+              },
+              "kind": {
+                "enum": [
+                  "database_backup",
+                  "recovery_ledger",
+                  "source_mirror"
+                ],
+                "title": "Kind",
+                "type": "string"
+              },
+              "location": {
+                "maxLength": 1024,
+                "minLength": 1,
+                "title": "Location",
+                "type": "string"
+              },
+              "name": {
+                "maxLength": 120,
+                "minLength": 1,
+                "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+                "title": "Name",
+                "type": "string"
+              },
+              "notes": {
+                "default": "",
+                "maxLength": 600,
+                "title": "Notes",
+                "type": "string"
+              },
+              "reported_verified_at": {
+                "anyOf": [
+                  {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Administrator-reported observation, not automatic verification.",
+                "title": "Reported Verified At"
+              }
+            },
+            "required": [
+              "name",
+              "kind",
+              "location"
+            ],
+            "title": "RecoveryMaterial",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/RecoveryDirectoryInput"
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "PUT",
+      "name": "recovery.configure",
+      "output_schema": {
+        "$defs": {
+          "RecoveryContact": {
+            "additionalProperties": false,
+            "properties": {
+              "channel": {
+                "maxLength": 300,
+                "minLength": 1,
+                "title": "Channel",
+                "type": "string"
+              },
+              "id": {
+                "format": "uuid",
+                "title": "Id",
+                "type": "string"
+              },
+              "name": {
+                "maxLength": 120,
+                "minLength": 1,
+                "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+                "title": "Name",
+                "type": "string"
+              },
+              "responsibility": {
+                "default": "",
+                "maxLength": 300,
+                "title": "Responsibility",
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "channel"
+            ],
+            "title": "RecoveryContact",
+            "type": "object"
+          },
+          "RecoveryDirectory": {
+            "additionalProperties": false,
+            "properties": {
+              "contacts": {
+                "items": {
+                  "$ref": "#/$defs/RecoveryContact"
+                },
+                "maxItems": 16,
+                "title": "Contacts",
+                "type": "array"
+              },
+              "hosts": {
+                "items": {
+                  "$ref": "#/$defs/RecoveryHost"
+                },
+                "maxItems": 16,
+                "title": "Hosts",
+                "type": "array"
+              },
+              "independent_url": {
+                "anyOf": [
+                  {
+                    "maxLength": 2048,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Independent Url"
+              },
+              "instructions": {
+                "default": "",
+                "maxLength": 2000,
+                "title": "Instructions",
+                "type": "string"
+              },
+              "materials": {
+                "items": {
+                  "$ref": "#/$defs/RecoveryMaterial"
+                },
+                "maxItems": 16,
+                "title": "Materials",
+                "type": "array"
+              }
+            },
+            "title": "RecoveryDirectory",
+            "type": "object"
+          },
+          "RecoveryDirectoryRecord": {
+            "additionalProperties": true,
+            "properties": {
+              "directory": {
+                "$ref": "#/$defs/RecoveryDirectory"
+              },
+              "revision": {
+                "maximum": 2147483647.0,
+                "minimum": 0.0,
+                "title": "Revision",
+                "type": "integer"
+              },
+              "tenant_id": {
+                "format": "uuid",
+                "title": "Tenant Id",
+                "type": "string"
+              },
+              "updated_at": {
+                "anyOf": [
+                  {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Updated At"
+              },
+              "updated_by": {
+                "anyOf": [
+                  {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Updated By"
+              }
+            },
+            "required": [
+              "tenant_id",
+              "revision",
+              "updated_at",
+              "updated_by",
+              "directory"
+            ],
+            "title": "RecoveryDirectoryRecord",
+            "type": "object"
+          },
+          "RecoveryHost": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "format": "uuid",
+                "title": "Id",
+                "type": "string"
+              },
+              "name": {
+                "maxLength": 120,
+                "minLength": 1,
+                "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+                "title": "Name",
+                "type": "string"
+              },
+              "notes": {
+                "default": "",
+                "maxLength": 600,
+                "title": "Notes",
+                "type": "string"
+              },
+              "operator": {
+                "default": "",
+                "maxLength": 200,
+                "title": "Operator",
+                "type": "string"
+              },
+              "operator_url": {
+                "anyOf": [
+                  {
+                    "maxLength": 2048,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Operator Url"
+              },
+              "platform": {
+                "default": "other",
+                "enum": [
+                  "windows",
+                  "macos",
+                  "linux",
+                  "managed",
+                  "other"
+                ],
+                "title": "Platform",
+                "type": "string"
+              },
+              "role": {
+                "default": "primary",
+                "enum": [
+                  "primary",
+                  "recovery",
+                  "ingestion"
+                ],
+                "title": "Role",
+                "type": "string"
+              },
+              "workspace_url": {
+                "anyOf": [
+                  {
+                    "maxLength": 2048,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Workspace Url"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "title": "RecoveryHost",
+            "type": "object"
+          },
+          "RecoveryMaterial": {
+            "additionalProperties": false,
+            "properties": {
+              "access_url": {
+                "anyOf": [
+                  {
+                    "maxLength": 2048,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Access Url"
+              },
+              "id": {
+                "format": "uuid",
+                "title": "Id",
+                "type": "string"
+              },
+              "kind": {
+                "enum": [
+                  "database_backup",
+                  "recovery_ledger",
+                  "source_mirror"
+                ],
+                "title": "Kind",
+                "type": "string"
+              },
+              "location": {
+                "maxLength": 1024,
+                "minLength": 1,
+                "title": "Location",
+                "type": "string"
+              },
+              "name": {
+                "maxLength": 120,
+                "minLength": 1,
+                "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+                "title": "Name",
+                "type": "string"
+              },
+              "notes": {
+                "default": "",
+                "maxLength": 600,
+                "title": "Notes",
+                "type": "string"
+              },
+              "reported_verified_at": {
+                "anyOf": [
+                  {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Administrator-reported observation, not automatic verification.",
+                "title": "Reported Verified At"
+              }
+            },
+            "required": [
+              "name",
+              "kind",
+              "location"
+            ],
+            "title": "RecoveryMaterial",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/RecoveryDirectoryRecord"
+      },
+      "parameter_locations": {},
+      "path": "/v1/recovery-directory",
+      "retry": "inspect_before_retry",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Update Directory"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "read",
+      "group": "recovery",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {},
+        "type": "object"
+      },
+      "method": "GET",
+      "name": "recovery.directory",
+      "output_schema": {
+        "$defs": {
+          "RecoveryContact": {
+            "additionalProperties": false,
+            "properties": {
+              "channel": {
+                "maxLength": 300,
+                "minLength": 1,
+                "title": "Channel",
+                "type": "string"
+              },
+              "id": {
+                "format": "uuid",
+                "title": "Id",
+                "type": "string"
+              },
+              "name": {
+                "maxLength": 120,
+                "minLength": 1,
+                "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+                "title": "Name",
+                "type": "string"
+              },
+              "responsibility": {
+                "default": "",
+                "maxLength": 300,
+                "title": "Responsibility",
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "channel"
+            ],
+            "title": "RecoveryContact",
+            "type": "object"
+          },
+          "RecoveryDirectory": {
+            "additionalProperties": false,
+            "properties": {
+              "contacts": {
+                "items": {
+                  "$ref": "#/$defs/RecoveryContact"
+                },
+                "maxItems": 16,
+                "title": "Contacts",
+                "type": "array"
+              },
+              "hosts": {
+                "items": {
+                  "$ref": "#/$defs/RecoveryHost"
+                },
+                "maxItems": 16,
+                "title": "Hosts",
+                "type": "array"
+              },
+              "independent_url": {
+                "anyOf": [
+                  {
+                    "maxLength": 2048,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Independent Url"
+              },
+              "instructions": {
+                "default": "",
+                "maxLength": 2000,
+                "title": "Instructions",
+                "type": "string"
+              },
+              "materials": {
+                "items": {
+                  "$ref": "#/$defs/RecoveryMaterial"
+                },
+                "maxItems": 16,
+                "title": "Materials",
+                "type": "array"
+              }
+            },
+            "title": "RecoveryDirectory",
+            "type": "object"
+          },
+          "RecoveryDirectoryRecord": {
+            "additionalProperties": true,
+            "properties": {
+              "directory": {
+                "$ref": "#/$defs/RecoveryDirectory"
+              },
+              "revision": {
+                "maximum": 2147483647.0,
+                "minimum": 0.0,
+                "title": "Revision",
+                "type": "integer"
+              },
+              "tenant_id": {
+                "format": "uuid",
+                "title": "Tenant Id",
+                "type": "string"
+              },
+              "updated_at": {
+                "anyOf": [
+                  {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Updated At"
+              },
+              "updated_by": {
+                "anyOf": [
+                  {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Updated By"
+              }
+            },
+            "required": [
+              "tenant_id",
+              "revision",
+              "updated_at",
+              "updated_by",
+              "directory"
+            ],
+            "title": "RecoveryDirectoryRecord",
+            "type": "object"
+          },
+          "RecoveryHost": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "format": "uuid",
+                "title": "Id",
+                "type": "string"
+              },
+              "name": {
+                "maxLength": 120,
+                "minLength": 1,
+                "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+                "title": "Name",
+                "type": "string"
+              },
+              "notes": {
+                "default": "",
+                "maxLength": 600,
+                "title": "Notes",
+                "type": "string"
+              },
+              "operator": {
+                "default": "",
+                "maxLength": 200,
+                "title": "Operator",
+                "type": "string"
+              },
+              "operator_url": {
+                "anyOf": [
+                  {
+                    "maxLength": 2048,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Operator Url"
+              },
+              "platform": {
+                "default": "other",
+                "enum": [
+                  "windows",
+                  "macos",
+                  "linux",
+                  "managed",
+                  "other"
+                ],
+                "title": "Platform",
+                "type": "string"
+              },
+              "role": {
+                "default": "primary",
+                "enum": [
+                  "primary",
+                  "recovery",
+                  "ingestion"
+                ],
+                "title": "Role",
+                "type": "string"
+              },
+              "workspace_url": {
+                "anyOf": [
+                  {
+                    "maxLength": 2048,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Workspace Url"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "title": "RecoveryHost",
+            "type": "object"
+          },
+          "RecoveryMaterial": {
+            "additionalProperties": false,
+            "properties": {
+              "access_url": {
+                "anyOf": [
+                  {
+                    "maxLength": 2048,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Access Url"
+              },
+              "id": {
+                "format": "uuid",
+                "title": "Id",
+                "type": "string"
+              },
+              "kind": {
+                "enum": [
+                  "database_backup",
+                  "recovery_ledger",
+                  "source_mirror"
+                ],
+                "title": "Kind",
+                "type": "string"
+              },
+              "location": {
+                "maxLength": 1024,
+                "minLength": 1,
+                "title": "Location",
+                "type": "string"
+              },
+              "name": {
+                "maxLength": 120,
+                "minLength": 1,
+                "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+                "title": "Name",
+                "type": "string"
+              },
+              "notes": {
+                "default": "",
+                "maxLength": 600,
+                "title": "Notes",
+                "type": "string"
+              },
+              "reported_verified_at": {
+                "anyOf": [
+                  {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Administrator-reported observation, not automatic verification.",
+                "title": "Reported Verified At"
+              }
+            },
+            "required": [
+              "name",
+              "kind",
+              "location"
+            ],
+            "title": "RecoveryMaterial",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/RecoveryDirectoryRecord"
+      },
+      "parameter_locations": {},
+      "path": "/v1/recovery-directory",
+      "retry": "read",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Directory"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
       "effect": "read",
       "group": "retrieval",
       "input_schema": {

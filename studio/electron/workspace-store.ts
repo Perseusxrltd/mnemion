@@ -4,6 +4,7 @@ import { constants, type Stats } from 'node:fs'
 import { chmod, lstat, mkdir, open, rename, rm } from 'node:fs/promises'
 import { isAbsolute, join } from 'node:path'
 import { passwordSession, type PasswordSession } from './workspace-auth.js'
+import { recoveryRecord, type RecoveryDirectoryRecord } from './workspace-recovery.js'
 
 export interface WorkspaceIdentity {
   principal_id: string
@@ -28,6 +29,8 @@ export interface WorkspaceInspection {
   bookmark: WorkspaceBookmark
   access: { identity: WorkspaceIdentity; verifiedAt: string } | null
   accessStatus: 'recorded' | 'not-recorded' | 'locked' | 'unavailable'
+  recovery?: { record: RecoveryDirectoryRecord; savedAt: string } | null
+  recoveryStatus?: 'recorded' | 'unavailable'
 }
 
 export interface CredentialCipher {
@@ -176,7 +179,8 @@ export class WorkspaceStore {
     return (await this.status()).bookmarks
   }
 
-  save(endpoint: string, credential: string, identity: WorkspaceIdentity, session?: PasswordSession): Promise<WorkspaceBookmark> {
+  save(endpoint: string, credential: string, identity: WorkspaceIdentity, session?: PasswordSession,
+    directory?: RecoveryDirectoryRecord | null): Promise<WorkspaceBookmark> {
     return this.serial(async () => {
       if (!await this.available()) throw new Error('Unlock the operating system password store, or connect without remembering this workspace.')
       endpoint = workspaceEndpoint(endpoint)
@@ -194,16 +198,68 @@ export class WorkspaceStore {
         principalName: identity.name, principalId: identity.principal_id,
         tenantId: identity.tenant_id, updatedAt: new Date().toISOString(),
       }
+      let recovery: { record: RecoveryDirectoryRecord; savedAt: string } | undefined
+      if (identity.administrator) {
+        if (directory) recovery = { record: recoveryRecord(directory, identity.tenant_id), savedAt: bookmark.updatedAt }
+        else if (directory === undefined && previous) {
+          try { recovery = this.recovery(await this.unseal(previous), identity) } catch { /* A fresh verified login can repair an old record. */ }
+        }
+      }
       // Bind the encrypted credential to its destination and identity. Changing
       // plaintext metadata cannot redirect the saved secret to another host.
-      const sealed = (await this.cipher.encrypt(JSON.stringify({
+      const payload = {
         format: 1, endpoint, principalId: bookmark.principalId, tenantId: bookmark.tenantId, credential,
         // Older clients ignore additional encrypted fields. Keep the outer
         // bookmark format unchanged so rollback can still open the connection.
         identity, verifiedAt: bookmark.updatedAt, ...(session ? { passwordSession: session } : {}),
-      }))).toString('base64')
-      await this.write({ activeId: bookmark.id, connections: [...entries.filter(item => item.id !== bookmark.id), { ...bookmark, sealed }] })
+        ...(recovery ? { recovery } : {}),
+      }
+      // Preserve the old outer format/size boundary so rollback can still open
+      // credentials. An optional large directory must not prevent connection.
+      if (recovery && (Buffer.byteLength(JSON.stringify(payload)) > 11000 || JSON.stringify(recovery).includes(credential))) delete payload.recovery
+      let sealed = (await this.cipher.encrypt(JSON.stringify(payload))).toString('base64')
+      if (payload.recovery && sealed.length > 16384) {
+        delete payload.recovery
+        sealed = (await this.cipher.encrypt(JSON.stringify(payload))).toString('base64')
+      }
+      if (sealed.length > 16384) throw new Error('The protected connection exceeds its size limit.')
+      const saved = () => ({ activeId: bookmark.id, connections: [...entries.filter(item => item.id !== bookmark.id), { ...bookmark, sealed }] })
+      if (payload.recovery && Buffer.byteLength(JSON.stringify({ format: 1, ...saved() })) + 1 > LIMIT) {
+        delete payload.recovery
+        sealed = (await this.cipher.encrypt(JSON.stringify(payload))).toString('base64')
+      }
+      await this.write(saved())
       return bookmark
+    })
+  }
+
+  private recovery(decoded: Record<string, unknown>, identity: WorkspaceIdentity) {
+    if (!identity.administrator || decoded.recovery === undefined) return undefined
+    const value = decoded.recovery as { record?: unknown; savedAt?: unknown }
+    if (!value || typeof value.savedAt !== 'string' || !Number.isFinite(Date.parse(value.savedAt))) throw new Error('Invalid saved recovery observation.')
+    const record = recoveryRecord(value.record, identity.tenant_id)
+    if (typeof decoded.credential === 'string' && JSON.stringify(record).includes(decoded.credential)) throw new Error('Invalid recovery references.')
+    return { record, savedAt: value.savedAt }
+  }
+
+  /** Refresh metadata only after a main-process, credential-bound server read. */
+  cacheRecovery(id: string, expected: WorkspaceIdentity, endpoint: string, directory: RecoveryDirectoryRecord | null): Promise<void> {
+    return this.serial(async () => {
+      const state = await this.read()
+      const item = state.connections.find(item => item.id === id)
+      if (!item || item.endpoint !== endpoint || item.tenantId !== expected.tenant_id || item.principalId !== expected.principal_id) throw new Error('The saved connection changed; reconnect before refreshing recovery details.')
+      const decoded = await this.unseal(item)
+      const identity = workspaceIdentity(decoded.identity)
+      delete decoded.recovery
+      if (identity.administrator && expected.administrator && directory) {
+        const record = recoveryRecord(directory, item.tenantId)
+        if (JSON.stringify(record).includes(decoded.credential)) throw new Error('Invalid recovery references.')
+        decoded.recovery = { record, savedAt: new Date().toISOString() }
+      }
+      const sealed = (await this.cipher.encrypt(JSON.stringify(decoded))).toString('base64')
+      if (sealed.length > 16384) throw new Error('These recovery details are too large for this saved connection. Download an encrypted recovery kit instead.')
+      item.sealed = sealed
+      await this.write(state)
     })
   }
 
@@ -262,7 +318,12 @@ export class WorkspaceStore {
         throw new Error('The stored access observation does not match this workspace.')
       }
       // Do not spread the decrypted payload into a renderer-facing result.
-      return { bookmark, access: { identity, verifiedAt: decoded.verifiedAt }, accessStatus: 'recorded' }
+      const inspection: WorkspaceInspection = { bookmark, access: { identity, verifiedAt: decoded.verifiedAt }, accessStatus: 'recorded' }
+      try {
+        const recovery = this.recovery(decoded, identity)
+        if (recovery) { inspection.recovery = recovery; inspection.recoveryStatus = 'recorded' }
+      } catch { inspection.recovery = null; inspection.recoveryStatus = 'unavailable' }
+      return inspection
     } catch {
       return { bookmark, access: null, accessStatus: 'unavailable' }
     }

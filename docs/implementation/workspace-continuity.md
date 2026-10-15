@@ -1,9 +1,16 @@
 # Organization administration and workspace continuity
 
-Updated **2026-10-12**. This contract extends requirements A01–A09 with the
+Updated **2026-10-15**. This contract extends requirements A01–A09 with the
 explicit request that another authorized administrator must be able to manage
 and recover a workspace when its original agent is unavailable. It is not a
 claim that the controls below are already released.
+
+The [4.8.0 directory batch](workspace-recovery-directory.md) implements shared
+host/operator and recovery-material references, protected desktop observations,
+an independent encrypted HTML viewer and equivalent agent operations. Its
+[source acceptance](../validation/2026-10-15-recovery-directory.md) is separate
+from native publication. The richer host health/delegation, recovery-custodian,
+backup-delivery, identity-provider and safe-takeover requirements below remain open.
 
 ## Ownership must survive the original agent
 

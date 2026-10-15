@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.7.1**. Roadmap updated: **2026-10-15**.
+Reviewed source distribution: **4.8.0**. Roadmap updated: **2026-10-15**.
 The [current published distribution and release gates](RELEASE_STATUS.md) are updated automatically.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
@@ -25,7 +25,7 @@ and path/handle timestamp differences. The corrections include an
 records the checks and their limits. [All 32 release jobs, uploaded-package
 verification, live website delivery and six public automatic upgrades passed](validation/2026-10-15-native-backup-release.md).
 Cloud delivery verification and independent host management remain open;
-configurable retention is implemented in the 4.7.0 source described below.
+configurable retention is published in 4.7.1 as described below.
 The strict full-scope count remains **17 of 64 shipped (26.6%)** because these
 broad requirements still have unfinished acceptance criteria.
 
@@ -38,19 +38,21 @@ agent-requested switches; successful switches reconnect the app to its selected
 workspace. [154 desktop checks and real source-app/CLI recovery](validation/2026-10-15-desktop-operator.md)
 passed, followed by the native release acceptance linked above.
 
-The [4.7.0 source](releases/4.7.0.md) adds opt-in backup retention, recorded
+Published [4.7.1](releases/4.7.1.md) adds opt-in backup retention, recorded
 inventory and reviewed cleanup in both the app and local agent interface.
 Keep-all remains the default. Cleanup protects two verified snapshot/ledger
 pairs, the latest access state, other keys and untracked files.
 [Actual Windows file operations, PostgreSQL recovery and a source-app walkthrough](validation/2026-10-15-backup-retention.md)
 passed. It also fixes [native database identity after Linux clock adjustments](validation/2026-10-15-native-clock-shutdown.md)
 and prevents failed shutdown from being reported as automatic-update readiness.
-Installed acceptance, provider delivery, permanent per-file cleanup audit history
-and independent host recovery remain open; the strict completion count is unchanged.
+All 32 release jobs, independent uploaded-package verification and live website
+delivery passed; public automatic-update evidence is tracked in release status.
+Provider delivery, permanent per-file cleanup audit history and independent host
+recovery remain open; the strict completion count is unchanged.
 The unpublished 4.7.0 candidate is superseded by 4.7.1, which carries these
 features together with the restart correction below.
 
-The [4.7.1 source](releases/4.7.1.md) allows managed servers to automatically
+Published [4.7.1](releases/4.7.1.md) allows managed servers to automatically
 accept newer minor versions within the same stable major series when schema
 hashes and model generations match. It also keeps temporary supervisor timeouts
 within the existing restart deadline, with fresh instance checks and idempotent
@@ -60,6 +62,16 @@ to reach this policy; automatic migrations and company fleet controls remain ope
 The [original shared host was independently restored and upgraded to 4.4.0](validation/2026-10-15-shared-host-upgrade.md),
 with preserved access and real Windows queries. It remains a separately operated
 installation; neither a source commit nor a desktop publication upgrades it by itself.
+
+The [4.8.0 source](releases/4.8.0.md) adds an administrator-managed
+[recovery directory and independent encrypted kit](service/recovery-directory.md):
+host/operator references, backup/ledger/source locations and independent contacts;
+protected desktop copies; offline HTML viewing; and equivalent agent operations.
+[Focused service, restoration, desktop and browser evidence](validation/2026-10-15-recovery-directory.md)
+is separate from the normal native release and public-update gates. This advances
+F08, A06–A07, A09 and A12–A13; delegated host authority, provider delivery
+verification, recovery-custodian policy, company SSO and safe takeover remain open.
+The strict full-scope count remains **17 of 64 shipped (26.6%)**.
 
 [4.3.3](releases/4.3.3.md) adds explainable, optional key-term support for questions
 without a full text match, plus saved evaluation ranking preferences and

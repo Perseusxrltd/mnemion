@@ -1,7 +1,7 @@
-import type { MnemionClient } from "@mnemion/client";
+import type { MnemionClient, RecoveryDirectoryRecord } from "@mnemion/client";
 
 export type WorkspaceIdentity = Awaited<ReturnType<MnemionClient["me"]>>;
-export type Connection = { client: MnemionClient; me: WorkspaceIdentity; endpoint: string; authentication?: 'password'; signOut?: () => Promise<void>; close?: () => void; subscribeClosed?: (listener: () => void) => () => void };
+export type Connection = { client: MnemionClient; me: WorkspaceIdentity; endpoint: string; authentication?: 'password'; signOut?: () => Promise<void>; close?: () => void; subscribeClosed?: (listener: () => void) => () => void; refreshRecovery?: () => Promise<WorkspaceInspection> };
 export type WorkspaceBookmark = {
   id: string;
   endpoint: string;
@@ -15,6 +15,8 @@ export type WorkspaceInspection = {
   bookmark: WorkspaceBookmark;
   access: { identity: Pick<WorkspaceIdentity, 'tenant_id' | 'principal_id' | 'tenant_name' | 'name' | 'administrator'>; verifiedAt: string } | null;
   accessStatus: 'recorded' | 'not-recorded' | 'locked' | 'unavailable';
+  recovery?: { record: RecoveryDirectoryRecord; savedAt: string } | null;
+  recoveryStatus?: 'recorded' | 'unavailable';
 };
 export type WorkspaceSession = {
   endpoint: string;

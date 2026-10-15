@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-__MNEMION_SCRIPT_HASH__'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<title>Mnemion · Independent recovery kit</title>
+<style>
+:root{color-scheme:dark;font-family:Inter,system-ui,sans-serif;background:#070b14;color:#f2ead9;line-height:1.55}*{box-sizing:border-box}body{margin:0}main{max-width:940px;margin:auto;padding:36px 22px 72px}.brand{display:flex;align-items:center;gap:14px;margin-bottom:36px}.brand svg{width:48px;height:48px}.brand strong{font-size:1.6rem;letter-spacing:.03em}.brand small{display:block;color:#a7acb9}h1{font-size:clamp(1.7rem,4vw,2.5rem);line-height:1.15}h2{font-size:1.15rem;margin:0 0 12px}h3{font-size:1rem;margin:0 0 8px}p{margin:10px 0}section,.entry{border:1px solid #c49a5538;background:#0d1420;border-radius:12px;padding:22px;margin:20px 0}.entry{background:#101927;padding:16px;margin:12px 0}label{display:block;margin:16px 0 6px}input,button{font:inherit;border-radius:7px;padding:11px 15px}input{width:100%;background:#070b14;border:1px solid #667082;color:#f2ead9}button{background:#e2b967;color:#070b14;border:1px solid #e2b967;cursor:pointer;margin:12px 8px 0 0}button:disabled{opacity:.6;cursor:wait}button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #f2ead9;outline-offset:3px}a{color:#e2b967;overflow-wrap:anywhere}small,.muted{color:#a7acb9}.notice{border-left:3px solid #c49a55;padding:12px 16px;background:#c49a5510}.error{color:#ffb0a6;min-height:1.6em}dl{display:grid;grid-template-columns:minmax(100px,180px) 1fr;gap:8px 16px}dt{color:#a7acb9}dd{margin:0;overflow-wrap:anywhere}.text{white-space:pre-wrap;overflow-wrap:anywhere}.links{display:flex;gap:18px;flex-wrap:wrap;margin-top:12px}[hidden]{display:none!important}@media(max-width:520px){dl{grid-template-columns:1fr;gap:3px}dd{margin-bottom:12px}main{padding:24px 16px}section{padding:16px}}
+</style>
+</head>
+<body><main>
+<header class="brand">__MNEMION_RECOVERY_MARK__<div><strong>Mnemion</strong><small>Perseus XR · Independent recovery kit</small></div></header>
+<section id="locked"><h1>Your recovery information, available offline</h1><p>Open this kit with its separate passphrase. It works without the memory server or the agent that created the workspace.</p>
+<form id="unlock"><label for="passphrase">Recovery-kit passphrase</label><input id="passphrase" type="password" autocomplete="current-password" maxlength="4096" required><button id="open" type="submit">Unlock recovery kit</button><p id="error" class="error" role="alert"></p></form>
+<p class="muted">This file contains encrypted recovery references. It exports the recorded directory; saved workspace logins and database backups are not added to it. Decryption stays in this page.</p></section>
+<div id="opened" hidden><button id="lock" type="button">Lock this kit</button><div id="details"></div></div>
+<footer><small>Mnemion is free. Keep an updated kit outside the host it helps you recover, and keep its passphrase separately. Existing copies cannot be remotely revoked.</small></footer>
+</main>
+<script>
+'use strict';
+const sealed = __MNEMION_RECOVERY_DATA__;
+const validateRecord = __MNEMION_RECOVERY_VALIDATOR__;
+const byId = id => document.getElementById(id);
+function node(tag, text, className) { const element = document.createElement(tag); if (text !== undefined) element.textContent = text; if (className) element.className = className; return element; }
+function text(value, max) { if (typeof value !== 'string' || [...value].length > max || !value.trim()) throw new Error('Invalid kit'); return value; }
+function address(value, loopback = false) { const raw = text(value, 4096), url = new URL(raw); if ((url.protocol !== 'https:' && !(loopback && url.protocol === 'http:' && ['localhost','127.0.0.1','[::1]'].includes(url.hostname))) || url.username || url.password || url.search || url.hash || /[\s\\]/.test(raw)) throw new Error('Invalid address'); return raw; }
+function link(parent, label, value, loopback = false) { if (!value) return; const a = node('a', label); a.href = address(value, loopback); a.target = '_blank'; a.rel = 'noreferrer noopener'; parent.append(a); }
+function field(parent, label, value) { if (!value) return; parent.append(node('dt', label), node('dd', value)); }
+function section(title) { const element = node('section'); element.append(node('h2', title)); byId('details').append(element); return element; }
+function display(payload) {
+  if (!payload || payload.format !== 'mnemion-recovery-kit-v1') throw new Error('Invalid kit');
+  const name = text(payload.workspace_name, 256), endpoint = address(payload.endpoint, true);
+  if (typeof payload.captured_at !== 'string' || !Number.isFinite(Date.parse(payload.captured_at))) throw new Error('Invalid kit date');
+  const record = validateRecord(payload.record), directory = record.directory;
+  byId('details').replaceChildren();
+  const title = section(name); title.prepend(node('h1', 'Workspace recovery'));
+  const facts = node('dl'); field(facts, 'Workspace ID', record.tenant_id); field(facts, 'Saved address', endpoint);
+  field(facts, 'Kit created', new Date(payload.captured_at).toLocaleString()); field(facts, 'Directory updated', record.updated_at ? new Date(record.updated_at).toLocaleString() : 'Not configured'); title.append(facts);
+  title.append(node('p', 'This is a dated copy of recovery references. Sign in independently at the host provider and verify the current workspace before changing anything. A directory entry does not grant host access or make this computer a replica.', 'notice'));
+  if (directory.independent_url) link(title, 'Open the organization’s independent recovery page', directory.independent_url);
+  if (directory.instructions) section('Recovery instructions').append(node('p', directory.instructions, 'text'));
+  const hosts = section('Hosts & operator access');
+  if (!directory.hosts.length) hosts.append(node('p', 'No host references were recorded. Contact a separately enrolled administrator.'));
+  for (const host of directory.hosts) { const item = node('article', undefined, 'entry'); item.append(node('h3', host.name)); const facts = node('dl'); field(facts, 'Purpose', host.role); field(facts, 'System', host.platform); field(facts, 'Operator', host.operator); if (host.workspace_url) field(facts, 'Workspace address', host.workspace_url); item.append(facts); if (host.notes) item.append(node('p', host.notes, 'text')); const links = node('div', undefined, 'links'); link(links, 'Open host console', host.operator_url); link(links, 'Open workspace address', host.workspace_url, true); item.append(links); hosts.append(item); }
+  const materialNames = { database_backup: 'Database backup', recovery_ledger: 'Access & deletion ledger', source_mirror: 'Source mirror · tracked documents only' };
+  const materials = section('Recovery material'); materials.append(node('p', 'Complete restoration needs a verified database backup and the current access/deletion ledger. A source mirror cannot recover every memory, user, permission or deletion.', 'muted'));
+  for (const material of directory.materials) { const item = node('article', undefined, 'entry'); item.append(node('h3', material.name)); const facts = node('dl'); field(facts, 'Material', materialNames[material.kind]); field(facts, 'Location', material.location); field(facts, 'Verification reported', material.reported_verified_at ? new Date(material.reported_verified_at).toLocaleString() : 'No reported verification'); item.append(facts); if (material.notes) item.append(node('p', material.notes, 'text')); link(item, 'Open storage access page', material.access_url); materials.append(item); }
+  const contacts = section('Independent recovery contacts'); for (const contact of directory.contacts) { const item = node('article', undefined, 'entry'); item.append(node('h3', contact.name), node('p', contact.channel, 'text')); if (contact.responsibility) item.append(node('p', contact.responsibility, 'text')); contacts.append(item); }
+  byId('locked').hidden = true; byId('opened').hidden = false; byId('lock').focus();
+}
+function decode(value, max) { if (typeof value !== 'string' || value.length > max || !/^[A-Za-z0-9+/]+={0,2}$/.test(value)) throw new Error('Invalid envelope'); const raw = atob(value); if (btoa(raw) !== value) throw new Error('Invalid envelope'); return Uint8Array.from(raw, c => c.charCodeAt(0)); }
+byId('unlock').addEventListener('submit', async event => {
+  event.preventDefault(); const button = byId('open'), error = byId('error'); button.disabled = true; error.textContent = '';
+  try {
+    if (!globalThis.crypto?.subtle) throw new Error('WebCrypto unavailable');
+    if (sealed?.format !== 1 || sealed.algorithm !== 'AES-256-GCM' || sealed.kdf !== 'PBKDF2-SHA256' || sealed.iterations !== 600000) throw new Error('Invalid envelope');
+    const password = new TextEncoder().encode(byId('passphrase').value); if (!password.length || password.length > 4096) throw new Error('Invalid passphrase');
+    const salt = decode(sealed.salt, 64), iv = decode(sealed.iv, 24), encrypted = decode(sealed.ciphertext, 44000);
+    if (salt.length !== 32 || iv.length !== 12 || encrypted.length > 32768) throw new Error('Invalid envelope');
+    const material = await crypto.subtle.importKey('raw', password, 'PBKDF2', false, ['deriveKey']); password.fill(0);
+    const key = await crypto.subtle.deriveKey({name:'PBKDF2',hash:'SHA-256',salt,iterations:600000}, material, {name:'AES-GCM',length:256}, false, ['decrypt']);
+    const clear = new Uint8Array(await crypto.subtle.decrypt({name:'AES-GCM',iv,additionalData:new TextEncoder().encode('mnemion-recovery-kit-v1')},key,encrypted));
+    try { display(JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(clear))); } finally { clear.fill(0); }
+  } catch { byId('details').replaceChildren(); error.textContent = globalThis.crypto?.subtle ? 'The passphrase or recovery kit is not valid. Check the passphrase and the original file.' : 'Use a current browser to open the downloaded file, or serve it from your organization’s HTTPS site.'; }
+  finally { byId('passphrase').value = ''; button.disabled = false; }
+});
+byId('lock').addEventListener('click', () => { byId('details').replaceChildren(); byId('opened').hidden = true; byId('locked').hidden = false; byId('passphrase').focus(); });
+</script></body></html>

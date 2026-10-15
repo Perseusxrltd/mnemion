@@ -30,6 +30,16 @@ export async function verifyNativeWorkspaceProbe(window: BrowserWindow): Promise
     let outsideRejected = false;
     try { await request(endpoint.replace('/organization', '') + '/v1/me'); } catch { outsideRejected = true; }
     if (!outsideRejected) throw new Error('A native workspace handle escaped its API prefix');
+    let recoveryRefreshed = false, offlineRecoveryAvailable = false;
+    if (secure) {
+      if (phase === 'save') {
+        const refreshed = await bridge.workspaceRecoveryRefresh(session.sessionToken);
+        recoveryRefreshed = refreshed.recovery?.record?.revision === 1;
+      }
+      const inspected = await bridge.workspaceInspect(session.bookmarkId);
+      if (inspected.recovery?.record?.directory?.instructions !== 'Independent native recovery fixture' || JSON.stringify(inspected).includes(credential)) throw new Error('The native recovery observation was missing or exposed a credential');
+      offlineRecoveryAvailable = phase === 'resume';
+    }
     let uiRestored = false;
     if (phase === 'resume' && secure) {
       const deadline = Date.now() + 10000;
@@ -51,6 +61,7 @@ export async function verifyNativeWorkspaceProbe(window: BrowserWindow): Promise
       if ((await bridge.workspaceStatus()).bookmarks.length) throw new Error('The native connection was not forgotten');
     }
     return { phase, secureStorage: secure, authenticated: true, outsideRejected, staleRejected,
+      recoveryRefreshed, offlineRecoveryAvailable,
       reconnectPaused: true, savedForRestart: secure && phase === 'save',
       processRestartRestored: secure && phase === 'resume', uiRestored,
       sessionOnlyDidNotPersist: !secure && phase === 'resume', forgotten: secure && phase === 'resume' };

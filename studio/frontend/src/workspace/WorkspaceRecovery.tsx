@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, LockKeyhole, ShieldCheck } from 'lucide-react';
 import type { WorkspaceBookmark, WorkspaceInspection } from './connection-types';
+import { RecoveryKitForm, RecoveryReferences } from './RecoveryReferences';
 
 function date(value: string): string {
   return new Date(value).toLocaleString();
@@ -67,6 +68,14 @@ export default function WorkspaceRecovery({ bookmark, busy, onReconnect, onNewCo
       <p>Starting the server or its tunnel requires the host owner’s operator access. A saved workspace connection identifies your account; it does not enroll this computer as a database replica.</p>
       <Link className="ws-link" to="/help?doc=docs%2Fservice%2Fconnection-diagnostics.md">Connection and host recovery guide<ArrowRight size={13} /></Link>
     </div>
+    {inspection?.recovery && <div className="ws-recovery-step">
+      <h4>Protected recovery directory</h4>
+      <p className="ws-helper">Saved on this device <time dateTime={inspection.recovery.savedAt}>{date(inspection.recovery.savedAt)}</time>. These are earlier administrator-provided references. Recheck current access at the host provider.</p>
+      <RecoveryReferences record={inspection.recovery.record} />
+      <RecoveryKitForm record={inspection.recovery.record} endpoint={saved.endpoint} name={saved.label} />
+    </div>}
+    {inspection?.recoveryStatus === 'unavailable' && <p className="ws-notice" role="status">The saved recovery directory could not be read. The protected connection was preserved; refresh its recovery copy after reconnecting.</p>}
+    {access?.identity.administrator && !inspection?.recovery && inspection?.recoveryStatus !== 'unavailable' && <p className="ws-helper">No recovery directory is saved here yet. Connect to a current server and open Recovery directory to record its hosts, contacts and backup locations.</p>}
     <div className="ws-recovery-step">
       <h4>Recover your data</h4>
       <p>A Git or cloud source mirror can recover its tracked documents. Complete workspace restoration also needs a verified database backup and the current access and deletion ledger.</p>

@@ -65,6 +65,7 @@ from .hosted_oauth_api import (
     oauth_error,
 )
 from .sign_in_api import attach_sign_in
+from .recovery_directory import attach_recovery_directory
 
 logger = logging.getLogger(__name__)
 
@@ -409,6 +410,7 @@ def create_app(
     attach_embeddings(app, database, registry, authenticated)
     attach_librarian(app, librarian, authenticated)
     attach_agents(app, authenticated)
+    attach_recovery_directory(app, database, authenticated)
     attach_oauth(app, database, authenticated, oauth.settings if oauth else None)
     attach_hosted_connections(
         app,

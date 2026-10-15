@@ -24,6 +24,7 @@ contextBridge.exposeInMainWorld('mnemion', {
   serviceRequest: (request: unknown) => transfer('service:request', request),
   workspaceStatus: () => transfer('workspaces:status'),
   workspaceInspect: (id: string) => transfer('workspaces:inspect', id),
+  workspaceRecoveryRefresh: (sessionToken: string) => transfer('workspaces:recovery-refresh', sessionToken),
   workspaceResume: () => transfer('workspaces:resume'),
   workspaceConnect: (input: unknown) => transfer('workspaces:connect', input),
   workspaceSignIn: (input: unknown) => transfer('workspaces:sign-in', input),

@@ -1,7 +1,7 @@
 # Desktop backups and independent recovery
 
 Backup/recovery and desktop agent controls require 4.6.0 or later; configurable
-retention requires 4.7.0 or later. Check [release status](../RELEASE_STATUS.md) for
+retention requires 4.7.1 or later. Check [release status](../RELEASE_STATUS.md) for
 verified public availability on each platform. The
 [4.6.0 publication record](../validation/2026-10-15-native-backup-release.md)
 records the first complete native release of this workflow.
@@ -59,7 +59,7 @@ another cloud, or an offline replica has received the files. Confirm remote
 availability using that storage system. Native provider delivery receipts remain
 on the roadmap.
 
-### Retention and inventory (4.7.0 source)
+### Retention and inventory (4.7.1)
 
 **Keep all copies is the default**, including when upgrading existing settings.
 **Keep recent recovery points** accepts 2–365 full snapshots and 2–10,000 recent
@@ -151,7 +151,7 @@ the primary organization ID and explicit trust confirmation. Automation can keep
 stdin open with `watch_parent: true` and send `{"action":"cancel"}`; closing that
 watched pipe also cancels owned work. One-shot JSON followed by EOF remains supported.
 
-From 4.7.0, capture accepts optional `retention` with `mode`, `snapshots` and
+From 4.7.1, capture accepts optional `retention` with `mode`, `snapshots` and
 `ledgers`. `local backup-inventory` and `local backup-prune` work without database
 tools or a decryption key. Both take `workspace_id`, `destination`, `key_id` and
 `policy` on stdin; cleanup additionally requires the inventory's current

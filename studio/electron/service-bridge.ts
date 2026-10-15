@@ -289,6 +289,20 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
     }), bookmark => localWorkspace().prepareSavedConnection(bookmark.endpoint, bookmark.tenantId, localPreferences().startWithApp), sessionToken => {
       const window = getWindow()
       if (window && !window.webContents.isDestroyed()) window.webContents.send('workspaces:closed', sessionToken)
+    }, async (endpoint, credential) => {
+      let response: Response
+      try {
+        response = await workspaceFetch(net.fetch.bind(net), endpoint + '/v1/recovery-directory', {
+          headers: { Authorization: 'Bearer ' + credential, Accept: 'application/json' },
+          redirect: 'error', credentials: 'omit', signal: AbortSignal.timeout(4000),
+        })
+      } catch { return undefined }
+      if (!response.ok) {
+        await response.body?.cancel()
+        return response.status === 401 || response.status === 403 ? null : undefined
+      }
+      try { return JSON.parse(Buffer.from(await boundedBody(response, 16 * 1024)).toString('utf8')) }
+      catch { throw new Error('The workspace did not return a valid recovery directory.') }
     })
     return connections
   }
@@ -304,6 +318,11 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
     trusted(event)
     if (typeof id !== 'string' || id.length > 64) throw new Error('Choose a saved workspace.')
     return workspaceConnections().inspect(id)
+  })
+  ipcMain.handle('workspaces:recovery-refresh', (event, sessionToken: unknown) => {
+    trusted(event)
+    if (typeof sessionToken !== 'string' || sessionToken.length > 128) throw new Error('Use the active workspace connection.')
+    return workspaceConnections().refreshRecovery(sessionToken)
   })
   ipcMain.handle('workspaces:resume', event => { trusted(event); return workspaceConnections().resume() })
   ipcMain.handle('workspaces:invitation-preview', (event, input: unknown) => {

@@ -14,3 +14,5 @@ const preload = ts.transpileModule(readFileSync(resolve(root, 'preload.ts'), 'ut
 })
 writeFileSync(resolve(root, 'dist/preload.cjs'), preload.outputText)
 rmSync(resolve(root, 'dist/preload.js'), { force: true })
+const kit = spawnSync(process.execPath, [resolve(root, '../../deploy/build_recovery_kit.mjs'), ...(process.argv.includes('--generate-recovery-kit') ? [] : ['--check'])], { stdio: 'inherit' })
+if (kit.status !== 0) process.exit(kit.status || 1)

@@ -4,7 +4,58 @@ import { chmod, lstat, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/p
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { WorkspaceStore, workspaceEndpoint } from '../dist/workspace-store.js'
-import { workspaceFixture as fixture, fixtureCredential as credential } from './workspace-fixture.mjs'
+import { workspaceFixture as fixture, fixtureCredential as credential, recoveryFixture } from './workspace-fixture.mjs'
+
+test('administrator recovery references survive restart only inside OS-protected storage', async t => {
+  const f = await fixture(t), identity = { ...f.identity, administrator: true }
+  const record = recoveryFixture(identity)
+  const saved = await f.store.save('https://memory.example.com', credential, identity, undefined, record)
+  const raw = await readFile(f.path, 'utf8')
+  assert.ok(!raw.includes(record.directory.instructions))
+  assert.ok(!JSON.stringify(await f.store.status()).includes('recovery'))
+  const restarted = new WorkspaceStore(f.directory, f.cipher)
+  assert.deepEqual((await restarted.inspect(saved.id)).recovery.record, record)
+  assert.equal((await restarted.credential(saved.id)).credential, credential)
+  f.cipher.unlocked = false
+  assert.equal((await restarted.inspect(saved.id)).accessStatus, 'locked')
+  assert.equal((await restarted.inspect(saved.id)).recovery, undefined)
+  f.cipher.unlocked = true
+  await restarted.save(saved.endpoint, credential, { ...identity, administrator: false })
+  assert.equal((await restarted.inspect(saved.id)).recovery, undefined)
+  assert.equal((await restarted.credential(saved.id)).credential, credential)
+})
+
+test('recovery cache rejects another tenant, changed destination and credential reflection without changing saved access', async t => {
+  const f = await fixture(t), identity = { ...f.identity, administrator: true }
+  const record = recoveryFixture(identity)
+  const saved = await f.store.save('https://memory.example.com', credential, identity, undefined, record)
+  const before = await readFile(f.path, 'utf8')
+  await assert.rejects(f.store.cacheRecovery(saved.id, identity, saved.endpoint, { ...record, tenant_id: randomUUID() }))
+  await assert.rejects(f.store.cacheRecovery(saved.id, identity, 'https://different.example.org', record))
+  const reflected = structuredClone(record); reflected.directory.instructions = credential
+  await assert.rejects(f.store.cacheRecovery(saved.id, identity, saved.endpoint, reflected))
+  assert.equal(await readFile(f.path, 'utf8'), before)
+  const document = JSON.parse(before)
+  const payload = JSON.parse(f.cipher.decrypt(Buffer.from(document.connections[0].sealed, 'base64')))
+  payload.recovery.record.tenant_id = randomUUID()
+  document.connections[0].sealed = f.cipher.encrypt(JSON.stringify(payload)).toString('base64')
+  await writeFile(f.path, JSON.stringify(document))
+  const inspected = await f.store.inspect(saved.id)
+  assert.equal(inspected.accessStatus, 'recorded')
+  assert.equal(inspected.recoveryStatus, 'unavailable')
+  assert.equal((await f.store.credential(saved.id)).credential, credential)
+})
+
+test('large optional recovery references do not break an otherwise valid protected connection', async t => {
+  const f = await fixture(t)
+  const identity = { ...f.identity, administrator: true, name: '🧠'.repeat(128), tenant_name: '🧠'.repeat(128) }
+  const record = recoveryFixture(identity); record.directory.instructions = '🧠'.repeat(1100)
+  const saved = await f.store.save('https://memory.example.com/' + 'a'.repeat(3900), 'a'.repeat(1024), identity, undefined, record)
+  const restarted = new WorkspaceStore(f.directory, f.cipher)
+  assert.equal((await restarted.credential(saved.id)).credential.length, 1024)
+  assert.equal((await restarted.inspect(saved.id)).accessStatus, 'recorded')
+  assert.equal((await restarted.inspect(saved.id)).recovery, undefined)
+})
 
 test('private encrypted storage survives restart without exposing a token in bookmarks', async t => {
   const f = await fixture(t)

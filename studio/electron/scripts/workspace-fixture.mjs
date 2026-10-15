@@ -31,3 +31,16 @@ export async function workspaceFixture(t) {
 }
 
 export const fixtureCredential = 'fixture_' + 'token'.repeat(8)
+
+export const recoveryFixture = identity => ({
+  tenant_id: identity.tenant_id, revision: 1, updated_at: new Date().toISOString(), updated_by: identity.principal_id,
+  directory: {
+    instructions: 'Use the independent operator account.', independent_url: 'https://recovery.example.org/team',
+    hosts: [{ id: randomUUID(), name: 'Primary host', role: 'primary', platform: 'linux',
+      workspace_url: 'https://memory.example.com/organization', operator_url: 'https://provider.example.org/console',
+      operator: 'Company recovery team', notes: 'Separate host authority is required.' }],
+    materials: [{ id: randomUUID(), name: 'Encrypted snapshot', kind: 'database_backup',
+      location: 'Company drive / snapshots', access_url: null, reported_verified_at: null, notes: '' }],
+    contacts: [],
+  },
+})

@@ -8,6 +8,8 @@ import type { LibrarianChoice, LibrarianSettings, LibrarianSettingsInput, Librar
 export * from './librarian.js'
 import type { PasswordAccount, DeviceSession, OAuthConfiguration, OAuthConnection, SignInInvitation, InvitationReceipt } from './sign-in.js'
 export * from './sign-in.js'
+import type { RecoveryDirectory, RecoveryDirectoryRecord } from './recovery.js'
+export * from './recovery.js'
 
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json }
 export type Kind = 'fact' | 'event' | 'preference' | 'procedure' | 'note'
@@ -265,6 +267,10 @@ export class MnemionClient {
   }
 
   me() { return this.request<{ principal_id: string; tenant_id: string; name: string; tenant_name: string; administrator: boolean; service_version?: string | null }>('GET', '/v1/me') }
+  recoveryDirectory() { return this.request<RecoveryDirectoryRecord>('GET', '/v1/recovery-directory') }
+  configureRecoveryDirectory(expected_revision: number, directory: RecoveryDirectory) {
+    return this.request<RecoveryDirectoryRecord>('PUT', '/v1/recovery-directory', { body: { expected_revision, directory } })
+  }
   passwordAccount() { return this.request<{ account: PasswordAccount | null; can_use_password: boolean }>('GET', '/v1/sign-in/account') }
   setPassword(input: { username: string; password: string; current_password?: string }) { return this.request<{ changed: boolean; sessions_revoked: boolean }>('PUT', '/v1/sign-in/account', { body: input }) }
   deviceSessions() { return this.request<{ items: DeviceSession[] }>('GET', '/v1/sign-in/sessions') }

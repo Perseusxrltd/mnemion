@@ -46,6 +46,9 @@ function nativeConnection(session: WorkspaceSession): Connection {
     endpoint: session.endpoint,
     me: session.me,
     authentication: session.authentication,
+    ...(session.remembered && session.me.administrator && window.mnemion?.workspaceRecoveryRefresh ? {
+      refreshRecovery: () => window.mnemion!.workspaceRecoveryRefresh!(session.sessionToken),
+    } : {}),
     client: new MnemionClient({ baseUrl: session.endpoint, apiKey: session.sessionToken, fetch: nativeFetch }),
     subscribeClosed: listener => {
       listen(); listeners.add(listener);

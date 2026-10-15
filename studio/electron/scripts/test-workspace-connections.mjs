@@ -4,12 +4,72 @@ import { lstat } from 'node:fs/promises'
 import { test } from 'node:test'
 import { WorkspaceConnections } from '../dist/workspace-connections.js'
 import { WorkspaceStore } from '../dist/workspace-store.js'
-import { workspaceFixture, fixtureCredential as credential } from './workspace-fixture.mjs'
+import { workspaceFixture, fixtureCredential as credential, recoveryFixture } from './workspace-fixture.mjs'
 
 const endpoint = 'https://memory.example.com/organization'
 const api = new URL(endpoint + '/v1/me')
 const header = session => 'Bearer ' + session.sessionToken
 const deferred = () => { let resolve; const promise = new Promise(done => { resolve = done }); return { promise, resolve } }
+
+test('recovery directory capture uses the real native credential and offline inspection never connects', async t => {
+  const f = await workspaceFixture(t), identity = { ...f.identity, administrator: true }
+  const record = recoveryFixture(identity)
+  let reads = 0, available = true
+  const connections = new WorkspaceConnections(f.store, async () => identity, undefined, undefined, undefined, async (address, key) => {
+    reads++; assert.equal(address, endpoint); assert.equal(key, credential)
+    return available ? record : undefined
+  })
+  const session = await connections.connect(endpoint, credential, true)
+  assert.equal(reads, 1)
+  await connections.disconnect()
+  const inspected = await connections.inspect(session.bookmarkId)
+  assert.deepEqual(inspected.recovery.record, record)
+  assert.ok(!JSON.stringify(inspected).includes(credential))
+  assert.equal((await connections.status()).active, null)
+  assert.equal(reads, 1)
+  available = false
+  await connections.restore(session.bookmarkId)
+  assert.deepEqual((await connections.inspect(session.bookmarkId)).recovery.record, record)
+})
+
+test('recovery refresh preserves observations on outage, discards denied access and rejects late connection changes', async t => {
+  const f = await workspaceFixture(t), identity = { ...f.identity, administrator: true }
+  const original = recoveryFixture(identity)
+  let answer = async () => original
+  const connections = new WorkspaceConnections(f.store, async () => identity, undefined, undefined, undefined, () => answer())
+  let session = await connections.connect(endpoint, credential, true)
+  answer = async () => undefined
+  await assert.rejects(connections.refreshRecovery(session.sessionToken), /last saved copy is preserved/)
+  assert.deepEqual((await connections.inspect(session.bookmarkId)).recovery.record, original)
+  const newer = { ...original, revision: 2 }
+  answer = async () => newer
+  assert.deepEqual((await connections.refreshRecovery(session.sessionToken)).recovery.record, newer)
+  const entered = deferred(), gate = deferred()
+  answer = async () => { entered.resolve(); return gate.promise }
+  const pending = connections.refreshRecovery(session.sessionToken)
+  await entered.promise
+  await connections.disconnect()
+  gate.resolve({ ...original, revision: 3 })
+  await assert.rejects(pending, /active connection changed/)
+  assert.deepEqual((await connections.inspect(session.bookmarkId)).recovery.record, newer)
+  answer = async () => newer
+  session = await connections.restore(session.bookmarkId)
+  answer = async () => null
+  await assert.rejects(connections.refreshRecovery(session.sessionToken), /no longer has access/)
+  assert.equal((await connections.inspect(session.bookmarkId)).recovery, undefined)
+})
+
+test('ordinary users and session-only logins do not capture administrator recovery references', async t => {
+  const f = await workspaceFixture(t)
+  let identity = f.identity, reads = 0
+  const connections = new WorkspaceConnections(f.store, async () => identity, undefined, undefined, undefined, async () => { reads++; return recoveryFixture(identity) })
+  let session = await connections.connect(endpoint, credential, true)
+  await assert.rejects(connections.refreshRecovery(session.sessionToken), /administrator connection/)
+  identity = { ...identity, administrator: true }
+  session = await connections.connect(endpoint, credential, false)
+  await assert.rejects(connections.refreshRecovery(session.sessionToken), /remembered administrator/)
+  assert.equal(reads, 0)
+})
 
 test('a remembered connection resumes after restart with a fresh renderer handle and rechecked identity', async t => {
   const f = await workspaceFixture(t)

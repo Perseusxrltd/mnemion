@@ -13,6 +13,7 @@ declare global {
       serviceRequest?: (request: { url: string; method: string; headers: Record<string, string>; body?: string }) => Promise<{ status: number; headers: Record<string, string>; body: Uint8Array }>
       workspaceStatus?: () => Promise<WorkspaceStatus>
       workspaceInspect?: (id: string) => Promise<WorkspaceInspection>
+      workspaceRecoveryRefresh?: (sessionToken: string) => Promise<WorkspaceInspection>
       workspaceResume?: () => Promise<WorkspaceSession | null>
       workspaceConnect?: (input: { endpoint: string; credential: string; remember: boolean }) => Promise<WorkspaceSession>
       workspaceSignIn?: (input: { endpoint: string; credentials: SignInCredentials; remember: boolean }) => Promise<WorkspaceSession>

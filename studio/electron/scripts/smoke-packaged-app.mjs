@@ -95,7 +95,12 @@ rmSync(smokeRoot, { recursive: true, force: true })
 mkdirSync(smokeRoot, { recursive: true, mode: 0o700 })
 
 const credential = randomBytes(32).toString('base64url')
-const identity = { principal_id: randomUUID(), tenant_id: randomUUID(), name: 'Native test user', tenant_name: 'Native validation', administrator: false }
+const identity = { principal_id: randomUUID(), tenant_id: randomUUID(), name: 'Native test user', tenant_name: 'Native validation', administrator: true }
+const recoveryDirectory = {
+  tenant_id: identity.tenant_id, revision: 1, updated_at: new Date().toISOString(), updated_by: identity.principal_id,
+  directory: { instructions: 'Independent native recovery fixture', independent_url: null, hosts: [], materials: [], contacts: [] },
+}
+let directoryAvailable = true
 let authenticatedRequests = 0
 let unexpectedRequests = 0
 const service = createServer((request, response) => {
@@ -108,12 +113,17 @@ const service = createServer((request, response) => {
   authenticatedRequests++
   if (request.url === '/organization/v1/me') response.end(JSON.stringify(identity))
   else if (request.url === '/organization/v1/spaces') response.end(JSON.stringify({ items: [], next_cursor: null }))
+  else if (request.url === '/organization/v1/recovery-directory') {
+    if (directoryAvailable) response.end(JSON.stringify(recoveryDirectory))
+    else response.writeHead(503).end('{}')
+  }
   else { unexpectedRequests++; response.writeHead(404).end('{}') }
 })
 await new Promise((resolve, reject) => { service.once('error', reject); service.listen(0, '127.0.0.1', resolve) })
 const endpoint = `http://127.0.0.1:${service.address().port}/organization`
 
 function launch(phase) {
+  directoryAvailable = phase === 'save'
   rmSync(smokeFile, { force: true })
   writeFileSync(workspaceConfig, JSON.stringify({ endpoint, credential, phase }), { mode: 0o600 })
   const args = process.platform === 'linux' && process.env.MNEMION_NATIVE_KEYRING_REQUIRED === '1' ? ['--password-store=gnome-libsecret'] : []
@@ -185,6 +195,8 @@ try {
   const savedFile = join(userData, 'workspaces', 'connections.json')
   if (first.renderer.secureStorage.available) {
     if (!existsSync(savedFile) || readFileSync(savedFile, 'utf8').includes(credential)) fail('The native bookmark must persist with an encrypted key')
+    if (readFileSync(savedFile, 'utf8').includes(recoveryDirectory.directory.instructions)) fail('Recovery references must be encrypted with the saved connection')
+    if (!first.renderer.workspaceProtocol.recoveryRefreshed) fail('The native administrator could not refresh protected recovery references')
   } else if (existsSync(savedFile)) fail('A session-only connection must not write a credential file')
   await stopAndWait()
   launch('resume')
@@ -193,6 +205,7 @@ try {
   const protocol = status.renderer.workspaceProtocol
   if (status.renderer.secureStorage.available) {
     if (!protocol.processRestartRestored || !protocol.uiRestored || !protocol.forgotten) fail('The saved workspace must reopen after app restart and support forgetting')
+    if (!protocol.offlineRecoveryAvailable) fail('Recovery references must survive app restart when their service is unavailable')
   } else if (!protocol.sessionOnlyDidNotPersist) fail('The unavailable-keychain session must be absent after app restart')
   if (authenticatedRequests < 4 || unexpectedRequests) fail('The native service fixture received an unexpected or unauthenticated request')
   console.log(JSON.stringify({

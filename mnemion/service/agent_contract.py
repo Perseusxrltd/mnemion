@@ -16,6 +16,8 @@ _OPERATIONS = """
 health.live GET /health/live
 health.ready GET /health/ready
 identity.me GET /v1/me
+recovery.directory GET /v1/recovery-directory
+recovery.configure PUT /v1/recovery-directory
 spaces.list GET /v1/spaces
 spaces.create POST /v1/spaces
 spaces.get GET /v1/spaces/{space_id}

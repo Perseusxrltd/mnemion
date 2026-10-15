@@ -44,12 +44,20 @@ explicit explanation, while the saved address and guides remain available.
 **Use another address or key** opens an empty key field and retains the original
 saved connection; confirm a replacement destination before entering a credential.
 
+From 4.8.0, **Recovery directory** lets administrators record host-console
+addresses, backup/ledger/source locations and independent contacts. Remembered
+administrator connections keep an OS-protected copy in **Details & recovery**.
+An encrypted HTML kit can also be opened on another device, or served from the
+organization's separate HTTPS site, while the memory host is offline. See the
+[directory and kit guide](recovery-directory.md) for setup, permissions and copy
+lifetime. Existing connections remain usable when an older server lacks this feature.
+
 A saved connection does not establish that the device contains a database
 replica, a complete backup, or authority to restart the host. A Git/cloud source
 mirror can recover its tracked documents; full recovery also needs the verified
 database backup and current access/deletion ledger described in the
-[recovery procedure](recovery.md). Registered host controls, an independent
-online recovery entry point and guided takeover remain in the
+[recovery procedure](recovery.md). Delegated host controls, verified delivery of
+independent backups and guided takeover remain in the
 [continuity contract](../implementation/workspace-continuity.md).
 
 ## Read-only diagnostic for people and agents

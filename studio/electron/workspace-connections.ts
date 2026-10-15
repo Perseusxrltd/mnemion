@@ -2,6 +2,7 @@
 import { randomBytes } from 'node:crypto'
 import { WorkspaceStore, workspaceEndpoint, workspaceIdentity, type WorkspaceIdentity, type WorkspaceBookmark } from './workspace-store.js'
 import { WorkspacePasswordAuth, type PasswordTokens, type PasswordSession, type InvitationPreview } from './workspace-auth.js'
+import { recoveryRecord, type RecoveryDirectoryRecord } from './workspace-recovery.js'
 
 export interface WorkspaceSession {
   endpoint: string
@@ -29,7 +30,32 @@ export class WorkspaceConnections {
   constructor(private readonly store: WorkspaceStore, private readonly verify: VerifyIdentity,
     private readonly passwords?: WorkspacePasswordAuth,
     private readonly beforeRestore?: (bookmark: WorkspaceBookmark) => Promise<void>,
-    private readonly closed?: (sessionToken: string) => void) {}
+    private readonly closed?: (sessionToken: string) => void,
+    private readonly readRecovery?: (endpoint: string, credential: string) => Promise<unknown>) {}
+
+  private async directory(endpoint: string, credential: string, me: WorkspaceIdentity): Promise<RecoveryDirectoryRecord | null | undefined> {
+    if (!me.administrator) return null
+    if (!this.readRecovery) return undefined
+    const value = await this.readRecovery(endpoint, credential)
+    if (value === null || value === undefined) return value
+    const record = recoveryRecord(value, me.tenant_id)
+    if (JSON.stringify(record).includes(credential)) throw new Error('Invalid recovery references.')
+    return record
+  }
+
+  async refreshRecovery(sessionToken: string) {
+    const active = this.active
+    if (!active || active.sessionToken !== sessionToken || !active.bookmarkId || !active.me.administrator) throw new Error('Use the remembered administrator connection to refresh recovery details.')
+    const credential = await this.authorization(new URL(active.endpoint + '/v1/recovery-directory'), 'Bearer ' + sessionToken)
+    const directory = await this.directory(active.endpoint, credential.replace(/^Bearer /, ''), active.me)
+    if (directory === undefined) throw new Error('Recovery details could not be refreshed. The last saved copy is preserved.')
+    return this.serial(async () => {
+      if (this.active?.sessionToken !== sessionToken) throw new Error('The active connection changed.')
+      await this.store.cacheRecovery(active.bookmarkId!, active.me, active.endpoint, directory)
+      if (directory === null) throw new Error('This connection no longer has access to the recovery directory. Sign in with a current administrator account.')
+      return this.store.inspect(active.bookmarkId!)
+    })
+  }
 
   private passwordAuth(): WorkspacePasswordAuth {
     if (!this.passwords) throw new Error('This installation does not support individual sign-in.')
@@ -71,8 +97,13 @@ export class WorkspaceConnections {
     }
     return this.serial(async () => {
       if (generation !== this.generation) throw new Error('A newer connection was selected.')
+      let directory: RecoveryDirectoryRecord | null | undefined
+      if (remember) {
+        try { directory = await this.directory(endpoint, credential, me) } catch { /* Optional recovery metadata must not prevent a verified connection. */ }
+      }
+      if (generation !== this.generation) throw new Error('A newer connection was selected.')
       const bookmark = remember ? await this.store.save(endpoint, password?.refreshToken ?? credential, me,
-        password ? sessionMetadata(password) : undefined) : undefined
+        password ? sessionMetadata(password) : undefined, directory) : undefined
       if (!remember) await this.store.select(null)
       if (generation !== this.generation) throw new Error('A newer connection was selected.')
       this.active = { endpoint, credential, me, remembered: !!bookmark, bookmarkId: bookmark?.id,

@@ -39,6 +39,13 @@ def main(argv: list[str] | None = None) -> int:
         help="Load a private JSON credentials file; can be repeated",
     )
     commands = parser.add_subparsers(dest="command", required=True)
+    from .recovery_kit import arguments as kit_arguments
+
+    kit_arguments(
+        commands.add_parser(
+            "recovery-kit", help="Create a portable encrypted recovery viewer locally"
+        )
+    )
     from ..local_workspace import arguments as local_arguments
 
     local_arguments(
@@ -250,7 +257,11 @@ def main(argv: list[str] | None = None) -> int:
         ):
             if values.get(key):
                 os.environ[variable] = values[key]
-    if args.command == "supervise":
+    if args.command == "recovery-kit":
+        from .recovery_kit import execute as create_recovery_kit
+
+        return create_recovery_kit(args)
+    elif args.command == "supervise":
         from .supervision import execute as supervise
 
         return supervise(args)

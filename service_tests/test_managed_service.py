@@ -342,13 +342,18 @@ def test_signed_operator_upgrade_runs_real_candidate_migration_and_keeps_enrolle
     monkeypatch.setattr(updates, "SERVICE_UPDATE_PUBLIC_KEY", public)
     major, minor, _ = version_tuple(__version__)
     target = f"{major}.{minor + 1}.0"
+    next_migration = 1 + max(
+        int(path.name.split("_", 1)[0])
+        for path in (bootstrap / "mnemion/service/migrations").glob("*.sql")
+    )
+    fixture_migration = f"{next_migration:03d}_managed_fixture.sql"
     packages, envelope = managed_release_fixture.candidate(
         bootstrap,
         tmp_path / "operator publisher",
         target,
         key,
         extra_migrations={
-            "016_managed_fixture.sql": "CREATE TABLE mnemion.managed_upgrade_fixture (value integer PRIMARY KEY);\n"
+            fixture_migration: "CREATE TABLE mnemion.managed_upgrade_fixture (value integer PRIMARY KEY);\n"
         },
     )
     monkeypatch.setattr(updates, "fetch_manifest", lambda: envelope)
@@ -371,7 +376,7 @@ def test_signed_operator_upgrade_runs_real_candidate_migration_and_keeps_enrolle
             source = connector_fixture(client, auth, owner, state, tmp_path)
             source_ids = connector_scan(source, state, __version__, client, auth)
             assert len(source_ids) == 2
-            assert managed_upgrade.plan(state)["migrations"] == ["016_managed_fixture.sql"]
+            assert managed_upgrade.plan(state)["migrations"] == [fixture_migration]
             outcome = managed_upgrade.upgrade(state, version=target, allow_migration=True)
             assert outcome["status"] == "upgraded" and outcome["database_restored"] is False
             active = updates.resolved_runtime(state)

@@ -35,6 +35,7 @@ organization identities separately from space grants. An authenticated
 administrator can open People & apps, Connections, Setup and documentation even
 without a memory-space grant. Administration no longer requires creating a
 private space merely to get past the welcome screen.
+From 4.8.0, the same access rule includes the [Recovery directory](recovery-directory.md).
 
 1. Open **People & apps**, enter the person's name, choose **Person**, then
    explicitly choose **Organization administrator**. The default is an ordinary
@@ -68,7 +69,10 @@ reachable**. Starting an offline computer, repairing its tunnel and restoring a
 database still require independently held host/operator access. Keep a verified
 backup and current recovery ledger outside that host. Version 4.0.11 includes
 [offline saved-workspace details](../validation/2026-10-11-offline-workspace-details.md).
-Registered hosts, delegated operators and complete independent recovery remain
+Version 4.8.0 adds [shared host/recovery references, protected desktop copies and
+an independent encrypted kit](recovery-directory.md). These preserve the
+information needed to reach separately authorized operators when the service is
+unavailable. Delegated host actions and complete independent recovery remain
 under the [continuity requirements](../implementation/workspace-continuity.md);
 a Git source mirror is not a complete database backup or proof of current
 workspace authority. The [actual Windows administration and test-lab report](../validation/2026-10-12-workspace-administration.md)

@@ -146,6 +146,12 @@ workspace through the app, with [RAM controls](memory-resources.md) and
 [address recovery](local-workspaces.md). A client connected to an organization
 does not gain authority to administer that organization's host.
 
+From 4.8.0, administrators can keep [recovery references and an independent
+encrypted kit](recovery-directory.md) in **Recovery directory**. Remembered
+desktop administrator connections retain a protected copy for offline diagnosis;
+the downloaded kit also opens without the memory service or original agent.
+Host login and authority to restore a database remain separately assigned.
+
 ## Use it from an application
 
 The Python client uses the same HTTP contract as other programs:

@@ -1,8 +1,8 @@
 # Agent administration and operation discovery
 
-For local host and app controls, the following source adds a
+For local host and app controls, version 4.6.0 adds a
 [private desktop operator interface](desktop-operator.md) under the owning OS
-account, including backup schedules, independent recovery and, in 4.7.0 source,
+account, including backup schedules, independent recovery and, in 4.7.1,
 recorded inventory and reviewed retention cleanup. The guide keeps
 its native release boundary explicit. Memory API credentials retain the scope
 described below.
@@ -24,6 +24,9 @@ and `mcp_available`; passwords, private invitations and rotating credentials use
 private CLI input/results instead of generic MCP calls.
 Version **4.3.0** adds `oauth.configuration`, `oauth.connections` and `oauth.disconnect` for **103 total**,
 with the same permission checks as [personal agent consent](hosted-agent-sign-in.md).
+Version **4.8.0** adds `recovery.directory` and `recovery.configure` for **105 total**.
+These expose administrator-only references; the [recovery directory guide](recovery-directory.md)
+also documents local encrypted-kit creation from a private CLI result file.
 Schemas load one at a time, so connecting an
 assistant does not put the entire administration API into its context.
 
@@ -48,6 +51,7 @@ and MCP availability without exposing another tenant's issuer settings.
 | Librarian | Configure approved models and budgets, start/cancel runs, inspect findings, accept/reject/undo proposals |
 | Evaluations | Manage datasets, start/cancel runs, inspect/assess results, compare and export |
 | Operations | Health, durable receipts, retries, activity, resource insights and Obsidian export |
+| Recovery directory (4.8.0) | Read/update administrator-only host, recovery-material and contact references; no host authority is delegated |
 
 Machine setup, database migrations, model-provider configuration, backups and
 recovery use the operator's existing `mnemion-service` commands and deployment

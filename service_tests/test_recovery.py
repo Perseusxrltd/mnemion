@@ -122,6 +122,13 @@ def test_recovery_erases_librarian_derivatives_and_pauses_model_schedules(
 def test_complete_recovery_reconciles_later_deletion_grants_and_keys(
     env, postgres, pg_bin, tmp_path, destination
 ):
+    from mnemion.service.recovery_directory import RecoveryDirectoryInput, RecoveryDirectoryService
+    from service_tests.test_recovery_directory import directory
+
+    directory_service = RecoveryDirectoryService(env.db)
+    saved_directory = directory_service.update(
+        env.owner, RecoveryDirectoryInput(expected_revision=0, directory=directory())
+    )
     kept = env.memory.save(
         env.owner,
         env.space,
@@ -223,6 +230,16 @@ def test_complete_recovery_reconciles_later_deletion_grants_and_keys(
             if p["tenant_id"] == str(env.owner.tenant_id)
         )
         identity = db.authenticate(owner["api_key"])
+        restored_directory = RecoveryDirectoryService(db)
+        assert restored_directory.get(identity) == saved_directory
+        changed_directory = restored_directory.update(
+            identity,
+            RecoveryDirectoryInput(
+                expected_revision=1, directory={"instructions": "Restored host"}
+            ),
+        )
+        assert changed_directory["revision"] == 2
+        assert changed_directory["updated_by"] == str(identity.principal_id)
         memory = MemoryService(db, env.embedder.generation)
         assert memory.fetch(identity, kept_id)["content"] == "We chose two Postgres replicas."
         assert len(memory.history(identity, kept_id)) == 2

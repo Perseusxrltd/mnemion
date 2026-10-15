@@ -1,7 +1,7 @@
 # Local desktop controls for agents
 
 The base interface requires 4.6.0 or later. Retention configuration, inventory
-and reviewed cleanup require 4.7.0 or later.
+and reviewed cleanup require 4.7.1 or later.
 Check [release status](../RELEASE_STATUS.md) for the available installers and
 native acceptance. This interface complements the shared workspace's
 [agent API, CLI and MCP](agent-control.md).
@@ -74,7 +74,7 @@ engine** so it uses the Windows account and named-pipe implementation.
 | `local.preferences` | Set `start_with_app` for the selected workspace; OS login startup remains a separate app preference. |
 | `backup.status`, `backup.key` | Read schedules/receipts or generate a new key into a private result file. Saved keys are never returned. |
 | `backup.configure`, `backup.run`, `backup.cancel` | Configure protected schedules, capture a snapshot/ledger, or cancel an active recovery operation. |
-| `backup.inventory`, `backup.prune` | From 4.7.0, review tracked files and apply the saved retention policy with explicit plan confirmation. The database may be stopped. |
+| `backup.inventory`, `backup.prune` | From 4.7.1, review tracked files and apply the saved retention policy with explicit plan confirmation. The database may be stopped. |
 | `backup.inspect`, `backup.restore` | Authenticate selected encrypted files and restore into a new managed private copy. |
 | `recovery.list`, `recovery.use` | Discover verified copies, select one, or return to the original workspace. |
 
@@ -116,7 +116,7 @@ configuration also needs `recovery_key` and explicit `key_saved: true`; keep the
 key outside the backup folder. Read fresh status before writing its revision.
 Use `backup.run` with `{"ledger_only": true}` for a current deletion/access ledger.
 
-In 4.7.0, `backup.configure` also accepts `retention`, for example
+In 4.7.1, `backup.configure` also accepts `retention`, for example
 `{"mode":"limited","snapshots":7,"ledgers":96}`. Omitting this field preserves
 an existing policy; old settings default to `keep_all`. Read `backup.inventory`
 with the current `expected_workspace_id`. To clean up, submit `backup.prune`
