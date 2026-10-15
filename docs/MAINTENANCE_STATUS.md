@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-15T04:25:29+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-15T04:42:24+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.4.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.4.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -21,7 +21,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 38679996018](https://github.com/Perseusxrltd/mnemion/actions/runs/38679996018) |
+| ci\.yml | main | success | [Run 38681850251](https://github.com/Perseusxrltd/mnemion/actions/runs/38681850251) |
 | public-updates\.yml | v4\.4\.0 | success | [Run 38655462084](https://github.com/Perseusxrltd/mnemion/actions/runs/38655462084) |
 | release\.yml | release/4\.4\.0 | success | [Run 38651001133](https://github.com/Perseusxrltd/mnemion/actions/runs/38651001133) |
 | release\.yml | release/4\.5\.0 | failure | [Run 38669057276](https://github.com/Perseusxrltd/mnemion/actions/runs/38669057276) |
@@ -29,6 +29,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | release\.yml | release/4\.6\.0 | cancelled | [Run 38675510809](https://github.com/Perseusxrltd/mnemion/actions/runs/38675510809) |
 | release\.yml | release/4\.6\.0-r2 | cancelled | [Run 38677594445](https://github.com/Perseusxrltd/mnemion/actions/runs/38677594445) |
 | release\.yml | release/4\.6\.0-r3 | in\_progress | [Run 38680133894](https://github.com/Perseusxrltd/mnemion/actions/runs/38680133894) |
+| release\.yml | release/4\.7\.0 | pending | [Run 38681887978](https://github.com/Perseusxrltd/mnemion/actions/runs/38681887978) |
 | verify-artifacts\.yml | main | skipped | [Run 38681059715](https://github.com/Perseusxrltd/mnemion/actions/runs/38681059715) |
 | website-release\.yml | v4\.4\.0 | success | [Run 38655459186](https://github.com/Perseusxrltd/mnemion/actions/runs/38655459186) |
 
