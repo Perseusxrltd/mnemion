@@ -39,6 +39,9 @@ studio/frontend/*
 !studio/shared/
 studio/shared/*
 !studio/shared/local-workspace.d.ts
+!studio/electron/
+studio/electron/*
+!studio/electron/workspace-recovery.ts
 !studio/README.md
 !assets/
 assets/*
