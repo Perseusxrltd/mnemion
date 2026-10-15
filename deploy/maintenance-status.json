@@ -63,15 +63,16 @@
   ],
   "runs": [
     {
-      "id": 38675451306,
+      "id": 38678185256,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "69386e0bf164d0ce8f2ce93d61e35dbaa60ae928",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-15T03:33:48Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38675451306"
+      "source_commit": "d94b6e9d0fc3813b79b456af978c04d9451b1d56",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-15T03:49:09Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38678185256",
+      "failed_jobs": []
     },
     {
       "id": 38655462084,
@@ -161,6 +162,26 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38675510809"
     },
     {
+      "id": 38677594445,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.6.0-r2",
+      "source_commit": "86e311bb6b85b738ad99ffdfb7e0d5bea264129e",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-15T03:44:50Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38677594445",
+      "failed_jobs": [
+        {
+          "name": "native / native_database / Private state / Windows / x64",
+          "id": 116234712004,
+          "steps": [
+            "Check ownership, inherited privacy and restricted-token access"
+          ]
+        }
+      ]
+    },
+    {
       "id": 38677363400,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
@@ -183,5 +204,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38655459186"
     }
   ],
-  "observed_at": "2026-10-15T03:39:25+00:00"
+  "observed_at": "2026-10-15T03:49:19+00:00"
 }
