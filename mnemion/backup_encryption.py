@@ -126,7 +126,15 @@ def _source(path: Path, maximum: int):
     )
     with os.fdopen(descriptor, "rb") as stream:
         opened = os.fstat(stream.fileno())
-        if _identity(opened) != _identity(before) or not 0 <= opened.st_size <= maximum:
+        # Windows Python 3.13 reports creation time through path stat but change
+        # time through handle fstat. Their st_ctime_ns values are not comparable.
+        # Keep device/inode/size/mtime checks across the open, then compare the
+        # full handle identity (including change time) before and after reading.
+        common_fields = 4 if os.name == "nt" else 5
+        if (
+            _identity(opened)[:common_fields] != _identity(before)[:common_fields]
+            or not 0 <= opened.st_size <= maximum
+        ):
             raise EncryptionError("The backup input changed or exceeds the supported size.")
         yield stream, opened.st_size
         if _identity(os.fstat(stream.fileno())) != _identity(opened):

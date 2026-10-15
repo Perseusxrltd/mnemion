@@ -13,12 +13,14 @@ cover configuration, restart and outage/recovery. Live provider acceptance,
 independent host recovery and company hosting/SSO remain open; publication and
 all-platform delivery evidence are tracked automatically above.
 
-The 4.5.0 release candidate implements [desktop backups and independent recovery](service/native-backups.md):
+The 4.6.0 candidate carries [desktop backups and independent recovery](service/native-backups.md)
+from the unpublished 4.5.0 batch:
 encrypted snapshots and frequent deletion/access ledgers, OS-protected scheduled
 keys, cancellation, persistent failure notices, disk admission, verified separate
 recovery copies and selection across restarts. PostgreSQL recovery and desktop
-controller checks have passed. The first installed attempt passed Mac/Linux;
-a Windows ownership correction is in the second release attempt.
+controller checks have passed. Installed Windows checks exposed directory-owner
+and path/handle timestamp differences. The corrections include an
+[actual Windows encryption failure/recovery comparison](validation/2026-10-15-windows-backup-metadata.md).
 [Source and desktop walkthrough evidence](validation/2026-10-15-native-backup-workflow.md)
 records the checks and their limits. Configurable retention, cloud delivery
 verification and independent host management remain open. The strict

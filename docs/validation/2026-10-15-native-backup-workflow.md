@@ -95,6 +95,12 @@ requires the complete installed release attempt; it is not a Windows release pas
 The corrected staging path also passed **27 real PostgreSQL backup/recovery
 checks**, including native independent restoration into bundled PostgreSQL 18.
 
+The second installed attempt exposed a separate Windows file-timestamp mismatch
+in encryption input validation. It reproduced on the actual Windows computer;
+the [targeted correction and native before/after evidence](2026-10-15-windows-backup-metadata.md)
+are carried into 4.6.0 with the desktop operator controls. The 4.5.0 candidate
+was not published. Current native/public acceptance remains in release status.
+
 Real cloud delivery, configurable pruning, complete agent schedule/root-selection
 controls, broad hardware/storage workloads, recovery-custodian onboarding and
 company failover remain open. No live user memories or production hosts are
