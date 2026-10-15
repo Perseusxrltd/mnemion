@@ -15,8 +15,11 @@ knowledge that all its members may read.
 Version **4.9.0** adds [company sign-in](company-sign-in.md). The host operator
 pins an OpenID Connect provider; administrators bind each human through a private
 invitation or explicit stable subject. Current Mnemion roles remain authoritative.
-The guide covers device sessions, immediate local revocation, provider setup and
-the remaining company provisioning and hosted-agent consent work.
+The guide covers device sessions, immediate local revocation and provider setup.
+Version **4.10.0** extends company authentication to
+[hosted-agent consent](hosted-agent-sign-in.md), with explicit permission review
+and bounded assistant lifetimes. Automatic provisioning and broader provider
+acceptance remain open.
 
 Use **Team and applications** in Studio to manage principals, credentials and
 grants. API and worker database logins have separate restricted roles; the schema
@@ -119,8 +122,9 @@ revocable external identity bindings for one operator-approved workspace per
 issuer configuration. Other tenants cannot claim those users. It supplements
 existing keys. The 4.2.0 source adds [personal passwords, invitations and device
 sessions](sign-in.md), with release validation tracked in [current status](../RELEASE_STATUS.md).
-Complete company identity-provider onboarding, hosted-agent consent and
-app-managed host recovery remain required work.
+Company identity-provider configuration is available from 4.9.0 and company
+assistant consent from 4.10.0. Guided host-provider onboarding, named-client
+acceptance and app-managed host recovery remain required work.
 
 Each source connection belongs to a space, has an explicit provider configuration,
 tracks a checkpoint and runs under an authorized identity. Git, local folders,

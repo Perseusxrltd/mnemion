@@ -138,6 +138,9 @@ For people, use [personal sign-in and invitations](sign-in.md), or
 [company sign-in](company-sign-in.md) from 4.9.0 when the host has an identity
 provider configured. Both offer revocable remembered sessions; company passwords
 stay at the provider. The in-app **Account & sessions** page manages access.
+From 4.10.0, the optional [assistant consent flow](hosted-agent-sign-in.md) can
+also use these company accounts, with explicit approval and bounded company
+session lifetimes.
 
 The [desktop client](updates.md) connects to the same service. It adds
 a native vault picker and applies authorized Obsidian exports using a packaged

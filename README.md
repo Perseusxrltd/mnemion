@@ -16,8 +16,9 @@ Download current published builds from [the official product page](https://www.p
 The automatically reconciled [release status](docs/RELEASE_STATUS.md) records
 the version, available platforms and release-gate evidence. It distinguishes
 published capability from the unfinished full product roadmap.
-The next source release adds [encrypted desktop backups and independent
-recovery](docs/service/native-backups.md); its native release checks are pending.
+Desktop releases include [encrypted backups and independent
+recovery](docs/service/native-backups.md); their published delivery evidence is
+recorded in the release status above.
 Studio includes guided [local workspace creation](docs/service/local-workspaces.md),
 bundled database/model runtimes, [app and agent RAM controls](docs/service/memory-resources.md),
 local recovery, a [live 3D memory map](docs/service/memory-map.md), recorded agent
@@ -25,9 +26,12 @@ activity and [connection diagnostics](docs/service/connection-diagnostics.md).
 Set up [independent human administrators](docs/service/organizations.md#establish-independent-administrators)
 to manage people, applications and space grants without the original agent.
 The [continuity contract](docs/implementation/workspace-continuity.md) tracks the
-remaining host delegation, independent recovery and company sign-in workflows.
+remaining host delegation, independent recovery and company hosting workflows.
 Published 4.2.0 includes [individual sign-in, invitations and device sessions](docs/service/sign-in.md),
 with [six-platform installed migration and recovery acceptance](docs/validation/2026-10-13-personal-access-release.md).
+Company accounts can use [Studio sign-in](docs/service/company-sign-in.md) from
+4.9.0 and [assistant consent](docs/service/hosted-agent-sign-in.md) from 4.10.0;
+the guides state their host configuration, validation and release requirements.
 Studio retains OS-protected saved connections, identity-checked reopening after restart and a clearer connection
 screen. [Workspace controls](docs/service/workspaces.md) explain remembering,
 disconnecting and forgetting a device connection. Complete fresh-machine setup
@@ -60,11 +64,11 @@ An authenticated identity is separate from the person or project a memory is abo
 - A versioned HTTP API, [OpenAPI contract](docs/service/openapi.json),
   Python and TypeScript clients, and authenticated MCP with stdio and Streamable
   HTTP; API and HTTP MCP share one listener by default.
-- [Agent administration](docs/service/agent-control.md): 103 reviewed operations from 4.3.0,
+- [Agent administration](docs/service/agent-control.md): a reviewed operation catalog,
   an offline catalog/CLI, compact MCP tools, private results and safe retry rules.
 - Studio for saving, searching, inspecting evidence and revisions, reviewing
   memories, managing identities/grants, and tracking indexing/deletion activity.
-- [Personal agent sign-in](docs/service/hosted-agent-sign-in.md): explicit consent,
+- [Personal and company agent sign-in](docs/service/hosted-agent-sign-in.md): explicit consent,
   scoped account authority, rotating OAuth credentials and connected-app revocation.
 - [Visual insights and evaluations](docs/service/insights.md): resource and retrieval
   diagnostics, private versioned test sets, bounded runs, comparisons and exports.

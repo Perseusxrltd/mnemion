@@ -42,13 +42,13 @@ export function Agents({ connection, space }: { connection: Connection; space: s
     <header className="ws-page-heading"><div><div className="ws-eyebrow">Assistants & applications</div><h1>Give your agents shared memory</h1><p>Each agent uses its own identity to recall permitted knowledge and save new evidence.</p></div><Terminal size={26} /></header>
     {error && <div className="ws-notice ws-error" role="alert">{error}</div>}
     <section className="ws-card ws-agent-sign-in">
-      <div className="ws-section-title"><h2>Connect with your personal login</h2><button type="button" className="ws-button ws-quiet" disabled={authentication.isFetching} onClick={() => void authentication.refetch()} aria-label="Check agent sign-in availability"><RefreshCw size={15} />Check availability</button></div>
+      <div className="ws-section-title"><h2>Connect with your account</h2><button type="button" className="ws-button ws-quiet" disabled={authentication.isFetching} onClick={() => void authentication.refetch()} aria-label="Check agent sign-in availability"><RefreshCw size={15} />Check availability</button></div>
       {authentication.isPending && <p role="status">Checking this workspace’s sign-in options…</p>}
-      {authentication.isError && <p role="status">{unavailable ? "This server needs an update to show its sign-in options here. Your host operator can check whether personal agent sign-in is enabled." : "Sign-in options could not be checked. Check your connection and try again."}</p>}
-      {signIn?.mode === "disabled" && <p>Your host operator can enable personal agent sign-in for this workspace at its public HTTPS address. You can also connect using a dedicated application key below.</p>}
+      {authentication.isError && <p role="status">{unavailable ? "This server needs an update to show its sign-in options here. Your host operator can check whether agent sign-in is enabled." : "Sign-in options could not be checked. Check your connection and try again."}</p>}
+      {signIn?.mode === "disabled" && <p>Your host operator can enable account sign-in for this workspace at its public HTTPS address. You can also connect using a dedicated application key below.</p>}
       {signIn && signIn.mode !== "disabled" && !signIn.mcp_enabled && <p>Your host operator needs to enable this workspace’s MCP gateway before agents can connect.</p>}
       {signIn?.mcp_enabled && signIn.mode !== "disabled" && signIn.resource && <>
-        <p>{signIn.mode === "personal" ? "Use your workspace login in an agent that supports MCP OAuth. Approval happens on your workspace’s own page." : "This workspace uses your organization’s identity provider. Your administrator must link your company account to your workspace identity."}</p>
+        <p>{signIn.mode === "personal" ? "Use your personal workspace login or a company account offered on the consent page. An agent supporting MCP OAuth opens that page for you to review and approve access." : "This workspace uses your organization’s identity provider. Your administrator must link your company account to your workspace identity."}</p>
         <label className="ws-field"><span>Workspace MCP address</span><input value={signIn.resource} readOnly onFocus={event => event.target.select()} /></label>
         {copyButton(signIn.resource, "Copy MCP address")}
         <ol className="ws-agent-steps">

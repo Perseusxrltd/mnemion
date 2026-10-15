@@ -9,6 +9,9 @@ Version **4.9.0** also supports [company accounts](company-sign-in.md), includin
 first-login invitation acceptance and revocable company device sessions. A host
 operator configures the identity provider; Mnemion administrators still assign
 every person's workspace authority.
+From **4.10.0**, an approved company account can also authorize an assistant
+through [hosted-agent consent](hosted-agent-sign-in.md), without creating a
+personal workspace password.
 
 ## Invite someone to your organization
 
@@ -136,9 +139,10 @@ limits bound sign-in work; repeated attempts can return `429`.
 
 This feature supplies Mnemion personal passwords and sessions. Optional
 [hosted-agent OAuth consent](hosted-agent-sign-in.md) is available from 4.3.0.
-Company identity-provider enrollment and live provider-specific acceptance
-remain in the [complete requirements](../PRODUCT_REQUIREMENTS.md); an existing
-company authorization server can use [external issuer mode](oauth.md).
+Company Studio sign-in is available from 4.9.0 and company-account assistant
+consent from 4.10.0. Guided host onboarding, automatic provisioning and live
+provider-specific acceptance remain in the [complete requirements](../PRODUCT_REQUIREMENTS.md).
+An existing company authorization server can use [external issuer mode](oauth.md).
 
 ## Agent and operator controls
 

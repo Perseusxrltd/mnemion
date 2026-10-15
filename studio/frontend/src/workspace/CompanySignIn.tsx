@@ -3,8 +3,8 @@ import { ArrowRight, Building2, LoaderCircle, LockKeyhole, ShieldCheck } from 'l
 import type { InvitationPreview } from '@mnemion/client'
 import type { Connection, WorkspaceSession } from './connection-types'
 import { BrowserSignIn, browserCompanyConfiguration, browserCompanyStart, canRememberBrowser, joinLink, previewBrowserInvitation, type JoinLink } from './sign-in'
-import type { CompanyConfiguration, CompanyCredentials, CompanyCallback } from '../../../shared/company-sign-in'
-import { companyStart } from '../../../electron/company-sign-in-protocol'
+import type { CompanyConfiguration, CompanyCredentials } from '../../../shared/company-sign-in'
+import { companyBrowserProof } from './company-browser'
 
 type Target = { endpoint: string; workspaceId: string; configuration: CompanyConfiguration; invitation?: string; preview?: InvitationPreview }
 
@@ -50,37 +50,10 @@ export default function CompanySignIn({ incoming, initialEndpoint, secureStorage
 
   async function browserLogin(selected: Target, credentials: CompanyCredentials, controller: AbortController): Promise<Connection> {
     if (new URL(selected.endpoint).origin !== location.origin) throw new Error('Open this workspace’s own website to use company sign-in.')
-    if (typeof BroadcastChannel === 'undefined') throw new Error('Use a current browser or the desktop app for company sign-in.')
-    const popup = window.open('about:blank', '_blank', 'popup,width=560,height=740')
-    if (!popup) throw new Error('Allow the company sign-in window, then try again.')
-    // The IdP receives no opener capable of navigating the memory window.
-    popup.opener = null
-    popup.document.title = 'Mnemion · Company sign-in'
-    popup.document.body.textContent = 'Opening your company’s sign-in page…'
-    let channel: BroadcastChannel | undefined
-    let timer: ReturnType<typeof setTimeout> | undefined
-    try {
-      const flow = companyStart(await browserCompanyStart(selected.endpoint, {
-        ...credentials, transport: 'browser', remember: remember && mayRemember,
-      }), credentials.provider_id)
-      if (controller.signal.aborted) throw new Error('Company sign-in was cancelled.')
-      channel = new BroadcastChannel('mnemion-company:' + flow.state)
-      const code = await new Promise<string>((resolve, reject) => {
-        const cancel = () => reject(new Error('Company sign-in was cancelled.'))
-        controller.signal.addEventListener('abort', cancel, { once: true })
-        timer = setTimeout(() => controller.abort(), flow.expires_in * 1000)
-        channel!.onmessage = ({ data }: MessageEvent<CompanyCallback>) => {
-          if (!data || data.type !== 'mnemion-company-callback' || data.state !== flow.state) return
-          controller.signal.removeEventListener('abort', cancel)
-          if (data.error || typeof data.code !== 'string' || !data.code || data.code.length > 4096) reject(new Error('Company sign-in was declined or could not be completed.'))
-          else resolve(data.code)
-        }
-        popup.location.href = flow.authorization_url
-      })
-      if (controller.signal.aborted) throw new Error('Company sign-in was cancelled.')
-      return await BrowserSignIn.companySignIn(selected.endpoint, selected.workspaceId,
-        { state: flow.state, code_verifier: flow.code_verifier, code }, selected.preview)
-    } finally { if (timer) clearTimeout(timer); channel?.close(); popup.close() }
+    const proof = await companyBrowserProof(credentials.provider_id, signal => browserCompanyStart(selected.endpoint, {
+      ...credentials, transport: 'browser', remember: remember && mayRemember,
+    }, signal), controller)
+    return BrowserSignIn.companySignIn(selected.endpoint, selected.workspaceId, proof, selected.preview)
   }
 
   async function signIn(event: FormEvent) {

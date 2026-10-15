@@ -127,10 +127,15 @@ an upstream account does not instantly revoke an already issued Mnemion session.
 Revoke its Mnemion link or disable its person for immediate local enforcement;
 otherwise its next company authentication occurs after the configured lifetime.
 
-Company sign-in opens Studio. The built-in [hosted-agent consent page](hosted-agent-sign-in.md)
-still uses a personal Mnemion password; company-account consent parity and live
-acceptance across hosted assistant products remain on the roadmap. Scoped agent
-keys and the separately configured [trusted-issuer OAuth resource server](oauth.md)
+From **4.10.0** and migration **019**, company accounts can also authorize
+assistants through the built-in [hosted-agent consent page](hosted-agent-sign-in.md).
+The host must enable that mode for the workspace. Existing linked users complete
+company authentication, review their current permissions and explicitly approve
+the requesting app. They do not need to create a Mnemion password. Assistant
+connections share the configured company lifetime and local revocation policy;
+the consent flow preserves their remembered Studio session. Live acceptance
+across named hosted assistant products remains on the roadmap. Scoped agent keys
+and the separately configured [trusted-issuer OAuth resource server](oauth.md)
 remain available. Generic OIDC support does not establish compatibility with
 every company's provider, MFA policy or restricted device; validate the actual
 provider configuration before deploying it broadly.

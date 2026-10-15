@@ -8,6 +8,7 @@ from typing import Annotated, Literal
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from uuid import UUID
 
+import anyio
 from fastapi import Depends, Request, Response
 from mcp.server.auth.handlers.authorize import AuthorizationHandler
 from mcp.server.auth.handlers.register import RegistrationHandler
@@ -18,10 +19,12 @@ from mcp.server.auth.settings import ClientRegistrationOptions
 from pydantic import AwareDatetime, Field, SecretStr, field_validator
 from starlette.responses import JSONResponse
 
-from .db import Identity
+from .company_identity import company_failed
+from .company_sign_in import CompanyFinish, CompanySignIn, CompanyStart
+from .db import Identity, token_hash
 from .contracts import ResponseModel
 from .errors import ServiceError, not_found
-from .hosted_oauth import HostedOAuth
+from .hosted_oauth import HostedOAuth, digest
 from .models import Command, json_value
 from .oauth import OAUTH_SCOPE
 from .sign_in import SignInService, normalize_username
@@ -43,6 +46,15 @@ class ConsentLogin(ConsentRequest):
 
 class ConsentApproval(ConsentRequest):
     proof: SecretStr = Field(min_length=50, max_length=50)
+
+
+class ConsentCompanyStart(ConsentRequest):
+    provider_id: str = Field(pattern=r"^[a-z][a-z0-9-]{0,63}$")
+
+
+class ConsentCompanyFinish(CompanyFinish):
+    ticket: SecretStr = Field(min_length=50, max_length=50)
+    transport: Literal["browser"] = "browser"
 
 
 class OAuthConnection(ResponseModel):
@@ -98,7 +110,7 @@ async def form(request):
     return fields
 
 
-def attach_hosted_oauth(app, provider: HostedOAuth, authenticated):
+def attach_hosted_oauth(app, provider: HostedOAuth, authenticated, company: CompanySignIn):
     settings = provider.settings
     policy = BrowserPolicy(settings.origin)
     authenticator = ClientAuthenticator(provider)
@@ -221,6 +233,7 @@ def attach_hosted_oauth(app, provider: HostedOAuth, authenticated):
             "callback": details["parameters"]["redirect_uri"],
             "csrf": csrf,
             "expires_at": details["expires_at"],
+            "company": company.configuration(settings.tenant_id),
         }
 
     @app.post("/oauth/consent/login", include_in_schema=False)
@@ -231,6 +244,50 @@ def attach_hosted_oauth(app, provider: HostedOAuth, authenticated):
         return await provider.login(
             ticket, value, command.username, command.password.get_secret_value()
         )
+
+    @app.post("/oauth/consent/company/start", include_in_schema=False)
+    async def consent_company_start(
+        command: ConsentCompanyStart, request: Request, response: Response
+    ):
+        ticket = command.ticket.get_secret_value()
+        value, _ = browser(request, ticket)
+        details = await provider.request(ticket)
+        login = CompanyStart(
+            workspace_id=settings.tenant_id,
+            provider_id=command.provider_id,
+            device_name=("Agent: " + details["client_name"])[:100],
+            transport="browser",
+        )
+        result = await anyio.to_thread.run_sync(
+            lambda: company.start(login, consent=(digest(ticket, "mnm_ot_"), token_hash(value)))
+        )
+        response.headers["Cache-Control"] = "no-store"
+        return result
+
+    @app.post("/oauth/consent/company/finish", include_in_schema=False)
+    async def consent_company_finish(
+        command: ConsentCompanyFinish, request: Request, response: Response
+    ):
+        ticket = command.ticket.get_secret_value()
+        value, _ = browser(request, ticket)
+        await provider.request(ticket)
+        flow, selected = await anyio.to_thread.run_sync(company.claim, command)
+        if (
+            selected.workspace_id != settings.tenant_id
+            or flow.get("consent")
+            != {"ticket_hash": digest(ticket, "mnm_ot_"), "browser_hash": token_hash(value)}
+            or flow.get("invitation_hash") is not None
+        ):
+            raise company_failed()
+        subject = await company.identity.exchange(
+            selected,
+            command.code.get_secret_value(),
+            command.code_verifier.get_secret_value(),
+            company.callback_uri,
+        )
+        result = await provider.company_login(ticket, value, command, selected, subject)
+        response.headers["Cache-Control"] = "no-store"
+        return result
 
     @app.post("/oauth/consent/approve", include_in_schema=False)
     async def consent_approve(command: ConsentApproval, request: Request, response: Response):

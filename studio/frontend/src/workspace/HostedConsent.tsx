@@ -1,22 +1,27 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { ArrowRight, ShieldCheck } from 'lucide-react'
+import { ArrowRight, Building2, LoaderCircle, ShieldCheck } from 'lucide-react'
 import BrandMark from '../components/BrandMark'
+import type { CompanyConfiguration } from '../../../shared/company-sign-in'
+import { companyConfiguration } from '../../../electron/company-sign-in-protocol'
+import { companyBrowserProof } from './company-browser'
 import './workspace.css'
 
-type RequestDetails = { client_name: string; callback: string; csrf: string; expires_at: number }
+type RequestDetails = { client_name: string; callback: string; csrf: string; expires_at: number; company: CompanyConfiguration }
 type PermissionReview = {
   proof: string
+  authentication: 'password' | 'company'
+  expires_at?: string
   permissions: {
     name: string; workspace_name: string; administrator: boolean; space_count: number
     spaces: Array<{ id: string; name: string; role: string }>
   }
 }
 
-async function consent<T>(action: string, body: object, csrf?: string): Promise<T> {
+async function consent<T>(action: string, body: object, csrf?: string, signal?: AbortSignal): Promise<T> {
   const response = await fetch(`/oauth/consent/${action}`, {
     method: 'POST', credentials: 'same-origin', cache: 'no-store', redirect: 'error',
     headers: { 'Content-Type': 'application/json', ...(csrf ? { 'X-Mnemion-Consent-CSRF': csrf } : {}) },
-    body: JSON.stringify(body), signal: AbortSignal.timeout(20000),
+    body: JSON.stringify(body), signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(20000)]) : AbortSignal.timeout(20000),
   })
   const result = await response.json()
   if (!response.ok) throw new Error(result?.error?.message || 'The connection could not be completed. Start again from your app.')
@@ -29,14 +34,18 @@ export default function HostedConsent() {
     return /^mnm_ot_[A-Za-z0-9_-]{43}$/.test(value) ? value : ''
   })
   const opening = useRef<Promise<RequestDetails> | undefined>(undefined)
+  const pendingCompany = useRef<AbortController | null>(null)
   const heading = useRef<HTMLHeadingElement>(null)
   const [details, setDetails] = useState<RequestDetails>()
   const [review, setReview] = useState<PermissionReview>()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [provider, setProvider] = useState('')
+  const [companyOpening, setCompanyOpening] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   useEffect(() => { if (review) heading.current?.focus() }, [review])
+  useEffect(() => () => { pendingCompany.current?.abort(); pendingCompany.current = null }, [])
   useEffect(() => {
     const previous = document.title
     document.title = 'Connect your app · Mnemion'
@@ -48,7 +57,11 @@ export default function HostedConsent() {
     if (!ticket) return
     let active = true
     opening.current ??= consent<RequestDetails>('request', { ticket })
-    void opening.current.then(value => { if (active) setDetails(value) })
+    void opening.current.then(value => {
+      if (!active) return
+      const company = companyConfiguration(value.company ?? { providers: [], callback_uri: null }, window.location.origin)
+      setDetails({ ...value, company }); setProvider(company.providers[0]?.id ?? '')
+    })
       .catch(value => { if (active) setError(value instanceof Error ? value.message : 'Restart this connection from your app.') })
     return () => { active = false }
   }, [ticket])
@@ -73,6 +86,23 @@ export default function HostedConsent() {
     setPassword('')
     await run(async () => setReview(await consent<PermissionReview>('login', { ticket, username, password: submitted }, details!.csrf)))
   }
+  async function companyLogin() {
+    if (busy || !details || !provider) return
+    const controller = new AbortController()
+    pendingCompany.current = controller
+    setPassword(''); setCompanyOpening(true)
+    try {
+      await run(async () => {
+        const proof = await companyBrowserProof(provider, signal => consent('company/start', {
+          ticket, provider_id: provider,
+        }, details.csrf, signal), controller)
+        const result = await consent<PermissionReview>('company/finish', { ticket, ...proof }, details.csrf, controller.signal)
+        if (!controller.signal.aborted && pendingCompany.current === controller) setReview(result)
+      })
+    } finally {
+      if (pendingCompany.current === controller) { pendingCompany.current = null; setCompanyOpening(false) }
+    }
+  }
   async function approve() {
     await run(async () => {
       const result = await consent<{ redirect: string }>('approve', { ticket, proof: review!.proof }, details!.csrf)
@@ -86,6 +116,7 @@ export default function HostedConsent() {
     })
   }
   const permissions = review?.permissions
+  const chosenCompany = details?.company.providers.find(item => item.id === provider)
   return <main className="workspace ws-hosted-consent">
     <div className="ws-consent-container">
       <a href="/workspace" className="ws-consent-brand"><BrandMark /><span>Mnemion</span></a>
@@ -97,15 +128,24 @@ export default function HostedConsent() {
         {details && <>
           <div className="ws-consent-app"><strong>{details.client_name}</strong><span>{new URL(details.callback).host}</span></div>
           <p>Check that this is the app you meant to connect. Its name is provided by the app; the address above is where you will return.</p>
-          {!permissions ? <form className="ws-form" onSubmit={login}>
-            <p>Sign in with your personal workspace login to review what this app can access.</p>
+          {!permissions ? <>
+            {chosenCompany && <div className="ws-sign-in">
+              <p>Use your company account to review what this app can access.</p>
+              {details.company.providers.length > 1 && <label className="ws-field"><span>Company account</span><select value={provider} onChange={event => setProvider(event.target.value)} disabled={busy}>{details.company.providers.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>}
+              <button type="button" className="ws-button ws-primary" disabled={busy} onClick={() => void companyLogin()}>{companyOpening ? <LoaderCircle size={17} className="ws-spin" /> : <Building2 size={17} />}{companyOpening ? 'Finish company sign-in in the other window…' : 'Continue with ' + chosenCompany.name}</button>
+              {companyOpening && <button type="button" className="ws-button ws-quiet" onClick={() => pendingCompany.current?.abort()}>Cancel company sign-in</button>}
+              <p className="ws-helper">Your company must already have given you workspace access. This connection lasts up to {chosenCompany.session_seconds / 3600} hours before you sign in again.</p>
+            </div>}
+            <form className="ws-form" onSubmit={login}>
+            <p>{chosenCompany ? 'Or use your personal workspace login.' : 'Sign in with your personal workspace login to review what this app can access.'}</p>
             <label className="ws-field"><span>Login name</span><input value={username} onChange={event => setUsername(event.target.value)} autoComplete="username" autoCapitalize="none" spellCheck={false} required minLength={3} maxLength={128} disabled={busy} /></label>
             <label className="ws-field"><span>Password</span><input type="password" value={password} onChange={event => setPassword(event.target.value)} autoComplete="current-password" required maxLength={128} disabled={busy} /></label>
             <p className="ws-helper">Need a login or a password reset? Ask a workspace administrator for an invitation.</p>
             <div className="ws-setup-actions"><button type="button" className="ws-button ws-quiet" onClick={() => void cancel()} disabled={busy}>Cancel</button><button className="ws-button ws-primary" disabled={busy}>{busy ? 'Signing in…' : 'Review access'}<ArrowRight size={16} /></button></div>
-          </form> : <div>
+          </form></> : <div>
             <div className="ws-consent-person"><ShieldCheck size={22} /><div><strong>{permissions.name}</strong><span>{permissions.workspace_name}</span></div></div>
             <p><strong>{details.client_name}</strong> will act with this account’s permissions. It can keep working when you close this page.</p>
+            {review?.authentication === 'company' && review.expires_at && <div className="ws-notice"><strong>Company sign-in</strong><p>This connection expires {new Date(review.expires_at).toLocaleString()}. The app must ask you to sign in again after that. Your workspace administrator can revoke it sooner.</p></div>}
             {permissions.administrator && <div className="ws-notice"><strong>Organization administrator access</strong><p>This includes managing people, permissions and workspace settings, and granting access to any memory space.</p></div>}
             {permissions.space_count > 0 ? <>
               <div className="ws-table-wrap ws-consent-spaces"><table className="ws-table"><thead><tr><th>Memory space</th><th>Permission</th></tr></thead><tbody>{permissions.spaces.map(space => <tr key={space.id}><td>{space.name}</td><td>{space.role}</td></tr>)}</tbody></table></div>
@@ -118,7 +158,7 @@ export default function HostedConsent() {
           </div>}
         </>}
       </section>
-      <p className="ws-consent-footer">Your password stays with this workspace. The connected app receives revocable access.</p>
+      <p className="ws-consent-footer">Sign-in stays with your workspace or company provider. The connected app receives revocable access.</p>
     </div>
   </main>
 }

@@ -3,8 +3,9 @@
 **Requires service 4.0.11 or later and migration 013.**
 This optional resource-server path lets an operator connect an existing or
 freely self-hosted authorization server to Mnemion. It retains scoped API keys.
-For Mnemion's own personal-account authorization and consent flow in 4.3.0,
-use [hosted-agent sign-in](hosted-agent-sign-in.md). Personal passwords and
+For Mnemion's own authorization and consent flow, use
+[hosted-agent sign-in](hosted-agent-sign-in.md): personal accounts from 4.3.0,
+or configured company accounts from 4.10.0. Personal passwords and
 invitations are described in [individual sign-in](sign-in.md).
 
 Mnemion exposes protected-resource discovery, challenges and authenticated MCP

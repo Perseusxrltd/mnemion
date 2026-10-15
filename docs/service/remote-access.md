@@ -20,10 +20,11 @@ the host's files, provider credentials or lifecycle. Other users join with
    an address ending in `/mcp` is normalized to its origin.
 3. For ngrok, enter your account's authtoken and assigned domain. For an existing
    proxy, configure forwarding as described below.
-4. Leave **Allow hosted agents to request personal sign-in and consent (OAuth)**
+4. Leave **Allow hosted agents to request account sign-in and consent (OAuth)**
    enabled to let compatible agents request an individual login and approval.
    This setting controls hosted-agent OAuth; people still need their own
-   workspace account and memory permissions.
+   workspace account and memory permissions. From 4.10.0, company accounts are
+   also offered when the host has an approved [identity provider](company-sign-in.md).
 5. Select **Save & restart local host**. The app drains the previous engine,
    saves the settings and reopens the same workspace. A stopped workspace offers
    **Save settings**, then **Start local host**. Memories, grants, existing keys,

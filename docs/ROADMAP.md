@@ -1,17 +1,26 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.9.0**. Roadmap updated: **2026-10-15**.
+Reviewed source distribution: **4.10.0**. Roadmap updated: **2026-10-15**.
 The [current published distribution and release gates](RELEASE_STATUS.md) are updated automatically.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
+
+The [4.10.0 source](releases/4.10.0.md) adds
+[company-account assistant consent](service/hosted-agent-sign-in.md): an approved
+person signs in through their company provider, reviews permissions and grants
+a revocable connection with a bounded company lifetime. Remembered Studio
+sessions are preserved. [Validation](validation/2026-10-15-company-agent-consent.md)
+includes PostgreSQL authorization/upgrade/recovery and real Dex/browser/MCP SDK
+acceptance. Named-client acceptance, provisioning, company-only policy and guided
+provider setup remain open. This advances F08, C09 and A03/A08 without closing
+their full requirements; the strict count remains **17/64 shipped (26.6%)**.
 
 The [4.9.0 source](releases/4.9.0.md) adds [company OpenID Connect sign-in](service/company-sign-in.md):
 private invitations and explicit identity links, system-browser desktop sign-in,
 protected remembered sessions, account administration and agent controls.
 [Validation](validation/2026-10-15-company-sign-in.md) records actual Dex/browser
-acceptance, existing-session upgrades and focused native/service checks. Hosted
-assistant consent through company accounts, automatic identity provisioning,
-company-only policy and fleet/provider acceptance remain open. This advances
+acceptance, existing-session upgrades and focused native/service checks. Automatic
+identity provisioning, company-only policy and fleet/provider acceptance remain open. This advances
 F08 and A01/A03/A07/A08 without closing their complete requirements.
 
 Versions **4.8.0 and 4.8.1 are published**: their native release gates, uploaded

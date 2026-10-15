@@ -27,7 +27,7 @@ const titles: Record<string, string> = {
   "docs/service/sign-in.md": "Individual sign-in, invitations & sessions",
   "docs/service/company-sign-in.md": "Company accounts & identity-provider setup",
   "docs/service/oauth.md": "Organization OAuth & agent access",
-  "docs/service/hosted-agent-sign-in.md": "Connect agents with your personal login",
+  "docs/service/hosted-agent-sign-in.md": "Connect agents with personal or company accounts",
   "docs/service/remote-access.md": "Share a workspace with people & agents",
   "docs/service/connection-diagnostics.md": "Connection diagnosis & host recovery",
   "docs/service/memory-map.md": "Live 3D memory map",

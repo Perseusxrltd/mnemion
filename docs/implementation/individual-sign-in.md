@@ -1,9 +1,10 @@
 # Individual sign-in, invitations and hosted agents
 
-Implementation contract updated **2026-10-14** for A01–A03, A07–A08, A11–A13
+Implementation contract updated **2026-10-15** for A01–A03, A07–A08, A11–A13
 and C04–C07. Personal sign-in and invitations are published in 4.2.0; the 4.3.0
-implementation adds hosted consent. Company SSO onboarding and named-provider
-acceptance remain open. It builds on the existing
+implementation adds hosted consent. The 4.9.0 source adds company Studio sign-in;
+4.10.0 adds company-account assistant consent. Guided company hosting, automatic
+provisioning and named-provider acceptance remain open. It builds on the existing
 [authorization boundary](../service/organizations.md),
 [OAuth resource server](../service/oauth.md) and
 [workspace continuity contract](workspace-continuity.md).
@@ -119,8 +120,9 @@ consent or account-linking authority. The
 [profile validation](../validation/2026-10-12-mcp-profile.md) and
 [4.1.3 publication record](../validation/2026-10-12-managed-connectors.md)
 record its completed source, native and delivery checks. The complete individual
-sign-in flow has since shipped; hosted consent, company enrollment and named-provider
-acceptance retain their separate [validation boundaries](../validation/2026-10-14-hosted-agent-sign-in.md).
+sign-in flow has since shipped; personal hosted consent, company enrollment and
+company assistant consent retain separate release and
+[provider-acceptance boundaries](../validation/2026-10-15-company-agent-consent.md).
 
 ## Acceptance before publication
 
@@ -150,5 +152,21 @@ OpenID Connect providers, exact subject links, invitation acceptance, bounded
 company sessions and desktop/browser persistence. The [validation record](../validation/2026-10-15-company-sign-in.md)
 keeps real Dex/browser checks, migration preservation and native controller checks
 separate from release delivery. Existing personal sessions survive migration 018.
-Company-only policy, automatic provisioning/group mapping, back-channel logout
-and company-account hosted-agent consent remain unfinished acceptance criteria.
+Company-only policy, automatic provisioning/group mapping and back-channel logout
+remain unfinished acceptance criteria.
+
+## Company assistant consent implementation (4.10.0 source)
+
+An operator-enabled hosted consent page offers the configured company providers
+for its selected workspace. The browser/request-bound handoff checks the existing
+company subject link and generates a short-lived permission proof, without
+creating a Studio session or altering its remembered cookies. Approval and code
+exchange recheck link policy, expiry and the reviewed grants. Assistant access
+uses the same revocable session anchors as Studio, with the provider's absolute
+lifetime and immediate local link/person revocation.
+
+[Validation](../validation/2026-10-15-company-agent-consent.md) covers PostgreSQL
+boundaries, earlier personal sessions and pending approvals across migration 019,
+restored-access revocation, an actual Dex/browser flow and the MCP client SDK.
+Named hosted products, company-only admission, provisioning and guided remote
+provider configuration still require separate completion.

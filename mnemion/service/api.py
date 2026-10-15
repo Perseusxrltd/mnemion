@@ -187,8 +187,12 @@ def create_app(
                 "Set MNEMION_DATABASE_URL to the non-owner application database login"
             )
         database = Database(dsn, max_size=int(os.environ.get("MNEMION_DB_POOL_SIZE", "10")))
-    hosted_oauth = HostedOAuth(database, builtin_settings) if builtin_settings else None
     company_identity = company_identity or CompanyIdentity.from_environment()
+    hosted_oauth = (
+        HostedOAuth(database, builtin_settings, company_policies=company_identity.policies)
+        if builtin_settings
+        else None
+    )
     company_origin = BrowserPolicy(
         oauth_settings.resource
         if oauth_settings
@@ -434,7 +438,7 @@ def create_app(
         mcp_enabled=gateway_enabled,
     )
     if hosted_oauth:
-        attach_hosted_oauth(app, hosted_oauth, authenticated)
+        attach_hosted_oauth(app, hosted_oauth, authenticated, company_sign_in)
     attach_sign_in(
         app,
         database,

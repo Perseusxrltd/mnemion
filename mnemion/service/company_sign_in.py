@@ -106,7 +106,7 @@ class CompanySignIn:
             "callback_uri": self.callback_uri,
         }
 
-    def start(self, command: CompanyStart):
+    def start(self, command: CompanyStart, *, consent: tuple[str, str] | None = None):
         provider = self.identity.provider(command.workspace_id, command.provider_id)
         state, state_hash = _secret("mnm_o_")
         verifier = secrets.token_urlsafe(32)
@@ -128,6 +128,8 @@ class CompanySignIn:
             "invitation_hash": invitation_hash,
             "remember": command.remember,
         }
+        if consent:
+            payload["consent"] = {"ticket_hash": consent[0], "browser_hash": consent[1]}
         with self.db.pool.connection() as conn:
             created = conn.execute(
                 "SELECT mnemion.create_company_login(%s,%s,%s,%s,%s,%s) AS created",
@@ -281,6 +283,8 @@ def attach_company_sign_in(app, service: CompanySignIn, authenticated):
     async def finish(command: CompanyFinish, request: Request, response: Response):
         origin = policy.check(request, command.transport)
         value, provider = await anyio.to_thread.run_sync(service.claim, command)
+        if "consent" in value:
+            raise company_failed()
         subject = await service.identity.exchange(
             provider,
             command.code.get_secret_value(),

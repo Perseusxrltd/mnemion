@@ -94,13 +94,13 @@ export function forgetBrowserBookmark(bookmark: BrowserBookmark): void {
   catch { /* Sign-out still clears the in-memory session and attempts server revocation. */ }
 }
 
-async function request(endpoint: string, operation: string, input: unknown, csrf?: string): Promise<unknown> {
+async function request(endpoint: string, operation: string, input: unknown, csrf?: string, signal?: AbortSignal): Promise<unknown> {
   ownOrigin(endpoint)
   let response: Response
   try {
     response = await fetch(endpoint + '/v1/sign-in/' + operation, {
       method: 'POST', body: JSON.stringify(input), redirect: 'error', cache: 'no-store', credentials: 'same-origin',
-      signal: AbortSignal.timeout(20_000), headers: { 'Content-Type': 'application/json', Accept: 'application/json',
+      signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(20_000)]) : AbortSignal.timeout(20_000), headers: { 'Content-Type': 'application/json', Accept: 'application/json',
         'ngrok-skip-browser-warning': 'mnemion', ...(csrf ? { 'X-Mnemion-CSRF': csrf } : {}) },
     })
   } catch { throw failed('The workspace could not confirm this request. Check the connection and sign in again.') }
@@ -154,8 +154,8 @@ function readTokens(value: unknown): Tokens {
 export async function browserCompanyConfiguration(endpoint: string, workspaceId: string): Promise<CompanyConfiguration> {
   return companyConfiguration(await request(endpoint, 'company/configuration', { workspace_id: workspaceId }), endpoint)
 }
-export async function browserCompanyStart(endpoint: string, input: unknown): Promise<unknown> {
-  return request(endpoint, 'company/start', input)
+export async function browserCompanyStart(endpoint: string, input: unknown, signal?: AbortSignal): Promise<unknown> {
+  return request(endpoint, 'company/start', input, undefined, signal)
 }
 export async function previewBrowserInvitation(endpoint: string, invitation: string): Promise<InvitationPreview> {
   const value = await request(endpoint, 'invitations/preview', { invitation })

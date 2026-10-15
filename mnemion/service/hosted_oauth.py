@@ -1,4 +1,4 @@
-"""MCP SDK OAuth provider backed by the existing revocable password sessions."""
+"""MCP SDK OAuth provider backed by revocable personal and company sessions."""
 
 from __future__ import annotations
 
@@ -24,11 +24,13 @@ from mcp.server.auth.provider import (
 from mcp.shared.auth import OAuthClientInformationFull, OAuthToken
 from psycopg.types.json import Jsonb
 
+from .company_identity import company_failed, digest as company_digest
+from .company_sign_in import external_hash
 from .db import Identity, new_token, token_hash
 from .errors import ServiceError
 from .oauth import OAUTH_SCOPE, OAuthSettings, https_url, unauthorized
 from .passwords import verify_password
-from .sign_in import SignInService, normalize_username
+from .sign_in import SignInService, _digest, normalize_username
 
 
 @dataclass(frozen=True)
@@ -122,9 +124,10 @@ def redirect_uri(value):
 
 
 class HostedOAuth:
-    def __init__(self, database, settings):
+    def __init__(self, database, settings, *, company_policies=()):
         self.db, self.settings = database, settings
         self.sign_in = SignInService(database)
+        self.company_policies = tuple(company_policies)
 
     def _call(self, function, *arguments):
         # Function names are fixed in this module, never taken from requests.
@@ -270,7 +273,32 @@ class HostedOAuth:
             raise ServiceError(
                 409, "authorization_changed", "The account or connection changed. Sign in again."
             )
-        return {"proof": proof, "permissions": preview}
+        return {"proof": proof, "permissions": preview, "authentication": "password"}
+
+    async def company_login(self, ticket, browser, command, provider, subject):
+        if provider.workspace_id != self.settings.tenant_id:
+            raise company_failed()
+        proof, proof_hash = opaque("mnm_op_")
+        result = await self.call(
+            "local_oauth_company_login",
+            digest(ticket, "mnm_ot_"),
+            self.settings.issuer,
+            self.settings.resource,
+            self.settings.tenant_id,
+            _digest(command.state.get_secret_value(), "mnm_o_"),
+            company_digest(command.code_verifier.get_secret_value()),
+            provider.issuer,
+            provider.client_id,
+            subject,
+            external_hash(provider, subject),
+            provider.policy_hash,
+            provider.session_seconds,
+            proof_hash,
+            token_hash(browser),
+        )
+        if not result:
+            raise company_failed()
+        return {"proof": proof, "authentication": "company", **result}
 
     async def consent(self, ticket, proof, browser):
         code, code_hash = opaque("mnm_oc_")
@@ -279,13 +307,14 @@ class HostedOAuth:
         except ValueError:
             raise unauthorized() from None
         params = await self.call(
-            "local_oauth_consent",
+            "local_oauth_consent_current",
             ticket_hash,
             self.settings.issuer,
             self.settings.resource,
             proof_hash,
             token_hash(browser),
             code_hash,
+            list(self.company_policies),
         )
         if not params:
             raise ServiceError(
@@ -360,7 +389,7 @@ class HostedOAuth:
         refresh, refresh_hash = opaque("mnmr_")
         _, anchor_hash = new_token()
         result = await self.call(
-            "local_oauth_exchange",
+            "local_oauth_exchange_current",
             digest(authorization_code.code, "mnm_oc_"),
             client.client_id,
             self.settings.issuer,
@@ -371,6 +400,7 @@ class HostedOAuth:
             access_hash,
             refresh_hash,
             ("Agent: " + (client.client_name or "Connected application"))[:100],
+            list(self.company_policies),
         )
         return self.tokens(result, access, refresh)
 
@@ -380,7 +410,12 @@ class HostedOAuth:
         except ValueError:
             return None
         return await self.call(
-            "local_oauth_token", hashed, kind, self.settings.issuer, self.settings.resource
+            "local_oauth_token_current",
+            hashed,
+            kind,
+            self.settings.issuer,
+            self.settings.resource,
+            list(self.company_policies),
         )
 
     async def load_refresh_token(self, client, refresh_token):
@@ -402,13 +437,14 @@ class HostedOAuth:
         access, access_hash = opaque("mnmo_")
         refresh, refresh_hash = opaque("mnmr_")
         result = await self.call(
-            "local_oauth_refresh",
+            "local_oauth_refresh_current",
             digest(refresh_token.token, "mnmr_"),
             client.client_id,
             self.settings.issuer,
             self.settings.resource,
             access_hash,
             refresh_hash,
+            list(self.company_policies),
         )
         return self.tokens(result, access, refresh)
 
@@ -441,10 +477,11 @@ class HostedOAuth:
     async def revoke_token(self, token):
         kind = "refresh" if isinstance(token, RefreshToken) else "access"
         await self.call(
-            "local_oauth_revoke",
+            "local_oauth_revoke_current",
             digest(token.token, "mnmr_" if kind == "refresh" else "mnmo_"),
             kind,
             token.client_id,
             self.settings.issuer,
             self.settings.resource,
+            list(self.company_policies),
         )

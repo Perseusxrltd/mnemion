@@ -31,6 +31,11 @@ Version **4.9.0** adds seven [company-account operations](company-sign-in.md) fo
 **112 total**. Configuration and authorized link administration are discoverable;
 one-use company login steps use private CLI input/results and are excluded from
 generic MCP execution.
+Version **4.10.0** lets assistants complete the standard OAuth authorization
+flow with an approved company account. Company-provider authentication and
+human permission review stay on their dedicated browser pages; the generic
+MCP catalog remains **112 operations**. See [account consent](hosted-agent-sign-in.md)
+for session expiry, revocation and provider acceptance limits.
 Schemas load one at a time, so connecting an
 assistant does not put the entire administration API into its context.
 
