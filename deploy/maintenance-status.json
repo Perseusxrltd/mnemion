@@ -90,11 +90,19 @@
       "workflow": "release.yml",
       "branch": "release/4.10.0",
       "source_commit": "0cc947fd24f910408d28b77d843a80b5b6040999",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-15T13:28:38Z",
+      "status": "completed",
+      "conclusion": "failure",
+      "updated_at": "2026-10-15T13:50:58Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38741670338",
-      "failed_jobs": []
+      "failed_jobs": [
+        {
+          "name": "native / windows-11-arm / arm64",
+          "id": 116448220119,
+          "steps": [
+            "Installed app creates, searches and reopens a real local workspace"
+          ]
+        }
+      ]
     },
     {
       "id": 38736139048,
@@ -108,15 +116,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38736139048"
     },
     {
-      "id": 38741415961,
+      "id": 38746215941,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "e377820169fc905285d06dc9c56622202352bcb0",
+      "source_commit": "52aad9bd8159f15e66f8b3d65f118c49aa26e27a",
       "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-15T13:19:25Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38741415961"
+      "conclusion": "skipped",
+      "updated_at": "2026-10-15T13:51:08Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38746215941"
     },
     {
       "id": 38741693478,
@@ -130,5 +138,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38741693478"
     }
   ],
-  "observed_at": "2026-10-15T13:34:05+00:00"
+  "observed_at": "2026-10-15T13:51:26+00:00"
 }
