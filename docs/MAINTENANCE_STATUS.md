@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-15T04:09:49+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-15T04:22:06+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.4.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.4.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -21,14 +21,15 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | queued | [Run 38679996018](https://github.com/Perseusxrltd/mnemion/actions/runs/38679996018) |
+| ci\.yml | main | in\_progress | [Run 38679996018](https://github.com/Perseusxrltd/mnemion/actions/runs/38679996018) |
 | public-updates\.yml | v4\.4\.0 | success | [Run 38655462084](https://github.com/Perseusxrltd/mnemion/actions/runs/38655462084) |
 | release\.yml | release/4\.4\.0 | success | [Run 38651001133](https://github.com/Perseusxrltd/mnemion/actions/runs/38651001133) |
 | release\.yml | release/4\.5\.0 | failure | [Run 38669057276](https://github.com/Perseusxrltd/mnemion/actions/runs/38669057276) |
 | release\.yml | release/4\.5\.0-r2 | failure | [Run 38674242209](https://github.com/Perseusxrltd/mnemion/actions/runs/38674242209) |
 | release\.yml | release/4\.6\.0 | cancelled | [Run 38675510809](https://github.com/Perseusxrltd/mnemion/actions/runs/38675510809) |
-| release\.yml | release/4\.6\.0-r2 | in\_progress | [Run 38677594445](https://github.com/Perseusxrltd/mnemion/actions/runs/38677594445) |
-| verify-artifacts\.yml | main | skipped | [Run 38678902487](https://github.com/Perseusxrltd/mnemion/actions/runs/38678902487) |
+| release\.yml | release/4\.6\.0-r2 | cancelled | [Run 38677594445](https://github.com/Perseusxrltd/mnemion/actions/runs/38677594445) |
+| release\.yml | release/4\.6\.0-r3 | queued | [Run 38680133894](https://github.com/Perseusxrltd/mnemion/actions/runs/38680133894) |
+| verify-artifacts\.yml | main | skipped | [Run 38681059715](https://github.com/Perseusxrltd/mnemion/actions/runs/38681059715) |
 | website-release\.yml | v4\.4\.0 | success | [Run 38655459186](https://github.com/Perseusxrltd/mnemion/actions/runs/38655459186) |
 
 ## Failed jobs
@@ -37,5 +38,3 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 - [Run 38669057276](https://github.com/Perseusxrltd/mnemion/actions/runs/38669057276): native / windows-2022 / x64. Steps: Installed app creates, searches and reopens a real local workspace.
 - [Run 38674242209](https://github.com/Perseusxrltd/mnemion/actions/runs/38674242209): native / windows-2022 / x64. Steps: Installed app creates, searches and reopens a real local workspace.
 - [Run 38674242209](https://github.com/Perseusxrltd/mnemion/actions/runs/38674242209): native / windows-11-arm / arm64. Steps: Installed app creates, searches and reopens a real local workspace.
-- [Run 38677594445](https://github.com/Perseusxrltd/mnemion/actions/runs/38677594445): native / windows-2022 / x64. Steps: Run uv run --project studio/client --no-sync python -m pytest client\_tests -q.
-- [Run 38677594445](https://github.com/Perseusxrltd/mnemion/actions/runs/38677594445): native / windows-11-arm / arm64. Steps: Run uv run --project studio/client --no-sync python -m pytest client\_tests -q.
