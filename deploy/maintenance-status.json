@@ -63,45 +63,16 @@
   ],
   "runs": [
     {
-      "id": 38713690998,
+      "id": 38714828463,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "b8893c1c902eab23280cafbcd6e1f80b31cf8132",
-      "status": "in_progress",
+      "source_commit": "45551aa814dda14ca1db6ef9f85f5c38e82864fd",
+      "status": "queued",
       "conclusion": null,
-      "updated_at": "2026-10-15T09:33:11Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38713690998",
-      "failed_jobs": [
-        {
-          "name": "service (3.14)",
-          "id": 116351216772,
-          "steps": [
-            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-          ]
-        },
-        {
-          "name": "container (ubuntu-22.04)",
-          "id": 116351216800,
-          "steps": [
-            "Build the actual deployment image with its documentation"
-          ]
-        },
-        {
-          "name": "container (ubuntu-22.04-arm)",
-          "id": 116351216897,
-          "steps": [
-            "Build the actual deployment image with its documentation"
-          ]
-        },
-        {
-          "name": "service (3.13)",
-          "id": 116351217021,
-          "steps": [
-            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-          ]
-        }
-      ]
+      "updated_at": "2026-10-15T09:42:09Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38714828463",
+      "failed_jobs": []
     },
     {
       "id": 38690301500,
@@ -148,6 +119,18 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38713709815"
     },
     {
+      "id": 38714843998,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.8.0-r3",
+      "source_commit": "45551aa814dda14ca1db6ef9f85f5c38e82864fd",
+      "status": "queued",
+      "conclusion": null,
+      "updated_at": "2026-10-15T09:42:04Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38714843998",
+      "failed_jobs": []
+    },
+    {
       "id": 38714343348,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
@@ -170,5 +153,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38690298719"
     }
   ],
-  "observed_at": "2026-10-15T09:38:09+00:00"
+  "observed_at": "2026-10-15T09:42:37+00:00"
 }
