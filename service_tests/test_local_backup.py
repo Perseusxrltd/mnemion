@@ -71,7 +71,9 @@ def test_encrypted_snapshot_and_newer_ledger_restore_deleted_state_without_sourc
     with psycopg.connect(env.admin_dsn) as connection:
         source_memories = {
             (str(tenant), str(identifier))
-            for tenant, identifier in connection.execute("SELECT tenant_id,id FROM mnemion.memories")
+            for tenant, identifier in connection.execute(
+                "SELECT tenant_id,id FROM mnemion.memories"
+            )
         }
     original_configuration = (root / "configuration.json").read_bytes()
     original_credentials = (root / "credentials.json").read_bytes()
@@ -96,12 +98,9 @@ def test_encrypted_snapshot_and_newer_ledger_restore_deleted_state_without_sourc
     assert "snapshot" not in latest
     assert state.read(root / "last-backup.json") == snapshot
     assert state.read(root / "last-ledger.json") == latest
-    assert (
-        backup.inspect_file(
-            root, backup.BackupInspection(source=latest["ledger"]["file"], recovery_key=key)
-        )["deletion_count"]
-        == len(current_ledger["deletions"])
-    )
+    assert backup.inspect_file(
+        root, backup.BackupInspection(source=latest["ledger"]["file"], recovery_key=key)
+    )["deletion_count"] == len(current_ledger["deletions"])
     raw_snapshot, raw_ledger = tmp_path / "unlocked-snapshot", tmp_path / "unlocked-ledger"
     encryption.decrypt_file(
         Path(snapshot["snapshot"]["file"]), raw_snapshot, key, expected_kind="snapshot"
