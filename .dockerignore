@@ -39,9 +39,11 @@ studio/frontend/*
 !studio/shared/
 studio/shared/*
 !studio/shared/local-workspace.d.ts
+!studio/shared/company-sign-in.d.ts
 !studio/electron/
 studio/electron/*
 !studio/electron/workspace-recovery.ts
+!studio/electron/company-sign-in-protocol.ts
 !studio/README.md
 !assets/
 assets/*
