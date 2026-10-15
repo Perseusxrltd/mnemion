@@ -63,15 +63,24 @@
   ],
   "runs": [
     {
-      "id": 38660538626,
+      "id": 38669019524,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "4ba863506ef3be4bd3eb5750605136a0574d802a",
+      "source_commit": "80a9979616568f813bf4635b6b71e0fe256b537c",
       "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-15T00:46:48Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38660538626"
+      "conclusion": "failure",
+      "updated_at": "2026-10-15T02:19:48Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38669019524",
+      "failed_jobs": [
+        {
+          "name": "supervision (macos-15-intel)",
+          "id": 116207465663,
+          "steps": [
+            "Verify managed installation, signed updates and rollback with real processes"
+          ]
+        }
+      ]
     },
     {
       "id": 38655462084,
@@ -96,6 +105,18 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38651001133"
     },
     {
+      "id": 38669057276,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.5.0",
+      "source_commit": "80a9979616568f813bf4635b6b71e0fe256b537c",
+      "status": "queued",
+      "conclusion": null,
+      "updated_at": "2026-10-15T02:20:00Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38669057276",
+      "failed_jobs": []
+    },
+    {
       "id": 38655307480,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
@@ -118,5 +139,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38655459186"
     }
   ],
-  "observed_at": "2026-10-15T00:47:09+00:00"
+  "observed_at": "2026-10-15T02:20:10+00:00"
 }
