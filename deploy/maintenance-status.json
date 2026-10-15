@@ -63,35 +63,21 @@
   ],
   "runs": [
     {
-      "id": 38656415411,
+      "id": 38658993151,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "86e04bb87218247efc4c208729b020f8726b75ed",
+      "source_commit": "c28840c2347efa909002c3d92d539fe0b7348ead",
       "status": "completed",
       "conclusion": "failure",
-      "updated_at": "2026-10-15T00:04:31Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38656415411",
+      "updated_at": "2026-10-15T00:30:23Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38658993151",
       "failed_jobs": [
         {
-          "name": "service (3.12)",
-          "id": 116167406194,
+          "name": "lint",
+          "id": 116175483449,
           "steps": [
-            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-          ]
-        },
-        {
-          "name": "service (3.14)",
-          "id": 116167406239,
-          "steps": [
-            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-          ]
-        },
-        {
-          "name": "service (3.13)",
-          "id": 116167406360,
-          "steps": [
-            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+            "Run uv run --no-sync ruff format --check ."
           ]
         }
       ]
@@ -141,5 +127,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38655459186"
     }
   ],
-  "observed_at": "2026-10-15T00:04:53+00:00"
+  "observed_at": "2026-10-15T00:30:46+00:00"
 }
