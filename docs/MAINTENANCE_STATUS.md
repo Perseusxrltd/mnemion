@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-15T07:56:19+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-15T09:22:32+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.7.1](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.7.1). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -21,8 +21,15 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 38686734392](https://github.com/Perseusxrltd/mnemion/actions/runs/38686734392) |
+| ci\.yml | main | in\_progress | [Run 38711884710](https://github.com/Perseusxrltd/mnemion/actions/runs/38711884710) |
 | public-updates\.yml | v4\.7\.1 | success | [Run 38690301500](https://github.com/Perseusxrltd/mnemion/actions/runs/38690301500) |
 | release\.yml | release/4\.7\.1 | success | [Run 38686774445](https://github.com/Perseusxrltd/mnemion/actions/runs/38686774445) |
-| verify-artifacts\.yml | main | success | [Run 38690150134](https://github.com/Perseusxrltd/mnemion/actions/runs/38690150134) |
+| release\.yml | release/4\.8\.0 | cancelled | [Run 38711982415](https://github.com/Perseusxrltd/mnemion/actions/runs/38711982415) |
+| verify-artifacts\.yml | main | skipped | [Run 38712418377](https://github.com/Perseusxrltd/mnemion/actions/runs/38712418377) |
 | website-release\.yml | v4\.7\.1 | success | [Run 38690298719](https://github.com/Perseusxrltd/mnemion/actions/runs/38690298719) |
+
+## Failed jobs
+
+- [Run 38711884710](https://github.com/Perseusxrltd/mnemion/actions/runs/38711884710): container \(ubuntu-22\.04-arm\). Steps: Build the actual deployment image with its documentation.
+- [Run 38711884710](https://github.com/Perseusxrltd/mnemion/actions/runs/38711884710): service \(3\.14\). Steps: Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- [Run 38711884710](https://github.com/Perseusxrltd/mnemion/actions/runs/38711884710): container \(ubuntu-22\.04\). Steps: Build the actual deployment image with its documentation.
