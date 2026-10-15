@@ -63,15 +63,15 @@
   ],
   "runs": [
     {
-      "id": 38678185256,
+      "id": 38679996018,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "d94b6e9d0fc3813b79b456af978c04d9451b1d56",
-      "status": "in_progress",
+      "source_commit": "d7b4465b422cf73c51e9131d3eb85423c0ab5ee2",
+      "status": "queued",
       "conclusion": null,
-      "updated_at": "2026-10-15T03:49:09Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38678185256",
+      "updated_at": "2026-10-15T04:09:40Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38679996018",
       "failed_jobs": []
     },
     {
@@ -169,9 +169,24 @@
       "source_commit": "86e311bb6b85b738ad99ffdfb7e0d5bea264129e",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-15T03:57:31Z",
+      "updated_at": "2026-10-15T03:59:43Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38677594445",
-      "failed_jobs": []
+      "failed_jobs": [
+        {
+          "name": "native / windows-2022 / x64",
+          "id": 116239349834,
+          "steps": [
+            "Run uv run --project studio/client --no-sync python -m pytest client_tests -q"
+          ]
+        },
+        {
+          "name": "native / windows-11-arm / arm64",
+          "id": 116239349866,
+          "steps": [
+            "Run uv run --project studio/client --no-sync python -m pytest client_tests -q"
+          ]
+        }
+      ]
     },
     {
       "id": 38678902487,
@@ -196,5 +211,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38655459186"
     }
   ],
-  "observed_at": "2026-10-15T03:57:55+00:00"
+  "observed_at": "2026-10-15T04:09:49+00:00"
 }
