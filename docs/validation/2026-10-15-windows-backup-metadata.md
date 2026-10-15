@@ -52,3 +52,17 @@ writes through the link are still required. This focused test passed on the
 actual Windows Python 3.13 installation in 0.03 seconds. The frozen release is
 retried only at the failed job and its blocked dependents; a fixture timeout does
 not justify disabling its security assertions or repackaging already passed jobs.
+
+The targeted retry passed the private-state gate, then both Windows packaging
+jobs reported two failures in the full client suite. These were the Linux and
+macOS endpoint-format cases: the test changed `sys.platform` while leaving
+Windows `Path` semantics active. `/tmp/.../control.sock` consequently failed
+the absolute-path check before any installed app test ran.
+
+Those simulated Unix cases now use `PurePosixPath` inside the test. The actual
+runtime retains its native path and local-pipe restrictions. All seven operator
+checks passed on Linux; the actual Windows interpreter passed five, with the
+two Unix-socket execution checks correctly skipped. The same small operator
+suite now runs alongside the early Windows encryption checks. This correction
+is included in a new frozen 4.6.0 release attempt; earlier source references
+remain unchanged.

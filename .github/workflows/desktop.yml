@@ -82,8 +82,8 @@ jobs:
           # its filesystem and encryption runtime on the ARM host.
           architecture: x64
       - run: python -m pip install pytest cryptography==50.0.2
-      - name: Verify native encrypted-file metadata before packaging
-        run: python -m pytest native_tests/test_backup_file_metadata.py -q
+      - name: Verify native encrypted files and desktop control before packaging
+        run: python -m pytest native_tests/test_backup_file_metadata.py client_tests/test_desktop_operator.py -q
   windows_engine:
     needs: [targets, windows_backup_metadata]
     if: contains(needs.targets.outputs.matrix, 'windows-')

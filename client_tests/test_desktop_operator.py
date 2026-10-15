@@ -1,7 +1,7 @@
 import asyncio
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import secrets
 import struct
 import sys
@@ -34,6 +34,10 @@ def record(address=None):
 @pytest.mark.parametrize("platform", ["linux", "darwin", "win32"])
 def test_discovery_accepts_only_local_os_pipes(monkeypatch, platform):
     monkeypatch.setattr(control.sys, "platform", platform)
+    if platform != "win32":
+        # A simulated Unix endpoint needs Unix pathname semantics even when
+        # this format-validation test runs on a native Windows interpreter.
+        monkeypatch.setattr(control, "Path", PurePosixPath)
     value = record()
     assert control.endpoint(value)["session_id"] == value["session_id"]
     for address in [
