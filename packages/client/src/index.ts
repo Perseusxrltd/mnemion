@@ -73,6 +73,7 @@ export interface RecallInput {
   min_score?: number; min_similarity?: number | null
   ranking_policy?: RankingPolicy
   keyword_fallback?: boolean
+  max_per_source?: number
 }
 export interface RecallHit extends Omit<Memory, 'content'> {
   text: string; text_truncated: boolean
@@ -97,13 +98,18 @@ export interface IndexState {
   eligible_records: number; indexed_records: number
   pending_records: number; observed_at: string
 }
+export interface SourceGrouping {
+  max_per_source: number; grouped_candidates: number; scope: 'candidate_window'
+}
 export interface Recall {
   request_id: string; query: string; hits: RecallHit[]; warnings: string[]
   index: IndexState; timing_ms: number; score_description: string
   match_status?: 'matched' | 'semantic_only' | 'empty'; filtered_candidates?: number
   ranking_policy?: RankingPolicy | null; ranking_reference_time?: string | null
+  source_grouping?: SourceGrouping | null
 }
 export interface ContextPack {
+  source_grouping?: SourceGrouping | null
   request_id: string; text: string; token_count: number; token_budget: number; tokenizer: string
   tokenizer_generation: string; omitted_items: number; warnings: string[]; index: IndexState
   token_count_unit?: 'model_tokens' | 'utf8_bytes'

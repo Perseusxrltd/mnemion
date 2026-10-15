@@ -118,6 +118,53 @@ this metadata on the next scan, which can temporarily queue re-indexing. Unchang
 files remain stable across subsequent commits, merges and rollback scans. Date
 sorting does not itself resolve contradictions or split appended logs by section.
 
+## Results from distinct documents
+
+Service 4.8.1 defaults to `max_per_source: 1` for search and context. Large Git,
+Drive and other imported documents can span several stored memories; the
+default keeps repeated parts of one file from occupying the result list.
+Choose **Results per imported document** in the app, or pass `max_per_source`
+through HTTP, either SDK, the full MCP search/context tools or the agent catalog.
+Values are integers from 0 to 50: `0` restores individual-part ranking and lets
+all matching parts compete for the requested result limit.
+
+Grouping recognizes the standard `Document.items()` metadata (`extractor:
+"mnemion-text-v1"`, a nonempty source identity and an integer part number). Its
+identity includes the current space and the memory's original author. Different
+spaces, original authors or source identities remain separate; a matching title,
+URL, path or body alone never merges memories. Custom adapters without this
+format retain individual results. Grouping changes returned results only; it
+does not delete, combine or rewrite stored memories or source evidence.
+
+Within each lexical, semantic, identifier and key-term channel, the best part of
+each document gets a place before second parts fill the existing candidate
+window. Fusion and date ordering then select up to the requested per-document
+limit. Match thresholds apply before a returned part consumes its document's
+slot. Disabling grouping restores the individual-part candidate order as well.
+Rank-fusion scores can change with the candidate order; compare settings on the
+same [evaluation test set](insights.md), especially when it labels several parts
+of one document.
+
+Recall and context echo `source_grouping.max_per_source` and
+`grouped_candidates`. The latter counts extra parts skipped in the examined
+candidate window, not all matching parts in the entire workspace. Source dates,
+validity, quarantine, current permissions and citation checks retain their
+existing behavior. There is no added model call or re-index. The extra candidate
+ordering still operates over the eligible corpus; a bounded response does not
+promise constant database cost as the corpus grows.
+
+For example, current-state review can explicitly combine matching-source date
+order and distinct documents:
+
+```json
+{"query":"TASK-7312 current status","all_accessible":true,"sort":"recent","max_per_source":1,"limit":5}
+```
+
+An updated SDK omits the new field unless requested, and the app withholds it
+from older servers. A newer server uses its default when the option is absent.
+Grouping does not establish which document is authoritative or which conflicting
+claim is true.
+
 ## Current-state ranking preferences
 
 Service 4.3.1 adds a bounded source-age preference to the default relevance order

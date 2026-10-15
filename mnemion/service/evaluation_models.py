@@ -75,6 +75,7 @@ class EvaluationInput(Command):
     )
     context: StrictBool = True
     keyword_fallback: StrictBool = True
+    max_per_source: StrictInt = Field(default=1, ge=0, le=50)
     ranking_policy: RankingPolicy = Field(default_factory=RankingPolicy)
     token_budget: StrictInt = Field(default=2048, ge=128, le=16000)
     max_seconds: StrictInt = Field(default=300, ge=10, le=3600)

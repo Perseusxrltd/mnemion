@@ -1,4 +1,4 @@
-import type { ContextPack, RecallHit, IndexState, RankingPolicy } from './index.js'
+import type { ContextPack, RecallHit, IndexState, RankingPolicy, SourceGrouping } from './index.js'
 
 export type MetricOrigin = 'all' | 'interactive' | 'background' | 'evaluation'
 export interface NamedCount { label: string; count: number }
@@ -84,7 +84,7 @@ export interface EvaluationInput {
   dataset_id: string; split?: EvaluationSplit; modes?: EvaluationMode[]; cutoffs?: number[]; context?: boolean
   token_budget?: number; max_seconds?: number; interval_seconds?: number
   embedding_generation?: string | null
-  keyword_fallback?: boolean; ranking_policy?: RankingPolicy
+  keyword_fallback?: boolean; ranking_policy?: RankingPolicy; max_per_source?: number
 }
 export interface EvaluationScores { recall: number | null; precision: number | null; ndcg: number | null; mrr: number | null; complete: boolean | null }
 export interface EvaluationScoreSummary extends Omit<EvaluationScores, 'complete'> {
@@ -105,7 +105,7 @@ export interface EvaluationSummary {
 export interface EvaluationRun {
   id: string; space_id: string; dataset_id: string; generation_id: string
   state: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled' | 'invalidated'; progress: number; total: number
-  configuration: Required<Omit<EvaluationInput, 'keyword_fallback' | 'ranking_policy'>> & Pick<EvaluationInput, 'keyword_fallback' | 'ranking_policy'>; summary: EvaluationSummary | null; error_code: string | null
+  configuration: Required<Omit<EvaluationInput, 'keyword_fallback' | 'ranking_policy' | 'max_per_source'>> & Pick<EvaluationInput, 'keyword_fallback' | 'ranking_policy' | 'max_per_source'>; summary: EvaluationSummary | null; error_code: string | null
   created_at: string; started_at: string | null; finished_at: string | null
   manifest: {
     version: number; scorer_version: string; dataset_hash: string; dataset_version: number; queued_service_version?: string
@@ -126,6 +126,7 @@ export interface EvaluationResult {
     metrics: Record<string, EvaluationScores>; recall_ms?: number; context_ms?: number | null
     ranking?: (Pick<RecallHit, 'memory_id' | 'revision_id' | 'relevance_score' | 'ranking' | 'memory_span'> & { source_revision_id: string })[]
     ranking_reference_time?: string | null
+    source_grouping?: SourceGrouping | null
     retrieval_service_version?: string
     context_recall?: number | null; context_complete?: boolean | null; context_tokens?: number
     context_citations?: ContextPack['citations']; citations_checked?: number; citations_invalid?: number

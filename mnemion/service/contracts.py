@@ -167,6 +167,12 @@ class IndexState(ResponseModel):
     observed_at: str
 
 
+class SourceGrouping(ResponseModel):
+    max_per_source: int = Field(ge=0, le=50)
+    grouped_candidates: int = Field(ge=0)
+    scope: Literal["candidate_window"] = "candidate_window"
+
+
 class Recall(ResponseModel):
     request_id: str
     query: str
@@ -179,6 +185,7 @@ class Recall(ResponseModel):
     filtered_candidates: int = Field(default=0, ge=0)
     ranking_policy: RankingPolicy | None = None
     ranking_reference_time: str | None = None
+    source_grouping: SourceGrouping | None = None
 
 
 class Citation(ResponseModel):
@@ -199,6 +206,7 @@ class IncludedBlock(ResponseModel):
 
 
 class ContextPack(ResponseModel):
+    source_grouping: SourceGrouping | None = None
     request_id: str
     text: str
     citations: list[Citation]

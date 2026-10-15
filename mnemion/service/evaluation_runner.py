@@ -315,6 +315,7 @@ class EvaluationRunner:
             embedding_generation=config.get("embedding_generation"),
             # Runs queued before this option existed retain their original channels.
             keyword_fallback=config.get("keyword_fallback", False),
+            max_per_source=config.get("max_per_source", 0),
             ranking_policy=config.get("ranking_policy", {}),
         )
         started = time.monotonic()
@@ -381,6 +382,7 @@ class EvaluationRunner:
                 for h in recall["hits"]
             ],
             "ranking_reference_time": recall.get("ranking_reference_time"),
+            "source_grouping": recall.get("source_grouping"),
             "retrieval_service_version": __version__,
             "context_recall": len(cited & relevant.keys()) / len(relevant)
             if context and relevant
@@ -402,7 +404,7 @@ class EvaluationRunner:
 
     def _verify(self, identity, space, hits, citations):
         checked = 0
-        sources = set()
+        sources = {}
         with self.db.transaction(identity) as conn:
             require_space(conn, space, 30)
             for item in [*hits, *citations]:
@@ -423,17 +425,28 @@ class EvaluationRunner:
                     valid = valid and item["text"] == fresh["content"][span["start"] : span["end"]]
                     valid = valid and all(
                         item["evidence"][key] == fresh["evidence"][key]
-                        for key in ("source_revision_id", "content_hash", "start", "end")
+                        for key in ("source_revision_id", "content_hash")
+                    )
+                    start, end = item["evidence"]["start"], item["evidence"]["end"]
+                    origin = fresh["evidence"]["start"]
+                    valid = (
+                        valid
+                        and item["evidence"]["excerpt"]
+                        == fresh["evidence"]["excerpt"][start - origin : end - origin]
                     )
                 else:
                     valid = (
                         valid
                         and item["source_revision_id"] == fresh["evidence"]["source_revision_id"]
                     )
-                    valid = (
-                        valid
-                        and item["source_start"] == fresh["evidence"]["start"]
-                        and item["source_end"] == fresh["evidence"]["end"]
+                    start, end = item["source_start"], item["source_end"]
+                valid = (
+                    valid and fresh["evidence"]["start"] <= start < end <= fresh["evidence"]["end"]
+                )
+                if fresh["evidence"]["excerpt"] == fresh["content"]:
+                    valid = valid and (start, end) == (
+                        fresh["evidence"]["start"] + span["start"],
+                        fresh["evidence"]["start"] + span["end"],
                     )
                 source_id = fresh["evidence"]["source_revision_id"]
                 if source_id not in sources:
@@ -441,16 +454,20 @@ class EvaluationRunner:
                         "SELECT content,content_hash FROM mnemion.source_revisions WHERE space_id=%s AND id=%s",
                         (space, UUID(source_id)),
                     ).fetchone()
-                    valid = (
-                        valid
-                        and source is not None
-                        and hashlib.sha256(source["content"].encode()).hexdigest()
-                        == source["content_hash"]
+                    sources[source_id] = (
+                        (
+                            hashlib.sha256(source["content"].encode()).hexdigest(),
+                            source["content_hash"],
+                            len(source["content"]),
+                        )
+                        if source is not None
+                        else (None, None, 0)
                     )
-                    valid = valid and 0 <= fresh["evidence"]["start"] < fresh["evidence"][
-                        "end"
-                    ] <= len(source["content"])
-                    sources.add(source_id)
+                digest, recorded_digest, length = sources[source_id]
+                valid = valid and digest == recorded_digest == fresh["evidence"]["content_hash"]
+                valid = (
+                    valid and 0 <= fresh["evidence"]["start"] < fresh["evidence"]["end"] <= length
+                )
                 if not valid:
                     raise ServiceError(
                         409,

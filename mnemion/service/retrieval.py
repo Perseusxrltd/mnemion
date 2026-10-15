@@ -40,6 +40,14 @@ logger = logging.getLogger(__name__)
 ELIGIBLE = """
 WITH eligible AS MATERIALIZED (
     SELECT m.id AS memory_id, m.space_id, r.id AS revision_id,
+           CASE WHEN %(group_sources)s
+                     AND r.metadata->>'extractor'='mnemion-text-v1'
+                     AND jsonb_typeof(r.metadata->'source_external_id')='string'
+                     AND length(r.metadata->>'source_external_id') BETWEEN 1 AND 512
+                     AND jsonb_typeof(r.metadata->'part')='number'
+                     AND r.metadata->>'part' ~ '^[0-9]{1,12}$'
+                THEN jsonb_build_array('document',m.space_id,m.created_by,r.metadata->>'source_external_id')
+                ELSE jsonb_build_array('memory',m.id) END AS source_group,
            CASE WHEN jsonb_typeof(r.metadata->'path')='string'
                 THEN r.metadata->>'path' END AS rank_path,
            coalesce(CASE WHEN pg_input_is_valid(r.metadata->>'source_modified_at', 'timestamptz')
@@ -243,6 +251,7 @@ class RetrievalService:
             "metadata": Jsonb(command.metadata_filter),
             "recorded_after": command.recorded_after,
             "recent": command.sort == "recent",
+            "group_sources": command.max_per_source > 0,
         }
         identifiers = query_identifiers(command.query)
         identifier_channel = bool(identifiers.terms) and (
@@ -270,13 +279,22 @@ class RetrievalService:
                 lexical = conn.execute(
                     ELIGIBLE
                     + """
-                    SELECT e.memory_id, e.space_id, e.revision_id, e.rank_time, e.rank_path,
+                    , lexical_matches AS (
+                    SELECT e.memory_id, e.space_id, e.revision_id, e.source_group, e.rank_time, e.rank_path,
                            ts_rank_cd(r.search_text, websearch_to_tsquery('simple', %(query)s)) AS lexical_rank
                     FROM eligible e JOIN mnemion.memory_revisions r
                       ON r.tenant_id=mnemion.tenant() AND r.space_id=e.space_id AND r.id=e.revision_id
                     WHERE r.search_text @@ websearch_to_tsquery('simple', %(query)s)
-                    ORDER BY CASE WHEN %(recent)s THEN e.rank_time END DESC NULLS LAST,
-                             lexical_rank DESC, e.memory_id LIMIT %(limit)s
+                    ), lexical_sources AS (
+                        SELECT *,row_number() OVER (PARTITION BY source_group
+                            ORDER BY CASE WHEN %(recent)s THEN rank_time END DESC NULLS LAST,
+                                     lexical_rank DESC,memory_id) AS source_position
+                        FROM lexical_matches
+                    )
+                    SELECT * FROM lexical_sources
+                    ORDER BY source_position,
+                             CASE WHEN %(recent)s THEN rank_time END DESC NULLS LAST,
+                             lexical_rank DESC,memory_id LIMIT %(limit)s
                 """,
                     params,
                 ).fetchall()
@@ -304,15 +322,19 @@ class RetrievalService:
                     ELIGIBLE
                     + """
                     , distances AS (
-                        SELECT e.memory_id, e.space_id, e.revision_id, e.rank_time, e.rank_path, v.start_offset, v.end_offset,
+                        SELECT e.memory_id, e.space_id, e.revision_id, e.source_group, e.rank_time, e.rank_path, v.start_offset, v.end_offset,
                                v.embedding <=> %(vector)s::vector AS distance,
                                row_number() OVER (PARTITION BY e.revision_id
                                    ORDER BY v.embedding <=> %(vector)s::vector, v.chunk_index) AS part
                         FROM eligible e JOIN mnemion.embeddings v
                           ON v.tenant_id=mnemion.tenant() AND v.space_id=e.space_id AND v.revision_id=e.revision_id
                         WHERE v.generation_id=%(generation)s
-                    ) SELECT * FROM distances WHERE part=1
-                    ORDER BY distance, memory_id LIMIT %(limit)s
+                    ), semantic_sources AS (
+                        SELECT *,row_number() OVER (PARTITION BY source_group
+                            ORDER BY distance,memory_id) AS source_position
+                        FROM distances WHERE part=1
+                    ) SELECT * FROM semantic_sources
+                    ORDER BY source_position,distance,memory_id LIMIT %(limit)s
                 """,
                     {
                         **params,
@@ -411,6 +433,8 @@ class RetrievalService:
                 )
             hits = []
             filtered = 0
+            grouped = 0
+            source_counts = defaultdict(int)
             for memory in ordered:
                 candidate = candidates[memory]
                 score = round(scores[memory] / denominator, 8)
@@ -424,6 +448,10 @@ class RetrievalService:
                     )
                 ):
                     filtered += 1
+                    continue
+                source_group = tuple(candidate["source_group"])
+                if command.max_per_source and source_counts[source_group] >= command.max_per_source:
+                    grouped += 1
                     continue
                 try:
                     row = memory_row(conn, memory)
@@ -490,6 +518,7 @@ class RetrievalService:
                 if hit["claim_status"] == "contested":
                     warnings.append("contested_evidence")
                 hits.append(hit)
+                source_counts[source_group] += 1
                 if len(hits) == command.limit:
                     break
         matched = any(
@@ -505,6 +534,11 @@ class RetrievalService:
                 "query": command.query,
                 "match_status": match_status,
                 "filtered_candidates": filtered,
+                "source_grouping": {
+                    "max_per_source": command.max_per_source,
+                    "grouped_candidates": grouped,
+                    "scope": "candidate_window",
+                },
                 "ranking_policy": command.ranking_policy.model_dump(),
                 "ranking_reference_time": ranking_reference,
                 "hits": hits,
@@ -652,4 +686,5 @@ class RetrievalService:
             "warnings": result["warnings"]
             + (["context_budget_or_freshness_limited"] if omitted else []),
             "index": result["index"],
+            "source_grouping": result["source_grouping"],
         }

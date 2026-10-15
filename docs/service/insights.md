@@ -51,6 +51,20 @@ evaluation API and SDKs. Dataset, split, corpus, index coverage, modes, cutoffs
 and context budget must still satisfy the comparison checks; ranking preferences
 and model generations may deliberately differ.
 
+From service 4.8.1, **Results per imported document** also records
+`max_per_source` with the run. One groups imported document parts, a higher
+number permits several, and zero retains individual-part results. The per-case
+export includes the applied setting and skipped-candidate count. A test set
+that labels several parts of one document can legitimately have lower reference
+coverage when grouping is enabled; compare the settings deliberately.
+Saved configurations without this field retain individual-part retrieval.
+
+The same version corrects citation verification for bounded excerpts of long
+sources. A valid excerpt need not cover the full saved citation. It must stay
+inside that citation, reproduce the source text exactly and pass the original
+memory/source hash checks. These checks establish evidence integrity, not the
+truth of an answer.
+
 New manifests record the queuing service version and the worker version that
 starts execution. Per-case results record the service version and ranking
 reference time. If a new run resumes on another version after a hotfix, it stops

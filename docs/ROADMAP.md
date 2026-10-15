@@ -1,9 +1,18 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.8.0**. Roadmap updated: **2026-10-15**.
+Reviewed source distribution: **4.8.1**. Roadmap updated: **2026-10-15**.
 The [current published distribution and release gates](RELEASE_STATUS.md) are updated automatically.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
+
+The [4.8.1 source](releases/4.8.1.md) gives distinct imported documents priority
+in bounded search/context windows and adds a configurable per-document result
+limit across the app, agents and evaluations. It also corrects evaluation of
+valid excerpts from long documents while retaining citation integrity checks.
+[Focused PostgreSQL, MCP and evaluation evidence](validation/2026-10-15-source-grouping.md)
+advances the repeated-file report in issue 31. Full current-state/question
+quality, dated sections and representative scale measurements remain open;
+the strict requirement count remains **17/64 shipped**.
 
 Published [4.4.0](releases/4.4.0.md) adds [guided remote access for local workspaces](service/remote-access.md):
 an owned ngrok connection or existing HTTPS proxy, supervised route checks,

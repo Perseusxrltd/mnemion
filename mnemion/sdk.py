@@ -469,7 +469,7 @@ class Client:
                     mode="json",
                     exclude={
                         field
-                        for field in ("keyword_fallback", "ranking_policy")
+                        for field in ("keyword_fallback", "ranking_policy", "max_per_source")
                         if field not in options
                     },
                 ),
@@ -624,7 +624,8 @@ class Client:
                         {"on_inference_busy"} if command.on_inference_busy == "error" else set()
                     )
                     | ({"ranking_policy"} if "ranking_policy" not in options else set())
-                    | ({"keyword_fallback"} if "keyword_fallback" not in options else set()),
+                    | ({"keyword_fallback"} if "keyword_fallback" not in options else set())
+                    | ({"max_per_source"} if "max_per_source" not in options else set()),
                 ),
             )
         )
@@ -671,7 +672,8 @@ class Client:
                         {"on_inference_busy"} if command.on_inference_busy == "error" else set()
                     )
                     | ({"ranking_policy"} if "ranking_policy" not in options else set())
-                    | ({"keyword_fallback"} if "keyword_fallback" not in options else set()),
+                    | ({"keyword_fallback"} if "keyword_fallback" not in options else set())
+                    | ({"max_per_source"} if "max_per_source" not in options else set()),
                 ),
             )
         )

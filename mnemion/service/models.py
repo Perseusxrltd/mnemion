@@ -203,6 +203,13 @@ class RecallInput(SpaceSelection):
     )
     on_inference_busy: InferenceBusyPolicy = "error"
     sort: Literal["relevance", "recent"] = "relevance"
+    max_per_source: int = Field(
+        default=1,
+        ge=0,
+        le=50,
+        strict=True,
+        description="Maximum returned parts of each imported document; 1 avoids repeated files, 0 shows every matching part. Groups stay within the same space and original author; equal titles alone never merge memories.",
+    )
     ranking_policy: RankingPolicy = Field(default_factory=RankingPolicy)
     recorded_after: AwareDatetime | None = None
     min_score: float = Field(default=0, ge=0, le=1, allow_inf_nan=False)

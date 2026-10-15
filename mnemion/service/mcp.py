@@ -80,6 +80,15 @@ QuestionKeywordFallback = Annotated[
         description="Optional support from individual question terms during hybrid search (server 4.3.3+, enabled by default). Applies when complete lexical or ID matches are absent and query embeddings are available; semantic similarity thresholds still apply. False disables it."
     ),
 ]
+MaximumPerSource = Annotated[
+    int | None,
+    Field(
+        ge=0,
+        le=50,
+        strict=True,
+        description="Optional returned-part limit for each imported document (server 4.8.1+). The server defaults to 1; use 0 to see every matching part. Separate spaces, authors and equal-title documents remain distinct.",
+    ),
+]
 IdempotencyKey = Annotated[
     str,
     Field(
@@ -446,6 +455,7 @@ def create_mcp(
         min_similarity: MinimumSimilarity = None,
         ranking_policy: SearchRankingPolicy = None,
         keyword_fallback: QuestionKeywordFallback = None,
+        max_per_source: MaximumPerSource = None,
     ) -> Recall:
         """Recall current authorized evidence with source citations and ranking details."""
         selected_spaces, accessible = _retrieval_scope(space_ids, all_accessible)
@@ -465,6 +475,7 @@ def create_mcp(
                 min_similarity=min_similarity,
                 **({"ranking_policy": ranking_policy.model_dump()} if ranking_policy else {}),
                 **({"keyword_fallback": keyword_fallback} if keyword_fallback is not None else {}),
+                **({"max_per_source": max_per_source} if max_per_source is not None else {}),
             ),
         )
 
@@ -502,6 +513,7 @@ def create_mcp(
         min_similarity: MinimumSimilarity = None,
         ranking_policy: SearchRankingPolicy = None,
         keyword_fallback: QuestionKeywordFallback = None,
+        max_per_source: MaximumPerSource = None,
     ) -> ContextPack:
         """Build a bounded context pack with core blocks, evidence citations, and omissions."""
         selected_spaces, accessible = _retrieval_scope(space_ids, all_accessible)
@@ -520,6 +532,7 @@ def create_mcp(
                 min_similarity=min_similarity,
                 **({"ranking_policy": ranking_policy.model_dump()} if ranking_policy else {}),
                 **({"keyword_fallback": keyword_fallback} if keyword_fallback is not None else {}),
+                **({"max_per_source": max_per_source} if max_per_source is not None else {}),
             ),
         )
 

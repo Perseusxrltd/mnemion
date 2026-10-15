@@ -65,7 +65,7 @@ def query_identifiers(query: str) -> IdentifierQuery:
 # counts once, so repetition cannot manufacture additional identifier coverage.
 IDENTIFIER_CANDIDATES = r"""
  , identifier_matches AS MATERIALIZED (
-SELECT e.memory_id, e.space_id, e.revision_id, e.rank_time, e.rank_path,
+SELECT e.memory_id, e.space_id, e.revision_id, e.source_group, e.rank_time, e.rank_path,
        matches.matched AS identifier_matches,
        matches.labelled AS identifier_label_matches
 FROM eligible e JOIN mnemion.memory_revisions r
@@ -81,15 +81,23 @@ CROSS JOIN LATERAL (
     WHERE CASE WHEN in_label THEN true ELSE r.content ~* pattern END
 ) matches
 WHERE matches.matched > 0
+), identifier_sources AS (
+    SELECT *,row_number() OVER (PARTITION BY source_group
+        ORDER BY identifier_matches DESC,identifier_label_matches DESC,memory_id
+    ) AS source_position,
+    row_number() OVER (PARTITION BY source_group
+        ORDER BY identifier_label_matches DESC,identifier_matches DESC,memory_id
+    ) AS source_label_position
+    FROM identifier_matches
 ), ranked_identifiers AS (
     SELECT *, row_number() OVER (
-        ORDER BY identifier_matches DESC, identifier_label_matches DESC, memory_id
+        ORDER BY source_position,identifier_matches DESC,identifier_label_matches DESC,memory_id
     ) AS identifier_rank,
     CASE WHEN identifier_label_matches>0 THEN row_number() OVER (
         ORDER BY (identifier_label_matches>0) DESC,
-                 identifier_label_matches DESC, identifier_matches DESC, memory_id
+                 source_label_position,identifier_label_matches DESC,identifier_matches DESC,memory_id
     ) END AS identifier_label_rank
-    FROM identifier_matches
+    FROM identifier_sources
 )
 SELECT * FROM ranked_identifiers
 WHERE identifier_rank<=%(limit)s OR identifier_label_rank<=%(limit)s

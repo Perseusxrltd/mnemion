@@ -161,11 +161,14 @@ function RunForm({ client, space, serviceVersion, datasets, close, created }: { 
   const [modes, setModes] = useState<EvaluationMode[]>(["hybrid"]), [cutoffs, setCutoffs] = useState("5, 10, 20");
   const [context, setContext] = useState(true), [tokens, setTokens] = useState(2048), [seconds, setSeconds] = useState(300), [interval, setInterval] = useState(1);
   const [keywordFallback, setKeywordFallback] = useState(true);
+  const [maxPerSource, setMaxPerSource] = useState("1");
   const [recencyWeight, setRecencyWeight] = useState("25"), [halfLifeDays, setHalfLifeDays] = useState("3");
   const [archiveWeight, setArchiveWeight] = useState("35"), [archiveDirectories, setArchiveDirectories] = useState("archive, archives");
   const serviceParts = serviceVersion?.match(/^(\d{1,5})\.(\d{1,5})\.(\d{1,5})$/)?.slice(1).map(Number);
   const supportsRankingOptions = !!serviceParts && (serviceParts[0] > 4 ||
     (serviceParts[0] === 4 && (serviceParts[1] > 3 || (serviceParts[1] === 3 && serviceParts[2] >= 3))));
+  const supportsSourceGrouping = !!serviceParts && (serviceParts[0] > 4 ||
+    (serviceParts[0] === 4 && (serviceParts[1] > 8 || (serviceParts[1] === 8 && serviceParts[2] >= 1))));
   const [error, setError] = useState<unknown>(), [submitting, setSubmitting] = useState(false);
   const key = useRef({ body: "", key: "" });
   const chosen = datasets.find(item => item.id === dataset), count = chosen ? split === "development" ? chosen.development_count : chosen.held_out_count : 0;
@@ -175,12 +178,14 @@ function RunForm({ client, space, serviceVersion, datasets, close, created }: { 
       const ks = cutoffs.split(",").map(value => Number(value.trim()));
       if (!ks.length || ks.length > 5 || ks.some(k => !Number.isInteger(k) || k < 1 || k > 50) || new Set(ks).size !== ks.length) throw new Error("Choose up to five distinct K values from 1 to 50.");
       const archiveSegments = archiveDirectories.split(",").map(part => part.trim()).filter(Boolean);
+      if (supportsSourceGrouping && (!maxPerSource.trim() || !Number.isInteger(Number(maxPerSource)) || Number(maxPerSource) < 0 || Number(maxPerSource) > 50)) throw new Error("Choose a whole-number document limit from 0 to 50; 0 shows all matching parts.");
       if (supportsRankingOptions && (
         [recencyWeight, archiveWeight].some(value => !value.trim() || !Number.isFinite(Number(value)) || Number(value) < 0 || Number(value) > 100) ||
         !halfLifeDays.trim() || !Number.isFinite(Number(halfLifeDays)) || Number(halfLifeDays) < 1 / 24 || Number(halfLifeDays) > 36500 ||
         archiveSegments.length > 16 || archiveSegments.some(part => part.length > 128 || /[\\/\x00]/.test(part))
       )) throw new Error("Use percentages from 0 to 100, a half-life from one hour to 36,500 days, and at most 16 archive directory names without slashes.");
       const body = { dataset_id: dataset, split, modes, cutoffs: ks, context, token_budget: tokens, max_seconds: seconds, interval_seconds: interval, embedding_generation: generation || null,
+        ...(supportsSourceGrouping ? { max_per_source: Number(maxPerSource) } : {}),
         ...(supportsRankingOptions ? { keyword_fallback: keywordFallback, ranking_policy: {
           recency_weight: Number(recencyWeight) / 100, half_life_days: Number(halfLifeDays),
           archive_weight: Number(archiveWeight) / 100, archive_path_segments: archiveSegments,
@@ -199,6 +204,7 @@ function RunForm({ client, space, serviceVersion, datasets, close, created }: { 
     {supportsRankingOptions && <details className="ins-inline-details"><summary>Ranking preferences</summary>
       <label className="ins-live-control"><input type="checkbox" checked={keywordFallback} onChange={event => setKeywordFallback(event.target.checked)} />Use key terms when a question has no complete text match</label>
       <div className="ins-form-grid">
+        {supportsSourceGrouping && <label className="ws-field"><span>Results per imported document</span><input type="number" min={0} max={50} step={1} value={maxPerSource} onChange={event => setMaxPerSource(event.target.value)} /><small>1 groups document parts; 0 keeps every matching part. Compare both when the test set labels several parts of one file.</small></label>}
         <label className="ws-field"><span>Recency influence (%)</span><input type="number" min={0} max={100} step={1} value={recencyWeight} onChange={event => setRecencyWeight(event.target.value)} /></label>
         <label className="ws-field"><span>Recency half-life (days)</span><input type="number" min={1 / 24} max={36500} step="any" value={halfLifeDays} onChange={event => setHalfLifeDays(event.target.value)} /></label>
         <label className="ws-field"><span>Archived match weight (%)</span><input type="number" min={0} max={100} step={1} value={archiveWeight} onChange={event => setArchiveWeight(event.target.value)} /></label>

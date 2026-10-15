@@ -1095,6 +1095,7 @@ function SearchMemory() {
   const [archiveWeight, setArchiveWeight] = useState("35");
   const [archiveDirectories, setArchiveDirectories] = useState("archive, archives");
   const [keywordFallback, setKeywordFallback] = useState(true);
+  const [maxPerSource, setMaxPerSource] = useState("1");
   const serviceParts = me.service_version?.match(/^(\d{1,5})\.(\d{1,5})\.(\d{1,5})$/)?.slice(1).map(Number);
   const supportsBusyFallback = !!serviceParts && (serviceParts[0] > 4 ||
     (serviceParts[0] === 4 && (serviceParts[1] > 1 || (serviceParts[1] === 1 && serviceParts[2] >= 2))));
@@ -1104,13 +1105,15 @@ function SearchMemory() {
     (serviceParts[0] === 4 && (serviceParts[1] > 3 || (serviceParts[1] === 3 && serviceParts[2] >= 1))));
   const supportsQuestionTerms = !!serviceParts && (serviceParts[0] > 4 ||
     (serviceParts[0] === 4 && (serviceParts[1] > 3 || (serviceParts[1] === 3 && serviceParts[2] >= 3))));
+  const supportsSourceGrouping = !!serviceParts && (serviceParts[0] > 4 ||
+    (serviceParts[0] === 4 && (serviceParts[1] > 8 || (serviceParts[1] === 8 && serviceParts[2] >= 1))));
   const archiveSegments = archiveDirectories.split(",").map(part => part.trim()).filter(Boolean);
   const rankingValid = !supportsRankingPolicy || sort === "recent" || (
     [recencyWeight, archiveWeight].every(value => value.trim() !== "" && Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= 100) &&
     halfLifeDays.trim() !== "" && Number.isFinite(Number(halfLifeDays)) && Number(halfLifeDays) >= 1 / 24 && Number(halfLifeDays) <= 36500 &&
     archiveSegments.length <= 16 && archiveSegments.every(part => part.length <= 128 && !/[\\/\x00]/.test(part))
   );
-  const optionsValid = rankingValid && (!supportsSearchControls || (
+  const optionsValid = rankingValid && (!supportsSourceGrouping || (maxPerSource.trim() !== "" && Number.isInteger(Number(maxPerSource)) && Number(maxPerSource) >= 0 && Number(maxPerSource) <= 50)) && (!supportsSearchControls || (
     (!recordedAfter || Number.isFinite(new Date(recordedAfter).getTime())) &&
     (!minScore || (Number.isFinite(Number(minScore)) && Number(minScore) >= 0 && Number(minScore) <= 1)) &&
     (!minSimilarity || (Number.isFinite(Number(minSimilarity)) && Number(minSimilarity) >= -1 && Number(minSimilarity) <= 1))
@@ -1131,6 +1134,7 @@ function SearchMemory() {
       const input = {
         query: text, ...(allAccessible ? { all_accessible: true } : { space_ids: [space.id] }), mode, limit: 20,
         ...(supportsQuestionTerms ? { keyword_fallback: keywordFallback } : {}),
+        ...(supportsSourceGrouping ? { max_per_source: Number(maxPerSource) } : {}),
         ...(supportsBusyFallback && busyPolicy === "lexical" ? { on_inference_busy: "lexical" as const } : {}),
         ...(supportsSearchControls ? {
           sort,
@@ -1232,6 +1236,9 @@ function SearchMemory() {
               <option value="recent">Newest source date</option>
             </select>
           </Field>
+          {supportsSourceGrouping && <Field label="Results per imported document">
+            <input type="number" min={0} max={50} step={1} value={maxPerSource} disabled={busy} onChange={event => setMaxPerSource(event.target.value)} />
+          </Field>}
           <Field label="Recorded in Mnemion since">
             <input type="datetime-local" value={recordedAfter} disabled={busy || !supportsSearchControls} onChange={event => setRecordedAfter(event.target.value)} />
           </Field>
@@ -1242,6 +1249,7 @@ function SearchMemory() {
             <input type="number" min={-1} max={1} step={0.01} placeholder="No minimum" value={minSimilarity} disabled={busy || !supportsSearchControls} onChange={event => setMinSimilarity(event.target.value)} />
           </Field>
         </div>
+        {supportsSourceGrouping && <p className="ws-helper">One result per imported document keeps large files from filling the list. Use 0 to show all matching parts, or a higher limit to include several passages. Separate spaces, authors and documents with the same title stay distinct. The same setting applies to context packs.</p>}
         {supportsRankingPolicy && <>
           <div className="ws-search-options">
             <Field label="Recency influence (%)">
@@ -1261,7 +1269,7 @@ function SearchMemory() {
         </>}
         <p className="ws-helper">Newest source date orders matching candidates by their source modification date, falling back to when the memory was recorded. Similarity filters apply when there is no full text or ID match, including partial key-term matches. Scores are not confidence percentages. Use your workspace evaluations to choose a useful minimum.</p>
         {!supportsSearchControls && <p className="ws-helper">These controls need workspace server 4.2.3 or later. <Link to="/workspace/setup">Check app & server versions</Link>, then reconnect after the server update.</p>}
-        {!optionsValid && <p role="alert" className="ws-helper">Enter values within the indicated ranges and at most 16 archive directory names, without slashes.</p>}
+        {!optionsValid && <p role="alert" className="ws-helper">Enter values within the indicated ranges, a whole-number document limit from 0 to 50, and at most 16 archive directory names without slashes.</p>}
       </details>
       <ErrorNotice error={error} />
       {busy && <Busy />}
@@ -1273,6 +1281,8 @@ function SearchMemory() {
             {result.index.indexed_records}/{result.index.eligible_records}{" "}
             memories indexed
             {!!result.filtered_candidates && ` · ${result.filtered_candidates} candidates excluded by match filters`}
+            {result.source_grouping && result.source_grouping.max_per_source > 0 && ` · up to ${result.source_grouping.max_per_source} per imported document`}
+            {!!result.source_grouping?.grouped_candidates && ` · ${result.source_grouping.grouped_candidates} additional source parts grouped`}
           </div>
           {result.hits.length ? (
             result.hits.map((hit) => (
@@ -1345,6 +1355,7 @@ function SearchMemory() {
             {context.token_count}/{context.token_budget} {context.token_count_unit === "utf8_bytes" ? "UTF-8 bytes" : "tokens"} ·{" "}
             {context.citations.length} citations · {context.omitted_items}{" "}
             omitted
+            {context.source_grouping && context.source_grouping.max_per_source > 0 && ` · up to ${context.source_grouping.max_per_source} per imported document`}
           </div>
           <div className="ws-card">
             <div className="ws-section-title">

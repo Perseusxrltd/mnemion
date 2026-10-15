@@ -57,6 +57,8 @@ def test_query_only_mcp_reads_current_sources_and_never_widens_explicit_scope(en
                     tools = {tool.name: tool for tool in (await client.list_tools()).tools}
                     assert "keyword_fallback" in tools["memory_search"].input_schema["properties"]
                     assert "keyword_fallback" in tools["memory_context"].input_schema["properties"]
+                    assert "max_per_source" in tools["memory_search"].input_schema["properties"]
+                    assert "max_per_source" in tools["memory_context"].input_schema["properties"]
                     for name in ("memory_search", "memory_context", "memory_map"):
                         assert "space_ids" not in tools[name].input_schema.get("required", [])
                         args = {} if name == "memory_map" else {"query": "billing"}
@@ -82,10 +84,19 @@ def test_query_only_mcp_reads_current_sources_and_never_widens_explicit_scope(en
                             "query": "billing",
                             "space_ids": [str(first)],
                             "ranking_policy": {"recency_weight": 0, "archive_weight": 1},
+                            "max_per_source": 0,
                         },
                     )
                     assert not scoped.is_error
                     assert scoped.structured_content["ranking_policy"]["recency_weight"] == 0
+                    assert scoped.structured_content["source_grouping"]["max_per_source"] == 0
+                    grouped_context = await client.call_tool(
+                        "memory_context", {"query": "billing", "max_per_source": 2}
+                    )
+                    assert not grouped_context.is_error
+                    assert (
+                        grouped_context.structured_content["source_grouping"]["max_per_source"] == 2
+                    )
                     assert [hit["memory_id"] for hit in scoped.structured_content["hits"]] == [
                         first_memory
                     ]

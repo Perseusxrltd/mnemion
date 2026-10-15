@@ -954,6 +954,14 @@
             "title": "Limit",
             "type": "integer"
           },
+          "max_per_source": {
+            "default": 1,
+            "description": "Maximum returned parts of each imported document; 1 avoids repeated files, 0 shows every matching part. Groups stay within the same space and original author; equal titles alone never merge memories.",
+            "maximum": 50.0,
+            "minimum": 0.0,
+            "title": "Max Per Source",
+            "type": "integer"
+          },
           "metadata_filter": {
             "additionalProperties": {
               "anyOf": [
@@ -1117,6 +1125,16 @@
           "request_id": {
             "title": "Request Id",
             "type": "string"
+          },
+          "source_grouping": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceGrouping"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "text": {
             "title": "Text",
@@ -1809,6 +1827,13 @@
             "default": true,
             "title": "Keyword Fallback",
             "type": "boolean"
+          },
+          "max_per_source": {
+            "default": 1,
+            "maximum": 50.0,
+            "minimum": 0.0,
+            "title": "Max Per Source",
+            "type": "integer"
           },
           "max_seconds": {
             "default": 300,
@@ -6105,6 +6130,16 @@
             "title": "Score Description",
             "type": "string"
           },
+          "source_grouping": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceGrouping"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "timing_ms": {
             "title": "Timing Ms",
             "type": "number"
@@ -6363,6 +6398,14 @@
             "maximum": 50.0,
             "minimum": 1.0,
             "title": "Limit",
+            "type": "integer"
+          },
+          "max_per_source": {
+            "default": 1,
+            "description": "Maximum returned parts of each imported document; 1 avoids repeated files, 0 shows every matching part. Groups stay within the same space and original author; equal titles alone never merge memories.",
+            "maximum": 50.0,
+            "minimum": 0.0,
+            "title": "Max Per Source",
             "type": "integer"
           },
           "metadata_filter": {
@@ -7781,6 +7824,34 @@
         "title": "Source",
         "type": "object"
       },
+      "SourceGrouping": {
+        "additionalProperties": true,
+        "properties": {
+          "grouped_candidates": {
+            "minimum": 0.0,
+            "title": "Grouped Candidates",
+            "type": "integer"
+          },
+          "max_per_source": {
+            "maximum": 50.0,
+            "minimum": 0.0,
+            "title": "Max Per Source",
+            "type": "integer"
+          },
+          "scope": {
+            "const": "candidate_window",
+            "default": "candidate_window",
+            "title": "Scope",
+            "type": "string"
+          }
+        },
+        "required": [
+          "max_per_source",
+          "grouped_candidates"
+        ],
+        "title": "SourceGrouping",
+        "type": "object"
+      },
       "SourceHealth": {
         "additionalProperties": true,
         "properties": {
@@ -8440,7 +8511,7 @@
   "info": {
     "description": "Shared, scoped memory and evidence for apps, teams, and assistants. Saves acknowledge canonical durability; operations report semantic indexing readiness.",
     "title": "Mnemion Memory Service",
-    "version": "4.8.0"
+    "version": "4.8.1"
   },
   "openapi": "3.1.0",
   "paths": {

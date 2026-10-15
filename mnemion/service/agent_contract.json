@@ -6642,6 +6642,13 @@
                 "title": "Keyword Fallback",
                 "type": "boolean"
               },
+              "max_per_source": {
+                "default": 1,
+                "maximum": 50.0,
+                "minimum": 0.0,
+                "title": "Max Per Source",
+                "type": "integer"
+              },
               "max_seconds": {
                 "default": 300,
                 "maximum": 3600.0,
@@ -16007,6 +16014,14 @@
                 "title": "Limit",
                 "type": "integer"
               },
+              "max_per_source": {
+                "default": 1,
+                "description": "Maximum returned parts of each imported document; 1 avoids repeated files, 0 shows every matching part. Groups stay within the same space and original author; equal titles alone never merge memories.",
+                "maximum": 50.0,
+                "minimum": 0.0,
+                "title": "Max Per Source",
+                "type": "integer"
+              },
               "metadata_filter": {
                 "additionalProperties": {
                   "anyOf": [
@@ -16278,6 +16293,16 @@
                 "title": "Request Id",
                 "type": "string"
               },
+              "source_grouping": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/SourceGrouping"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "text": {
                 "title": "Text",
                 "type": "string"
@@ -16408,6 +16433,34 @@
               "observed_at"
             ],
             "title": "IndexState",
+            "type": "object"
+          },
+          "SourceGrouping": {
+            "additionalProperties": true,
+            "properties": {
+              "grouped_candidates": {
+                "minimum": 0.0,
+                "title": "Grouped Candidates",
+                "type": "integer"
+              },
+              "max_per_source": {
+                "maximum": 50.0,
+                "minimum": 0.0,
+                "title": "Max Per Source",
+                "type": "integer"
+              },
+              "scope": {
+                "const": "candidate_window",
+                "default": "candidate_window",
+                "title": "Scope",
+                "type": "string"
+              }
+            },
+            "required": [
+              "max_per_source",
+              "grouped_candidates"
+            ],
+            "title": "SourceGrouping",
             "type": "object"
           },
           "Span": {
@@ -16566,6 +16619,14 @@
                 "maximum": 50.0,
                 "minimum": 1.0,
                 "title": "Limit",
+                "type": "integer"
+              },
+              "max_per_source": {
+                "default": 1,
+                "description": "Maximum returned parts of each imported document; 1 avoids repeated files, 0 shows every matching part. Groups stay within the same space and original author; equal titles alone never merge memories.",
+                "maximum": 50.0,
+                "minimum": 0.0,
+                "title": "Max Per Source",
                 "type": "integer"
               },
               "metadata_filter": {
@@ -17182,6 +17243,16 @@
                 "title": "Score Description",
                 "type": "string"
               },
+              "source_grouping": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/SourceGrouping"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "timing_ms": {
                 "title": "Timing Ms",
                 "type": "number"
@@ -17367,6 +17438,34 @@
               "ranking"
             ],
             "title": "RecallHit",
+            "type": "object"
+          },
+          "SourceGrouping": {
+            "additionalProperties": true,
+            "properties": {
+              "grouped_candidates": {
+                "minimum": 0.0,
+                "title": "Grouped Candidates",
+                "type": "integer"
+              },
+              "max_per_source": {
+                "maximum": 50.0,
+                "minimum": 0.0,
+                "title": "Max Per Source",
+                "type": "integer"
+              },
+              "scope": {
+                "const": "candidate_window",
+                "default": "candidate_window",
+                "title": "Scope",
+                "type": "string"
+              }
+            },
+            "required": [
+              "max_per_source",
+              "grouped_candidates"
+            ],
+            "title": "SourceGrouping",
             "type": "object"
           },
           "Span": {

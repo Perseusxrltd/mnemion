@@ -28,7 +28,7 @@ KEYWORD_CANDIDATES = """
 ), query_size AS (
     SELECT count(*) AS count FROM query_terms
 ), keyword_matches AS MATERIALIZED (
-    SELECT e.memory_id,e.space_id,e.revision_id,e.rank_time,e.rank_path,t.word,
+    SELECT e.memory_id,e.space_id,e.revision_id,e.source_group,e.rank_time,e.rank_path,t.word,
            char_length(r.content) AS characters,
            to_tsvector('simple',coalesce(r.subject,'')) @@ t.query AS in_label
     FROM eligible e JOIN mnemion.memory_revisions r
@@ -40,8 +40,8 @@ KEYWORD_CANDIDATES = """
     SELECT word,count(*) AS count FROM keyword_matches GROUP BY word
 ), corpus_size AS (
     SELECT count(*) AS count FROM eligible
-)
-SELECT k.memory_id,k.space_id,k.revision_id,k.rank_time,k.rank_path,
+), keyword_scores AS (
+SELECT k.memory_id,k.space_id,k.revision_id,k.source_group,k.rank_time,k.rank_path,
        array_agg(k.word ORDER BY k.word) AS keyword_terms,
        count(*) AS keyword_matches,
        (SELECT count FROM query_size) AS keyword_requested,
@@ -49,6 +49,11 @@ SELECT k.memory_id,k.space_id,k.revision_id,k.rank_time,k.rank_path,
            * CASE WHEN k.in_label THEN 1.5 ELSE 1 END)
            / (1+0.1*ln(1.0+k.characters/1000.0)) AS keyword_score
 FROM keyword_matches k JOIN frequencies f ON f.word=k.word
-GROUP BY k.memory_id,k.space_id,k.revision_id,k.rank_time,k.rank_path,k.characters
-ORDER BY keyword_score DESC,k.memory_id LIMIT %(limit)s
+GROUP BY k.memory_id,k.space_id,k.revision_id,k.source_group,k.rank_time,k.rank_path,k.characters
+), keyword_sources AS (
+    SELECT *,row_number() OVER (PARTITION BY source_group
+        ORDER BY keyword_score DESC,memory_id) AS source_position FROM keyword_scores
+)
+SELECT * FROM keyword_sources
+ORDER BY source_position,keyword_score DESC,memory_id LIMIT %(limit)s
 """
