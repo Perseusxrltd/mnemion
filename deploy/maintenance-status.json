@@ -79,11 +79,10 @@
       "workflow": "public-updates.yml",
       "branch": "v4.6.0",
       "source_commit": "d7b4465b422cf73c51e9131d3eb85423c0ab5ee2",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-15T04:57:24Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38684157633",
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-15T05:08:29Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38684157633"
     },
     {
       "id": 38680133894,
@@ -104,9 +103,17 @@
       "source_commit": "1ca745e65330381b63ea01f8c8eff89aa44ab4b8",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-15T04:56:49Z",
+      "updated_at": "2026-10-15T05:02:33Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38681887978",
-      "failed_jobs": []
+      "failed_jobs": [
+        {
+          "name": "checks / service (3.14)",
+          "id": 116254798137,
+          "steps": [
+            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+          ]
+        }
+      ]
     },
     {
       "id": 38684052387,
@@ -120,6 +127,17 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38684052387"
     },
     {
+      "id": 38685130286,
+      "attempt": 1,
+      "workflow": "website-release.yml",
+      "branch": "main",
+      "source_commit": "d8cc17425d8529a8661d9d95518ef051e6667c13",
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-15T05:08:11Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38685130286"
+    },
+    {
       "id": 38684155620,
       "attempt": 1,
       "workflow": "website-release.yml",
@@ -131,5 +149,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38684155620"
     }
   ],
-  "observed_at": "2026-10-15T04:57:32+00:00"
+  "observed_at": "2026-10-15T05:08:33+00:00"
 }
