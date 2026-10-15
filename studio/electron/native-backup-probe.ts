@@ -48,7 +48,7 @@ export async function verifyNativeBackups(window: BrowserWindow, config: Record<
       async function ready() {
         await until(async () => {
           const status = await bridge.localStatus();
-          if (status.state === 'error') throw new Error('Native recovery startup failed: ' + status.errorCode);
+          if (status.state === 'error') throw new Error('Native recovery startup failed: ' + status.errorCode + ' / stage ' + status.stage + ' / ' + status.message + ' / diagnostic ' + JSON.stringify(status.diagnostic));
           return status.state === 'running' && document.querySelector('.ws-workspace-name')?.textContent === 'Équipe installed validation';
         }, 'The recovery workspace did not open', 600000);
         const session = (await bridge.workspaceStatus()).active;

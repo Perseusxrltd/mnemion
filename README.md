@@ -32,6 +32,8 @@ with [six-platform installed migration and recovery acceptance](docs/validation/
 Company accounts can use [Studio sign-in](docs/service/company-sign-in.md) from
 4.9.0 and [assistant consent](docs/service/hosted-agent-sign-in.md) from 4.10.0;
 the guides state their host configuration, validation and release requirements.
+Source 4.11.0 adds [company-provider setup in the app](docs/service/company-sign-in.md#a-workspace-hosted-by-the-desktop-app),
+including discovery, private client configuration, company certificates and local agent controls.
 Studio retains OS-protected saved connections, identity-checked reopening after restart and a clearer connection
 screen. [Workspace controls](docs/service/workspaces.md) explain remembering,
 disconnecting and forgetting a device connection. Complete fresh-machine setup

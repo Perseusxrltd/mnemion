@@ -51,7 +51,7 @@ export default function CompanyAccess({ connection, people, disconnect }: {
     {configuration.isSuccess && (providers.length ? <ul>{providers.map(provider => <li key={provider.id}>
       <strong>{provider.name}</strong> · Sign in again after {provider.session_seconds % 3600 === 0 ? `${provider.session_seconds / 3600} hours` : `${provider.session_seconds / 60} minutes`}
       {me.administrator && <><br /><small>{provider.issuer}</small></>}
-    </li>)}</ul> : <p>No company sign-in provider is enabled for this workspace. {me.administrator && 'The host operator can connect your identity provider using the company sign-in guide in Help.'}</p>)}
+    </li>)}</ul> : <p>No company sign-in provider is enabled for this workspace. {me.administrator && 'On the host computer, open Setup & this device → Company sign-in setup. Separately operated servers use the company sign-in guide in Help.'}</p>)}
     {links.data && <><div className="ws-table-wrap"><table className="ws-table"><thead><tr><th>Person</th><th>Company account</th><th>Last sign-in</th><th>Access</th></tr></thead><tbody>
       {links.data.items.map(link => <tr key={link.id}><td>{personName(link.principal_id)}</td><td>{providers.find(provider => provider.id === link.provider_id)?.name ?? link.provider_id}
         <details><summary>Identity details</summary><small>{link.issuer}</small><code>{link.subject}</code></details></td>

@@ -71,6 +71,7 @@ engine** so it uses the Windows account and named-pipe implementation.
 | `local.memory` | Set automatic/manual RAM limits or repair a damaged RAM policy with its current repair token. |
 | `local.port` | Change a stopped workspace's API port using its observed current port. |
 | `local.remote`, `local.remote-check` | Configure or check the existing supervised remote-access options. |
+| `local.company-discover`, `local.company` | From 4.11.0, review an OIDC provider or save/remove/repair the local host's company configuration, with current company and HTTPS revisions. |
 | `local.preferences` | Set `start_with_app` for the selected workspace; OS login startup remains a separate app preference. |
 | `backup.status`, `backup.key` | Read schedules/receipts or generate a new key into a private result file. Saved keys are never returned. |
 | `backup.configure`, `backup.run`, `backup.cancel` | Configure protected schedules, capture a snapshot/ledger, or cancel an active recovery operation. |
@@ -80,7 +81,7 @@ engine** so it uses the Windows account and named-pipe implementation.
 
 Native engine validators retain their bounds and requirements. See
 [RAM controls](memory-resources.md), [local addresses](local-workspaces.md),
-[remote access](remote-access.md) and [backups](native-backups.md) for the input
+[remote access](remote-access.md), [company setup](company-sign-in.md#agent-and-sdk-controls) and [backups](native-backups.md) for the input
 fields and their semantics. Unknown actions and input fields are refused.
 
 For every workspace-bound action, include `expected_workspace_id` at the top
@@ -88,7 +89,7 @@ level using `status.result.info.settings.workspace_id`. Supply explicit `null`
 when no workspace exists, such as initial creation or recovery on a new computer.
 Refresh after switching copies. State-changing requests share the app's native
 mutation guard, and a stale workspace identity is refused.
-Creating, selecting or stopping the displayed workspace also checks for unsaved
+Creating, selecting, stopping or changing company settings for the displayed workspace also checks for unsaved
 app edits and pending requests. Save or discard edits before retrying a refused
 change. During an accepted switch the app shows its progress, then reconnects
 to the selected copy; it does not leave the previous workspace on screen.

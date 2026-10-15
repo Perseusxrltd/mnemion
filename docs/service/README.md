@@ -141,6 +141,10 @@ stay at the provider. The in-app **Account & sessions** page manages access.
 From 4.10.0, the optional [assistant consent flow](hosted-agent-sign-in.md) can
 also use these company accounts, with explicit approval and bounded company
 session lifetimes.
+From 4.11.0, an app-owned host can configure its provider through
+**Setup & this device → Company sign-in setup**, including reviewed discovery,
+private client secrets and company certificate authorities. Separately managed
+servers retain the documented environment-file configuration.
 
 The [desktop client](updates.md) connects to the same service. It adds
 a native vault picker and applies authorized Obsidian exports using a packaged

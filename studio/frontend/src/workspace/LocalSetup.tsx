@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import RemoteAccess from './RemoteAccess';
+import CompanyProviderSetup from './CompanyProviderSetup';
 import { ArrowLeft, ArrowRight, Check, Cpu, Database, LoaderCircle, Play, ShieldCheck } from 'lucide-react';
 import type { LocalOptions, LocalStatus } from '../../../shared/local-workspace';
 import type { WorkspaceSession } from './connection-types';
@@ -99,6 +100,7 @@ export default function LocalSetup({ initial, onOpen, onBack, autoContinue = fal
     {status?.memory && <LiveMemory value={status.memory} />}
     {status && <LocalOperator status={status} />}
     {configured && status && <RemoteAccess status={status} onStatus={setStatus} />}
+    {configured && status && <CompanyProviderSetup status={status} onStatus={setStatus} />}
     {configured && status && <Backups status={status} onStatus={setStatus} />}
   </section>;
 }

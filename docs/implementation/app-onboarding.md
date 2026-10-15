@@ -82,6 +82,13 @@ complete installation or host setup.
    [real local TLS/controller walkthrough](../validation/2026-10-15-native-remote-access.md)
    covers configuration, restart and outage/recovery. Live provider acceptance,
    guided remote-host adoption and company SSO remain open.
+5. Source 4.11.0 adds [company-provider setup in the app](../service/company-sign-in.md):
+   the known local workspace, copied HTTPS callback, bounded OIDC discovery,
+   client registration review, private client-secret handling, company CA bundles,
+   session duration, provider removal/repair and local agent parity. A status
+   read finishing after restart no longer causes a needless discovery retry.
+   Organization-wide hosting, provider registration at the company, automatic
+   provisioning, company-only policy and fleet/provider acceptance remain open.
 
 Source 4.0.13 adds separate app/server version reporting and a fresh authenticated
 server check in Setup, with explicit older-server and failed-check states. This

@@ -107,9 +107,14 @@ fieldset.ws-setup-fields { border: 0; padding: 0; min-width: 0; }
 .ws-device-settings > p { color: var(--ws-muted); font-size: 13px; margin-top: 12px; }
 .ws-device-settings .ws-live-memory { margin: 22px 0; }
 .ws-device-settings .ws-setup-actions > .ws-primary { margin-left: 0; }
-.ws-remote-access h2 { display: flex; align-items: center; gap: 10px; }
-.ws-remote-access .ws-checkbox { align-items: flex-start; white-space: normal; }
-.ws-remote-access .ws-checkbox input { flex: 0 0 16px; margin-top: 2px; }
+.ws-remote-access h2, .ws-company-setup h2 { display: flex; align-items: center; gap: 10px; }
+.ws-remote-access .ws-checkbox, .ws-company-setup .ws-checkbox { align-items: flex-start; white-space: normal; }
+.ws-remote-access .ws-checkbox input, .ws-company-setup .ws-checkbox input { flex: 0 0 16px; margin-top: 2px; }
+.ws-company-provider-list { display: grid; gap: 16px; margin: 20px 0; padding: 0; list-style: none; }
+.ws-company-provider-list li { display: grid; gap: 6px; min-width: 0; padding: 16px; border: 1px solid var(--ws-border); border-radius: 12px; }
+.ws-company-setup .ws-local-path, .ws-company-setup .ws-notice small { display: block; margin-top: 6px; }
+.ws-company-setup .ws-notice p { margin: 10px 0; }
+.ws-company-setup textarea { min-width: 0; resize: vertical; font-family: var(--font-mono, monospace); font-size: 12px; }
 .ws-remote-provider { display: grid; gap: 12px; }
 .ws-remote-provider p, .ws-remote-hint { color: var(--ws-muted); font-size: 13px; line-height: 1.6; }
 .ws-remote-access .ws-notice small { display: block; margin-top: 6px; }

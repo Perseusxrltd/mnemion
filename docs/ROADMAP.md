@@ -1,19 +1,30 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.10.0**. Roadmap updated: **2026-10-15**.
+Reviewed source distribution: **4.11.0**. Roadmap updated: **2026-10-15**.
 The [current published distribution and release gates](RELEASE_STATUS.md) are updated automatically.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
 
-The [4.10.0 source](releases/4.10.0.md) adds
+The [4.11.0 source](releases/4.11.0.md) adds
+[company-provider setup in the app](service/company-sign-in.md): HTTPS callback
+registration guidance, bounded discovery, private client settings, company CA
+bundles, session duration, provider removal/repair and two private local agent
+operations. Existing explicitly configured server environments are preserved.
+This advances F08, A01/A08 and U01; guided remote-host configuration,
+provisioning, company-only policy and fleet/provider acceptance remain open.
+The strict full-scope count remains **17/64 shipped (26.6%)**.
+
+Published [4.10.0](releases/4.10.0.md) adds
 [company-account assistant consent](service/hosted-agent-sign-in.md): an approved
 person signs in through their company provider, reviews permissions and grants
 a revocable connection with a bounded company lifetime. Remembered Studio
 sessions are preserved. [Validation](validation/2026-10-15-company-agent-consent.md)
 includes PostgreSQL authorization/upgrade/recovery and real Dex/browser/MCP SDK
 acceptance. Named-client acceptance, provisioning, company-only policy and guided
-provider setup remain open. This advances F08, C09 and A03/A08 without closing
+remote-host provider setup remain open. This advances F08, C09 and A03/A08 without closing
 their full requirements; the strict count remains **17/64 shipped (26.6%)**.
+Its native release gates, independent publication verification, live website
+update and all six public automatic-update checks passed.
 
 The [4.9.0 source](releases/4.9.0.md) adds [company OpenID Connect sign-in](service/company-sign-in.md):
 private invitations and explicit identity links, system-browser desktop sign-in,
@@ -563,8 +574,10 @@ that can be revisited. Keep equivalent agent/operator operations available.
 Published 4.0.11 and 4.0.12 bundle the local engine/database and guide workspace
 creation, CPU model setup, RAM control and occupied API-port recovery. Integrated
 installed flows, shutdown and automatic reopen passed on all six targets.
+Source 4.11.0 adds company-provider configuration for the locally owned host,
+with discovery, session/certificate controls, repair and local agent parity.
 The complete app-only setup requirement remains **partial**: organization
-hosting, provider approval and full backup recovery remain open. See the
+hosting, provider approval, full source setup and independently delivered backup recovery remain open. See the
 [full acceptance requirements](implementation/app-onboarding.md) and
 [current validation scope](validation/2026-10-11-local-address-recovery.md).
 Do not count a setup guide, mock success or disabled button as an implemented flow.

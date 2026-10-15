@@ -6,6 +6,7 @@ import { syncBuiltinESMExports } from 'node:module'
 import { PassThrough } from 'node:stream'
 import { test } from 'node:test'
 import { LocalWorkspace, portOptions, localDiagnostic, remoteOptions, remoteSnapshot } from '../dist/local-workspace.js'
+import { companyOptions, companySnapshot, companyDiscoveryResult } from '../dist/local-company-protocol.js'
 
 const { version } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
 const root = '/private/test-workspace'
@@ -22,6 +23,29 @@ const sharingInfo = (revision = 'not-configured', mode = 'disabled') => ({ ...ad
 const sharingChange = { workspace_id: addressChange.workspace_id, expected_revision: 'not-configured',
   mode: 'proxy', public_url: 'https://memory.example.test', personal_sign_in: true, ngrok_authtoken: null }
 const savedSharingRevision = '00000000-0000-4000-8000-000000000009'
+const companyProvider = { id: 'company', name: 'Company account', issuer: 'https://identity.example.test/company',
+  authorization_url: 'https://identity.example.test/company/auth', token_url: 'https://identity.example.test/company/token',
+  jwks_url: 'https://identity.example.test/company/keys', client_id: 'mnemion-client', session_seconds: 28800 }
+const companyChange = { workspace_id: addressChange.workspace_id, expected_revision: 'not-configured', expected_remote_revision: savedSharingRevision,
+  action: 'save', provider: companyProvider, client_secret: 'private-company-secret-sentinel' }
+const companyInfo = (revision = 'not-configured', providers = []) => ({ ...sharingInfo(savedSharingRevision, 'proxy'), company_access: {
+  revision, providers, state: providers.length ? 'configured' : 'disabled', repairable: true, has_custom_ca: false,
+  message: 'Company settings fixture', callback_uri: 'https://memory.example.test/company/callback',
+} })
+const savedCompanyInfo = () => companyInfo('00000000-0000-4000-8000-000000000010', [{ ...companyProvider, has_client_secret: true }])
+
+test('company controls reject credentials in status and unsupported host instructions', () => {
+  assert.deepEqual(companyOptions(companyChange), companyChange)
+  assert.throws(() => companyOptions({ ...companyChange, execute: 'unreviewed-command' }))
+  assert.throws(() => companyOptions({ ...companyChange, provider: { ...companyProvider, token_url: 'https://identity.example.test/token?credential=private' } }))
+  assert.throws(() => companyOptions({ ...companyChange, ca_pem: '-----BEGIN PRIVATE KEY-----' }))
+  assert.throws(() => companyOptions({ ...companyChange, client_secret: 'x'.repeat(2049) }))
+  assert.throws(() => companyOptions({ ...companyChange, clear_client_secret: true }))
+  assert.deepEqual(companySnapshot(savedCompanyInfo().company_access), savedCompanyInfo().company_access)
+  assert.throws(() => companySnapshot({ ...savedCompanyInfo().company_access, client_secret: 'private-sentinel' }))
+  assert.throws(() => companySnapshot({ ...savedCompanyInfo().company_access, providers: [{ ...companyProvider, has_client_secret: true, client_secret: 'private-sentinel' }] }))
+  assert.throws(() => companyDiscoveryResult({ ...companyChange, issuer: companyProvider.issuer }, { ...companyChange, issuer: companyProvider.issuer }))
+})
 
 test('remote controls accept only explicit HTTPS routes and never return provider credentials', () => {
   assert.equal(remoteOptions({ ...sharingChange, public_url: 'https://memory.example.test/mcp' }).public_url, 'https://memory.example.test')
@@ -213,6 +237,92 @@ test('a stale remote form cannot stop the running host or overwrite another oper
   await refused
   assert.equal(f.host.status.state, 'running')
   assert.equal(f.commands.filter(command => command.action === 'remote').length, 0)
+})
+
+test('company setup drains the same host and reopens only after a confirmed private save', async t => {
+  const f = fixture(t)
+  const engine = await running(f)
+  const change = f.host.changeCompany(companyChange)
+  f.last().reply(companyInfo())
+  await settle()
+  assert.equal(f.host.status.state, 'stopping')
+  assert.equal(f.commands.filter(command => command.action === 'company').length, 0)
+  engine.finish(); await settle()
+  assert.equal(f.last().action, 'company')
+  f.last().reply(savedCompanyInfo())
+  const result = await change
+  assert.equal(result.state, 'starting')
+  assert.equal(result.info.settings.workspace_id, addressChange.workspace_id)
+  assert.equal(result.info.company_access.providers[0].has_client_secret, true)
+  assert.ok(!JSON.stringify(result).includes(companyChange.client_secret))
+  assert.equal(f.commands.filter(command => command.action === 'run').length, 2)
+})
+
+test('a changed company or HTTPS revision cannot stop a running host', async t => {
+  const f = fixture(t)
+  await running(f)
+  for (const observed of [savedCompanyInfo(), { ...companyInfo(), remote_access: sharing('00000000-0000-4000-8000-000000000011', 'proxy') }]) {
+    const refused = assert.rejects(f.host.changeCompany(companyChange), /settings changed/)
+    f.last().reply(observed)
+    await refused
+    assert.equal(f.host.status.state, 'running')
+    assert.equal(f.commands.filter(command => command.action === 'company').length, 0)
+  }
+})
+
+test('an explicit stop waits for company settings and prevents automatic reopen', async t => {
+  const f = fixture(t)
+  const engine = await running(f)
+  const change = f.host.changeCompany(companyChange)
+  f.last().reply(companyInfo()); await settle()
+  const stop = f.host.stop()
+  engine.finish(); await settle()
+  f.last().reply(savedCompanyInfo())
+  await change
+  assert.equal(await stop, true)
+  assert.equal(f.host.status.state, 'stopped')
+  assert.equal(f.commands.filter(command => command.action === 'run').length, 1)
+})
+
+test('unconfirmed company configuration cannot replace the known settings', async t => {
+  const f = fixture(t)
+  const inspect = f.host.inspect(); f.last().reply(companyInfo()); await inspect
+  const refused = assert.rejects(f.host.changeCompany(companyChange), /could not be confirmed/)
+  f.last().reply(companyInfo()); await settle()
+  f.last().reply(companyInfo('00000000-0000-4000-8000-000000000010', [{ ...companyProvider, client_id: 'different-client', has_client_secret: true }]))
+  await refused
+  assert.deepEqual(f.host.status.info.company_access.providers, [])
+})
+
+test('company discovery retains a running host, binds the reply and excludes overlapping writes', async t => {
+  const f = fixture(t)
+  await running(f)
+  const request = { workspace_id: companyChange.workspace_id, expected_revision: 'not-configured', expected_remote_revision: savedSharingRevision, issuer: companyProvider.issuer }
+  const discovery = f.host.discoverCompany(request)
+  assert.equal(f.last().action, 'company-discover')
+  await assert.rejects(f.host.changeCompany(companyChange), /operation/)
+  const result = { ...request, authorization_url: companyProvider.authorization_url, token_url: companyProvider.token_url, jwks_url: companyProvider.jwks_url }
+  f.last().reply({ event: 'company_discovery', engine_version: version, discovery: result })
+  assert.deepEqual(await discovery, result)
+  assert.equal(f.host.status.state, 'running')
+  assert.equal(f.commands.filter(command => command.action === 'run').length, 1)
+  const refused = assert.rejects(f.host.discoverCompany(request), /current request/)
+  f.last().reply({ event: 'company_discovery', engine_version: version, discovery: { ...result, expected_revision: savedSharingRevision } })
+  await refused
+})
+
+test('a company setup click waits for the harmless readiness inspection after restart', async t => {
+  const f = fixture(t)
+  await running(f)
+  const inspect = f.host.inspect()
+  const request = { workspace_id: companyChange.workspace_id, expected_revision: 'not-configured', expected_remote_revision: savedSharingRevision, issuer: companyProvider.issuer }
+  const discovery = f.host.discoverCompany(request)
+  assert.equal(f.last().action, 'status')
+  f.last().reply(companyInfo()); await inspect; await settle()
+  assert.equal(f.last().action, 'company-discover')
+  f.last().reply({ event: 'company_discovery', engine_version: version, discovery: { ...request, authorization_url: companyProvider.authorization_url, token_url: companyProvider.token_url, jwks_url: companyProvider.jwks_url } })
+  await discovery
+  assert.equal(f.host.status.state, 'running')
 })
 
 test('private check requests use the current workspace and never restart its engine', async t => {

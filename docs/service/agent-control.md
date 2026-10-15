@@ -36,6 +36,11 @@ flow with an approved company account. Company-provider authentication and
 human permission review stay on their dedicated browser pages; the generic
 MCP catalog remains **112 operations**. See [account consent](hosted-agent-sign-in.md)
 for session expiry, revocation and provider acceptance limits.
+Version **4.11.0** adds `local.company-discover` and `local.company` to the
+**23-operation private desktop catalog**. These manage an app-owned host's
+provider setup and restart under the owning OS account, with the same settings
+review as Studio. The HTTP/MCP catalog stays at 112 operations; a memory key
+does not grant host configuration. See [company operator controls](company-sign-in.md#agent-and-sdk-controls).
 Schemas load one at a time, so connecting an
 assistant does not put the entire administration API into its context.
 

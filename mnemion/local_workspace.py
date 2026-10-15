@@ -27,7 +27,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_valida
 
 from . import local_state as state
 from .local_database import LocalDatabase, available_port, prepare_credentials
-from . import local_memory, local_remote
+from . import local_company, local_memory, local_remote
 from .service.memory_budget import MemoryBudget, MemoryOptions, sample_memory, working_target
 from .version import __version__
 
@@ -142,6 +142,7 @@ def inspect(root: Path) -> dict:
             **local_memory.inspection(root),
             memory=local_memory.live_status(root),
             remote_access=local_remote.inspection(root, settings["workspace_id"]),
+            company_access=local_company.inspection(root, settings["workspace_id"]),
         )
         if (root / "readiness.json").exists():
             result["last_verification"] = state.read(root / "readiness.json")
@@ -434,6 +435,12 @@ async def _serve(
             studio_enabled=True,
             hosted_oauth_settings=remote.oauth,
             public_url=remote.public_url,
+            company_identity=local_company.identity(
+                root,
+                settings["workspace_id"],
+                tenant_id=credentials["tenant_id"],
+                public_url=remote.public_url,
+            ),
         )
         remote.attach(app)
         original_lifespan = app.router.lifespan_context
@@ -654,6 +661,8 @@ def arguments(parser: argparse.ArgumentParser) -> None:
             "port",
             "remote",
             "remote-check",
+            "company",
+            "company-discover",
             "backup",
             "backup-ledger",
             "backup-inspect",
@@ -696,6 +705,33 @@ def dispatch(args) -> int:
                 raise ValueError("The address settings exceed their size limit")
             change_port(root, PortChange.model_validate_json(line))
             emit({"event": "status", **inspect(root)})
+            return 0
+        if args.action in {"company", "company-discover"}:
+            line = sys.stdin.buffer.readline(16385)
+            try:
+                if len(line) > 16384:
+                    raise ValueError("Company settings exceed their size limit")
+                change = (
+                    local_company.CompanyDiscovery
+                    if args.action == "company-discover"
+                    else local_company.CompanyChange
+                ).model_validate_json(line)
+            except (ValueError, ValidationError):
+                raise state.LocalSetupError(
+                    "invalid_company_options",
+                    "Check the company provider, certificate, client details and current settings revision.",
+                ) from None
+            if args.action == "company-discover":
+                emit(
+                    {
+                        "event": "company_discovery",
+                        "engine_version": __version__,
+                        "discovery": asyncio.run(local_company.discover(root, change)),
+                    }
+                )
+            else:
+                local_company.configure(root, change)
+                emit({"event": "status", **inspect(root)})
             return 0
         if args.action in {"remote", "remote-check"}:
             line = sys.stdin.buffer.readline(4097)

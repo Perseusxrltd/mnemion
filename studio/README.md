@@ -12,6 +12,11 @@ executable. From 4.0.11, it also bundles the private engine, PostgreSQL and CPU
 model drivers for guided **Create on this computer** setup. Model weights download
 when local setup is selected. Joining an existing company workspace does not
 start a local database or download a model on every employee's laptop.
+Source 4.11.0 adds **Setup & this device → Company sign-in setup** for a local
+host: a copied HTTPS callback, OIDC discovery, client/certificate settings,
+session limits, removal/repair and matching private agent controls. See the
+[company guide](../docs/service/company-sign-in.md); publication is tracked in
+[release status](../docs/RELEASE_STATUS.md).
 Remote-agent fixes in 4.0.2 and lower model RAM in 4.0.3 require upgrading the memory server;
 the desktop updater cannot replace a separately deployed service. See the
 [patch notes](../docs/releases/4.0.12.md). Version 4.0.12 also fixes native ngrok

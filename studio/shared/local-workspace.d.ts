@@ -15,6 +15,22 @@ export type RemoteAccess = {
   state: 'disabled' | 'unchecked' | 'stopped' | 'configuration_error' | 'connecting' | 'online' | 'unavailable';
   message: string; checked_at?: string | null; verified_at?: string | null; provider_code?: string | null;
 }
+export type CompanyProviderSettings = {
+  id: string; name: string; issuer: string; authorization_url: string; token_url: string;
+  jwks_url: string; client_id: string; session_seconds: number;
+}
+export type CompanyRequest = { workspace_id: string; expected_revision: string; expected_remote_revision: string }
+export type CompanyChange = CompanyRequest & (
+  { action: 'save'; provider: CompanyProviderSettings; client_secret?: string | null; clear_client_secret?: boolean; ca_pem?: string | null } |
+  { action: 'remove'; provider_id: string } | { action: 'reset' }
+)
+export type CompanyDiscoveryRequest = CompanyRequest & { issuer: string; ca_pem?: string | null }
+export type CompanyDiscoveryResult = CompanyRequest & Pick<CompanyProviderSettings, 'issuer' | 'authorization_url' | 'token_url' | 'jwks_url'>
+export type CompanyAccess = {
+  revision: string; repairable: boolean; state: 'disabled' | 'configured' | 'needs_remote' | 'configuration_error' | 'external';
+  message: string; callback_uri: string | null; has_custom_ca: boolean;
+  providers: Array<CompanyProviderSettings & { has_client_secret: boolean }>;
+}
 export type MemoryRecovery = { code: 'memory_policy_missing' | 'memory_policy_damaged' | 'memory_policy_inaccessible'; message: string; repair_token: string | null }
 export type MemorySnapshot = {
   mode: 'auto' | 'manual'; requested_limit_mib: number | null; revision: string;
@@ -46,6 +62,7 @@ export type LocalInfo = {
   last_verification?: { verified_at: string; generation_id: string; engine_version: string; semantic_index: boolean };
   memory_policy?: MemoryPolicy | null; memory_recovery?: MemoryRecovery | null; memory?: MemorySnapshot | null;
   remote_access?: RemoteAccess;
+  company_access?: CompanyAccess;
 }
 export type LocalStatus = {
   available: boolean; state: 'new' | 'starting' | 'running' | 'stopping' | 'stopped' | 'error';

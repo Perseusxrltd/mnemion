@@ -134,12 +134,14 @@ class CompanyProvider:
 
 
 class CompanyIdentity:
-    def __init__(self, providers=(), *, transport=None, ca_file=None):
+    def __init__(self, providers=(), *, transport=None, ca_file=None, ca_pem=None):
         self.providers = {(item.workspace_id, item.id): item for item in providers}
         if len(self.providers) != len(providers) or len(providers) > 32:
             raise ValueError("Use at most 32 distinct workspace/company provider configurations")
         self.transport = transport
-        self.tls = ssl.create_default_context(cafile=ca_file) if ca_file else True
+        self.tls = (
+            ssl.create_default_context(cafile=ca_file, cadata=ca_pem) if ca_file or ca_pem else True
+        )
         self.capacity = anyio.CapacityLimiter(8)
 
     @classmethod

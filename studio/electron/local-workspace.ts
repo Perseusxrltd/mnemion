@@ -2,6 +2,8 @@ import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { StringDecoder } from 'node:string_decoder'
 import { backupResult } from './local-backup-protocol.js'
+import { companyOptions, companyDiscoveryOptions, companyDiscoveryResult, companySnapshot } from './local-company-protocol.js'
+import type { CompanyChange, CompanyDiscoveryResult } from '../shared/local-workspace.js'
 import type { BackupAction, BackupOperationResult } from '../shared/local-workspace.js'
 import type { LocalOptions, LocalInfo, LocalStatus, MemoryChange, MemoryWrite, MemorySnapshot, MemoryPolicy, PortChange, LocalDiagnostic, RemoteChange, RemoteAccess, RemoteCheck } from '../shared/local-workspace.js'
 type Connection = { endpoint: string; credential: string; workspaceId: string; tenantId: string; version: string }
@@ -285,7 +287,7 @@ export class LocalWorkspace {
     try { return await this.operation } finally { this.operation = undefined }
   }
 
-  private readInfo(action: 'status' | 'port' | 'remote' | 'remote-check', input?: PortChange | RemoteChange | RemoteCheck): Promise<LocalInfo> {
+  private readInfo(action: 'status' | 'port' | 'remote' | 'remote-check' | 'company', input?: PortChange | RemoteChange | RemoteCheck | CompanyChange): Promise<LocalInfo> {
     return new Promise((resolve, reject) => {
       const child = this.control(action)
       child.stdin.end(input === undefined ? undefined : JSON.stringify(input) + '\n')
@@ -312,6 +314,7 @@ export class LocalWorkspace {
           }
           const { configured, data_directory, engine_version, resources, settings, last_verification, memory_policy, memory_recovery, memory } = value
           const remote_access = value.remote_access === undefined ? undefined : remoteSnapshot(value.remote_access)
+          const company_access = value.company_access === undefined ? undefined : companySnapshot(value.company_access)
           const address = input as PortChange
           if (action === 'port' && (!configured || !settings || settings.workspace_id !== input!.workspace_id.toLowerCase() ||
               !Number.isInteger(settings.port) || settings.port < 1024 || settings.port > 65535 || settings.port === settings.database_port ||
@@ -322,10 +325,20 @@ export class LocalWorkspace {
               remote_access.mode !== sharing.mode || remote_access.public_url !== sharing.public_url ||
               remote_access.personal_sign_in !== sharing.personal_sign_in ||
               (sharing.mode === 'ngrok' && !remote_access.has_ngrok_authtoken))) throw new Error('The saved remote settings could not be confirmed. Refresh before retrying.')
+          if (action === 'company') {
+            const change = input as CompanyChange
+            const provider = company_access?.providers.find(item => item.id === (change.action === 'save' ? change.provider.id : change.action === 'remove' ? change.provider_id : ''))
+            if (!configured || settings?.workspace_id !== change.workspace_id || !company_access || company_access.state === 'configuration_error' ||
+                company_access.revision === change.expected_revision || remote_access?.revision !== change.expected_remote_revision ||
+                (change.action === 'remove' && provider) || (change.action === 'reset' && company_access.providers.length) ||
+                (change.action === 'save' && (!provider || Object.entries(change.provider).some(([key, value]) => provider[key as keyof typeof provider] !== value) ||
+                  (change.client_secret && !provider.has_client_secret) || (change.clear_client_secret && provider.has_client_secret) ||
+                  (Object.hasOwn(change, 'ca_pem') && company_access.has_custom_ca !== !!change.ca_pem)))) throw new Error('The saved company settings could not be confirmed. Refresh before retrying.')
+          }
           if (memory_recovery && (!['memory_policy_missing', 'memory_policy_damaged', 'memory_policy_inaccessible'].includes(memory_recovery.code) ||
               typeof memory_recovery.message !== 'string' || memory_recovery.message.length > 1000 ||
               (memory_recovery.repair_token !== null && !/^[a-f0-9]{64}$/.test(memory_recovery.repair_token)))) throw new Error('Invalid RAM recovery status')
-          const info = { configured, data_directory, engine_version, resources, settings, last_verification, memory_policy, memory_recovery, memory, remote_access }
+          const info = { configured, data_directory, engine_version, resources, settings, last_verification, memory_policy, memory_recovery, memory, remote_access, company_access }
           this.info = info
           this.changed(this.status)
           resolve(info)
@@ -508,7 +521,7 @@ export class LocalWorkspace {
     if (!this.status.available) throw new Error('The complete local runtime is missing. Reinstall Mnemion Studio.')
     if (this.busy) throw new Error('Wait for the current local operation before changing remote access.')
     const change = remoteOptions(input)
-    this.configurationChange = this.saveRemote(change)
+    this.configurationChange = this.saveHostConfiguration('remote', change)
     try { return await this.configurationChange } finally { this.configurationChange = undefined }
   }
 
@@ -522,18 +535,57 @@ export class LocalWorkspace {
     return this.status
   }
 
-  private async saveRemote(change: RemoteChange): Promise<LocalStatus> {
+  async changeCompany(input: unknown): Promise<LocalStatus> {
+    this.assertOpen()
+    if (this.operation) { await this.operation; this.assertOpen() }
+    if (!this.status.available) throw new Error('The complete local runtime is missing. Reinstall Mnemion Studio.')
+    if (this.busy) throw new Error('Wait for the current local operation before changing company access.')
+    const change = companyOptions(input)
+    this.configurationChange = this.saveHostConfiguration('company', change)
+    try { return await this.configurationChange } finally { this.configurationChange = undefined }
+  }
+
+  async discoverCompany(input: unknown): Promise<CompanyDiscoveryResult> {
+    this.assertOpen()
+    if (this.operation) { await this.operation; this.assertOpen() }
+    if (!this.status.available || this.busy) throw new Error('Wait for the current local operation before checking the company provider.')
+    const request = companyDiscoveryOptions(input)
+    return new Promise((resolve, reject) => {
+      const child = this.control('company-discover')
+      child.stdin.end(JSON.stringify(request) + '\n')
+      let body = '', failed = false
+      const timer = setTimeout(() => { failed = true; child.kill(); reject(new Error('Company provider discovery timed out. Check its address and connection.')) }, 20_000)
+      child.stdout.on('data', (chunk: Buffer) => {
+        body += chunk.toString('utf8')
+        if (body.length > 16 * 1024) { failed = true; child.kill(); reject(new Error('The local runtime returned an invalid provider response.')) }
+      })
+      child.stderr.resume()
+      child.on('error', () => { failed = true; reject(new Error('The local runtime could not check the provider.')) })
+      child.on('close', code => {
+        clearTimeout(timer)
+        if (failed) return
+        try {
+          const value = JSON.parse(body)
+          if (code !== 0 || value.event !== 'company_discovery' || value.engine_version !== this.options.version) throw new Error(value.event === 'error' && typeof value.message === 'string' && value.message.length <= 1000 ? value.message : 'The local runtime could not check the provider.')
+          resolve(companyDiscoveryResult(value.discovery, request))
+        } catch (error) { reject(error instanceof Error ? error : new Error('Invalid company provider response.')) }
+      })
+    })
+  }
+
+  private async saveHostConfiguration(action: 'remote' | 'company', change: RemoteChange | CompanyChange): Promise<LocalStatus> {
     const before = await this.readInfo('status')
-    if (before.settings?.workspace_id !== change.workspace_id || before.remote_access?.revision !== change.expected_revision) {
-      throw new Error('Remote settings changed. Refresh before saving them again.')
+    if (before.settings?.workspace_id !== change.workspace_id || before[action === 'remote' ? 'remote_access' : 'company_access']?.revision !== change.expected_revision ||
+        (action === 'company' && before.remote_access?.revision !== (change as CompanyChange).expected_remote_revision)) {
+      throw new Error(action === 'remote' ? 'Remote settings changed. Refresh before saving them again.' : 'Company or remote settings changed. Refresh before saving them again.')
     }
     const resume = !!this.child
     // Own the entire drain/write/reopen operation. External stop/close waits
     // for it and prevents the reopen; it cannot race the private state write.
     if (resume && !await this.stopChild()) throw new Error('The local workspace is still stopping. Refresh before retrying.')
     try {
-      const updated = await this.readInfo('remote', change)
-      this.set({ state: 'stopped', stage: undefined, errorCode: undefined, message: 'Remote settings saved.' })
+      const updated = await this.readInfo(action, change)
+      this.set({ state: 'stopped', stage: undefined, errorCode: undefined, message: action === 'remote' ? 'Remote settings saved.' : 'Company settings saved.' })
       if (resume && !this.stopping && !this.closing && !this.disposed) return this.launch(updated)
       return this.status
     } catch (error) {
