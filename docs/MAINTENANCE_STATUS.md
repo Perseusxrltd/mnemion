@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-15T12:23:38+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-15T12:27:23+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.8.1](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.8.1). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -25,8 +25,8 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | public-updates\.yml | v4\.8\.1 | success | [Run 38726882226](https://github.com/Perseusxrltd/mnemion/actions/runs/38726882226) |
 | release\.yml | release/4\.8\.1 | success | [Run 38722648688](https://github.com/Perseusxrltd/mnemion/actions/runs/38722648688) |
 | release\.yml | release/4\.9\.0 | cancelled | [Run 38733665769](https://github.com/Perseusxrltd/mnemion/actions/runs/38733665769) |
-| release\.yml | release/4\.9\.0-r2 | queued | [Run 38734167677](https://github.com/Perseusxrltd/mnemion/actions/runs/38734167677) |
-| verify-artifacts\.yml | main | skipped | [Run 38734228777](https://github.com/Perseusxrltd/mnemion/actions/runs/38734228777) |
+| release\.yml | release/4\.9\.0-r2 | cancelled | [Run 38734167677](https://github.com/Perseusxrltd/mnemion/actions/runs/38734167677) |
+| verify-artifacts\.yml | main | skipped | [Run 38734720003](https://github.com/Perseusxrltd/mnemion/actions/runs/38734720003) |
 | website-release\.yml | main | success | [Run 38731918836](https://github.com/Perseusxrltd/mnemion/actions/runs/38731918836) |
 | website-release\.yml | v4\.8\.1 | success | [Run 38726877979](https://github.com/Perseusxrltd/mnemion/actions/runs/38726877979) |
 
@@ -34,4 +34,3 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 - [Run 38734143996](https://github.com/Perseusxrltd/mnemion/actions/runs/38734143996): container \(ubuntu-22\.04-arm\). Steps: Build the actual deployment image with its documentation.
 - [Run 38734143996](https://github.com/Perseusxrltd/mnemion/actions/runs/38734143996): container \(ubuntu-22\.04\). Steps: Build the actual deployment image with its documentation.
-- [Run 38734167677](https://github.com/Perseusxrltd/mnemion/actions/runs/38734167677): checks / container \(ubuntu-22\.04\). Steps: Build the actual deployment image with its documentation.
