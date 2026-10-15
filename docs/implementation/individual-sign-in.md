@@ -142,3 +142,13 @@ acceptance retain their separate [validation boundaries](../validation/2026-10-1
    allowed and denied calls, refresh, disconnect, reconnect and revocation.
    Protocol fixtures, profile metadata and generic MCP support are not substitutes
    for live ChatGPT, Dot, Claude, Grokbot, Hermes or OpenClaw acceptance.
+
+## Company sign-in implementation (4.9.0 source)
+
+The [company guide](../service/company-sign-in.md) documents operator-pinned
+OpenID Connect providers, exact subject links, invitation acceptance, bounded
+company sessions and desktop/browser persistence. The [validation record](../validation/2026-10-15-company-sign-in.md)
+keeps real Dex/browser checks, migration preservation and native controller checks
+separate from release delivery. Existing personal sessions survive migration 018.
+Company-only policy, automatic provisioning/group mapping, back-channel logout
+and company-account hosted-agent consent remain unfinished acceptance criteria.

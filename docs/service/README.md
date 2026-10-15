@@ -134,6 +134,11 @@ evidence, manage applications/access, follow ingestion activity, and export to
 Obsidian. Browser keys stay in window memory; reconnect after a reload. Downloadable
 original source attachments include hashes that Studio verifies before saving.
 
+For people, use [personal sign-in and invitations](sign-in.md), or
+[company sign-in](company-sign-in.md) from 4.9.0 when the host has an identity
+provider configured. Both offer revocable remembered sessions; company passwords
+stay at the provider. The in-app **Account & sessions** page manages access.
+
 The [desktop client](updates.md) connects to the same service. It adds
 a native vault picker and applies authorized Obsidian exports using a packaged
 local client. The desktop connection does not require browser CORS exceptions or

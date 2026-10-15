@@ -93,7 +93,14 @@ def test_shared_password_file_is_not_sent(tmp_path, monkeypatch, capsys):
 
 
 @pytest.mark.parametrize(
-    "operation", ["sign_in.login", "sign_in.refresh", "sign_in.accept_invitation"]
+    "operation",
+    [
+        "sign_in.login",
+        "sign_in.refresh",
+        "sign_in.accept_invitation",
+        "company.start",
+        "company.finish",
+    ],
 )
 def test_uncertain_credential_writes_do_not_retry_or_print_remote_content(
     tmp_path, monkeypatch, capsys, operation
@@ -114,6 +121,19 @@ def test_uncertain_credential_writes_do_not_retry_or_print_remote_content(
             "password": PASSWORD,
             "transport": "native",
             "device_name": "CLI fixture",
+        },
+        "company.start": {
+            "workspace_id": str(uuid4()),
+            "provider_id": "company",
+            "device_name": "CLI fixture",
+            "transport": "native",
+            "callback_uri": "http://127.0.0.1:45123/mnemion-company/" + "x" * 43,
+        },
+        "company.finish": {
+            "state": "mnm_o_" + "x" * 43,
+            "code_verifier": "x" * 43,
+            "code": secret,
+            "transport": "native",
         },
     }[operation]
 

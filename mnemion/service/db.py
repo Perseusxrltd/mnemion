@@ -141,7 +141,7 @@ class Database:
     def close(self) -> None:
         self.pool.close()
 
-    def authenticate(self, token: str) -> Identity:
+    def authenticate(self, token: str, *, company_policies=()) -> Identity:
         if self.worker or not token.startswith("mnm_") or not 40 <= len(token) <= 200:
             raise ServiceError(401, "unauthorized", "A valid Mnemion API key is required.")
         with self.pool.connection() as conn:
@@ -152,6 +152,11 @@ class Database:
                 session = conn.execute(
                     "SELECT * FROM mnemion.authenticate_session(%s)", (token_hash(token),)
                 ).fetchone()
+                if not session and company_policies:
+                    session = conn.execute(
+                        "SELECT * FROM mnemion.authenticate_company_session(%s,%s)",
+                        (token_hash(token), list(company_policies)),
+                    ).fetchone()
                 if session:
                     return Identity(
                         session["tenant_id"],

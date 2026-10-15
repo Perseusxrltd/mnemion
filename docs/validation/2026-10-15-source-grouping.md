@@ -4,6 +4,12 @@ This report covers the **4.8.1 source batch**. Native publication, uploaded
 artifacts and public automatic updates remain separate in
 [release status](../RELEASE_STATUS.md).
 
+**Publication update:** 4.8.1's [native release](https://github.com/Perseusxrltd/mnemion/actions/runs/38722648688),
+[independent package publication](https://github.com/Perseusxrltd/mnemion/actions/runs/38726654937),
+[live website update](https://github.com/Perseusxrltd/mnemion/actions/runs/38726877979)
+and [all six public automatic updates](https://github.com/Perseusxrltd/mnemion/actions/runs/38726882226)
+passed on 15 October. Retrieval-quality acceptance below remains open.
+
 ## Scoped retrieval
 
 A real PostgreSQL exercise imports a 35-part document through the published

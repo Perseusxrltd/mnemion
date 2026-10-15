@@ -6,7 +6,7 @@ export * from './embeddings.js'
 import type { LibrarianChoice, LibrarianSettings, LibrarianSettingsInput, LibrarianRun, LibrarianRunItem,
   LibrarianMode, LibrarianProposal, LibrarianProposalState, LibrarianDecisionReceipt } from './librarian.js'
 export * from './librarian.js'
-import type { PasswordAccount, DeviceSession, OAuthConfiguration, OAuthConnection, SignInInvitation, InvitationReceipt } from './sign-in.js'
+import type { PasswordAccount, DeviceSession, OAuthConfiguration, OAuthConnection, SignInInvitation, InvitationReceipt, CompanyConfiguration, CompanyLink } from './sign-in.js'
 export * from './sign-in.js'
 import type { RecoveryDirectory, RecoveryDirectoryRecord } from './recovery.js'
 export * from './recovery.js'
@@ -283,6 +283,10 @@ export class MnemionClient {
   revokeSession(id: string) { return this.request<{ id: string; revoked: boolean }>('DELETE', '/v1/sign-in/sessions/' + encodeURIComponent(id)) }
   oauthConfiguration() { return this.request<OAuthConfiguration>('GET', '/v1/oauth/configuration') }
   signInConfiguration() { return this.request<{ password_sign_in: boolean; public_origin: string | null; browser_sign_in: boolean; remember_browser: boolean; minimum_password_characters: number }>('GET', '/v1/sign-in/configuration') }
+  companyConfiguration(workspace: string) { return this.request<CompanyConfiguration>('GET', '/v1/sign-in/company/configuration?workspace_id=' + encodeURIComponent(workspace)) }
+  companyLinks() { return this.request<{ items: CompanyLink[] }>('GET', '/v1/sign-in/company/links') }
+  linkCompanyIdentity(input: { principal_id: string; provider_id: string; subject: string }) { return this.request<{ id: string; principal_id: string; provider_id: string }>('POST', '/v1/sign-in/company/links', { body: input }) }
+  revokeCompanyIdentity(id: string) { return this.request<{ id: string; revoked: boolean }>('DELETE', '/v1/sign-in/company/links/' + encodeURIComponent(id)) }
   oauthConnections() { return this.request<{ connections: OAuthConnection[] }>('GET', '/v1/oauth/connections') }
   revokeOAuthConnection(id: string) { return this.request<{ id: string; revoked: boolean }>('POST', '/v1/oauth/connections/' + encodeURIComponent(id) + '/revoke') }
   signInInvitations() { return this.request<{ items: SignInInvitation[] }>('GET', '/v1/sign-in/invitations') }

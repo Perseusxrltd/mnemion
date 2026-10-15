@@ -106,12 +106,16 @@ def _session_result(row, access: str, refresh: str, csrf: str | None) -> dict:
         "access_expires_at": json_value(row["access_expires_at"]),
         "expires_at": json_value(row["expires_at"]),
         "rotation": row.get("rotation", row.get("rotations", 0)),
+        "authentication": row.get(
+            "authentication", "company" if row.get("company_link_id") else "password"
+        ),
     }
 
 
 class SignInService:
-    def __init__(self, database: Database):
+    def __init__(self, database: Database, *, company_policies=()):
         self.db = database
+        self.company_policies = tuple(company_policies)
 
     def _admit(self, subject: str) -> None:
         if self.db.worker:
@@ -228,7 +232,7 @@ class SignInService:
         new_refresh, refresh_digest = _secret("mnm_r_")
         with self.db.pool.connection() as conn:
             row = conn.execute(
-                "SELECT * FROM mnemion.rotate_password_session(%s,%s,%s,%s,%s,%s,%s)",
+                "SELECT * FROM mnemion.rotate_device_session(%s,%s,%s,%s,%s,%s,%s,%s)",
                 (
                     old_digest,
                     access_digest,
@@ -237,6 +241,7 @@ class SignInService:
                     transport,
                     workspace,
                     session,
+                    list(self.company_policies),
                 ),
             ).fetchone()
         # A reused refresh token revokes its stable anchor. Do not raise inside
@@ -267,7 +272,8 @@ class SignInService:
         with self.db.transaction(identity) as conn:
             rows = conn.execute(
                 """SELECT s.id,s.principal_id,s.device_name,s.transport,s.created_at,
-                     s.last_refreshed_at,s.expires_at,k.revoked_at,s.key_id=%s AS current
+                     s.last_refreshed_at,s.expires_at,k.revoked_at,s.key_id=%s AS current,
+                     CASE WHEN s.company_link_id IS NULL THEN 'password' ELSE 'company' END AS authentication
                    FROM mnemion.sign_in_sessions s JOIN mnemion.api_keys k
                      ON k.tenant_id=s.tenant_id AND k.id=s.key_id
                    ORDER BY s.created_at DESC,s.id LIMIT 1000""",

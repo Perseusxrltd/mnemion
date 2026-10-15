@@ -12,6 +12,12 @@ organization administrator authority, control each operation; searching multiple
 spaces still checks every requested space. Use a shared project space only for
 knowledge that all its members may read.
 
+Version **4.9.0** adds [company sign-in](company-sign-in.md). The host operator
+pins an OpenID Connect provider; administrators bind each human through a private
+invitation or explicit stable subject. Current Mnemion roles remain authoritative.
+The guide covers device sessions, immediate local revocation, provider setup and
+the remaining company provisioning and hosted-agent consent work.
+
 Use **Team and applications** in Studio to manage principals, credentials and
 grants. API and worker database logins have separate restricted roles; the schema
 owner is only for setup, migration and recovery. Do not give assistants an owner

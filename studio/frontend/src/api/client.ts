@@ -2,6 +2,7 @@ import type { AgentsResponse, ConnectorStatus, CoreMemory, DrawerDetail, DrawerS
 import type { WorkspaceInspection, WorkspaceSession, WorkspaceStatus } from '../workspace/connection-types'
 import type { LocalOptions, LocalStatus, MemoryWrite, PortChange, RemoteChange, RemoteCheck, BackupView, BackupSettingsInput, BackupReceipt, BackupInspectionData, BackupRestoreInput, RecoveryReceipt, BackupInventory, BackupRetentionResult } from '../../../shared/local-workspace'
 import type { SignInCredentials, InvitationCredentials, InvitationPreview } from '@mnemion/client'
+import type { CompanyConfiguration, CompanyCredentials } from '../../../shared/company-sign-in'
 
 declare global {
   interface Window {
@@ -17,6 +18,9 @@ declare global {
       workspaceResume?: () => Promise<WorkspaceSession | null>
       workspaceConnect?: (input: { endpoint: string; credential: string; remember: boolean }) => Promise<WorkspaceSession>
       workspaceSignIn?: (input: { endpoint: string; credentials: SignInCredentials; remember: boolean }) => Promise<WorkspaceSession>
+      workspaceCompanyConfiguration?: (input: { endpoint: string; workspace_id: string }) => Promise<CompanyConfiguration>
+      workspaceCompanySignIn?: (input: { endpoint: string; credentials: CompanyCredentials; remember: boolean }) => Promise<WorkspaceSession>
+      workspaceCompanyCancel?: () => Promise<void>
       workspaceInvitationPreview?: (input: { endpoint: string; invitation: string }) => Promise<InvitationPreview>
       workspaceInvitationAccept?: (input: { endpoint: string; credentials: InvitationCredentials; remember: boolean }) => Promise<WorkspaceSession>
       workspaceRestore?: (id: string) => Promise<WorkspaceSession>

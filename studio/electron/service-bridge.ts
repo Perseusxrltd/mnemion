@@ -1,4 +1,4 @@
-import { app, dialog, ipcMain, net, safeStorage, type BrowserWindow, type IpcMainInvokeEvent } from 'electron'
+import { app, dialog, ipcMain, net, safeStorage, shell, type BrowserWindow, type IpcMainInvokeEvent } from 'electron'
 import { spawn, type ChildProcess } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { AsyncLocalStorage } from 'node:async_hooks'
@@ -7,7 +7,8 @@ import { isAbsolute, join } from 'node:path'
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { WorkspaceStore, workspaceIdentity } from './workspace-store.js'
 import { WorkspaceConnections, isWorkspaceSession } from './workspace-connections.js'
-import { WorkspacePasswordAuth } from './workspace-auth.js'
+import { WorkspacePasswordAuth, type SignInRequest } from './workspace-auth.js'
+import { WorkspaceCompanyAuth } from './workspace-company-auth.js'
 import { macosCredentialCipher, macosCredentialMemory } from './macos-credentials.js'
 import { workspaceFetch } from './workspace-fetch.js'
 import { LocalWorkspace, localEnvironment, localOptions } from './local-workspace.js'
@@ -250,24 +251,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
       join(process.resourcesPath, 'engine', process.platform === 'win32' ? 'mnemion-engine.exe' : 'mnemion-engine')
   }
   function workspaceConnections(): WorkspaceConnections {
-    connections ??= new WorkspaceConnections(new WorkspaceStore(join(app.getPath('userData'), 'workspaces'), workspaceCipher()), async (endpoint, credential) => {
-      let response: Response
-      try {
-        response = await workspaceFetch(net.fetch.bind(net), endpoint + '/v1/me', {
-          headers: { Authorization: 'Bearer ' + credential, Accept: 'application/json' },
-          redirect: 'error', credentials: 'omit', signal: AbortSignal.timeout(15_000),
-        })
-      } catch { throw new Error('The workspace could not be reached. Check its address and your network or VPN. If an agent hosts it, use the host’s operator controls to check that its computer and network connection are running.') }
-      if (response.headers.get('ngrok-error-code') === 'ERR_NGROK_3200') {
-        await response.body?.cancel()
-        throw new Error('The workspace tunnel is offline. Restart its connection through the host’s operator controls; changing the workspace key will not reconnect the host.')
-      }
-      if (response.status === 401 || response.status === 403) throw new Error('This key is expired, revoked or does not grant workspace access. Use a current key.')
-      if (!response.ok) throw new Error('The workspace is not ready. Try again or check its service status.')
-      const bytes = await boundedBody(response, 128 * 1024)
-      try { return workspaceIdentity(JSON.parse(Buffer.from(bytes).toString('utf8'))) }
-      catch { throw new Error('This address did not return a Mnemion workspace identity.') }
-    }, new WorkspacePasswordAuth(async (endpoint, operation, input) => {
+    const signInRequest: SignInRequest = async (endpoint, operation, input) => {
       let response: Response
       try {
         response = await workspaceFetch(net.fetch.bind(net), endpoint + '/v1/sign-in/' + operation, {
@@ -286,7 +270,25 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
       }
       try { return JSON.parse(Buffer.from(await boundedBody(response, 128 * 1024)).toString('utf8')) }
       catch { throw new Error('The workspace returned an invalid sign-in response.') }
-    }), bookmark => localWorkspace().prepareSavedConnection(bookmark.endpoint, bookmark.tenantId, localPreferences().startWithApp), sessionToken => {
+    }
+    connections ??= new WorkspaceConnections(new WorkspaceStore(join(app.getPath('userData'), 'workspaces'), workspaceCipher()), async (endpoint, credential) => {
+      let response: Response
+      try {
+        response = await workspaceFetch(net.fetch.bind(net), endpoint + '/v1/me', {
+          headers: { Authorization: 'Bearer ' + credential, Accept: 'application/json' },
+          redirect: 'error', credentials: 'omit', signal: AbortSignal.timeout(15_000),
+        })
+      } catch { throw new Error('The workspace could not be reached. Check its address and your network or VPN. If an agent hosts it, use the host’s operator controls to check that its computer and network connection are running.') }
+      if (response.headers.get('ngrok-error-code') === 'ERR_NGROK_3200') {
+        await response.body?.cancel()
+        throw new Error('The workspace tunnel is offline. Restart its connection through the host’s operator controls; changing the workspace key will not reconnect the host.')
+      }
+      if (response.status === 401 || response.status === 403) throw new Error('This key is expired, revoked or does not grant workspace access. Use a current key.')
+      if (!response.ok) throw new Error('The workspace is not ready. Try again or check its service status.')
+      const bytes = await boundedBody(response, 128 * 1024)
+      try { return workspaceIdentity(JSON.parse(Buffer.from(bytes).toString('utf8'))) }
+      catch { throw new Error('This address did not return a Mnemion workspace identity.') }
+    }, new WorkspacePasswordAuth(signInRequest), bookmark => localWorkspace().prepareSavedConnection(bookmark.endpoint, bookmark.tenantId, localPreferences().startWithApp), sessionToken => {
       const window = getWindow()
       if (window && !window.webContents.isDestroyed()) window.webContents.send('workspaces:closed', sessionToken)
     }, async (endpoint, credential) => {
@@ -303,7 +305,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
       }
       try { return JSON.parse(Buffer.from(await boundedBody(response, 16 * 1024)).toString('utf8')) }
       catch { throw new Error('The workspace did not return a valid recovery directory.') }
-    })
+    }, new WorkspaceCompanyAuth(signInRequest, url => shell.openExternal(url)))
     return connections
   }
   function trusted(event: IpcMainInvokeEvent) {
@@ -333,7 +335,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
         Object.keys(value).some(key => !['endpoint', 'invitation'].includes(key))) throw new Error('Paste a complete invitation.')
     return workspaceConnections().previewInvitation(value.endpoint, value.invitation)
   })
-  for (const action of ['sign-in', 'invitation-accept'] as const) {
+  for (const action of ['sign-in', 'invitation-accept', 'company-sign-in'] as const) {
     ipcMain.handle('workspaces:' + action, (event, input: unknown) => {
       trusted(event)
       if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Invalid sign-in request.')
@@ -341,10 +343,20 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
       if (typeof value.endpoint !== 'string' || typeof value.remember !== 'boolean' ||
           Object.keys(value).some(key => !['endpoint', 'credentials', 'remember'].includes(key))) throw new Error('Invalid sign-in request.')
       deselectLocal()
-      return action === 'sign-in' ? workspaceConnections().signIn(value.endpoint, value.credentials, value.remember) :
+      return action === 'company-sign-in' ? workspaceConnections().companySignIn(value.endpoint, value.credentials, value.remember) :
+        action === 'sign-in' ? workspaceConnections().signIn(value.endpoint, value.credentials, value.remember) :
         workspaceConnections().acceptInvitation(value.endpoint, value.credentials, value.remember)
     })
   }
+  ipcMain.handle('workspaces:company-configuration', (event, input: unknown) => {
+    trusted(event)
+    if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Use a workspace sign-in link.')
+    const value = input as { endpoint: string; workspace_id: string }
+    if (typeof value.endpoint !== 'string' || typeof value.workspace_id !== 'string' ||
+        Object.keys(value).some(key => !['endpoint', 'workspace_id'].includes(key))) throw new Error('Use a workspace sign-in link.')
+    return workspaceConnections().companyConfiguration(value.endpoint, value.workspace_id)
+  })
+  ipcMain.handle('workspaces:company-cancel', event => { trusted(event); workspaceConnections().cancelCompanySignIn() })
   ipcMain.handle('workspaces:connect', (event, input: unknown) => {
     trusted(event)
     if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Invalid workspace connection.')

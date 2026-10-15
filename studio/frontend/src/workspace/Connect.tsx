@@ -11,6 +11,7 @@ import LocalSetup from './LocalSetup';
 import RecoverWorkspace from './RecoverWorkspace';
 import WorkspaceRecovery from './WorkspaceRecovery';
 import SignInForm from './SignInForm';
+import CompanySignIn from './CompanySignIn';
 import { browserBookmarks, initialJoinLink, type JoinLink } from './sign-in';
 
 function errorMessage(error: unknown): string {
@@ -62,7 +63,7 @@ function nativeConnection(session: WorkspaceSession): Connection {
 export default function Connect({ onConnect, initialError, initialJoin }: { onConnect: (connection: Connection) => void; initialError?: unknown; initialJoin?: JoinLink | null }) {
   const desktop = window.mnemion?.workspaceConnect ? window.mnemion : undefined;
   const [incoming] = useState(() => initialJoinLink() ?? initialJoin ?? null);
-  const [joinMethod, setJoinMethod] = useState<'key' | 'password' | 'invitation'>(() => incoming?.invitation ? 'invitation' : incoming?.workspaceId || (!desktop && browserBookmarks().length) ? 'password' : 'key');
+  const [joinMethod, setJoinMethod] = useState<'key' | 'password' | 'invitation' | 'company'>(() => incoming?.invitation ? 'invitation' : incoming?.workspaceId || (!desktop && browserBookmarks().length) ? 'password' : 'key');
   const [endpoint, setEndpoint] = useState(() => incoming?.endpoint ?? savedAddress());
   const [key, setKey] = useState("");
   const [remember, setRemember] = useState(false);
@@ -236,10 +237,12 @@ export default function Connect({ onConnect, initialError, initialJoin }: { onCo
           )}
           {selection === 'join' && <div className="ws-saved-actions" role="group" aria-label="Choose how to join">
             <button type="button" className={`ws-button ${joinMethod === 'password' ? 'ws-primary' : 'ws-quiet'}`} disabled={!!busy} onClick={() => setJoinMethod('password')}>Sign in</button>
+            <button type="button" className={`ws-button ${joinMethod === 'company' ? 'ws-primary' : 'ws-quiet'}`} disabled={!!busy} onClick={() => setJoinMethod('company')}>Company sign-in</button>
             <button type="button" className={`ws-button ${joinMethod === 'invitation' ? 'ws-primary' : 'ws-quiet'}`} disabled={!!busy} onClick={() => setJoinMethod('invitation')}>Use invitation</button>
             <button type="button" className={`ws-button ${joinMethod === 'key' ? 'ws-primary' : 'ws-quiet'}`} disabled={!!busy} onClick={() => setJoinMethod('key')}>Workspace key</button>
           </div>}
-          {selection === 'join' && joinMethod !== 'key' && <SignInForm key={joinMethod} method={joinMethod} incoming={incoming} initialEndpoint={endpoint} initialError={error} secureStorage={!!status?.secureStorage} busy={!!busy} onBusy={setBusy} onConnect={onConnect} onNativeConnect={complete} />}
+          {selection === 'join' && (joinMethod === 'password' || joinMethod === 'invitation') && <SignInForm key={joinMethod} method={joinMethod} incoming={incoming} initialEndpoint={endpoint} initialError={error} secureStorage={!!status?.secureStorage} busy={!!busy} onBusy={setBusy} onConnect={onConnect} onNativeConnect={complete} />}
+          {selection === 'join' && joinMethod === 'company' && <CompanySignIn incoming={incoming} initialEndpoint={endpoint} secureStorage={!!status?.secureStorage} busy={!!busy} onBusy={setBusy} onConnect={onConnect} onNativeConnect={complete} />}
           {selection === 'join' && joinMethod === 'key' && <form className="ws-join-form" onSubmit={connect} aria-label="Connect a workspace">
             {desktop?.localStatus && <button type="button" className="ws-button ws-quiet" disabled={!!busy} onClick={() => setSelection(null)}>Choose another setup</button>}
             {!!status?.bookmarks.length && <h3>Join another workspace</h3>}

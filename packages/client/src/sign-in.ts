@@ -15,6 +15,13 @@ export interface DeviceSession {
   expires_at: string
   revoked_at: string | null
   current: boolean
+  authentication?: 'password' | 'company'
+}
+export interface CompanyProvider { id: string; name: string; issuer: string; session_seconds: number }
+export interface CompanyConfiguration { providers: CompanyProvider[]; callback_uri: string | null }
+export interface CompanyLink {
+  id: string; principal_id: string; provider_id: string; issuer: string; client_id: string; subject: string
+  created_at: string; changed_at: string; last_authenticated_at: string | null; revoked_at: string | null
 }
 export interface OAuthConnection {
   session_id: string

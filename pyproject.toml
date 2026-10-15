@@ -1,6 +1,6 @@
 [project]
 name = "mnemion"
-version = "4.8.1"
+version = "4.9.0"
 description = "Shared memory infrastructure for applications, teams, and AI assistants, with source evidence and Obsidian visualization."
 readme = "README.md"
 requires-python = ">=3.12,<3.15"
@@ -36,6 +36,7 @@ dependencies = [
     "onnxruntime==1.31.0; sys_platform != 'darwin' or platform_machine != 'x86_64'",
     "mcp>=2.3.0,<3",
     "cryptography==50.0.2",
+    "PyJWT[crypto]==2.15.1",
     "zxcvbn==4.5.0",
     "httpx>=0.28.1,<0.29",
     "jsonschema>=4.26.0,<5",

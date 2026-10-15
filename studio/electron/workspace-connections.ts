@@ -3,6 +3,7 @@ import { randomBytes } from 'node:crypto'
 import { WorkspaceStore, workspaceEndpoint, workspaceIdentity, type WorkspaceIdentity, type WorkspaceBookmark } from './workspace-store.js'
 import { WorkspacePasswordAuth, type PasswordTokens, type PasswordSession, type InvitationPreview } from './workspace-auth.js'
 import { recoveryRecord, type RecoveryDirectoryRecord } from './workspace-recovery.js'
+import { WorkspaceCompanyAuth } from './workspace-company-auth.js'
 
 export interface WorkspaceSession {
   endpoint: string
@@ -10,7 +11,7 @@ export interface WorkspaceSession {
   me: WorkspaceIdentity
   remembered: boolean
   bookmarkId?: string
-  authentication?: 'password'
+  authentication?: 'password' | 'company'
 }
 type Active = WorkspaceSession & { credential: string; password?: PasswordTokens }
 type VerifyIdentity = (endpoint: string, credential: string) => Promise<WorkspaceIdentity>
@@ -18,6 +19,7 @@ const PREFIX = 'mnm_session_'
 export const isWorkspaceSession = (header: string): boolean => header.startsWith('Bearer ' + PREFIX)
 const sessionMetadata = (tokens: PasswordTokens): PasswordSession => ({
   sessionId: tokens.sessionId, expiresAt: tokens.expiresAt, refreshPending: false,
+  ...(tokens.authentication ? { authentication: tokens.authentication } : {}),
 })
 
 export class WorkspaceConnections {
@@ -31,7 +33,8 @@ export class WorkspaceConnections {
     private readonly passwords?: WorkspacePasswordAuth,
     private readonly beforeRestore?: (bookmark: WorkspaceBookmark) => Promise<void>,
     private readonly closed?: (sessionToken: string) => void,
-    private readonly readRecovery?: (endpoint: string, credential: string) => Promise<unknown>) {}
+    private readonly readRecovery?: (endpoint: string, credential: string) => Promise<unknown>,
+    private readonly company?: WorkspaceCompanyAuth) {}
 
   private async directory(endpoint: string, credential: string, me: WorkspaceIdentity): Promise<RecoveryDirectoryRecord | null | undefined> {
     if (!me.administrator) return null
@@ -108,7 +111,7 @@ export class WorkspaceConnections {
       if (generation !== this.generation) throw new Error('A newer connection was selected.')
       this.active = { endpoint, credential, me, remembered: !!bookmark, bookmarkId: bookmark?.id,
         sessionToken: PREFIX + randomBytes(32).toString('base64url'),
-        ...(password ? { authentication: 'password' as const, password } : {}) }
+        ...(password ? { authentication: password.authentication ?? 'password' as const, password } : {}) }
       return this.publicSession()!
     })
   }
@@ -135,6 +138,21 @@ export class WorkspaceConnections {
     const generation = ++this.generation
     endpoint = workspaceEndpoint(endpoint)
     const tokens = await this.passwordAuth().signIn(endpoint, input)
+    return this.activatePassword(endpoint, tokens, remember, generation)
+  }
+
+  async companyConfiguration(endpoint: string, workspaceId: unknown) {
+    if (!this.company) throw new Error('Update this app to use company sign-in.')
+    return this.company.configuration(endpoint, workspaceId)
+  }
+
+  cancelCompanySignIn(): void { ++this.generation; this.company?.cancel() }
+
+  async companySignIn(endpoint: string, input: unknown, remember: boolean): Promise<WorkspaceSession> {
+    if (!this.company) throw new Error('Update this app to use company sign-in.')
+    const generation = ++this.generation
+    endpoint = workspaceEndpoint(endpoint)
+    const tokens = await this.company.signIn(endpoint, input)
     return this.activatePassword(endpoint, tokens, remember, generation)
   }
 
@@ -178,6 +196,7 @@ export class WorkspaceConnections {
 
   /** Clear process memory on exit while retaining the chosen saved workspace. */
   lock(): void {
+    this.company?.cancel()
     ++this.generation
     this.active = null
   }

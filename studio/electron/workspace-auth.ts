@@ -5,6 +5,7 @@ export interface PasswordSession {
   sessionId: string
   expiresAt: string
   refreshPending: boolean
+  authentication?: 'company'
 }
 export interface PasswordTokens {
   sessionId: string
@@ -14,6 +15,7 @@ export interface PasswordTokens {
   refreshToken: string
   accessExpiresAt: string
   expiresAt: string
+  authentication?: 'company'
 }
 export interface InvitationPreview {
   id: string
@@ -27,7 +29,7 @@ export interface InvitationPreview {
   suggested_login: string | null
   spaces: { space_id: string; name: string; role: string }[]
 }
-export type SignInRequest = (endpoint: string, operation: 'login' | 'refresh' | 'logout' | 'invitations/preview' | 'invitations/accept', input: Record<string, unknown>) => Promise<unknown>
+export type SignInRequest = (endpoint: string, operation: 'login' | 'refresh' | 'logout' | 'invitations/preview' | 'invitations/accept' | 'company/configuration' | 'company/start' | 'company/finish', input: Record<string, unknown>) => Promise<unknown>
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const ACCESS = /^mnm_s_[A-Za-z0-9_-]{43}$/
 const REFRESH = /^mnm_r_[A-Za-z0-9_-]{43}$/
@@ -36,10 +38,11 @@ const INVITATION = /^mnm_i_[A-Za-z0-9_-]{43}$/
 export function passwordSession(value: unknown): PasswordSession {
   const data = object(value)
   if (!uuid(data.sessionId) || typeof data.expiresAt !== 'string' || !Number.isFinite(Date.parse(data.expiresAt)) ||
-      typeof data.refreshPending !== 'boolean' || Object.keys(data).some(key => !['sessionId', 'expiresAt', 'refreshPending'].includes(key))) {
+      typeof data.refreshPending !== 'boolean' || !(data.authentication === undefined || data.authentication === 'company') || Object.keys(data).some(key => !['sessionId', 'expiresAt', 'refreshPending', 'authentication'].includes(key))) {
     throw new Error('This saved login is invalid. Sign in again.')
   }
-  return { sessionId: data.sessionId, expiresAt: data.expiresAt, refreshPending: data.refreshPending }
+  return { sessionId: data.sessionId, expiresAt: data.expiresAt, refreshPending: data.refreshPending,
+    ...(data.authentication === 'company' ? { authentication: 'company' as const } : {}) }
 }
 function object(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Invalid sign-in response.')
@@ -49,13 +52,13 @@ function uuid(value: unknown): value is string { return typeof value === 'string
 function label(value: unknown): value is string {
   return typeof value === 'string' && value.length > 0 && value.length <= 256 && !/[\u0000-\u001f\u007f]/.test(value)
 }
-function tokens(value: unknown): PasswordTokens {
+export function passwordTokens(value: unknown): PasswordTokens {
   const data = object(value)
   if (!uuid(data.session_id) || !uuid(data.tenant_id) || !uuid(data.principal_id) ||
       typeof data.access_token !== 'string' || !ACCESS.test(data.access_token) ||
       typeof data.refresh_token !== 'string' || !REFRESH.test(data.refresh_token) ||
       typeof data.access_expires_at !== 'string' || typeof data.expires_at !== 'string' ||
-      data.persistence !== 'native' || data.csrf_token != null) throw new Error('The workspace returned an invalid login.')
+      data.persistence !== 'native' || data.csrf_token != null || ![undefined, 'password', 'company'].includes(data.authentication as string | undefined)) throw new Error('The workspace returned an invalid login.')
   const access = Date.parse(data.access_expires_at), expires = Date.parse(data.expires_at), now = Date.now()
   if (!Number.isFinite(access) || !Number.isFinite(expires) || access <= now || expires < access ||
       access > now + 20 * 60_000 || expires > now + 31 * 86400_000) {
@@ -63,7 +66,8 @@ function tokens(value: unknown): PasswordTokens {
   }
   return { sessionId: data.session_id, tenantId: data.tenant_id, principalId: data.principal_id,
     accessToken: data.access_token, refreshToken: data.refresh_token,
-    accessExpiresAt: data.access_expires_at, expiresAt: data.expires_at }
+    accessExpiresAt: data.access_expires_at, expiresAt: data.expires_at,
+    ...(data.authentication === 'company' ? { authentication: 'company' as const } : {}) }
 }
 function credentials(input: unknown, invitation: boolean): Record<string, unknown> {
   const value = object(input)
@@ -83,13 +87,13 @@ export class WorkspacePasswordAuth {
 
   async signIn(endpoint: string, input: unknown): Promise<PasswordTokens> {
     const command = credentials(input, false)
-    const result = tokens(await this.request(workspaceEndpoint(endpoint), 'login', command))
+    const result = passwordTokens(await this.request(workspaceEndpoint(endpoint), 'login', command))
     if (result.tenantId !== command.workspace_id) throw new Error('The login identified another workspace. Sign in again.')
     return result
   }
 
   async accept(endpoint: string, input: unknown, expected: InvitationPreview): Promise<PasswordTokens> {
-    const result = tokens(await this.request(workspaceEndpoint(endpoint), 'invitations/accept', credentials(input, true)))
+    const result = passwordTokens(await this.request(workspaceEndpoint(endpoint), 'invitations/accept', credentials(input, true)))
     if (result.tenantId !== expected.workspace_id || result.principalId !== expected.principal_id) {
       throw new Error('The invitation identified another workspace or person. Ask for a new invitation.')
     }
@@ -122,11 +126,11 @@ export class WorkspacePasswordAuth {
     if (session.refreshPending) throw new Error('The previous login refresh was interrupted. Sign in again to keep your account safe.')
     if (Date.parse(session.expiresAt) <= Date.now()) throw new Error('This saved login has expired. Sign in again.')
     if (!REFRESH.test(refresh)) throw new Error('This saved login is invalid. Sign in again.')
-    const result = tokens(await this.request(workspaceEndpoint(endpoint), 'refresh', {
+    const result = passwordTokens(await this.request(workspaceEndpoint(endpoint), 'refresh', {
       workspace_id: expected.tenantId, session_id: session.sessionId, transport: 'native', refresh_token: refresh,
     }))
     if (result.sessionId !== session.sessionId || result.tenantId !== expected.tenantId || result.principalId !== expected.principalId ||
-        Date.parse(result.expiresAt) !== Date.parse(session.expiresAt)) {
+        Date.parse(result.expiresAt) !== Date.parse(session.expiresAt) || result.authentication !== session.authentication) {
       throw new Error('The refreshed login no longer identifies the saved account. Sign in again.')
     }
     return result

@@ -375,8 +375,8 @@ function Shell({
               <small>{me.administrator ? "Organization administrator" : space?.role ?? "No space access"}</small>
             </div>
             <button
-              title={connection.authentication === 'password' ? 'Sign out' : 'Disconnect'}
-              aria-label={connection.authentication === 'password' ? 'Sign out' : 'Disconnect'}
+              title={!!connection.authentication ? 'Sign out' : 'Disconnect'}
+              aria-label={!!connection.authentication ? 'Sign out' : 'Disconnect'}
               className="ws-icon-button"
               onClick={disconnect}
             >
@@ -2229,7 +2229,7 @@ export default function Workspace() {
   const disconnecting = useRef<Connection | null>(null);
   const connect = useCallback((next: Connection) => {
     setDisconnectError(undefined);
-    setReturnTo(next.authentication === 'password' ? {
+    setReturnTo(!!next.authentication ? {
       endpoint: next.endpoint, workspaceId: next.me.tenant_id,
     } : null);
     setConnection(next);

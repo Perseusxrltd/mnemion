@@ -203,6 +203,499 @@
       "summary": "Put Block"
     },
     {
+      "authentication": "none",
+      "download": false,
+      "effect": "read",
+      "group": "sign-in",
+      "input_schema": {
+        "$defs": {
+          "CompanyConfigurationInput": {
+            "additionalProperties": false,
+            "properties": {
+              "workspace_id": {
+                "format": "uuid",
+                "title": "Workspace Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "workspace_id"
+            ],
+            "title": "CompanyConfigurationInput",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/CompanyConfigurationInput"
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "POST",
+      "name": "company.check_configuration",
+      "output_schema": {
+        "additionalProperties": true,
+        "title": "Response Configuration Request V1 Sign In Company Configuration Post",
+        "type": "object"
+      },
+      "parameter_locations": {},
+      "path": "/v1/sign-in/company/configuration",
+      "retry": "read",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Configuration Request"
+    },
+    {
+      "authentication": "none",
+      "download": false,
+      "effect": "read",
+      "group": "sign-in",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "workspace_id": {
+                "format": "uuid",
+                "title": "Workspace Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "workspace_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters"
+        ],
+        "type": "object"
+      },
+      "method": "GET",
+      "name": "company.configuration",
+      "output_schema": {
+        "additionalProperties": true,
+        "title": "Response Configuration V1 Sign In Company Configuration Get",
+        "type": "object"
+      },
+      "parameter_locations": {
+        "workspace_id": "query"
+      },
+      "path": "/v1/sign-in/company/configuration",
+      "retry": "read",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Configuration"
+    },
+    {
+      "authentication": "body",
+      "download": false,
+      "effect": "write",
+      "group": "sign-in",
+      "input_schema": {
+        "$defs": {
+          "CompanyFinish": {
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "format": "password",
+                "maxLength": 4096,
+                "minLength": 1,
+                "title": "Code",
+                "type": "string",
+                "writeOnly": true
+              },
+              "code_verifier": {
+                "format": "password",
+                "maxLength": 128,
+                "minLength": 43,
+                "title": "Code Verifier",
+                "type": "string",
+                "writeOnly": true
+              },
+              "state": {
+                "format": "password",
+                "maxLength": 49,
+                "minLength": 49,
+                "title": "State",
+                "type": "string",
+                "writeOnly": true
+              },
+              "transport": {
+                "enum": [
+                  "browser",
+                  "native"
+                ],
+                "title": "Transport",
+                "type": "string"
+              }
+            },
+            "required": [
+              "state",
+              "code_verifier",
+              "code",
+              "transport"
+            ],
+            "title": "CompanyFinish",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/CompanyFinish"
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "POST",
+      "name": "company.finish",
+      "output_schema": {
+        "$defs": {
+          "SessionTokens": {
+            "additionalProperties": true,
+            "properties": {
+              "access_expires_at": {
+                "format": "date-time",
+                "title": "Access Expires At",
+                "type": "string"
+              },
+              "access_token": {
+                "title": "Access Token",
+                "type": "string"
+              },
+              "authentication": {
+                "default": "password",
+                "enum": [
+                  "password",
+                  "company"
+                ],
+                "title": "Authentication",
+                "type": "string"
+              },
+              "csrf_token": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Csrf Token"
+              },
+              "expires_at": {
+                "format": "date-time",
+                "title": "Expires At",
+                "type": "string"
+              },
+              "persistence": {
+                "enum": [
+                  "native",
+                  "cookie",
+                  "memory"
+                ],
+                "title": "Persistence",
+                "type": "string"
+              },
+              "principal_id": {
+                "format": "uuid",
+                "title": "Principal Id",
+                "type": "string"
+              },
+              "refresh_token": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Refresh Token"
+              },
+              "rotation": {
+                "maximum": 4096.0,
+                "minimum": 0.0,
+                "title": "Rotation",
+                "type": "integer"
+              },
+              "session_id": {
+                "format": "uuid",
+                "title": "Session Id",
+                "type": "string"
+              },
+              "tenant_id": {
+                "format": "uuid",
+                "title": "Tenant Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "session_id",
+              "tenant_id",
+              "principal_id",
+              "access_token",
+              "access_expires_at",
+              "expires_at",
+              "persistence",
+              "rotation"
+            ],
+            "title": "SessionTokens",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/SessionTokens"
+      },
+      "parameter_locations": {},
+      "path": "/v1/sign-in/company/finish",
+      "retry": "inspect_before_retry",
+      "sensitive_input": true,
+      "sensitive_result": true,
+      "summary": "Finish"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "write",
+      "group": "sign-in",
+      "input_schema": {
+        "$defs": {
+          "CompanyLinkInput": {
+            "additionalProperties": false,
+            "properties": {
+              "principal_id": {
+                "format": "uuid",
+                "title": "Principal Id",
+                "type": "string"
+              },
+              "provider_id": {
+                "pattern": "^[a-z][a-z0-9-]{0,63}$",
+                "title": "Provider Id",
+                "type": "string"
+              },
+              "subject": {
+                "maxLength": 255,
+                "minLength": 1,
+                "title": "Subject",
+                "type": "string"
+              }
+            },
+            "required": [
+              "principal_id",
+              "provider_id",
+              "subject"
+            ],
+            "title": "CompanyLinkInput",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/CompanyLinkInput"
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "POST",
+      "name": "company.link",
+      "output_schema": {
+        "additionalProperties": true,
+        "title": "Response Link V1 Sign In Company Links Post",
+        "type": "object"
+      },
+      "parameter_locations": {},
+      "path": "/v1/sign-in/company/links",
+      "retry": "inspect_before_retry",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Link"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "read",
+      "group": "sign-in",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {},
+        "type": "object"
+      },
+      "method": "GET",
+      "name": "company.links",
+      "output_schema": {
+        "additionalProperties": true,
+        "title": "Response Links V1 Sign In Company Links Get",
+        "type": "object"
+      },
+      "parameter_locations": {},
+      "path": "/v1/sign-in/company/links",
+      "retry": "read",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Links"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "write",
+      "group": "sign-in",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "link_id": {
+                "format": "uuid",
+                "title": "Link Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "link_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters"
+        ],
+        "type": "object"
+      },
+      "method": "DELETE",
+      "name": "company.revoke",
+      "output_schema": {
+        "additionalProperties": true,
+        "title": "Response Revoke V1 Sign In Company Links  Link Id  Delete",
+        "type": "object"
+      },
+      "parameter_locations": {
+        "link_id": "path"
+      },
+      "path": "/v1/sign-in/company/links/{link_id}",
+      "retry": "inspect_before_retry",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Revoke"
+    },
+    {
+      "authentication": "body",
+      "download": false,
+      "effect": "write",
+      "group": "sign-in",
+      "input_schema": {
+        "$defs": {
+          "CompanyStart": {
+            "additionalProperties": false,
+            "properties": {
+              "callback_uri": {
+                "anyOf": [
+                  {
+                    "maxLength": 256,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Callback Uri"
+              },
+              "device_name": {
+                "maxLength": 100,
+                "minLength": 1,
+                "title": "Device Name",
+                "type": "string"
+              },
+              "invitation": {
+                "anyOf": [
+                  {
+                    "format": "password",
+                    "maxLength": 200,
+                    "minLength": 40,
+                    "type": "string",
+                    "writeOnly": true
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Invitation"
+              },
+              "provider_id": {
+                "pattern": "^[a-z][a-z0-9-]{0,63}$",
+                "title": "Provider Id",
+                "type": "string"
+              },
+              "remember": {
+                "default": false,
+                "title": "Remember",
+                "type": "boolean"
+              },
+              "transport": {
+                "enum": [
+                  "browser",
+                  "native"
+                ],
+                "title": "Transport",
+                "type": "string"
+              },
+              "workspace_id": {
+                "format": "uuid",
+                "title": "Workspace Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "workspace_id",
+              "provider_id",
+              "device_name",
+              "transport"
+            ],
+            "title": "CompanyStart",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/CompanyStart"
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "POST",
+      "name": "company.start",
+      "output_schema": {
+        "additionalProperties": true,
+        "title": "Response Start V1 Sign In Company Start Post",
+        "type": "object"
+      },
+      "parameter_locations": {},
+      "path": "/v1/sign-in/company/start",
+      "retry": "inspect_before_retry",
+      "sensitive_input": true,
+      "sensitive_result": true,
+      "summary": "Start"
+    },
+    {
       "authentication": "bearer",
       "download": false,
       "effect": "write",
@@ -17593,6 +18086,15 @@
                 "title": "Access Token",
                 "type": "string"
               },
+              "authentication": {
+                "default": "password",
+                "enum": [
+                  "password",
+                  "company"
+                ],
+                "title": "Authentication",
+                "type": "string"
+              },
               "csrf_token": {
                 "anyOf": [
                   {
@@ -17897,6 +18399,15 @@
                 "title": "Access Token",
                 "type": "string"
               },
+              "authentication": {
+                "default": "password",
+                "enum": [
+                  "password",
+                  "company"
+                ],
+                "title": "Authentication",
+                "type": "string"
+              },
               "csrf_token": {
                 "anyOf": [
                   {
@@ -18197,6 +18708,15 @@
               },
               "access_token": {
                 "title": "Access Token",
+                "type": "string"
+              },
+              "authentication": {
+                "default": "password",
+                "enum": [
+                  "password",
+                  "company"
+                ],
+                "title": "Authentication",
                 "type": "string"
               },
               "csrf_token": {

@@ -4,6 +4,12 @@ This report covers the source batch prepared for **4.8.0**. Publication and nati
 installation/update results remain separate in [release status](../RELEASE_STATUS.md).
 The development browser walkthrough ran before the package version was advanced.
 
+**Publication update:** 4.8.0's [native release](https://github.com/Perseusxrltd/mnemion/actions/runs/38716852043),
+[independent package publication](https://github.com/Perseusxrltd/mnemion/actions/runs/38722852719),
+[live website update](https://github.com/Perseusxrltd/mnemion/actions/runs/38723054488)
+and [all six public automatic updates](https://github.com/Perseusxrltd/mnemion/actions/runs/38723057646)
+passed on 15 October. The remaining recovery acceptance below is unchanged.
+
 ## Service, isolation and real restoration
 
 The focused service/directory/kit/recovery selection passed **24 tests** against

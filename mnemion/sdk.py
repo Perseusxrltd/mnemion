@@ -101,6 +101,29 @@ def _retry_after(response: httpx.Response) -> float | None:
 
 
 class Client:
+    def company_configuration(self, workspace_id: str) -> dict:
+        return self.request(
+            "GET",
+            "/v1/sign-in/company/configuration",
+            params={"workspace_id": str(UUID(workspace_id))},
+        )
+
+    def company_links(self) -> dict:
+        return self.request("GET", "/v1/sign-in/company/links")
+
+    def link_company_identity(self, principal_id: str, provider_id: str, subject: str) -> dict:
+        from .service.company_sign_in import CompanyLinkInput
+
+        command = CompanyLinkInput(
+            principal_id=principal_id, provider_id=provider_id, subject=subject
+        )
+        return self.request(
+            "POST", "/v1/sign-in/company/links", body=command.model_dump(mode="json")
+        )
+
+    def revoke_company_identity(self, link_id: str) -> dict:
+        return self.request("DELETE", f"/v1/sign-in/company/links/{UUID(link_id)}")
+
     def connector_sync_status(self, connector_id: str) -> SyncStatus:
         from .service.connector_contracts import SyncStatus
 

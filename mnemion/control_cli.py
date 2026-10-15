@@ -227,6 +227,7 @@ def main(argv: list[str] | None = None) -> int:
                             "sign_in.login",
                             "sign_in.refresh",
                             "sign_in.accept_invitation",
+                            "company.finish",
                         }:
                             from .service.sign_in_api import SessionTokens
 

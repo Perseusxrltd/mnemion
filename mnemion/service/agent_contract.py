@@ -46,6 +46,13 @@ sign_in.create_invitation POST /v1/sign-in/invitations
 sign_in.preview_invitation POST /v1/sign-in/invitations/preview
 sign_in.accept_invitation POST /v1/sign-in/invitations/accept
 sign_in.revoke_invitation DELETE /v1/sign-in/invitations/{invitation_id}
+company.configuration GET /v1/sign-in/company/configuration
+company.check_configuration POST /v1/sign-in/company/configuration
+company.start POST /v1/sign-in/company/start
+company.finish POST /v1/sign-in/company/finish
+company.links GET /v1/sign-in/company/links
+company.link POST /v1/sign-in/company/links
+company.revoke DELETE /v1/sign-in/company/links/{link_id}
 grants.list GET /v1/spaces/{space_id}/grants
 grants.set PUT /v1/spaces/{space_id}/grants/{principal_id}
 grants.revoke DELETE /v1/spaces/{space_id}/grants/{principal_id}
@@ -128,6 +135,7 @@ READ_POST = frozenset(
         "obsidian.export",
         "evaluations.compare",
         "sign_in.preview_invitation",
+        "company.check_configuration",
     }
 )
 DOWNLOADS = frozenset({"sources.attachment", "obsidian.export", "evaluations.export"})
@@ -139,6 +147,8 @@ PRIVATE_INPUTS = frozenset(
         "sign_in.logout",
         "sign_in.preview_invitation",
         "sign_in.accept_invitation",
+        "company.start",
+        "company.finish",
     }
 )
 # These operations prove identity with their private input, not another user's
@@ -151,7 +161,14 @@ PUBLIC_AUTH = frozenset(
         "sign_in.logout",
         "sign_in.preview_invitation",
         "sign_in.accept_invitation",
+        "company.configuration",
+        "company.check_configuration",
+        "company.start",
+        "company.finish",
     }
+)
+PUBLIC_CONFIGURATION = frozenset(
+    {"sign_in.configuration", "company.configuration", "company.check_configuration"}
 )
 CONTRACT_PATH = Path(__file__).with_name("agent_contract.json")
 DISCOVERY = frozenset(
@@ -273,9 +290,9 @@ def build_contract(openapi: dict) -> dict:
                 "sensitive_result": name in PRIVATE_INPUTS
                 or name in {"keys.create", "sign_in.create_invitation"},
                 "authentication": "body"
-                if name in PUBLIC_AUTH - {"sign_in.configuration"}
+                if name in PUBLIC_AUTH - PUBLIC_CONFIGURATION
                 else "none"
-                if name == "sign_in.configuration"
+                if name in PUBLIC_CONFIGURATION
                 else "bearer",
                 "parameter_locations": locations,
                 "input_schema": _standalone(input_schema, definitions),

@@ -27,6 +27,10 @@ with the same permission checks as [personal agent consent](hosted-agent-sign-in
 Version **4.8.0** adds `recovery.directory` and `recovery.configure` for **105 total**.
 These expose administrator-only references; the [recovery directory guide](recovery-directory.md)
 also documents local encrypted-kit creation from a private CLI result file.
+Version **4.9.0** adds seven [company-account operations](company-sign-in.md) for
+**112 total**. Configuration and authorized link administration are discoverable;
+one-use company login steps use private CLI input/results and are excluded from
+generic MCP execution.
 Schemas load one at a time, so connecting an
 assistant does not put the entire administration API into its context.
 
@@ -44,6 +48,7 @@ and MCP availability without exposing another tenant's issuer settings.
 | --- | --- |
 | Identity and teams | Inspect identity, create/list spaces and principals, issue/revoke keys, manage grants |
 | Personal access (4.2.0) | Configure passwords, invite/reset people, log in, refresh, list/revoke device sessions and invitations |
+| Company access (4.9.0) | Inspect configured providers, start/finish private company login, list/link/revoke permitted company identities |
 | Memory and evidence | Save, fetch, revise, review, forget, retrieve history, inspect source evidence and attachments |
 | Retrieval and knowledge | Search, construct bounded context, explore the knowledge map, maintain core blocks |
 | Source connectors | Register, enable/disable, bind access, list/refresh scopes, request/monitor scans, suspend/resume, run sync pages and resolve proposals |

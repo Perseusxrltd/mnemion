@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Copy, KeyRound, RefreshCw, ShieldCheck } from 'lucide-react'
 import { MnemionError, type InvitationReceipt } from '@mnemion/client'
 import type { Connection } from './connection-types'
+import CompanyAccess from './CompanyAccess'
 
 const date = (value: string) => new Date(value).toLocaleString()
 function CopyValue({ value, label }: { value: string; label: string }) {
@@ -75,8 +76,8 @@ export default function Account({ connection, disconnect }: { connection: Connec
       setPassword(''); setCurrentPassword(''); setConfirm('')
       setPasswordFormRevision(value => value + 1)
       setNotice('Login saved. Device sessions have been signed out. Your independent API keys remain available.')
-      if (connection.authentication === 'password') disconnect()
-    }, connection.authentication !== 'password')
+      if (!!connection.authentication) disconnect()
+    }, !connection.authentication)
   }
   const sessionToRevoke = sessions.data?.items.find(s => s.id === pendingRevoke)
   const appToRevoke = apps.data?.connections.find(app => app.session_id === pendingApp)
@@ -92,6 +93,7 @@ export default function Account({ connection, disconnect }: { connection: Connec
       <div className="ws-code"><code>{signInLink}</code><CopyValue value={signInLink} label="Copy sign-in link" /></div>
       <small>The host must be reachable from their device. A local address is only reachable on this computer. Use the host’s public HTTPS address to invite people on other computers.</small>
     </section>
+    <CompanyAccess connection={connection} people={humans} disconnect={disconnect} />
     {account.data?.can_use_password ? <form key={passwordFormRevision} className="ws-card ws-form" onSubmit={changePassword}>
       <h2>{account.data.account ? 'Change your login or password' : 'Create your personal login'}</h2>
       {account.data.account?.reset_required ? <p className="ws-notice">An administrator must issue a new reset invitation for this account.</p> : <>
@@ -100,7 +102,7 @@ export default function Account({ connection, disconnect }: { connection: Connec
         <label className="ws-field"><span>New password</span><input type="password" value={password} onChange={event => setPassword(event.target.value)} required minLength={15} maxLength={128} autoComplete="new-password" disabled={busy} /></label>
         <small>Use at least 15 characters, such as several unrelated words.</small>
         <label className="ws-field"><span>Confirm new password</span><input type="password" value={confirm} onChange={event => setConfirm(event.target.value)} required autoComplete="new-password" disabled={busy} /></label>
-        <p className="ws-helper">Saving signs out all of your password sessions. Keep your independent recovery key in a safe place.</p>
+        <p className="ws-helper">Saving signs out all of your device sessions. Keep your independent recovery key in a safe place.</p>
         <button className="ws-button ws-primary" disabled={busy || !password}><KeyRound size={16} />Save login</button>
       </>}
     </form> : account.data && <div className="ws-card"><p>This connection belongs to an application. Applications use their own keys or linked identity-provider credentials; people use individual accounts.</p></div>}
@@ -108,12 +110,12 @@ export default function Account({ connection, disconnect }: { connection: Connec
       <p>Revoke a lost or unused device without affecting your other sessions.</p>
       {me.administrator && <label className="ws-checkbox"><input type="checkbox" data-update-safe checked={allPeople} onChange={event => setAllPeople(event.target.checked)} />Show everyone in this organization</label>}
       <div className="ws-table-wrap"><table className="ws-table"><thead><tr><th>Device</th><th>Person</th><th>Last renewed</th><th>Expires</th><th>Access</th></tr></thead>
-        <tbody>{visibleSessions.map(session => <tr key={session.id}><td><strong>{session.device_name}{session.current ? ' · This session' : ''}</strong><small>{session.transport} · Created {date(session.created_at)}</small></td>
+        <tbody>{visibleSessions.map(session => <tr key={session.id}><td><strong>{session.device_name}{session.current ? ' · This session' : ''}</strong><small>{session.authentication === 'company' ? 'Company account' : 'Personal password'} · {session.transport} · Created {date(session.created_at)}</small></td>
           <td>{session.principal_id === me.principal_id ? me.name : humans.find(p => p.id === session.principal_id)?.name ?? session.principal_id}</td>
           <td>{date(session.last_refreshed_at)}</td><td>{date(session.expires_at)}</td><td>{session.revoked_at ? 'Revoked' : Date.parse(session.expires_at) <= Date.now() ? 'Expired' :
             <button type="button" className="ws-button ws-quiet" disabled={busy} onClick={() => setPendingRevoke(session.id)}>Revoke session</button>}</td></tr>)}</tbody>
       </table></div>
-      {!sessions.isPending && visibleSessions.length === 0 && <p>No password sessions to show.</p>}
+      {!sessions.isPending && visibleSessions.length === 0 && <p>No device sessions to show.</p>}
       <small>Device names are labels supplied at sign-in. Last renewed records credential refresh, not every memory request.</small>
       {(sessions.data?.items.length ?? 0) >= 1000 && <p>Showing the latest 1,000 sessions returned by the server.</p>}
       {sessionToRevoke && <div className="ws-notice" role="group" aria-label="Confirm session revocation">
@@ -145,11 +147,11 @@ export default function Account({ connection, disconnect }: { connection: Connec
           setInvitationFormRevision(value => value + 1)
         })
       }}><h2>Invite a person or reset their login</h2>
-        <p>Choose a person whose space permissions are already set. They choose their own password.</p>
+        <p>Choose a person whose space permissions are already set. They can create a personal password or join with an enabled company account.</p>
         <Link className="ws-link" to="/workspace/team">Create a person or change their space access</Link>
         <label className="ws-field"><span>Person</span><select value={person} onChange={event => setPerson(event.target.value)} required disabled={busy}><option value="">Choose a person</option>{humans.map(p => <option key={p.id} value={p.id}>{p.name}{p.administrator ? ' · Organization administrator' : ''}</option>)}</select></label>
         <label className="ws-field"><span>Invitation type</span><select value={purpose} onChange={event => setPurpose(event.target.value as 'enroll' | 'reset')} disabled={busy}><option value="enroll">First login</option><option value="reset">Reset existing login</option></select></label>
-        {purpose === 'reset' && <p className="ws-notice">Creating this reset immediately disables the old password and signs out that person’s password sessions. Independent API keys remain valid.</p>}
+        {purpose === 'reset' && <p className="ws-notice">Creating this reset immediately disables the old password and signs out that person’s device sessions. Independent API keys remain valid. Revoke a linked company identity separately to prevent another company sign-in.</p>}
         <label className="ws-field"><span>Expires after</span><select value={expiry} onChange={event => setExpiry(Number(event.target.value))} disabled={busy}><option value={3600}>1 hour</option><option value={86400}>1 day</option><option value={604800}>7 days</option></select></label>
         <button className="ws-button ws-primary" disabled={busy || !person}>Create private invitation</button>
       </form>

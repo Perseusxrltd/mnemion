@@ -58,6 +58,9 @@ from .agent_api import attach_agents
 from .oauth import OAuthSettings, OAuthVerifier, unauthorized
 from .oauth_api import attach_oauth
 from .hosted_oauth import HostedOAuth, HostedOAuthSettings
+from .company_identity import CompanyIdentity
+from .company_sign_in import CompanySignIn, attach_company_sign_in
+from .sign_in_api import BrowserPolicy
 from .hosted_oauth_api import (
     PROTOCOL_PATHS,
     attach_hosted_connections,
@@ -162,6 +165,7 @@ def create_app(
     oauth: OAuthVerifier | None = None,
     hosted_oauth_settings: HostedOAuthSettings | None = None,
     public_url: str | None = None,
+    company_identity: CompanyIdentity | None = None,
 ) -> FastAPI:
     builtin_settings = hosted_oauth_settings or HostedOAuthSettings.from_environment()
     if builtin_settings and oauth is not None:
@@ -184,6 +188,13 @@ def create_app(
             )
         database = Database(dsn, max_size=int(os.environ.get("MNEMION_DB_POOL_SIZE", "10")))
     hosted_oauth = HostedOAuth(database, builtin_settings) if builtin_settings else None
+    company_identity = company_identity or CompanyIdentity.from_environment()
+    company_origin = BrowserPolicy(
+        oauth_settings.resource
+        if oauth_settings
+        else public_url or os.environ.get("MNEMION_PUBLIC_URL")
+    ).public_origin
+    company_sign_in = CompanySignIn(database, company_identity, company_origin)
     registry = registry or (
         ModelRegistry(embedder) if embedder is not None else ModelRegistry.from_environment()
     )
@@ -395,7 +406,9 @@ def create_app(
             return await hosted_oauth.authenticate(token)
         # Reserve the local key prefix. Never send a Mnemion API key to an issuer.
         if token.startswith("mnm_") or oauth is None:
-            return await anyio.to_thread.run_sync(database.authenticate, token)
+            return await anyio.to_thread.run_sync(
+                lambda: database.authenticate(token, company_policies=company_identity.policies)
+            )
         claims = await oauth.verify(token)
         return await anyio.to_thread.run_sync(database.authenticate_oauth, claims)
 
@@ -427,7 +440,9 @@ def create_app(
         database,
         authenticated,
         public_url=oauth_settings.resource if oauth_settings else public_url,
+        company_policies=company_identity.policies,
     )
+    attach_company_sign_in(app, company_sign_in, authenticated)
 
     if oauth_settings:
 

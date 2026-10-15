@@ -507,6 +507,10 @@ def _recover_access(conn, ledger: dict, backup_id: str) -> dict:
     # A historical snapshot must not revive a password changed after backup.
     # Recovery administrators reenroll people with fresh one-use invitations.
     conn.execute("UPDATE mnemion.password_accounts SET reset_required=true")
+    conn.execute(
+        "UPDATE mnemion.company_links SET revoked_at=coalesce(revoked_at,clock_timestamp())"
+    )
+    conn.execute("DELETE FROM mnemion.company_login_requests")
     conn.execute("UPDATE mnemion.sign_in_invitations SET revoked_at=coalesce(revoked_at,now())")
     conn.execute("DELETE FROM mnemion.spent_refresh_tokens")
     conn.execute("DELETE FROM mnemion.oauth_local_requests")

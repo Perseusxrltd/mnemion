@@ -1500,7 +1500,7 @@ wheels = [
 
 [[package]]
 name = "mnemion"
-version = "4.8.1"
+version = "4.9.0"
 source = { editable = "." }
 dependencies = [
     { name = "cryptography" },
@@ -1515,6 +1515,7 @@ dependencies = [
     { name = "pgvector" },
     { name = "psutil" },
     { name = "psycopg", extra = ["binary", "pool"] },
+    { name = "pyjwt", extra = ["crypto"] },
     { name = "pyyaml" },
     { name = "tomlkit" },
     { name = "uvicorn" },
@@ -1597,6 +1598,7 @@ requires-dist = [
     { name = "psutil", marker = "extra == 'dev'", specifier = ">=5.9" },
     { name = "psycopg", extras = ["binary", "pool"], specifier = ">=3.3.6,<4" },
     { name = "pyinstaller", marker = "extra == 'studio'", specifier = ">=6.0" },
+    { name = "pyjwt", extras = ["crypto"], specifier = "==2.15.1" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0" },
     { name = "pyyaml", specifier = ">=6.0.3,<7" },

@@ -3,6 +3,7 @@ import { ArrowRight, KeyRound, LoaderCircle, LockKeyhole, ShieldCheck } from 'lu
 import type { InvitationPreview } from '@mnemion/client'
 import type { Connection, WorkspaceSession } from './connection-types'
 import { BrowserSignIn, browserBookmarks, canRememberBrowser, forgetBrowserBookmark, joinLink, previewBrowserInvitation, type JoinLink } from './sign-in'
+import CompanySignIn from './CompanySignIn'
 
 export default function SignInForm({ method, incoming, initialEndpoint, initialError, secureStorage, busy, onBusy, onConnect, onNativeConnect }: {
   method: 'password' | 'invitation'; incoming: JoinLink | null; initialEndpoint: string
@@ -23,6 +24,7 @@ export default function SignInForm({ method, incoming, initialEndpoint, initialE
   const [previewEndpoint, setPreviewEndpoint] = useState('')
   const [previewSecret, setPreviewSecret] = useState('')
   const [error, setError] = useState<unknown>(initialError)
+  const [company, setCompany] = useState(false)
   useEffect(() => { if (initialError) setError(initialError) }, [initialError])
   const [saved, setSaved] = useState(browserBookmarks)
   const mounted = useRef(true)
@@ -79,6 +81,7 @@ export default function SignInForm({ method, incoming, initialEndpoint, initialE
     })
   }
   const foreignOrigin = !desktop && (() => { try { return new URL(target().endpoint).origin !== location.origin } catch { return false } })()
+  if (company && preview) return <CompanySignIn incoming={{ endpoint: previewEndpoint, workspaceId: preview.workspace_id, invitation: previewSecret }} initialEndpoint={previewEndpoint} secureStorage={secureStorage} busy={busy} onBusy={onBusy} onConnect={onConnect} onNativeConnect={onNativeConnect} onBack={() => setCompany(false)} />
   return <div className="ws-sign-in">
     {!desktop && saved.length > 0 && method === 'password' && <section className="ws-saved-workspaces" aria-label="Remembered browser logins">
       <h3>Continue in your workspace</h3>
@@ -112,6 +115,7 @@ export default function SignInForm({ method, incoming, initialEndpoint, initialE
         <p>{preview.administrator ? 'Organization administrator: can manage people and workspace access.' : 'Member: access is limited to the spaces shown below.'}</p>
         {preview.spaces.length ? <ul>{preview.spaces.map(space => <li key={space.space_id}><strong>{space.name}</strong> · {space.role}</li>)}</ul> : <p>No memory spaces have been granted yet. Ask your administrator to assign access.</p>}
         <small>Invitation expires {new Date(preview.expires_at).toLocaleString()}.</small>
+        {preview.purpose === 'enroll' && <button type="button" className="ws-button" disabled={busy} onClick={() => setCompany(true)}>Join with my company account</button>}
         <button type="button" className="ws-button ws-quiet" disabled={busy} onClick={() => { setPreview(undefined); setPassword(''); setConfirm(''); }}>Use a different invitation</button>
       </div>}
       {(method === 'password' || preview) && <>

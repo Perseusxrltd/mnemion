@@ -36,6 +36,7 @@ class SessionTokens(ResponseModel):
     expires_at: AwareDatetime
     persistence: Literal["native", "cookie", "memory"]
     rotation: int = Field(ge=0, le=4096)
+    authentication: Literal["password", "company"] = "password"
 
 
 class InvitationSecret(Command):
@@ -188,8 +189,10 @@ def refresh_credentials(request: Request, command: RefreshInput, policy: Browser
     return refresh, csrf, cookie
 
 
-def attach_sign_in(app, database, authenticated, *, public_url: str | None = None):
-    service = SignInService(database)
+def attach_sign_in(
+    app, database, authenticated, *, public_url: str | None = None, company_policies=()
+):
+    service = SignInService(database, company_policies=company_policies)
     policy = BrowserPolicy(public_url or os.environ.get("MNEMION_PUBLIC_URL"))
     Auth = Annotated[Identity, Depends(authenticated)]
 

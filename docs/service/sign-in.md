@@ -5,6 +5,11 @@ for published versions and validation. Each person can use their own login,
 password and revocable device sessions. Existing scoped application keys remain
 available for agents and independently held administrator recovery.
 
+Version **4.9.0** also supports [company accounts](company-sign-in.md), including
+first-login invitation acceptance and revocable company device sessions. A host
+operator configures the identity provider; Mnemion administrators still assign
+every person's workspace authority.
+
 ## Invite someone to your organization
 
 1. In **People & apps**, create a **Person** and give them the required space
@@ -19,6 +24,10 @@ available for agents and independently held administrator recovery.
 4. The recipient chooses **Join a workspace → Use invitation**, pastes the link
    or code and selects **Review invitation**. They review their identity and
    access, choose a login and password, name this device and open the workspace.
+
+With an enabled company provider on 4.9.0, a first-login recipient can instead
+choose **Join with my company account**. Company sign-in does not require
+creating a Mnemion password.
 
 Only the recipient chooses their password. An invitation works once before its
 expiry. A replacement invitation, a relevant permission change, a disabled

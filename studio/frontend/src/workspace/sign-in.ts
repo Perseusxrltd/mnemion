@@ -1,5 +1,7 @@
 import { MnemionClient, MnemionError, type InvitationCredentials, type InvitationPreview, type SignInCredentials } from '@mnemion/client'
 import type { Connection } from './connection-types'
+import type { CompanyConfiguration } from '../../../shared/company-sign-in'
+import { companyConfiguration } from '../../../electron/company-sign-in-protocol'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const TOKEN = (prefix: string, value: unknown): value is string => typeof value === 'string' && new RegExp('^' + prefix + '[A-Za-z0-9_-]{43}$').test(value)
@@ -8,11 +10,13 @@ export type JoinLink = { endpoint: string; workspaceId?: string; invitation?: st
 export type BrowserBookmark = {
   endpoint: string; workspaceId: string; principalId: string; sessionId: string
   name: string; workspaceName: string; expiresAt: string; refreshPending: boolean
+  authentication?: 'company'
 }
 type Tokens = {
   tenant_id: string; principal_id: string; session_id: string; access_token: string
   refresh_token: string | null; csrf_token: string; access_expires_at: string; expires_at: string
   persistence: 'cookie' | 'memory'; rotation: number
+  authentication?: 'company'
 }
 
 export function joinLink(value: string): JoinLink {
@@ -70,12 +74,13 @@ export function browserBookmarks(): BrowserBookmark[] {
     return data.filter((value): value is BrowserBookmark => {
       if (!value || typeof value !== 'object') return false
       const b = value as BrowserBookmark
-      return typeof b.endpoint === 'string' && b.endpoint.length <= 4096 && joinLink(b.endpoint).endpoint === b.endpoint &&
+      return (b.authentication === undefined || b.authentication === 'company') && typeof b.endpoint === 'string' && b.endpoint.length <= 4096 && joinLink(b.endpoint).endpoint === b.endpoint &&
         new URL(b.endpoint).origin === location.origin && [b.workspaceId, b.principalId, b.sessionId].every(id => typeof id === 'string' && UUID.test(id)) &&
         [b.name, b.workspaceName].every(label => typeof label === 'string' && label.length <= 256) &&
         typeof b.expiresAt === 'string' && Number.isFinite(Date.parse(b.expiresAt)) && typeof b.refreshPending === 'boolean'
     }).map(b => ({ endpoint: b.endpoint, workspaceId: b.workspaceId, principalId: b.principalId, sessionId: b.sessionId,
-      name: b.name, workspaceName: b.workspaceName, expiresAt: b.expiresAt, refreshPending: b.refreshPending }))
+      name: b.name, workspaceName: b.workspaceName, expiresAt: b.expiresAt, refreshPending: b.refreshPending,
+      ...(b.authentication ? { authentication: b.authentication } : {}) }))
   } catch { return [] }
 }
 function saveBookmark(bookmark: BrowserBookmark): void {
@@ -131,10 +136,10 @@ async function request(endpoint: string, operation: string, input: unknown, csrf
 
 function readTokens(value: unknown): Tokens {
   if (!value || typeof value !== 'object') throw failed('The workspace returned an invalid login.')
-  const t = value as Tokens
+  const t = value as Omit<Tokens, 'authentication'> & { authentication?: 'password' | 'company' }
   if (![t.tenant_id, t.principal_id, t.session_id].every(id => typeof id === 'string' && UUID.test(id)) ||
       !TOKEN('mnm_s_', t.access_token) || !TOKEN('mnm_c_', t.csrf_token) ||
-      !Number.isInteger(t.rotation) || t.rotation < 0 || t.rotation > 4096 ||
+      ![undefined, 'password', 'company'].includes(t.authentication) || !Number.isInteger(t.rotation) || t.rotation < 0 || t.rotation > 4096 ||
       !(t.persistence === 'cookie' && t.refresh_token === null || t.persistence === 'memory' && TOKEN('mnm_r_', t.refresh_token))) throw failed('The workspace returned an invalid login.')
   const access = Date.parse(t.access_expires_at), expires = Date.parse(t.expires_at), now = Date.now()
   if (!Number.isFinite(access) || !Number.isFinite(expires) || access <= now || access > now + 20 * 60_000 || expires < access || expires > now + 31 * 86400_000) {
@@ -142,7 +147,15 @@ function readTokens(value: unknown): Tokens {
   }
   return { tenant_id: t.tenant_id, principal_id: t.principal_id, session_id: t.session_id,
     access_token: t.access_token, refresh_token: t.refresh_token, csrf_token: t.csrf_token,
-    access_expires_at: t.access_expires_at, expires_at: t.expires_at, persistence: t.persistence, rotation: t.rotation }
+    access_expires_at: t.access_expires_at, expires_at: t.expires_at, persistence: t.persistence, rotation: t.rotation,
+    ...(t.authentication === 'company' ? { authentication: 'company' as const } : {}) }
+}
+
+export async function browserCompanyConfiguration(endpoint: string, workspaceId: string): Promise<CompanyConfiguration> {
+  return companyConfiguration(await request(endpoint, 'company/configuration', { workspace_id: workspaceId }), endpoint)
+}
+export async function browserCompanyStart(endpoint: string, input: unknown): Promise<unknown> {
+  return request(endpoint, 'company/start', input)
 }
 export async function previewBrowserInvitation(endpoint: string, invitation: string): Promise<InvitationPreview> {
   const value = await request(endpoint, 'invitations/preview', { invitation })
@@ -198,7 +211,7 @@ export class BrowserSignIn {
   #checkPin(tokens: Tokens): void {
     const b = this.#bookmark
     if (tokens.tenant_id !== b.workspaceId || tokens.principal_id !== b.principalId || tokens.session_id !== b.sessionId ||
-        Date.parse(tokens.expires_at) !== Date.parse(b.expiresAt)) throw failed('This login identifies a different account. Sign in again.')
+        Date.parse(tokens.expires_at) !== Date.parse(b.expiresAt) || tokens.authentication !== b.authentication) throw failed('This login identifies a different account. Sign in again.')
   }
   #publish(): void { if (this.#cookie && this.#tokens) this.#channel?.postMessage({ kind: 'access', tokens: this.#tokens }) }
   #close(): void {
@@ -267,15 +280,27 @@ export class BrowserSignIn {
     if ([me.name, me.tenant_name].some(value => typeof value !== 'string' || value.length > 256)) throw failed('Invalid workspace identity.')
     this.#bookmark = { ...this.#bookmark, name: me.name, workspaceName: me.tenant_name }
     if (this.#cookie) saveBookmark(this.#bookmark)
-    return { client: this.client, me, endpoint: this.endpoint, authentication: 'password', signOut: () => this.signOut(), close: () => this.#close(),
+    return { client: this.client, me, endpoint: this.endpoint, authentication: this.#bookmark.authentication ?? 'password', signOut: () => this.signOut(), close: () => this.#close(),
       subscribeClosed: listener => {
         if (this.#closed) listener(); else this.#closedListeners.add(listener)
         return () => { this.#closedListeners.delete(listener) }
       } }
   }
   static async signIn(endpoint: string, input: SignInCredentials | InvitationCredentials, remember: boolean, preview?: InvitationPreview): Promise<Connection> {
-    ownOrigin(endpoint)
     const workspaceId = preview?.workspace_id ?? (input as SignInCredentials).workspace_id
+    return this.openSession(endpoint, workspaceId, () => request(endpoint, preview ? 'invitations/accept' : 'login', {
+      ...input, transport: 'browser', remember: remember && canRememberBrowser(),
+    }), preview)
+  }
+  static async companySignIn(endpoint: string, workspaceId: string, input: { state: string; code_verifier: string; code: string }, preview?: InvitationPreview): Promise<Connection> {
+    return this.openSession(endpoint, workspaceId, async () => {
+      const response = await request(endpoint, 'company/finish', { ...input, transport: 'browser' })
+      if (readTokens(response).authentication !== 'company') throw failed('The workspace returned another sign-in method.')
+      return response
+    }, preview)
+  }
+  private static async openSession(endpoint: string, workspaceId: string, retrieve: () => Promise<unknown>, preview?: InvitationPreview): Promise<Connection> {
+    ownOrigin(endpoint)
     if (!UUID.test(workspaceId)) throw failed('Use your administrator’s workspace sign-in link.')
     const start = async () => {
       const previous = browserBookmarks().find(b => b.endpoint === endpoint && b.workspaceId === workspaceId)
@@ -284,12 +309,11 @@ export class BrowserSignIn {
         if (canRememberBrowser()) await new BrowserSignIn(endpoint, previous, null).#end()
         else forgetBrowserBookmark(previous)
       }
-      const tokens = readTokens(await request(endpoint, preview ? 'invitations/accept' : 'login', {
-        ...input, transport: 'browser', remember: remember && canRememberBrowser(),
-      }))
+      const tokens = readTokens(await retrieve())
       if (tokens.tenant_id !== workspaceId || (preview && tokens.principal_id !== preview.principal_id)) throw failed('The sign-in identified another workspace or person.')
       const session = new BrowserSignIn(endpoint, { endpoint, workspaceId: tokens.tenant_id, principalId: tokens.principal_id,
-        sessionId: tokens.session_id, expiresAt: tokens.expires_at, name: '', workspaceName: '', refreshPending: false }, tokens)
+        sessionId: tokens.session_id, expiresAt: tokens.expires_at, name: '', workspaceName: '', refreshPending: false,
+        ...(tokens.authentication ? { authentication: tokens.authentication } : {}) }, tokens)
       try { const connection = await session.#connection(); session.#publish(); return connection }
       catch (error) { await session.#end().catch(() => {}); throw error }
     }
