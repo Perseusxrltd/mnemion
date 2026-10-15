@@ -41,7 +41,7 @@ def inventory(dsn):
         return result
 
 
-@pytest.mark.parametrize("previous_count", [13, 14, 15])
+@pytest.mark.parametrize("previous_count", [13, 14, 15, 16])
 def test_previous_schema_upgrade_preserves_keys_grants_and_existing_memory(
     postgres, tmp_path, monkeypatch, previous_count
 ):
@@ -129,12 +129,14 @@ def test_previous_schema_upgrade_preserves_keys_grants_and_existing_memory(
         after = inventory(admin_dsn)
         assert {table: after[table] for table in before} == before
         added = set(after) - set(before)
-        expected_tables = {
-            "oauth_local_attempts",
-            "oauth_local_clients",
-            "oauth_local_requests",
-            "oauth_local_connections",
-        }
+        expected_tables = {"recovery_directories"}
+        if previous_count < 16:
+            expected_tables |= {
+                "oauth_local_attempts",
+                "oauth_local_clients",
+                "oauth_local_requests",
+                "oauth_local_connections",
+            }
         if previous_count < 15:
             expected_tables |= {
                 "password_accounts",

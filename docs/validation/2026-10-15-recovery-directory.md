@@ -24,6 +24,11 @@ revision and editor history. Old keys remained rejected. The new recovery
 administrator could update it to the next revision while the exercise continued
 to verify memory deletion, access revocation and queued-work reconciliation.
 
+Four preceding-schema upgrade cases also passed, including the schema used by
+4.7.1. They verify that existing rows, keys and grants remain unchanged, only the
+declared empty tables are added, and the installed upgrade snapshot still
+detects an incorrect session-key conversion.
+
 ## Desktop persistence
 
 **50 desktop store, connection and personal-sign-in checks passed.** New cases
