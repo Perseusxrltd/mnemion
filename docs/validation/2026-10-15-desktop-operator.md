@@ -17,6 +17,12 @@ private key output, identity confirmation, cancellation and bounded retries.
   live/dead process publication, partial-response timeout and response identity.
   These address protocol behavior; platform branches simulated on Linux do not
   count as native Windows or macOS execution.
+- A separate **eight-test native Windows run** passed using Windows Python 3.13
+  and Node 25.2.1, the same transport tests, current compiled desktop modules and
+  source Python client. It exercised real Windows named pipes and NTFS private
+  discovery/output permissions, including authentication, cancellation and replay.
+  The disposable probe did not touch the installed Windows app and does not
+  replace bundled-installer or Windows ARM acceptance.
 - TypeScript builds and the complete desktop frontend build passed. The new
   setup panel uses the existing design system and copies executable/argument
   instructions without a credential or pipe address.
