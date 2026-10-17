@@ -59,6 +59,25 @@
       "updated_at": "2026-10-13T05:57:12Z",
       "url": "https://github.com/Perseusxrltd/mnemion/issues/32",
       "labels": []
+    },
+    {
+      "number": 38,
+      "title": "Host reset wipes a self-hosted install with no reproducible re-install path or off-host key/state recovery",
+      "updated_at": "2026-10-17T09:57:06Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/issues/38",
+      "labels": [
+        "bug",
+        "documentation"
+      ]
+    },
+    {
+      "number": 39,
+      "title": "Buffer memory with automatic additive write-back to Git (native saves are never pushed upstream)",
+      "updated_at": "2026-10-17T09:57:12Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/issues/39",
+      "labels": [
+        "enhancement"
+      ]
     }
   ],
   "runs": [
@@ -129,5 +148,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38762926335"
     }
   ],
-  "observed_at": "2026-10-17T07:56:56+00:00"
+  "observed_at": "2026-10-17T09:57:24+00:00"
 }
