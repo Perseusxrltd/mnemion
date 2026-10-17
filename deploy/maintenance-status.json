@@ -47,7 +47,7 @@
     {
       "number": 31,
       "title": "Recall has no recency signal: older 'open question' memories outrank the newer answer",
-      "updated_at": "2026-10-16T07:47:27Z",
+      "updated_at": "2026-10-17T07:56:35Z",
       "url": "https://github.com/Perseusxrltd/mnemion/issues/31",
       "labels": [
         "fixed-in:4.2.3"
@@ -129,5 +129,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38762926335"
     }
   ],
-  "observed_at": "2026-10-17T04:58:02+00:00"
+  "observed_at": "2026-10-17T07:56:56+00:00"
 }
