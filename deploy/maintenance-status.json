@@ -63,7 +63,7 @@
     {
       "number": 38,
       "title": "Host reset wipes a self-hosted install with no reproducible re-install path or off-host key/state recovery",
-      "updated_at": "2026-10-17T15:55:33Z",
+      "updated_at": "2026-10-18T15:55:32Z",
       "url": "https://github.com/Perseusxrltd/mnemion/issues/38",
       "labels": [
         "bug",
@@ -148,5 +148,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38762926335"
     }
   ],
-  "observed_at": "2026-10-18T11:41:28+00:00"
+  "observed_at": "2026-10-18T15:55:55+00:00"
 }
