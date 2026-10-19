@@ -126,7 +126,7 @@ def test_complete_recovery_reconciles_later_deletion_grants_and_keys(
     from service_tests.test_recovery_directory import directory
     from service_tests.test_writeback import setup as setup_journal
 
-    setup_journal(env, tmp_path)
+    journal_service, journal_destination = setup_journal(env, tmp_path)
 
     directory_service = RecoveryDirectoryService(env.db)
     saved_directory = directory_service.update(
@@ -195,6 +195,18 @@ def test_complete_recovery_reconciles_later_deletion_grants_and_keys(
     assert leased and str(leased["operation_id"]) == pending["operation_id"]
     archive, ledger, credentials = (
         tmp_path / n for n in ("backup.mnemion", "ledger.json", "owner.json")
+    )
+    from mnemion.service.backfill_models import BackfillStartInput
+
+    backfill = journal_service.start_backfill(
+        env.owner,
+        env.space,
+        BackfillStartInput(
+            expected_version=1,
+            publish_existing_memories=True,
+            acknowledge_retained_git_history=True,
+        ),
+        "recovery-backfill",
     )
     backup = recovery.create_backup(env.admin_dsn, archive, pg_bin=pg_bin)
     env.memory.forget(
@@ -301,6 +313,15 @@ def test_complete_recovery_reconciles_later_deletion_grants_and_keys(
                 "SELECT FROM mnemion.writeback_events WHERE memory_id=%s AND action='upsert' AND state IN ('pending','local')",
                 (doomed["memory_id"],),
             ).fetchone()
+        from mnemion.journal.config import Configuration
+        from mnemion.service.writeback import WritebackService
+
+        restored_journal = WritebackService(db, Configuration(destinations=[journal_destination]))
+        restored_backfill = restored_journal.backfill_status(identity, env.space)
+        assert restored_backfill["run"]["id"] == backfill["run"]["id"]
+        assert restored_backfill["waiting_reason"] == "journal_paused"
+        assert restored_journal.backfill_batch(identity, env.space)["examined"] == 0
+        assert not restored_journal.run_once()
     finally:
         db.close()
     if os.name != "nt":

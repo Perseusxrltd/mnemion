@@ -12,8 +12,11 @@ Source **4.19.0** adds file rollover and an index of validated Git objects.
 Source **4.20.0** adds pinned SSH deploy-key access and explicit local/network
 destination types in receipts. The 4.18 native build was withheld; 4.19 includes
 its guided setup with the desktop connection metadata correction.
+Source **4.22.0** adds separately approved, resumable backfill of existing native
+memories with the same controls in the app, SDKs and agent catalog.
 
-An inbound Git connection does not enable publication. Existing memories, core
+An inbound Git connection does not enable publication. Enabling a journal does
+not automatically export older memories; use the separate approval below. Core
 blocks, attachments, credentials and organization settings are not backfilled.
 Use a [complete host recovery package](host-recovery.md) to preserve accounts,
 grants, native database IDs and source settings. A journal protects published
@@ -103,7 +106,8 @@ and re-register them on the recovered host before approving publication.
    branch and folder, then acknowledge publication and retained Git history.
    Configuration requires organization administration **and** administrator
    access to this space. The default interval is 300 seconds, configurable
-   between 30 and 86,400. Only future native changes are captured.
+   between 30 and 86,400. This enables future native changes; older memories need
+   the separate approval below.
 
 Git installation and credential provisioning still require the service OS
 account's operator. Hosts outside the app use the registration command above.
@@ -170,6 +174,84 @@ operation. Changing the registered file paths requires the current registration
 fingerprint/revision and fresh space approval. Existing HTTPS/local registrations
 retain their fingerprints when upgrading to SSH-capable versions.
 
+## Including existing native memories
+
+From 4.22, an organization administrator with administrator access to the native
+space can open **Git journal → Include existing memories**. The host must have
+an approved, unpaused destination and an active publisher.
+
+1. Review the repository, branch, folder, candidate count and text size. The
+   preview counts current ordinary revisions without a corresponding journal
+   event. It does not run the privacy scanner or promise that every candidate
+   will be exported.
+2. Acknowledge existing-memory publication and retained Git history, then choose
+   **Approve & start scan**. The workspace host continues without this page or a
+   language-model session. It must remain running to make progress.
+3. Inspect checked, queued, already-captured, excluded and rejected counts. The
+   scan does not edit memories, create revisions or request embeddings. Journal
+   records retain the native memory ID, current version, original revision author
+   and revision timestamp. Only the current text, subject, kind and metadata are
+   exported; earlier revisions and full source/attachment evidence are outside
+   this journal format.
+4. Review rejected records through their memory links. Secret, personal-data and
+   custom scanner checks run before capture. No content is placed in diagnostics;
+   at most 50 memory IDs/versions and fixed reasons are shown. Originals remain
+   untouched. Repair the source memory through normal revision controls, then
+   start another scan when needed. A missing or failed scanner pauses progress
+   as **needs attention**, without advancing past that record.
+5. Check **pending entries** and the **last confirmed push** for delivery. A
+   finished scan can still have pending Git work or rejected memories. The
+   destination kind retains its meaning: a local bare repository's receipt is
+   not proof of off-host replication.
+
+The scan fixes its memory-creation cutoff at approval and reads each current
+revision when it reaches it. Normal native journaling handles newer saves and
+edits. Deleted, quarantined, withdrawn-source and recovery-denied records are
+excluded. Already captured current versions are not duplicated. A deletion or
+quarantine after capture suppresses pending text through the normal journal path.
+
+Cursor movement, counts and each captured event commit in one transaction.
+Competing service processes serialize the same job. Work uses at most 100
+records and a 2 MiB text target per batch, reduced by the destination's lower
+limits, with a five-second work target. One bounded record/scanner operation can
+finish after that target. Oversized historical values are refused before loading
+them into application memory. Queued publication drains before another scheduled
+batch, so a Git outage cannot accumulate the entire backfill in the local queue.
+
+**Pause scan** and **Cancel remaining scan** stop further capture. Already queued
+entries keep their separate publication policy; pause journal publication too
+when delivery must stop. Resume uses the same run and cursor. Any destination or
+policy change needs fresh approval. If the approving administrator is disabled
+or loses the required grant, another authorized administrator can review and
+resume that job. No administrator inherits another space's content access.
+
+Progress survives a service restart and is included in full database backups.
+Recovery pauses journal publication and changes its policy version; restoring a
+job never automatically restarts old publication. Review the restored host,
+destination, publisher and current access before approving resume.
+
+The same operations are available to agents:
+
+| Operation | HTTP | Purpose |
+| --- | --- | --- |
+| `journal.backfill.status` | `GET /v1/spaces/{space_id}/writeback/backfill` | Preview current candidates and inspect progress/waiting reasons. |
+| `journal.backfill.start` | `POST /v1/spaces/{space_id}/writeback/backfill` | Start or explicitly resume, with one retained `Idempotency-Key`. |
+| `journal.backfill.control` | `POST /v1/spaces/{space_id}/writeback/backfill/control` | Pause/cancel the exact current run. |
+
+Start input requires `expected_version` (the journal policy version),
+`publish_existing_memories: true` and `acknowledge_retained_git_history: true`.
+Supply `resume_run` to approve continuation of an existing job. An uncertain
+response must be retried with the **same input and idempotency key**; fetch current
+status afterward. Controls require `expected_version`, `run_id`, and `action`
+(`pause` or `cancel`). Python provides `journal_backfill_status`,
+`start_journal_backfill` and `control_journal_backfill`; TypeScript provides the
+corresponding camelCase methods. Ordinary memory-tool discovery does not grant
+administration rights.
+
+The older `existing_memories_backfilled: false` journal-status field remains for
+client compatibility and describes default journal enablement only. Use the
+separate backfill status and delivery receipts for actual coverage.
+
 ### Adopting an older external journal
 
 The prototype buffer in the issue 39 report used different fields and has no
@@ -185,6 +267,8 @@ memories, and verify the exact remotely published events/bytes. Do not mark all
 current local file bytes as delivered after a push that sent an earlier snapshot.
 Native receipts acknowledge selected event IDs, so a concurrently appended event
 remains pending until its own confirmed publication.
+Native-memory backfill does not convert that external schema or restore an
+original writable database from a source mirror.
 
 ## Save acknowledgments and failures
 
@@ -389,7 +473,7 @@ read in bounded Git batches and projected through the existing 2 MiB SQLite
 cache. The same one-million-record/2 GiB inventory limits apply, with up to
 50,000 journal/view files and an 8 MiB tree listing. This is bounded processing,
 not a measured large-company throughput guarantee. The 4.19 rollover above
-handles the per-writer daily-file limit; larger complete inventories, backfill
+handles the per-writer daily-file limit; larger complete inventories
 and representative provider/fleet capacity remain roadmap work.
 
 ## Monitoring, SDKs and agents
@@ -461,10 +545,12 @@ Publication defaults to 250 entries/8 MiB per batch, configurable up to 2,000
 entries/32 MiB. Subprocesses have time/output bounds. The publisher lock is
 separate from local capture. Replay uses a private disposable SQLite index with
 a 2 MiB cache, bounded to one million physical records and 2 GiB of input;
-duplicates consume the input budget. Files are capped at 20 MB, matching default
-adapter limits. A full file or larger inventory fails visibly. Pending storage
-can grow while Git is offline: monitor queue bytes/count and available disk.
-Automatic sharding and representative large-history capacity remain open.
+duplicates consume the input budget. Individual files are capped at 20 MB;
+4.19 publishers roll full daily files into numbered continuations under a
+schema-2 catalog. The complete inventory limits still apply. Pending native
+saves can grow while Git is offline: monitor queue bytes/count and available
+disk. Scheduled backfill waits for the queue to drain before adding another
+batch. Larger inventory sharding and representative fleet capacity remain open.
 
 ## Recovery and remaining work
 
@@ -475,8 +561,8 @@ Enroll a destination on the new host, establish its Git credential manager and
 explicitly approve its policy in Studio before resuming the durable queue.
 
 [Issue 39](https://github.com/Perseusxrltd/mnemion/issues/39) remains open for
-guided remote-host enrollment and provider sign-in, old-memory backfill, direct
+guided remote-host enrollment and provider sign-in, legacy-buffer reconciliation, direct
 writable-space reconstruction and large-history/live-provider acceptance. The
 source now includes local app host registration, capture, guarded publication,
-scheduled filing/archival, app/agent controls and source replay; it does not
+scheduled filing/archival, existing native-memory backfill, app/agent controls and source replay; it does not
 replace complete workspace backups or independently hosted infrastructure.

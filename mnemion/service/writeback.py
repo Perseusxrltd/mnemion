@@ -517,6 +517,26 @@ class WritebackService:
 
         return organize(self, identity, space, expected_version=expected_version)
 
+    def backfill_status(self, identity, space):
+        from .journal_backfill import status
+
+        return status(self, identity, space)
+
+    def start_backfill(self, identity, space, command, key):
+        from .journal_backfill import start
+
+        return start(self, identity, space, command, key)
+
+    def control_backfill(self, identity, space, command):
+        from .journal_backfill import control
+
+        return control(self, identity, space, command)
+
+    def backfill_batch(self, identity, space):
+        from .journal_backfill import run_batch
+
+        return run_batch(self, identity, space)
+
     def stop(self):
         self._stop.set()
         if self._thread:
@@ -526,7 +546,7 @@ class WritebackService:
         if not self.destinations or not self._step.acquire(blocking=False):
             return False
         try:
-            organizing = False
+            action = "push"
             with self.db.pool.connection() as conn:
                 settings = conn.execute(
                     "SELECT * FROM mnemion.claim_writeback(%s)",
@@ -534,14 +554,23 @@ class WritebackService:
                 ).fetchone()
                 if settings is None:
                     settings = conn.execute(
+                        "SELECT * FROM mnemion.claim_journal_backfill(%s)",
+                        ([d.fingerprint for d in self.destinations.values()],),
+                    ).fetchone()
+                    if settings is not None:
+                        action = "backfill"
+                if settings is None:
+                    settings = conn.execute(
                         "SELECT * FROM mnemion.claim_journal_fold(%s)",
                         ([d.fingerprint for d in self.destinations.values()],),
                     ).fetchone()
-                    organizing = settings is not None
+                    action = "organize"
             if settings is None:
                 return False
-            if organizing:
+            if action == "organize":
                 self.organize(self._publisher(settings), settings["space_id"])
+            elif action == "backfill":
+                self.backfill_batch(self._publisher(settings), settings["space_id"])
             else:
                 self.push(self._publisher(settings), settings["space_id"])
             return True

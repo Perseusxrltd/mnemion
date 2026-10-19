@@ -12,7 +12,7 @@ import type { RecoveryDirectory, RecoveryDirectoryRecord } from './recovery.js'
 export * from './recovery.js'
 import type { VaultAuditEvent, VaultEntry, VaultEnvelope, VaultGrantInput, VaultGrants, VaultPage, VaultPutInput, VaultStatus } from './vault.js'
 export * from './vault.js'
-import type { JournalDelivery, JournalPolicyInput, JournalStatus } from './writeback.js'
+import type { JournalBackfillControl, JournalBackfillStart, JournalBackfillStatus, JournalDelivery, JournalPolicyInput, JournalStatus } from './writeback.js'
 export * from './writeback.js'
 export * from './conversations.js'
 
@@ -180,6 +180,9 @@ export class MnemionClient {
   configureJournal(space: string, input: JournalPolicyInput) { return this.request<JournalStatus>('PUT', this.journalPath(space), { body: input }) }
   pushJournal(space: string, expectedVersion: number) { return this.request<JournalStatus>('POST', this.journalPath(space) + '/push', { body: { expected_version: expectedVersion } }) }
   organizeJournal(space: string, expectedVersion: number) { return this.request<JournalStatus>('POST', this.journalPath(space) + '/organize', { body: { expected_version: expectedVersion } }) }
+  journalBackfillStatus(space: string) { return this.request<JournalBackfillStatus>('GET', this.journalPath(space) + '/backfill') }
+  startJournalBackfill(space: string, input: JournalBackfillStart, key: string = crypto.randomUUID()) { return this.request<JournalBackfillStatus>('POST', this.journalPath(space) + '/backfill', { body: input, key }) }
+  controlJournalBackfill(space: string, input: JournalBackfillControl) { return this.request<JournalBackfillStatus>('POST', this.journalPath(space) + '/backfill/control', { body: input }) }
   private librarianPath(space: string) { return '/v1/spaces/' + encodeURIComponent(space) + '/librarian' }
   librarianChoices(space: string) { return this.request<Page<LibrarianChoice>>('GET', this.librarianPath(space) + '/models') }
   librarianSettings(space: string) { return this.request<LibrarianSettings>('GET', this.librarianPath(space)) }

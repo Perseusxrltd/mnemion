@@ -30,6 +30,7 @@ from .service.models import ContextInput, MemoryInput, RecallInput, RevisionInpu
 
 if TYPE_CHECKING:
     from .service.writeback_models import WritebackPolicyInput, WritebackStatus
+    from .service.backfill_models import BackfillControlInput, BackfillStartInput, BackfillStatus
     from .service.connector_contracts import SourceHealth, SyncStatus
     from .service.librarian_models import (
         LibrarianChoice,
@@ -283,6 +284,42 @@ class Client:
             self.request(
                 "POST",
                 f"/v1/spaces/{UUID(space_id)}/writeback/organize",
+                body=command.model_dump(mode="json"),
+            )
+        )
+
+    def journal_backfill_status(self, space_id: str) -> BackfillStatus:
+        from .service.backfill_models import BackfillStatus
+
+        return BackfillStatus.model_validate(
+            self.request("GET", f"/v1/spaces/{UUID(space_id)}/writeback/backfill")
+        )
+
+    def start_journal_backfill(
+        self, space_id: str, command: BackfillStartInput, *, idempotency_key: str | None = None
+    ) -> BackfillStatus:
+        from .service.backfill_models import BackfillStartInput, BackfillStatus
+
+        command = BackfillStartInput.model_validate(command)
+        return BackfillStatus.model_validate(
+            self.request(
+                "POST",
+                f"/v1/spaces/{UUID(space_id)}/writeback/backfill",
+                body=command.model_dump(mode="json", exclude_none=True),
+                key=idempotency_key or str(uuid4()),
+            )
+        )
+
+    def control_journal_backfill(
+        self, space_id: str, command: BackfillControlInput
+    ) -> BackfillStatus:
+        from .service.backfill_models import BackfillControlInput, BackfillStatus
+
+        command = BackfillControlInput.model_validate(command)
+        return BackfillStatus.model_validate(
+            self.request(
+                "POST",
+                f"/v1/spaces/{UUID(space_id)}/writeback/backfill/control",
                 body=command.model_dump(mode="json"),
             )
         )

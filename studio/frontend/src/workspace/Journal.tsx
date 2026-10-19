@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Archive, GitBranch, LoaderCircle, RefreshCw, Upload } from 'lucide-react';
-import { MnemionClient, MnemionError, supportsJournal, supportsJournalFolding, type JournalPolicyInput, type JournalStatus } from '@mnemion/client';
+import { MnemionClient, MnemionError, supportsJournal, supportsJournalBackfill, supportsJournalFolding, type JournalPolicyInput, type JournalStatus } from '@mnemion/client';
 import JournalHostSetup from './JournalHostSetup';
+import JournalBackfill from './JournalBackfill';
 
 const states: Record<JournalStatus['state'], string> = {
   not_configured: 'Not enabled', ready: 'Automatic publication enabled', paused: 'Publication paused',
@@ -75,6 +76,7 @@ export default function Journal({ client, space, writer, serviceVersion, endpoin
           <p className="ws-helper">Local capture continues while publication is paused. Important saves require acknowledgement by the selected Git destination before success is returned. A host reset can lose local-only copies; a delivery receipt does not verify another replica or a complete workspace backup.</p>
           {writer && <button className="ws-button" disabled={busy || data.state !== 'ready'} onClick={() => void act(() => client.pushJournal(space, data.version), 'Publication checked. Remaining entries continue in bounded batches.')}><Upload size={15} />{busy ? 'Working…' : 'Push now'}</button>}</>}
       </section>
+      {data.configured && data.can_configure && supportsJournalBackfill(serviceVersion) && <JournalBackfill client={client} space={space} journal={data} />}
       {data.configured && foldingSupported && <section className="ws-card"><h2><Archive size={20} />Library & archive</h2>
         <p>The librarian files current memories as readable Markdown notes for Obsidian. Original journal files move intact into the archive once every record is old enough.</p>
         <p><strong>{data.fold_enabled ? 'Automatic filing enabled' : 'Automatic filing not enabled'}</strong>
@@ -95,7 +97,7 @@ export default function Journal({ client, space, writer, serviceVersion, endpoin
         <p className="ws-helper">Filing uses no language model and makes no paid calls. Model-assisted organization remains available in the <Link to="/workspace/librarian">librarian</Link>. Generated notes are excluded from connector replay so an old copy cannot bring back a deleted memory.</p>
       </section>}
       <section className="ws-notice"><p>Git history retains published text. Deleting a memory prevents it from returning in journal replay, but cannot erase copies or old Git commits. Do not use this journal for credentials or information that must be fully erased from external storage.</p>
-        <p>Only changes made after enabling the journal are captured. Existing memories are not backfilled. Journal replay restores stable source identities; a complete workspace recovery archive also preserves accounts, permissions and native database IDs.</p></section>
+        <p>Enabling a journal captures future changes. Including existing native memories needs separate administrator approval{supportsJournalBackfill(serviceVersion) ? ' above' : ' on workspace server 4.22.0 or later'}. Journal replay restores stable source identities; a complete workspace recovery archive also preserves accounts, permissions and native database IDs.</p></section>
       {data.can_configure && data.destination && <JournalSettings key={`${space}:${data.version}`} data={data} busy={busy} foldingSupported={foldingSupported} save={input => void act(() => client.configureJournal(space, input), 'Journal settings saved.')} />}
       {!data.can_configure && <p className="ws-helper">Changing the destination or publisher requires organization administration and administrator access to this space.</p>}
     </>}

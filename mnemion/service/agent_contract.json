@@ -9572,6 +9572,778 @@
       "group": "git-journal",
       "input_schema": {
         "$defs": {
+          "BackfillControlInput": {
+            "additionalProperties": false,
+            "properties": {
+              "action": {
+                "enum": [
+                  "pause",
+                  "cancel"
+                ],
+                "title": "Action",
+                "type": "string"
+              },
+              "expected_version": {
+                "minimum": 1.0,
+                "title": "Expected Version",
+                "type": "integer"
+              },
+              "run_id": {
+                "format": "uuid",
+                "title": "Run Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "expected_version",
+              "run_id",
+              "action"
+            ],
+            "title": "BackfillControlInput",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/BackfillControlInput"
+          },
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "space_id": {
+                "format": "uuid",
+                "title": "Space Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "space_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters",
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "POST",
+      "name": "journal.backfill.control",
+      "output_schema": {
+        "$defs": {
+          "BackfillError": {
+            "additionalProperties": true,
+            "properties": {
+              "code": {
+                "title": "Code",
+                "type": "string"
+              },
+              "memory_id": {
+                "title": "Memory Id",
+                "type": "string"
+              },
+              "version": {
+                "title": "Version",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "memory_id",
+              "version",
+              "code"
+            ],
+            "title": "BackfillError",
+            "type": "object"
+          },
+          "BackfillRun": {
+            "additionalProperties": true,
+            "properties": {
+              "already_journaled": {
+                "title": "Already Journaled",
+                "type": "integer"
+              },
+              "content_bytes": {
+                "title": "Content Bytes",
+                "type": "integer"
+              },
+              "cutoff_at": {
+                "title": "Cutoff At",
+                "type": "string"
+              },
+              "errors": {
+                "items": {
+                  "$ref": "#/$defs/BackfillError"
+                },
+                "title": "Errors",
+                "type": "array"
+              },
+              "examined": {
+                "title": "Examined",
+                "type": "integer"
+              },
+              "excluded": {
+                "title": "Excluded",
+                "type": "integer"
+              },
+              "finished_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Finished At"
+              },
+              "id": {
+                "title": "Id",
+                "type": "string"
+              },
+              "last_error": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Error"
+              },
+              "policy_version": {
+                "title": "Policy Version",
+                "type": "integer"
+              },
+              "queued": {
+                "title": "Queued",
+                "type": "integer"
+              },
+              "rejected": {
+                "title": "Rejected",
+                "type": "integer"
+              },
+              "started_at": {
+                "title": "Started At",
+                "type": "string"
+              },
+              "state": {
+                "enum": [
+                  "running",
+                  "paused",
+                  "blocked",
+                  "completed",
+                  "cancelled"
+                ],
+                "title": "State",
+                "type": "string"
+              },
+              "total_at_start": {
+                "title": "Total At Start",
+                "type": "integer"
+              },
+              "updated_at": {
+                "title": "Updated At",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "policy_version",
+              "state",
+              "cutoff_at",
+              "total_at_start",
+              "examined",
+              "queued",
+              "already_journaled",
+              "excluded",
+              "rejected",
+              "content_bytes",
+              "errors",
+              "last_error",
+              "started_at",
+              "updated_at",
+              "finished_at"
+            ],
+            "title": "BackfillRun",
+            "type": "object"
+          },
+          "BackfillStatus": {
+            "additionalProperties": true,
+            "properties": {
+              "eligible_content_bytes": {
+                "title": "Eligible Content Bytes",
+                "type": "integer"
+              },
+              "eligible_memories": {
+                "title": "Eligible Memories",
+                "type": "integer"
+              },
+              "policy_version": {
+                "title": "Policy Version",
+                "type": "integer"
+              },
+              "run": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/BackfillRun"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "waiting_reason": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Waiting Reason"
+              }
+            },
+            "required": [
+              "policy_version",
+              "eligible_memories",
+              "eligible_content_bytes",
+              "waiting_reason",
+              "run"
+            ],
+            "title": "BackfillStatus",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/BackfillStatus"
+      },
+      "parameter_locations": {
+        "space_id": "path"
+      },
+      "path": "/v1/spaces/{space_id}/writeback/backfill/control",
+      "retry": "inspect_before_retry",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Journal Backfill Control"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "write",
+      "group": "git-journal",
+      "input_schema": {
+        "$defs": {
+          "BackfillStartInput": {
+            "additionalProperties": false,
+            "properties": {
+              "acknowledge_retained_git_history": {
+                "const": true,
+                "title": "Acknowledge Retained Git History",
+                "type": "boolean"
+              },
+              "expected_version": {
+                "minimum": 1.0,
+                "title": "Expected Version",
+                "type": "integer"
+              },
+              "publish_existing_memories": {
+                "const": true,
+                "title": "Publish Existing Memories",
+                "type": "boolean"
+              },
+              "resume_run": {
+                "anyOf": [
+                  {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Resume Run"
+              }
+            },
+            "required": [
+              "expected_version",
+              "publish_existing_memories",
+              "acknowledge_retained_git_history"
+            ],
+            "title": "BackfillStartInput",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/BackfillStartInput"
+          },
+          "idempotency_key": {
+            "maxLength": 200,
+            "minLength": 1,
+            "pattern": "^[\\x21-\\x7e]+$",
+            "type": "string"
+          },
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "space_id": {
+                "format": "uuid",
+                "title": "Space Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "space_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "idempotency_key",
+          "parameters",
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "POST",
+      "name": "journal.backfill.start",
+      "output_schema": {
+        "$defs": {
+          "BackfillError": {
+            "additionalProperties": true,
+            "properties": {
+              "code": {
+                "title": "Code",
+                "type": "string"
+              },
+              "memory_id": {
+                "title": "Memory Id",
+                "type": "string"
+              },
+              "version": {
+                "title": "Version",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "memory_id",
+              "version",
+              "code"
+            ],
+            "title": "BackfillError",
+            "type": "object"
+          },
+          "BackfillRun": {
+            "additionalProperties": true,
+            "properties": {
+              "already_journaled": {
+                "title": "Already Journaled",
+                "type": "integer"
+              },
+              "content_bytes": {
+                "title": "Content Bytes",
+                "type": "integer"
+              },
+              "cutoff_at": {
+                "title": "Cutoff At",
+                "type": "string"
+              },
+              "errors": {
+                "items": {
+                  "$ref": "#/$defs/BackfillError"
+                },
+                "title": "Errors",
+                "type": "array"
+              },
+              "examined": {
+                "title": "Examined",
+                "type": "integer"
+              },
+              "excluded": {
+                "title": "Excluded",
+                "type": "integer"
+              },
+              "finished_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Finished At"
+              },
+              "id": {
+                "title": "Id",
+                "type": "string"
+              },
+              "last_error": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Error"
+              },
+              "policy_version": {
+                "title": "Policy Version",
+                "type": "integer"
+              },
+              "queued": {
+                "title": "Queued",
+                "type": "integer"
+              },
+              "rejected": {
+                "title": "Rejected",
+                "type": "integer"
+              },
+              "started_at": {
+                "title": "Started At",
+                "type": "string"
+              },
+              "state": {
+                "enum": [
+                  "running",
+                  "paused",
+                  "blocked",
+                  "completed",
+                  "cancelled"
+                ],
+                "title": "State",
+                "type": "string"
+              },
+              "total_at_start": {
+                "title": "Total At Start",
+                "type": "integer"
+              },
+              "updated_at": {
+                "title": "Updated At",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "policy_version",
+              "state",
+              "cutoff_at",
+              "total_at_start",
+              "examined",
+              "queued",
+              "already_journaled",
+              "excluded",
+              "rejected",
+              "content_bytes",
+              "errors",
+              "last_error",
+              "started_at",
+              "updated_at",
+              "finished_at"
+            ],
+            "title": "BackfillRun",
+            "type": "object"
+          },
+          "BackfillStatus": {
+            "additionalProperties": true,
+            "properties": {
+              "eligible_content_bytes": {
+                "title": "Eligible Content Bytes",
+                "type": "integer"
+              },
+              "eligible_memories": {
+                "title": "Eligible Memories",
+                "type": "integer"
+              },
+              "policy_version": {
+                "title": "Policy Version",
+                "type": "integer"
+              },
+              "run": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/BackfillRun"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "waiting_reason": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Waiting Reason"
+              }
+            },
+            "required": [
+              "policy_version",
+              "eligible_memories",
+              "eligible_content_bytes",
+              "waiting_reason",
+              "run"
+            ],
+            "title": "BackfillStatus",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/BackfillStatus"
+      },
+      "parameter_locations": {
+        "space_id": "path"
+      },
+      "path": "/v1/spaces/{space_id}/writeback/backfill",
+      "retry": "idempotency_key",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Journal Backfill Start"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "read",
+      "group": "git-journal",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "space_id": {
+                "format": "uuid",
+                "title": "Space Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "space_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters"
+        ],
+        "type": "object"
+      },
+      "method": "GET",
+      "name": "journal.backfill.status",
+      "output_schema": {
+        "$defs": {
+          "BackfillError": {
+            "additionalProperties": true,
+            "properties": {
+              "code": {
+                "title": "Code",
+                "type": "string"
+              },
+              "memory_id": {
+                "title": "Memory Id",
+                "type": "string"
+              },
+              "version": {
+                "title": "Version",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "memory_id",
+              "version",
+              "code"
+            ],
+            "title": "BackfillError",
+            "type": "object"
+          },
+          "BackfillRun": {
+            "additionalProperties": true,
+            "properties": {
+              "already_journaled": {
+                "title": "Already Journaled",
+                "type": "integer"
+              },
+              "content_bytes": {
+                "title": "Content Bytes",
+                "type": "integer"
+              },
+              "cutoff_at": {
+                "title": "Cutoff At",
+                "type": "string"
+              },
+              "errors": {
+                "items": {
+                  "$ref": "#/$defs/BackfillError"
+                },
+                "title": "Errors",
+                "type": "array"
+              },
+              "examined": {
+                "title": "Examined",
+                "type": "integer"
+              },
+              "excluded": {
+                "title": "Excluded",
+                "type": "integer"
+              },
+              "finished_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Finished At"
+              },
+              "id": {
+                "title": "Id",
+                "type": "string"
+              },
+              "last_error": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Error"
+              },
+              "policy_version": {
+                "title": "Policy Version",
+                "type": "integer"
+              },
+              "queued": {
+                "title": "Queued",
+                "type": "integer"
+              },
+              "rejected": {
+                "title": "Rejected",
+                "type": "integer"
+              },
+              "started_at": {
+                "title": "Started At",
+                "type": "string"
+              },
+              "state": {
+                "enum": [
+                  "running",
+                  "paused",
+                  "blocked",
+                  "completed",
+                  "cancelled"
+                ],
+                "title": "State",
+                "type": "string"
+              },
+              "total_at_start": {
+                "title": "Total At Start",
+                "type": "integer"
+              },
+              "updated_at": {
+                "title": "Updated At",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "policy_version",
+              "state",
+              "cutoff_at",
+              "total_at_start",
+              "examined",
+              "queued",
+              "already_journaled",
+              "excluded",
+              "rejected",
+              "content_bytes",
+              "errors",
+              "last_error",
+              "started_at",
+              "updated_at",
+              "finished_at"
+            ],
+            "title": "BackfillRun",
+            "type": "object"
+          },
+          "BackfillStatus": {
+            "additionalProperties": true,
+            "properties": {
+              "eligible_content_bytes": {
+                "title": "Eligible Content Bytes",
+                "type": "integer"
+              },
+              "eligible_memories": {
+                "title": "Eligible Memories",
+                "type": "integer"
+              },
+              "policy_version": {
+                "title": "Policy Version",
+                "type": "integer"
+              },
+              "run": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/BackfillRun"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "waiting_reason": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Waiting Reason"
+              }
+            },
+            "required": [
+              "policy_version",
+              "eligible_memories",
+              "eligible_content_bytes",
+              "waiting_reason",
+              "run"
+            ],
+            "title": "BackfillStatus",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/BackfillStatus"
+      },
+      "parameter_locations": {
+        "space_id": "path"
+      },
+      "path": "/v1/spaces/{space_id}/writeback/backfill",
+      "retry": "read",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Journal Backfill Status"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "write",
+      "group": "git-journal",
+      "input_schema": {
+        "$defs": {
           "WritebackPolicyInput": {
             "additionalProperties": false,
             "properties": {

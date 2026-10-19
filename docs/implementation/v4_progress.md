@@ -573,3 +573,18 @@ report coverage problems. Migration 024 adds only an index and scoped health
 function. Structured journals, directory inventory and permissions remain
 fail-closed. Broader provider/fleet acceptance and the full 64-requirement scope
 remain open; this hotfix does not change the strict completion count.
+
+## Existing native-memory backfill, 19 October 2026
+
+The [4.22 batch](../validation/2026-10-19-journal-backfill.md) adds separate
+approval, a persistent cursor, bounded privacy-scanned capture and current
+administrator/publisher checks. App, Python/TypeScript SDK and named agent
+operations share start, status, pause, resume and cancel controls. Original
+memory identities, revision dates and authors survive without re-embedding.
+Queued Git delivery remains separately observable; full database restore retains
+progress and pauses publication. A narrowly scoped approval function lets the
+internal publisher check the approving administrator without reading other
+principals' records. Legacy external-buffer migration and complete writable
+reconstruction remain under issue 39. The [issue plan](github-issues.md) retains
+all 12 reports reviewed today; verified-release associations close only addressed
+issues after publication/upgrade evidence. Strict scope remains 17/64 (26.6%).

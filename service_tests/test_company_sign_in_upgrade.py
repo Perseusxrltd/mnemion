@@ -41,9 +41,12 @@ def test_pre_company_upgrade_preserves_existing_password_session(
     previous = tmp_path / "previous-service"
     migrations = previous / "migrations"
     migrations.mkdir(parents=True)
+    expected_migrations = []
     for path in db.files("mnemion.service").joinpath("migrations").iterdir():
         if path.suffix == ".sql" and int(path.name[:3]) <= previous_count:
             (migrations / path.name).write_bytes(path.read_bytes())
+        elif path.suffix == ".sql":
+            expected_migrations.append(path.name)
     name = "mnemion_company_upgrade_" + uuid4().hex
     admin_dsn, app_dsn, _ = (make_conninfo(dsn, dbname=name) for dsn in postgres)
     with psycopg.connect(postgres[0], autocommit=True) as connection:
@@ -111,15 +114,10 @@ def test_pre_company_upgrade_preserves_existing_password_session(
                     ).fetchall()
             database.close()
             database = None
-        assert db.migrate(admin_dsn) == (
-            ["018_company_sign_in.sql"] if previous_count == 17 else []
-        ) + [
-            "019_company_agent_consent.sql",
-            "020_secrets_vault.sql",
-            "021_passage_chronology.sql",
-            "022_memory_journal.sql",
-            "023_journal_folding.sql",
-        ]
+        # Upgrade all the way to this release without hard-coding its final
+        # migration. The assertions below check preserved real login state.
+        assert db.migrate(admin_dsn) == sorted(expected_migrations)
+        assert db.migrate(admin_dsn) == []
         with psycopg.connect(admin_dsn) as connection:
             after = connection.execute(
                 "SELECT to_jsonb(s) FROM mnemion.sign_in_sessions s WHERE id=%s",

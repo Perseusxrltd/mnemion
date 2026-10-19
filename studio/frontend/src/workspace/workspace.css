@@ -1134,6 +1134,14 @@ fieldset.ws-setup-fields { border: 0; padding: 0; min-width: 0; }
   padding-top: 1rem;
   border-top: 1px solid var(--border, #303030);
 }
+.ws-journal-backfill > h2 { display: flex; align-items: center; gap: 10px; }
+.ws-journal-backfill .ws-stats { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.ws-journal-backfill .ws-checkbox { margin: 0; align-items: flex-start; }
+.ws-journal-backfill .ws-checkbox input { flex-shrink: 0; margin-top: 2px; }
+.ws-journal-backfill progress { appearance: none; display: block; width: 100%; height: 8px; margin: 16px 0; border: 0; border-radius: 4px; overflow: hidden; background: var(--ws-border); }
+.ws-journal-backfill progress::-webkit-progress-bar { background: var(--ws-border); }
+.ws-journal-backfill progress::-webkit-progress-value { background: var(--ws-accent); }
+.ws-journal-backfill progress::-moz-progress-bar { background: var(--ws-accent); }
 .ws-connector-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin: 1.25rem 0; }
 .ws-connector-form label, .ws-connector-heading label { display: grid; gap: .4rem; font-weight: 600; }
 .ws-connector-form label.ws-checkbox { display: flex; align-items: center; grid-column: 1 / -1; }

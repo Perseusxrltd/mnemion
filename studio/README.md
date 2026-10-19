@@ -40,6 +40,10 @@ relative-path diagnostics. Healthy text files continue syncing when another
 file is malformed; search explains incomplete or unavailable source coverage.
 [Source health](../docs/service/connectors.md#text-file-failures-and-source-health)
 documents retained last-good data, repair and the authenticated agent endpoint.
+Source 4.22.0 adds **Git journal → Include existing memories**: review candidate
+counts, approve older content, follow scanned/queued/rejected progress and pause
+or resume without losing the saved position. Another authorized administrator
+can take over the same job. See [backfill controls and recovery](../docs/service/git-journal.md#including-existing-native-memories).
 
 Remote-agent fixes in 4.0.2 and lower model RAM in 4.0.3 require upgrading the memory server;
 the desktop updater cannot replace a separately deployed service. See the

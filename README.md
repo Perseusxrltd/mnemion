@@ -52,7 +52,7 @@ source replay. Source 4.16.0 adds scheduled filing into Obsidian-readable notes
 and intact archival, with app and agent controls. Git history retains published
 text; journals do not replace a full workspace backup. Source 4.18.0 adds local
 desktop host registration and matching agent controls. Git sign-in, guided remote
-host enrollment, backfill and large-history scaling remain on the roadmap.
+host enrollment, legacy-buffer reconciliation and large-history scaling remain on the roadmap.
 Source 4.19.0 adds [daily journal rollover and cached retries](docs/service/git-journal.md#file-rollover-and-version-compatibility),
 plus [local agent update controls](docs/service/desktop-operator.md#app-updates-and-startup).
 Upgrade journal-reading runners as well as publishers before using continuation
@@ -66,6 +66,9 @@ Malformed text files no longer prevent healthy notes from updating; partial
 scans retain prior data, withhold inferred deletion and report affected files
 in the app. Search and authenticated health checks warn about incomplete or
 unavailable sources. Complete journal and access checks remain enforced.
+Source 4.22.0 adds separately approved [existing-memory backfill](docs/service/git-journal.md#including-existing-native-memories):
+bounded resumable work, privacy checks, current administrator authority and the
+same progress/control operations in the app, SDKs and agent catalog.
 Source 4.17.0 adds [live JSONL conversation capture](docs/service/live-conversations.md):
 bounded records and fragments, deferred tails, per-file source controls, private
 checkpoints, unchanged-fragment reuse and capture progress in the app. Existing

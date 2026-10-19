@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { MnemionClient, MnemionError, supportsJournalFolding, supportsLiveConversations, conversationCapture } from '../dist/index.js'
+import { MnemionClient, MnemionError, supportsJournalBackfill, supportsJournalFolding, supportsLiveConversations, conversationCapture } from '../dist/index.js'
 
 test('live capture shows only bounded counters from a supported completed checkpoint', () => {
   const checkpoint = { id: 'a'.repeat(32), generation: 'b'.repeat(32), file: 'c'.repeat(32),
@@ -38,6 +38,27 @@ test('journal filing keeps optimistic versions and does not opt older workspaces
   assert.equal(supportsJournalFolding('4.16.0'), true)
   assert.equal(supportsJournalFolding('5.0.0'), true)
   assert.equal(supportsJournalFolding('unknown'), false)
+})
+
+test('uncertain backfill approval retries one job and requires an explicit old-memory opt-in', async () => {
+  const calls = []
+  const client = new MnemionClient({ baseUrl: 'https://example.invalid', apiKey: 'fixture-key', fetch: async (url, options) => {
+    calls.push({ url, ...options })
+    if (calls.length === 1) throw new TypeError('Lost response after job acceptance')
+    return Response.json({ policy_version: 2, eligible_memories: 1, run: { id: 'same-run', state: 'running' } })
+  } })
+  const input = { expected_version: 2, publish_existing_memories: true, acknowledge_retained_git_history: true, resume_run: 'same-run' }
+  const result = await client.startJournalBackfill('space', input, 'backfill-approval')
+  assert.equal(result.run.id, 'same-run')
+  assert.equal(calls.length, 2)
+  assert.equal(calls[0].headers['Idempotency-Key'], 'backfill-approval')
+  assert.equal(calls[1].headers['Idempotency-Key'], calls[0].headers['Idempotency-Key'])
+  assert.equal(calls[1].body, calls[0].body)
+  assert.deepEqual(JSON.parse(calls[0].body), input)
+  assert.equal(supportsJournalBackfill('4.21.99'), false)
+  assert.equal(supportsJournalBackfill('4.22.0'), true)
+  assert.equal(supportsJournalBackfill('5.0.0'), true)
+  assert.equal(supportsJournalBackfill(undefined), false)
 })
 
 test('an offline tunnel has actionable diagnostics without repeating private proxy content', async () => {

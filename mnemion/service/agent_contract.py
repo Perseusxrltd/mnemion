@@ -36,6 +36,9 @@ journal.status GET /v1/spaces/{space_id}/writeback
 journal.configure PUT /v1/spaces/{space_id}/writeback
 journal.push POST /v1/spaces/{space_id}/writeback/push
 journal.organize POST /v1/spaces/{space_id}/writeback/organize
+journal.backfill.status GET /v1/spaces/{space_id}/writeback/backfill
+journal.backfill.start POST /v1/spaces/{space_id}/writeback/backfill
+journal.backfill.control POST /v1/spaces/{space_id}/writeback/backfill/control
 principals.list GET /v1/principals
 principals.create POST /v1/principals
 principals.disable POST /v1/principals/{principal_id}/disable

@@ -1,11 +1,21 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.21.0**. Roadmap updated: **2026-10-19**.
+Reviewed source distribution: **4.22.0**. Roadmap updated: **2026-10-19**.
 The [current published distribution and release gates](RELEASE_STATUS.md) are updated automatically.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
 
-The [4.21.0 source](releases/4.21.0.md) addresses issue 43 with
+The [4.22.0 source](releases/4.22.0.md) adds [existing native-memory backfill](service/git-journal.md#including-existing-native-memories)
+for issue 39: explicit approval, resumable bounded scanning, privacy checks,
+duplicate prevention, current permissions and app/SDK/agent controls. Full
+restore retains progress but pauses publication. [Validation](validation/2026-10-19-journal-backfill.md)
+uses actual PostgreSQL, Git and HTTP. Legacy external-buffer conversion and
+writable reconstruction remain open; strict completion stays **17/64 (26.6%)**.
+The [GitHub issue plan](implementation/github-issues.md) records every current
+report and its remaining acceptance alongside the automatic maintenance board.
+
+The [4.21.0 source](releases/4.21.0.md), carried into 4.22 after the frozen 4.21
+candidate was withheld for outdated migration-test expectations, addresses issue 43 with
 [isolated text-file failures and scoped source health](service/connectors.md#text-file-failures-and-source-health).
 Valid files continue syncing, partial inventories retain data and withhold
 deletion/checkpoint acknowledgement, and the app, search, SDKs and agents report

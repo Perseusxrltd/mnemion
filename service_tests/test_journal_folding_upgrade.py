@@ -17,9 +17,12 @@ def test_existing_journal_policy_keeps_every_field_and_filing_stays_disabled(
     previous = tmp_path / "previous-service"
     scripts = previous / "migrations"
     scripts.mkdir(parents=True)
+    expected_migrations = []
     for path in db.files("mnemion.service").joinpath("migrations").iterdir():
         if path.suffix == ".sql" and int(path.name[:3]) <= 22:
             (scripts / path.name).write_bytes(path.read_bytes())
+        elif path.suffix == ".sql":
+            expected_migrations.append(path.name)
     name = "mnemion_journal_upgrade_" + uuid4().hex
     admin_dsn = make_conninfo(postgres[0], dbname=name)
     with psycopg.connect(postgres[0], autocommit=True) as conn:
@@ -51,7 +54,7 @@ def test_existing_journal_policy_keeps_every_field_and_filing_stays_disabled(
                 before = conn.execute(
                     "SELECT to_jsonb(s) FROM mnemion.writeback_settings s"
                 ).fetchone()[0]
-        assert db.migrate(admin_dsn) == ["023_journal_folding.sql"]
+        assert db.migrate(admin_dsn) == sorted(expected_migrations)
         assert db.migrate(admin_dsn) == []
         defaults = {
             "fold_enabled": False,
@@ -81,6 +84,7 @@ def test_existing_journal_policy_keeps_every_field_and_filing_stays_disabled(
             assert not conn.execute(
                 "SELECT * FROM mnemion.claim_journal_fold(%s)", (["a" * 64],)
             ).fetchone()
+            assert not conn.execute("SELECT * FROM mnemion.writeback_backfills").fetchone()
     finally:
         with psycopg.connect(postgres[0], autocommit=True) as conn:
             conn.execute(sql.SQL("DROP DATABASE {} WITH (FORCE)").format(sql.Identifier(name)))

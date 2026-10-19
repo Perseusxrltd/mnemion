@@ -19,6 +19,15 @@ not equally sized. This is coverage of the full requested scope, not a measure
 of engineering effort or the usability of the published app. Hotfixes to a
 partial feature do not automatically mark its whole requirement complete.
 
+Source 4.22.0 advances F08/C01/A09 with [existing native-memory backfill](service/git-journal.md#including-existing-native-memories)
+for issue 39. Separate approval, bounded persistent scanning, privacy rejection,
+administrator takeover and app/SDK/agent controls protect current identity and
+publication policy. [Validation](validation/2026-10-19-journal-backfill.md) includes
+real Git, current access and full restore. Legacy buffer reconciliation, full
+writable reconstruction and provider/recovery acceptance remain separate work;
+the full requirement count is unchanged. [All current GitHub reports](implementation/github-issues.md)
+remain part of this scope.
+
 Source 4.21.0 advances F08/C01/C08 with [isolated text failures and source health](service/connectors.md#text-file-failures-and-source-health)
 for issue 43. It keeps healthy updates flowing, protects missing-file reconciliation
 and stable identities, and reports source gaps through the app, recall, SDKs and
