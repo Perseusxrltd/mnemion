@@ -1,9 +1,18 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.24.0**. Roadmap updated: **2026-10-19**.
+Reviewed source distribution: **4.25.0**. Roadmap updated: **2026-10-19**.
 The [current published distribution and release gates](RELEASE_STATUS.md) are updated automatically.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
+
+The [4.25.0 source](releases/4.25.0.md) adds [reviewed external-buffer recovery](service/legacy-buffer.md)
+for issue 39. App, SDK and private-agent controls validate complete records,
+retain explicit withdrawals, preserve edits and create stable writable memories
+in a private destination. They refuse existing Git publication and do not infer
+original identities, full history or remote delivery. Complete native-journal
+reconstruction and original-office recovery remain open. Strict completion stays
+**17/64 (26.6%)**. Release maintenance now retries a proven unstarted GitHub
+runner-capacity failure once; actual failed tests keep their normal gates.
 
 The [4.24.0 source](releases/4.24.0.md) addresses the archive and question patterns
 in issues 17 and 31, both before and after semantic indexing. Recent order keeps
@@ -29,8 +38,8 @@ The [4.22.0 source](releases/4.22.0.md) adds [existing native-memory backfill](s
 for issue 39: explicit approval, resumable bounded scanning, privacy checks,
 duplicate prevention, current permissions and app/SDK/agent controls. Full
 restore retains progress but pauses publication. [Validation](validation/2026-10-19-journal-backfill.md)
-uses actual PostgreSQL, Git and HTTP. Legacy external-buffer conversion and
-writable reconstruction remain open; strict completion stays **17/64 (26.6%)**.
+uses actual PostgreSQL, Git and HTTP. Source 4.25 adds the external-buffer path
+above; complete native-journal reconstruction remains open.
 The [GitHub issue plan](implementation/github-issues.md) records every current
 report and its remaining acceptance alongside the automatic maintenance board.
 

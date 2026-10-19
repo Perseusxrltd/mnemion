@@ -29,6 +29,12 @@ from .service.contracts import (
 from .service.models import ContextInput, MemoryInput, RecallInput, RevisionInput
 
 if TYPE_CHECKING:
+    from .service.buffer_import_models import (
+        BufferPreviewInput,
+        BufferImportInput,
+        BufferPreview,
+        BufferImported,
+    )
     from .service.keepass_models import (
         KeepassPreviewInput,
         KeepassImportInput,
@@ -359,6 +365,33 @@ class Client:
                 "POST",
                 f"/v1/spaces/{UUID(space_id)}/writeback/backfill/control",
                 body=command.model_dump(mode="json"),
+            )
+        )
+
+    def preview_legacy_buffer(self, space_id: str, command: BufferPreviewInput) -> BufferPreview:
+        from .service.buffer_import_models import BufferPreviewInput, BufferPreview
+
+        command = BufferPreviewInput.model_validate(command)
+        body = command.model_dump(mode="json")
+        body["jsonl"] = command.jsonl.get_secret_value()
+        return BufferPreview.model_validate(
+            self.request("POST", f"/v1/spaces/{UUID(space_id)}/buffer-import/preview", body=body)
+        )
+
+    def import_legacy_buffer(
+        self, space_id: str, command: BufferImportInput, *, idempotency_key: str | None = None
+    ) -> BufferImported:
+        from .service.buffer_import_models import BufferImportInput, BufferImported
+
+        command = BufferImportInput.model_validate(command)
+        body = command.model_dump(mode="json")
+        body["jsonl"] = command.jsonl.get_secret_value()
+        return BufferImported.model_validate(
+            self.request(
+                "POST",
+                f"/v1/spaces/{UUID(space_id)}/buffer-import",
+                body=body,
+                key=idempotency_key or str(uuid4()),
             )
         )
 

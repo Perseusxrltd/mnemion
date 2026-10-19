@@ -261,10 +261,16 @@ old buffer and its remote commits independently. Native publication refuses an
 occupied journal prefix without its valid catalog; it does not convert those
 files or infer that they were acknowledged remotely.
 
-A checked migration/reconciliation tool remains tracked: it must preserve the
-original records, map identities explicitly, reconcile duplicate and withdrawn
-memories, and verify the exact remotely published events/bytes. Do not mark all
-current local file bytes as delivered after a push that sent an earlier snapshot.
+From 4.25, [reviewed legacy-buffer import](legacy-buffer.md) copies complete
+prototype records into a private native space through Studio, SDKs or private
+agent operations. It preserves source identity/provenance, reconciles duplicates
+and supplied withdrawals, and leaves existing native edits intact. Original
+writer labels confer no grants. It refuses an existing Git publication policy;
+encrypted originals require their separate authorized private decryption.
+
+This import neither converts the old prefix into native catalogs nor verifies
+remote delivery. Retain and reconcile the actual published events/bytes. Do not
+mark all current local file bytes as delivered after a push that sent an earlier snapshot.
 Native receipts acknowledge selected event IDs, so a concurrently appended event
 remains pending until its own confirmed publication.
 Native-memory backfill does not convert that external schema or restore an

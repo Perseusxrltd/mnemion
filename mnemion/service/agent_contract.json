@@ -17044,6 +17044,460 @@
       "authentication": "bearer",
       "download": false,
       "effect": "write",
+      "group": "memory-recovery",
+      "input_schema": {
+        "$defs": {
+          "BufferImportInput": {
+            "additionalProperties": false,
+            "properties": {
+              "acknowledge_source_only": {
+                "const": true,
+                "title": "Acknowledge Source Only",
+                "type": "boolean"
+              },
+              "jsonl": {
+                "description": "Complete UTF-8 JSONL records, at most 1 MiB and 100 unique records. Never send encrypted bytes as text.",
+                "format": "password",
+                "maxLength": 1048576,
+                "title": "Jsonl",
+                "type": "string",
+                "writeOnly": true
+              },
+              "namespace": {
+                "maxLength": 80,
+                "minLength": 1,
+                "pattern": "^[a-z0-9][a-z0-9_-]*$",
+                "title": "Namespace",
+                "type": "string"
+              },
+              "preview_sha256": {
+                "pattern": "^[a-f0-9]{64}$",
+                "title": "Preview Sha256",
+                "type": "string"
+              },
+              "reject_personal_data": {
+                "default": true,
+                "title": "Reject Personal Data",
+                "type": "boolean"
+              },
+              "reviewed_withdrawals": {
+                "const": true,
+                "title": "Reviewed Withdrawals",
+                "type": "boolean"
+              },
+              "withdrawn_ids": {
+                "description": "Explicitly reconciled withdrawals, including IDs absent from this batch. The prototype has no trustworthy built-in deletion ledger.",
+                "items": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "maxItems": 1000,
+                "title": "Withdrawn Ids",
+                "type": "array"
+              }
+            },
+            "required": [
+              "namespace",
+              "jsonl",
+              "withdrawn_ids",
+              "preview_sha256",
+              "reviewed_withdrawals",
+              "acknowledge_source_only"
+            ],
+            "title": "BufferImportInput",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/BufferImportInput"
+          },
+          "idempotency_key": {
+            "maxLength": 200,
+            "minLength": 1,
+            "pattern": "^[\\x21-\\x7e]+$",
+            "type": "string"
+          },
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "space_id": {
+                "format": "uuid",
+                "title": "Space Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "space_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "idempotency_key",
+          "parameters",
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "POST",
+      "name": "memory.buffer.import",
+      "output_schema": {
+        "$defs": {
+          "BufferImported": {
+            "additionalProperties": false,
+            "properties": {
+              "counts": {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "title": "Counts",
+                "type": "object"
+              },
+              "items": {
+                "items": {
+                  "$ref": "#/$defs/BufferPlanItem"
+                },
+                "title": "Items",
+                "type": "array"
+              },
+              "namespace": {
+                "title": "Namespace",
+                "type": "string"
+              },
+              "preview_sha256": {
+                "title": "Preview Sha256",
+                "type": "string"
+              },
+              "remote_delivery_verified": {
+                "const": false,
+                "default": false,
+                "title": "Remote Delivery Verified",
+                "type": "boolean"
+              },
+              "source_only": {
+                "const": true,
+                "default": true,
+                "title": "Source Only",
+                "type": "boolean"
+              },
+              "space_id": {
+                "format": "uuid",
+                "title": "Space Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "namespace",
+              "space_id",
+              "preview_sha256",
+              "counts",
+              "items"
+            ],
+            "title": "BufferImported",
+            "type": "object"
+          },
+          "BufferPlanItem": {
+            "additionalProperties": false,
+            "properties": {
+              "action": {
+                "enum": [
+                  "create",
+                  "already_imported",
+                  "preserved_changes",
+                  "withdrawn",
+                  "withdraw",
+                  "deny",
+                  "conflict",
+                  "rejected"
+                ],
+                "title": "Action",
+                "type": "string"
+              },
+              "code": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Code"
+              },
+              "legacy_id": {
+                "format": "uuid",
+                "title": "Legacy Id",
+                "type": "string"
+              },
+              "memory_id": {
+                "format": "uuid",
+                "title": "Memory Id",
+                "type": "string"
+              },
+              "version": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Version"
+              }
+            },
+            "required": [
+              "legacy_id",
+              "memory_id",
+              "action"
+            ],
+            "title": "BufferPlanItem",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/BufferImported"
+      },
+      "parameter_locations": {
+        "space_id": "path"
+      },
+      "path": "/v1/spaces/{space_id}/buffer-import",
+      "retry": "idempotency_key",
+      "sensitive_input": true,
+      "sensitive_result": true,
+      "summary": "Buffer Import"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "read",
+      "group": "memory-recovery",
+      "input_schema": {
+        "$defs": {
+          "BufferPreviewInput": {
+            "additionalProperties": false,
+            "properties": {
+              "jsonl": {
+                "description": "Complete UTF-8 JSONL records, at most 1 MiB and 100 unique records. Never send encrypted bytes as text.",
+                "format": "password",
+                "maxLength": 1048576,
+                "title": "Jsonl",
+                "type": "string",
+                "writeOnly": true
+              },
+              "namespace": {
+                "maxLength": 80,
+                "minLength": 1,
+                "pattern": "^[a-z0-9][a-z0-9_-]*$",
+                "title": "Namespace",
+                "type": "string"
+              },
+              "reject_personal_data": {
+                "default": true,
+                "title": "Reject Personal Data",
+                "type": "boolean"
+              },
+              "withdrawn_ids": {
+                "description": "Explicitly reconciled withdrawals, including IDs absent from this batch. The prototype has no trustworthy built-in deletion ledger.",
+                "items": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "maxItems": 1000,
+                "title": "Withdrawn Ids",
+                "type": "array"
+              }
+            },
+            "required": [
+              "namespace",
+              "jsonl",
+              "withdrawn_ids"
+            ],
+            "title": "BufferPreviewInput",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/BufferPreviewInput"
+          },
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "space_id": {
+                "format": "uuid",
+                "title": "Space Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "space_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters",
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "POST",
+      "name": "memory.buffer.preview",
+      "output_schema": {
+        "$defs": {
+          "BufferPlanItem": {
+            "additionalProperties": false,
+            "properties": {
+              "action": {
+                "enum": [
+                  "create",
+                  "already_imported",
+                  "preserved_changes",
+                  "withdrawn",
+                  "withdraw",
+                  "deny",
+                  "conflict",
+                  "rejected"
+                ],
+                "title": "Action",
+                "type": "string"
+              },
+              "code": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Code"
+              },
+              "legacy_id": {
+                "format": "uuid",
+                "title": "Legacy Id",
+                "type": "string"
+              },
+              "memory_id": {
+                "format": "uuid",
+                "title": "Memory Id",
+                "type": "string"
+              },
+              "version": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Version"
+              }
+            },
+            "required": [
+              "legacy_id",
+              "memory_id",
+              "action"
+            ],
+            "title": "BufferPlanItem",
+            "type": "object"
+          },
+          "BufferPreview": {
+            "additionalProperties": false,
+            "properties": {
+              "can_import": {
+                "title": "Can Import",
+                "type": "boolean"
+              },
+              "counts": {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "title": "Counts",
+                "type": "object"
+              },
+              "duplicates": {
+                "title": "Duplicates",
+                "type": "integer"
+              },
+              "input_sha256": {
+                "title": "Input Sha256",
+                "type": "string"
+              },
+              "items": {
+                "items": {
+                  "$ref": "#/$defs/BufferPlanItem"
+                },
+                "title": "Items",
+                "type": "array"
+              },
+              "namespace": {
+                "title": "Namespace",
+                "type": "string"
+              },
+              "preview_sha256": {
+                "title": "Preview Sha256",
+                "type": "string"
+              },
+              "remote_delivery_verified": {
+                "const": false,
+                "default": false,
+                "title": "Remote Delivery Verified",
+                "type": "boolean"
+              },
+              "source_only": {
+                "const": true,
+                "default": true,
+                "title": "Source Only",
+                "type": "boolean"
+              },
+              "space_id": {
+                "format": "uuid",
+                "title": "Space Id",
+                "type": "string"
+              },
+              "writers": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Writers",
+                "type": "array"
+              }
+            },
+            "required": [
+              "namespace",
+              "space_id",
+              "preview_sha256",
+              "input_sha256",
+              "can_import",
+              "duplicates",
+              "writers",
+              "items",
+              "counts"
+            ],
+            "title": "BufferPreview",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/BufferPreview"
+      },
+      "parameter_locations": {
+        "space_id": "path"
+      },
+      "path": "/v1/spaces/{space_id}/buffer-import/preview",
+      "retry": "read",
+      "sensitive_input": true,
+      "sensitive_result": true,
+      "summary": "Buffer Preview"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "write",
       "group": "identity",
       "input_schema": {
         "$defs": {

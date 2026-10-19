@@ -1142,6 +1142,8 @@ fieldset.ws-setup-fields { border: 0; padding: 0; min-width: 0; }
 .ws-journal-backfill progress::-webkit-progress-bar { background: var(--ws-border); }
 .ws-journal-backfill progress::-webkit-progress-value { background: var(--ws-accent); }
 .ws-journal-backfill progress::-moz-progress-bar { background: var(--ws-accent); }
+.ws-buffer-import > h3, .ws-buffer-import > .ws-form, .ws-buffer-import > .ws-button { margin-top: 20px; }
+.ws-buffer-import .ws-details { margin: 16px 0; }
 .ws-connector-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin: 1.25rem 0; }
 .ws-connector-form label, .ws-connector-heading label { display: grid; gap: .4rem; font-weight: 600; }
 .ws-connector-form label.ws-checkbox { display: flex; align-items: center; grid-column: 1 / -1; }

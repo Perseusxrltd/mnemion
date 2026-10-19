@@ -52,7 +52,7 @@ source replay. Source 4.16.0 adds scheduled filing into Obsidian-readable notes
 and intact archival, with app and agent controls. Git history retains published
 text; journals do not replace a full workspace backup. Source 4.18.0 adds local
 desktop host registration and matching agent controls. Git sign-in, guided remote
-host enrollment, legacy-buffer reconciliation and large-history scaling remain on the roadmap.
+host enrollment, complete native-journal reconstruction and large-history scaling remain on the roadmap.
 Source 4.19.0 adds [daily journal rollover and cached retries](docs/service/git-journal.md#file-rollover-and-version-compatibility),
 plus [local agent update controls](docs/service/desktop-operator.md#app-updates-and-startup).
 Upgrade journal-reading runners as well as publishers before using continuation
@@ -78,6 +78,12 @@ carries the correction, [archive-aware question retrieval](docs/service/retrieva
 and a [repeatable real-model check](docs/validation/2026-10-19-retrieval-archives.md).
 Recent search preserves question support and keeps comparable current evidence
 ahead of archived drafts, with explicit historical-order controls.
+Source 4.25.0 adds [reviewed legacy-buffer recovery](docs/service/legacy-buffer.md)
+through the app, SDKs and agents. Stable imported IDs, private destinations,
+retained withdrawals and preservation of local edits support recovery without
+inferring original grants or Git delivery. Encrypted originals retain their
+separate decryption/publication boundary; complete workspace backups remain
+necessary for accounts, secrets and missing history.
 Source 4.17.0 adds [live JSONL conversation capture](docs/service/live-conversations.md):
 bounded records and fragments, deferred tails, per-file source controls, private
 checkpoints, unchanged-fragment reuse and capture progress in the app. Existing

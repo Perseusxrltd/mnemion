@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Archive, GitBranch, LoaderCircle, RefreshCw, Upload } from 'lucide-react';
-import { MnemionClient, MnemionError, supportsJournal, supportsJournalBackfill, supportsJournalFolding, type JournalPolicyInput, type JournalStatus } from '@mnemion/client';
+import { MnemionClient, MnemionError, supportsBufferImport, supportsJournal, supportsJournalBackfill, supportsJournalFolding, type JournalPolicyInput, type JournalStatus } from '@mnemion/client';
 import JournalHostSetup from './JournalHostSetup';
 import JournalBackfill from './JournalBackfill';
+import LegacyBufferImport from './LegacyBufferImport';
 
 const states: Record<JournalStatus['state'], string> = {
   not_configured: 'Not enabled', ready: 'Automatic publication enabled', paused: 'Publication paused',
@@ -77,6 +78,7 @@ export default function Journal({ client, space, writer, serviceVersion, endpoin
           {writer && <button className="ws-button" disabled={busy || data.state !== 'ready'} onClick={() => void act(() => client.pushJournal(space, data.version), 'Publication checked. Remaining entries continue in bounded batches.')}><Upload size={15} />{busy ? 'Working…' : 'Push now'}</button>}</>}
       </section>
       {data.configured && data.can_configure && supportsJournalBackfill(serviceVersion) && <JournalBackfill client={client} space={space} journal={data} />}
+      {data.can_configure && !data.configured && supportsBufferImport(serviceVersion) && <LegacyBufferImport key={space} client={client} space={space} />}
       {data.configured && foldingSupported && <section className="ws-card"><h2><Archive size={20} />Library & archive</h2>
         <p>The librarian files current memories as readable Markdown notes for Obsidian. Original journal files move intact into the archive once every record is old enough.</p>
         <p><strong>{data.fold_enabled ? 'Automatic filing enabled' : 'Automatic filing not enabled'}</strong>

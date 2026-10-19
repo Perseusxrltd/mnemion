@@ -15,6 +15,8 @@ export * from './vault.js'
 import type { JournalBackfillControl, JournalBackfillStart, JournalBackfillStatus, JournalDelivery, JournalPolicyInput, JournalStatus } from './writeback.js'
 export * from './writeback.js'
 export * from './conversations.js'
+import type { BufferPreviewInput, BufferImportInput, BufferPreview, BufferImported } from './buffer-import.js'
+export * from './buffer-import.js'
 
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json }
 export type Kind = 'fact' | 'event' | 'preference' | 'procedure' | 'note'
@@ -185,6 +187,8 @@ export class MnemionClient {
   pushJournal(space: string, expectedVersion: number) { return this.request<JournalStatus>('POST', this.journalPath(space) + '/push', { body: { expected_version: expectedVersion } }) }
   organizeJournal(space: string, expectedVersion: number) { return this.request<JournalStatus>('POST', this.journalPath(space) + '/organize', { body: { expected_version: expectedVersion } }) }
   journalBackfillStatus(space: string) { return this.request<JournalBackfillStatus>('GET', this.journalPath(space) + '/backfill') }
+  previewLegacyBuffer(space: string, input: BufferPreviewInput) { return this.request<BufferPreview>('POST', `/v1/spaces/${encodeURIComponent(space)}/buffer-import/preview`, { body: input }) }
+  importLegacyBuffer(space: string, input: BufferImportInput, key: string = crypto.randomUUID()) { return this.request<BufferImported>('POST', `/v1/spaces/${encodeURIComponent(space)}/buffer-import`, { body: input, key }) }
   startJournalBackfill(space: string, input: JournalBackfillStart, key: string = crypto.randomUUID()) { return this.request<JournalBackfillStatus>('POST', this.journalPath(space) + '/backfill', { body: input, key }) }
   controlJournalBackfill(space: string, input: JournalBackfillControl) { return this.request<JournalBackfillStatus>('POST', this.journalPath(space) + '/backfill/control', { body: input }) }
   private librarianPath(space: string) { return '/v1/spaces/' + encodeURIComponent(space) + '/librarian' }

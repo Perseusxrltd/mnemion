@@ -456,6 +456,9 @@ def create_app(
     attach_embeddings(app, database, registry, authenticated)
     attach_librarian(app, librarian, authenticated)
     attach_writeback(app, writeback, authenticated)
+    from .buffer_import_api import attach_buffer_import
+
+    attach_buffer_import(app, memory, authenticated)
     attach_agents(app, authenticated)
     attach_recovery_directory(app, database, authenticated)
     attach_vault(app, vault, authenticated)

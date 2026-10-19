@@ -19,6 +19,14 @@ not equally sized. This is coverage of the full requested scope, not a measure
 of engineering effort or the usability of the published app. Hotfixes to a
 partial feature do not automatically mark its whole requirement complete.
 
+Source 4.25.0 advances F03/F08/A09/A13 with [reviewed legacy-buffer recovery](service/legacy-buffer.md)
+in Studio, SDKs and private agent controls. Available records become writable
+native memories with stable identities and retained provenance. Reconciliation
+preserves edits and withdrawals, checks current access and refuses existing Git
+publication. It does not reconstruct missing history, original accounts or the
+unavailable office database/vault. Complete native-journal recovery and broader
+provider adoption remain open; the strict requirement count is unchanged.
+
 Source 4.23.0 advances A04/A09/F08 with [KeePass transfer](service/keepass.md):
 exact import preview, default masked labels, encrypted original field mapping,
 grant-checked export and matching app/SDK/private-agent controls. Independent
@@ -30,8 +38,9 @@ Source 4.22.0 advances F08/C01/A09 with [existing native-memory backfill](servic
 for issue 39. Separate approval, bounded persistent scanning, privacy rejection,
 administrator takeover and app/SDK/agent controls protect current identity and
 publication policy. [Validation](validation/2026-10-19-journal-backfill.md) includes
-real Git, current access and full restore. Legacy buffer reconciliation, full
-writable reconstruction and provider/recovery acceptance remain separate work;
+real Git, current access and full restore. Source 4.25 adds legacy-buffer
+reconciliation; complete native-journal reconstruction and provider/recovery
+acceptance remain separate work;
 the full requirement count is unchanged. [All current GitHub reports](implementation/github-issues.md)
 remain part of this scope.
 
@@ -198,8 +207,9 @@ app/agent progress. Unchanged fragments retain exact revisions without body
 uploads; older bytes are still verified when a file grows. This advances
 C03/C07/C08 and V01 without claiming native plugin installation, fleet capacity
 or complete cross-app capture. The strict count remains **17/64 (26.6%)**.
-Issue 39 also retains a checked migration from the older external prototype
-buffer; native enrollment must use a separate prefix until reconciliation exists.
+Issue 39's older external prototype now has a checked private import in source
+4.25. Native enrollment still uses a separate prefix: importing available records
+does not convert the original files into native catalogs or acknowledge delivery.
 
 1. **Reported stabilization:** the [published 4.1.7 update-scheduler fix](validation/2026-10-13-managed-update-schedule.md)
    for suspended hosts (issue 33) passed source, native package, independent

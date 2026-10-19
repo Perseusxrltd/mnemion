@@ -42,6 +42,8 @@ journal.organize POST /v1/spaces/{space_id}/writeback/organize
 journal.backfill.status GET /v1/spaces/{space_id}/writeback/backfill
 journal.backfill.start POST /v1/spaces/{space_id}/writeback/backfill
 journal.backfill.control POST /v1/spaces/{space_id}/writeback/backfill/control
+memory.buffer.preview POST /v1/spaces/{space_id}/buffer-import/preview
+memory.buffer.import POST /v1/spaces/{space_id}/buffer-import
 principals.list GET /v1/principals
 principals.create POST /v1/principals
 principals.disable POST /v1/principals/{principal_id}/disable
@@ -150,6 +152,7 @@ evaluations.export GET /v1/spaces/{space_id}/evaluations/runs/{run_id}/export
 
 READ_POST = frozenset(
     {
+        "memory.buffer.preview",
         "retrieval.search",
         "retrieval.context",
         "knowledge.map",
@@ -165,6 +168,8 @@ READ_POST = frozenset(
 DOWNLOADS = frozenset({"sources.attachment", "obsidian.export", "evaluations.export"})
 PRIVATE_INPUTS = frozenset(
     {
+        "memory.buffer.preview",
+        "memory.buffer.import",
         "sign_in.set_password",
         "sign_in.login",
         "sign_in.refresh",
