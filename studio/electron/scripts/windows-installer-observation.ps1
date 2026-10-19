@@ -1,5 +1,6 @@
 # Read only: report installer processes/windows in one disposable probe directory.
 # No arbitrary desktop windows or command-line arguments enter the report.
+param([switch]$ProgressOnly)
 $ErrorActionPreference = 'Stop'
 $root = $env:MNEMION_PROBE_OUTPUT_DIRECTORY
 if (-not $root -or -not [IO.Path]::IsPathRooted($root)) { throw 'Use a disposable probe directory' }
@@ -14,6 +15,14 @@ for ($depth = 0; $depth -lt 5; $depth++) {
   foreach ($item in $all) {
     if ($owned.ContainsKey([int]$item.ParentProcessId)) { $owned[[int]$item.ProcessId] = $true }
   }
+}
+if ($ProgressOnly) {
+  # Keep routine samples small and skip native window enumeration / compilation.
+  @{
+    processes = @($all | Where-Object { $owned.ContainsKey([int]$_.ProcessId) } |
+      Select-Object -First 40 ProcessId,CreationDate,KernelModeTime,UserModeTime,ReadTransferCount,WriteTransferCount)
+  } | ConvertTo-Json -Depth 4 -Compress
+  exit
 }
 Add-Type -TypeDefinition @'
 using System;
@@ -55,7 +64,7 @@ $callback = [MnemionInstallerObservation+Callback] {
 }
 [void][MnemionInstallerObservation]::EnumWindows($callback, [IntPtr]::Zero)
 @{
-  processes = @($all | Where-Object { $owned.ContainsKey([int]$_.ProcessId) } | Select-Object -First 40 ProcessId,ParentProcessId,Name,ExecutablePath,KernelModeTime,UserModeTime,WorkingSetSize)
+  processes = @($all | Where-Object { $owned.ContainsKey([int]$_.ProcessId) } | Select-Object -First 40 ProcessId,ParentProcessId,Name,ExecutablePath,CreationDate,KernelModeTime,UserModeTime,ReadTransferCount,WriteTransferCount,WorkingSetSize)
   windows = @($windows.ToArray())
   disk = @(Get-CimInstance Win32_LogicalDisk -Filter 'DriveType=3' | Select-Object DeviceID,Size,FreeSpace)
 } | ConvertTo-Json -Depth 6 -Compress

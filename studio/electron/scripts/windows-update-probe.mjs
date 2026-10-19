@@ -1,5 +1,5 @@
 /** Real NSIS first-install/upgrade/relaunch using disposable instrumented packages. */
-import { createReadStream, createWriteStream, existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { appendFileSync, createReadStream, createWriteStream, existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { cp, mkdir, readdir, rename, rm } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -10,6 +10,7 @@ import { spawn, spawnSync } from 'node:child_process'
 import { extractAll, extractFile, createPackageWithOptions, getRawHeader } from '@electron/asar'
 import { NtExecutable, NtExecutableResource, Resource } from 'resedit'
 import { root, platformArtifacts, packageJson } from './platform-artifacts.mjs'
+import { InstallerProgressWindow } from './installer-progress.mjs'
 
 if (process.platform !== 'win32') throw new Error('Run this rehearsal on native Windows')
 // The disposable packages use the production archive policy as well.
@@ -103,6 +104,16 @@ for (const name of Object.keys(env)) if (name.toLowerCase() === 'psmodulepath') 
 const log = createWriteStream(join(output, 'build.log'))
 const sleep = milliseconds => new Promise(resolve_ => setTimeout(resolve_, milliseconds))
 let child
+const installationProgress = []
+
+function installerObservation(progressOnly = false, timeout = 20_000) {
+  const result = spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-File',
+    join(scripts, 'windows-installer-observation.ps1'), ...(progressOnly ? ['-ProgressOnly'] : [])],
+  { env: { ...env, MNEMION_PROBE_OUTPUT_DIRECTORY: output }, encoding: 'utf8',
+    timeout, windowsHide: true, maxBuffer: 65_536 })
+  if (result.status !== 0) return { processInspectionFailed: true }
+  try { return JSON.parse(result.stdout) } catch { return { processInspectionFailed: true } }
+}
 
 async function run(command, args, timeout = 180_000) {
   await new Promise((resolve_, reject) => {
@@ -217,17 +228,35 @@ try {
   child.stdout.pipe(electronLog, { end: false }); child.stderr.pipe(electronLog, { end: false })
   child.once('close', () => electronLog.end())
   child.on('error', error => { writeFileSync(join(output, 'spawn-error.txt'), error.message) })
-  const deadline = Date.now() + 240_000
-  let events = [], relaunched
-  while (Date.now() < deadline) {
+  const started = performance.now()
+  const progressWindow = new InstallerProgressWindow(started)
+  // The usual fast path does not invoke CIM. Slow copies get observed CPU/IO
+  // progress, not an unconditional retry or an unbounded timeout extension.
+  let nextObservation = started + 120_000
+  let events = [], relaunched, relaunchedAt
+  while (true) {
     if (existsSync(receipt)) {
       events = readFileSync(receipt, 'utf8').trim().split('\n').filter(Boolean).map(line => JSON.parse(line))
       const error = events.find(event => event.event === 'error')
       if (error) throw new Error(`The Windows fixture failed: ${error.message}`)
       relaunched = events.find(event => event.event === 'relaunched')
-      if (relaunched) break
+      if (relaunched) { relaunchedAt = performance.now(); break }
     }
     if (child.exitCode !== null && child.exitCode !== 0) throw new Error('The initial application exited unexpectedly')
+    const remaining = progressWindow.maximum - (performance.now() - started)
+    if (remaining <= 0) throw new Error('NSIS did not replace and relaunch the target application: maximum_duration')
+    if (performance.now() >= nextObservation) {
+      const observation = installerObservation(true, Math.max(1, Math.min(20_000, Math.floor(remaining))))
+      const now = performance.now()
+      progressWindow.observe(now, observation.processes)
+      const sample = { elapsedSeconds: Math.round((now - started) / 1000), ...observation }
+      installationProgress.push(sample)
+      appendFileSync(join(output, 'installer-progress.jsonl'), JSON.stringify(sample) + '\n')
+      console.log('NSIS progress ' + JSON.stringify(sample))
+      nextObservation = now + 30_000
+    }
+    const expired = progressWindow.expired(performance.now())
+    if (expired) throw new Error(`NSIS did not replace and relaunch the target application: ${expired}`)
     await sleep(200)
   }
   if (!relaunched || relaunched.version !== target || relaunched.pid === child.pid) throw new Error('NSIS did not replace and relaunch the target application')
@@ -245,6 +274,8 @@ try {
   if (createHash('sha256').update(readFileSync(join(source.resources, 'app.asar'))).digest('hex') !== sourceHash) throw new Error('The production package was changed by the fixture')
   const result = { architecture: process.arch, originalVersion: version, updatedVersion: target, downloads,
     installedBinaries, updatedBinaries, binaryHashesPreserved: true, installationPathWithSpaces: true,
+    updateRelaunchSeconds: Math.round((relaunchedAt - started) / 1000),
+    installerProgressSamples: installationProgress.length,
     nativeNsisFirstInstallation: true, nativeReplacementAndRelaunch: true, packagedDesktopController: true,
     signedMetadataAndCachedInstallerVerified: true, focusTransferDraftIdleGuards: true,
     nativeManualRedirects: true,
@@ -260,11 +291,8 @@ try {
     diagnostic.installedVersion = JSON.parse(extractFile(join(installed, 'resources/app.asar'), 'package.json').toString('utf8')).version
     diagnostic.updatedBinaries = await verifyInstalledBinaries(join(output, 'packages', target), installed)
   } catch (failure) { diagnostic.binaryVerification = failure.message }
-  const processEnvironment = { ...env, MNEMION_PROBE_OUTPUT_DIRECTORY: output }
-  const processes = spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-File',
-    join(scripts, 'windows-installer-observation.ps1')],
-  { env: processEnvironment, encoding: 'utf8', timeout: 20_000, windowsHide: true, maxBuffer: 65_536 })
-  try { diagnostic.processes = JSON.parse(processes.stdout || '[]') } catch { diagnostic.processInspectionFailed = true }
+  diagnostic.processes = installerObservation()
+  diagnostic.installationProgress = installationProgress
   writeFileSync(join(output, 'upgrade-failure.json'), JSON.stringify(diagnostic, null, 2))
   throw error
 } finally {
