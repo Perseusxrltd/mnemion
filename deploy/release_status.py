@@ -126,7 +126,15 @@ def gate(
     if not candidates:
         return result
     run = max(candidates, key=lambda item: (timestamp(item["updated_at"]), item["id"]))
-    result.update({"run_id": run["id"], "url": run["html_url"], "updated_at": run["updated_at"]})
+    result.update(
+        {
+            "run_id": run["id"],
+            "url": run["html_url"],
+            "updated_at": run["updated_at"],
+            "event": run.get("event"),
+            "conclusion": run.get("conclusion"),
+        }
+    )
     if run.get("status") != "completed":
         result["status"] = "pending"
     elif run.get("conclusion") == "success":
@@ -154,6 +162,104 @@ def public_upgrade_coverage(result: dict, jobs: dict, targets: list[dict]) -> di
     if not expected or not expected <= passed:
         return {**result, "status": "incomplete", "missing_targets": sorted(expected - passed)}
     return {**result, "targets_passed": len(expected)}
+
+
+def complete_jobs(run_id: int, source: str) -> dict[str, dict]:
+    """GitHub's latest filter includes the retained successful jobs of a retry."""
+    rows = []
+    expected = None
+    for page in range(1, 11):
+        data = api(f"actions/runs/{run_id}/jobs?filter=latest&per_page=100&page={page}")
+        total, jobs = data.get("total_count"), data.get("jobs")
+        if (
+            type(total) is not int
+            or not 0 < total <= 1000
+            or (expected is not None and total != expected)
+            or not isinstance(jobs, list)
+            or not jobs
+            or len(jobs) > 100
+        ):
+            raise ValueError("Incomplete release job inventory")
+        expected = total
+        rows.extend(jobs)
+        if len(rows) >= total:
+            break
+    if len(rows) != expected:
+        raise ValueError("Incomplete release job inventory")
+    names, ids = {}, set()
+    for job in rows:
+        name = job.get("name")
+        if (
+            not isinstance(name, str)
+            or not 0 < len(name) <= 300
+            or name in names
+            or type(job.get("id")) is not int
+            or job["id"] <= 0
+            or job["id"] in ids
+            or job.get("run_id") != run_id
+            or job.get("head_sha") != source
+            or not isinstance(job.get("steps"), list)
+        ):
+            raise ValueError("Release jobs must belong to the exact source and run")
+        names[name] = job
+        ids.add(job["id"])
+    return names
+
+
+def reuse_release_checks(ci: dict, release: dict, source: str) -> dict:
+    """A superseded branch run can use the same complete reusable CI suite."""
+    if (
+        ci.get("status") != "not passed"
+        or ci.get("conclusion") != "cancelled"
+        or ci.get("event") != "push"
+        or release.get("status") != "passed"
+        or timestamp(release["updated_at"]) < timestamp(ci["updated_at"])
+    ):
+        return ci
+    standalone = complete_jobs(ci["run_id"], source)
+    # A cancellation after an actual failure must not conceal that failure.
+    if any(
+        job.get("status") != "completed"
+        or job.get("conclusion") not in {"success", "cancelled", "skipped"}
+        or any(
+            step.get("conclusion") in {"failure", "timed_out", "action_required"}
+            for step in job["steps"]
+        )
+        for job in standalone.values()
+    ):
+        return ci
+    embedded = {
+        name.removeprefix("checks / "): job
+        for name, job in complete_jobs(release["run_id"], source).items()
+        if name.startswith("checks / ")
+    }
+    # Equality retains every matrix target, including future jobs. It also
+    # refuses an incomplete branch inventory or a differently structured suite.
+    if set(embedded) != set(standalone) or any(
+        job.get("status") != "completed"
+        or job.get("conclusion") != "success"
+        or any(
+            step.get("conclusion") in {"failure", "timed_out", "action_required"}
+            for step in job["steps"]
+        )
+        for job in embedded.values()
+    ):
+        return ci
+    return {
+        **ci,
+        "status": "passed",
+        "conclusion": "success",
+        "run_id": release["run_id"],
+        "event": release.get("event"),
+        "url": release["url"],
+        "updated_at": release["updated_at"],
+        "evidence": "complete reusable Product checks",
+        "jobs_passed": len(embedded),
+        "superseded_run_id": ci["run_id"],
+        "superseded_url": ci["url"],
+        "standalone_conclusion": "cancelled",
+        "standalone_event": ci["event"],
+    }
 
 
 def collect(root: Path) -> dict:
@@ -204,6 +310,7 @@ def collect(root: Path) -> dict:
                 targets,
             )
         gates.append(result)
+    gates[0] = reuse_release_checks(gates[0], gates[1], source)
     return {
         "schema": 1,
         "checked_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -265,6 +372,14 @@ def markdown(data: dict) -> str:
         f"| {item['name']} | {item['status']} | [Workflow]({item['url']}) |"
         for item in data["gates"]
     ]
+    for item in data["gates"]:
+        if item.get("evidence") == "complete reusable Product checks":
+            lines += [
+                "",
+                f"Product checks passed as all {item['jobs_passed']} matching jobs inside the "
+                f"exact-source release workflow. The [separate branch run]({item['superseded_url']}) "
+                "was superseded and cancelled; its cancellation is not counted as a pass.",
+            ]
     lines += [
         "",
         "Passing evidence belongs to the exact release source. Public upgrade evidence",

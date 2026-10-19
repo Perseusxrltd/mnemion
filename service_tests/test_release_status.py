@@ -199,3 +199,92 @@ def test_inventory_only_advertises_installers_that_exist():
     original = deepcopy(published)
     status.installers(published)
     assert published == original
+
+
+def job(name, run_id, identifier, **changes):
+    return {
+        "name": name,
+        "id": identifier,
+        "run_id": run_id,
+        "head_sha": SOURCE,
+        "status": "completed",
+        "conclusion": "success",
+        "steps": [],
+        **changes,
+    }
+
+
+def embedded_fixture(monkeypatch, *, broken=None):
+    ci = gate([run(conclusion="cancelled")])
+    release = gate(
+        [run("release.yml", id=43, html_url=f"{status.ORIGIN}/actions/runs/43")], "release.yml"
+    )
+    original = [job("lint", 42, 1), job("service (3.12)", 42, 2, conclusion="cancelled")]
+    embedded = [job("checks / lint", 43, 3), job("checks / service (3.12)", 43, 4)]
+    if broken:
+        broken(original, embedded)
+    monkeypatch.setattr(
+        status,
+        "api",
+        lambda path: {
+            "total_count": len(original if "/42/" in path else embedded),
+            "jobs": original if "/42/" in path else embedded,
+        },
+    )
+    return ci, release
+
+
+def test_superseded_branch_uses_every_matching_successful_release_check(monkeypatch):
+    ci, release = embedded_fixture(monkeypatch)
+    result = status.reuse_release_checks(ci, release, SOURCE)
+    assert result["status"] == "passed" and result["run_id"] == 43
+    assert result["superseded_run_id"] == 42 and result["jobs_passed"] == 2
+    assert ci["status"] == "not passed"
+
+
+@pytest.mark.parametrize("problem", ["failure", "step_failure", "missing", "skipped", "source"])
+def test_reuse_never_conceals_failed_or_incomplete_checks(monkeypatch, problem):
+    def broken(original, embedded):
+        if problem == "failure":
+            original[1]["conclusion"] = "failure"
+        elif problem == "step_failure":
+            original[1]["steps"] = [{"conclusion": "failure"}]
+        elif problem == "missing":
+            embedded.pop()
+        elif problem == "skipped":
+            embedded[1]["conclusion"] = "skipped"
+        else:
+            embedded[1]["head_sha"] = "b" * 40
+
+    ci, release = embedded_fixture(monkeypatch, broken=broken)
+    if problem == "source":
+        with pytest.raises(ValueError, match="exact source"):
+            status.reuse_release_checks(ci, release, SOURCE)
+    else:
+        assert status.reuse_release_checks(ci, release, SOURCE) == ci
+
+
+def test_reuse_does_not_override_actual_failure_or_manual_cancellation(monkeypatch):
+    ci, release = embedded_fixture(monkeypatch)
+    for change in (
+        {"conclusion": "failure"},
+        {"event": "workflow_dispatch"},
+        {"status": "pending"},
+    ):
+        candidate = {**ci, **change}
+        assert status.reuse_release_checks(candidate, release, SOURCE) == candidate
+    assert status.reuse_release_checks(ci, {**release, "status": "not passed"}, SOURCE) == ci
+
+
+def test_job_inventory_requires_complete_pagination_and_stable_identity(monkeypatch):
+    first = [job("job " + str(n), 42, n + 1) for n in range(100)]
+    second = [job("last job", 42, 101)]
+    monkeypatch.setattr(
+        status,
+        "api",
+        lambda path: {"total_count": 101, "jobs": second if path.endswith("page=2") else first},
+    )
+    assert len(status.complete_jobs(42, SOURCE)) == 101
+    second.clear()
+    with pytest.raises(ValueError, match="Incomplete"):
+        status.complete_jobs(42, SOURCE)

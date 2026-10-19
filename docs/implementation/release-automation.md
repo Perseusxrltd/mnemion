@@ -123,3 +123,23 @@ python -m deploy.release_automation publish \
 No download or profile diagnostic is treated as proof that a customer's actual
 installation or independently hosted workspace has upgraded. Provider access,
 customer-specific migrations and unfinished features keep their own evidence.
+## Reusing product-check evidence after a superseded branch push
+
+The release workflow calls the same complete Product checks workflow at its
+frozen source commit. A newer main push can cancel that commit's separate
+branch CI without affecting the release's checks. Status reconciliation now
+uses the successful release invocation when the standalone push was cancelled
+and contained no failed job or step.
+
+Both complete GitHub job inventories must identify the same source. Every
+standalone job name must match exactly one successful reusable release job,
+including every matrix target. Missing pages, mismatched identities, skipped
+release checks, actual failures, pending checks and manually dispatched
+cancellations do not qualify. The status record links the passing release
+invocation and retains the cancelled branch run as separate evidence.
+
+On 19 October, all eleven reusable checks for 4.24 passed in release run
+39307882234; standalone push run 39307840806 had been superseded. Live collection
+then recognized all five release gates, including six public installed updates.
+The focused status suite passed 34 checks. This reads existing evidence and
+does not rerun tests, alter artifacts or relax public-update requirements.
