@@ -41,7 +41,7 @@ def inventory(dsn):
         return result
 
 
-@pytest.mark.parametrize("previous_count", [13, 14, 15, 16, 17, 18])
+@pytest.mark.parametrize("previous_count", [13, 14, 15, 16, 17, 18, 19])
 def test_previous_schema_upgrade_preserves_keys_grants_and_existing_memory(
     postgres, tmp_path, monkeypatch, previous_count
 ):
@@ -132,6 +132,7 @@ def test_previous_schema_upgrade_preserves_keys_grants_and_existing_memory(
         expected_tables = (
             {"company_links", "company_login_requests"} if previous_count < 18 else set()
         )
+        expected_tables |= {"vault_entries", "vault_grants", "vault_denials", "vault_audit_events"}
         if previous_count < 17:
             expected_tables.add("recovery_directories")
         if previous_count < 16:

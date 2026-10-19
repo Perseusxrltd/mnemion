@@ -113,7 +113,7 @@ def test_pre_company_upgrade_preserves_existing_password_session(
             database = None
         assert db.migrate(admin_dsn) == (
             ["018_company_sign_in.sql"] if previous_count == 17 else []
-        ) + ["019_company_agent_consent.sql"]
+        ) + ["019_company_agent_consent.sql", "020_secrets_vault.sql"]
         with psycopg.connect(admin_dsn) as connection:
             after = connection.execute(
                 "SELECT to_jsonb(s) FROM mnemion.sign_in_sessions s WHERE id=%s",

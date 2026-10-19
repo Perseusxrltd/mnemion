@@ -14,6 +14,12 @@ The TypeScript client, web Studio and Electron builds passed; both Python locks
 passed offline verification. Existing OpenAPI operations and models are unchanged;
 the generated contract adds the reviewed vault operations.
 
+An additional **nine migration regression cases passed** after updating the
+expected current schema. They cover upgrades from schemas 13–19, including the
+published 4.11 schema, and preserve existing memory, keys, grants and password/
+assistant sessions. The four new vault tables start empty. Full CI and installed
+release acceptance remain tracked separately from these focused checks.
+
 The real PostgreSQL tests exercise separate ciphertext storage, absence from
 memory/search/context/Obsidian output, tenant and worker isolation, key and
 signed-in-person grants, list/read/write separation, current revocation after
