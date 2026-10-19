@@ -53,6 +53,10 @@ and intact archival, with app and agent controls. Git history retains published
 text; journals do not replace a full workspace backup. Source 4.18.0 adds local
 desktop host registration and matching agent controls. Git sign-in, guided remote
 host enrollment, backfill and large-history scaling remain on the roadmap.
+Source 4.19.0 adds [daily journal rollover and cached retries](docs/service/git-journal.md#file-rollover-and-version-compatibility),
+plus [local agent update controls](docs/service/desktop-operator.md#app-updates-and-startup).
+Upgrade journal-reading runners as well as publishers before using continuation
+files. Complete inventory limits and independent remote hosting still apply.
 Source 4.17.0 adds [live JSONL conversation capture](docs/service/live-conversations.md):
 bounded records and fragments, deferred tails, per-file source controls, private
 checkpoints, unchanged-fragment reuse and capture progress in the app. Existing

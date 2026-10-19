@@ -1,14 +1,14 @@
 """Bounded, repeatable filing of complete journals into Markdown and intact archives."""
 
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 import hashlib
 import io
 import time
 from uuid import UUID
 
 from .. import local_state
-from .format import JournalError, MAX_FILE_BYTES, parse_file, parse_line
+from .format import JournalError, MAX_FILE_BYTES, journal_path, matches_path, parse_file, parse_line
 from .index import journal_index
 from .notes import note_path, notes_prefix, render_note, validate_note
 from .privacy import scan
@@ -103,14 +103,8 @@ def _day(journal, path):
     archived = relative.startswith("_archive/")
     if archived:
         relative = relative.removeprefix("_archive/")
-    try:
-        day, name = relative.split("/")
-        parsed = date.fromisoformat(day)
-        if day != parsed.isoformat() or name != f"{UUID(name.removesuffix('.jsonl'))}.jsonl":
-            raise ValueError
-    except ValueError:
-        raise JournalError("journal_record_path_mismatch") from None
-    return relative, parsed, archived
+    parsed, writer, part = journal_path(relative)
+    return relative, parsed, writer, part, archived
 
 
 def _matches(blob, content):
@@ -125,21 +119,27 @@ def _matches(blob, content):
 def _plan(journal, head, index, *, cutoff):
     destination = journal.destination
     files, views = _inventory(journal, head)
+    catalog = journal._catalog(head)
     eligible = []
+    series = {}
     index.db.execute("CREATE TABLE fold_origins(origin TEXT PRIMARY KEY)")
     for blob, data in _read_objects(journal, files.values()):
-        relative, day, archived = _day(journal, blob.path)
+        relative, day, writer, part, archived = _day(journal, blob.path)
+        if part and catalog.schema_version < 2:
+            raise JournalError("journal_catalog_layout_mismatch")
+        series.setdefault((day, writer), set()).add(part)
         old = day < cutoff.date()
         if old and not archived:
             eligible.append(blob)
         for entry in parse_file(io.BytesIO(data)):
             journal._scope(entry)
-            if entry.relative_path != relative:
+            if not matches_path(entry, relative):
                 raise JournalError("journal_record_path_mismatch")
             index.add(entry, uri=blob.path)
             if old or archived:
                 index.db.execute("INSERT OR IGNORE INTO fold_origins VALUES (?)", (entry.origin,))
-    catalog = journal._catalog(head)
+    if any(parts != set(range(max(parts) + 1)) for parts in series.values()):
+        raise JournalError("journal_incomplete_series")
     if index.records != catalog.records:
         raise JournalError("journal_incomplete_inventory")
 

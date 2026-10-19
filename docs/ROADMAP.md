@@ -1,9 +1,20 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.18.0**. Roadmap updated: **2026-10-19**.
+Reviewed source distribution: **4.19.0**. Roadmap updated: **2026-10-19**.
 The [current published distribution and release gates](RELEASE_STATUS.md) are updated automatically.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
+
+The [4.19.0 source](releases/4.19.0.md) removes the daily writer's single-file
+publication stop with [numbered Git journal rollover](service/git-journal.md#file-rollover-and-version-compatibility),
+cached immutable objects, exact retries and complete archive/denial replay.
+All publishers and journal-reading runners must support its schema-2 catalog.
+The same batch adds [private agent control of app updates](service/desktop-operator.md#app-updates-and-startup),
+including immediate checking and one version-confirmed restart with existing
+work safeguards. [Validation](validation/2026-10-19-journal-rollover-updates.md)
+includes a real journal exceeding 20 MB and actual service/protocol checks.
+Complete inventory scaling, backfill, provider onboarding, fleet acceptance and
+independent hosting remain open. Strict completion stays **17/64 (26.6%)**.
 
 The [4.18.0 source](releases/4.18.0.md) adds local desktop
 [Git journal host registration](service/git-journal.md#a-workspace-hosted-by-the-desktop-app):

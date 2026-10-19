@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from collections import defaultdict
-import io
 import re
 import time
 
@@ -15,11 +14,11 @@ from .format import (
     JournalError,
     MAX_FILE_BYTES,
     parse_catalog,
-    parse_file,
 )
 from .privacy import scan
 from .process import program_environment, run
 from .spool import Spool
+from .rollover import append, delivery_index
 
 OID = re.compile(r"^[0-9a-f]{40}(?:[0-9a-f]{24})?$")
 
@@ -167,40 +166,6 @@ class GitJournal:
             raise JournalError("journal_file_too_large")
         return self._git("cat-file", "blob", object_id, maximum=MAX_FILE_BYTES)
 
-    def _append(self, head, path, additions):
-        active = self._blob(head, path)
-        archive_path = (
-            self.destination.prefix + "/_archive/" + path[len(self.destination.prefix) + 1 :]
-        )
-        archived = self._blob(head, archive_path)
-        target = archive_path if archived is not None else path
-        existing = (archived if archived is not None else active) or b""
-        known = {}
-        for content in (archived, active):
-            for entry in parse_file(io.BytesIO(content or b"")):
-                self._scope(entry)
-                if path != self.destination.prefix + "/" + entry.relative_path:
-                    raise JournalError("journal_record_path_mismatch")
-                digest = entry.digest
-                if str(entry.id) in known and known[str(entry.id)] != digest:
-                    raise JournalError("journal_entry_conflict")
-                known[str(entry.id)] = digest
-        extra = bytearray()
-        added = 0
-        for entry in sorted(additions, key=lambda e: (e.ts, str(e.id))):
-            previous = known.get(str(entry.id))
-            if previous:
-                if previous != entry.digest:
-                    raise JournalError("journal_entry_conflict")
-                continue
-            line = entry.line()
-            if len(existing) + len(extra) + len(line) > MAX_FILE_BYTES:
-                raise JournalError("journal_file_too_large")
-            extra.extend(line)
-            known[str(entry.id)] = entry.digest
-            added += 1
-        return (existing + extra if extra else None), added, target
-
     def _catalog(self, head):
         path = self.destination.prefix + "/catalog.json"
         value = self._blob(head, path)
@@ -252,7 +217,11 @@ class GitJournal:
             after = self._blob(head, path)
             if path == self.destination.prefix + "/catalog.json" and before and after:
                 prior, current = parse_catalog(before), parse_catalog(after)
-                if prior.namespace != current.namespace or current.records < prior.records:
+                if (
+                    prior.namespace != current.namespace
+                    or current.records < prior.records
+                    or current.schema_version < prior.schema_version
+                ):
                     raise JournalError("journal_remote_history_changed")
                 continue
             if after is None and path.startswith(self.destination.prefix + "/"):
@@ -339,7 +308,8 @@ class GitJournal:
             )
             groups[self.destination.prefix + "/" + entry.relative_path].append(entry)
         # A slow network push must not lock the local receipt path used by saves.
-        with local_state.lock(self.control):
+        with local_state.lock(self.control), delivery_index(self) as index:
+            metrics = {"read_bytes": 0, "written_bytes": 0, "rollover_files": 0}
             for attempt in range(3):
                 head = self._fetch()
                 self._protect_previous(head)
@@ -351,12 +321,16 @@ class GitJournal:
                 updates = []
                 added_records = 0
                 for path, additions in sorted(groups.items()):
-                    content, added, target = self._append(head, path, additions)
+                    changes, added, progress = append(
+                        self, head, path, additions, index, catalog_version=catalog.schema_version
+                    )
                     added_records += added
-                    if content is not None:
-                        updates.append(self._update(target, content))
+                    updates.extend(changes)
+                    for name in metrics:
+                        metrics[name] += progress[name]
                 if added_records:
                     catalog = JournalCatalog(
+                        schema_version=2 if metrics["rollover_files"] else catalog.schema_version,
                         tenant_id=catalog.tenant_id,
                         space_id=catalog.space_id,
                         records=catalog.records + added_records,
@@ -379,6 +353,7 @@ class GitJournal:
                     "attempts": attempt + 1,
                     "elapsed_seconds": round(time.monotonic() - started, 3),
                     "destination_fingerprint": self.destination.fingerprint,
+                    "append_planning": metrics,
                 }
                 local_state.write(self.spool.root / "publication.json", report)
                 return report

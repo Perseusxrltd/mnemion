@@ -67,6 +67,8 @@ engine** so it uses the Windows account and named-pipe implementation.
 | Action | Behavior |
 | --- | --- |
 | `status`, `catalog` | Read current native state or discover the supported interface. |
+| `app.status`, `app.preferences` | From 4.19.0, inspect this app's version/update policy or change an observed app preference. No local workspace needs to be running. |
+| `app.update-check`, `app.update-restart` | From 4.19.0, request an immediate ordinary update check or one guarded restart of the exact verified ready version. |
 | `local.create`, `local.start`, `local.stop` | Create, start or stop the app's local workspace through the ordinary lifecycle controls. |
 | `local.memory` | Set automatic/manual RAM limits or repair a damaged RAM policy with its current repair token. |
 | `local.port` | Change a stopped workspace's API port using its observed current port. |
@@ -145,6 +147,60 @@ current workspace automatically. Review its result, then call `recovery.use`
 with `{"id":"VERIFIED_COPY_ID"}` and the current workspace identity. Use
 `{"id":null}` to return to the original. The same current deletion/access rules,
 fresh administrator credentials and external-connection review apply as in the UI.
+
+## App updates and startup
+
+From 4.19.0, the private catalog contains **30 operations**. App controls work
+independently of a remote workspace or its originating agent. Use the copied
+native engine command as above, with one request on stdin:
+
+```json
+{"action":"app.status"}
+```
+
+The result includes this desktop's version, OS/architecture, preferences,
+administrator policy, distribution support, current bounded update status and
+the verified `ready_version`, if any. Ordinary checks run shortly after startup
+and then every **6–6¼ hours**, with bounded retries after failure. Automatic
+restarts wait for ten minutes of computer inactivity, background/lock state,
+saved work and clean completion of active operations. A release being available
+does not mean every running installation has already checked or restarted.
+
+```json
+{"action":"app.update-check"}
+```
+
+This requests the app's normal signature-verified check/download immediately.
+It refuses paused, administrator-managed or unsupported updates. The app owns
+an accepted download even if the requesting agent disconnects. Read `app.status`
+for its result; `requested: true` is not proof of a download or installation.
+
+To change a preference, supply its observed value. Allowed keys are
+`automaticUpdates`, `startAtLogin` and `background`:
+
+```json
+{"action":"app.preferences","input":{"key":"background","expected_value":false,"enabled":true}}
+```
+
+Stale values are refused. Administrator-managed automatic updates cannot be
+overridden. These app/OS-login preferences are distinct from the selected
+workspace's `local.preferences.start_with_app`.
+
+After a version is verified and ready, an authorized local agent can request a
+single deliberate restart, substituting the actual `ready_version`:
+
+```json
+{"action":"app.update-restart","input":{"expected_version":"4.19.0","confirm":true}}
+```
+
+The request is acknowledged before a deferred restart attempt, so the operation
+can release its local mutation guard. Like the app's **Restart now** action,
+this deliberate request can proceed while the user is active; unsaved drafts,
+in-flight work, service/database drain and signature checks remain mandatory.
+If refused, it leaves no persistent override of background/inactivity policy.
+Read status again; after a successful replacement use the newly published
+private discovery record. An accepted request is not proof that installation
+completed. These controls never restart or repair a separately hosted server.
 
 ## Timeouts, retries and recovery
 

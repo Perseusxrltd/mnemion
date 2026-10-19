@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from datetime import timezone
+from datetime import date, timezone
 import hashlib
 import json
+import re
 from typing import Literal
 from uuid import UUID
 
@@ -15,6 +16,29 @@ from ..service.models import Command, Content, MemoryInput, MemoryKind
 FORMAT = "mnemion-memory-journal"
 MAX_LINE_BYTES = 384 * 1024
 MAX_FILE_BYTES = 20_000_000
+MAX_SERIES_FILES = 4096
+
+
+def journal_path(value: str):
+    """Canonical portable daily paths, including bounded numbered continuations."""
+    try:
+        day, name = value.split("/")
+        parsed = date.fromisoformat(day)
+        match = re.fullmatch(r"([0-9a-f-]{36})(?:\.part-([0-9]{6}))?\.jsonl", name)
+        if match is None or day != parsed.isoformat():
+            raise ValueError
+        writer = UUID(match[1])
+        part = int(match[2]) if match[2] else 0
+        if str(writer) != match[1] or match[2] and not 1 <= part < MAX_SERIES_FILES:
+            raise ValueError
+        return parsed, writer, part
+    except ValueError:
+        raise JournalError("journal_record_path_mismatch") from None
+
+
+def matches_path(entry, relative: str):
+    day, writer, _ = journal_path(relative)
+    return day == entry.ts.date() and writer == entry.writer
 
 
 def journal_candidate(path: str, text: str) -> bool:
@@ -25,7 +49,9 @@ def journal_candidate(path: str, text: str) -> bool:
 
 class JournalCatalog(Command):
     format: Literal["mnemion-memory-journal-catalog"] = "mnemion-memory-journal-catalog"
-    schema_version: Literal[1] = 1
+    # Version 2 permits continuation paths. Older publishers/readers reject
+    # the whole catalog instead of silently overlooking a continuation.
+    schema_version: Literal[1, 2] = 1
     tenant_id: UUID
     space_id: UUID
     records: int = Field(ge=0, le=1_000_000, strict=True)

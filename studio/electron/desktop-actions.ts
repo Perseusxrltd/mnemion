@@ -2,6 +2,10 @@
 export const desktopActions = {
   status: { workspace: false, mutation: false, fields: [] },
   catalog: { workspace: false, mutation: false, fields: [] },
+  'app.status': { workspace: false, mutation: false, fields: [] },
+  'app.preferences': { workspace: false, mutation: true, fields: ['key', 'enabled', 'expected_value'] },
+  'app.update-check': { workspace: false, mutation: true, fields: [] },
+  'app.update-restart': { workspace: false, mutation: true, fields: ['expected_version', 'confirm'] },
   'local.create': { workspace: true, mutation: true, fields: ['workspace_name', 'owner_name', 'embedding_profile', 'threads', 'port', 'memory'] },
   'local.start': { workspace: true, mutation: true, fields: [] },
   'local.stop': { workspace: true, mutation: true, fields: [] },

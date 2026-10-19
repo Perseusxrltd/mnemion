@@ -60,6 +60,12 @@ export async function verifyNativeOperator(window: BrowserWindow, phase: string)
   if (!workspace || status.operator?.state !== 'ready') throw new Error('The installed operator did not identify its live local workspace.')
   const catalog = await success('catalog')
   if (catalog.scope !== 'owning_os_account' || !catalog.operations['backup.configure']?.workspace || !catalog.operations['recovery.use']) throw new Error('The desktop operator catalog is incomplete.')
+  const appStatus = await success('app.status')
+  if (appStatus.version !== app.getVersion() || appStatus.platform !== process.platform ||
+      typeof appStatus.preferences?.automaticUpdates !== 'boolean' || typeof appStatus.managed !== 'boolean' ||
+      appStatus.regular_check_seconds?.minimum !== 21600 || !catalog.operations['app.update-restart']) {
+    throw new Error('The installed operator could not inspect this app’s update policy.')
+  }
   if (phase === 'backup-capture') {
     const initial = (await success('backup.status')).configuration as BackupConfiguration
     const settings = { expected_revision: initial.revision, destination: initial.destination, enabled: false,
@@ -86,7 +92,7 @@ export async function verifyNativeOperator(window: BrowserWindow, phase: string)
       primary_tenant_id: fixture.tenantId, trusted_backup_confirmed: true }, workspace)
     const unchanged = await success('status') as LocalStatus
     if (!recovered.receipt.keys_rotated || !recovered.receipt.external_connections_require_review || recovered.receipt.source_workspace_id !== workspace || unchanged.info?.settings?.workspace_id !== workspace) throw new Error('The operator restore did not preserve the original host and reset access.')
-    return { nativeOperatorPipe: true, operatorScheduleAndUiAgree: true, operatorRetryDoesNotRepeat: true,
+    return { nativeOperatorPipe: true, nativeAppUpdateStatus: true, operatorScheduleAndUiAgree: true, operatorRetryDoesNotRepeat: true,
       operatorStaleIdentityRefused: true, operatorRefreshesLedger: true, operatorInspectsEncryptedFiles: true, operatorRestoresIndependentCopy: true }
   }
   if (phase === 'backup-resume') {
@@ -108,7 +114,7 @@ export async function verifyNativeOperator(window: BrowserWindow, phase: string)
     const returned = await success('recovery.use', { id: null }, copy.receipt.workspace_id) as LocalStatus
     if (returned.preferences?.recoveryRoot || returned.info?.settings?.workspace_id !== workspace) throw new Error('The operator did not preserve the original workspace selection.')
     await ui(window, `(async()=>{const s=await window.mnemion.localStatus();const w=await window.mnemion.workspaceStatus();return s.state==='running' && !s.preferences?.recoveryRoot && !!w.active && !!document.querySelector('.ws-workspace-name');})()`)
-    return { nativeOperatorPipe: true, operatorRecoverySelection: true, operatorOriginalSelection: true, operatorPreservesUnsavedDraft: true }
+    return { nativeOperatorPipe: true, nativeAppUpdateStatus: true, operatorRecoverySelection: true, operatorOriginalSelection: true, operatorPreservesUnsavedDraft: true }
   }
-  return { nativeOperatorPipe: true }
+  return { nativeOperatorPipe: true, nativeAppUpdateStatus: true }
 }

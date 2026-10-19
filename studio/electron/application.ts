@@ -8,6 +8,7 @@ import { randomBytes } from 'crypto'
 import { createServer } from 'net'
 import { installServiceBridge, localClientBusy, verifyLocalClient, verifyWorkspaceStorage } from './service-bridge.js'
 import { DesktopUpdates } from './updates.js'
+import { desktopAppAction } from './desktop-app-actions.js'
 import { verifyNativeWorkspaceProbe } from './workspace-probe.js'
 import { verifyLocalHostingProbe, watchHostingProbeQuit } from './local-hosting-probe.js'
 
@@ -543,7 +544,8 @@ ipcMain.handle('app:version', () => app.getVersion())
 ipcMain.handle('app:platform', () => process.platform)
 ipcMain.handle('backend:port', () => backendPort)
 ipcMain.handle('backend:token', () => STUDIO_TOKEN)
-const desktopBridge = installServiceBridge(() => mainWindow)
+const desktopBridge = installServiceBridge(() => mainWindow,
+  (action, input, signal) => desktopAppAction(updates, action, input, signal))
 
 // App lifecycle
 

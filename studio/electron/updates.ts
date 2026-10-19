@@ -27,6 +27,7 @@ export class DesktopUpdates {
   private windows?: WindowsUpdateBridge
   private timers: NodeJS.Timeout[] = []
   private retryTimer?: NodeJS.Timeout
+  private requestedRestartTimer?: NodeJS.Timeout
   private retryAttempts = 0
   private stopped = false
   private readonly path = join(app.getPath('userData'), 'desktop-preferences.json')
@@ -114,6 +115,7 @@ export class DesktopUpdates {
     app.on('will-quit', () => {
       this.stopped = true
       this.clearRetry()
+      if (this.requestedRestartTimer) clearTimeout(this.requestedRestartTimer)
       for (const timer of this.timers) clearTimeout(timer)
     })
   }
@@ -121,6 +123,26 @@ export class DesktopUpdates {
   get enabled() { return this.supported && !this.managed && this.preferences.automaticUpdates }
   get policyManaged() { return this.managed }
   get canRequestRestart() { return this.enabled && this.downloaded && !this.installing }
+  inspect() {
+    return { version: app.getVersion(), platform: process.platform, architecture: process.arch,
+      preferences: { ...this.preferences }, enabled: this.enabled, managed: this.managed,
+      supported: this.supported, status: { ...this.status }, can_request_restart: this.canRequestRestart,
+      ready_version: this.downloaded ? this.readyVersion ?? null : null,
+      regular_check_seconds: { minimum: 21600, maximum: 22500 },
+      automatic_restart_idle_seconds: 600 }
+  }
+  requestRestart(expectedVersion: string) {
+    if (!this.canRequestRestart || expectedVersion !== this.readyVersion) throw new Error('The ready update changed. Read app.status before requesting its restart.')
+    if (this.requestedRestartTimer) return
+    // Return the private operator receipt and release its mutation guard first.
+    // This is a single deliberate attempt, with all normal draft/work checks;
+    // it never leaves a persistent request to bypass inactivity checks later.
+    this.requestedRestartTimer = setTimeout(() => {
+      this.requestedRestartTimer = undefined
+      if (!this.stopped && this.readyVersion === expectedVersion) void this.restartIfSafe(true)
+    }, 0)
+    this.requestedRestartTimer.unref()
+  }
   get quitNeedsUpdateCleanup() {
     const updater = this.mac || this.windows
     return !!updater?.active && !updater.installing

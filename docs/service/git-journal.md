@@ -8,6 +8,7 @@ Source **4.16.0** adds optional scheduled filing into Markdown notes and intact
 archival, with the same controls in Studio, HTTP, SDKs and the agent catalog.
 Source **4.18.0** adds destination registration in the desktop app and its private
 local agent interface.
+Source **4.19.0** adds file rollover and an index of validated Git objects.
 
 An inbound Git connection does not enable publication. Existing memories, core
 blocks, attachments, credentials and organization settings are not backfilled.
@@ -211,6 +212,45 @@ source are idempotent. This does not recreate the original writable space,
 accounts, attachments or full database history. Use trusted current snapshots
 and independent backups/denial ledgers for recovery.
 
+## File rollover and version compatibility
+
+From 4.19.0, a daily writer file rolls over before an appended complete record
+would exceed **20,000,000 bytes**. The original `<writer-uuid>.jsonl` stays intact;
+continuations are `<writer-uuid>.part-000001.jsonl`, `.part-000002.jsonl`, and so
+on in the same UTC day. Numbering is contiguous and shared across active/archive
+locations. Retries inspect all parts for the exact event, so restarting the host
+or losing a cache does not acknowledge unpublished content or duplicate records.
+Late writes continue an archived series, with the same complete replay rules.
+
+The first continuation atomically changes the catalog to **schema 2** with the
+new files. Individual records keep schema 1. Upgrade **all publishers, filing
+hosts and journal-reading source runners to 4.19 or later** before relying on
+rollover. Older versions refuse schema 2 instead of omitting its parts. Ordinary
+unsegmented journals retain catalog schema 1 until rollover is needed. Catalog
+downgrade and missing numbered parts are refused; do not edit the catalog to
+make an old publisher accept it. Upgrade a separately deployed service/runner
+through its own operator; updating a desktop does not update that remote host.
+
+A private `publisher-control/delivery-index.sqlite3` stores only validated object
+IDs and event/version hashes. Immutable sealed objects are reused; a changed Git
+object is parsed again. SQLite uses a 2 MiB page cache and file-backed temporary
+storage. Loss of this disposable index triggers reconstruction from Git. Detected
+SQLite damage refuses that attempt, removes only the damaged metadata cache, and
+rebuilds on the next attempt; publication receipts and memory files are retained.
+Missing Git history or unsafe linked state is not repaired by inventing records.
+
+Each writer/day has at most 4,096 parts, and planning refuses more than one
+million physical records or 2 GiB for that series. Batch limits still apply.
+Complete filing/replay retains its whole-inventory limits below; these are
+separate limits, so many individually valid days can still exceed that total.
+Rollover removes the single daily-file stop, not every large-history limit.
+
+The private `publication.json` receipt includes `append_planning.read_bytes`,
+`written_bytes` and `rollover_files`, summed across attempted pushes. These count
+JSONL object bytes and continuation files planned, including an attempt displaced
+by another writer. They exclude Git network/compression, history comparisons,
+catalogs and generated notes. They are not a measurement of total bandwidth.
+
 ## Automatic filing and archival
 
 On a 4.16.0 or later server, open the space's **Git journal** settings and enable
@@ -254,7 +294,8 @@ and catalog. This protection does not erase old Git commits, exported copies or
 files deliberately detached from their managed identity.
 
 Upgrade journal writers to 4.16.0 for immediate view invalidation. Older 4.15
-writers understand intact archive moves and can continue publishing; their
+writers understand intact archive moves and can continue publishing within
+schema-1 catalogs; their
 changes appear in the views at the next 4.16 filing run. Generated notes live
 outside the append-only journal folder for this compatibility. Database schema
 migrations still require every API process sharing that database to be compatible.
@@ -271,8 +312,9 @@ moving history; remaining work is scheduled again after 60 seconds. Files are
 read in bounded Git batches and projected through the existing 2 MiB SQLite
 cache. The same one-million-record/2 GiB inventory limits apply, with up to
 50,000 journal/view files and an 8 MiB tree listing. This is bounded processing,
-not a measured large-company throughput guarantee. File sharding and larger
-inventories remain roadmap work.
+not a measured large-company throughput guarantee. The 4.19 rollover above
+handles the per-writer daily-file limit; larger complete inventories, backfill
+and representative provider/fleet capacity remain roadmap work.
 
 ## Monitoring, SDKs and agents
 

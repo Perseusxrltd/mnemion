@@ -56,6 +56,12 @@ policy-version checks and explicit retained-history consent. Local destination
 enrollment uses `mnemion-service journal` under the operator OS account; memory
 credentials cannot select executable or storage paths. See [Git journals](git-journal.md).
 
+Source **4.18.0** adds `local.journal`; source **4.19.0** adds `app.status`,
+`app.preferences`, `app.update-check` and `app.update-restart`, for **30 private
+desktop operations**. These use the owning OS account and the same controlled
+restart, current-state and unsaved-work safeguards as Studio. They add no remote
+memory authority. See [app update controls](desktop-operator.md#app-updates-and-startup).
+
 Every call uses the application's own credential and the existing tenant,
 space and role checks. Catalog visibility describes capabilities; it does not
 grant permission to use them. Revoking a key or a space grant takes effect on

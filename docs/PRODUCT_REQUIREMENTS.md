@@ -19,6 +19,13 @@ not equally sized. This is coverage of the full requested scope, not a measure
 of engineering effort or the usability of the published app. Hotfixes to a
 partial feature do not automatically mark its whole requirement complete.
 
+Source 4.19.0 advances F08/R04/U04 with [bounded journal rollover](service/git-journal.md#file-rollover-and-version-compatibility)
+and [private local agent update controls](service/desktop-operator.md#app-updates-and-startup).
+The [focused evidence](validation/2026-10-19-journal-rollover-updates.md) includes
+more than 20 MB of real Git publication, cached retries and guarded update control.
+Full inventory/fleet capacity, provider sign-in, backfill and independent hosting
+remain separate acceptance; no broad requirement is promoted by this batch.
+
 Source 4.18.0 advances F08/C01/A09/U01 with [local app Git journal registration](service/git-journal.md#a-workspace-hosted-by-the-desktop-app)
 and a matching private local agent control. [Focused validation](validation/2026-10-19-journal-host-setup.md)
 covers approval, queue preservation and restart contracts. Native delivery, provider

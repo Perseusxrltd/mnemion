@@ -530,3 +530,16 @@ flow. Each record distinguishes source checks from native acceptance. See the
 Independent custody, provider sign-in, guided remote-host setup, backfill and
 complete writable reconstruction remain open. The complete requested scope is
 retained at 17 of 64 shipped, with 41 partial requirements.
+
+## Daily journal capacity and agent update control, 19 October 2026
+
+The [4.19 batch](../validation/2026-10-19-journal-rollover-updates.md) removes the
+20 MB single daily-file publication stop through numbered continuation files,
+immutable-object indexing and complete active/archive retry checks. A schema-2
+catalog prevents older writers/readers from silently overlooking parts; every
+publisher and journal runner needs the compatible version. The batch also adds
+four private desktop operations for app preferences and update status/check/restart,
+with stale-state and unsaved-work guards. Native delivery remains tracked in the
+automatic release ledger. Full backfill, large total inventories, provider and
+fleet acceptance, and independent office availability remain open. Strict full
+scope remains 17 of 64 shipped (26.6%).

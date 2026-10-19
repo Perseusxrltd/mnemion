@@ -35,6 +35,8 @@ mock.module('electron-updater', { defaultExport: { autoUpdater: automatic } })
 mock.module('../dist/macos-updates.js', { namedExports: { MacUpdateBridge: PlatformBridge } })
 mock.module('../dist/windows-updates.js', { namedExports: { WindowsUpdateBridge: PlatformBridge } })
 const { DesktopUpdates } = await import('../dist/updates.js')
+const { desktopAppAction } = await import('../dist/desktop-app-actions.js')
+const { desktopAction } = await import('../dist/desktop-actions.js')
 after(() => {
   mock.restoreAll()
   if (previousResources === undefined) delete process.resourcesPath
@@ -51,7 +53,7 @@ function fixture(t, { ready = true } = {}) {
   for (const key of keys) delete process.env[key]
   process.env.APPIMAGE = join(directory, 'fixture.AppImage')
   idle = 0; idleState = 'active'; quits = 0
-  const state = { safe: true, focused: true, busy: false, drains: 0, cancelled: 0, attempts: 0, installs: 0,
+  const state = { safe: true, focused: true, busy: false, drains: 0, cancelled: 0, attempts: 0, installs: 0, checks: 0,
     drain: async () => true, beforeFinalGuard: () => {} }
   const window = { isFocused: () => state.focused, isVisible: () => true, isMinimized: () => false,
     webContents: { executeJavaScript: async () => state.safe } }
@@ -61,7 +63,7 @@ function fixture(t, { ready = true } = {}) {
   // Windows final authorization callback remain the production implementation.
   controller.mac = undefined
   controller.windows = {
-    check: async () => {}, cancel: async () => {},
+    check: async () => { state.checks++ }, cancel: async () => {},
     install: async guard => {
       state.attempts++
       state.beforeFinalGuard()
@@ -80,6 +82,92 @@ function fixture(t, { ready = true } = {}) {
   })
   return { state, controller }
 }
+
+function localAction(controller, action, input = {}, signal = new AbortController().signal) {
+  desktopAction(action, input)
+  return desktopAppAction(controller, action, input, signal)
+}
+
+test('local agents see independent app update policy and cannot mutate the returned snapshot', t => {
+  const { controller } = fixture(t)
+  const status = localAction(controller, 'app.status')
+  assert.equal(status.version, '4.0.11')
+  assert.equal(status.ready_version, '4.0.12')
+  assert.equal(status.enabled, true)
+  assert.equal(status.regular_check_seconds.minimum, 21600)
+  status.preferences.automaticUpdates = false
+  status.status.state = 'Changed by caller'
+  assert.equal(controller.preferences.automaticUpdates, true)
+  assert.notEqual(controller.status.state, 'Changed by caller')
+  assert.throws(() => localAction(controller, 'app.status', { credential: 'not accepted' }), /unsupported/)
+})
+
+test('app preference changes reject stale, mistyped and administrator-managed requests', t => {
+  const { controller } = fixture(t)
+  const action = input => localAction(controller, 'app.preferences', input)
+  assert.throws(() => action({ key: 'background', enabled: false, expected_value: false }), /changed/)
+  assert.throws(() => action({ key: 'background', enabled: 'false', expected_value: true }), /boolean/)
+  assert.equal(action({ key: 'background', enabled: false, expected_value: true }).preferences.background, false)
+  assert.throws(() => action({ key: 'background', enabled: true, expected_value: true }), /changed/)
+  controller.managed = true
+  assert.throws(() => action({ key: 'automaticUpdates', enabled: false, expected_value: true }), /administrator/)
+  assert.equal(controller.preferences.automaticUpdates, true)
+})
+
+test('an agent can check immediately without waiting for six hours or enabling paused updates', async t => {
+  const { state, controller } = fixture(t, { ready: false })
+  assert.equal(localAction(controller, 'app.update-check').requested, true)
+  await Promise.resolve()
+  assert.equal(state.checks, 1)
+  assert.equal(state.installs, 0)
+  controller.preferences.automaticUpdates = false
+  assert.throws(() => localAction(controller, 'app.update-check'), /paused/)
+  assert.equal(state.checks, 1)
+})
+
+test('an agent restart requires the ready version and releases its request before shutdown', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] })
+  const { state, controller } = fixture(t)
+  const action = input => localAction(controller, 'app.update-restart', input)
+  assert.throws(() => action({ expected_version: '4.0.12', confirm: 1 }), /Confirm/)
+  assert.throws(() => action({ expected_version: '4.0.13', confirm: true }), /changed/)
+  assert.equal(action({ expected_version: '4.0.12', confirm: true }).requested, true)
+  action({ expected_version: '4.0.12', confirm: true })
+  assert.equal(state.installs, 0)
+  t.mock.timers.tick(1)
+  for (let n = 0; n < 12; n++) await Promise.resolve()
+  assert.equal(state.installs, 1)
+  assert.equal(quits, 1)
+})
+
+test('agent restart preserves drafts and never leaves an active manual restart request behind', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] })
+  const { state, controller } = fixture(t)
+  localAction(controller, 'app.update-restart', { expected_version: '4.0.12', confirm: true })
+  state.safe = false
+  t.mock.timers.tick(1)
+  for (let n = 0; n < 8; n++) await Promise.resolve()
+  assert.equal(state.installs, 0)
+  assert.equal(state.drains, 0)
+  state.safe = true
+  await controller.restartIfSafe()
+  assert.equal(state.installs, 0, 'Normal focus/inactivity checks apply after the refused request')
+})
+
+test('cancelled agent calls and shutdown cannot change preferences or fire queued restart work', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] })
+  const { state, controller } = fixture(t)
+  const abort = new AbortController(); abort.abort()
+  assert.throws(() => localAction(controller, 'app.preferences',
+    { key: 'background', enabled: false, expected_value: true }, abort.signal), /abort/i)
+  assert.equal(controller.preferences.background, true)
+  localAction(controller, 'app.update-restart', { expected_version: '4.0.12', confirm: true })
+  app.emit('will-quit')
+  t.mock.timers.tick(1)
+  await Promise.resolve()
+  assert.equal(state.drains, 0)
+  assert.equal(state.installs, 0)
+})
 
 test('a deliberate restart works while focused and active, after all work checks', async t => {
   const { state, controller } = fixture(t)

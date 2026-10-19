@@ -170,7 +170,8 @@ export async function verifyLocalClient(): Promise<Record<string, unknown>> {
   return runClient(['--version'])
 }
 
-export function installServiceBridge(getWindow: () => BrowserWindow | null) {
+export function installServiceBridge(getWindow: () => BrowserWindow | null,
+  appControl?: (action: string, input: Record<string, unknown>, signal: AbortSignal) => unknown) {
   let connections: WorkspaceConnections | undefined
   let local: LocalWorkspace | undefined
   let backups: LocalBackups | undefined
@@ -644,6 +645,9 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
           request_limit_bytes: 16384, response_limit_bytes: 262144, same_request_replay_seconds: 600,
           guide: 'https://github.com/Perseusxrltd/mnemion/blob/main/docs/service/desktop-operator.md' }
         case 'status': return localStatus()
+        case 'app.status': case 'app.preferences': case 'app.update-check': case 'app.update-restart':
+          if (!appControl) throw new Error('The desktop app controls are not available in this session.')
+          return appControl(request.action, input, signal)
         case 'local.create': return createLocal(input)
         case 'local.start': return startLocal()
         case 'local.stop': return { stopped: await stopLocal() }
