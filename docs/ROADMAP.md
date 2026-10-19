@@ -5,7 +5,10 @@ The [current published distribution and release gates](RELEASE_STATUS.md) are up
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
 
-The [4.19.0 source](releases/4.19.0.md) removes the daily writer's single-file
+The [4.19.0 source](releases/4.19.0.md) fixes native connections dropping the
+server version and hiding supported features. The installed Git-setup check
+caught this in 4.18, which was withheld; 4.19 includes its guided setup with the
+correction and retains that acceptance flow. It also removes the daily writer's single-file
 publication stop with [numbered Git journal rollover](service/git-journal.md#file-rollover-and-version-compatibility),
 cached immutable objects, exact retries and complete archive/denial replay.
 All publishers and journal-reading runners must support its schema-2 catalog.
@@ -21,8 +24,9 @@ The [4.18.0 source](releases/4.18.0.md) adds local desktop
 repository choices, private derived paths, controlled service restart, concurrent
 edit checks, removal/repair and the same private local agent operation. Registration
 does not publish memories or grant space access. [Validation](validation/2026-10-19-journal-host-setup.md)
-includes actual PostgreSQL approval/queue checks and desktop controls; the new
-installed UI flow awaits native release acceptance. Provider sign-in, guided
+includes actual PostgreSQL approval/queue checks and desktop controls. Its new
+installed UI flow caught the connection metadata defect corrected in 4.19.
+Provider sign-in, guided
 remote-host setup, independent custody, backfill and writable reconstruction remain
 open under issue 39 and F08/C01/A09/U01. The strict count remains **17/64 (26.6%)**.
 

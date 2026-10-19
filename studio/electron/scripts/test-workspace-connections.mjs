@@ -74,25 +74,35 @@ test('ordinary users and session-only logins do not capture administrator recove
 test('a remembered connection resumes after restart with a fresh renderer handle and rechecked identity', async t => {
   const f = await workspaceFixture(t)
   let checks = 0
+  let serviceVersion = '4.18.0'
   const verify = async (address, key) => {
     assert.equal(address, endpoint)
     assert.equal(key, credential)
     checks++
-    return f.identity
+    return { ...f.identity, service_version: serviceVersion }
   }
   const first = new WorkspaceConnections(f.store, verify)
   const connected = await first.connect(endpoint, credential, true)
+  assert.equal(connected.me.service_version, '4.18.0')
   assert.equal(await first.authorization(api, header(connected)), 'Bearer ' + credential)
   assert.ok(!JSON.stringify(connected).includes(credential))
   assert.ok(!JSON.stringify(await first.status()).includes(credential))
   first.lock()
+  serviceVersion = '4.19.0'
   const restarted = new WorkspaceConnections(new WorkspaceStore(f.directory, f.cipher), verify)
   const [a, b] = await Promise.all([restarted.resume(), restarted.resume()])
   assert.deepEqual(a, b)
   assert.equal(checks, 2)
+  assert.equal(a.me.service_version, '4.19.0')
   assert.notEqual(a.sessionToken, connected.sessionToken)
   assert.equal(await restarted.authorization(api, header(a)), 'Bearer ' + credential)
   await assert.rejects(() => restarted.authorization(api, header(connected)), /Reconnect/)
+  restarted.lock()
+  serviceVersion = undefined
+  const legacy = await restarted.resume()
+  assert.equal(checks, 3)
+  assert.equal(Object.hasOwn(legacy.me, 'service_version'), false)
+  assert.equal(Object.hasOwn((await restarted.inspect(legacy.bookmarkId)).access.identity, 'service_version'), false)
 })
 
 test('session handles cannot send a stored credential outside the selected API', async t => {

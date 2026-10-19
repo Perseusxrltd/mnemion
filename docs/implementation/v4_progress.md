@@ -543,3 +543,9 @@ with stale-state and unsaved-work guards. Native delivery remains tracked in the
 automatic release ledger. Full backfill, large total inventories, provider and
 fleet acceptance, and independent office availability remain open. Strict full
 scope remains 17 of 64 shipped (26.6%).
+
+The 4.18 installed Git-registration gate caught native connections stripping the
+server version, hiding supported features. All six native targets refused that
+release. 4.19 retains the optional, validated version through connect/resume and
+keeps the complete installed registration check. Two regression checks reproduced
+the old failure; all 38 workspace identity/connection checks pass after the fix.

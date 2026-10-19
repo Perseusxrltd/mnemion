@@ -89,6 +89,7 @@ export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Re
       'The installed UI did not open or automatically restore its local workspace', 180000);
     const session = (await bridge.workspaceStatus()).active;
     if (!session || session.me.tenant_name !== 'Équipe installed validation') throw new Error('The UI has no authenticated local session');
+    if (session.me.service_version !== await bridge.version()) throw new Error('The local session did not retain the bundled server version');
     if (config.phase === 'recover-port' && new URL(session.endpoint).port === String(config.port)) throw new Error('The repaired UI reconnected to the occupied old address');
     async function request(method, path, body) {
       const response = await bridge.serviceRequest({ url: session.endpoint + path, method,
@@ -150,7 +151,7 @@ export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Re
     return { phase: config.phase, memoryId, endpoint: session.endpoint, tenantId: session.me.tenant_id,
       actualSetupControls: config.phase === 'create', uiOpenedWorkspace: true, nativeService: true,
       journalRegistrationControls: config.phase === 'create',
-      authenticatedApi: true, realModelInference: true, semanticSaveAndRecall: true, nativeNgrokSdkLoaded: true,
+      authenticatedApi: true, serverVersionRetained: true, realModelInference: true, semanticSaveAndRecall: true, nativeNgrokSdkLoaded: true,
       automaticReopen: config.phase === 'resume', recoveredPortConflict: config.phase === 'recover-port', savedMemoryPresent: true, memoryPolicyRetained: true,
       navigationPreservesUpdateReadiness: true, unsavedDraftBlocksUpdate: true, closedEditorRestoresUpdateReadiness: true };
   })()`)

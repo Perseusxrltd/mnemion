@@ -12,6 +12,8 @@ export interface WorkspaceIdentity {
   name: string
   tenant_name: string
   administrator: boolean
+  /** Optional server metadata; never a substitute for live authorization. */
+  service_version?: string
 }
 
 export interface WorkspaceBookmark {
@@ -76,7 +78,12 @@ export function workspaceIdentity(value: unknown): WorkspaceIdentity {
       !label(me.name) || !label(me.tenant_name) || typeof me.administrator !== 'boolean') {
     throw new Error('Invalid workspace identity.')
   }
-  return { principal_id: me.principal_id, tenant_id: me.tenant_id, name: me.name, tenant_name: me.tenant_name, administrator: me.administrator }
+  // Older servers omit this field. Invalid optional metadata must not break a
+  // valid login, but must not enable features that the server may not support.
+  const serviceVersion = typeof me.service_version === 'string' && me.service_version.trim() === me.service_version && /^\d{1,9}\.\d{1,9}\.\d{1,9}$/.test(me.service_version)
+    ? me.service_version : undefined
+  return { principal_id: me.principal_id, tenant_id: me.tenant_id, name: me.name, tenant_name: me.tenant_name, administrator: me.administrator,
+    ...(serviceVersion ? { service_version: serviceVersion } : {}) }
 }
 
 function decode(value: unknown): StoredState {

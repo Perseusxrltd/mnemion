@@ -21,6 +21,8 @@ partial feature do not automatically mark its whole requirement complete.
 
 Source 4.19.0 advances F08/R04/U04 with [bounded journal rollover](service/git-journal.md#file-rollover-and-version-compatibility)
 and [private local agent update controls](service/desktop-operator.md#app-updates-and-startup).
+It also fixes native connections dropping server-version metadata and hiding
+supported features; the installed Git-setup check caught this before 4.18 publication.
 The [focused evidence](validation/2026-10-19-journal-rollover-updates.md) includes
 more than 20 MB of real Git publication, cached retries and guarded update control.
 Full inventory/fleet capacity, provider sign-in, backfill and independent hosting

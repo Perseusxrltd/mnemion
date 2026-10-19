@@ -6,9 +6,21 @@ databases are synthetic and isolated. No live-office migration or user workspace
 change is part of this validation.
 
 Focused validation covers **68 Python cases** (52 journal/replay/filing cases and
-16 service cases) and **26 desktop cases** (17 update-controller and 9 private
-operator protocol cases). Desktop process and web-renderer builds, locked
+16 service cases) and **64 desktop cases** (17 update-controller, 9 private
+operator protocol and 38 workspace identity/connection cases). Desktop process and web-renderer builds, locked
 dependency metadata, pinned formatting/lint and release metadata checks pass.
+
+The installed Git-setup flow in the 4.18 release failed on all six targets before
+publication: native identity sanitization discarded `service_version`, so the
+renderer hid capabilities supported by the server. Two focused regression checks
+failed against the old compiled code; all 38 identity/connection checks passed
+after retaining the bounded, optional version field. Unrelated server fields
+remain excluded. Missing or invalid optional versions do not break valid logins,
+and reconnect reads the current server rather than trusting cached capabilities.
+The installed hosting probe now checks version metadata immediately and retains
+the actual registration, restart and memory-preservation flow. Its successful
+native acceptance remains a release-pipeline requirement. 4.18 was not published;
+4.19 supersedes it rather than changing its frozen source.
 
 The focused journal tests use actual Git repositories and include a daily writer
 whose records exceed the real 20,000,000-byte file limit. Publication produces

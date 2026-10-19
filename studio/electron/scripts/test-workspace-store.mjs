@@ -3,8 +3,27 @@ import { randomUUID } from 'node:crypto'
 import { chmod, lstat, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { WorkspaceStore, workspaceEndpoint } from '../dist/workspace-store.js'
+import { WorkspaceStore, workspaceEndpoint, workspaceIdentity } from '../dist/workspace-store.js'
 import { workspaceFixture as fixture, fixtureCredential as credential, recoveryFixture } from './workspace-fixture.mjs'
+
+test('verified server version survives identity sanitization without forwarding other server fields', async t => {
+  const f = await fixture(t)
+  const identity = { ...f.identity, service_version: '4.19.0' }
+  assert.deepEqual(workspaceIdentity({ ...identity, credential, extra: { administrator: true } }), identity)
+  const saved = await f.store.save('https://memory.example.com', credential, identity)
+  const restarted = new WorkspaceStore(f.directory, f.cipher)
+  assert.deepEqual((await restarted.inspect(saved.id)).access.identity, identity)
+  assert.equal((await restarted.credential(saved.id)).credential, credential)
+})
+
+test('missing or invalid optional server versions keep valid identities usable without feature metadata', async t => {
+  const { identity } = await fixture(t)
+  assert.deepEqual(workspaceIdentity(identity), identity)
+  for (const service_version of [null, false, 419, [], {}, '', '4.19', '4.19.0\n', 'v4.19.0', '4.19.0-preview', '9'.repeat(10000)]) {
+    assert.deepEqual(workspaceIdentity({ ...identity, service_version }), identity)
+  }
+  assert.throws(() => workspaceIdentity({ ...identity, administrator: 'true', service_version: '4.19.0' }), /Invalid workspace identity/)
+})
 
 test('administrator recovery references survive restart only inside OS-protected storage', async t => {
   const f = await fixture(t), identity = { ...f.identity, administrator: true }
