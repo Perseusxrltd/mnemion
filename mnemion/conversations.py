@@ -201,7 +201,8 @@ def parse(text: str, source_id: str) -> list[Transcript]:
         rows = data if isinstance(data, list) else [data]
     except (json.JSONDecodeError, RecursionError):
         try:
-            rows = [json.loads(line) for line in text.splitlines() if line.strip()]
+            # JSONL records end at LF; Unicode separators are valid string content.
+            rows = [json.loads(line) for line in text.split("\n") if line.strip()]
         except (json.JSONDecodeError, RecursionError):
             raise ConversationError("conversation_json_incomplete_or_invalid") from None
         data = rows

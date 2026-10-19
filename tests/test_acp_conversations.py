@@ -54,6 +54,14 @@ def test_streamed_chunks_preserve_spaces_unicode_and_message_time_bounds():
     assert "2026-10-19T00:00:00Z → 2026-10-19T00:00:01Z" in result.text
 
 
+@pytest.mark.parametrize("separator", ["\u2028", "\u2029", "\u0085"])
+def test_jsonl_preserves_literal_unicode_separators_inside_message_text(separator):
+    message = f"Preserve{separator}this separator"
+    rows = [event("user_message_chunk", message), event("agent_message_chunk", "Saved")]
+    result = parse(encoded(rows).replace("\n", "\r\n"), "fixture")[0]
+    assert result.turns == 2 and message in result.text and result.text.endswith("Saved")
+
+
 def test_duplicate_events_need_an_explicit_identity_and_conflicts_are_visible():
     one = event("agent_message_chunk", "ha", eventId="chunk-1")
     result = parse(

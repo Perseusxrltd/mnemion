@@ -34,9 +34,10 @@ filing, service permissions and historical schema upgrades. They cover:
 compatibility. Web and Electron frontends compile and use existing Perseus components;
 this records compilation, not a separate desktop UI acceptance session.
 
-The same source batch addresses issue 40's Grok Build format gap. **14 parser and
+The same source batch addresses issue 40's Grok Build format gap. **17 parser and
 companion checks passed** across the existing formats and new ACP sessions,
-including streamed Unicode/text spacing, separate sessions/message identities,
+including streamed Unicode/text spacing, literal Unicode separators in JSONL,
+Windows line endings, separate sessions/message identities,
 first/last chunk timestamps, explicit event deduplication/conflict handling,
 non-message exclusion, stable raw provenance and repeat/append companion IDs.
 Unknown updates remain raw; incomplete JSONL still fails the normal inventory.
