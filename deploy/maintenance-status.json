@@ -82,31 +82,16 @@
   ],
   "runs": [
     {
-      "id": 39242606506,
+      "id": 39242843713,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "2c21cbcbda31d8d3d0ffddc7a4eeebb1957b5ef2",
+      "source_commit": "fe5cfd1f939a769d6b0c6fb3cd24f7459e01673d",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-19T11:09:51Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39242606506",
-      "failed_jobs": [
-        {
-          "name": "legacy",
-          "id": 118026792930,
-          "steps": [
-            "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
-          ]
-        },
-        {
-          "name": "lint",
-          "id": 118026793218,
-          "steps": [
-            "Run uv run --no-sync ruff format --check ."
-          ]
-        }
-      ]
+      "updated_at": "2026-10-19T11:12:02Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39242843713",
+      "failed_jobs": []
     },
     {
       "id": 39241855912,
@@ -174,5 +159,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39241852486"
     }
   ],
-  "observed_at": "2026-10-19T11:10:52+00:00"
+  "observed_at": "2026-10-19T11:12:13+00:00"
 }
