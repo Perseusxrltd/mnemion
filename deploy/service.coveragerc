@@ -8,6 +8,8 @@ include =
     */mnemion/service/*
     */mnemion/local_*.py
     */mnemion/backup_encryption.py
+    */mnemion/journal/*
+    */mnemion/connectors/journal_projection.py
 fail_under = 75
 show_missing = true
 exclude_lines =

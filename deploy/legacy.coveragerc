@@ -6,6 +6,8 @@ omit =
     */mnemion/service/*
     */mnemion/local_*.py
     */mnemion/backup_encryption.py
+    */mnemion/journal/*
+    */mnemion/connectors/journal_projection.py
 
 [report]
 fail_under = 45

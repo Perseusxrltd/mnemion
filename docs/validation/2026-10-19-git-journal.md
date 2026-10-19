@@ -41,6 +41,12 @@ was modified. This is not a live Git-provider or remote host-reset claim.
   Its formatting was corrected without a behavioral change. Release startup
   now runs format/lint locally before reserving a release branch; the complete
   497-file format check and lint pass.
+- Release attempt 2 passed **334 legacy tests** (one skipped), then its legacy
+  coverage calculation included the new service journal modules at zero coverage.
+  Those modules and journal projection are now measured by the service gate and
+  excluded from the legacy denominator. Both thresholds remain unchanged
+  (75% service, 45% legacy). Their **39 focused tests cover 88.79%** of the 758
+  journal/projection statements. No tested module is excluded from both gates.
 
 Native packages, independent uploaded-byte verification and public automatic
 upgrade rehearsals remain separate pipeline evidence in
