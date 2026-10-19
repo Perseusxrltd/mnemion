@@ -27,15 +27,23 @@ export async function verifyNativeRetention(window: BrowserWindow): Promise<Reco
         await pause(100);
       }while(Date.now()<end);throw new Error(message);
     }
-    const button=text=>[...document.querySelectorAll('.ws-backup-panel button')].find(node=>node.textContent.trim()===text);
+    const panel=()=>document.querySelector('.ws-setup-page .ws-backup-panel');
+    const button=text=>[...(panel()?.querySelectorAll('button')??[])].find(node=>node.textContent.trim()===text);
     async function click(text){(await until(()=>{const node=button(text);return node&&!node.disabled&&node;},'Missing retention button: '+text)).click();await pause(100);}
     async function field(labelText,value,kind='input'){
-      const field=await until(()=>[...document.querySelectorAll('.ws-backup-panel label')].find(node=>node.querySelector('span')?.textContent===labelText)?.querySelector(kind),'Missing retention field: '+labelText);
+      const field=await until(()=>{
+        const node=[...(panel()?.querySelectorAll('label')??[])].find(node=>node.querySelector('span')?.textContent===labelText)?.querySelector(kind);
+        return node?.isConnected&&!node.disabled&&node;
+      },'Retention field did not become editable: '+labelText);
       Object.getOwnPropertyDescriptor(kind==='select'?HTMLSelectElement.prototype:HTMLInputElement.prototype,'value').set.call(field,value);
       field.dispatchEvent(new Event(kind==='select'?'change':'input',{bubbles:true}));await pause(100);
     }
     location.hash='/workspace/setup';
-    await until(()=>document.querySelector('.ws-backup-inventory'),'Backup inventory did not appear');
+    await until(()=>panel()?.querySelector('.ws-backup-inventory'),'Backup inventory did not appear');
+    // Workspace selection and backup completion each notify the renderer.
+    // Let the new route hydrate its saved form before sending user input, and
+    // never send synthetic changes to controls disabled by a pending refresh.
+    await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
     await field('Backup retention','limited','select');
     await field('Full snapshots to keep','2');await field('Recent access ledgers to keep','2');
     if(bridge.updateSafety())throw new Error('Unsaved retention settings did not protect the form.');
