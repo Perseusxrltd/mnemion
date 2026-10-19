@@ -20,17 +20,19 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.12'
-      - name: Install only the formatter pinned in the project lock
+      - name: Install pinned preflight tools
         run: |
           python - <<'PY'
           import pathlib, subprocess, sys, tomllib
           packages = tomllib.loads(pathlib.Path('uv.lock').read_text())['package']
           version = next(package['version'] for package in packages if package['name'] == 'ruff')
-          subprocess.run([sys.executable, '-m', 'pip', 'install', '--disable-pip-version-check', 'ruff==' + version], check=True)
+          subprocess.run([sys.executable, '-m', 'pip', 'install', '--disable-pip-version-check', 'ruff==' + version, 'uv==0.12.24'], check=True)
           PY
       - run: ruff check .
       - run: ruff format --check .
       - run: python deploy/release.py
+      - name: Check binary dependency availability before native builds
+        run: python -m deploy.binary_preflight
       - run: git ls-files -z '*.sh' | xargs -0 -r -n 1 bash -n
   checks:
     needs: preflight

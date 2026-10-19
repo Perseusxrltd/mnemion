@@ -106,7 +106,7 @@ From service 4.2.3, recall and context requests, SDKs and the full MCP
 | Input | Behavior |
 | --- | --- |
 | `sort: "relevance"` | Rank fusion with bounded source-age, archive and available question-coverage preferences; the default. |
-| `sort: "recent"` | From 4.14.0, prioritize comparable passage query support, then order by passage chronology. Semantic mode, or queries with fewer than two matched terms, use comparable rank-fusion relevance. Weaker candidates follow. Earlier servers order by whole-record dates. |
+| `sort: "recent"` | Prioritize comparable passage query support, then order by passage chronology. From 4.24, apply archive preferences within that group and retain available question support when rank fusion supplies the comparison. Weaker candidates follow. Earlier than 4.14, servers use whole-record dates. |
 | `recorded_after` | Inclusive timezone-aware timestamp filter on when the revision was recorded in Mnemion. Applied before candidate selection; distinct from the source date. |
 | `min_score` | Minimum normalized rank-fusion score, 0–1; default 0. It is a rank score, not answer confidence. |
 | `min_similarity` | Optional cosine floor, −1–1, for candidates without a full lexical or identifier match, including partial key-term candidates. Exact text or identifier matches remain eligible; `min_score` still applies to them. |
@@ -134,10 +134,23 @@ floors; different embedding models do not share a universally calibrated cutoff.
 The app's **Match threshold for recent results** defaults to 70%. It is
 `ranking_policy.recent_relevance_ratio` in the API. A candidate with at least
 70% of the best passage word coverage joins the priority group; when word
-coverage is unavailable or semantic mode is explicit, the same comparison uses
-rank fusion. Set it to 0 for strict date ordering within the candidate windows.
+coverage is unavailable, the same comparison uses rank fusion with any available
+question-coverage factor. Explicit semantic mode uses rank fusion without keyword
+support. Set it to 0 for strict date ordering within the candidate windows.
 Weaker results remain available and produce `recent_weak_matches_demoted`.
 This is separate from exclusion filters and from the keyword-fallback option.
+
+From **4.24**, comparable recent matches also honor `archive_weight`. An archived
+match whose weighted support falls below the comparison threshold follows the
+other comparable matches. Each group retains its actual passage dates; no date
+is rewritten. This produces `recent_archived_matches_demoted` and per-hit
+`ranking.archive` with the factor, matched folder and `demoted` flag. Strong
+archived evidence still precedes weak unrelated matches. If all comparable
+matches are archived, their common factor cancels and dates determine the order.
+Use `archive_weight: 1`, an empty archive-folder list or a recent ratio of zero
+to disable this preference. `ranking.recency.comparison_basis` and
+`comparison_support` explain whether the comparison used passage coverage,
+plain fusion or fusion with question support.
 
 ## Passage chronology
 
@@ -257,7 +270,7 @@ The API, Python/TypeScript clients, `memory_search`, `memory_context` and the ap
 | `recency_weight` | `0.25` | Maximum fractional age reduction, 0–1. Zero disables it. |
 | `recent_relevance_ratio` | `0.7` | Comparable support threshold for recent ordering, 0–1; zero restores strict dates. Requires 4.14.0. |
 | `half_life_days` | `3` | At this age, half of the maximum reduction applies. Range: 1 hour–36,500 days. |
-| `archive_weight` | `0.35` | Multiplier for archived candidates, 0–1. One disables the reduction; zero puts them last without excluding them. |
+| `archive_weight` | `0.35` | Multiplier for archived candidates, 0–1. One disables the reduction. In relevance order, zero explicitly puts them last; a nonzero value preserves sole literal historical evidence. In recent order, it applies within comparable matches. |
 | `archive_path_segments` | `["archive", "archives"]` | Up to 16 literal directory names of 1–128 characters each. An empty list disables matching. |
 
 Directory matching uses `metadata.path`, accepts Windows/Unix separators and
@@ -293,15 +306,24 @@ policy and `ranking_reference_time`; the app displays the factors under
 `min_score` remain unadjusted. Compare thresholds using the recorded model,
 retrieval version and settings; a new keyword implementation can change scores.
 Result relevance scores can consequently be out of descending order.
-`sort: "recent"` uses its comparable-support threshold and bypasses age,
-archive and question-factor multiplication.
+From 4.24, a nonzero archive preference does not penalize the only literal
+historical evidence when no non-archived candidate has a full text or identifier
+match. The hit reports `archive_uncontested: true`, the configured factor and an
+effective archive factor of 1. This prevents generic semantic neighbors from
+displacing the only exact record. An explicit zero still suppresses it in
+relevance ordering. A literal match remains evidence to review, not proof of truth.
+
+`sort: "recent"` bypasses age decay. Its comparable-support threshold retains
+question support, and its separate archive comparison behaves as described above.
 
 Access, source leases, quarantine, validity and query filters still run before
 ranking. These preferences add no model call, re-index or candidate-window
 expansion. Old servers receive no new field unless a caller requests it; the app
 enables the controls only for a compatible workspace server. Source dates and
 archive paths remain source-supplied hints, not proof of supersession or truth.
-Read cited evidence for current-state decisions. Historical Git span dating,
+The [repeatable local-model regression probe](../validation/2026-10-19-retrieval-archives.md)
+records synthetic multilingual, mixed-row and archive cases before and after
+indexing, with explicit target labels. Read cited evidence for current-state decisions. Historical Git span dating,
 contradiction resolution and broader held-out quality evaluations remain in the
 [roadmap](../PRODUCT_REQUIREMENTS.md).
 

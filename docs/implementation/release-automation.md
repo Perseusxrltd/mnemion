@@ -27,6 +27,15 @@ gates; no paid service, model call or new signing credential is required.
    and Python/platform inputs. Changed inputs rerun the group; skipped database
    checks cannot pass. PostgreSQL or the development `pgserver` fixture must be
    available. These early checks do not replace the complete release gates.
+   From 4.24, `python -m deploy.binary_preflight` also checks binary-only locked
+   dependency resolution for the current Python interpreter on all five service
+   targets (the two Windows desktop architectures share the x64 service). It
+   runs before local release dispatch and in the release workflow before native
+   builders. Use pinned `uv==0.12.24`; `MNEMION_RELEASE_UV` can supply its path.
+   This is a dry run: it installs nothing, starts no service and compiles no
+   dependency. Intel cryptography is the sole exception because its signed wheel
+   has a separate native build/inspection gate. Target floors are macOS 13 Intel,
+   macOS 14 ARM and glibc 2.28 Linux. Native execution checks still decide delivery.
 4. The release workflow runs product/native gates and creates a draft. The
    independent verifier checks the exact uploaded bytes, signatures, complete
    feeds and their unchanged inventory. GitHub can report the workflow completed

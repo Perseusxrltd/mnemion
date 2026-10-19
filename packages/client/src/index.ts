@@ -98,13 +98,17 @@ export interface RecallHit extends Omit<Memory, 'content'> {
       score: number; date: string; age_days: number
       recency_factor: number; archive_factor: number; archive_segment: string | null
       keyword_factor?: number | null
+      configured_archive_factor?: number; archive_uncontested?: boolean
     } | null
+    archive?: { archive_factor: number; archive_segment: string | null; demoted: boolean } | null
     keywords?: { rank: number; matched: number; requested: number; terms: string[]; weight: number } | null
     recency?: {
       at: string; basis: 'recorded_at' | 'source_modified_at' | 'source_timestamp' | 'source_date'
       span: { start: number; end: number; offset_unit: 'unicode_codepoints' }
       tracked: boolean; matched_terms: number; requested_terms: number; prioritized: boolean | null
       limited?: boolean
+      comparison_support?: number
+      comparison_basis?: 'passage_coverage' | 'rank_fusion_with_keyword_support' | 'rank_fusion'
     } | null
   }
 }

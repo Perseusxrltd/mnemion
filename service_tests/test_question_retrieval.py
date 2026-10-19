@@ -1,6 +1,6 @@
 """Question fallback uses real authorized PostgreSQL candidates, never model claims."""
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 import psycopg
@@ -75,6 +75,44 @@ def test_partial_terms_do_not_bypass_similarity_or_relevance_filters(env, questi
     for controls in ({"min_similarity": 0.99}, {"min_score": 0.9}):
         result = service.recall(env.owner, command.model_copy(update=controls))
         assert target["memory_id"] not in {hit["memory_id"] for hit in result["hits"]}
+
+
+def test_recent_bilingual_question_retains_keyword_support_ahead_of_fresh_noise(env):
+    target = env.memory.save(
+        env.owner,
+        env.space,
+        MemoryInput(
+            content="Projet Atlas : les sauvegardes restent au bureau de Stockholm. postgres",
+            metadata={
+                "source_modified_at": (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
+            },
+        ),
+        "atlas-backup-decision",
+    )["memory_id"]
+    noise = env.memory.save(
+        env.owner,
+        env.space,
+        MemoryInput(content="The unrelated pension review is complete."),
+        "fresh-noise",
+    )["memory_id"]
+    while env.worker.run_once():
+        pass
+    service = RetrievalService(env.db, env.embedder)
+    command = RecallInput(
+        query="Where will we keep the Atlas backup copy?", space_ids=[env.space], sort="recent"
+    )
+    result = service.recall(env.owner, command)
+    assert result["hits"][0]["memory_id"] == target
+    assert result["hits"][0]["ranking"]["keywords"]["terms"] == ["atlas"]
+    assert "recent_weak_matches_demoted" in result["warnings"]
+    without_support = service.recall(
+        env.owner, command.model_copy(update={"keyword_fallback": False})
+    )
+    assert without_support["hits"][0]["memory_id"] == noise
+    # The preference changes ordering, not the returned evidence or score floor.
+    assert {hit["memory_id"] for hit in result["hits"]} == {target, noise}
+    filtered = service.recall(env.owner, command.model_copy(update={"min_similarity": 0.9999}))
+    assert target not in {hit["memory_id"] for hit in filtered["hits"]}
 
 
 @pytest.mark.parametrize(

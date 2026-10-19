@@ -73,6 +73,11 @@ Source 4.23.0 adds [KeePass import/export](docs/service/keepass.md): reviewed
 KDBX 4 field mapping, default masked names, encrypted original grouping and
 current-grant checks in the app and private agent controls. It creates no
 plaintext temporary files; omitted history/attachments are shown before import.
+The 4.23 candidate was withheld for an Intel Mac dependency issue; source 4.24
+carries the correction, [archive-aware question retrieval](docs/service/retrieval.md)
+and a [repeatable real-model check](docs/validation/2026-10-19-retrieval-archives.md).
+Recent search preserves question support and keeps comparable current evidence
+ahead of archived drafts, with explicit historical-order controls.
 Source 4.17.0 adds [live JSONL conversation capture](docs/service/live-conversations.md):
 bounded records and fragments, deferred tails, per-file source controls, private
 checkpoints, unchanged-fragment reuse and capture progress in the app. Existing

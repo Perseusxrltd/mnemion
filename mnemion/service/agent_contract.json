@@ -7449,7 +7449,7 @@
               },
               "archive_weight": {
                 "default": 0.35,
-                "description": "Multiplier for matches in archive directories; 1 leaves their priority unchanged. Does not exclude evidence.",
+                "description": "Multiplier for matches in archive directories; 1 leaves priority unchanged. Recent ordering applies it within comparable matches. Relevance ordering preserves the only literal evidence when the weight is nonzero and no non-archived literal alternative exists. Does not exclude evidence.",
                 "maximum": 1.0,
                 "minimum": 0.0,
                 "title": "Archive Weight",
@@ -7473,7 +7473,7 @@
               },
               "recent_relevance_ratio": {
                 "default": 0.7,
-                "description": "For recent ordering, prioritize candidates within this fraction of the best passage query coverage when at least two terms match, or rank-fusion relevance otherwise. Semantic mode uses relevance. Weaker matches remain after them. Set 0 for strict date ordering within the candidate window.",
+                "description": "For recent ordering, prioritize candidates within this fraction of the best passage query coverage when at least two terms match, or rank fusion with available question-coverage support otherwise. Semantic mode uses relevance. Archive weighting also applies within comparable matches. Weaker matches remain after them. Set 0 for strict date ordering within the candidate window.",
                 "maximum": 1.0,
                 "minimum": 0.0,
                 "title": "Recent Relevance Ratio",
@@ -19524,7 +19524,7 @@
               },
               "archive_weight": {
                 "default": 0.35,
-                "description": "Multiplier for matches in archive directories; 1 leaves their priority unchanged. Does not exclude evidence.",
+                "description": "Multiplier for matches in archive directories; 1 leaves priority unchanged. Recent ordering applies it within comparable matches. Relevance ordering preserves the only literal evidence when the weight is nonzero and no non-archived literal alternative exists. Does not exclude evidence.",
                 "maximum": 1.0,
                 "minimum": 0.0,
                 "title": "Archive Weight",
@@ -19548,7 +19548,7 @@
               },
               "recent_relevance_ratio": {
                 "default": 0.7,
-                "description": "For recent ordering, prioritize candidates within this fraction of the best passage query coverage when at least two terms match, or rank-fusion relevance otherwise. Semantic mode uses relevance. Weaker matches remain after them. Set 0 for strict date ordering within the candidate window.",
+                "description": "For recent ordering, prioritize candidates within this fraction of the best passage query coverage when at least two terms match, or rank fusion with available question-coverage support otherwise. Semantic mode uses relevance. Archive weighting also applies within comparable matches. Weaker matches remain after them. Set 0 for strict date ordering within the candidate window.",
                 "maximum": 1.0,
                 "minimum": 0.0,
                 "title": "Recent Relevance Ratio",
@@ -19879,7 +19879,7 @@
               },
               "archive_weight": {
                 "default": 0.35,
-                "description": "Multiplier for matches in archive directories; 1 leaves their priority unchanged. Does not exclude evidence.",
+                "description": "Multiplier for matches in archive directories; 1 leaves priority unchanged. Recent ordering applies it within comparable matches. Relevance ordering preserves the only literal evidence when the weight is nonzero and no non-archived literal alternative exists. Does not exclude evidence.",
                 "maximum": 1.0,
                 "minimum": 0.0,
                 "title": "Archive Weight",
@@ -19903,7 +19903,7 @@
               },
               "recent_relevance_ratio": {
                 "default": 0.7,
-                "description": "For recent ordering, prioritize candidates within this fraction of the best passage query coverage when at least two terms match, or rank-fusion relevance otherwise. Semantic mode uses relevance. Weaker matches remain after them. Set 0 for strict date ordering within the candidate window.",
+                "description": "For recent ordering, prioritize candidates within this fraction of the best passage query coverage when at least two terms match, or rank fusion with available question-coverage support otherwise. Semantic mode uses relevance. Archive weighting also applies within comparable matches. Weaker matches remain after them. Set 0 for strict date ordering within the candidate window.",
                 "maximum": 1.0,
                 "minimum": 0.0,
                 "title": "Recent Relevance Ratio",
@@ -20614,7 +20614,7 @@
               },
               "archive_weight": {
                 "default": 0.35,
-                "description": "Multiplier for matches in archive directories; 1 leaves their priority unchanged. Does not exclude evidence.",
+                "description": "Multiplier for matches in archive directories; 1 leaves priority unchanged. Recent ordering applies it within comparable matches. Relevance ordering preserves the only literal evidence when the weight is nonzero and no non-archived literal alternative exists. Does not exclude evidence.",
                 "maximum": 1.0,
                 "minimum": 0.0,
                 "title": "Archive Weight",
@@ -20638,7 +20638,7 @@
               },
               "recent_relevance_ratio": {
                 "default": 0.7,
-                "description": "For recent ordering, prioritize candidates within this fraction of the best passage query coverage when at least two terms match, or rank-fusion relevance otherwise. Semantic mode uses relevance. Weaker matches remain after them. Set 0 for strict date ordering within the candidate window.",
+                "description": "For recent ordering, prioritize candidates within this fraction of the best passage query coverage when at least two terms match, or rank fusion with available question-coverage support otherwise. Semantic mode uses relevance. Archive weighting also applies within comparable matches. Weaker matches remain after them. Set 0 for strict date ordering within the candidate window.",
                 "maximum": 1.0,
                 "minimum": 0.0,
                 "title": "Recent Relevance Ratio",

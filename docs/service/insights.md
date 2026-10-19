@@ -50,6 +50,10 @@ threshold of 0 restores strict chronological ordering; 70% is the normal
 comparison threshold. The run keeps its settings, retrieval implementation
 and actual execution version. Older queued runs keep relevance order. Source
 date labels and matching terms do not establish that a claim is true.
+From 4.24, recent comparison retains available question support and applies
+archive preferences among comparable matches. A queued run that starts after an
+upgrade records the implementation actually executed and preserves its queued
+identifier. Already running evaluations still refuse to mix service versions.
 
 From server 4.3.3, **Ranking preferences** records `keyword_fallback` and the
 complete `ranking_policy` with each run. Compare question-term support on/off,

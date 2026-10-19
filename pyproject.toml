@@ -1,6 +1,6 @@
 [project]
 name = "mnemion"
-version = "4.23.0"
+version = "4.24.0"
 description = "Shared memory infrastructure for applications, teams, and AI assistants, with source evidence and Obsidian visualization."
 readme = "README.md"
 requires-python = ">=3.12,<3.15"
@@ -45,6 +45,10 @@ dependencies = [
     "psutil>=7.2.2,<8",
     "ngrok==1.7.0",
     "argon2-cffi==25.1.0",
+    # 26.1 removed Intel Mac wheels; both bindings vendor the same Argon2 source.
+    # Managed hosts install verified binaries without a local compiler.
+    "argon2-cffi-bindings==25.1.0; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    "argon2-cffi-bindings==26.1.0; sys_platform != 'darwin' or platform_machine != 'x86_64'",
     "pycryptodomex==3.24.1",
     "defusedxml==0.7.1",
 ]

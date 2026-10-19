@@ -5,6 +5,8 @@ and desktop Studio. The workspace must already have its
 [encrypted credentials vault](secrets-vault.md) enabled and its matching host
 key available. The live [release status](../RELEASE_STATUS.md) identifies which
 native packages are published.
+The 4.23 candidate was withheld for an Intel Mac binary-dependency failure;
+4.24 carries the same transfer protocol with a compatible dependency pin.
 
 ## Import current credentials
 

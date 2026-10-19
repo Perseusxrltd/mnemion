@@ -26,12 +26,15 @@ from .model_state import selected_generations
 from .model_state import settings as model_settings
 from .passages import evidence_passage, passage_span
 from .passage_time import select as select_passage_time
-from .ranking import adjustment
+from .ranking import adjustment, archive_adjustment
 from .repository import hydrate, memory_row
 from .telemetry import Telemetry
 from .source_health import source_health
 
 logger = logging.getLogger(__name__)
+RETRIEVAL_IMPLEMENTATION = (
+    "scoped_exact_cosine_lexical_question_coverage_passage_time_archive_rrf_k60_v3"
+)
 
 # Materialize the authorized candidates before computing distance or ranks.
 # The initial engine uses exact vector distance; no post-hoc tenant filtering
@@ -482,16 +485,35 @@ class RetrievalService:
                 if command.sort == "relevance"
                 else {}
             )
-            if adjustments and keywords:
+            if adjustments and 0 < command.ranking_policy.archive_weight < 1:
+                # An archive preference needs an alternative with literal
+                # support. Do not let generic semantic neighbors displace the
+                # only exact historical record. An explicit zero weight still
+                # requests full suppression in relevance ordering.
+                literal = {
+                    key for key in scores if "lexical" in ranks[key] or key in identifier_ranks
+                }
+                if not any(adjustments[key]["archive_segment"] is None for key in literal):
+                    for key in literal:
+                        value = adjustments[key]
+                        if value["archive_segment"] is not None:
+                            value["configured_archive_factor"] = value["archive_factor"]
+                            value["score"] /= value["archive_factor"]
+                            value["archive_factor"] = 1.0
+                            value["archive_uncontested"] = True
+            keyword_factors = {}
+            if keywords:
                 strongest = max(row["keyword_matches"] for row in keywords)
-                for key, value in adjustments.items():
+                for key in scores:
                     # RRF treats neighboring ranks similarly. A broad ledger
                     # matching one shared ID must not receive almost the same
                     # question support as the actual decision's several terms.
                     # Keep the original relevance/minimum filters unchanged.
                     factor = 0.5 + 0.5 * candidates[key].get("keyword_matches", 0) / strongest
-                    value["keyword_factor"] = factor
-                    value["score"] = round(value["score"] * factor, 8)
+                    keyword_factors[key] = factor
+                    if key in adjustments:
+                        adjustments[key]["keyword_factor"] = factor
+                        adjustments[key]["score"] = round(adjustments[key]["score"] * factor, 8)
             ordered = sorted(
                 scores,
                 key=lambda key: (
@@ -499,28 +521,60 @@ class RetrievalService:
                     str(key),
                 ),
             )
+            recent_archives = {}
             if command.sort == "recent":
                 ratio = command.ranking_policy.recent_relevance_ratio
-                best_score = max(scores.values(), default=0)
                 best_support = max(
                     (value["matched_terms"] for value in chronology.values()), default=0
                 )
+                # Prose with just one shared name or project often crosses
+                # languages. Preserve its existing key-term support rather
+                # than letting near-equal RRF ranks promote fresh noise.
+                comparison_support = {
+                    key: chronology.get(key, {}).get("matched_terms", 0)
+                    if best_support >= 2 and command.mode != "semantic"
+                    else scores[key] * keyword_factors.get(key, 1)
+                    for key in scores
+                }
+                best_comparison = max(comparison_support.values(), default=0)
                 prioritized = {
                     key
                     for key in scores
                     if ratio == 0
                     or key in chronology
-                    and (
-                        chronology[key]["matched_terms"] >= best_support * ratio
-                        if best_support >= 2 and command.mode != "semantic"
-                        else scores[key] >= best_score * ratio
-                    )
+                    and comparison_support[key] >= best_comparison * ratio
                 }
                 if len(prioritized) < len(scores):
                     warnings.append("recent_weak_matches_demoted")
+                # Keep the existing relevance floor: an unrelated fresh note
+                # must not jump ahead of strong historical evidence. Among
+                # comparable matches only, apply the same explicit archive
+                # preference as relevance ordering, without inventing dates.
+                recent_archives = {
+                    key: archive_adjustment(candidates[key]["rank_path"], command.ranking_policy)
+                    for key in scores
+                }
+                best_weighted = max(
+                    (
+                        comparison_support[key] * recent_archives[key]["archive_factor"]
+                        for key in prioritized
+                    ),
+                    default=0,
+                )
+                for key, value in recent_archives.items():
+                    value["demoted"] = bool(
+                        ratio > 0
+                        and key in prioritized
+                        and value["archive_segment"] is not None
+                        and comparison_support[key] * value["archive_factor"]
+                        < best_weighted * ratio
+                    )
+                if any(value["demoted"] for value in recent_archives.values()):
+                    warnings.append("recent_archived_matches_demoted")
                 ordered.sort(
                     key=lambda key: (
                         key in prioritized,
+                        not recent_archives[key]["demoted"],
                         candidates[key]["rank_time"]
                         if key in prioritized
                         else datetime.min.replace(tzinfo=timezone.utc),
@@ -593,6 +647,8 @@ class RetrievalService:
                 }
                 if adjustments:
                     hit["ranking"]["adjustment"] = adjustments[memory]
+                if recent_archives:
+                    hit["ranking"]["archive"] = recent_archives[memory]
                 if memory in chronology:
                     value = chronology[memory]
                     hit["ranking"]["recency"] = {
@@ -608,6 +664,18 @@ class RetrievalService:
                         "matched_terms": value["matched_terms"],
                         "requested_terms": value["requested_terms"],
                         "prioritized": memory in prioritized if command.sort == "recent" else None,
+                        **(
+                            {
+                                "comparison_support": comparison_support[memory],
+                                "comparison_basis": "passage_coverage"
+                                if best_support >= 2 and command.mode != "semantic"
+                                else "rank_fusion_with_keyword_support"
+                                if keyword_factors
+                                else "rank_fusion",
+                            }
+                            if command.sort == "recent"
+                            else {}
+                        ),
                     }
                 if memory in identifier_ranks:
                     hit["ranking"]["identifier"] = {
@@ -689,10 +757,10 @@ class RetrievalService:
                     else ""
                 )
                 + (
-                    "Ordering uses ranking.adjustment.score with bounded source-age, archive-path and available question-coverage factors; "
+                    "Ordering uses ranking.adjustment.score with bounded source-age, archive-path and available question-coverage factors. A nonzero archive preference preserves literal historical evidence when no non-archived literal alternative exists; "
                     "relevance_score and min_score retain unadjusted rank fusion."
                     if command.sort == "relevance"
-                    else "Recent ordering prioritizes comparable passage query coverage when at least two terms match, or rank-fusion relevance otherwise, then uses passage chronology; weaker matches remain afterwards. Semantic mode uses relevance. A ratio of 0 uses strict date ordering. Age and archive factors do not apply."
+                    else "Recent ordering prioritizes comparable passage query coverage when at least two terms match, or rank fusion with available question-coverage support otherwise. Among those matches, archive-path weighting may demote archived evidence before passage chronology orders each group; weaker matches remain afterwards. Semantic mode uses relevance. A ratio of 0 uses strict date ordering. Age decay does not apply."
                 ),
                 "timing_ms": round((time.monotonic() - started) * 1000, 2),
             }

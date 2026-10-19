@@ -1,0 +1,373 @@
+{
+  "format": 1,
+  "description": "Invented names, identifiers and documents representing issue patterns. No private workspace content. Fifty documents; target labels identify the requested current answer, or the sole historical source where explicitly requested.",
+  "documents": [
+    {
+      "id": "escalation_current",
+      "path": "reports/CASE-7319_ESCALADE_v4.md",
+      "age_minutes": 12,
+      "content": "CASE-7319 calendrier escalade adopté, version 4. Le 23 contacter le délégué; le 26 le préfet; le 28 la direction DGEF; le 30 le ministre. Cette décision remplace la version 3 et ses brouillons."
+    },
+    {
+      "id": "escalation_archive",
+      "path": "reports/qc/archive/CASE-7319_ESCALADE_v3.md",
+      "age_minutes": 10,
+      "content": "CASE-7319 calendrier escalade, brouillon v3: 23 délégué, 26 préfet, 28 DGEF, 30 ministre. Cette proposition est encore en attente de validation."
+    },
+    {
+      "id": "permit_current",
+      "path": "reports/CASE-8320_PERMIT_v4.md",
+      "age_minutes": 12,
+      "content": "Dossier CASE-8320 de Clara. La demande ANEF pour le titre de séjour a été validée et la décision finale est disponible. Le rendez-vous est confirmé. La version 3 est remplacée."
+    },
+    {
+      "id": "permit_archive",
+      "path": "reports/qc/ARCHIVES/CASE-8320_PERMIT_v3.md",
+      "age_minutes": 10,
+      "content": "Clara titre de séjour ANEF rendez-vous: CASE-8320 en attente. Le titre de séjour est une question ouverte. Brouillon de la demande ANEF."
+    },
+    {
+      "id": "school_current",
+      "path": "decisions/school.md",
+      "age_minutes": 60,
+      "content": "Décision école pour Camille : inscription confirmée à l’école bilingue du quartier pour septembre. Nous avons accepté la place. Plus aucune décision à prendre sur la scolarité de Camille."
+    },
+    {
+      "id": "school_pending",
+      "path": "archive/school-options.md",
+      "age_minutes": 1440,
+      "content": "Camille école : faut-il accepter la place à l’école bilingue ou garder l’instruction en famille ? La décision reste ouverte."
+    },
+    {
+      "id": "home_education",
+      "path": "notes/instruction-en-famille.md",
+      "age_minutes": 90,
+      "content": "Instruction en famille : nous ne continuons pas cette année. Camille ira à l’école bilingue. Les démarches pour l’enseignement à domicile sont annulées."
+    },
+    {
+      "id": "multi_current",
+      "path": "ops/DECISIONS.md",
+      "age_minutes": 8,
+      "content": "| Date | Décisions de l’équipe |\n| --- | --- |\n| Aujourd’hui | (1) Stockage: garder les sauvegardes à Stockholm, devis terminé. (2) Jardin: commander le compost au printemps. (3) Nova assurance: CLOSED, no action. (4) Elena: NO, settled; MESSAGE_ELENA_v2 archived; CASE-8326 closed. (5) Café: la machine reste au bureau. (6) Train: réserver les billets demain. (7) CASE-8345: watch by Gmail only, no outreach. (8) Facturation: la demande de remboursement est envoyée. |"
+    },
+    {
+      "id": "message_old",
+      "path": "archive/MESSAGE_ELENA_v2.md",
+      "age_minutes": 2,
+      "content": "Elena message CASE-8326: one action left, send the message after final review. Not settled; not closed. Pending decision."
+    },
+    {
+      "id": "watch_old",
+      "path": "archive/CASE-8345.md",
+      "age_minutes": 3,
+      "content": "CASE-8345: contact the customer tomorrow, check Gmail for a response. Decision pending."
+    },
+    {
+      "id": "routine_current",
+      "path": "ops/ROUTINE.md",
+      "age_minutes": 60,
+      "content": "Routine des likes sur le réseau social: créée à 10:30, vérifiée à 19:30, active. La tâche est close."
+    },
+    {
+      "id": "routine_pending",
+      "path": "ops/OLD-ROUTINE.md",
+      "age_minutes": 180,
+      "content": "Routine des likes sur le réseau social: pas encore créée. Une action reste à faire."
+    },
+    {
+      "id": "fresh_readme",
+      "path": "README.md",
+      "age_minutes": 0,
+      "content": "Routine de maintenance du dépôt: relire ce guide après une mise à jour. Ce document décrit les rubriques du dépôt."
+    },
+    {
+      "id": "free_current",
+      "path": "decisions/hosting.md",
+      "age_minutes": 15,
+      "content": "The agreed hosting decision is final: use our existing server at no extra cost. Do not start paid subscriptions or trials. Automatic backups stay enabled. Remote access must work without any agent being online."
+    },
+    {
+      "id": "free_pending",
+      "path": "archive/hosting-options.md",
+      "age_minutes": 5,
+      "content": "Hosting decision to review: perhaps a paid cloud subscription or a trial for remote access. No agreement yet."
+    },
+    {
+      "id": "rare_clause",
+      "path": "ledger/current.md",
+      "age_minutes": 35,
+      "content": "| Work | Details |\n| Completed | The budget spreadsheet was filed; reference XZ-92741 approved for the hardware replacement; delivery received and the replacement is operational. |"
+    },
+    {
+      "id": "backup_current",
+      "path": "decisions/backups.md",
+      "age_minutes": 30,
+      "content": "Projet Atlas : les sauvegardes restent au bureau de Stockholm. La copie de secours est chiffrée et indépendante de l’ordinateur de l’agent."
+    },
+    {
+      "id": "historical_only",
+      "path": "archive/old-case.md",
+      "age_minutes": 8000,
+      "content": "CASE-6510 cobalt procurement: the historical invoice was approved and the audit receipt is stored here."
+    },
+    {
+      "id": "noise_0_0",
+      "path": "notes/pension-0.md",
+      "age_minutes": 100,
+      "content": "Retirement pension tax calculations and a discussion of education allowances. Reference journal page 1."
+    },
+    {
+      "id": "noise_0_1",
+      "path": "notes/pension-1.md",
+      "age_minutes": 1540,
+      "content": "Retirement pension tax calculations and a discussion of education allowances. Reference journal page 2."
+    },
+    {
+      "id": "noise_1_0",
+      "path": "notes/gardening-0.md",
+      "age_minutes": 100,
+      "content": "Garden planning, soil, compost and watering routines for the spring. Reference journal page 1."
+    },
+    {
+      "id": "noise_1_1",
+      "path": "notes/gardening-1.md",
+      "age_minutes": 1540,
+      "content": "Garden planning, soil, compost and watering routines for the spring. Reference journal page 2."
+    },
+    {
+      "id": "noise_2_0",
+      "path": "notes/recipe-0.md",
+      "age_minutes": 100,
+      "content": "Coffee beans, breakfast recipes and a shopping list for the office kitchen. Reference journal page 1."
+    },
+    {
+      "id": "noise_2_1",
+      "path": "notes/recipe-1.md",
+      "age_minutes": 1540,
+      "content": "Coffee beans, breakfast recipes and a shopping list for the office kitchen. Reference journal page 2."
+    },
+    {
+      "id": "noise_3_0",
+      "path": "notes/school-budget-0.md",
+      "age_minutes": 100,
+      "content": "School fees and annual budgets for an unrelated municipal building. Reference journal page 1."
+    },
+    {
+      "id": "noise_3_1",
+      "path": "notes/school-budget-1.md",
+      "age_minutes": 1540,
+      "content": "School fees and annual budgets for an unrelated municipal building. Reference journal page 2."
+    },
+    {
+      "id": "noise_4_0",
+      "path": "notes/calendar-0.md",
+      "age_minutes": 100,
+      "content": "Calendar planning for the engineering team and the next software release. Reference journal page 1."
+    },
+    {
+      "id": "noise_4_1",
+      "path": "notes/calendar-1.md",
+      "age_minutes": 1540,
+      "content": "Calendar planning for the engineering team and the next software release. Reference journal page 2."
+    },
+    {
+      "id": "noise_5_0",
+      "path": "notes/delegate-0.md",
+      "age_minutes": 100,
+      "content": "Delegated access permissions must be reviewed by the security team. Reference journal page 1."
+    },
+    {
+      "id": "noise_5_1",
+      "path": "notes/delegate-1.md",
+      "age_minutes": 1540,
+      "content": "Delegated access permissions must be reviewed by the security team. Reference journal page 2."
+    },
+    {
+      "id": "noise_6_0",
+      "path": "notes/meeting-0.md",
+      "age_minutes": 100,
+      "content": "Meeting minutes from a procurement review. No final decision was made. Reference journal page 1."
+    },
+    {
+      "id": "noise_6_1",
+      "path": "notes/meeting-1.md",
+      "age_minutes": 1540,
+      "content": "Meeting minutes from a procurement review. No final decision was made. Reference journal page 2."
+    },
+    {
+      "id": "noise_7_0",
+      "path": "notes/storage-0.md",
+      "age_minutes": 100,
+      "content": "Storage benchmarks compare local drives with network attached disks. Reference journal page 1."
+    },
+    {
+      "id": "noise_7_1",
+      "path": "notes/storage-1.md",
+      "age_minutes": 1540,
+      "content": "Storage benchmarks compare local drives with network attached disks. Reference journal page 2."
+    },
+    {
+      "id": "noise_8_0",
+      "path": "notes/travel-0.md",
+      "age_minutes": 100,
+      "content": "Travel arrangements for Stockholm and a list of conference hotels. Reference journal page 1."
+    },
+    {
+      "id": "noise_8_1",
+      "path": "notes/travel-1.md",
+      "age_minutes": 1540,
+      "content": "Travel arrangements for Stockholm and a list of conference hotels. Reference journal page 2."
+    },
+    {
+      "id": "noise_9_0",
+      "path": "notes/mail-0.md",
+      "age_minutes": 100,
+      "content": "Gmail settings for notifications and archive management across devices. Reference journal page 1."
+    },
+    {
+      "id": "noise_9_1",
+      "path": "notes/mail-1.md",
+      "age_minutes": 1540,
+      "content": "Gmail settings for notifications and archive management across devices. Reference journal page 2."
+    },
+    {
+      "id": "noise_10_0",
+      "path": "notes/signoff-0.md",
+      "age_minutes": 100,
+      "content": "The compliance review is closed and settled with no action required. Reference journal page 1."
+    },
+    {
+      "id": "noise_10_1",
+      "path": "notes/signoff-1.md",
+      "age_minutes": 1540,
+      "content": "The compliance review is closed and settled with no action required. Reference journal page 2."
+    },
+    {
+      "id": "noise_11_0",
+      "path": "notes/messages-0.md",
+      "age_minutes": 100,
+      "content": "Message templates for onboarding new staff into the office. Reference journal page 1."
+    },
+    {
+      "id": "noise_11_1",
+      "path": "notes/messages-1.md",
+      "age_minutes": 1540,
+      "content": "Message templates for onboarding new staff into the office. Reference journal page 2."
+    },
+    {
+      "id": "noise_12_0",
+      "path": "notes/insurance-0.md",
+      "age_minutes": 100,
+      "content": "Assurance du matériel informatique : renouvellement du contrat annuel. Reference journal page 1."
+    },
+    {
+      "id": "noise_12_1",
+      "path": "notes/insurance-1.md",
+      "age_minutes": 1540,
+      "content": "Assurance du matériel informatique : renouvellement du contrat annuel. Reference journal page 2."
+    },
+    {
+      "id": "noise_13_0",
+      "path": "notes/education-0.md",
+      "age_minutes": 100,
+      "content": "L’école municipale organise une visite pédagogique pour les enseignants. Reference journal page 1."
+    },
+    {
+      "id": "noise_13_1",
+      "path": "notes/education-1.md",
+      "age_minutes": 1540,
+      "content": "L’école municipale organise une visite pédagogique pour les enseignants. Reference journal page 2."
+    },
+    {
+      "id": "noise_14_0",
+      "path": "notes/permit-0.md",
+      "age_minutes": 100,
+      "content": "Le permis de construire concerne les travaux du garage et non le séjour. Reference journal page 1."
+    },
+    {
+      "id": "noise_14_1",
+      "path": "notes/permit-1.md",
+      "age_minutes": 1540,
+      "content": "Le permis de construire concerne les travaux du garage et non le séjour. Reference journal page 2."
+    },
+    {
+      "id": "noise_15_0",
+      "path": "notes/software-0.md",
+      "age_minutes": 100,
+      "content": "Automatic software updates were tested and the download completed. Reference journal page 1."
+    },
+    {
+      "id": "noise_15_1",
+      "path": "notes/software-1.md",
+      "age_minutes": 1540,
+      "content": "Automatic software updates were tested and the download completed. Reference journal page 2."
+    }
+  ],
+  "queries": [
+    {
+      "id": "escalation",
+      "query": "CASE-7319 calendrier escalade 23 délégué 26 préfet 28 DGEF 30 ministre",
+      "expected": "escalation_current"
+    },
+    {
+      "id": "permit",
+      "query": "Clara titre de séjour ANEF rendez-vous",
+      "expected": "permit_current"
+    },
+    {
+      "id": "school_question",
+      "query": "what did we decide about Camille school",
+      "expected": "school_current"
+    },
+    {
+      "id": "school_keywords",
+      "query": "Camille école inscription confirmée",
+      "expected": "school_current"
+    },
+    {
+      "id": "home_education_question",
+      "query": "are we continuing home education for Camille this year",
+      "expected": "home_education"
+    },
+    {
+      "id": "long_row_question",
+      "query": "Elena message CASE-8326 closed settled",
+      "expected": "multi_current"
+    },
+    {
+      "id": "long_row_exact",
+      "query": "MESSAGE_ELENA_v2 archived",
+      "expected": "multi_current"
+    },
+    {
+      "id": "watch_question",
+      "query": "CASE-8345 watch by Gmail only",
+      "expected": "multi_current"
+    },
+    {
+      "id": "routine",
+      "query": "routine likes créée",
+      "expected": "routine_current"
+    },
+    {
+      "id": "hosting_question",
+      "query": "what is the final decision about paid hosting and remote access",
+      "expected": "free_current"
+    },
+    {
+      "id": "rare_reference",
+      "query": "XZ-92741 hardware replacement approved",
+      "expected": "rare_clause"
+    },
+    {
+      "id": "backup_question",
+      "query": "Where will we keep the Atlas backup copy?",
+      "expected": "backup_current"
+    },
+    {
+      "id": "only_archive",
+      "query": "CASE-6510 cobalt procurement invoice",
+      "expected": "historical_only"
+    }
+  ]
+}

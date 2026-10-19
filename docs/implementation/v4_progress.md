@@ -19,6 +19,25 @@ Requirements and acceptance criteria are defined by the
 [architecture](../research/2026-10-09-mnemion-study/ARCHITECTURE.md), and
 [roadmap](../research/2026-10-09-mnemion-study/ROADMAP.md).
 
+## 19 October: current-answer ranking and binary preflight
+
+Source 4.24 addresses the archive and bilingual-question patterns in issues
+17/31, with preserved history, explicit ranking explanations and a repeatable
+real-model probe. [The 50-document comparison](../validation/2026-10-19-retrieval-archives.md)
+records all thirteen intended targets in the top four after indexing, without
+claiming general accuracy. Queued evaluations now record their actual execution
+implementation. Ninety focused retrieval checks and the typed client/UI checks
+passed. The source carries KeePass from withheld 4.23, correcting its missing
+Intel Mac dependency wheel and adding an automatic binary-only resolution gate.
+
+[The actual Windows installation](../validation/2026-10-19-windows-live-update.md)
+completed an unattended 4.15→4.20 update and relaunch, retaining its automatic
+updates, background and login preferences. Release 4.22 was subsequently
+published; each release's public update acceptance stays separately recorded.
+The strict complete product count remains **17/64 (26.6%)**. Host continuity,
+legacy buffer reconciliation, hosted client acceptance and broader quality
+remain active work.
+
 ## 19 October: KeePass transfer and issue closure
 
 Source 4.23 implements the remaining KDBX 4 request from issue 32, with reviewed

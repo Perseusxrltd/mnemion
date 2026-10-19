@@ -161,7 +161,7 @@ class RankingPolicy(Command):
         ge=0,
         le=1,
         allow_inf_nan=False,
-        description="For recent ordering, prioritize candidates within this fraction of the best passage query coverage when at least two terms match, or rank-fusion relevance otherwise. Semantic mode uses relevance. Weaker matches remain after them. Set 0 for strict date ordering within the candidate window.",
+        description="For recent ordering, prioritize candidates within this fraction of the best passage query coverage when at least two terms match, or rank fusion with available question-coverage support otherwise. Semantic mode uses relevance. Archive weighting also applies within comparable matches. Weaker matches remain after them. Set 0 for strict date ordering within the candidate window.",
     )
     half_life_days: float = Field(
         default=3,
@@ -175,7 +175,7 @@ class RankingPolicy(Command):
         ge=0,
         le=1,
         allow_inf_nan=False,
-        description="Multiplier for matches in archive directories; 1 leaves their priority unchanged. Does not exclude evidence.",
+        description="Multiplier for matches in archive directories; 1 leaves priority unchanged. Recent ordering applies it within comparable matches. Relevance ordering preserves the only literal evidence when the weight is nonzero and no non-archived literal alternative exists. Does not exclude evidence.",
     )
     archive_path_segments: list[Annotated[str, Field(min_length=1, max_length=128)]] = Field(
         default_factory=lambda: ["archive", "archives"],

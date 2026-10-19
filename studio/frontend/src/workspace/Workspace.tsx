@@ -227,6 +227,8 @@ function WarningList({ warnings }: { warnings: string[] }) {
       "Some results match individual terms from your question. Review the source for the full answer.",
     recent_weak_matches_demoted:
       "Weaker matches follow the recent, better-supported evidence. Set the recent match threshold to 0 for strict date ordering.",
+    recent_archived_matches_demoted:
+      "Archived drafts follow comparable matches outside archive folders. Their original dates and evidence are preserved.",
     passage_ranking_window_limited:
       "Passage dates were checked for the 250 strongest candidates. Narrow the search to compare a smaller set.",
     passage_chronology_limited:
@@ -1369,14 +1371,20 @@ function SearchMemory() {
                     {" "}Source-age factor: {hit.ranking.adjustment.recency_factor.toFixed(3)}
                     {hit.ranking.adjustment.archive_segment !== null && ` · archive factor: ${hit.ranking.adjustment.archive_factor.toFixed(3)} (${hit.ranking.adjustment.archive_segment})`}.
                     {hit.ranking.adjustment.keyword_factor != null && ` Question coverage factor: ${hit.ranking.adjustment.keyword_factor.toFixed(3)}.`}
+                    {hit.ranking.adjustment.archive_uncontested && " The archive penalty is inactive because no match outside archives has exact text or identifier support."}
                     {" "}Ranking date: {date(hit.ranking.adjustment.date)}.
                     {" "}The minimum relevance filter uses the original score before these factors.
+                  </p>}
+                  {hit.ranking.archive?.archive_segment && <p>
+                    Archive folder: {hit.ranking.archive.archive_segment} · weight: {hit.ranking.archive.archive_factor.toFixed(3)}.
+                    {hit.ranking.archive.demoted ? " This archived match follows comparable evidence outside archive folders." : " This match retains its place within the recent comparison group."}
                   </p>}
                   {hit.ranking.recency && <p>
                     Passage date comes from {hit.ranking.recency.basis === "source_timestamp" ? "a timestamp in the source" : hit.ranking.recency.basis === "source_date" ? "a calendar date in the source, without a verified time" : hit.ranking.recency.basis === "source_modified_at" ? "the source's reported modification time" : "when this text was recorded"}.
                     {hit.ranking.recency.limited ? " Detailed passage history was limited; this is the whole-record date." : hit.ranking.recency.tracked ? " Unchanged passages retain their earlier date across revisions." : " This older revision has no retained passage-change history."}
                     {` This passage supports ${hit.ranking.recency.matched_terms} of ${hit.ranking.recency.requested_terms} query terms.`}
                     {hit.ranking.recency.prioritized === false && " It follows stronger matches in recent ordering."}
+                    {hit.ranking.recency.comparison_basis === "rank_fusion_with_keyword_support" && " The recent comparison retains keyword support for this question."}
                   </p>}
                   <p>
                     {hit.ranking.ranks.lexical

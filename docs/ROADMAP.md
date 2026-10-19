@@ -1,16 +1,28 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.23.0**. Roadmap updated: **2026-10-19**.
+Reviewed source distribution: **4.24.0**. Roadmap updated: **2026-10-19**.
 The [current published distribution and release gates](RELEASE_STATUS.md) are updated automatically.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
+
+The [4.24.0 source](releases/4.24.0.md) addresses the archive and question patterns
+in issues 17 and 31, both before and after semantic indexing. Recent order keeps
+question support, applies archive preferences within comparable matches and
+retains strict dates. Relevance order preserves sole literal historical evidence.
+A [50-document, 13-query real-model comparison](validation/2026-10-19-retrieval-archives.md)
+records explicit labels and remaining limitations; this is not a general quality
+guarantee. Evaluations record actual execution identity. The batch also carries
+KeePass from withheld 4.23 with a compatible Intel Mac binding and adds binary
+resolution checks before native builders. Broader quality, native delivery and
+the remaining issues retain their own gates. Strict coverage is **17/64 (26.6%)**.
 
 The [4.23.0 source](releases/4.23.0.md) addresses issue 32's remaining
 [KeePass interoperability](service/keepass.md): reviewed current-field import,
 default masked names, encrypted original grouping, scoped export, private agent
 transport and no plaintext temporary files. Independent fixtures and actual
 database/HTTP checks [verify field preservation and permissions](validation/2026-10-19-keepass.md). Publication
-remains a separate release gate. Company policy, key custody and managed rotation
+remains a separate release gate; the frozen 4.23 candidate was withheld and the
+work moves to 4.24 with the Intel Mac dependency correction. Company policy, key custody and managed rotation
 remain open; the strict full-scope count stays **17/64 shipped (26.6%)**.
 
 The [4.22.0 source](releases/4.22.0.md) adds [existing native-memory backfill](service/git-journal.md#including-existing-native-memories)
@@ -112,8 +124,8 @@ inventory replay. Deletion and quarantine are applied before source projection;
 Git history retention is explicit. Recovery pauses publication and requires
 fresh host registration. [Validation](validation/2026-10-19-git-journal.md)
 covers real Git operations and PostgreSQL boundaries. Issue 39 remains open for
-full app enrollment, large-history capacity,
-old-memory backfill and direct writable-space reconstruction. This advances
+complete app enrollment, large-history capacity,
+legacy external-buffer reconciliation and direct writable-space reconstruction. This advances
 F08, C01/C08, A12/A13 and U01 without changing the strict full-scope count:
 **17/64 shipped (26.6%)**.
 
@@ -131,9 +143,11 @@ remain open. The strict full-scope count remains **17/64 shipped (26.6%)**.
 
 The [19 October 4.17 field recheck](https://github.com/Perseusxrltd/mnemion/issues/31#issuecomment-6271764609)
 reports superseded archived drafts ahead of current documents while semantic
-indexing was incomplete. That newer retrieval report remains open for a
-post-indexing reproduction; the earlier passage tests do not establish that
-all ranking cases are resolved.
+indexing was incomplete. The 4.24 comparison above reproduces its archive pattern
+with synthetic content in both indexing states and checks the actual pinned model.
+The private reporter's current encrypted corpus was not replayed. Broader
+current-state quality remains open; the earlier passage tests alone do not
+establish that all ranking cases are resolved.
 
 The [4.13.0 source](releases/4.13.0.md) implements
 [encrypted host packages and resumable reconstruction](service/host-recovery.md)

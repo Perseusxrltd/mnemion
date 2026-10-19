@@ -25,7 +25,7 @@ from mnemion.service.evaluation_models import (
 from mnemion.service.evaluation_runner import EvaluationRunner
 from mnemion.service.evaluations import EvaluationService
 from mnemion.service.models import GrantInput, KeyInput, MemoryInput, PrincipalInput, RecallInput
-from mnemion.service.retrieval import RetrievalService
+from mnemion.service.retrieval import RETRIEVAL_IMPLEMENTATION, RetrievalService
 
 
 @pytest.mark.parametrize(
@@ -169,6 +169,31 @@ def test_a_hotfix_cannot_mix_service_versions_inside_one_new_evaluation(env, mon
     final = service.run(env.owner, env.space, UUID(run["id"]))
     assert final["state"] == "failed" and final["error_code"] == "evaluation_error"
     assert final["progress"] == 1
+
+
+def test_queued_evaluation_records_the_retrieval_implementation_that_actually_starts(
+    env, monkeypatch
+):
+    from mnemion.service import evaluations
+
+    service, dataset, _ = setup(env)
+    monkeypatch.setattr(evaluations, "RETRIEVAL_IMPLEMENTATION", "previous-queued-implementation")
+    run = service.create_run(
+        env.owner,
+        env.space,
+        EvaluationInput(dataset_id=UUID(dataset["id"])),
+        "queued-before-upgrade",
+    )
+    try:
+        assert run["manifest"]["retrieval"] == "previous-queued-implementation"
+        runner = EvaluationRunner(env.db, RetrievalService(env.db, env.embedder))
+        assert runner.run_once()
+        started = service.run(env.owner, env.space, UUID(run["id"]))
+        assert started["manifest"]["queued_retrieval"] == "previous-queued-implementation"
+        assert started["manifest"]["retrieval"] == RETRIEVAL_IMPLEMENTATION
+        assert started["progress"] == 1
+    finally:
+        service.cancel(env.owner, env.space, UUID(run["id"]))
 
 
 def test_sdk_keeps_new_evaluation_options_optional_for_older_services():

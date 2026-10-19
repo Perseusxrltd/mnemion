@@ -39,8 +39,11 @@ require an administrator-approved deployment. Independent signatures authenticat
 subsequent updates without bypassing SmartScreen or company policy. The ARM64
 installer uses native system process checks during installation and updates.
 
-On macOS 13 or later, choose **Apple silicon** for an M-series Mac or **Intel**
-for an Intel Mac. Open the disk image, drag **Mnemion Studio** to Applications,
+Choose **Apple silicon** for an M-series Mac or **Intel** for an Intel Mac.
+The desktop client requires macOS 13 or later. Creating a local workspace with
+the bundled model runtime requires **macOS 14 on Apple silicon**, or macOS 13
+on Intel; connecting to an existing remote workspace does not run that local
+model. Open the disk image, drag **Mnemion Studio** to Applications,
 and eject the disk image. Use a writable Applications folder for automatic updates.
 The free distribution has an ad-hoc application signature and independently
 signed updates. It is not Apple Developer ID signed or notarized. If macOS blocks

@@ -21,6 +21,7 @@ from .evaluation_metrics import SCORER_VERSION, bootstrap_mean
 from .evaluation_models import AssessmentInput, DatasetInput, EvaluationInput
 from .models import json_value
 from .repository import audit, hydrate
+from .retrieval import RETRIEVAL_IMPLEMENTATION
 
 
 def digest(value) -> str:
@@ -417,7 +418,7 @@ class EvaluationService:
                     "dimensions": model.generation.dimensions,
                     "configuration": model.generation.configuration,
                 },
-                "retrieval": "scoped_exact_cosine_lexical_question_coverage_passage_time_rrf_k60_v2",
+                "retrieval": RETRIEVAL_IMPLEMENTATION,
                 "queued_service_version": __version__,
                 "selected_cases": [case["id"] for case in selected],
                 "configuration": payload,

@@ -21,7 +21,7 @@ from .evaluations import EvaluationService, digest
 from .models import ContextInput, RecallInput, json_value
 from .model_state import selected_generations
 from .repository import hydrate, memory_row
-from .retrieval import RetrievalService
+from .retrieval import RETRIEVAL_IMPLEMENTATION, RetrievalService
 
 logger = logging.getLogger(__name__)
 
@@ -213,6 +213,8 @@ class EvaluationRunner:
                     )
             if job["manifest"]["corpus_start"] is None:
                 manifest = dict(job["manifest"])
+                manifest["queued_retrieval"] = manifest["retrieval"]
+                manifest["retrieval"] = RETRIEVAL_IMPLEMENTATION
                 snapshot = corpus_snapshot(conn, job["space_id"], job["generation_id"])
                 manifest["corpus_start"] = snapshot["sha256"]
                 manifest["index_start"] = snapshot
