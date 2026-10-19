@@ -31,6 +31,13 @@ with protected persistence. A separate
 preserved existing agent keys and verified off-host configuration backup;
 signed-in ChatGPT/provider acceptance remains open. Strict coverage is unchanged.
 
+The [actual Windows shared lab](validation/2026-10-20-windows-shared-lab.md)
+advances U11/R04 with isolated contributor authority, 42 successful cycle
+requests, complete synthetic cleanup and 27 successful read-only requests up to
+ten in flight. A user-level scheduled task checks new app/server versions and
+runs one bounded cycle, preserving measured receipts without an agent session.
+This is a short connection-specific baseline, not a saturation or fleet claim.
+
 Source 4.27.0 advances host continuity with [portable backup recovery](validation/2026-10-19-portable-host-recovery.md).
 A Git-downloaded encrypted package was restored on a different physical computer,
 retaining the original application identities and exact memories. Actual Ubuntu

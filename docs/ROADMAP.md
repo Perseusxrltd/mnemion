@@ -30,6 +30,9 @@ of the released app. A hotfix does not finish a broader requirement.
   Windows app and shared server then updated automatically to 4.28. The app now
   uses the independent human administrator's protected login. Browser sign-in/
   sign-out and independently confirmed encrypted off-host backup also passed.
+  Its [isolated Windows lab](validation/2026-10-20-windows-shared-lab.md) passed a
+  42-request memory cycle and 27-request concurrency check, with automatic
+  bounded checks after app/server version changes.
 - **Three GitHub reports remain open: 3, 4 and 18.** The [issue resolution plan](implementation/github-issues.md)
   records their implementation and remaining live-provider checks. Actual HTTPS
   OAuth passed; signed-in ChatGPT and managed tunnel-provider acceptance remain.
