@@ -27,7 +27,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_valida
 
 from . import local_state as state
 from .local_database import LocalDatabase, available_port, prepare_credentials
-from . import local_company, local_memory, local_remote, local_vault
+from . import local_company, local_journal, local_memory, local_remote, local_vault
 from .service.memory_budget import MemoryBudget, MemoryOptions, sample_memory, working_target
 from .version import __version__
 
@@ -144,6 +144,7 @@ def inspect(root: Path) -> dict:
             remote_access=local_remote.inspection(root, settings["workspace_id"]),
             company_access=local_company.inspection(root, settings["workspace_id"]),
             vault_access=local_vault.inspection(root, settings["workspace_id"]),
+            journal_access=local_journal.inspection(root, settings["workspace_id"]),
         )
         if (root / "readiness.json").exists():
             result["last_verification"] = state.read(root / "readiness.json")
@@ -443,6 +444,9 @@ async def _serve(
                 public_url=remote.public_url,
             ),
             vault_settings=local_vault.settings(root, settings["workspace_id"]),
+            writeback_configuration=local_journal.configuration(
+                root, settings["workspace_id"], tenant_id=credentials["tenant_id"]
+            ),
         )
         remote.attach(app)
         original_lifespan = app.router.lifespan_context
@@ -667,6 +671,7 @@ def arguments(parser: argparse.ArgumentParser) -> None:
             "company-discover",
             "vault",
             "vault-key",
+            "journal",
             "backup",
             "backup-ledger",
             "backup-inspect",
@@ -708,6 +713,21 @@ def dispatch(args) -> int:
             if len(line) > 4096:
                 raise ValueError("The address settings exceed their size limit")
             change_port(root, PortChange.model_validate_json(line))
+            emit({"event": "status", **inspect(root)})
+            return 0
+        if args.action == "journal":
+            line = sys.stdin.buffer.readline(8193)
+            try:
+                if len(line) > 8192:
+                    raise ValueError("Journal settings exceed their limit")
+                change = local_journal.JournalChange.model_validate_json(line)
+                local_journal.configure(root, change)
+            except (ValueError, ValidationError):
+                # Repository URLs may contain accidentally pasted credentials.
+                raise state.LocalSetupError(
+                    "invalid_journal_options",
+                    "Check the HTTPS repository URL without credentials, its branch and folder, and the current settings revision.",
+                ) from None
             emit({"event": "status", **inspect(root)})
             return 0
         if args.action in {"vault", "vault-key"}:

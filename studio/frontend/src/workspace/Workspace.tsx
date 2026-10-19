@@ -470,7 +470,7 @@ function Shell({
                 <Route path="operations" element={<Operations />} />
                 <Route path="insights" element={<Suspense fallback={<Busy />}><InsightsView client={client} space={space.id} reviewer={reviewer} administrator={me.administrator} serviceVersion={me.service_version} /></Suspense>} />
                 <Route path="obsidian" element={<Obsidian />} />
-                <Route path="journal" element={<Suspense fallback={<Busy />}><Journal key={space.id} client={client} space={space.id} writer={["contributor", "reviewer", "administrator"].includes(role)} serviceVersion={me.service_version} /></Suspense>} />
+                <Route path="journal" element={<Suspense fallback={<Busy />}><Journal key={space.id} client={client} space={space.id} writer={["contributor", "reviewer", "administrator"].includes(role)} serviceVersion={me.service_version} endpoint={connection.endpoint} label={space.name} /></Suspense>} />
                 <Route path="models" element={<Suspense fallback={<Busy />}><EmbeddingModels key={space.id} client={client} space={space.id} administrator={space.role === "administrator"} /></Suspense>} />
                 <Route path="librarian" element={<Suspense fallback={<Busy />}><Librarian key={space.id} client={client} space={space.id} reviewer={reviewer} administrator={space.role === "administrator"} /></Suspense>} />
                 <Route path="agents" element={<Agents connection={connection} space={space.id} />} />

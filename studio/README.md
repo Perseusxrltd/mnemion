@@ -21,6 +21,11 @@ Source 4.12.0 adds **Secrets** and **Encrypted credentials vault** setup, with
 scoped person/key grants, timed value reveal, audit records and encrypted
 import/export. [The vault guide](../docs/service/secrets-vault.md) explains the
 separate host key, backup recovery and opt-in MCP tools.
+Source 4.18.0 adds **Git journal → Repository on this host** for a locally hosted
+space. Register its existing HTTPS repository, review the branch/folder and let
+the app apply the private host settings with a controlled restart. Publication
+still requires separate space approval. [The journal guide](../docs/service/git-journal.md#a-workspace-hosted-by-the-desktop-app)
+covers Git sign-in prerequisites, local agent controls and recovery boundaries.
 Remote-agent fixes in 4.0.2 and lower model RAM in 4.0.3 require upgrading the memory server;
 the desktop updater cannot replace a separately deployed service. See the
 [patch notes](../docs/releases/4.0.12.md). Version 4.0.12 also fixes native ngrok

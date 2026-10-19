@@ -117,6 +117,24 @@ export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Re
     const status = await bridge.localStatus();
     if (status.info?.resources?.remote_access?.ngrok_sdk !== '1.7.0') throw new Error('The installed engine cannot load its reviewed ngrok SDK');
     if (status.info?.settings?.memory?.limit_mib !== 2048) throw new Error('The setup RAM policy was not retained');
+    if (config.phase === 'create') {
+      location.hash = '/workspace/journal';
+      await until(() => document.querySelector('.ws-journal-host'), 'The installed app did not offer local journal registration');
+      await click('Register a repository');
+      await input('.ws-journal-host input[type="url"]', 'https://git.example.invalid/team/memory.git');
+      document.querySelector('.ws-journal-host input[type="checkbox"][required]').click();
+      await click('Save host registration');
+      await until(async () => {
+        const current = await bridge.localStatus();
+        if (current.state === 'error') throw new Error('Journal registration restart failed: ' + current.errorCode);
+        return current.state === 'running' && current.info?.journal_access?.destinations.some(item => item.space_id === spaces[0].id && item.remote === 'https://git.example.invalid/team/memory.git');
+      }, 'Journal registration did not survive the controlled host restart', 180000);
+      const journal = await request('GET', '/v1/spaces/' + spaces[0].id + '/writeback');
+      if (journal.configured || journal.destination?.repository !== 'https://git.example.invalid/team/memory.git') throw new Error('Host registration must retain separate space approval before publication');
+      if ((await request('GET', '/v1/memories/' + memoryId)).memory_id !== memoryId) throw new Error('Journal registration lost an existing memory');
+      location.hash = '/workspace/memories';
+      await until(() => !document.querySelector('.ws-journal-host form'), 'Journal setup did not close');
+    }
     await until(() => bridge.updateSafety(), 'Settled workspace must permit a guarded update');
     const picker = await until(() => document.querySelector('select[aria-label="Memory space"]'), 'Missing memory-space navigation');
     picker.dispatchEvent(new Event('change', { bubbles: true }));
@@ -131,6 +149,7 @@ export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Re
     if (typeof window.require !== 'undefined') throw new Error('The installed renderer is not sandboxed');
     return { phase: config.phase, memoryId, endpoint: session.endpoint, tenantId: session.me.tenant_id,
       actualSetupControls: config.phase === 'create', uiOpenedWorkspace: true, nativeService: true,
+      journalRegistrationControls: config.phase === 'create',
       authenticatedApi: true, realModelInference: true, semanticSaveAndRecall: true, nativeNgrokSdkLoaded: true,
       automaticReopen: config.phase === 'resume', recoveredPortConflict: config.phase === 'recover-port', savedMemoryPresent: true, memoryPolicyRetained: true,
       navigationPreservesUpdateReadiness: true, unsavedDraftBlocksUpdate: true, closedEditorRestoresUpdateReadiness: true };

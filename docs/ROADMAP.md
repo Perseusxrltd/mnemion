@@ -1,9 +1,19 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.17.0**. Roadmap updated: **2026-10-19**.
+Reviewed source distribution: **4.18.0**. Roadmap updated: **2026-10-19**.
 The [current published distribution and release gates](RELEASE_STATUS.md) are updated automatically.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
+
+The [4.18.0 source](releases/4.18.0.md) adds local desktop
+[Git journal host registration](service/git-journal.md#a-workspace-hosted-by-the-desktop-app):
+repository choices, private derived paths, controlled service restart, concurrent
+edit checks, removal/repair and the same private local agent operation. Registration
+does not publish memories or grant space access. [Validation](validation/2026-10-19-journal-host-setup.md)
+includes actual PostgreSQL approval/queue checks and desktop controls; the new
+installed UI flow awaits native release acceptance. Provider sign-in, guided
+remote-host setup, independent custody, backfill and writable reconstruction remain
+open under issue 39 and F08/C01/A09/U01. The strict count remains **17/64 (26.6%)**.
 
 The [4.17.0 source](releases/4.17.0.md) adds the dedicated
 [live conversation adapter](service/live-conversations.md) for issue 41:

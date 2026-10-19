@@ -35,6 +35,14 @@ export type VaultRequest = { workspace_id: string; expected_revision: string }
 export type VaultChange = VaultRequest & { action: 'configure' | 'restore'; enabled: boolean; mcp_enabled: boolean; recovery_key?: string; key_saved?: boolean }
 export type VaultAccess = { revision: string; repairable: boolean; state: 'not_configured' | 'configured' | 'disabled' | 'configuration_error' | 'external'; enabled: boolean; mcp_enabled: boolean; key_id: string | null; message: string }
 export type VaultKey = { workspace_id: string; revision: string; key_id: string; recovery_key: string }
+export type JournalDestination = { space_id: string; label: string; remote: string; branch: string; prefix: string; personal_data_scan: boolean }
+export type JournalChange = { workspace_id: string; expected_revision: string } & (
+  { action: 'save'; destination: JournalDestination } | { action: 'remove'; space_id: string } | { action: 'reset' }
+)
+export type JournalAccess = {
+  revision: string; repairable: boolean; state: 'not_configured' | 'configured' | 'configuration_error' | 'external';
+  git_found: boolean; destinations: JournalDestination[]; message: string;
+}
 export type MemoryRecovery = { code: 'memory_policy_missing' | 'memory_policy_damaged' | 'memory_policy_inaccessible'; message: string; repair_token: string | null }
 export type MemorySnapshot = {
   mode: 'auto' | 'manual'; requested_limit_mib: number | null; revision: string;
@@ -68,6 +76,7 @@ export type LocalInfo = {
   remote_access?: RemoteAccess;
   company_access?: CompanyAccess;
   vault_access?: VaultAccess;
+  journal_access?: JournalAccess;
 }
 export type LocalStatus = {
   available: boolean; state: 'new' | 'starting' | 'running' | 'stopping' | 'stopped' | 'error';

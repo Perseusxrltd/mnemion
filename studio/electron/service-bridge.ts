@@ -444,6 +444,11 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
     requireLocalSteady()
     return localWorkspace().revealVaultKey(input)
   })
+  ipcMain.handle('local:journal', async (event, input: unknown) => {
+    trusted(event)
+    requireLocalSteady()
+    return desktopLocalStatus(await localWorkspace().changeJournal(input))
+  })
   ipcMain.handle('local:open', async event => {
     trusted(event)
     requireLocalSteady()
@@ -618,7 +623,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
     const run = async (): Promise<unknown> => {
       signal.throwIfAborted()
       const input = request.input
-      if (['local.company', 'local.vault'].includes(request.action) && localPreferences().selected) {
+      if (['local.company', 'local.vault', 'local.journal'].includes(request.action) && localPreferences().selected) {
         const window = getWindow()
         if (window && !window.webContents.isDestroyed() && !await window.webContents.executeJavaScript('window.mnemion?.updateSafety?.() === true')) throw new Error('Save or discard edits and finish pending requests in the app before restarting its workspace.')
         signal.throwIfAborted()
@@ -650,6 +655,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
         case 'local.company-discover': return localWorkspace().discoverCompany(input)
         case 'local.vault': return desktopLocalStatus(await localWorkspace().changeVault(input))
         case 'local.vault-key': return localWorkspace().revealVaultKey(input)
+        case 'local.journal': return desktopLocalStatus(await localWorkspace().changeJournal(input))
         case 'local.preferences':
           if (typeof input.start_with_app !== 'boolean') throw new Error('Choose whether this workspace starts with the app.')
           saveLocalPreferences({ ...localPreferences(), startWithApp: input.start_with_app })

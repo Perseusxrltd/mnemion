@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Archive, GitBranch, LoaderCircle, RefreshCw, Upload } from 'lucide-react';
 import { MnemionClient, MnemionError, supportsJournal, supportsJournalFolding, type JournalPolicyInput, type JournalStatus } from '@mnemion/client';
+import JournalHostSetup from './JournalHostSetup';
 
 const states: Record<JournalStatus['state'], string> = {
   not_configured: 'Not enabled', ready: 'Automatic publication enabled', paused: 'Publication paused',
@@ -25,8 +26,8 @@ const errorText = (error: unknown) => error instanceof MnemionError
 const bytes = (value: number) => value < 1024 ? `${value} B` : value < 1024 ** 2
   ? `${(value / 1024).toFixed(1)} KiB` : `${(value / 1024 ** 2).toFixed(1)} MiB`;
 
-export default function Journal({ client, space, writer, serviceVersion }: {
-  client: MnemionClient; space: string; writer: boolean; serviceVersion?: string | null;
+export default function Journal({ client, space, writer, serviceVersion, endpoint, label }: {
+  client: MnemionClient; space: string; writer: boolean; serviceVersion?: string | null; endpoint: string; label: string;
 }) {
   const cache = useQueryClient();
   const supported = supportsJournal(serviceVersion);
@@ -55,12 +56,13 @@ export default function Journal({ client, space, writer, serviceVersion }: {
     {notice && <p className="ws-notice" role="status">{notice}</p>}
     {data && <>
       {query.isError && <p className="ws-notice" role="status">Status refresh failed. These are the last observed values.</p>}
+      {data.can_configure && <JournalHostSetup endpoint={endpoint} space={space} label={label} />}
       <section className="ws-card"><h2><GitBranch size={20} /> {states[data.state]}</h2>
         {data.destination ? <><p><strong>{data.destination.label}</strong></p><p>{data.destination.repository}</p>
           <p className="ws-helper">Branch {data.destination.branch} · Folder {data.destination.prefix}</p>
           <p className="ws-helper">Secret checks are always on. Personal-data patterns: {data.destination.personal_data_scan ? 'on' : 'off'}.
             {data.destination.custom_scanner ? ' A host-approved scanner also checks every save.' : ' Your operator can add a custom scanner.'}</p></>
-          : <p>A host operator must register a repository for this space first. The setup guide includes a single command and credential-manager instructions.</p>}
+          : <p>Register a repository for this space on its host first. A current desktop host provides registration above; other hosts use the operator command in the setup guide.</p>}
         {data.last_error && <p className="ws-notice" role="status">{errors[data.last_error] ?? `Last publication could not finish (${data.last_error.replaceAll('_', ' ')}). Check the host's Git connection and credential manager.`}</p>}
         {data.configured && <><div className="ws-stats"><div><span>Visible pending entries</span><strong>{data.pending_entries.toLocaleString()}</strong></div>
           <div><span>Pending content</span><strong>{bytes(data.pending_content_bytes)}</strong></div>

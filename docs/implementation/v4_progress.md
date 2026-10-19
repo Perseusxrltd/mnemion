@@ -515,3 +515,18 @@ focused checks and a real local TLS/CPU-model walkthrough from native release
 gates and live provider acceptance. No database migration is added. Independent
 hosting/recovery and named provider acceptance remain open; the strict tracker
 still has 17 of 64 requirements shipped and 40 partial.
+
+## Journal durability, live capture and host setup, 19 October 2026
+
+The [4.15 journal batch](../validation/2026-10-19-git-journal.md) and
+[4.16 filing batch](../validation/2026-10-19-journal-filing.md) add optional durable
+receipts, guarded Git delivery, complete replay, Obsidian notes and intact archival.
+The [4.17 batch](../validation/2026-10-19-live-conversations.md) adds bounded live
+JSONL capture, exact source references and a reproduced desktop control-drain fix.
+The [4.18 batch](../validation/2026-10-19-journal-host-setup.md) adds local app/agent
+host registration, separate publication approval and a new installed-app acceptance
+flow. Each record distinguishes source checks from native acceptance. See the
+[automatic release ledger](../RELEASE_STATUS.md) for publication and public updates.
+Independent custody, provider sign-in, guided remote-host setup, backfill and
+complete writable reconstruction remain open. The complete requested scope is
+retained at 17 of 64 shipped, with 41 partial requirements.

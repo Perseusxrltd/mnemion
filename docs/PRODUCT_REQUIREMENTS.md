@@ -19,6 +19,12 @@ not equally sized. This is coverage of the full requested scope, not a measure
 of engineering effort or the usability of the published app. Hotfixes to a
 partial feature do not automatically mark its whole requirement complete.
 
+Source 4.18.0 advances F08/C01/A09/U01 with [local app Git journal registration](service/git-journal.md#a-workspace-hosted-by-the-desktop-app)
+and a matching private local agent control. [Focused validation](validation/2026-10-19-journal-host-setup.md)
+covers approval, queue preservation and restart contracts. Native delivery, provider
+sign-in, remote-host setup and independent recovery remain separate acceptance;
+this addition does not promote those broad requirements to shipped.
+
 ## Foundation and compatibility
 
 | ID | Requested outcome | State | Evidence and remaining acceptance |

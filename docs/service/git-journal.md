@@ -6,6 +6,8 @@ journal is durable; important saves also require Git to acknowledge the push.
 Check [release status](../RELEASE_STATUS.md) before requiring this version.
 Source **4.16.0** adds optional scheduled filing into Markdown notes and intact
 archival, with the same controls in Studio, HTTP, SDKs and the agent catalog.
+Source **4.18.0** adds destination registration in the desktop app and its private
+local agent interface.
 
 An inbound Git connection does not enable publication. Existing memories, core
 blocks, attachments, credentials and organization settings are not backfilled.
@@ -14,6 +16,52 @@ grants, native database IDs and source settings. A journal protects published
 memory text and provenance, with the recovery boundaries described below.
 
 ## Setup
+
+### A workspace hosted by the desktop app
+
+From 4.18.0, open the local workspace, choose its space and select **Git journal**.
+An organization administrator with administrator access to that space sees
+**Repository on this host** when connected directly to this computer's local
+service. Remote workspaces use their own host's setup below.
+
+1. Install Git for this OS account and sign in through its credential manager.
+   Use an existing repository with the required write access. The app detects
+   whether the Git command can be found; that is not proof of authentication or
+   repository permissions. Restart the app after installing Git.
+2. Select **Register a repository**. Enter its HTTPS address without a password,
+   token, query or fragment. Choose the branch and an unused journal folder. The
+   default folder is unique to the selected space and separate from old external
+   buffers. Keep personal-data pattern checks enabled unless your policy calls
+   for a different setting; recognizable-secret checks are always on.
+3. Review and save the host registration. The app writes private settings and
+   restarts its local service after a clean drain. Your workspace identity,
+   existing memories and credentials are retained. Other clients briefly lose
+   their connection during the restart.
+4. When it returns, review **Enable this destination** below. Confirm publication
+   and retained Git history, choose its schedule and save the space policy.
+   Registering the host alone never enables publication or sends a Git request.
+
+The app derives private queue paths and does not accept arbitrary executable
+scanners or host paths through this form. The primary organization of the local
+workspace supplies the destination's tenant identity. Each space needs a distinct
+repository folder. An already configured `MNEMION_WRITEBACK_CONFIG` is retained;
+adopt app-managed configuration deliberately through the host operator.
+
+**Change repository registration** retains private pending entries. Fresh space
+approval is required when its destination fingerprint changes; pending changes
+then use that destination. Published Git history is not migrated. **Remove
+registration** keeps queue files and history, but journal-backed saves require a
+valid approved destination to resume. Use the ordinary **Pause publication**
+setting for a temporary publication pause. Repair preserves damaged registration
+bytes before clearing the host's destination choices.
+
+Git installation and credential-manager sign-in are still separate prerequisites;
+this feature creates no account or paid service. Local database recovery preserves
+the queue in the database but does not recreate host registrations or Git sign-in.
+Retain repository/branch/folder choices with your independent recovery references
+and re-register them on the recovered host before approving publication.
+
+### Other API hosts and operator-managed destinations
 
 1. Install Git on the API host. Authenticate its **service OS account** through
    Git's credential manager, with write access to the selected repository. Use
@@ -46,10 +94,10 @@ memory text and provenance, with the recovery boundaries described below.
    access to this space. The default interval is 300 seconds, configurable
    between 30 and 86,400. Only future native changes are captured.
 
-Git installation, credential-manager sign-in and initial host registration still
-require an operator; this is not yet complete app-only onboarding. The app/API
-cannot choose arbitrary host paths, destinations or scanner programs. No paid
-account or provider subscription is created by this feature.
+Git installation and credential-manager sign-in still require the service OS
+account's operator. Hosts outside the app use the registration command above.
+Ordinary memory API principals cannot choose arbitrary host paths, destinations
+or scanner programs. No paid account or provider subscription is created.
 
 `mnemion-service journal status --config /private/mnemion/journals/registry.json`
 validates registrations and prints fingerprints. Enroll additional unique
@@ -252,6 +300,38 @@ or MCP. Configuration requires literal `true` for `publish_to_repository` and
 `acknowledge_retained_git_history`; repository content cannot grant consent.
 Public status includes no local paths or Git credentials.
 
+From 4.18.0, the private desktop catalog adds `local.journal`. Read `status` and
+`info.journal_access.revision` first, then submit the current selected host ID and
+the same reviewed choices as the app:
+
+```json
+{
+  "action": "local.journal",
+  "expected_workspace_id": "11111111-1111-4111-8111-111111111111",
+  "input": {
+    "workspace_id": "11111111-1111-4111-8111-111111111111",
+    "expected_revision": "not-configured",
+    "action": "save",
+    "destination": {
+      "space_id": "22222222-2222-4222-8222-222222222222",
+      "label": "Team memories",
+      "remote": "https://git.example.com/team/memories.git",
+      "branch": "main",
+      "prefix": "memory/native-buffer/team",
+      "personal_data_scan": true
+    }
+  }
+}
+```
+
+Use `action: "remove"` with `space_id`, or `action: "reset"` only for damaged
+settings, omitting `destination`. These operations run under the owning OS
+account and use the same drain/reopen and stale-revision checks. Saving host
+choices still requires separate `journal.configure` approval through an authorized
+workspace administrator. Standalone host tools can send the `input` object on
+private stdin to `mnemion-service local journal --root /private/local-workspace`
+while that local service is stopped. Do not use another app user's directory.
+
 Set `fold_enabled: true`, `fold_after_hours: 24` and
 `fold_interval_seconds: 3600` in the existing versioned policy command to enable
 filing. Omitting those fields preserves an existing filing policy, including
@@ -277,7 +357,8 @@ Enroll a destination on the new host, establish its Git credential manager and
 explicitly approve its policy in Studio before resuming the durable queue.
 
 [Issue 39](https://github.com/Perseusxrltd/mnemion/issues/39) remains open for
-complete app host enrollment, old-memory backfill, direct writable-space
-reconstruction and large-history/live-provider acceptance. The source now includes
-capture, guarded publication, scheduled filing/archival, app/agent controls and source replay; it does not
+guided remote-host enrollment and provider sign-in, old-memory backfill, direct
+writable-space reconstruction and large-history/live-provider acceptance. The
+source now includes local app host registration, capture, guarded publication,
+scheduled filing/archival, app/agent controls and source replay; it does not
 replace complete workspace backups or independently hosted infrastructure.

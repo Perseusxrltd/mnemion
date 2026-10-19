@@ -137,6 +137,7 @@ try {
   const first = await launch({ phase: 'create', port, emulated: nativeRuntime.engine_emulation === true })
   if (!first.actualSetupControls || !first.realModelInference) throw new Error('The installed UI did not exercise real setup and inference')
   if (!first.nativeNgrokSdkLoaded) throw new Error('The installed engine did not load its remote connection runtime')
+  if (!first.journalRegistrationControls) throw new Error('The installed UI did not verify host journal registration and separate publication approval')
   const hostedPage = await fetch(first.endpoint + '/oauth/consent', { signal: AbortSignal.timeout(10000) })
   const hostedHtml = await hostedPage.text()
   const hostedAsset = hostedHtml.match(/src="(\/assets\/[^"<>]+\.js)"/)
@@ -201,6 +202,7 @@ try {
     installer: process.platform === 'win32' ? 'NSIS per-user' : process.platform === 'darwin' ? 'DMG copied application' : 'AppImage portable user installation',
     installationPathWithSpacesAndUnicode: true, actualSetupControls: true, authenticatedApi: true,
     nativeNgrokSdkLoaded: true, hostedBrowserAndConsentAssets: true,
+    nativeJournalRegistrationAndSeparateApproval: true,
     nativeEncryptedSnapshotAndLedger: true, backupKeyProtectedAndReopenedByOsStore: true,
     recoveryThroughActualAppControls: true, recoveredCopyReopenedAfterRestart: true,
     postSnapshotDeletionPreservedByRecovery: true, originalWorkspacePreservedAndReopened: true,

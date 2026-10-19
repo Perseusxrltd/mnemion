@@ -4,6 +4,8 @@ import { StringDecoder } from 'node:string_decoder'
 import { backupResult } from './local-backup-protocol.js'
 import { companyOptions, companyDiscoveryOptions, companyDiscoveryResult, companySnapshot } from './local-company-protocol.js'
 import { vaultKeyId, vaultKeyResult, vaultOptions, vaultRequest, vaultSnapshot } from './local-vault-protocol.js'
+import { journalOptions, journalSnapshot } from './local-journal-protocol.js'
+import type { JournalChange } from '../shared/local-workspace.js'
 import type { VaultChange, VaultKey } from '../shared/local-workspace.js'
 import type { CompanyChange, CompanyDiscoveryResult } from '../shared/local-workspace.js'
 import type { BackupAction, BackupOperationResult } from '../shared/local-workspace.js'
@@ -289,7 +291,7 @@ export class LocalWorkspace {
     try { return await this.operation } finally { this.operation = undefined }
   }
 
-  private readInfo(action: 'status' | 'port' | 'remote' | 'remote-check' | 'company' | 'vault', input?: PortChange | RemoteChange | RemoteCheck | CompanyChange | VaultChange): Promise<LocalInfo> {
+  private readInfo(action: 'status' | 'port' | 'remote' | 'remote-check' | 'company' | 'vault' | 'journal', input?: PortChange | RemoteChange | RemoteCheck | CompanyChange | VaultChange | JournalChange): Promise<LocalInfo> {
     return new Promise((resolve, reject) => {
       const child = this.control(action)
       child.stdin.end(input === undefined ? undefined : JSON.stringify(input) + '\n')
@@ -318,6 +320,7 @@ export class LocalWorkspace {
           const remote_access = value.remote_access === undefined ? undefined : remoteSnapshot(value.remote_access)
           const company_access = value.company_access === undefined ? undefined : companySnapshot(value.company_access)
           const vault_access = value.vault_access === undefined ? undefined : vaultSnapshot(value.vault_access)
+          const journal_access = value.journal_access === undefined ? undefined : journalSnapshot(value.journal_access)
           const address = input as PortChange
           if (action === 'port' && (!configured || !settings || settings.workspace_id !== input!.workspace_id.toLowerCase() ||
               !Number.isInteger(settings.port) || settings.port < 1024 || settings.port > 65535 || settings.port === settings.database_port ||
@@ -345,10 +348,18 @@ export class LocalWorkspace {
                 vault_access.enabled !== change.enabled || vault_access.mcp_enabled !== change.mcp_enabled ||
                 (change.recovery_key && vault_access.key_id !== vaultKeyId(change.recovery_key))) throw new Error('The saved vault settings could not be confirmed. Refresh before retrying.')
           }
+          if (action === 'journal') {
+            const change = input as JournalChange
+            const destination = journal_access?.destinations.find(item => item.space_id === (change.action === 'save' ? change.destination.space_id : change.action === 'remove' ? change.space_id : ''))
+            if (!configured || settings?.workspace_id !== change.workspace_id || !journal_access ||
+                ['configuration_error', 'external'].includes(journal_access.state) || journal_access.revision === change.expected_revision ||
+                (change.action === 'remove' && destination) || (change.action === 'reset' && journal_access.destinations.length) ||
+                (change.action === 'save' && (!destination || Object.entries(change.destination).some(([key, value]) => destination[key as keyof typeof destination] !== value)))) throw new Error('The saved journal destination could not be confirmed. Refresh before retrying.')
+          }
           if (memory_recovery && (!['memory_policy_missing', 'memory_policy_damaged', 'memory_policy_inaccessible'].includes(memory_recovery.code) ||
               typeof memory_recovery.message !== 'string' || memory_recovery.message.length > 1000 ||
               (memory_recovery.repair_token !== null && !/^[a-f0-9]{64}$/.test(memory_recovery.repair_token)))) throw new Error('Invalid RAM recovery status')
-          const info = { configured, data_directory, engine_version, resources, settings, last_verification, memory_policy, memory_recovery, memory, remote_access, company_access, vault_access }
+          const info = { configured, data_directory, engine_version, resources, settings, last_verification, memory_policy, memory_recovery, memory, remote_access, company_access, vault_access, journal_access }
           this.info = info
           this.changed(this.status)
           resolve(info)
@@ -621,9 +632,18 @@ export class LocalWorkspace {
     })
   }
 
-  private async saveHostConfiguration(action: 'remote' | 'company' | 'vault', change: RemoteChange | CompanyChange | VaultChange): Promise<LocalStatus> {
+  async changeJournal(input: unknown): Promise<LocalStatus> {
+    this.assertOpen()
+    if (this.operation) { await this.operation; this.assertOpen() }
+    if (!this.status.available || this.busy) throw new Error('Wait for the current local operation before changing journal registrations.')
+    const change = journalOptions(input)
+    this.configurationChange = this.saveHostConfiguration('journal', change)
+    try { return await this.configurationChange } finally { this.configurationChange = undefined }
+  }
+
+  private async saveHostConfiguration(action: 'remote' | 'company' | 'vault' | 'journal', change: RemoteChange | CompanyChange | VaultChange | JournalChange): Promise<LocalStatus> {
     const before = await this.readInfo('status')
-    const section = action === 'remote' ? 'remote_access' : action === 'company' ? 'company_access' : 'vault_access'
+    const section = ({ remote: 'remote_access', company: 'company_access', vault: 'vault_access', journal: 'journal_access' } as const)[action]
     if (before.settings?.workspace_id !== change.workspace_id || before[section]?.revision !== change.expected_revision ||
         (action === 'company' && before.remote_access?.revision !== (change as CompanyChange).expected_remote_revision)) {
       throw new Error('Host settings changed. Refresh before saving them again.')
@@ -634,7 +654,7 @@ export class LocalWorkspace {
     if (resume && !await this.stopChild()) throw new Error('The local workspace is still stopping. Refresh before retrying.')
     try {
       const updated = await this.readInfo(action, change)
-      this.set({ state: 'stopped', stage: undefined, errorCode: undefined, message: action === 'remote' ? 'Remote settings saved.' : action === 'company' ? 'Company settings saved.' : 'Vault settings saved.' })
+      this.set({ state: 'stopped', stage: undefined, errorCode: undefined, message: action === 'remote' ? 'Remote settings saved.' : action === 'company' ? 'Company settings saved.' : action === 'journal' ? 'Journal destination saved.' : 'Vault settings saved.' })
       if (resume && !this.stopping && !this.closing && !this.disposed) return this.launch(updated)
       return this.status
     } catch (error) {

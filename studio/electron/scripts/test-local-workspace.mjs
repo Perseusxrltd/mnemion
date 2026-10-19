@@ -8,6 +8,7 @@ import { test } from 'node:test'
 import { LocalWorkspace, portOptions, localDiagnostic, remoteOptions, remoteSnapshot } from '../dist/local-workspace.js'
 import { companyOptions, companySnapshot, companyDiscoveryResult } from '../dist/local-company-protocol.js'
 import { vaultOptions, vaultSnapshot, vaultKeyId, vaultKeyResult } from '../dist/local-vault-protocol.js'
+import { journalOptions, journalSnapshot } from '../dist/local-journal-protocol.js'
 
 const { version } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
 const root = '/private/test-workspace'
@@ -43,6 +44,26 @@ const vaultInfo = (configured = false) => ({ ...addressInfo(17400), vault_access
   repairable: true, enabled: configured, mcp_enabled: false, key_id: configured ? vaultKeyId(vaultKey) : null,
   message: 'Private vault fixture',
 } })
+const journalDestination = { space_id: '00000000-0000-4000-8000-000000000014', label: 'Team memory',
+  remote: 'https://git.example.test/team/memory.git', branch: 'main', prefix: 'memory/native-buffer', personal_data_scan: true }
+const journalChange = { workspace_id: addressChange.workspace_id, expected_revision: 'not-configured', action: 'save', destination: journalDestination }
+const journalInfo = (saved = false) => ({ ...addressInfo(17400), journal_access: {
+  revision: saved ? '00000000-0000-4000-8000-000000000015' : 'not-configured', state: saved ? 'configured' : 'not_configured',
+  repairable: true, git_found: true, destinations: saved ? [journalDestination] : [], message: 'Private journal fixture',
+} })
+
+test('journal controls reject host paths, executable instructions and credential URLs', () => {
+  assert.deepEqual(journalOptions(journalChange), journalChange)
+  for (const patch of [{ remote: 'https://user:private@git.example.test/team.git' }, { remote: 'https://git.example.test/team.git?key=private' },
+    { remote: 'http://git.example.test/team.git' }, { branch: '--upload-pack=program' }, { prefix: '../outside' },
+    { prefix: 'memory/NUL' }, { state_directory: '/arbitrary/private/path' }, { scanner: ['/unreviewed/program'] }]) {
+    assert.throws(() => journalOptions({ ...journalChange, destination: { ...journalDestination, ...patch } }))
+  }
+  assert.throws(() => journalOptions({ ...journalChange, expected_revision: 'outdated' }))
+  assert.deepEqual(journalSnapshot(journalInfo(true).journal_access), journalInfo(true).journal_access)
+  assert.throws(() => journalSnapshot({ ...journalInfo(true).journal_access, credential: 'private' }))
+  assert.throws(() => journalSnapshot({ ...journalInfo(true).journal_access, destinations: [journalDestination, journalDestination] }))
+})
 
 test('vault handoffs reject unreviewed instructions and credentials in public status', () => {
   assert.deepEqual(vaultOptions(vaultChange), vaultChange)
@@ -261,6 +282,56 @@ test('a stale remote form cannot stop the running host or overwrite another oper
   await refused
   assert.equal(f.host.status.state, 'running')
   assert.equal(f.commands.filter(command => command.action === 'remote').length, 0)
+})
+
+test('journal registration drains the host and confirms the selected destination before reopening', async t => {
+  const f = fixture(t)
+  const engine = await running(f)
+  const change = f.host.changeJournal(journalChange)
+  f.last().reply(journalInfo()); await settle()
+  assert.equal(f.host.status.state, 'stopping')
+  assert.equal(f.commands.filter(command => command.action === 'journal').length, 0)
+  engine.finish(); await settle()
+  assert.equal(f.last().action, 'journal')
+  f.last().reply(journalInfo(true))
+  const result = await change
+  assert.equal(result.state, 'starting')
+  assert.deepEqual(result.info.journal_access.destinations, [journalDestination])
+  assert.equal(f.commands.filter(command => command.action === 'run').length, 2)
+})
+
+test('stale journal registration cannot interrupt a running host', async t => {
+  const f = fixture(t)
+  await running(f)
+  const refused = assert.rejects(f.host.changeJournal(journalChange), /settings changed/)
+  f.last().reply(journalInfo(true)); await refused
+  assert.equal(f.host.status.state, 'running')
+  assert.equal(f.commands.filter(command => command.action === 'journal').length, 0)
+})
+
+test('explicit stop waits for a journal registration and prevents its automatic reopen', async t => {
+  const f = fixture(t)
+  const engine = await running(f)
+  const change = f.host.changeJournal(journalChange)
+  f.last().reply(journalInfo()); await settle()
+  const stop = f.host.stop()
+  engine.finish(); await settle()
+  f.last().reply(journalInfo(true))
+  await change
+  assert.equal(await stop, true)
+  assert.equal(f.host.status.state, 'stopped')
+  assert.equal(f.commands.filter(command => command.action === 'run').length, 1)
+})
+
+test('a response for a different journal repository cannot replace known host settings', async t => {
+  const f = fixture(t)
+  const inspect = f.host.inspect(); f.last().reply(journalInfo()); await inspect
+  const refused = assert.rejects(f.host.changeJournal(journalChange), /could not be confirmed/)
+  f.last().reply(journalInfo()); await settle()
+  const reply = journalInfo(true)
+  reply.journal_access.destinations = [{ ...journalDestination, remote: 'https://git.example.test/other.git' }]
+  f.last().reply(reply); await refused
+  assert.deepEqual(f.host.status.info.journal_access.destinations, [])
 })
 
 test('company setup drains the same host and reopens only after a confirmed private save', async t => {
