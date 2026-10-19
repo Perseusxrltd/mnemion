@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-19T11:54:33+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-19T12:14:04+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.14.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.14.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -16,7 +16,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | [#18](https://github.com/Perseusxrltd/mnemion/issues/18) | OAuth 2\.1 MCP auth so ChatGPT custom connectors can connect \(spec for \#4\) | 2026-10-10T20:58:20Z |
 | [#31](https://github.com/Perseusxrltd/mnemion/issues/31) | Recall has no recency signal: older 'open question' memories outrank the newer answer | 2026-10-18T07:47:57Z |
 | [#32](https://github.com/Perseusxrltd/mnemion/issues/32) | Feature: encrypted secrets vault, kept apart from searchable memory | 2026-10-19T09:43:02Z |
-| [#38](https://github.com/Perseusxrltd/mnemion/issues/38) | Host reset wipes a self-hosted install with no reproducible re-install path or off-host key/state recovery | 2026-10-19T11:44:27Z |
+| [#38](https://github.com/Perseusxrltd/mnemion/issues/38) | Host reset wipes a self-hosted install with no reproducible re-install path or off-host key/state recovery | 2026-10-19T12:13:43Z |
 | [#39](https://github.com/Perseusxrltd/mnemion/issues/39) | Buffer memory with automatic additive write-back to Git \(native saves are never pushed upstream\) | 2026-10-19T11:44:25Z |
 | [#40](https://github.com/Perseusxrltd/mnemion/issues/40) | Support Grok Build native session/update transcript normalization | 2026-10-19T11:44:19Z |
 | [#41](https://github.com/Perseusxrltd/mnemion/issues/41) | Live transcript capture: partial or oversized JSONL suspends the entire source scope | 2026-10-19T11:44:22Z |
@@ -25,7 +25,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 39246187887](https://github.com/Perseusxrltd/mnemion/actions/runs/39246187887) |
+| ci\.yml | main | in\_progress | [Run 39250395095](https://github.com/Perseusxrltd/mnemion/actions/runs/39250395095) |
 | public-updates\.yml | v4\.14\.0 | success | [Run 39241855912](https://github.com/Perseusxrltd/mnemion/actions/runs/39241855912) |
 | release\.yml | release/4\.14\.0-r2 | success | [Run 39236264889](https://github.com/Perseusxrltd/mnemion/actions/runs/39236264889) |
 | release\.yml | release/4\.15\.0 | failure | [Run 39242637086](https://github.com/Perseusxrltd/mnemion/actions/runs/39242637086) |

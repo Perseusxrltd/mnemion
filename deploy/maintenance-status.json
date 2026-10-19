@@ -63,7 +63,7 @@
     {
       "number": 38,
       "title": "Host reset wipes a self-hosted install with no reproducible re-install path or off-host key/state recovery",
-      "updated_at": "2026-10-19T11:44:27Z",
+      "updated_at": "2026-10-19T12:13:43Z",
       "url": "https://github.com/Perseusxrltd/mnemion/issues/38",
       "labels": [
         "bug",
@@ -100,15 +100,16 @@
   ],
   "runs": [
     {
-      "id": 39246187887,
+      "id": 39250395095,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "d573974ad0c527e789bf59286161d66feeef2f3b",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-19T11:54:10Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39246187887"
+      "source_commit": "bf31d3a743953396522570f926533ea6b3bf96cd",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-19T12:13:48Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39250395095",
+      "failed_jobs": []
     },
     {
       "id": 39241855912,
@@ -209,5 +210,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39241852486"
     }
   ],
-  "observed_at": "2026-10-19T11:54:33+00:00"
+  "observed_at": "2026-10-19T12:14:04+00:00"
 }
