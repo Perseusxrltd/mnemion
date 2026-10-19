@@ -454,3 +454,57 @@ def test_operator_enrollment_is_private_and_requires_current_fingerprint_to_repl
     command[-1] = "https://user:" + secret + "@example.invalid/memory.git"
     assert main(command) == 1 and secret not in capsys.readouterr().out
     assert path.read_bytes() == before
+
+
+def test_retry_and_late_delivery_after_archive_keep_catalog_identity(tmp_path):
+    from mnemion.journal.format import parse_catalog
+
+    first = entry()
+    destination = configure(tmp_path, first)
+    publisher = GitJournal(destination)
+    head = publisher.publish([first])["commit"]
+    path = destination.prefix + "/" + first.relative_path
+    archived = destination.prefix + "/_archive/" + first.relative_path
+    copied = commit_file(destination.local_repository, archived, first.line(), head=head)
+    git(destination.local_repository, "read-tree", copied)
+    git(
+        destination.local_repository,
+        "update-index",
+        "--index-info",
+        input=f"0 {'0' * len(head)}\t{path}\n".encode(),
+    )
+    tree = git(destination.local_repository, "write-tree").strip().decode()
+    moved = (
+        git(
+            destination.local_repository,
+            "-c",
+            "user.name=Archive fixture",
+            "-c",
+            "user.email=fixture@example.invalid",
+            "commit-tree",
+            tree,
+            "-p",
+            copied,
+            "-m",
+            "Move an intact daily journal",
+        )
+        .strip()
+        .decode()
+    )
+    git(destination.local_repository, "update-ref", "refs/heads/main", moved)
+    assert publisher.publish([first])["commit"] == moved
+    late = revision(first, text="A late delivery to an archived day")
+    confirmed = publisher.publish([late])["commit"]
+    assert git(destination.local_repository, "ls-tree", "--name-only", "main", "--", path) == b""
+    assert (
+        git(destination.local_repository, "show", "main:" + archived) == first.line() + late.line()
+    )
+    assert (
+        parse_catalog(
+            git(
+                destination.local_repository, "show", "main:" + destination.prefix + "/catalog.json"
+            )
+        ).records
+        == 2
+    )
+    assert publisher.publish([first, late])["commit"] == confirmed

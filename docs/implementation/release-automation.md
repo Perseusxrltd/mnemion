@@ -18,6 +18,9 @@ gates; no paid service, model call or new signing credential is required.
    `python -m deploy.release_automation start` freezes its `release/X.Y.Z`
    branch and starts the complete release workflow once. Existing matching runs
    are reported, not repeated; a different frozen source is rejected.
+   From 4.15.0, the command first runs the pinned Ruff format/lint checks locally,
+   before reserving that branch. This catches cheap failures without starting
+   native builders. Use the locked development environment; it includes Ruff.
 4. The release workflow runs product/native gates and creates a draft. The
    independent verifier checks the exact uploaded bytes, signatures, complete
    feeds and their unchanged inventory.

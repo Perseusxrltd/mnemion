@@ -136,7 +136,9 @@ malicious repository owner who rewrites both catalog and records.
 
 Repeated records are deduplicated. Revisions retain a source identity derived
 from their original organization/space/memory tuple. Moving intact files into
-`_archive` preserves that identity. Claimed writer IDs remain provenance and
+`_archive` preserves that identity. Push retries also check archived records;
+late records append there without recreating the active file or double-counting.
+Claimed writer IDs remain provenance and
 never become local principals or grants. A fresh workspace assigns new internal
 database IDs under its current source permissions; repeated imports into that
 source are idempotent. This does not recreate the original writable space,

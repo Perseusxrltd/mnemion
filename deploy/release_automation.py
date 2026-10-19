@@ -416,6 +416,11 @@ def main():
     elif args.command == "integrate":
         print(json.dumps(integrate(root, args.repo)))
     elif args.command == "start":
+        # Catch inexpensive source failures before reserving an immutable
+        # release branch or consuming a native runner. Maintainers use the
+        # locked development environment, which includes the pinned Ruff.
+        for check in (["format", "--check", "."], ["check", "."]):
+            subprocess.run([sys.executable, "-m", "ruff", *check], cwd=root, check=True)
         print(json.dumps(start(root, args.repo, attempt=args.attempt)))
     else:
         if (

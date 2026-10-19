@@ -8,9 +8,9 @@ Tests use disposable local bare Git repositories, isolated PostgreSQL databases
 and generated fixture identities. No user memory repository or hosted workspace
 was modified. This is not a live Git-provider or remote host-reset claim.
 
-- **125 focused Python checks passed** across journal capture/publication,
+- **126 focused Python checks passed** across journal capture/publication,
   native transactions, recovery, source ingestion, SDKs and agent contracts.
-  This includes **38 journal/write-back cases** and upgrades from all nine
+  This includes **39 journal/write-back cases** and upgrades from all nine
   preceding schema prefixes, 013–021. Upgrade checks compare every original
   row hash and require the two new journal tables to be empty.
 - Journal cases cover strict parsing, scans before commit, durable local
@@ -20,6 +20,9 @@ was modified. This is not a live Git-provider or remote host-reset claim.
 - Replay checks cover duplicates, reordered active/archive records, stable
   origin identities and refusal of partial inventories that omit denials.
   Physical duplicates still consume resource limits.
+- Retrying a push after its daily file was moved to the archive preserves the
+  existing catalog count. Late records append to the archive, keeping retries
+  idempotent and preventing active/archive duplicate counts from blocking replay.
 - A real Git → HTTP connector → PostgreSQL round trip retains the imported
   memory/revision IDs on repeated sync, refuses an omitted deletion and removes
   the imported copy when the complete journal becomes available again. Original
@@ -34,6 +37,10 @@ was modified. This is not a live Git-provider or remote host-reset claim.
   release metadata checks pass. One host-recovery check initially lacked `uv`
   on the test runner's PATH; it passed after exposing the already installed
   pinned binary. No product behavior was weakened to pass that check.
+- The first 4.15.0 release preflight found one unformatted CLI registration.
+  Its formatting was corrected without a behavioral change. Release startup
+  now runs format/lint locally before reserving a release branch; the complete
+  497-file format check and lint pass.
 
 Native packages, independent uploaded-byte verification and public automatic
 upgrade rehearsals remain separate pipeline evidence in

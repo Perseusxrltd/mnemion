@@ -168,16 +168,23 @@ class GitJournal:
         return self._git("cat-file", "blob", object_id, maximum=MAX_FILE_BYTES)
 
     def _append(self, head, path, additions):
-        existing = self._blob(head, path) or b""
+        active = self._blob(head, path)
+        archive_path = (
+            self.destination.prefix + "/_archive/" + path[len(self.destination.prefix) + 1 :]
+        )
+        archived = self._blob(head, archive_path)
+        target = archive_path if archived is not None else path
+        existing = (archived if archived is not None else active) or b""
         known = {}
-        for entry in parse_file(io.BytesIO(existing)):
-            self._scope(entry)
-            if path != self.destination.prefix + "/" + entry.relative_path:
-                raise JournalError("journal_record_path_mismatch")
-            digest = entry.digest
-            if str(entry.id) in known and known[str(entry.id)] != digest:
-                raise JournalError("journal_entry_conflict")
-            known[str(entry.id)] = digest
+        for content in (archived, active):
+            for entry in parse_file(io.BytesIO(content or b"")):
+                self._scope(entry)
+                if path != self.destination.prefix + "/" + entry.relative_path:
+                    raise JournalError("journal_record_path_mismatch")
+                digest = entry.digest
+                if str(entry.id) in known and known[str(entry.id)] != digest:
+                    raise JournalError("journal_entry_conflict")
+                known[str(entry.id)] = digest
         extra = bytearray()
         added = 0
         for entry in sorted(additions, key=lambda e: (e.ts, str(e.id))):
@@ -192,7 +199,7 @@ class GitJournal:
             extra.extend(line)
             known[str(entry.id)] = entry.digest
             added += 1
-        return (existing + extra if extra else None), added
+        return (existing + extra if extra else None), added, target
 
     def _catalog(self, head):
         path = self.destination.prefix + "/catalog.json"
@@ -255,6 +262,12 @@ class GitJournal:
                     + path[len(self.destination.prefix) + 1 :]
                 )
                 after = self._blob(head, archived)
+                if (
+                    before is not None
+                    and after is not None
+                    and (after.startswith(before) or b"\n" + before in after)
+                ):
+                    continue  # An intact move may append to an older archive.
             if before is None or after is None or not after.startswith(before):
                 raise JournalError("journal_remote_history_changed")
 
@@ -297,13 +310,13 @@ class GitJournal:
                 updates = []
                 added_records = 0
                 for path, additions in sorted(groups.items()):
-                    content, added = self._append(head, path, additions)
+                    content, added, target = self._append(head, path, additions)
                     added_records += added
                     if content is not None:
                         oid = self._oid(
                             self._git("hash-object", "-w", "--stdin", input=content, maximum=128)
                         )
-                        updates.append(f"100644 {oid}\t{path}\n")
+                        updates.append(f"100644 {oid}\t{target}\n")
                 if added_records:
                     catalog = JournalCatalog(
                         tenant_id=catalog.tenant_id,
