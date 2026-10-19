@@ -1,12 +1,12 @@
 # Automated maintenance status
 
-Observed: 2026-10-19T14:36:43+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-19T14:46:32+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.17.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.17.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
 This inventory reports GitHub state; issue closure does not prove that an entire product requirement is complete. Build observations cover the latest 100 runs, retaining the latest relevant run per workflow and branch. Active builds are checked for failed jobs at each observation; completed failures are inspected once per changed attempt. This automation never retries a build or publishes a release.
 
-## Open issues (10)
+## Open issues (11)
 
 | Issue | Report | Last activity |
 | --- | --- | --- |
@@ -20,6 +20,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | [#39](https://github.com/Perseusxrltd/mnemion/issues/39) | Buffer memory with automatic additive write-back to Git \(native saves are never pushed upstream\) | 2026-10-19T11:44:25Z |
 | [#40](https://github.com/Perseusxrltd/mnemion/issues/40) | Support Grok Build native session/update transcript normalization | 2026-10-19T11:44:19Z |
 | [#41](https://github.com/Perseusxrltd/mnemion/issues/41) | Live transcript capture: partial or oversized JSONL suspends the entire source scope | 2026-10-19T11:44:22Z |
+| [#42](https://github.com/Perseusxrltd/mnemion/issues/42) | Native Git journal: support repository-scoped SSH deploy keys and distinguish local destination receipts | 2026-10-19T14:46:11Z |
 
 ## Relevant builds
 

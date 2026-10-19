@@ -96,6 +96,13 @@
       "labels": [
         "enhancement"
       ]
+    },
+    {
+      "number": 42,
+      "title": "Native Git journal: support repository-scoped SSH deploy keys and distinguish local destination receipts",
+      "updated_at": "2026-10-19T14:46:11Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/issues/42",
+      "labels": []
     }
   ],
   "runs": [
@@ -210,5 +217,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39265100417"
     }
   ],
-  "observed_at": "2026-10-19T14:36:43+00:00"
+  "observed_at": "2026-10-19T14:46:32+00:00"
 }
