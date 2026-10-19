@@ -58,6 +58,14 @@ acting identity without carrying credentials or agent context across boundaries.
 
 ## Current gaps and implementation order
 
+Source 4.28 gives trusted local agents the same key/password desktop connection,
+saved-account, disconnect and local-selection paths through
+[private desktop controls](../service/desktop-operator.md#select-a-team-workspace-from-a-local-agent).
+Observed revisions, live identity checks, unsaved-work protection and the OS
+credential store retain their app semantics. This advances agent setup while the
+app is in the background; provider enrollment, complete host import and fleet
+onboarding remain separate work. Native acceptance is required before publication.
+
 Published 4.0.9 adds OS-protected saved desktop connections, verified
 reconnection, durable disconnect and device-only forgetting. Local real-service,
 UI and all six native encrypted-restart gates passed. This foundation does not

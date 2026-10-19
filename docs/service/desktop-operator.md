@@ -69,7 +69,11 @@ engine** so it uses the Windows account and named-pipe implementation.
 | `status`, `catalog` | Read current native state or discover the supported interface. |
 | `app.status`, `app.preferences` | From 4.19.0, inspect this app's version/update policy or change an observed app preference. No local workspace needs to be running. |
 | `app.update-check`, `app.update-restart` | From 4.19.0, request an immediate ordinary update check or one guarded restart of the exact verified ready version. |
+| `workspace.status`, `workspace.verify`, `workspace.inspect` | From 4.28.0, inspect the selected/saved accounts without secrets, verify a supplied key without connecting, or read a saved account's offline details. |
+| `workspace.connect`, `workspace.sign-in`, `workspace.restore` | From 4.28.0, open an explicitly identified key connection, use a personal password login, or revalidate a saved account. |
+| `workspace.disconnect`, `workspace.forget` | From 4.28.0, disconnect the selected account or remove one saved connection from this device. |
 | `local.create`, `local.start`, `local.stop` | Create, start or stop the app's local workspace through the ordinary lifecycle controls. |
+| `local.open` | From 4.28.0, select the running local workspace using its independent local owner. Confirm both the local workspace ID and the current connection revision. |
 | `local.memory` | Set automatic/manual RAM limits or repair a damaged RAM policy with its current repair token. |
 | `local.port` | Change a stopped workspace's API port using its observed current port. |
 | `local.remote`, `local.remote-check` | Configure or check the existing supervised remote-access options. |
@@ -147,6 +151,84 @@ current workspace automatically. Review its result, then call `recovery.use`
 with `{"id":"VERIFIED_COPY_ID"}` and the current workspace identity. Use
 `{"id":null}` to return to the original. The same current deletion/access rules,
 fresh administrator credentials and external-connection review apply as in the UI.
+
+## Select a team workspace from a local agent
+
+Desktop **4.28.0** adds nine operations, bringing the private catalog to **39**.
+They use the same connection manager and OS-protected credential store as the
+app. No local model or local database is needed to join a remotely hosted team.
+The app can remain in the background or behind the lock screen; a locked OS
+credential store can still require the owning person to unlock it.
+
+Read `workspace.status`. Its `revision` identifies the observed connection,
+saved accounts and local selection. `active` reports the selected endpoint,
+person and organization; `bookmarks` and `activeId` describe saved connections.
+Neither result contains a real key, refresh token or native session handle.
+These are local observations, not a fresh assertion of server permissions.
+Use `workspace.inspect` with a bookmark `id` to read its dated offline access
+and recovery information without contacting the host.
+
+When using a supplied key, first verify it without changing the app:
+
+```json
+{"action":"workspace.verify","input":{"endpoint":"https://memory.example.com","credential":"KEY_FROM_PRIVATE_INPUT"}}
+```
+
+Review the returned `me.tenant_id`, `me.principal_id`, name and administrator
+status. Then connect with both exact identities and the current connection
+revision:
+
+```json
+{
+  "action": "workspace.connect",
+  "input": {
+    "expected_revision": "REVISION_FROM_WORKSPACE_STATUS",
+    "endpoint": "https://memory.example.com",
+    "credential": "KEY_FROM_PRIVATE_INPUT",
+    "remember": true,
+    "expected_tenant_id": "TENANT_UUID_FROM_VERIFICATION",
+    "expected_principal_id": "PERSON_UUID_FROM_VERIFICATION"
+  }
+}
+```
+
+The app rechecks the actual server identity before saving or selecting it.
+A wrong organization/person, stale observation, unavailable host or unavailable
+secure store cannot replace the prior connection. Set `remember: false` for a
+temporary connection; there is no plaintext storage fallback. Supply secrets
+through private stdin, never shell arguments, shared configuration or a memory.
+
+For an existing personal login, use `workspace.sign-in` with `expected_revision`,
+`endpoint`, `remember` and a `credentials` object containing `workspace_id`,
+`username`, `password` and `device_name`. Password sessions require service 4.2
+or later and retain their ordinary refresh and revocation rules. Creating the
+person or accepting an invitation remains available through the existing
+[personal-access app and private CLI](sign-in.md); these controls do not create
+an account, invent a password or bypass company-provider sign-in.
+
+Use `workspace.restore` with the current `expected_revision` and bookmark `id`
+to reopen a saved account. It revalidates identity and, for personal logins,
+refreshes the same device session. `workspace.disconnect` needs only the current
+`expected_revision`. Key connections retain their encrypted bookmark; password
+sign-out removes the saved refresh token and requests server revocation. If the
+server cannot confirm sign-out, local access still closes and the command
+explains the remaining revocation step. `workspace.forget` takes the same
+revision and one `id`; it removes that device bookmark, without deleting
+memories or revoking a server key.
+
+To return to the running local host, read both `status` and `workspace.status`,
+then call `local.open` with top-level `expected_workspace_id` and input
+`expected_revision`. Starting a stopped local host remains `local.start`.
+Connecting to a remote account does not stop the local host or change its
+background-start preference.
+
+Selection changes check for unsaved drafts and pending UI requests, serialize
+with native mutations and refresh the displayed workspace after completion.
+An accepted login may complete after the requesting client disconnects. Inspect
+fresh status before retrying; the usual bounded request-ID replay applies.
+These controls change the desktop selection, not an external agent's own
+conversation context or scoped memory authority. Concurrent multi-workspace
+sessions and delegated remote host control remain separate requirements.
 
 ## App updates and startup
 

@@ -53,6 +53,85 @@ async function ui(window: BrowserWindow, expression: string): Promise<void> {
   })()`)
 }
 
+async function verifyWorkspaceSelection(window: BrowserWindow, workspace: string): Promise<Record<string, boolean>> {
+  const original = await success('workspace.status')
+  if (!original.local_selected || !original.active?.me.administrator || !original.secureStorage ||
+      JSON.stringify(original).includes('mnm_session_')) throw new Error('The operator did not safely describe the original local owner.')
+  const fixture = await window.webContents.executeJavaScript(`(async()=>{
+    const session=(await window.mnemion.workspaceStatus()).active;
+    async function request(method,path,body,expected=200){
+      const response=await window.mnemion.serviceRequest({url:session.endpoint+path,method,
+        headers:{Authorization:'Bearer '+session.sessionToken,'Content-Type':'application/json'},
+        ...(body?{body:JSON.stringify(body)}:{})});
+      if(response.status!==expected)throw new Error('Operator fixture setup failed: '+path+' / '+response.status);
+      return JSON.parse(new TextDecoder().decode(response.body));
+    }
+    const space=(await request('GET','/v1/spaces')).items[0];
+    const person=await request('POST','/v1/principals',{name:'Native local-agent reader',kind:'application',administrator:false},201);
+    await request('PUT','/v1/spaces/'+space.id+'/grants/'+person.id,{role:'reader'});
+    const key=await request('POST','/v1/principals/'+person.id+'/keys',{name:'Disposable private operator connection'},201);
+    return {endpoint:session.endpoint,tenantId:session.me.tenant_id,principalId:person.id,spaceId:space.id,credential:key.api_key};
+  })()`)
+  try {
+    const verified = await success('workspace.verify', { endpoint: fixture.endpoint, credential: fixture.credential })
+    if (verified.me.tenant_id !== fixture.tenantId || verified.me.principal_id !== fixture.principalId || verified.me.administrator ||
+        (await success('workspace.status')).revision !== original.revision) throw new Error('Workspace verification changed selection or returned the wrong identity.')
+    const input = { expected_revision: original.revision, endpoint: fixture.endpoint, credential: fixture.credential,
+      remember: true, expected_tenant_id: fixture.tenantId, expected_principal_id: fixture.principalId }
+    const wrong = await call('workspace.connect', { ...input, expected_principal_id: randomUUID() })
+    if (wrong.ok || (await success('workspace.status')).revision !== original.revision) throw new Error('A mismatched intended account changed the desktop connection.')
+    await ui(window, 'window.mnemion.updateSafety()')
+    await window.webContents.executeJavaScript(`(()=>{const field=document.createElement('textarea');field.id='native-workspace-draft';document.body.append(field);field.value='Keep this unsaved draft';field.dispatchEvent(new Event('input',{bubbles:true}));})()`)
+    try {
+      const draft = await call('workspace.connect', input)
+      if (draft.ok || !draft.message?.includes('Save or discard edits') || (await success('workspace.status')).revision !== original.revision) throw new Error('The operator replaced a connection with an unsaved draft.')
+    } finally { await window.webContents.executeJavaScript("document.getElementById('native-workspace-draft')?.remove()") }
+    await ui(window, 'window.mnemion.updateSafety()')
+    const connected = await success('workspace.connect', input)
+    if (connected.local_selected || connected.active?.me.principal_id !== fixture.principalId || !connected.active.remembered ||
+        JSON.stringify(connected).includes(fixture.credential) || JSON.stringify(connected).includes('mnm_session_')) throw new Error('The operator connection lost its identity, protected storage or private handle boundary.')
+    if ((await readFile(join(app.getPath('userData'), 'workspaces', 'connections.json'), 'utf8')).includes(fixture.credential)) throw new Error('The operator saved a workspace key without OS protection.')
+    const selected = async () => ui(window, `(async()=>{const s=(await window.mnemion.workspaceStatus()).active;return s?.me.principal_id===${JSON.stringify(fixture.principalId)} && !s.me.administrator && !!document.querySelector('.ws-workspace-name');})()`)
+    await selected()
+    await window.webContents.executeJavaScript(`(async()=>{
+      const session=(await window.mnemion.workspaceStatus()).active;
+      async function request(method,path,body,expected){
+        const response=await window.mnemion.serviceRequest({url:session.endpoint+path,method,
+          headers:{Authorization:'Bearer '+session.sessionToken,'Content-Type':'application/json','Idempotency-Key':crypto.randomUUID()},
+          ...(body?{body:JSON.stringify(body)}:{})});
+        if(response.status!==expected)throw new Error('Operator-selected reader authority failed: '+path+' / '+response.status);
+        return JSON.parse(new TextDecoder().decode(response.body));
+      }
+      const spaces=(await request('GET','/v1/spaces',null,200)).items;
+      if(spaces.length!==1 || spaces[0].id!==${JSON.stringify(fixture.spaceId)})throw new Error('The reader did not retain exactly its granted space');
+      await request('GET','/v1/principals',null,403);
+      await request('POST','/v1/spaces/'+${JSON.stringify(fixture.spaceId)}+'/memories',{content:'This reader must not save.'},403);
+    })()`)
+    const stale = await call('workspace.disconnect', { expected_revision: original.revision })
+    if (stale.ok) throw new Error('A stale operator disconnected the newer account.')
+    await ui(window, 'window.mnemion.updateSafety()')
+    const disconnected = await success('workspace.disconnect', { expected_revision: connected.revision })
+    if (disconnected.active || disconnected.local_selected || disconnected.bookmarks.every((item: any) => item.id !== connected.active.bookmarkId)) throw new Error('The disconnect did not preserve only the protected saved connection.')
+    const inspected = await success('workspace.inspect', { id: connected.active.bookmarkId })
+    if (inspected.access.identity.principal_id !== fixture.principalId || JSON.stringify(inspected).includes(fixture.credential)) throw new Error('Offline operator inspection exposed a key or lost the account.')
+    await ui(window, 'window.mnemion.updateSafety()')
+    const restored = await success('workspace.restore', { id: connected.active.bookmarkId, expected_revision: disconnected.revision })
+    if (restored.active?.me.principal_id !== fixture.principalId || restored.local_selected) throw new Error('The saved account was not revalidated and reopened.')
+    await selected()
+    await ui(window, 'window.mnemion.updateSafety()')
+    const forgotten = await success('workspace.forget', { id: connected.active.bookmarkId, expected_revision: restored.revision })
+    if (forgotten.active || forgotten.bookmarks.some((item: any) => item.id === connected.active.bookmarkId)) throw new Error('The forgotten account stayed selected or saved.')
+  } finally {
+    await ui(window, 'window.mnemion.updateSafety()')
+    await success('local.open', { expected_revision: (await success('workspace.status')).revision }, workspace)
+    await ui(window, `(async()=>{const s=(await window.mnemion.workspaceStatus()).active;const l=await window.mnemion.localStatus();return l.preferences.selected && s?.me.principal_id===${JSON.stringify(original.active.me.principal_id)} && !!document.querySelector('.ws-workspace-name');})()`)
+    await window.webContents.executeJavaScript(`(async()=>{const s=(await window.mnemion.workspaceStatus()).active;const r=await window.mnemion.serviceRequest({url:s.endpoint+'/v1/principals/'+${JSON.stringify(fixture.principalId)}+'/disable',method:'POST',headers:{Authorization:'Bearer '+s.sessionToken}});if(r.status!==200)throw new Error('The native operator fixture was not disabled.');})()`)
+  }
+  return { nativeWorkspaceOperator: true, operatorAccountIdentityBound: true, operatorConnectionDraftPreserved: true,
+    operatorWorkspaceSelectionAndUiAgree: true, operatorSelectedReaderRestricted: true,
+    operatorSavedConnectionRestored: true, operatorPrivateCredentialsRetained: true, operatorLocalOwnerReopened: true }
+}
+
 export async function verifyNativeOperator(window: BrowserWindow, phase: string): Promise<Record<string, boolean>> {
   await ui(window, `(async()=>{ const s = await window.mnemion.localStatus(); if(s.operator?.state === 'unavailable')throw new Error(s.operator.message); return s.operator?.state === 'ready'; })()`)
   const status = await success('status') as LocalStatus
@@ -114,7 +193,8 @@ export async function verifyNativeOperator(window: BrowserWindow, phase: string)
     const returned = await success('recovery.use', { id: null }, copy.receipt.workspace_id) as LocalStatus
     if (returned.preferences?.recoveryRoot || returned.info?.settings?.workspace_id !== workspace) throw new Error('The operator did not preserve the original workspace selection.')
     await ui(window, `(async()=>{const s=await window.mnemion.localStatus();const w=await window.mnemion.workspaceStatus();return s.state==='running' && !s.preferences?.recoveryRoot && !!w.active && !!document.querySelector('.ws-workspace-name');})()`)
-    return { nativeOperatorPipe: true, nativeAppUpdateStatus: true, operatorRecoverySelection: true, operatorOriginalSelection: true, operatorPreservesUnsavedDraft: true }
+    return { nativeOperatorPipe: true, nativeAppUpdateStatus: true, operatorRecoverySelection: true, operatorOriginalSelection: true, operatorPreservesUnsavedDraft: true,
+      ...await verifyWorkspaceSelection(window, workspace) }
   }
   return { nativeOperatorPipe: true, nativeAppUpdateStatus: true }
 }

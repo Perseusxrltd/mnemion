@@ -19,6 +19,25 @@ Requirements and acceptance criteria are defined by the
 [architecture](../research/2026-10-09-mnemion-study/ARCHITECTURE.md), and
 [roadmap](../research/2026-10-09-mnemion-study/ROADMAP.md).
 
+## 20 October: agent-controlled desktop connections and hosted sign-in
+
+Source 4.28 adds nine private desktop operations for selecting key/password team
+accounts, inspecting and reopening saved connections, disconnecting/forgetting
+and returning to the running local host. It requires current selection revisions,
+checks intended key identities before activation, retains OS-protected storage
+and shares the app's draft and mutation controls. The copied agent setup includes
+connection discovery. [47 focused cases](../validation/2026-10-20-desktop-workspace-control.md)
+passed; native installation/selection acceptance remains a publication gate.
+
+The existing 4.17 shared host was separately configured for built-in OAuth after
+its public discovery endpoints returned 404. [Actual public HTTPS acceptance](../validation/2026-10-20-live-hosted-signin.md)
+verified reader consent, MCP access, rotation and immediate revocation, preserving
+both existing agent credentials and the original memory. The temporary identity
+was disabled and a fresh encrypted snapshot/ledger was verified off-host. This
+was a later live configuration change, after the isolated recovery drill below;
+it does not establish signed-in ChatGPT acceptance or restore the missing office.
+Strict requirement coverage remains 17/64 (26.6%).
+
 ## 19 October: replacement-host acceptance and portable backups
 
 Source 4.27 fixes the locale-dependent keyword-index mismatch discovered when

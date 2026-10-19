@@ -55,6 +55,13 @@ the interface alone does not exit the desktop app.
 Personal password sessions have separate sign-out, expiry and revocation
 behavior. See [remembering a login and managing sessions](sign-in.md#sign-in-and-remember-a-device).
 
+From desktop 4.28, a trusted agent on this computer can perform the same key or
+password connection, saved-account inspection, reopening, disconnect and
+forgetting through [private desktop controls](desktop-operator.md#select-a-team-workspace-from-a-local-agent).
+It confirms the current selection and intended identity, retains OS-protected
+storage and refuses to discard unsaved work. This can operate while the app is
+in the background; a workspace API key alone does not grant these local controls.
+
 ## If a connection fails
 
 - Check the address and that the service is running. A client update does not

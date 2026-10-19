@@ -25,7 +25,7 @@ function privateMessage(error: unknown, input: unknown, credential: string): str
   function visit(value: unknown, depth: number): void {
     if (depth > 5 || !value || typeof value !== 'object') return
     for (const [key, child] of Object.entries(value)) {
-      if (/key|token|secret|password|credential/i.test(key) && typeof child === 'string' && child.length > 3) values.push(child)
+      if (/key|token|secret|password|credential|invitation/i.test(key) && typeof child === 'string' && child.length > 3) values.push(child)
       else if (typeof child === 'object') visit(child, depth + 1)
     }
   }

@@ -1,9 +1,19 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.27.0**. Roadmap updated: **2026-10-19**.
+Reviewed source distribution: **4.28.0**. Roadmap updated: **2026-10-19**.
 The [current published distribution and release gates](RELEASE_STATUS.md) are updated automatically.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
+
+The [4.28.0 source](releases/4.28.0.md) adds
+[private desktop workspace selection](service/desktop-operator.md#select-a-team-workspace-from-a-local-agent).
+A trusted local agent can connect the app to a team, use personal sign-in,
+inspect or reopen a saved account and return to the local host. Current-selection
+and intended-identity checks retain draft and OS-credential protection.
+[Focused checks](validation/2026-10-20-desktop-workspace-control.md) precede native
+publication. Separately, [actual public HTTPS OAuth](validation/2026-10-20-live-hosted-signin.md)
+passed consent, scoped MCP access and revocation on the shared host. ChatGPT UI
+and free-provider account acceptance remain open. Full-scope coverage is 17/64.
 
 The [4.27.0 source](releases/4.27.0.md) fixes a cross-host locale mismatch found
 by [an actual independent-computer restore](validation/2026-10-19-portable-host-recovery.md).

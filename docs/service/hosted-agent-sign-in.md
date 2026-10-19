@@ -162,6 +162,13 @@ registration, PKCE exchange, tool discovery/search, refresh and revocation. It
 also covers existing password connections across migration and restored-access
 revocation. These are generic protocol and local-provider checks.
 
+The [20 October public-HTTPS record](../validation/2026-10-20-live-hosted-signin.md)
+also verifies real discovery, reader consent, MCP access, refresh and immediate
+revocation on an independently supervised host. It caught disabled persistent
+OAuth settings, preserved existing agent keys and verified a fresh encrypted
+off-host backup. An enabled gateway still needs individual accounts; that
+exercise does not replace signed-in ChatGPT acceptance.
+
 The generic flow follows the current
 [OpenAI authentication contract](https://developers.openai.com/plugins/build/auth).
 It does not establish live acceptance in ChatGPT, Dot, Claude, Grok Bot, Hermes

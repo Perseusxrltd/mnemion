@@ -5,6 +5,13 @@ This is a core implementation requirement, not a statement that the complete
 feature is shipped. Version 4.0.9's saved workspace connections are a foundation;
 they do not establish all the isolation, sharing and agent-parity guarantees below.
 
+Source 4.28 adds [private desktop connection operations](../service/desktop-operator.md#select-a-team-workspace-from-a-local-agent)
+with observed-selection revisions, expected person/tenant checks, protected
+saved accounts and the existing draft/mutation guard. The app follows the chosen
+identity after an agent switches it. [Focused and native acceptance](../validation/2026-10-20-desktop-workspace-control.md)
+remain separate from the wider concurrent-session, context-isolation and
+cross-workspace transfer contract below.
+
 ## Intended experience
 
 One person can use personal, employer, client and project workspaces in the same

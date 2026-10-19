@@ -1,6 +1,6 @@
 # Organization administration and workspace continuity
 
-Updated **2026-10-15**. This contract extends requirements A01–A09 with the
+Updated **2026-10-20**. This contract extends requirements A01–A09 with the
 explicit request that another authorized administrator must be able to manage
 and recover a workspace when its original agent is unavailable. It is not a
 claim that the controls below are already released.
@@ -11,6 +11,16 @@ an independent encrypted HTML viewer and equivalent agent operations. Its
 [source acceptance](../validation/2026-10-15-recovery-directory.md) is separate
 from native publication. The richer host health/delegation, recovery-custodian,
 backup-delivery, identity-provider and safe-takeover requirements below remain open.
+
+The [independent-PC recovery drill](../validation/2026-10-19-portable-host-recovery.md)
+subsequently verified current encrypted Git delivery, existing application-key
+continuity, exact memories and restart on another physical computer. Source
+4.27 fixes its discovered locale mismatch. Source 4.28 adds private agent
+selection of remote desktop accounts, with guarded identity and credential
+handling. [Public HTTPS sign-in](../validation/2026-10-20-live-hosted-signin.md)
+also passed scoped OAuth/MCP checks on the existing host, with new configuration
+backed up off-host. The original office's unavailable full state, named-provider
+acceptance, OS/provider provisioning and automatic failover remain separate.
 
 ## Ownership must survive the original agent
 

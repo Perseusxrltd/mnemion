@@ -14,6 +14,7 @@ export interface WorkspaceSession {
   authentication?: 'password' | 'company'
 }
 type Active = WorkspaceSession & { credential: string; password?: PasswordTokens }
+export type ExpectedWorkspaceIdentity = Pick<WorkspaceBookmark, 'tenantId' | 'principalId'>
 type VerifyIdentity = (endpoint: string, credential: string) => Promise<WorkspaceIdentity>
 const PREFIX = 'mnm_session_'
 export const isWorkspaceSession = (header: string): boolean => header.startsWith('Bearer ' + PREFIX)
@@ -88,12 +89,20 @@ export class WorkspaceConnections {
     return this.store.inspect(id)
   }
 
-  private async activate(endpoint: string, credential: string, remember: boolean, generation: number,
-    expected?: WorkspaceBookmark, password?: PasswordTokens): Promise<WorkspaceSession> {
+  async identify(endpoint: string, credential: string): Promise<{ endpoint: string; me: WorkspaceIdentity }> {
     endpoint = workspaceEndpoint(endpoint)
     if (typeof credential !== 'string' || !/^[A-Za-z0-9_.~+/=-]{16,1024}$/.test(credential)) throw new Error('Enter a valid workspace key.')
     const me = workspaceIdentity(await this.verify(endpoint, credential))
-    if (JSON.stringify(me).includes(credential) || (password && JSON.stringify(me).includes(password.refreshToken))) throw new Error('The workspace returned an invalid identity.')
+    if (JSON.stringify(me).includes(credential)) throw new Error('The workspace returned an invalid identity.')
+    return { endpoint, me }
+  }
+
+  private async activate(endpoint: string, credential: string, remember: boolean, generation: number,
+    expected?: ExpectedWorkspaceIdentity, password?: PasswordTokens): Promise<WorkspaceSession> {
+    const identified = await this.identify(endpoint, credential)
+    endpoint = identified.endpoint
+    const me = identified.me
+    if (password && JSON.stringify(me).includes(password.refreshToken)) throw new Error('The workspace returned an invalid identity.')
     if ((expected && (expected.tenantId !== me.tenant_id || expected.principalId !== me.principal_id)) ||
         (password && (password.tenantId !== me.tenant_id || password.principalId !== me.principal_id))) {
       throw new Error('This credential now identifies a different workspace or person. Connect again to review its access.')
@@ -116,8 +125,8 @@ export class WorkspaceConnections {
     })
   }
 
-  connect(endpoint: string, credential: string, remember: boolean): Promise<WorkspaceSession> {
-    return this.activate(endpoint, credential, remember, ++this.generation)
+  connect(endpoint: string, credential: string, remember: boolean, expected?: ExpectedWorkspaceIdentity): Promise<WorkspaceSession> {
+    return this.activate(endpoint, credential, remember, ++this.generation, expected)
   }
 
   async previewInvitation(endpoint: string, invitation: unknown): Promise<InvitationPreview> {

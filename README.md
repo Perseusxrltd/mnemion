@@ -41,6 +41,10 @@ Studio retains OS-protected saved connections, identity-checked reopening after 
 screen. [Workspace controls](docs/service/workspaces.md) explain remembering,
 disconnecting and forgetting a device connection. Complete fresh-machine setup
 through the app remains [active work](docs/implementation/app-onboarding.md).
+Source 4.28 adds [private desktop connection controls](docs/service/desktop-operator.md#select-a-team-workspace-from-a-local-agent):
+trusted local agents can verify and select a team account, reopen a saved login,
+disconnect, or return to the local workspace while preserving unsaved work and
+OS-protected credentials. These controls work with the app in the background.
 The Perseus XR design and [signed Linux/macOS service updater](docs/service/managed-updates.md)
 include backup verification and data-preserving rollback.
 Official Python packages include web Studio, local fonts and offline guides.

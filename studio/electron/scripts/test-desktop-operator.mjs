@@ -138,6 +138,20 @@ test('private failures redact even long secret values and oversized results rema
   assert.equal((await send(f.endpoint.address, f.request({ action: 'backup.status' }))).error, 'response_limit')
 })
 
+test('private connection failures redact nested login, invitation and key inputs', async t => {
+  const key = 'mnm_' + randomBytes(32).toString('base64url')
+  const password = 'A private password ' + randomBytes(32).toString('base64url')
+  const invitation = 'mnm_i_' + randomBytes(32).toString('base64url')
+  const f = await fixture(t, async request => {
+    const input = request.input
+    throw new Error([input.credential, input.credentials.password, input.credentials.invitation].join(' '))
+  })
+  const result = await send(f.endpoint.address, f.request({ action: 'workspace.sign-in',
+    input: { credential: key, credentials: { password, invitation } } }))
+  assert.equal(result.ok, false)
+  assert.equal(result.message, '[private] [private] [private]')
+})
+
 test('a second live desktop cannot overwrite discovery and closing removes the stale endpoint', async t => {
   const f = await fixture(t)
   const duplicate = await child(['-c', 'import json,sys; from mnemion.desktop_operator import publish_request; print(json.dumps(publish_request(sys.stdin.buffer.read(16385))))'], { directory: f.control, endpoint: f.endpoint })

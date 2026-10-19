@@ -1,6 +1,6 @@
 # Complete product requirements
 
-Updated **2026-10-19**. This is the persistent checklist for the Mnemion rebuild,
+Updated **2026-10-20**. This is the persistent checklist for the Mnemion rebuild,
 including additions made during implementation. The [roadmap](ROADMAP.md)
 explains delivery order; this file preserves the complete requested scope.
 The current published distribution and release evidence are linked there.
@@ -18,6 +18,16 @@ Current strict completion: **17 of 64 requirements shipped (26.6%)**; 41 partial
 not equally sized. This is coverage of the full requested scope, not a measure
 of engineering effort or the usability of the published app. Hotfixes to a
 partial feature do not automatically mark its whole requirement complete.
+
+Source 4.28.0 advances F08/A12/U01/U02 with [private desktop connection controls](service/desktop-operator.md#select-a-team-workspace-from-a-local-agent).
+Trusted local agents can verify the intended person/organization, select a key or
+password account, inspect/reopen saved connections and return to the local host.
+The same draft, permission and OS-protection rules apply while the app is in the
+background. [Focused validation](validation/2026-10-20-desktop-workspace-control.md)
+and required native acceptance remain distinct. A separate
+[actual hosted HTTPS OAuth exercise](validation/2026-10-20-live-hosted-signin.md)
+preserved existing agent keys and verified off-host configuration backup;
+signed-in ChatGPT/provider acceptance remains open. Strict coverage is unchanged.
 
 Source 4.27.0 advances host continuity with [portable backup recovery](validation/2026-10-19-portable-host-recovery.md).
 A Git-downloaded encrypted package was restored on a different physical computer,

@@ -16,6 +16,7 @@ import { LocalBackups, createRecoveryKey, readBackupDocument, recoveryKey } from
 import { backupResult } from './local-backup-protocol.js'
 import { DesktopOperator, type DesktopRequest } from './desktop-operator.js'
 import { desktopAction, desktopActions } from './desktop-actions.js'
+import { DesktopWorkspaceActions } from './desktop-workspace-actions.js'
 import type { BackupSettings, DesktopOperatorStatus, LocalStatus, RecoveryReceipt } from '../shared/local-workspace.js'
 
 const MAX_BYTES = 120 * 1024 * 1024
@@ -324,10 +325,11 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
   })
   ipcMain.handle('workspaces:recovery-refresh', (event, sessionToken: unknown) => {
     trusted(event)
+    requireLocalSteady()
     if (typeof sessionToken !== 'string' || sessionToken.length > 128) throw new Error('Use the active workspace connection.')
     return workspaceConnections().refreshRecovery(sessionToken)
   })
-  ipcMain.handle('workspaces:resume', event => { trusted(event); return workspaceConnections().resume() })
+  ipcMain.handle('workspaces:resume', event => { trusted(event); requireLocalSteady(); return workspaceConnections().resume() })
   ipcMain.handle('workspaces:invitation-preview', (event, input: unknown) => {
     trusted(event)
     if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Paste a complete invitation.')
@@ -339,6 +341,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
   for (const action of ['sign-in', 'invitation-accept', 'company-sign-in'] as const) {
     ipcMain.handle('workspaces:' + action, (event, input: unknown) => {
       trusted(event)
+      requireLocalSteady()
       if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Invalid sign-in request.')
       const value = input as { endpoint: string; credentials: unknown; remember: boolean }
       if (typeof value.endpoint !== 'string' || typeof value.remember !== 'boolean' ||
@@ -357,9 +360,10 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
         Object.keys(value).some(key => !['endpoint', 'workspace_id'].includes(key))) throw new Error('Use a workspace sign-in link.')
     return workspaceConnections().companyConfiguration(value.endpoint, value.workspace_id)
   })
-  ipcMain.handle('workspaces:company-cancel', event => { trusted(event); workspaceConnections().cancelCompanySignIn() })
+  ipcMain.handle('workspaces:company-cancel', event => { trusted(event); requireLocalSteady(); workspaceConnections().cancelCompanySignIn() })
   ipcMain.handle('workspaces:connect', (event, input: unknown) => {
     trusted(event)
+    requireLocalSteady()
     if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Invalid workspace connection.')
     const value = input as { endpoint: string; credential: string; remember: boolean }
     if (typeof value.endpoint !== 'string' || typeof value.credential !== 'string' || typeof value.remember !== 'boolean' ||
@@ -369,17 +373,19 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
   })
   ipcMain.handle('workspaces:restore', (event, id: unknown) => {
     trusted(event)
+    requireLocalSteady()
     if (typeof id !== 'string' || id.length > 64) throw new Error('Choose a saved workspace.')
     deselectLocal()
     return workspaceConnections().restore(id)
   })
   ipcMain.handle('workspaces:forget', (event, id: unknown) => {
     trusted(event)
+    requireLocalSteady()
     if (typeof id !== 'string' || id.length > 64) throw new Error('Choose a saved workspace.')
     return workspaceConnections().forget(id)
   })
-  ipcMain.handle('workspaces:disconnect', event => { trusted(event); deselectLocal(); return workspaceConnections().disconnect() })
-  ipcMain.handle('workspaces:reset', event => { trusted(event); return workspaceConnections().reset() })
+  ipcMain.handle('workspaces:disconnect', event => { trusted(event); requireLocalSteady(); deselectLocal(); return workspaceConnections().disconnect() })
+  ipcMain.handle('workspaces:reset', event => { trusted(event); requireLocalSteady(); return workspaceConnections().reset() })
 
   async function localStatus(): Promise<LocalStatus> {
     const host = localWorkspace()
@@ -459,8 +465,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     requireLocalSteady()
     return desktopLocalStatus(await localWorkspace().changeJournal(input))
   })
-  ipcMain.handle('local:open', async event => {
-    trusted(event)
+  async function openLocal() {
     requireLocalSteady()
     const generation = ++localOpenGeneration
     const connection = localWorkspace().privateConnection()
@@ -468,7 +473,8 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     if (generation !== localOpenGeneration) throw new Error('Another workspace connection was selected.')
     saveLocalPreferences({ ...localPreferences(), selected: true })
     return session
-  })
+  }
+  ipcMain.handle('local:open', event => { trusted(event); return openLocal() })
   async function stopLocal(): Promise<boolean> {
     requireLocalSteady()
     if (backups?.busy && !local?.backupActive) throw new Error('Finish or cancel the backup settings operation before stopping the workspace.')
@@ -633,13 +639,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     const run = async (): Promise<unknown> => {
       signal.throwIfAborted()
       const input = request.input
-      if (['local.company', 'local.vault', 'local.journal'].includes(request.action) && localPreferences().selected) {
-        const window = getWindow()
-        if (window && !window.webContents.isDestroyed() && !await window.webContents.executeJavaScript('window.mnemion?.updateSafety?.() === true')) throw new Error('Save or discard edits and finish pending requests in the app before restarting its workspace.')
-        signal.throwIfAborted()
-      }
-      if (request.action === 'local.create' || request.action === 'recovery.use' ||
-          (request.action === 'local.stop' && localPreferences().selected)) {
+      const beforeSelectionChange = async () => {
         const window = getWindow()
         if (window && !window.webContents.isDestroyed() &&
             !await window.webContents.executeJavaScript('window.mnemion?.updateSafety?.() === true')) {
@@ -648,6 +648,22 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
         signal.throwIfAborted()
         selecting = true
         if (window && !window.webContents.isDestroyed()) window.webContents.send('local:selection-changed', 'changing')
+      }
+      if (['local.company', 'local.vault', 'local.journal'].includes(request.action) && localPreferences().selected) {
+        const window = getWindow()
+        if (window && !window.webContents.isDestroyed() && !await window.webContents.executeJavaScript('window.mnemion?.updateSafety?.() === true')) throw new Error('Save or discard edits and finish pending requests in the app before restarting its workspace.')
+        signal.throwIfAborted()
+      }
+      if (request.action === 'local.create' || request.action === 'recovery.use' ||
+          (request.action === 'local.stop' && localPreferences().selected)) {
+        await beforeSelectionChange()
+      }
+      if (request.action.startsWith('workspace.') || request.action === 'local.open') {
+        if (spec.mutation) requireLocalSteady()
+        return new DesktopWorkspaceActions({ connections: workspaceConnections(),
+          localSelected: () => localPreferences().selected, deselectLocal, openLocal,
+          beforeChange: beforeSelectionChange, changed: () => { operatorSelectionChanged = true },
+        }).execute(request.action, input, signal)
       }
       switch (request.action) {
         case 'catalog': return { protocol: 1, scope: 'owning_os_account', version: app.getVersion(), operations: desktopActions,
