@@ -94,11 +94,33 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "108d8828a743cf62d1d60babf19e80ac65133740",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-19T17:35:17Z",
+      "status": "completed",
+      "conclusion": "failure",
+      "updated_at": "2026-10-19T17:50:23Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39295360468",
-      "failed_jobs": []
+      "failed_jobs": [
+        {
+          "name": "service (3.13)",
+          "id": 118206327959,
+          "steps": [
+            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+          ]
+        },
+        {
+          "name": "service (3.14)",
+          "id": 118206328134,
+          "steps": [
+            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+          ]
+        },
+        {
+          "name": "service (3.12)",
+          "id": 118206328265,
+          "steps": [
+            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+          ]
+        }
+      ]
     },
     {
       "id": 39292701099,
@@ -143,7 +165,22 @@
       "conclusion": null,
       "updated_at": "2026-10-19T17:38:15Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39295434988",
-      "failed_jobs": []
+      "failed_jobs": [
+        {
+          "name": "checks / service (3.14)",
+          "id": 118207934992,
+          "steps": [
+            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+          ]
+        },
+        {
+          "name": "checks / service (3.13)",
+          "id": 118207935416,
+          "steps": [
+            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+          ]
+        }
+      ]
     },
     {
       "id": 39295760633,
@@ -168,5 +205,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39292701228"
     }
   ],
-  "observed_at": "2026-10-19T17:38:23+00:00"
+  "observed_at": "2026-10-19T17:50:52+00:00"
 }
