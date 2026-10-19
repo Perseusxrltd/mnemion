@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "checked_at": "2026-10-19T20:09:41+00:00",
+  "checked_at": "2026-10-19T20:21:53+00:00",
   "tag_name": "v4.24.0",
   "source_commit": "913e2af144d37fd707746a0b791d7da9c7ca8224",
   "published_at": "2026-10-19T19:58:00Z",
   "release_url": "https://github.com/Perseusxrltd/mnemion/releases/tag/v4.24.0",
   "availability": "published",
-  "release_checks": "evidence incomplete",
+  "release_checks": "passed",
   "asset_count": 38,
   "checksum_digest": "sha256:1c271cf63055847fc350088af313875cff2d0e36bf7a59cf830b04ef23320abc",
   "platforms": [
@@ -44,24 +44,36 @@
   "gates": [
     {
       "name": "Product checks on the release source",
-      "status": "not passed",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39307840806",
-      "run_id": 39307840806,
-      "updated_at": "2026-10-19T19:18:19Z"
+      "status": "passed",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39307882234",
+      "run_id": 39307882234,
+      "updated_at": "2026-10-19T19:56:30Z",
+      "event": "workflow_dispatch",
+      "conclusion": "success",
+      "evidence": "complete reusable Product checks",
+      "jobs_passed": 11,
+      "superseded_run_id": 39307840806,
+      "superseded_url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39307840806",
+      "standalone_conclusion": "cancelled",
+      "standalone_event": "push"
     },
     {
       "name": "Native packages and installed-workspace release gates",
       "status": "passed",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39307882234",
       "run_id": 39307882234,
-      "updated_at": "2026-10-19T19:56:30Z"
+      "updated_at": "2026-10-19T19:56:30Z",
+      "event": "workflow_dispatch",
+      "conclusion": "success"
     },
     {
       "name": "Independent uploaded-byte and signature verification",
       "status": "passed",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39315145156",
       "run_id": 39315145156,
-      "updated_at": "2026-10-19T19:58:09Z"
+      "updated_at": "2026-10-19T19:58:09Z",
+      "event": "workflow_run",
+      "conclusion": "success"
     },
     {
       "name": "Automatic upgrades from public installers",
@@ -69,6 +81,8 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39315350141",
       "run_id": 39315350141,
       "updated_at": "2026-10-19T20:09:29Z",
+      "event": "workflow_dispatch",
+      "conclusion": "success",
       "targets_passed": 6
     },
     {
@@ -76,7 +90,9 @@
       "status": "passed",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39315345960",
       "run_id": 39315345960,
-      "updated_at": "2026-10-19T19:58:18Z"
+      "updated_at": "2026-10-19T19:58:18Z",
+      "event": "workflow_dispatch",
+      "conclusion": "success"
     }
   ],
   "requirements": {

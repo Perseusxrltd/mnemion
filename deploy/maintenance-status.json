@@ -27,15 +27,6 @@
       ]
     },
     {
-      "number": 17,
-      "title": "Natural-language questions retrieve much worse than keyword queries",
-      "updated_at": "2026-10-19T07:56:12Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/issues/17",
-      "labels": [
-        "enhancement"
-      ]
-    },
-    {
       "number": 18,
       "title": "OAuth 2.1 MCP auth so ChatGPT custom connectors can connect (spec for #4)",
       "updated_at": "2026-10-10T20:58:20Z",
@@ -43,22 +34,6 @@
       "labels": [
         "enhancement"
       ]
-    },
-    {
-      "number": 31,
-      "title": "Recall has no recency signal: older 'open question' memories outrank the newer answer",
-      "updated_at": "2026-10-19T16:14:52Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/issues/31",
-      "labels": [
-        "fixed-in:4.2.3"
-      ]
-    },
-    {
-      "number": 32,
-      "title": "Feature: encrypted secrets vault, kept apart from searchable memory",
-      "updated_at": "2026-10-19T09:43:02Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/issues/32",
-      "labels": []
     },
     {
       "number": 38,
@@ -82,15 +57,16 @@
   ],
   "runs": [
     {
-      "id": 39313072545,
+      "id": 39318570163,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "64e16e068b17d6948b0723732e511fe8df8e9699",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-19T20:02:19Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39313072545"
+      "source_commit": "758874e424334782e3f328063ccc26d602f29b7e",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-19T20:21:15Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39318570163",
+      "failed_jobs": []
     },
     {
       "id": 39315350141,
@@ -120,22 +96,65 @@
       "workflow": "release.yml",
       "branch": "release/4.25.0",
       "source_commit": "64e16e068b17d6948b0723732e511fe8df8e9699",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-19T19:59:19Z",
+      "status": "completed",
+      "conclusion": "failure",
+      "updated_at": "2026-10-19T20:21:35Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39314058004",
-      "failed_jobs": []
+      "failed_jobs": [
+        {
+          "name": "native / ubuntu-22.04 / x64",
+          "id": 118281765808,
+          "steps": [
+            "Installed Linux app creates, searches and reopens a real local workspace"
+          ]
+        },
+        {
+          "name": "native / windows-11-arm / arm64",
+          "id": 118281765895,
+          "steps": [
+            "Installed app creates, searches and reopens a real local workspace"
+          ]
+        },
+        {
+          "name": "native / macos-15 / arm64",
+          "id": 118281765918,
+          "steps": [
+            "Installed app creates, searches and reopens a real local workspace"
+          ]
+        },
+        {
+          "name": "native / ubuntu-22.04-arm / arm64",
+          "id": 118281765941,
+          "steps": [
+            "Installed Linux app creates, searches and reopens a real local workspace"
+          ]
+        },
+        {
+          "name": "native / windows-2022 / x64",
+          "id": 118281765953,
+          "steps": [
+            "Installed app creates, searches and reopens a real local workspace"
+          ]
+        },
+        {
+          "name": "native / macos-15-intel / x64",
+          "id": 118281766622,
+          "steps": [
+            "Installed app creates, searches and reopens a real local workspace"
+          ]
+        }
+      ]
     },
     {
-      "id": 39315145156,
+      "id": 39318647572,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "1d0ffc1ec016ee82abde92bd30077e3fa70bb72c",
+      "source_commit": "758874e424334782e3f328063ccc26d602f29b7e",
       "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-19T19:58:09Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39315145156"
+      "conclusion": "skipped",
+      "updated_at": "2026-10-19T20:21:39Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39318647572"
     },
     {
       "id": 39315345960,
@@ -149,5 +168,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39315345960"
     }
   ],
-  "observed_at": "2026-10-19T20:09:56+00:00"
+  "observed_at": "2026-10-19T20:22:17+00:00"
 }
