@@ -68,9 +68,35 @@ export async function verifyNativeBackups(window: BrowserWindow, config: Record<
         await click('Recover a workspace from an encrypted backup');
         await until(() => document.querySelector('.ws-recover-workspace'), 'Recovery entry point did not open');
       }
+      const vaultValue = 'synthetic-installed-vault-value-never-a-memory';
+      async function configureVault(recoveryKey) {
+        location.hash = '/workspace/setup';
+        await until(() => document.querySelector('.ws-vault-setup'), 'Vault setup controls did not appear');
+        await click(recoveryKey ? 'Restore an existing key' : 'Set up vault');
+        if (recoveryKey) await input('.ws-vault-setup input[type="password"]', recoveryKey);
+        else await click('Generate a vault key');
+        const key = document.querySelector('.ws-vault-setup input[type="password"]').value;
+        if (!key.startsWith('mnv_') || key.length !== 47) throw new Error('A complete vault recovery key was not supplied');
+        document.querySelector('.ws-vault-setup input[type="checkbox"][required]').click(); await pause(100);
+        await click('Save vault settings');
+        await until(() => !document.querySelector('.ws-vault-setup form'), 'The vault settings did not finish');
+        session = await ready();
+        const status = await request('GET', '/v1/vault/status');
+        if (!status.available || status.mcp_enabled) throw new Error('Native vault access did not preserve its explicit configuration');
+        return key;
+      }
+      async function verifyVaultValues() {
+        const value = await request('GET', '/v1/vault/entries/' + saved.vaultSurvivor);
+        if (value.value !== vaultValue) throw new Error('The native vault did not decrypt its retained value');
+        await request('GET', '/v1/vault/entries/' + saved.vaultDeleted, undefined, 404);
+      }
       location.hash = '/workspace';
       session = await ready();
       if (config.phase === 'backup-capture') {
+        const vaultKey = await configureVault();
+        const vaultSurvivor = crypto.randomUUID(), vaultDeleted = crypto.randomUUID();
+        await request('PUT', '/v1/vault/entries/' + vaultSurvivor, { expected_version: 0, name: 'Installed retained credential', value: vaultValue });
+        await request('PUT', '/v1/vault/entries/' + vaultDeleted, { expected_version: 0, name: 'Installed later deletion', value: vaultValue });
         const spaces = (await request('GET', '/v1/spaces')).items;
         const discarded = await request('POST', '/v1/spaces/' + spaces[0].id + '/memories',
           { content: 'Disposable native recovery record: this must remain deleted after restoration.', kind: 'note' }, 202);
@@ -90,6 +116,7 @@ export async function verifyNativeBackups(window: BrowserWindow, config: Record<
           if (view.last_error) throw new Error('Native encrypted backup: ' + view.last_error.slice(0, 1000));
           return view.last_snapshot?.snapshot && view;
         }, 'The native encrypted snapshot did not finish', 180000);
+        await request('POST', '/v1/vault/entries/' + vaultDeleted + '/delete', { expected_version: 1 });
         const deletion = await request('DELETE', '/v1/memories/' + discarded.memory_id + '?expected_version=1', undefined, 202);
         if (deletion.operation_id) await until(async () => {
           const operation = await request('GET', '/v1/operations/' + deletion.operation_id);
@@ -103,7 +130,8 @@ export async function verifyNativeBackups(window: BrowserWindow, config: Record<
         if (latest.snapshot_availability !== 'present' || latest.ledger_availability !== 'present') throw new Error('A verified native backup file is unavailable');
         document.querySelector('.ws-backup-panel').scrollIntoView({ block: 'start' }); await pause(100);
         return { phase: config.phase, nativeEncryptedSnapshot: true, laterDeletionLedger: true, protectedKeySaved: true,
-          backupFormRestoresUpdateReadiness: true, fixture: { key, snapshot: backed.last_snapshot.snapshot, ledger: latest.last_ledger.ledger,
+          nativeVaultConfiguredThroughApp: true, vaultDeletionRecordedAfterSnapshot: true,
+          backupFormRestoresUpdateReadiness: true, fixture: { key, vaultKey, vaultSurvivor, vaultDeleted, snapshot: backed.last_snapshot.snapshot, ledger: latest.last_ledger.ledger,
             discardedId: discarded.memory_id, tenantId: session.me.tenant_id, workspaceId: (await bridge.localStatus()).info.settings.workspace_id } };
       }
       if (config.phase === 'backup-recover') {
@@ -129,8 +157,20 @@ export async function verifyNativeBackups(window: BrowserWindow, config: Record<
         if (session.me.tenant_id !== saved.tenantId) throw new Error('Recovery lost the original organization');
         await request('GET', '/v1/memories/' + config.memoryId);
         await request('GET', '/v1/memories/' + saved.discardedId, undefined, 404);
+        if ((await request('GET', '/v1/vault/status')).available) throw new Error('Recovery unexpectedly restored the private vault host key');
+        await configureVault(saved.vaultKey);
+        await request('GET', '/v1/vault/entries/' + saved.vaultSurvivor, undefined, 403);
+        const vaultStatus = await request('GET', '/v1/vault/status');
+        const grants = await request('GET', '/v1/vault/entries/' + saved.vaultSurvivor + '/grants');
+        if (grants.items.length) throw new Error('Recovery silently revived historical credential grants');
+        await request('PUT', '/v1/vault/entries/' + saved.vaultSurvivor + '/grants', {
+          expected_access_version: grants.access_version, subject_kind: 'key', subject_id: vaultStatus.current_key_id, read: true, write: true });
+        await verifyVaultValues();
+        const recall = await request('POST', '/v1/recall', { query: vaultValue, all_accessible: true, mode: 'lexical' });
+        if (JSON.stringify(recall.hits).includes(vaultValue)) throw new Error('A vault value entered memory search');
         await until(() => bridge.updateSafety(), 'Finished recovery leaves a stale update blocker');
         return { phase: config.phase, protectedKeyReopened: true, realRecoveryControls: true, separateRecoveryCopy: true,
+          vaultKeyRestoredThroughApp: true, vaultGrantsRequireFreshReview: true, vaultDeletionPreserved: true, vaultExcludedFromMemory: true,
           originalOrganizationRetained: true, retainedMemoryReadable: true, postSnapshotDeletionPreserved: true,
           freshAdministratorConnected: true, recoveryRoot: status.preferences.recoveryRoot };
       }
@@ -138,6 +178,7 @@ export async function verifyNativeBackups(window: BrowserWindow, config: Record<
       if (!restored.preferences.recoveryRoot || restored.info.settings.workspace_id === saved.workspaceId) throw new Error('Restart did not reopen the selected recovery copy');
       await request('GET', '/v1/memories/' + config.memoryId);
       await request('GET', '/v1/memories/' + saved.discardedId, undefined, 404);
+      await verifyVaultValues();
       await recoverScreen();
       await click('Return to the original local workspace');
       session = await ready();
@@ -145,7 +186,9 @@ export async function verifyNativeBackups(window: BrowserWindow, config: Record<
       if (original.preferences.recoveryRoot || original.info.settings.workspace_id !== saved.workspaceId) throw new Error('The original workspace did not remain independently accessible');
       await request('GET', '/v1/memories/' + config.memoryId);
       await request('GET', '/v1/memories/' + saved.discardedId, undefined, 404);
-      return { phase: config.phase, recoveredCopyReopened: true, deletionPreservedAfterReopen: true, originalWorkspaceReopened: true };
+      await verifyVaultValues();
+      return { phase: config.phase, recoveredCopyReopened: true, deletionPreservedAfterReopen: true, originalWorkspaceReopened: true,
+        restoredVaultSurvivesRestart: true, originalVaultRemainsIndependent: true };
     })()`)
     if (result.fixture) {
       await writeFile(fixturePath, JSON.stringify(result.fixture), { mode: 0o600, flag: 'wx' })

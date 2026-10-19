@@ -109,11 +109,11 @@ test('an in-flight request is not started twice and disconnect aborts its owned 
   assert.equal(calls, 1)
 })
 
-test('new recovery keys require a private result destination reserved before any request', async t => {
-  const key = 'mnm_bk_' + randomBytes(32).toString('base64url')
+for (const action of ['backup.key', 'local.vault-key']) test(`${action} requires a private result destination reserved before any request`, async t => {
+  const key = (action === 'backup.key' ? 'mnm_bk_' : 'mnv_') + randomBytes(32).toString('base64url')
   let calls = 0
   const f = await fixture(t, async () => { ++calls; return { recovery_key: key } })
-  const request = { action: 'backup.key' }
+  const request = { action }
   const refused = await child(['-m', 'mnemion.desktop_operator', '--control-directory', f.control], request)
   assert.equal(refused.code, 1); assert.equal(calls, 0)
   const file = join(f.directory, 'private-recovery-key.json')

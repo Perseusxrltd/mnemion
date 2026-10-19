@@ -131,7 +131,9 @@ def main(argv: list[str] | None = None) -> int:
         help="New private JSON result file; required for passwords, invitations and issued credentials",
     )
     call.add_argument(
-        "--max-response-bytes", type=int, help="Default: 64 KiB JSON or 1 GiB streamed download"
+        "--max-response-bytes",
+        type=int,
+        help="Default: 64 KiB JSON, 2 MB private vault result or 1 GiB streamed download",
     )
     call.add_argument(
         "--retries",
@@ -168,7 +170,10 @@ def main(argv: list[str] | None = None) -> int:
                 raw = (
                     sys.stdin.buffer.read(INPUT_LIMIT + 1)
                     if str(args.input) == "-"
-                    else read_private(args.input, maximum=65536)
+                    else read_private(
+                        args.input,
+                        maximum=INPUT_LIMIT if args.operation.startswith("vault.") else 65536,
+                    )
                     if classification["sensitive_input"]
                     else _read(args.input, INPUT_LIMIT)
                 )
@@ -195,7 +200,13 @@ def main(argv: list[str] | None = None) -> int:
             maximum = (
                 args.max_response_bytes
                 if args.max_response_bytes is not None
-                else (DOWNLOAD_LIMIT if args.output else 65536)
+                else DOWNLOAD_LIMIT
+                if args.output
+                else INPUT_LIMIT
+                if args.result_file
+                and args.operation.startswith("vault.")
+                and operation["sensitive_result"]
+                else 65536
             )
             with private_output(destination) if destination else nullcontext(None) as output:
                 with Client(address, key, retries=args.retries) as client:
@@ -222,7 +233,11 @@ def main(argv: list[str] | None = None) -> int:
                             )
                         # Newly issued files can be used directly by mnemion-agent,
                         # mnemion-service and this CLI without printing/copying keys.
-                        stored = {**issued, "api_url": address}
+                        stored = (
+                            issued
+                            if args.operation.startswith("vault.")
+                            else {**issued, "api_url": address}
+                        )
                         if args.operation in {
                             "sign_in.login",
                             "sign_in.refresh",

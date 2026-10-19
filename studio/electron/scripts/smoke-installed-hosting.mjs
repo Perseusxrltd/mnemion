@@ -155,9 +155,9 @@ try {
   await stop()
   if (credentialsHash() !== credentials) throw new Error('Application restart replaced the private workspace credentials')
   for (const [phase, required] of [
-    ['backup-capture', ['nativeEncryptedSnapshot', 'laterDeletionLedger', 'protectedKeySaved', 'backupFormRestoresUpdateReadiness', 'nativeOperatorPipe', 'operatorScheduleAndUiAgree', 'operatorRetryDoesNotRepeat', 'operatorStaleIdentityRefused', 'operatorRefreshesLedger', 'operatorInspectsEncryptedFiles', 'operatorRestoresIndependentCopy']],
-    ['backup-recover', ['protectedKeyReopened', 'realRecoveryControls', 'separateRecoveryCopy', 'originalOrganizationRetained', 'retainedMemoryReadable', 'postSnapshotDeletionPreserved', 'freshAdministratorConnected', 'nativeOperatorPipe']],
-    ['backup-resume', ['recoveredCopyReopened', 'deletionPreservedAfterReopen', 'originalWorkspaceReopened', 'nativeOperatorPipe', 'operatorRecoverySelection', 'operatorOriginalSelection', 'operatorPreservesUnsavedDraft', 'nativeBackupRetention', 'retentionKeepsVerifiedPairs', 'retentionControlsAndAgentAgree']],
+    ['backup-capture', ['nativeEncryptedSnapshot', 'laterDeletionLedger', 'protectedKeySaved', 'backupFormRestoresUpdateReadiness', 'nativeVaultConfiguredThroughApp', 'vaultDeletionRecordedAfterSnapshot', 'nativeOperatorPipe', 'operatorScheduleAndUiAgree', 'operatorRetryDoesNotRepeat', 'operatorStaleIdentityRefused', 'operatorRefreshesLedger', 'operatorInspectsEncryptedFiles', 'operatorRestoresIndependentCopy']],
+    ['backup-recover', ['protectedKeyReopened', 'realRecoveryControls', 'separateRecoveryCopy', 'originalOrganizationRetained', 'retainedMemoryReadable', 'postSnapshotDeletionPreserved', 'freshAdministratorConnected', 'vaultKeyRestoredThroughApp', 'vaultGrantsRequireFreshReview', 'vaultDeletionPreserved', 'vaultExcludedFromMemory', 'nativeOperatorPipe']],
+    ['backup-resume', ['recoveredCopyReopened', 'deletionPreservedAfterReopen', 'originalWorkspaceReopened', 'restoredVaultSurvivesRestart', 'originalVaultRemainsIndependent', 'nativeOperatorPipe', 'operatorRecoverySelection', 'operatorOriginalSelection', 'operatorPreservesUnsavedDraft', 'nativeBackupRetention', 'retentionKeepsVerifiedPairs', 'retentionControlsAndAgentAgree']],
   ]) {
     const backup = await launch({ phase, port, memoryId: first.memoryId })
     if (required.some(field => backup[field] !== true)) throw new Error('Installed backup/recovery acceptance failed: ' + phase)
@@ -202,6 +202,8 @@ try {
     nativeEncryptedSnapshotAndLedger: true, backupKeyProtectedAndReopenedByOsStore: true,
     recoveryThroughActualAppControls: true, recoveredCopyReopenedAfterRestart: true,
     postSnapshotDeletionPreservedByRecovery: true, originalWorkspacePreservedAndReopened: true,
+    nativeVaultSetupAndIndependentKeyRecovery: true, recoveredVaultRequiresFreshGrants: true,
+    vaultDeletionPreservedAndValuesExcludedFromMemory: true, originalAndRecoveredVaultsSurviveRestart: true,
     anonymousAccessRefused: true, realSemanticSaveAndRecall: true, automaticWorkspaceReopen: true,
     restartPreservesWorkspaceAndCredentials: true, savedMemorySurvivesRestart: true,
     configuredRamBudgetPersists: true, cleanDatabaseShutdownOnAppExit: true,

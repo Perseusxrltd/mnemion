@@ -27,7 +27,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_valida
 
 from . import local_state as state
 from .local_database import LocalDatabase, available_port, prepare_credentials
-from . import local_company, local_memory, local_remote
+from . import local_company, local_memory, local_remote, local_vault
 from .service.memory_budget import MemoryBudget, MemoryOptions, sample_memory, working_target
 from .version import __version__
 
@@ -143,6 +143,7 @@ def inspect(root: Path) -> dict:
             memory=local_memory.live_status(root),
             remote_access=local_remote.inspection(root, settings["workspace_id"]),
             company_access=local_company.inspection(root, settings["workspace_id"]),
+            vault_access=local_vault.inspection(root, settings["workspace_id"]),
         )
         if (root / "readiness.json").exists():
             result["last_verification"] = state.read(root / "readiness.json")
@@ -441,6 +442,7 @@ async def _serve(
                 tenant_id=credentials["tenant_id"],
                 public_url=remote.public_url,
             ),
+            vault_settings=local_vault.settings(root, settings["workspace_id"]),
         )
         remote.attach(app)
         original_lifespan = app.router.lifespan_context
@@ -663,6 +665,8 @@ def arguments(parser: argparse.ArgumentParser) -> None:
             "remote-check",
             "company",
             "company-discover",
+            "vault",
+            "vault-key",
             "backup",
             "backup-ledger",
             "backup-inspect",
@@ -705,6 +709,33 @@ def dispatch(args) -> int:
                 raise ValueError("The address settings exceed their size limit")
             change_port(root, PortChange.model_validate_json(line))
             emit({"event": "status", **inspect(root)})
+            return 0
+        if args.action in {"vault", "vault-key"}:
+            line = sys.stdin.buffer.readline(4097)
+            try:
+                if len(line) > 4096:
+                    raise ValueError("Vault settings exceed their limit")
+                change = (
+                    local_vault.VaultRequest
+                    if args.action == "vault-key"
+                    else local_vault.VaultChange
+                ).model_validate_json(line)
+            except (ValueError, ValidationError):
+                raise state.LocalSetupError(
+                    "invalid_vault_options",
+                    "Check the current workspace, settings revision and vault key.",
+                ) from None
+            if args.action == "vault-key":
+                emit(
+                    {
+                        "event": "vault_key",
+                        "engine_version": __version__,
+                        "key": local_vault.reveal_key(root, change),
+                    }
+                )
+            else:
+                local_vault.configure(root, change)
+                emit({"event": "status", **inspect(root)})
             return 0
         if args.action in {"company", "company-discover"}:
             line = sys.stdin.buffer.readline(16385)

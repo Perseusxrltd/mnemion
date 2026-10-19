@@ -3,6 +3,8 @@ import { existsSync } from 'node:fs'
 import { StringDecoder } from 'node:string_decoder'
 import { backupResult } from './local-backup-protocol.js'
 import { companyOptions, companyDiscoveryOptions, companyDiscoveryResult, companySnapshot } from './local-company-protocol.js'
+import { vaultKeyId, vaultKeyResult, vaultOptions, vaultRequest, vaultSnapshot } from './local-vault-protocol.js'
+import type { VaultChange, VaultKey } from '../shared/local-workspace.js'
 import type { CompanyChange, CompanyDiscoveryResult } from '../shared/local-workspace.js'
 import type { BackupAction, BackupOperationResult } from '../shared/local-workspace.js'
 import type { LocalOptions, LocalInfo, LocalStatus, MemoryChange, MemoryWrite, MemorySnapshot, MemoryPolicy, PortChange, LocalDiagnostic, RemoteChange, RemoteAccess, RemoteCheck } from '../shared/local-workspace.js'
@@ -287,7 +289,7 @@ export class LocalWorkspace {
     try { return await this.operation } finally { this.operation = undefined }
   }
 
-  private readInfo(action: 'status' | 'port' | 'remote' | 'remote-check' | 'company', input?: PortChange | RemoteChange | RemoteCheck | CompanyChange): Promise<LocalInfo> {
+  private readInfo(action: 'status' | 'port' | 'remote' | 'remote-check' | 'company' | 'vault', input?: PortChange | RemoteChange | RemoteCheck | CompanyChange | VaultChange): Promise<LocalInfo> {
     return new Promise((resolve, reject) => {
       const child = this.control(action)
       child.stdin.end(input === undefined ? undefined : JSON.stringify(input) + '\n')
@@ -315,6 +317,7 @@ export class LocalWorkspace {
           const { configured, data_directory, engine_version, resources, settings, last_verification, memory_policy, memory_recovery, memory } = value
           const remote_access = value.remote_access === undefined ? undefined : remoteSnapshot(value.remote_access)
           const company_access = value.company_access === undefined ? undefined : companySnapshot(value.company_access)
+          const vault_access = value.vault_access === undefined ? undefined : vaultSnapshot(value.vault_access)
           const address = input as PortChange
           if (action === 'port' && (!configured || !settings || settings.workspace_id !== input!.workspace_id.toLowerCase() ||
               !Number.isInteger(settings.port) || settings.port < 1024 || settings.port > 65535 || settings.port === settings.database_port ||
@@ -335,10 +338,17 @@ export class LocalWorkspace {
                   (change.client_secret && !provider.has_client_secret) || (change.clear_client_secret && provider.has_client_secret) ||
                   (Object.hasOwn(change, 'ca_pem') && company_access.has_custom_ca !== !!change.ca_pem)))) throw new Error('The saved company settings could not be confirmed. Refresh before retrying.')
           }
+          if (action === 'vault') {
+            const change = input as VaultChange
+            if (!configured || settings?.workspace_id !== change.workspace_id || !vault_access ||
+                vault_access.state === 'configuration_error' || vault_access.revision === change.expected_revision ||
+                vault_access.enabled !== change.enabled || vault_access.mcp_enabled !== change.mcp_enabled ||
+                (change.recovery_key && vault_access.key_id !== vaultKeyId(change.recovery_key))) throw new Error('The saved vault settings could not be confirmed. Refresh before retrying.')
+          }
           if (memory_recovery && (!['memory_policy_missing', 'memory_policy_damaged', 'memory_policy_inaccessible'].includes(memory_recovery.code) ||
               typeof memory_recovery.message !== 'string' || memory_recovery.message.length > 1000 ||
               (memory_recovery.repair_token !== null && !/^[a-f0-9]{64}$/.test(memory_recovery.repair_token)))) throw new Error('Invalid RAM recovery status')
-          const info = { configured, data_directory, engine_version, resources, settings, last_verification, memory_policy, memory_recovery, memory, remote_access, company_access }
+          const info = { configured, data_directory, engine_version, resources, settings, last_verification, memory_policy, memory_recovery, memory, remote_access, company_access, vault_access }
           this.info = info
           this.changed(this.status)
           resolve(info)
@@ -573,11 +583,50 @@ export class LocalWorkspace {
     })
   }
 
-  private async saveHostConfiguration(action: 'remote' | 'company', change: RemoteChange | CompanyChange): Promise<LocalStatus> {
+  async changeVault(input: unknown): Promise<LocalStatus> {
+    this.assertOpen()
+    if (this.operation) { await this.operation; this.assertOpen() }
+    if (!this.status.available || this.busy) throw new Error('Wait for the current local operation before changing vault settings.')
+    const change = vaultOptions(input)
+    this.configurationChange = this.saveHostConfiguration('vault', change)
+    try { return await this.configurationChange } finally { this.configurationChange = undefined }
+  }
+
+  async revealVaultKey(input: unknown): Promise<VaultKey> {
+    this.assertOpen()
+    if (this.operation) { await this.operation; this.assertOpen() }
+    if (!this.status.available || this.busy) throw new Error('Wait for the current local operation before reading its recovery key.')
+    const request = vaultRequest(input)
+    return new Promise((resolve, reject) => {
+      const child = this.control('vault-key')
+      child.stdin.end(JSON.stringify(request) + '\n')
+      let body = '', failed = false
+      const timer = setTimeout(() => { failed = true; child.kill(); reject(new Error('The vault key request timed out. Refresh before retrying.')) }, 10_000)
+      child.stdout.on('data', (chunk: Buffer) => {
+        body += chunk.toString('utf8')
+        if (body.length > 4096) { failed = true; child.kill(); reject(new Error('Invalid private vault key response.')) }
+      })
+      child.stderr.resume()
+      child.on('error', () => { failed = true; reject(new Error('The local runtime could not read the vault key.')) })
+      child.on('close', code => {
+        clearTimeout(timer)
+        if (failed) return
+        try {
+          const value = JSON.parse(body)
+          if (code !== 0 || value.event !== 'vault_key' || value.engine_version !== this.options.version) throw new Error('The vault key could not be read. Refresh the current workspace settings.')
+          resolve(vaultKeyResult(value.key, request))
+        } catch { reject(new Error('The vault key response could not be verified.')) }
+        finally { body = '' }
+      })
+    })
+  }
+
+  private async saveHostConfiguration(action: 'remote' | 'company' | 'vault', change: RemoteChange | CompanyChange | VaultChange): Promise<LocalStatus> {
     const before = await this.readInfo('status')
-    if (before.settings?.workspace_id !== change.workspace_id || before[action === 'remote' ? 'remote_access' : 'company_access']?.revision !== change.expected_revision ||
+    const section = action === 'remote' ? 'remote_access' : action === 'company' ? 'company_access' : 'vault_access'
+    if (before.settings?.workspace_id !== change.workspace_id || before[section]?.revision !== change.expected_revision ||
         (action === 'company' && before.remote_access?.revision !== (change as CompanyChange).expected_remote_revision)) {
-      throw new Error(action === 'remote' ? 'Remote settings changed. Refresh before saving them again.' : 'Company or remote settings changed. Refresh before saving them again.')
+      throw new Error('Host settings changed. Refresh before saving them again.')
     }
     const resume = !!this.child
     // Own the entire drain/write/reopen operation. External stop/close waits
@@ -585,7 +634,7 @@ export class LocalWorkspace {
     if (resume && !await this.stopChild()) throw new Error('The local workspace is still stopping. Refresh before retrying.')
     try {
       const updated = await this.readInfo(action, change)
-      this.set({ state: 'stopped', stage: undefined, errorCode: undefined, message: action === 'remote' ? 'Remote settings saved.' : 'Company settings saved.' })
+      this.set({ state: 'stopped', stage: undefined, errorCode: undefined, message: action === 'remote' ? 'Remote settings saved.' : action === 'company' ? 'Company settings saved.' : 'Vault settings saved.' })
       if (resume && !this.stopping && !this.closing && !this.disposed) return this.launch(updated)
       return this.status
     } catch (error) {

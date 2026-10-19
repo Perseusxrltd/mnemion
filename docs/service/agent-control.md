@@ -41,6 +41,10 @@ Version **4.11.0** adds `local.company-discover` and `local.company` to the
 provider setup and restart under the owning OS account, with the same settings
 review as Studio. The HTTP/MCP catalog stays at 112 operations; a memory key
 does not grant host configuration. See [company operator controls](company-sign-in.md#agent-and-sdk-controls).
+Source **4.12.0** adds ten [vault operations](secrets-vault.md#agent-and-sdk-controls)
+for **122 HTTP operations**, and `local.vault`/`local.vault-key` for **25 private
+desktop operations**. Value inputs/results use private CLI files. Three dedicated
+MCP vault tools are available only when explicitly enabled by the host operator.
 Schemas load one at a time, so connecting an
 assistant does not put the entire administration API into its context.
 

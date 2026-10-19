@@ -250,7 +250,7 @@ def replace_damaged(path: Path, value: dict, *, expected: bytes, kind: str = "me
     Ordinary write() still refuses malformed records. Links, unsafe ownership,
     unreadable/oversized records and failed preservation never reach replacement.
     """
-    if kind not in {"memory", "remote", "company"}:
+    if kind not in {"memory", "remote", "company", "vault"}:
         raise ValueError("Unsupported private recovery record")
     directory(path.parent)
     if read_bytes(path) != expected:
@@ -263,6 +263,10 @@ def replace_damaged(path: Path, value: dict, *, expected: bytes, kind: str = "me
     if read_bytes(path) != expected:
         raise LocalSetupError("state_changed", "The saved record changed. Refresh before repair.")
     _publish(path, value, replace=True)
+    if kind == "vault":
+        # Prior encryption keys can be needed for independent historical
+        # backups. Diagnostic-history retention must never discard them.
+        return archive
     # Only discard old damage copies after the new policy and newest copy are
     # durable. This is bounded diagnostic history, never canonical memory data.
     try:

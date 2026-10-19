@@ -434,6 +434,16 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
     requireLocalSteady()
     return localWorkspace().discoverCompany(input)
   })
+  ipcMain.handle('local:vault', async (event, input: unknown) => {
+    trusted(event)
+    requireLocalSteady()
+    return desktopLocalStatus(await localWorkspace().changeVault(input))
+  })
+  ipcMain.handle('local:vault-key', async (event, input: unknown) => {
+    trusted(event)
+    requireLocalSteady()
+    return localWorkspace().revealVaultKey(input)
+  })
   ipcMain.handle('local:open', async event => {
     trusted(event)
     requireLocalSteady()
@@ -608,7 +618,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
     const run = async (): Promise<unknown> => {
       signal.throwIfAborted()
       const input = request.input
-      if (request.action === 'local.company' && localPreferences().selected) {
+      if (['local.company', 'local.vault'].includes(request.action) && localPreferences().selected) {
         const window = getWindow()
         if (window && !window.webContents.isDestroyed() && !await window.webContents.executeJavaScript('window.mnemion?.updateSafety?.() === true')) throw new Error('Save or discard edits and finish pending requests in the app before restarting its workspace.')
         signal.throwIfAborted()
@@ -638,6 +648,8 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null) {
         case 'local.remote-check': return desktopLocalStatus(await localWorkspace().checkRemote(input))
         case 'local.company': return desktopLocalStatus(await localWorkspace().changeCompany(input))
         case 'local.company-discover': return localWorkspace().discoverCompany(input)
+        case 'local.vault': return desktopLocalStatus(await localWorkspace().changeVault(input))
+        case 'local.vault-key': return localWorkspace().revealVaultKey(input)
         case 'local.preferences':
           if (typeof input.start_with_app !== 'boolean') throw new Error('Choose whether this workspace starts with the app.')
           saveLocalPreferences({ ...localPreferences(), startWithApp: input.start_with_app })

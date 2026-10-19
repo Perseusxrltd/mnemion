@@ -10,6 +10,8 @@ import type { PasswordAccount, DeviceSession, OAuthConfiguration, OAuthConnectio
 export * from './sign-in.js'
 import type { RecoveryDirectory, RecoveryDirectoryRecord } from './recovery.js'
 export * from './recovery.js'
+import type { VaultAuditEvent, VaultEntry, VaultEnvelope, VaultGrantInput, VaultGrants, VaultPage, VaultPutInput, VaultStatus } from './vault.js'
+export * from './vault.js'
 
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json }
 export type Kind = 'fact' | 'event' | 'preference' | 'procedure' | 'note'
@@ -274,6 +276,16 @@ export class MnemionClient {
 
   me() { return this.request<{ principal_id: string; tenant_id: string; name: string; tenant_name: string; administrator: boolean; service_version?: string | null }>('GET', '/v1/me') }
   recoveryDirectory() { return this.request<RecoveryDirectoryRecord>('GET', '/v1/recovery-directory') }
+  vaultStatus() { return this.request<VaultStatus>('GET', '/v1/vault/status') }
+  vaultEntries(offset = 0, limit = 100) { return this.request<VaultPage<VaultEntry>>('GET', `/v1/vault/entries?offset=${offset}&limit=${limit}`) }
+  vaultValue(id: string) { return this.request<VaultEntry & { value: string }>('GET', `/v1/vault/entries/${encodeURIComponent(id)}`) }
+  putVaultValue(id: string, input: VaultPutInput) { return this.request<VaultEntry>('PUT', `/v1/vault/entries/${encodeURIComponent(id)}`, { body: input }) }
+  vaultGrants(id: string) { return this.request<VaultGrants>('GET', `/v1/vault/entries/${encodeURIComponent(id)}/grants`) }
+  grantVault(id: string, input: VaultGrantInput) { return this.request<VaultGrants>('PUT', `/v1/vault/entries/${encodeURIComponent(id)}/grants`, { body: input }) }
+  deleteVault(id: string, expected_version: number) { return this.request<{ id: string; deleted: true }>('POST', `/v1/vault/entries/${encodeURIComponent(id)}/delete`, { body: { expected_version } }) }
+  exportVault(entry_ids: string[], recovery_key: string) { return this.request<VaultEnvelope>('POST', '/v1/vault/export', { body: { entry_ids, recovery_key } }) }
+  importVault(archive: VaultEnvelope, recovery_key: string) { return this.request<VaultPage<VaultEntry>>('POST', '/v1/vault/import', { body: { archive, recovery_key } }) }
+  vaultAudit(offset = 0, limit = 100) { return this.request<VaultPage<VaultAuditEvent>>('GET', `/v1/vault/audit?offset=${offset}&limit=${limit}`) }
   configureRecoveryDirectory(expected_revision: number, directory: RecoveryDirectory) {
     return this.request<RecoveryDirectoryRecord>('PUT', '/v1/recovery-directory', { body: { expected_revision, directory } })
   }

@@ -1,0 +1,23 @@
+.ws-vault { max-width: 1280px; }
+.ws-vault-summary { display: flex; flex-wrap: wrap; gap: .65rem 1.25rem; padding: 1rem 0; color: var(--muted, #a9a7a1); font-size: .82rem; }
+.ws-vault-summary span { display: inline-flex; align-items: center; gap: .45rem; }
+.ws-vault-columns { display: grid; grid-template-columns: minmax(260px, .85fr) minmax(0, 1.4fr); gap: 1rem; margin: 1.25rem 0; }
+.ws-vault-panel { min-width: 0; padding: 1.25rem; margin-bottom: 1rem; border: 1px solid rgba(208, 183, 119, .2); border-radius: 14px; background: rgba(19, 20, 19, .8); }
+.ws-vault-panel h2, .ws-vault-panel h3 { overflow-wrap: anywhere; }
+.ws-vault-panel fieldset { min-width: 0; border: 0; padding: 0; margin: 0; }
+.ws-vault-panel input:not([type=checkbox]), .ws-vault-panel textarea, .ws-vault-panel select, .ws-vault-setup input:not([type=checkbox]) { max-width: 100%; min-width: 0; }
+.ws-vault-panel textarea { width: 100%; resize: vertical; overflow-wrap: anywhere; }
+.ws-vault-entries, .ws-vault-grants ul { list-style: none; margin: 1rem 0; padding: 0; }
+.ws-vault-entries li { display: flex; align-items: center; gap: .65rem; border: 1px solid transparent; border-radius: 8px; margin: .3rem 0; padding: .35rem .5rem; }
+.ws-vault-entries li.selected { border-color: rgba(208, 183, 119, .45); background: rgba(208, 183, 119, .06); }
+.ws-vault-entries button { text-align: left; color: inherit; min-width: 0; width: 100%; border: 0; background: transparent; padding: .5rem .1rem; cursor: pointer; }
+.ws-vault-entries strong { display: block; overflow-wrap: anywhere; }
+.ws-vault small { display: block; margin: .35rem 0; color: #aaa79d; line-height: 1.6; }
+.ws-vault-revealed { padding: 1rem; margin-top: 1rem; border: 1px solid rgba(208, 183, 119, .35); border-radius: 8px; }
+.ws-vault-grants { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(208, 183, 119, .16); }
+.ws-vault-grants li { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin: .6rem 0; }
+.ws-vault-grants li > div { min-width: 0; overflow-wrap: anywhere; }
+.ws-vault-table { overflow-x: auto; }
+.ws-vault-table table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+.ws-vault-table th, .ws-vault-table td { text-align: left; padding: .75rem .6rem; border-bottom: 1px solid rgba(208, 183, 119, .15); }
+@media (max-width: 780px) { .ws-vault-columns { grid-template-columns: minmax(0, 1fr); } .ws-vault-panel { padding: 1rem; } }

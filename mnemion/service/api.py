@@ -69,6 +69,9 @@ from .hosted_oauth_api import (
 )
 from .sign_in_api import attach_sign_in
 from .recovery_directory import attach_recovery_directory
+from .vault import VaultService
+from .vault_api import attach_vault
+from .vault_crypto import VaultSettings
 
 logger = logging.getLogger(__name__)
 
@@ -166,6 +169,7 @@ def create_app(
     hosted_oauth_settings: HostedOAuthSettings | None = None,
     public_url: str | None = None,
     company_identity: CompanyIdentity | None = None,
+    vault_settings: VaultSettings | None = None,
 ) -> FastAPI:
     builtin_settings = hosted_oauth_settings or HostedOAuthSettings.from_environment()
     if builtin_settings and oauth is not None:
@@ -216,6 +220,7 @@ def create_app(
         can_start=registry.memory_budget.can_start_background if registry.memory_budget else None,
     )
     exports = ExportService(database)
+    vault = VaultService(database, vault_settings or VaultSettings.from_environment())
     mcp_app = None
 
     @asynccontextmanager
@@ -296,6 +301,7 @@ def create_app(
     app.state.evaluations = evaluations
     app.state.librarian = librarian
     app.state.librarian_runner = librarian_runner
+    app.state.vault = vault
 
     @app.middleware("http")
     async def request_context(request: Request, call_next):
@@ -428,6 +434,7 @@ def create_app(
     attach_librarian(app, librarian, authenticated)
     attach_agents(app, authenticated)
     attach_recovery_directory(app, database, authenticated)
+    attach_vault(app, vault, authenticated)
     attach_oauth(app, database, authenticated, oauth.settings if oauth else None)
     attach_hosted_connections(
         app,

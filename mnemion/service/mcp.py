@@ -8,7 +8,7 @@ from uuid import UUID
 import anyio
 from mcp.server.mcpserver import Context, MCPServer
 from mcp.types import ToolAnnotations
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, SecretStr
 
 from ..sdk import ContextPack, Memory, MnemionError, Receipt, Recall
 from ..version import __version__
@@ -17,6 +17,7 @@ from .contracts import IdentityInfo, Page, Space
 from .models import InferenceBusyPolicy, MemoryKind, RankingPolicy, SourceInput
 from .mcp_transport import MnemionMCPServer
 from .oauth import OAuthSettings
+from .vault_crypto import VaultSettings
 
 Text = Annotated[
     str,
@@ -203,6 +204,10 @@ def create_mcp(
     api_app=None,
     public_url: str | None = None,
 ) -> MCPServer:
+    vault_settings = (
+        api_app.state.vault.settings if api_app is not None else VaultSettings.from_environment()
+    )
+    vault_tools = vault_settings.enabled and vault_settings.mcp_enabled
     server = MnemionMCPServer(
         "Mnemion",
         api_url=base_url,
@@ -323,6 +328,12 @@ def create_mcp(
         return agent_control.describe(operation)
 
     def tool_operation(name, request, effect):
+        if name.startswith("vault.") and not vault_tools:
+            raise agent_control.ControlError(
+                "vault_mcp_disabled",
+                "Vault tools are disabled by this MCP host's operator.",
+                status=403,
+            )
         operation, _ = agent_control.prepare(name, request, effect=effect)
         if operation["download"] or operation["sensitive_result"] or operation["sensitive_input"]:
             raise agent_control.ControlError(
@@ -370,6 +381,56 @@ def create_mcp(
             effect="write",
             max_response_bytes=max_response_bytes,
         )
+
+    if vault_tools:
+
+        @server.tool(annotations=Read, structured_output=True)
+        async def vault_list(
+            ctx: Context,
+            offset: Annotated[int, Field(ge=0, le=10000)] = 0,
+            limit: Annotated[int, Field(ge=1, le=100)] = 100,
+        ) -> dict[str, Any]:
+            """List explicitly permitted credential names and IDs, never values. Credentials stay separate from searchable memory."""
+            return await invoke(
+                ctx,
+                lambda client: client.request(
+                    "GET", "/v1/vault/entries", params={"offset": offset, "limit": limit}
+                ),
+            )
+
+        @server.tool(annotations=Read, structured_output=True)
+        async def vault_get(entry_id: UUID, ctx: Context) -> dict[str, Any]:
+            """Explicitly retrieve a granted credential. Its sensitive value enters this client's/model's context; never copy it into memory or source files. The read is audited."""
+            return await invoke(
+                ctx, lambda client: client.request("GET", f"/v1/vault/entries/{entry_id}")
+            )
+
+        @server.tool(
+            annotations=ToolAnnotations(
+                readOnlyHint=False, destructiveHint=True, idempotentHint=False, openWorldHint=False
+            ),
+            structured_output=True,
+        )
+        async def vault_put(
+            entry_id: UUID,
+            name: Annotated[str, Field(min_length=1, max_length=120)],
+            value: Annotated[SecretStr, Field(min_length=1, max_length=65536)],
+            expected_version: Annotated[int, Field(ge=0, le=2147483646)],
+            ctx: Context,
+        ) -> dict[str, Any]:
+            """Encrypt a credential without indexing it. Use a fresh UUID and expected_version=0 to create as administrator; updates require a write grant and current version. Inspect state before retrying an interrupted write."""
+            return await invoke(
+                ctx,
+                lambda client: client.request(
+                    "PUT",
+                    f"/v1/vault/entries/{entry_id}",
+                    body={
+                        "name": name,
+                        "value": value.get_secret_value(),
+                        "expected_version": expected_version,
+                    },
+                ),
+            )
 
     @server.tool(annotations=Read, meta={"openai/profile": True}, structured_output=True)
     async def memory_profile(ctx: Context) -> MemoryProfile:

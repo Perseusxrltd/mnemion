@@ -18,6 +18,16 @@ health.ready GET /health/ready
 identity.me GET /v1/me
 recovery.directory GET /v1/recovery-directory
 recovery.configure PUT /v1/recovery-directory
+vault.status GET /v1/vault/status
+vault.list GET /v1/vault/entries
+vault.get GET /v1/vault/entries/{entry_id}
+vault.put PUT /v1/vault/entries/{entry_id}
+vault.grants GET /v1/vault/entries/{entry_id}/grants
+vault.grant PUT /v1/vault/entries/{entry_id}/grants
+vault.delete POST /v1/vault/entries/{entry_id}/delete
+vault.export POST /v1/vault/export
+vault.import POST /v1/vault/import
+vault.audit GET /v1/vault/audit
 spaces.list GET /v1/spaces
 spaces.create POST /v1/spaces
 spaces.get GET /v1/spaces/{space_id}
@@ -136,6 +146,7 @@ READ_POST = frozenset(
         "evaluations.compare",
         "sign_in.preview_invitation",
         "company.check_configuration",
+        "vault.export",
     }
 )
 DOWNLOADS = frozenset({"sources.attachment", "obsidian.export", "evaluations.export"})
@@ -149,6 +160,9 @@ PRIVATE_INPUTS = frozenset(
         "sign_in.accept_invitation",
         "company.start",
         "company.finish",
+        "vault.put",
+        "vault.export",
+        "vault.import",
     }
 )
 # These operations prove identity with their private input, not another user's
@@ -288,7 +302,7 @@ def build_contract(openapi: dict) -> dict:
                 "download": name in DOWNLOADS,
                 "sensitive_input": name in PRIVATE_INPUTS,
                 "sensitive_result": name in PRIVATE_INPUTS
-                or name in {"keys.create", "sign_in.create_invitation"},
+                or name in {"keys.create", "sign_in.create_invitation", "vault.get"},
                 "authentication": "body"
                 if name in PUBLIC_AUTH - PUBLIC_CONFIGURATION
                 else "none"

@@ -26,6 +26,7 @@ const titles: Record<string, string> = {
   "docs/service/workspaces.md": "Connect & remember workspaces",
   "docs/service/sign-in.md": "Individual sign-in, invitations & sessions",
   "docs/service/company-sign-in.md": "Company accounts & identity-provider setup",
+  "docs/service/secrets-vault.md": "Encrypted credentials, grants & key recovery",
   "docs/service/oauth.md": "Organization OAuth & agent access",
   "docs/service/hosted-agent-sign-in.md": "Connect agents with personal or company accounts",
   "docs/service/remote-access.md": "Share a workspace with people & agents",

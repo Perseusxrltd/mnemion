@@ -1,7 +1,7 @@
 # Backup, recovery, and the v3 preservation boundary
 
 The new [desktop backup and independent recovery guide](native-backups.md)
-covers the app workflow being prepared after 4.4.0. The service-level procedures
+covers the app workflow published from 4.6.0. The service-level procedures
 below also support independently managed servers and existing installations.
 
 Mnemion's service backup contains its complete PostgreSQL schema and data: tenants,
@@ -10,6 +10,10 @@ generation, jobs, idempotency receipts, core-block history, audit events, aliase
 and deletion denials. It uses one exported PostgreSQL snapshot for both the dump
 and the per-table count/content hashes. It does not copy database login passwords,
 model-cache files, deployment secrets, or a desktop's Obsidian vault.
+From source 4.12.0, snapshots also contain encrypted credential tables. Their
+[vault host key](secrets-vault.md#backups-exports-and-recovery) must be kept
+separately. Restoration preserves later credential deletions and clears old
+vault grants for fresh administrator review; it does not recover the host key.
 
 The commands run locally with `MNEMION_ADMIN_DATABASE_URL`. Keep that credential
 out of the API and worker processes. Install PostgreSQL's `pg_dump` and `pg_restore`

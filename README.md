@@ -34,6 +34,9 @@ Company accounts can use [Studio sign-in](docs/service/company-sign-in.md) from
 the guides state their host configuration, validation and release requirements.
 Source 4.11.0 adds [company-provider setup in the app](docs/service/company-sign-in.md#a-workspace-hosted-by-the-desktop-app),
 including discovery, private client configuration, company certificates and local agent controls.
+Source 4.12.0 adds a separate [encrypted credentials vault](docs/service/secrets-vault.md)
+with app setup, individual grants, access auditing, encrypted export and independent
+key recovery. Credentials stay outside searchable memory and Obsidian exports.
 Studio retains OS-protected saved connections, identity-checked reopening after restart and a clearer connection
 screen. [Workspace controls](docs/service/workspaces.md) explain remembering,
 disconnecting and forgetting a device connection. Complete fresh-machine setup

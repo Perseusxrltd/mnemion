@@ -180,6 +180,10 @@ class DriveProvider:
                 raise ProviderError("source_is_not_utf8_text") from None
         if "\0" in text:
             raise ProviderError("source_contains_binary_data")
+        from .providers import private_vault_content
+
+        if private_vault_content(text):
+            return
         metadata = {
             "provider": "gdrive",
             "file_id": identifier,

@@ -9,6 +9,7 @@ import { LiveMemory, MemoryFields, RepairMemory, validMemory } from './MemoryCon
 import { localError } from './LocalSetup';
 import RemoteAccess from './RemoteAccess';
 import CompanyProviderSetup from './CompanyProviderSetup';
+import VaultSetup from './VaultSetup';
 import Backups from './Backups';
 import LocalOperator from './LocalOperator';
 
@@ -67,6 +68,7 @@ export default function Setup({ client, endpoint, administrator }: { client: Mne
     {status && <LocalOperator status={status} />}
     {status?.info?.configured && <RemoteAccess status={status} onStatus={setStatus} connected={endpoint === `http://127.0.0.1:${status.info.settings?.port}`} />}
     {status?.info?.configured && <CompanyProviderSetup status={status} onStatus={setStatus} connected={endpoint === `http://127.0.0.1:${status.info.settings?.port}`} />}
+    {status?.info?.configured && <VaultSetup status={status} onStatus={setStatus} />}
     {status?.info?.configured && <Backups status={status} onStatus={setStatus} />}
     {status?.info?.configured && <section className="ws-device-settings">
       <div className="ws-memory-heading"><h2>RAM on this computer</h2><span className="ws-badge">{status.state === 'running' ? 'Local workspace running' : status.state}</span></div>

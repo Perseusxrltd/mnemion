@@ -7,6 +7,7 @@ import { PassThrough } from 'node:stream'
 import { test } from 'node:test'
 import { LocalWorkspace, portOptions, localDiagnostic, remoteOptions, remoteSnapshot } from '../dist/local-workspace.js'
 import { companyOptions, companySnapshot, companyDiscoveryResult } from '../dist/local-company-protocol.js'
+import { vaultOptions, vaultSnapshot, vaultKeyId, vaultKeyResult } from '../dist/local-vault-protocol.js'
 
 const { version } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
 const root = '/private/test-workspace'
@@ -33,6 +34,29 @@ const companyInfo = (revision = 'not-configured', providers = []) => ({ ...shari
   message: 'Company settings fixture', callback_uri: 'https://memory.example.test/company/callback',
 } })
 const savedCompanyInfo = () => companyInfo('00000000-0000-4000-8000-000000000010', [{ ...companyProvider, has_client_secret: true }])
+const vaultKey = 'mnv_' + Buffer.alloc(32, 7).toString('base64url')
+const vaultRevision = '00000000-0000-4000-8000-000000000012'
+const vaultChange = { workspace_id: addressChange.workspace_id, expected_revision: 'not-configured',
+  action: 'configure', enabled: true, mcp_enabled: false, recovery_key: vaultKey, key_saved: true }
+const vaultInfo = (configured = false) => ({ ...addressInfo(17400), vault_access: {
+  revision: configured ? vaultRevision : 'not-configured', state: configured ? 'configured' : 'not_configured',
+  repairable: true, enabled: configured, mcp_enabled: false, key_id: configured ? vaultKeyId(vaultKey) : null,
+  message: 'Private vault fixture',
+} })
+
+test('vault handoffs reject unreviewed instructions and credentials in public status', () => {
+  assert.deepEqual(vaultOptions(vaultChange), vaultChange)
+  assert.throws(() => vaultOptions({ ...vaultChange, execute: 'unreviewed-command' }))
+  assert.throws(() => vaultOptions({ ...vaultChange, key_saved: false }))
+  assert.throws(() => vaultOptions({ ...vaultChange, recovery_key: 'mnv_' + 'b'.repeat(43) }))
+  assert.throws(() => vaultSnapshot({ ...vaultInfo(true).vault_access, recovery_key: vaultKey }))
+  assert.deepEqual(vaultSnapshot(vaultInfo(true).vault_access), vaultInfo(true).vault_access)
+  const request = { workspace_id: addressChange.workspace_id, expected_revision: vaultRevision }
+  const result = { workspace_id: request.workspace_id, revision: vaultRevision, key_id: vaultKeyId(vaultKey), recovery_key: vaultKey }
+  assert.deepEqual(vaultKeyResult(result, request), result)
+  assert.throws(() => vaultKeyResult({ ...result, revision: savedSharingRevision }, request))
+  assert.throws(() => vaultKeyResult({ ...result, key_id: '0'.repeat(32) }, request))
+})
 
 test('company controls reject credentials in status and unsupported host instructions', () => {
   assert.deepEqual(companyOptions(companyChange), companyChange)
@@ -232,7 +256,7 @@ test('a stale remote form cannot stop the running host or overwrite another oper
   const f = fixture(t)
   await running(f)
   const changed = f.host.changeRemote(sharingChange)
-  const refused = assert.rejects(changed, /Remote settings changed/)
+  const refused = assert.rejects(changed, /settings changed/)
   f.last().reply(sharingInfo(savedSharingRevision, 'proxy'))
   await refused
   assert.equal(f.host.status.state, 'running')
@@ -256,6 +280,62 @@ test('company setup drains the same host and reopens only after a confirmed priv
   assert.equal(result.info.company_access.providers[0].has_client_secret, true)
   assert.ok(!JSON.stringify(result).includes(companyChange.client_secret))
   assert.equal(f.commands.filter(command => command.action === 'run').length, 2)
+})
+
+test('vault setup drains the host and reopens after the private key save without disclosing it', async t => {
+  const f = fixture(t)
+  const engine = await running(f)
+  const change = f.host.changeVault(vaultChange)
+  f.last().reply(vaultInfo()); await settle()
+  assert.equal(f.host.status.state, 'stopping')
+  assert.equal(f.commands.filter(command => command.action === 'vault').length, 0)
+  engine.finish(); await settle()
+  assert.equal(f.last().action, 'vault')
+  f.last().reply(vaultInfo(true))
+  const result = await change
+  assert.equal(result.state, 'starting')
+  assert.equal(result.info.vault_access.key_id, vaultKeyId(vaultKey))
+  assert.ok(!JSON.stringify(result).includes(vaultKey))
+  assert.equal(f.commands.filter(command => command.action === 'run').length, 2)
+})
+
+test('stale vault settings cannot stop the host or replace another operator key', async t => {
+  const f = fixture(t)
+  await running(f)
+  const refused = assert.rejects(f.host.changeVault(vaultChange), /settings changed/)
+  f.last().reply(vaultInfo(true)); await refused
+  assert.equal(f.host.status.state, 'running')
+  assert.equal(f.commands.filter(command => command.action === 'vault').length, 0)
+})
+
+test('explicit stop waits for vault key configuration and prevents automatic reopen', async t => {
+  const f = fixture(t)
+  const engine = await running(f)
+  const change = f.host.changeVault(vaultChange)
+  f.last().reply(vaultInfo()); await settle()
+  const stop = f.host.stop()
+  engine.finish(); await settle()
+  f.last().reply(vaultInfo(true))
+  await change
+  assert.equal(await stop, true)
+  assert.equal(f.host.status.state, 'stopped')
+  assert.equal(f.commands.filter(command => command.action === 'run').length, 1)
+})
+
+test('explicit key recovery verifies the current workspace and never enters host status', async t => {
+  const f = fixture(t)
+  await running(f)
+  const request = { workspace_id: addressChange.workspace_id, expected_revision: vaultRevision }
+  const key = { workspace_id: request.workspace_id, revision: vaultRevision, key_id: vaultKeyId(vaultKey), recovery_key: vaultKey }
+  const reveal = f.host.revealVaultKey(request)
+  assert.equal(f.last().action, 'vault-key')
+  f.last().reply({ event: 'vault_key', engine_version: version, key })
+  assert.deepEqual(await reveal, key)
+  assert.ok(!JSON.stringify(f.host.status).includes(vaultKey))
+  const refused = assert.rejects(f.host.revealVaultKey(request), /could not be verified/)
+  f.last().reply({ event: 'vault_key', engine_version: version, key: { ...key, workspace_id: savedSharingRevision } })
+  await refused
+  assert.equal(f.host.status.state, 'running')
 })
 
 test('a changed company or HTTPS revision cannot stop a running host', async t => {

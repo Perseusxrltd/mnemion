@@ -85,6 +85,7 @@ const Librarian = lazy(() => import("./Librarian"));
 const Setup = lazy(() => import("./Setup"));
 const Account = lazy(() => import("./Account"));
 const RecoveryDirectoryView = lazy(() => import("./RecoveryDirectory"));
+const SecretsVault = lazy(() => import("./SecretsVault"));
 
 type Me = Awaited<ReturnType<MnemionClient["me"]>>;
 type Session = Connection & {
@@ -260,7 +261,7 @@ function Shell({
   const [creating, setCreating] = useState(false);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const organizationPage = ['/workspace/team', '/workspace/connections', '/workspace/setup', '/workspace/help', '/workspace/account', '/workspace/recovery']
+  const organizationPage = ['/workspace/team', '/workspace/connections', '/workspace/setup', '/workspace/help', '/workspace/account', '/workspace/recovery', '/workspace/secrets']
     .includes(location.pathname.replace(/\/+$/, ''));
   const role = space?.role ?? "reader";
   const reviewer = ["reviewer", "administrator"].includes(role);
@@ -279,6 +280,7 @@ function Shell({
     { to: "help", label: "Documentation & roadmap", icon: FileText },
     { to: "setup", label: "Setup & this device", icon: Settings },
     { to: "account", label: "Account & sessions", icon: ShieldCheck },
+    { to: "secrets", label: "Secrets", icon: ShieldCheck },
     ...(me.administrator
       ? [{ to: "connections", label: "Connections", icon: Plug }, { to: "team", label: "People & apps", icon: Users }, { to: "recovery", label: "Recovery directory", icon: ShieldCheck }]
       : []),
@@ -286,7 +288,7 @@ function Shell({
   const navigationGroups = [
     { label: "01 / Memory", pages: ["memories", "search", "knowledge", "blocks", "review"] },
     { label: "02 / Intelligence", pages: ["operations", "insights", "librarian", "models"] },
-    { label: "03 / Workspace", pages: ["setup", "account", "obsidian", "agents", "connections", "team", "recovery", "help"] },
+    { label: "03 / Workspace", pages: ["setup", "account", "secrets", "obsidian", "agents", "connections", "team", "recovery", "help"] },
   ];
   async function createSpace(event: FormEvent) {
     event.preventDefault();
@@ -394,6 +396,7 @@ function Shell({
               <Route path="team" element={<Team connection={connection} initialSpace={space} />} />
               <Route path="account" element={<Account connection={connection} disconnect={disconnect} />} />
               <Route path="recovery" element={<RecoveryDirectoryView key={connection.endpoint + ':' + me.principal_id} connection={connection} />} />
+              <Route path="secrets" element={<SecretsVault key={connection.endpoint + ':' + me.principal_id} connection={connection} />} />
               <Route path="connections" element={<Connections client={client} administrator={me.administrator} endpoint={connection.endpoint} selectSpace={setSelected} />} />
               <Route path="setup" element={<Setup client={client} endpoint={connection.endpoint} administrator={me.administrator} />} />
               <Route path="help" element={<Documentation />} />

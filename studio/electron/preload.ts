@@ -55,6 +55,8 @@ contextBridge.exposeInMainWorld('mnemion', {
   localRemoteCheck: (input: unknown) => transfer('local:remote-check', input),
   localCompany: (input: unknown) => transfer('local:company', input),
   localCompanyDiscover: (input: unknown) => transfer('local:company-discover', input),
+  localVault: (input: unknown) => transfer('local:vault', input),
+  localVaultKey: (input: unknown) => transfer('local:vault-key', input),
   localBackupStatus: () => transfer('local:backup-status'),
   localBackupKey: () => transfer('local:backup-key'),
   localBackupChoose: (kind: 'folder' | 'file') => transfer('local:backup-choose', kind),

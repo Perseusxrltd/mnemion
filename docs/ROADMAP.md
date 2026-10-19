@@ -1,11 +1,31 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.11.0**. Roadmap updated: **2026-10-15**.
+Reviewed source distribution: **4.12.0**. Roadmap updated: **2026-10-19**.
 The [current published distribution and release gates](RELEASE_STATUS.md) are updated automatically.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
 
-The [4.11.0 source](releases/4.11.0.md) adds
+The [4.12.0 source](releases/4.12.0.md) adds a separate
+[encrypted credentials vault](service/secrets-vault.md): app setup, scoped
+person/key grants, audited explicit reads, encrypted import/export and independent
+key recovery. Restored databases preserve later deletions and require fresh vault
+grants. [Validation](validation/2026-10-15-secrets-vault.md) records focused tests
+and source-app acceptance; the normal native release gates remain separate.
+This advances A04, A09, F08 and U01 without claiming complete company policy,
+key custody/rotation or KeePass interoperability. The strict full-scope count
+remains **17/64 shipped (26.6%)**.
+
+The next operational batch prioritizes the newer
+[host-reset/reinstallation report, issue 38](https://github.com/Perseusxrltd/mnemion/issues/38):
+an idempotent host plan, independent encrypted state/key custody, clear managed-update
+and public-route status, and actionable connector configuration errors. Preserving
+identities and restoring access must respect the current denial ledger.
+[Issue 39](https://github.com/Perseusxrltd/mnemion/issues/39) adds an opt-in durable
+Git delivery journal for native saves, scanning hooks, scheduled/important pushes,
+librarian folding and stable replay. Its export/deletion/permission contract must
+be explicit; connecting an inbound Git source alone does not provide this backup.
+
+Published [4.11.0](releases/4.11.0.md) adds
 [company-provider setup in the app](service/company-sign-in.md): HTTPS callback
 registration guidance, bounded discovery, private client settings, company CA
 bundles, session duration, provider removal/repair and two private local agent
@@ -13,6 +33,8 @@ operations. Existing explicitly configured server environments are preserved.
 This advances F08, A01/A08 and U01; guided remote-host configuration,
 provisioning, company-only policy and fleet/provider acceptance remain open.
 The strict full-scope count remains **17/64 shipped (26.6%)**.
+Its native release gates, independent artifact verification, live website
+update and all six public automatic-update checks passed.
 
 Published [4.10.0](releases/4.10.0.md) adds
 [company-account assistant consent](service/hosted-agent-sign-in.md): an approved
@@ -302,8 +324,9 @@ client/discovery compatibility and measured retrieval quality: exact identifiers
 relevance, natural-language queries and recency. Version 4.1.6 delivers the
 reported Git revision/scan-label, MCP default-scope, version-diagnostic and
 connection-guidance fixes.
-The separate encrypted secrets-vault request is retained under A04; it must
-never enter ordinary memory search, capture or model context.
+The separate encrypted secrets-vault request under A04 is implemented in source
+4.12.0. It stays outside ordinary memory search, capture and automatic context;
+explicitly enabled MCP credential reads are separately authorized and audited.
 Version [4.1.1](releases/4.1.1.md) ships idle local-model
 cleanup and visible cache statistics, using the existing schema. Its
 [local/product checks and real-model measurements](validation/2026-10-12-model-idle-cleanup.md)
@@ -695,11 +718,13 @@ Current compartments are authorized tenant/space boundaries with scoped keys.
 TLS, restricted server identities and deployment controls protect the service;
 disk/backup encryption belongs to the deployment. Obsidian exports are plaintext.
 
-Planned extensions include company identity/SSO and lifecycle provisioning,
-policy-managed devices and updates, stronger audit export/retention, managed
-secrets, organization quotas and shared source ownership. Evaluate encrypted
-archive/vault storage and customer-managed keys with explicit recovery and search
-tradeoffs. End-to-end encrypted searchable memory is not a current promise.
+Company OIDC sign-in and app-owned provider setup are implemented in 4.9–4.11;
+source 4.12.0 adds separate encrypted credentials and independent key recovery.
+Remaining extensions include lifecycle provisioning, policy-managed devices and
+updates, stronger audit export/retention, managed key custody/rotation, organization
+quotas and shared source ownership. Credential-value encryption does not change
+the search/storage boundary of ordinary memory. End-to-end encrypted searchable
+memory is not a current promise.
 
 Acceptance: clear threat and recovery models, revocation across projections,
 least-privilege integration tests and no misleading encryption claims.

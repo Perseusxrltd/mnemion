@@ -241,8 +241,11 @@ def execute(
             "download_required" if operation["download"] else "unexpected_output",
             "Download operations use mnemion-control call --output; JSON results use the normal result object",
         )
+    json_limit = (
+        INPUT_LIMIT if name.startswith("vault.") and operation["sensitive_result"] else INLINE_LIMIT
+    )
     if type(max_response_bytes) is not int or not 1024 <= max_response_bytes <= (
-        DOWNLOAD_LIMIT if output is not None else INLINE_LIMIT
+        DOWNLOAD_LIMIT if output is not None else json_limit
     ):
         raise ControlError("invalid_response_limit", "Choose a supported bounded response size")
     headers = {

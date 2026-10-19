@@ -68,6 +68,15 @@ async def compact_tool_metadata(ctx, call_next):
         "memory_profile": "Identify the current account and workspace.",
     }
     tools = {tool["name"]: tool for tool in result.get("tools", [])}
+    # Explicit operator opt-in retains usable vault discovery in compact mode.
+    # These tools are absent from the server entirely when vault MCP is off.
+    for name, description in {
+        "vault_list": "List permitted credential names only; no values.",
+        "vault_get": "Explicit sensitive credential read. Requires a vault grant; do not copy the value into memory.",
+        "vault_put": "Encrypt a credential at its expected version. Creation requires administrator authority.",
+    }.items():
+        if name in tools:
+            descriptions[name] = description
     compact = []
     for name, description in descriptions.items():
         tool = tools[name]

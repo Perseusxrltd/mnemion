@@ -19469,6 +19469,1296 @@
       "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Spaces"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "read",
+      "group": "vault",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "limit": {
+                "default": 100,
+                "maximum": 100,
+                "minimum": 1,
+                "title": "Limit",
+                "type": "integer"
+              },
+              "offset": {
+                "default": 0,
+                "maximum": 10000,
+                "minimum": 0,
+                "title": "Offset",
+                "type": "integer"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "method": "GET",
+      "name": "vault.audit",
+      "output_schema": {
+        "$defs": {
+          "Page_VaultAuditEvent_": {
+            "additionalProperties": true,
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/$defs/VaultAuditEvent"
+                },
+                "title": "Items",
+                "type": "array"
+              }
+            },
+            "required": [
+              "items"
+            ],
+            "title": "Page[VaultAuditEvent]",
+            "type": "object"
+          },
+          "VaultAuditEvent": {
+            "additionalProperties": false,
+            "properties": {
+              "action": {
+                "title": "Action",
+                "type": "string"
+              },
+              "entry_id": {
+                "anyOf": [
+                  {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Entry Id"
+              },
+              "id": {
+                "format": "uuid",
+                "title": "Id",
+                "type": "string"
+              },
+              "key_id": {
+                "format": "uuid",
+                "title": "Key Id",
+                "type": "string"
+              },
+              "occurred_at": {
+                "format": "date-time",
+                "title": "Occurred At",
+                "type": "string"
+              },
+              "outcome": {
+                "title": "Outcome",
+                "type": "string"
+              },
+              "principal_id": {
+                "format": "uuid",
+                "title": "Principal Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "principal_id",
+              "key_id",
+              "entry_id",
+              "action",
+              "outcome",
+              "occurred_at"
+            ],
+            "title": "VaultAuditEvent",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/Page_VaultAuditEvent_"
+      },
+      "parameter_locations": {
+        "limit": "query",
+        "offset": "query"
+      },
+      "path": "/v1/vault/audit",
+      "retry": "read",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Vault Audit"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "write",
+      "group": "vault",
+      "input_schema": {
+        "$defs": {
+          "VaultDelete": {
+            "additionalProperties": false,
+            "properties": {
+              "expected_version": {
+                "maximum": 2147483646.0,
+                "minimum": 1.0,
+                "title": "Expected Version",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "expected_version"
+            ],
+            "title": "VaultDelete",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/VaultDelete"
+          },
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "entry_id": {
+                "format": "uuid",
+                "title": "Entry Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "entry_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters",
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "POST",
+      "name": "vault.delete",
+      "output_schema": {
+        "$defs": {
+          "VaultDeleted": {
+            "additionalProperties": false,
+            "properties": {
+              "deleted": {
+                "const": true,
+                "default": true,
+                "title": "Deleted",
+                "type": "boolean"
+              },
+              "id": {
+                "format": "uuid",
+                "title": "Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id"
+            ],
+            "title": "VaultDeleted",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/VaultDeleted"
+      },
+      "parameter_locations": {
+        "entry_id": "path"
+      },
+      "path": "/v1/vault/entries/{entry_id}/delete",
+      "retry": "inspect_before_retry",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Vault Delete"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "read",
+      "group": "vault",
+      "input_schema": {
+        "$defs": {
+          "VaultExport": {
+            "additionalProperties": false,
+            "properties": {
+              "entry_ids": {
+                "items": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "maxItems": 100,
+                "minItems": 1,
+                "title": "Entry Ids",
+                "type": "array"
+              },
+              "recovery_key": {
+                "format": "password",
+                "title": "Recovery Key",
+                "type": "string",
+                "writeOnly": true
+              }
+            },
+            "required": [
+              "recovery_key",
+              "entry_ids"
+            ],
+            "title": "VaultExport",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/VaultExport"
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "POST",
+      "name": "vault.export",
+      "output_schema": {
+        "$defs": {
+          "VaultEnvelope": {
+            "additionalProperties": false,
+            "properties": {
+              "ciphertext": {
+                "maxLength": 1333360,
+                "minLength": 24,
+                "title": "Ciphertext",
+                "type": "string"
+              },
+              "format": {
+                "const": "mnemion-vault-export",
+                "default": "mnemion-vault-export",
+                "title": "Format",
+                "type": "string"
+              },
+              "key_id": {
+                "pattern": "^[a-f0-9]{32}$",
+                "title": "Key Id",
+                "type": "string"
+              },
+              "nonce": {
+                "maxLength": 16,
+                "minLength": 16,
+                "title": "Nonce",
+                "type": "string"
+              },
+              "version": {
+                "const": 1,
+                "default": 1,
+                "title": "Version",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "key_id",
+              "nonce",
+              "ciphertext"
+            ],
+            "title": "VaultEnvelope",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/VaultEnvelope"
+      },
+      "parameter_locations": {},
+      "path": "/v1/vault/export",
+      "retry": "read",
+      "sensitive_input": true,
+      "sensitive_result": true,
+      "summary": "Vault Export"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "read",
+      "group": "vault",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "entry_id": {
+                "format": "uuid",
+                "title": "Entry Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "entry_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters"
+        ],
+        "type": "object"
+      },
+      "method": "GET",
+      "name": "vault.get",
+      "output_schema": {
+        "$defs": {
+          "VaultPermissions": {
+            "additionalProperties": false,
+            "properties": {
+              "manage": {
+                "title": "Manage",
+                "type": "boolean"
+              },
+              "read": {
+                "title": "Read",
+                "type": "boolean"
+              },
+              "write": {
+                "title": "Write",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "read",
+              "write",
+              "manage"
+            ],
+            "title": "VaultPermissions",
+            "type": "object"
+          },
+          "VaultValue": {
+            "additionalProperties": false,
+            "properties": {
+              "access_version": {
+                "title": "Access Version",
+                "type": "integer"
+              },
+              "created_at": {
+                "format": "date-time",
+                "title": "Created At",
+                "type": "string"
+              },
+              "id": {
+                "format": "uuid",
+                "title": "Id",
+                "type": "string"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "permissions": {
+                "$ref": "#/$defs/VaultPermissions"
+              },
+              "updated_at": {
+                "format": "date-time",
+                "title": "Updated At",
+                "type": "string"
+              },
+              "value": {
+                "title": "Value",
+                "type": "string"
+              },
+              "version": {
+                "title": "Version",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "version",
+              "access_version",
+              "created_at",
+              "updated_at",
+              "permissions",
+              "value"
+            ],
+            "title": "VaultValue",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/VaultValue"
+      },
+      "parameter_locations": {
+        "entry_id": "path"
+      },
+      "path": "/v1/vault/entries/{entry_id}",
+      "retry": "read",
+      "sensitive_input": false,
+      "sensitive_result": true,
+      "summary": "Vault Get"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "write",
+      "group": "vault",
+      "input_schema": {
+        "$defs": {
+          "VaultGrant": {
+            "additionalProperties": false,
+            "properties": {
+              "expected_access_version": {
+                "maximum": 2147483646.0,
+                "minimum": 1.0,
+                "title": "Expected Access Version",
+                "type": "integer"
+              },
+              "read": {
+                "default": false,
+                "title": "Read",
+                "type": "boolean"
+              },
+              "remove": {
+                "default": false,
+                "title": "Remove",
+                "type": "boolean"
+              },
+              "subject_id": {
+                "format": "uuid",
+                "title": "Subject Id",
+                "type": "string"
+              },
+              "subject_kind": {
+                "enum": [
+                  "person",
+                  "key"
+                ],
+                "title": "Subject Kind",
+                "type": "string"
+              },
+              "write": {
+                "default": false,
+                "title": "Write",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "expected_access_version",
+              "subject_kind",
+              "subject_id"
+            ],
+            "title": "VaultGrant",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/VaultGrant"
+          },
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "entry_id": {
+                "format": "uuid",
+                "title": "Entry Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "entry_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters",
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "PUT",
+      "name": "vault.grant",
+      "output_schema": {
+        "$defs": {
+          "VaultGrantRecord": {
+            "additionalProperties": false,
+            "properties": {
+              "active": {
+                "title": "Active",
+                "type": "boolean"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "read": {
+                "title": "Read",
+                "type": "boolean"
+              },
+              "subject_id": {
+                "format": "uuid",
+                "title": "Subject Id",
+                "type": "string"
+              },
+              "subject_kind": {
+                "enum": [
+                  "person",
+                  "key"
+                ],
+                "title": "Subject Kind",
+                "type": "string"
+              },
+              "write": {
+                "title": "Write",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "subject_kind",
+              "subject_id",
+              "name",
+              "read",
+              "write",
+              "active"
+            ],
+            "title": "VaultGrantRecord",
+            "type": "object"
+          },
+          "VaultGrants": {
+            "additionalProperties": false,
+            "properties": {
+              "access_version": {
+                "title": "Access Version",
+                "type": "integer"
+              },
+              "entry_id": {
+                "format": "uuid",
+                "title": "Entry Id",
+                "type": "string"
+              },
+              "items": {
+                "items": {
+                  "$ref": "#/$defs/VaultGrantRecord"
+                },
+                "title": "Items",
+                "type": "array"
+              }
+            },
+            "required": [
+              "entry_id",
+              "access_version",
+              "items"
+            ],
+            "title": "VaultGrants",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/VaultGrants"
+      },
+      "parameter_locations": {
+        "entry_id": "path"
+      },
+      "path": "/v1/vault/entries/{entry_id}/grants",
+      "retry": "inspect_before_retry",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Vault Grant"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "read",
+      "group": "vault",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "entry_id": {
+                "format": "uuid",
+                "title": "Entry Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "entry_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters"
+        ],
+        "type": "object"
+      },
+      "method": "GET",
+      "name": "vault.grants",
+      "output_schema": {
+        "$defs": {
+          "VaultGrantRecord": {
+            "additionalProperties": false,
+            "properties": {
+              "active": {
+                "title": "Active",
+                "type": "boolean"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "read": {
+                "title": "Read",
+                "type": "boolean"
+              },
+              "subject_id": {
+                "format": "uuid",
+                "title": "Subject Id",
+                "type": "string"
+              },
+              "subject_kind": {
+                "enum": [
+                  "person",
+                  "key"
+                ],
+                "title": "Subject Kind",
+                "type": "string"
+              },
+              "write": {
+                "title": "Write",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "subject_kind",
+              "subject_id",
+              "name",
+              "read",
+              "write",
+              "active"
+            ],
+            "title": "VaultGrantRecord",
+            "type": "object"
+          },
+          "VaultGrants": {
+            "additionalProperties": false,
+            "properties": {
+              "access_version": {
+                "title": "Access Version",
+                "type": "integer"
+              },
+              "entry_id": {
+                "format": "uuid",
+                "title": "Entry Id",
+                "type": "string"
+              },
+              "items": {
+                "items": {
+                  "$ref": "#/$defs/VaultGrantRecord"
+                },
+                "title": "Items",
+                "type": "array"
+              }
+            },
+            "required": [
+              "entry_id",
+              "access_version",
+              "items"
+            ],
+            "title": "VaultGrants",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/VaultGrants"
+      },
+      "parameter_locations": {
+        "entry_id": "path"
+      },
+      "path": "/v1/vault/entries/{entry_id}/grants",
+      "retry": "read",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Vault Grants"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "write",
+      "group": "vault",
+      "input_schema": {
+        "$defs": {
+          "VaultEnvelope": {
+            "additionalProperties": false,
+            "properties": {
+              "ciphertext": {
+                "maxLength": 1333360,
+                "minLength": 24,
+                "title": "Ciphertext",
+                "type": "string"
+              },
+              "format": {
+                "const": "mnemion-vault-export",
+                "default": "mnemion-vault-export",
+                "title": "Format",
+                "type": "string"
+              },
+              "key_id": {
+                "pattern": "^[a-f0-9]{32}$",
+                "title": "Key Id",
+                "type": "string"
+              },
+              "nonce": {
+                "maxLength": 16,
+                "minLength": 16,
+                "title": "Nonce",
+                "type": "string"
+              },
+              "version": {
+                "const": 1,
+                "default": 1,
+                "title": "Version",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "key_id",
+              "nonce",
+              "ciphertext"
+            ],
+            "title": "VaultEnvelope",
+            "type": "object"
+          },
+          "VaultImport": {
+            "additionalProperties": false,
+            "properties": {
+              "archive": {
+                "$ref": "#/$defs/VaultEnvelope"
+              },
+              "recovery_key": {
+                "format": "password",
+                "title": "Recovery Key",
+                "type": "string",
+                "writeOnly": true
+              }
+            },
+            "required": [
+              "recovery_key",
+              "archive"
+            ],
+            "title": "VaultImport",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/VaultImport"
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "POST",
+      "name": "vault.import",
+      "output_schema": {
+        "$defs": {
+          "Page_VaultEntry_": {
+            "additionalProperties": true,
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/$defs/VaultEntry"
+                },
+                "title": "Items",
+                "type": "array"
+              }
+            },
+            "required": [
+              "items"
+            ],
+            "title": "Page[VaultEntry]",
+            "type": "object"
+          },
+          "VaultEntry": {
+            "additionalProperties": false,
+            "properties": {
+              "access_version": {
+                "title": "Access Version",
+                "type": "integer"
+              },
+              "created_at": {
+                "format": "date-time",
+                "title": "Created At",
+                "type": "string"
+              },
+              "id": {
+                "format": "uuid",
+                "title": "Id",
+                "type": "string"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "permissions": {
+                "$ref": "#/$defs/VaultPermissions"
+              },
+              "updated_at": {
+                "format": "date-time",
+                "title": "Updated At",
+                "type": "string"
+              },
+              "version": {
+                "title": "Version",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "version",
+              "access_version",
+              "created_at",
+              "updated_at",
+              "permissions"
+            ],
+            "title": "VaultEntry",
+            "type": "object"
+          },
+          "VaultPermissions": {
+            "additionalProperties": false,
+            "properties": {
+              "manage": {
+                "title": "Manage",
+                "type": "boolean"
+              },
+              "read": {
+                "title": "Read",
+                "type": "boolean"
+              },
+              "write": {
+                "title": "Write",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "read",
+              "write",
+              "manage"
+            ],
+            "title": "VaultPermissions",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/Page_VaultEntry_"
+      },
+      "parameter_locations": {},
+      "path": "/v1/vault/import",
+      "retry": "inspect_before_retry",
+      "sensitive_input": true,
+      "sensitive_result": true,
+      "summary": "Vault Import"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "read",
+      "group": "vault",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "limit": {
+                "default": 100,
+                "maximum": 100,
+                "minimum": 1,
+                "title": "Limit",
+                "type": "integer"
+              },
+              "offset": {
+                "default": 0,
+                "maximum": 10000,
+                "minimum": 0,
+                "title": "Offset",
+                "type": "integer"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "method": "GET",
+      "name": "vault.list",
+      "output_schema": {
+        "$defs": {
+          "Page_VaultEntry_": {
+            "additionalProperties": true,
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/$defs/VaultEntry"
+                },
+                "title": "Items",
+                "type": "array"
+              }
+            },
+            "required": [
+              "items"
+            ],
+            "title": "Page[VaultEntry]",
+            "type": "object"
+          },
+          "VaultEntry": {
+            "additionalProperties": false,
+            "properties": {
+              "access_version": {
+                "title": "Access Version",
+                "type": "integer"
+              },
+              "created_at": {
+                "format": "date-time",
+                "title": "Created At",
+                "type": "string"
+              },
+              "id": {
+                "format": "uuid",
+                "title": "Id",
+                "type": "string"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "permissions": {
+                "$ref": "#/$defs/VaultPermissions"
+              },
+              "updated_at": {
+                "format": "date-time",
+                "title": "Updated At",
+                "type": "string"
+              },
+              "version": {
+                "title": "Version",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "version",
+              "access_version",
+              "created_at",
+              "updated_at",
+              "permissions"
+            ],
+            "title": "VaultEntry",
+            "type": "object"
+          },
+          "VaultPermissions": {
+            "additionalProperties": false,
+            "properties": {
+              "manage": {
+                "title": "Manage",
+                "type": "boolean"
+              },
+              "read": {
+                "title": "Read",
+                "type": "boolean"
+              },
+              "write": {
+                "title": "Write",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "read",
+              "write",
+              "manage"
+            ],
+            "title": "VaultPermissions",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/Page_VaultEntry_"
+      },
+      "parameter_locations": {
+        "limit": "query",
+        "offset": "query"
+      },
+      "path": "/v1/vault/entries",
+      "retry": "read",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Vault List"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "write",
+      "group": "vault",
+      "input_schema": {
+        "$defs": {
+          "VaultPut": {
+            "additionalProperties": false,
+            "properties": {
+              "expected_version": {
+                "maximum": 2147483646.0,
+                "minimum": 0.0,
+                "title": "Expected Version",
+                "type": "integer"
+              },
+              "name": {
+                "maxLength": 120,
+                "minLength": 1,
+                "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+                "title": "Name",
+                "type": "string"
+              },
+              "value": {
+                "format": "password",
+                "maxLength": 65536,
+                "minLength": 1,
+                "title": "Value",
+                "type": "string",
+                "writeOnly": true
+              }
+            },
+            "required": [
+              "expected_version",
+              "name",
+              "value"
+            ],
+            "title": "VaultPut",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/VaultPut"
+          },
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "entry_id": {
+                "format": "uuid",
+                "title": "Entry Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "entry_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters",
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "PUT",
+      "name": "vault.put",
+      "output_schema": {
+        "$defs": {
+          "VaultEntry": {
+            "additionalProperties": false,
+            "properties": {
+              "access_version": {
+                "title": "Access Version",
+                "type": "integer"
+              },
+              "created_at": {
+                "format": "date-time",
+                "title": "Created At",
+                "type": "string"
+              },
+              "id": {
+                "format": "uuid",
+                "title": "Id",
+                "type": "string"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "permissions": {
+                "$ref": "#/$defs/VaultPermissions"
+              },
+              "updated_at": {
+                "format": "date-time",
+                "title": "Updated At",
+                "type": "string"
+              },
+              "version": {
+                "title": "Version",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "version",
+              "access_version",
+              "created_at",
+              "updated_at",
+              "permissions"
+            ],
+            "title": "VaultEntry",
+            "type": "object"
+          },
+          "VaultPermissions": {
+            "additionalProperties": false,
+            "properties": {
+              "manage": {
+                "title": "Manage",
+                "type": "boolean"
+              },
+              "read": {
+                "title": "Read",
+                "type": "boolean"
+              },
+              "write": {
+                "title": "Write",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "read",
+              "write",
+              "manage"
+            ],
+            "title": "VaultPermissions",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/VaultEntry"
+      },
+      "parameter_locations": {
+        "entry_id": "path"
+      },
+      "path": "/v1/vault/entries/{entry_id}",
+      "retry": "inspect_before_retry",
+      "sensitive_input": true,
+      "sensitive_result": true,
+      "summary": "Vault Put"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "read",
+      "group": "vault",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {},
+        "type": "object"
+      },
+      "method": "GET",
+      "name": "vault.status",
+      "output_schema": {
+        "$defs": {
+          "VaultStatus": {
+            "additionalProperties": false,
+            "properties": {
+              "administrator": {
+                "title": "Administrator",
+                "type": "boolean"
+              },
+              "available": {
+                "title": "Available",
+                "type": "boolean"
+              },
+              "configured": {
+                "title": "Configured",
+                "type": "boolean"
+              },
+              "current_key_id": {
+                "format": "uuid",
+                "title": "Current Key Id",
+                "type": "string"
+              },
+              "current_person_id": {
+                "anyOf": [
+                  {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Current Person Id"
+              },
+              "enabled": {
+                "title": "Enabled",
+                "type": "boolean"
+              },
+              "error_code": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Error Code"
+              },
+              "key_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Key Id"
+              },
+              "mcp_enabled": {
+                "title": "Mcp Enabled",
+                "type": "boolean"
+              },
+              "required_key_ids": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Required Key Ids",
+                "type": "array"
+              }
+            },
+            "required": [
+              "configured",
+              "enabled",
+              "mcp_enabled",
+              "available",
+              "error_code",
+              "key_id",
+              "required_key_ids",
+              "current_key_id",
+              "current_person_id",
+              "administrator"
+            ],
+            "title": "VaultStatus",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/VaultStatus"
+      },
+      "parameter_locations": {},
+      "path": "/v1/vault/status",
+      "retry": "read",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Vault Status"
     }
   ],
   "schema_version": 1

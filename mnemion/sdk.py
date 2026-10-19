@@ -101,6 +101,75 @@ def _retry_after(response: httpx.Response) -> float | None:
 
 
 class Client:
+    def vault_status(self) -> dict:
+        return self.request("GET", "/v1/vault/status")
+
+    def vault_list(self, *, offset: int = 0, limit: int = 100) -> dict:
+        return self.request("GET", "/v1/vault/entries", params={"offset": offset, "limit": limit})
+
+    def vault_get(self, entry_id: str) -> dict:
+        """Explicit sensitive read. Do not log the returned value or save it as memory."""
+        return self.request("GET", f"/v1/vault/entries/{UUID(entry_id)}")
+
+    def vault_put(self, entry_id: str, *, name: str, value: str, expected_version: int) -> dict:
+        return self.request(
+            "PUT",
+            f"/v1/vault/entries/{UUID(entry_id)}",
+            body={"name": name, "value": value, "expected_version": expected_version},
+        )
+
+    def vault_grants(self, entry_id: str) -> dict:
+        return self.request("GET", f"/v1/vault/entries/{UUID(entry_id)}/grants")
+
+    def vault_grant(
+        self,
+        entry_id: str,
+        *,
+        subject_kind: str,
+        subject_id: str,
+        expected_access_version: int,
+        read: bool = False,
+        write: bool = False,
+        remove: bool = False,
+    ) -> dict:
+        return self.request(
+            "PUT",
+            f"/v1/vault/entries/{UUID(entry_id)}/grants",
+            body={
+                "subject_kind": subject_kind,
+                "subject_id": str(UUID(subject_id)),
+                "expected_access_version": expected_access_version,
+                "read": read,
+                "write": write,
+                "remove": remove,
+            },
+        )
+
+    def vault_delete(self, entry_id: str, *, expected_version: int) -> dict:
+        return self.request(
+            "POST",
+            f"/v1/vault/entries/{UUID(entry_id)}/delete",
+            body={"expected_version": expected_version},
+        )
+
+    def vault_export(self, entry_ids: list[str], *, recovery_key: str) -> dict:
+        return self.request(
+            "POST",
+            "/v1/vault/export",
+            body={
+                "entry_ids": [str(UUID(value)) for value in entry_ids],
+                "recovery_key": recovery_key,
+            },
+        )
+
+    def vault_import(self, archive: dict, *, recovery_key: str) -> dict:
+        return self.request(
+            "POST", "/v1/vault/import", body={"archive": archive, "recovery_key": recovery_key}
+        )
+
+    def vault_audit(self, *, offset: int = 0, limit: int = 100) -> dict:
+        return self.request("GET", "/v1/vault/audit", params={"offset": offset, "limit": limit})
+
     def company_configuration(self, workspace_id: str) -> dict:
         return self.request(
             "GET",

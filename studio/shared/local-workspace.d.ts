@@ -31,6 +31,10 @@ export type CompanyAccess = {
   message: string; callback_uri: string | null; has_custom_ca: boolean;
   providers: Array<CompanyProviderSettings & { has_client_secret: boolean }>;
 }
+export type VaultRequest = { workspace_id: string; expected_revision: string }
+export type VaultChange = VaultRequest & { action: 'configure' | 'restore'; enabled: boolean; mcp_enabled: boolean; recovery_key?: string; key_saved?: boolean }
+export type VaultAccess = { revision: string; repairable: boolean; state: 'not_configured' | 'configured' | 'disabled' | 'configuration_error' | 'external'; enabled: boolean; mcp_enabled: boolean; key_id: string | null; message: string }
+export type VaultKey = { workspace_id: string; revision: string; key_id: string; recovery_key: string }
 export type MemoryRecovery = { code: 'memory_policy_missing' | 'memory_policy_damaged' | 'memory_policy_inaccessible'; message: string; repair_token: string | null }
 export type MemorySnapshot = {
   mode: 'auto' | 'manual'; requested_limit_mib: number | null; revision: string;
@@ -63,6 +67,7 @@ export type LocalInfo = {
   memory_policy?: MemoryPolicy | null; memory_recovery?: MemoryRecovery | null; memory?: MemorySnapshot | null;
   remote_access?: RemoteAccess;
   company_access?: CompanyAccess;
+  vault_access?: VaultAccess;
 }
 export type LocalStatus = {
   available: boolean; state: 'new' | 'starting' | 'running' | 'stopping' | 'stopped' | 'error';

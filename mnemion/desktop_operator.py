@@ -248,8 +248,8 @@ def dispatch(args: argparse.Namespace) -> int:
         if len(raw) > MAX_REQUEST:
             raise ValueError("The desktop request exceeds 16 KiB.")
         request = request_document(json.loads(raw))
-        if request["action"] == "backup.key" and not args.result_file:
-            raise ValueError("New recovery keys require an owner-only result file.")
+        if request["action"] in {"backup.key", "local.vault-key"} and not args.result_file:
+            raise ValueError("Recovery keys require an owner-only result file.")
         with ExitStack() as stack:
             destination = (
                 stack.enter_context(private_output(args.result_file)) if args.result_file else None

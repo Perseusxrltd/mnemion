@@ -167,3 +167,10 @@ release source. Company recovery custodians, independently
 managed host inventory, continuous replication, provider power management and
 automatic failover retain their separate
 [workspace-continuity requirements](../implementation/workspace-continuity.md).
+
+From source 4.12.0, full snapshots include [encrypted credentials](secrets-vault.md).
+Their host vault key is separate from the backup encryption key and must be saved
+independently. After creating a recovery copy, restore the original vault key in
+**Setup & this device** and review fresh credential grants. Current ledgers preserve
+credential deletions made after the snapshot; old grants are never automatically
+reactivated. The native release gate requires this additional recovery boundary.

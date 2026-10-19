@@ -15,6 +15,9 @@ private runtime credentials, a shared Studio service, operations, and recovery
 cutover. For a private workspace on one computer, desktop 4.0.11 provides
 [guided local setup](local-workspaces.md) without Python or Docker installation.
 The commands below cover a standalone or managed PostgreSQL service deployment.
+From source 4.12.0, the optional [encrypted credentials vault](secrets-vault.md)
+provides separate storage, scoped grants, auditing and independent key recovery.
+It does not add credential values to memory, indexing or Obsidian exports.
 
 ## Run the service
 
@@ -70,8 +73,10 @@ and configure allowed browser origins with `MNEMION_CORS_ORIGINS`.
 
 Version 4.0.11 adds an [optional trusted-issuer OAuth foundation](oauth.md)
 for hosted agents, with migration 013. It requires an actual
-authorization server and operator-approved workspace; built-in personal/team
-sign-in and guided onboarding remain in development.
+authorization server and operator-approved workspace. Built-in [personal sign-in](sign-in.md)
+ships from 4.2.0; [company sign-in](company-sign-in.md) starts at 4.9.0 and its
+guided local-host configuration at 4.11.0. Each guide records remaining provider
+acceptance and hosting requirements.
 
 The worker downloads and verifies the pinned multilingual E5 small ONNX model
 when first needed. No paid model key is needed. Prepare the cache explicitly with:

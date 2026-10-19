@@ -3,6 +3,12 @@ title = "Mnemion secret scan"
 [extend]
 useDefault = true
 
+[[rules]]
+id = "mnemion-vault-key"
+description = "Mnemion vault host or portable-export recovery key"
+regex = '''\bmnv_[A-Za-z0-9_-]{43}\b'''
+keywords = ["mnv_"]
+
 [[allowlists]]
 description = "Reviewed public evidence/model SHA-256 digests and a documented request idempotency key; these confer no access."
 regexTarget = "secret"

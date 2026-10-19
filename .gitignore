@@ -29,6 +29,8 @@ studio/electron/backend.spec
 # Local v4 credentials and deployment state
 .mnemion-run/
 *.mnemion-credentials.json
+vault-access.json
+**/recovery/vault-*.bin
 
 # Browser automation state can contain temporary credentials
 .playwright-cli/

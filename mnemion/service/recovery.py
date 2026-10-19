@@ -217,6 +217,7 @@ def inventory(conn) -> dict:
 
 def _ledger(conn) -> dict:
     from .connector_recovery import capture
+    from .vault_recovery import capture as capture_vault
 
     payload = json_value(
         {
@@ -238,6 +239,7 @@ def _ledger(conn) -> dict:
                 "SELECT tenant_id, space_id, principal_id, role, created_at FROM mnemion.space_grants ORDER BY tenant_id, space_id, principal_id"
             ).fetchall(),
             "connector_state": capture(conn),
+            "vault_state": capture_vault(conn),
         }
     )
     return {**payload, "sha256": hashlib.sha256(canonical_json(payload)).hexdigest()}
@@ -299,6 +301,10 @@ def read_ledger(path: Path) -> dict:
                 "administrator",
             }:
                 raise ValueError("Invalid recovery grant")
+    if payload.get("vault_state") is not None:
+        from .vault_recovery import validate as validate_vault
+
+        validate_vault(payload["vault_state"], tenants)
     if "connector_state" in payload:
         from .connector_recovery import validate
 
@@ -452,8 +458,10 @@ def _reconcile_deletions(conn, ledger: dict) -> int:
 
 def _recover_access(conn, ledger: dict, backup_id: str) -> dict:
     from .connector_recovery import restore
+    from .vault_recovery import restore as restore_vault
 
     restore(conn, ledger)
+    restore_vault(conn, ledger)
     # A restored schedule or key is not current consent to send text to a model.
     conn.execute("""UPDATE mnemion.librarian_settings SET enabled=false,
         network_egress_approved=false,next_run_at=NULL,version=version+1,updated_at=now()""")

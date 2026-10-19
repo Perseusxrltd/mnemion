@@ -41,8 +41,18 @@ def relative_path(value: str) -> str:
 
 
 def selected(config, relative: str) -> bool:
+    if PurePosixPath(relative).name.lower() == "vault-access.json":
+        return False
     return any(fnmatch.fnmatchcase(relative, pattern) for pattern in config.include) and not any(
         fnmatch.fnmatchcase(relative, pattern) for pattern in config.exclude
+    )
+
+
+def private_vault_content(text: str) -> bool:
+    """Never capture a host vault key or a vault archive as searchable memory."""
+    return bool(
+        re.search(r"\bmnv_[A-Za-z0-9_-]{43}\b", text)
+        or re.search(r'"format"\s*:\s*"mnemion-vault-(?:export|contents)"', text)
     )
 
 
@@ -63,6 +73,8 @@ def document(
         raise ProviderError("source_is_not_utf8_text") from None
     if "\0" in text:
         raise ProviderError("source_contains_binary_data")
+    if private_vault_content(text):
+        return None
     if not config.include_generated and re.search(
         r"(?m)^mnemion_managed:\s*true\s*$", text[:16000]
     ):

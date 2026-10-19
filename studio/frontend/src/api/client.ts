@@ -3,6 +3,7 @@ import type { WorkspaceInspection, WorkspaceSession, WorkspaceStatus } from '../
 import type { LocalOptions, LocalStatus, MemoryWrite, PortChange, RemoteChange, RemoteCheck, BackupView, BackupSettingsInput, BackupReceipt, BackupInspectionData, BackupRestoreInput, RecoveryReceipt, BackupInventory, BackupRetentionResult } from '../../../shared/local-workspace'
 import type { SignInCredentials, InvitationCredentials, InvitationPreview } from '@mnemion/client'
 import type { CompanyConfiguration, CompanyCredentials } from '../../../shared/company-sign-in'
+import type { VaultChange, VaultKey, VaultRequest } from '../../../shared/local-workspace'
 import type { CompanyChange, CompanyDiscoveryRequest, CompanyDiscoveryResult } from '../../../shared/local-workspace'
 
 declare global {
@@ -40,6 +41,8 @@ declare global {
       localRemoteCheck?: (input: RemoteCheck) => Promise<LocalStatus>
       localCompany?: (input: CompanyChange) => Promise<LocalStatus>
       localCompanyDiscover?: (input: CompanyDiscoveryRequest) => Promise<CompanyDiscoveryResult>
+      localVault?: (input: VaultChange) => Promise<LocalStatus>
+      localVaultKey?: (input: VaultRequest) => Promise<VaultKey>
       localBackupStatus?: () => Promise<BackupView>
       localBackupKey?: () => Promise<string>
       localBackupChoose?: (kind: 'folder' | 'file') => Promise<{ id: string; path: string } | null>
