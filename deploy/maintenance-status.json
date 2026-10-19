@@ -29,7 +29,7 @@
     {
       "number": 17,
       "title": "Natural-language questions retrieve much worse than keyword queries",
-      "updated_at": "2026-10-13T20:00:14Z",
+      "updated_at": "2026-10-19T07:56:12Z",
       "url": "https://github.com/Perseusxrltd/mnemion/issues/17",
       "labels": [
         "enhancement"
@@ -123,12 +123,19 @@
       "source_commit": "ecbb6135e3cfcee943e622fb7d03d36b36696a2f",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-19T07:38:58Z",
+      "updated_at": "2026-10-19T07:51:08Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39217047454",
       "failed_jobs": [
         {
           "name": "checks / service (3.13)",
           "id": 117943310903,
+          "steps": [
+            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+          ]
+        },
+        {
+          "name": "checks / service (3.12)",
+          "id": 117943310940,
           "steps": [
             "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
           ]
@@ -188,5 +195,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38762926335"
     }
   ],
-  "observed_at": "2026-10-19T07:44:31+00:00"
+  "observed_at": "2026-10-19T07:56:31+00:00"
 }
