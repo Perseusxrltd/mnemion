@@ -82,24 +82,16 @@
   ],
   "runs": [
     {
-      "id": 39242843713,
+      "id": 39243285782,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "fe5cfd1f939a769d6b0c6fb3cd24f7459e01673d",
+      "source_commit": "cbb5f3b4c92387566e071b0158d25a343eabc40b",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-19T11:12:02Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39242843713",
-      "failed_jobs": [
-        {
-          "name": "legacy",
-          "id": 118027688779,
-          "steps": [
-            "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
-          ]
-        }
-      ]
+      "updated_at": "2026-10-19T11:16:18Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39243285782",
+      "failed_jobs": []
     },
     {
       "id": 39241855912,
@@ -144,6 +136,26 @@
       ]
     },
     {
+      "id": 39243307027,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.15.0-r2",
+      "source_commit": "cbb5f3b4c92387566e071b0158d25a343eabc40b",
+      "status": "queued",
+      "conclusion": null,
+      "updated_at": "2026-10-19T11:16:20Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39243307027",
+      "failed_jobs": [
+        {
+          "name": "checks / legacy",
+          "id": 118029154967,
+          "steps": [
+            "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
+          ]
+        }
+      ]
+    },
+    {
       "id": 39242665532,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
@@ -166,5 +178,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39241852486"
     }
   ],
-  "observed_at": "2026-10-19T11:15:09+00:00"
+  "observed_at": "2026-10-19T11:16:35+00:00"
 }
