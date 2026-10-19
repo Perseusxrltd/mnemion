@@ -82,15 +82,16 @@
   ],
   "runs": [
     {
-      "id": 38755654205,
+      "id": 39217859050,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "edd86390f0ab43e8149a7b9fb13ce748ac6e4cb5",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-15T15:14:18Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38755654205"
+      "source_commit": "b226dbe7c33bc0591f2edf4e6c2a6debbbbec8c7",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-19T07:44:15Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39217859050",
+      "failed_jobs": []
     },
     {
       "id": 38762930423,
@@ -113,6 +114,45 @@
       "conclusion": "success",
       "updated_at": "2026-10-15T15:42:28Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38755751232"
+    },
+    {
+      "id": 39217047454,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.12.0",
+      "source_commit": "ecbb6135e3cfcee943e622fb7d03d36b36696a2f",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-19T07:38:58Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39217047454",
+      "failed_jobs": [
+        {
+          "name": "checks / service (3.13)",
+          "id": 117943310903,
+          "steps": [
+            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+          ]
+        },
+        {
+          "name": "checks / service (3.14)",
+          "id": 117943310985,
+          "steps": [
+            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 39217905202,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.12.0-r2",
+      "source_commit": "b226dbe7c33bc0591f2edf4e6c2a6debbbbec8c7",
+      "status": "pending",
+      "conclusion": null,
+      "updated_at": "2026-10-19T07:44:14Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39217905202",
+      "failed_jobs": []
     },
     {
       "id": 38762688790,
@@ -148,5 +188,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38762926335"
     }
   ],
-  "observed_at": "2026-10-19T05:17:50+00:00"
+  "observed_at": "2026-10-19T07:44:31+00:00"
 }
