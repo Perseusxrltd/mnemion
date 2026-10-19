@@ -49,3 +49,13 @@ The fixture uses an actual local service through the normal saved-connection
 path. It does not prove every external company network or signed-in provider.
 Company sign-in, invitation enrollment, concurrent multi-workspace sessions and
 remote host delegation keep their separate acceptance requirements.
+
+## Published and actual Windows acceptance
+
+Release [4.28.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.28.0)
+published on 19 October at 23:18 UTC after all six native targets passed.
+The user's actual Windows x64 app then updated automatically and selected the
+existing shared workspace through `workspace.sign-in`. Its independent human
+administrator identity, protected remembered password session and previous
+bookmark were verified. See [actual deployment evidence](2026-10-20-shared-workspace-adoption.md).
+The automatic release status separately records the public update rehearsals.
