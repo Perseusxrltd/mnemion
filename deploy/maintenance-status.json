@@ -78,13 +78,6 @@
       "labels": [
         "enhancement"
       ]
-    },
-    {
-      "number": 43,
-      "title": "Filesystem connector: one non-UTF-8 text file suspends the whole scope (access_suspended) with no health signal",
-      "updated_at": "2026-10-19T16:14:43Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/issues/43",
-      "labels": []
     }
   ],
   "runs": [
@@ -106,11 +99,10 @@
       "workflow": "public-updates.yml",
       "branch": "v4.22.0",
       "source_commit": "24a7ebc040bde5b5f52db2d1459ad695ab1cfc2e",
-      "status": "queued",
-      "conclusion": null,
-      "updated_at": "2026-10-19T19:08:35Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39305811598",
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-19T19:32:31Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39305811598"
     },
     {
       "id": 39299277378,
@@ -140,9 +132,9 @@
       "workflow": "release.yml",
       "branch": "release/4.24.0",
       "source_commit": "913e2af144d37fd707746a0b791d7da9c7ca8224",
-      "status": "queued",
+      "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-19T19:04:45Z",
+      "updated_at": "2026-10-19T19:21:01Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39307882234",
       "failed_jobs": []
     },
@@ -169,5 +161,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39305807222"
     }
   ],
-  "observed_at": "2026-10-19T19:18:53+00:00"
+  "observed_at": "2026-10-19T19:33:03+00:00"
 }
