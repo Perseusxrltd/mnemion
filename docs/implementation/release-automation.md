@@ -91,7 +91,20 @@ verification dispatches remain read-only. No package is rebuilt after verificati
 When a gate fails, inspect that run and fix its concrete cause. A failed full run
 is not an invitation to bypass it or repeatedly exercise unrelated passing gates.
 Re-run the failed workflow only when a fix or resolved transient error justifies
-it. For a corrected version that has **never been published**, commit and push
+it. The status workflow now makes one exception automatically: if GitHub reports
+that its hosted runner could not acquire a job, and every unsuccessful job has
+zero steps and no assigned runner, it retries only the failed jobs once. This
+requires the exact GitHub capacity annotation, a first attempt, our repository,
+and either the current public release tag or an unpublished frozen release
+branch still on main. It rechecks that identity before requesting the retry.
+Actual test failures, timeouts, ordinary cancellations, forks, stale versions
+and second attempts remain for investigation. Passing jobs and release assets
+are reused; no paid runner or check bypass is added. Inspect without mutation
+using `python -m deploy.runner_capacity_retry --run RUN_ID`; `--apply` enables the
+same bounded action used by the workflow. Its separate job has Actions write
+permission but no repository-content or issue write permission.
+
+For a corrected version that has **never been published**, commit and push
 the fix to main, then use `python -m deploy.release_automation start --attempt 2`
 (or the next attempt number). This freezes a separate `release/X.Y.Z-r2` branch;
 the failed attempt's source is preserved. A published version requires a new
