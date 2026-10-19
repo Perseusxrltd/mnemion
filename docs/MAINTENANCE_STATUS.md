@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-19T11:22:56+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-19T11:37:05+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.14.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.14.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -23,7 +23,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | in\_progress | [Run 39243804164](https://github.com/Perseusxrltd/mnemion/actions/runs/39243804164) |
+| ci\.yml | main | failure | [Run 39243804164](https://github.com/Perseusxrltd/mnemion/actions/runs/39243804164) |
 | public-updates\.yml | v4\.14\.0 | success | [Run 39241855912](https://github.com/Perseusxrltd/mnemion/actions/runs/39241855912) |
 | release\.yml | release/4\.14\.0-r2 | success | [Run 39236264889](https://github.com/Perseusxrltd/mnemion/actions/runs/39236264889) |
 | release\.yml | release/4\.15\.0 | failure | [Run 39242637086](https://github.com/Perseusxrltd/mnemion/actions/runs/39242637086) |
@@ -34,4 +34,6 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 ## Failed jobs
 
+- [Run 39243804164](https://github.com/Perseusxrltd/mnemion/actions/runs/39243804164): supervision \(macos-15\). Steps: Verify both pinned local models on the actual Mac runtime.
 - [Run 39242637086](https://github.com/Perseusxrltd/mnemion/actions/runs/39242637086): Release preflight. Steps: Run ruff format --check \..
+- [Run 39243853016](https://github.com/Perseusxrltd/mnemion/actions/runs/39243853016): checks / service \(3\.12\). Steps: Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
