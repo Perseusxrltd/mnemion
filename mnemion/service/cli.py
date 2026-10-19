@@ -109,6 +109,13 @@ def main(argv: list[str] | None = None) -> int:
     update_arguments(
         commands.add_parser("updates", help="Manage signed server hotfixes with verified backups")
     )
+    from .host_cli import arguments as host_arguments
+
+    host_arguments(
+        commands.add_parser(
+            "host", help="Export and restore an encrypted host with stable workspace identities"
+        )
+    )
     worker = commands.add_parser("worker", help="Run durable indexing and deletion work")
     worker.add_argument("--once", action="store_true")
     prepare = commands.add_parser(
@@ -269,6 +276,10 @@ def main(argv: list[str] | None = None) -> int:
         from .service_updates import execute as update_service
 
         return update_service(args)
+    elif args.command == "host":
+        from .host_cli import execute as host_service
+
+        return host_service(args)
     elif args.command == "studio":
         from .studio import build_studio, studio_status
 

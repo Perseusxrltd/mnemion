@@ -44,6 +44,8 @@ dist-desktop/
 !.env.example
 *.mnemion
 *.mnemion-ledger.json
+*.mnemion-host
+*.mnemion-ledger
 
 # Local browser acceptance artifacts may include fixture credentials
 output/

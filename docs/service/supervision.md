@@ -6,11 +6,14 @@ account on Linux or macOS, including hosts without systemd. The API also serves
 Studio and authenticated HTTP MCP. On Windows, use the background
 [Compose deployment](deployment.md); Supervisor itself does not support Windows.
 
-This manages the two application processes. PostgreSQL, TLS/tunnels and source
-runners retain their own deployment lifecycle. It does not download software
+This manages the API and worker, plus optionally registered source runners from
+4.13.0. PostgreSQL and TLS/tunnels retain their own deployment lifecycle.
+Ordinary supervision does not download software
 updates or run migrations. For automatic compatible patches, use the
 [managed setup](managed-updates.md) introduced in 4.0.8; it adds an updater child
 to a new private Supervisor instance. Desktop automatic updates remain independent.
+Use [host recovery packages](host-recovery.md) to restore a supervised workspace
+and its source settings after losing the original host.
 
 ## Prepare a private instance
 
@@ -74,6 +77,20 @@ librarian and selected resource settings are also captured from the preparation
 environment. Do not put database logins in this file; use the role files above.
 Settings and provider keys are private, not printed in command results. Changing
 the login shell later does not change the saved configuration.
+
+From 4.13.0, add a repeated `--connector-config /private/source.json` when
+preparing an instance to supervise up to 64 distinct source runners. These use
+the same restart and bounded-log lifecycle; a managed instance also moves their
+scans with its verified runtime. Keep one runner per connector, stopping any
+older independently launched runner before starting the new instance. The
+configuration must be private and retain the registered connector ID. Source
+children receive their own token/provider references, not database-owner
+environment variables. See [managed source runners](managed-connectors.md).
+
+`supervise status` reports managed/manual update mode, the saved enabled state,
+and whether a public HTTPS origin is configured even when the service is stopped.
+It does not claim that an external proxy or tunnel is reachable. Invalid update
+settings have an unknown enabled state and a visible attention code.
 
 Preparation never overwrites different existing settings or credentials. For a
 configuration change, prepare a new state directory, stop the old instance and

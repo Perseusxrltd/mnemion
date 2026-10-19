@@ -339,6 +339,8 @@ def create_app(
 
     @app.exception_handler(RequestValidationError)
     async def invalid_request(request: Request, exc: RequestValidationError):
+        from .connector_models import CONNECTOR_PROVIDER_MESSAGE
+
         # Validation diagnostics must never echo submitted credentials or source text.
         fields = [
             {"field": ".".join(str(part) for part in error["loc"]), "type": error["type"]}
@@ -350,6 +352,8 @@ def create_app(
                     "code": "invalid_request",
                     "message": SCOPE_SELECTION_MESSAGE
                     if any(error["type"] == "memory_scope" for error in exc.errors())
+                    else CONNECTOR_PROVIDER_MESSAGE
+                    if any(error["type"] == "connector_provider" for error in exc.errors())
                     else "Check the request fields against the API schema.",
                     "fields": fields,
                 },

@@ -202,6 +202,8 @@ def setup(
     port: int = 7892,
     public_url: str | None = None,
     environment: Path | None = None,
+    connector_configs: tuple[Path, ...] = (),
+    inherit_environment: bool = True,
 ) -> dict:
     """One explicit host adoption; new managed installations update by default."""
     state = state.expanduser().absolute()
@@ -257,6 +259,8 @@ def setup(
             public_url=public_url,
             environment=environment,
             managed_updates=True,
+            connector_configs=connector_configs,
+            inherit_environment=inherit_environment,
         )
         state, root, settings = _root(state)
         for child in ("logs", "releases", "backups", "cache", "tools"):
@@ -1009,6 +1013,7 @@ def arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--worker-credentials", type=Path)
     parser.add_argument("--admin-credentials", type=Path)
     parser.add_argument("--environment", type=Path)
+    parser.add_argument("--connector-config", type=Path, action="append", default=[])
     parser.add_argument("--uv", type=Path)
     parser.add_argument("--pg-bin", type=Path)
     parser.add_argument("--host", default="127.0.0.1")
@@ -1046,6 +1051,7 @@ def execute(args: argparse.Namespace) -> int:
                 port=args.port,
                 public_url=args.public_url,
                 environment=args.environment,
+                connector_configs=tuple(args.connector_config),
             )
         elif args.action == "watch":
             return watch(args.state_dir)

@@ -158,19 +158,36 @@ def test_native_cli_handoff_is_bounded_and_key_retrieval_is_explicit(tmp_path):
 
 
 def test_connectors_never_import_host_keys_or_encrypted_vault_exports():
+    from mnemion.backup_encryption import new_key
     from mnemion.connectors.config import FileSelection
     from mnemion.connectors.providers import document, selected
+    from mnemion.service.db import new_token
 
     selection = FileSelection(exclude=[])
     assert not selected(selection, "nested/vault-access.json")
+    for name in ("host-secrets.json", "office.mnemion-host", "access.mnemion-ledger"):
+        assert not selected(selection, "nested/" + name)
     for content in (
         json.dumps({"key": new_vault_key()}),
         '{"format":"mnemion-vault-export","ciphertext":"fixture"}',
+        json.dumps({"key": new_key()}),
+        json.dumps({"key": new_token()[0]}),
+        json.dumps({"database_url": "postgresql://app:private-password@localhost/mnemion"}),
+        json.dumps({"worker_database_url": "private-worker-login"}),
+        json.dumps({"admin_database_url": "private-owner-login"}),
+        json.dumps({"format": "mnemion-host-recovery-state", "selection": {}}),
+        json.dumps({"identifier": "mnemion-example", "environment": {"COMPANY_SECRET": "private"}}),
     ):
         assert document(selection, "renamed.txt", content.encode(), "fixture") is None
     assert (
         document(
             selection, "notes.md", b"A normal note about using a credentials vault.", "fixture"
+        )
+        is not None
+    )
+    assert (
+        document(
+            selection, "notes.json", b'{"note":"Configure database_url on the host."}', "fixture"
         )
         is not None
     )

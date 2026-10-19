@@ -1,9 +1,22 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.12.0**. Roadmap updated: **2026-10-19**.
+Reviewed source distribution: **4.13.0**. Roadmap updated: **2026-10-19**.
 The [current published distribution and release gates](RELEASE_STATUS.md) are updated automatically.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
+
+The [4.13.0 source](releases/4.13.0.md) implements
+[encrypted host packages and resumable reconstruction](service/host-recovery.md)
+for supervised Linux/macOS hosts: a complete database snapshot, newer encrypted
+access ledgers, stable workspace identities, restricted database logins, explicit
+application-key continuity and restored source-runner supervision. Managed updates
+default on while preserving a deliberate pause. Status returns startup instructions
+and distinguishes local readiness from external-route verification.
+[Actual PostgreSQL, process and CLI checks](validation/2026-10-19-host-recovery.md)
+cover repeated loss and interrupted restoration. This advances issue 38 and
+F08, C01, A06/A09/A12/A13 and U04/U06. Verified off-host delivery, delegated
+provider wake, guided app import, Windows/Compose adoption and multi-host takeover
+remain open; the strict full-scope count remains **17/64 shipped (26.6%)**.
 
 The [4.12.0 source](releases/4.12.0.md) adds a separate
 [encrypted credentials vault](service/secrets-vault.md): app setup, scoped
@@ -15,11 +28,10 @@ This advances A04, A09, F08 and U01 without claiming complete company policy,
 key custody/rotation or KeePass interoperability. The strict full-scope count
 remains **17/64 shipped (26.6%)**.
 
-The next operational batch prioritizes the newer
-[host-reset/reinstallation report, issue 38](https://github.com/Perseusxrltd/mnemion/issues/38):
-an idempotent host plan, independent encrypted state/key custody, clear managed-update
-and public-route status, and actionable connector configuration errors. Preserving
-identities and restoring access must respect the current denial ledger.
+The [host-reset/reinstallation report, issue 38](https://github.com/Perseusxrltd/mnemion/issues/38)
+retains the external deployment, independent custody and guided recovery work
+beyond the operator batch above. Preserving identities and restoring access must
+continue to respect the latest independently available denial ledger.
 [Issue 39](https://github.com/Perseusxrltd/mnemion/issues/39) adds an opt-in durable
 Git delivery journal for native saves, scanning hooks, scheduled/important pushes,
 librarian folding and stable replay. Its export/deletion/permission contract must

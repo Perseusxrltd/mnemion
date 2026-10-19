@@ -5,6 +5,15 @@ verified service runtime. This addresses a separately launched Git, filesystem,
 Drive, Slack or rclone runner remaining on its original Python installation
 after the API and worker update.
 
+From 4.13.0, a new `updates setup` or `supervise prepare` can accept a repeated
+`--connector-config /private/source.json`. Supervisor then owns those runners
+alongside the API and worker. Managed instances automatically apply the verified
+runtime behavior below. This also lets [host recovery](host-recovery.md) include
+the registered configurations and restore their lifecycle without separate
+launcher commands. Stop an older independently launched runner before starting
+the new supervised instance. Provider authorization and source bindings remain
+explicit; registering a process grants no new source permissions.
+
 Keep the existing connector ID, configuration, token references, source cache
 and identity mappings. Stop the previous runner through its existing process
 manager, then start one managed runner:

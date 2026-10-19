@@ -72,6 +72,14 @@ key per organization; a single-organization file can be passed directly with
 active administrator, recovery creates an administrator with no automatic content
 grants; explicitly assign the necessary space access before use.
 
+From 4.13.0, the separate [host-package workflow](host-recovery.md) can restore
+the database together with supervised host settings and source runners. Its
+default still rotates access. An explicit `preserve_applications` policy retains
+only non-administrator application keys eligible in both the backup and current
+ledger, without extending expiry or reviving revoked/disabled access. Human
+sessions and historical credential-vault grants still require fresh authorization.
+The plain `restore` command above retains its rotate-all behavior.
+
 Endpoint embedding processing is paused after restore. Candidate reindex runs
 are paused too, and their previous endpoint approvals are cleared. Review the
 registered destinations in Studio's **Embedding models** page, then explicitly

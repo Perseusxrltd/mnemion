@@ -28,6 +28,13 @@ and let the chosen storage client transport it. Keep the ingestion root and the
 generated visualization separate to avoid feedback loops. A synchronized folder
 is not a replacement for the authoritative database or a verified recovery archive.
 
+From 4.13.0, text imports also reject recognized host database-login documents,
+recovery state and Mnemion key material even when a private file is renamed.
+Host recovery archives and `host-secrets.json` are excluded from folder selection.
+Normal documentation that explains configuration fields remains importable.
+Keep source folders separate from runtime credentials; this guard is not a
+general-purpose secret or personal-data classifier.
+
 ## Connected sources and writable memory
 
 A connected Git repository appears in a connector-managed source space. Its
@@ -81,8 +88,12 @@ that would detach the copy from the source's access and deletion lifecycle.
 1. Create a dedicated **application** principal without organization administrator
    rights, then issue its own Mnemion API key. Do not reuse an assistant's key.
 2. As an organization administrator, register `POST /v1/connectors` with `name`,
-   `provider`, `principal_id`, and `access_mode`. Use `provider` for Slack/Drive or
-   `published` for filesystem/Git/rclone.
+   `provider`, `principal_id`, and `access_mode`. Set **`provider`** to the adapter
+   name: `slack`, `gdrive`, `filesystem`, `git`, `rclone`, or your custom adapter's
+   name. Set **`access_mode`** to `provider` for Slack/Drive or `published` for
+   filesystem/Git/rclone. For example: `{"provider":"filesystem","access_mode":"published"}`.
+   Each connector needs its own application principal; an existing connector's
+   provider cannot be changed while retaining its source identities.
 3. Map source identities using `PUT /v1/connectors/{id}/bindings`: `external_id`,
    `principal_id`, and `role` (`reader` or `reviewer`). Unknown identities get no
    access. An application may be mapped explicitly to the source audience it
@@ -95,6 +106,14 @@ that would detach the copy from the source's access and deletion lifecycle.
    IDs and memberships. This reads the provider and service without importing or
    changing access. Add the required identity mappings, then run without
    `--inspect`. Add `--watch` for repeated scans.
+
+`provider` names the adapter; `access_mode` names its permission policy.
+The API rejects `provider: "provider"` and `provider: "published"` with an
+actionable message. Before reading a source, the runner also checks that the
+configuration matches the registered provider and access mode. A token reference
+must be an object such as `{"file":"/private/source.key"}` or
+`{"env":"MNEMION_CONNECTOR_KEY"}`. Invalid configuration reports this shape
+without echoing the supplied credential.
 
 On an adopted Linux/macOS service host, use the
 [managed connector launch path](managed-connectors.md) to follow verified

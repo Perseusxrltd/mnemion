@@ -41,7 +41,10 @@ def relative_path(value: str) -> str:
 
 
 def selected(config, relative: str) -> bool:
-    if PurePosixPath(relative).name.lower() == "vault-access.json":
+    name = PurePosixPath(relative).name.lower()
+    if name in {"vault-access.json", "host-secrets.json"} or name.endswith(
+        (".mnemion-host", ".mnemion-ledger")
+    ):
         return False
     return any(fnmatch.fnmatchcase(relative, pattern) for pattern in config.include) and not any(
         fnmatch.fnmatchcase(relative, pattern) for pattern in config.exclude
@@ -49,10 +52,28 @@ def selected(config, relative: str) -> bool:
 
 
 def private_vault_content(text: str) -> bool:
-    """Never capture a host vault key or a vault archive as searchable memory."""
-    return bool(
-        re.search(r"\bmnv_[A-Za-z0-9_-]{43}\b", text)
-        or re.search(r'"format"\s*:\s*"mnemion-vault-(?:export|contents)"', text)
+    """Keep host keys, recovery controls and credential archives out of memory."""
+    if re.search(r"\b(?:mnv_|mnm_bk_|mnm_)[A-Za-z0-9_-]{43}\b", text) or re.search(
+        r'"format"\s*:\s*"mnemion-vault-(?:export|contents)"', text
+    ):
+        return True
+    # Recognize actual control documents, including renamed copies, without
+    # excluding prose that merely explains these configuration fields.
+    if not text.lstrip().startswith("{"):
+        return False
+    try:
+        value = json.loads(text)
+    except (ValueError, RecursionError):
+        return False
+    return isinstance(value, dict) and (
+        any(
+            isinstance(value.get(field), str)
+            for field in ("database_url", "worker_database_url", "admin_database_url")
+        )
+        or value.get("format") == "mnemion-host-recovery-state"
+        or isinstance(value.get("identifier"), str)
+        and value["identifier"].startswith("mnemion-")
+        and isinstance(value.get("environment"), dict)
     )
 
 

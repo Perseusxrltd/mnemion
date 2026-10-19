@@ -18,6 +18,11 @@ The commands below cover a standalone or managed PostgreSQL service deployment.
 From source 4.12.0, the optional [encrypted credentials vault](secrets-vault.md)
 provides separate storage, scoped grants, auditing and independent key recovery.
 It does not add credential values to memory, indexing or Obsidian exports.
+Source 4.13.0 adds [encrypted host packages and resumable restoration](host-recovery.md)
+for supervised Linux/macOS services, including scoped logins and source runners.
+It keeps stable organization IDs and offers an explicit, ledger-bound policy for
+application-key continuity. External hosting, transport and startup registration
+remain operator responsibilities.
 
 ## Run the service
 

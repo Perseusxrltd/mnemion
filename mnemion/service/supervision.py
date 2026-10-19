@@ -22,6 +22,7 @@ import time
 from urllib.parse import urlsplit
 import urllib.request
 import xmlrpc.client
+from uuid import UUID
 
 from ..archives import private_json
 from .. import process_identity
@@ -182,6 +183,8 @@ def prepare(
     studio: Path | None = None,
     environment: Path | None = None,
     managed_updates: bool = False,
+    connector_configs: tuple[Path, ...] = (),
+    inherit_environment: bool = True,
 ) -> dict:
     _unix()
     state = state.expanduser().absolute()
@@ -219,7 +222,8 @@ def prepare(
     runtime_environment = {
         key: value
         for key, value in os.environ.items()
-        if (
+        if inherit_environment
+        and (
             key.startswith(("MNEMION_MODEL_", "MNEMION_EMBEDDING_", "MNEMION_LIBRARIAN_"))
             or key
             in {
@@ -234,6 +238,18 @@ def prepare(
     }
     runtime_environment.update(_read(environment) if environment else {})
     runtime_environment = _environment(runtime_environment)
+    connectors = []
+    if len(connector_configs) > 64:
+        raise SupervisionError("A supervised host supports at most 64 source runners")
+    for path in connector_configs:
+        from ..connectors.config import read_config
+
+        path = path.expanduser().absolute()
+        _private(path)
+        config = read_config(path)
+        connectors.append({"id": str(config.connector_id), "config": str(path)})
+    if len({item["id"] for item in connectors}) != len(connectors):
+        raise SupervisionError("Configure each supervised connector only once")
     identifier, runtime = _runtime(state)
     # Preserve the venv executable path; resolve() would follow its symlink to
     # the base interpreter and discard the installed environment.
@@ -253,6 +269,7 @@ def prepare(
         "runtime": str(runtime),
         "environment": runtime_environment,
         **({"managed_updates": True} if managed_updates else {}),
+        **({"connectors": connectors} if connectors else {}),
     }
     for value in (str(state), str(runtime), executable, settings["directory"]):
         _value(value)
@@ -291,22 +308,36 @@ def prepare(
     _once(state / "settings.json", settings)
     _content_once(state / "supervisord.conf", text.encode())
     _content_once(state / "launchd.plist", launchd)
+    return {
+        "prepared": True,
+        "state_directory": str(state),
+        "systemd_required": False,
+        **startup_instructions(state, settings),
+    }
+
+
+def startup_instructions(state: Path, settings: dict) -> dict:
+    """Report the generated OS entry point without claiming it was registered."""
     boot = (
         "cd "
         + shlex.quote(settings["directory"])
         + " && "
         + shlex.join(
-            [executable, "-m", "mnemion.service.supervision", "start", "--state-dir", str(state)]
+            [
+                settings["python"],
+                "-m",
+                "mnemion.service.supervision",
+                "start",
+                "--state-dir",
+                str(state),
+            ]
         )
     )
     return {
-        "prepared": True,
-        "state_directory": str(state),
-        "systemd_required": False,
         "boot_command": boot,
         "cron_entry": "@reboot " + boot.replace("%", r"\%"),
         "launchd_file": str(state / "launchd.plist"),
-        "launchd_label": launchd_label,
+        "launchd_label": "com.mnemion.service." + settings["identifier"],
     }
 
 
@@ -363,6 +394,38 @@ killasgroup=true
 redirect_stderr=true
 stdout_logfile={_value(str(state / "logs" / (role + ".log")), expansions=2)}
 stdout_logfile_maxbytes=10MB
+stdout_logfile_backups=2
+environment=PYTHONUNBUFFERED="1"
+"""
+    for connector in settings.get("connectors", []):
+        identifier = UUID(connector["id"])
+        command = shlex.join(
+            [
+                settings["python"],
+                "-m",
+                "mnemion.service.supervision",
+                "connector-child",
+                "--state-dir",
+                str(state),
+                "--connector-id",
+                str(identifier),
+            ]
+        )
+        config += f"""
+[program:mnemion-connector-{identifier.hex}]
+command={_value(command)}
+directory={_value(settings["directory"])}
+autostart=true
+autorestart=true
+startsecs=2
+startretries=5
+stopsignal=TERM
+stopwaitsecs=35
+stopasgroup=true
+killasgroup=true
+redirect_stderr=true
+stdout_logfile={_value(str(state / "logs" / ("connector-" + identifier.hex + ".log")), expansions=2)}
+stdout_logfile_maxbytes=5MB
 stdout_logfile_backups=2
 environment=PYTHONUNBUFFERED="1"
 """
@@ -537,19 +600,66 @@ def _initialized(state: Path, value: dict, processes: list[dict]) -> bool | None
         return False
 
 
+def configuration_status(state: Path, value: dict) -> dict:
+    """Readiness alone does not prove update adoption or a working tunnel."""
+    managed = value.get("managed_updates") is True
+    enabled = False
+    valid = True
+    if managed:
+        try:
+            configuration = state / "updates/config.json"
+            _private(configuration)
+            saved = _read(configuration)
+            if saved.get("format") != 1 or type(saved.get("enabled")) is not bool:
+                raise ValueError("Invalid update settings")
+            enabled = saved["enabled"]
+        except (OSError, ValueError):
+            enabled = None
+            valid = False
+    public_origin = bool(value.get("public_url"))
+    attention = []
+    if not managed:
+        attention.append("automatic_updates_unmanaged")
+    elif not valid:
+        attention.append("automatic_updates_configuration_invalid")
+    elif not enabled:
+        attention.append("automatic_updates_disabled")
+    if not public_origin:
+        attention.append("public_origin_not_configured")
+    return {
+        "updates": {"mode": "managed" if managed else "manual", "enabled": enabled},
+        "remote_access": {
+            "public_origin_configured": public_origin,
+            "transport_verified": False,
+            "verification": "External tunnel or proxy must be checked separately.",
+        },
+        "attention": attention,
+    }
+
+
 def status(state: Path) -> dict:
     state, value = settings(state)
+    configuration = configuration_status(state, value)
     try:
         with _rpc(value) as client:
             processes = client.supervisor.getAllProcessInfo()
             pid = client.supervisor.getPID()
     except xmlrpc.client.Fault as error:
         if error.faultCode == 6:  # Supervisor rejects normal RPC while draining children.
-            return {"running": True, "stopping": True, "ready": False, "processes": []}
+            return {
+                "running": True,
+                "stopping": True,
+                "ready": False,
+                "processes": [],
+                **configuration,
+            }
         raise
     except (FileNotFoundError, ConnectionRefusedError):
-        return {"running": False, "ready": False, "processes": []}
+        return {"running": False, "ready": False, "processes": [], **configuration}
     expected = {"mnemion-api", "mnemion-worker"}
+    expected.update(
+        "mnemion-connector-" + UUID(item["id"]).hex for item in value.get("connectors", [])
+    )
     if value.get("managed_updates"):
         expected.add("mnemion-updater")
     if {item["name"] for item in processes} != expected:
@@ -590,6 +700,7 @@ def status(state: Path) -> dict:
             # Preserve a not-ready result instead of reporting stale readiness.
             unchanged = False
     return {
+        **configuration,
         "running": True,
         "service_ready": ready
         and instance_matches
@@ -742,8 +853,51 @@ def child(state: Path, role: str) -> int:
     return service(arguments)
 
 
+def connector_child(state: Path, identifier: str) -> int:
+    from ..connectors.config import read_config
+    from .service_updates import _environment as installation_environment
+
+    state, value = settings(state)
+    identifier = str(UUID(identifier))
+    entry = next((item for item in value.get("connectors", []) if item["id"] == identifier), None)
+    if entry is None:
+        raise SupervisionError("This connector is not registered with this supervisor")
+    path = Path(entry["config"])
+    _private(path)
+    config = read_config(path)
+    if str(config.connector_id) != identifier:
+        raise SupervisionError("The supervised connector configuration changed identity")
+    environment = installation_environment()
+    environment["PYTHONUNBUFFERED"] = "1"
+    if "SSH_AUTH_SOCK" in os.environ:
+        environment["SSH_AUTH_SOCK"] = os.environ["SSH_AUTH_SOCK"]
+    tokens = [config.service_token]
+    if hasattr(config.provider, "token"):
+        tokens.append(config.provider.token)
+    for token in tokens:
+        if token.env:
+            if token.env in ROLE_VARIABLES - {"MNEMION_API_KEY"} or token.env.startswith(
+                ("MNEMION_VAULT", "PYTHON", "LD_", "DYLD_")
+            ):
+                raise SupervisionError(
+                    "Source runners need dedicated provider or application credentials"
+                )
+            credential = value["environment"].get(token.env, os.environ.get(token.env))
+            if credential is None:
+                raise SupervisionError("A supervised connector credential variable is missing")
+            environment[token.env] = credential
+    command = [value["python"], "-m", "mnemion.connectors.runner", "--config", str(path), "--watch"]
+    if value.get("managed_updates"):
+        command += ["--managed-state", str(state)]
+    os.chdir(value["directory"])
+    os.execve(command[0], command, environment)
+    return 0
+
+
 def arguments(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("action", choices=("prepare", "start", "run", "status", "stop", "child"))
+    parser.add_argument(
+        "action", choices=("prepare", "start", "run", "status", "stop", "child", "connector-child")
+    )
     parser.add_argument("--state-dir", type=Path, required=True)
     parser.add_argument("--api-credentials", type=Path)
     parser.add_argument("--worker-credentials", type=Path)
@@ -755,6 +909,8 @@ def arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--public-url")
     parser.add_argument("--studio", type=Path)
     parser.add_argument("--role", choices=("api", "worker", "updater"))
+    parser.add_argument("--connector-id")
+    parser.add_argument("--connector-config", type=Path, action="append", default=[])
 
 
 def execute(args: argparse.Namespace) -> int:
@@ -771,6 +927,7 @@ def execute(args: argparse.Namespace) -> int:
                 public_url=args.public_url,
                 studio=args.studio,
                 environment=args.environment,
+                connector_configs=tuple(args.connector_config),
             )
         elif args.action in {"start", "run"}:
             result = start(args.state_dir, foreground=args.action == "run")
@@ -780,6 +937,10 @@ def execute(args: argparse.Namespace) -> int:
             if args.role is None:
                 raise SupervisionError("child requires a role")
             return child(args.state_dir, args.role)
+        elif args.action == "connector-child":
+            if args.connector_id is None:
+                raise SupervisionError("connector-child requires its registered connector ID")
+            return connector_child(args.state_dir, args.connector_id)
         else:
             result = status(args.state_dir)
         print(json.dumps(result))

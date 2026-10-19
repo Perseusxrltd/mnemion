@@ -110,6 +110,7 @@ Optional setup arguments:
 | `--uv /absolute/path/to/uv` | Select the reviewed installer if it is not on PATH |
 | `--pg-bin /path/to/postgresql/bin` | Select matching PostgreSQL backup tools |
 | `--environment /private/runtime.json` | Save approved model, provider and resource configuration |
+| `--connector-config /private/source.json` | Register a source runner with Supervisor; repeat for up to 64 distinct sources (4.13.0+) |
 | `--host 127.0.0.1 --port 7892` | Choose the listener; loopback is the default |
 | `--public-url https://memory.example.com` | Configure the public MCP origin; does not provision a tunnel or TLS |
 
@@ -126,6 +127,12 @@ The generated cron entry and launchd plist work as described in the
 [boot and login guide](supervision.md#linux-boot-with-cron). Installing one remains
 an explicit host configuration step. Verify actual reboot, database/network
 startup order and the organization's OS policy on the adopted host.
+
+[Host recovery packages](host-recovery.md) can capture the database and required
+private configuration, then restore managed updates and registered source runners
+after host loss. Their restoration defaults to managed updates and preserves an
+explicitly paused setting. Independent cloud delivery, host wake and boot-task
+registration still require the organization's deployment controls.
 
 ## Automatic behavior
 

@@ -4,11 +4,16 @@ from datetime import datetime
 from typing import Annotated, Literal
 from uuid import UUID
 
-from pydantic import AwareDatetime, Field, model_validator
+from pydantic import AwareDatetime, Field, field_validator, model_validator
+from pydantic_core import PydanticCustomError
 
 from .models import Command, MemoryInput
 
 ExternalID = Annotated[str, Field(min_length=1, max_length=512, pattern=r"^[^\x00-\x1f]+$")]
+CONNECTOR_PROVIDER_MESSAGE = (
+    "provider must identify the source adapter, such as filesystem, git, rclone, slack or gdrive. "
+    "Use provider or published in access_mode."
+)
 
 
 class ConnectorInput(Command):
@@ -16,6 +21,15 @@ class ConnectorInput(Command):
     provider: str = Field(min_length=1, max_length=80, pattern=r"^[a-z][a-z0-9_-]*$")
     principal_id: UUID
     access_mode: Literal["provider", "published"] = "provider"
+
+    @field_validator("provider")
+    @classmethod
+    def adapter_name(cls, value):
+        # Keep custom adapters possible while refusing the two easy-to-confuse
+        # access policy values before an unusable connector is persisted.
+        if value in {"provider", "published"}:
+            raise PydanticCustomError("connector_provider", CONNECTOR_PROVIDER_MESSAGE)
+        return value
 
 
 class BindingInput(Command):

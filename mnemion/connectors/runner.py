@@ -25,6 +25,28 @@ SCAN_TRIGGER_ENV = "MNEMION_CONNECTOR_SCAN_TRIGGER"
 SCAN_REPORT_ENV = "MNEMION_CONNECTOR_REPORT_PATH"
 
 
+class ConnectorConfigurationError(ValueError):
+    """Only these fixed operator hints may enter a scan failure report."""
+
+    MESSAGES = {
+        "connector_identity_unavailable": (
+            "Use the active connector's dedicated application key and connector_id."
+        ),
+        "connector_provider_mismatch": (
+            "The registered connector provider differs from provider.type in this config. "
+            "Register the source adapter name; published and provider are access_mode values."
+        ),
+        "connector_access_mode_mismatch": (
+            "Use access_mode published for filesystem, git and rclone; "
+            "use access_mode provider for slack and gdrive."
+        ),
+    }
+
+    def __init__(self, code):
+        self.code = code
+        super().__init__(self.MESSAGES[code])
+
+
 def scan_trigger() -> str:
     # Managed one-shot scans inherit their watcher's reason. Older runtimes
     # simply ignore this optional environment value, preserving rollback.
@@ -65,14 +87,12 @@ def _scan(config, *, inspect=False, adapter=None, client=None) -> dict:
             ),
             None,
         )
-        if (
-            not connection
-            or connection["disabled_at"]
-            or connection["provider"] != config.provider.type
-        ):
-            raise ValueError("The credential does not own an active connector for this provider")
+        if not connection or connection["disabled_at"]:
+            raise ConnectorConfigurationError("connector_identity_unavailable")
+        if connection["provider"] != config.provider.type:
+            raise ConnectorConfigurationError("connector_provider_mismatch")
         if connection["access_mode"] != adapter.access_mode:
-            raise ValueError("The connector access mode does not match this source adapter")
+            raise ConnectorConfigurationError("connector_access_mode_mismatch")
         previous = {scope["external_id"]: scope for scope in bridge.scopes()}
         # Do not reconcile disappeared scopes unless the complete catalog loaded.
         identifiers = list(adapter.scopes())
@@ -358,12 +378,31 @@ def main(argv=None) -> int:
         except ValidationError as exc:
             # Pydantic repr may include submitted token-shaped values. Report
             # locations only, never raw configuration or provider diagnostics.
+            credential_fields = sorted(
+                {
+                    "service_token" if error["loc"][0] == "service_token" else "provider.token"
+                    for error in exc.errors()
+                    if error["loc"]
+                    and (
+                        error["loc"][0] == "service_token"
+                        or error["loc"][0] == "provider"
+                        and "token" in error["loc"]
+                    )
+                }
+            )
             print(
                 json.dumps(
                     {
                         "error": "invalid_config",
                         "timestamp": datetime.now(timezone.utc).isoformat(),
                         "fields": [".".join(map(str, error["loc"])) for error in exc.errors()],
+                        "hints": [
+                            {
+                                "field": field,
+                                "message": 'Use a {"file": "/path/to/private-token"} or {"env": "VARIABLE_NAME"} reference, not a token string.',
+                            }
+                            for field in credential_fields
+                        ],
                     }
                 ),
                 file=sys.stderr,
@@ -376,6 +415,11 @@ def main(argv=None) -> int:
                         "event": "connector_scan_failed",
                         "runner_version": __version__,
                         "error": getattr(exc, "code", "connector_failed"),
+                        **(
+                            {"message": str(exc)}
+                            if isinstance(exc, ConnectorConfigurationError)
+                            else {}
+                        ),
                         "started_at": started_at,
                         "timestamp": datetime.now(timezone.utc).isoformat(),
                         "duration_seconds": round(time.monotonic() - started, 3),

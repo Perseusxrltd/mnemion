@@ -216,6 +216,7 @@ def inventory(conn) -> dict:
 
 
 def _ledger(conn) -> dict:
+    from .application_key_recovery import capture as capture_application_keys
     from .connector_recovery import capture
     from .vault_recovery import capture as capture_vault
 
@@ -240,6 +241,7 @@ def _ledger(conn) -> dict:
             ).fetchall(),
             "connector_state": capture(conn),
             "vault_state": capture_vault(conn),
+            "application_key_state": capture_application_keys(conn),
         }
     )
     return {**payload, "sha256": hashlib.sha256(canonical_json(payload)).hexdigest()}
@@ -309,6 +311,10 @@ def read_ledger(path: Path) -> dict:
         from .connector_recovery import validate
 
         validate(payload["connector_state"], tenants)
+    if "application_key_state" in payload:
+        from .application_key_recovery import validate as validate_application_keys
+
+        validate_application_keys(payload["application_key_state"], tenants)
     return {**payload, "sha256": digest}
 
 
@@ -456,9 +462,18 @@ def _reconcile_deletions(conn, ledger: dict) -> int:
     return applied
 
 
-def _recover_access(conn, ledger: dict, backup_id: str) -> dict:
+def _recover_access(conn, ledger: dict, backup_id: str, *, preserve_application_keys=False) -> dict:
+    from collections import Counter
+
+    from .application_key_recovery import eligible, retain
     from .connector_recovery import restore
     from .vault_recovery import restore as restore_vault
+
+    original_eligible = (
+        {(row["tenant_id"], row["id"]) for row in eligible(conn, ledger)}
+        if preserve_application_keys
+        else set()
+    )
 
     restore(conn, ledger)
     restore_vault(conn, ledger)
@@ -511,7 +526,17 @@ def _recover_access(conn, ledger: dict, backup_id: str) -> dict:
                 grant["principal_id"],
             ),
         )
+    retained = (
+        [
+            row
+            for row in eligible(conn, ledger)
+            if (row["tenant_id"], row["id"]) in original_eligible
+        ]
+        if preserve_application_keys
+        else []
+    )
     conn.execute("UPDATE mnemion.api_keys SET revoked_at=coalesce(revoked_at,now())")
+    retain(conn, retained)
     # A historical snapshot must not revive a password changed after backup.
     # Recovery administrators reenroll people with fresh one-use invitations.
     conn.execute("UPDATE mnemion.password_accounts SET reset_required=true")
@@ -523,7 +548,9 @@ def _recover_access(conn, ledger: dict, backup_id: str) -> dict:
     conn.execute("DELETE FROM mnemion.spent_refresh_tokens")
     conn.execute("DELETE FROM mnemion.oauth_local_requests")
     credentials = []
+    retained_by_tenant = Counter(row["tenant_id"] for row in retained)
     for tenant in conn.execute("SELECT id, name FROM mnemion.tenants ORDER BY id").fetchall():
+        retained_count = retained_by_tenant[str(tenant["id"])]
         owner = conn.execute(
             """SELECT id FROM mnemion.principals WHERE tenant_id=%s AND administrator
                AND disabled_at IS NULL ORDER BY created_at, id LIMIT 1""",
@@ -550,7 +577,13 @@ def _recover_access(conn, ledger: dict, backup_id: str) -> dict:
                 uuid4(),
                 principal,
                 backup_id,
-                Jsonb({"ledger_sha256": ledger["sha256"], "keys_rotated": True}),
+                Jsonb(
+                    {
+                        "ledger_sha256": ledger["sha256"],
+                        "keys_rotated": not retained_count,
+                        "application_keys_preserved": retained_count,
+                    }
+                ),
             ),
         )
         credentials.append(
@@ -563,6 +596,10 @@ def _recover_access(conn, ledger: dict, backup_id: str) -> dict:
             }
         )
     result = {"backup_id": backup_id, "organizations": credentials}
+    if preserve_application_keys:
+        result["preserved_application_keys"] = [
+            {"tenant_id": row["tenant_id"], "key_id": row["id"]} for row in retained
+        ]
     if len(credentials) == 1:
         result.update(credentials[0])
     return result
@@ -578,6 +615,7 @@ def restore_backup(
     pg_bin: Path | None = None,
     temporary_directory: Path | None = None,
     cancelled: Callable[[], bool] | None = None,
+    preserve_application_keys: bool = False,
 ) -> dict:
     started = time.monotonic()
     if not re.fullmatch(r"[a-z][a-z0-9_]{0,62}", database_name):
@@ -586,6 +624,10 @@ def restore_backup(
         raise FileExistsError("Recovery credentials output already exists")
     _pg_tool("pg_restore", pg_bin)
     ledger = read_ledger(deletion_ledger)
+    if preserve_application_keys:
+        from .application_key_recovery import validate as validate_application_keys
+
+        validate_application_keys(ledger.get("application_key_state"), set(ledger["tenant_ids"]))
     with verified_archive(
         archive,
         BACKUP_FORMAT,
@@ -709,7 +751,12 @@ def restore_backup(
                     conn.execute(
                         "UPDATE mnemion.operations SET state='accepted', updated_at=now() WHERE state='indexing'"
                     )
-                    credentials = _recover_access(conn, ledger, manifest["backup_id"])
+                    credentials = _recover_access(
+                        conn,
+                        ledger,
+                        manifest["backup_id"],
+                        preserve_application_keys=preserve_application_keys,
+                    )
                     private_json(credentials_output, credentials)
                 administration.execute(
                     sql.SQL("ALTER DATABASE {} RENAME TO {}").format(
@@ -734,6 +781,11 @@ def restore_backup(
         "deletions_reconciled": denied,
         "credentials_file": str(credentials_output),
         "ledger_at": ledger["snapshot_at"],
-        "keys_rotated": True,
+        "keys_rotated": not credentials.get("preserved_application_keys"),
+        **(
+            {"application_keys_preserved": len(credentials["preserved_application_keys"])}
+            if preserve_application_keys
+            else {}
+        ),
         "elapsed_seconds": round(time.monotonic() - started, 3),
     }
