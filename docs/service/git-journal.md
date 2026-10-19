@@ -4,6 +4,8 @@ Source **4.15.0** adds optional publication of future native changes to a
 host-approved Git destination. Ordinary saves return after a private local
 journal is durable; important saves also require Git to acknowledge the push.
 Check [release status](../RELEASE_STATUS.md) before requiring this version.
+Source **4.16.0** adds optional scheduled filing into Markdown notes and intact
+archival, with the same controls in Studio, HTTP, SDKs and the agent catalog.
 
 An inbound Git connection does not enable publication. Existing memories, core
 blocks, attachments, credentials and organization settings are not backfilled.
@@ -56,6 +58,22 @@ its current `--expected-fingerprint`; restart the API and approve the new policy
 in Studio. Each space needs a separate state directory and repository prefix.
 Changing a destination does not migrate previously published history.
 
+### Adopting an older external journal
+
+The prototype buffer in the issue 39 report used different fields and has no
+native versioned catalog. It is not compatible with this journal format. Enroll
+an unused prefix, for example `--prefix memory/native-buffer`, and retain the
+old buffer and its remote commits independently. Native publication refuses an
+occupied journal prefix without its valid catalog; it does not convert those
+files or infer that they were acknowledged remotely.
+
+A checked migration/reconciliation tool remains tracked: it must preserve the
+original records, map identities explicitly, reconcile duplicate and withdrawn
+memories, and verify the exact remotely published events/bytes. Do not mark all
+current local file bytes as delivered after a push that sent an earlier snapshot.
+Native receipts acknowledge selected event IDs, so a concurrently appended event
+remains pending until its own confirmed publication.
+
 ## Save acknowledgments and failures
 
 Use the normal HTTP/SDK/MCP save and revision commands. Add
@@ -101,7 +119,7 @@ current key, grants, policy version and memory state are checked before pushing.
 Revocation stops delivery; the app's explicit repair replaces that identity and
 revokes old access. Retries never silently recreate revoked authority.
 
-Pause stops automatic and manual pushes while local capture continues. An
+Pause stops automatic and manual pushes and filing while local capture continues. An
 important save cannot acknowledge Git delivery while publication is paused.
 Unpublished withdrawn content is suppressed. A content-free deletion entry
 permanently prevents journal replay from restoring that memory, even if files
@@ -145,6 +163,69 @@ source are idempotent. This does not recreate the original writable space,
 accounts, attachments or full database history. Use trusted current snapshots
 and independent backups/denial ledgers for recovery.
 
+## Automatic filing and archival
+
+On a 4.16.0 or later server, open the space's **Git journal** settings and enable
+**Automatically file readable notes and archive older journals**. Review the
+displayed notes folder along with the repository. Filing is off by default;
+upgrading an existing journal does not enable it. The default minimum age is
+24 hours and the default interval is one hour. Organization/space administrators
+can select 24–8,760 hours and a 60–86,400-second interval. Reviewers can also use
+**Organize & archive now** after queued changes have reached Git.
+
+For the default journal prefix, the librarian creates ordinary Markdown files
+in `memory/buffer-mnemion-notes/<memory-uuid>.md`. They contain the current text,
+title aliases and tags, the original identity/version, and a link to journal
+history. Obsidian can open these alongside the rest of the repository. Stable
+UUID filenames avoid renames when titles change. Edit the original memory in
+Mnemion; these marked files are generated views. Unrelated repository files are
+preserved. A conflicting filename or edited view stops filing for review.
+Publishing a source change clears that view's body, including hand edits; its
+previous version remains in Git history.
+
+Filing uses the complete current journal projection, including archived records,
+later revisions, permanent deletions and quarantines. It copies retained text
+without asking a model to summarize it. Model-assisted titles, tags, summaries
+and review remain available through the [configurable librarian](librarian.md);
+those proposals retain their normal approval rules. Filing itself needs no
+language model, GPU or paid provider.
+
+After the required notes are ready, eligible dated files move intact into
+`memory/buffer/_archive/YYYY-MM-DD/`. A whole UTC day is eligible only after its
+end plus the configured minimum age; every record is therefore at least that
+old. Original bytes and catalog counts are retained. If an active file reappears
+beside an existing archive, its bytes are retained there too; duplicate logical
+operations still replay once. Late writes append to the archive.
+
+Newly published changes invalidate existing generated views in the same Git
+commit. A deletion/quarantine removes text from that view; another revision marks
+it pending until the next filing run. Generated notes are never imported as
+independent memory, even with `include_generated` enabled or a damaged header in
+the reserved notes folder. Connectors must continue reading the complete journal
+and catalog. This protection does not erase old Git commits, exported copies or
+files deliberately detached from their managed identity.
+
+Upgrade journal writers to 4.16.0 for immediate view invalidation. Older 4.15
+writers understand intact archive moves and can continue publishing; their
+changes appear in the views at the next 4.16 filing run. Generated notes live
+outside the append-only journal folder for this compatibility. Database schema
+migrations still require every API process sharing that database to be compatible.
+
+Filing checks permissions and policy again before a fast-forward push. Queued
+local changes block filing until published; a concurrent remote commit causes
+complete reprojection before retrying. Changed settings, revoked access,
+incomplete inventories and resource limits stop the run visibly. Database
+recovery's publication pause also stops filing.
+
+Each run changes at most the destination's note-count and byte budget and moves
+at most that many journal files. Partial runs prepare notes without prematurely
+moving history; remaining work is scheduled again after 60 seconds. Files are
+read in bounded Git batches and projected through the existing 2 MiB SQLite
+cache. The same one-million-record/2 GiB inventory limits apply, with up to
+50,000 journal/view files and an 8 MiB tree listing. This is bounded processing,
+not a measured large-company throughput guarantee. File sharding and larger
+inventories remain roadmap work.
+
 ## Monitoring, SDKs and agents
 
 Studio shows the destination, interval, visible pending count/content bytes,
@@ -153,17 +234,30 @@ events; reviewers see the space queue. **Push now** requires contributor access.
 Configuration and repair require organization and space administration; stale
 policy versions are rejected.
 
-| Interface | Status | Configure | Push |
-| --- | --- | --- | --- |
-| HTTP | `GET /v1/spaces/{id}/writeback` | `PUT /v1/spaces/{id}/writeback` | `POST /v1/spaces/{id}/writeback/push` |
-| Python | `journal_status(id)` | `configure_journal(id, command)` | `push_journal(id, expected_version=n)` |
-| TypeScript | `journalStatus(id)` | `configureJournal(id, command)` | `pushJournal(id, version)` |
-| Agent catalog | `journal.status` | `journal.configure` | `journal.push` |
+From 4.16.0, status also exposes filing enablement/schedule, notes folder, last
+confirmed filing commit/error, updated-note and archived-file counts, remaining
+work, and bytes of journal content read/written. These byte counts describe data
+processed, not compressed Git network traffic. Counts describe the last run;
+they are not lifetime totals. The same values appear in the app.
+
+| Interface | Status | Configure | Push | Organize (4.16+) |
+| --- | --- | --- | --- | --- |
+| HTTP | `GET /v1/spaces/{id}/writeback` | `PUT /v1/spaces/{id}/writeback` | `POST /v1/spaces/{id}/writeback/push` | `POST /v1/spaces/{id}/writeback/organize` |
+| Python | `journal_status(id)` | `configure_journal(id, command)` | `push_journal(id, expected_version=n)` | `organize_journal(id, expected_version=n)` |
+| TypeScript | `journalStatus(id)` | `configureJournal(id, command)` | `pushJournal(id, version)` | `organizeJournal(id, version)` |
+| Agent catalog | `journal.status` | `journal.configure` | `journal.push` | `journal.organize` |
 
 Discover exact input schemas with [agent control](agent-control.md), through CLI
 or MCP. Configuration requires literal `true` for `publish_to_repository` and
 `acknowledge_retained_git_history`; repository content cannot grant consent.
 Public status includes no local paths or Git credentials.
+
+Set `fold_enabled: true`, `fold_after_hours: 24` and
+`fold_interval_seconds: 3600` in the existing versioned policy command to enable
+filing. Omitting those fields preserves an existing filing policy, including
+when using an older client. Send `fold_enabled: false` to disable future filing;
+that does not delete generated notes or stop ordinary publication. Organize
+requests contain the current `expected_version` and require reviewer access.
 
 Publication defaults to 250 entries/8 MiB per batch, configurable up to 2,000
 entries/32 MiB. Subprocesses have time/output bounds. The publisher lock is
@@ -183,8 +277,7 @@ Enroll a destination on the new host, establish its Git credential manager and
 explicitly approve its policy in Studio before resuming the durable queue.
 
 [Issue 39](https://github.com/Perseusxrltd/mnemion/issues/39) remains open for
-scheduled librarian folding into official notes followed by intact archival,
 complete app host enrollment, old-memory backfill, direct writable-space
-reconstruction and large-history/live-provider acceptance. This batch delivers
-capture, guarded publication, app/agent controls and source replay; it does not
+reconstruction and large-history/live-provider acceptance. The source now includes
+capture, guarded publication, scheduled filing/archival, app/agent controls and source replay; it does not
 replace complete workspace backups or independently hosted infrastructure.

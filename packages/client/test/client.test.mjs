@@ -1,6 +1,24 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { MnemionClient, MnemionError } from '../dist/index.js'
+import { MnemionClient, MnemionError, supportsJournalFolding } from '../dist/index.js'
+
+test('journal filing keeps optimistic versions and does not opt older workspaces in', async () => {
+  const calls = []
+  const client = new MnemionClient({ baseUrl: 'https://example.invalid', apiKey: 'fixture-key', fetch: async (url, options) => {
+    calls.push({ url, method: options.method, body: JSON.parse(options.body) })
+    return Response.json({ configured: true, version: 3, fold_enabled: true })
+  } })
+  await client.organizeJournal('team-space', 2)
+  assert.equal(calls[0].url, 'https://example.invalid/v1/spaces/team-space/writeback/organize')
+  assert.equal(calls[0].method, 'POST')
+  assert.deepEqual(calls[0].body, { expected_version: 2 })
+  await client.configureJournal('team-space', { expected_version: 3, destination_id: 'team', publish_to_repository: true, acknowledge_retained_git_history: true })
+  assert.ok(!Object.hasOwn(calls[1].body, 'fold_enabled'))
+  assert.equal(supportsJournalFolding('4.15.9'), false)
+  assert.equal(supportsJournalFolding('4.16.0'), true)
+  assert.equal(supportsJournalFolding('5.0.0'), true)
+  assert.equal(supportsJournalFolding('unknown'), false)
+})
 
 test('an offline tunnel has actionable diagnostics without repeating private proxy content', async () => {
   let calls = 0

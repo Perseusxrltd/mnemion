@@ -15,6 +15,7 @@ branches omitted from the readable conversation.
 | Export | Readable companion |
 | --- | --- |
 | Codex JSONL | Canonical user/agent event messages, without duplicate response items |
+| Grok Build / ACP `session/update` JSONL (4.16.0+) | User/agent text chunks grouped by session and message; tool, thought and status updates stay in raw evidence |
 | Claude Code JSONL | Human/assistant text turns; tool payloads remain in the raw record |
 | ChatGPT JSON or `conversations.json` | Active `current_node` branch, including multiple conversations |
 | Claude privacy export | Conversation IDs, sender identities and text blocks |
@@ -26,6 +27,28 @@ An old ChatGPT tree with multiple leaves and no active node remains raw rather
 than guessing its final branch. Normalization does not correct spelling or call
 a model. A partially written JSONL file aborts the inventory, so its absence
 cannot certify deletion. The next completed scan retries it.
+
+For ACP logs, adjacent chunks for the same speaker/message are joined verbatim,
+without inserting spaces or newlines. Explicit message IDs and tool/turn boundaries
+separate messages. Interleaved session IDs remain separate companions. The label
+shows the first/last chunk timestamps when they differ; the raw record retains
+every event timestamp. Identical repeated events deduplicate only when the source
+provides an explicit `eventId`; conflicting reuse is reported. Repeated text
+without an event identity is preserved, since it can be intentional. Repeated
+source imports and appends retain the same companion identity and raw-source
+provenance. This supports the native shape reported in
+[issue 40](https://github.com/Perseusxrltd/mnemion/issues/40); it does not install a
+Grok plugin or automatically select a user's private session directory.
+
+**Live-file limitation:** the existing file adapters require a complete, stable
+file within their configured size cap. A partial, oversized or changing file
+can suspend that source scope until a complete scan succeeds. Use stable,
+deliberately split exports or curated notes for now. The dedicated bounded,
+checkpointed live-conversation adapter is tracked in
+[issue 41](https://github.com/Perseusxrltd/mnemion/issues/41), including tail
+completion, append/rename/rotation/truncation, source offsets and removal/access
+semantics. Conversation normalization does not change these limits or relax
+the complete-inventory requirement for Git memory journals.
 
 Readable notes use the same revision, conflict and deletion rules as other
 connector records. Human corrections and quarantine produce review proposals

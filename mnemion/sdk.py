@@ -254,7 +254,7 @@ class Client:
             self.request(
                 "PUT",
                 f"/v1/spaces/{UUID(space_id)}/writeback",
-                body=command.model_dump(mode="json"),
+                body=command.model_dump(mode="json", exclude_none=True),
             )
         )
 
@@ -266,6 +266,18 @@ class Client:
             self.request(
                 "POST",
                 f"/v1/spaces/{UUID(space_id)}/writeback/push",
+                body=command.model_dump(mode="json"),
+            )
+        )
+
+    def organize_journal(self, space_id: str, *, expected_version: int) -> WritebackStatus:
+        from .service.writeback_models import WritebackPushInput, WritebackStatus
+
+        command = WritebackPushInput(expected_version=expected_version)
+        return WritebackStatus.model_validate(
+            self.request(
+                "POST",
+                f"/v1/spaces/{UUID(space_id)}/writeback/organize",
                 body=command.model_dump(mode="json"),
             )
         )

@@ -1,9 +1,36 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.15.0**. Roadmap updated: **2026-10-19**.
+Reviewed source distribution: **4.16.0**. Roadmap updated: **2026-10-19**.
 The [current published distribution and release gates](RELEASE_STATUS.md) are updated automatically.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
+
+The [4.16.0 source](releases/4.16.0.md) adds scheduled
+[journal filing and archival](service/git-journal.md#automatic-filing-and-archival):
+current records become ordinary Markdown notes, and old day files move intact
+into `_archive` only after the notes are ready. Complete projection applies later
+revisions and denials first; generated notes never replay as independent memory.
+Filing is a separate opt-in with bounded batches, current permissions, app/SDK
+controls and the `journal.organize` agent operation. Migration 023 preserves
+existing publisher settings and defaults filing off.
+[Validation](validation/2026-10-19-journal-filing.md) covers real Git conflicts,
+archive retention, PostgreSQL permissions and upgrade compatibility. Issue 39
+still needs full app host enrollment, old-memory backfill, writable reconstruction
+and large-history/live-provider acceptance. The strict complete count remains
+**17/64 shipped (26.6%)** pending those full requirements.
+
+The same batch adds [Grok Build/ACP transcript normalization](service/capture.md)
+for [issue 40](https://github.com/Perseusxrltd/mnemion/issues/40), retaining session
+identity, streamed text, time bounds, raw provenance and explicit event identity.
+[Issue 41](https://github.com/Perseusxrltd/mnemion/issues/41) requires a separate
+bounded live-conversation adapter: checkpoint complete records and segments,
+defer unfinished tails, distinguish append/rotation/truncation/deletion, retain
+source offsets, and preserve current access and complete-inventory semantics.
+It cannot be solved by ignoring incomplete Git journals or removing size limits.
+Issue 39's newer adoption comment also adds checked reconciliation of its older
+external buffer format and exact per-event/remote-byte acknowledgment; use a
+separate native prefix until that migration is available. Issue 38 retains
+independently retrieved custody and two-client external recovery acceptance.
 
 The [4.15.0 source](releases/4.15.0.md) adds optional
 [Git journals for native changes](service/git-journal.md): transactional capture,
@@ -13,7 +40,7 @@ inventory replay. Deletion and quarantine are applied before source projection;
 Git history retention is explicit. Recovery pauses publication and requires
 fresh host registration. [Validation](validation/2026-10-19-git-journal.md)
 covers real Git operations and PostgreSQL boundaries. Issue 39 remains open for
-librarian folding/archival, full app enrollment, large-history capacity,
+full app enrollment, large-history capacity,
 old-memory backfill and direct writable-space reconstruction. This advances
 F08, C01/C08, A12/A13 and U01 without changing the strict full-scope count:
 **17/64 shipped (26.6%)**.
@@ -67,7 +94,8 @@ continue to respect the latest independently available denial ledger.
 Git delivery journal for native saves, scanning hooks, scheduled/important pushes,
 librarian folding and stable replay. Its export/deletion/permission contract must
 be explicit; connecting an inbound Git source alone does not provide this backup.
-The 4.15.0 batch above implements capture, guarded delivery and source replay;
+The 4.15.0 batch implements capture, guarded delivery and source replay;
+4.16.0 adds scheduled filing and intact archival.
 the remaining work is tracked separately instead of treating the issue as closed.
 
 Published [4.11.0](releases/4.11.0.md) adds
@@ -747,6 +775,10 @@ Broader review finds possible links, duplicates, contradictions and stale claims
 within a bounded batch. Models cannot grant access, delete evidence, merge records
 or mark claims verified. Recovery pauses processing and clears endpoint consent.
 See [the librarian guide](service/librarian.md).
+
+Source 4.16.0 adds separately enabled, model-free filing of current Git journal
+memories into Markdown and intact archival, with matching app/agent controls.
+This does not replace the model-assisted quality work below.
 
 Remaining improvements: measured model/hardware comparisons, calibrated quality
 evaluations, acceptance/rejection analyses, organization-wide grouping and review

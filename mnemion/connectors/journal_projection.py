@@ -5,6 +5,7 @@ import io
 
 from ..journal.format import JournalError, journal_candidate, parse_catalog, parse_file
 from ..journal.index import journal_index
+from ..journal.notes import note_candidate
 from ..journal.privacy import scan
 from .protocol import Document
 
@@ -21,6 +22,10 @@ def project_documents(documents):
                 yield None
                 continue
             path = str(document.metadata.get("path", ""))
+            if note_candidate(path, document.text):
+                # These are disposable views of the journal, never independent
+                # sources. Importing an old view could bypass a newer denial.
+                continue
             if (
                 path.lower().endswith(".json")
                 and "mnemion-memory-journal-catalog" in document.text[:4096]

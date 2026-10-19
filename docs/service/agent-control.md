@@ -48,8 +48,10 @@ MCP vault tools are available only when explicitly enabled by the host operator.
 Schemas load one at a time, so connecting an
 assistant does not put the entire administration API into its context.
 
-Source **4.15.0** adds `journal.status`, `journal.configure` and `journal.push`,
-for **125 reviewed HTTP operations**. They share Studio's permissions,
+Source **4.16.0** adds `journal.organize` to 4.15's `journal.status`,
+`journal.configure` and `journal.push`, for **126 reviewed HTTP operations**.
+Filing is explicitly enabled, requires reviewer access and retains original
+journal bytes. These operations share Studio's permissions,
 policy-version checks and explicit retained-history consent. Local destination
 enrollment uses `mnemion-service journal` under the operator OS account; memory
 credentials cannot select executable or storage paths. See [Git journals](git-journal.md).

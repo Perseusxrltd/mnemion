@@ -10,6 +10,13 @@ The same service works with Windows, macOS and Linux clients. Models run at the
 configured endpoint; a desktop client does not need model weights, a GPU or an
 Ollama installation. A small computer can connect to its organization's server.
 
+For a space with an approved Git journal, 4.16.0 also offers
+[automatic filing and archival](git-journal.md#automatic-filing-and-archival)
+under **Git journal**. It creates readable Markdown views from current records
+and moves older journals intact to `_archive`, without requiring a model call.
+Its schedule is separately enabled and uses the journal's publisher permissions.
+Model-assisted proposals and review below keep their existing controls.
+
 ## What a run does
 
 | Task | Input | Result |

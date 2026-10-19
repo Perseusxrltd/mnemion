@@ -11,6 +11,7 @@ from fastapi.testclient import TestClient
 from mnemion.journal.config import Configuration
 from mnemion.journal.format import JournalError, parse_file
 from mnemion.journal.index import journal_index
+from mnemion.journal.git import GitJournal
 from mnemion.journal.spool import Spool
 from mnemion.service.api import create_app
 from mnemion.service.errors import ServiceError
@@ -149,6 +150,46 @@ def test_important_memory_is_acknowledged_only_after_real_git_publication(env, t
     assert events(env)[0]["state"] == "pushed"
     assert remote_entries(destination)[0].text == "The release is approved."
     assert service.status(author, env.space)["state"] == "ready"
+    assert not list(Spool(destination).records())
+
+
+def test_append_after_git_upload_remains_pending_until_its_own_publication(
+    env, tmp_path, monkeypatch
+):
+    service, destination = setup(env, tmp_path)
+    first = env.memory.save(
+        env.owner, env.space, MemoryInput(content="First published event."), "first-push"
+    )
+    original = GitJournal._commit_push
+    appended = []
+
+    def append_between_upload_and_acknowledgment(journal, *args, **kwargs):
+        result = original(journal, *args, **kwargs)
+        if not appended:
+            appended.append(
+                env.memory.save(
+                    env.owner,
+                    env.space,
+                    MemoryInput(content="New event after upload."),
+                    "after-upload",
+                )
+            )
+        return result
+
+    monkeypatch.setattr(GitJournal, "_commit_push", append_between_upload_and_acknowledgment)
+    service.push(env.owner, env.space)
+    assert [str(record.id) for record in remote_entries(destination)] == [first["operation_id"]]
+    assert [str(record.id) for record in Spool(destination).records()] == [
+        appended[0]["operation_id"]
+    ]
+    states = {str(row["id"]): row["state"] for row in events(env)}
+    assert states[first["operation_id"]] == "pushed"
+    assert states[appended[0]["operation_id"]] == "local"
+    service.push(env.owner, env.space)
+    assert {str(record.id) for record in remote_entries(destination)} == {
+        first["operation_id"],
+        appended[0]["operation_id"],
+    }
     assert not list(Spool(destination).records())
 
 

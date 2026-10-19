@@ -9,6 +9,7 @@ from uuid import UUID, uuid4
 from ..journal.config import Configuration
 from ..journal.format import JournalEntry, JournalError
 from ..journal.git import GitJournal
+from ..journal.notes import notes_prefix
 from ..journal.privacy import scan
 from ..journal.spool import Spool
 from ..local_state import LocalSetupError, lock
@@ -125,14 +126,30 @@ class WritebackService:
                     )
             else:
                 publisher, key = settings["publisher_id"], settings["key_id"]
+            folding = {
+                name: getattr(command, name)
+                if getattr(command, name) is not None
+                else settings[name]
+                if settings
+                else default
+                for name, default in (
+                    ("fold_enabled", False),
+                    ("fold_after_hours", 24),
+                    ("fold_interval_seconds", 3600),
+                )
+            }
             conn.execute(
                 """INSERT INTO mnemion.writeback_settings
-                  (tenant_id,space_id,destination_id,fingerprint,publisher_id,key_id,paused,interval_seconds,created_by)
-                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                  (tenant_id,space_id,destination_id,fingerprint,publisher_id,key_id,paused,interval_seconds,created_by,
+                   fold_enabled,fold_after_hours,fold_interval_seconds,next_fold_at)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,CASE WHEN %s THEN clock_timestamp() END)
                 ON CONFLICT(tenant_id,space_id) DO UPDATE SET destination_id=excluded.destination_id,
                   fingerprint=excluded.fingerprint,publisher_id=excluded.publisher_id,key_id=excluded.key_id,
                   paused=excluded.paused,interval_seconds=excluded.interval_seconds,version=writeback_settings.version+1,
-                  updated_at=clock_timestamp(),next_push_at=clock_timestamp(),last_error=NULL""",
+                  updated_at=clock_timestamp(),next_push_at=clock_timestamp(),last_error=NULL,
+                  fold_enabled=excluded.fold_enabled,fold_after_hours=excluded.fold_after_hours,
+                  fold_interval_seconds=excluded.fold_interval_seconds,next_fold_at=excluded.next_fold_at,
+                  last_fold_error=NULL""",
                 (
                     identity.tenant_id,
                     space,
@@ -143,6 +160,10 @@ class WritebackService:
                     command.paused,
                     command.interval_seconds,
                     identity.principal_id,
+                    folding["fold_enabled"],
+                    folding["fold_after_hours"],
+                    folding["fold_interval_seconds"],
+                    folding["fold_enabled"],
                 ),
             )
             audit(
@@ -156,6 +177,8 @@ class WritebackService:
                     "paused": command.paused,
                     "retained_git_history_acknowledged": True,
                     "publisher_id": publisher,
+                    **folding,
+                    "notes_prefix": notes_prefix(destination) if folding["fold_enabled"] else None,
                 },
             )
         return self.status(identity, space)
@@ -165,14 +188,17 @@ class WritebackService:
             require_space(conn, space)
             settings = self._settings(conn, space)
             destination = self.destinations.get((identity.tenant_id, space))
-            can_configure = conn.execute(
+            permissions = conn.execute(
                 """SELECT mnemion.administrator() AND mnemion.authorized(%s,40)
-                AND NOT EXISTS (SELECT FROM mnemion.connector_scopes WHERE space_id=%s) AS allowed""",
-                (space, space),
-            ).fetchone()["allowed"]
+                AND NOT EXISTS (SELECT FROM mnemion.connector_scopes WHERE space_id=%s) AS configure,
+                mnemion.authorized(%s,30) AS organize""",
+                (space, space, space),
+            ).fetchone()
             result = {
                 "configured": settings is not None,
-                "can_configure": can_configure,
+                "can_configure": permissions["configure"],
+                "can_organize": permissions["organize"],
+                "notes_prefix": notes_prefix(destination) if destination else None,
                 "destination": {
                     "id": destination.id,
                     "label": destination.label,
@@ -219,6 +245,24 @@ class WritebackService:
                     last_error=settings["last_error"],
                     last_entries=settings["last_entries"],
                     last_bytes=settings["last_bytes"],
+                    **{
+                        field: settings[field]
+                        for field in (
+                            "fold_enabled",
+                            "fold_after_hours",
+                            "fold_interval_seconds",
+                            "next_fold_at",
+                            "last_fold_at",
+                            "last_fold_commit",
+                            "last_fold_error",
+                            "last_fold_notes",
+                            "last_fold_archived_files",
+                            "last_fold_pending_notes",
+                            "last_fold_pending_files",
+                            "last_fold_read_bytes",
+                            "last_fold_written_bytes",
+                        )
+                    },
                 )
             return json_value(result)
 
@@ -466,6 +510,11 @@ class WritebackService:
             self._thread = threading.Thread(target=self._loop, name="mnemion-journal", daemon=True)
             self._thread.start()
 
+    def organize(self, identity, space, *, expected_version=None):
+        from .journal_folding import organize
+
+        return organize(self, identity, space, expected_version=expected_version)
+
     def stop(self):
         self._stop.set()
         if self._thread:
@@ -475,14 +524,24 @@ class WritebackService:
         if not self.destinations or not self._step.acquire(blocking=False):
             return False
         try:
+            organizing = False
             with self.db.pool.connection() as conn:
                 settings = conn.execute(
                     "SELECT * FROM mnemion.claim_writeback(%s)",
                     ([d.fingerprint for d in self.destinations.values()],),
                 ).fetchone()
+                if settings is None:
+                    settings = conn.execute(
+                        "SELECT * FROM mnemion.claim_journal_fold(%s)",
+                        ([d.fingerprint for d in self.destinations.values()],),
+                    ).fetchone()
+                    organizing = settings is not None
             if settings is None:
                 return False
-            self.push(self._publisher(settings), settings["space_id"])
+            if organizing:
+                self.organize(self._publisher(settings), settings["space_id"])
+            else:
+                self.push(self._publisher(settings), settings["space_id"])
             return True
         finally:
             self._step.release()

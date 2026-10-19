@@ -14,6 +14,9 @@ class WritebackPolicyInput(Command):
     paused: StrictBool = False
     interval_seconds: int = Field(default=300, ge=30, le=86400)
     repair_publisher: StrictBool = False
+    fold_enabled: StrictBool | None = None
+    fold_after_hours: int | None = Field(default=None, ge=24, le=8760)
+    fold_interval_seconds: int | None = Field(default=None, ge=60, le=86400)
 
     @field_validator("publish_to_repository", "acknowledge_retained_git_history", mode="before")
     @classmethod
@@ -57,3 +60,18 @@ class WritebackStatus(ResponseModel):
     last_error: str | None = None
     last_entries: int = 0
     last_bytes: int = 0
+    can_organize: bool = False
+    notes_prefix: str | None = None
+    fold_enabled: bool = False
+    fold_after_hours: int | None = None
+    fold_interval_seconds: int | None = None
+    next_fold_at: str | None = None
+    last_fold_at: str | None = None
+    last_fold_commit: str | None = None
+    last_fold_error: str | None = None
+    last_fold_notes: int = 0
+    last_fold_archived_files: int = 0
+    last_fold_pending_notes: int = 0
+    last_fold_pending_files: int = 0
+    last_fold_read_bytes: int = 0
+    last_fold_written_bytes: int = 0

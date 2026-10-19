@@ -278,6 +278,47 @@ class GitJournal:
         ):
             raise JournalError("journal_scope_mismatch")
 
+    def _update(self, path, content):
+        oid = self._oid(self._git("hash-object", "-w", "--stdin", input=content, maximum=128))
+        return f"100644 {oid}\t{path}\n"
+
+    def _commit_push(self, head, updates, message, *, before_push=None):
+        if before_push is not None:
+            before_push()
+        if not updates:
+            return head
+        self._git("update-index", "--index-info", input="".join(updates).encode())
+        tree = self._oid(self._git("write-tree", maximum=128))
+        commit = self._oid(
+            self._git(
+                "commit-tree", tree, *(["-p", head] if head else []), "-m", message, maximum=128
+            )
+        )
+        output = self._git(
+            "push",
+            "--porcelain",
+            "--no-verify",
+            "--",
+            self.remote,
+            commit + ":" + self.ref,
+            accepted=(0, 1),
+        )
+        if b"[rejected]" in output:
+            if b"fetch first" in output or b"non-fast-forward" in output:
+                return None
+            raise JournalError("journal_push_rejected")
+        if not any(
+            line.startswith((b"*\t", b" \t", b"=\t")) and self.ref.encode() in line
+            for line in output.splitlines()
+        ):
+            raise JournalError("journal_push_not_confirmed")
+        return commit
+
+    def fold(self, *, after_hours=24, now=None, before_push=None):
+        from .folding import fold
+
+        return fold(self, after_hours=after_hours, now=now, before_push=before_push)
+
     def publish(self, entries: list[JournalEntry], *, before_push=None):
         """A returned commit is acknowledged upstream; local receipts alone are not."""
         started = time.monotonic()
@@ -313,60 +354,24 @@ class GitJournal:
                     content, added, target = self._append(head, path, additions)
                     added_records += added
                     if content is not None:
-                        oid = self._oid(
-                            self._git("hash-object", "-w", "--stdin", input=content, maximum=128)
-                        )
-                        updates.append(f"100644 {oid}\t{target}\n")
+                        updates.append(self._update(target, content))
                 if added_records:
                     catalog = JournalCatalog(
                         tenant_id=catalog.tenant_id,
                         space_id=catalog.space_id,
                         records=catalog.records + added_records,
                     )
-                    oid = self._oid(
-                        self._git(
-                            "hash-object", "-w", "--stdin", input=catalog.encoded(), maximum=128
-                        )
+                    updates.append(
+                        self._update(self.destination.prefix + "/catalog.json", catalog.encoded())
                     )
-                    updates.append(f"100644 {oid}\t{self.destination.prefix}/catalog.json\n")
-                if before_push is not None:
-                    before_push()
-                if not updates:
-                    commit = head
-                else:
-                    self._git("update-index", "--index-info", input="".join(updates).encode())
-                    tree = self._oid(self._git("write-tree", maximum=128))
-                    commit = self._oid(
-                        self._git(
-                            "commit-tree",
-                            tree,
-                            *(["-p", head] if head else []),
-                            "-m",
-                            "Append Mnemion memory journal",
-                            maximum=128,
-                        )
-                    )
-                    output = self._git(
-                        "push",
-                        "--porcelain",
-                        "--no-verify",
-                        "--",
-                        self.remote,
-                        commit + ":" + self.ref,
-                        accepted=(0, 1),
-                    )
-                    if b"[rejected]" in output:
-                        if attempt < 2 and (
-                            b"fetch first" in output or b"non-fast-forward" in output
-                        ):
-                            continue
-                        raise JournalError("journal_push_rejected")
-                    # Porcelain must identify successful creation/update/up-to-date.
-                    if not any(
-                        line.startswith((b"*\t", b" \t", b"=\t")) and self.ref.encode() in line
-                        for line in output.splitlines()
-                    ):
-                        raise JournalError("journal_push_not_confirmed")
+                    from .notes import invalidated_notes
+
+                    updates.extend(invalidated_notes(self, head, entries))
+                commit = self._commit_push(
+                    head, updates, "Append Mnemion memory journal", before_push=before_push
+                )
+                if commit is None:
+                    continue
                 report = {
                     "commit": commit,
                     "entries": len(entries),

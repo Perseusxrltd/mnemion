@@ -118,6 +118,7 @@ def test_pre_company_upgrade_preserves_existing_password_session(
             "020_secrets_vault.sql",
             "021_passage_chronology.sql",
             "022_memory_journal.sql",
+            "023_journal_folding.sql",
         ]
         with psycopg.connect(admin_dsn) as connection:
             after = connection.execute(

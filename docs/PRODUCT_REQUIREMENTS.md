@@ -137,9 +137,21 @@ permission, deletion, provenance and secret-exclusion requirements. The existing
 import connectors remain one-way. Source [4.15.0](releases/4.15.0.md) implements
 the separate opt-in [journal path](service/git-journal.md), with transactional
 capture, scoped publication, app/SDK/agent controls and source replay. It advances
-F08, C01/C08, A12/A13 and U01; librarian folding, complete app enrollment,
+F08, C01/C08, A12/A13 and U01. Source [4.16.0](releases/4.16.0.md) adds scheduled
+filing into Markdown, intact archival, deletion-safe derived views and the
+matching app/SDK/agent controls, with [focused validation](validation/2026-10-19-journal-filing.md).
+Complete app enrollment,
 large-history/provider acceptance and writable-space reconstruction remain open.
 The strict complete-requirement count stays **17/64 (26.6%)**.
+
+**19 October capture follow-ups retained:** [issue 40](https://github.com/Perseusxrltd/mnemion/issues/40)
+requests Grok Build's native ACP normalization; 4.16.0 adds its bounded complete-file
+parser and stable companions. [Issue 41](https://github.com/Perseusxrltd/mnemion/issues/41)
+tracks a dedicated incremental adapter for live/large transcripts, complete-record
+checkpoints, stable segments/offsets, rotation/removal and current access. This
+advances C03/C07/C08 without claiming a native Grokbot plugin or complete live capture.
+Issue 39 also retains a checked migration from the older external prototype
+buffer; native enrollment must use a separate prefix until reconciliation exists.
 
 1. **Reported stabilization:** the [published 4.1.7 update-scheduler fix](validation/2026-10-13-managed-update-schedule.md)
    for suspended hosts (issue 33) passed source, native package, independent

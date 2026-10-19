@@ -175,6 +175,7 @@ export class MnemionClient {
   journalStatus(space: string) { return this.request<JournalStatus>('GET', this.journalPath(space)) }
   configureJournal(space: string, input: JournalPolicyInput) { return this.request<JournalStatus>('PUT', this.journalPath(space), { body: input }) }
   pushJournal(space: string, expectedVersion: number) { return this.request<JournalStatus>('POST', this.journalPath(space) + '/push', { body: { expected_version: expectedVersion } }) }
+  organizeJournal(space: string, expectedVersion: number) { return this.request<JournalStatus>('POST', this.journalPath(space) + '/organize', { body: { expected_version: expectedVersion } }) }
   private librarianPath(space: string) { return '/v1/spaces/' + encodeURIComponent(space) + '/librarian' }
   librarianChoices(space: string) { return this.request<Page<LibrarianChoice>>('GET', this.librarianPath(space) + '/models') }
   librarianSettings(space: string) { return this.request<LibrarianSettings>('GET', this.librarianPath(space)) }

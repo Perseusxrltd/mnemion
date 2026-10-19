@@ -110,3 +110,40 @@ def test_unknown_json_stays_raw_and_incomplete_jsonl_does_not_certify_inventory(
                 normalize_conversations=True,
             ).items()
         )
+
+
+def test_grok_companion_preserves_raw_provenance_and_stable_identity_on_repeat_and_append():
+    from tests.test_acp_conversations import encoded, event
+
+    rows = [
+        event("user_message_chunk", "Keep this source."),
+        event("agent_message_chunk", "Saved."),
+    ]
+    raw = encoded(rows)
+    document = Document(
+        "grok/updates.jsonl",
+        "one",
+        "Grok updates",
+        raw,
+        uri="https://example.invalid/source",
+        normalize_conversations=True,
+    )
+    first = list(document.items())
+    assert first == list(document.items()) and len(first) == 2
+    assert first[0].memory.source.content == raw
+    metadata = first[1].memory.metadata
+    assert metadata["conversation_id"] == "synthetic-grok"
+    assert metadata["conversation_format"] == "acp-session"
+    assert metadata["raw_source_external_id"] == "grok/updates.jsonl"
+    assert metadata["raw_document_sha256"] == first[0].memory.metadata["document_sha256"]
+    assert first[1].memory.source.uri == document.uri
+    assert first[1].memory.claim_status == "observed"
+    rows.append(event("user_message_chunk", "Later addition."))
+    after = list(
+        Document(
+            "grok/updates.jsonl", "two", "Grok updates", encoded(rows), normalize_conversations=True
+        ).items()
+    )
+    assert [item.external_id for item in after] == [item.external_id for item in first]
+    assert after[1].revision != first[1].revision
+    assert after[1].memory.metadata["conversation_turns"] == 3

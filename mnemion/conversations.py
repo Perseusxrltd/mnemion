@@ -102,6 +102,98 @@ def _chatgpt(conversation: dict, fallback: str) -> Transcript | None:
     )
 
 
+def _acp_sessions(rows, fallback):
+    """Grok Build and other ACP session/update logs, preserving streamed text."""
+    sessions = {}
+
+    def flush(session):
+        current = session.pop("current", None)
+        if current is None:
+            return
+        first, last = current["first"], current["last"]
+        stamp = f"{first} → {last}" if first and last and first != last else first or last
+        session["turns"].append((current["role"], "".join(current["parts"]), stamp))
+
+    for row in rows:
+        if not isinstance(row, dict) or row.get("method") != "session/update":
+            continue
+        params = row.get("params")
+        if not isinstance(params, dict) or not isinstance(params.get("update"), dict):
+            continue
+        update = params["update"]
+        kind = update.get("sessionUpdate")
+        if not isinstance(kind, str):
+            continue
+        role = {"user_message_chunk": "user", "agent_message_chunk": "assistant"}.get(kind)
+        identifier = params.get("sessionId", fallback)
+        if not isinstance(identifier, str) or not identifier.strip() or len(identifier) > 1024:
+            raise ConversationError("conversation_session_invalid")
+        session = sessions.setdefault(identifier, {"turns": [], "seen": {}})
+        if role is None:
+            if kind in {
+                "tool_call",
+                "tool_call_update",
+                "agent_thought_chunk",
+                "turn_end",
+                "message_end",
+                "session_end",
+            }:
+                flush(session)
+            continue
+        content = update.get("content")
+        if (
+            not isinstance(content, dict)
+            or content.get("type") != "text"
+            or not isinstance(content.get("text"), str)
+        ):
+            continue  # Tools, thought, resource/image blocks and status are not spoken text.
+        value = content["text"]
+        event_id = update.get("eventId", row.get("eventId"))
+        if event_id is not None:
+            if type(event_id) not in {str, int} or len(str(event_id)) > 1024:
+                raise ConversationError("conversation_event_invalid")
+            key = (type(event_id).__name__, event_id)
+            digest = hashlib.sha256(
+                json.dumps(row, sort_keys=True, ensure_ascii=False).encode()
+            ).hexdigest()
+            prior = session["seen"].get(key)
+            if prior is not None:
+                if prior != digest:
+                    raise ConversationError("conversation_event_conflict")
+                continue
+            session["seen"][key] = digest
+        if not value:
+            continue
+        message_id = update.get("messageId")
+        if message_id is not None and (not isinstance(message_id, str) or len(message_id) > 1024):
+            raise ConversationError("conversation_message_invalid")
+        current = session.get("current")
+        if current and (current["role"] != role or current["message_id"] != message_id):
+            flush(session)
+            current = None
+        stamp = row.get("timestamp")
+        if current is None:
+            current = {
+                "role": role,
+                "message_id": message_id,
+                "parts": [],
+                "first": stamp,
+                "last": stamp,
+            }
+            session["current"] = current
+        current["parts"].append(value)
+        if stamp:
+            current["first"] = current["first"] or stamp
+            current["last"] = stamp
+    result = []
+    for identifier, session in sessions.items():
+        flush(session)
+        transcript = _transcript(identifier, "Agent conversation", "acp-session", session["turns"])
+        if transcript:
+            result.append(transcript)
+    return result
+
+
 def parse(text: str, source_id: str) -> list[Transcript]:
     """Parse complete JSON/JSONL only. In-progress files fail without pruning a scan."""
     try:
@@ -121,6 +213,9 @@ def parse(text: str, source_id: str) -> list[Transcript]:
     def add(value):
         if value:
             result.append(value)
+
+    if any(isinstance(row, dict) and row.get("method") == "session/update" for row in rows):
+        return _acp_sessions(rows, fallback)
 
     if any(isinstance(row, dict) and row.get("type") == "session_meta" for row in rows):
         turns, identifier = [], fallback

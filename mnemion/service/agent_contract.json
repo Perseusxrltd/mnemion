@@ -9278,6 +9278,43 @@
                 "title": "Expected Version",
                 "type": "integer"
               },
+              "fold_after_hours": {
+                "anyOf": [
+                  {
+                    "maximum": 8760.0,
+                    "minimum": 24.0,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Fold After Hours"
+              },
+              "fold_enabled": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Fold Enabled"
+              },
+              "fold_interval_seconds": {
+                "anyOf": [
+                  {
+                    "maximum": 86400.0,
+                    "minimum": 60.0,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Fold Interval Seconds"
+              },
               "interval_seconds": {
                 "default": 300,
                 "maximum": 86400.0,
@@ -9392,6 +9429,11 @@
                 "title": "Can Configure",
                 "type": "boolean"
               },
+              "can_organize": {
+                "default": false,
+                "title": "Can Organize",
+                "type": "boolean"
+              },
               "configured": {
                 "title": "Configured",
                 "type": "boolean"
@@ -9415,6 +9457,33 @@
                 "const": true,
                 "title": "External History Retained",
                 "type": "boolean"
+              },
+              "fold_after_hours": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Fold After Hours"
+              },
+              "fold_enabled": {
+                "default": false,
+                "title": "Fold Enabled",
+                "type": "boolean"
+              },
+              "fold_interval_seconds": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Fold Interval Seconds"
               },
               "interval_seconds": {
                 "anyOf": [
@@ -9459,6 +9528,69 @@
                 ],
                 "title": "Last Error"
               },
+              "last_fold_archived_files": {
+                "default": 0,
+                "title": "Last Fold Archived Files",
+                "type": "integer"
+              },
+              "last_fold_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Fold At"
+              },
+              "last_fold_commit": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Fold Commit"
+              },
+              "last_fold_error": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Fold Error"
+              },
+              "last_fold_notes": {
+                "default": 0,
+                "title": "Last Fold Notes",
+                "type": "integer"
+              },
+              "last_fold_pending_files": {
+                "default": 0,
+                "title": "Last Fold Pending Files",
+                "type": "integer"
+              },
+              "last_fold_pending_notes": {
+                "default": 0,
+                "title": "Last Fold Pending Notes",
+                "type": "integer"
+              },
+              "last_fold_read_bytes": {
+                "default": 0,
+                "title": "Last Fold Read Bytes",
+                "type": "integer"
+              },
+              "last_fold_written_bytes": {
+                "default": 0,
+                "title": "Last Fold Written Bytes",
+                "type": "integer"
+              },
               "last_push_at": {
                 "anyOf": [
                   {
@@ -9469,6 +9601,28 @@
                   }
                 ],
                 "title": "Last Push At"
+              },
+              "next_fold_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Next Fold At"
+              },
+              "notes_prefix": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Notes Prefix"
               },
               "paused": {
                 "anyOf": [
@@ -9592,6 +9746,377 @@
         "type": "object"
       },
       "method": "POST",
+      "name": "journal.organize",
+      "output_schema": {
+        "$defs": {
+          "DestinationInfo": {
+            "additionalProperties": true,
+            "properties": {
+              "branch": {
+                "title": "Branch",
+                "type": "string"
+              },
+              "custom_scanner": {
+                "title": "Custom Scanner",
+                "type": "boolean"
+              },
+              "id": {
+                "title": "Id",
+                "type": "string"
+              },
+              "label": {
+                "title": "Label",
+                "type": "string"
+              },
+              "personal_data_scan": {
+                "title": "Personal Data Scan",
+                "type": "boolean"
+              },
+              "prefix": {
+                "title": "Prefix",
+                "type": "string"
+              },
+              "repository": {
+                "title": "Repository",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "repository",
+              "branch",
+              "prefix",
+              "personal_data_scan",
+              "custom_scanner"
+            ],
+            "title": "DestinationInfo",
+            "type": "object"
+          },
+          "WritebackStatus": {
+            "additionalProperties": true,
+            "properties": {
+              "can_configure": {
+                "title": "Can Configure",
+                "type": "boolean"
+              },
+              "can_organize": {
+                "default": false,
+                "title": "Can Organize",
+                "type": "boolean"
+              },
+              "configured": {
+                "title": "Configured",
+                "type": "boolean"
+              },
+              "destination": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/DestinationInfo"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "existing_memories_backfilled": {
+                "const": false,
+                "title": "Existing Memories Backfilled",
+                "type": "boolean"
+              },
+              "external_history_retained": {
+                "const": true,
+                "title": "External History Retained",
+                "type": "boolean"
+              },
+              "fold_after_hours": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Fold After Hours"
+              },
+              "fold_enabled": {
+                "default": false,
+                "title": "Fold Enabled",
+                "type": "boolean"
+              },
+              "fold_interval_seconds": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Fold Interval Seconds"
+              },
+              "interval_seconds": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Interval Seconds"
+              },
+              "last_bytes": {
+                "default": 0,
+                "title": "Last Bytes",
+                "type": "integer"
+              },
+              "last_commit": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Commit"
+              },
+              "last_entries": {
+                "default": 0,
+                "title": "Last Entries",
+                "type": "integer"
+              },
+              "last_error": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Error"
+              },
+              "last_fold_archived_files": {
+                "default": 0,
+                "title": "Last Fold Archived Files",
+                "type": "integer"
+              },
+              "last_fold_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Fold At"
+              },
+              "last_fold_commit": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Fold Commit"
+              },
+              "last_fold_error": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Fold Error"
+              },
+              "last_fold_notes": {
+                "default": 0,
+                "title": "Last Fold Notes",
+                "type": "integer"
+              },
+              "last_fold_pending_files": {
+                "default": 0,
+                "title": "Last Fold Pending Files",
+                "type": "integer"
+              },
+              "last_fold_pending_notes": {
+                "default": 0,
+                "title": "Last Fold Pending Notes",
+                "type": "integer"
+              },
+              "last_fold_read_bytes": {
+                "default": 0,
+                "title": "Last Fold Read Bytes",
+                "type": "integer"
+              },
+              "last_fold_written_bytes": {
+                "default": 0,
+                "title": "Last Fold Written Bytes",
+                "type": "integer"
+              },
+              "last_push_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Push At"
+              },
+              "next_fold_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Next Fold At"
+              },
+              "notes_prefix": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Notes Prefix"
+              },
+              "paused": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Paused"
+              },
+              "pending_content_bytes": {
+                "title": "Pending Content Bytes",
+                "type": "integer"
+              },
+              "pending_entries": {
+                "title": "Pending Entries",
+                "type": "integer"
+              },
+              "publisher_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Publisher Id"
+              },
+              "state": {
+                "enum": [
+                  "not_configured",
+                  "ready",
+                  "paused",
+                  "publisher_unavailable",
+                  "destination_changed"
+                ],
+                "title": "State",
+                "type": "string"
+              },
+              "version": {
+                "title": "Version",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "configured",
+              "can_configure",
+              "destination",
+              "version",
+              "state",
+              "pending_entries",
+              "pending_content_bytes",
+              "external_history_retained",
+              "existing_memories_backfilled"
+            ],
+            "title": "WritebackStatus",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/WritebackStatus"
+      },
+      "parameter_locations": {
+        "space_id": "path"
+      },
+      "path": "/v1/spaces/{space_id}/writeback/organize",
+      "retry": "inspect_before_retry",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Journal Organize"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "write",
+      "group": "git-journal",
+      "input_schema": {
+        "$defs": {
+          "WritebackPushInput": {
+            "additionalProperties": false,
+            "properties": {
+              "expected_version": {
+                "minimum": 1.0,
+                "title": "Expected Version",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "expected_version"
+            ],
+            "title": "WritebackPushInput",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/WritebackPushInput"
+          },
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "space_id": {
+                "format": "uuid",
+                "title": "Space Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "space_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters",
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "POST",
       "name": "journal.push",
       "output_schema": {
         "$defs": {
@@ -9646,6 +10171,11 @@
                 "title": "Can Configure",
                 "type": "boolean"
               },
+              "can_organize": {
+                "default": false,
+                "title": "Can Organize",
+                "type": "boolean"
+              },
               "configured": {
                 "title": "Configured",
                 "type": "boolean"
@@ -9669,6 +10199,33 @@
                 "const": true,
                 "title": "External History Retained",
                 "type": "boolean"
+              },
+              "fold_after_hours": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Fold After Hours"
+              },
+              "fold_enabled": {
+                "default": false,
+                "title": "Fold Enabled",
+                "type": "boolean"
+              },
+              "fold_interval_seconds": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Fold Interval Seconds"
               },
               "interval_seconds": {
                 "anyOf": [
@@ -9713,6 +10270,69 @@
                 ],
                 "title": "Last Error"
               },
+              "last_fold_archived_files": {
+                "default": 0,
+                "title": "Last Fold Archived Files",
+                "type": "integer"
+              },
+              "last_fold_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Fold At"
+              },
+              "last_fold_commit": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Fold Commit"
+              },
+              "last_fold_error": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Fold Error"
+              },
+              "last_fold_notes": {
+                "default": 0,
+                "title": "Last Fold Notes",
+                "type": "integer"
+              },
+              "last_fold_pending_files": {
+                "default": 0,
+                "title": "Last Fold Pending Files",
+                "type": "integer"
+              },
+              "last_fold_pending_notes": {
+                "default": 0,
+                "title": "Last Fold Pending Notes",
+                "type": "integer"
+              },
+              "last_fold_read_bytes": {
+                "default": 0,
+                "title": "Last Fold Read Bytes",
+                "type": "integer"
+              },
+              "last_fold_written_bytes": {
+                "default": 0,
+                "title": "Last Fold Written Bytes",
+                "type": "integer"
+              },
               "last_push_at": {
                 "anyOf": [
                   {
@@ -9723,6 +10343,28 @@
                   }
                 ],
                 "title": "Last Push At"
+              },
+              "next_fold_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Next Fold At"
+              },
+              "notes_prefix": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Notes Prefix"
               },
               "paused": {
                 "anyOf": [
@@ -9879,6 +10521,11 @@
                 "title": "Can Configure",
                 "type": "boolean"
               },
+              "can_organize": {
+                "default": false,
+                "title": "Can Organize",
+                "type": "boolean"
+              },
               "configured": {
                 "title": "Configured",
                 "type": "boolean"
@@ -9902,6 +10549,33 @@
                 "const": true,
                 "title": "External History Retained",
                 "type": "boolean"
+              },
+              "fold_after_hours": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Fold After Hours"
+              },
+              "fold_enabled": {
+                "default": false,
+                "title": "Fold Enabled",
+                "type": "boolean"
+              },
+              "fold_interval_seconds": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Fold Interval Seconds"
               },
               "interval_seconds": {
                 "anyOf": [
@@ -9946,6 +10620,69 @@
                 ],
                 "title": "Last Error"
               },
+              "last_fold_archived_files": {
+                "default": 0,
+                "title": "Last Fold Archived Files",
+                "type": "integer"
+              },
+              "last_fold_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Fold At"
+              },
+              "last_fold_commit": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Fold Commit"
+              },
+              "last_fold_error": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Fold Error"
+              },
+              "last_fold_notes": {
+                "default": 0,
+                "title": "Last Fold Notes",
+                "type": "integer"
+              },
+              "last_fold_pending_files": {
+                "default": 0,
+                "title": "Last Fold Pending Files",
+                "type": "integer"
+              },
+              "last_fold_pending_notes": {
+                "default": 0,
+                "title": "Last Fold Pending Notes",
+                "type": "integer"
+              },
+              "last_fold_read_bytes": {
+                "default": 0,
+                "title": "Last Fold Read Bytes",
+                "type": "integer"
+              },
+              "last_fold_written_bytes": {
+                "default": 0,
+                "title": "Last Fold Written Bytes",
+                "type": "integer"
+              },
               "last_push_at": {
                 "anyOf": [
                   {
@@ -9956,6 +10693,28 @@
                   }
                 ],
                 "title": "Last Push At"
+              },
+              "next_fold_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Next Fold At"
+              },
+              "notes_prefix": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Notes Prefix"
               },
               "paused": {
                 "anyOf": [

@@ -31,3 +31,13 @@ def attach_writeback(app, service, authenticated):
     def journal_push(space_id: UUID, command: WritebackPushInput, identity: Auth):
         service.push(identity, space_id, expected_version=command.expected_version)
         return service.status(identity, space_id)
+
+    @app.post(
+        "/v1/spaces/{space_id}/writeback/organize",
+        tags=["Git journal"],
+        response_model=WritebackStatus,
+    )
+    def journal_organize(space_id: UUID, command: WritebackPushInput, identity: Auth):
+        """File current journal memories into Markdown and move old records intact to the archive."""
+        service.organize(identity, space_id, expected_version=command.expected_version)
+        return service.status(identity, space_id)
