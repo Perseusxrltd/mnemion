@@ -82,15 +82,16 @@
   ],
   "runs": [
     {
-      "id": 39217859050,
+      "id": 39223715397,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "b226dbe7c33bc0591f2edf4e6c2a6debbbbec8c7",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-19T08:03:14Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39217859050"
+      "source_commit": "d0937f4de9a715413f4907b35a1d7f285e11b76e",
+      "status": "queued",
+      "conclusion": null,
+      "updated_at": "2026-10-19T08:34:21Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39223715397",
+      "failed_jobs": []
     },
     {
       "id": 38762930423,
@@ -131,22 +132,33 @@
       "workflow": "release.yml",
       "branch": "release/4.12.0-r2",
       "source_commit": "b226dbe7c33bc0591f2edf4e6c2a6debbbbec8c7",
-      "status": "in_progress",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "updated_at": "2026-10-19T08:35:19Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39217905202"
+    },
+    {
+      "id": 39223746890,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.12.0-r3",
+      "source_commit": "d0937f4de9a715413f4907b35a1d7f285e11b76e",
+      "status": "queued",
       "conclusion": null,
-      "updated_at": "2026-10-19T08:02:00Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39217905202",
+      "updated_at": "2026-10-19T08:35:32Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39223746890",
       "failed_jobs": []
     },
     {
-      "id": 39219576146,
+      "id": 39223838644,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "bc3420afe3ed146fce02408146014379e4d966ec",
+      "source_commit": "d0937f4de9a715413f4907b35a1d7f285e11b76e",
       "status": "completed",
       "conclusion": "skipped",
-      "updated_at": "2026-10-19T07:59:17Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39219576146"
+      "updated_at": "2026-10-19T08:35:23Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39223838644"
     },
     {
       "id": 39203752292,
@@ -171,5 +183,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/38762926335"
     }
   ],
-  "observed_at": "2026-10-19T08:03:34+00:00"
+  "observed_at": "2026-10-19T08:35:45+00:00"
 }

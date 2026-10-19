@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-19T08:03:34+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-19T08:35:45+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.11.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.11.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -23,11 +23,12 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 39217859050](https://github.com/Perseusxrltd/mnemion/actions/runs/39217859050) |
+| ci\.yml | main | queued | [Run 39223715397](https://github.com/Perseusxrltd/mnemion/actions/runs/39223715397) |
 | public-updates\.yml | v4\.11\.0 | success | [Run 38762930423](https://github.com/Perseusxrltd/mnemion/actions/runs/38762930423) |
 | release\.yml | release/4\.11\.0 | success | [Run 38755751232](https://github.com/Perseusxrltd/mnemion/actions/runs/38755751232) |
 | release\.yml | release/4\.12\.0 | cancelled | [Run 39217047454](https://github.com/Perseusxrltd/mnemion/actions/runs/39217047454) |
-| release\.yml | release/4\.12\.0-r2 | in\_progress | [Run 39217905202](https://github.com/Perseusxrltd/mnemion/actions/runs/39217905202) |
-| verify-artifacts\.yml | main | skipped | [Run 39219576146](https://github.com/Perseusxrltd/mnemion/actions/runs/39219576146) |
+| release\.yml | release/4\.12\.0-r2 | cancelled | [Run 39217905202](https://github.com/Perseusxrltd/mnemion/actions/runs/39217905202) |
+| release\.yml | release/4\.12\.0-r3 | queued | [Run 39223746890](https://github.com/Perseusxrltd/mnemion/actions/runs/39223746890) |
+| verify-artifacts\.yml | main | skipped | [Run 39223838644](https://github.com/Perseusxrltd/mnemion/actions/runs/39223838644) |
 | website-release\.yml | main | success | [Run 39203752292](https://github.com/Perseusxrltd/mnemion/actions/runs/39203752292) |
 | website-release\.yml | v4\.11\.0 | success | [Run 38762926335](https://github.com/Perseusxrltd/mnemion/actions/runs/38762926335) |
