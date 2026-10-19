@@ -25,6 +25,7 @@ const titles: Record<string, string> = {
   "docs/service/host-recovery.md": "Rebuild a host and keep workspace identities",
   "docs/service/git-journal.md": "Git journals, publication & memory replay",
   "docs/service/legacy-buffer.md": "Recover records from an older agent buffer",
+  "docs/service/journal-recovery.md": "Restore editable memories from a native journal",
   "docs/implementation/github-issues.md": "GitHub fixes & remaining issue work",
   "docs/service/managed-updates.md": "Managed server updates",
   "docs/service/workspaces.md": "Connect & remember workspaces",

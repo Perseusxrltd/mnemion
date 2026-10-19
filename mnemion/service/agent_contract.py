@@ -44,6 +44,8 @@ journal.backfill.start POST /v1/spaces/{space_id}/writeback/backfill
 journal.backfill.control POST /v1/spaces/{space_id}/writeback/backfill/control
 memory.buffer.preview POST /v1/spaces/{space_id}/buffer-import/preview
 memory.buffer.import POST /v1/spaces/{space_id}/buffer-import
+memory.journal.preview POST /v1/spaces/{space_id}/journal-recovery/preview
+memory.journal.restore POST /v1/spaces/{space_id}/journal-recovery
 principals.list GET /v1/principals
 principals.create POST /v1/principals
 principals.disable POST /v1/principals/{principal_id}/disable
@@ -153,6 +155,7 @@ evaluations.export GET /v1/spaces/{space_id}/evaluations/runs/{run_id}/export
 READ_POST = frozenset(
     {
         "memory.buffer.preview",
+        "memory.journal.preview",
         "retrieval.search",
         "retrieval.context",
         "knowledge.map",
@@ -170,6 +173,8 @@ PRIVATE_INPUTS = frozenset(
     {
         "memory.buffer.preview",
         "memory.buffer.import",
+        "memory.journal.preview",
+        "memory.journal.restore",
         "sign_in.set_password",
         "sign_in.login",
         "sign_in.refresh",

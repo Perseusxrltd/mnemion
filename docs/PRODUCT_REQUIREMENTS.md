@@ -19,13 +19,24 @@ not equally sized. This is coverage of the full requested scope, not a measure
 of engineering effort or the usability of the published app. Hotfixes to a
 partial feature do not automatically mark its whole requirement complete.
 
+Source 4.26.0 advances F03/F08/A09/A13/U01 with [native journal recovery](service/journal-recovery.md):
+complete inventory review, original IDs or independent copies, editable current
+content, durable withdrawals and content-free quarantine identities, local-edit
+preservation and app/SDK/agent parity. The guided limit is 1 MiB and 1,000
+identities. Resumable larger uploads and the original office's unavailable full
+state remain separate work. Later quarantine state survives older full-backup
+restoration through the current recovery ledger; newer positive text still
+needs a full snapshot or complete journal review. The batch also carries the
+withheld 4.25 importer and fixes recovery-screen update guards. Strict full-scope
+completion is unchanged.
+
 Source 4.25.0 advances F03/F08/A09/A13 with [reviewed legacy-buffer recovery](service/legacy-buffer.md)
 in Studio, SDKs and private agent controls. Available records become writable
 native memories with stable identities and retained provenance. Reconciliation
 preserves edits and withdrawals, checks current access and refuses existing Git
 publication. It does not reconstruct missing history, original accounts or the
-unavailable office database/vault. Complete native-journal recovery and broader
-provider adoption remain open; the strict requirement count is unchanged.
+unavailable office database/vault. Source 4.26 adds the bounded native-journal
+path above; larger recovery and broader provider adoption remain open.
 
 Source 4.23.0 advances A04/A09/F08 with [KeePass transfer](service/keepass.md):
 exact import preview, default masked labels, encrypted original field mapping,
@@ -39,8 +50,8 @@ for issue 39. Separate approval, bounded persistent scanning, privacy rejection,
 administrator takeover and app/SDK/agent controls protect current identity and
 publication policy. [Validation](validation/2026-10-19-journal-backfill.md) includes
 real Git, current access and full restore. Source 4.25 adds legacy-buffer
-reconciliation; complete native-journal reconstruction and provider/recovery
-acceptance remain separate work;
+reconciliation and 4.26 adds bounded native-journal reconstruction. Larger
+inventories and provider/recovery acceptance remain separate work;
 the full requirement count is unchanged. [All current GitHub reports](implementation/github-issues.md)
 remain part of this scope.
 

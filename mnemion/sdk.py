@@ -29,6 +29,12 @@ from .service.contracts import (
 from .service.models import ContextInput, MemoryInput, RecallInput, RevisionInput
 
 if TYPE_CHECKING:
+    from .service.journal_recovery_models import (
+        JournalRecoveryInput,
+        JournalRecoveryApply,
+        JournalRecoveryPreview,
+        JournalRecoveryReceipt,
+    )
     from .service.buffer_import_models import (
         BufferPreviewInput,
         BufferImportInput,
@@ -365,6 +371,41 @@ class Client:
                 "POST",
                 f"/v1/spaces/{UUID(space_id)}/writeback/backfill/control",
                 body=command.model_dump(mode="json"),
+            )
+        )
+
+    def preview_journal_recovery(
+        self, space_id: str, command: JournalRecoveryInput
+    ) -> JournalRecoveryPreview:
+        from .service.journal_recovery_models import JournalRecoveryInput, JournalRecoveryPreview
+
+        command = JournalRecoveryInput.model_validate(command)
+        body = command.model_dump(mode="json")
+        body["catalog"] = command.catalog.get_secret_value()
+        body["files"] = [
+            {"path": file.path, "text": file.text.get_secret_value()} for file in command.files
+        ]
+        return JournalRecoveryPreview.model_validate(
+            self.request("POST", f"/v1/spaces/{UUID(space_id)}/journal-recovery/preview", body=body)
+        )
+
+    def restore_journal(
+        self, space_id: str, command: JournalRecoveryApply, *, idempotency_key: str | None = None
+    ) -> JournalRecoveryReceipt:
+        from .service.journal_recovery_models import JournalRecoveryApply, JournalRecoveryReceipt
+
+        command = JournalRecoveryApply.model_validate(command)
+        body = command.model_dump(mode="json")
+        body["catalog"] = command.catalog.get_secret_value()
+        body["files"] = [
+            {"path": file.path, "text": file.text.get_secret_value()} for file in command.files
+        ]
+        return JournalRecoveryReceipt.model_validate(
+            self.request(
+                "POST",
+                f"/v1/spaces/{UUID(space_id)}/journal-recovery",
+                body=body,
+                key=idempotency_key or str(uuid4()),
             )
         )
 

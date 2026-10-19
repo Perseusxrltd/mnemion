@@ -141,7 +141,9 @@ export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Re
     picker.dispatchEvent(new Event('change', { bubbles: true }));
     await until(() => bridge.updateSafety(), 'Memory-space navigation incorrectly blocks updates');
     location.hash = '/workspace/new';
-    const draft = await until(() => document.querySelector('.ws-page textarea'), 'Missing memory editor');
+    // The previous journal page also has textareas; wait for the actual editor
+    // instead of editing a node that React removes during this navigation.
+    const draft = await until(() => document.querySelector('.ws-page textarea[placeholder="What should this workspace remember?"]'), 'Missing memory editor');
     Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(draft, 'Disposable unsaved update-guard check');
     draft.dispatchEvent(new Event('input', { bubbles: true })); await pause(100);
     if (bridge.updateSafety()) throw new Error('An unsaved memory permits an update restart');

@@ -218,12 +218,15 @@ def inventory(conn) -> dict:
 def _ledger(conn) -> dict:
     from .application_key_recovery import capture as capture_application_keys
     from .connector_recovery import capture
+    from .journal_recovery_ledger import capture as capture_journal
     from .vault_recovery import capture as capture_vault
 
+    journal = capture_journal(conn)
     payload = json_value(
         {
             "format": LEDGER_FORMAT,
-            "version": 1,
+            # Older readers must not silently discard a newer quarantine.
+            "version": 2 if journal and journal["quarantines"] else 1,
             "snapshot_at": conn.execute("SELECT transaction_timestamp() AS time").fetchone()[
                 "time"
             ],
@@ -242,6 +245,7 @@ def _ledger(conn) -> dict:
             "connector_state": capture(conn),
             "vault_state": capture_vault(conn),
             "application_key_state": capture_application_keys(conn),
+            "journal_recovery_state": journal,
         }
     )
     return {**payload, "sha256": hashlib.sha256(canonical_json(payload)).hexdigest()}
@@ -274,7 +278,8 @@ def read_ledger(path: Path) -> dict:
     if (
         not isinstance(payload, dict)
         or payload.get("format") != LEDGER_FORMAT
-        or payload.get("version") != 1
+        or type(payload.get("version")) is not int
+        or payload["version"] not in (1, 2)
     ):
         raise ValueError("Unsupported recovery ledger")
     digest = payload.pop("sha256", None)
@@ -315,6 +320,14 @@ def read_ledger(path: Path) -> dict:
         from .application_key_recovery import validate as validate_application_keys
 
         validate_application_keys(payload["application_key_state"], tenants)
+    if payload.get("journal_recovery_state") is not None:
+        from .journal_recovery_ledger import validate as validate_journal
+
+        validate_journal(payload["journal_recovery_state"], tenants)
+        if payload["journal_recovery_state"]["quarantines"] and payload["version"] != 2:
+            raise ValueError("Journal quarantines require a version 2 recovery ledger")
+    elif payload["version"] == 2:
+        raise ValueError("A version 2 recovery ledger requires journal quarantine state")
     return {**payload, "sha256": digest}
 
 
@@ -467,6 +480,7 @@ def _recover_access(conn, ledger: dict, backup_id: str, *, preserve_application_
 
     from .application_key_recovery import eligible, retain
     from .connector_recovery import restore
+    from .journal_recovery_ledger import restore as restore_journal
     from .vault_recovery import restore as restore_vault
 
     original_eligible = (
@@ -477,6 +491,7 @@ def _recover_access(conn, ledger: dict, backup_id: str, *, preserve_application_
 
     restore(conn, ledger)
     restore_vault(conn, ledger)
+    restore_journal(conn, ledger)
     # Git history and restored credentials are not current publication consent.
     # Reapprove the host destination and repair its publisher explicitly.
     conn.execute("""UPDATE mnemion.writeback_settings SET paused=true,version=version+1,

@@ -567,8 +567,11 @@ Enroll a destination on the new host, establish its Git credential manager and
 explicitly approve its policy in Studio before resuming the durable queue.
 
 [Issue 39](https://github.com/Perseusxrltd/mnemion/issues/39) remains open for
-guided remote-host enrollment and provider sign-in, legacy-buffer reconciliation, direct
-writable-space reconstruction and large-history/live-provider acceptance. The
+guided remote-host enrollment and provider sign-in, large-history/live-provider
+acceptance and remaining deployment recovery checks. Source 4.25 supplies
+[older external-buffer reconciliation](legacy-buffer.md); 4.26 supplies
+[editable native journal recovery](journal-recovery.md) with complete inventories
+up to 1 MiB and 1,000 identities. The
 source now includes local app host registration, capture, guarded publication,
 scheduled filing/archival, existing native-memory backfill, app/agent controls and source replay; it does not
 replace complete workspace backups or independently hosted infrastructure.

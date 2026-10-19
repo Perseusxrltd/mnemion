@@ -459,6 +459,9 @@ def create_app(
     from .buffer_import_api import attach_buffer_import
 
     attach_buffer_import(app, memory, authenticated)
+    from .journal_recovery_api import attach_journal_recovery
+
+    attach_journal_recovery(app, memory, authenticated)
     attach_agents(app, authenticated)
     attach_recovery_directory(app, database, authenticated)
     attach_vault(app, vault, authenticated)

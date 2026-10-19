@@ -17497,6 +17497,586 @@
     {
       "authentication": "bearer",
       "download": false,
+      "effect": "read",
+      "group": "memory-recovery",
+      "input_schema": {
+        "$defs": {
+          "JournalRecoveryFile": {
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "maxLength": 120,
+                "minLength": 1,
+                "title": "Path",
+                "type": "string"
+              },
+              "text": {
+                "format": "password",
+                "maxLength": 1048576,
+                "title": "Text",
+                "type": "string",
+                "writeOnly": true
+              }
+            },
+            "required": [
+              "path",
+              "text"
+            ],
+            "title": "JournalRecoveryFile",
+            "type": "object"
+          },
+          "JournalRecoveryInput": {
+            "additionalProperties": false,
+            "properties": {
+              "catalog": {
+                "format": "password",
+                "maxLength": 4096,
+                "title": "Catalog",
+                "type": "string",
+                "writeOnly": true
+              },
+              "files": {
+                "items": {
+                  "$ref": "#/$defs/JournalRecoveryFile"
+                },
+                "maxItems": 256,
+                "title": "Files",
+                "type": "array"
+              },
+              "identity_mode": {
+                "default": "original",
+                "enum": [
+                  "original",
+                  "copy"
+                ],
+                "title": "Identity Mode",
+                "type": "string"
+              },
+              "reject_personal_data": {
+                "default": true,
+                "title": "Reject Personal Data",
+                "type": "boolean"
+              },
+              "withdrawn_ids": {
+                "description": "Known original memory IDs withdrawn after this snapshot, including IDs absent from it. Review before supplying an empty list.",
+                "items": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "maxItems": 1000,
+                "title": "Withdrawn Ids",
+                "type": "array"
+              }
+            },
+            "required": [
+              "catalog",
+              "files",
+              "withdrawn_ids"
+            ],
+            "title": "JournalRecoveryInput",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/JournalRecoveryInput"
+          },
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "space_id": {
+                "format": "uuid",
+                "title": "Space Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "space_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters",
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "POST",
+      "name": "memory.journal.preview",
+      "output_schema": {
+        "$defs": {
+          "JournalRecoveryItem": {
+            "additionalProperties": false,
+            "properties": {
+              "action": {
+                "enum": [
+                  "create",
+                  "already_restored",
+                  "preserved_changes",
+                  "stale_source",
+                  "withdraw",
+                  "deny",
+                  "withdrawn",
+                  "hold",
+                  "quarantine",
+                  "held",
+                  "release",
+                  "update",
+                  "conflict",
+                  "rejected"
+                ],
+                "title": "Action",
+                "type": "string"
+              },
+              "code": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Code"
+              },
+              "memory_id": {
+                "format": "uuid",
+                "title": "Memory Id",
+                "type": "string"
+              },
+              "original_id": {
+                "format": "uuid",
+                "title": "Original Id",
+                "type": "string"
+              },
+              "source_version": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Source Version"
+              },
+              "version": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Version"
+              }
+            },
+            "required": [
+              "original_id",
+              "memory_id",
+              "action"
+            ],
+            "title": "JournalRecoveryItem",
+            "type": "object"
+          },
+          "JournalRecoveryPreview": {
+            "additionalProperties": false,
+            "properties": {
+              "bytes": {
+                "title": "Bytes",
+                "type": "integer"
+              },
+              "can_restore": {
+                "title": "Can Restore",
+                "type": "boolean"
+              },
+              "counts": {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "title": "Counts",
+                "type": "object"
+              },
+              "duplicates": {
+                "title": "Duplicates",
+                "type": "integer"
+              },
+              "identity_mode": {
+                "enum": [
+                  "original",
+                  "copy"
+                ],
+                "title": "Identity Mode",
+                "type": "string"
+              },
+              "input_sha256": {
+                "title": "Input Sha256",
+                "type": "string"
+              },
+              "items": {
+                "items": {
+                  "$ref": "#/$defs/JournalRecoveryItem"
+                },
+                "title": "Items",
+                "type": "array"
+              },
+              "namespace": {
+                "title": "Namespace",
+                "type": "string"
+              },
+              "preview_sha256": {
+                "title": "Preview Sha256",
+                "type": "string"
+              },
+              "records": {
+                "title": "Records",
+                "type": "integer"
+              },
+              "remote_delivery_verified": {
+                "const": false,
+                "default": false,
+                "title": "Remote Delivery Verified",
+                "type": "boolean"
+              },
+              "source_only": {
+                "const": true,
+                "default": true,
+                "title": "Source Only",
+                "type": "boolean"
+              },
+              "space_id": {
+                "format": "uuid",
+                "title": "Space Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "identity_mode",
+              "namespace",
+              "space_id",
+              "preview_sha256",
+              "counts",
+              "items",
+              "input_sha256",
+              "can_restore",
+              "records",
+              "duplicates",
+              "bytes"
+            ],
+            "title": "JournalRecoveryPreview",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/JournalRecoveryPreview"
+      },
+      "parameter_locations": {
+        "space_id": "path"
+      },
+      "path": "/v1/spaces/{space_id}/journal-recovery/preview",
+      "retry": "read",
+      "sensitive_input": true,
+      "sensitive_result": true,
+      "summary": "Journal Recovery Preview"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "write",
+      "group": "memory-recovery",
+      "input_schema": {
+        "$defs": {
+          "JournalRecoveryApply": {
+            "additionalProperties": false,
+            "properties": {
+              "acknowledge_source_only": {
+                "const": true,
+                "title": "Acknowledge Source Only",
+                "type": "boolean"
+              },
+              "catalog": {
+                "format": "password",
+                "maxLength": 4096,
+                "title": "Catalog",
+                "type": "string",
+                "writeOnly": true
+              },
+              "files": {
+                "items": {
+                  "$ref": "#/$defs/JournalRecoveryFile"
+                },
+                "maxItems": 256,
+                "title": "Files",
+                "type": "array"
+              },
+              "identity_mode": {
+                "default": "original",
+                "enum": [
+                  "original",
+                  "copy"
+                ],
+                "title": "Identity Mode",
+                "type": "string"
+              },
+              "preview_sha256": {
+                "pattern": "^[a-f0-9]{64}$",
+                "title": "Preview Sha256",
+                "type": "string"
+              },
+              "reject_personal_data": {
+                "default": true,
+                "title": "Reject Personal Data",
+                "type": "boolean"
+              },
+              "reviewed_complete_inventory": {
+                "const": true,
+                "title": "Reviewed Complete Inventory",
+                "type": "boolean"
+              },
+              "reviewed_withdrawals": {
+                "const": true,
+                "title": "Reviewed Withdrawals",
+                "type": "boolean"
+              },
+              "withdrawn_ids": {
+                "description": "Known original memory IDs withdrawn after this snapshot, including IDs absent from it. Review before supplying an empty list.",
+                "items": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "maxItems": 1000,
+                "title": "Withdrawn Ids",
+                "type": "array"
+              }
+            },
+            "required": [
+              "catalog",
+              "files",
+              "withdrawn_ids",
+              "preview_sha256",
+              "reviewed_complete_inventory",
+              "reviewed_withdrawals",
+              "acknowledge_source_only"
+            ],
+            "title": "JournalRecoveryApply",
+            "type": "object"
+          },
+          "JournalRecoveryFile": {
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "maxLength": 120,
+                "minLength": 1,
+                "title": "Path",
+                "type": "string"
+              },
+              "text": {
+                "format": "password",
+                "maxLength": 1048576,
+                "title": "Text",
+                "type": "string",
+                "writeOnly": true
+              }
+            },
+            "required": [
+              "path",
+              "text"
+            ],
+            "title": "JournalRecoveryFile",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/JournalRecoveryApply"
+          },
+          "idempotency_key": {
+            "maxLength": 200,
+            "minLength": 1,
+            "pattern": "^[\\x21-\\x7e]+$",
+            "type": "string"
+          },
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "space_id": {
+                "format": "uuid",
+                "title": "Space Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "space_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "idempotency_key",
+          "parameters",
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "POST",
+      "name": "memory.journal.restore",
+      "output_schema": {
+        "$defs": {
+          "JournalRecoveryItem": {
+            "additionalProperties": false,
+            "properties": {
+              "action": {
+                "enum": [
+                  "create",
+                  "already_restored",
+                  "preserved_changes",
+                  "stale_source",
+                  "withdraw",
+                  "deny",
+                  "withdrawn",
+                  "hold",
+                  "quarantine",
+                  "held",
+                  "release",
+                  "update",
+                  "conflict",
+                  "rejected"
+                ],
+                "title": "Action",
+                "type": "string"
+              },
+              "code": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Code"
+              },
+              "memory_id": {
+                "format": "uuid",
+                "title": "Memory Id",
+                "type": "string"
+              },
+              "original_id": {
+                "format": "uuid",
+                "title": "Original Id",
+                "type": "string"
+              },
+              "source_version": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Source Version"
+              },
+              "version": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Version"
+              }
+            },
+            "required": [
+              "original_id",
+              "memory_id",
+              "action"
+            ],
+            "title": "JournalRecoveryItem",
+            "type": "object"
+          },
+          "JournalRecoveryReceipt": {
+            "additionalProperties": false,
+            "properties": {
+              "counts": {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "title": "Counts",
+                "type": "object"
+              },
+              "identity_mode": {
+                "enum": [
+                  "original",
+                  "copy"
+                ],
+                "title": "Identity Mode",
+                "type": "string"
+              },
+              "items": {
+                "items": {
+                  "$ref": "#/$defs/JournalRecoveryItem"
+                },
+                "title": "Items",
+                "type": "array"
+              },
+              "namespace": {
+                "title": "Namespace",
+                "type": "string"
+              },
+              "preview_sha256": {
+                "title": "Preview Sha256",
+                "type": "string"
+              },
+              "remote_delivery_verified": {
+                "const": false,
+                "default": false,
+                "title": "Remote Delivery Verified",
+                "type": "boolean"
+              },
+              "source_only": {
+                "const": true,
+                "default": true,
+                "title": "Source Only",
+                "type": "boolean"
+              },
+              "space_id": {
+                "format": "uuid",
+                "title": "Space Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "identity_mode",
+              "namespace",
+              "space_id",
+              "preview_sha256",
+              "counts",
+              "items"
+            ],
+            "title": "JournalRecoveryReceipt",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/JournalRecoveryReceipt"
+      },
+      "parameter_locations": {
+        "space_id": "path"
+      },
+      "path": "/v1/spaces/{space_id}/journal-recovery",
+      "retry": "idempotency_key",
+      "sensitive_input": true,
+      "sensitive_result": true,
+      "summary": "Journal Recovery Apply"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
       "effect": "write",
       "group": "identity",
       "input_schema": {

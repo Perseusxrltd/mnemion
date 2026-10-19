@@ -51,10 +51,10 @@ export function RecoveryKitForm({ record, endpoint, name }: { record: RecoveryDi
     <h3><LockKeyhole size={18} /> Keep an independent recovery kit</h3>
     <p>Download one encrypted HTML file that opens on another device without the memory server. Store it outside the original host, or serve it from your organization’s own HTTPS site.</p>
     <p className="ws-helper">The kit exports only this directory. Keep logins, backup keys and memory data in their separate stores. Use a separate passphrase, keep it separately, and refresh the kit when the setup changes. Existing copies cannot be remotely revoked.</p>
-    <form onSubmit={exportKit} data-update-pending={!!password || !!repeat || busy}>
+    <form onSubmit={exportKit} data-update-pending={password || repeat || busy ? '' : undefined}>
       <fieldset disabled={busy}><div className="recovery-grid">
-        <label>Kit passphrase<input type="password" autoComplete="new-password" value={password} maxLength={1024} minLength={15} required onChange={event => setPassword(event.target.value)} /></label>
-        <label>Repeat kit passphrase<input type="password" autoComplete="new-password" value={repeat} maxLength={1024} minLength={15} required onChange={event => setRepeat(event.target.value)} /></label>
+        <label>Kit passphrase<input data-update-safe type="password" autoComplete="new-password" value={password} maxLength={1024} minLength={15} required onChange={event => setPassword(event.target.value)} /></label>
+        <label>Repeat kit passphrase<input data-update-safe type="password" autoComplete="new-password" value={repeat} maxLength={1024} minLength={15} required onChange={event => setRepeat(event.target.value)} /></label>
       </div><p className="ws-helper">At least 15 characters; several unrelated words work well.</p>
       <button className="ws-button ws-primary" type="submit" disabled={!record.revision}><Download size={15} />{busy ? 'Encrypting…' : 'Download encrypted recovery kit'}</button></fieldset>
       {error && <div className="ws-notice ws-error" role="alert">{error}</div>}

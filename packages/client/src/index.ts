@@ -17,6 +17,8 @@ export * from './writeback.js'
 export * from './conversations.js'
 import type { BufferPreviewInput, BufferImportInput, BufferPreview, BufferImported } from './buffer-import.js'
 export * from './buffer-import.js'
+import type { JournalRecoveryInput, JournalRecoveryApply, JournalRecoveryPreview, JournalRecoveryReceipt } from './journal-recovery.js'
+export * from './journal-recovery.js'
 
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json }
 export type Kind = 'fact' | 'event' | 'preference' | 'procedure' | 'note'
@@ -181,6 +183,8 @@ export interface ClientOptions {
 interface RequestOptions { body?: unknown; key?: string; signal?: AbortSignal; binary?: boolean }
 
 export class MnemionClient {
+  previewJournalRecovery(space: string, input: JournalRecoveryInput) { return this.request<JournalRecoveryPreview>('POST', '/v1/spaces/' + encodeURIComponent(space) + '/journal-recovery/preview', { body: input }) }
+  restoreJournal(space: string, input: JournalRecoveryApply, key: string = crypto.randomUUID()) { return this.request<JournalRecoveryReceipt>('POST', '/v1/spaces/' + encodeURIComponent(space) + '/journal-recovery', { body: input, key }) }
   private journalPath(space: string) { return '/v1/spaces/' + encodeURIComponent(space) + '/writeback' }
   journalStatus(space: string) { return this.request<JournalStatus>('GET', this.journalPath(space)) }
   configureJournal(space: string, input: JournalPolicyInput) { return this.request<JournalStatus>('PUT', this.journalPath(space), { body: input }) }

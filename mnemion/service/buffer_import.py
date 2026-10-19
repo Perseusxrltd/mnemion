@@ -10,10 +10,9 @@ from pydantic import ValidationError
 from ..journal.format import JournalEntry, JournalError
 from ..journal.privacy import scan
 from .buffer_import_models import LegacyBufferRecord
-from .db import require_administrator, require_space
 from .errors import ServiceError
-from .fences import exclusive_boundary
 from .models import MemoryInput, SourceInput, json_value
+from .private_import import authorize
 from .repository import audit, idempotency, remember_receipt
 
 
@@ -77,27 +76,7 @@ def _records(command):
 
 
 def _authorize(conn, identity, space):
-    require_administrator(conn)
-    require_space(conn, space, 40)
-    exclusive_boundary(conn, identity.tenant_id, space)
-    require_space(conn, space, 40, writing=True)
-    if (
-        conn.execute(
-            "SELECT 1 FROM mnemion.space_grants WHERE space_id=%s AND principal_id<>%s",
-            (space, identity.principal_id),
-        ).fetchone()
-        or conn.execute(
-            "SELECT 1 FROM mnemion.connector_scopes WHERE space_id=%s", (space,)
-        ).fetchone()
-        or conn.execute(
-            "SELECT 1 FROM mnemion.writeback_settings WHERE space_id=%s", (space,)
-        ).fetchone()
-    ):
-        raise ServiceError(
-            409,
-            "buffer_private_space_required",
-            "Choose a private native space with only your administrator grant and no Git publication. Share or publish it separately after reconciliation.",
-        )
+    authorize(conn, identity, space, code="buffer_private_space_required")
 
 
 def _alias(namespace, legacy_id):

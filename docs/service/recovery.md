@@ -48,6 +48,12 @@ Recovery requires a ledger covering every backed-up organization and taken at
 least as recently as the backup. Its freshness determines how recently deletions
 and access revocations can be reconciled after loss of the original database.
 
+From 4.26, ledgers also preserve later quarantines of recovered journal
+identities, including holds without text or a space in the older snapshot.
+Those ledgers use format version 2 and require 4.26 or newer for restoration;
+older readers reject them. They contain no newer positive text and do not
+release a backed-up quarantine. See [native journal recovery](journal-recovery.md).
+
 ## Restore into a new database
 
 ```sh

@@ -1,18 +1,33 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.25.0**. Roadmap updated: **2026-10-19**.
+Reviewed source distribution: **4.26.0**. Roadmap updated: **2026-10-19**.
 The [current published distribution and release gates](RELEASE_STATUS.md) are updated automatically.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
+
+The [4.26.0 source](releases/4.26.0.md) adds [editable native journal recovery](service/journal-recovery.md)
+for issue 39. The app, SDKs and private agent controls check the complete catalog,
+active files and archives before a transaction restores current content.
+Original memory IDs are preserved by default; explicit copies support separate
+destinations. Quarantines without text, permanent withdrawals, older snapshots
+and local edits retain their own recovery decisions. This guided path is bounded
+to 1 MiB and 1,000 identities. Resumable large-inventory upload, original workspace
+state and remaining provider acceptance stay open. Current ledgers preserve
+later journal and local-review quarantines across older backup restoration;
+format-2 ledgers require 4.26 or newer. Recovery forms clear completed update
+guards. Strict coverage stays **17/64
+(26.6%)**.
 
 The [4.25.0 source](releases/4.25.0.md) adds [reviewed external-buffer recovery](service/legacy-buffer.md)
 for issue 39. App, SDK and private-agent controls validate complete records,
 retain explicit withdrawals, preserve edits and create stable writable memories
 in a private destination. They refuse existing Git publication and do not infer
-original identities, full history or remote delivery. Complete native-journal
-reconstruction and original-office recovery remain open. Strict completion stays
+original identities, full history or remote delivery. The bounded native-journal
+path follows in 4.26; large-inventory and original-office recovery remain open. Strict completion stays
 **17/64 (26.6%)**. Release maintenance now retries a proven unstarted GitHub
 runner-capacity failure once; actual failed tests keep their normal gates.
+The frozen 4.25 build was withheld for an installed-test navigation race; 4.26
+carries its importer and the corrected editor selector.
 
 The [4.24.0 source](releases/4.24.0.md) addresses the archive and question patterns
 in issues 17 and 31, both before and after semantic indexing. Recent order keeps
@@ -23,7 +38,9 @@ records explicit labels and remaining limitations; this is not a general quality
 guarantee. Evaluations record actual execution identity. The batch also carries
 KeePass from withheld 4.23 with a compatible Intel Mac binding and adds binary
 resolution checks before native builders. Broader quality, native delivery and
-the remaining issues retain their own gates. Strict coverage is **17/64 (26.6%)**.
+the remaining issues retain their own gates. All six public 4.24 update paths
+passed, and issues **17, 31 and 32** closed through the verified-release workflow.
+Strict coverage is **17/64 (26.6%)**.
 
 The [4.23.0 source](releases/4.23.0.md) addresses issue 32's remaining
 [KeePass interoperability](service/keepass.md): reviewed current-field import,

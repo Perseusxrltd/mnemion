@@ -84,6 +84,14 @@ retained withdrawals and preservation of local edits support recovery without
 inferring original grants or Git delivery. Encrypted originals retain their
 separate decryption/publication boundary; complete workspace backups remain
 necessary for accounts, secrets and missing history.
+Source 4.26.0 adds [editable native journal recovery](docs/service/journal-recovery.md):
+complete catalog/archive review, original IDs or independent copies, preserved
+local edits and retained withdrawals/quarantines. The app and agents share the
+same bounded recovery; full workspace state still requires complete backups.
+Later quarantines survive an older backup when its current recovery ledger is
+supplied. Ledgers containing that state require 4.26 or newer. The same release
+carries the older-buffer importer from withheld 4.25 and clears completed
+recovery forms' automatic-update guards.
 Source 4.17.0 adds [live JSONL conversation capture](docs/service/live-conversations.md):
 bounded records and fragments, deferred tails, per-file source controls, private
 checkpoints, unchanged-fragment reuse and capture progress in the app. Existing
