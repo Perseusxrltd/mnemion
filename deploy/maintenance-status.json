@@ -191,11 +191,19 @@
       "workflow": "verify-artifacts.yml",
       "branch": "main",
       "source_commit": "0ae5644ad0992c0682b8cb0d1181eacd5f492a9d",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-19T17:10:21Z",
+      "status": "completed",
+      "conclusion": "failure",
+      "updated_at": "2026-10-19T17:11:50Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39291833460",
-      "failed_jobs": []
+      "failed_jobs": [
+        {
+          "name": "publish",
+          "id": 118194740676,
+          "steps": [
+            "Publish unchanged verified assets and dispatch public follow-ups"
+          ]
+        }
+      ]
     },
     {
       "id": 39289148212,
@@ -209,5 +217,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39289148212"
     }
   ],
-  "observed_at": "2026-10-19T17:10:36+00:00"
+  "observed_at": "2026-10-19T17:12:19+00:00"
 }
