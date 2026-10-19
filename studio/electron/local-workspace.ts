@@ -712,7 +712,25 @@ export class LocalWorkspace {
       })
       if (!stopped) return false
     }
-    if (this.controls.size > 0) return false
+    if (this.controls.size > 0) {
+      this.set({ message: 'Finishing local operations before closing the database…' })
+      const drained = await new Promise<boolean>(resolve => {
+        const pending = [...this.controls]
+        const finish = (complete: boolean) => {
+          clearTimeout(timer)
+          for (const child of pending) child.removeListener('close', closed)
+          resolve(complete)
+        }
+        const closed = () => { if (pending.every(child => !this.controls.has(child))) finish(true) }
+        const timer = setTimeout(() => finish(false), 90_000)
+        for (const child of pending) child.once('close', closed)
+        closed()
+      })
+      if (!drained) {
+        this.set({ message: 'Local operations are still finishing. Wait a moment and try again.' })
+        return false
+      }
+    }
     return this.stopChild()
   }
 

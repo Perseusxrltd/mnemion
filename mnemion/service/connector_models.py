@@ -83,13 +83,13 @@ class RunInput(Command):
 class ConnectorItemInput(Command):
     external_id: ExternalID
     revision: str = Field(min_length=1, max_length=512)
-    action: Literal["upsert", "delete"] = "upsert"
+    action: Literal["upsert", "delete", "retain"] = "upsert"
     memory: MemoryInput | None = None
 
     @model_validator(mode="after")
     def valid_item(self):
         if (self.action == "upsert") != (self.memory is not None):
-            raise ValueError("Upserts require evidence; deletion events must omit content")
+            raise ValueError("Upserts require evidence; delete and retain events omit content")
         if self.memory and self.memory.claim_status != "observed":
             raise ValueError("Connectors cannot verify their own source claims")
         return self

@@ -207,6 +207,43 @@ def command(args: list[str], *, maximum=64_000_000, timeout=120, environment=Non
         return output.read(maximum + 1)
 
 
+def filesystem_paths(config, *, verify_files=True):
+    """A complete selected path catalog; unreadable directories never mean empty."""
+    root = config.path.expanduser().resolve()
+    if not root.is_dir():
+        raise ProviderError("source_folder_unavailable", access_lost=True)
+    count = 0
+
+    def failed(error):
+        raise ProviderError("source_folder_unreadable") from None
+
+    for parent, dirs, files in os.walk(root, followlinks=False, onerror=failed):
+        dirs[:] = sorted(
+            d
+            for d in dirs
+            if not any(
+                fnmatch.fnmatchcase((Path(parent) / d).relative_to(root).as_posix() + "/", pattern)
+                for pattern in config.exclude
+            )
+        )
+        if any(
+            (Path(parent) / directory).is_symlink() or (Path(parent) / directory).is_junction()
+            for directory in dirs
+        ):
+            raise ProviderError("source_symlinks_not_supported")
+        for filename in sorted(files):
+            path = Path(parent) / filename
+            rel = relative_path(path.relative_to(root).as_posix())
+            if not selected(config, rel):
+                continue
+            if verify_files and (path.is_symlink() or not path.is_file()):
+                raise ProviderError("source_symlinks_not_supported")
+            count += 1
+            if count > config.max_files:
+                raise ProviderError("source_inventory_limit")
+            yield rel
+
+
 class FilesystemProvider:
     access_mode = "published"
 
@@ -223,55 +260,25 @@ class FilesystemProvider:
 
     def documents(self, scope_id: str):
         root = self.config.path.expanduser().resolve()
-        count = 0
-
-        def failed(error):
-            raise ProviderError("source_folder_unreadable") from None
-
-        for parent, dirs, files in os.walk(root, followlinks=False, onerror=failed):
-            dirs[:] = sorted(
-                d
-                for d in dirs
-                if not any(
-                    fnmatch.fnmatchcase(
-                        (Path(parent) / d).relative_to(root).as_posix() + "/", pattern
-                    )
-                    for pattern in self.config.exclude
-                )
+        for count, rel in enumerate(filesystem_paths(self.config), 1):
+            try:
+                data = read_selected(root, rel, self.config.max_file_bytes)
+            except SourceReadError as exc:
+                raise ProviderError(exc.code) from None
+            result = document(
+                self.config,
+                rel,
+                data,
+                hashlib.sha256(data).hexdigest(),
+                "mnemion-source://filesystem/"
+                + quote(self.config.scope_id, safe="")
+                + "/"
+                + quote(rel, safe="/"),
             )
-            if any(
-                (Path(parent) / directory).is_symlink() or (Path(parent) / directory).is_junction()
-                for directory in dirs
-            ):
-                raise ProviderError("source_symlinks_not_supported")
-            for filename in sorted(files):
-                path = Path(parent) / filename
-                rel = relative_path(path.relative_to(root).as_posix())
-                if not selected(self.config, rel):
-                    continue
-                if path.is_symlink() or not path.is_file():
-                    raise ProviderError("source_symlinks_not_supported")
-                count += 1
-                if count > self.config.max_files:
-                    raise ProviderError("source_inventory_limit")
-                try:
-                    data = read_selected(root, rel, self.config.max_file_bytes)
-                except SourceReadError as exc:
-                    raise ProviderError(exc.code) from None
-                result = document(
-                    self.config,
-                    rel,
-                    data,
-                    hashlib.sha256(data).hexdigest(),
-                    "mnemion-source://filesystem/"
-                    + quote(self.config.scope_id, safe="")
-                    + "/"
-                    + quote(rel, safe="/"),
-                )
-                if result:
-                    yield result
-                if count % 10 == 0:
-                    yield None
+            if result:
+                yield result
+            if count % 10 == 0:
+                yield None
 
 
 class GitProvider:

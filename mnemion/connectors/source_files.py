@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 import os
 import stat
 from pathlib import Path, PurePosixPath
@@ -33,7 +34,9 @@ def _windows_handle_path(descriptor: int) -> Path:
     return Path(value)
 
 
-def read_selected(root: Path, relative: str, maximum: int) -> bytes:
+@contextmanager
+def open_selected(root: Path, relative: str):
+    """Open a regular selected source without following a redirected component."""
     parts = PurePosixPath(relative).parts
     if not parts or PurePosixPath(relative).is_absolute() or ".." in parts or "\\" in relative:
         raise SourceReadError("invalid_source_path")
@@ -65,9 +68,20 @@ def read_selected(root: Path, relative: str, maximum: int) -> bytes:
             raise SourceReadError("source_handle_verification_unavailable")
         with os.fdopen(descriptor, "rb") as stream:
             descriptor = None
-            before = os.fstat(stream.fileno())
-            if not stat.S_ISREG(before.st_mode):
+            if not stat.S_ISREG(os.fstat(stream.fileno()).st_mode):
                 raise SourceReadError("source_is_not_regular_file")
+            yield stream
+    except OSError:
+        raise SourceReadError("source_unreadable_or_symlink_changed") from None
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+
+
+def read_selected(root: Path, relative: str, maximum: int) -> bytes:
+    with open_selected(root, relative) as stream:
+        try:
+            before = os.fstat(stream.fileno())
             if before.st_size > maximum:
                 raise SourceReadError("source_too_large")
             data = stream.read(maximum + 1)
@@ -82,8 +96,5 @@ def read_selected(root: Path, relative: str, maximum: int) -> bytes:
             ):
                 raise SourceReadError("source_changed_during_read")
             return data
-    except OSError:
-        raise SourceReadError("source_unreadable_or_symlink_changed") from None
-    finally:
-        if descriptor is not None:
-            os.close(descriptor)
+        except OSError:
+            raise SourceReadError("source_unreadable_or_symlink_changed") from None

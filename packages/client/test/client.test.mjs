@@ -1,6 +1,26 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { MnemionClient, MnemionError, supportsJournalFolding } from '../dist/index.js'
+import { MnemionClient, MnemionError, supportsJournalFolding, supportsLiveConversations, conversationCapture } from '../dist/index.js'
+
+test('live capture shows only bounded counters from a supported completed checkpoint', () => {
+  const checkpoint = { id: 'a'.repeat(32), generation: 'b'.repeat(32), file: 'c'.repeat(32),
+    captured: 1000, observed: 1042, read: 1500, reused: 3, rendered: 1 }
+  const encode = value => 'jsonl:v1:' + JSON.stringify(value)
+  assert.deepEqual(conversationCapture(encode(checkpoint)), {
+    captured: 1000, observed: 1042, pending: 42, read: 1500, reused: 3, rendered: 1,
+  })
+  assert.equal(conversationCapture('jsonl:unfinished-scan'), null)
+  assert.equal(conversationCapture('jsonl:v1:{broken'), null)
+  assert.equal(conversationCapture(encode({ ...checkpoint, observed: 999 })), null)
+  assert.equal(conversationCapture(encode({ ...checkpoint, read: '1500' })), null)
+  assert.equal(conversationCapture(encode({ ...checkpoint, reused: -1 })), null)
+  assert.equal(conversationCapture(encode({ ...checkpoint, captured: Number.MAX_SAFE_INTEGER + 1 })), null)
+  assert.equal(conversationCapture(encode({ ...checkpoint, id: 'arbitrary-source-text' })), null)
+  assert.equal(supportsLiveConversations('4.16.99'), false)
+  assert.equal(supportsLiveConversations('4.17.0'), true)
+  assert.equal(supportsLiveConversations('5.0.0'), true)
+  assert.equal(supportsLiveConversations(undefined), false)
+})
 
 test('journal filing keeps optimistic versions and does not opt older workspaces in', async () => {
   const calls = []

@@ -471,6 +471,45 @@ test('closing during inspection prevents a delayed workspace start', async t => 
   await assert.rejects(f.host.inspect(), /closing/)
 })
 
+test('quitting waits for an independent vault control before draining the database', async t => {
+  const f = fixture(t)
+  const engine = await running(f)
+  const request = { workspace_id: addressChange.workspace_id, expected_revision: vaultRevision }
+  const key = { workspace_id: request.workspace_id, revision: vaultRevision, key_id: vaultKeyId(vaultKey), recovery_key: vaultKey }
+  const reveal = f.host.revealVaultKey(request)
+  void reveal.catch(() => {})
+  const helper = f.last()
+  let settled = false
+  const closing = f.host.close().then(value => { settled = true; return value })
+  await settle()
+  assert.equal(settled, false)
+  assert.equal(engine.stdin.writableEnded, false)
+  helper.reply({ event: 'vault_key', engine_version: version, key })
+  assert.deepEqual(await reveal, key)
+  await settle()
+  assert.equal(engine.stdin.writableEnded, true)
+  assert.equal(settled, false)
+  engine.finish()
+  assert.equal(await closing, true)
+  assert.equal(f.host.active, false)
+})
+
+test('an unresponsive independent control keeps quit bounded and does not force the database down', async t => {
+  const f = fixture(t)
+  const engine = await running(f)
+  t.mock.timers.enable({ apis: ['setTimeout'] })
+  const reveal = assert.rejects(f.host.revealVaultKey({ workspace_id: addressChange.workspace_id, expected_revision: vaultRevision }), /timed out/)
+  f.last().kill = () => true // A process that has not acknowledged termination.
+  const closing = f.host.close()
+  await settle()
+  t.mock.timers.tick(90_000)
+  await reveal
+  assert.equal(await closing, false)
+  assert.equal(engine.stdin.writableEnded, false)
+  assert.equal(f.host.active, true)
+  t.mock.timers.reset()
+})
+
 test('a stopped local address change is bounded and cannot accept a listener host', () => {
   assert.deepEqual(portOptions(addressChange), addressChange)
   for (const change of [{ host: '0.0.0.0' }, { port: true }, { port: '7893' }, { port: 80 }, { port: 65536 }, { workspace_id: 'not-a-workspace' }]) {

@@ -147,9 +147,13 @@ The strict complete-requirement count stays **17/64 (26.6%)**.
 **19 October capture follow-ups retained:** [issue 40](https://github.com/Perseusxrltd/mnemion/issues/40)
 requests Grok Build's native ACP normalization; 4.16.0 adds its bounded complete-file
 parser and stable companions. [Issue 41](https://github.com/Perseusxrltd/mnemion/issues/41)
-tracks a dedicated incremental adapter for live/large transcripts, complete-record
-checkpoints, stable segments/offsets, rotation/removal and current access. This
-advances C03/C07/C08 without claiming a native Grokbot plugin or complete live capture.
+tracks live/large transcripts. Source 4.17.0 adds the dedicated
+[live JSONL adapter](service/live-conversations.md): complete-record checkpoints,
+bounded fragments/offsets, per-file scopes, rotation/removal, current access and
+app/agent progress. Unchanged fragments retain exact revisions without body
+uploads; older bytes are still verified when a file grows. This advances
+C03/C07/C08 and V01 without claiming native plugin installation, fleet capacity
+or complete cross-app capture. The strict count remains **17/64 (26.6%)**.
 Issue 39 also retains a checked migration from the older external prototype
 buffer; native enrollment must use a separate prefix until reconciliation exists.
 

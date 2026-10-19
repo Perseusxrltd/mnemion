@@ -86,6 +86,22 @@ class FilesystemConfig(PublishedSource):
     path: Path
 
 
+class ConversationConfig(PublishedSource):
+    type: Literal["conversations"] = "conversations"
+    path: Path
+    state_directory: Path = Path(".mnemion-conversations")
+    include: list[str] = Field(default_factory=lambda: ["*.jsonl"])
+    normalize_conversations: bool = True
+    max_files: int = Field(default=1000, ge=1, le=100000)
+    # Streaming limits are independent of ordinary whole-file text extraction.
+    max_file_bytes: int = Field(default=1_000_000_000, ge=1, le=1_000_000_000_000)
+    max_record_bytes: int = Field(default=2_000_000, ge=1, le=16_000_000)
+    segment_bytes: int = Field(default=256_000, ge=1024, le=1_000_000)
+    segment_records: int = Field(default=256, ge=1, le=10000)
+    max_segments: int = Field(default=100000, ge=1, le=1000000)
+    max_scan_seconds: int = Field(default=120, ge=1, le=600)
+
+
 class GitConfig(PublishedSource):
     type: Literal["git"] = "git"
     path: Path
@@ -153,7 +169,7 @@ class DriveConfig(FileSelection):
 
 
 Provider = Annotated[
-    FilesystemConfig | GitConfig | RcloneConfig | SlackConfig | DriveConfig,
+    FilesystemConfig | ConversationConfig | GitConfig | RcloneConfig | SlackConfig | DriveConfig,
     Field(discriminator="type"),
 ]
 
@@ -184,7 +200,7 @@ def read_config(path: Path) -> ConnectorConfig:
     for token in tokens:
         if token.file is not None and not token.file.is_absolute():
             token.file = base / token.file
-    for field in ("path", "config_file"):
+    for field in ("path", "config_file", "state_directory"):
         value = getattr(result.provider, field, None)
         if value is not None and not value.is_absolute():
             setattr(result.provider, field, base / value)

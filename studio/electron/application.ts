@@ -618,8 +618,10 @@ app.on('before-quit', event => {
     event.preventDefault()
     if (localQuitPending) return
     localQuitPending = true
+    writeSmokeStatus('local-shutdown-pending', { localActive: desktopBridge.localActive(), localBusy: desktopBridge.localBusy() })
     void desktopBridge.closeLocal().then(stopped => {
       localQuitPending = false
+      writeSmokeStatus(stopped ? 'local-shutdown-complete' : 'local-shutdown-deferred', { localActive: desktopBridge.localActive(), localBusy: desktopBridge.localBusy() })
       if (stopped) app.quit()
       else isQuitting = false
     })

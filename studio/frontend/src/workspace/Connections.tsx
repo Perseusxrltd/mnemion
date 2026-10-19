@@ -2,10 +2,11 @@ import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download, Plus, RefreshCw } from "lucide-react";
-import { MnemionClient, MnemionError, type Connector, type ConnectorProposal } from "@mnemion/client";
+import { MnemionClient, MnemionError, conversationCapture, supportsLiveConversations, type Connector, type ConnectorProposal } from "@mnemion/client";
 
 const providers = [
   ["filesystem", "Obsidian / folder"], ["git", "Git repository"],
+  ["conversations", "Live agent conversations"],
   ["gdrive", "Google Drive"], ["slack", "Slack"], ["rclone", "Other cloud storage (rclone)"],
 ];
 const failure = (error: unknown) => error instanceof Error ? error.message : "The request failed.";
@@ -16,6 +17,7 @@ function configuration(connection: Connector, endpoint: string, members: string[
     publish_to_mapped_members: true };
   const sources: Record<string, unknown> = {
     filesystem: { type: "filesystem", path: "./selected-vault", ...publication },
+    conversations: { type: "conversations", path: "./selected-sessions", state_directory: "./.mnemion-conversations", include: ["*.jsonl"], normalize_conversations: true, ...publication },
     git: { type: "git", path: "./repository", ref: "HEAD", ...publication },
     rclone: { type: "rclone", remote: "company:Knowledge", ...publication },
     slack: { type: "slack", token: { env: "SLACK_ACCESS_TOKEN" }, team_id: "REPLACE_WITH_TEAM_ID", channels: ["REPLACE_WITH_CHANNEL_ID"], include_threads: true },
@@ -25,8 +27,8 @@ function configuration(connection: Connector, endpoint: string, members: string[
     service_token: { env: "MNEMION_CONNECTOR_KEY" }, provider: sources[connection.provider] }, null, 2);
 }
 
-export function Connections({ client, administrator, endpoint, selectSpace }: {
-  client: MnemionClient; administrator: boolean; endpoint: string; selectSpace: (id: string) => void;
+export function Connections({ client, administrator, endpoint, selectSpace, serviceVersion }: {
+  client: MnemionClient; administrator: boolean; endpoint: string; selectSpace: (id: string) => void; serviceVersion?: string | null;
 }) {
   const cache = useQueryClient();
   const connections = useQuery({ queryKey: ["connectors"], queryFn: () => client.connectors() });
@@ -75,11 +77,12 @@ export function Connections({ client, administrator, endpoint, selectSpace }: {
       <summary><strong>Add a connection</strong></summary>
       <form onSubmit={create} className="ws-connector-form">
         <label>Name<input value={name} onChange={e => setName(e.target.value)} required maxLength={200} placeholder="Engineering knowledge" /></label>
-        <label>Source<select value={provider} onChange={e => { setProvider(e.target.value); setPublication(false); }}>{providers.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>
+        <label>Source<select value={provider} onChange={e => { setProvider(e.target.value); setPublication(false); }}>{providers.map(([id, label]) => <option key={id} value={id} disabled={id === "conversations" && !supportsLiveConversations(serviceVersion)}>{label}{id === "conversations" && !supportsLiveConversations(serviceVersion) ? " · requires server 4.17.0" : ""}</option>)}</select></label>
         <label>Dedicated application<select value={application} onChange={e => setApplication(e.target.value)} required><option value="">Choose an application</option>{people.data?.items.filter(person => person.kind === "application" && !person.administrator && !person.disabled_at).map(person => <option key={person.id} value={person.id}>{person.name}</option>)}</select></label>
         <p className="ws-helper">Create a dedicated application and its key in <Link className="ws-link" to="/workspace/team">People & apps</Link>. Each connection uses its own application.</p>
         {published && <label className="ws-checkbox"><input type="checkbox" checked={publication} onChange={e => setPublication(e.target.checked)} required />Use the mapped audience as this source’s sharing policy.</label>}
-        {published ? <p className="ws-helper">Folder, Git and rclone access is published explicitly. These adapters cannot infer the provider’s effective permissions.</p> : <p className="ws-helper">Only mapped users with current provider access can read imported material. Unmapped identities and unsupported group grants remain excluded.</p>}
+        {published ? <p className="ws-helper">Folder, conversation, Git and rclone access is published explicitly. These adapters cannot infer the provider’s effective permissions.</p> : <p className="ws-helper">Only mapped users with current provider access can read imported material. Unmapped identities and unsupported group grants remain excluded.</p>}
+        {provider === "conversations" && <p className="ws-helper">Choose a folder of JSONL session logs. Each file has separate source controls. Complete records are captured in fragments; unfinished text waits for the next scan.</p>}
         <button className="ws-button ws-primary" disabled={busy || (published && !publication)}><Plus size={16} />Register connection</button>
       </form>
     </details>}
@@ -112,7 +115,7 @@ export function Connections({ client, administrator, endpoint, selectSpace }: {
           })}><RefreshCw size={14} />Sync now</button>
         </div>}
         {syncStatus.data === null && <p className="ws-helper">Upgrade the memory server and source runner to 4.0.5 or later to request and monitor scans here.</p>}
-        <div className="ws-table-wrap"><table className="ws-table"><thead><tr><th>Source</th><th>Access</th><th>Last complete scan</th>{administrator && <th>Control</th>}</tr></thead><tbody>{scopes.data?.items.map(scope => <tr key={scope.space_id}><td><Link className="ws-link" to="/workspace/memories" onClick={() => selectSpace(scope.space_id)}>{scope.name || scope.external_id}</Link><small className="ws-helper">{scope.external_id}</small></td><td>{connection.disabled_at ? "Disabled" : scope.operator_paused ? "Paused by an administrator" : scope.suspended_at ? "Needs permission recheck" : scope.access_current ? `Checked until ${when(scope.access_valid_until)}` : "Access expired"}</td><td>{when(scope.completed_at)}</td>{administrator && <td><button className="ws-link" disabled={busy || !!connection.disabled_at} onClick={() => act(() => scope.operator_paused ? client.resumeConnectorScope(scope.space_id) : client.pauseConnectorScope(scope.space_id))}>{scope.operator_paused ? "Resume and recheck" : "Pause source"}</button></td>}</tr>)}</tbody></table></div>
+        <div className="ws-table-wrap"><table className="ws-table"><thead><tr><th>Source</th><th>Access</th><th>Last complete scan</th>{connection.provider === "conversations" && <th>Capture progress</th>}{administrator && <th>Control</th>}</tr></thead><tbody>{scopes.data?.items.map(scope => <tr key={scope.space_id}><td><Link className="ws-link" to="/workspace/memories" onClick={() => selectSpace(scope.space_id)}>{scope.name || scope.external_id}</Link><small className="ws-helper">{scope.external_id}</small></td><td>{connection.disabled_at ? "Disabled" : scope.operator_paused ? "Paused by an administrator" : scope.suspended_at ? "Needs permission recheck" : scope.access_current ? `Checked until ${when(scope.access_valid_until)}` : "Access expired"}</td><td>{when(scope.completed_at)}</td>{connection.provider === "conversations" && <td><ConversationProgress checkpoint={scope.checkpoint} /></td>}{administrator && <td><button className="ws-link" disabled={busy || !!connection.disabled_at} onClick={() => act(() => scope.operator_paused ? client.resumeConnectorScope(scope.space_id) : client.pauseConnectorScope(scope.space_id))}>{scope.operator_paused ? "Resume and recheck" : "Pause source"}</button></td>}</tr>)}</tbody></table></div>
         {!scopes.data?.items.length && <p className="ws-helper">Run the adapter to discover sources and verify access.</p>}
         {scopes.data?.next_cursor && <button className="ws-button" onClick={() => setCursor(scopes.data!.next_cursor!)}>Next sources</button>}{cursor && <button className="ws-button" onClick={() => setCursor(undefined)}>First sources</button>}
       </section>
@@ -124,6 +127,13 @@ export function Connections({ client, administrator, endpoint, selectSpace }: {
       </section>
     </>}
   </div>;
+}
+
+function ConversationProgress({ checkpoint }: { checkpoint?: string | null }) {
+  const value = conversationCapture(checkpoint);
+  if (!value) return <span className="ws-helper">Waiting for first capture</span>;
+  const bytes = (count: number) => count >= 1_000_000 ? `${(count / 1_000_000).toFixed(1)} MB` : count >= 1000 ? `${(count / 1000).toFixed(1)} kB` : `${count} B`;
+  return <div>{bytes(value.captured)} captured<small className="ws-helper">{value.pending ? `${bytes(value.pending)} waiting for capture` : "Complete at last scan"}</small><small className="ws-helper">Read {bytes(value.read)} from source · {value.reused} fragments reused · {value.rendered} processed</small></div>;
 }
 
 export function SourceProposals({ client, space }: { client: MnemionClient; space: string }) {

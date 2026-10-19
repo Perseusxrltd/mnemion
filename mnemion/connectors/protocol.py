@@ -6,7 +6,7 @@ import hashlib
 import json
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Iterable
+from typing import Callable, Iterable
 from uuid import UUID, uuid4
 
 from ..sdk import Client
@@ -151,7 +151,7 @@ class ConnectorClient:
         items: Iterable[ConnectorItemInput | None],
         *,
         mode="snapshot",
-        checkpoint: str | None = None,
+        checkpoint: str | Callable[[], str | None] | None = None,
         heartbeat=None,
     ) -> dict:
         space_id = str(UUID(space_id))
@@ -166,7 +166,11 @@ class ConnectorClient:
             nonlocal sequence, page, size
             if heartbeat:
                 heartbeat()
-            command = BatchInput(sequence=sequence, items=page, checkpoint=checkpoint)
+            command = BatchInput(
+                sequence=sequence,
+                items=page,
+                checkpoint=checkpoint() if callable(checkpoint) else checkpoint,
+            )
             result = self.client.request(
                 "POST",
                 path + "/pages",

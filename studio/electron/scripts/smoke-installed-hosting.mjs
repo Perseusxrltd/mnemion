@@ -27,6 +27,7 @@ const evidenceFile = join(root, 'build-tmp/installed-hosting-evidence.json')
 let executable
 let child
 let stdout = '', stderr = ''
+let phase = 'installation'
 let installationComplete = false
 let succeeded = false
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
@@ -80,6 +81,7 @@ async function freePort() {
 }
 
 async function launch(config) {
+  phase = config.phase
   console.log("Installed local workspace probe: " + config.phase)
   rmSync(smokeFile, { force: true }); rmSync(quitFile, { force: true })
   writeFileSync(probeFile, JSON.stringify(config), { mode: 0o600 })
@@ -96,7 +98,7 @@ async function launch(config) {
   let last
   while (Date.now() < deadline) {
     if (spawnError) throw spawnError
-    if (child.exitCode !== null) throw new Error('The installed app exited before hosting validation completed')
+    if (child.exitCode !== null || child.signalCode !== null) throw new Error(`The installed app exited before hosting validation completed: phase=${phase}, exit=${child.exitCode}, signal=${child.signalCode}`)
     if (existsSync(smokeFile)) {
       try { last = JSON.parse(readFileSync(smokeFile, 'utf8')) } catch { await sleep(100); continue }
       if (last.stage === 'hosting-ready') return last.hosting
@@ -110,13 +112,13 @@ async function launch(config) {
 }
 
 async function stop() {
-  if (!child || child.exitCode !== null) return
+  if (!child) return
   // Exercise the app's real before-quit service/database drain. Do not replace it
   // with a direct database stop that could conceal an unsafe application exit.
-  writeFileSync(quitFile, 'quit\n', { mode: 0o600 })
+  if (child.exitCode === null && child.signalCode === null) writeFileSync(quitFile, 'quit\n', { mode: 0o600 })
   const deadline = Date.now() + 120000
-  while (child.exitCode === null && Date.now() < deadline) await sleep(100)
-  if (child.exitCode !== 0) throw new Error('The installed application did not finish a clean shutdown')
+  while (child.exitCode === null && child.signalCode === null && Date.now() < deadline) await sleep(100)
+  if (child.exitCode !== 0) throw new Error(`The installed application did not finish a clean shutdown: phase=${phase}, exit=${child.exitCode}, signal=${child.signalCode}`)
   const pidFile = join(userData, 'mnemion-local-workspace/database/postmaster.pid')
   if (existsSync(pidFile)) throw new Error('The installed app left its private PostgreSQL cluster running')
   const recovered = join(userData, 'mnemion-recovered-workspaces')
@@ -224,7 +226,12 @@ try {
   // Keep private diagnostic details out of uploaded evidence; even future
   // service logs may contain a generated workspace credential.
   writeFileSync(join(temporary, 'failure.log'), String(error) + '\n' + stdout + '\n' + stderr, { mode: 0o600 })
+  let state = {}
+  try { state = JSON.parse(readFileSync(smokeFile, 'utf8')) } catch { /* No private contents are copied into the report. */ }
+  const shutdown = Object.fromEntries(['localActive', 'localBusy'].filter(key => typeof state?.[key] === 'boolean').map(key => [key, state[key]]))
+  const lastStage = typeof state?.stage === 'string' && /^[a-z-]{1,64}$/.test(state.stage) ? state.stage : null
   writeFileSync(evidenceFile, JSON.stringify({ passed: false, platform: process.platform, architecture: process.arch,
+    phase, childExitCode: child?.exitCode ?? null, childSignal: child?.signalCode ?? null, lastStage, ...shutdown,
     stage: installationComplete ? 'installed-local-hosting' : 'installation', privateDiagnostics: 'retained only in the disposable runner temporary directory' }, null, 2) + '\n')
   throw error
 } finally {

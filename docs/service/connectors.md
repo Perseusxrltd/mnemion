@@ -12,6 +12,7 @@ fetch arbitrary URLs or store Slack, Google, Git, or rclone credentials.
 | --- | --- | --- | --- |
 | Git | Committed text from a selected local repository or HTTPS/SSH remote and ref | Explicit publication to mapped identities | No checkout, hooks, submodule execution, or writes upstream. Uncommitted files are excluded. |
 | Filesystem / Obsidian vault | UTF-8 Markdown, text, JSON, JSONL, CSV from a chosen folder | Explicit publication to mapped identities | Preserves text and wikilinks. Ignores Obsidian settings, common credential files, and generated Mnemion mirrors by default. Internal symlinks produce an error. |
+| [Live conversations](live-conversations.md) (4.17.0+) | Complete records from selected growing JSONL logs | Explicit mapped audience; one managed scope per file | Bounded fragments, deferred tails, metadata checkpoints and body-free reuse. Raw evidence and source offsets are retained. Requires an independently running capture host. |
 | Google Drive | Selected files or recursive folders; text files; Docs, Slides and all sheets in Sheets exports | A managed permission scope for each file; mapped effective user permissions | Shared-drive API flags are enabled. Unmapped users, groups, domains and `anyone` grants confer no Mnemion access. Group expansion requires an identity-aware custom adapter. |
 | Slack | Explicitly selected channels, messages, edits, and threads | Channel membership mapped to Mnemion identities | Read-only. No messages are sent. Attachment references are retained; attachment binaries are not downloaded. The credential must be allowed to read history, membership, and requested threads. |
 | rclone | Text objects from an operator-configured remote | Explicit publication to mapped identities | Supports the storage providers available in the installed rclone, including S3-compatible stores, OneDrive, Dropbox, WebDAV, and private endpoints. No automatic provider ACL translation. |
@@ -361,11 +362,22 @@ Use the same scope ID, external source IDs, version semantics and permission
 mapping on every hardware instance. Do not use local filenames that change per
 machine as cross-device identities.
 
+On 4.17.0+, an unchanged inventory member can use
+`ConnectorItemInput(action="retain", external_id=..., revision=...)` without a
+memory body. The exact revision must already exist in that scope; otherwise the
+service returns `source_reference_unavailable` and the adapter must resend full
+evidence. This never creates, edits or revives a memory or replaces a review
+proposal. A complete snapshot still includes every retained identity. Python
+`sync()` also accepts a checkpoint callable; a final progress marker can store
+verified capture counters after streaming completes.
+
 Text is split into bounded, stable source parts with source hashes, exact captured
 text, and character offsets. The initial built-in file limit is 20 MB, configurable
 up to 100 MB; individual API pages stay below the service's 2 MB request limit.
 Store large or rich original files in the provider or an approved evidence store;
 the ordinary connector API is not a binary object-store backup.
+The [live JSONL adapter](live-conversations.md) has separate streaming limits,
+per-file scopes and documented generation/removal semantics.
 
 ## Validation and provider references
 

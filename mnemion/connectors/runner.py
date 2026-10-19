@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from contextlib import nullcontext
 import json
 import os
 import sys
@@ -17,6 +18,7 @@ from ..sdk import Client, MnemionError
 from ..version import __version__
 from .config import read_config
 from .protocol import ConnectorClient
+from .live_conversations import ConversationProvider
 from .journal_projection import project_documents
 from .provenance import git_commit
 from .providers import FilesystemProvider, GitProvider, ProviderError, RcloneProvider
@@ -38,8 +40,11 @@ class ConnectorConfigurationError(ValueError):
             "Register the source adapter name; published and provider are access_mode values."
         ),
         "connector_access_mode_mismatch": (
-            "Use access_mode published for filesystem, git and rclone; "
+            "Use access_mode published for filesystem, conversations, git and rclone; "
             "use access_mode provider for slack and gdrive."
+        ),
+        "conversation_server_upgrade_required": (
+            "Live conversation capture requires Mnemion server 4.17.0 or later."
         ),
     }
 
@@ -61,6 +66,7 @@ def provider(config):
 
     return {
         "filesystem": FilesystemProvider,
+        "conversations": ConversationProvider,
         "git": GitProvider,
         "rclone": RcloneProvider,
         "slack": SlackProvider,
@@ -94,6 +100,18 @@ def _scan(config, *, inspect=False, adapter=None, client=None) -> dict:
             raise ConnectorConfigurationError("connector_provider_mismatch")
         if connection["access_mode"] != adapter.access_mode:
             raise ConnectorConfigurationError("connector_access_mode_mismatch")
+        if isinstance(adapter, ConversationProvider) and not inspect:
+            value = client.request("GET", "/health/live").get("service_version", "")
+            try:
+                supported = len(value.split(".")) == 3 and tuple(map(int, value.split("."))) >= (
+                    4,
+                    17,
+                    0,
+                )
+            except (TypeError, ValueError, AttributeError):
+                supported = False
+            if not supported:
+                raise ConnectorConfigurationError("conversation_server_upgrade_required")
         previous = {scope["external_id"]: scope for scope in bridge.scopes()}
         # Do not reconcile disappeared scopes unless the complete catalog loaded.
         identifiers = list(adapter.scopes())
@@ -122,20 +140,43 @@ def _scan(config, *, inspect=False, adapter=None, client=None) -> dict:
                         )
                         last_access = time.monotonic()
 
-                def items():
-                    for value in project_documents(adapter.documents(identifier)):
-                        if value is None:
-                            yield None
-                        else:
-                            yield from value.items()
-                    # Validate effective access again before a deletion sweep.
-                    bridge.refresh(
-                        adapter.access(identifier), lease_seconds=config.access_lease_seconds
-                    )
-
-                result = bridge.sync(
-                    target["space_id"], items(), checkpoint=checkpoint, heartbeat=heartbeat
+                context = (
+                    adapter.snapshot(identifier, target.get("checkpoint"))
+                    if isinstance(adapter, ConversationProvider)
+                    else nullcontext(None)
                 )
+                with context as snapshot:
+
+                    def items():
+                        if snapshot is not None:
+                            yield from snapshot.items()
+                        else:
+                            for value in project_documents(adapter.documents(identifier)):
+                                if value is None:
+                                    yield None
+                                else:
+                                    yield from value.items()
+                        # Validate effective access again before a deletion sweep.
+                        bridge.refresh(
+                            adapter.access(identifier), lease_seconds=config.access_lease_seconds
+                        )
+                        if snapshot is not None:
+                            yield None  # Publish the final verified capture counters.
+
+                    try:
+                        result = bridge.sync(
+                            target["space_id"],
+                            items(),
+                            checkpoint=(lambda: snapshot.checkpoint) if snapshot else checkpoint,
+                            heartbeat=heartbeat,
+                        )
+                    except MnemionError as exc:
+                        if snapshot and exc.code == "source_reference_unavailable":
+                            snapshot.invalidate()
+                        raise
+                    if snapshot is not None:
+                        snapshot.acknowledge()
+                        result["capture"] = snapshot.report
                 report["scopes"].append({"external_id": identifier, **result})
             except (ProviderError, OSError, ValueError, MnemionError, httpx.HTTPError) as exc:
                 report["completed"] = False

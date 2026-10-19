@@ -14,6 +14,7 @@ import type { VaultAuditEvent, VaultEntry, VaultEnvelope, VaultGrantInput, Vault
 export * from './vault.js'
 import type { JournalDelivery, JournalPolicyInput, JournalStatus } from './writeback.js'
 export * from './writeback.js'
+export * from './conversations.js'
 
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json }
 export type Kind = 'fact' | 'event' | 'preference' | 'procedure' | 'note'
@@ -138,10 +139,10 @@ export interface Page<T> { items: T[]; next_cursor?: string | null }
 export interface Connector { id: string; name: string; provider: string; principal_id: string; access_mode: 'provider' | 'published'; disabled_at: string | null; created_at: string }
 export interface ConnectorSyncStatus { connector_id: string; requested_generation: number; completed_generation: number; pending: boolean; requested_at: string | null; completed_at: string | null; last_attempt_at: string | null; last_successful: boolean | null; last_duration_seconds: number | null; last_changed: number; last_removed: number; last_unchanged: number; last_error_code: string | null; scanned_commit?: string | null; scanned_at?: string | null; scanned_space_id?: string | null }
 export interface ConnectorBinding { external_id: string; principal_id: string; role: 'reader' | 'reviewer' }
-export interface ConnectorScope { space_id: string; connector_id: string; external_id: string; name?: string; operator_paused: boolean; access_current: boolean; observed_at: string; access_valid_until: string; suspended_at: string | null; suspension_reason: string | null; completed_at: string | null }
+export interface ConnectorScope { space_id: string; connector_id: string; external_id: string; name?: string; operator_paused: boolean; access_current: boolean; observed_at: string; access_valid_until: string; suspended_at: string | null; suspension_reason: string | null; completed_at: string | null; checkpoint?: string | null }
 export interface KnowledgeNode { id: string; kind: 'space' | 'memory' | 'source' | 'entity'; label: string; space_id: string; memory_id?: string }
 export interface Knowledge { generated_at: string; fingerprint: string; truncated: boolean; memories: Memory[]; nodes: KnowledgeNode[]; edges: { source: string; target: string; relation: 'in_space' | 'cites' | 'about' }[]; topics: { id: string; title: string; space_id: string; memory_ids: string[] }[]; findings: { kind: 'exact_duplicate' | 'contested' | 'unassigned_subject'; message: string; memory_ids: string[] }[]; markdown: string }
-export interface ConnectorItem { external_id: string; revision: string; action: 'upsert' | 'delete'; memory?: MemoryInput | null }
+export interface ConnectorItem { external_id: string; revision: string; action: 'upsert' | 'delete' | 'retain'; memory?: MemoryInput | null }
 export interface ConnectorProposal { memory_id: string; proposal_hash: string; payload: ConnectorItem; created_at: string; version: number }
 
 export class MnemionError extends Error {

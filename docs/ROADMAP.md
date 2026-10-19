@@ -1,9 +1,20 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.16.0**. Roadmap updated: **2026-10-19**.
+Reviewed source distribution: **4.17.0**. Roadmap updated: **2026-10-19**.
 The [current published distribution and release gates](RELEASE_STATUS.md) are updated automatically.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
+
+The [4.17.0 source](releases/4.17.0.md) adds the dedicated
+[live conversation adapter](service/live-conversations.md) for issue 41:
+complete-record checkpoints, bounded JSONL fragments, per-file scopes, deferred
+tails, exact source references and app/agent progress. Source replacements and
+truncation start a new generation; mapping removal and complete-catalog rules
+remain enforced. Prefix verification still reads older bytes on append. Native
+plugin installation, fleet-scale capture scheduling and a producer-backed append
+protocol remain separate work. [Validation](validation/2026-10-19-live-conversations.md)
+also covers a reproduced desktop control-process quit gap and its bounded drain.
+The full-requirement count remains **17/64 (26.6%)**.
 
 The [4.16.0 source](releases/4.16.0.md) adds scheduled
 [journal filing and archival](service/git-journal.md#automatic-filing-and-archival):
@@ -22,11 +33,9 @@ and large-history/live-provider acceptance. The strict complete count remains
 The same batch adds [Grok Build/ACP transcript normalization](service/capture.md)
 for [issue 40](https://github.com/Perseusxrltd/mnemion/issues/40), retaining session
 identity, streamed text, time bounds, raw provenance and explicit event identity.
-[Issue 41](https://github.com/Perseusxrltd/mnemion/issues/41) requires a separate
-bounded live-conversation adapter: checkpoint complete records and segments,
-defer unfinished tails, distinguish append/rotation/truncation/deletion, retain
-source offsets, and preserve current access and complete-inventory semantics.
-It cannot be solved by ignoring incomplete Git journals or removing size limits.
+[Issue 41](https://github.com/Perseusxrltd/mnemion/issues/41) is addressed separately
+by the 4.17.0 adapter above. Native format support alone does not solve ongoing
+capture; complete Git-journal inventories and source limits remain mandatory.
 Issue 39's newer adoption comment also adds checked reconciliation of its older
 external buffer format and exact per-event/remote-byte acknowledgment; use a
 separate native prefix until that migration is available. Issue 38 retains
@@ -96,7 +105,7 @@ librarian folding and stable replay. Its export/deletion/permission contract mus
 be explicit; connecting an inbound Git source alone does not provide this backup.
 The 4.15.0 batch implements capture, guarded delivery and source replay;
 4.16.0 adds scheduled filing and intact archival.
-the remaining work is tracked separately instead of treating the issue as closed.
+The remaining work is tracked separately instead of treating the issue as closed.
 
 Published [4.11.0](releases/4.11.0.md) adds
 [company-provider setup in the app](service/company-sign-in.md): HTTPS callback

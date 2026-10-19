@@ -1,5 +1,10 @@
 # Conversation capture
 
+For growing native JSONL logs, use the [live conversation adapter](live-conversations.md)
+on 4.17.0 or later. It captures complete records in bounded fragments, defers
+unfinished tails and isolates each file's permissions and failures. The export
+workflow below retains its original complete-file contract.
+
 Capture is opt-in. Select an export/session folder through a filesystem, Git,
 Drive or rclone connection, map its intended audience, and set
 `normalize_conversations: true` on that provider. Run `mnemion-connect --watch`
@@ -40,15 +45,13 @@ provenance. This supports the native shape reported in
 [issue 40](https://github.com/Perseusxrltd/mnemion/issues/40); it does not install a
 Grok plugin or automatically select a user's private session directory.
 
-**Live-file limitation:** the existing file adapters require a complete, stable
-file within their configured size cap. A partial, oversized or changing file
-can suspend that source scope until a complete scan succeeds. Use stable,
-deliberately split exports or curated notes for now. The dedicated bounded,
-checkpointed live-conversation adapter is tracked in
-[issue 41](https://github.com/Perseusxrltd/mnemion/issues/41), including tail
-completion, append/rename/rotation/truncation, source offsets and removal/access
-semantics. Conversation normalization does not change these limits or relax
-the complete-inventory requirement for Git memory journals.
+**Export adapter boundary:** the ordinary file adapters require a complete,
+stable file within their configured size cap. A partial, oversized or changing
+file can suspend that source scope until a complete scan succeeds. Keep stable
+exports there; select the separate [live adapter](live-conversations.md) for
+ongoing JSONL sessions. Its checkpoint and fragment controls address
+[issue 41](https://github.com/Perseusxrltd/mnemion/issues/41) without changing
+these limits or relaxing complete Git-journal inventories.
 
 Readable notes use the same revision, conflict and deletion rules as other
 connector records. Human corrections and quarantine produce review proposals

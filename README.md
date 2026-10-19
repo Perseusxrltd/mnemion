@@ -52,6 +52,10 @@ source replay. Source 4.16.0 adds scheduled filing into Obsidian-readable notes
 and intact archival, with app and agent controls. Git history retains published
 text; journals do not replace a full workspace backup. App-only host enrollment,
 backfill and large-history scaling remain on the roadmap.
+Source 4.17.0 adds [live JSONL conversation capture](docs/service/live-conversations.md):
+bounded records and fragments, deferred tails, per-file source controls, private
+checkpoints, unchanged-fragment reuse and capture progress in the app. Existing
+complete-file and Git-journal safeguards remain in force.
 Release targets cover **Windows, macOS and Linux on x64 and ARM64**. Windows and
 Mac updates use independent publisher signatures. The product page lists only
 published, verified builds. Development and

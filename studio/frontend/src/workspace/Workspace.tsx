@@ -406,7 +406,7 @@ function Shell({
               <Route path="account" element={<Account connection={connection} disconnect={disconnect} />} />
               <Route path="recovery" element={<RecoveryDirectoryView key={connection.endpoint + ':' + me.principal_id} connection={connection} />} />
               <Route path="secrets" element={<SecretsVault key={connection.endpoint + ':' + me.principal_id} connection={connection} />} />
-              <Route path="connections" element={<Connections client={client} administrator={me.administrator} endpoint={connection.endpoint} selectSpace={setSelected} />} />
+              <Route path="connections" element={<Connections client={client} administrator={me.administrator} endpoint={connection.endpoint} selectSpace={setSelected} serviceVersion={me.service_version} />} />
               <Route path="setup" element={<Setup client={client} endpoint={connection.endpoint} administrator={me.administrator} />} />
               <Route path="help" element={<Documentation />} />
             </Routes></Suspense></ErrorBoundary></div>

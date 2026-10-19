@@ -415,6 +415,29 @@ class ConnectorService(ConnectorSyncControls):
             "SELECT * FROM mnemion.connector_items WHERE space_id=%s AND external_id=%s FOR UPDATE",
             (space, item.external_id),
         ).fetchone()
+        if item.action == "retain":
+            # A body-free inventory observation can only keep the exact source
+            # revision already held by this scope. It cannot create, revise or
+            # revive evidence, alter a review, or replace a pending proposal.
+            if not current or current["origin_revision"] != item.revision:
+                raise ServiceError(
+                    409,
+                    "source_reference_unavailable",
+                    "Resend the complete source inventory; this revision is not available.",
+                )
+            conn.execute(
+                "UPDATE mnemion.connector_items SET last_seen_run=%s,updated_at=now() WHERE space_id=%s AND external_id=%s",
+                (run, space, item.external_id),
+            )
+            return {
+                "external_id": item.external_id,
+                "memory_id": str(current["memory_id"]) if current["memory_id"] else None,
+                "outcome": "deletion_preserved"
+                if current["state"] == "deleted"
+                else "conflict"
+                if current["state"] == "conflict"
+                else "unchanged",
+            }
         data = item.memory.model_dump(mode="json") if item.memory else None
         digest = _digest(data) if data else None
         memory = current["memory_id"] if current else None
