@@ -29,6 +29,14 @@ from .service.contracts import (
 from .service.models import ContextInput, MemoryInput, RecallInput, RevisionInput
 
 if TYPE_CHECKING:
+    from .service.keepass_models import (
+        KeepassPreviewInput,
+        KeepassImportInput,
+        KeepassExportInput,
+        KeepassPreview,
+        KeepassImported,
+        KeepassExported,
+    )
     from .service.writeback_models import WritebackPolicyInput, WritebackStatus
     from .service.backfill_models import BackfillControlInput, BackfillStartInput, BackfillStatus
     from .service.connector_contracts import SourceHealth, SyncStatus
@@ -180,6 +188,36 @@ class Client:
 
     def vault_audit(self, *, offset: int = 0, limit: int = 100) -> dict:
         return self.request("GET", "/v1/vault/audit", params={"offset": offset, "limit": limit})
+
+    @staticmethod
+    def _keepass_body(command):
+        body = command.model_dump(mode="json")
+        for name in ("file", "password", "key_file"):
+            value = getattr(command, name, None)
+            if value is not None:
+                body[name] = value.get_secret_value()
+        return body
+
+    def vault_keepass_preview(self, command: KeepassPreviewInput) -> KeepassPreview:
+        from .service.keepass_models import KeepassPreview
+
+        return KeepassPreview.model_validate(
+            self.request("POST", "/v1/vault/keepass/preview", body=self._keepass_body(command))
+        )
+
+    def vault_keepass_import(self, command: KeepassImportInput) -> KeepassImported:
+        from .service.keepass_models import KeepassImported
+
+        return KeepassImported.model_validate(
+            self.request("POST", "/v1/vault/keepass/import", body=self._keepass_body(command))
+        )
+
+    def vault_keepass_export(self, command: KeepassExportInput) -> KeepassExported:
+        from .service.keepass_models import KeepassExported
+
+        return KeepassExported.model_validate(
+            self.request("POST", "/v1/vault/keepass/export", body=self._keepass_body(command))
+        )
 
     def company_configuration(self, workspace_id: str) -> dict:
         return self.request(

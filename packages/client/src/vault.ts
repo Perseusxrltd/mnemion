@@ -14,3 +14,16 @@ export interface VaultGrantInput { expected_access_version: number; subject_kind
 export interface VaultPutInput { expected_version: number; name: string; value: string }
 export interface VaultEnvelope { format: 'mnemion-vault-export'; version: 1; key_id: string; nonce: string; ciphertext: string }
 export interface VaultAuditEvent { id: string; principal_id: string; key_id: string; entry_id: string | null; action: string; outcome: string; occurred_at: string }
+export interface KeepassPreviewInput { file: string; password?: string | null; key_file?: string | null; namespace?: string; mask_names?: boolean }
+export interface KeepassImportInput extends KeepassPreviewInput { expected_plan: string; import_current_values: true }
+export interface KeepassPreview {
+  plan: string; entries: number; credentials: number; empty_fields: number; names: string[]; mask_names: boolean;
+  omitted: { history_entries: number; attachments: number; recycled_entries: number };
+  name_conflicts: number; can_import: boolean; already_imported: boolean;
+}
+export interface KeepassImported { items: VaultEntry[]; already_imported: boolean }
+export interface KeepassExported { format: 'kdbx'; version: '4.1'; file: string; sha256: string; credentials: number; entries: number }
+export function supportsKeePass(version?: string | null): boolean {
+  const parts = /^(\d+)\.(\d+)\.(\d+)(?:$|[-+])/.exec(version ?? '');
+  return !!parts && (Number(parts[1]) > 4 || Number(parts[1]) === 4 && Number(parts[2]) >= 23);
+}

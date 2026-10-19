@@ -19,6 +19,22 @@ Requirements and acceptance criteria are defined by the
 [architecture](../research/2026-10-09-mnemion-study/ARCHITECTURE.md), and
 [roadmap](../research/2026-10-09-mnemion-study/ROADMAP.md).
 
+## 19 October: KeePass transfer and issue closure
+
+Source 4.23 implements the remaining KDBX 4 request from issue 32, with reviewed
+current-field import, default masked names, encrypted mapping, scoped export and
+matching app/SDK/private-agent controls. [Validation](../validation/2026-10-19-keepass.md)
+records 23 focused cases, 37 existing vault/agent checks, 25 migration checks and
+an actual app download opened independently by PyKeePass with all 12 field hashes
+and both group paths preserved. [The guide](../service/keepass.md) documents limits
+and omitted history/attachments. Native publication remains separate.
+
+Issues 40/41/42 closed through verified public release evidence. The corrected
+4.22 candidate carries the source-health fix for 43 and native-memory backfill
+for 39; 4.21 and the initial 4.22 attempt remain withheld. Remaining reports are
+retained in the [issue plan](github-issues.md). The full 64-item requirement count
+does not change merely because a bounded issue is addressed.
+
 ## Worktree and reproducibility
 
 - Current implementation: `main`. The rebuild and free Mac updater were merged at `da74785f67f96d0fd375e7925d23284c435b6f99`. The original implementation branch was `codex/mnemion-v4`, based on `c670e3039d2f7b43dbb00a2157e420e665203979`.

@@ -10,7 +10,7 @@ import type { PasswordAccount, DeviceSession, OAuthConfiguration, OAuthConnectio
 export * from './sign-in.js'
 import type { RecoveryDirectory, RecoveryDirectoryRecord } from './recovery.js'
 export * from './recovery.js'
-import type { VaultAuditEvent, VaultEntry, VaultEnvelope, VaultGrantInput, VaultGrants, VaultPage, VaultPutInput, VaultStatus } from './vault.js'
+import type { KeepassExported, KeepassImported, KeepassImportInput, KeepassPreview, KeepassPreviewInput, VaultAuditEvent, VaultEntry, VaultEnvelope, VaultGrantInput, VaultGrants, VaultPage, VaultPutInput, VaultStatus } from './vault.js'
 export * from './vault.js'
 import type { JournalBackfillControl, JournalBackfillStart, JournalBackfillStatus, JournalDelivery, JournalPolicyInput, JournalStatus } from './writeback.js'
 export * from './writeback.js'
@@ -309,6 +309,9 @@ export class MnemionClient {
   deleteVault(id: string, expected_version: number) { return this.request<{ id: string; deleted: true }>('POST', `/v1/vault/entries/${encodeURIComponent(id)}/delete`, { body: { expected_version } }) }
   exportVault(entry_ids: string[], recovery_key: string) { return this.request<VaultEnvelope>('POST', '/v1/vault/export', { body: { entry_ids, recovery_key } }) }
   importVault(archive: VaultEnvelope, recovery_key: string) { return this.request<VaultPage<VaultEntry>>('POST', '/v1/vault/import', { body: { archive, recovery_key } }) }
+  previewKeePass(input: KeepassPreviewInput) { return this.request<KeepassPreview>('POST', '/v1/vault/keepass/preview', { body: input }) }
+  importKeePass(input: KeepassImportInput) { return this.request<KeepassImported>('POST', '/v1/vault/keepass/import', { body: input }) }
+  exportKeePass(entry_ids: string[], password: string) { return this.request<KeepassExported>('POST', '/v1/vault/keepass/export', { body: { entry_ids, password } }) }
   vaultAudit(offset = 0, limit = 100) { return this.request<VaultPage<VaultAuditEvent>>('GET', `/v1/vault/audit?offset=${offset}&limit=${limit}`) }
   configureRecoveryDirectory(expected_revision: number, directory: RecoveryDirectory) {
     return this.request<RecoveryDirectoryRecord>('PUT', '/v1/recovery-directory', { body: { expected_revision, directory } })

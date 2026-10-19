@@ -1,9 +1,17 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.22.0**. Roadmap updated: **2026-10-19**.
+Reviewed source distribution: **4.23.0**. Roadmap updated: **2026-10-19**.
 The [current published distribution and release gates](RELEASE_STATUS.md) are updated automatically.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
+
+The [4.23.0 source](releases/4.23.0.md) addresses issue 32's remaining
+[KeePass interoperability](service/keepass.md): reviewed current-field import,
+default masked names, encrypted original grouping, scoped export, private agent
+transport and no plaintext temporary files. Independent fixtures and actual
+database/HTTP checks [verify field preservation and permissions](validation/2026-10-19-keepass.md). Publication
+remains a separate release gate. Company policy, key custody and managed rotation
+remain open; the strict full-scope count stays **17/64 shipped (26.6%)**.
 
 The [4.22.0 source](releases/4.22.0.md) adds [existing native-memory backfill](service/git-journal.md#including-existing-native-memories)
 for issue 39: explicit approval, resumable bounded scanning, privacy checks,
@@ -151,10 +159,10 @@ key custody/rotation or KeePass interoperability. The strict full-scope count
 remains **17/64 shipped (26.6%)**.
 
 The [19 October operator follow-up to issue 32](https://github.com/Perseusxrltd/mnemion/issues/32#issuecomment-6264307829)
-reports successful vault use and manual KDBX 4 migration. Supported KeePass
-import/export remains required: entries, fields and custom properties,
-masked credential names, value-preservation checks and no plaintext temporary
-files. The external report is not a substitute for product acceptance tests.
+reports successful vault use and manual KDBX 4 migration. Source 4.23 implements
+the remaining supported current-field transfer with masking and in-memory
+conversion. Its [guide](service/keepass.md) documents compatibility, omissions
+and independent software checks; the issue closes only after public gates pass.
 
 The [host-reset/reinstallation report, issue 38](https://github.com/Perseusxrltd/mnemion/issues/38)
 retains the external deployment, independent custody and guided recovery work

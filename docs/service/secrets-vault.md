@@ -102,11 +102,12 @@ Managed file/Git/rclone and Drive imports reject the native vault key filename,
 generated vault-key material and recognized portable vault envelopes. This is
 not universal secret detection for unrelated documents or values deliberately
 pasted into ordinary memory. Keep credentials out of capture folders. Optional
-KeePass interoperability remains follow-up work. The supported KDBX 4 workflow
-must map entries, standard fields and custom properties, support masked names,
-verify value preservation, and avoid plaintext temporary files. The operator's
-[manual migration report](https://github.com/Perseusxrltd/mnemion/issues/32#issuecomment-6264307829)
-does not mean `.kdbx` import/export is already available in the app.
+KeePass interoperability is available from source **4.23** through
+[Import KeePass / Export selected to KeePass](keepass.md), including reviewed
+current-field mapping, default name masking and in-memory conversion. Check
+release status for native availability. History, attachments and recycled
+entries are deliberately omitted and shown in the preview. Portable Mnemion
+exports that contain these encrypted mappings require 4.23 or later to import.
 
 ## Independently hosted service
 

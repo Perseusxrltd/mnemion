@@ -7,6 +7,15 @@ from fastapi import Depends, Query
 
 from .contracts import Page
 from .db import Identity
+from . import keepass_vault
+from .keepass_models import (
+    KeepassExported,
+    KeepassExportInput,
+    KeepassImported,
+    KeepassImportInput,
+    KeepassPreview,
+    KeepassPreviewInput,
+)
 from .vault import VaultService
 from .vault_models import (
     VaultAuditEvent,
@@ -73,6 +82,21 @@ def attach_vault(app, service: VaultService, authenticated):
     def vault_import(command: VaultImport, identity: Auth):
         """Verify an encrypted export and create new credentials without restoring historical grants."""
         return service.import_archive(identity, command)
+
+    @app.post("/v1/vault/keepass/preview", response_model=KeepassPreview, tags=["Vault"])
+    def keepass_preview(command: KeepassPreviewInput, identity: Auth):
+        """Verify KDBX 4 in memory and review its masked current-field mapping as administrator."""
+        return keepass_vault.preview(service, identity, command)
+
+    @app.post("/v1/vault/keepass/import", response_model=KeepassImported, tags=["Vault"])
+    def keepass_import(command: KeepassImportInput, identity: Auth):
+        """Approve the exact preview, importing current fields atomically without historical grants."""
+        return keepass_vault.import_file(service, identity, command)
+
+    @app.post("/v1/vault/keepass/export", response_model=KeepassExported, tags=["Vault"])
+    def keepass_export(command: KeepassExportInput, identity: Auth):
+        """Export only explicitly readable credentials as password-encrypted KDBX 4.1."""
+        return keepass_vault.export_file(service, identity, command)
 
     @app.get("/v1/vault/audit", response_model=Page[VaultAuditEvent], tags=["Vault"])
     def vault_audit(identity: Auth, offset: Offset = 0, limit: Limit = 100):

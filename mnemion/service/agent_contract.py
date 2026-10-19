@@ -28,6 +28,9 @@ vault.grant PUT /v1/vault/entries/{entry_id}/grants
 vault.delete POST /v1/vault/entries/{entry_id}/delete
 vault.export POST /v1/vault/export
 vault.import POST /v1/vault/import
+vault.keepass.preview POST /v1/vault/keepass/preview
+vault.keepass.import POST /v1/vault/keepass/import
+vault.keepass.export POST /v1/vault/keepass/export
 vault.audit GET /v1/vault/audit
 spaces.list GET /v1/spaces
 spaces.create POST /v1/spaces
@@ -155,6 +158,8 @@ READ_POST = frozenset(
         "sign_in.preview_invitation",
         "company.check_configuration",
         "vault.export",
+        "vault.keepass.preview",
+        "vault.keepass.export",
     }
 )
 DOWNLOADS = frozenset({"sources.attachment", "obsidian.export", "evaluations.export"})
@@ -171,6 +176,9 @@ PRIVATE_INPUTS = frozenset(
         "vault.put",
         "vault.export",
         "vault.import",
+        "vault.keepass.preview",
+        "vault.keepass.import",
+        "vault.keepass.export",
     }
 )
 # These operations prove identity with their private input, not another user's

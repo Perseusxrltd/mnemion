@@ -62,6 +62,13 @@ desktop operations**. These use the owning OS account and the same controlled
 restart, current-state and unsaved-work safeguards as Studio. They add no remote
 memory authority. See [app update controls](desktop-operator.md#app-updates-and-startup).
 
+Source **4.23.0** adds `vault.keepass.preview`, `vault.keepass.import` and
+`vault.keepass.export`, bringing the reviewed HTTP catalog to **133 operations**.
+[KeePass transfer](keepass.md) uses private CLI input/result files, exact preview
+approval and current per-credential read grants. The generic MCP surface refuses
+these sensitive transport operations; it does not put file passwords or exports
+into chat context.
+
 Every call uses the application's own credential and the existing tenant,
 space and role checks. Catalog visibility describes capabilities; it does not
 grant permission to use them. Revoking a key or a space grant takes effect on

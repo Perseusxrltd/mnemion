@@ -2,10 +2,11 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Copy, Download, Eye, EyeOff, KeyRound, LoaderCircle, Plus, RefreshCw, ShieldCheck, Trash2, Upload } from 'lucide-react';
-import type { VaultEntry, VaultEnvelope } from '@mnemion/client';
+import { supportsKeePass, type VaultEntry, type VaultEnvelope } from '@mnemion/client';
 import type { Connection } from './connection-types';
 import { downloadVault, newVaultKey } from './vault-utils';
 import './vault.css';
+import KeepassTransfer from './KeepassTransfer';
 
 const message = (error: unknown) => error instanceof Error ? error.message : 'The vault request could not be completed.';
 const date = (value: string) => new Date(value).toLocaleString();
@@ -30,6 +31,7 @@ export default function SecretsVault({ connection }: { connection: Connection })
   const [transferKey, setTransferKey] = useState(''), [showKey, setShowKey] = useState(false), [keySaved, setKeySaved] = useState(false);
   const [archive, setArchive] = useState<VaultEnvelope | null>(null), [fileName, setFileName] = useState('');
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [notice, setNotice] = useState('');
+  const [keepassActive, setKeepassActive] = useState(false);
   const live = useRef(true), generation = useRef(0);
   useEffect(() => { live.current = true; return () => { live.current = false; generation.current++; }; }, []);
   useEffect(() => {
@@ -38,7 +40,7 @@ export default function SecretsVault({ connection }: { connection: Connection })
     const timer = revealed ? setTimeout(hide, 60000) : undefined;
     return () => { window.removeEventListener('blur', hide); document.removeEventListener('visibilitychange', hide); clearTimeout(timer); };
   }, [revealed]);
-  const pending = busy || !!editor || !!transfer || !!deleting || !!subject;
+  const pending = busy || !!editor || !!transfer || !!deleting || !!subject || keepassActive;
   async function refresh() { await cache.invalidateQueries({ queryKey: scope }); }
   async function run(action: () => Promise<void>) {
     setBusy(true); setError(''); setNotice('');
@@ -102,6 +104,9 @@ export default function SecretsVault({ connection }: { connection: Connection })
     {tab === 'credentials' && status.data?.available && <>
       <div className="ws-setup-actions">{me.administrator && <><button className="ws-button ws-primary" disabled={pending} onClick={() => { setEditor({ id: crypto.randomUUID(), name: '', value: '', version: 0, rename: true }); setError(''); }}><Plus size={15} />Add credential</button><button className="ws-button" disabled={pending} onClick={() => beginTransfer('import')}><Upload size={15} />Restore encrypted export</button></>}
         <button className="ws-button" disabled={pending || !chosen.length} onClick={() => beginTransfer('export')}><Download size={15} />Export selected{chosen.length ? ` (${chosen.length})` : ''}</button>{!!chosen.length && <button className="ws-button ws-quiet" disabled={pending} onClick={() => setChosen([])}>Clear selection</button>}</div>
+      {supportsKeePass(me.service_version) && <KeepassTransfer client={client} administrator={me.administrator} selected={chosen}
+        disabled={busy || !!editor || !!transfer || !!deleting || !!subject} onActive={setKeepassActive}
+        onDone={message => { setNotice(message); setChosen([]); setOffset(0); void refresh(); }} />}
       {entries.error && <p className="ws-notice ws-error" role="alert">{message(entries.error)}</p>}
       <div className="ws-vault-columns"><section className="ws-vault-panel"><h2>Credentials available to you</h2><label className="ws-field"><span>Filter this page by name</span><input data-update-safe value={filter} onChange={event => setFilter(event.target.value)} maxLength={120} autoComplete="off" /></label>
         <ul className="ws-vault-entries">{entries.data?.items.filter(item => item.name.toLocaleLowerCase().includes(filter.toLocaleLowerCase())).map(entry => <li key={entry.id} className={selected === entry.id ? 'selected' : ''}>

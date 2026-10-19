@@ -100,6 +100,46 @@ class VaultCipher:
                 "The encrypted value could not be verified. Restore a verified copy.",
             ) from None
 
+    @staticmethod
+    def _keepass_aad(tenant, entry):
+        return canonical(
+            {
+                "format": "mnemion-keepass-field-map",
+                "version": 1,
+                "tenant_id": str(tenant),
+                "entry_id": str(entry),
+            }
+        )
+
+    def encrypt_keepass(self, tenant, entry, mapping):
+        payload = canonical(mapping)
+        if len(payload) > 32768:
+            raise ServiceError(
+                422,
+                "keepass_mapping_size",
+                "This KeePass field's context exceeds the portable mapping limit.",
+            )
+        nonce = secrets.token_bytes(12)
+        return nonce, self._cipher.encrypt(nonce, payload, self._keepass_aad(tenant, entry))
+
+    def decrypt_keepass(self, row):
+        if row["keepass_nonce"] is None and row["keepass_ciphertext"] is None:
+            return None
+        try:
+            if row["key_id"] != self.key_id:
+                raise ValueError()
+            return json.loads(
+                self._cipher.decrypt(
+                    bytes(row["keepass_nonce"]),
+                    bytes(row["keepass_ciphertext"]),
+                    self._keepass_aad(row["tenant_id"], row["id"]),
+                )
+            )
+        except (InvalidTag, ValueError, TypeError, UnicodeError, RecursionError):
+            raise ServiceError(
+                503, "vault_integrity", "The encrypted KeePass mapping could not be verified."
+            ) from None
+
     def seal_archive(self, document: dict) -> dict:
         payload = canonical(document)
         if len(payload) > MAX_ARCHIVE_BYTES:

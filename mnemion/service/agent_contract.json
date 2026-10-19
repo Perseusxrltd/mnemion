@@ -23343,6 +23343,478 @@
       "effect": "read",
       "group": "vault",
       "input_schema": {
+        "$defs": {
+          "KeepassExportInput": {
+            "additionalProperties": false,
+            "properties": {
+              "entry_ids": {
+                "items": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "maxItems": 100,
+                "minItems": 1,
+                "title": "Entry Ids",
+                "type": "array"
+              },
+              "password": {
+                "format": "password",
+                "maxLength": 1024,
+                "minLength": 12,
+                "title": "Password",
+                "type": "string",
+                "writeOnly": true
+              }
+            },
+            "required": [
+              "entry_ids",
+              "password"
+            ],
+            "title": "KeepassExportInput",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/KeepassExportInput"
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "POST",
+      "name": "vault.keepass.export",
+      "output_schema": {
+        "$defs": {
+          "KeepassExported": {
+            "additionalProperties": true,
+            "properties": {
+              "credentials": {
+                "title": "Credentials",
+                "type": "integer"
+              },
+              "entries": {
+                "title": "Entries",
+                "type": "integer"
+              },
+              "file": {
+                "title": "File",
+                "type": "string"
+              },
+              "format": {
+                "const": "kdbx",
+                "default": "kdbx",
+                "title": "Format",
+                "type": "string"
+              },
+              "sha256": {
+                "title": "Sha256",
+                "type": "string"
+              },
+              "version": {
+                "const": "4.1",
+                "default": "4.1",
+                "title": "Version",
+                "type": "string"
+              }
+            },
+            "required": [
+              "file",
+              "sha256",
+              "credentials",
+              "entries"
+            ],
+            "title": "KeepassExported",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/KeepassExported"
+      },
+      "parameter_locations": {},
+      "path": "/v1/vault/keepass/export",
+      "retry": "read",
+      "sensitive_input": true,
+      "sensitive_result": true,
+      "summary": "Keepass Export"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "write",
+      "group": "vault",
+      "input_schema": {
+        "$defs": {
+          "KeepassImportInput": {
+            "additionalProperties": false,
+            "properties": {
+              "expected_plan": {
+                "pattern": "^[a-f0-9]{64}$",
+                "title": "Expected Plan",
+                "type": "string"
+              },
+              "file": {
+                "format": "password",
+                "maxLength": 1333336,
+                "minLength": 88,
+                "title": "File",
+                "type": "string",
+                "writeOnly": true
+              },
+              "import_current_values": {
+                "const": true,
+                "title": "Import Current Values",
+                "type": "boolean"
+              },
+              "key_file": {
+                "anyOf": [
+                  {
+                    "format": "password",
+                    "maxLength": 87384,
+                    "type": "string",
+                    "writeOnly": true
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Key File"
+              },
+              "mask_names": {
+                "default": true,
+                "title": "Mask Names",
+                "type": "boolean"
+              },
+              "namespace": {
+                "default": "keepass",
+                "pattern": "^[A-Za-z0-9_-]{1,24}$",
+                "title": "Namespace",
+                "type": "string"
+              },
+              "password": {
+                "anyOf": [
+                  {
+                    "format": "password",
+                    "maxLength": 1024,
+                    "type": "string",
+                    "writeOnly": true
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Password"
+              }
+            },
+            "required": [
+              "file",
+              "expected_plan",
+              "import_current_values"
+            ],
+            "title": "KeepassImportInput",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/KeepassImportInput"
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "POST",
+      "name": "vault.keepass.import",
+      "output_schema": {
+        "$defs": {
+          "KeepassImported": {
+            "additionalProperties": true,
+            "properties": {
+              "already_imported": {
+                "title": "Already Imported",
+                "type": "boolean"
+              },
+              "items": {
+                "items": {
+                  "$ref": "#/$defs/VaultEntry"
+                },
+                "title": "Items",
+                "type": "array"
+              }
+            },
+            "required": [
+              "items",
+              "already_imported"
+            ],
+            "title": "KeepassImported",
+            "type": "object"
+          },
+          "VaultEntry": {
+            "additionalProperties": false,
+            "properties": {
+              "access_version": {
+                "title": "Access Version",
+                "type": "integer"
+              },
+              "created_at": {
+                "format": "date-time",
+                "title": "Created At",
+                "type": "string"
+              },
+              "id": {
+                "format": "uuid",
+                "title": "Id",
+                "type": "string"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "permissions": {
+                "$ref": "#/$defs/VaultPermissions"
+              },
+              "updated_at": {
+                "format": "date-time",
+                "title": "Updated At",
+                "type": "string"
+              },
+              "version": {
+                "title": "Version",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "version",
+              "access_version",
+              "created_at",
+              "updated_at",
+              "permissions"
+            ],
+            "title": "VaultEntry",
+            "type": "object"
+          },
+          "VaultPermissions": {
+            "additionalProperties": false,
+            "properties": {
+              "manage": {
+                "title": "Manage",
+                "type": "boolean"
+              },
+              "read": {
+                "title": "Read",
+                "type": "boolean"
+              },
+              "write": {
+                "title": "Write",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "read",
+              "write",
+              "manage"
+            ],
+            "title": "VaultPermissions",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/KeepassImported"
+      },
+      "parameter_locations": {},
+      "path": "/v1/vault/keepass/import",
+      "retry": "inspect_before_retry",
+      "sensitive_input": true,
+      "sensitive_result": true,
+      "summary": "Keepass Import"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "read",
+      "group": "vault",
+      "input_schema": {
+        "$defs": {
+          "KeepassPreviewInput": {
+            "additionalProperties": false,
+            "properties": {
+              "file": {
+                "format": "password",
+                "maxLength": 1333336,
+                "minLength": 88,
+                "title": "File",
+                "type": "string",
+                "writeOnly": true
+              },
+              "key_file": {
+                "anyOf": [
+                  {
+                    "format": "password",
+                    "maxLength": 87384,
+                    "type": "string",
+                    "writeOnly": true
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Key File"
+              },
+              "mask_names": {
+                "default": true,
+                "title": "Mask Names",
+                "type": "boolean"
+              },
+              "namespace": {
+                "default": "keepass",
+                "pattern": "^[A-Za-z0-9_-]{1,24}$",
+                "title": "Namespace",
+                "type": "string"
+              },
+              "password": {
+                "anyOf": [
+                  {
+                    "format": "password",
+                    "maxLength": 1024,
+                    "type": "string",
+                    "writeOnly": true
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Password"
+              }
+            },
+            "required": [
+              "file"
+            ],
+            "title": "KeepassPreviewInput",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/KeepassPreviewInput"
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "POST",
+      "name": "vault.keepass.preview",
+      "output_schema": {
+        "$defs": {
+          "KeepassOmissions": {
+            "additionalProperties": true,
+            "properties": {
+              "attachments": {
+                "title": "Attachments",
+                "type": "integer"
+              },
+              "history_entries": {
+                "title": "History Entries",
+                "type": "integer"
+              },
+              "recycled_entries": {
+                "title": "Recycled Entries",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "history_entries",
+              "attachments",
+              "recycled_entries"
+            ],
+            "title": "KeepassOmissions",
+            "type": "object"
+          },
+          "KeepassPreview": {
+            "additionalProperties": true,
+            "properties": {
+              "already_imported": {
+                "title": "Already Imported",
+                "type": "boolean"
+              },
+              "can_import": {
+                "title": "Can Import",
+                "type": "boolean"
+              },
+              "credentials": {
+                "title": "Credentials",
+                "type": "integer"
+              },
+              "empty_fields": {
+                "title": "Empty Fields",
+                "type": "integer"
+              },
+              "entries": {
+                "title": "Entries",
+                "type": "integer"
+              },
+              "mask_names": {
+                "title": "Mask Names",
+                "type": "boolean"
+              },
+              "name_conflicts": {
+                "title": "Name Conflicts",
+                "type": "integer"
+              },
+              "names": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Names",
+                "type": "array"
+              },
+              "omitted": {
+                "$ref": "#/$defs/KeepassOmissions"
+              },
+              "plan": {
+                "title": "Plan",
+                "type": "string"
+              }
+            },
+            "required": [
+              "plan",
+              "entries",
+              "credentials",
+              "empty_fields",
+              "names",
+              "mask_names",
+              "omitted",
+              "name_conflicts",
+              "can_import",
+              "already_imported"
+            ],
+            "title": "KeepassPreview",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/KeepassPreview"
+      },
+      "parameter_locations": {},
+      "path": "/v1/vault/keepass/preview",
+      "retry": "read",
+      "sensitive_input": true,
+      "sensitive_result": true,
+      "summary": "Keepass Preview"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "read",
+      "group": "vault",
+      "input_schema": {
         "additionalProperties": false,
         "properties": {
           "parameters": {

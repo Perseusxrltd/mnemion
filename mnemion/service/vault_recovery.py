@@ -58,8 +58,15 @@ def restore(conn, ledger):
                 VALUES (%s,%s,%s) ON CONFLICT DO NOTHING""",
                 (entry["tenant_id"], entry["entry_id"], entry["requested_at"]),
             )
-        conn.execute("""UPDATE mnemion.vault_entries e SET
+        mapping = (
+            "keepass_nonce=NULL,keepass_ciphertext=NULL,"
+            if conn.execute("""SELECT 1 FROM information_schema.columns WHERE table_schema='mnemion'
+                AND table_name='vault_entries' AND column_name='keepass_nonce'""").fetchone()
+            else ""
+        )
+        conn.execute(f"""UPDATE mnemion.vault_entries e SET
             deleted_at=coalesce(e.deleted_at,d.requested_at),nonce=NULL,ciphertext=NULL,
+            {mapping}
             version=version+CASE WHEN e.deleted_at IS NULL THEN 1 ELSE 0 END
             FROM mnemion.vault_denials d WHERE d.tenant_id=e.tenant_id AND d.entry_id=e.id""")
     # New recovery keys and freshly reenrolled people need explicitly reviewed

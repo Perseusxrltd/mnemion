@@ -69,6 +69,10 @@ unavailable sources. Complete journal and access checks remain enforced.
 Source 4.22.0 adds separately approved [existing-memory backfill](docs/service/git-journal.md#including-existing-native-memories):
 bounded resumable work, privacy checks, current administrator authority and the
 same progress/control operations in the app, SDKs and agent catalog.
+Source 4.23.0 adds [KeePass import/export](docs/service/keepass.md): reviewed
+KDBX 4 field mapping, default masked names, encrypted original grouping and
+current-grant checks in the app and private agent controls. It creates no
+plaintext temporary files; omitted history/attachments are shown before import.
 Source 4.17.0 adds [live JSONL conversation capture](docs/service/live-conversations.md):
 bounded records and fragments, deferred tails, per-file source controls, private
 checkpoints, unchanged-fragment reuse and capture progress in the app. Existing

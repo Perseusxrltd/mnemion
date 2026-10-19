@@ -10,7 +10,15 @@ from .db import Database, Identity, require_administrator
 from .errors import ServiceError, forbidden, not_found
 from .models import json_value
 from .vault_crypto import VaultCipher, VaultSettings
-from .vault_models import VaultArchive, VaultDelete, VaultExport, VaultGrant, VaultImport, VaultPut
+from .vault_models import (
+    KeepassMapping,
+    VaultArchive,
+    VaultDelete,
+    VaultExport,
+    VaultGrant,
+    VaultImport,
+    VaultPut,
+)
 
 METADATA = "id,name,version,access_version,created_at,updated_at"
 
@@ -285,6 +293,27 @@ class VaultService:
         with self._access(identity, "put", entry) as conn:
             return self._put(conn, identity, entry, command)
 
+    def _set_keepass(self, conn, identity, entry, mapping):
+        model = KeepassMapping.model_validate(mapping)
+        nonce, ciphertext = self.cipher.encrypt_keepass(
+            identity.tenant_id, entry, model.model_dump(mode="json")
+        )
+        conn.execute(
+            "UPDATE mnemion.vault_entries SET keepass_nonce=%s,keepass_ciphertext=%s WHERE id=%s",
+            (nonce, ciphertext, entry),
+        )
+
+    def _keepass_mapping(self, row):
+        mapping = self.cipher.decrypt_keepass(row)
+        if mapping is None:
+            return None
+        try:
+            return KeepassMapping.model_validate(mapping).model_dump(mode="json")
+        except ValidationError:
+            raise ServiceError(
+                503, "vault_integrity", "The encrypted KeePass mapping could not be verified."
+            ) from None
+
     @staticmethod
     def _grants(conn, entry):
         row = VaultService._entry(conn, entry)
@@ -389,7 +418,8 @@ class VaultService:
             conn.execute("DELETE FROM mnemion.vault_grants WHERE entry_id=%s", (entry,))
             conn.execute(
                 """UPDATE mnemion.vault_entries SET deleted_at=clock_timestamp(),updated_at=clock_timestamp(),
-                         version=version+1,updated_by=%s,nonce=NULL,ciphertext=NULL WHERE id=%s""",
+                         version=version+1,updated_by=%s,nonce=NULL,ciphertext=NULL,
+                         keepass_nonce=NULL,keepass_ciphertext=NULL WHERE id=%s""",
                 (identity.principal_id, entry),
             )
             return {"id": str(entry), "deleted": True}
@@ -401,11 +431,14 @@ class VaultService:
                 row = self._entry(conn, entry, encrypted=True)
                 if not row["rights"] & 2:
                     raise forbidden()
-                contents.append({"name": row["name"], "value": self.cipher.decrypt(row)})
+                item = {"name": row["name"], "value": self.cipher.decrypt(row)}
+                if mapping := self._keepass_mapping(row):
+                    item["keepass"] = mapping
+                contents.append(item)
             envelope = VaultCipher(command.recovery_key.get_secret_value()).seal_archive(
                 {
                     "format": "mnemion-vault-contents",
-                    "version": 1,
+                    "version": 2 if any("keepass" in item for item in contents) else 1,
                     "source_tenant_id": str(identity.tenant_id),
                     "exported_at": datetime.now(timezone.utc).isoformat(),
                     "entries": contents,
@@ -439,18 +472,31 @@ class VaultService:
                 raise ServiceError(
                     422, "vault_archive_invalid", "The export contains duplicate credential names."
                 )
-            return {
-                "items": [
+            items = []
+            # Rebase imported mapping batches so separate restores cannot merge
+            # different credentials merely because their original file matched.
+            batches = {}
+            for entry in archive.entries:
+                identifier = uuid4()
+                items.append(
                     self._put(
                         conn,
                         identity,
-                        uuid4(),
+                        identifier,
                         VaultPut(expected_version=0, name=entry.name, value=entry.value),
                     )
-                    for entry in archive.entries
-                ],
-                "next_offset": None,
-            }
+                )
+                if entry.keepass:
+                    if archive.version != 2:
+                        raise ServiceError(
+                            422,
+                            "vault_archive_invalid",
+                            "KeePass mappings require the version 2 vault contents format.",
+                        )
+                    mapping = entry.keepass.model_dump(mode="json")
+                    mapping["batch_id"] = str(batches.setdefault(mapping["batch_id"], uuid4()))
+                    self._set_keepass(conn, identity, identifier, mapping)
+            return {"items": items, "next_offset": None}
 
     def audit_events(self, identity: Identity, *, offset=0, limit=100):
         with self.db.transaction(identity) as conn:

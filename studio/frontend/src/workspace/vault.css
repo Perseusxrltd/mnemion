@@ -4,6 +4,11 @@
 .ws-vault-columns { display: grid; grid-template-columns: minmax(260px, .85fr) minmax(0, 1.4fr); gap: 1rem; margin: 1.25rem 0; }
 .ws-vault-panel { min-width: 0; padding: 1.25rem; margin-bottom: 1rem; border: 1px solid rgba(208, 183, 119, .2); border-radius: 14px; background: rgba(19, 20, 19, .8); }
 .ws-vault-panel h2, .ws-vault-panel h3 { overflow-wrap: anywhere; }
+.ws-keepass h2 { display: flex; align-items: center; gap: .65rem; }
+.ws-keepass .ws-checkbox { margin: 0; align-items: flex-start; }
+.ws-keepass .ws-checkbox input { flex-shrink: 0; margin-top: 2px; }
+.ws-keepass-preview { padding: 1rem; border: 1px solid var(--ws-border); border-radius: 8px; }
+.ws-keepass-preview li { overflow-wrap: anywhere; }
 .ws-vault-panel fieldset { min-width: 0; border: 0; padding: 0; margin: 0; }
 .ws-vault-panel input:not([type=checkbox]), .ws-vault-panel textarea, .ws-vault-panel select, .ws-vault-setup input:not([type=checkbox]) { max-width: 100%; min-width: 0; }
 .ws-vault-panel textarea { width: 100%; resize: vertical; overflow-wrap: anywhere; }

@@ -126,14 +126,36 @@ class VaultImport(VaultRecoveryKey):
     archive: VaultEnvelope
 
 
+class KeepassGroup(Command):
+    id: UUID
+    name: str = Field(max_length=2048, repr=False)
+
+
+class KeepassEmptyField(Command):
+    kind: Literal["string", "custom-data"]
+    name: str = Field(min_length=1, max_length=2048, repr=False)
+
+
+class KeepassMapping(Command):
+    format: Literal["mnemion-keepass-field"] = "mnemion-keepass-field"
+    version: Literal[1] = 1
+    batch_id: UUID
+    entry_id: UUID
+    groups: list[KeepassGroup] = Field(max_length=25, repr=False)
+    field_kind: Literal["string", "custom-data"]
+    field_name: str = Field(min_length=1, max_length=2048, repr=False)
+    empty_fields: list[KeepassEmptyField] = Field(default_factory=list, max_length=100, repr=False)
+
+
 class VaultArchiveItem(Command):
     name: VaultName
     value: SecretStr = Field(min_length=1, max_length=65536)
+    keepass: KeepassMapping | None = Field(default=None, repr=False)
 
 
 class VaultArchive(Command):
     format: Literal["mnemion-vault-contents"]
-    version: Literal[1]
+    version: Literal[1, 2]
     source_tenant_id: UUID
     exported_at: AwareDatetime
     entries: list[VaultArchiveItem] = Field(min_length=1, max_length=100)

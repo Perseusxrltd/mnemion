@@ -1,0 +1,312 @@
+{
+  "generator": "PyKeePass 4.2.0 / lxml",
+  "password": "synthetic-keepass-fixture-only",
+  "fixtures": {
+    "argon2d-aes.kdbx": {
+      "sha256": "66850819c6d620a0e6bffe3b201466b1c98c2048278bc390dd69dc760a7e9b86",
+      "password": "synthetic-keepass-fixture-only",
+      "key_file": null,
+      "entries": [
+        {
+          "id": "27abeb13-cbe8-11f1-b106-00155d5e287d",
+          "groups": [
+            {
+              "id": "17af68b3-8f78-4c32-ba76-8ba88caeb9bd",
+              "name": "Synthetic root"
+            },
+            {
+              "id": "27ab70e9-cbe8-11f1-9faa-00155d5e287d",
+              "name": "Private team Ω"
+            }
+          ],
+          "fields": [
+            {
+              "kind": "string",
+              "name": "Title",
+              "value": "Synthetic account 🌌"
+            },
+            {
+              "kind": "string",
+              "name": "UserName",
+              "value": "fixture-user"
+            },
+            {
+              "kind": "string",
+              "name": "Password",
+              "value": "synthetic-test-value-α"
+            },
+            {
+              "kind": "string",
+              "name": "URL",
+              "value": "https://example.invalid"
+            },
+            {
+              "kind": "string",
+              "name": "Notes",
+              "value": "Résumé\nSecond line"
+            },
+            {
+              "kind": "string",
+              "name": "API/label",
+              "value": "synthetic-custom-field"
+            },
+            {
+              "kind": "string",
+              "name": "Empty",
+              "value": ""
+            },
+            {
+              "kind": "custom-data",
+              "name": "plugin-metadata",
+              "value": "synthetic-plugin-value"
+            }
+          ]
+        },
+        {
+          "id": "27ac02ba-cbe8-11f1-9574-00155d5e287d",
+          "groups": [
+            {
+              "id": "17af68b3-8f78-4c32-ba76-8ba88caeb9bd",
+              "name": "Synthetic root"
+            },
+            {
+              "id": "27ab70e9-cbe8-11f1-9faa-00155d5e287d",
+              "name": "Private team Ω"
+            }
+          ],
+          "fields": [
+            {
+              "kind": "string",
+              "name": "Title",
+              "value": "Second synthetic account"
+            },
+            {
+              "kind": "string",
+              "name": "UserName",
+              "value": "second-user"
+            },
+            {
+              "kind": "string",
+              "name": "Password",
+              "value": "second-password"
+            },
+            {
+              "kind": "string",
+              "name": "OTP",
+              "value": "synthetic-otp"
+            }
+          ]
+        }
+      ],
+      "omitted": {
+        "history_entries": 1,
+        "attachments": 1,
+        "recycled_entries": 1
+      }
+    },
+    "argon2id-chacha.kdbx": {
+      "sha256": "9b220b5116a3fb9112c47381449e624a5244a1c8ac44f545537df10f3a4e5ad8",
+      "password": "synthetic-keepass-fixture-only",
+      "key_file": "key-v2.key",
+      "entries": [
+        {
+          "id": "2847b544-cbe8-11f1-bd3a-00155d5e287d",
+          "groups": [
+            {
+              "id": "17af68b3-8f78-4c32-ba76-8ba88caeb9bd",
+              "name": "Synthetic root"
+            },
+            {
+              "id": "2847aee1-cbe8-11f1-96c8-00155d5e287d",
+              "name": "Private team Ω"
+            }
+          ],
+          "fields": [
+            {
+              "kind": "string",
+              "name": "Title",
+              "value": "Synthetic account 🌌"
+            },
+            {
+              "kind": "string",
+              "name": "UserName",
+              "value": "fixture-user"
+            },
+            {
+              "kind": "string",
+              "name": "Password",
+              "value": "synthetic-test-value-α"
+            },
+            {
+              "kind": "string",
+              "name": "URL",
+              "value": "https://example.invalid"
+            },
+            {
+              "kind": "string",
+              "name": "Notes",
+              "value": "Résumé\nSecond line"
+            },
+            {
+              "kind": "string",
+              "name": "API/label",
+              "value": "synthetic-custom-field"
+            },
+            {
+              "kind": "string",
+              "name": "Empty",
+              "value": ""
+            },
+            {
+              "kind": "custom-data",
+              "name": "plugin-metadata",
+              "value": "synthetic-plugin-value"
+            }
+          ]
+        },
+        {
+          "id": "2847c3ab-cbe8-11f1-8090-00155d5e287d",
+          "groups": [
+            {
+              "id": "17af68b3-8f78-4c32-ba76-8ba88caeb9bd",
+              "name": "Synthetic root"
+            },
+            {
+              "id": "2847aee1-cbe8-11f1-96c8-00155d5e287d",
+              "name": "Private team Ω"
+            }
+          ],
+          "fields": [
+            {
+              "kind": "string",
+              "name": "Title",
+              "value": "Second synthetic account"
+            },
+            {
+              "kind": "string",
+              "name": "UserName",
+              "value": "second-user"
+            },
+            {
+              "kind": "string",
+              "name": "Password",
+              "value": "second-password"
+            },
+            {
+              "kind": "string",
+              "name": "OTP",
+              "value": "synthetic-otp"
+            }
+          ]
+        }
+      ],
+      "omitted": {
+        "history_entries": 1,
+        "attachments": 1,
+        "recycled_entries": 1
+      }
+    },
+    "aes-kdf-salsa.kdbx": {
+      "sha256": "d148d6ac7d078879c560079debc5495300ecaaf0be1b0d571e8d59b94615e1e1",
+      "password": null,
+      "key_file": "key-raw.key",
+      "entries": [
+        {
+          "id": "28e40ffd-cbe8-11f1-bb28-00155d5e287d",
+          "groups": [
+            {
+              "id": "17af68b3-8f78-4c32-ba76-8ba88caeb9bd",
+              "name": "Synthetic root"
+            },
+            {
+              "id": "28e40995-cbe8-11f1-b2e3-00155d5e287d",
+              "name": "Private team Ω"
+            }
+          ],
+          "fields": [
+            {
+              "kind": "string",
+              "name": "Title",
+              "value": "Synthetic account 🌌"
+            },
+            {
+              "kind": "string",
+              "name": "UserName",
+              "value": "fixture-user"
+            },
+            {
+              "kind": "string",
+              "name": "Password",
+              "value": "synthetic-test-value-α"
+            },
+            {
+              "kind": "string",
+              "name": "URL",
+              "value": "https://example.invalid"
+            },
+            {
+              "kind": "string",
+              "name": "Notes",
+              "value": "Résumé\nSecond line"
+            },
+            {
+              "kind": "string",
+              "name": "API/label",
+              "value": "synthetic-custom-field"
+            },
+            {
+              "kind": "string",
+              "name": "Empty",
+              "value": ""
+            },
+            {
+              "kind": "custom-data",
+              "name": "plugin-metadata",
+              "value": "synthetic-plugin-value"
+            }
+          ]
+        },
+        {
+          "id": "28e41df3-cbe8-11f1-b745-00155d5e287d",
+          "groups": [
+            {
+              "id": "17af68b3-8f78-4c32-ba76-8ba88caeb9bd",
+              "name": "Synthetic root"
+            },
+            {
+              "id": "28e40995-cbe8-11f1-b2e3-00155d5e287d",
+              "name": "Private team Ω"
+            }
+          ],
+          "fields": [
+            {
+              "kind": "string",
+              "name": "Title",
+              "value": "Second synthetic account"
+            },
+            {
+              "kind": "string",
+              "name": "UserName",
+              "value": "second-user"
+            },
+            {
+              "kind": "string",
+              "name": "Password",
+              "value": "second-password"
+            },
+            {
+              "kind": "string",
+              "name": "OTP",
+              "value": "synthetic-otp"
+            }
+          ]
+        }
+      ],
+      "omitted": {
+        "history_entries": 1,
+        "attachments": 1,
+        "recycled_entries": 1
+      }
+    }
+  }
+}
