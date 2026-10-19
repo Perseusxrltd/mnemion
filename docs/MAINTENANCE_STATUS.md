@@ -1,8 +1,8 @@
 # Automated maintenance status
 
-Observed: 2026-10-19T12:23:48+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-19T12:25:13+00:00. Updated by repository events and the scheduled status workflow.
 
-Published release: [v4.14.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.14.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
+Published release: [v4.15.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.15.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
 This inventory reports GitHub state; issue closure does not prove that an entire product requirement is complete. Build observations cover the latest 100 runs, retaining the latest relevant run per workflow and branch. Active builds are checked for failed jobs at each observation; completed failures are inspected once per changed attempt. This automation never retries a build or publishes a release.
 
@@ -26,16 +26,8 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
 | ci\.yml | main | in\_progress | [Run 39251027771](https://github.com/Perseusxrltd/mnemion/actions/runs/39251027771) |
-| public-updates\.yml | v4\.14\.0 | success | [Run 39241855912](https://github.com/Perseusxrltd/mnemion/actions/runs/39241855912) |
-| release\.yml | release/4\.14\.0-r2 | success | [Run 39236264889](https://github.com/Perseusxrltd/mnemion/actions/runs/39236264889) |
-| release\.yml | release/4\.15\.0 | failure | [Run 39242637086](https://github.com/Perseusxrltd/mnemion/actions/runs/39242637086) |
-| release\.yml | release/4\.15\.0-r2 | cancelled | [Run 39243307027](https://github.com/Perseusxrltd/mnemion/actions/runs/39243307027) |
-| release\.yml | release/4\.15\.0-r3 | cancelled | [Run 39243853016](https://github.com/Perseusxrltd/mnemion/actions/runs/39243853016) |
+| public-updates\.yml | v4\.15\.0 | in\_progress | [Run 39251839063](https://github.com/Perseusxrltd/mnemion/actions/runs/39251839063) |
 | release\.yml | release/4\.15\.0-r4 | success | [Run 39246219571](https://github.com/Perseusxrltd/mnemion/actions/runs/39246219571) |
-| release\.yml | release/4\.16\.0 | queued | [Run 39251058831](https://github.com/Perseusxrltd/mnemion/actions/runs/39251058831) |
-| verify-artifacts\.yml | main | in\_progress | [Run 39251669178](https://github.com/Perseusxrltd/mnemion/actions/runs/39251669178) |
-| website-release\.yml | v4\.14\.0 | success | [Run 39241852486](https://github.com/Perseusxrltd/mnemion/actions/runs/39241852486) |
-
-## Failed jobs
-
-- [Run 39242637086](https://github.com/Perseusxrltd/mnemion/actions/runs/39242637086): Release preflight. Steps: Run ruff format --check \..
+| release\.yml | release/4\.16\.0 | in\_progress | [Run 39251058831](https://github.com/Perseusxrltd/mnemion/actions/runs/39251058831) |
+| verify-artifacts\.yml | main | success | [Run 39251669178](https://github.com/Perseusxrltd/mnemion/actions/runs/39251669178) |
+| website-release\.yml | v4\.15\.0 | success | [Run 39251835481](https://github.com/Perseusxrltd/mnemion/actions/runs/39251835481) |
