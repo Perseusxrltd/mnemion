@@ -23,6 +23,7 @@ const titles: Record<string, string> = {
   "docs/service/deployment.md": "Self-hosted deployment", "docs/service/organizations.md": "Organizations, spaces & security",
   "docs/service/supervision.md": "Background service without systemd",
   "docs/service/host-recovery.md": "Rebuild a host and keep workspace identities",
+  "docs/service/git-journal.md": "Git journals, publication & memory replay",
   "docs/service/managed-updates.md": "Managed server updates",
   "docs/service/workspaces.md": "Connect & remember workspaces",
   "docs/service/sign-in.md": "Individual sign-in, invitations & sessions",

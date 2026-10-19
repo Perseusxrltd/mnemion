@@ -9257,6 +9257,782 @@
       "authentication": "bearer",
       "download": false,
       "effect": "write",
+      "group": "git-journal",
+      "input_schema": {
+        "$defs": {
+          "WritebackPolicyInput": {
+            "additionalProperties": false,
+            "properties": {
+              "acknowledge_retained_git_history": {
+                "const": true,
+                "title": "Acknowledge Retained Git History",
+                "type": "boolean"
+              },
+              "destination_id": {
+                "pattern": "^[a-z][a-z0-9-]{0,63}$",
+                "title": "Destination Id",
+                "type": "string"
+              },
+              "expected_version": {
+                "minimum": 0.0,
+                "title": "Expected Version",
+                "type": "integer"
+              },
+              "interval_seconds": {
+                "default": 300,
+                "maximum": 86400.0,
+                "minimum": 30.0,
+                "title": "Interval Seconds",
+                "type": "integer"
+              },
+              "paused": {
+                "default": false,
+                "title": "Paused",
+                "type": "boolean"
+              },
+              "publish_to_repository": {
+                "const": true,
+                "title": "Publish To Repository",
+                "type": "boolean"
+              },
+              "repair_publisher": {
+                "default": false,
+                "title": "Repair Publisher",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "expected_version",
+              "destination_id",
+              "publish_to_repository",
+              "acknowledge_retained_git_history"
+            ],
+            "title": "WritebackPolicyInput",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/WritebackPolicyInput"
+          },
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "space_id": {
+                "format": "uuid",
+                "title": "Space Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "space_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters",
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "PUT",
+      "name": "journal.configure",
+      "output_schema": {
+        "$defs": {
+          "DestinationInfo": {
+            "additionalProperties": true,
+            "properties": {
+              "branch": {
+                "title": "Branch",
+                "type": "string"
+              },
+              "custom_scanner": {
+                "title": "Custom Scanner",
+                "type": "boolean"
+              },
+              "id": {
+                "title": "Id",
+                "type": "string"
+              },
+              "label": {
+                "title": "Label",
+                "type": "string"
+              },
+              "personal_data_scan": {
+                "title": "Personal Data Scan",
+                "type": "boolean"
+              },
+              "prefix": {
+                "title": "Prefix",
+                "type": "string"
+              },
+              "repository": {
+                "title": "Repository",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "repository",
+              "branch",
+              "prefix",
+              "personal_data_scan",
+              "custom_scanner"
+            ],
+            "title": "DestinationInfo",
+            "type": "object"
+          },
+          "WritebackStatus": {
+            "additionalProperties": true,
+            "properties": {
+              "can_configure": {
+                "title": "Can Configure",
+                "type": "boolean"
+              },
+              "configured": {
+                "title": "Configured",
+                "type": "boolean"
+              },
+              "destination": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/DestinationInfo"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "existing_memories_backfilled": {
+                "const": false,
+                "title": "Existing Memories Backfilled",
+                "type": "boolean"
+              },
+              "external_history_retained": {
+                "const": true,
+                "title": "External History Retained",
+                "type": "boolean"
+              },
+              "interval_seconds": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Interval Seconds"
+              },
+              "last_bytes": {
+                "default": 0,
+                "title": "Last Bytes",
+                "type": "integer"
+              },
+              "last_commit": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Commit"
+              },
+              "last_entries": {
+                "default": 0,
+                "title": "Last Entries",
+                "type": "integer"
+              },
+              "last_error": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Error"
+              },
+              "last_push_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Push At"
+              },
+              "paused": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Paused"
+              },
+              "pending_content_bytes": {
+                "title": "Pending Content Bytes",
+                "type": "integer"
+              },
+              "pending_entries": {
+                "title": "Pending Entries",
+                "type": "integer"
+              },
+              "publisher_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Publisher Id"
+              },
+              "state": {
+                "enum": [
+                  "not_configured",
+                  "ready",
+                  "paused",
+                  "publisher_unavailable",
+                  "destination_changed"
+                ],
+                "title": "State",
+                "type": "string"
+              },
+              "version": {
+                "title": "Version",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "configured",
+              "can_configure",
+              "destination",
+              "version",
+              "state",
+              "pending_entries",
+              "pending_content_bytes",
+              "external_history_retained",
+              "existing_memories_backfilled"
+            ],
+            "title": "WritebackStatus",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/WritebackStatus"
+      },
+      "parameter_locations": {
+        "space_id": "path"
+      },
+      "path": "/v1/spaces/{space_id}/writeback",
+      "retry": "inspect_before_retry",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Journal Policy"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "write",
+      "group": "git-journal",
+      "input_schema": {
+        "$defs": {
+          "WritebackPushInput": {
+            "additionalProperties": false,
+            "properties": {
+              "expected_version": {
+                "minimum": 1.0,
+                "title": "Expected Version",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "expected_version"
+            ],
+            "title": "WritebackPushInput",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/WritebackPushInput"
+          },
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "space_id": {
+                "format": "uuid",
+                "title": "Space Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "space_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters",
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "POST",
+      "name": "journal.push",
+      "output_schema": {
+        "$defs": {
+          "DestinationInfo": {
+            "additionalProperties": true,
+            "properties": {
+              "branch": {
+                "title": "Branch",
+                "type": "string"
+              },
+              "custom_scanner": {
+                "title": "Custom Scanner",
+                "type": "boolean"
+              },
+              "id": {
+                "title": "Id",
+                "type": "string"
+              },
+              "label": {
+                "title": "Label",
+                "type": "string"
+              },
+              "personal_data_scan": {
+                "title": "Personal Data Scan",
+                "type": "boolean"
+              },
+              "prefix": {
+                "title": "Prefix",
+                "type": "string"
+              },
+              "repository": {
+                "title": "Repository",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "repository",
+              "branch",
+              "prefix",
+              "personal_data_scan",
+              "custom_scanner"
+            ],
+            "title": "DestinationInfo",
+            "type": "object"
+          },
+          "WritebackStatus": {
+            "additionalProperties": true,
+            "properties": {
+              "can_configure": {
+                "title": "Can Configure",
+                "type": "boolean"
+              },
+              "configured": {
+                "title": "Configured",
+                "type": "boolean"
+              },
+              "destination": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/DestinationInfo"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "existing_memories_backfilled": {
+                "const": false,
+                "title": "Existing Memories Backfilled",
+                "type": "boolean"
+              },
+              "external_history_retained": {
+                "const": true,
+                "title": "External History Retained",
+                "type": "boolean"
+              },
+              "interval_seconds": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Interval Seconds"
+              },
+              "last_bytes": {
+                "default": 0,
+                "title": "Last Bytes",
+                "type": "integer"
+              },
+              "last_commit": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Commit"
+              },
+              "last_entries": {
+                "default": 0,
+                "title": "Last Entries",
+                "type": "integer"
+              },
+              "last_error": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Error"
+              },
+              "last_push_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Push At"
+              },
+              "paused": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Paused"
+              },
+              "pending_content_bytes": {
+                "title": "Pending Content Bytes",
+                "type": "integer"
+              },
+              "pending_entries": {
+                "title": "Pending Entries",
+                "type": "integer"
+              },
+              "publisher_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Publisher Id"
+              },
+              "state": {
+                "enum": [
+                  "not_configured",
+                  "ready",
+                  "paused",
+                  "publisher_unavailable",
+                  "destination_changed"
+                ],
+                "title": "State",
+                "type": "string"
+              },
+              "version": {
+                "title": "Version",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "configured",
+              "can_configure",
+              "destination",
+              "version",
+              "state",
+              "pending_entries",
+              "pending_content_bytes",
+              "external_history_retained",
+              "existing_memories_backfilled"
+            ],
+            "title": "WritebackStatus",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/WritebackStatus"
+      },
+      "parameter_locations": {
+        "space_id": "path"
+      },
+      "path": "/v1/spaces/{space_id}/writeback/push",
+      "retry": "inspect_before_retry",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Journal Push"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "read",
+      "group": "git-journal",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "space_id": {
+                "format": "uuid",
+                "title": "Space Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "space_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters"
+        ],
+        "type": "object"
+      },
+      "method": "GET",
+      "name": "journal.status",
+      "output_schema": {
+        "$defs": {
+          "DestinationInfo": {
+            "additionalProperties": true,
+            "properties": {
+              "branch": {
+                "title": "Branch",
+                "type": "string"
+              },
+              "custom_scanner": {
+                "title": "Custom Scanner",
+                "type": "boolean"
+              },
+              "id": {
+                "title": "Id",
+                "type": "string"
+              },
+              "label": {
+                "title": "Label",
+                "type": "string"
+              },
+              "personal_data_scan": {
+                "title": "Personal Data Scan",
+                "type": "boolean"
+              },
+              "prefix": {
+                "title": "Prefix",
+                "type": "string"
+              },
+              "repository": {
+                "title": "Repository",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "repository",
+              "branch",
+              "prefix",
+              "personal_data_scan",
+              "custom_scanner"
+            ],
+            "title": "DestinationInfo",
+            "type": "object"
+          },
+          "WritebackStatus": {
+            "additionalProperties": true,
+            "properties": {
+              "can_configure": {
+                "title": "Can Configure",
+                "type": "boolean"
+              },
+              "configured": {
+                "title": "Configured",
+                "type": "boolean"
+              },
+              "destination": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/DestinationInfo"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "existing_memories_backfilled": {
+                "const": false,
+                "title": "Existing Memories Backfilled",
+                "type": "boolean"
+              },
+              "external_history_retained": {
+                "const": true,
+                "title": "External History Retained",
+                "type": "boolean"
+              },
+              "interval_seconds": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Interval Seconds"
+              },
+              "last_bytes": {
+                "default": 0,
+                "title": "Last Bytes",
+                "type": "integer"
+              },
+              "last_commit": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Commit"
+              },
+              "last_entries": {
+                "default": 0,
+                "title": "Last Entries",
+                "type": "integer"
+              },
+              "last_error": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Error"
+              },
+              "last_push_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Push At"
+              },
+              "paused": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Paused"
+              },
+              "pending_content_bytes": {
+                "title": "Pending Content Bytes",
+                "type": "integer"
+              },
+              "pending_entries": {
+                "title": "Pending Entries",
+                "type": "integer"
+              },
+              "publisher_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Publisher Id"
+              },
+              "state": {
+                "enum": [
+                  "not_configured",
+                  "ready",
+                  "paused",
+                  "publisher_unavailable",
+                  "destination_changed"
+                ],
+                "title": "State",
+                "type": "string"
+              },
+              "version": {
+                "title": "Version",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "configured",
+              "can_configure",
+              "destination",
+              "version",
+              "state",
+              "pending_entries",
+              "pending_content_bytes",
+              "external_history_retained",
+              "existing_memories_backfilled"
+            ],
+            "title": "WritebackStatus",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/WritebackStatus"
+      },
+      "parameter_locations": {
+        "space_id": "path"
+      },
+      "path": "/v1/spaces/{space_id}/writeback",
+      "retry": "read",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Journal Status"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "write",
       "group": "identity",
       "input_schema": {
         "$defs": {
@@ -12198,6 +12974,40 @@
       "name": "memories.forget",
       "output_schema": {
         "$defs": {
+          "JournalDelivery": {
+            "additionalProperties": true,
+            "properties": {
+              "durability": {
+                "enum": [
+                  "local_journal",
+                  "remote_git"
+                ],
+                "title": "Durability",
+                "type": "string"
+              },
+              "event_id": {
+                "title": "Event Id",
+                "type": "string"
+              },
+              "external_history_retained": {
+                "const": true,
+                "default": true,
+                "title": "External History Retained",
+                "type": "boolean"
+              },
+              "remote_pending": {
+                "title": "Remote Pending",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "event_id",
+              "durability",
+              "remote_pending"
+            ],
+            "title": "JournalDelivery",
+            "type": "object"
+          },
           "Receipt": {
             "additionalProperties": true,
             "properties": {
@@ -12271,6 +13081,16 @@
                   }
                 ],
                 "title": "Version"
+              },
+              "writeback": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/JournalDelivery"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               }
             },
             "required": [
@@ -13801,6 +14621,40 @@
       "name": "memories.revise",
       "output_schema": {
         "$defs": {
+          "JournalDelivery": {
+            "additionalProperties": true,
+            "properties": {
+              "durability": {
+                "enum": [
+                  "local_journal",
+                  "remote_git"
+                ],
+                "title": "Durability",
+                "type": "string"
+              },
+              "event_id": {
+                "title": "Event Id",
+                "type": "string"
+              },
+              "external_history_retained": {
+                "const": true,
+                "default": true,
+                "title": "External History Retained",
+                "type": "boolean"
+              },
+              "remote_pending": {
+                "title": "Remote Pending",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "event_id",
+              "durability",
+              "remote_pending"
+            ],
+            "title": "JournalDelivery",
+            "type": "object"
+          },
           "Receipt": {
             "additionalProperties": true,
             "properties": {
@@ -13874,6 +14728,16 @@
                   }
                 ],
                 "title": "Version"
+              },
+              "writeback": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/JournalDelivery"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               }
             },
             "required": [
@@ -14105,6 +14969,40 @@
       "name": "memories.save",
       "output_schema": {
         "$defs": {
+          "JournalDelivery": {
+            "additionalProperties": true,
+            "properties": {
+              "durability": {
+                "enum": [
+                  "local_journal",
+                  "remote_git"
+                ],
+                "title": "Durability",
+                "type": "string"
+              },
+              "event_id": {
+                "title": "Event Id",
+                "type": "string"
+              },
+              "external_history_retained": {
+                "const": true,
+                "default": true,
+                "title": "External History Retained",
+                "type": "boolean"
+              },
+              "remote_pending": {
+                "title": "Remote Pending",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "event_id",
+              "durability",
+              "remote_pending"
+            ],
+            "title": "JournalDelivery",
+            "type": "object"
+          },
           "Receipt": {
             "additionalProperties": true,
             "properties": {
@@ -14178,6 +15076,16 @@
                   }
                 ],
                 "title": "Version"
+              },
+              "writeback": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/JournalDelivery"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               }
             },
             "required": [

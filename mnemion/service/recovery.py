@@ -477,6 +477,14 @@ def _recover_access(conn, ledger: dict, backup_id: str, *, preserve_application_
 
     restore(conn, ledger)
     restore_vault(conn, ledger)
+    # Git history and restored credentials are not current publication consent.
+    # Reapprove the host destination and repair its publisher explicitly.
+    conn.execute("""UPDATE mnemion.writeback_settings SET paused=true,version=version+1,
+        last_error='recovery_revalidation_required',updated_at=clock_timestamp()""")
+    conn.execute("""UPDATE mnemion.writeback_events e SET state='suppressed'
+        FROM mnemion.memories m WHERE e.tenant_id=m.tenant_id AND e.space_id=m.space_id
+          AND e.memory_id=m.id AND e.action='upsert' AND m.deleted_at IS NOT NULL
+          AND e.state IN ('pending','local')""")
     # A restored schedule or key is not current consent to send text to a model.
     conn.execute("""UPDATE mnemion.librarian_settings SET enabled=false,
         network_egress_approved=false,next_run_at=NULL,version=version+1,updated_at=now()""")

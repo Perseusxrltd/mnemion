@@ -318,6 +318,7 @@ storage/billing limit to make a check pass.
 - [Deployment](service/deployment.md): service, workers, storage and operations.
 - [Organizations](service/organizations.md): identities, spaces and security.
 - [Sources](service/connectors.md): local, Git, cloud and messaging adapters.
+- [Git journals](service/git-journal.md): opt-in native-memory publication, retained-history consent and source replay.
 - [Agents](service/agents.md) and [capture](service/capture.md): platform integration.
 - [Knowledge](service/knowledge.md): wiki, graph and review workflows.
 - [Insights/evaluations](service/insights.md): monitoring, metrics and experiments.

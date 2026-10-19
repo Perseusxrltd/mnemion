@@ -39,6 +39,9 @@ def main(argv: list[str] | None = None) -> int:
         help="Load a private JSON credentials file; can be repeated",
     )
     commands = parser.add_subparsers(dest="command", required=True)
+    from ..journal.cli import arguments as journal_arguments
+
+    journal_arguments(commands.add_parser("journal", help="Enroll and inspect host-approved Git memory destinations"))
     from .recovery_kit import arguments as kit_arguments
 
     kit_arguments(
@@ -264,7 +267,11 @@ def main(argv: list[str] | None = None) -> int:
         ):
             if values.get(key):
                 os.environ[variable] = values[key]
-    if args.command == "recovery-kit":
+    if args.command == "journal":
+        from ..journal.cli import execute as journal_execute
+
+        return journal_execute(args)
+    elif args.command == "recovery-kit":
         from .recovery_kit import execute as create_recovery_kit
 
         return create_recovery_kit(args)

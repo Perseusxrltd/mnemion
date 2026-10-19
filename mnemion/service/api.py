@@ -72,6 +72,9 @@ from .recovery_directory import attach_recovery_directory
 from .vault import VaultService
 from .vault_api import attach_vault
 from .vault_crypto import VaultSettings
+from ..journal.config import Configuration as WritebackConfiguration
+from .writeback import WritebackService
+from .writeback_api import attach_writeback
 
 logger = logging.getLogger(__name__)
 
@@ -170,6 +173,7 @@ def create_app(
     public_url: str | None = None,
     company_identity: CompanyIdentity | None = None,
     vault_settings: VaultSettings | None = None,
+    writeback_configuration: WritebackConfiguration | None = None,
 ) -> FastAPI:
     builtin_settings = hosted_oauth_settings or HostedOAuthSettings.from_environment()
     if builtin_settings and oauth is not None:
@@ -209,6 +213,8 @@ def create_app(
     embedder = registry.default
     identity_service = IdentityService(database)
     memory = MemoryService(database, embedder.generation)
+    writeback = WritebackService(database, writeback_configuration)
+    memory.writeback = writeback
     telemetry = Telemetry(database)
     retrieval = RetrievalService(database, embedder, telemetry, registry=registry)
     insights = InsightsService(database, embedder)
@@ -228,6 +234,7 @@ def create_app(
         if owned:
             database.open()
         telemetry.start()
+        writeback.start()
         if os.environ.get("MNEMION_EVALUATIONS_DISABLED") != "1":
             evaluations.start()
         if os.environ.get("MNEMION_LIBRARIAN_DISABLED") != "1":
@@ -247,6 +254,7 @@ def create_app(
                 stack.enter_context(process_ready("api", registry.generation_ids))
                 yield
         finally:
+            writeback.stop()
             librarian_runner.stop()
             evaluations.stop()
             telemetry.stop()
@@ -300,6 +308,7 @@ def create_app(
     app.state.telemetry = telemetry
     app.state.evaluations = evaluations
     app.state.librarian = librarian
+    app.state.writeback = writeback
     app.state.librarian_runner = librarian_runner
     app.state.vault = vault
 
@@ -436,6 +445,7 @@ def create_app(
     attach_evaluations(app, database, embedder, authenticated, registry=registry)
     attach_embeddings(app, database, registry, authenticated)
     attach_librarian(app, librarian, authenticated)
+    attach_writeback(app, writeback, authenticated)
     attach_agents(app, authenticated)
     attach_recovery_directory(app, database, authenticated)
     attach_vault(app, vault, authenticated)

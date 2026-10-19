@@ -23,6 +23,10 @@ for supervised Linux/macOS services, including scoped logins and source runners.
 It keeps stable organization IDs and offers an explicit, ledger-bound policy for
 application-key continuity. External hosting, transport and startup registration
 remain operator responsibilities.
+Source 4.15.0 adds optional [Git journals](git-journal.md) for future native
+changes, with explicit publication consent, durable receipts, scheduled pushes,
+app/agent controls and source replay. Git history retains published content;
+the journal does not replace a complete workspace recovery archive.
 
 ## Run the service
 

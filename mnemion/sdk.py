@@ -29,6 +29,7 @@ from .service.contracts import (
 from .service.models import ContextInput, MemoryInput, RecallInput, RevisionInput
 
 if TYPE_CHECKING:
+    from .service.writeback_models import WritebackPolicyInput, WritebackStatus
     from .service.connector_contracts import SyncStatus
     from .service.librarian_models import (
         LibrarianChoice,
@@ -237,6 +238,37 @@ class Client:
         from .service.librarian_models import LibrarianSettings
 
         return LibrarianSettings.model_validate(self.request("GET", self._librarian_path(space_id)))
+
+    def journal_status(self, space_id: str) -> WritebackStatus:
+        from .service.writeback_models import WritebackStatus
+
+        return WritebackStatus.model_validate(
+            self.request("GET", f"/v1/spaces/{UUID(space_id)}/writeback")
+        )
+
+    def configure_journal(self, space_id: str, command: WritebackPolicyInput) -> WritebackStatus:
+        from .service.writeback_models import WritebackPolicyInput, WritebackStatus
+
+        command = WritebackPolicyInput.model_validate(command)
+        return WritebackStatus.model_validate(
+            self.request(
+                "PUT",
+                f"/v1/spaces/{UUID(space_id)}/writeback",
+                body=command.model_dump(mode="json"),
+            )
+        )
+
+    def push_journal(self, space_id: str, *, expected_version: int) -> WritebackStatus:
+        from .service.writeback_models import WritebackPushInput, WritebackStatus
+
+        command = WritebackPushInput(expected_version=expected_version)
+        return WritebackStatus.model_validate(
+            self.request(
+                "POST",
+                f"/v1/spaces/{UUID(space_id)}/writeback/push",
+                body=command.model_dump(mode="json"),
+            )
+        )
 
     def configure_librarian(
         self, space_id: str, command: LibrarianSettingsInput

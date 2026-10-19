@@ -19,6 +19,7 @@ from urllib.parse import quote
 from .config import FilesystemConfig, GitConfig, RcloneConfig
 from .protocol import Document, Scope
 from .source_files import SourceReadError, read_selected
+from ..journal.format import journal_candidate
 
 
 class ProviderError(RuntimeError):
@@ -94,7 +95,7 @@ def document(
         raise ProviderError("source_is_not_utf8_text") from None
     if "\0" in text:
         raise ProviderError("source_contains_binary_data")
-    if private_vault_content(text):
+    if private_vault_content(text) and not journal_candidate(relative, text):
         return None
     if not config.include_generated and re.search(
         r"(?m)^mnemion_managed:\s*true\s*$", text[:16000]

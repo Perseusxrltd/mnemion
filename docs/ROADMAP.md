@@ -1,9 +1,22 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.14.0**. Roadmap updated: **2026-10-19**.
+Reviewed source distribution: **4.15.0**. Roadmap updated: **2026-10-19**.
 The [current published distribution and release gates](RELEASE_STATUS.md) are updated automatically.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
+
+The [4.15.0 source](releases/4.15.0.md) adds optional
+[Git journals for native changes](service/git-journal.md): transactional capture,
+pre-publication secret checks, durable local receipts, important-save Git
+acknowledgments, a scoped scheduled publisher, app/SDK/agent controls and complete
+inventory replay. Deletion and quarantine are applied before source projection;
+Git history retention is explicit. Recovery pauses publication and requires
+fresh host registration. [Validation](validation/2026-10-19-git-journal.md)
+covers real Git operations and PostgreSQL boundaries. Issue 39 remains open for
+librarian folding/archival, full app enrollment, large-history capacity,
+old-memory backfill and direct writable-space reconstruction. This advances
+F08, C01/C08, A12/A13 and U01 without changing the strict full-scope count:
+**17/64 shipped (26.6%)**.
 
 The [4.14.0 source](releases/4.14.0.md) addresses the latest concrete examples in
 issues 17 and 31 with [question coverage and passage chronology](service/retrieval.md#passage-chronology).
@@ -54,6 +67,8 @@ continue to respect the latest independently available denial ledger.
 Git delivery journal for native saves, scanning hooks, scheduled/important pushes,
 librarian folding and stable replay. Its export/deletion/permission contract must
 be explicit; connecting an inbound Git source alone does not provide this backup.
+The 4.15.0 batch above implements capture, guarded delivery and source replay;
+the remaining work is tracked separately instead of treating the issue as closed.
 
 Published [4.11.0](releases/4.11.0.md) adds
 [company-provider setup in the app](service/company-sign-in.md): HTTPS callback

@@ -1572,6 +1572,50 @@
         "title": "DatasetInput",
         "type": "object"
       },
+      "DestinationInfo": {
+        "additionalProperties": true,
+        "properties": {
+          "branch": {
+            "title": "Branch",
+            "type": "string"
+          },
+          "custom_scanner": {
+            "title": "Custom Scanner",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "personal_data_scan": {
+            "title": "Personal Data Scan",
+            "type": "boolean"
+          },
+          "prefix": {
+            "title": "Prefix",
+            "type": "string"
+          },
+          "repository": {
+            "title": "Repository",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "repository",
+          "branch",
+          "prefix",
+          "personal_data_scan",
+          "custom_scanner"
+        ],
+        "title": "DestinationInfo",
+        "type": "object"
+      },
       "DisabledPrincipal": {
         "additionalProperties": true,
         "properties": {
@@ -3004,6 +3048,40 @@
           "outcome"
         ],
         "title": "ItemResult",
+        "type": "object"
+      },
+      "JournalDelivery": {
+        "additionalProperties": true,
+        "properties": {
+          "durability": {
+            "enum": [
+              "local_journal",
+              "remote_git"
+            ],
+            "title": "Durability",
+            "type": "string"
+          },
+          "event_id": {
+            "title": "Event Id",
+            "type": "string"
+          },
+          "external_history_retained": {
+            "const": true,
+            "default": true,
+            "title": "External History Retained",
+            "type": "boolean"
+          },
+          "remote_pending": {
+            "title": "Remote Pending",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "event_id",
+          "durability",
+          "remote_pending"
+        ],
+        "title": "JournalDelivery",
         "type": "object"
       },
       "KeyInput": {
@@ -6912,6 +6990,16 @@
               }
             ],
             "title": "Version"
+          },
+          "writeback": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JournalDelivery"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -9348,6 +9436,216 @@
         ],
         "title": "VaultValue",
         "type": "object"
+      },
+      "WritebackPolicyInput": {
+        "additionalProperties": false,
+        "properties": {
+          "acknowledge_retained_git_history": {
+            "const": true,
+            "title": "Acknowledge Retained Git History",
+            "type": "boolean"
+          },
+          "destination_id": {
+            "pattern": "^[a-z][a-z0-9-]{0,63}$",
+            "title": "Destination Id",
+            "type": "string"
+          },
+          "expected_version": {
+            "minimum": 0.0,
+            "title": "Expected Version",
+            "type": "integer"
+          },
+          "interval_seconds": {
+            "default": 300,
+            "maximum": 86400.0,
+            "minimum": 30.0,
+            "title": "Interval Seconds",
+            "type": "integer"
+          },
+          "paused": {
+            "default": false,
+            "title": "Paused",
+            "type": "boolean"
+          },
+          "publish_to_repository": {
+            "const": true,
+            "title": "Publish To Repository",
+            "type": "boolean"
+          },
+          "repair_publisher": {
+            "default": false,
+            "title": "Repair Publisher",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "expected_version",
+          "destination_id",
+          "publish_to_repository",
+          "acknowledge_retained_git_history"
+        ],
+        "title": "WritebackPolicyInput",
+        "type": "object"
+      },
+      "WritebackPushInput": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_version": {
+            "minimum": 1.0,
+            "title": "Expected Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_version"
+        ],
+        "title": "WritebackPushInput",
+        "type": "object"
+      },
+      "WritebackStatus": {
+        "additionalProperties": true,
+        "properties": {
+          "can_configure": {
+            "title": "Can Configure",
+            "type": "boolean"
+          },
+          "configured": {
+            "title": "Configured",
+            "type": "boolean"
+          },
+          "destination": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DestinationInfo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "existing_memories_backfilled": {
+            "const": false,
+            "title": "Existing Memories Backfilled",
+            "type": "boolean"
+          },
+          "external_history_retained": {
+            "const": true,
+            "title": "External History Retained",
+            "type": "boolean"
+          },
+          "interval_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interval Seconds"
+          },
+          "last_bytes": {
+            "default": 0,
+            "title": "Last Bytes",
+            "type": "integer"
+          },
+          "last_commit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Commit"
+          },
+          "last_entries": {
+            "default": 0,
+            "title": "Last Entries",
+            "type": "integer"
+          },
+          "last_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Error"
+          },
+          "last_push_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Push At"
+          },
+          "paused": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paused"
+          },
+          "pending_content_bytes": {
+            "title": "Pending Content Bytes",
+            "type": "integer"
+          },
+          "pending_entries": {
+            "title": "Pending Entries",
+            "type": "integer"
+          },
+          "publisher_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Publisher Id"
+          },
+          "state": {
+            "enum": [
+              "not_configured",
+              "ready",
+              "paused",
+              "publisher_unavailable",
+              "destination_changed"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "configured",
+          "can_configure",
+          "destination",
+          "version",
+          "state",
+          "pending_entries",
+          "pending_content_bytes",
+          "external_history_retained",
+          "existing_memories_backfilled"
+        ],
+        "title": "WritebackStatus",
+        "type": "object"
       }
     },
     "securitySchemes": {
@@ -9360,7 +9658,7 @@
   "info": {
     "description": "Shared, scoped memory and evidence for apps, teams, and assistants. Saves acknowledge canonical durability; operations report semantic indexing readiness.",
     "title": "Mnemion Memory Service",
-    "version": "4.14.0"
+    "version": "4.15.0"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -25794,6 +26092,439 @@
         "summary": "Space Status",
         "tags": [
           "Operations"
+        ]
+      }
+    },
+    "/v1/spaces/{space_id}/writeback": {
+      "get": {
+        "operationId": "journal_status_v1_spaces__space_id__writeback_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "space_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Space Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WritebackStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "408": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request Timeout"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Journal Status",
+        "tags": [
+          "Git journal"
+        ]
+      },
+      "put": {
+        "description": "Approve capture and Git publication for future native changes; Git history retains published text.",
+        "operationId": "journal_policy_v1_spaces__space_id__writeback_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "space_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Space Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WritebackPolicyInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WritebackStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "408": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request Timeout"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Journal Policy",
+        "tags": [
+          "Git journal"
+        ]
+      }
+    },
+    "/v1/spaces/{space_id}/writeback/push": {
+      "post": {
+        "operationId": "journal_push_v1_spaces__space_id__writeback_push_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "space_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Space Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WritebackPushInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WritebackStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "408": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request Timeout"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Journal Push",
+        "tags": [
+          "Git journal"
         ]
       }
     },

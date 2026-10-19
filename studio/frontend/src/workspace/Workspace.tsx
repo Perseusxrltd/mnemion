@@ -55,6 +55,7 @@ import {
 import {
   MnemionClient,
   MnemionError,
+  supportsJournal,
   type ApiKey,
   type ContextPack,
   type CoreBlock,
@@ -86,6 +87,7 @@ const Setup = lazy(() => import("./Setup"));
 const Account = lazy(() => import("./Account"));
 const RecoveryDirectoryView = lazy(() => import("./RecoveryDirectory"));
 const SecretsVault = lazy(() => import("./SecretsVault"));
+const Journal = lazy(() => import("./Journal"));
 
 type Me = Awaited<ReturnType<MnemionClient["me"]>>;
 type Session = Connection & {
@@ -282,6 +284,7 @@ function Shell({
     ...(reviewer ? [{ to: "librarian", label: "Librarian", icon: BookOpenCheck }] : []),
     ...(role === "administrator" ? [{ to: "models", label: "Embedding models", icon: Database }] : []),
     { to: "obsidian", label: "Obsidian", icon: Archive },
+    { to: "journal", label: "Git journal", icon: Archive },
     { to: "agents", label: "Agents & apps", icon: Plug },
     { to: "help", label: "Documentation & roadmap", icon: FileText },
     { to: "setup", label: "Setup & this device", icon: Settings },
@@ -294,7 +297,7 @@ function Shell({
   const navigationGroups = [
     { label: "01 / Memory", pages: ["memories", "search", "knowledge", "blocks", "review"] },
     { label: "02 / Intelligence", pages: ["operations", "insights", "librarian", "models"] },
-    { label: "03 / Workspace", pages: ["setup", "account", "secrets", "obsidian", "agents", "connections", "team", "recovery", "help"] },
+    { label: "03 / Workspace", pages: ["setup", "account", "secrets", "journal", "obsidian", "agents", "connections", "team", "recovery", "help"] },
   ];
   async function createSpace(event: FormEvent) {
     event.preventDefault();
@@ -467,6 +470,7 @@ function Shell({
                 <Route path="operations" element={<Operations />} />
                 <Route path="insights" element={<Suspense fallback={<Busy />}><InsightsView client={client} space={space.id} reviewer={reviewer} administrator={me.administrator} serviceVersion={me.service_version} /></Suspense>} />
                 <Route path="obsidian" element={<Obsidian />} />
+                <Route path="journal" element={<Suspense fallback={<Busy />}><Journal key={space.id} client={client} space={space.id} writer={["contributor", "reviewer", "administrator"].includes(role)} serviceVersion={me.service_version} /></Suspense>} />
                 <Route path="models" element={<Suspense fallback={<Busy />}><EmbeddingModels key={space.id} client={client} space={space.id} administrator={space.role === "administrator"} /></Suspense>} />
                 <Route path="librarian" element={<Suspense fallback={<Busy />}><Librarian key={space.id} client={client} space={space.id} reviewer={reviewer} administrator={space.role === "administrator"} /></Suspense>} />
                 <Route path="agents" element={<Agents connection={connection} space={space.id} />} />
@@ -590,6 +594,12 @@ function Memories({ review = false }: { review?: boolean }) {
   );
 }
 
+function useSpaceJournal() {
+  const { client, space, me } = useSession();
+  return useQuery({ queryKey: ['journal', space.id], queryFn: () => client.journalStatus(space.id),
+    enabled: supportsJournal(me.service_version), staleTime: 10000 });
+}
+
 function MemoryForm({
   initial,
   onSave,
@@ -606,6 +616,8 @@ function MemoryForm({
   const [uri, setUri] = useState("");
   const [source, setSource] = useState("");
   const [reason, setReason] = useState("");
+  const journal = useSpaceJournal();
+  const [important, setImportant] = useState(initial?.metadata.important === true);
   return (
     <form
       className="ws-form"
@@ -616,6 +628,8 @@ function MemoryForm({
             content,
             subject: subject || null,
             kind,
+            ...(important !== (initial?.metadata.important === true)
+              ? { metadata: { ...initial?.metadata, important } } : {}),
             ...(title || source || uri
               ? {
                   source: {
@@ -662,6 +676,10 @@ function MemoryForm({
           placeholder="What should this workspace remember?"
         />
       </Field>
+      {journal.data?.configured && <div className="ws-notice"><label className="ws-checkbox">
+        <input type="checkbox" checked={important} onChange={event => setImportant(event.target.checked)} />Important: confirm Git delivery before accepting this save
+      </label><p className="ws-helper">This space publishes changes to Git. History retains published text. <Link to="/workspace/journal">View journal status and destination</Link>.</p>
+      {important && journal.data.state !== 'ready' && <p role="status">Git publication is unavailable or paused. Delivery must resume before this important save can return success.</p>}</div>}
       <details className="ws-details">
         <summary>Attach source evidence</summary>
         <div className="ws-form">
@@ -734,7 +752,7 @@ function CreateMemory() {
     try {
       const receipt = await client.save(space.id, input, request.current.key);
       await cache.invalidateQueries({ queryKey: ["memories", space.id] });
-      navigate(`/workspace/memory/${receipt.memory_id}`);
+      navigate(`/workspace/memory/${receipt.memory_id}`, { state: { savedReceipt: receipt } });
     } catch (error) {
       setError(error);
     } finally {
@@ -767,6 +785,9 @@ function CreateMemory() {
 
 function MemoryDetail() {
   const { id = "" } = useParams();
+  const location = useLocation();
+  const savedReceipt = location.state?.savedReceipt as Receipt | undefined;
+  const journal = useSpaceJournal();
   const { client, reviewer, writer } = useSession();
   const cache = useQueryClient();
   const navigate = useNavigate();
@@ -886,10 +907,14 @@ function MemoryDetail() {
         Recorded {date(memory.recorded_at)}
       </Title>
       <ErrorNotice error={error} />
+      {!receipt && savedReceipt?.memory_id === id && savedReceipt.writeback && <p className="ws-notice" role="status">
+        {savedReceipt.writeback.durability === 'remote_git' ? 'Memory saved and Git delivery confirmed.' : 'Memory saved with a durable local journal entry. Git delivery is pending.'} <Link to="/workspace/journal">View journal</Link>
+      </p>}
       {receipt && (
         <div className="ws-notice" role="status">
           Revision saved. Search indexing:{" "}
           {operation.data?.state ?? receipt.state}.
+          {receipt.writeback && (receipt.writeback.durability === 'remote_git' ? ' Git delivery confirmed.' : ' Local journal saved; Git delivery pending.')}
         </div>
       )}
       <div className="ws-detail-grid">
@@ -974,6 +999,7 @@ function MemoryDetail() {
                       Access is removed immediately. The worker then purges
                       content and retains a deletion receipt.
                     </p>
+                    {journal.data?.configured && <p>Previously published Git commits keep their content. A journal deletion entry prevents replay from restoring this memory.</p>}
                     <div className="ws-actions">
                       <button
                         className="ws-button ws-danger"

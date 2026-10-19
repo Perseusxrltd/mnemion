@@ -71,3 +71,12 @@ candidate can run once.
 The Electron build and its **187 tests** passed with this observation change,
 including the three progress-window scenarios. Native Windows PowerShell parsed
 the observer successfully; release metadata and patch whitespace checks passed.
+
+The corrected [4.14.0 release run](https://github.com/Perseusxrltd/mnemion/actions/runs/39236264889)
+passed all 32 jobs, including all six native targets. Independent
+[uploaded-artifact verification](https://github.com/Perseusxrltd/mnemion/actions/runs/39241687200)
+passed and published the release on 19 October at 11:03:23 UTC. The
+[website update](https://github.com/Perseusxrltd/mnemion/actions/runs/39241852486)
+also passed. Public automatic upgrades have their own recorded workflow in
+[release status](../RELEASE_STATUS.md); the earlier installer stall's cause
+remains unproven.

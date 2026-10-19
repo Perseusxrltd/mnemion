@@ -46,6 +46,11 @@ include backup verification and data-preserving rollback.
 Official Python packages include web Studio, local fonts and offline guides.
 Source-sync controls, agent administration, Obsidian compatibility and the earlier
 native-update and model-memory improvements are retained.
+Source 4.15.0 adds optional [Git journals](docs/service/git-journal.md) for future
+native memory changes, with publication consent, guarded delivery and complete
+source replay. Git history retains published text; journals do not replace a
+full workspace backup. App-only host enrollment and librarian archival remain
+on the roadmap.
 Release targets cover **Windows, macOS and Linux on x64 and ARM64**. Windows and
 Mac updates use independent publisher signatures. The product page lists only
 published, verified builds. Development and

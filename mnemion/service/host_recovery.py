@@ -519,6 +519,12 @@ def restore(
                     content = canonical_json(_replace_paths(json.loads(content), paths, mappings))
                 _once(asset_root / item["id"], content)
             environment = _replace_paths(saved["environment"], paths, mappings)
+            # A journal registry can contain a local scanner executable and
+            # Git/state paths. Restore its encrypted asset for inspection,
+            # but never activate another host's executable configuration.
+            # Database recovery pauses publication; the new operator enrolls
+            # a destination before an administrator approves capture again.
+            environment.pop("MNEMION_WRITEBACK_CONFIG", None)
             environment["MNEMION_MODEL_CACHE"] = str(update_state.directory(root / "models"))
             if origin:
                 environment["MNEMION_PUBLIC_URL"] = origin

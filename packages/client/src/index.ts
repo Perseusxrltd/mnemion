@@ -12,6 +12,8 @@ import type { RecoveryDirectory, RecoveryDirectoryRecord } from './recovery.js'
 export * from './recovery.js'
 import type { VaultAuditEvent, VaultEntry, VaultEnvelope, VaultGrantInput, VaultGrants, VaultPage, VaultPutInput, VaultStatus } from './vault.js'
 export * from './vault.js'
+import type { JournalDelivery, JournalPolicyInput, JournalStatus } from './writeback.js'
+export * from './writeback.js'
 
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json }
 export type Kind = 'fact' | 'event' | 'preference' | 'procedure' | 'note'
@@ -33,6 +35,7 @@ export interface Receipt {
   operation_id: string; memory_id: string; revision_id: string | null; space_id: string
   state: OperationState; version?: number; lexical_ready: boolean; semantic_ready: boolean
   generation_id: string | null; deleted?: boolean
+  writeback?: JournalDelivery | null
 }
 export interface Operation {
   operation_id: string; memory_id: string | null; revision_id: string | null; space_id: string
@@ -168,6 +171,10 @@ export interface ClientOptions {
 interface RequestOptions { body?: unknown; key?: string; signal?: AbortSignal; binary?: boolean }
 
 export class MnemionClient {
+  private journalPath(space: string) { return '/v1/spaces/' + encodeURIComponent(space) + '/writeback' }
+  journalStatus(space: string) { return this.request<JournalStatus>('GET', this.journalPath(space)) }
+  configureJournal(space: string, input: JournalPolicyInput) { return this.request<JournalStatus>('PUT', this.journalPath(space), { body: input }) }
+  pushJournal(space: string, expectedVersion: number) { return this.request<JournalStatus>('POST', this.journalPath(space) + '/push', { body: { expected_version: expectedVersion } }) }
   private librarianPath(space: string) { return '/v1/spaces/' + encodeURIComponent(space) + '/librarian' }
   librarianChoices(space: string) { return this.request<Page<LibrarianChoice>>('GET', this.librarianPath(space) + '/models') }
   librarianSettings(space: string) { return this.request<LibrarianSettings>('GET', this.librarianPath(space)) }

@@ -45,6 +45,13 @@ class ReadyStatus(ResponseModel):
     service_version: str | None = None
 
 
+class JournalDelivery(ResponseModel):
+    event_id: str
+    durability: Literal["local_journal", "remote_git"]
+    remote_pending: bool
+    external_history_retained: Literal[True] = True
+
+
 class Receipt(ResponseModel):
     operation_id: str
     memory_id: str
@@ -56,6 +63,7 @@ class Receipt(ResponseModel):
     semantic_ready: bool = False
     generation_id: str | None = None
     deleted: bool = False
+    writeback: JournalDelivery | None = None
 
 
 class Evidence(ResponseModel):

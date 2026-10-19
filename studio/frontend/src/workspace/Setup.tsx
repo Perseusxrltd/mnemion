@@ -46,6 +46,7 @@ export default function Setup({ client, endpoint, administrator }: { client: Mne
     ...(administrator ? [
       { to: 'team', title: 'Organize your team', description: 'Give each person and app access to the spaces they need.', icon: Users },
       { to: 'connections', title: 'Bring in your sources', description: 'Manage source connections, permissions and synchronization.', icon: Database },
+      { to: 'journal', title: 'Keep changes in Git', description: 'Approve a journal destination and monitor publication of future memories.', icon: HardDrive },
       { to: 'models', title: 'Choose your memory models', description: 'Review local and operator-approved providers for each space.', icon: Cpu },
       { to: 'librarian', title: 'Configure your librarian', description: 'Let an approved model propose memory improvements for review.', icon: BookOpenCheck },
     ] : []),

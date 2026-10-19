@@ -17,6 +17,7 @@ from ..sdk import Client, MnemionError
 from ..version import __version__
 from .config import read_config
 from .protocol import ConnectorClient
+from .journal_projection import project_documents
 from .provenance import git_commit
 from .providers import FilesystemProvider, GitProvider, ProviderError, RcloneProvider
 
@@ -122,7 +123,7 @@ def _scan(config, *, inspect=False, adapter=None, client=None) -> dict:
                         last_access = time.monotonic()
 
                 def items():
-                    for value in adapter.documents(identifier):
+                    for value in project_documents(adapter.documents(identifier)):
                         if value is None:
                             yield None
                         else:

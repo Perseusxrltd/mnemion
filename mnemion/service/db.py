@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import secrets
 from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass
 from importlib.resources import files
 from typing import Iterator
@@ -89,6 +90,7 @@ def migrate(dsn: str, *, expected: dict[str, str] | None = None) -> list[str]:
 class Database:
     def __init__(self, dsn: str, *, worker: bool = False, max_size: int = 10):
         self.worker = worker
+        self._commit_callbacks = ContextVar("mnemion_commit_callbacks", default=None)
         self.pool = ConnectionPool(
             conninfo=dsn,
             min_size=0,
@@ -190,13 +192,29 @@ class Database:
     ) -> Iterator[psycopg.Connection]:
         if self.worker:
             raise RuntimeError("Worker connections cannot serve API requests")
+        callbacks = []
         with self.pool.connection(timeout=timeout) as conn:
-            with conn.transaction():
-                self._scope(conn, identity.tenant_id, identity.principal_id)
-                # Authentication is rechecked in each new transaction. A request
-                # cannot retain access through a cached Identity after revocation.
-                self._check_identity(conn, identity)
-                yield conn
+            token = self._commit_callbacks.set((conn, callbacks))
+            try:
+                with conn.transaction():
+                    self._scope(conn, identity.tenant_id, identity.principal_id)
+                    # Authentication is rechecked in each new transaction. A request
+                    # cannot retain access through a cached Identity after revocation.
+                    self._check_identity(conn, identity)
+                    yield conn
+            finally:
+                self._commit_callbacks.reset(token)
+        # No filesystem publication happens before COMMIT, or while a pool
+        # connection is retained. A failed callback leaves its durable SQL event
+        # pending and surfaces a retryable response to the original caller.
+        for callback in callbacks:
+            callback()
+
+    def after_commit(self, conn, callback) -> None:
+        active = self._commit_callbacks.get()
+        if active is None or active[0] is not conn:
+            raise RuntimeError("An after-commit action requires this authenticated transaction")
+        active[1].append(callback)
 
     @staticmethod
     def _check_identity(conn: psycopg.Connection, identity: Identity) -> None:

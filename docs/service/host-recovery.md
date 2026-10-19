@@ -1,5 +1,10 @@
 # Recover a supervised workspace host
 
+From 4.15.0, recovery also pauses [Git journal publication](git-journal.md).
+Its registry can be retained as a private package asset, but the new host must
+enroll its own paths and Git credentials. Restoration does not activate scanner
+programs from the old host. An administrator must approve publication again.
+
 From **4.13.0**, a Linux or macOS host operator can save one encrypted package
 containing the database and the settings needed to rebuild its Mnemion service.
 The restore creates a new database, retains organization and memory identities,

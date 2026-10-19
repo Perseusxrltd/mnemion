@@ -124,6 +124,9 @@ def test_complete_recovery_reconciles_later_deletion_grants_and_keys(
 ):
     from mnemion.service.recovery_directory import RecoveryDirectoryInput, RecoveryDirectoryService
     from service_tests.test_recovery_directory import directory
+    from service_tests.test_writeback import setup as setup_journal
+
+    setup_journal(env, tmp_path)
 
     directory_service = RecoveryDirectoryService(env.db)
     saved_directory = directory_service.update(
@@ -290,6 +293,14 @@ def test_complete_recovery_reconciles_later_deletion_grants_and_keys(
             assert conn.execute(
                 "SELECT state, lease_id FROM mnemion.jobs WHERE id=%s", (leased["id"],)
             ).fetchone() == {"state": "pending", "lease_id": None}
+            assert conn.execute(
+                "SELECT paused,last_error FROM mnemion.writeback_settings WHERE space_id=%s",
+                (env.space,),
+            ).fetchone() == {"paused": True, "last_error": "recovery_revalidation_required"}
+            assert not conn.execute(
+                "SELECT FROM mnemion.writeback_events WHERE memory_id=%s AND action='upsert' AND state IN ('pending','local')",
+                (doomed["memory_id"],),
+            ).fetchone()
     finally:
         db.close()
     if os.name != "nt":

@@ -31,6 +31,7 @@ class MemoryService:
     def __init__(self, database: Database, generation: Generation):
         self.db = database
         self.generation = generation
+        self.writeback = None
 
     def _revision(
         self,
@@ -179,7 +180,7 @@ class MemoryService:
                 generation=model_settings["candidate_generation_id"],
                 created_by=identity.principal_id,
             )
-        return {
+        receipt = {
             "operation_id": operation,
             "memory_id": memory,
             "revision_id": revision,
@@ -189,6 +190,23 @@ class MemoryService:
             "semantic_ready": False,
             "generation_id": generation,
         }
+        if self.writeback is not None:
+            version = conn.execute(
+                "SELECT version FROM mnemion.memories WHERE id=%s", (memory,)
+            ).fetchone()["version"]
+            journal = self.writeback.capture(
+                conn,
+                identity,
+                space,
+                memory,
+                revision,
+                version,
+                operation,
+                "forget" if kind == "delete" else "upsert",
+            )
+            if journal:
+                receipt["writeback"] = journal
+        return receipt
 
     def save(self, identity: Identity, space: UUID, command: MemoryInput, key: str) -> dict:
         with self.db.transaction(identity) as conn:
@@ -204,6 +222,8 @@ class MemoryService:
             conn, identity, space, key, {"kind": "ingest", **command.model_dump(mode="json")}
         )
         if previous:
+            if self.writeback is not None:
+                self.writeback.replay(conn, identity, previous)
             return previous
         memory = uuid4()
         conn.execute(
@@ -310,6 +330,8 @@ class MemoryService:
                 },
             )
             if previous:
+                if self.writeback is not None:
+                    self.writeback.replay(conn, identity, previous)
                 return previous
         row = memory_row(conn, memory, review=review, lock=True)
         _version(row, command.expected_version)
@@ -393,6 +415,17 @@ class MemoryService:
                 space_id=row["space_id"],
                 details={"state": command.state, "reason": command.reason, "version": version},
             )
+            if self.writeback is not None:
+                self.writeback.capture(
+                    conn,
+                    identity,
+                    row["space_id"],
+                    memory,
+                    row["current_revision_id"] if command.state == "ordinary" else None,
+                    version,
+                    uuid4(),
+                    "upsert" if command.state == "ordinary" else "quarantine",
+                )
             return {"memory_id": str(memory), "version": version, "review_state": command.state}
 
     def forget(self, identity: Identity, memory: UUID, *, expected_version: int, key: str) -> dict:
@@ -421,6 +454,8 @@ class MemoryService:
         row = target(conn, identity, memory, lock=True)
         self.db._check_identity(conn, identity)
         if previous:
+            if self.writeback is not None:
+                self.writeback.replay(conn, identity, previous)
             return previous
         if row["deleted_at"]:
             receipt = conn.execute(

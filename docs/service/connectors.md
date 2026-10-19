@@ -80,6 +80,10 @@ or changing connector extraction settings may also legitimately revise evidence.
 access from `memory_spaces` or `GET /v1/spaces`. Searching a source never grants
 permission to write into it, and the connector does not push changes upstream.
 To change the source itself, edit the repository/provider and request a rescan.
+From 4.15.0, an independently approved [Git journal](git-journal.md) can publish
+future native changes from a writable space. It does not grant inbound
+connectors permission to write upstream. Replay requires the complete journal
+root, including its catalog and archive.
 Do not copy its contents into a writable space merely to make search unified;
 that would detach the copy from the source's access and deletion lifecycle.
 

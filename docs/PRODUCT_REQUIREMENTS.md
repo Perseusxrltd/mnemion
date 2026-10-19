@@ -134,7 +134,12 @@ requirements rather than creating a replacement organization silently.
 Git journals for native saves, scanning hooks, scheduled/urgent delivery, librarian
 folding and stable replay. It is retained under sources/continuity with explicit
 permission, deletion, provenance and secret-exclusion requirements. The existing
-import connectors remain one-way until this separate write-back path is implemented.
+import connectors remain one-way. Source [4.15.0](releases/4.15.0.md) implements
+the separate opt-in [journal path](service/git-journal.md), with transactional
+capture, scoped publication, app/SDK/agent controls and source replay. It advances
+F08, C01/C08, A12/A13 and U01; librarian folding, complete app enrollment,
+large-history/provider acceptance and writable-space reconstruction remain open.
+The strict complete-requirement count stays **17/64 (26.6%)**.
 
 1. **Reported stabilization:** the [published 4.1.7 update-scheduler fix](validation/2026-10-13-managed-update-schedule.md)
    for suspended hosts (issue 33) passed source, native package, independent
