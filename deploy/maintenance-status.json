@@ -56,7 +56,7 @@
     {
       "number": 32,
       "title": "Feature: encrypted secrets vault, kept apart from searchable memory",
-      "updated_at": "2026-10-13T05:57:12Z",
+      "updated_at": "2026-10-19T09:43:02Z",
       "url": "https://github.com/Perseusxrltd/mnemion/issues/32",
       "labels": []
     },
@@ -150,5 +150,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39229291154"
     }
   ],
-  "observed_at": "2026-10-19T09:36:02+00:00"
+  "observed_at": "2026-10-19T09:43:21+00:00"
 }
