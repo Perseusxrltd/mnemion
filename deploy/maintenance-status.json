@@ -82,15 +82,16 @@
   ],
   "runs": [
     {
-      "id": 39230670130,
+      "id": 39234755543,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "587f773267da327cbbc1ea509b58fa7c0730a8f3",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-19T09:49:05Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39230670130"
+      "source_commit": "86202c9a910d15386fcce374d2c15c6b0d838ca6",
+      "status": "queued",
+      "conclusion": null,
+      "updated_at": "2026-10-19T10:04:16Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39234755543",
+      "failed_jobs": []
     },
     {
       "id": 39229294956,
@@ -124,18 +125,37 @@
       "conclusion": null,
       "updated_at": "2026-10-19T09:47:08Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39230702617",
-      "failed_jobs": []
+      "failed_jobs": [
+        {
+          "name": "native / windows-2022 / x64",
+          "id": 117994019622,
+          "steps": [
+            "Native Windows installation, authenticated upgrade and relaunch"
+          ]
+        }
+      ]
     },
     {
-      "id": 39229129989,
+      "id": 39234979580,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.14.0",
+      "source_commit": "86202c9a910d15386fcce374d2c15c6b0d838ca6",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "updated_at": "2026-10-19T10:13:09Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39234979580"
+    },
+    {
+      "id": 39235864798,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "f754f6137c0e86acb1c527ee334679055e33c9dd",
+      "source_commit": "86202c9a910d15386fcce374d2c15c6b0d838ca6",
       "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-19T09:20:21Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39229129989"
+      "conclusion": "skipped",
+      "updated_at": "2026-10-19T10:13:14Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39235864798"
     },
     {
       "id": 39229291154,
@@ -149,5 +169,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39229291154"
     }
   ],
-  "observed_at": "2026-10-19T09:49:27+00:00"
+  "observed_at": "2026-10-19T10:13:34+00:00"
 }
