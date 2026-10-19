@@ -387,6 +387,8 @@ def test_cli_recovers_again_after_its_installed_environment_is_lost(
         str(host["destination"]),
         "--database",
         host["database"],
+        "--database-locale",
+        "C",
         "--expect-sha256",
         host["report"]["sha256"],
         "--operator-credentials",
@@ -403,6 +405,14 @@ def test_cli_recovers_again_after_its_installed_environment_is_lost(
     )
     assert first.returncode == 0, first.stderr
     assert json.loads(first.stdout)["restored"]
+    assert (
+        json.loads((host["destination"] / "restore.json").read_text())["selection"][
+            "database_locale"
+        ]
+        == "C"
+    )
+    with pytest.raises(HostRecoveryError, match="different reviewed recovery"):
+        apply(host, postgres, pg_bin, managed=False, database_locale="C.UTF-8")
     state = host["destination"] / "service"
     assert supervision.settings(state)[1]["python"] == str(installed / "bin/python")
     receipt = (host["destination"] / "recovery-credentials.json").read_bytes()

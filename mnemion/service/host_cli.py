@@ -36,6 +36,9 @@ def arguments(parser: argparse.ArgumentParser):
     parser.add_argument("--database")
     parser.add_argument("--database-host")
     parser.add_argument("--database-port", type=int)
+    parser.add_argument(
+        "--database-locale", help="Installed libc locale for restoring a legacy database backup"
+    )
     parser.add_argument("--expect-sha256")
     parser.add_argument("--ledger", type=Path)
     parser.add_argument("--ledger-sha256")
@@ -112,6 +115,7 @@ def execute(args):
                 database_name=args.database,
                 database_host=args.database_host,
                 database_port=args.database_port,
+                database_locale=args.database_locale,
                 expected_sha256=args.expect_sha256,
                 access_policy=args.access_policy,
                 managed=not args.manual_updates,

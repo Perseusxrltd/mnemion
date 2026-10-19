@@ -19,6 +19,14 @@ not equally sized. This is coverage of the full requested scope, not a measure
 of engineering effort or the usability of the published app. Hotfixes to a
 partial feature do not automatically mark its whole requirement complete.
 
+Source 4.27.0 advances host continuity with [portable backup recovery](validation/2026-10-19-portable-host-recovery.md).
+A Git-downloaded encrypted package was restored on a different physical computer,
+retaining the original application identities and exact memories. Actual Ubuntu
+and Windows clients passed API/MCP checks and restart continuity. Locale-aware
+legacy restoration and a portable inventory remove the discovered keyword-index
+mismatch. Full OS/provider provisioning, original-office data recovery and broader
+availability remain partial; the strict count is unchanged.
+
 Source 4.26.0 advances F03/F08/A09/A13/U01 with [native journal recovery](service/journal-recovery.md):
 complete inventory review, original IDs or independent copies, editable current
 content, durable withdrawals and content-free quarantine identities, local-edit

@@ -19,6 +19,24 @@ Requirements and acceptance criteria are defined by the
 [architecture](../research/2026-10-09-mnemion-study/ARCHITECTURE.md), and
 [roadmap](../research/2026-10-09-mnemion-study/ROADMAP.md).
 
+## 19 October: replacement-host acceptance and portable backups
+
+Source 4.27 fixes the locale-dependent keyword-index mismatch discovered when
+restoring an independently downloaded encrypted Git backup on a different PC.
+[The complete drill](../validation/2026-10-19-portable-host-recovery.md) retained
+all 69 original table hashes with the explicit legacy locale, then verified a
+new portable snapshot across locales. The actual installed candidate retained
+the existing Codex/Grok credentials, exact UTF-8 memories and later denials.
+Ubuntu and native Windows API/MCP calls and a service restart passed; all isolated
+processes were stopped afterward. Production and the user's desktop profile
+were unchanged.
+
+The batch carries the older-buffer importer and editable native journal recovery
+from withheld 4.25/4.26 candidates. Issues 38 and 39 are associated with 4.27 for
+automatic closure only after its public artifact and six-platform update gates.
+Larger journal imports, full OS/provider provisioning and missing original office
+state stay explicitly separate. Strict roadmap coverage remains 17/64 (26.6%).
+
 ## 19 October: current-answer ranking and binary preflight
 
 Source 4.24 addresses the archive and bilingual-question patterns in issues

@@ -343,6 +343,7 @@ def restore(
     expected_sha256: str,
     database_host: str | None = None,
     database_port: int | None = None,
+    database_locale: str | None = None,
     access_policy="rotate_all",
     managed=True,
     uv: Path | None = None,
@@ -356,6 +357,7 @@ def restore(
     ledger_sha256: str | None = None,
 ) -> dict:
     supervision._unix()
+    recovery._database_locale(database_locale)
     if not re.fullmatch(r"[a-z][a-z0-9_]{0,62}", database_name) or not re.fullmatch(
         r"[a-f0-9]{64}", expected_sha256
     ):
@@ -419,6 +421,7 @@ def restore(
                 service_updates._target(make_conninfo(operator_dsn, dbname=database_name))
             ),
             "runtime_database_target": list(service_updates._target(runtime_dsn)),
+            **({"database_locale": database_locale} if database_locale is not None else {}),
         }
         update_state.directory(root)
         with update_state.lock(root):
@@ -494,6 +497,7 @@ def restore(
                     credentials_output=credentials_file,
                     pg_bin=pg_bin,
                     preserve_application_keys=access_policy == "preserve_applications",
+                    database_locale=database_locale,
                 )
             request["phase"] = "database_restored"
             update_state.write(record, request)

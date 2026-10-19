@@ -92,6 +92,13 @@ Later quarantines survive an older backup when its current recovery ledger is
 supplied. Ledgers containing that state require 4.26 or newer. The same release
 carries the older-buffer importer from withheld 4.25 and clears completed
 recovery forms' automatic-update guards.
+Source 4.27.0 adds [portable cross-host backup recovery](docs/service/recovery.md)
+after an actual independent-PC restore exposed locale-dependent keyword indexing.
+All stored memory and embedding values remain verified; legacy backups retain
+their full checks and support an explicit source-locale option. The
+[replacement-host proof](docs/validation/2026-10-19-portable-host-recovery.md)
+includes the existing Codex/Grok keys, native Windows MCP access and restart
+continuity. See release status for published availability.
 Source 4.17.0 adds [live JSONL conversation capture](docs/service/live-conversations.md):
 bounded records and fragments, deferred tails, per-file source controls, private
 checkpoints, unchanged-fragment reuse and capture progress in the app. Existing

@@ -57,6 +57,10 @@ client tools are not on `PATH`. PostgreSQL must be the same major version as the
 backup or newer; use client tools suitable for the source and destination server.
 The package records the source server version. The restore checks schema and
 content before publishing the new database.
+From 4.27, new snapshots verify stored memories across database locale changes
+while PostgreSQL regenerates its keyword index. For an older snapshot, supply
+`--database-locale` with the source's installed libc locale when necessary; all
+legacy hashes still have to match. See [locale compatibility](recovery.md).
 Ledger capture supports the API-key schema that predates individual sign-in;
 databases with session keys still exclude those keys from application continuity.
 
@@ -196,6 +200,13 @@ use the operator connection's network/socket route. Server certificate trust
 settings are retained. A separate endpoint must reach the same restored
 database; the tool verifies its recovery identity before preparing the service.
 `--host` and `--port` instead select Mnemion's HTTP listener.
+
+For a legacy backup made on a `C.UTF-8` database, for example, add
+`--database-locale C.UTF-8` if the replacement cluster uses a different default.
+This option requires 4.27 or later and an installed libc locale. A reviewed
+locale becomes part of the idempotent recovery selection: retry with the same
+choice, or use a fresh directory and database for a different selection. New
+portable snapshots normally need no locale override.
 
 To use a newer independently copied ledger, add both:
 

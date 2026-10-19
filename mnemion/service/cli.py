@@ -174,6 +174,9 @@ def main(argv: list[str] | None = None) -> int:
     restore.add_argument("--ledger", type=Path, required=True)
     restore.add_argument("--credentials-output", type=Path, required=True)
     restore.add_argument("--pg-bin", type=Path)
+    restore.add_argument(
+        "--database-locale", help="Installed libc locale for restoring a legacy database backup"
+    )
     legacy_backup = commands.add_parser(
         "legacy-backup",
         help="Snapshot an offline v3 profile, source files, sidecars, and Obsidian vault",
@@ -566,6 +569,7 @@ def main(argv: list[str] | None = None) -> int:
                     deletion_ledger=args.ledger,
                     credentials_output=args.credentials_output,
                     pg_bin=args.pg_bin,
+                    database_locale=args.database_locale,
                 ),
                 indent=2,
             )

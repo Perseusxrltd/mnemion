@@ -39,9 +39,19 @@ export async function verifyNativeBackups(window: BrowserWindow, config: Record<
         throw new Error(message);
       }
       const button = text => [...document.querySelectorAll('button')].find(node => (node.getAttribute('aria-label') === text || node.getAttribute('title') === text || node.textContent.trim() === text) && !node.matches(':disabled') && node.getClientRects().length);
-      async function click(text) { (await until(() => button(text), 'Missing recovery control: ' + text)).click(); await pause(100); }
+      // React can expose a new control before its mount effects have finished.
+      // Wait for two rendered frames, then recheck the same visible control,
+      // as a user-facing browser click does. Never act on an old route's node.
+      async function settled(find, message) {
+        return until(async () => {
+          const node = find(); if (!node) return null;
+          await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+          return node.isConnected && find() === node ? node : null;
+        }, message);
+      }
+      async function click(text) { (await settled(() => button(text), 'Missing recovery control: ' + text)).click(); await pause(100); }
       async function input(selector, value) {
-        const field = await until(() => document.querySelector(selector), 'Missing recovery field');
+        const field = await settled(() => document.querySelector(selector), 'Missing recovery field: ' + selector);
         Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(field, value);
         field.dispatchEvent(new Event('input', { bubbles: true })); await pause(100);
       }

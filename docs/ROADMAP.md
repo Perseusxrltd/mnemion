@@ -1,9 +1,18 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.26.0**. Roadmap updated: **2026-10-19**.
+Reviewed source distribution: **4.27.0**. Roadmap updated: **2026-10-19**.
 The [current published distribution and release gates](RELEASE_STATUS.md) are updated automatically.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
+
+The [4.27.0 source](releases/4.27.0.md) fixes a cross-host locale mismatch found
+by [an actual independent-computer restore](validation/2026-10-19-portable-host-recovery.md).
+The existing Codex and Grok credentials worked on the restored copy from Ubuntu
+and native Windows. New backups verify portable stored values while PostgreSQL
+regenerates its keyword index; older backups retain full hash checks and an
+explicit locale option. Public release and installed-update checks still gate
+issue closure. Full host provisioning, larger journal recovery and provider
+acceptance remain separate roadmap work; strict coverage stays 17/64 (26.6%).
 
 The [4.26.0 source](releases/4.26.0.md) adds [editable native journal recovery](service/journal-recovery.md)
 for issue 39. The app, SDKs and private agent controls check the complete catalog,

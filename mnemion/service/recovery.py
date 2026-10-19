@@ -190,9 +190,46 @@ def _restore_permissions(conn) -> None:
     conn.execute("GRANT SELECT ON mnemion.schema_migrations TO mnemion_app, mnemion_worker")
 
 
-def inventory(conn) -> dict:
-    """Deterministic content hashes and counts, including all derived state."""
+def _inventory_version(value) -> int:
+    if type(value) is not int or value not in (1, 2):
+        raise ValueError("Unsupported backup table inventory version")
+    return value
+
+
+def _database_locale(value: str | None) -> None:
+    if value is not None and (
+        not isinstance(value, str)
+        or not value
+        or len(value) > 128
+        or any(ord(char) < 32 or ord(char) == 127 for char in value)
+    ):
+        raise ValueError("Use an installed libc database locale of up to 128 characters")
+
+
+def inventory(conn, *, version: int = 1) -> dict:
+    """Hash stored values; v2 excludes only the regenerated keyword index.
+
+    PostgreSQL rebuilds stored generated columns during pg_restore. The simple
+    text parser depends on the destination's LC_CTYPE, so search_text can differ
+    without any memory changing. Legacy manifests still verify that column.
+    """
+    _inventory_version(version)
     conn.execute("SET LOCAL timezone='UTC'")
+    if version == 2:
+        generated = conn.execute(
+            """SELECT a.attgenerated, a.atttypid='tsvector'::regtype AS vector,
+                      pg_get_expr(d.adbin,d.adrelid) AS expression
+               FROM pg_attribute a JOIN pg_attrdef d
+                 ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+               WHERE a.attrelid='mnemion.memory_revisions'::regclass
+                 AND a.attname='search_text' AND NOT a.attisdropped"""
+        ).fetchone()
+        if not generated or not (
+            generated["attgenerated"] == "s"
+            and generated["vector"]
+            and generated["expression"] == "to_tsvector('simple'::regconfig, content)"
+        ):
+            raise ValueError("Portable backups require the packaged generated keyword index")
     tables = conn.execute(
         "SELECT tablename FROM pg_tables WHERE schemaname='mnemion' ORDER BY tablename"
     ).fetchall()
@@ -200,13 +237,16 @@ def inventory(conn) -> dict:
     for row in tables:
         table = row["tablename"]
         digest, count = hashlib.sha256(), 0
+        projection = sql.SQL("to_jsonb(t)")
+        if version == 2 and table == "memory_revisions":
+            projection = sql.SQL("to_jsonb(t) - 'search_text'")
         # Ordering the complete JSON representation handles every table without
         # assuming a particular primary key, including future schema additions.
         with conn.cursor(name="inventory_" + uuid4().hex) as cursor:
             cursor.execute(
                 sql.SQL(
-                    'SELECT to_jsonb(t)::text AS row FROM mnemion.{} t ORDER BY to_jsonb(t)::text COLLATE "C"'
-                ).format(sql.Identifier(table))
+                    'SELECT ({})::text AS row FROM mnemion.{} t ORDER BY ({})::text COLLATE "C"'
+                ).format(projection, sql.Identifier(table), projection)
             )
             for item in cursor:
                 digest.update(item["row"].encode() + b"\n")
@@ -355,9 +395,15 @@ def create_backup(
             database_timezone = conn.execute(
                 "SELECT current_setting('TimeZone') AS zone"
             ).fetchone()["zone"]
+            database_locale = conn.execute(
+                """SELECT datcollate AS collation, datctype AS ctype,
+                     CASE datlocprovider WHEN 'c' THEN 'libc' WHEN 'i' THEN 'icu'
+                       WHEN 'b' THEN 'builtin' ELSE datlocprovider::text END AS provider
+                   FROM pg_database WHERE datname=current_database()"""
+            ).fetchone()
             snapshot = conn.execute("SELECT pg_export_snapshot() AS id").fetchone()["id"]
             ledger = _ledger(conn)
-            tables = inventory(conn)
+            tables = inventory(conn, version=2)
             schema = json_value(
                 conn.execute(
                     "SELECT name, sha256 FROM mnemion.schema_migrations ORDER BY name"
@@ -393,6 +439,8 @@ def create_backup(
                 "snapshot_at": ledger["snapshot_at"],
                 "server_version": server_version,
                 "database_timezone": database_timezone,
+                "database_locale": database_locale,
+                "inventory_version": 2,
                 "schema": schema,
                 "tables": tables,
                 "tenant_ids": ledger["tenant_ids"],
@@ -639,12 +687,14 @@ def restore_backup(
     temporary_directory: Path | None = None,
     cancelled: Callable[[], bool] | None = None,
     preserve_application_keys: bool = False,
+    database_locale: str | None = None,
 ) -> dict:
     started = time.monotonic()
     if not re.fullmatch(r"[a-z][a-z0-9_]{0,62}", database_name):
         raise ValueError("Use a lowercase PostgreSQL database name of up to 63 characters")
     if credentials_output.exists():
         raise FileExistsError("Recovery credentials output already exists")
+    _database_locale(database_locale)
     _pg_tool("pg_restore", pg_bin)
     ledger = read_ledger(deletion_ledger)
     if preserve_application_keys:
@@ -659,6 +709,7 @@ def restore_backup(
     ) as (manifest, root):
         if set(manifest["files"]) != {"database.dump", "deletions.json"}:
             raise ValueError("Incomplete database backup")
+        inventory_version = _inventory_version(manifest.get("inventory_version", 1))
         if _time(ledger["snapshot_at"]) < _time(manifest["snapshot_at"]):
             raise ValueError(
                 "Recovery requires a deletion/access ledger at least as recent as the backup"
@@ -695,11 +746,14 @@ def restore_backup(
             if administration.info.server_version // 10000 < manifest["server_version"] // 10000:
                 raise ValueError("Restore requires the same or a newer PostgreSQL major version")
             try:
-                administration.execute(
-                    sql.SQL("CREATE DATABASE {} TEMPLATE template0").format(
-                        sql.Identifier(temporary)
-                    )
+                create = sql.SQL("CREATE DATABASE {} TEMPLATE template0").format(
+                    sql.Identifier(temporary)
                 )
+                if database_locale is not None:
+                    create += sql.SQL(" LOCALE_PROVIDER libc LOCALE {}").format(
+                        sql.Literal(database_locale)
+                    )
+                administration.execute(create)
                 created = True
                 # Calendar-day constraints (including session expiry across DST)
                 # must be replayed with the source database's timezone. Content
@@ -755,9 +809,16 @@ def restore_backup(
                     psycopg.connect(staged_dsn, row_factory=dict_row) as conn,
                     _cancel_queries(conn, cancelled),
                 ):
-                    if inventory(conn) != manifest["tables"]:
+                    if inventory(conn, version=inventory_version) != manifest["tables"]:
                         raise ValueError(
                             "Restored table counts or content hashes do not match the backup"
+                            + (
+                                ". A legacy backup also hashes the generated keyword index; "
+                                "use --database-locale to match the source libc locale, or "
+                                "create a portable backup with the current release"
+                                if inventory_version == 1
+                                else ""
+                            )
                         )
                 migrate(staged_dsn)
                 with (

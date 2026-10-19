@@ -26,6 +26,25 @@ older service archives without this metadata, use the original timezone in the
 restore connection's `options` (for example `-c TimeZone=Europe/Paris`). Do not
 guess another timezone when a restore reports a session-expiry constraint error.
 
+From **4.27**, new backups also record the source database locale and use table
+inventory version 2. PostgreSQL regenerates `memory_revisions.search_text` during
+restore, and its tokenizer depends on the operating system's locale. The portable
+inventory verifies every other column, including the original Unicode content,
+metadata and embeddings. It excludes that column only after checking its exact
+packaged stored-generation definition. Keyword search uses the destination's
+regenerated index; no model call is needed. Use 4.27 or newer to restore these
+portable backups across locales.
+
+Older backups keep full-row verification, including their generated keyword
+index. When moving between locales, add `--database-locale C.UTF-8` (or the
+source's actual installed libc locale) to `restore` or `host restore`. This does
+not bypass a hash mismatch. It creates the unpublished destination using the
+selected locale. The locale must be installed on the replacement host. If the
+original source is available, its `pg_database.datctype` and `datcollate` identify
+the settings. For an older backup from a different locale provider, use a
+compatible replacement environment or produce a portable backup on a compatible
+recovery host first. Never edit the stored hashes to force recovery to succeed.
+
 ## Service snapshot and denial ledger
 
 ```sh
@@ -65,7 +84,8 @@ mnemion-service restore /backups/mnemion-2026-10-09.mnemion \
 
 The destination must not exist. Restore verifies every archive member, restores
 into a temporary database in one transaction, compares every table count and
-content hash, applies compatible migrations, and reconciles the current ledger.
+content hash using the recorded inventory version, applies compatible migrations,
+and reconciles the current ledger.
 It erases withdrawn source/revision/vector bytes, preserves negative identities
 for records created after the snapshot, reapplies current grants, and resets
 interrupted worker leases. Only a successfully checked database receives the
