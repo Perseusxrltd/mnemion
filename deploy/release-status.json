@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "checked_at": "2026-10-19T12:35:28+00:00",
+  "checked_at": "2026-10-19T12:36:13+00:00",
   "tag_name": "v4.15.0",
   "source_commit": "d573974ad0c527e789bf59286161d66feeef2f3b",
   "published_at": "2026-10-19T12:24:38Z",
   "release_url": "https://github.com/Perseusxrltd/mnemion/releases/tag/v4.15.0",
   "availability": "published",
-  "release_checks": "evidence incomplete",
+  "release_checks": "passed",
   "asset_count": 38,
   "checksum_digest": "sha256:1e761caaa44febe998b0b217c2a147859fe562b7a4c2c8ebe7f93ae23a9a8d96",
   "platforms": [
@@ -65,10 +65,11 @@
     },
     {
       "name": "Automatic upgrades from public installers",
-      "status": "pending",
+      "status": "passed",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39251839063",
       "run_id": 39251839063,
-      "updated_at": "2026-10-19T12:25:06Z"
+      "updated_at": "2026-10-19T12:36:04Z",
+      "targets_passed": 6
     },
     {
       "name": "Live website downloads, version, notes and guides",
