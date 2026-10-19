@@ -89,15 +89,24 @@
   ],
   "runs": [
     {
-      "id": 39299111540,
+      "id": 39303012547,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "24a7ebc040bde5b5f52db2d1459ad695ab1cfc2e",
+      "source_commit": "bda5331ef45f654a985788f9e92d016cb1a56c1a",
       "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-19T18:22:24Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39299111540"
+      "conclusion": "failure",
+      "updated_at": "2026-10-19T18:46:37Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39303012547",
+      "failed_jobs": [
+        {
+          "name": "supervision (macos-15-intel)",
+          "id": 118232815988,
+          "steps": [
+            "Verify managed installation, host recovery, signed updates and rollback with real processes"
+          ]
+        }
+      ]
     },
     {
       "id": 39292701099,
@@ -149,10 +158,22 @@
       "workflow": "release.yml",
       "branch": "release/4.22.0-r2",
       "source_commit": "24a7ebc040bde5b5f52db2d1459ad695ab1cfc2e",
-      "status": "queued",
+      "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-19T18:17:52Z",
+      "updated_at": "2026-10-19T18:45:44Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39299277378",
+      "failed_jobs": []
+    },
+    {
+      "id": 39303165270,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.23.0",
+      "source_commit": "bda5331ef45f654a985788f9e92d016cb1a56c1a",
+      "status": "pending",
+      "conclusion": null,
+      "updated_at": "2026-10-19T18:31:09Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39303165270",
       "failed_jobs": []
     },
     {
@@ -178,5 +199,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39292701228"
     }
   ],
-  "observed_at": "2026-10-19T18:22:50+00:00"
+  "observed_at": "2026-10-19T18:47:06+00:00"
 }
