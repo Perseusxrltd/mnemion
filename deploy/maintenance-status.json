@@ -93,6 +93,13 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39242606506",
       "failed_jobs": [
         {
+          "name": "legacy",
+          "id": 118026792930,
+          "steps": [
+            "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
+          ]
+        },
+        {
           "name": "lint",
           "id": 118026793218,
           "steps": [
@@ -167,5 +174,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39241852486"
     }
   ],
-  "observed_at": "2026-10-19T11:10:28+00:00"
+  "observed_at": "2026-10-19T11:10:52+00:00"
 }
