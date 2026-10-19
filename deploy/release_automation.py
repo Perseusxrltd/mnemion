@@ -421,6 +421,9 @@ def main():
         # locked development environment, which includes the pinned Ruff.
         for check in (["format", "--check", "."], ["check", "."]):
             subprocess.run([sys.executable, "-m", "ruff", *check], cwd=root, check=True)
+        from deploy.migration_preflight import check as check_migrations
+
+        print(json.dumps({"migration_preflight": check_migrations(root)}))
         print(json.dumps(start(root, args.repo, attempt=args.attempt)))
     else:
         if (

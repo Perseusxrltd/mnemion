@@ -21,6 +21,12 @@ gates; no paid service, model call or new signing credential is required.
    From 4.15.0, the command first runs the pinned Ruff format/lint checks locally,
    before reserving that branch. This catches cheap failures without starting
    native builders. Use the locked development environment; it includes Ruff.
+   From 4.22.0 it also runs focused PostgreSQL migration and installed-inventory
+   checks using `python -m deploy.migration_preflight`. A successful local receipt
+   is cached under ignored `build-tmp/` for the same source, schema, test, lockfile
+   and Python/platform inputs. Changed inputs rerun the group; skipped database
+   checks cannot pass. PostgreSQL or the development `pgserver` fixture must be
+   available. These early checks do not replace the complete release gates.
 4. The release workflow runs product/native gates and creates a draft. The
    independent verifier checks the exact uploaded bytes, signatures, complete
    feeds and their unchanged inventory. GitHub can report the workflow completed

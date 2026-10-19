@@ -82,3 +82,20 @@ is distinct from local Git acknowledgement and verified off-host replication.
 Native installations, artifact publication and public upgrades remain separate
 automated gates in [release status](../RELEASE_STATUS.md). The complete requirement
 count remains 17 of 64; this bounded improvement does not finish all of issue 39.
+
+## Corrected release attempt
+
+The first 4.22 candidate exposed a second stale test inventory: the existing
+author-withdrawal upgrade test had not added the new `writeback_backfills` table
+to its expected empty tables. Its preservation checks and the new backfill cases
+passed; Python 3.13 and 3.14 each reported 1,387 passing service cases and ten
+inventory failures. The correction explicitly includes the intended new table
+and retains exact comparisons of prior keys, grants, memories and table hashes.
+
+The corrected source passed 25 focused migration and installed-inventory checks
+in 66.33 seconds. Release preparation now runs this group before freezing a new
+attempt or reserving native runners. Successful local checks are cached against
+the runtime/schema sources, checks, lockfile and Python/platform identity;
+unchanged input reuses the receipt. Missing or skipped PostgreSQL checks cannot
+create a passing receipt. This early check does not replace CI or artifact gates.
+The original frozen attempt remains unchanged and unpublished.

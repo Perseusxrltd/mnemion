@@ -144,6 +144,8 @@ def test_previous_schema_upgrade_preserves_keys_grants_and_existing_memory(
         )
         if previous_count < 22:
             expected_tables |= {"writeback_settings", "writeback_events"}
+        if previous_count < 25:
+            expected_tables.add("writeback_backfills")
         if previous_count < 20:
             expected_tables |= {
                 "vault_entries",
