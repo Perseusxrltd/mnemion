@@ -41,7 +41,11 @@ def main(argv: list[str] | None = None) -> int:
     commands = parser.add_subparsers(dest="command", required=True)
     from ..journal.cli import arguments as journal_arguments
 
-    journal_arguments(commands.add_parser("journal", help="Enroll and inspect host-approved Git memory destinations"))
+    journal_arguments(
+        commands.add_parser(
+            "journal", help="Enroll and inspect host-approved Git memory destinations"
+        )
+    )
     from .recovery_kit import arguments as kit_arguments
 
     kit_arguments(
