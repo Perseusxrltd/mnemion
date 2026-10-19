@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-19T21:05:56+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-19T21:30:26+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.24.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.24.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -24,8 +24,8 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | public-updates\.yml | v4\.24\.0 | success | [Run 39315350141](https://github.com/Perseusxrltd/mnemion/actions/runs/39315350141) |
 | release\.yml | release/4\.24\.0 | success | [Run 39307882234](https://github.com/Perseusxrltd/mnemion/actions/runs/39307882234) |
 | release\.yml | release/4\.25\.0 | failure | [Run 39314058004](https://github.com/Perseusxrltd/mnemion/actions/runs/39314058004) |
-| release\.yml | release/4\.26\.0 | in\_progress | [Run 39322187837](https://github.com/Perseusxrltd/mnemion/actions/runs/39322187837) |
-| verify-artifacts\.yml | main | skipped | [Run 39318647572](https://github.com/Perseusxrltd/mnemion/actions/runs/39318647572) |
+| release\.yml | release/4\.26\.0 | failure | [Run 39322187837](https://github.com/Perseusxrltd/mnemion/actions/runs/39322187837) |
+| verify-artifacts\.yml | main | skipped | [Run 39327941444](https://github.com/Perseusxrltd/mnemion/actions/runs/39327941444) |
 | website-release\.yml | v4\.24\.0 | success | [Run 39315345960](https://github.com/Perseusxrltd/mnemion/actions/runs/39315345960) |
 
 ## Failed jobs
@@ -36,3 +36,4 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 - [Run 39314058004](https://github.com/Perseusxrltd/mnemion/actions/runs/39314058004): native / ubuntu-22\.04-arm / arm64. Steps: Installed Linux app creates, searches and reopens a real local workspace.
 - [Run 39314058004](https://github.com/Perseusxrltd/mnemion/actions/runs/39314058004): native / windows-2022 / x64. Steps: Installed app creates, searches and reopens a real local workspace.
 - [Run 39314058004](https://github.com/Perseusxrltd/mnemion/actions/runs/39314058004): native / macos-15-intel / x64. Steps: Installed app creates, searches and reopens a real local workspace.
+- [Run 39322187837](https://github.com/Perseusxrltd/mnemion/actions/runs/39322187837): native / ubuntu-22\.04 / x64. Steps: Installed Linux app creates, searches and reopens a real local workspace.

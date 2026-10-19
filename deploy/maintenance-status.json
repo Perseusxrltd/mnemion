@@ -150,22 +150,30 @@
       "workflow": "release.yml",
       "branch": "release/4.26.0",
       "source_commit": "560a166fdaf1a0ff574ab1eb9f29075b320adbcc",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-19T21:02:40Z",
+      "status": "completed",
+      "conclusion": "failure",
+      "updated_at": "2026-10-19T21:29:48Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39322187837",
-      "failed_jobs": []
+      "failed_jobs": [
+        {
+          "name": "native / ubuntu-22.04 / x64",
+          "id": 118306046537,
+          "steps": [
+            "Installed Linux app creates, searches and reopens a real local workspace"
+          ]
+        }
+      ]
     },
     {
-      "id": 39318647572,
+      "id": 39327941444,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "758874e424334782e3f328063ccc26d602f29b7e",
+      "source_commit": "4e49fdc03d820524adb7be3bd263987628cc545c",
       "status": "completed",
       "conclusion": "skipped",
-      "updated_at": "2026-10-19T20:21:39Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39318647572"
+      "updated_at": "2026-10-19T21:29:52Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39327941444"
     },
     {
       "id": 39315345960,
@@ -179,5 +187,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39315345960"
     }
   ],
-  "observed_at": "2026-10-19T21:05:56+00:00"
+  "observed_at": "2026-10-19T21:30:26+00:00"
 }
