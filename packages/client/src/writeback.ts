@@ -1,13 +1,17 @@
 /** A journal exports future native writes to an explicitly approved Git repository. */
+export type JournalDestinationKind = 'local_repository' | 'https_repository' | 'ssh_repository'
 export interface JournalDelivery {
   event_id: string
   durability: 'local_journal' | 'remote_git'
   remote_pending: boolean
+  /** Missing on older receipts. remote_git acknowledges this destination, not every replica. */
+  destination_kind?: JournalDestinationKind | null
   external_history_retained: true
 }
 export interface JournalDestination {
   id: string; label: string; repository: string; branch: string; prefix: string
   personal_data_scan: boolean; custom_scanner: boolean
+  destination_kind?: JournalDestinationKind
 }
 export interface JournalStatus {
   configured: boolean; can_configure: boolean; destination: JournalDestination | null

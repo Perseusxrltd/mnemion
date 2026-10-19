@@ -4,6 +4,7 @@ import { EventEmitter } from 'node:events'
 import { readFileSync } from 'node:fs'
 import { syncBuiltinESMExports } from 'node:module'
 import { PassThrough } from 'node:stream'
+import { resolve } from 'node:path'
 import { test } from 'node:test'
 import { LocalWorkspace, portOptions, localDiagnostic, remoteOptions, remoteSnapshot } from '../dist/local-workspace.js'
 import { companyOptions, companySnapshot, companyDiscoveryResult } from '../dist/local-company-protocol.js'
@@ -63,6 +64,21 @@ test('journal controls reject host paths, executable instructions and credential
   assert.deepEqual(journalSnapshot(journalInfo(true).journal_access), journalInfo(true).journal_access)
   assert.throws(() => journalSnapshot({ ...journalInfo(true).journal_access, credential: 'private' }))
   assert.throws(() => journalSnapshot({ ...journalInfo(true).journal_access, destinations: [journalDestination, journalDestination] }))
+})
+
+test('SSH journal registration preserves only reviewed credential references and requires matching transport', () => {
+  const destination = { ...journalDestination, remote: 'ssh://git@git.example.test/team/memory.git',
+    ssh: { identity_file: resolve('private key'), known_hosts_file: resolve('private host pins') } }
+  const change = { ...journalChange, destination }
+  assert.deepEqual(journalOptions(change), change)
+  assert.deepEqual(journalSnapshot({ ...journalInfo(true).journal_access, destinations: [destination] }).destinations, [destination])
+  for (const patch of [{ ssh: undefined }, { ssh: null }, { remote: 'https://git.example.test/team.git' },
+    { remote: 'ssh://git:secret@git.example.test/team.git' }, { remote: 'ssh://git.example.test/team.git' },
+    { remote: 'ssh://-oFlag@git.example.test/team.git' }, { remote: 'ssh://git@-oProxy/team.git' },
+    { ssh: { ...destination.ssh, identity_file: 'relative' } },
+    { ssh: { ...destination.ssh, command: 'unreviewed' } }, { ssh: { ...destination.ssh, identity_file: 'path\ncommand' } }]) {
+    assert.throws(() => journalOptions({ ...change, destination: { ...destination, ...patch } }))
+  }
 })
 
 test('vault handoffs reject unreviewed instructions and credentials in public status', () => {

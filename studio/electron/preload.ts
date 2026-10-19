@@ -58,6 +58,7 @@ contextBridge.exposeInMainWorld('mnemion', {
   localVault: (input: unknown) => transfer('local:vault', input),
   localVaultKey: (input: unknown) => transfer('local:vault-key', input),
   localJournal: (input: unknown) => transfer('local:journal', input),
+  localJournalChoose: (kind: 'identity' | 'known_hosts') => transfer('local:journal-choose', kind),
   localBackupStatus: () => transfer('local:backup-status'),
   localBackupKey: () => transfer('local:backup-key'),
   localBackupChoose: (kind: 'folder' | 'file') => transfer('local:backup-choose', kind),

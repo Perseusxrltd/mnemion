@@ -31,6 +31,10 @@ policy/status inspection, current-value preference changes, immediate checks and
 version-confirmed restarts that preserve unsaved-work and active-operation guards.
 It also adds [Git journal rollover](../docs/service/git-journal.md#file-rollover-and-version-compatibility)
 with cached sealed files; upgrade journal-reading source runners to 4.19 as well.
+Source 4.20.0 adds **SSH · repository deploy key**, with native file pickers for
+the private key and verified host pins. Local Git receipts are clearly labelled
+so users do not mistake a local repository for an off-host recovery copy. See
+[SSH setup](../docs/service/git-journal.md#ssh-deploy-keys-and-host-pins).
 
 Remote-agent fixes in 4.0.2 and lower model RAM in 4.0.3 require upgrading the memory server;
 the desktop updater cannot replace a separately deployed service. See the
@@ -56,10 +60,10 @@ save a plaintext key. Version 4.0.11 adds native local creation, RAM controls an
 occupied API-port recovery. Organization provisioning and full backup recovery
 remain on the [onboarding plan](../docs/implementation/app-onboarding.md).
 
-The next source release adds [encrypted desktop backups and independent
+Published releases include [encrypted desktop backups and independent
 recovery](../docs/service/native-backups.md): protected schedules, manual copies,
 current deletion ledgers and restoration into a separate local workspace.
-Installed acceptance remains pending; use the public release status for availability.
+Use the public release status for the current version and native acceptance evidence.
 
 Version 4.0.8 unifies the interface with Perseus XR, including locally bundled
 Inter/Outfit fonts, gold accents, grouped navigation, responsive charts and offline

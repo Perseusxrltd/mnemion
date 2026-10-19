@@ -1,4 +1,4 @@
-"""Host-approved destinations; network credentials remain with Git's credential manager."""
+"""Host-approved destinations; network credentials remain under OS-account control."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 from pathlib import Path, PurePosixPath
+import re
 from urllib.parse import urlsplit
 from uuid import UUID
 
@@ -17,14 +18,31 @@ from ..service.models import Command
 from .format import JournalError
 
 
+class SshAuthentication(Command):
+    identity_file: Path
+    known_hosts_file: Path
+
+    @field_validator("identity_file", "known_hosts_file")
+    @classmethod
+    def private_path(cls, value):
+        if (
+            not value.is_absolute()
+            or len(str(value)) > 4096
+            or any(ord(c) < 32 or ord(c) == 127 for c in str(value))
+        ):
+            raise ValueError("Use an absolute path to a private SSH credential file")
+        return value
+
+
 class Destination(Command):
     id: str = Field(pattern=r"^[a-z][a-z0-9-]{0,63}$")
     label: str = Field(min_length=1, max_length=200)
     tenant_id: UUID
     space_id: UUID
     state_directory: Path
-    remote: str | None = None
+    remote: str | None = Field(default=None, max_length=2048)
     local_repository: Path | None = None
+    ssh: SshAuthentication | None = None
     branch: str = Field(default="main", min_length=1, max_length=200)
     prefix: str = Field(default="memory/buffer", min_length=1, max_length=200)
     personal_data_scan: bool = True
@@ -34,28 +52,34 @@ class Destination(Command):
 
     @field_validator("remote")
     @classmethod
-    def https_remote(cls, value):
+    def git_remote(cls, value):
         if value is None:
             return value
         try:
             url = urlsplit(value)
             if (
-                url.scheme != "https"
+                url.scheme not in {"https", "ssh"}
                 or not url.hostname
-                or url.username is not None
+                or url.hostname.startswith("-")
+                or not url.hostname.isascii()
+                or any(c in url.hostname for c in "%\\")
+                or url.scheme == "https"
+                and url.username is not None
+                or url.scheme == "ssh"
+                and not re.fullmatch(r"[A-Za-z0-9_][A-Za-z0-9_.-]{0,63}", url.username or "")
                 or url.password is not None
                 or url.query
                 or url.fragment
                 or not url.path
                 or "\\" in value
-                or any(c.isspace() or ord(c) < 32 for c in value)
+                or any(c.isspace() or ord(c) < 32 or ord(c) == 127 for c in value)
                 or url.port is not None
                 and not 1 <= url.port <= 65535
             ):
                 raise ValueError
         except ValueError:
             raise ValueError(
-                "Use an HTTPS repository URL without credentials, queries or fragments"
+                "Use HTTPS without credentials or ssh://user@host/repository, without passwords, queries or fragments"
             ) from None
         return value
 
@@ -92,7 +116,13 @@ class Destination(Command):
     def destination(self):
         if bool(self.remote) == bool(self.local_repository):
             raise ValueError(
-                "Choose an HTTPS remote or an explicitly selected local bare repository"
+                "Choose an HTTPS/SSH remote or an explicitly selected local bare repository"
+            )
+        if (self.remote is not None and urlsplit(self.remote).scheme == "ssh") != (
+            self.ssh is not None
+        ):
+            raise ValueError(
+                "SSH requires a dedicated private key and pinned known-hosts file; other destinations must not include SSH settings"
             )
         for path in (self.state_directory, self.local_repository):
             if path is not None and not path.is_absolute():
@@ -108,9 +138,22 @@ class Destination(Command):
 
     @property
     def fingerprint(self):
+        # Adding optional SSH support must not invalidate existing approvals,
+        # private spools or retry indexes for HTTPS/local destinations.
+        excluded = {"label"} if self.ssh is not None else {"label", "ssh"}
         return hashlib.sha256(
-            json.dumps(self.model_dump(mode="json", exclude={"label"}), sort_keys=True).encode()
+            json.dumps(self.model_dump(mode="json", exclude=excluded), sort_keys=True).encode()
         ).hexdigest()
+
+    @property
+    def kind(self):
+        return (
+            "local_repository"
+            if self.local_repository is not None
+            else "ssh_repository"
+            if self.ssh is not None
+            else "https_repository"
+        )
 
 
 class Configuration(Command):

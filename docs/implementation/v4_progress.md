@@ -549,3 +549,14 @@ server version, hiding supported features. All six native targets refused that
 release. 4.19 retains the optional, validated version through connect/resume and
 keeps the complete installed registration check. Two regression checks reproduced
 the old failure; all 38 workspace identity/connection checks pass after the fix.
+
+## SSH journal access and destination receipts, 19 October 2026
+
+The [4.20 batch](../validation/2026-10-19-journal-ssh.md) implements issue 42's
+repository-specific SSH key and host-pin controls. It includes native file
+selection, CLI/private-agent enrollment, bounded owner-only key snapshots,
+noninteractive transport and explicit local/network receipt types. Actual
+OpenSSH, Git and PostgreSQL checks cover important-save acknowledgement, revoked
+access, wrong host keys, retries and concurrent writers. Existing HTTPS/local
+fingerprints remain stable. Provider provisioning, additional native SSH evidence
+and complete recovery remain open; full-scope completion stays 17 of 64 (26.6%).

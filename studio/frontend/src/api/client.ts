@@ -44,6 +44,7 @@ declare global {
       localVault?: (input: VaultChange) => Promise<LocalStatus>
       localVaultKey?: (input: VaultRequest) => Promise<VaultKey>
       localJournal?: (input: JournalChange) => Promise<LocalStatus>
+      localJournalChoose?: (kind: 'identity' | 'known_hosts') => Promise<string | null>
       localBackupStatus?: () => Promise<BackupView>
       localBackupKey?: () => Promise<string>
       localBackupChoose?: (kind: 'folder' | 'file') => Promise<{ id: string; path: string } | null>

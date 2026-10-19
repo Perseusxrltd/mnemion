@@ -45,10 +45,14 @@ class ReadyStatus(ResponseModel):
     service_version: str | None = None
 
 
+JournalDestinationKind = Literal["local_repository", "https_repository", "ssh_repository"]
+
+
 class JournalDelivery(ResponseModel):
     event_id: str
     durability: Literal["local_journal", "remote_git"]
     remote_pending: bool
+    destination_kind: JournalDestinationKind | None = None
     external_history_retained: Literal[True] = True
 
 

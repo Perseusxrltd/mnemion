@@ -1,8 +1,9 @@
 import type { JournalAccess, JournalChange, JournalDestination } from '../shared/local-workspace.js'
+import { isAbsolute } from 'node:path'
 
 const uuid = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/
 const revision = /^(?:not-configured|[a-f0-9-]{36}|[a-f0-9]{64})$/
-const destinationFields = ['space_id', 'label', 'remote', 'branch', 'prefix', 'personal_data_scan']
+const destinationFields = ['space_id', 'label', 'remote', 'branch', 'prefix', 'personal_data_scan', 'ssh']
 function object(input: unknown, fields: readonly string[]): Record<string, unknown> {
   if (!input || typeof input !== 'object' || Array.isArray(input) || Object.keys(input).some(key => !fields.includes(key))) throw new Error('Check the journal settings and supported fields.')
   return input as Record<string, unknown>
@@ -13,12 +14,18 @@ function text(value: unknown, maximum: number): value is string {
 export function journalDestination(input: unknown): JournalDestination {
   const value = object(input, destinationFields)
   if (typeof value.space_id !== 'string' || !uuid.test(value.space_id) || !text(value.label, 200) ||
-      !text(value.remote, 2048) || !text(value.branch, 200) || !text(value.prefix, 200) || typeof value.personal_data_scan !== 'boolean') throw new Error('Choose a space, label, HTTPS repository, branch and journal folder.')
+      !text(value.remote, 2048) || !text(value.branch, 200) || !text(value.prefix, 200) || typeof value.personal_data_scan !== 'boolean') throw new Error('Choose a space, label, Git repository, branch and journal folder.')
   try {
     const parsed = new URL(value.remote)
-    if (parsed.protocol !== 'https:' || !parsed.hostname || parsed.username || parsed.password || parsed.search || parsed.hash ||
-        !parsed.pathname || /\s|\\/.test(value.remote) || (parsed.port && Number(parsed.port) < 1)) throw new Error()
-  } catch { throw new Error('Use an HTTPS repository URL without credentials, queries or fragments.') }
+    const ssh = parsed.protocol === 'ssh:'
+    if ((!ssh && parsed.protocol !== 'https:') || !parsed.hostname || parsed.hostname.startsWith('-') || /[^\x00-\x7f]|%/.test(parsed.hostname) ||
+        (ssh ? !/^[A-Za-z0-9_][A-Za-z0-9_.-]{0,63}$/.test(parsed.username) : !!parsed.username) || parsed.password || parsed.search || parsed.hash ||
+        !parsed.pathname || /\s|\\/.test(value.remote) || (parsed.port && Number(parsed.port) < 1) || ssh !== (value.ssh !== undefined)) throw new Error()
+  } catch { throw new Error('Use HTTPS without credentials or ssh://user@host/repository with a dedicated deploy key and pinned host keys.') }
+  if (value.ssh !== undefined) {
+    const ssh = object(value.ssh, ['identity_file', 'known_hosts_file'])
+    if (!text(ssh.identity_file, 4096) || !isAbsolute(ssh.identity_file) || !text(ssh.known_hosts_file, 4096) || !isAbsolute(ssh.known_hosts_file)) throw new Error('Choose absolute paths to the private SSH key and known-hosts files on this computer.')
+  }
   if (/^[\-/]|[/.]$|\.\.|@\{|\/\/|[\s~^:?*\[\\]/.test(value.branch) || value.branch === '@' ||
       value.branch.split('/').some(part => part.startsWith('.') || part.endsWith('.lock'))) throw new Error('Use a literal Git branch name.')
   if (value.prefix.split('/').some(part => !part || part.startsWith('.') || /[\s. ]$|[<>:"\\|?*]/.test(part) ||

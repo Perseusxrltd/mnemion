@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from contextlib import nullcontext
 import re
 import time
 
@@ -93,18 +94,30 @@ class GitJournal:
         ]
         if self.destination.local_repository is not None:
             options += ["-c", "protocol.file.allow=always"]
+        if self.destination.ssh is not None:
+            options += ["-c", "protocol.https.allow=never", "-c", "protocol.ssh.allow=always"]
         if in_repository:
             options += ["-C", str(self.repository)]
-        code, output = run(
-            options + list(args),
-            input=input,
-            env=self.env,
-            timeout=60,
-            maximum=maximum,
-            cancel=self.cancel,
-        )
+        network = self.destination.ssh is not None and args[0] in {"ls-remote", "fetch", "push"}
+        from .ssh import transport
+
+        with (
+            transport(self.destination, self.control, self.env)
+            if network
+            else nullcontext(self.env) as env
+        ):
+            code, output = run(
+                options + list(args),
+                input=input,
+                env=env,
+                timeout=60,
+                maximum=maximum,
+                cancel=self.cancel,
+            )
         if code not in accepted:
-            raise JournalError("journal_git_command_failed")
+            raise JournalError(
+                "journal_ssh_connection_failed" if network else "journal_git_command_failed"
+            )
         return output
 
     @staticmethod
@@ -353,6 +366,7 @@ class GitJournal:
                     "attempts": attempt + 1,
                     "elapsed_seconds": round(time.monotonic() - started, 3),
                     "destination_fingerprint": self.destination.fingerprint,
+                    "destination_kind": self.destination.kind,
                     "append_planning": metrics,
                 }
                 local_state.write(self.spool.root / "publication.json", report)

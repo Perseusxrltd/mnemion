@@ -207,6 +207,7 @@ class WritebackService:
                     "prefix": destination.prefix,
                     "personal_data_scan": destination.personal_data_scan,
                     "custom_scanner": bool(destination.scanner),
+                    "destination_kind": destination.kind,
                 }
                 if destination
                 else None,
@@ -328,6 +329,7 @@ class WritebackService:
             "event_id": str(event_id),
             "durability": "remote_git" if entry.important else "local_journal",
             "remote_pending": not entry.important,
+            "destination_kind": destination.kind,
             "external_history_retained": True,
         }
         self.db.after_commit(
@@ -502,7 +504,7 @@ class WritebackService:
             raise ServiceError(
                 503,
                 code,
-                "Git publication is pending. Check this destination's Git credential manager, connection and journal status.",
+                "Git publication is pending. Check this destination's Git credentials or pinned SSH key, connection and journal status.",
             ) from None
 
     def start(self):

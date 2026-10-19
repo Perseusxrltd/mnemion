@@ -908,13 +908,17 @@ function MemoryDetail() {
       </Title>
       <ErrorNotice error={error} />
       {!receipt && savedReceipt?.memory_id === id && savedReceipt.writeback && <p className="ws-notice" role="status">
-        {savedReceipt.writeback.durability === 'remote_git' ? 'Memory saved and Git delivery confirmed.' : 'Memory saved with a durable local journal entry. Git delivery is pending.'} <Link to="/workspace/journal">View journal</Link>
+        {savedReceipt.writeback.durability === 'remote_git'
+          ? savedReceipt.writeback.destination_kind === 'local_repository' ? 'Memory saved to the local Git repository. Off-host replication needs a separate receipt.' : 'Memory saved and the selected Git destination acknowledged delivery.'
+          : 'Memory saved with a durable local journal entry. Git delivery is pending.'} <Link to="/workspace/journal">View journal</Link>
       </p>}
       {receipt && (
         <div className="ws-notice" role="status">
           Revision saved. Search indexing:{" "}
           {operation.data?.state ?? receipt.state}.
-          {receipt.writeback && (receipt.writeback.durability === 'remote_git' ? ' Git delivery confirmed.' : ' Local journal saved; Git delivery pending.')}
+          {receipt.writeback && (receipt.writeback.durability === 'remote_git'
+            ? receipt.writeback.destination_kind === 'local_repository' ? ' Local Git delivery confirmed; off-host replication needs a separate receipt.' : ' The selected Git destination acknowledged delivery.'
+            : ' Local journal saved; Git delivery pending.')}
         </div>
       )}
       <div className="ws-detail-grid">

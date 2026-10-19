@@ -44,6 +44,15 @@ export default function JournalHostSetup({ endpoint, space, label }: { endpoint:
     setDraft(value => value?.action === 'save' ? { action: 'save', destination: { ...value.destination, ...patch } } : value);
     setReviewed(false); setError(undefined);
   }
+  async function chooseSsh(kind: 'identity' | 'known_hosts') {
+    if (draft?.action !== 'save' || !draft.destination.ssh || !desktop?.localJournalChoose) return;
+    setBusy(true); setError(undefined);
+    try {
+      const path = await desktop.localJournalChoose(kind);
+      if (path && live.current) edit({ ssh: { ...draft.destination.ssh, [kind === 'identity' ? 'identity_file' : 'known_hosts_file']: path } });
+    } catch (failure) { if (live.current) setError(failure); }
+    finally { if (live.current) setBusy(false); }
+  }
   async function refresh() {
     setBusy(true); setError(undefined);
     try { const next = await desktop!.localStatus!(); if (live.current) setStatus(next); }
@@ -71,7 +80,7 @@ export default function JournalHostSetup({ endpoint, space, label }: { endpoint:
     <p>Choose the Git destination for <strong>{label}</strong>, hosted on this computer. Mnemion manages its private registration and restarts the workspace to apply changes.</p>
     <p className={`ws-notice${saved.state === 'configuration_error' ? ' ws-error' : ''}`} role="status">{saved.message}</p>
     {!saved.git_found && <p className="ws-notice">Git was not found on this computer. <a href="https://git-scm.com/downloads" target="_blank" rel="noreferrer">Install Git for free</a>, then restart Mnemion.</p>}
-    <p className="ws-helper">Use an existing repository and sign in through this OS account’s Git credential manager. Registration does not test repository access or publish memories; approve publication separately below. Passwords and tokens do not belong in the repository address.</p>
+    <p className="ws-helper">Use an existing repository with Git credential-manager sign-in, or its own SSH deploy key and verified host keys. Registration does not test repository access or publish memories; approve publication separately below. Passwords and tokens do not belong in the repository address.</p>
     {!!error && <p className="ws-notice ws-error" role="alert">{localError(error)}</p>}
     {notice && <p className="ws-notice" role="status">{notice}</p>}
     {current && !draft && <p className="ws-helper">{current.remote} · {current.branch} · {current.prefix}</p>}
@@ -87,7 +96,16 @@ export default function JournalHostSetup({ endpoint, space, label }: { endpoint:
         {stale && <p className="ws-notice" role="alert">Registrations changed on this host. Cancel and review the current values before saving.</p>}
         {draft.action === 'save' && <>
           <label className="ws-field"><span>Destination name</span><input required maxLength={200} value={draft.destination.label} onChange={event => edit({ label: event.target.value })} /></label>
-          <label className="ws-field"><span>Repository HTTPS address</span><input type="url" required maxLength={2048} autoComplete="off" placeholder="https://github.com/your-team/memories.git" value={draft.destination.remote} onChange={event => edit({ remote: event.target.value })} /></label>
+          <label className="ws-field"><span>Connection</span><select value={draft.destination.ssh ? 'ssh' : 'https'} onChange={event => edit({ remote: '', ssh: event.target.value === 'ssh' ? { identity_file: '', known_hosts_file: '' } : undefined })}>
+            <option value="https">HTTPS · Git credential manager</option><option value="ssh">SSH · repository deploy key</option></select></label>
+          <label className="ws-field"><span>Repository address</span><input type="url" required maxLength={2048} autoComplete="off" placeholder={draft.destination.ssh ? 'ssh://git@github.com/your-team/memories.git' : 'https://github.com/your-team/memories.git'} value={draft.destination.remote} onChange={event => edit({ remote: event.target.value })} /></label>
+          {draft.destination.ssh && <>
+            <label className="ws-field"><span>Private deploy key file</span><input required maxLength={4096} autoComplete="off" spellCheck={false} value={draft.destination.ssh.identity_file} onChange={event => edit({ ssh: { ...draft.destination.ssh!, identity_file: event.target.value } })} /></label>
+            {desktop.localJournalChoose && <button type="button" className="ws-button ws-quiet" onClick={() => void chooseSsh('identity')}>Choose deploy key</button>}
+            <label className="ws-field"><span>Verified known-hosts file</span><input required maxLength={4096} autoComplete="off" spellCheck={false} value={draft.destination.ssh.known_hosts_file} onChange={event => edit({ ssh: { ...draft.destination.ssh!, known_hosts_file: event.target.value } })} /></label>
+            {desktop.localJournalChoose && <button type="button" className="ws-button ws-quiet" onClick={() => void chooseSsh('known_hosts')}>Choose host keys</button>}
+            <p className="ws-helper">Both files must belong to this OS account and be readable only by it. Use a dedicated deploy key with write access to this repository. Verify the server’s host keys through its provider or administrator before saving. Background publishing cannot ask for a key passphrase and does not use an SSH agent.</p>
+          </>}
           <label className="ws-field"><span>Branch</span><input required maxLength={200} value={draft.destination.branch} onChange={event => edit({ branch: event.target.value })} /></label>
           <label className="ws-field"><span>Journal folder</span><input required maxLength={200} value={draft.destination.prefix} onChange={event => edit({ prefix: event.target.value })} /></label>
           <p className="ws-helper">Choose an unused folder or this space’s existing native journal. An older external buffer needs separate migration. Pending changes use the newly approved destination; previously published Git history stays in its original repository.</p>

@@ -1,7 +1,7 @@
 """Journal destination enrollment for the owning OS account.
 
-Only repository choices are persisted. Host paths are derived locally and Git
-credentials remain in the OS account's existing credential manager.
+Host paths are derived locally. SSH credential references stay with the owning
+OS account; key bytes never enter the registration or service API.
 """
 
 from datetime import datetime, timezone
@@ -11,12 +11,14 @@ import os
 from pathlib import Path
 import shutil
 from typing import Literal
+from urllib.parse import urlsplit
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from . import local_state as state
-from .journal.config import Configuration, Destination
+from .journal.config import Configuration, Destination, SshAuthentication
+from .journal.format import JournalError
 from .service.oauth import _json_object
 
 
@@ -29,6 +31,7 @@ class JournalDestination(BaseModel):
     branch: str = Field(default="main", min_length=1, max_length=200)
     prefix: str = Field(default="memory/native-buffer", min_length=1, max_length=200)
     personal_data_scan: bool = True
+    ssh: SshAuthentication | None = None
 
     @field_validator("label")
     @classmethod
@@ -39,8 +42,14 @@ class JournalDestination(BaseModel):
 
     @field_validator("remote")
     @classmethod
-    def https_remote(cls, value):
-        return Destination.https_remote(value)
+    def git_remote(cls, value):
+        return Destination.git_remote(value)
+
+    @model_validator(mode="after")
+    def authentication(self):
+        if (urlsplit(self.remote).scheme == "ssh") != (self.ssh is not None):
+            raise ValueError("SSH requires a dedicated deploy key and pinned known-hosts file")
+        return self
 
     @field_validator("branch")
     @classmethod
@@ -144,7 +153,7 @@ def inspection(root: Path, workspace_id: str):
         choices = saved.destinations if saved else []
         view.update(
             state="configured" if choices else "not_configured",
-            destinations=[d.model_dump(mode="json") for d in choices],
+            destinations=[d.model_dump(mode="json", exclude_none=True) for d in choices],
             message="Repository choices are registered on this host. Each space still requires separate approval before publication."
             if choices
             else "Register a repository, then approve publication in that space's Git journal.",
@@ -177,6 +186,16 @@ def configure(root: Path, change: JournalChange):
             )
         choices = {d.space_id: d for d in saved.destinations} if saved else {}
         if change.action == "save":
+            if change.destination.ssh:
+                from .journal.ssh import credential_bytes
+
+                try:
+                    credential_bytes(change.destination.ssh)
+                except JournalError:
+                    raise state.LocalSetupError(
+                        "journal_ssh_credentials_unavailable",
+                        "Select existing SSH key and known-hosts files readable only by this OS account, without links. Verify the repository host's keys independently.",
+                    ) from None
             choices[change.destination.space_id] = change.destination
         elif change.action == "remove":
             if change.space_id not in choices:
@@ -190,7 +209,7 @@ def configure(root: Path, change: JournalChange):
             updated_at=datetime.now(timezone.utc).isoformat(),
             destinations=list(choices.values()),
         )
-        value = updated.model_dump(mode="json")
+        value = updated.model_dump(mode="json", exclude_none=True)
         if len(json.dumps(value).encode()) > 128 * 1024:
             raise state.LocalSetupError(
                 "journal_capacity", "Journal registrations exceed the 128 KiB limit."

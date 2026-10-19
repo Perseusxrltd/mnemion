@@ -147,9 +147,13 @@ def test_important_memory_is_acknowledged_only_after_real_git_publication(env, t
     )
     assert result["writeback"]["durability"] == "remote_git"
     assert result["writeback"]["remote_pending"] is False
+    assert result["writeback"]["destination_kind"] == "local_repository"
     assert events(env)[0]["state"] == "pushed"
     assert remote_entries(destination)[0].text == "The release is approved."
     assert service.status(author, env.space)["state"] == "ready"
+    assert (
+        service.status(author, env.space)["destination"]["destination_kind"] == "local_repository"
+    )
     assert not list(Spool(destination).records())
 
 
@@ -309,8 +313,10 @@ def test_http_routes_share_native_capture_and_status_without_local_paths(
         )
         assert saved.status_code == 202, saved.text
         assert saved.json()["writeback"]["durability"] == "local_journal"
+        assert saved.json()["writeback"]["destination_kind"] == "local_repository"
         response = client.get(f"/v1/spaces/{env.space}/writeback", headers=headers)
         assert response.json()["pending_entries"] == 1
+        assert response.json()["destination"]["destination_kind"] == "local_repository"
         assert str(destination.state_directory) not in response.text
 
 

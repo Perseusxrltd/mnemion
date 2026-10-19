@@ -9391,6 +9391,15 @@
                 "title": "Custom Scanner",
                 "type": "boolean"
               },
+              "destination_kind": {
+                "enum": [
+                  "local_repository",
+                  "https_repository",
+                  "ssh_repository"
+                ],
+                "title": "Destination Kind",
+                "type": "string"
+              },
               "id": {
                 "title": "Id",
                 "type": "string"
@@ -9419,7 +9428,8 @@
               "branch",
               "prefix",
               "personal_data_scan",
-              "custom_scanner"
+              "custom_scanner",
+              "destination_kind"
             ],
             "title": "DestinationInfo",
             "type": "object"
@@ -9762,6 +9772,15 @@
                 "title": "Custom Scanner",
                 "type": "boolean"
               },
+              "destination_kind": {
+                "enum": [
+                  "local_repository",
+                  "https_repository",
+                  "ssh_repository"
+                ],
+                "title": "Destination Kind",
+                "type": "string"
+              },
               "id": {
                 "title": "Id",
                 "type": "string"
@@ -9790,7 +9809,8 @@
               "branch",
               "prefix",
               "personal_data_scan",
-              "custom_scanner"
+              "custom_scanner",
+              "destination_kind"
             ],
             "title": "DestinationInfo",
             "type": "object"
@@ -10133,6 +10153,15 @@
                 "title": "Custom Scanner",
                 "type": "boolean"
               },
+              "destination_kind": {
+                "enum": [
+                  "local_repository",
+                  "https_repository",
+                  "ssh_repository"
+                ],
+                "title": "Destination Kind",
+                "type": "string"
+              },
               "id": {
                 "title": "Id",
                 "type": "string"
@@ -10161,7 +10190,8 @@
               "branch",
               "prefix",
               "personal_data_scan",
-              "custom_scanner"
+              "custom_scanner",
+              "destination_kind"
             ],
             "title": "DestinationInfo",
             "type": "object"
@@ -10483,6 +10513,15 @@
                 "title": "Custom Scanner",
                 "type": "boolean"
               },
+              "destination_kind": {
+                "enum": [
+                  "local_repository",
+                  "https_repository",
+                  "ssh_repository"
+                ],
+                "title": "Destination Kind",
+                "type": "string"
+              },
               "id": {
                 "title": "Id",
                 "type": "string"
@@ -10511,7 +10550,8 @@
               "branch",
               "prefix",
               "personal_data_scan",
-              "custom_scanner"
+              "custom_scanner",
+              "destination_kind"
             ],
             "title": "DestinationInfo",
             "type": "object"
@@ -13738,6 +13778,22 @@
           "JournalDelivery": {
             "additionalProperties": true,
             "properties": {
+              "destination_kind": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "local_repository",
+                      "https_repository",
+                      "ssh_repository"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Destination Kind"
+              },
               "durability": {
                 "enum": [
                   "local_journal",
@@ -15385,6 +15441,22 @@
           "JournalDelivery": {
             "additionalProperties": true,
             "properties": {
+              "destination_kind": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "local_repository",
+                      "https_repository",
+                      "ssh_repository"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Destination Kind"
+              },
               "durability": {
                 "enum": [
                   "local_journal",
@@ -15733,6 +15805,22 @@
           "JournalDelivery": {
             "additionalProperties": true,
             "properties": {
+              "destination_kind": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "local_repository",
+                      "https_repository",
+                      "ssh_repository"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Destination Kind"
+              },
               "durability": {
                 "enum": [
                   "local_journal",

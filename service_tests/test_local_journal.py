@@ -12,6 +12,7 @@ from mnemion import local_journal as journal, local_state as state
 from mnemion.journal.config import Configuration
 from mnemion.journal.spool import Spool
 from mnemion.local_workspace import SetupOptions, inspect
+from mnemion.private_output import private_output
 from mnemion.service.errors import ServiceError
 from mnemion.service.models import MemoryInput
 from mnemion.service.writeback import WritebackService
@@ -78,6 +79,40 @@ def test_enrollment_keeps_identity_private_state_and_separate_space_approval(tmp
     assert "state_directory" not in (root / "journal-access.json").read_text()
     if os.name != "nt":
         assert (root / "journal-access.json").stat().st_mode & 0o077 == 0
+
+
+def test_app_ssh_registration_keeps_only_private_references_and_preserves_config_on_failure(
+    tmp_path,
+):
+    root, settings = workspace(tmp_path)
+    key, pins = root / "deploy-key", root / "host-pins"
+    for path, content in ((key, b"synthetic private key"), (pins, b"synthetic verified host pins")):
+        with private_output(path) as output:
+            output.write(content)
+    selected = destination(
+        remote="ssh://git@git.example.test/team/memory.git",
+        ssh={"identity_file": str(key), "known_hosts_file": str(pins)},
+    )
+    view = journal.configure(root, change(settings, action="save", destination=selected))
+    assert view["destinations"] == [selected]
+    saved = (root / "journal-access.json").read_bytes()
+    assert b"synthetic private key" not in saved
+    registered = journal.configuration(
+        root, settings["workspace_id"], tenant_id=str(uuid4())
+    ).destinations[0]
+    assert registered.ssh.identity_file == key and registered.kind == "ssh_repository"
+    key.unlink()
+    with pytest.raises(state.LocalSetupError, match="existing SSH key"):
+        journal.configure(
+            root,
+            change(
+                settings,
+                action="save",
+                expected_revision=view["revision"],
+                destination={**selected, "label": "Changed label"},
+            ),
+        )
+    assert (root / "journal-access.json").read_bytes() == saved
 
 
 def test_stale_changes_and_foreign_workspaces_do_not_overwrite_registrations(tmp_path):

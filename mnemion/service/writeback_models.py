@@ -3,7 +3,7 @@
 from typing import Literal
 from pydantic import Field, StrictBool, field_validator
 from .models import Command
-from .contracts import ResponseModel
+from .contracts import JournalDestinationKind, ResponseModel
 
 
 class WritebackPolicyInput(Command):
@@ -38,6 +38,7 @@ class DestinationInfo(ResponseModel):
     prefix: str
     personal_data_scan: bool
     custom_scanner: bool
+    destination_kind: JournalDestinationKind
 
 
 class WritebackStatus(ResponseModel):

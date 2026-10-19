@@ -57,6 +57,10 @@ Source 4.19.0 adds [daily journal rollover and cached retries](docs/service/git-
 plus [local agent update controls](docs/service/desktop-operator.md#app-updates-and-startup).
 Upgrade journal-reading runners as well as publishers before using continuation
 files. Complete inventory limits and independent remote hosting still apply.
+Source 4.20.0 adds [pinned SSH deploy-key publishing](docs/service/git-journal.md#ssh-deploy-keys-and-host-pins)
+through the app and local agent/CLI controls. Delivery receipts identify local,
+HTTPS and SSH destinations; a local Git acknowledgement does not prove off-host
+replication. Existing HTTPS registrations keep their approvals when upgraded.
 Source 4.17.0 adds [live JSONL conversation capture](docs/service/live-conversations.md):
 bounded records and fragments, deferred tails, per-file source controls, private
 checkpoints, unchanged-fragment reuse and capture progress in the app. Existing

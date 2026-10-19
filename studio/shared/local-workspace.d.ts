@@ -35,7 +35,8 @@ export type VaultRequest = { workspace_id: string; expected_revision: string }
 export type VaultChange = VaultRequest & { action: 'configure' | 'restore'; enabled: boolean; mcp_enabled: boolean; recovery_key?: string; key_saved?: boolean }
 export type VaultAccess = { revision: string; repairable: boolean; state: 'not_configured' | 'configured' | 'disabled' | 'configuration_error' | 'external'; enabled: boolean; mcp_enabled: boolean; key_id: string | null; message: string }
 export type VaultKey = { workspace_id: string; revision: string; key_id: string; recovery_key: string }
-export type JournalDestination = { space_id: string; label: string; remote: string; branch: string; prefix: string; personal_data_scan: boolean }
+export type JournalSsh = { identity_file: string; known_hosts_file: string }
+export type JournalDestination = { space_id: string; label: string; remote: string; branch: string; prefix: string; personal_data_scan: boolean; ssh?: JournalSsh }
 export type JournalChange = { workspace_id: string; expected_revision: string } & (
   { action: 'save'; destination: JournalDestination } | { action: 'remove'; space_id: string } | { action: 'reset' }
 )

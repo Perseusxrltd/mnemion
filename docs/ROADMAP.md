@@ -1,9 +1,19 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.19.0**. Roadmap updated: **2026-10-19**.
+Reviewed source distribution: **4.20.0**. Roadmap updated: **2026-10-19**.
 The [current published distribution and release gates](RELEASE_STATUS.md) are updated automatically.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
+
+The [4.20.0 source](releases/4.20.0.md) addresses issue 42 with
+[SSH deploy keys and pinned host keys](service/git-journal.md#ssh-deploy-keys-and-host-pins),
+local app/agent enrollment and explicit destination types in receipts. It keeps
+existing HTTPS approvals and distinguishes a local Git acknowledgement from
+off-host replication. [Validation](validation/2026-10-19-journal-ssh.md) includes
+actual OpenSSH/Git and PostgreSQL, revocation, host-key refusal and concurrent
+publication. Provider account/key provisioning, native SSH platform evidence,
+backfill and independent recovery remain open. Strict completion stays
+**17/64 (26.6%)**.
 
 The [4.19.0 source](releases/4.19.0.md) fixes native connections dropping the
 server version and hiding supported features. The installed Git-setup check

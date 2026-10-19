@@ -7,7 +7,7 @@ from uuid import UUID
 from pydantic import ValidationError
 
 from .. import local_state
-from .config import Configuration, Destination
+from .config import Configuration, Destination, SshAuthentication
 from .format import JournalError
 
 
@@ -29,7 +29,8 @@ def arguments(parser):
     enroll.add_argument("--state", type=Path, required=True)
     repository = enroll.add_mutually_exclusive_group(required=True)
     repository.add_argument(
-        "--remote", help="HTTPS URL; credentials must be in Git's credential manager"
+        "--remote",
+        help="HTTPS URL with Git credentials, or ssh://user@host/repository with dedicated key and host pins",
     )
     repository.add_argument(
         "--local-repository",
@@ -38,6 +39,14 @@ def arguments(parser):
     )
     enroll.add_argument("--branch", default="main")
     enroll.add_argument("--prefix", default="memory/buffer")
+    enroll.add_argument(
+        "--ssh-key-file", type=Path, help="Owner-only deploy key for this SSH repository"
+    )
+    enroll.add_argument(
+        "--ssh-known-hosts-file",
+        type=Path,
+        help="Owner-only known-hosts file containing independently verified host keys",
+    )
     enroll.add_argument(
         "--expected-fingerprint", help="Required when replacing an existing registration"
     )
@@ -61,7 +70,16 @@ def execute(args):
                 else None,
                 branch=args.branch,
                 prefix=args.prefix,
+                ssh=SshAuthentication(
+                    identity_file=args.ssh_key_file, known_hosts_file=args.ssh_known_hosts_file
+                )
+                if args.ssh_key_file is not None or args.ssh_known_hosts_file is not None
+                else None,
             )
+            if destination.ssh:
+                from .ssh import credential_bytes
+
+                credential_bytes(destination.ssh)
             local_state.directory(path.parent)
             with local_state.lock(path.parent):
                 existing = path.exists() or path.is_symlink()
@@ -73,7 +91,9 @@ def execute(args):
                     destinations=[d for d in config.destinations if d.id != destination.id]
                     + [destination]
                 )
-                local_state.write(path, config.model_dump(mode="json"), replace=existing)
+                local_state.write(
+                    path, config.model_dump(mode="json", exclude_none=True), replace=existing
+                )
         print(
             json.dumps(
                 {
@@ -85,6 +105,7 @@ def execute(args):
                             "tenant_id": str(d.tenant_id),
                             "space_id": str(d.space_id),
                             "fingerprint": d.fingerprint,
+                            "destination_kind": d.kind,
                         }
                         for d in config.destinations
                     ],
@@ -107,7 +128,7 @@ def execute(args):
             json.dumps(
                 {
                     "error": code,
-                    "message": "Check the private file, scope IDs, safe HTTPS URL and current registration fingerprint.",
+                    "message": "Check the private registry, scope IDs, safe Git URL, SSH credential files if selected, and current registration fingerprint.",
                 }
             )
         )

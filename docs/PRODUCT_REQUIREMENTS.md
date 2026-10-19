@@ -19,6 +19,12 @@ not equally sized. This is coverage of the full requested scope, not a measure
 of engineering effort or the usability of the published app. Hotfixes to a
 partial feature do not automatically mark its whole requirement complete.
 
+Source 4.20.0 advances F08/C01/A09 with [pinned SSH journal access](service/git-journal.md#ssh-deploy-keys-and-host-pins)
+for issue 42. App and local-agent setup use the same private credential references;
+receipts distinguish local repositories from HTTPS/SSH destinations. The
+[real SSH/API evidence](validation/2026-10-19-journal-ssh.md) does not complete
+provider onboarding, native platform acceptance or independent office recovery.
+
 Source 4.19.0 advances F08/R04/U04 with [bounded journal rollover](service/git-journal.md#file-rollover-and-version-compatibility)
 and [private local agent update controls](service/desktop-operator.md#app-updates-and-startup).
 It also fixes native connections dropping server-version metadata and hiding

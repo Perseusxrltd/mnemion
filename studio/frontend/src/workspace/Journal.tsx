@@ -14,6 +14,8 @@ const errors: Record<string, string> = {
   journal_policy_changed: 'Settings changed during publication. Refresh before retrying.',
   journal_publication_changed: 'A queued memory changed or was withdrawn. Refresh and retry publication.',
   journal_storage_unavailable: 'The host cannot write its private journal. Check available storage and access.',
+  journal_ssh_credentials_unavailable: 'The host cannot read its private SSH files. Review the deploy key, verified known-hosts file and their OS permissions.',
+  journal_ssh_connection_failed: 'SSH access failed. Check the pinned host keys, repository deploy-key access and network. No password prompt or SSH-agent fallback is used.',
   journal_destination_unavailable: 'The host destination changed. An administrator must review and approve it.',
   journal_pending_changes: 'Publish the queued changes before organizing this journal. Automatic filing waits for publication to finish.',
   journal_note_conflict: 'A generated note was edited or its reserved filename is occupied. Preserve your copy outside the generated folder, then restore the generated view before retrying.',
@@ -60,6 +62,8 @@ export default function Journal({ client, space, writer, serviceVersion, endpoin
       <section className="ws-card"><h2><GitBranch size={20} /> {states[data.state]}</h2>
         {data.destination ? <><p><strong>{data.destination.label}</strong></p><p>{data.destination.repository}</p>
           <p className="ws-helper">Branch {data.destination.branch} · Folder {data.destination.prefix}</p>
+          {data.destination.destination_kind === 'local_repository' && <p className="ws-notice">This destination is a local Git repository. A confirmed push only acknowledges that local copy. Any off-host replication needs its own verified delivery receipt.</p>}
+          {data.destination.destination_kind === 'ssh_repository' && <p className="ws-helper">SSH uses this host’s dedicated deploy key and pinned host keys.</p>}
           <p className="ws-helper">Secret checks are always on. Personal-data patterns: {data.destination.personal_data_scan ? 'on' : 'off'}.
             {data.destination.custom_scanner ? ' A host-approved scanner also checks every save.' : ' Your operator can add a custom scanner.'}</p></>
           : <p>Register a repository for this space on its host first. A current desktop host provides registration above; other hosts use the operator command in the setup guide.</p>}
@@ -68,7 +72,7 @@ export default function Journal({ client, space, writer, serviceVersion, endpoin
           <div><span>Pending content</span><strong>{bytes(data.pending_content_bytes)}</strong></div>
           <div><span>Publication interval</span><strong>{data.interval_seconds}s</strong></div></div>
           <p>Last confirmed push: {data.last_push_at ? new Date(data.last_push_at).toLocaleString() : 'None yet'}{data.last_commit && <> · <code>{data.last_commit.slice(0, 12)}</code></>}</p>
-          <p className="ws-helper">Local capture continues while publication is paused. A host reset can lose entries that have not reached the repository. Important saves require a confirmed Git push before success is returned.</p>
+          <p className="ws-helper">Local capture continues while publication is paused. Important saves require acknowledgement by the selected Git destination before success is returned. A host reset can lose local-only copies; a delivery receipt does not verify another replica or a complete workspace backup.</p>
           {writer && <button className="ws-button" disabled={busy || data.state !== 'ready'} onClick={() => void act(() => client.pushJournal(space, data.version), 'Publication checked. Remaining entries continue in bounded batches.')}><Upload size={15} />{busy ? 'Working…' : 'Push now'}</button>}</>}
       </section>
       {data.configured && foldingSupported && <section className="ws-card"><h2><Archive size={20} />Library & archive</h2>

@@ -9,6 +9,9 @@ archival, with the same controls in Studio, HTTP, SDKs and the agent catalog.
 Source **4.18.0** adds destination registration in the desktop app and its private
 local agent interface.
 Source **4.19.0** adds file rollover and an index of validated Git objects.
+Source **4.20.0** adds pinned SSH deploy-key access and explicit local/network
+destination types in receipts. The 4.18 native build was withheld; 4.19 includes
+its guided setup with the desktop connection metadata correction.
 
 An inbound Git connection does not enable publication. Existing memories, core
 blocks, attachments, credentials and organization settings are not backfilled.
@@ -20,17 +23,22 @@ memory text and provenance, with the recovery boundaries described below.
 
 ### A workspace hosted by the desktop app
 
-From 4.18.0, open the local workspace, choose its space and select **Git journal**.
+From 4.19.0, open the local workspace, choose its space and select **Git journal**.
 An organization administrator with administrator access to that space sees
 **Repository on this host** when connected directly to this computer's local
 service. Remote workspaces use their own host's setup below.
 
-1. Install Git for this OS account and sign in through its credential manager.
+1. Install Git for this OS account and sign in through its credential manager,
+   or prepare the dedicated SSH files described below. SSH also requires OpenSSH.
    Use an existing repository with the required write access. The app detects
    whether the Git command can be found; that is not proof of authentication or
    repository permissions. Restart the app after installing Git.
-2. Select **Register a repository**. Enter its HTTPS address without a password,
-   token, query or fragment. Choose the branch and an unused journal folder. The
+2. Select **Register a repository**. Choose **HTTPS · Git credential manager**
+   or **SSH · repository deploy key**. Enter its address without a password,
+   token, query or fragment. For SSH, use `ssh://user@host/repository` and choose
+   the private deploy-key and verified known-hosts files. The app stores their
+   paths locally; it does not put the key contents in the registration or API.
+   Choose the branch and an unused journal folder. The
    default folder is unique to the selected space and separate from old external
    buffers. Keep personal-data pattern checks enabled unless your policy calls
    for a different setting; recognizable-secret checks are always on.
@@ -42,8 +50,9 @@ service. Remote workspaces use their own host's setup below.
    and retained Git history, choose its schedule and save the space policy.
    Registering the host alone never enables publication or sends a Git request.
 
-The app derives private queue paths and does not accept arbitrary executable
-scanners or host paths through this form. The primary organization of the local
+The app derives private queue paths and does not accept executable scanners or
+custom Git/SSH commands through this form. Only the two selected SSH credential
+file paths are accepted as optional local inputs. The primary organization of the local
 workspace supplies the destination's tenant identity. Each space needs a distinct
 repository folder. An already configured `MNEMION_WRITEBACK_CONFIG` is retained;
 adopt app-managed configuration deliberately through the host operator.
@@ -56,7 +65,7 @@ valid approved destination to resume. Use the ordinary **Pause publication**
 setting for a temporary publication pause. Repair preserves damaged registration
 bytes before clearing the host's destination choices.
 
-Git installation and credential-manager sign-in are still separate prerequisites;
+Git installation and credential provisioning are still separate prerequisites;
 this feature creates no account or paid service. Local database recovery preserves
 the queue in the database but does not recreate host registrations or Git sign-in.
 Retain repository/branch/folder choices with your independent recovery references
@@ -65,7 +74,8 @@ and re-register them on the recovered host before approving publication.
 ### Other API hosts and operator-managed destinations
 
 1. Install Git on the API host. Authenticate its **service OS account** through
-   Git's credential manager, with write access to the selected repository. Use
+   Git's credential manager, or use [pinned SSH access](#ssh-deploy-keys-and-host-pins),
+   with write access to the selected repository. Use
    an existing free Git provider or a bare repository you operate.
 2. Read the organization ID from `GET /v1/me` and choose a native writable space
    from `GET /v1/spaces`. Connector-managed source spaces cannot publish through
@@ -95,7 +105,7 @@ and re-register them on the recovered host before approving publication.
    access to this space. The default interval is 300 seconds, configurable
    between 30 and 86,400. Only future native changes are captured.
 
-Git installation and credential-manager sign-in still require the service OS
+Git installation and credential provisioning still require the service OS
 account's operator. Hosts outside the app use the registration command above.
 Ordinary memory API principals cannot choose arbitrary host paths, destinations
 or scanner programs. No paid account or provider subscription is created.
@@ -106,6 +116,59 @@ destinations into the same registry. Replacing an existing registration requires
 its current `--expected-fingerprint`; restart the API and approve the new policy
 in Studio. Each space needs a separate state directory and repository prefix.
 Changing a destination does not migrate previously published history.
+
+### SSH deploy keys and host pins
+
+From 4.20, an SSH destination requires an explicit `ssh://user@host/repository`
+URL, its own private key and a verified known-hosts file. Optional ports are
+supported. SCP-style `user@host:path`, passwords in URLs and custom SSH commands
+are not accepted.
+
+1. Create a deploy key for this repository and service OS account, for example
+   `ssh-keygen -t ed25519 -N "" -f /private/mnemion/keys/journal-key`. Grant its
+   **public** key write access in the repository provider. Keep the private key
+   on the host and in an independently controlled encrypted recovery location.
+2. Obtain the host's public SSH keys through its provider's authenticated
+   documentation or the host administrator. Save the verified entries in a
+   dedicated known-hosts file. For a nonstandard port, use entries in the form
+   `[host]:port key-type public-key`. A network `ssh-keyscan` by itself does not
+   verify the host's identity. Mnemion never automatically trusts an unknown key.
+3. Both input files must be regular files owned by and readable only by the
+   service OS account, without links. On Unix use mode `0600`; on Windows use an
+   owner-only file ACL. Existing files are checked, not silently repaired.
+4. Choose **SSH · repository deploy key** in the desktop form, or enroll through
+   the same local operator command:
+
+   ```sh
+   mnemion-service journal enroll --config /private/mnemion/journals/registry.json --id office --label "Office memories" --tenant 11111111-1111-4111-8111-111111111111 --space 22222222-2222-4222-8222-222222222222 --state /private/mnemion/journals/office --remote ssh://git@git.example.com/team/memories.git --ssh-key-file /private/mnemion/keys/journal-key --ssh-known-hosts-file /private/mnemion/keys/known-hosts
+   ```
+
+   Configure the host environment/restart and approve space publication as above.
+   Registration verifies bounded private-file access; **Push now** or an important
+   save tests the actual Git connection and repository write permission.
+
+SSH uses only the selected identity and host pins. It ignores inherited SSH
+commands, SSH agents, user/system SSH configuration and global Git URL rewrites.
+Password/passphrase prompts, forwarding, local SSH commands and multiplexed
+connections are disabled. Unattended keys that need an interactive passphrase,
+agent, hardware touch, proxy jump or company-specific SSH configuration need a
+different provisioned transport; they are not silently bypassed.
+
+Each network operation reads the existing files through checked handles and uses
+temporary owner-only snapshots. This handles paths with spaces, Unicode, quotes
+and percent signs without shell interpolation. Snapshots are removed after the
+operation; an abrupt OS/process kill may leave a private staging directory under
+the publisher's private control folder. Key contents never enter Git, the public
+API or publication receipts. Keep the original key and host-pin files under
+independent operator custody when moving/recovering a host; database backups do
+not recreate those external credential files.
+
+Key revocation, an unknown/changed host key and connection failure leave delivery
+pending. Repair the credential or independently verify new host keys, then retry
+the same event/idempotency key. File contents are reread on the next network
+operation. Changing the registered file paths requires the current registration
+fingerprint/revision and fresh space approval. Existing HTTPS/local registrations
+retain their fingerprints when upgrading to SSH-capable versions.
 
 ### Adopting an older external journal
 
@@ -131,7 +194,20 @@ require immediate Git delivery. Preserve other metadata when revising it.
 
 Receipts add `writeback.event_id`, `durability`, `remote_pending` and
 `external_history_retained`. `local_journal` means the database and private
-journal are durable locally; `remote_git` also means Git confirmed publication.
+journal are durable locally. The compatibility name `remote_git` means the
+**selected Git destination** acknowledged publication; that destination may be
+a local bare repository. It does not acknowledge another replica or a complete
+off-host backup. From 4.20, `writeback.destination_kind`, journal status and the
+private publication receipt distinguish:
+
+| Destination kind | What its Git acknowledgement covers |
+| --- | --- |
+| `local_repository` | The explicitly enrolled local bare repository only. A separate replication job needs its own remotely verified receipt. |
+| `https_repository` | The repository reached through the enrolled HTTPS URL. Other replicas and storage durability are not independently verified. |
+| `ssh_repository` | The repository reached through the enrolled SSH URL with its selected key and host pins. Other replicas are not independently verified. |
+
+Older receipts can omit the kind; do not infer off-host protection from them.
+Even a network URL can reach another service on the same physical host.
 These fields describe the save's acknowledgment, not the repository's future
 state. Read journal status for current pending counts and the last confirmed
 commit. Lexical and semantic indexing retain their normal separate receipts;

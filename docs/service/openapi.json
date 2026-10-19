@@ -1584,6 +1584,15 @@
             "title": "Custom Scanner",
             "type": "boolean"
           },
+          "destination_kind": {
+            "enum": [
+              "local_repository",
+              "https_repository",
+              "ssh_repository"
+            ],
+            "title": "Destination Kind",
+            "type": "string"
+          },
           "id": {
             "title": "Id",
             "type": "string"
@@ -1612,7 +1621,8 @@
           "branch",
           "prefix",
           "personal_data_scan",
-          "custom_scanner"
+          "custom_scanner",
+          "destination_kind"
         ],
         "title": "DestinationInfo",
         "type": "object"
@@ -3054,6 +3064,22 @@
       "JournalDelivery": {
         "additionalProperties": true,
         "properties": {
+          "destination_kind": {
+            "anyOf": [
+              {
+                "enum": [
+                  "local_repository",
+                  "https_repository",
+                  "ssh_repository"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destination Kind"
+          },
           "durability": {
             "enum": [
               "local_journal",
@@ -9813,7 +9839,7 @@
   "info": {
     "description": "Shared, scoped memory and evidence for apps, teams, and assistants. Saves acknowledge canonical durability; operations report semantic indexing readiness.",
     "title": "Mnemion Memory Service",
-    "version": "4.19.0"
+    "version": "4.20.0"
   },
   "openapi": "3.1.0",
   "paths": {

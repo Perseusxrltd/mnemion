@@ -445,6 +445,15 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     requireLocalSteady()
     return localWorkspace().revealVaultKey(input)
   })
+  ipcMain.handle('local:journal-choose', async (event, kind: unknown) => {
+    trusted(event)
+    if (kind !== 'identity' && kind !== 'known_hosts') throw new Error('Choose an SSH deploy key or pinned known-hosts file.')
+    const selected = await dialog.showOpenDialog(getWindow()!, {
+      title: kind === 'identity' ? 'Choose this repository’s private SSH deploy key' : 'Choose its verified SSH known-hosts file',
+      properties: ['openFile'],
+    })
+    return selected.canceled ? null : selected.filePaths[0] ?? null
+  })
   ipcMain.handle('local:journal', async (event, input: unknown) => {
     trusted(event)
     requireLocalSteady()
