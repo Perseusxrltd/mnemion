@@ -104,6 +104,20 @@ pinned local assets; for an HTTP profile it prepares only the tokenizer.
 `MNEMION_MODEL_OFFLINE=1` requires any tokenizer/ONNX files to exist in
 `MNEMION_MODEL_CACHE`; it does **not** disable an explicitly configured HTTP provider.
 
+From 4.15.0, local E5/BGE preparation checks the pinned file cache before making
+network requests. A complete cache loads and reloads without contacting Hugging
+Face, including when offline mode is not explicitly enabled. A cold or partial
+cache downloads only the required ONNX/tokenizer files and the runtime's optional
+configuration files, using their exact pinned revision. It does not list the
+model repository or download unrelated model variants. This avoids repository
+listing rate limits on shared networks; first-time downloads still need access
+to Hugging Face's file resolver. No Hub account or token is required.
+
+Model and tokenizer checksums are still verified before inference. A corrupt
+cached file fails preparation; reusing a cache does not bypass integrity checks.
+The weights, tokenizer identities and embedding generations are unchanged, so
+this download improvement requires no reindex.
+
 For an existing Ollama server, add a profile such as:
 
 ```json

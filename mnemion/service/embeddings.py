@@ -139,22 +139,13 @@ class LocalEmbedder:
                 return
             from fastembed import TextEmbedding
             from fastembed.common.model_description import ModelSource, PoolingType
-            from huggingface_hub import snapshot_download
             from tokenizers import Tokenizer
+            from .model_files import pinned_model_directory
 
             config = self.generation.configuration
             if importlib.metadata.version("fastembed") != config["runtime_version"]:
                 raise RuntimeError("Embedding runtime changed; a new generation must be registered")
-            model_path = Path(
-                snapshot_download(
-                    repo_id=config["repository"],
-                    revision=config["revision"],
-                    cache_dir=str(self.cache_dir),
-                    allow_patterns=[config["model_file"], "*.json"],
-                    local_files_only=self.offline,
-                    token=False,
-                )
-            )
+            model_path = pinned_model_directory(config, self.cache_dir, offline=self.offline)
             for filename, expected in (
                 (config["model_file"], config["model_sha256"]),
                 ("tokenizer.json", config["tokenizer_sha256"]),

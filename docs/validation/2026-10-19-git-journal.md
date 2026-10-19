@@ -47,6 +47,22 @@ was modified. This is not a live Git-provider or remote host-reset claim.
   excluded from the legacy denominator. Both thresholds remain unchanged
   (75% service, 45% legacy). Their **39 focused tests cover 88.79%** of the 758
   journal/projection statements. No tested module is excluded from both gates.
+- The next release service run passed **1,279 tests** with **86.01% coverage**,
+  but exposed a test assumption that a deletion would finish within eight global
+  worker claims. The test database contains other tenants' queues. The corrected
+  test deliberately puts nine indexing jobs ahead of its deletion and waits for
+  that deletion's completion receipt under a deadline. Real worker purging and
+  the assertion that journal revision references are cleared remain exercised.
+- A Mac main-branch check hit an anonymous Hugging Face repository-listing
+  HTTP 429; the release's equivalent Apple Silicon model check passed. The local
+  model loader now uses cached pinned files first, then exact file resolution for
+  missing files. **35 model/cache/idle checks passed**, including actual E5/BGE
+  retrieval and idle reload with network access disabled. Cache checks prohibit
+  network calls for complete caches, reject mixed snapshots/unsafe paths and
+  ensure corrupt model bytes never reach inference.
+- A fresh tokenizer-configuration download used the Hub's file-resolver quota
+  and did not list the repository tree. Cold downloads still use the network.
+  The corrected journal suite and new cache checks passed together (**20 tests**).
 
 Native packages, independent uploaded-byte verification and public automatic
 upgrade rehearsals remain separate pipeline evidence in

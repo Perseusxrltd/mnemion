@@ -2,6 +2,7 @@
 
 import io
 import secrets
+import time
 from uuid import UUID
 
 import pytest
@@ -152,11 +153,23 @@ def test_important_memory_is_acknowledged_only_after_real_git_publication(env, t
 
 
 def test_forgotten_unpublished_text_never_reaches_git_and_replay_retains_denial(env, tmp_path):
+    # The test database is shared across tenants. A worker may have more than
+    # eight unrelated jobs ahead of this purge; its completion receipt is the
+    # boundary we need, not an assumed number of scheduler iterations.
+    for number in range(9):
+        env.memory.save(
+            env.owner,
+            env.space,
+            MemoryInput(content=f"Unrelated indexing job {number}"),
+            f"unrelated-{number}",
+        )
     service, destination = setup(env, tmp_path)
     saved = env.memory.save(
         env.owner, env.space, MemoryInput(content="Withdraw this before sharing."), "temporary"
     )
-    env.memory.forget(env.owner, UUID(saved["memory_id"]), expected_version=1, key="withdraw")
+    forgotten = env.memory.forget(
+        env.owner, UUID(saved["memory_id"]), expected_version=1, key="withdraw"
+    )
     pending = list(Spool(destination).records())
     assert len(pending) == 1 and pending[0].action == "forget"
     assert service.run_once()
@@ -166,9 +179,10 @@ def test_forgotten_unpublished_text_never_reaches_git_and_replay_retains_denial(
         for value in published:
             index.add(value)
         assert not list(index.current()) and index.describe()["forgotten_memories"] == 1
-    for _ in range(8):
-        if not env.worker.run_once():
-            break
+    deadline = time.monotonic() + 30
+    while env.memory.operation(env.owner, UUID(forgotten["operation_id"]))["state"] != "ready":
+        assert time.monotonic() < deadline, "The deletion operation did not complete"
+        assert env.worker.run_once(), "The queued deletion operation was not claimed"
     assert all(row["revision_id"] is None for row in events(env))
 
 
