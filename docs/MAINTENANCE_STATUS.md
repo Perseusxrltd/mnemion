@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-19T21:52:46+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-19T22:21:00+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.24.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.24.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -20,13 +20,14 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 39328442720](https://github.com/Perseusxrltd/mnemion/actions/runs/39328442720) |
+| ci\.yml | main | in\_progress | [Run 39333618790](https://github.com/Perseusxrltd/mnemion/actions/runs/39333618790) |
 | public-updates\.yml | v4\.24\.0 | success | [Run 39315350141](https://github.com/Perseusxrltd/mnemion/actions/runs/39315350141) |
 | release\.yml | release/4\.24\.0 | success | [Run 39307882234](https://github.com/Perseusxrltd/mnemion/actions/runs/39307882234) |
 | release\.yml | release/4\.25\.0 | failure | [Run 39314058004](https://github.com/Perseusxrltd/mnemion/actions/runs/39314058004) |
 | release\.yml | release/4\.26\.0 | failure | [Run 39322187837](https://github.com/Perseusxrltd/mnemion/actions/runs/39322187837) |
-| release\.yml | release/4\.27\.0 | in\_progress | [Run 39328666072](https://github.com/Perseusxrltd/mnemion/actions/runs/39328666072) |
-| verify-artifacts\.yml | main | skipped | [Run 39327941444](https://github.com/Perseusxrltd/mnemion/actions/runs/39327941444) |
+| release\.yml | release/4\.27\.0 | success | [Run 39328666072](https://github.com/Perseusxrltd/mnemion/actions/runs/39328666072) |
+| release\.yml | release/4\.28\.0 | in\_progress | [Run 39333925246](https://github.com/Perseusxrltd/mnemion/actions/runs/39333925246) |
+| verify-artifacts\.yml | main | in\_progress | [Run 39334233018](https://github.com/Perseusxrltd/mnemion/actions/runs/39334233018) |
 | website-release\.yml | v4\.24\.0 | success | [Run 39315345960](https://github.com/Perseusxrltd/mnemion/actions/runs/39315345960) |
 
 ## Failed jobs
