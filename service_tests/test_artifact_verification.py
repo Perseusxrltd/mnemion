@@ -53,6 +53,7 @@ def fixture(tmp_path, monkeypatch):
         "event": "workflow_dispatch",
         "status": "completed",
         "conclusion": "success",
+        "run_attempt": 1,
         "repository": {"full_name": REPO},
         "head_repository": {"full_name": REPO},
     }
@@ -171,6 +172,89 @@ def test_wrong_or_incomplete_gates_refuse_before_download(fixture, failure):
         subject.verify(REPO, 99, state.source, state.output)
     assert not state.output.exists()
     assert not any(c[:2] == ("release", "download") for c in state.calls)
+
+
+@pytest.fixture
+def metadata_clock(monkeypatch):
+    clock = SimpleNamespace(now=0, sleeps=[], after_sleep=None)
+
+    def sleep(seconds):
+        clock.sleeps.append(seconds)
+        clock.now += seconds
+        if clock.after_sleep:
+            clock.after_sleep()
+
+    monkeypatch.setattr(subject.time, "monotonic", lambda: clock.now)
+    monkeypatch.setattr(subject.time, "sleep", sleep)
+    return clock
+
+
+@pytest.mark.parametrize("missing_catalog", [False, True])
+def test_delayed_job_metadata_waits_for_actual_success(
+    fixture, metadata_clock, capsys, missing_catalog
+):
+    original = copy.deepcopy(fixture.jobs["jobs"])
+    if missing_catalog:
+        fixture.jobs["jobs"].pop()
+    else:
+        fixture.jobs["jobs"][-1].update(status="in_progress", conclusion="")
+
+    def complete():
+        assert not fixture.output.exists()
+        assert not fixture.validations
+        fixture.jobs["jobs"] = original
+
+    metadata_clock.after_sleep = complete
+    receipt = subject.verify(REPO, 99, fixture.source, fixture.output, wait_seconds=30)
+    assert receipt["exact_source_production_validator_passed"]
+    assert metadata_clock.sleeps == [15]
+    captured = capsys.readouterr()
+    assert not captured.out and "Waiting for completed" in captured.err
+
+
+def test_metadata_wait_expires_without_downloading_or_issuing_receipt(fixture, metadata_clock):
+    fixture.jobs["jobs"][-1].update(status="in_progress", conclusion=None)
+    with pytest.raises(ValueError, match="Release jobs do not match"):
+        subject.verify(REPO, 99, fixture.source, fixture.output, wait_seconds=16)
+    assert metadata_clock.sleeps == [15, 1]
+    assert not fixture.output.exists()
+    assert not any(c[:2] == ("release", "download") for c in fixture.calls)
+
+
+@pytest.mark.parametrize("conclusion", ["failure", "cancelled", "skipped", "timed_out"])
+def test_failed_gates_are_never_retried(fixture, metadata_clock, conclusion):
+    fixture.jobs["jobs"][-1]["conclusion"] = conclusion
+    with pytest.raises(ValueError, match="failed or invalid"):
+        subject.release_run(REPO, 99, wait_seconds=30)
+    assert not metadata_clock.sleeps
+
+
+@pytest.mark.parametrize("change", ["source", "attempt", "repository", "failure"])
+def test_changed_release_identity_or_failure_stops_metadata_wait(fixture, metadata_clock, change):
+    fixture.jobs["jobs"][-1].update(status="in_progress", conclusion=None)
+
+    def changed():
+        if change == "source":
+            fixture.run["head_sha"] = fixture.jobs["headSha"] = "b" * 40
+        elif change == "attempt":
+            fixture.run["run_attempt"] += 1
+        elif change == "repository":
+            fixture.run["head_repository"]["full_name"] = "foreign/repository"
+        else:
+            fixture.run["conclusion"] = "failure"
+
+    metadata_clock.after_sleep = changed
+    with pytest.raises(ValueError):
+        subject.release_run(REPO, 99, wait_seconds=30)
+    assert metadata_clock.sleeps == [15]
+    assert not fixture.output.exists()
+
+
+@pytest.mark.parametrize("wait_seconds", [-1, 1201, True, float("inf")])
+def test_metadata_wait_has_a_fixed_bound(fixture, wait_seconds):
+    with pytest.raises(ValueError, match="Metadata wait"):
+        subject.release_run(REPO, 99, wait_seconds=wait_seconds)
+    assert not fixture.calls
 
 
 @pytest.mark.parametrize("failure", ["wrong_source", "dirty"])

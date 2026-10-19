@@ -23,7 +23,13 @@ gates; no paid service, model call or new signing credential is required.
    native builders. Use the locked development environment; it includes Ruff.
 4. The release workflow runs product/native gates and creates a draft. The
    independent verifier checks the exact uploaded bytes, signatures, complete
-   feeds and their unchanged inventory.
+   feeds and their unchanged inventory. GitHub can report the workflow completed
+   before its job listing catches up. The verification workflow waits up to
+   20 minutes for that listing, checking every 15 seconds and keeping the source
+   commit and run attempt fixed. Every job must actually report completed/success;
+   a failed gate or changed identity stops immediately. No asset is downloaded
+   until these gates pass. The standalone verifier defaults to no waiting;
+   `--wait-seconds` opts into a bounded wait, at most 1,200 seconds.
 5. A dependent publication job verifies the successful verification job, original
    release gates, main ancestry, unchanged asset IDs/sizes/digests, existing tag
    and latest stable version. It publishes only the matching release. A newer

@@ -10,6 +10,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 import tomllib
 from datetime import datetime, timezone
 from pathlib import Path
@@ -17,6 +18,7 @@ from pathlib import Path
 MAX_ASSETS = 128
 MAX_ASSET_BYTES = 2 * 1024**3
 MAX_TOTAL_BYTES = 8 * 1024**3
+MAX_METADATA_WAIT_SECONDS = 1200
 
 
 def gh(*arguments: str) -> str:
@@ -28,37 +30,66 @@ def gh(*arguments: str) -> str:
     return result.stdout
 
 
-def release_run(repo: str, run_id: int) -> dict:
+def release_run(repo: str, run_id: int, *, wait_seconds: int = 0) -> dict:
     if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repo) or run_id < 1:
         raise ValueError("A repository and positive release run ID are required")
-    run = json.loads(gh("api", f"repos/{repo}/actions/runs/{run_id}"))
-    if (
-        run.get("id") != run_id
-        or run.get("path") != ".github/workflows/release.yml"
-        or run.get("event") != "workflow_dispatch"
-        or run.get("status") != "completed"
-        or run.get("conclusion") != "success"
-        or run.get("repository", {}).get("full_name") != repo
-        or run.get("head_repository", {}).get("full_name") != repo
-        or not re.fullmatch(r"[a-f0-9]{40}", run.get("head_sha", ""))
-    ):
-        raise ValueError("The exact repository release workflow must have succeeded")
-    jobs = json.loads(
-        gh("run", "view", str(run_id), "--repo", repo, "--json", "headSha,conclusion,jobs")
-    )
-    if (
-        jobs.get("headSha") != run["head_sha"]
-        or jobs.get("conclusion") != "success"
-        or not {"Release preflight", "assemble"}.issubset(
-            {job.get("name") for job in jobs.get("jobs", [])}
+    if type(wait_seconds) is not int or not 0 <= wait_seconds <= MAX_METADATA_WAIT_SECONDS:
+        raise ValueError("Metadata wait must be between 0 and 1200 seconds")
+    deadline = time.monotonic() + wait_seconds
+    expected = None
+    while True:
+        run = json.loads(gh("api", f"repos/{repo}/actions/runs/{run_id}"))
+        if (
+            run.get("id") != run_id
+            or run.get("path") != ".github/workflows/release.yml"
+            or run.get("event") != "workflow_dispatch"
+            or run.get("status") != "completed"
+            or run.get("conclusion") != "success"
+            or run.get("repository", {}).get("full_name") != repo
+            or run.get("head_repository", {}).get("full_name") != repo
+            or not re.fullmatch(r"[a-f0-9]{40}", run.get("head_sha", ""))
+        ):
+            raise ValueError("The exact repository release workflow must have succeeded")
+        identity = (run["head_sha"], run.get("run_attempt"))
+        if expected is not None and expected != identity:
+            raise ValueError("Release source or run attempt changed while waiting for metadata")
+        expected = identity
+        jobs = json.loads(
+            gh("run", "view", str(run_id), "--repo", repo, "--json", "headSha,conclusion,jobs")
         )
-        or any(
-            job.get("status") != "completed" or job.get("conclusion") != "success"
-            for job in jobs["jobs"]
+        if (
+            jobs.get("headSha") != run["head_sha"]
+            or jobs.get("conclusion") != "success"
+            or not isinstance(jobs.get("jobs"), list)
+        ):
+            raise ValueError("Release jobs do not match the completed source and gates")
+        pending = False
+        for job in jobs["jobs"]:
+            if job.get("status") == "completed" and job.get("conclusion") == "success":
+                continue
+            if job.get("status") not in {
+                "completed",
+                "queued",
+                "in_progress",
+                "waiting",
+                "pending",
+                "requested",
+            } or job.get("conclusion") not in {None, "", "success"}:
+                raise ValueError("Release jobs include a failed or invalid gate")
+            pending = True
+        pending |= not {"Release preflight", "assemble"}.issubset(
+            {job.get("name") for job in jobs["jobs"]}
         )
-    ):
-        raise ValueError("Release jobs do not match the completed source and gates")
-    return run
+        if not pending:
+            return run
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise ValueError("Release jobs do not match the completed source and gates")
+        # A workflow_run completion can arrive before the jobs API catches up.
+        # Keep the exact source/attempt pinned and require actual completed jobs;
+        # runner steps and uploaded artifacts are never substitutes for success.
+        print("Waiting for completed release job metadata from GitHub", file=sys.stderr)
+        time.sleep(min(15, remaining))
 
 
 def inventory(release: dict, version: str, commit: str) -> dict[str, dict]:
@@ -132,8 +163,8 @@ def download(repo: str, tag: str, artifacts: Path, asset: dict) -> None:
         raise ValueError("Downloaded bytes differ from GitHub's exact size or digest")
 
 
-def verify(repo: str, run_id: int, source: Path, output: Path) -> dict:
-    run = release_run(repo, run_id)
+def verify(repo: str, run_id: int, source: Path, output: Path, *, wait_seconds: int = 0) -> dict:
+    run = release_run(repo, run_id, wait_seconds=wait_seconds)
     source = source.resolve()
     actual = subprocess.run(
         ["git", "rev-parse", "HEAD"],
@@ -239,13 +270,23 @@ def main() -> None:
     parser.add_argument("--resolve", action="store_true")
     parser.add_argument("--source", type=Path)
     parser.add_argument("--output", type=Path)
+    parser.add_argument(
+        "--wait-seconds",
+        type=int,
+        default=0,
+        help="Bounded wait for delayed job metadata after a successful workflow (0–1200)",
+    )
     args = parser.parse_args()
     if args.resolve:
-        print("commit=" + release_run(args.repo, args.run)["head_sha"])
+        print(
+            "commit=" + release_run(args.repo, args.run, wait_seconds=args.wait_seconds)["head_sha"]
+        )
     else:
         if args.source is None or args.output is None:
             parser.error("--source and --output are required for verification")
-        receipt = verify(args.repo, args.run, args.source, args.output)
+        receipt = verify(
+            args.repo, args.run, args.source, args.output, wait_seconds=args.wait_seconds
+        )
         print(json.dumps({key: value for key, value in receipt.items() if key != "inventory"}))
 
 

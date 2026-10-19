@@ -29,7 +29,7 @@ jobs:
       (github.event.workflow_run.conclusion == 'success' &&
        github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -47,7 +47,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           MNEMION_RELEASE_RUN: ${{ github.event.workflow_run.id || inputs.release_run }}
         run: >-
-          python verifier/deploy/verify_artifacts.py --resolve
+          python verifier/deploy/verify_artifacts.py --resolve --wait-seconds 1200
           --repo "$GITHUB_REPOSITORY" --run "$MNEMION_RELEASE_RUN" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -61,7 +61,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           MNEMION_RELEASE_RUN: ${{ github.event.workflow_run.id || inputs.release_run }}
         run: >-
-          python verifier/deploy/verify_artifacts.py
+          python verifier/deploy/verify_artifacts.py --wait-seconds 1200
           --repo "$GITHUB_REPOSITORY" --run "$MNEMION_RELEASE_RUN"
           --source release-source --output "$RUNNER_TEMP/verified-release"
       - name: Retain the bounded verification receipt, without duplicate binaries
