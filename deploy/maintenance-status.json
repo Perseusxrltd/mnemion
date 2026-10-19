@@ -87,9 +87,9 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "b10993c16e0efb317b7ec23573fb6b7e4a6d878d",
-      "status": "queued",
+      "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-19T10:16:23Z",
+      "updated_at": "2026-10-19T10:17:21Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39236223232",
       "failed_jobs": []
     },
@@ -152,9 +152,9 @@
       "workflow": "release.yml",
       "branch": "release/4.14.0-r2",
       "source_commit": "b10993c16e0efb317b7ec23573fb6b7e4a6d878d",
-      "status": "queued",
+      "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-19T10:16:42Z",
+      "updated_at": "2026-10-19T10:17:12Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39236264889",
       "failed_jobs": []
     },
@@ -164,11 +164,10 @@
       "workflow": "verify-artifacts.yml",
       "branch": "main",
       "source_commit": "b10993c16e0efb317b7ec23573fb6b7e4a6d878d",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-19T10:16:32Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39236275437",
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "skipped",
+      "updated_at": "2026-10-19T10:16:42Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39236275437"
     },
     {
       "id": 39229291154,
@@ -182,5 +181,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39229291154"
     }
   ],
-  "observed_at": "2026-10-19T10:16:47+00:00"
+  "observed_at": "2026-10-19T10:17:32+00:00"
 }
