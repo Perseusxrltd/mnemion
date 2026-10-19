@@ -80,31 +80,6 @@
       ]
     },
     {
-      "number": 40,
-      "title": "Support Grok Build native session/update transcript normalization",
-      "updated_at": "2026-10-19T11:44:19Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/issues/40",
-      "labels": [
-        "enhancement"
-      ]
-    },
-    {
-      "number": 41,
-      "title": "Live transcript capture: partial or oversized JSONL suspends the entire source scope",
-      "updated_at": "2026-10-19T11:44:22Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/issues/41",
-      "labels": [
-        "enhancement"
-      ]
-    },
-    {
-      "number": 42,
-      "title": "Native Git journal: support repository-scoped SSH deploy keys and distinguish local destination receipts",
-      "updated_at": "2026-10-19T14:46:11Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/issues/42",
-      "labels": []
-    },
-    {
       "number": 43,
       "title": "Filesystem connector: one non-UTF-8 text file suspends the whole scope (access_suspended) with no health signal",
       "updated_at": "2026-10-19T16:14:43Z",
@@ -114,15 +89,16 @@
   ],
   "runs": [
     {
-      "id": 39283118461,
+      "id": 39295360468,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "125f5e8c86c600b8d58aa5a37c1db139a850fffa",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-19T16:38:46Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39283118461"
+      "source_commit": "108d8828a743cf62d1d60babf19e80ac65133740",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-19T17:35:17Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39295360468",
+      "failed_jobs": []
     },
     {
       "id": 39292701099,
@@ -130,11 +106,10 @@
       "workflow": "public-updates.yml",
       "branch": "v4.20.0",
       "source_commit": "125f5e8c86c600b8d58aa5a37c1db139a850fffa",
-      "status": "queued",
-      "conclusion": null,
-      "updated_at": "2026-10-19T17:16:43Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39292701099",
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-19T17:37:12Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39292701099"
     },
     {
       "id": 39283268591,
@@ -153,10 +128,44 @@
       "workflow": "release.yml",
       "branch": "release/4.21.0",
       "source_commit": "a96daa60eeeeb2229c43c526b04822d12903332c",
-      "status": "queued",
+      "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-19T17:10:28Z",
+      "updated_at": "2026-10-19T17:36:40Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39287754923",
+      "failed_jobs": [
+        {
+          "name": "checks / service (3.13)",
+          "id": 118194246609,
+          "steps": [
+            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+          ]
+        },
+        {
+          "name": "checks / service (3.12)",
+          "id": 118194246712,
+          "steps": [
+            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+          ]
+        },
+        {
+          "name": "checks / service (3.14)",
+          "id": 118194246740,
+          "steps": [
+            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 39295434988,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.22.0",
+      "source_commit": "108d8828a743cf62d1d60babf19e80ac65133740",
+      "status": "pending",
+      "conclusion": null,
+      "updated_at": "2026-10-19T17:35:35Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39295434988",
       "failed_jobs": []
     },
     {
@@ -182,5 +191,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39292701228"
     }
   ],
-  "observed_at": "2026-10-19T17:18:06+00:00"
+  "observed_at": "2026-10-19T17:37:47+00:00"
 }
