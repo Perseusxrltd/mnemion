@@ -119,6 +119,7 @@ class IdentifierRanking(ResponseModel):
     label_matches: int = Field(ge=0, le=8)
     weight: float = Field(gt=0)
     label_weight: float = Field(gt=0)
+    context_matches: int = Field(default=0, ge=0, le=24)
 
 
 class RankingAdjustment(ResponseModel):
@@ -128,6 +129,7 @@ class RankingAdjustment(ResponseModel):
     recency_factor: float = Field(ge=0, le=1)
     archive_factor: float = Field(ge=0, le=1)
     archive_segment: str | None = None
+    keyword_factor: float | None = Field(default=None, ge=0.5, le=1)
 
 
 class KeywordRanking(ResponseModel):
@@ -138,6 +140,17 @@ class KeywordRanking(ResponseModel):
     weight: float = Field(gt=0, le=1)
 
 
+class PassageRecency(ResponseModel):
+    at: str
+    basis: Literal["recorded_at", "source_modified_at", "source_timestamp", "source_date"]
+    span: Span
+    tracked: bool
+    limited: bool = False
+    matched_terms: int = Field(ge=0, le=64)
+    requested_terms: int = Field(ge=0, le=64)
+    prioritized: bool | None = None
+
+
 class Ranking(ResponseModel):
     ranks: dict[Literal["lexical", "semantic"], int]
     rrf: float
@@ -146,6 +159,7 @@ class Ranking(ResponseModel):
     identifier: IdentifierRanking | None = None
     adjustment: RankingAdjustment | None = None
     keywords: KeywordRanking | None = None
+    recency: PassageRecency | None = None
 
 
 class RecallHit(MemoryMetadata):

@@ -315,6 +315,7 @@ class EvaluationRunner:
             embedding_generation=config.get("embedding_generation"),
             # Runs queued before this option existed retain their original channels.
             keyword_fallback=config.get("keyword_fallback", False),
+            sort=config.get("sort", "relevance"),
             max_per_source=config.get("max_per_source", 0),
             ranking_policy=config.get("ranking_policy", {}),
         )

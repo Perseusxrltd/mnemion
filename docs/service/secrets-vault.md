@@ -102,7 +102,11 @@ Managed file/Git/rclone and Drive imports reject the native vault key filename,
 generated vault-key material and recognized portable vault envelopes. This is
 not universal secret detection for unrelated documents or values deliberately
 pasted into ordinary memory. Keep credentials out of capture folders. Optional
-KeePass interoperability remains follow-up work.
+KeePass interoperability remains follow-up work. The supported KDBX 4 workflow
+must map entries, standard fields and custom properties, support masked names,
+verify value preservation, and avoid plaintext temporary files. The operator's
+[manual migration report](https://github.com/Perseusxrltd/mnemion/issues/32#issuecomment-6264307829)
+does not mean `.kdbx` import/export is already available in the app.
 
 ## Independently hosted service
 

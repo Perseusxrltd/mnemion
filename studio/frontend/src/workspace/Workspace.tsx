@@ -219,6 +219,12 @@ function WarningList({ warnings }: { warnings: string[] }) {
       "Related memories, with no exact text or ID match. Check the evidence before treating these as an answer.",
     partial_keyword_support:
       "Some results match individual terms from your question. Review the source for the full answer.",
+    recent_weak_matches_demoted:
+      "Weaker matches follow the recent, better-supported evidence. Set the recent match threshold to 0 for strict date ordering.",
+    passage_ranking_window_limited:
+      "Passage dates were checked for the 250 strongest candidates. Narrow the search to compare a smaller set.",
+    passage_chronology_limited:
+      "A source contains too many separate passages for detailed chronology. Its result uses a whole-record date.",
     context_budget_or_freshness_limited:
       "Some items were omitted to fit the context budget or because their source changed.",
   };
@@ -1094,6 +1100,7 @@ function SearchMemory() {
   const [minScore, setMinScore] = useState("");
   const [minSimilarity, setMinSimilarity] = useState("");
   const [recencyWeight, setRecencyWeight] = useState("25");
+  const [recentRatio, setRecentRatio] = useState("70");
   const [halfLifeDays, setHalfLifeDays] = useState("3");
   const [archiveWeight, setArchiveWeight] = useState("35");
   const [archiveDirectories, setArchiveDirectories] = useState("archive, archives");
@@ -1110,13 +1117,14 @@ function SearchMemory() {
     (serviceParts[0] === 4 && (serviceParts[1] > 3 || (serviceParts[1] === 3 && serviceParts[2] >= 3))));
   const supportsSourceGrouping = !!serviceParts && (serviceParts[0] > 4 ||
     (serviceParts[0] === 4 && (serviceParts[1] > 8 || (serviceParts[1] === 8 && serviceParts[2] >= 1))));
+  const supportsPassageChronology = !!serviceParts && (serviceParts[0] > 4 || (serviceParts[0] === 4 && serviceParts[1] >= 14));
   const archiveSegments = archiveDirectories.split(",").map(part => part.trim()).filter(Boolean);
   const rankingValid = !supportsRankingPolicy || sort === "recent" || (
     [recencyWeight, archiveWeight].every(value => value.trim() !== "" && Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= 100) &&
     halfLifeDays.trim() !== "" && Number.isFinite(Number(halfLifeDays)) && Number(halfLifeDays) >= 1 / 24 && Number(halfLifeDays) <= 36500 &&
     archiveSegments.length <= 16 && archiveSegments.every(part => part.length <= 128 && !/[\\/\x00]/.test(part))
   );
-  const optionsValid = rankingValid && (!supportsSourceGrouping || (maxPerSource.trim() !== "" && Number.isInteger(Number(maxPerSource)) && Number(maxPerSource) >= 0 && Number(maxPerSource) <= 50)) && (!supportsSearchControls || (
+  const optionsValid = rankingValid && (!supportsPassageChronology || sort !== "recent" || (recentRatio.trim() !== "" && Number.isFinite(Number(recentRatio)) && Number(recentRatio) >= 0 && Number(recentRatio) <= 100)) && (!supportsSourceGrouping || (maxPerSource.trim() !== "" && Number.isInteger(Number(maxPerSource)) && Number(maxPerSource) >= 0 && Number(maxPerSource) <= 50)) && (!supportsSearchControls || (
     (!recordedAfter || Number.isFinite(new Date(recordedAfter).getTime())) &&
     (!minScore || (Number.isFinite(Number(minScore)) && Number(minScore) >= 0 && Number(minScore) <= 1)) &&
     (!minSimilarity || (Number.isFinite(Number(minSimilarity)) && Number(minSimilarity) >= -1 && Number(minSimilarity) <= 1))
@@ -1152,6 +1160,9 @@ function SearchMemory() {
             archive_weight: Number(archiveWeight) / 100,
             archive_path_segments: archiveSegments,
           },
+        } : {}),
+        ...(supportsPassageChronology && sort === "recent" ? {
+          ranking_policy: { recent_relevance_ratio: Number(recentRatio) / 100 },
         } : {}),
       };
       if (pack)
@@ -1236,9 +1247,12 @@ function SearchMemory() {
           <Field label="Result order">
             <select value={sort} disabled={busy || !supportsSearchControls} onChange={event => setSort(event.target.value as typeof sort)}>
               <option value="relevance">Best matches</option>
-              <option value="recent">Newest source date</option>
+              <option value="recent">{supportsPassageChronology ? "Recent relevant passages" : "Newest source date"}</option>
             </select>
           </Field>
+          {supportsPassageChronology && sort === "recent" && <Field label="Match threshold for recent results (%)">
+            <input type="number" min={0} max={100} step={1} value={recentRatio} disabled={busy} onChange={event => setRecentRatio(event.target.value)} />
+          </Field>}
           {supportsSourceGrouping && <Field label="Results per imported document">
             <input type="number" min={0} max={50} step={1} value={maxPerSource} disabled={busy} onChange={event => setMaxPerSource(event.target.value)} />
           </Field>}
@@ -1270,7 +1284,7 @@ function SearchMemory() {
           </div>
           <p className="ws-helper">Best matches favours newer source dates and lowers the priority of archive directories. Recency influence caps the age adjustment; half of that adjustment applies at the chosen half-life. Nothing is excluded by these preferences. Use 0% recency influence and 100% archived weight for pure relevance. A source date does not prove that a claim is current.</p>
         </>}
-        <p className="ws-helper">Newest source date orders matching candidates by their source modification date, falling back to when the memory was recorded. Similarity filters apply when there is no full text or ID match, including partial key-term matches. Scores are not confidence percentages. Use your workspace evaluations to choose a useful minimum.</p>
+        <p className="ws-helper">{supportsPassageChronology ? "Recent ordering compares query support within passages, then orders comparable matches by their retained date. Weaker matches follow. Set the threshold to 0 for strict date ordering. Source date labels are reported as given; they do not establish that a claim is current. " : "Newest source date uses source modification dates, falling back to when memories were recorded. "}Similarity filters apply when there is no full text or ID match, including partial key-term matches. Scores are not confidence percentages. Use workspace evaluations to compare settings.</p>
         {!supportsSearchControls && <p className="ws-helper">These controls need workspace server 4.2.3 or later. <Link to="/workspace/setup">Check app & server versions</Link>, then reconnect after the server update.</p>}
         {!optionsValid && <p role="alert" className="ws-helper">Enter values within the indicated ranges, a whole-number document limit from 0 to 50, and at most 16 archive directory names without slashes.</p>}
       </details>
@@ -1292,8 +1306,8 @@ function SearchMemory() {
               <article className="ws-card ws-search-result" key={hit.memory_id}>
                 <div className="ws-card-top">
                   <Badge>{hit.claim_status}</Badge>
-                  <time title={hit.ranking.adjustment ? "Ranking source date, with recorded-time fallback" : sort === "recent" && typeof hit.metadata.source_modified_at === "string" ? "Source modification date (reported by source)" : "Recorded in Mnemion"}>
-                    {date(hit.ranking.adjustment?.date ?? (sort === "recent" && typeof hit.metadata.source_modified_at === "string" && Number.isFinite(Date.parse(hit.metadata.source_modified_at)) ? hit.metadata.source_modified_at : hit.recorded_at))}
+                  <time title={hit.ranking.recency ? `Passage chronology: ${hit.ranking.recency.basis.replaceAll("_", " ")}` : hit.ranking.adjustment ? "Ranking source date, with recorded-time fallback" : sort === "recent" && typeof hit.metadata.source_modified_at === "string" ? "Source modification date (reported by source)" : "Recorded in Mnemion"}>
+                    {hit.ranking.recency?.basis === "source_date" ? `${hit.ranking.recency.at.slice(0, 10)} (date only)` : date(hit.ranking.recency?.at ?? hit.ranking.adjustment?.date ?? (sort === "recent" && typeof hit.metadata.source_modified_at === "string" && Number.isFinite(Date.parse(hit.metadata.source_modified_at)) ? hit.metadata.source_modified_at : hit.recorded_at))}
                   </time>
                 </div>
                 <h2>
@@ -1320,8 +1334,15 @@ function SearchMemory() {
                     Order score: {hit.ranking.adjustment.score.toFixed(3)}.
                     {" "}Source-age factor: {hit.ranking.adjustment.recency_factor.toFixed(3)}
                     {hit.ranking.adjustment.archive_segment !== null && ` · archive factor: ${hit.ranking.adjustment.archive_factor.toFixed(3)} (${hit.ranking.adjustment.archive_segment})`}.
+                    {hit.ranking.adjustment.keyword_factor != null && ` Question coverage factor: ${hit.ranking.adjustment.keyword_factor.toFixed(3)}.`}
                     {" "}Ranking date: {date(hit.ranking.adjustment.date)}.
                     {" "}The minimum relevance filter uses the original score before these factors.
+                  </p>}
+                  {hit.ranking.recency && <p>
+                    Passage date comes from {hit.ranking.recency.basis === "source_timestamp" ? "a timestamp in the source" : hit.ranking.recency.basis === "source_date" ? "a calendar date in the source, without a verified time" : hit.ranking.recency.basis === "source_modified_at" ? "the source's reported modification time" : "when this text was recorded"}.
+                    {hit.ranking.recency.limited ? " Detailed passage history was limited; this is the whole-record date." : hit.ranking.recency.tracked ? " Unchanged passages retain their earlier date across revisions." : " This older revision has no retained passage-change history."}
+                    {` This passage supports ${hit.ranking.recency.matched_terms} of ${hit.ranking.recency.requested_terms} query terms.`}
+                    {hit.ranking.recency.prioritized === false && " It follows stronger matches in recent ordering."}
                   </p>}
                   <p>
                     {hit.ranking.ranks.lexical

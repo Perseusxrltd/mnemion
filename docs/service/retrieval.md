@@ -36,6 +36,12 @@ compatible. Optional `ranking.identifier` reports the literal rank, label
 rank, matched and requested counts, label matches and weights. The app shows
 the matched counts under **Why this result?**
 
+In 4.14.0, a plain hybrid question containing an ID also uses its surrounding
+key terms. Among equally complete identifier matches, those terms break ties;
+`ranking.identifier.context_matches` reports the count when present. Pure
+identifier requests, explicit search syntax and a disabled keyword fallback
+retain their original identifier ordering.
+
 The query still examines the eligible corpus; the candidate cap bounds returned
 rows, not database scan work. Large-corpus capacity and natural-language quality
 remain separate evaluation work. Version 4.2.3 adds the controls below.
@@ -43,16 +49,18 @@ remain separate evaluation work. Version 4.2.3 adds the controls below.
 ## Natural-language question support
 
 From service 4.3.3, hybrid search defaults to `keyword_fallback: true`.
-When a plain question has no complete lexical match and no identifier channel,
+When a plain question has no complete lexical match,
 individual key terms can add candidates alongside semantic search. For example,
 “Where will we keep the Atlas backup copy?” can give an Atlas document useful
 text support even though the document does not repeat the complete question.
+From 4.14.0 this also applies to questions containing identifiers; earlier
+versions skipped this support when an identifier was recognized.
 
 The fallback accepts 3–32 query words and 2–24 distinct non-stopword lexemes.
 PostgreSQL's bundled English and French dictionaries remove common words; the
 remaining terms retain their original lexical form. This is not automatic
 translation or a general language-understanding model. Quotes, exclusions,
-explicit `OR`, identifier queries, short queries, explicit lexical/semantic
+explicit `OR`, short queries, explicit lexical/semantic
 modes and inference-busy exact-text fallback keep their existing behavior.
 
 Each matching term counts once per eligible memory. Rarer terms and subject
@@ -62,8 +70,11 @@ window remains `min(250, max(30, limit * 5))`; database work still scales with
 the eligible inventory. No model download, extra embedding call or re-index is
 required. Representative large-workspace capacity remains evaluation work.
 
-Key-term candidates use rank-fusion weight 0.5 in place of the absent full
-lexical channel. `ranking.keywords` exposes the matched terms, matched/requested
+From 4.14.0, key-term candidates use rank-fusion weight
+`0.5 × matched_terms / requested_terms`, replacing the absent full lexical
+channel or supplementing exact identifiers. Merely sharing an ID no longer
+gets nearly the same question support as matching its specific decision.
+`ranking.keywords` exposes the matched terms, matched/requested
 counts, rank and weight. `partial_keyword_support` explicitly marks the fallback;
 the app explains it under **Why this result?**. It does not establish a full
 query match. The existing `semantic_only` match status and evidence-review
@@ -79,6 +90,14 @@ The [60-question regression](../validation/2026-10-14-question-retrieval.md)
 records the measured improvement and its limits; broader question quality and
 live shared-workspace acceptance remain open.
 
+For relevance ordering, available question support also supplies a bounded
+`ranking.adjustment.keyword_factor`: `0.5 + 0.5 × matched_terms / best_matched_terms`
+within the keyword candidate window. The strongest coverage keeps its original
+ordering score; weaker coverage can reduce it by at most half. This adjustment
+does not alter `relevance_score` or `min_score`. Turning keyword fallback off
+also turns off this adjustment. It is not applied to full lexical matches or
+explicit lexical/semantic modes.
+
 ## Order and match controls
 
 From service 4.2.3, recall and context requests, SDKs and the full MCP
@@ -86,8 +105,8 @@ From service 4.2.3, recall and context requests, SDKs and the full MCP
 
 | Input | Behavior |
 | --- | --- |
-| `sort: "relevance"` | Rank fusion with the source-age and archive preferences below from 4.3.1; the default. Earlier servers use pure rank fusion. |
-| `sort: "recent"` | Order matching candidates by `metadata.source_modified_at` when parseable, otherwise the selected revision's `recorded_at`; rank score breaks ties. |
+| `sort: "relevance"` | Rank fusion with bounded source-age, archive and available question-coverage preferences; the default. |
+| `sort: "recent"` | From 4.14.0, prioritize comparable passage query support, then order by passage chronology. Semantic mode, or queries with fewer than two matched terms, use comparable rank-fusion relevance. Weaker candidates follow. Earlier servers order by whole-record dates. |
 | `recorded_after` | Inclusive timezone-aware timestamp filter on when the revision was recorded in Mnemion. Applied before candidate selection; distinct from the source date. |
 | `min_score` | Minimum normalized rank-fusion score, 0–1; default 0. It is a rank score, not answer confidence. |
 | `min_similarity` | Optional cosine floor, −1–1, for candidates without a full lexical or identifier match, including partial key-term candidates. Exact text or identifier matches remain eligible; `min_score` still applies to them. |
@@ -111,6 +130,63 @@ their own candidate selection before the final recency sort. A recent unrelated 
 solely because it is recent. Source dates are provider-supplied metadata, not an
 independent authenticity guarantee. Use workspace evaluations to choose score
 floors; different embedding models do not share a universally calibrated cutoff.
+
+The app's **Match threshold for recent results** defaults to 70%. It is
+`ranking_policy.recent_relevance_ratio` in the API. A candidate with at least
+70% of the best passage word coverage joins the priority group; when word
+coverage is unavailable or semantic mode is explicit, the same comparison uses
+rank fusion. Set it to 0 for strict date ordering within the candidate windows.
+Weaker results remain available and produce `recent_weak_matches_demoted`.
+This is separate from exclusion filters and from the keyword-fallback option.
+
+## Passage chronology
+
+Version 4.14.0 adds an internal chronology field to memory revisions. On a new
+revision, unchanged lines and numbered decisions retain their earlier date,
+including whitespace-only edits. Editing another line in a file therefore
+does not refresh an unchanged status. A changed statement beneath an existing
+date heading receives its observed update time. Repeated identical text keeps
+its earliest retained date; this is text-change evidence, not proof that its
+context or claim remains valid.
+
+The first observation can use a leading ISO date in a Markdown heading or
+table row. A timestamp with an explicit UTC offset retains its precise time.
+A date or time without an offset is ordered at calendar-day precision and
+displayed as **date only**; no timezone is invented. Inline deadlines, invalid
+dates, future labels and date-like text in fenced code are not interpreted as
+new date headings. When no applicable date is available, chronology uses
+the source's valid reported modification time or the revision's recorded time.
+
+Recall reports `ranking.recency`: the date, its basis (`source_timestamp`,
+`source_date`, `source_modified_at` or `recorded_at`), exact Unicode span,
+literal query-term coverage, whether chronology was retained, and whether the
+result joined the recent priority group. **Why this result?** explains those
+values. Normal memory and source citations remain verbatim. A recent date
+does not verify a claim, infer that “closed” supersedes “open”, or override
+permissions and claim status.
+
+Existing revisions receive an empty field in migration **021**. Search can
+read their explicit dated sections immediately, without re-ingestion or
+re-embedding. Their next actual revision can retain unchanged passage dates.
+This does not reconstruct historical Git blame or missing pre-upgrade edit
+history. Ambiguous dates, undated historical corrections, copied/reordered
+content across separate imported parts and authoritative contradiction
+resolution remain limitations to evaluate with the team's real evidence.
+
+Processing is bounded to 2,048 units per revision and 250 strongest candidates
+per search, using one additional authorized content query and no model call.
+An excessive number of units falls back to whole-record chronology with
+`passage_chronology_limited`; a larger candidate union reports
+`passage_ranking_window_limited`. Other candidates remain available. Candidate
+selection still uses record dates before this final passage comparison, so
+this is not a complete chronological scan of arbitrarily large workspaces.
+The field follows revision RLS, encrypted backup and deletion rules; it is
+neither a searchable credential store nor a second plaintext source copy.
+
+[Evaluations](insights.md) can now record `sort: "recent"` and the comparison
+threshold, then compare them with relevance or strict-date runs on the same
+private test set. Old queued runs retain relevance order. The run manifest
+records the updated retrieval implementation and actual execution version.
 
 Git connectors now record the last file-changing commit's strict ISO timestamp
 as `source_modified_at`. Their source revision format changes once to backfill
@@ -179,6 +255,7 @@ The API, Python/TypeScript clients, `memory_search`, `memory_context` and the ap
 | Field | Default | Meaning |
 | --- | --- | --- |
 | `recency_weight` | `0.25` | Maximum fractional age reduction, 0–1. Zero disables it. |
+| `recent_relevance_ratio` | `0.7` | Comparable support threshold for recent ordering, 0–1; zero restores strict dates. Requires 4.14.0. |
 | `half_life_days` | `3` | At this age, half of the maximum reduction applies. Range: 1 hour–36,500 days. |
 | `archive_weight` | `0.35` | Multiplier for archived candidates, 0–1. One disables the reduction; zero puts them last without excluding them. |
 | `archive_path_segments` | `["archive", "archives"]` | Up to 16 literal directory names of 1–128 characters each. An empty list disables matching. |
@@ -196,16 +273,16 @@ For example, a current-state query can use the defaults:
 For historical research or an exact baseline, request pure relevance explicitly:
 
 ```json
-{"query":"TASK-7312","all_accessible":true,"ranking_policy":{"recency_weight":0,"archive_weight":1}}
+{"query":"TASK-7312","all_accessible":true,"keyword_fallback":false,"ranking_policy":{"recency_weight":0,"archive_weight":1}}
 ```
 
-The ordering score is `relevance_score × age_factor × archive_factor`, where
+The ordering score is `relevance_score × age_factor × archive_factor × keyword_factor`, where
 `age_factor = 1 - recency_weight × (1 - 2^(-age_days / half_life_days))`.
 Defaults therefore reduce a match by at most 25% due to age. Age can reorder
 comparably relevant hits within that bounded share of the existing score.
-The source date is parsed from `source_modified_at`, with invalid, missing or
-unsupported dates falling back to the selected revision's `recorded_at`.
-Future source dates receive the same maximum age weight as today's dates.
+The ranking date uses passage chronology described above. Unsupported or future
+source dates fall back to the selected revision's recorded time. The optional
+question factor is 1 when no partial-term channel applies.
 The reference is `known_at`, otherwise `valid_at`, otherwise the request's start
 time, so historical queries do not acquire an age penalty based on today's date.
 
@@ -213,16 +290,18 @@ Each relevance hit exposes `ranking.adjustment`: ordering score, ranking date,
 age, both factors and the matched archive directory. The response echoes the
 policy and `ranking_reference_time`; the app displays the factors under
 **Why this result?**. `relevance_score`, `score_method: normalized_rrf_k60` and
-`min_score` remain unadjusted, keeping existing quality thresholds comparable.
+`min_score` remain unadjusted. Compare thresholds using the recorded model,
+retrieval version and settings; a new keyword implementation can change scores.
 Result relevance scores can consequently be out of descending order.
-`sort: "recent"` continues to order by date and bypasses these preferences.
+`sort: "recent"` uses its comparable-support threshold and bypasses age,
+archive and question-factor multiplication.
 
 Access, source leases, quarantine, validity and query filters still run before
 ranking. These preferences add no model call, re-index or candidate-window
 expansion. Old servers receive no new field unless a caller requests it; the app
 enables the controls only for a compatible workspace server. Source dates and
 archive paths remain source-supplied hints, not proof of supersession or truth.
-Read cited evidence for current-state decisions. Dated-section chunking,
+Read cited evidence for current-state decisions. Historical Git span dating,
 contradiction resolution and broader held-out quality evaluations remain in the
 [roadmap](../PRODUCT_REQUIREMENTS.md).
 

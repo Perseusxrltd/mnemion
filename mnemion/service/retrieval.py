@@ -25,6 +25,7 @@ from .model_registry import ModelRegistry
 from .model_state import selected_generations
 from .model_state import settings as model_settings
 from .passages import evidence_passage, passage_span
+from .passage_time import select as select_passage_time
 from .ranking import adjustment
 from .repository import hydrate, memory_row
 from .telemetry import Telemetry
@@ -53,6 +54,7 @@ WITH eligible AS MATERIALIZED (
            coalesce(CASE WHEN pg_input_is_valid(r.metadata->>'source_modified_at', 'timestamptz')
              THEN CASE WHEN (r.metadata->>'source_modified_at')::timestamptz
                         BETWEEN timestamptz '0001-01-02 00:00:00+00' AND timestamptz '9999-12-30 00:00:00+00'
+                        AND (r.metadata->>'source_modified_at')::timestamptz<=r.recorded_at
                        THEN (r.metadata->>'source_modified_at')::timestamptz END
              END, r.recorded_at) AS rank_time
     FROM mnemion.memories m
@@ -301,7 +303,16 @@ class RetrievalService:
             if identifier_channel:
                 exact = conn.execute(
                     ELIGIBLE + IDENTIFIER_CANDIDATES,
-                    {**params, "identifier_patterns": list(identifiers.patterns)},
+                    {
+                        **params,
+                        "identifier_patterns": list(identifiers.patterns),
+                        "identifier_question": command.keyword_fallback
+                        and command.mode == "hybrid"
+                        and bool(vectors)
+                        and not busy_fallback
+                        and not lexical
+                        and permits_keyword_fallback(command.query),
+                    },
                 ).fetchall()
             if (
                 command.keyword_fallback
@@ -309,7 +320,6 @@ class RetrievalService:
                 and bool(vectors)
                 and not busy_fallback
                 and not lexical
-                and not identifier_channel
                 and permits_keyword_fallback(command.query)
             ):
                 keywords = conn.execute(ELIGIBLE + KEYWORD_CANDIDATES, params).fetchall()
@@ -389,7 +399,12 @@ class RetrievalService:
                         identifier_ranks.pop(key, None)
                         keyword_ranks.pop(key, None)
                         candidates[key] = {}
-                    scores[key] += weight / (60 + rank)
+                    supported_weight = (
+                        weight * row["keyword_matches"] / row["keyword_requested"]
+                        if channel == "keywords"
+                        else weight
+                    )
+                    scores[key] += supported_weight / (60 + rank)
                     if channel == "identifier":
                         identifier_ranks[key] = rank
                         if row["identifier_label_rank"] is not None:
@@ -405,7 +420,48 @@ class RetrievalService:
             channel_count += (
                 IDENTIFIER_WEIGHT + IDENTIFIER_LABEL_WEIGHT if identifier_channel else 0
             )
+            if keywords and identifier_channel:
+                channel_count += KEYWORD_WEIGHT
             denominator = max(1, channel_count) / 61
+            chronology = {}
+            # One bounded, currently authorized fetch for passage chronology.
+            # No new inference, reindex, or per-result query is needed. Large
+            # mixed-generation searches retain their remaining candidates and
+            # report the limit instead of pretending they were all reranked.
+            selected = sorted(scores, key=lambda key: (-scores[key], str(key)))[:250]
+            if len(selected) < len(scores):
+                warnings.append("passage_ranking_window_limited")
+            if selected:
+                rows = conn.execute(
+                    ELIGIBLE
+                    + """SELECT e.memory_id,e.revision_id,r.content,r.metadata,r.recorded_at,r.passage_times
+                    FROM eligible e JOIN mnemion.memory_revisions r
+                      ON r.tenant_id=mnemion.tenant() AND r.space_id=e.space_id AND r.id=e.revision_id
+                    WHERE e.memory_id=ANY(%(selected_memories)s::uuid[])""",
+                    {**params, "selected_memories": selected},
+                )
+                for row in rows:
+                    key = row["memory_id"]
+                    candidate = candidates[key]
+                    if row["revision_id"] != candidate["revision_id"]:
+                        continue
+                    preferred = (
+                        (candidate["start_offset"], candidate["end_offset"])
+                        if "semantic" in ranks[key]
+                        else None
+                    )
+                    chronology[key] = select_passage_time(
+                        row["content"],
+                        row["passage_times"],
+                        row["metadata"],
+                        row["recorded_at"],
+                        command.query,
+                        recent=command.sort == "recent",
+                        preferred=preferred,
+                    )
+                    candidate["rank_time"] = chronology[key]["at"]
+                    if chronology[key]["limited"]:
+                        warnings.append("passage_chronology_limited")
             adjustments = (
                 {
                     key: adjustment(
@@ -420,6 +476,16 @@ class RetrievalService:
                 if command.sort == "relevance"
                 else {}
             )
+            if adjustments and keywords:
+                strongest = max(row["keyword_matches"] for row in keywords)
+                for key, value in adjustments.items():
+                    # RRF treats neighboring ranks similarly. A broad ledger
+                    # matching one shared ID must not receive almost the same
+                    # question support as the actual decision's several terms.
+                    # Keep the original relevance/minimum filters unchanged.
+                    factor = 0.5 + 0.5 * candidates[key].get("keyword_matches", 0) / strongest
+                    value["keyword_factor"] = factor
+                    value["score"] = round(value["score"] * factor, 8)
             ordered = sorted(
                 scores,
                 key=lambda key: (
@@ -428,8 +494,33 @@ class RetrievalService:
                 ),
             )
             if command.sort == "recent":
+                ratio = command.ranking_policy.recent_relevance_ratio
+                best_score = max(scores.values(), default=0)
+                best_support = max(
+                    (value["matched_terms"] for value in chronology.values()), default=0
+                )
+                prioritized = {
+                    key
+                    for key in scores
+                    if ratio == 0
+                    or key in chronology
+                    and (
+                        chronology[key]["matched_terms"] >= best_support * ratio
+                        if best_support >= 2 and command.mode != "semantic"
+                        else scores[key] >= best_score * ratio
+                    )
+                }
+                if len(prioritized) < len(scores):
+                    warnings.append("recent_weak_matches_demoted")
                 ordered.sort(
-                    key=lambda key: (candidates[key]["rank_time"], scores[key]), reverse=True
+                    key=lambda key: (
+                        key in prioritized,
+                        candidates[key]["rank_time"]
+                        if key in prioritized
+                        else datetime.min.replace(tzinfo=timezone.utc),
+                        scores[key],
+                    ),
+                    reverse=True,
                 )
             hits = []
             filtered = 0
@@ -496,6 +587,22 @@ class RetrievalService:
                 }
                 if adjustments:
                     hit["ranking"]["adjustment"] = adjustments[memory]
+                if memory in chronology:
+                    value = chronology[memory]
+                    hit["ranking"]["recency"] = {
+                        "at": value["at"],
+                        "basis": value["basis"],
+                        "tracked": value["tracked"],
+                        "limited": value["limited"],
+                        "span": {
+                            "start": value["start"],
+                            "end": value["end"],
+                            "offset_unit": "unicode_codepoints",
+                        },
+                        "matched_terms": value["matched_terms"],
+                        "requested_terms": value["requested_terms"],
+                        "prioritized": memory in prioritized if command.sort == "recent" else None,
+                    }
                 if memory in identifier_ranks:
                     hit["ranking"]["identifier"] = {
                         "rank": identifier_ranks[memory],
@@ -505,6 +612,11 @@ class RetrievalService:
                         "label_matches": candidate["identifier_label_matches"],
                         "weight": IDENTIFIER_WEIGHT,
                         "label_weight": IDENTIFIER_LABEL_WEIGHT,
+                        **(
+                            {"context_matches": candidate["identifier_context_matches"]}
+                            if candidate["identifier_context_matches"]
+                            else {}
+                        ),
                     }
                 if memory in keyword_ranks:
                     hit["ranking"]["keywords"] = {
@@ -512,7 +624,9 @@ class RetrievalService:
                         "matched": candidate["keyword_matches"],
                         "requested": candidate["keyword_requested"],
                         "terms": candidate["keyword_terms"],
-                        "weight": KEYWORD_WEIGHT,
+                        "weight": KEYWORD_WEIGHT
+                        * candidate["keyword_matches"]
+                        / candidate["keyword_requested"],
                     }
                 hit["embedding_generation"] = routing[row["space_id"]]
                 if hit["claim_status"] == "contested":
@@ -563,16 +677,16 @@ class RetrievalService:
                 )
                 + "Semantic ranks are computed separately within each embedding generation. "
                 + (
-                    "Partial key-term support uses weight 0.5 in place of the absent full lexical channel; "
+                    "Partial key-term support uses up to weight 0.5, proportional to covered terms, alongside exact identifiers or in place of the absent full lexical channel; "
                     "it does not establish a complete query match. "
                     if keywords
                     else ""
                 )
                 + (
-                    "Ordering uses ranking.adjustment.score with bounded source-age and archive-path factors; "
+                    "Ordering uses ranking.adjustment.score with bounded source-age, archive-path and available question-coverage factors; "
                     "relevance_score and min_score retain unadjusted rank fusion."
                     if command.sort == "relevance"
-                    else "Newest-first ordering does not apply age or archive factors."
+                    else "Recent ordering prioritizes comparable passage query coverage when at least two terms match, or rank-fusion relevance otherwise, then uses passage chronology; weaker matches remain afterwards. Semantic mode uses relevance. A ratio of 0 uses strict date ordering. Age and archive factors do not apply."
                 ),
                 "timing_ms": round((time.monotonic() - started) * 1000, 2),
             }

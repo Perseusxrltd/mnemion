@@ -64,6 +64,7 @@ export interface Memory {
 export interface RankingPolicy {
   recency_weight?: number; half_life_days?: number; archive_weight?: number
   archive_path_segments?: string[]
+  recent_relevance_ratio?: number
 }
 export interface RecallInput {
   query: string; space_ids?: string[]; all_accessible?: boolean; subject?: string | null; kinds?: Kind[]
@@ -87,12 +88,20 @@ export interface RecallHit extends Omit<Memory, 'content'> {
     identifier?: {
       rank: number; label_rank: number | null; matched: number; requested: number
       label_matches: number; weight: number; label_weight: number
+      context_matches?: number
     } | null
     adjustment?: {
       score: number; date: string; age_days: number
       recency_factor: number; archive_factor: number; archive_segment: string | null
+      keyword_factor?: number | null
     } | null
     keywords?: { rank: number; matched: number; requested: number; terms: string[]; weight: number } | null
+    recency?: {
+      at: string; basis: 'recorded_at' | 'source_modified_at' | 'source_timestamp' | 'source_date'
+      span: { start: number; end: number; offset_unit: 'unicode_codepoints' }
+      tracked: boolean; matched_terms: number; requested_terms: number; prioritized: boolean | null
+      limited?: boolean
+    } | null
   }
 }
 export interface IndexState {

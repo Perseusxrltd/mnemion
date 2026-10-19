@@ -1066,7 +1066,7 @@
           },
           "keyword_fallback": {
             "default": true,
-            "description": "In hybrid search with no full lexical or identifier match, add bounded key-term support for a plain prose query. Does not relax similarity thresholds or explicit search syntax.",
+            "description": "In hybrid search with no full lexical match, add bounded key-term support for a plain prose query, including questions containing identifiers. Does not relax similarity thresholds or explicit search syntax.",
             "title": "Keyword Fallback",
             "type": "boolean"
           },
@@ -2016,6 +2016,15 @@
           "ranking_policy": {
             "$ref": "#/components/schemas/RankingPolicy"
           },
+          "sort": {
+            "default": "relevance",
+            "enum": [
+              "relevance",
+              "recent"
+            ],
+            "title": "Sort",
+            "type": "string"
+          },
           "split": {
             "default": "development",
             "enum": [
@@ -2574,6 +2583,13 @@
       "IdentifierRanking": {
         "additionalProperties": true,
         "properties": {
+          "context_matches": {
+            "default": 0,
+            "maximum": 24.0,
+            "minimum": 0.0,
+            "title": "Context Matches",
+            "type": "integer"
+          },
           "label_matches": {
             "maximum": 8.0,
             "minimum": 0.0,
@@ -5740,6 +5756,70 @@
         "title": "Page[VaultEntry]",
         "type": "object"
       },
+      "PassageRecency": {
+        "additionalProperties": true,
+        "properties": {
+          "at": {
+            "title": "At",
+            "type": "string"
+          },
+          "basis": {
+            "enum": [
+              "recorded_at",
+              "source_modified_at",
+              "source_timestamp",
+              "source_date"
+            ],
+            "title": "Basis",
+            "type": "string"
+          },
+          "limited": {
+            "default": false,
+            "title": "Limited",
+            "type": "boolean"
+          },
+          "matched_terms": {
+            "maximum": 64.0,
+            "minimum": 0.0,
+            "title": "Matched Terms",
+            "type": "integer"
+          },
+          "prioritized": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prioritized"
+          },
+          "requested_terms": {
+            "maximum": 64.0,
+            "minimum": 0.0,
+            "title": "Requested Terms",
+            "type": "integer"
+          },
+          "span": {
+            "$ref": "#/components/schemas/Span"
+          },
+          "tracked": {
+            "title": "Tracked",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "at",
+          "basis",
+          "span",
+          "tracked",
+          "matched_terms",
+          "requested_terms"
+        ],
+        "title": "PassageRecency",
+        "type": "object"
+      },
       "PasswordInput": {
         "additionalProperties": false,
         "properties": {
@@ -6119,6 +6199,16 @@
             "title": "Ranks",
             "type": "object"
           },
+          "recency": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PassageRecency"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "rrf": {
             "title": "Rrf",
             "type": "number"
@@ -6161,6 +6251,19 @@
           "date": {
             "title": "Date",
             "type": "string"
+          },
+          "keyword_factor": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.5,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Keyword Factor"
           },
           "recency_factor": {
             "maximum": 1.0,
@@ -6222,6 +6325,14 @@
             "maximum": 1.0,
             "minimum": 0.0,
             "title": "Recency Weight",
+            "type": "number"
+          },
+          "recent_relevance_ratio": {
+            "default": 0.7,
+            "description": "For recent ordering, prioritize candidates within this fraction of the best passage query coverage when at least two terms match, or rank-fusion relevance otherwise. Semantic mode uses relevance. Weaker matches remain after them. Set 0 for strict date ordering within the candidate window.",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Recent Relevance Ratio",
             "type": "number"
           }
         },
@@ -6546,7 +6657,7 @@
           },
           "keyword_fallback": {
             "default": true,
-            "description": "In hybrid search with no full lexical or identifier match, add bounded key-term support for a plain prose query. Does not relax similarity thresholds or explicit search syntax.",
+            "description": "In hybrid search with no full lexical match, add bounded key-term support for a plain prose query, including questions containing identifiers. Does not relax similarity thresholds or explicit search syntax.",
             "title": "Keyword Fallback",
             "type": "boolean"
           },
@@ -9249,7 +9360,7 @@
   "info": {
     "description": "Shared, scoped memory and evidence for apps, teams, and assistants. Saves acknowledge canonical durability; operations report semantic indexing readiness.",
     "title": "Mnemion Memory Service",
-    "version": "4.13.0"
+    "version": "4.14.0"
   },
   "openapi": "3.1.0",
   "paths": {

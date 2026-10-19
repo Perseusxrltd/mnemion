@@ -67,6 +67,15 @@ __all__ = [
 ]
 
 
+def _ranking_compatibility(body: dict, options: dict) -> dict:
+    """A new nested default must not become an unsolicited old-server option."""
+    policy = options.get("ranking_policy", {})
+    specified = policy if isinstance(policy, dict) else getattr(policy, "model_fields_set", set())
+    if "ranking_policy" in body and "recent_relevance_ratio" not in specified:
+        body["ranking_policy"].pop("recent_relevance_ratio", None)
+    return body
+
+
 class MnemionError(RuntimeError):
     def __init__(
         self,
@@ -557,13 +566,21 @@ class Client:
             self.request(
                 "POST",
                 self._evaluation_path(space_id) + "/runs",
-                body=command.model_dump(
-                    mode="json",
-                    exclude={
-                        field
-                        for field in ("keyword_fallback", "ranking_policy", "max_per_source")
-                        if field not in options
-                    },
+                body=_ranking_compatibility(
+                    command.model_dump(
+                        mode="json",
+                        exclude={
+                            field
+                            for field in (
+                                "keyword_fallback",
+                                "ranking_policy",
+                                "max_per_source",
+                                "sort",
+                            )
+                            if field not in options
+                        },
+                    ),
+                    options,
                 ),
                 key=idempotency_key or str(uuid4()),
             )
@@ -710,14 +727,17 @@ class Client:
             self.request(
                 "POST",
                 "/v1/recall",
-                body=command.model_dump(
-                    mode="json",
-                    exclude=(
-                        {"on_inference_busy"} if command.on_inference_busy == "error" else set()
-                    )
-                    | ({"ranking_policy"} if "ranking_policy" not in options else set())
-                    | ({"keyword_fallback"} if "keyword_fallback" not in options else set())
-                    | ({"max_per_source"} if "max_per_source" not in options else set()),
+                body=_ranking_compatibility(
+                    command.model_dump(
+                        mode="json",
+                        exclude=(
+                            {"on_inference_busy"} if command.on_inference_busy == "error" else set()
+                        )
+                        | ({"ranking_policy"} if "ranking_policy" not in options else set())
+                        | ({"keyword_fallback"} if "keyword_fallback" not in options else set())
+                        | ({"max_per_source"} if "max_per_source" not in options else set()),
+                    ),
+                    options,
                 ),
             )
         )
@@ -758,14 +778,17 @@ class Client:
             self.request(
                 "POST",
                 "/v1/context",
-                body=command.model_dump(
-                    mode="json",
-                    exclude=(
-                        {"on_inference_busy"} if command.on_inference_busy == "error" else set()
-                    )
-                    | ({"ranking_policy"} if "ranking_policy" not in options else set())
-                    | ({"keyword_fallback"} if "keyword_fallback" not in options else set())
-                    | ({"max_per_source"} if "max_per_source" not in options else set()),
+                body=_ranking_compatibility(
+                    command.model_dump(
+                        mode="json",
+                        exclude=(
+                            {"on_inference_busy"} if command.on_inference_busy == "error" else set()
+                        )
+                        | ({"ranking_policy"} if "ranking_policy" not in options else set())
+                        | ({"keyword_fallback"} if "keyword_fallback" not in options else set())
+                        | ({"max_per_source"} if "max_per_source" not in options else set()),
+                    ),
+                    options,
                 ),
             )
         )

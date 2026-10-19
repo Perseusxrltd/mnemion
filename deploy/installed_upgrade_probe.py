@@ -379,6 +379,13 @@ class InstalledUpgrade:
                 value = sql.SQL("to_jsonb(t)")
                 if table == "api_keys" and legacy_api_keys:
                     value = sql.SQL("jsonb_build_object('session_key',false) || to_jsonb(t)")
+                if table == "memory_revisions":
+                    # 021 adds empty chronology to historical rows. Default
+                    # only the absent field; an actual changed value on either
+                    # side must still fail the preservation comparison.
+                    value = sql.SQL(
+                        "jsonb_build_object('passage_times','{}'::jsonb) || to_jsonb(t)"
+                    )
                 rows = connection.execute(
                     sql.SQL(
                         'SELECT ({})::text FROM mnemion.{} t ORDER BY ({})::text COLLATE "C"'

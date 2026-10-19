@@ -75,6 +75,7 @@ class EvaluationInput(Command):
     )
     context: StrictBool = True
     keyword_fallback: StrictBool = True
+    sort: Literal["relevance", "recent"] = "relevance"
     max_per_source: StrictInt = Field(default=1, ge=0, le=50)
     ranking_policy: RankingPolicy = Field(default_factory=RankingPolicy)
     token_budget: StrictInt = Field(default=2048, ge=128, le=16000)

@@ -16,6 +16,7 @@ from mnemion.service.identity import IdentityService
 from mnemion.service.memory import MemoryService
 from mnemion.service.models import GrantInput, KeyInput, MemoryInput, PrincipalInput
 from service_tests.conftest import FixtureEmbedder
+from service_tests.legacy_revision_writer import previous_revision
 
 
 def inventory(dsn):
@@ -32,6 +33,8 @@ def inventory(dsn):
                 if table == "api_keys"
                 else sql.SQL("to_jsonb(t)")
             )
+            if table == "memory_revisions":
+                value = sql.SQL("jsonb_build_object('passage_times','{}'::jsonb) || to_jsonb(t)")
             rows = connection.execute(
                 sql.SQL("SELECT ({})::text AS value FROM mnemion.{} t ORDER BY value").format(
                     value, sql.Identifier(table)
@@ -41,7 +44,7 @@ def inventory(dsn):
         return result
 
 
-@pytest.mark.parametrize("previous_count", [13, 14, 15, 16, 17, 18, 19])
+@pytest.mark.parametrize("previous_count", [13, 14, 15, 16, 17, 18, 19, 20])
 def test_previous_schema_upgrade_preserves_keys_grants_and_existing_memory(
     postgres, tmp_path, monkeypatch, previous_count
 ):
@@ -63,6 +66,7 @@ def test_previous_schema_upgrade_preserves_keys_grants_and_existing_memory(
         embedder = FixtureEmbedder()
         with monkeypatch.context() as legacy:
             legacy.setattr(db, "files", lambda _: previous)
+            legacy.setattr(MemoryService, "_revision", previous_revision)
             assert len(db.migrate(admin_dsn)) == previous_count
             setup = bootstrap_tenant(
                 admin_dsn,
@@ -126,13 +130,25 @@ def test_previous_schema_upgrade_preserves_keys_grants_and_existing_memory(
         assert probe.snapshot()["api_keys"] != before_installed["api_keys"]
         with psycopg.connect(admin_dsn) as connection:
             connection.execute("UPDATE mnemion.api_keys SET session_key=false")
+            connection.execute(
+                "UPDATE mnemion.memory_revisions SET passage_times=jsonb_build_object('unexpected',true)"
+            )
+        assert probe.snapshot()["memory_revisions"] != before_installed["memory_revisions"]
+        with psycopg.connect(admin_dsn) as connection:
+            connection.execute("UPDATE mnemion.memory_revisions SET passage_times='{}'::jsonb")
         after = inventory(admin_dsn)
         assert {table: after[table] for table in before} == before
         added = set(after) - set(before)
         expected_tables = (
             {"company_links", "company_login_requests"} if previous_count < 18 else set()
         )
-        expected_tables |= {"vault_entries", "vault_grants", "vault_denials", "vault_audit_events"}
+        if previous_count < 20:
+            expected_tables |= {
+                "vault_entries",
+                "vault_grants",
+                "vault_denials",
+                "vault_audit_events",
+            }
         if previous_count < 17:
             expected_tables.add("recovery_directories")
         if previous_count < 16:

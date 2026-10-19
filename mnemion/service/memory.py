@@ -50,9 +50,9 @@ class MemoryService:
             inserted = conn.execute(
                 """INSERT INTO mnemion.memory_revisions
                     (tenant_id,space_id,id,memory_id,version,content,content_hash,metadata,subject,kind,
-                     source_revision_id,source_start,source_end,claim_status,valid_from,valid_to,created_by)
+                     source_revision_id,source_start,source_end,claim_status,valid_from,valid_to,created_by,passage_times)
                     SELECT tenant_id,space_id,%s,memory_id,%s,content,content_hash,%s,%s,kind,
-                           source_revision_id,source_start,source_end,claim_status,valid_from,valid_to,%s
+                           source_revision_id,source_start,source_end,claim_status,valid_from,valid_to,%s,passage_times
                     FROM mnemion.memory_revisions WHERE tenant_id=%s AND space_id=%s AND memory_id=%s AND id=%s
                     RETURNING id""",
                 (
@@ -70,6 +70,18 @@ class MemoryService:
             if not inserted:
                 raise not_found()
             return revision
+        from .passage_time import capture
+
+        prior = conn.execute(
+            """SELECT r.content,r.metadata,r.passage_times,r.recorded_at,now() AS captured_at
+               FROM (SELECT 1) seed LEFT JOIN LATERAL (
+                 SELECT content,metadata,passage_times,recorded_at
+                 FROM mnemion.memory_revisions WHERE tenant_id=%s AND space_id=%s AND memory_id=%s
+                 ORDER BY version DESC LIMIT 1
+               ) r ON true""",
+            (identity.tenant_id, space, memory),
+        ).fetchone()
+        chronology = capture(command.content, command.metadata, prior["captured_at"], prior)
         source = command.source
         source_content = (
             source.content if source and source.content is not None else command.content
@@ -105,8 +117,8 @@ class MemoryService:
         conn.execute(
             """INSERT INTO mnemion.memory_revisions
                  (tenant_id, space_id, id, memory_id, version, content, content_hash, metadata, subject, kind,
-                  source_revision_id, source_start, source_end, claim_status, valid_from, valid_to, created_by)
-               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                  source_revision_id, source_start, source_end, claim_status, valid_from, valid_to, created_by, passage_times)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
             (
                 identity.tenant_id,
                 space,
@@ -125,6 +137,7 @@ class MemoryService:
                 command.valid_from,
                 command.valid_to,
                 identity.principal_id,
+                Jsonb(chronology),
             ),
         )
         return revision

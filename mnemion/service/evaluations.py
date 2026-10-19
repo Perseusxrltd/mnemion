@@ -417,7 +417,7 @@ class EvaluationService:
                     "dimensions": model.generation.dimensions,
                     "configuration": model.generation.configuration,
                 },
-                "retrieval": "scoped_exact_cosine_lexical_optional_keywords_rrf_k60",
+                "retrieval": "scoped_exact_cosine_lexical_question_coverage_passage_time_rrf_k60_v2",
                 "queued_service_version": __version__,
                 "selected_cases": [case["id"] for case in selected],
                 "configuration": payload,

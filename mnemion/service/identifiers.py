@@ -64,10 +64,20 @@ def query_identifiers(query: str) -> IdentifierQuery:
 # the caller. Check short labels before the bounded memory body. A repeated ID
 # counts once, so repetition cannot manufacture additional identifier coverage.
 IDENTIFIER_CANDIDATES = r"""
- , identifier_matches AS MATERIALIZED (
+ , identifier_context_terms AS MATERIALIZED (
+    SELECT plainto_tsquery('simple',word) AS query
+    FROM unnest(tsvector_to_array(to_tsvector('simple',%(query)s))) words(word)
+    WHERE %(identifier_question)s
+      AND length(word) BETWEEN 2 AND 128
+      AND cardinality(ts_lexize('english_stem',word))>0
+      AND cardinality(ts_lexize('french_stem',word))>0
+ ), identifier_matches AS MATERIALIZED (
 SELECT e.memory_id, e.space_id, e.revision_id, e.source_group, e.rank_time, e.rank_path,
        matches.matched AS identifier_matches,
-       matches.labelled AS identifier_label_matches
+       matches.labelled AS identifier_label_matches,
+       (SELECT count(*) FROM identifier_context_terms t
+        WHERE (SELECT count(*) FROM identifier_context_terms)<=24
+          AND r.search_text @@ t.query) AS identifier_context_matches
 FROM eligible e JOIN mnemion.memory_revisions r
   ON r.tenant_id=mnemion.tenant() AND r.space_id=e.space_id AND r.id=e.revision_id
 CROSS JOIN LATERAL (
@@ -83,19 +93,19 @@ CROSS JOIN LATERAL (
 WHERE matches.matched > 0
 ), identifier_sources AS (
     SELECT *,row_number() OVER (PARTITION BY source_group
-        ORDER BY identifier_matches DESC,identifier_label_matches DESC,memory_id
+        ORDER BY identifier_matches DESC,identifier_context_matches DESC,identifier_label_matches DESC,memory_id
     ) AS source_position,
     row_number() OVER (PARTITION BY source_group
-        ORDER BY identifier_label_matches DESC,identifier_matches DESC,memory_id
+        ORDER BY identifier_label_matches DESC,identifier_matches DESC,identifier_context_matches DESC,memory_id
     ) AS source_label_position
     FROM identifier_matches
 ), ranked_identifiers AS (
     SELECT *, row_number() OVER (
-        ORDER BY source_position,identifier_matches DESC,identifier_label_matches DESC,memory_id
+        ORDER BY source_position,identifier_matches DESC,identifier_context_matches DESC,identifier_label_matches DESC,memory_id
     ) AS identifier_rank,
     CASE WHEN identifier_label_matches>0 THEN row_number() OVER (
         ORDER BY (identifier_label_matches>0) DESC,
-                 source_label_position,identifier_label_matches DESC,identifier_matches DESC,memory_id
+                 source_label_position,identifier_label_matches DESC,identifier_matches DESC,identifier_context_matches DESC,memory_id
     ) END AS identifier_label_rank
     FROM identifier_sources
 )

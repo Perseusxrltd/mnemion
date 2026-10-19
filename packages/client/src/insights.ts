@@ -85,6 +85,7 @@ export interface EvaluationInput {
   token_budget?: number; max_seconds?: number; interval_seconds?: number
   embedding_generation?: string | null
   keyword_fallback?: boolean; ranking_policy?: RankingPolicy; max_per_source?: number
+  sort?: 'relevance' | 'recent'
 }
 export interface EvaluationScores { recall: number | null; precision: number | null; ndcg: number | null; mrr: number | null; complete: boolean | null }
 export interface EvaluationScoreSummary extends Omit<EvaluationScores, 'complete'> {
@@ -105,7 +106,7 @@ export interface EvaluationSummary {
 export interface EvaluationRun {
   id: string; space_id: string; dataset_id: string; generation_id: string
   state: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled' | 'invalidated'; progress: number; total: number
-  configuration: Required<Omit<EvaluationInput, 'keyword_fallback' | 'ranking_policy' | 'max_per_source'>> & Pick<EvaluationInput, 'keyword_fallback' | 'ranking_policy' | 'max_per_source'>; summary: EvaluationSummary | null; error_code: string | null
+  configuration: Required<Omit<EvaluationInput, 'keyword_fallback' | 'ranking_policy' | 'max_per_source' | 'sort'>> & Pick<EvaluationInput, 'keyword_fallback' | 'ranking_policy' | 'max_per_source' | 'sort'>; summary: EvaluationSummary | null; error_code: string | null
   created_at: string; started_at: string | null; finished_at: string | null
   manifest: {
     version: number; scorer_version: string; dataset_hash: string; dataset_version: number; queued_service_version?: string

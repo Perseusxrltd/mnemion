@@ -43,6 +43,14 @@ Cancellation, credential revocation, source deletion and time limits stop or
 invalidate affected work. Human assessments use optimistic concurrency so two
 reviewers do not silently overwrite one another.
 
+From server 4.14.0, **Ranking preferences** also records `sort` and the recent
+match threshold (`ranking_policy.recent_relevance_ratio`). Compare relevance,
+recent relevant passages and strict dates on the same test-set version. A
+threshold of 0 restores strict chronological ordering; 70% is the normal
+comparison threshold. The run keeps its settings, retrieval implementation
+and actual execution version. Older queued runs keep relevance order. Source
+date labels and matching terms do not establish that a claim is true.
+
 From server 4.3.3, **Ranking preferences** records `keyword_fallback` and the
 complete `ranking_policy` with each run. Compare question-term support on/off,
 or use 0% recency influence and 100% archive weight to measure relevance without

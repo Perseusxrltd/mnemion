@@ -156,6 +156,13 @@ class RankingPolicy(Command):
         allow_inf_nan=False,
         description="Maximum fractional reduction in ordering score due to source age; 0 disables it.",
     )
+    recent_relevance_ratio: float = Field(
+        default=0.7,
+        ge=0,
+        le=1,
+        allow_inf_nan=False,
+        description="For recent ordering, prioritize candidates within this fraction of the best passage query coverage when at least two terms match, or rank-fusion relevance otherwise. Semantic mode uses relevance. Weaker matches remain after them. Set 0 for strict date ordering within the candidate window.",
+    )
     half_life_days: float = Field(
         default=3,
         ge=1 / 24,
@@ -199,7 +206,7 @@ class RecallInput(SpaceSelection):
     mode: Literal["hybrid", "lexical", "semantic"] = "hybrid"
     keyword_fallback: StrictBool = Field(
         default=True,
-        description="In hybrid search with no full lexical or identifier match, add bounded key-term support for a plain prose query. Does not relax similarity thresholds or explicit search syntax.",
+        description="In hybrid search with no full lexical match, add bounded key-term support for a plain prose query, including questions containing identifiers. Does not relax similarity thresholds or explicit search syntax.",
     )
     on_inference_busy: InferenceBusyPolicy = "error"
     sort: Literal["relevance", "recent"] = "relevance"

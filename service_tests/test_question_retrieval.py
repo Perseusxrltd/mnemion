@@ -85,12 +85,9 @@ def test_partial_terms_do_not_bypass_similarity_or_relevance_filters(env, questi
         "Atlas OR backup copy",
         "Atlas backup",
         "Atlas " * 40,
-        "T-7312 Atlas backup copy",
     ],
 )
-def test_explicit_syntax_identifiers_and_query_budgets_keep_existing_channels(
-    env, question_case, query
-):
+def test_explicit_syntax_and_query_budgets_keep_existing_channels(env, question_case, query):
     service, _ = question_case
     result = service.recall(
         env.owner, RecallInput(query=query, space_ids=[env.space], keyword_fallback=True)
