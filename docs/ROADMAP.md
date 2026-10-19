@@ -1,9 +1,19 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.20.0**. Roadmap updated: **2026-10-19**.
+Reviewed source distribution: **4.21.0**. Roadmap updated: **2026-10-19**.
 The [current published distribution and release gates](RELEASE_STATUS.md) are updated automatically.
 The [official product page](https://www.perseusxr.com/mnemion) lists verified
 published downloads; source and release preparation can precede publication.
+
+The [4.21.0 source](releases/4.21.0.md) addresses issue 43 with
+[isolated text-file failures and scoped source health](service/connectors.md#text-file-failures-and-source-health).
+Valid files continue syncing, partial inventories retain data and withhold
+deletion/checkpoint acknowledgement, and the app, search, SDKs and agents report
+incomplete or suspended sources. Unreadable structured journals remain
+fail-closed. [Validation](validation/2026-10-19-source-health.md) uses actual HTTP
+and PostgreSQL, including repair, current access, bounded diagnostics and source
+identity preservation. Provider onboarding, fleet validation and delivery alerts
+remain open. Strict full-scope completion stays **17/64 (26.6%)**.
 
 The [4.20.0 source](releases/4.20.0.md) addresses issue 42 with
 [SSH deploy keys and pinned host keys](service/git-journal.md#ssh-deploy-keys-and-host-pins),
@@ -89,7 +99,7 @@ old-memory backfill and direct writable-space reconstruction. This advances
 F08, C01/C08, A12/A13 and U01 without changing the strict full-scope count:
 **17/64 shipped (26.6%)**.
 
-The [4.14.0 source](releases/4.14.0.md) addresses the latest concrete examples in
+The [4.14.0 source](releases/4.14.0.md) addresses the concrete examples through 4.11 in
 issues 17 and 31 with [question coverage and passage chronology](service/retrieval.md#passage-chronology).
 Unchanged lines and numbered decisions retain their dates across revisions;
 recent ordering compares query support before dates, with a visible strict-date
@@ -100,6 +110,12 @@ covers actual retrieval, source updates, SDK compatibility, recorded evaluations
 and historical schema/recovery boundaries. Historical Git blame, undated or
 ambiguous history, contradiction resolution and broader live model baselines
 remain open. The strict full-scope count remains **17/64 shipped (26.6%)**.
+
+The [19 October 4.17 field recheck](https://github.com/Perseusxrltd/mnemion/issues/31#issuecomment-6271764609)
+reports superseded archived drafts ahead of current documents while semantic
+indexing was incomplete. That newer retrieval report remains open for a
+post-indexing reproduction; the earlier passage tests do not establish that
+all ranking cases are resolved.
 
 The [4.13.0 source](releases/4.13.0.md) implements
 [encrypted host packages and resumable reconstruction](service/host-recovery.md)

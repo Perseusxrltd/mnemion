@@ -10,7 +10,7 @@ from typing import Callable, Iterable
 from uuid import UUID, uuid4
 
 from ..sdk import Client
-from ..service.connector_models import BatchInput, ConnectorItemInput, ScopeInput
+from ..service.connector_models import BatchInput, ConnectorItemInput, ScopeInput, SourceFileError
 from ..service.models import MemoryInput, SourceInput
 
 
@@ -20,6 +20,21 @@ class Scope:
     name: str
     members: list[str]
     observed_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+@dataclass(frozen=True)
+class SkippedDocument:
+    """A content failure, never an authorization or directory-inventory failure."""
+
+    path: str
+    code: str
+
+    def report(self) -> dict:
+        return SourceFileError(
+            path=self.path[:512],
+            path_sha256=hashlib.sha256(self.path.encode()).hexdigest(),
+            error_code=self.code,
+        ).model_dump()
 
 
 @dataclass(frozen=True)
@@ -153,6 +168,7 @@ class ConnectorClient:
         mode="snapshot",
         checkpoint: str | Callable[[], str | None] | None = None,
         heartbeat=None,
+        inventory_errors: Callable[[], dict] | None = None,
     ) -> dict:
         space_id = str(UUID(space_id))
         run = str(uuid4())
@@ -197,13 +213,15 @@ class ConnectorClient:
             size += length
         if page or not sequence:
             commit()
+        errors = inventory_errors() if inventory_errors else {}
+        finish = {"complete_inventory": mode == "snapshot" and not errors, **errors}
         while True:
             if heartbeat:
                 heartbeat()
             result = self.client.request(
                 "POST",
                 path + "/finish",
-                body={"complete_inventory": mode == "snapshot"},
+                body=finish,
                 key="finish:" + run,
             )
             if result["state"] == "completed":

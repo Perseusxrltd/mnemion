@@ -17,7 +17,7 @@ from pydantic import ValidationError
 from ..sdk import Client, MnemionError
 from ..version import __version__
 from .config import read_config
-from .protocol import ConnectorClient
+from .protocol import ConnectorClient, SkippedDocument
 from .live_conversations import ConversationProvider
 from .journal_projection import project_documents
 from .provenance import git_commit
@@ -146,6 +146,7 @@ def _scan(config, *, inspect=False, adapter=None, client=None) -> dict:
                     else nullcontext(None)
                 )
                 with context as snapshot:
+                    skipped = {"skipped_documents": 0, "file_errors": []}
 
                     def items():
                         if snapshot is not None:
@@ -153,6 +154,19 @@ def _scan(config, *, inspect=False, adapter=None, client=None) -> dict:
                         else:
                             for value in project_documents(adapter.documents(identifier)):
                                 if value is None:
+                                    yield None
+                                elif isinstance(value, SkippedDocument):
+                                    if (
+                                        not skipped["skipped_documents"]
+                                        and client.request("GET", "/health/live").get(
+                                            "connector_partial_inventory"
+                                        )
+                                        is not True
+                                    ):
+                                        raise ProviderError("text_source_server_upgrade_required")
+                                    skipped["skipped_documents"] += 1
+                                    if len(skipped["file_errors"]) < 50:
+                                        skipped["file_errors"].append(value.report())
                                     yield None
                                 else:
                                     yield from value.items()
@@ -169,6 +183,9 @@ def _scan(config, *, inspect=False, adapter=None, client=None) -> dict:
                             items(),
                             checkpoint=(lambda: snapshot.checkpoint) if snapshot else checkpoint,
                             heartbeat=heartbeat,
+                            inventory_errors=lambda: (
+                                skipped if skipped["skipped_documents"] else {}
+                            ),
                         )
                     except MnemionError as exc:
                         if snapshot and exc.code == "source_reference_unavailable":
@@ -177,6 +194,8 @@ def _scan(config, *, inspect=False, adapter=None, client=None) -> dict:
                     if snapshot is not None:
                         snapshot.acknowledge()
                         result["capture"] = snapshot.report
+                    if result.get("incomplete_inventory"):
+                        report["completed"] = False
                 report["scopes"].append({"external_id": identifier, **result})
             except (ProviderError, OSError, ValueError, MnemionError, httpx.HTTPError) as exc:
                 report["completed"] = False

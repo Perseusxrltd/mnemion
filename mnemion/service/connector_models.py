@@ -1,6 +1,7 @@
 """Versioned connector protocol. Provider credentials never enter these commands."""
 
 from datetime import datetime
+from pathlib import PurePosixPath
 from typing import Annotated, Literal
 from uuid import UUID
 
@@ -109,8 +110,44 @@ class BatchInput(Command):
         return self
 
 
+class SourceFileError(Command):
+    path: str = Field(min_length=1, max_length=512, pattern=r"^[^\x00-\x1f]+$")
+    path_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    error_code: Literal[
+        "source_is_not_utf8_text", "source_contains_binary_data", "source_too_large"
+    ]
+
+    @field_validator("path")
+    @classmethod
+    def relative(cls, value):
+        if (
+            PurePosixPath(value).is_absolute()
+            or ".." in PurePosixPath(value).parts
+            or "\\" in value
+        ):
+            raise ValueError("Source diagnostics require a relative path")
+        return value
+
+
 class FinishInput(Command):
     complete_inventory: bool = False
+    skipped_documents: int = Field(default=0, ge=0, le=1_000_000)
+    file_errors: list[SourceFileError] = Field(default_factory=list, max_length=50)
+
+    @model_validator(mode="after")
+    def partial_inventory(self):
+        if self.skipped_documents:
+            if (
+                self.complete_inventory
+                or not self.file_errors
+                or len(self.file_errors) > self.skipped_documents
+            ):
+                raise ValueError(
+                    "A partial inventory requires bounded file diagnostics and cannot infer deletions"
+                )
+        elif self.file_errors:
+            raise ValueError("File diagnostics require a skipped document count")
+        return self
 
 
 class ResolveInput(Command):

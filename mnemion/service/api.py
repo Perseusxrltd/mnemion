@@ -436,6 +436,16 @@ def create_app(
         return await anyio.to_thread.run_sync(database.authenticate_oauth, claims)
 
     Auth = Annotated[Identity, Depends(authenticated)]
+
+    async def optional_authenticated(
+        request: Request,
+        credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)],
+    ) -> Identity | None:
+        if not request.headers.getlist("authorization"):
+            return None
+        return await authenticated(request, credentials)
+
+    OptionalAuth = Annotated[Identity | None, Depends(optional_authenticated)]
     Key = Annotated[str, Header(alias="Idempotency-Key", min_length=1, max_length=200)]
 
     from .connector_api import install_routes
@@ -478,10 +488,15 @@ def create_app(
 
     @app.get("/health/live", tags=["Operations"], response_model=c.LiveStatus)
     def live():
-        return {"status": "alive", "api_version": "v1", "service_version": __version__}
+        return {
+            "status": "alive",
+            "api_version": "v1",
+            "service_version": __version__,
+            "connector_partial_inventory": True,
+        }
 
     @app.get("/health/ready", tags=["Operations"], response_model=c.ReadyStatus)
-    def ready(response: Response):
+    def ready(response: Response, identity: OptionalAuth):
         with database.pool.connection() as conn:
             registered = conn.execute(
                 "SELECT id FROM mnemion.embedding_generations WHERE id=%s",
@@ -497,10 +512,18 @@ def create_app(
         if re.fullmatch(r"mnemion-[a-f0-9]{24}", instance):
             response.headers["X-Mnemion-Instance"] = instance
             response.headers["X-Mnemion-Process"] = str(os.getpid())
+        attention = []
+        if identity is not None:
+            from .source_health import source_health
+
+            with database.transaction(identity) as conn:
+                attention = source_health(conn)["attention"]
         return {
             "status": "ready",
             "generation_id": embedder.generation.id,
             "service_version": __version__,
+            "source_health_checked": identity is not None,
+            "attention": attention,
         }
 
     @app.get("/v1/me", tags=["Identity"], response_model=c.IdentityInfo)

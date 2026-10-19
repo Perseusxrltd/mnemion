@@ -15,6 +15,7 @@ from pathlib import Path
 _OPERATIONS = """
 health.live GET /health/live
 health.ready GET /health/ready
+health.sources GET /v1/health/sources
 identity.me GET /v1/me
 recovery.directory GET /v1/recovery-directory
 recovery.configure PUT /v1/recovery-directory

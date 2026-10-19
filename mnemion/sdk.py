@@ -30,7 +30,7 @@ from .service.models import ContextInput, MemoryInput, RecallInput, RevisionInpu
 
 if TYPE_CHECKING:
     from .service.writeback_models import WritebackPolicyInput, WritebackStatus
-    from .service.connector_contracts import SyncStatus
+    from .service.connector_contracts import SourceHealth, SyncStatus
     from .service.librarian_models import (
         LibrarianChoice,
         LibrarianSettings,
@@ -202,6 +202,11 @@ class Client:
 
     def revoke_company_identity(self, link_id: str) -> dict:
         return self.request("DELETE", f"/v1/sign-in/company/links/{UUID(link_id)}")
+
+    def source_health(self) -> SourceHealth:
+        from .service.connector_contracts import SourceHealth
+
+        return SourceHealth.model_validate(self.request("GET", "/v1/health/sources"))
 
     def connector_sync_status(self, connector_id: str) -> SyncStatus:
         from .service.connector_contracts import SyncStatus

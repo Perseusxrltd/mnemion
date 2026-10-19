@@ -16,11 +16,18 @@ def test_health_reports_running_version_without_exposing_workspace_or_update_det
         live = client.get("/health/live")
         ready = client.get("/health/ready")
     assert live.status_code == ready.status_code == 200
-    assert live.json() == {"status": "alive", "api_version": "v1", "service_version": __version__}
+    assert live.json() == {
+        "status": "alive",
+        "api_version": "v1",
+        "service_version": __version__,
+        "connector_partial_inventory": True,
+    }
     assert ready.json() == {
         "status": "ready",
         "generation_id": env.embedder.generation.id,
         "service_version": __version__,
+        "source_health_checked": False,
+        "attention": [],
     }
     assert len(live.content) < 256 and len(ready.content) < 512
     # Existing clients must still be able to connect to older hosts.

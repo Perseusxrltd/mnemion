@@ -283,6 +283,57 @@ coordinated backup, migration and restart instructions in its
 [release notes](../releases/4.0.5.md). Existing indexes and Obsidian formats stay
 unchanged; a Studio update alone cannot migrate a separately hosted server.
 
+## Text-file failures and source health
+
+From **4.21.0**, folder, Git and rclone scans skip ordinary text files containing
+invalid UTF-8 or binary data, and files exceeding `max_file_bytes`. Other valid
+files continue updating. The original bytes are never changed or decoded with
+replacement characters.
+
+The app's **Connections → Source status → File status** shows the skipped count,
+relative paths and reasons. CLI scan receipts and each scope's `inventory`
+response contain `incomplete_inventory`, `skipped_documents` and `file_errors`.
+Detailed errors are bounded to 50 paths of at most 512 characters, each with a
+SHA-256 of the complete relative path. No source content or absolute host path
+is included. Repair the file or deliberately exclude it, then request another
+scan; a clean result clears the warning.
+
+A partial scan keeps previously indexed versions, which may be stale. It does
+**not** infer that unreadable or unvisited files were deleted, advance the last
+complete checkpoint/time, or acknowledge a requested complete sync. Already
+applied healthy updates remain committed. A later complete scan performs the
+normal missing-file reconciliation. Scan exit code 2 and `last_successful:
+false` keep this distinction visible even when healthy files changed.
+
+Search/context add `connector_inventory_incomplete` and
+`connector_scope_suspended` warnings for the caller's selected source access.
+`GET /v1/health/sources` returns scoped counts, `attention` and `observed_at`;
+Python `client.source_health()`, TypeScript `client.sourceHealth()` and agent
+operation `health.sources` use the same authenticated endpoint. An existing
+grant lets its holder learn that access expired or was suspended, without
+returning source content, ACLs, paths or IDs. Other users' sources do not enter
+the summary. Explicitly narrowed recall does not warn about unrelated sources.
+
+`/health/ready` checks service availability. With a valid Authorization header,
+it also checks that caller's source health and includes the same `attention`
+warnings. Without credentials it returns `source_health_checked: false` and no
+private source status. A healthy HTTP process or Supervisor `ready` result is
+not a complete-source-delivery receipt; monitor the authenticated source status
+and scan timestamps too. No third-party alerting service is configured by this
+feature.
+
+Upgrade both service and source runners. An older server that lacks the partial
+inventory capability causes the runner to retain fail-closed behavior with
+`text_source_server_upgrade_required`. Migration `024_source_health.sql` adds
+an index and a narrowly scoped health function, with no memory rewrite.
+
+Directory/catalog failures, symlinks, lost permissions and provider read failures
+still suspend the scope. Unreadable JSON/JSONL and partial Git-journal inventories
+also stay fail-closed, because a skipped catalog or denial could expose withdrawn
+evidence. Use [live conversation capture](live-conversations.md) for actively
+appended transcripts. This change does not repair malformed files or bypass
+provider access rules.
+
 ## Updates, permissions, and deletion
 
 Each provider scope has an access lease, default **15 minutes**, configurable

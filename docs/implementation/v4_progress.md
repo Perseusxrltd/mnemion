@@ -560,3 +560,16 @@ OpenSSH, Git and PostgreSQL checks cover important-save acknowledgement, revoked
 access, wrong host keys, retries and concurrent writers. Existing HTTPS/local
 fingerprints remain stable. Provider provisioning, additional native SSH evidence
 and complete recovery remain open; full-scope completion stays 17 of 64 (26.6%).
+
+## Text-source isolation and health, 19 October 2026
+
+The [4.21 batch](../validation/2026-10-19-source-health.md) addresses issue 43:
+one malformed Markdown file could suspend an entire source. Folder, Git and
+rclone text scans now keep valid updates flowing with bounded per-file diagnostics.
+Partial scans retain prior evidence, stable IDs and complete checkpoints, withhold
+inferred deletion and leave requested syncs pending until a clean scan. The app,
+recall/context, authenticated health, SDKs and `health.sources` agent operation
+report coverage problems. Migration 024 adds only an index and scoped health
+function. Structured journals, directory inventory and permissions remain
+fail-closed. Broader provider/fleet acceptance and the full 64-requirement scope
+remain open; this hotfix does not change the strict completion count.

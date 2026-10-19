@@ -29,6 +29,7 @@ from .passage_time import select as select_passage_time
 from .ranking import adjustment
 from .repository import hydrate, memory_row
 from .telemetry import Telemetry
+from .source_health import source_health
 
 logger = logging.getLogger(__name__)
 
@@ -264,6 +265,11 @@ class RetrievalService:
         with self.db.transaction(identity) as conn:
             # Recheck after model inference, including revoked keys and grants.
             params["spaces"] = resolve_spaces(conn, command)
+            warnings.extend(
+                source_health(conn, None if command.all_accessible else params["spaces"])[
+                    "attention"
+                ]
+            )
             if (
                 selected_generations(
                     conn,

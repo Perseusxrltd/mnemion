@@ -1,6 +1,8 @@
 from typing import Literal
 
-from .connector_models import ConnectorItemInput
+from pydantic import Field
+
+from .connector_models import ConnectorItemInput, SourceFileError
 from .contracts import ResponseModel
 
 
@@ -44,6 +46,20 @@ class BindingResult(Binding):
     removed: bool
 
 
+class InventoryStatus(ResponseModel):
+    incomplete_inventory: bool = False
+    skipped_documents: int = 0
+    file_errors: list[SourceFileError] = Field(default_factory=list)
+
+
+class SourceHealth(ResponseModel):
+    unavailable_scopes: int
+    incomplete_scopes: int
+    skipped_documents: int
+    attention: list[str]
+    observed_at: str
+
+
 class ConnectorScope(ResponseModel):
     space_id: str
     connector_id: str
@@ -57,6 +73,7 @@ class ConnectorScope(ResponseModel):
     checkpoint: str | None
     completed_at: str | None
     access_current: bool
+    inventory: InventoryStatus | None = None
 
 
 class ScopePage(ResponseModel):
@@ -95,7 +112,7 @@ class PageResult(ResponseModel):
     items: list[ItemResult]
 
 
-class SyncResult(ResponseModel):
+class SyncResult(InventoryStatus):
     run_id: str
     space_id: str
     state: Literal["finalizing", "completed"]

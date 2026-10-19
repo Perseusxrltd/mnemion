@@ -1395,9 +1395,57 @@
                 "default": false,
                 "title": "Complete Inventory",
                 "type": "boolean"
+              },
+              "file_errors": {
+                "items": {
+                  "$ref": "#/$defs/SourceFileError"
+                },
+                "maxItems": 50,
+                "title": "File Errors",
+                "type": "array"
+              },
+              "skipped_documents": {
+                "default": 0,
+                "maximum": 1000000.0,
+                "minimum": 0.0,
+                "title": "Skipped Documents",
+                "type": "integer"
               }
             },
             "title": "FinishInput",
+            "type": "object"
+          },
+          "SourceFileError": {
+            "additionalProperties": false,
+            "properties": {
+              "error_code": {
+                "enum": [
+                  "source_is_not_utf8_text",
+                  "source_contains_binary_data",
+                  "source_too_large"
+                ],
+                "title": "Error Code",
+                "type": "string"
+              },
+              "path": {
+                "maxLength": 512,
+                "minLength": 1,
+                "pattern": "^[^\\x00-\\x1f]+$",
+                "title": "Path",
+                "type": "string"
+              },
+              "path_sha256": {
+                "pattern": "^[0-9a-f]{64}$",
+                "title": "Path Sha256",
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "path_sha256",
+              "error_code"
+            ],
+            "title": "SourceFileError",
             "type": "object"
           }
         },
@@ -1437,11 +1485,56 @@
       "name": "connectors.finish",
       "output_schema": {
         "$defs": {
+          "SourceFileError": {
+            "additionalProperties": false,
+            "properties": {
+              "error_code": {
+                "enum": [
+                  "source_is_not_utf8_text",
+                  "source_contains_binary_data",
+                  "source_too_large"
+                ],
+                "title": "Error Code",
+                "type": "string"
+              },
+              "path": {
+                "maxLength": 512,
+                "minLength": 1,
+                "pattern": "^[^\\x00-\\x1f]+$",
+                "title": "Path",
+                "type": "string"
+              },
+              "path_sha256": {
+                "pattern": "^[0-9a-f]{64}$",
+                "title": "Path Sha256",
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "path_sha256",
+              "error_code"
+            ],
+            "title": "SourceFileError",
+            "type": "object"
+          },
           "SyncResult": {
             "additionalProperties": true,
             "properties": {
               "checkpoint_committed": {
                 "title": "Checkpoint Committed",
+                "type": "boolean"
+              },
+              "file_errors": {
+                "items": {
+                  "$ref": "#/$defs/SourceFileError"
+                },
+                "title": "File Errors",
+                "type": "array"
+              },
+              "incomplete_inventory": {
+                "default": false,
+                "title": "Incomplete Inventory",
                 "type": "boolean"
               },
               "pages": {
@@ -1455,6 +1548,11 @@
               "run_id": {
                 "title": "Run Id",
                 "type": "string"
+              },
+              "skipped_documents": {
+                "default": 0,
+                "title": "Skipped Documents",
+                "type": "integer"
               },
               "space_id": {
                 "title": "Space Id",
@@ -2389,6 +2487,16 @@
                 "title": "External Id",
                 "type": "string"
               },
+              "inventory": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/InventoryStatus"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "name": {
                 "anyOf": [
                   {
@@ -2449,6 +2557,63 @@
               "access_current"
             ],
             "title": "ConnectorScope",
+            "type": "object"
+          },
+          "InventoryStatus": {
+            "additionalProperties": true,
+            "properties": {
+              "file_errors": {
+                "items": {
+                  "$ref": "#/$defs/SourceFileError"
+                },
+                "title": "File Errors",
+                "type": "array"
+              },
+              "incomplete_inventory": {
+                "default": false,
+                "title": "Incomplete Inventory",
+                "type": "boolean"
+              },
+              "skipped_documents": {
+                "default": 0,
+                "title": "Skipped Documents",
+                "type": "integer"
+              }
+            },
+            "title": "InventoryStatus",
+            "type": "object"
+          },
+          "SourceFileError": {
+            "additionalProperties": false,
+            "properties": {
+              "error_code": {
+                "enum": [
+                  "source_is_not_utf8_text",
+                  "source_contains_binary_data",
+                  "source_too_large"
+                ],
+                "title": "Error Code",
+                "type": "string"
+              },
+              "path": {
+                "maxLength": 512,
+                "minLength": 1,
+                "pattern": "^[^\\x00-\\x1f]+$",
+                "title": "Path",
+                "type": "string"
+              },
+              "path_sha256": {
+                "pattern": "^[0-9a-f]{64}$",
+                "title": "Path Sha256",
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "path_sha256",
+              "error_code"
+            ],
+            "title": "SourceFileError",
             "type": "object"
           }
         },
@@ -2733,6 +2898,16 @@
                 "title": "External Id",
                 "type": "string"
               },
+              "inventory": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/InventoryStatus"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "name": {
                 "anyOf": [
                   {
@@ -2795,6 +2970,30 @@
             "title": "ConnectorScope",
             "type": "object"
           },
+          "InventoryStatus": {
+            "additionalProperties": true,
+            "properties": {
+              "file_errors": {
+                "items": {
+                  "$ref": "#/$defs/SourceFileError"
+                },
+                "title": "File Errors",
+                "type": "array"
+              },
+              "incomplete_inventory": {
+                "default": false,
+                "title": "Incomplete Inventory",
+                "type": "boolean"
+              },
+              "skipped_documents": {
+                "default": 0,
+                "title": "Skipped Documents",
+                "type": "integer"
+              }
+            },
+            "title": "InventoryStatus",
+            "type": "object"
+          },
           "ScopePage": {
             "additionalProperties": true,
             "properties": {
@@ -2822,6 +3021,39 @@
               "next_cursor"
             ],
             "title": "ScopePage",
+            "type": "object"
+          },
+          "SourceFileError": {
+            "additionalProperties": false,
+            "properties": {
+              "error_code": {
+                "enum": [
+                  "source_is_not_utf8_text",
+                  "source_contains_binary_data",
+                  "source_too_large"
+                ],
+                "title": "Error Code",
+                "type": "string"
+              },
+              "path": {
+                "maxLength": 512,
+                "minLength": 1,
+                "pattern": "^[^\\x00-\\x1f]+$",
+                "title": "Path",
+                "type": "string"
+              },
+              "path_sha256": {
+                "pattern": "^[0-9a-f]{64}$",
+                "title": "Path Sha256",
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "path_sha256",
+              "error_code"
+            ],
+            "title": "SourceFileError",
             "type": "object"
           }
         },
@@ -7729,6 +7961,11 @@
                 "title": "Api Version",
                 "type": "string"
               },
+              "connector_partial_inventory": {
+                "default": false,
+                "title": "Connector Partial Inventory",
+                "type": "boolean"
+              },
               "service_version": {
                 "anyOf": [
                   {
@@ -7780,6 +8017,13 @@
           "ReadyStatus": {
             "additionalProperties": true,
             "properties": {
+              "attention": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Attention",
+                "type": "array"
+              },
               "generation_id": {
                 "title": "Generation Id",
                 "type": "string"
@@ -7794,6 +8038,11 @@
                   }
                 ],
                 "title": "Service Version"
+              },
+              "source_health_checked": {
+                "default": false,
+                "title": "Source Health Checked",
+                "type": "boolean"
               },
               "status": {
                 "const": "ready",
@@ -7817,6 +8066,67 @@
       "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Ready"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "read",
+      "group": "operations",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {},
+        "type": "object"
+      },
+      "method": "GET",
+      "name": "health.sources",
+      "output_schema": {
+        "$defs": {
+          "mnemion__service__connector_contracts__SourceHealth": {
+            "additionalProperties": true,
+            "properties": {
+              "attention": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Attention",
+                "type": "array"
+              },
+              "incomplete_scopes": {
+                "title": "Incomplete Scopes",
+                "type": "integer"
+              },
+              "observed_at": {
+                "title": "Observed At",
+                "type": "string"
+              },
+              "skipped_documents": {
+                "title": "Skipped Documents",
+                "type": "integer"
+              },
+              "unavailable_scopes": {
+                "title": "Unavailable Scopes",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "unavailable_scopes",
+              "incomplete_scopes",
+              "skipped_documents",
+              "attention",
+              "observed_at"
+            ],
+            "title": "SourceHealth",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/mnemion__service__connector_contracts__SourceHealth"
+      },
+      "parameter_locations": {},
+      "path": "/v1/health/sources",
+      "retry": "read",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Source Health"
     },
     {
       "authentication": "bearer",
@@ -8514,7 +8824,7 @@
                 "type": "integer"
               },
               "source": {
-                "$ref": "#/$defs/SourceHealth"
+                "$ref": "#/$defs/mnemion__service__insights_models__SourceHealth"
               },
               "space_id": {
                 "title": "Space Id",
@@ -9140,7 +9450,7 @@
             "title": "QueueRow",
             "type": "object"
           },
-          "SourceHealth": {
+          "mnemion__service__insights_models__SourceHealth": {
             "additionalProperties": true,
             "properties": {
               "access_valid_until": {

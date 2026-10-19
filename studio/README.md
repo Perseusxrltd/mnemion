@@ -35,6 +35,11 @@ Source 4.20.0 adds **SSH · repository deploy key**, with native file pickers fo
 the private key and verified host pins. Local Git receipts are clearly labelled
 so users do not mistake a local repository for an off-host recovery copy. See
 [SSH setup](../docs/service/git-journal.md#ssh-deploy-keys-and-host-pins).
+Source 4.21.0 adds **Connections → Source status → File status** with bounded
+relative-path diagnostics. Healthy text files continue syncing when another
+file is malformed; search explains incomplete or unavailable source coverage.
+[Source health](../docs/service/connectors.md#text-file-failures-and-source-health)
+documents retained last-good data, repair and the authenticated agent endpoint.
 
 Remote-agent fixes in 4.0.2 and lower model RAM in 4.0.3 require upgrading the memory server;
 the desktop updater cannot replace a separately deployed service. See the

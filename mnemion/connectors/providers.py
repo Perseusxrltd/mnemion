@@ -17,7 +17,7 @@ from pathlib import Path, PurePosixPath
 from urllib.parse import quote
 
 from .config import FilesystemConfig, GitConfig, RcloneConfig
-from .protocol import Document, Scope
+from .protocol import Document, Scope, SkippedDocument
 from .source_files import SourceReadError, read_selected
 from ..journal.format import journal_candidate
 
@@ -86,15 +86,15 @@ def document(
     uri: str | None = None,
     *,
     metadata: dict | None = None,
-) -> Document | None:
+) -> Document | SkippedDocument | None:
     if len(data) > config.max_file_bytes:
-        raise ProviderError("source_too_large")
+        return SkippedDocument(relative, "source_too_large")
     try:
         text = data.decode("utf-8-sig")
     except UnicodeDecodeError:
-        raise ProviderError("source_is_not_utf8_text") from None
+        return SkippedDocument(relative, "source_is_not_utf8_text")
     if "\0" in text:
-        raise ProviderError("source_contains_binary_data")
+        return SkippedDocument(relative, "source_contains_binary_data")
     if private_vault_content(text) and not journal_candidate(relative, text):
         return None
     if not config.include_generated and re.search(
@@ -264,6 +264,10 @@ class FilesystemProvider:
             try:
                 data = read_selected(root, rel, self.config.max_file_bytes)
             except SourceReadError as exc:
+                if exc.code == "source_too_large":
+                    yield SkippedDocument(rel, exc.code)
+                    yield None
+                    continue
                 raise ProviderError(exc.code) from None
             result = document(
                 self.config,
@@ -374,7 +378,9 @@ class GitProvider:
             if count > self.config.max_files:
                 raise ProviderError("source_inventory_limit")
             if int(size) > self.config.max_file_bytes:
-                raise ProviderError("source_too_large")
+                yield SkippedDocument(rel, "source_too_large")
+                yield None
+                continue
             blob = oid.decode("ascii")
             if not re.fullmatch(r"[0-9a-f]{40}|[0-9a-f]{64}", blob):
                 raise ProviderError("invalid_git_object")
@@ -471,8 +477,12 @@ class RcloneProvider:
             seen.add(rel)
             if entry.get("IsDir") or not selected(self.config, rel):
                 continue
-            if entry["Size"] > self.config.max_file_bytes or entry["Size"] < 0:
+            if entry["Size"] < 0:
                 raise ProviderError("source_too_large")
+            if entry["Size"] > self.config.max_file_bytes:
+                yield SkippedDocument(rel, "source_too_large")
+                yield None
+                continue
             data = self.rclone(
                 "cat",
                 "--",

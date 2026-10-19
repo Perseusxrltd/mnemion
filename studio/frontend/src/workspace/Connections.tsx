@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download, Plus, RefreshCw } from "lucide-react";
-import { MnemionClient, MnemionError, conversationCapture, supportsLiveConversations, type Connector, type ConnectorProposal } from "@mnemion/client";
+import { MnemionClient, MnemionError, conversationCapture, supportsLiveConversations, type Connector, type ConnectorProposal, type SourceInventory } from "@mnemion/client";
 
 const providers = [
   ["filesystem", "Obsidian / folder"], ["git", "Git repository"],
@@ -105,7 +105,7 @@ export function Connections({ client, administrator, endpoint, selectSpace, serv
       <section className="ws-card"><div className="ws-section-title"><h2>Source status</h2><button className="ws-button" onClick={() => scopes.refetch()}><RefreshCw size={14} />Refresh</button></div>
         {syncStatus.data && <div className="ws-connector-heading">
           <div><p>{syncStatus.data.pending ? `Sync requested ${when(syncStatus.data.requested_at)}. Waiting for a complete scan.` : syncStatus.data.last_attempt_at ? (syncStatus.data.last_successful ? "Source scan complete." : "The last source scan was incomplete.") : "No scan reported yet."}</p>
-            {syncStatus.data.last_attempt_at && <p className="ws-helper">Last report {when(syncStatus.data.last_attempt_at)} · {syncStatus.data.last_changed} changed · {syncStatus.data.last_removed} removed · {syncStatus.data.last_unchanged} unchanged · {syncStatus.data.last_duration_seconds?.toFixed(1)} seconds{syncStatus.data.last_successful === false ? ". Counts cover completed scopes." : ""}</p>}
+            {syncStatus.data.last_attempt_at && <p className="ws-helper">Last report {when(syncStatus.data.last_attempt_at)} · {syncStatus.data.last_changed} changed · {syncStatus.data.last_removed} removed · {syncStatus.data.last_unchanged} unchanged · {syncStatus.data.last_duration_seconds?.toFixed(1)} seconds{syncStatus.data.last_successful === false ? ". Counts include safely applied updates from partial scans." : ""}</p>}
             {connection.provider === "git" && (syncStatus.data.scanned_commit ? <p className="ws-helper">Last complete Git snapshot · {when(syncStatus.data.scanned_at ?? null)}<br /><code style={{ overflowWrap: "anywhere" }}>{syncStatus.data.scanned_commit}</code></p> : <p className="ws-helper">The scanned Git commit will appear after a complete scan with runner 4.3.2 or later.</p>)}
             {syncStatus.data.pending && <p className="ws-helper">The source runner must be running and connected. Requests do not change source permissions.</p>}
           </div>
@@ -115,7 +115,16 @@ export function Connections({ client, administrator, endpoint, selectSpace, serv
           })}><RefreshCw size={14} />Sync now</button>
         </div>}
         {syncStatus.data === null && <p className="ws-helper">Upgrade the memory server and source runner to 4.0.5 or later to request and monitor scans here.</p>}
-        <div className="ws-table-wrap"><table className="ws-table"><thead><tr><th>Source</th><th>Access</th><th>Last complete scan</th>{connection.provider === "conversations" && <th>Capture progress</th>}{administrator && <th>Control</th>}</tr></thead><tbody>{scopes.data?.items.map(scope => <tr key={scope.space_id}><td><Link className="ws-link" to="/workspace/memories" onClick={() => selectSpace(scope.space_id)}>{scope.name || scope.external_id}</Link><small className="ws-helper">{scope.external_id}</small></td><td>{connection.disabled_at ? "Disabled" : scope.operator_paused ? "Paused by an administrator" : scope.suspended_at ? "Needs permission recheck" : scope.access_current ? `Checked until ${when(scope.access_valid_until)}` : "Access expired"}</td><td>{when(scope.completed_at)}</td>{connection.provider === "conversations" && <td><ConversationProgress checkpoint={scope.checkpoint} /></td>}{administrator && <td><button className="ws-link" disabled={busy || !!connection.disabled_at} onClick={() => act(() => scope.operator_paused ? client.resumeConnectorScope(scope.space_id) : client.pauseConnectorScope(scope.space_id))}>{scope.operator_paused ? "Resume and recheck" : "Pause source"}</button></td>}</tr>)}</tbody></table></div>
+        <div className="ws-table-wrap"><table className="ws-table">
+          <thead><tr><th>Source</th><th>Access</th><th>Last complete scan</th><th>File status</th>{connection.provider === "conversations" && <th>Capture progress</th>}{administrator && <th>Control</th>}</tr></thead>
+          <tbody>{scopes.data?.items.map(scope => <tr key={scope.space_id}>
+            <td><Link className="ws-link" to="/workspace/memories" onClick={() => selectSpace(scope.space_id)}>{scope.name || scope.external_id}</Link><small className="ws-helper">{scope.external_id}</small></td>
+            <td>{connection.disabled_at ? "Disabled" : scope.operator_paused ? "Paused by an administrator" : scope.suspended_at ? "Needs permission recheck" : scope.access_current ? `Checked until ${when(scope.access_valid_until)}` : "Access expired"}</td>
+            <td>{when(scope.completed_at)}</td><td><InventoryDetails inventory={scope.inventory} /></td>
+            {connection.provider === "conversations" && <td><ConversationProgress checkpoint={scope.checkpoint} /></td>}
+            {administrator && <td><button className="ws-link" disabled={busy || !!connection.disabled_at} onClick={() => act(() => scope.operator_paused ? client.resumeConnectorScope(scope.space_id) : client.pauseConnectorScope(scope.space_id))}>{scope.operator_paused ? "Resume and recheck" : "Pause source"}</button></td>}
+          </tr>)}</tbody>
+        </table></div>
         {!scopes.data?.items.length && <p className="ws-helper">Run the adapter to discover sources and verify access.</p>}
         {scopes.data?.next_cursor && <button className="ws-button" onClick={() => setCursor(scopes.data!.next_cursor!)}>Next sources</button>}{cursor && <button className="ws-button" onClick={() => setCursor(undefined)}>First sources</button>}
       </section>
@@ -127,6 +136,24 @@ export function Connections({ client, administrator, endpoint, selectSpace, serv
       </section>
     </>}
   </div>;
+}
+
+function InventoryDetails({ inventory }: { inventory?: SourceInventory | null }) {
+  if (!inventory) return <span className="ws-helper">No file report yet</span>;
+  if (!inventory.incomplete_inventory) return <span className="ws-helper">No skipped files</span>;
+  const reasons = {
+    source_is_not_utf8_text: "Invalid UTF-8 text",
+    source_contains_binary_data: "Contains binary data",
+    source_too_large: "Exceeds the configured file size limit",
+  };
+  return <details style={{ minWidth: 180, maxWidth: 380 }}>
+    <summary className="ws-link">{inventory.skipped_documents} {inventory.skipped_documents === 1 ? "file needs" : "files need"} attention</summary>
+    <p className="ws-helper">Other valid files keep syncing. Last good data is retained; removal waits for a clean scan.</p>
+    {inventory.file_errors.map(item => <p key={item.path_sha256} className="ws-helper">
+      <code title={`Path SHA-256: ${item.path_sha256}`} style={{ overflowWrap: "anywhere" }}>{item.path}</code><br />{reasons[item.error_code] ?? item.error_code}
+    </p>)}
+    {inventory.skipped_documents > inventory.file_errors.length && <p className="ws-helper">Showing the first {inventory.file_errors.length} affected files. Repair or exclude them, then scan again.</p>}
+  </details>;
 }
 
 function ConversationProgress({ checkpoint }: { checkpoint?: string | null }) {

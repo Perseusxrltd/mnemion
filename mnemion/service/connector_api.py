@@ -25,6 +25,10 @@ from .db import Identity
 def install_routes(app, authenticated, service):
     Auth = Annotated[Identity, Depends(authenticated)]
 
+    @app.get("/v1/health/sources", tags=["Operations"], response_model=c.SourceHealth)
+    def source_health(identity: Auth):
+        return service.health(identity)
+
     @app.get("/v1/connectors", tags=["Connectors"], response_model=Page[c.Connector])
     def connectors(identity: Auth):
         return service.list(identity)

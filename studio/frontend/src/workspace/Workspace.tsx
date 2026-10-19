@@ -209,6 +209,10 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 }
 function WarningList({ warnings }: { warnings: string[] }) {
   const descriptions: Record<string, string> = {
+    connector_scope_suspended:
+      "Some of your sources are paused or their access has expired. Their memories are unavailable until access is rechecked. Check Connections or contact your workspace administrator.",
+    connector_inventory_incomplete:
+      "Some source files could not be read. Other files continue syncing. Results may include last good versions of unreadable files. Check Connections for the affected files.",
     semantic_index_incomplete:
       "Some memories are waiting for semantic indexing. Search results may be incomplete.",
     semantic_unavailable_lexical_only:

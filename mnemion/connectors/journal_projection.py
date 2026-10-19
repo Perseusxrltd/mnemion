@@ -7,7 +7,7 @@ from ..journal.format import JournalError, journal_candidate, parse_catalog, par
 from ..journal.index import journal_index
 from ..journal.notes import note_candidate
 from ..journal.privacy import scan
-from .protocol import Document
+from .protocol import Document, SkippedDocument
 
 
 def project_documents(documents):
@@ -17,9 +17,18 @@ def project_documents(documents):
         index = None
         catalogs = {}
         scanned = 0
+        incomplete = False
         for document in documents:
             if document is None:
                 yield None
+                continue
+            if isinstance(document, SkippedDocument):
+                # An unreadable structured file could contain the only denial
+                # or catalog. Never turn a partial journal into live evidence.
+                if document.path.lower().endswith((".json", ".jsonl")):
+                    raise JournalError("journal_inventory_unreadable")
+                incomplete = True
+                yield document
                 continue
             path = str(document.metadata.get("path", ""))
             if note_candidate(path, document.text):
@@ -47,6 +56,8 @@ def project_documents(documents):
                 scanned += 1
                 if scanned % 100 == 0:
                     yield None
+        if incomplete and (index is not None or catalogs):
+            raise JournalError("journal_incomplete_inventory")
         if index is not None:
             if index.inventories() != catalogs:
                 raise JournalError("journal_incomplete_inventory")

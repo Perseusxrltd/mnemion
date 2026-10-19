@@ -30,6 +30,7 @@ from .errors import ServiceError, not_found
 from .memory import MemoryService
 from .models import RevisionInput, json_value
 from .repository import audit, hydrate, memory_row
+from .source_health import source_health
 
 
 def _digest(value: dict) -> str:
@@ -45,6 +46,10 @@ def _lock(conn, space: UUID) -> None:
 class ConnectorService(ConnectorSyncControls):
     def __init__(self, memory: MemoryService):
         self.memory, self.db = memory, memory.db
+
+    def health(self, identity: Identity) -> dict:
+        with self.db.transaction(identity) as conn:
+            return source_health(conn)
 
     def create(self, identity: Identity, command: ConnectorInput) -> dict:
         with self.db.transaction(identity) as conn:
@@ -258,8 +263,14 @@ class ConnectorService(ConnectorSyncControls):
             ).fetchone():
                 raise not_found()
             rows = conn.execute(
-                """SELECT s.*,p.name,s.suspended_at IS NULL AND s.access_valid_until>now() AS access_current
+                """SELECT s.*,p.name,s.suspended_at IS NULL AND s.access_valid_until>now() AS access_current,
+                          latest.result AS inventory
                    FROM mnemion.connector_scopes s JOIN mnemion.spaces p ON p.tenant_id=s.tenant_id AND p.id=s.space_id
+                   LEFT JOIN LATERAL (
+                     SELECT r.result FROM mnemion.connector_runs r
+                     WHERE r.tenant_id=s.tenant_id AND r.space_id=s.space_id AND r.state='completed'
+                     ORDER BY r.finished_at DESC,r.id DESC LIMIT 1
+                   ) latest ON true
                    WHERE s.connector_id=%s AND (%s::uuid IS NULL OR s.space_id>%s) ORDER BY s.space_id LIMIT %s""",
                 (connector, after, after, limit + 1),
             ).fetchall()
@@ -541,7 +552,12 @@ class ConnectorService(ConnectorSyncControls):
             self._scope(conn, space)
             require_space(conn, space, 20, writing=True)
             current = self._run(conn, space, run)
-            if (current["mode"] == "snapshot") != command.complete_inventory:
+            partial = current["mode"] == "snapshot" and command.skipped_documents > 0
+            if (
+                (current["mode"] == "snapshot") != command.complete_inventory
+                and not partial
+                or (current["mode"] == "incremental" and command.skipped_documents)
+            ):
                 raise ServiceError(
                     422,
                     "inventory_required",
@@ -549,6 +565,12 @@ class ConnectorService(ConnectorSyncControls):
                 )
             if current["state"] == "completed":
                 return current["result"]
+            if current["state"] == "finalizing" and partial:
+                raise ServiceError(
+                    409,
+                    "inventory_already_finalizing",
+                    "A complete deletion sweep cannot be changed into a partial inventory.",
+                )
             if current["state"] not in ("running", "finalizing") or not current["lease_current"]:
                 raise ServiceError(409, "run_inactive", "The ingestion lease is no longer active.")
             if not current["next_sequence"]:
@@ -584,7 +606,10 @@ class ConnectorService(ConnectorSyncControls):
                 "state": state,
                 "pages": current["next_sequence"],
                 "removed": deleted,
-                "checkpoint_committed": state == "completed",
+                "checkpoint_committed": state == "completed" and not partial,
+                "incomplete_inventory": partial,
+                "skipped_documents": command.skipped_documents,
+                "file_errors": [error.model_dump() for error in command.file_errors],
             }
             conn.execute(
                 """UPDATE mnemion.connector_runs SET state=%s,result=%s,
@@ -593,16 +618,23 @@ class ConnectorService(ConnectorSyncControls):
                 (state, Jsonb(result), state, space, run),
             )
             if state == "completed":
-                conn.execute(
-                    "SELECT mnemion.commit_connector_cursor(%s,%s)", (space, current["checkpoint"])
-                )
+                if not partial:
+                    conn.execute(
+                        "SELECT mnemion.commit_connector_cursor(%s,%s)",
+                        (space, current["checkpoint"]),
+                    )
                 audit(
                     conn,
                     identity,
                     "connector.synced",
                     run,
                     space_id=space,
-                    details={"pages": current["next_sequence"], "inferred_deletions": deleted},
+                    details={
+                        "pages": current["next_sequence"],
+                        "inferred_deletions": deleted,
+                        "incomplete_inventory": partial,
+                        "skipped_documents": command.skipped_documents,
+                    },
                 )
             return result
 

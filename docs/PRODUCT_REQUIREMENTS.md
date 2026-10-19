@@ -19,6 +19,13 @@ not equally sized. This is coverage of the full requested scope, not a measure
 of engineering effort or the usability of the published app. Hotfixes to a
 partial feature do not automatically mark its whole requirement complete.
 
+Source 4.21.0 advances F08/C01/C08 with [isolated text failures and source health](service/connectors.md#text-file-failures-and-source-health)
+for issue 43. It keeps healthy updates flowing, protects missing-file reconciliation
+and stable identities, and reports source gaps through the app, recall, SDKs and
+agent controls. [Validation](validation/2026-10-19-source-health.md) retains
+fail-closed journal and access handling. This does not complete provider onboarding,
+fleet adoption or the broader advanced-monitoring requirement; the count is unchanged.
+
 Source 4.20.0 advances F08/C01/A09 with [pinned SSH journal access](service/git-journal.md#ssh-deploy-keys-and-host-pins)
 for issue 42. App and local-agent setup use the same private credential references;
 receipts distinguish local repositories from HTTPS/SSH destinations. The

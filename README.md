@@ -61,6 +61,11 @@ Source 4.20.0 adds [pinned SSH deploy-key publishing](docs/service/git-journal.m
 through the app and local agent/CLI controls. Delivery receipts identify local,
 HTTPS and SSH destinations; a local Git acknowledgement does not prove off-host
 replication. Existing HTTPS registrations keep their approvals when upgraded.
+Source 4.21.0 adds [text-source failure isolation and scoped health](docs/service/connectors.md#text-file-failures-and-source-health).
+Malformed text files no longer prevent healthy notes from updating; partial
+scans retain prior data, withhold inferred deletion and report affected files
+in the app. Search and authenticated health checks warn about incomplete or
+unavailable sources. Complete journal and access checks remain enforced.
 Source 4.17.0 adds [live JSONL conversation capture](docs/service/live-conversations.md):
 bounded records and fragments, deferred tails, per-file source controls, private
 checkpoints, unchanged-fragment reuse and capture progress in the app. Existing

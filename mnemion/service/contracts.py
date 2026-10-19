@@ -37,12 +37,15 @@ class LiveStatus(ResponseModel):
     status: Literal["alive"]
     api_version: Literal["v1"]
     service_version: str | None = None
+    connector_partial_inventory: bool = False
 
 
 class ReadyStatus(ResponseModel):
     status: Literal["ready"]
     generation_id: str
     service_version: str | None = None
+    source_health_checked: bool = False
+    attention: list[str] = Field(default_factory=list)
 
 
 JournalDestinationKind = Literal["local_repository", "https_repository", "ssh_repository"]
