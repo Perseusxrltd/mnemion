@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-20T12:09:52+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-20T12:20:33+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.37.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.37.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -29,25 +29,20 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 ## Active jobs
 
-[Run 39419696237](https://github.com/Perseusxrltd/mnemion/actions/runs/39419696237): 7/12 jobs completed; 7 succeeded.
+[Run 39419696237](https://github.com/Perseusxrltd/mnemion/actions/runs/39419696237): 10/12 jobs completed; 10 succeeded.
 
-- supervision \(macos-15\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
-- supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
+- supervision \(macos-15-intel\): in\_progress — Verify both pinned local models on the actual Mac runtime.
 - service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 
-[Run 39420061069](https://github.com/Perseusxrltd/mnemion/actions/runs/39420061069): 7/18 jobs completed; 7 succeeded.
+[Run 39420061069](https://github.com/Perseusxrltd/mnemion/actions/runs/39420061069): 22/31 jobs completed; 22 succeeded.
 
-- checks / studio: in\_progress — Run npm --prefix studio/electron ci && npm --prefix studio/electron test.
 - checks / service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- checks / container \(ubuntu-22\.04\): in\_progress — Build the actual deployment image with its documentation.
-- checks / supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
-- checks / service \(3\.13\): in\_progress — Run npm --prefix packages/client ci && npm --prefix packages/client test.
-- checks / container \(ubuntu-22\.04-arm\): in\_progress — Build the actual deployment image with its documentation.
-- checks / supervision \(macos-15\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
-- checks / legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
-- checks / service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- native / Encrypted files / Windows / arm64: in\_progress — Run actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1.
-- native / native\_database / Private state / Windows / arm64: in\_progress — Post Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
+- checks / supervision \(macos-15-intel\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
+- checks / service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- native / ubuntu-22\.04-arm / arm64: in\_progress — Package the native desktop with one bounded upstream-download retry.
+- native / windows-2022 / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
+- native / macos-15-intel / x64: in\_progress — Locked native service build dependencies.
+- native / windows-11-arm / arm64: in\_progress — Package the native desktop with one bounded upstream-download retry.
+- native / macos-15 / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
+- native / ubuntu-22\.04 / x64: in\_progress — Installed Linux app creates, searches and reopens a real local workspace.
 
