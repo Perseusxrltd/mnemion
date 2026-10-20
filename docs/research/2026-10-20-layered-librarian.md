@@ -240,5 +240,12 @@ statistical resurfacing or calibrated verification, and it does not complete
 those delivery stages.
 
 This work is tracked as R07 in the [complete requirements](../PRODUCT_REQUIREMENTS.md).
+
+Source **4.41** adds the [selected capture modes](../service/live-conversations.md#choose-how-much-to-capture)
+for approved live sources: complete exposed records or message projections,
+with app/agent parity and explicit checkpoint scope. This advances L1 controls
+without implementing new cross-layer consolidation or unseen provider access.
+The [completion audit](../implementation/completion-audit.md) retains all seven
+stages while prioritizing complete operational and onboarding journeys.
 Operational GitHub bugs and the current connector release continue in parallel
 with this longer implementation sequence.

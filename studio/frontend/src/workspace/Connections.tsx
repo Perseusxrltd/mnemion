@@ -164,7 +164,7 @@ function ConversationProgress({ checkpoint }: { checkpoint?: string | null }) {
   const value = conversationCapture(checkpoint);
   if (!value) return <span className="ws-helper">Waiting for first capture</span>;
   const bytes = (count: number) => count >= 1_000_000 ? `${(count / 1_000_000).toFixed(1)} MB` : count >= 1000 ? `${(count / 1000).toFixed(1)} kB` : `${count} B`;
-  return <div>{bytes(value.captured)} captured<small className="ws-helper">{value.pending ? `${bytes(value.pending)} waiting for capture` : "Complete at last scan"}</small><small className="ws-helper">Read {bytes(value.read)} from source · {value.reused} fragments reused · {value.rendered} processed</small></div>;
+  return <div>{bytes(value.captured)} {value.mode === 'messages' ? 'scanned for messages' : 'captured'}<small className="ws-helper">{value.pending ? `${bytes(value.pending)} waiting for capture` : "Complete at last scan"}</small>{value.mode === 'messages' && <small className="ws-helper">Messages only · raw session records excluded from this capture</small>}<small className="ws-helper">Read {bytes(value.read)} from source · {value.reused} fragments reused · {value.rendered} processed</small></div>;
 }
 
 export function SourceProposals({ client, space }: { client: MnemionClient; space: string }) {

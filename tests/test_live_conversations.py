@@ -51,6 +51,121 @@ def raw(items):
     return [item for item in items if item.memory and not item.memory.metadata.get("projection")]
 
 
+@pytest.mark.parametrize("kind", ["generic", "codex", "claude", "acp"])
+def test_message_only_capture_keeps_message_text_and_excludes_structured_private_events(
+    source, kind
+):
+    path, config = source
+    config.capture_mode = "messages"
+    config.segment_records = 1
+    if kind == "generic":
+        rows = [
+            {"role": "user", "content": "Visible café 東京"},
+            {"role": "tool", "content": "Tool payload must stay local"},
+            {"role": "assistant", "channel": "analysis", "content": "Reasoning stays local"},
+            {"role": "system", "content": "Private instructions"},
+            {"role": "assistant", "content": "Visible answer"},
+        ]
+    elif kind == "codex":
+        rows = [
+            {"type": "session_meta", "payload": {"id": "capture-fixture"}},
+            {
+                "type": "event_msg",
+                "payload": {"type": "user_message", "message": "Visible café 東京"},
+            },
+            {
+                "type": "event_msg",
+                "payload": {"type": "agent_reasoning", "text": "Reasoning stays local"},
+            },
+            {
+                "type": "response_item",
+                "payload": {
+                    "type": "function_call_output",
+                    "output": "Tool payload must stay local",
+                },
+            },
+            {
+                "type": "event_msg",
+                "payload": {"type": "agent_message", "message": "Visible answer"},
+            },
+        ]
+    elif kind == "claude":
+        rows = [
+            {
+                "type": "user",
+                "sessionId": "capture-fixture",
+                "message": {"content": "Visible café 東京"},
+            },
+            {
+                "type": "assistant",
+                "sessionId": "capture-fixture",
+                "message": {
+                    "content": [
+                        {"type": "thinking", "text": "Reasoning stays local"},
+                        {"type": "tool_use", "text": "Tool payload must stay local"},
+                        {"type": "text", "text": "Visible answer"},
+                    ]
+                },
+            },
+        ]
+    else:
+        rows = [
+            {
+                "method": "session/update",
+                "params": {
+                    "sessionId": "capture-fixture",
+                    "update": {"sessionUpdate": kind, "content": {"type": "text", "text": text}},
+                },
+            }
+            for kind, text in [
+                ("user_message_chunk", "Visible café 東京"),
+                ("tool_call", "Tool payload must stay local"),
+                ("agent_thought_chunk", "Reasoning stays local"),
+                ("agent_message_chunk", "Visible answer"),
+            ]
+        ]
+    data = b"".join((json.dumps(row, ensure_ascii=False) + "\n").encode() for row in rows)
+    path.write_bytes(data)
+    items, report, checkpoint = capture(config)
+    assert not raw(items) and spoken(items)
+    visible = "\n".join(item.memory.content for item in spoken(items))
+    assert "Visible café 東京" in visible and "Visible answer" in visible
+    encoded = json.dumps([item.model_dump(mode="json") for item in items])
+    for excluded in (
+        "Reasoning stays local",
+        "Tool payload must stay local",
+        "Private instructions",
+    ):
+        assert excluded not in encoded
+    assert all(item.memory.metadata["raw_evidence_stored"] is False for item in spoken(items))
+    assert all("raw_source_external_id" not in item.memory.metadata for item in spoken(items))
+    assert report["captured_prefix_bytes"] == len(data) and report["capture_mode"] == "messages"
+    assert json.loads(checkpoint[9:])["capture_mode"] == "messages"
+    again, report, _ = capture(config, checkpoint)
+    assert all(item.action == "retain" for item in again) and report["bytes_read"] == 0
+
+
+def test_capture_mode_change_reexamines_source_without_reusing_raw_references(source):
+    path, config = source
+    path.write_bytes(line("Message retained") + line("Tool data", "tool"))
+    original, _, checkpoint = capture(config)
+    raw_ids = {item.external_id for item in raw(original)}
+    assert raw_ids
+    config.capture_mode = "messages"
+    selected, report, _ = capture(config, checkpoint)
+    assert report["segments_reused"] == 0 and not raw(selected)
+    assert not raw_ids.intersection(item.external_id for item in selected)
+    assert all("Tool data" not in item.memory.content for item in spoken(selected))
+
+
+def test_message_only_capture_cannot_disable_its_message_parser(source):
+    _, config = source
+    with pytest.raises(ValueError, match="requires conversation normalization"):
+        ConversationConfig.model_validate(
+            {**config.model_dump(), "capture_mode": "messages", "normalize_conversations": False}
+        )
+
+
 def test_half_record_and_split_unicode_are_deferred_then_captured_once(source):
     path, config = source
     complete, later = line("First turn"), line("Later café 東京", "assistant")

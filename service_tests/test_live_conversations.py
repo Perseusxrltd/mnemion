@@ -95,6 +95,30 @@ def memories(env, operator, reader, space):
     return [env.memory.fetch(reader, row["id"]) for row in ids]
 
 
+def test_capture_mode_change_publishes_only_messages_after_complete_inventory(
+    env, conversation_source
+):
+    service, connection, operator, reader, secret, config = conversation_source
+    (config.provider.path / "selected.jsonl").write_bytes(
+        encoded("Visible message") + encoded("Private tool payload", "tool")
+    )
+    with serve(create_app(env.db, env.embedder)) as url, Client(url, secret) as client:
+        assert sync(config, client=client)["completed"]
+        space = service.scopes(env.owner, connection)["items"][0]["space_id"]
+        original = memories(env, operator, reader, space)
+        assert len(original) == 2 and any("Private tool payload" in m["content"] for m in original)
+        config.provider.capture_mode = "messages"
+        assert sync(config, client=client)["completed"]
+        selected = memories(env, operator, reader, space)
+        assert len(selected) == 1 and "Visible message" in selected[0]["content"]
+        assert "Private tool payload" not in json.dumps(selected)
+        assert selected[0]["metadata"]["capture_mode"] == "messages"
+        checkpoint = service.scopes(env.owner, connection)["items"][0]["checkpoint"]
+        assert json.loads(checkpoint[9:])["capture_mode"] == "messages"
+        repeated = sync(config, client=client)
+        assert repeated["completed"] and repeated["changed"] == 0
+
+
 @pytest.mark.parametrize("external,revision", [("missing", "1"), ("kept", "not-current")])
 def test_references_cannot_invent_source_evidence_or_change_an_existing_revision(
     env, connected, external, revision

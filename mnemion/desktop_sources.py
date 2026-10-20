@@ -73,6 +73,7 @@ class Source(Command):
     principal_id: UUID
     name: str = Field(min_length=1, max_length=200)
     provider: Literal["filesystem", "conversations", "slack", "gdrive"]
+    capture_mode: Literal["complete", "messages"] | None = None
     path: str | None = Field(default=None, min_length=1, max_length=4096)
     slack: SlackSelection | None = None
     gdrive: DriveSelection | None = None
@@ -94,6 +95,8 @@ class Source(Command):
 
     @model_validator(mode="after")
     def address_and_path(self):
+        if self.provider != "conversations" and self.capture_mode is not None:
+            raise ValueError("Capture mode applies only to live conversation sources")
         # Share the established HTTPS/loopback contract, including path prefixes.
         config = self.connector(Path("unused-capture-state"))
         self.endpoint = config.service_url
@@ -140,7 +143,11 @@ class Source(Command):
                 "max_files": self.max_files,
             }
             if self.provider == "conversations":
-                provider.update(state_directory=str(capture), max_scan_seconds=60)
+                provider.update(
+                    state_directory=str(capture),
+                    max_scan_seconds=60,
+                    capture_mode=self.capture_mode or "complete",
+                )
             else:
                 provider["max_file_bytes"] = min(20_000_000, self.memory_limit_mib * 65536)
         return ConnectorConfig.model_validate(

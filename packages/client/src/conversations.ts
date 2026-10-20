@@ -2,6 +2,7 @@
 export interface ConversationCapture {
   captured: number; observed: number; pending: number
   read: number; reused: number; rendered: number
+  mode: 'complete' | 'messages'
 }
 
 export function supportsLiveConversations(version?: string | null): boolean {
@@ -19,7 +20,8 @@ export function conversationCapture(checkpoint?: string | null): ConversationCap
     const counters = ['captured', 'observed', 'read', 'reused', 'rendered'] as const
     if (!counters.every(key => Number.isSafeInteger(value[key]) && value[key] >= 0) ||
         value.observed < value.captured) return null
+    if (value.capture_mode !== undefined && !['complete', 'messages'].includes(value.capture_mode)) return null
     return { captured: value.captured, observed: value.observed, pending: value.observed - value.captured,
-      read: value.read, reused: value.reused, rendered: value.rendered }
+      read: value.read, reused: value.reused, rendered: value.rendered, mode: value.capture_mode ?? 'complete' }
   } catch { return null }
 }

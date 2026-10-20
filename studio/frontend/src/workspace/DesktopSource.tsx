@@ -30,6 +30,7 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
   const [interval, setIntervalMinutes] = useState(5);
   const [memory, setMemory] = useState(256);
   const [files, setFiles] = useState(10000);
+  const [captureMode, setCaptureMode] = useState<'complete' | 'messages'>('complete');
   const [key, setKey] = useState('');
   const [providerKey, setProviderKey] = useState('');
   const [team, setTeam] = useState(''), [channels, setChannels] = useState('');
@@ -51,6 +52,7 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
     if (dirty) return;
     setPath(current?.path ?? ''); setIntervalMinutes((current?.poll_seconds ?? 300) / 60);
     setMemory(current?.memory_limit_mib ?? 256); setFiles(current?.max_files ?? 10000);
+    setCaptureMode(current?.capture_mode ?? 'complete');
     setKey(''); setProviderKey(''); setPublication(false); setRevision(query.data?.revision);
     setTeam(current?.slack?.team_id ?? ''); setChannels(current?.slack?.channels.join('\n') ?? '');
     setThreads(current?.slack?.include_threads ?? true); setRecursive(current?.gdrive?.recursive ?? true);
@@ -81,7 +83,7 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
       const selection = connection.provider === 'slack' ? { slack: { team_id: team.trim(),
         channels: [...new Set(channels.split(/[\s,]+/).filter(Boolean))], include_threads: threads } }
         : connection.provider === 'gdrive' ? { gdrive: { folder_ids: driveIds(folders), file_ids: driveIds(driveFiles), recursive } }
-        : { path };
+        : { path, ...(connection.provider === 'conversations' ? { capture_mode: captureMode } : {}) };
       const me = await client.me();
       let credential = key || undefined;
       if (!current && !credential) {
@@ -138,6 +140,15 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
           try { const value = await native!.sourceChoose!(); if (value) { setPath(value); setDirty(true); } }
           catch (error) { setError(message(error)); }
         }}><FolderOpen size={16} />Choose folder</button>}
+        {connection.provider === 'conversations' && <>
+          <label>What to remember<select disabled={busy} data-update-safe value={captureMode} onChange={event => {
+            setCaptureMode(event.target.value as 'complete' | 'messages'); setDirty(true); setPublication(false);
+          }}><option value="complete">Messages and exposed session events</option><option value="messages">Messages only</option></select></label>
+          <p className="ws-helper">{captureMode === 'complete'
+            ? 'Keep the selected session records, including tool activity and reasoning traces your agent actually saves, plus readable messages.'
+            : 'Copy supported user and assistant message text. Structured tool and reasoning records remain in the original files. Unknown formats produce no message copy.'}
+            {' '}Changing this choice takes effect after a complete scan. Earlier copies, reviewed edits and backups follow their existing retention rules.</p>
+        </>}
         {connection.provider === 'slack' && <>
           <label>Slack workspace ID<input disabled={busy} data-update-safe value={team} readOnly={!!current} maxLength={128} required placeholder="T0123456789" onChange={event => { setTeam(event.target.value); setDirty(true); setPublication(false); }} /></label>
           <label>Channel IDs<textarea disabled={busy} data-update-safe rows={3} value={channels} maxLength={16384} required placeholder="C0123456789, C9876543210" onChange={event => { setChannels(event.target.value); setDirty(true); setPublication(false); }} /></label>
@@ -172,7 +183,7 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
         <button className="ws-button ws-primary" disabled={busy || scanning || stale || !hasLocation || !publication || (cloud && !current && !providerKey) || !query.data?.secure_storage || !!connection.disabled_at || members.length > 128}><Play size={15} />{current ? 'Save source settings' : 'Save and start scanning'}</button>
         {dirty && <button className="ws-button" type="button" disabled={busy} onClick={() => {
           setPath(current?.path ?? ''); setIntervalMinutes((current?.poll_seconds ?? 300) / 60); setMemory(current?.memory_limit_mib ?? 256);
-          setFiles(current?.max_files ?? 10000); setKey(''); setProviderKey(''); setPublication(false); setDirty(false);
+          setFiles(current?.max_files ?? 10000); setCaptureMode(current?.capture_mode ?? 'complete'); setKey(''); setProviderKey(''); setPublication(false); setDirty(false);
         }}>Discard edits</button>}
       </form>
     </details>

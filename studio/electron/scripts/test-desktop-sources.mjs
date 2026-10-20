@@ -52,7 +52,7 @@ async function fixture(t) {
 }
 
 test('source configuration persists protected keys, reopens and refuses a stale revision', async t => {
-  const f = await fixture(t), initial = await f.manager.status(), source = definition()
+  const f = await fixture(t), initial = await f.manager.status(), source = { ...definition(), provider: 'conversations', capture_mode: 'messages' }
   const configured = await f.add(source)
   assert.equal(configured.sources[0].connector_id, source.connector_id)
   assert.ok(!JSON.stringify(configured).includes(credential))
@@ -62,6 +62,7 @@ test('source configuration persists protected keys, reopens and refuses a stale 
   const reopened = new DesktopSources(f.options)
   t.after(() => reopened.close())
   assert.deepEqual((await reopened.status()).sources.map(s => s.id), [source.id])
+  assert.equal((await reopened.status()).sources[0].capture_mode, 'messages')
   await assert.rejects(f.manager.control('pause', { id: source.id, expected_revision: initial.revision, enabled: false }), /changed/)
   assert.equal((await f.manager.status()).sources[0].enabled, true)
 })

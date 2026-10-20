@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.40.0**. Roadmap updated: **2026-10-20**.
+Reviewed source distribution: **4.41.0**. Roadmap updated: **2026-10-20**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
 [Release status](RELEASE_STATUS.md) and the [maintenance board](MAINTENANCE_STATUS.md)
@@ -19,6 +19,20 @@ their actual acceptance passes. The [release process](MAINTENANCE.md) keeps
 issue review, publication and version-linked closure together.
 
 ## Current delivery checkpoint
+
+- **4.41 completes the selected live-capture choice.** The app and agents can
+  choose complete exposed records or supported messages only, with provenance,
+  bounded checkpoints and ordinary permission/deletion protections. This is a
+  foundation for the broader librarian, not a completed parent requirement.
+  [Capture guide](service/live-conversations.md#choose-how-much-to-capture) and
+  [validation](validation/2026-10-20-capture-policy.md) retain its exact scope.
+
+- **Work now follows the complete-milestone acceptance audit.** All 65 IDs and
+  their full scope remain retained. The [42-partial audit](implementation/completion-audit.md)
+  records missing acceptance work, dependencies and evidence without invented
+  estimates. Finish one feature journey alongside urgent bugs; keep current
+  releases running. Shared administration, capture freshness, ordinary memory,
+  recovery and updates precede further independent advanced-feature work.
 
 - **4.40 adds measured librarian coverage and app update diagnostics.**
   [Organization/review coverage](service/librarian.md#coverage-and-processing)

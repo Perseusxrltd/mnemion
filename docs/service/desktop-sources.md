@@ -12,6 +12,11 @@ terminal. Embedding happens on the workspace under its existing model policy.
 
 ## Set up a source
 
+From 4.41, live conversation folders also offer **What to remember**: retain
+complete exposed session records or copy supported messages only. The same
+`capture_mode: "complete" | "messages"` selection is available to agents.
+See [capture choices and retention boundaries](live-conversations.md#choose-how-much-to-capture).
+
 1. Connect to the intended workspace. An administrator creates a dedicated
    application in **People & apps**, then registers its folder or conversation
    connection in **Connections**. Each source uses its own application.

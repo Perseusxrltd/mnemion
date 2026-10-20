@@ -96,6 +96,7 @@ def test_source_types_are_bounded_and_keep_established_safe_exclusions(tmp_path)
         {"poll_seconds": 0},
         {"max_files": 100001},
         {"provider": "shell"},
+        {"capture_mode": "messages"},
         {"publish_to_mapped_members": False},
     ):
         with pytest.raises(ValidationError):
@@ -105,6 +106,11 @@ def test_source_types_are_bounded_and_keep_established_safe_exclusions(tmp_path)
     assert config.provider.max_file_bytes <= 20_000_000
     conversation = source(tmp_path, provider="conversations").connector(tmp_path / "capture")
     assert conversation.provider.normalize_conversations
+    assert conversation.provider.capture_mode == "complete"
+    messages = source(tmp_path, provider="conversations", capture_mode="messages").connector(
+        tmp_path / "capture"
+    )
+    assert messages.provider.capture_mode == "messages"
     assert conversation.provider.state_directory == tmp_path / "capture"
     assert conversation.provider.max_scan_seconds == 60
     assert config.service_token.model_dump(exclude_none=True) == {

@@ -28,15 +28,22 @@ class Transcript:
     turns: int
 
 
-def _text(value) -> str:
+def _text(value, *, messages_only=False) -> str:
     if isinstance(value, str):
         return value
     if isinstance(value, list):
-        return "\n".join(part for item in value if (part := _text(item)))
+        return "\n".join(
+            part for item in value if (part := _text(item, messages_only=messages_only))
+        )
     if isinstance(value, dict):
         if value.get("type") in {"tool_use", "tool_result", "thinking", "image"}:
             return ""
-        return _text(value.get("text", value.get("parts", "")))
+        if messages_only and (
+            value.get("type") in {"reasoning", "reasoning_summary", "redacted_thinking"}
+            or value.get("content_type") in {"thoughts", "reasoning", "reasoning_recap"}
+        ):
+            return ""
+        return _text(value.get("text", value.get("parts", "")), messages_only=messages_only)
     return ""
 
 
@@ -54,7 +61,7 @@ def _transcript(identifier, title, fmt, turns) -> Transcript | None:
     return Transcript(str(identifier), str(title)[:300], fmt, "\n\n".join(rendered), len(rendered))
 
 
-def _chatgpt(conversation: dict, fallback: str) -> Transcript | None:
+def _chatgpt(conversation: dict, fallback: str, *, messages_only=False) -> Transcript | None:
     mapping = conversation.get("mapping")
     if not isinstance(mapping, dict) or not mapping:
         raise ConversationError("conversation_mapping_invalid")
@@ -91,8 +98,21 @@ def _chatgpt(conversation: dict, fallback: str) -> Transcript | None:
         if isinstance(message, dict):
             author = message.get("author") or {}
             role = author.get("role") if isinstance(author, dict) else None
-            if role in {"user", "assistant", "system", "developer"}:
-                path.append((role, _text(message.get("content")), message.get("create_time")))
+            roles = (
+                {"user", "assistant"}
+                if messages_only
+                else {"user", "assistant", "system", "developer"}
+            )
+            if role in roles and (
+                not messages_only or message.get("channel") not in {"analysis", "reasoning"}
+            ):
+                path.append(
+                    (
+                        role,
+                        _text(message.get("content"), messages_only=messages_only),
+                        message.get("create_time"),
+                    )
+                )
         current = node.get("parent")
     return _transcript(
         conversation.get("id", conversation.get("conversation_id", fallback)),
@@ -194,7 +214,7 @@ def _acp_sessions(rows, fallback):
     return result
 
 
-def parse(text: str, source_id: str) -> list[Transcript]:
+def parse(text: str, source_id: str, *, messages_only=False) -> list[Transcript]:
     """Parse complete JSON/JSONL only. In-progress files fail without pruning a scan."""
     try:
         data = json.loads(text)
@@ -235,7 +255,7 @@ def parse(text: str, source_id: str) -> list[Transcript]:
                 turns.append(
                     (
                         "user" if payload["type"] == "user_message" else "assistant",
-                        _text(payload.get("message")),
+                        _text(payload.get("message"), messages_only=messages_only),
                         row.get("timestamp"),
                     )
                 )
@@ -258,7 +278,7 @@ def parse(text: str, source_id: str) -> list[Transcript]:
                 turns.append(
                     (
                         "user" if role == "human" else role,
-                        _text(row["message"].get("content")),
+                        _text(row["message"].get("content"), messages_only=messages_only),
                         row.get("timestamp"),
                     )
                 )
@@ -268,7 +288,7 @@ def parse(text: str, source_id: str) -> list[Transcript]:
     if any(isinstance(row, dict) and "mapping" in row for row in rows):
         for index, row in enumerate(rows):
             if isinstance(row, dict) and "mapping" in row:
-                add(_chatgpt(row, f"{fallback}:{index}"))
+                add(_chatgpt(row, f"{fallback}:{index}", messages_only=messages_only))
         return result
 
     if isinstance(data, dict) and ("chat_messages" in data or "messages" in data):
@@ -285,10 +305,15 @@ def parse(text: str, source_id: str) -> list[Transcript]:
                 if not isinstance(message, dict):
                     continue
                 role = message.get("sender", message.get("role", "unknown"))
+                if messages_only and role not in {"human", "user", "assistant"}:
+                    continue
                 turns.append(
                     (
                         role,
-                        _text(message.get("content") or message.get("text", "")),
+                        _text(
+                            message.get("content") or message.get("text", ""),
+                            messages_only=messages_only,
+                        ),
                         message.get("created_at"),
                     )
                 )
@@ -328,7 +353,19 @@ def parse(text: str, source_id: str) -> list[Transcript]:
                 fallback,
                 "Conversation",
                 "messages",
-                [(row["role"], _text(row["content"]), row.get("timestamp")) for row in rows],
+                [
+                    (
+                        row["role"],
+                        _text(row["content"], messages_only=messages_only),
+                        row.get("timestamp"),
+                    )
+                    for row in rows
+                    if not messages_only
+                    or (
+                        row["role"] in {"human", "user", "assistant"}
+                        and row.get("channel") not in {"analysis", "reasoning"}
+                    )
+                ],
             )
         )
     return result

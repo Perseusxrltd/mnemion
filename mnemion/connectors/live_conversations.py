@@ -126,6 +126,7 @@ class ConversationSnapshot:
                     VERSION,
                     __version__,
                     self.config.normalize_conversations,
+                    self.config.capture_mode,
                     self.config.segment_bytes,
                     self.config.segment_records,
                 ],
@@ -143,6 +144,7 @@ class ConversationSnapshot:
         self.ready = None
         self.report = {
             "format": CAPTURE,
+            "capture_mode": self.config.capture_mode,
             "bytes_read": 0,
             "segments_reused": 0,
             "segments_rendered": 0,
@@ -259,17 +261,38 @@ class ConversationSnapshot:
         }
         text = raw.decode("utf-8-sig" if start == 0 else "utf-8")
         document = Document(external, digest, self.relative, text, uri, metadata=metadata)
-        items = list(document.items())
+        messages_only = self.config.capture_mode == "messages"
+        items = [] if messages_only else list(document.items())
         if self.config.normalize_conversations:
             visible = rows
             if context:
                 visible = [{"type": "session_meta", "payload": {"id": context["id"]}}, *rows]
-            for transcript in parse(json.dumps(visible, ensure_ascii=False), self.identifier):
+            for transcript in parse(
+                json.dumps(visible, ensure_ascii=False),
+                self.identifier,
+                messages_only=messages_only,
+            ):
+                provenance = (
+                    {
+                        "raw_source_external_id": external,
+                        "raw_document_sha256": hashlib.sha256(text.encode()).hexdigest(),
+                    }
+                    if not messages_only
+                    else {
+                        "capture_mode": "messages",
+                        "raw_evidence_stored": False,
+                        "source_document_sha256": hashlib.sha256(text.encode()).hexdigest(),
+                    }
+                )
                 companion = Document(
                     external + "#conversation:" + transcript.identifier,
                     hashlib.sha256(
                         (
-                            digest + VERSION + transcript.text + json.dumps(context, sort_keys=True)
+                            digest
+                            + VERSION
+                            + transcript.text
+                            + json.dumps(context, sort_keys=True)
+                            + ("messages-only-v1" if messages_only else "")
                         ).encode()
                     ).hexdigest(),
                     transcript.title + " · conversation fragment",
@@ -281,8 +304,7 @@ class ConversationSnapshot:
                         "conversation_format": transcript.format,
                         "conversation_id": transcript.identifier[:512],
                         "conversation_turn_fragments": transcript.turns,
-                        "raw_source_external_id": external,
-                        "raw_document_sha256": hashlib.sha256(text.encode()).hexdigest(),
+                        **provenance,
                         "context_header": context,
                     },
                 )
@@ -481,6 +503,7 @@ class ConversationSnapshot:
                 "read": self.report["bytes_read"],
                 "reused": self.report["segments_reused"],
                 "rendered": self.report["segments_rendered"],
+                "capture_mode": self.config.capture_mode,
             },
             separators=(",", ":"),
         )

@@ -7,7 +7,7 @@ test('live capture shows only bounded counters from a supported completed checkp
     captured: 1000, observed: 1042, read: 1500, reused: 3, rendered: 1 }
   const encode = value => 'jsonl:v1:' + JSON.stringify(value)
   assert.deepEqual(conversationCapture(encode(checkpoint)), {
-    captured: 1000, observed: 1042, pending: 42, read: 1500, reused: 3, rendered: 1,
+    captured: 1000, observed: 1042, pending: 42, read: 1500, reused: 3, rendered: 1, mode: 'complete',
   })
   assert.equal(conversationCapture('jsonl:unfinished-scan'), null)
   assert.equal(conversationCapture('jsonl:v1:{broken'), null)
@@ -16,6 +16,8 @@ test('live capture shows only bounded counters from a supported completed checkp
   assert.equal(conversationCapture(encode({ ...checkpoint, reused: -1 })), null)
   assert.equal(conversationCapture(encode({ ...checkpoint, captured: Number.MAX_SAFE_INTEGER + 1 })), null)
   assert.equal(conversationCapture(encode({ ...checkpoint, id: 'arbitrary-source-text' })), null)
+  assert.equal(conversationCapture(encode({ ...checkpoint, capture_mode: 'messages' })).mode, 'messages')
+  assert.equal(conversationCapture(encode({ ...checkpoint, capture_mode: 'unknown' })), null)
   assert.equal(supportsLiveConversations('4.16.99'), false)
   assert.equal(supportsLiveConversations('4.17.0'), true)
   assert.equal(supportsLiveConversations('5.0.0'), true)

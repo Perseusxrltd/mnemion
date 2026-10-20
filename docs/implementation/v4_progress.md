@@ -19,6 +19,22 @@ Requirements and acceptance criteria are defined by the
 [architecture](../research/2026-10-09-mnemion-study/ARCHITECTURE.md), and
 [roadmap](../research/2026-10-09-mnemion-study/ROADMAP.md).
 
+## 20 October: capture choice, librarian coverage and completion audit
+
+Source 4.41 adds [selected live conversation capture](../service/live-conversations.md#choose-how-much-to-capture)
+through both the app and native agent controls, with explicit raw-evidence
+provenance and retained deletion/recovery rules. [Parser, database, SDK,
+controller and actual Electron acceptance](../validation/2026-10-20-capture-policy.md)
+passed. Source 4.40 adds current-revision librarian coverage, processing usage
+and matching agent access; its [actual app and database evidence](../validation/2026-10-20-librarian-coverage.md)
+remains separate from publication status.
+
+The [completion audit](completion-audit.md) decomposes all 42 partial
+requirements without removing any of the 65 IDs. Finish coherent app/agent
+journeys alongside urgent bugs, prioritizing shared administration, source
+freshness, ordinary memory, recovery and updates. Remaining effort is
+unestimated; these foundations do not mark the full layered librarian complete.
+
 ## 20 October: operator turns, corrected container and scientific watch
 
 Source 4.39 supersedes the unpublished 4.38 candidate after both container gates

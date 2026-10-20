@@ -5,6 +5,11 @@ on 4.17.0 or later. It captures complete records in bounded fragments, defers
 unfinished tails and isolates each file's permissions and failures. The export
 workflow below retains its original complete-file contract.
 
+From 4.41, that live adapter has an app/agent
+[capture choice](live-conversations.md#choose-how-much-to-capture): complete
+exposed session records or message projections only. Ordinary complete-file
+export adapters retain the behavior below.
+
 Capture is opt-in. Select an export/session folder through a filesystem, Git,
 Drive or rclone connection, map its intended audience, and set
 `normalize_conversations: true` on that provider. Run `mnemion-connect --watch`

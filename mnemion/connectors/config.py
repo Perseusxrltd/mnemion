@@ -92,6 +92,7 @@ class ConversationConfig(PublishedSource):
     state_directory: Path = Path(".mnemion-conversations")
     include: list[str] = Field(default_factory=lambda: ["*.jsonl"])
     normalize_conversations: bool = True
+    capture_mode: Literal["complete", "messages"] = "complete"
     max_files: int = Field(default=1000, ge=1, le=100000)
     # Streaming limits are independent of ordinary whole-file text extraction.
     max_file_bytes: int = Field(default=1_000_000_000, ge=1, le=1_000_000_000_000)
@@ -100,6 +101,12 @@ class ConversationConfig(PublishedSource):
     segment_records: int = Field(default=256, ge=1, le=10000)
     max_segments: int = Field(default=100000, ge=1, le=1000000)
     max_scan_seconds: int = Field(default=120, ge=1, le=600)
+
+    @model_validator(mode="after")
+    def capture_selection(self):
+        if self.capture_mode == "messages" and not self.normalize_conversations:
+            raise ValueError("Message-only capture requires conversation normalization")
+        return self
 
 
 class GitConfig(PublishedSource):

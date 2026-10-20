@@ -68,6 +68,39 @@ cloud ACLs into company membership. The runner must still be able to open the
 source through a verified handle before and after capture. Source content never
 chooses a file path, runs a command or grants access.
 
+## Choose how much to capture
+
+From 4.41, Studio's **Run on this computer → What to remember** offers two
+choices for an approved live conversation folder. Local agents use the same
+`capture_mode` property in `source.configure` and can inspect it through
+`source.status`. Standalone runners set it under `provider` in their JSON:
+
+| `capture_mode` | What enters Mnemion |
+| --- | --- |
+| `complete` (existing default) | Complete exposed JSONL records, including saved tool/status/reasoning events, plus readable companions when normalization is enabled. |
+| `messages` | Supported user/assistant message projections with source hashes, generation and byte/line ranges. Raw session records are omitted. |
+
+Message-only capture requires `normalize_conversations: true`. It uses supported
+formats' explicit roles, channels and content types to exclude structured tool,
+system/developer and reasoning events; it does not infer sensitive content from
+ordinary message text. ACP/Grok, Codex and Claude Code framing and deduplication
+remain intact. Unknown valid formats produce no message copy. Providers determine
+which traces are exposed; neither choice obtains hidden internal reasoning.
+
+For example, add `"capture_mode": "messages"` beside `"type": "conversations"`
+in the configuration above. The original selected files remain intact. In this
+mode, a source progress byte count describes the record prefix examined for
+messages, not a raw archive stored in Mnemion. App and SDK progress displays name
+the selected mode; the checkpoint and report expose it to agents.
+
+Changing modes invalidates cached capture references and re-examines the source
+before completing its inventory. Normal source reconciliation removes omitted,
+uncorrected imports; reviewed edits, conflicts, denials, old archives and backups
+retain their existing rules. A mode change is not proof that every historic copy
+has been erased. Pause the runner before editing its settings, inspect the
+selected folder/audience and complete a fresh scan. Current permission leases,
+bounded reads, unfinished-tail handling and acknowledgment rules still apply.
+
 ## Checkpoints, source evidence and bandwidth
 
 Fragments end at complete record boundaries. The last fragment can grow until
