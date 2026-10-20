@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-20T17:28:07+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-20T17:35:32+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.41.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.41.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -17,16 +17,22 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 39460842888](https://github.com/Perseusxrltd/mnemion/actions/runs/39460842888) |
+| ci\.yml | main | queued | [Run 39467357025](https://github.com/Perseusxrltd/mnemion/actions/runs/39467357025) |
 | public-updates\.yml | v4\.41\.0 | success | [Run 39441745467](https://github.com/Perseusxrltd/mnemion/actions/runs/39441745467) |
 | release\.yml | release/4\.41\.0 | success | [Run 39428746847](https://github.com/Perseusxrltd/mnemion/actions/runs/39428746847) |
 | release\.yml | release/4\.42\.0 | failure | [Run 39457153644](https://github.com/Perseusxrltd/mnemion/actions/runs/39457153644) |
 | release\.yml | release/4\.43\.0 | queued | [Run 39460885775](https://github.com/Perseusxrltd/mnemion/actions/runs/39460885775) |
 | verify-artifacts\.yml | main | skipped | [Run 39466182278](https://github.com/Perseusxrltd/mnemion/actions/runs/39466182278) |
-| website-release\.yml | main | success | [Run 39460842819](https://github.com/Perseusxrltd/mnemion/actions/runs/39460842819) |
+| website-release\.yml | main | pending | [Run 39467357011](https://github.com/Perseusxrltd/mnemion/actions/runs/39467357011) |
 | website-release\.yml | v4\.41\.0 | success | [Run 39441738346](https://github.com/Perseusxrltd/mnemion/actions/runs/39441738346) |
 
 ## Active jobs
+
+[Run 39467357025](https://github.com/Perseusxrltd/mnemion/actions/runs/39467357025): 0/3 jobs completed; 0 succeeded.
+
+- studio: in\_progress — Run python deploy/bundle\_studio\.py.
+- Select checks: queued.
+- lint: queued.
 
 [Run 39460885775](https://github.com/Perseusxrltd/mnemion/actions/runs/39460885775): 13/14 jobs completed; 12 succeeded.
 
