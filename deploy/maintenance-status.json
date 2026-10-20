@@ -25,50 +25,10 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "d8e6b05e075d81382fc7f1994efe0dd36147f5da",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-20T07:40:46Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39388058383",
-      "job_progress": {
-        "total": 12,
-        "completed": 8,
-        "succeeded": 8,
-        "active": [
-          {
-            "id": 118512683170,
-            "name": "service (3.12)",
-            "status": "in_progress",
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 118512683192,
-            "name": "service (3.14)",
-            "status": "in_progress",
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 118512683309,
-            "name": "service (3.13)",
-            "status": "in_progress",
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 118512683382,
-            "name": "supervision (macos-15-intel)",
-            "status": "in_progress",
-            "steps": [
-              "Build the current Intel cryptography runtime with static OpenSSL"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-20T08:00:19Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39388058383"
     },
     {
       "id": 39387468667,
@@ -104,55 +64,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39388255080",
       "job_progress": {
         "total": 31,
-        "completed": 20,
-        "succeeded": 20,
+        "completed": 26,
+        "succeeded": 26,
         "active": [
-          {
-            "id": 118513426294,
-            "name": "checks / supervision (macos-15)",
-            "status": "in_progress",
-            "steps": [
-              "Verify managed installation, host recovery, signed updates and rollback with real processes"
-            ]
-          },
-          {
-            "id": 118513426335,
-            "name": "checks / service (3.14)",
-            "status": "in_progress",
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 118513426371,
-            "name": "checks / supervision (macos-15-intel)",
-            "status": "in_progress",
-            "steps": [
-              "Build the current Intel cryptography runtime with static OpenSSL"
-            ]
-          },
-          {
-            "id": 118513426382,
-            "name": "checks / service (3.12)",
-            "status": "in_progress",
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 118513426563,
-            "name": "checks / service (3.13)",
-            "status": "in_progress",
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
           {
             "id": 118515119477,
             "name": "native / windows-11-arm / arm64",
             "status": "in_progress",
             "steps": [
-              "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38"
+              "Installed app creates, searches and reopens a real local workspace"
             ]
           },
           {
@@ -160,7 +80,7 @@
             "name": "native / macos-15 / arm64",
             "status": "in_progress",
             "steps": [
-              "Locked native service build dependencies"
+              "Packaged Mac update, restart guards and relaunch"
             ]
           },
           {
@@ -168,7 +88,7 @@
             "name": "native / ubuntu-22.04 / x64",
             "status": "in_progress",
             "steps": [
-              "Linux desktop libraries"
+              "Installed Linux app creates, searches and reopens a real local workspace"
             ]
           },
           {
@@ -176,7 +96,7 @@
             "name": "native / windows-2022 / x64",
             "status": "in_progress",
             "steps": [
-              "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38"
+              "Native Windows installation, authenticated upgrade and relaunch"
             ]
           },
           {
@@ -184,15 +104,7 @@
             "name": "native / macos-15-intel / x64",
             "status": "in_progress",
             "steps": [
-              "Run uv sync --project studio/client --locked --python \"/Users/runner/hostedtoolcache/Python/3.13.15/x64/bin/python\" --no-managed-python"
-            ]
-          },
-          {
-            "id": 118515119698,
-            "name": "native / ubuntu-22.04-arm / arm64",
-            "status": "in_progress",
-            "steps": [
-              "Linux desktop libraries"
+              "Installed app creates, searches and reopens a real local workspace"
             ]
           }
         ]
@@ -222,5 +134,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39387465064"
     }
   ],
-  "observed_at": "2026-10-20T07:47:33+00:00"
+  "observed_at": "2026-10-20T08:00:53+00:00"
 }
