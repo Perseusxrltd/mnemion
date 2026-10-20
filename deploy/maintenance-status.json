@@ -58,34 +58,10 @@
       "workflow": "release.yml",
       "branch": "release/4.35.0",
       "source_commit": "4fcab3d7ebcfc92ca3ea87dcf9e2aa208c07f587",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-20T08:53:00Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39392435604",
-      "job_progress": {
-        "total": 31,
-        "completed": 30,
-        "succeeded": 28,
-        "active": [
-          {
-            "id": 118532066276,
-            "name": "native / macos-15-intel / x64",
-            "status": "in_progress",
-            "steps": [
-              "Installed app creates, searches and reopens a real local workspace"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": [
-        {
-          "name": "native / windows-11-arm / arm64",
-          "id": 118532066284,
-          "steps": [
-            "Installed app creates, searches and reopens a real local workspace"
-          ]
-        }
-      ]
+      "status": "completed",
+      "conclusion": "cancelled",
+      "updated_at": "2026-10-20T08:53:21Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39392435604"
     },
     {
       "id": 39394175777,
@@ -99,15 +75,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39394175777"
     },
     {
-      "id": 39396581020,
+      "id": 39396659373,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "0981efeabef0be8416706ab02a08032e28cd2cc2",
+      "source_commit": "c650c775b72696b57e94db2a9c09503dcfe9c549",
       "status": "completed",
       "conclusion": "skipped",
-      "updated_at": "2026-10-20T08:52:55Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39396581020"
+      "updated_at": "2026-10-20T08:53:24Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39396659373"
     },
     {
       "id": 39393535317,
@@ -121,5 +97,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39393535317"
     }
   ],
-  "observed_at": "2026-10-20T08:53:13+00:00"
+  "observed_at": "2026-10-20T08:53:53+00:00"
 }
