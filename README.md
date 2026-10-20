@@ -27,7 +27,7 @@ Windows](docs/validation/2026-10-20-agent-setup-private-files.md), while retaini
 existing client policies and private Unix permissions. It also fixes
 [long Windows database-backup paths](docs/validation/2026-10-20-windows-backup-paths.md)
 and preserves safe failure details for users and local agents.
-Source 4.31.0 adds [folder, Obsidian and conversation source setup in Studio](docs/service/desktop-sources.md),
+Published 4.31.0 adds [folder, Obsidian and conversation source setup in Studio](docs/service/desktop-sources.md),
 with protected dedicated keys, background capture, adjustable RAM/file limits,
 offline device controls and equivalent local-agent operations. Contributing
 files to a shared workspace does not require a local database or model.

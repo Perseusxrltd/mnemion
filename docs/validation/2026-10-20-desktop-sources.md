@@ -96,4 +96,6 @@ so its UI assertion now compares the saved canonical path. The source exercise
 also creates an additional managed space; later address-recovery checks now
 follow the original space ID explicitly. Fresh creation and its first restart
 still require exactly one private space. No production behavior or access check
-is weakened. Corrected native acceptance remains a publication prerequisite.
+is weakened. The fourth corrected candidate passed all six native targets and
+was published as 4.31.0. [Actual Windows/shared-host automatic updates and the
+isolated Windows lab also passed](2026-10-20-431-live-updates.md).

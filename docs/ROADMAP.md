@@ -21,11 +21,13 @@ of the released app. A hotfix does not finish a broader requirement.
   follows its updates. Grok Build has an observed native profile; separate
   vendor plugins and hosted provider acceptance remain open.
 
-- **4.31.0 source adds folder and conversation setup through the app.**
+- **4.31.0 is published with folder and conversation setup through the app.**
   [Desktop sources](service/desktop-sources.md) have folder selection, scoped
   protected keys, bounded background scans, RAM/file limits and matching agent
   controls. Saved-source controls work while signed out. Contributing to a
-  shared workspace needs no local database or model. Other provider enrollment
+  shared workspace needs no local database or model. [All six native gates and
+  actual Windows/shared-host automatic updates passed](validation/2026-10-20-431-live-updates.md),
+  preserving access and completing the isolated lab. Other provider enrollment
   and fleet acceptance remain open; strict full-scope coverage is unchanged.
 
 - **4.30.2 is published and updated the actual Windows app and shared host.**

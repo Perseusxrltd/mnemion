@@ -29,13 +29,14 @@ remain distinct. Grok Build uses its observed native TOML contract; this does no
 complete the separate Grokbot, Dot, Hermes or OpenClaw plugin requests. No broad
 requirement is promoted by configuration support alone.
 
-Source 4.31.0 advances **F08/C01/C03/U01** and extends **R03/R04** with
+Published 4.31.0 advances **F08/C01/C03/U01** and extends **R03/R04** with
 [desktop folder, Obsidian and JSONL source setup](service/desktop-sources.md).
 People and local agents can manage protected dedicated keys, background capture,
 RAM/file limits and saved-source controls before sign-in or during an outage.
 A contributing app needs no local database. The existing permission/inventory
-contracts remain in force. [Focused validation](validation/2026-10-20-desktop-sources.md)
-and native/public release gates are separate. Other provider enrollment and
+contracts remain in force. [Focused validation](validation/2026-10-20-desktop-sources.md),
+all six native release gates and [actual Windows/shared-host updates](validation/2026-10-20-431-live-updates.md)
+passed; separate public-update rehearsals remain automatically tracked. Other provider enrollment and
 fleet coverage remain open; no broader requirement is marked complete.
 
 Published 4.30.2 advances **F08/A10** with explicit Windows ownership and private

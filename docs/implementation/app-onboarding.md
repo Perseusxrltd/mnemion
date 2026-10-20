@@ -68,7 +68,7 @@ the chosen client. Native release acceptance exercises the generated launcher;
 live hosted-provider acceptance, separate vendor plugins and automatic capture
 remain separate work.
 
-Source 4.31 adds [folder/Obsidian and live JSONL setup in Studio](../service/desktop-sources.md),
+Published 4.31 adds [folder/Obsidian and live JSONL setup in Studio](../service/desktop-sources.md),
 with folder selection, dedicated-key creation, private OS storage, verified
 identities, bounded background scans and matching local-agent controls. A device
 can contribute without a local database. Saved-source controls remain available
