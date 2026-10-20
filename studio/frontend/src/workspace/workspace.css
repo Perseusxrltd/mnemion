@@ -1150,7 +1150,8 @@ fieldset.ws-setup-fields { border: 0; padding: 0; min-width: 0; }
 .ws-connector-form label, .ws-connector-heading label { display: grid; gap: .4rem; font-weight: 600; }
 .ws-connector-form label.ws-checkbox { display: flex; align-items: center; grid-column: 1 / -1; }
 .ws-connector-form > .ws-helper, .ws-connector-form > .ws-button { grid-column: 1 / -1; }
-.ws-connector-form input:not([type=checkbox]), .ws-connector-form select, .ws-connector-heading select { width: 100%; min-width: 0; padding: .7rem; border: 1px solid var(--line); border-radius: var(--radius-m); background: var(--surface-overlay); color: var(--ws-text); }
+.ws-connector-form input:not([type=checkbox]), .ws-connector-form textarea, .ws-connector-form select, .ws-connector-heading select { width: 100%; min-width: 0; padding: .7rem; border: 1px solid var(--line); border-radius: var(--radius-m); background: var(--surface-overlay); color: var(--ws-text); }
+.ws-connector-form textarea { font: inherit; resize: vertical; }
 .ws-connector-form input::placeholder { color: var(--text-faint); }
 .ws-checkbox { display: flex; align-items: center; gap: 8px; min-height: 32px; font-size: 13px; font-weight: 400; }
 .ws-checkbox input { width: 16px; height: 16px; min-height: 0; margin: 0; padding: 0; accent-color: var(--ws-accent); }

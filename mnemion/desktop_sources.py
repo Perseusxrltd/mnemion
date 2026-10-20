@@ -23,11 +23,46 @@ from . import local_state
 from .connectors.config import ConnectorConfig
 from .connectors.providers import ProviderError
 from .connectors.runner import sync
+from .desktop_provider_credentials import credential as provider_credential
 from .sdk import Client, MnemionError
 from .service.models import Command
 
 MAX_SOURCES = 16
 MAX_REQUEST = 256 * 1024
+
+
+class SlackSelection(Command):
+    team_id: str = Field(pattern=r"^[TE][A-Z0-9]+$", max_length=128)
+    channels: list[str] = Field(min_length=1, max_length=128)
+    include_threads: bool = Field(default=True, strict=True)
+
+    @field_validator("channels")
+    @classmethod
+    def identifiers(cls, value):
+        import re
+
+        if len(set(value)) != len(value) or any(
+            not re.fullmatch(r"[CGD][A-Z0-9]{1,127}", item) for item in value
+        ):
+            raise ValueError("Choose distinct Slack channel IDs")
+        return value
+
+
+class DriveSelection(Command):
+    folder_ids: list[str] = Field(default_factory=list, max_length=128)
+    file_ids: list[str] = Field(default_factory=list, max_length=128)
+    recursive: bool = Field(default=True, strict=True)
+
+    @field_validator("folder_ids", "file_ids")
+    @classmethod
+    def identifiers(cls, value):
+        import re
+
+        if len(set(value)) != len(value) or any(
+            not re.fullmatch(r"[A-Za-z0-9_-]{1,300}", item) for item in value
+        ):
+            raise ValueError("Choose distinct Drive folder or file IDs")
+        return value
 
 
 class Source(Command):
@@ -37,8 +72,10 @@ class Source(Command):
     connector_id: UUID
     principal_id: UUID
     name: str = Field(min_length=1, max_length=200)
-    provider: Literal["filesystem", "conversations"]
-    path: str = Field(min_length=1, max_length=4096)
+    provider: Literal["filesystem", "conversations", "slack", "gdrive"]
+    path: str | None = Field(default=None, min_length=1, max_length=4096)
+    slack: SlackSelection | None = None
+    gdrive: DriveSelection | None = None
     members: list[str] = Field(max_length=128)
     publish_to_mapped_members: Literal[True]
     poll_seconds: int = Field(default=300, ge=30, le=3600, strict=True)
@@ -60,24 +97,52 @@ class Source(Command):
         # Share the established HTTPS/loopback contract, including path prefixes.
         config = self.connector(Path("unused-capture-state"))
         self.endpoint = config.service_url
-        if not Path(self.path).is_absolute() or "\x00" in self.path:
-            raise ValueError("Choose an absolute source folder")
+        if self.provider in {"filesystem", "conversations"}:
+            if (
+                not self.path
+                or not Path(self.path).is_absolute()
+                or "\x00" in self.path
+                or self.slack is not None
+                or self.gdrive is not None
+            ):
+                raise ValueError("Choose an absolute source folder without cloud settings")
+        elif (
+            self.path is not None
+            or (self.provider == "slack") != (self.slack is not None)
+            or (self.provider == "gdrive") != (self.gdrive is not None)
+        ):
+            raise ValueError("Choose the selected cloud provider's settings")
         return self
 
     def connector(self, capture: Path) -> ConnectorConfig:
-        provider = {
-            "type": self.provider,
-            "path": self.path,
-            "scope_id": "selected-source",
-            "name": self.name,
-            "members": self.members,
-            "publish_to_mapped_members": True,
-            "max_files": self.max_files,
-        }
-        if self.provider == "conversations":
-            provider.update(state_directory=str(capture), max_scan_seconds=60)
+        if self.provider in {"slack", "gdrive"}:
+            selection = self.slack if self.provider == "slack" else self.gdrive
+            provider = {
+                "type": self.provider,
+                **(selection.model_dump() if selection else {}),
+                "token": {"env": "MNEMION_DESKTOP_PROVIDER_UNUSED"},
+            }
+            if self.provider == "slack":
+                provider.update(page_size=15, max_messages=self.max_files)
+            else:
+                provider.update(
+                    max_files=self.max_files,
+                    max_file_bytes=min(20_000_000, self.memory_limit_mib * 65536),
+                )
         else:
-            provider["max_file_bytes"] = min(20_000_000, self.memory_limit_mib * 65536)
+            provider = {
+                "type": self.provider,
+                "path": self.path,
+                "scope_id": "selected-source",
+                "name": self.name,
+                "members": self.members,
+                "publish_to_mapped_members": True,
+                "max_files": self.max_files,
+            }
+            if self.provider == "conversations":
+                provider.update(state_directory=str(capture), max_scan_seconds=60)
+            else:
+                provider["max_file_bytes"] = min(20_000_000, self.memory_limit_mib * 65536)
         return ConnectorConfig.model_validate(
             {
                 "version": 1,
@@ -95,13 +160,20 @@ class Source(Command):
 
 class SavedSource(Source):
     sealed_key: str = Field(min_length=16, max_length=16384)
+    sealed_provider: str | None = Field(default=None, min_length=16, max_length=32768)
 
-    @field_validator("sealed_key")
+    @field_validator("sealed_key", "sealed_provider")
     @classmethod
     def encrypted_bytes(cls, value):
-        if not base64.b64decode(value, validate=True):
+        if value is not None and not base64.b64decode(value, validate=True):
             raise ValueError("Use an OS-protected source key")
         return value
+
+    @model_validator(mode="after")
+    def cloud_credential(self):
+        if (self.provider in {"slack", "gdrive"}) != bool(self.sealed_provider):
+            raise ValueError("Cloud credentials must use separate OS-protected storage")
+        return self
 
 
 class SourceState(Command):
@@ -135,8 +207,10 @@ def store(root: Path, expected: str, sources: list) -> dict:
             raise local_state.LocalSetupError(
                 "source_settings_changed", "Source settings changed. Refresh before retrying."
             )
-        local_state.write(root / "sources.json", candidate.model_dump(mode="json"))
-    return candidate.model_dump(mode="json")
+        local_state.write(
+            root / "sources.json", candidate.model_dump(mode="json", exclude_none=True)
+        )
+    return candidate.model_dump(mode="json", exclude_none=True)
 
 
 def source_folder(source: Source, root: Path, private_roots=()) -> Path:
@@ -155,7 +229,8 @@ def source_folder(source: Source, root: Path, private_roots=()) -> Path:
 
 
 def verify(source: Source, root: Path, client: Client, private_roots=()) -> Source:
-    source.path = str(source_folder(source, root, private_roots))
+    if source.provider in {"filesystem", "conversations"}:
+        source.path = str(source_folder(source, root, private_roots))
     me = client.request("GET", "/v1/me")
     if (
         me.get("tenant_id") != str(source.tenant_id)
@@ -171,13 +246,52 @@ def verify(source: Source, root: Path, client: Client, private_roots=()) -> Sour
     if (
         connector.get("principal_id") != str(source.principal_id)
         or connector.get("provider") != source.provider
-        or connector.get("access_mode") != "published"
+        or connector.get("access_mode")
+        != ("provider" if source.provider in {"slack", "gdrive"} else "published")
         or connector.get("disabled_at") is not None
     ):
         raise local_state.LocalSetupError(
             "source_connection_unavailable", "Enable this connection and check its application."
         )
     return source
+
+
+def cloud_adapter(source: Source, value: str):
+    # The public connector configuration contains a placeholder reference only.
+    # Its token reader is replaced in memory, without files or environment changes.
+    try:
+        token = provider_credential(source.provider, value)
+    except ValueError:
+        raise local_state.LocalSetupError(
+            "source_provider_credentials",
+            "Check the selected provider's private credential.",
+        ) from None
+    config = source.connector(Path("unused-capture-state")).provider
+    if source.provider == "slack":
+        from .connectors.slack import SlackProvider
+
+        adapter = SlackProvider(config)
+    else:
+        from .connectors.gdrive import DriveProvider
+
+        adapter = DriveProvider(config)
+    adapter.http.token = token
+    return adapter
+
+
+def verify_cloud(adapter, provider: str):
+    if provider == "slack":
+        adapter.scopes()  # auth.test validates the exact selected Slack workspace.
+    else:
+        result = adapter.http.get("about", {"fields": "user(permissionId)"})
+        user = result.get("user")
+        if (
+            not isinstance(user, dict)
+            or not isinstance(user.get("permissionId"), str)
+            or not user["permissionId"]
+        ):
+            raise ProviderError("invalid_drive_identity")
+    # The first scan checks each actual channel/file membership before publishing.
 
 
 def perform(root: Path, request: dict, private_roots=()) -> dict:
@@ -188,10 +302,13 @@ def perform(root: Path, request: dict, private_roots=()) -> dict:
         "verify": {"operation", "source", "credential"},
         "scan": {"operation", "source", "credential"},
     }
-    if operation not in fields or set(request) != fields[operation]:
+    allowed = fields.get(operation, set()) | (
+        {"provider_credential"} if operation in {"verify", "scan"} else set()
+    )
+    if operation not in fields or not fields[operation] <= set(request) <= allowed:
         raise ValueError("Choose a supported private source operation")
     if operation == "load":
-        return load(root).model_dump(mode="json")
+        return load(root).model_dump(mode="json", exclude_none=True)
     if operation == "store":
         return store(root, request["expected_revision"], request["sources"])
     source = Source.model_validate(request["source"])
@@ -203,16 +320,26 @@ def perform(root: Path, request: dict, private_roots=()) -> dict:
     ):
         raise ValueError("Supply the dedicated source key through the private pipe")
     local_state.directory(root)
+    cloud = source.provider in {"slack", "gdrive"}
+    if cloud != ("provider_credential" in request):
+        raise ValueError("Supply separate credentials only for cloud sources")
     with Client(source.endpoint, credential, timeout=20, retries=0) as client:
         verify(source, root, client, private_roots)
-        if operation == "verify":
-            return source.model_dump(mode="json")
-        if not source.enabled:
-            raise ValueError("Resume the source before scanning")
-        capture = root / ("capture-" + str(source.id))
-        if source.provider == "conversations":
-            local_state.directory(capture)
-        report = sync(source.connector(capture), client=client)
+        adapter = cloud_adapter(source, request["provider_credential"]) if cloud else None
+        try:
+            if operation == "verify":
+                if adapter:
+                    verify_cloud(adapter, source.provider)
+                return source.model_dump(mode="json", exclude_none=True)
+            if not source.enabled:
+                raise ValueError("Resume the source before scanning")
+            capture = root / ("capture-" + str(source.id))
+            if source.provider == "conversations":
+                local_state.directory(capture)
+            report = sync(source.connector(capture), client=client, adapter=adapter)
+        finally:
+            if adapter:
+                adapter.close()
         # Only bounded operational counters cross the app bridge, never source
         # content, raw diagnostics, provider IDs or authentication responses.
         return {
@@ -287,6 +414,15 @@ def dispatch(args) -> int:
     ) as exc:
         stopped.set()
         code = exc.code if isinstance(exc, local_state.LocalSetupError) else "source_unavailable"
+        if isinstance(exc, ProviderError) and getattr(exc, "code", None) in {
+            "provider_access_lost",
+            "slack_access_lost",
+            "slack_workspace_mismatch",
+            "provider_rate_limited",
+            "provider_unavailable",
+            "invalid_drive_identity",
+        }:
+            code = exc.code
         emit({"event": "result", "ok": False, "error": code})
         return 2
 

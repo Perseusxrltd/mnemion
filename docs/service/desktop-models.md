@@ -1,8 +1,9 @@
 # Model providers in the desktop app
 
-Source 4.33 adds **Setup & this device → Your model providers** for a workspace
+Studio 4.33 adds **Setup & this device → Your model providers** for a workspace
 hosted on this computer. The same controls are available from local setup before
-sign-in. Check [release status](../RELEASE_STATUS.md) for published installers.
+sign-in. Its six native targets and artifact verification passed before
+publication. Check [release status](../RELEASE_STATUS.md) for current installers.
 
 The existing E5 and BGE CPU embedding models remain available. You can add up to
 eight embedding profiles and eight librarian profiles, using Ollama or an

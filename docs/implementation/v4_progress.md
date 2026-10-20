@@ -21,6 +21,22 @@ Requirements and acceptance criteria are defined by the
 
 ## 20 October: agent-controlled desktop connections and hosted sign-in
 
+The 4.34 source advances app-managed cloud capture: selected Slack channels and
+Drive resources, separate OS-protected provider credentials, read-only Google
+service-account token renewal, actual provider permissions and private-agent
+controls. [Focused service/controller checks and the real source-app walkthrough](../validation/2026-10-20-desktop-cloud-sources.md)
+passed. The app captured fixture records through both adapters without a local
+database, recovered from a bad key, retained encrypted keys for agent changes
+and removed sources while signed out. The walkthrough also found and fixed a
+connection-selection flag that unnecessarily blocked automatic updates. Native
+4.34 release gates and customer-provider acceptance remain separate.
+
+The 4.33 model-provider release passed all six native targets and independent
+artifact verification and is published. Its website update completed
+automatically. Public installer updates and actual shared-host/Windows update
+receipts remain distinct checks; [release status](../RELEASE_STATUS.md) records
+the public workflow. Strict full-scope coverage remains 17/64 (26.6%).
+
 Source 4.28 adds nine private desktop operations for selecting key/password team
 accounts, inspecting and reopening saved connections, disconnecting/forgetting
 and returning to the running local host. It requires current selection revisions,

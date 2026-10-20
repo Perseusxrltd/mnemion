@@ -31,14 +31,17 @@ Published 4.31.0 adds [folder, Obsidian and conversation source setup in Studio]
 with protected dedicated keys, background capture, adjustable RAM/file limits,
 offline device controls and equivalent local-agent operations. Contributing
 files to a shared workspace does not require a local database or model.
-Source 4.32.0 adds [agent installation through Studio](docs/service/desktop-agents.md),
+Published 4.32.0 adds [agent installation through Studio](docs/service/desktop-agents.md),
 including Grok Build and named connections for separate workspaces. Reviewed
 configuration changes preserve other agent settings; a private maintained
 runtime keeps connections working while Studio is closed. Installed connections
 can be removed before sign-in, through the app or local-agent controls.
-Source 4.33.0 adds [model-provider setup through Studio](docs/service/desktop-models.md),
+Published 4.33.0 adds [model-provider setup through Studio](docs/service/desktop-models.md),
 with local/cloud embedding and librarian profiles, private keys, host restart,
 per-space processing approval and equivalent local-agent controls.
+Source 4.34.0 adds [Slack and Google Drive setup through Studio](docs/service/desktop-cloud-sources.md),
+with selected resources, separate OS-protected provider credentials, read-only
+Drive token renewal, provider permission checks and offline device controls.
 Studio includes guided [local workspace creation](docs/service/local-workspaces.md),
 bundled database/model runtimes, [app and agent RAM controls](docs/service/memory-resources.md),
 local recovery, a [live 3D memory map](docs/service/memory-map.md), recorded agent

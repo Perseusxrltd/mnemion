@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.33.0**. Roadmap updated: **2026-10-20**.
+Reviewed source distribution: **4.34.0**. Roadmap updated: **2026-10-20**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
 [Release status](RELEASE_STATUS.md) and the [maintenance board](MAINTENANCE_STATUS.md)
@@ -14,11 +14,20 @@ of the released app. A hotfix does not finish a broader requirement.
 
 ## Current delivery checkpoint
 
-- **4.33.0 source adds model-provider setup through the app.**
+- **4.34.0 source adds Slack and Google Drive setup through the app.**
+  [Cloud sources](service/desktop-cloud-sources.md) accept existing approved
+  credentials and selected resources, with separate OS-protected keys and
+  read-only Drive token renewal. Actual provider permissions govern capture.
+  Offline controls and equivalent local-agent setup share the bounded source
+  runner. Interactive OAuth enrollment and live customer-provider acceptance
+  remain open; complete source onboarding is still partial.
+
+- **4.33.0 is published with model-provider setup through the app.**
   [Local hosting controls](service/desktop-models.md) enroll embedding and librarian
   endpoints, private keys, CA trust and capacity settings. Saved profiles remain
   separate from per-space processing approval; equivalent local-agent controls
-  and damaged-file recovery are included. Native release acceptance is pending.
+  and damaged-file recovery are included. [All six native targets and uploaded
+  artifact verification passed](validation/2026-10-20-desktop-models.md).
   The shared inference queue now respects the strictest approved endpoint limit.
 
 - **4.32.0 is published with guided local agent installation.**

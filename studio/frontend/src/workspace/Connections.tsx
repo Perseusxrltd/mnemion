@@ -89,7 +89,7 @@ export function Connections({ client, administrator, endpoint, selectSpace, serv
     </details>}
     {!connections.isPending && !connections.data?.items.length && <div className="ws-empty"><h2>No connections yet</h2><p>An administrator can register a source adapter and map its audience here.</p></div>}
     {connection && <>
-      <div className="ws-card ws-connector-heading"><label>Connection<select value={connection.id} onChange={e => { setSelected(e.target.value); setCursor(undefined); }}>{connections.data?.items.map(item => <option key={item.id} value={item.id}>{item.name} · {item.provider}</option>)}</select></label>
+      <div className="ws-card ws-connector-heading"><label>Connection<select data-update-safe value={connection.id} onChange={e => { setSelected(e.target.value); setCursor(undefined); }}>{connections.data?.items.map(item => <option key={item.id} value={item.id}>{item.name} · {item.provider}</option>)}</select></label>
         <span className="ws-badge">{connection.disabled_at ? "Disabled" : "Registered"}</span>
         {administrator && <button className="ws-button" disabled={busy} onClick={() => act(() => connection.disabled_at ? client.enableConnector(connection.id) : client.disableConnector(connection.id))}>{connection.disabled_at ? "Enable and recheck access" : "Disable connection"}</button>}
       </div>
@@ -129,7 +129,7 @@ export function Connections({ client, administrator, endpoint, selectSpace, serv
         {!scopes.data?.items.length && <p className="ws-helper">Run the adapter to discover sources and verify access.</p>}
         {scopes.data?.next_cursor && <button className="ws-button" onClick={() => setCursor(scopes.data!.next_cursor!)}>Next sources</button>}{cursor && <button className="ws-button" onClick={() => setCursor(undefined)}>First sources</button>}
       </section>
-      {window.mnemion?.sourceStatus && ["filesystem", "conversations"].includes(connection.provider) &&
+      {window.mnemion?.sourceStatus && ["filesystem", "conversations", "slack", "gdrive"].includes(connection.provider) &&
         <DesktopSourceCard key={connection.id} client={client} connection={connection} endpoint={endpoint} administrator={administrator}
           members={[...new Set(bindings.data?.items.map(item => item.external_id) ?? [])]} />}
       <details className="ws-card"><summary>Run on another computer or use an advanced adapter</summary><p>Run this configuration on a machine with access to the source. Set the dedicated Mnemion key and provider credentials there, then replace the source paths or IDs in the template.</p>

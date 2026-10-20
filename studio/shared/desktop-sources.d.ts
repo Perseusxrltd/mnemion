@@ -1,6 +1,8 @@
 export type DesktopSource = {
   id: string; endpoint: string; tenant_id: string; connector_id: string; principal_id: string;
-  name: string; provider: 'filesystem' | 'conversations'; path: string; members: string[];
+  name: string; provider: 'filesystem' | 'conversations' | 'slack' | 'gdrive'; path?: string; members: string[];
+  slack?: { team_id: string; channels: string[]; include_threads: boolean };
+  gdrive?: { folder_ids: string[]; file_ids: string[]; recursive: boolean };
   publish_to_mapped_members: true; poll_seconds: number; memory_limit_mib: number; max_files: number; enabled: boolean;
 }
 export type SourceReport = {
@@ -17,5 +19,6 @@ export type DesktopSourceView = {
 }
 export type SourceConfigure = {
   expected_revision: string; source: Omit<DesktopSource, 'id'> & { id?: string }; credential?: string;
+  provider_credential?: string;
 }
 export type SourceControl = { expected_revision: string; id: string; enabled?: boolean; confirm?: boolean }

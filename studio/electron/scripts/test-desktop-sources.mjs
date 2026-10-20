@@ -142,3 +142,43 @@ test('an existing source cannot silently switch to a different folder or workspa
     assert.throws(() => desktopAction(action, { arbitrary_shell: 'forbidden' }), /unsupported input/)
   }
 })
+
+for (const provider of ['slack', 'gdrive']) test('cloud credentials remain separate and protected across restart and scan: ' + provider, async t => {
+  const f = await fixture(t), originalCall = f.options.call, privateCalls = []
+  f.options.call = async (...args) => {
+    if (['verify', 'scan'].includes(args[0].operation)) privateCalls.push(structuredClone(args[0]))
+    return originalCall(...args)
+  }
+  const { path: _path, ...common } = definition()
+  const source = { ...common, provider, ...(provider === 'slack'
+    ? { slack: { team_id: 'T123', channels: ['C123'], include_threads: false } }
+    : { gdrive: { folder_ids: ['selected-folder'], file_ids: [], recursive: true } }) }
+  const secret = provider === 'slack' ? 'private-slack-provider-fixture' : '{"private_key":"synthetic-google-key-fixture"}'
+  const first = await f.manager.configure({ expected_revision: (await f.manager.status()).revision,
+    source, credential, provider_credential: secret })
+  assert.ok(!JSON.stringify(first).includes(secret))
+  assert.ok(!JSON.stringify(first).includes('sealed_provider'))
+  assert.ok(!JSON.stringify(f.document()).includes(secret))
+  assert.equal(f.cipher.decrypt(Buffer.from(f.document().sources[0].sealed_provider, 'base64')), secret)
+  assert.equal(f.cipher.decrypt(Buffer.from(f.document().sources[0].sealed_key, 'base64')), credential)
+  const reopened = new DesktopSources(f.options)
+  t.after(() => reopened.close())
+  assert.deepEqual((await reopened.status()).sources.map(s => s.id), [source.id])
+  await f.manager.configure({ expected_revision: first.revision, source })
+  assert.equal(privateCalls.at(-1).provider_credential, secret, 'blank replacement retains the private provider key')
+  if (provider === 'slack') await assert.rejects(f.manager.configure({
+    expected_revision: (await f.manager.status()).revision,
+    source: { ...source, slack: { ...source.slack, team_id: 'T456' } },
+    provider_credential: 'new-private-slack-fixture',
+  }), /new connection/)
+  await f.manager.start(); await f.flush()
+  assert.equal(privateCalls.at(-1).operation, 'scan')
+  assert.equal(privateCalls.at(-1).provider_credential, secret)
+  assert.equal(privateCalls.at(-1).credential, credential)
+  assert.ok(!Object.hasOwn(privateCalls.at(-1).source, 'sealed_provider'))
+  const removed = await f.manager.control('remove', { expected_revision: (await f.manager.status()).revision,
+    id: source.id, confirm: true })
+  assert.deepEqual(removed.sources, [])
+  assert.deepEqual(f.document().sources, [])
+  assert.equal(f.state.running, 0)
+})

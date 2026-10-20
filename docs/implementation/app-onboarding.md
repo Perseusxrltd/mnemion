@@ -12,10 +12,16 @@ workspace creation. Each release requires its complete installed-platform gates.
 Use the [official product page](https://www.perseusxr.com/mnemion) for published
 installers; source availability alone is not publication.
 
-Source 4.33 adds [desktop model-provider enrollment](../service/desktop-models.md)
+Published 4.33 adds [desktop model-provider enrollment](../service/desktop-models.md)
 for an app-owned host, including private credentials, restart, repair and matching
 local-agent controls. External model installation and provider accounts remain
 separate, and cloud processing still requires per-space approval.
+
+Source 4.34 adds [Slack and Drive enrollment](../service/desktop-cloud-sources.md)
+using existing approved credentials, selected channels/files/folders and separate
+OS-protected provider keys. It keeps provider permissions and private-agent
+controls, including offline removal. Interactive Google sign-in, Slack app
+installation/token rotation and live customer-account acceptance remain open.
 
 ## Entry paths
 
@@ -77,7 +83,7 @@ Published 4.31 adds [folder/Obsidian and live JSONL setup in Studio](../service/
 with folder selection, dedicated-key creation, private OS storage, verified
 identities, bounded background scans and matching local-agent controls. A device
 can contribute without a local database. Saved-source controls remain available
-before sign-in and during an outage. Other provider enrollment, fleet policy and
+before sign-in and during an outage. Full provider enrollment, fleet policy and
 full host reconstruction remain separate work.
 
 Source 4.30.1 adds [desktop database recovery from a server package](../service/desktop-host-recovery.md).

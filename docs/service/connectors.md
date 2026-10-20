@@ -10,6 +10,9 @@ Studio 4.31.0 provides [desktop source setup](desktop-sources.md) for folders,
 Obsidian vaults and growing JSONL conversations, including protected keys,
 background scans, RAM limits and matching private-agent controls. The device
 can contribute to a shared workspace without hosting a local database.
+Source 4.34.0 adds [guided Slack and Drive setup](desktop-cloud-sources.md) with
+existing approved credentials. Interactive provider-account enrollment remains
+separate from this selected-source workflow.
 
 ## Included adapters
 

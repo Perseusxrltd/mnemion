@@ -37,7 +37,7 @@ def test_settings_reopen_private_compare_revision_and_retain_original_on_failure
     initial = sources.load(root)
     assert initial.sources == []
     saved = sources.store(root, initial.revision, [value])
-    assert sources.load(root).model_dump(mode="json") == saved
+    assert sources.load(root).model_dump(mode="json", exclude_none=True) == saved
     before = (root / "sources.json").read_bytes()
     with pytest.raises(LocalSetupError, match="settings changed"):
         sources.store(root, initial.revision, [])

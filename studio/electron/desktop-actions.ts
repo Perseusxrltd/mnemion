@@ -15,7 +15,7 @@ export const desktopActions = {
   'workspace.disconnect': { workspace: false, mutation: true, fields: ['expected_revision'] },
   'workspace.forget': { workspace: false, mutation: true, fields: ['expected_revision', 'id'] },
   'source.status': { workspace: false, mutation: false, fields: [] },
-  'source.configure': { workspace: false, mutation: true, fields: ['expected_revision', 'source', 'credential'] },
+  'source.configure': { workspace: false, mutation: true, fields: ['expected_revision', 'source', 'credential', 'provider_credential'] },
   'source.pause': { workspace: false, mutation: true, fields: ['expected_revision', 'id', 'enabled'] },
   'source.sync': { workspace: false, mutation: true, fields: ['expected_revision', 'id'] },
   'source.remove': { workspace: false, mutation: true, fields: ['expected_revision', 'id', 'confirm'] },

@@ -104,7 +104,7 @@ The same OS-account [private desktop interface](desktop-operator.md) exposes:
 | Action | Input |
 | --- | --- |
 | `source.status` | None; returns the settings revision, sources, counts and RSS without keys. |
-| `source.configure` | `expected_revision`, `source`, and `credential` for a new entry; an existing entry can keep its key. |
+| `source.configure` | `expected_revision`, `source`, and `credential` for a new entry; an existing entry can keep its key. Cloud sources also use a separate `provider_credential`. |
 | `source.pause` | `expected_revision`, `id`, `enabled` (`false` to pause, `true` to resume). |
 | `source.sync` | `expected_revision`, `id`; queues a scan of an enabled source. |
 | `source.remove` | `expected_revision`, `id`, `confirm: true`. |
@@ -123,8 +123,12 @@ through private stdin. The desktop catalog describes envelope/byte limits.
 
 ## Other providers
 
-Git, Drive, Slack, rclone and custom adapters remain available through **Run on
-another computer or use an advanced adapter** and their [guides](connectors.md).
+Source 4.34 adds [Slack and Google Drive setup](desktop-cloud-sources.md) using
+existing approved provider credentials, explicit resource selection and actual
+provider permissions. It shares this runner's offline and private-agent controls.
+
+Git, rclone and custom adapters remain available through **Run on another
+computer or use an advanced adapter** and their [guides](connectors.md).
 A cloud client can expose ordinary readable files as the selected folder.
 Provider-specific sign-in, virtual-placeholder hydration, organization ACL
 translation and graphical enrollment for other adapters remain separate roadmap

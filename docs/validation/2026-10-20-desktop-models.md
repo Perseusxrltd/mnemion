@@ -1,7 +1,12 @@
 # Desktop model enrollment — 20 October 2026
 
-Source 4.33 adds private local-host enrollment for embedding and librarian
-profiles. Publication and installed delivery remain separate release gates.
+Published 4.33 adds private local-host enrollment for embedding and librarian
+profiles. Source `8d5e2f76d62f0a26e950e6516f6c06cf72a4e93a` passed
+[all six native targets](https://github.com/Perseusxrltd/mnemion/actions/runs/39382743155)
+and [independent artifact verification](https://github.com/Perseusxrltd/mnemion/actions/runs/39387307827).
+The [website follow-up](https://github.com/Perseusxrltd/mnemion/actions/runs/39387465064)
+also passed. Subsequent public update results are recorded in
+[release status](../RELEASE_STATUS.md).
 
 ## Completed checks
 
@@ -39,7 +44,7 @@ profiles. Publication and installed delivery remain separate release gates.
 
 This local walkthrough uses the production desktop build with a source Python
 engine wrapper. It does not substitute for the six packaged native gates,
-which remain required before publication.
+which subsequently passed before publication.
 
 The checks use disposable workspaces, synthetic provider endpoints and fixture
 keys. They do not call a paid model, install external model software, change the
@@ -48,4 +53,4 @@ user's real workspace profiles or certify a vendor's model quality.
 The installed backup/resume gate includes `verifyNativeModels`: enrollment of
 both kinds, private credential persistence, actual host restarts, registered
 public choices, displayed setup and removal, with zero inference during enrollment.
-Its result must pass on each supported target before publication.
+Its result passed on each supported target before publication.
