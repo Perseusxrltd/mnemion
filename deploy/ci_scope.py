@@ -13,6 +13,7 @@ METADATA = {
     "deploy/maintenance-status.json",
     "deploy/published-release.json",
     "deploy/release-status.json",
+    "deploy/research-watch.json",
 }
 
 

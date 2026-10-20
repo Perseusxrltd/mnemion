@@ -335,6 +335,31 @@ A successful public build does not establish the billing
 status of unrelated account usage. Never enable larger paid runners or raise a
 storage/billing limit to make a check pass.
 
+## Scientific paper and tool watch
+
+The free [research watch](research/RESEARCH_WATCH.md) checks public metadata from
+arXiv, Crossref, MemPalace, Mem0, Hindsight, Graphiti, Letta Code and TypeSafe AI.
+`.github/workflows/research-watch.yml` runs on main each Monday at **07:17 UTC**
+and through manual dispatch. Locally, `python -m deploy.research_watch` prints a
+summary; add `--write` to update `deploy/research-watch.json` and its Markdown
+catalog. The workflow commits only those two generated files with normal Git
+pushes. It neither releases an app nor changes its dependencies.
+
+Fetches use no provider accounts, API keys or model calls. There are at most
+three concurrent requests, 2 MiB per response, 50 retained entries per source,
+and a five-minute workflow limit. Redirects and executable source content are
+not followed. Feed failure keeps the last successful candidates and records
+the failed attempt; partial success is visible rather than labeled complete.
+The initial arXiv request was rate-limited. Do not repeatedly retry a failed
+feed within a release session.
+
+Each entry is an unreviewed candidate. Review papers and official documentation,
+then compare useful changes against the [librarian evaluation plan](research/2026-10-20-layered-librarian.md).
+The catalog does not authorize purchases, trials, cloud export, automatic model
+changes or executing instructions from external metadata. Current findings and
+decisions belong in the research study and roadmap. Git contains the latest
+catalog; app help receives its matching copy through the ordinary app update.
+
 ## Documentation map
 
 - [Quick start and API](service/README.md): install, initialize, connect and use.
@@ -351,6 +376,7 @@ storage/billing limit to make a check pass.
   trust, release responsibilities and data handling.
 - [Roadmap](ROADMAP.md): delivered work, priorities and acceptance criteria.
 - [Librarian](service/librarian.md): model configuration, budgets, proposals and recovery.
+- [Research watch](research/RESEARCH_WATCH.md): dated public paper/tool candidates and feed health.
 - [Free forever and support](SUPPORT.md): free access and optional contributions.
 - `docs/releases/`: immutable per-version release notes.
 - `docs/validation/`: dated evidence and its limitations.

@@ -19,6 +19,22 @@ Requirements and acceptance criteria are defined by the
 [architecture](../research/2026-10-09-mnemion-study/ARCHITECTURE.md), and
 [roadmap](../research/2026-10-09-mnemion-study/ROADMAP.md).
 
+## 20 October: operator turns, corrected container and scientific watch
+
+Source 4.39 supersedes the unpublished 4.38 candidate after both container gates
+found a missing canonical branding asset. It carries all native connector work,
+supplies the Docker input, and adds a bounded operator wait for the continuous
+source-scan contention observed in issue 45. Entered upgrade operations are
+never replayed by the wait. [Source validation](../validation/2026-10-20-operator-turn-research.md)
+retains the failure and distinguishes publication from actual deployment.
+
+The expanded [layered-librarian research contract](../research/2026-10-20-layered-librarian.md)
+preserves the 20 October request as R07, with seven stages and Jev assessed as an
+optional paid decision provider. A free weekly metadata watch supplies dated
+candidates without model calls or automatic dependency adoption. R07 remains
+planned: current strict scope is 17/65 shipped (26.2%), 42 partial, two planned,
+three ongoing and one external. Earlier counts below are dated checkpoints.
+
 ## 20 October: native named clients and new deployment reports
 
 Source 4.38 implements native Hermes YAML/OpenClaw JSON5 setup and a common

@@ -38,6 +38,16 @@ commit, new migration names, downtime, backup policy and the apply command. It
 does not change the database or stop processes. Package staging during upgrade
 can take several minutes; the existing service continues running during it.
 
+From **4.39**, `plan` and `upgrade` wait up to **60 seconds** to obtain their
+maintenance turn. On contention, they temporarily defer new managed source
+scans while existing scans finish normally. Set `--wait-for-turn SECONDS` to
+an integer from 0 to 300; zero preserves immediate deferral. This bounds waiting
+for the operation lock, not the duration of staging, backup or migration.
+Only lock acquisition is retried: an entered upgrade is never replayed by the
+wait loop. The process-checked announcement expires after five minutes and
+is ignored if its owner exits; another operator's announcement is retained.
+Older command-line runtimes do not recognize the new flag until upgraded.
+
 Only newer versions in the same major version are supported here. Every applied
 migration must retain its original checksum, new scripts must come after the
 existing sequence, and installed/live model-generation identities must match.
@@ -80,7 +90,7 @@ shell variable you set to that executable, not a new Mnemion preference.
 
 1. It owns the existing managed operation lock. Enrolled connector scans hold
    shared leases, so a scan finishes before upgrade work can acquire that lock.
-   A busy command returns JSON `status: deferred`, a 30-second retry hint and
+   If its bounded wait expires, the command returns JSON `status: deferred`, a 30-second retry hint and
    exit status 75; it does not interrupt another updater or source scan.
 2. It verifies the official stable manifest, exact requested version, downloaded
    packages, dependency lock, installed files and current embedding generations.

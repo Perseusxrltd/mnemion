@@ -67,7 +67,7 @@ will stop working. Server keys are not silently revoked; an administrator can
 revoke unused keys in **People & apps**. Other devices retain their own setup.
 
 The app does not overwrite invalid or duplicate-key settings, unsupported JSON
-comments or linked files. From 4.38, Hermes YAML retains comments and quotes;
+comments or linked files. From 4.39, Hermes YAML retains comments and quotes;
 OpenClaw JSON5 accepts comments and is saved as ordinary JSON with an exact
 private backup. Editing a YAML alias does not change other settings sharing it.
 Use the agent's own supported configuration editor to resolve such a file, then
@@ -77,7 +77,7 @@ response is not a reason to blindly replay an old settings revision.
 ## Profiles and boundaries
 
 Profiles cover Codex, Grok Build, Claude Code/Desktop, Cursor, Gemini CLI, Zed,
-Devin Desktop, legacy Windsurf and an explicit generic MCP file. From 4.38,
+Devin Desktop, legacy Windsurf and an explicit generic MCP file. From 4.39,
 Hermes uses `mcp_servers` in its active YAML profile; OpenClaw uses nested
 `mcp.servers` in JSON/JSON5. Hermes honors `HERMES_HOME`; OpenClaw honors
 `OPENCLAW_CONFIG_PATH`, `OPENCLAW_STATE_DIR`, `OPENCLAW_HOME` and named

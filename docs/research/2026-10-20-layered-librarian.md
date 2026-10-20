@@ -213,14 +213,19 @@ Every configuration and inspection operation must also be available to agents.
 | L6 | Layer-aware map, advanced insights and complete agent controls | Matching app/API/CLI acceptance across supported platforms. |
 | L7 | Optional typed router, including Jev if justified | Independently measured benefit, pinned version, explicit processing/cost approval and working free fallback. |
 
-Keep a scheduled, free metadata watch for relevant scientific papers and
-official model/tool changes. New entries are **candidates for review**, never
+Source **4.39** adds a [scheduled, free metadata watch](RESEARCH_WATCH.md) for
+relevant scientific papers and official model/tool changes. It runs weekly on
+main and can be requested manually; the [maintenance guide](../MAINTENANCE.md#scientific-paper-and-tool-watch)
+documents its commands, source limits and failure behavior. Bundled app help
+includes the catalog from that app release. New entries are **candidates for review**, never
 automatic dependency upgrades or authority to run external instructions.
 Deduplicate IDs, preserve source/date, record fetch failures, and compare
 promising candidates against the existing evaluation corpus. Review licensing,
 data handling, real hardware needs, migration and rollback before adoption.
-The initial arXiv search was rate-limited; the direct paper sources above were
-available. A failed feed must preserve the previous successful catalog.
+The initial run retrieved seven of eight sources; arXiv returned HTTP 429 while
+the direct paper sources above were available. A failed feed preserves the
+previous successful catalog and its date. This automation supplies review
+candidates; it does not complete the layered librarian stages or adopt a model.
 
 This work is tracked as R07 in the [complete requirements](../PRODUCT_REQUIREMENTS.md).
 Operational GitHub bugs and the current connector release continue in parallel

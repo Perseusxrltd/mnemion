@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from datetime import datetime, timezone
 import hashlib
 from importlib.resources import files
@@ -147,19 +147,18 @@ def local_migrations() -> dict[str, str]:
     }
 
 
-def pause_new_connector_scans(root: Path) -> None:
+def pause_new_connector_scans(root: Path) -> dict:
     """A live updater announces its turn; existing scans can finish normally."""
     import psutil
     from .. import process_identity
 
-    write(
-        root / "connector-update-pending.json",
-        {
-            "format": 1,
-            "process_identity": process_identity.capture(psutil.Process()),
-            "until_monotonic": time.monotonic() + 300,
-        },
-    )
+    value = {
+        "format": 1,
+        "process_identity": process_identity.capture(psutil.Process()),
+        "until_monotonic": time.monotonic() + 300,
+    }
+    write(root / "connector-update-pending.json", value)
+    return value
 
 
 def connector_update_waiting(root: Path) -> bool:
@@ -190,6 +189,40 @@ def clear_connector_pause(root: Path) -> None:
     if path.exists():
         read(path)
         path.unlink(missing_ok=True)
+
+
+@contextmanager
+def operator_lock(root: Path, *, wait_seconds: int = 60):
+    """Let existing scans finish before an explicit operator gets its turn.
+
+    Only lock acquisition is retried. Once yielded, a failed operation is never
+    replayed. The existing process-identity/expiry check releases intake even
+    when an operator dies before its finally block can run.
+    """
+    if type(wait_seconds) is not int or not 0 <= wait_seconds <= 300:
+        raise ManifestError("Operator wait must be an integer from 0 to 300 seconds")
+    deadline = time.monotonic() + wait_seconds
+    owned_pause = None
+    path = root / "connector-update-pending.json"
+    try:
+        with ExitStack() as stack:
+            while True:
+                try:
+                    descriptor = stack.enter_context(lock(root))
+                except OperationBusy:
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        raise
+                    if owned_pause is None and not connector_update_waiting(root):
+                        owned_pause = pause_new_connector_scans(root)
+                    time.sleep(min(0.25, remaining))
+                else:
+                    break
+            yield descriptor
+    finally:
+        if owned_pause is not None and path.exists():
+            if read(path) == owned_pause:
+                clear_connector_pause(root)
 
 
 def record(root: Path, event: str, **fields) -> None:

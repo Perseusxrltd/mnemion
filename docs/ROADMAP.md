@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.38.0**. Roadmap updated: **2026-10-20**.
+Reviewed source distribution: **4.39.0**. Roadmap updated: **2026-10-20**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
 [Release status](RELEASE_STATUS.md) and the [maintenance board](MAINTENANCE_STATUS.md)
@@ -20,6 +20,16 @@ issue review, publication and version-linked closure together.
 
 ## Current delivery checkpoint
 
+- **4.39 source combines connectors with the busy-host and container repairs.**
+  A [bounded operator turn](service/managed-upgrades.md) prevents continuous
+  new scans from starving an explicit upgrade. The container frontend now
+  receives the canonical logo; missing input withheld both 4.38 container gates.
+  4.39 supersedes that unpublished candidate and carries its native profiles
+  and packages. [Source validation](validation/2026-10-20-operator-turn-research.md)
+  stays separate from the full release and private deployment checks.
+  A [free weekly research watch](research/RESEARCH_WATCH.md) preserves dated
+  paper/tool candidates and failed feeds without adopting dependencies.
+
 - **Expanded librarian requirement R07 is planned and preserved.**
   The [scientific study and delivery contract](research/2026-10-20-layered-librarian.md)
   covers configurable raw capture, layered consolidation, deep review, statistics,
@@ -29,7 +39,7 @@ issue review, publication and version-linked closure together.
   have explicit acceptance criteria. This added scope changes the denominator,
   not the number of shipped requirements.
 
-- **4.38 source adds native Hermes/OpenClaw setup and Perseus XR packages.**
+- **The combined source adds native Hermes/OpenClaw setup and Perseus XR packages.**
   [Native profiles](service/desktop-agents.md) preserve settings and distinct
   workspace identities. [Connection packages](service/agent-packages.md) are
   downloadable in the app and generated through the API, SDKs and native CLI.

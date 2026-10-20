@@ -172,6 +172,8 @@ def integrate(root: Path, repo: str) -> dict:
         "docs/RELEASE_STATUS.md",
         "deploy/maintenance-status.json",
         "docs/MAINTENANCE_STATUS.md",
+        "deploy/research-watch.json",
+        "docs/research/RESEARCH_WATCH.md",
     }
     for attempt in range(1, 4):
         git("fetch", "origin", "main")

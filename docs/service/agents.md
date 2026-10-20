@@ -2,7 +2,7 @@
 
 For full local/remote provisioning and repair, use the [native agent setup guide](agent-setup.md).
 
-From **4.38**, download [Perseus XR connection packages](agent-packages.md)
+From **4.39**, download [Perseus XR connection packages](agent-packages.md)
 directly from **Agents**, or generate them through the API, SDKs or native CLI.
 Hermes and OpenClaw also join the local profile installer below.
 

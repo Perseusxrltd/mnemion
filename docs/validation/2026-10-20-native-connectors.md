@@ -4,6 +4,11 @@ The 4.38 source adds Hermes and OpenClaw profiles to the existing app/agent
 installer and a shared provider-package generator for the app, API, SDKs and
 standalone engine CLI. It preserves existing Grok Build, Claude and Codex setup.
 
+The immutable 4.38 candidate was withheld when its container frontend lacked a
+new branding input. Source 4.39 carries these features and the
+[container/operator fixes](2026-10-20-operator-turn-research.md). The source
+checks below remain evidence of their stated scope, not a published 4.38 build.
+
 ## Measured source acceptance
 
 - **31 focused cases passed** across the existing agent installer, new native

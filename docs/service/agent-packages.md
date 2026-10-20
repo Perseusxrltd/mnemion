@@ -1,6 +1,6 @@
 # Perseus XR agent plugins and connection packages
 
-From **4.38.0**, **Agents → Connect with your account** can download a package
+From **4.39.0**, **Agents → Connect with your account** can download a package
 for the selected workspace. Choose the agent, download the ZIP and follow its
 `README.md`. The package uses the workspace's configured HTTPS MCP address;
 sign-in and permission review take place in the receiving agent.

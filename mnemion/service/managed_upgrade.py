@@ -79,9 +79,9 @@ def _schema(state: Path, root: Path) -> dict[str, str]:
         return dict(conn.execute("SELECT name, sha256 FROM mnemion.schema_migrations").fetchall())
 
 
-def plan(state: Path) -> dict:
+def plan(state: Path, *, wait_seconds: int = 60) -> dict:
     state, root, _ = updates._root(state)
-    with state_io.lock(root):
+    with state_io.operator_lock(root, wait_seconds=wait_seconds):
         if (root / JOURNAL).exists():
             return {"status": "recovery_required", **upgrade_status(root)}
         result = updates._check(root)
@@ -189,13 +189,18 @@ def _resume_failure(state: Path, root: Path, journal: dict) -> None:
 
 
 def upgrade(
-    state: Path, *, version: str | None, allow_migration: bool = False, resume: bool = False
+    state: Path,
+    *,
+    version: str | None,
+    allow_migration: bool = False,
+    resume: bool = False,
+    wait_seconds: int = 60,
 ) -> dict:
     if not allow_migration or version is None:
         raise ManifestError("Review updates plan, then supply --version and --allow-migration")
     version_tuple(version)
     state, root, settings = updates._root(state)
-    with state_io.lock(root):
+    with state_io.operator_lock(root, wait_seconds=wait_seconds):
         path = root / JOURNAL
         if path.exists():
             if not resume:

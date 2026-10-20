@@ -11,6 +11,8 @@ from deploy.ci_scope import documentation, scope
         ("README.md", True),
         ("docs/service/agents.md", True),
         ("deploy/issue-releases.json", True),
+        ("deploy/research-watch.json", True),
+        ("deploy/research_watch.py", False),
         ("docs/validation/releases/4.30.2-status.json", True),
         ("docs/service/openapi.json", False),
         ("mnemion/service/README.md", False),

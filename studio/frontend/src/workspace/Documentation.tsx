@@ -57,6 +57,7 @@ const titles: Record<string, string> = {
   "docs/CODE_SIGNING.md": "Code signing policy", "docs/service/privacy.md": "Privacy & data handling",
   "docs/service/embeddings.md": "Embedding models, reindexing & resources",
   "docs/research/2026-10-20-layered-librarian.md": "Layered librarian, scientific evidence & Jev",
+  "docs/research/RESEARCH_WATCH.md": "Weekly scientific papers & memory-tool watch",
   "docs/service/librarian.md": "Librarian models, schedules & review",
 };
 const documents = Object.entries(sources).map(([key, load]) => {

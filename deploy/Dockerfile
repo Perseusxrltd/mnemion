@@ -10,6 +10,7 @@ COPY studio/frontend ./studio/frontend
 COPY studio/shared/*.d.ts ./studio/shared/
 COPY studio/electron/workspace-recovery.ts studio/electron/company-sign-in-protocol.ts ./studio/electron/
 COPY mnemion/service/recovery_kit.html ./mnemion/service/recovery_kit.html
+COPY mnemion/assets ./mnemion/assets
 COPY studio/branding/mnemion.svg studio/branding/assets.json studio/branding/verify.mjs ./studio/branding/
 COPY assets/mnemion_logo.png ./assets/
 COPY docs ./docs

@@ -1028,6 +1028,13 @@ def arguments(parser: argparse.ArgumentParser) -> None:
         help="Authorize the planned schema/minor-version upgrade",
     )
     parser.add_argument("--resume", action="store_true", help="Resume a journaled operator upgrade")
+    parser.add_argument(
+        "--wait-for-turn",
+        type=int,
+        default=60,
+        metavar="SECONDS",
+        help="Plan/upgrade: wait 0–300 seconds for existing scans; default 60",
+    )
 
 
 def execute(args: argparse.Namespace) -> int:
@@ -1065,13 +1072,14 @@ def execute(args: argparse.Namespace) -> int:
             from .managed_upgrade import plan, upgrade
 
             result = (
-                plan(args.state_dir)
+                plan(args.state_dir, wait_seconds=args.wait_for_turn)
                 if args.action == "plan"
                 else upgrade(
                     args.state_dir,
                     version=args.version,
                     allow_migration=args.allow_migration,
                     resume=args.resume,
+                    wait_seconds=args.wait_for_turn,
                 )
             )
         else:

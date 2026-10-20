@@ -50,12 +50,16 @@ indexing and physical-cleanup counts, waiting text sizes, retries, due jobs and
 age, available through Studio and the existing scoped insights API, and fixes
 a [first-setup state publication race](docs/validation/2026-10-20-state-publication.md).
 The unpublished 4.35/4.36 candidates are superseded by this combined release.
-Source 4.38 adds [native Hermes/OpenClaw setup](docs/service/desktop-agents.md)
+Source 4.39 carries [native Hermes/OpenClaw setup](docs/service/desktop-agents.md)
 and downloadable [Perseus XR agent packages](docs/service/agent-packages.md)
 through Studio, the API, SDKs and engine CLI. Provider-specific plugin,
 configuration and guide support remain explicit. The expanded
 [layered librarian research and delivery plan](docs/research/2026-10-20-layered-librarian.md)
 records raw capture, continuous consolidation, statistical resurfacing and Jev.
+A [free weekly research watch](docs/research/RESEARCH_WATCH.md) records new
+paper/tool candidates and feed failures. The combined release also adds
+[bounded upgrade turns on busy hosts](docs/service/managed-upgrades.md) and fixes
+the missing logo input that withheld the unpublished 4.38 container build.
 An [actual ChatGPT OAuth connection](docs/validation/2026-10-20-chatgpt-acceptance.md)
 passed personal sign-in, permission review, all 16 tool definitions and an
 authenticated profile request. Follow the [current connection guide](docs/service/hosted-agent-sign-in.md#chatgpt-custom-mcp-connection).
