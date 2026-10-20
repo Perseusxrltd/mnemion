@@ -112,6 +112,121 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39373420728"
     },
     {
+      "id": 39377381706,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.32.0-r2",
+      "source_commit": "0f7d5de1201fa2de5c5d203613fd2f8c0e8a1824",
+      "status": "queued",
+      "conclusion": null,
+      "updated_at": "2026-10-20T05:54:44Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39377381706",
+      "job_progress": {
+        "total": 18,
+        "completed": 3,
+        "succeeded": 3,
+        "active": [
+          {
+            "id": 118478545171,
+            "name": "checks / lint",
+            "status": "in_progress",
+            "steps": [
+              "Post Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
+            ]
+          },
+          {
+            "id": 118478545267,
+            "name": "checks / studio",
+            "status": "in_progress",
+            "steps": [
+              "Run python deploy/bundle_studio.py"
+            ]
+          },
+          {
+            "id": 118478579413,
+            "name": "native / Encrypted files / Windows / arm64",
+            "status": "in_progress",
+            "steps": []
+          },
+          {
+            "id": 118478579460,
+            "name": "native / Encrypted files / Windows / x64",
+            "status": "in_progress",
+            "steps": [
+              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
+            ]
+          },
+          {
+            "id": 118478579721,
+            "name": "native / native_database / Private state / Windows / x64",
+            "status": "in_progress",
+            "steps": []
+          },
+          {
+            "id": 118478579788,
+            "name": "native / native_database / Private state / Windows / arm64",
+            "status": "in_progress",
+            "steps": []
+          },
+          {
+            "id": 118478591764,
+            "name": "checks / service (3.12)",
+            "status": "queued",
+            "steps": []
+          },
+          {
+            "id": 118478591770,
+            "name": "checks / container (ubuntu-22.04)",
+            "status": "queued",
+            "steps": []
+          },
+          {
+            "id": 118478591785,
+            "name": "checks / legacy",
+            "status": "queued",
+            "steps": []
+          },
+          {
+            "id": 118478591793,
+            "name": "checks / dependency-audit",
+            "status": "queued",
+            "steps": []
+          },
+          {
+            "id": 118478591796,
+            "name": "checks / container (ubuntu-22.04-arm)",
+            "status": "queued",
+            "steps": []
+          },
+          {
+            "id": 118478591808,
+            "name": "checks / service (3.13)",
+            "status": "queued",
+            "steps": []
+          },
+          {
+            "id": 118478591839,
+            "name": "checks / supervision (macos-15)",
+            "status": "queued",
+            "steps": []
+          },
+          {
+            "id": 118478591842,
+            "name": "checks / service (3.14)",
+            "status": "queued",
+            "steps": []
+          },
+          {
+            "id": 118478591992,
+            "name": "checks / supervision (macos-15-intel)",
+            "status": "queued",
+            "steps": []
+          }
+        ]
+      },
+      "failed_jobs": []
+    },
+    {
       "id": 39377325233,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
@@ -134,5 +249,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39374935509"
     }
   ],
-  "observed_at": "2026-10-20T05:54:13+00:00"
+  "observed_at": "2026-10-20T05:54:48+00:00"
 }
