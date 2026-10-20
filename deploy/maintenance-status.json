@@ -85,71 +85,39 @@
     },
     {
       "id": 39460885775,
-      "attempt": 1,
+      "attempt": 2,
       "workflow": "release.yml",
       "branch": "release/4.43.0",
       "source_commit": "603be186385f473984a6e553045077164e43f25a",
       "status": "queued",
       "conclusion": null,
-      "updated_at": "2026-10-20T17:12:01Z",
+      "updated_at": "2026-10-20T17:27:59Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39460885775",
       "job_progress": {
-        "total": 13,
-        "completed": 8,
-        "succeeded": 7,
+        "total": 14,
+        "completed": 13,
+        "succeeded": 12,
         "active": [
           {
-            "id": 118769998115,
-            "name": "native / Encrypted files / Windows / arm64",
-            "status": "in_progress",
-            "steps": [
-              "Run actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1"
-            ]
-          },
-          {
-            "id": 118770360858,
-            "name": "native / native_database / Database / windows / x64",
-            "status": "in_progress",
-            "steps": [
-              "Relocate, initialize, verify TLS and RLS, restore backup and recover a crash"
-            ]
-          },
-          {
-            "id": 118770360863,
-            "name": "native / native_database / Database / macos / x64",
-            "status": "in_progress",
-            "steps": [
-              "Relocate, initialize, verify TLS and RLS, restore backup and recover a crash"
-            ]
-          },
-          {
-            "id": 118770360867,
+            "id": 118778498286,
             "name": "native / native_database / Database / macos / arm64",
             "status": "queued",
             "steps": []
-          },
-          {
-            "id": 118770360893,
-            "name": "native / native_database / Database / linux / arm64",
-            "status": "in_progress",
-            "steps": [
-              "Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
-            ]
           }
         ]
       },
       "failed_jobs": []
     },
     {
-      "id": 39463757862,
+      "id": 39466182278,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "2aa306560b95bef0382e57601d10ccf7fde1b7ac",
+      "source_commit": "612a45c5ae3bc9d6316d36bbb9714c7e5ba8409e",
       "status": "completed",
       "conclusion": "skipped",
-      "updated_at": "2026-10-20T17:10:40Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39463757862"
+      "updated_at": "2026-10-20T17:27:09Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39466182278"
     },
     {
       "id": 39460842819,
@@ -174,5 +142,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39441738346"
     }
   ],
-  "observed_at": "2026-10-20T17:12:22+00:00"
+  "observed_at": "2026-10-20T17:28:07+00:00"
 }
