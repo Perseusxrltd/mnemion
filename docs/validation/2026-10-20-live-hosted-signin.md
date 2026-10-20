@@ -40,9 +40,14 @@ receipts remain outside the public repository.
 
 This was actual public HTTPS protocol acceptance, **not a ChatGPT UI test**.
 The available Windows session was locked and the test browser had no signed-in
-ChatGPT account. Issues [4](https://github.com/Perseusxrltd/mnemion/issues/4) and
-[18](https://github.com/Perseusxrltd/mnemion/issues/18) remain open for supported
-ChatGPT registration, consent and tool discovery. Live managed-ngrok account
+ChatGPT account. Issue [18](https://github.com/Perseusxrltd/mnemion/issues/18)
+remains open for supported ChatGPT registration, consent and tool discovery.
+The separate general OAuth request in
+[4](https://github.com/Perseusxrltd/mnemion/issues/4) is addressed by the actual
+scoped protocol, rotation and revocation checks above. Its reviewed release
+association uses published 4.29, whose native/public update checks passed and
+whose [live upgrade retained these identities and access](2026-10-20-shared-workspace-429.md).
+That bounded closure does not claim ChatGPT acceptance. Live managed-ngrok account
 acceptance for issue [3](https://github.com/Perseusxrltd/mnemion/issues/3) is
 separate from this existing HTTPS proxy. No paid service, trial, hosted model
 call or provider enrollment was used.
