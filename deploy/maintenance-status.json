@@ -18,7 +18,7 @@
     {
       "number": 45,
       "title": "Deployment acceptance: finish guarded host upgrade and expose paused note publishing",
-      "updated_at": "2026-10-20T11:20:50Z",
+      "updated_at": "2026-10-20T11:54:56Z",
       "url": "https://github.com/Perseusxrltd/mnemion/issues/45",
       "labels": []
     },
@@ -32,15 +32,46 @@
   ],
   "runs": [
     {
-      "id": 39410929977,
+      "id": 39416524423,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "75a72f717ba8d258169213a4f967612a04f4b598",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-20T10:52:56Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39410929977"
+      "source_commit": "58bb4d59f0d1bfb9aa8e5375d5dd156ae91ce2bc",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-20T11:39:54Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39416524423",
+      "job_progress": {
+        "total": 12,
+        "completed": 11,
+        "succeeded": 9,
+        "active": [
+          {
+            "id": 118606830966,
+            "name": "supervision (macos-15-intel)",
+            "status": "in_progress",
+            "steps": [
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": [
+        {
+          "name": "container (ubuntu-22.04)",
+          "id": 118606830739,
+          "steps": [
+            "Build the actual deployment image with its documentation"
+          ]
+        },
+        {
+          "name": "container (ubuntu-22.04-arm)",
+          "id": 118606830805,
+          "steps": [
+            "Build the actual deployment image with its documentation"
+          ]
+        }
+      ]
     },
     {
       "id": 39403004762,
@@ -65,6 +96,112 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39397479332"
     },
     {
+      "id": 39416800968,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.38.0",
+      "source_commit": "58bb4d59f0d1bfb9aa8e5375d5dd156ae91ce2bc",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-20T11:47:00Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39416800968",
+      "job_progress": {
+        "total": 31,
+        "completed": 22,
+        "succeeded": 20,
+        "active": [
+          {
+            "id": 118607851119,
+            "name": "checks / supervision (macos-15-intel)",
+            "status": "in_progress",
+            "steps": [
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
+            ]
+          },
+          {
+            "id": 118607851361,
+            "name": "checks / service (3.12)",
+            "status": "in_progress",
+            "steps": [
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+            ]
+          },
+          {
+            "id": 118607851389,
+            "name": "checks / service (3.13)",
+            "status": "in_progress",
+            "steps": [
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+            ]
+          },
+          {
+            "id": 118609633867,
+            "name": "native / windows-11-arm / arm64",
+            "status": "in_progress",
+            "steps": [
+              "Package the native desktop with one bounded upstream-download retry"
+            ]
+          },
+          {
+            "id": 118609633935,
+            "name": "native / windows-2022 / x64",
+            "status": "in_progress",
+            "steps": [
+              "Installed app creates, searches and reopens a real local workspace"
+            ]
+          },
+          {
+            "id": 118609633970,
+            "name": "native / macos-15-intel / x64",
+            "status": "in_progress",
+            "steps": [
+              "Package the native desktop with one bounded upstream-download retry"
+            ]
+          },
+          {
+            "id": 118609633991,
+            "name": "native / macos-15 / arm64",
+            "status": "in_progress",
+            "steps": [
+              "Installed app creates, searches and reopens a real local workspace"
+            ]
+          },
+          {
+            "id": 118609633992,
+            "name": "native / ubuntu-22.04 / x64",
+            "status": "in_progress",
+            "steps": [
+              "Installed Linux app creates, searches and reopens a real local workspace"
+            ]
+          },
+          {
+            "id": 118609634024,
+            "name": "native / ubuntu-22.04-arm / arm64",
+            "status": "in_progress",
+            "steps": [
+              "Installed Linux app creates, searches and reopens a real local workspace"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": [
+        {
+          "name": "checks / container (ubuntu-22.04)",
+          "id": 118607851151,
+          "steps": [
+            "Build the actual deployment image with its documentation"
+          ]
+        },
+        {
+          "name": "checks / container (ubuntu-22.04-arm)",
+          "id": 118607851330,
+          "steps": [
+            "Build the actual deployment image with its documentation"
+          ]
+        }
+      ]
+    },
+    {
       "id": 39402826454,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
@@ -87,5 +224,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39403000169"
     }
   ],
-  "observed_at": "2026-10-20T11:21:20+00:00"
+  "observed_at": "2026-10-20T11:55:29+00:00"
 }
