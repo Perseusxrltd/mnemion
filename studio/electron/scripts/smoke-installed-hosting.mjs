@@ -1,8 +1,8 @@
 /** Install this build into a new disposable location and use the real local UI. */
 import { spawn, spawnSync } from 'node:child_process'
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { rm } from 'node:fs/promises'
-import { createHash } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { createServer } from 'node:net'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -17,7 +17,13 @@ if (process.platform === 'win32' && (process.env.CI !== 'true' || process.env.RU
 }
 // macOS exposes /var through a symlink; the private workspace correctly rejects
 // redirected parents, so start with the canonical OS temporary directory.
-const temporary = mkdtempSync(join(realpathSync(tmpdir()), 'mnemion-installed-hosting-'))
+// Elevated Windows runners give Node-created directories an Administrators
+// owner. Create this disposable profile with explicit current-user ownership
+// before either the app or its private fixture writer uses it.
+const python = process.env.MNEMION_ENGINE_PYTHON
+if (!python) throw new Error('The native host fixture needs the pinned build interpreter')
+const temporary = join(realpathSync(tmpdir()), 'mnemion-installed-hosting-' + randomUUID())
+run(python, ['-c', 'from pathlib import Path; import sys; from mnemion.local_state import directory; directory(Path(sys.argv[1]), exist_ok=False)', temporary], { cwd: root })
 const installed = join(temporary, 'Applications Équipe with spaces')
 const userData = join(temporary, 'Private profile')
 const probeFile = join(temporary, 'hosting-probe.json')
@@ -167,8 +173,6 @@ try {
     await stop()
     if (credentialsHash() !== credentials) throw new Error('Recovery modified the original workspace credentials')
     if (phase === 'backup-capture') {
-      const python = process.env.MNEMION_ENGINE_PYTHON
-      if (!python) throw new Error('The native host fixture needs the pinned build interpreter')
       run(python, ['-m', 'deploy.native_host_backup_fixture', '--fixture', join(temporary, 'native-backup-fixture.json'),
         '--output', join(temporary, 'Server backup Équipe.mnemion-host')], { cwd: root, env: environment })
     }

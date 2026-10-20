@@ -11,6 +11,17 @@ modified private ledger fixture separately. The six focused host-import cases,
 including both real native database restores, passed again in 29.85 seconds.
 This correction changes tests, not the runtime's validation or recovery policy.
 
+The first 4.30.1 native run then caught an elevated-Windows test setup error:
+Node's temporary profile belonged to the Administrators group, so the private
+fixture writer correctly refused its parent. The corrected attempt creates the
+new disposable root with the existing explicit-owner directory helper before
+installation. It does not take ownership of an existing directory or relax the
+production check. The first frozen attempt is retained; the corrected source
+uses a separate release attempt and must pass the normal native gates.
+The corrected directory/private-fixture round trip passed with native Windows
+Python on the local PC; the disposable folder was removed afterward. JavaScript
+syntax and diff checks also passed.
+
 ## Implemented behavior
 
 The existing desktop recovery flow now recognizes authenticated server packages.
