@@ -14,7 +14,12 @@ of the released app. A hotfix does not finish a broader requirement.
 
 ## Current delivery checkpoint
 
-- **4.30.2 source fixes Windows backup paths and protects agent setup files.**
+- **4.30.2 is published and updated the actual Windows app and shared host.**
+  [All six native gates and live update acceptance](validation/2026-10-20-4302-live-updates.md)
+  passed, preserving identities, memories, protected login and preferences.
+  The isolated Windows lab passed 42 requests with no pending cleanup.
+
+- **4.30.2 fixes Windows backup paths and protects agent setup files.**
   [Database tools accept long private backup paths](validation/2026-10-20-windows-backup-paths.md)
   without changing Windows settings; the app and agent status retain safe failure
   diagnostics. Configuration backups
@@ -22,7 +27,7 @@ of the released app. A hotfix does not finish a broader requirement.
   before writing. [Focused Linux and native Windows checks](validation/2026-10-20-agent-setup-private-files.md)
   preserve existing client policies, exact backups and unrelated files.
 
-- **4.30.2 source includes server-backup recovery in the desktop app.** The
+- **4.30.2 includes server-backup recovery in the desktop app.** The
   [app and local-agent workflow](service/desktop-host-recovery.md) authenticates
   the full package, reviews included or newer access state and creates a separate
   native database with preserved identities and fresh access. Full host/provider

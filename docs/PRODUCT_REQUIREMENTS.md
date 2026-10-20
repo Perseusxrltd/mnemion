@@ -19,17 +19,17 @@ not equally sized. This is coverage of the full requested scope, not a measure
 of engineering effort or the usability of the published app. Hotfixes to a
 partial feature do not automatically mark its whole requirement complete.
 
-Source 4.30.2 advances **F08/A10** with explicit Windows ownership and private
+Published 4.30.2 advances **F08/A10** with explicit Windows ownership and private
 ACLs for agent-configuration backups and staged replacements. Existing client
 policies, other servers and failed-write recovery retain their contract.
 [Linux and native Windows checks passed](validation/2026-10-20-agent-setup-private-files.md);
-publication remains a separate gate. No new provider profile or full requirement
+[publication and actual automatic updates passed](validation/2026-10-20-4302-live-updates.md). No new provider profile or full requirement
 is claimed by this fix.
 It also fixes [Windows PostgreSQL backup paths at the 260-character boundary](validation/2026-10-20-windows-backup-paths.md),
 without shortening private workspace paths or changing the machine's settings.
 Bounded failure diagnostics survive into the app and private agent status.
 
-Source 4.30.2 advances **F08/A06/A09/U02** with
+Published 4.30.2 advances **F08/A06/A09/U02** with
 [server-package database recovery through the desktop app](service/desktop-host-recovery.md).
 The complete encrypted inventory, included or newer ledger, explicit recovery
 scope and a new private database are reviewed through the same app and local
@@ -37,7 +37,8 @@ agent controls. Existing organization/memory identities, current denials and
 fresh administrator access are retained. Source/provider/OS configuration stays
 separate; this does not finish full host reconstruction or independent cloud
 delivery. [Focused validation](validation/2026-10-20-desktop-host-recovery.md)
-and native/public release gates remain distinct. Strict coverage stays 17/64.
+and the [native release and live continuity evidence](validation/2026-10-20-4302-live-updates.md)
+have passed. Public update rehearsals are tracked separately. Strict coverage stays 17/64.
 
 Published 4.28.0 advances F08/A12/U01/U02 with [private desktop connection controls](service/desktop-operator.md#select-a-team-workspace-from-a-local-agent).
 Trusted local agents can verify the intended person/organization, select a key or
