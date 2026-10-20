@@ -51,7 +51,7 @@ does not downgrade an existing newer release snapshot.
 ## Automatic invalidation and verification
 
 The existing signed repository webhook accepts release events and normal
-documentation/content pushes to `main`. The repository hook must subscribe to
+documentation/content pushes to `main`. The repository hook is subscribed to
 both **release** and **push**. Its existing HMAC secret stays in GitHub's hook
 configuration and the website's private environment. An event only invalidates
 fixed cache tags/paths; its payload cannot provide rendered content or URLs.
@@ -66,16 +66,17 @@ current and otherwise allows a bounded ten-minute cache-propagation window
 inside a fifteen-minute job. A failed check reports failure; it cannot replace
 or deploy the live website.
 
-For the initial rollout, deploy the reviewed website consumer with its validated
-snapshots, add **push** to the existing webhook's events, then enable the Git
-content publication/verification changes. Preserve the hook's secret. Git deployment
-of the corporate website stays disabled; use the existing production project.
-Thereafter normal documentation changes need only this repository.
+The initial rollout passed live acceptance on 20 October 2026: after the reviewed
+consumer was deployed and the existing hook gained `push`, a distinct canonical
+Git change reached all three live surfaces without another website deployment.
+Normal documentation changes now need only this repository. Git deployment of
+the corporate website stays disabled; code/layout releases still use its existing
+production project.
 
 A new content schema or layout still requires a reviewed website code update.
 Brand assets, corporate identity, contact delivery and payment configuration keep
 their existing controlled sources. Automation does not turn incomplete product
 requirements into shipped features or change the free-product/no-spending policy.
 
-See the [implementation and local acceptance record](../validation/2026-10-20-git-owned-website-content.md)
-for checked behavior and the separate live propagation gate.
+See the [implementation and live acceptance record](../validation/2026-10-20-git-owned-website-content.md)
+for separate local cache-failure checks and the successful production Git refresh.

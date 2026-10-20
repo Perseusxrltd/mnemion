@@ -1,4 +1,4 @@
-# Git-owned website documentation: implementation and local acceptance
+# Git-owned website documentation: implementation and live acceptance
 
 Date: 20 October 2026.
 
@@ -16,7 +16,7 @@ the macOS 13+ desktop client from Apple-silicon local workspaces requiring macOS
 edits. App and hosted Studio documentation already bundle repository Markdown
 from each exact release, including offline help; that mapping was verified.
 
-## Checks completed
+## Local implementation checks
 
 - Producer and public verifier: 32 focused cases passed across their affected
   groups (11 producer, 21 verifier), including malformed/oversized text, missing
@@ -54,7 +54,7 @@ from each exact release, including offline help; that mapping was verified.
   not close the broader documentation requirement. No paid service, model call,
   account, payment transaction or message was introduced.
 
-The checked canonical content digest is
+The locally checked canonical content digest was
 `e58095f2ddcbeb55772239cb7514bf085702fe5cf85c926361e28c4f19b1b462`.
 Local evidence is retained privately under
 `mnemion-completion/2026-10-20-website-git-content/`, including
@@ -62,19 +62,48 @@ Local evidence is retained privately under
 screenshots reside in the website review worktree's ignored `output/playwright/`.
 No webhook credential is included in these reports.
 
-## Live acceptance remains separate
+## Live Git-only acceptance passed
 
-These are implementation and local production-build results, not evidence that
-the live website has received a Git-only content change. The existing repository
-hook was read-only verified as release-only during this work. The integrating
-agent will deploy the checked consumer first, add `push` to that same hook while
-preserving its secret, then integrate the producer/workflow changes. A deliberate
-canonical text change must subsequently appear on the live site with a changed
-content digest and an unchanged website deployment before recording live
-end-to-end acceptance.
+The local checks above preceded a separate live acceptance on 20 October at
+14:25 UTC. The reviewed website consumer (`19cb27f`) was deployed first. The
+existing hook, initially release-only, was extended to **release and push** by
+changing only its event subscription; its secret was neither read nor replaced.
+Mnemion commit `fca12c7db24d5defecf3e8cb583ee208aac13296` then published different
+canonical text through Git. Its actual push delivery returned HTTP 200 with
+`accepted`, `revalidated` and `content` all true.
+
+The live product page displayed the new paragraph:
+
+> Read guides for the version you download and follow the latest roadmap. The same help is available inside the app, including offline.
+
+The product page, homepage and Lab Notes all advanced from the locally checked
+digest above to
+`7fb9a810a102acbe0a6b230953bdafb5a2224edca81a28a44fe0e34e34513639`.
+Production deployment `dpl_Eh4X1VezfcWWiKv1LFtUWAajkP8X` stayed identical before
+and after that Git push. This proves a real Git-only content refresh without
+another website deployment, beyond matching an unchanged bundled fallback.
+
+[Website workflow 39438860803](https://github.com/Perseusxrltd/mnemion/actions/runs/39438860803)
+passed independently and retained its public verification receipt. Live checks
+confirmed all six 4.40.0 installer links, published-version operating guides,
+checksums, release notes and the `main` roadmap. The committed website release
+fallback remained **4.39.0**; dynamic release sources served **4.40.0**. Both the
+`www` product URL and apex redirect worked, and legal/privacy pages returned
+HTTP 200. Contact/payment code remained unchanged; no new delivery or payment
+test was performed. The protected preview toolbar was blocked by the unchanged
+CSP, without a product-page error.
+
+The same private evidence directory contains `live-end-to-end.json`,
+`live-before-git-push.json`, `live-git-only-receipt.json`,
+`preview-three-surface-receipt.json`, `hook-subscription.json`,
+`verified-hook-push.json`, both production deployment inspections and
+`github-workflow-proof/website-verification.json`. The local fixture results
+remain separate evidence for invalid-response and cache-retention behavior;
+production was not fault-injected.
 
 The public workflow retains the published installer/update checks and adds the
 expected Git content digest and visible text on all three pages. It permits a
 bounded ten-minute cache propagation window in a fifteen-minute job and leaves
-the deployed site untouched on verification failure. No app version, release
-dispatch, website publication or webhook mutation was performed by this slice.
+the deployed site untouched on verification failure. This documentation update
+does not change an app version or close the broader U09 requirement; affected
+guides, roadmap claims and release evidence still require engineering review.
