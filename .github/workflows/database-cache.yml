@@ -1,0 +1,29 @@
+name: Warm native database caches
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 4 * * *'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/native-runtime.yml'
+      - 'deploy/build_native_postgres.py'
+      - 'deploy/native-postgres.json'
+      - 'deploy/native_database_cache.py'
+      - 'deploy/windows-native-runtime.manifest'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: warm-native-database-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  database:
+    # Release branches can read caches saved by main, but cannot populate main's
+    # cache themselves. Reuse the existing compiler-image/source fingerprint and
+    # real relocation/TLS/RLS/backup/crash probe before retaining any archive.
+    if: github.repository == 'Perseusxrltd/mnemion' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/native-runtime.yml

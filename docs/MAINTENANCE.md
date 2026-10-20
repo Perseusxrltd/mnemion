@@ -49,6 +49,15 @@ in the background. It emits only changes after its first observation, reuses
 completed failure evidence, checks active jobs once a minute and stops after the
 requested duration. It does not retry jobs, edit issues or publish anything.
 
+**Warm native database caches** runs on main each day and when the pinned database
+sources or build instructions change. GitHub release branches can read main's
+caches; they cannot save a reusable main cache themselves. The warmer calls the
+existing native database workflow, including its real relocation, TLS, row-level
+permissions, backup and crash checks before saving. Compiler-image and input
+fingerprints remain exact; missing metadata or a miss still requires compilation.
+The warmer has no signing credentials and publishes no release. It can also be
+dispatched manually after a compiler-image change, without rebuilding the app.
+
 The public-upgrade workflow explicitly dispatches status reconciliation after
 its platform jobs, including failed runs. Reconciliation waits for the
 initiating run to finish before reading its gates. This keeps final upgrade
