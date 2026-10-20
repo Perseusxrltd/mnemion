@@ -37,40 +37,15 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "78478d4f17cf01a7dd299ee55b3adc8e0971b9c1",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-20T13:56:14Z",
+      "status": "completed",
+      "conclusion": "failure",
+      "updated_at": "2026-10-20T14:14:51Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39434393357",
       "job_progress": {
         "total": 12,
-        "completed": 9,
-        "succeeded": 8,
-        "active": [
-          {
-            "id": 118667528549,
-            "name": "service (3.14)",
-            "status": "in_progress",
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 118667528747,
-            "name": "service (3.13)",
-            "status": "in_progress",
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 118667528812,
-            "name": "service (3.12)",
-            "status": "in_progress",
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          }
-        ]
+        "completed": 12,
+        "succeeded": 11,
+        "active": []
       },
       "failed_jobs": [
         {
@@ -116,69 +91,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39428746847",
       "job_progress": {
         "total": 31,
-        "completed": 21,
-        "succeeded": 21,
+        "completed": 29,
+        "succeeded": 29,
         "active": [
-          {
-            "id": 118665904001,
-            "name": "checks / supervision (macos-15-intel)",
-            "status": "in_progress",
-            "steps": [
-              "Verify managed installation, host recovery, signed updates and rollback with real processes"
-            ]
-          },
-          {
-            "id": 118665904443,
-            "name": "checks / service (3.14)",
-            "status": "in_progress",
-            "steps": []
-          },
-          {
-            "id": 118665904579,
-            "name": "checks / service (3.13)",
-            "status": "in_progress",
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 118665904849,
-            "name": "checks / service (3.12)",
-            "status": "in_progress",
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 118668238790,
-            "name": "native / ubuntu-22.04-arm / arm64",
-            "status": "in_progress",
-            "steps": [
-              "Installed Linux app creates, searches and reopens a real local workspace"
-            ]
-          },
-          {
-            "id": 118668238940,
-            "name": "native / windows-2022 / x64",
-            "status": "in_progress",
-            "steps": [
-              "Installed app creates, searches and reopens a real local workspace"
-            ]
-          },
-          {
-            "id": 118668238971,
-            "name": "native / macos-15 / arm64",
-            "status": "in_progress",
-            "steps": [
-              "Installed app creates, searches and reopens a real local workspace"
-            ]
-          },
           {
             "id": 118668238979,
             "name": "native / macos-15-intel / x64",
             "status": "in_progress",
             "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
+              "Installed app creates, searches and reopens a real local workspace"
             ]
           },
           {
@@ -186,15 +107,7 @@
             "name": "native / windows-11-arm / arm64",
             "status": "in_progress",
             "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
-            ]
-          },
-          {
-            "id": 118668239397,
-            "name": "native / ubuntu-22.04 / x64",
-            "status": "in_progress",
-            "steps": [
-              "Installed Linux app creates, searches and reopens a real local workspace"
+              "Installed app creates, searches and reopens a real local workspace"
             ]
           }
         ]
@@ -224,5 +137,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39434081456"
     }
   ],
-  "observed_at": "2026-10-20T14:04:23+00:00"
+  "observed_at": "2026-10-20T14:15:32+00:00"
 }
