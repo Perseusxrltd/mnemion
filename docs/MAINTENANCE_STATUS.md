@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-20T08:39:58+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-20T08:52:07+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.34.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.34.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -16,7 +16,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | in\_progress | [Run 39393856803](https://github.com/Perseusxrltd/mnemion/actions/runs/39393856803) |
+| ci\.yml | main | success | [Run 39393856803](https://github.com/Perseusxrltd/mnemion/actions/runs/39393856803) |
 | public-updates\.yml | v4\.34\.0 | success | [Run 39393538181](https://github.com/Perseusxrltd/mnemion/actions/runs/39393538181) |
 | release\.yml | release/4\.34\.0 | success | [Run 39388255080](https://github.com/Perseusxrltd/mnemion/actions/runs/39388255080) |
 | release\.yml | release/4\.35\.0 | in\_progress | [Run 39392435604](https://github.com/Perseusxrltd/mnemion/actions/runs/39392435604) |
@@ -26,22 +26,12 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 ## Active jobs
 
-[Run 39393856803](https://github.com/Perseusxrltd/mnemion/actions/runs/39393856803): 8/12 jobs completed; 8 succeeded.
+[Run 39392435604](https://github.com/Perseusxrltd/mnemion/actions/runs/39392435604): 29/31 jobs completed; 28 succeeded.
 
-- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- supervision \(macos-15-intel\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
+- native / windows-2022 / x64: in\_progress — Native Windows installation, authenticated upgrade and relaunch.
+- native / macos-15-intel / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
 
-[Run 39392435604](https://github.com/Perseusxrltd/mnemion/actions/runs/39392435604): 22/31 jobs completed; 22 succeeded.
 
-- checks / service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- checks / supervision \(macos-15-intel\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
-- checks / service \(3\.13\): in\_progress.
-- native / ubuntu-22\.04-arm / arm64: in\_progress — Installed Linux app creates, searches and reopens a real local workspace.
-- native / windows-2022 / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
-- native / macos-15 / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
-- native / macos-15-intel / x64: in\_progress — Package the native desktop with one bounded upstream-download retry.
-- native / windows-11-arm / arm64: in\_progress — Package the native desktop with one bounded upstream-download retry.
-- native / ubuntu-22\.04 / x64: in\_progress — Installed Linux app creates, searches and reopens a real local workspace.
+## Failed jobs
 
+- [Run 39392435604](https://github.com/Perseusxrltd/mnemion/actions/runs/39392435604): native / windows-11-arm / arm64. Steps: Installed app creates, searches and reopens a real local workspace.
