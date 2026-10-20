@@ -54,11 +54,10 @@
       "workflow": "public-updates.yml",
       "branch": "v4.29.0",
       "source_commit": "32623ae7d7e7c0d417615b7773d5752c7c622d4b",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-20T01:24:37Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39352199551",
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-20T01:24:41Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39352199551"
     },
     {
       "id": 39347302345,
@@ -105,5 +104,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39352196704"
     }
   ],
-  "observed_at": "2026-10-20T01:24:42+00:00"
+  "observed_at": "2026-10-20T01:25:14+00:00"
 }
