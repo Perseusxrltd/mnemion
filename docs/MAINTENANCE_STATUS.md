@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-20T13:52:31+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-20T14:04:23+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.40.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.40.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -18,8 +18,8 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 39424001891](https://github.com/Perseusxrltd/mnemion/actions/runs/39424001891) |
-| public-updates\.yml | v4\.40\.0 | queued | [Run 39434085500](https://github.com/Perseusxrltd/mnemion/actions/runs/39434085500) |
+| ci\.yml | main | in\_progress | [Run 39434393357](https://github.com/Perseusxrltd/mnemion/actions/runs/39434393357) |
+| public-updates\.yml | v4\.40\.0 | success | [Run 39434085500](https://github.com/Perseusxrltd/mnemion/actions/runs/39434085500) |
 | release\.yml | release/4\.40\.0 | success | [Run 39424241142](https://github.com/Perseusxrltd/mnemion/actions/runs/39424241142) |
 | release\.yml | release/4\.41\.0 | in\_progress | [Run 39428746847](https://github.com/Perseusxrltd/mnemion/actions/runs/39428746847) |
 | verify-artifacts\.yml | main | success | [Run 39433889111](https://github.com/Perseusxrltd/mnemion/actions/runs/39433889111) |
@@ -27,22 +27,26 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 ## Active jobs
 
-[Run 39434085500](https://github.com/Perseusxrltd/mnemion/actions/runs/39434085500): 1/7 jobs completed; 1 succeeded.
+[Run 39434393357](https://github.com/Perseusxrltd/mnemion/actions/runs/39434393357): 9/12 jobs completed; 8 succeeded.
 
-- macos / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- windows / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- linux / arm64 public upgrade: in\_progress — Linux desktop libraries.
-- windows / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- linux / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- macos / arm64 public upgrade: queued.
+- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 
-[Run 39428746847](https://github.com/Perseusxrltd/mnemion/actions/runs/39428746847): 17/24 jobs completed; 17 succeeded.
+[Run 39428746847](https://github.com/Perseusxrltd/mnemion/actions/runs/39428746847): 21/31 jobs completed; 21 succeeded.
 
-- native / Encrypted files / Windows / arm64: in\_progress — Run actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1.
-- checks / supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
-- checks / supervision \(macos-15\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
-- checks / service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- checks / supervision \(macos-15-intel\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
+- checks / service \(3\.14\): in\_progress.
 - checks / service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 - checks / service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- native / native\_database / Database / Windows ARM host / x64 engine: in\_progress — Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
+- native / ubuntu-22\.04-arm / arm64: in\_progress — Installed Linux app creates, searches and reopens a real local workspace.
+- native / windows-2022 / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
+- native / macos-15 / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
+- native / macos-15-intel / x64: in\_progress — Package the native desktop with one bounded upstream-download retry.
+- native / windows-11-arm / arm64: in\_progress — Package the native desktop with one bounded upstream-download retry.
+- native / ubuntu-22\.04 / x64: in\_progress — Installed Linux app creates, searches and reopens a real local workspace.
 
+
+## Failed jobs
+
+- [Run 39434393357](https://github.com/Perseusxrltd/mnemion/actions/runs/39434393357): supervision \(macos-15-intel\). Steps: Run python -m pip install uv==0\.12\.24.
