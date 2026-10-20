@@ -18,15 +18,6 @@
       ]
     },
     {
-      "number": 4,
-      "title": "No OAuth for hosted agents; static bearer tokens only",
-      "updated_at": "2026-10-10T20:55:33Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/issues/4",
-      "labels": [
-        "enhancement"
-      ]
-    },
-    {
       "number": 18,
       "title": "OAuth 2.1 MCP auth so ChatGPT custom connectors can connect (spec for #4)",
       "updated_at": "2026-10-10T20:58:20Z",
@@ -38,15 +29,15 @@
   ],
   "runs": [
     {
-      "id": 39356338837,
+      "id": 39356685322,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "ee7f72b7a97a0c1cf079391da8d4423185692cd6",
-      "status": "in_progress",
+      "source_commit": "435b6a4e1c35397fee247ae924bc2f65e2ceb2a3",
+      "status": "pending",
       "conclusion": null,
-      "updated_at": "2026-10-20T01:58:38Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39356338837",
+      "updated_at": "2026-10-20T02:01:55Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39356685322",
       "failed_jobs": []
     },
     {
@@ -100,26 +91,10 @@
       "workflow": "release.yml",
       "branch": "release/4.30.1",
       "source_commit": "d69d9671426e646e6d9d35415dd9e17edb69eaaa",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-20T01:45:22Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39353709978",
-      "failed_jobs": [
-        {
-          "name": "native / windows-11-arm / arm64",
-          "id": 118408173382,
-          "steps": [
-            "Installed app creates, searches and reopens a real local workspace"
-          ]
-        },
-        {
-          "name": "native / windows-2022 / x64",
-          "id": 118408173568,
-          "steps": [
-            "Installed app creates, searches and reopens a real local workspace"
-          ]
-        }
-      ]
+      "status": "completed",
+      "conclusion": "cancelled",
+      "updated_at": "2026-10-20T02:01:51Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39353709978"
     },
     {
       "id": 39356398218,
@@ -129,20 +104,20 @@
       "source_commit": "ee7f72b7a97a0c1cf079391da8d4423185692cd6",
       "status": "queued",
       "conclusion": null,
-      "updated_at": "2026-10-20T01:58:51Z",
+      "updated_at": "2026-10-20T02:02:15Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39356398218",
       "failed_jobs": []
     },
     {
-      "id": 39353184885,
+      "id": 39356685463,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "fde55684de5dc9b488f370d5b13b6c064d9d2310",
+      "source_commit": "435b6a4e1c35397fee247ae924bc2f65e2ceb2a3",
       "status": "completed",
       "conclusion": "skipped",
-      "updated_at": "2026-10-20T01:23:44Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39353184885"
+      "updated_at": "2026-10-20T02:02:03Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39356685463"
     },
     {
       "id": 39352196704,
@@ -156,5 +131,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39352196704"
     }
   ],
-  "observed_at": "2026-10-20T01:58:57+00:00"
+  "observed_at": "2026-10-20T02:02:23+00:00"
 }
