@@ -97,6 +97,22 @@ def test_active_runs_surface_failed_jobs_and_only_completed_attempts_reuse_job_e
         "updated_at": "2026-10-14T12:24:00Z",
     }
     observed = []
+    jobs = [
+        {
+            "id": 50,
+            "name": "Mac startup",
+            "status": "completed",
+            "conclusion": "failure",
+            "steps": [],
+        },
+        {
+            "id": 51,
+            "name": "Windows ARM",
+            "status": "in_progress",
+            "conclusion": None,
+            "steps": [{"name": "Install", "status": "in_progress"}],
+        },
+    ]
 
     def remote(*arguments):
         if arguments[0] == "issue":
@@ -108,22 +124,37 @@ def test_active_runs_surface_failed_jobs_and_only_completed_attempts_reuse_job_e
             return {"workflow_runs": [run]}
         assert endpoint == "actions/runs/5/jobs?filter=latest&per_page=100"
         observed.append(endpoint)
-        return {
-            "total_count": 1,
-            "jobs": [{"id": 50, "name": "Mac startup", "conclusion": "failure", "steps": []}],
-        }
+        return {"total_count": len(jobs), "jobs": jobs}
 
     monkeypatch.setattr(subject, "object_from_gh", remote)
     first = subject.collect({})
     assert subject.changes({}, first)["failed_runs"] == 1
     assert subject.changes({}, first)["active_runs"] == 1
+    assert first["runs"][0]["job_progress"]["active"][0]["steps"] == ["Install"]
+    jobs[1]["steps"] = [{"name": "Upgrade and relaunch", "status": "in_progress"}]
     second = subject.collect(first)
+    # GitHub's enclosing run timestamp need not change with each job step.
+    delta = subject.changes(first, second)
+    assert delta["changed"] and len(delta["changed_runs"]) == 1
+    rendered = subject.markdown({**second, "observed_at": "2026-10-20T05:30:00Z"})
+    assert "1/2 jobs completed; 0 succeeded" in rendered
+    assert "Windows ARM: in\\_progress — Upgrade and relaunch" in rendered
     assert len(observed) == 2
+    unchanged = subject.collect(second)
+    assert not subject.changes(second, unchanged)["changed"]
+    assert len(observed) == 3
+    jobs[1].update(status="completed", conclusion="success", steps=[])
     run.update(status="completed", conclusion="failure", updated_at="2026-10-14T12:45:00Z")
     completed = subject.collect(second)
-    assert len(observed) == 3
+    assert len(observed) == 4
+    assert completed["runs"][0]["job_progress"] == {
+        "total": 2,
+        "completed": 2,
+        "succeeded": 1,
+        "active": [],
+    }
     assert subject.collect(completed) == completed
-    assert len(observed) == 3
+    assert len(observed) == 4
 
 
 def test_generated_titles_are_text_instead_of_remote_images_or_html():

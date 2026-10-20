@@ -67,6 +67,10 @@ gates; no paid service, model call or new signing credential is required.
 
 `python -m deploy.maintenance_snapshot` reports the current published release,
 new/updated/closed issues, changed builds and failed job steps as bounded JSON.
+Active builds also report completed/successful job counts and the current steps
+of pending jobs. This uses the same bounded job response as failure detection;
+a step change is reported even when GitHub's enclosing run timestamp is unchanged.
+Unchanged polls remain silent, with no extra API request per job or step.
 The existing status workflow refreshes the
 [maintenance board](../MAINTENANCE_STATUS.md) on issue/comment changes, completed
 release workflows and its schedule. It reads trusted code from main; issue text

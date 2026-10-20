@@ -122,12 +122,33 @@ def collect(previous: dict) -> dict:
             and "failed_jobs" in old
         ):
             row["failed_jobs"] = old["failed_jobs"]
+            if "job_progress" in old:
+                row["job_progress"] = old["job_progress"]
             continue
         jobs = object_from_gh(
             "api", f"repos/{REPOSITORY}/actions/runs/{row['id']}/jobs?filter=latest&per_page=100"
         )
         if jobs["total_count"] > 100:
             raise ValueError("This run needs paginated job inspection")
+        row["job_progress"] = {
+            "total": jobs["total_count"],
+            "completed": sum(job.get("status") == "completed" for job in jobs["jobs"]),
+            "succeeded": sum(job.get("conclusion") == "success" for job in jobs["jobs"]),
+            "active": [
+                {
+                    "id": job["id"],
+                    "name": job["name"],
+                    "status": job["status"],
+                    "steps": [
+                        step["name"]
+                        for step in job.get("steps", [])
+                        if step.get("status") == "in_progress"
+                    ],
+                }
+                for job in jobs["jobs"]
+                if job.get("status") in {"queued", "pending", "waiting", "in_progress"}
+            ],
+        }
         row["failed_jobs"] = [
             {
                 "name": job["name"],
@@ -192,7 +213,7 @@ def markdown(data: dict) -> str:
         "",
         "This inventory reports GitHub state; issue closure does not prove that an entire product requirement is complete. "
         f"Build observations cover the latest {data['run_window']} runs, retaining the latest relevant run per workflow and branch. "
-        "Active builds are checked for failed jobs at each observation; completed failures are inspected once per changed attempt. "
+        "Active builds report job progress and failures from the same observation; completed failures are inspected once per changed attempt. "
         "This automation never retries a build or publishes a release.",
         "",
         f"## Open issues ({len(data['issues'])})",
@@ -217,6 +238,23 @@ def markdown(data: dict) -> str:
         f"| {escaped(row['workflow'])} | {escaped(row['branch'] or 'detached')} | {escaped(row['conclusion'] or row['status'])} | [Run {row['id']}]({row['url']}) |"
         for row in data["runs"]
     )
+    active = [row for row in data["runs"] if row.get("job_progress", {}).get("active")]
+    if active:
+        lines.extend(["", "## Active jobs", ""])
+        for row in active:
+            progress = row["job_progress"]
+            lines.append(
+                f"[Run {row['id']}]({row['url']}): {progress['completed']}/{progress['total']} "
+                f"jobs completed; {progress['succeeded']} succeeded."
+            )
+            lines.append("")
+            lines.extend(
+                f"- {escaped(job['name'])}: {escaped(job['status'])}"
+                + (f" — {escaped(', '.join(job['steps']))}" if job["steps"] else "")
+                + "."
+                for job in progress["active"]
+            )
+            lines.append("")
     failures = [row for row in data["runs"] if row.get("failed_jobs")]
     if failures:
         lines.extend(["", "## Failed jobs", ""])
