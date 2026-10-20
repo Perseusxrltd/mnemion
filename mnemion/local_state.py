@@ -9,6 +9,7 @@ from pathlib import Path
 import shutil
 import stat
 import tempfile
+import time
 from uuid import uuid4
 
 from .private_output import private_output
@@ -291,6 +292,26 @@ def replace_damaged(path: Path, value: dict, *, expected: bytes, kind: str = "me
     return archive
 
 
+def _replace_record(temporary: Path, path: Path) -> None:
+    # Windows readers and filesystem scanners may briefly omit FILE_SHARE_DELETE.
+    # Keep the old record intact and retry the same atomic operation. Permanent
+    # denials still fail; never delete the target or weaken its permissions.
+    delays = (0.02, 0.04, 0.08, 0.16, 0.32, 0.64)
+    for attempt in range(len(delays) + 1):
+        try:
+            os.replace(temporary, path)
+            return
+        except OSError as error:
+            if os.name != "nt" or getattr(error, "winerror", None) not in {5, 32, 33}:
+                raise
+            if attempt == len(delays):
+                raise LocalSetupError(
+                    "state_file_locked",
+                    "Windows could not save a local settings file. Close programs using this workspace or check its file permissions, then retry. Existing data has been retained.",
+                ) from error
+            time.sleep(delays[attempt])
+
+
 def _publish(path: Path, value: dict, *, replace: bool) -> None:
     content = json.dumps(value, sort_keys=True, ensure_ascii=True, allow_nan=False).encode() + b"\n"
     if len(content) > MAX_RECORD_BYTES:
@@ -300,7 +321,7 @@ def _publish(path: Path, value: dict, *, replace: bool) -> None:
         with private_output(temporary) as stream:
             stream.write(content)
         if replace:
-            os.replace(temporary, path)
+            _replace_record(temporary, path)
         else:
             os.link(temporary, path)
             temporary.unlink()

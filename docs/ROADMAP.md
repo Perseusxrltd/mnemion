@@ -20,6 +20,8 @@ of the released app. A hotfix does not finish a broader requirement.
   The private runtime keeps agents independent of a running Studio window and
   follows its updates. Grok Build has an observed native profile; separate
   vendor plugins and hosted provider acceptance remain open.
+  The corrected candidate also [handles temporary Windows status-file locks](validation/2026-10-20-windows-state-locks.md),
+  after the first attempt's installed backup check found an atomic-write failure.
 
 - **4.31.0 is published with folder and conversation setup through the app.**
   [Desktop sources](service/desktop-sources.md) have folder selection, scoped

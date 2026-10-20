@@ -28,6 +28,9 @@ continues outside Studio and follows app updates without rewriting client files.
 remain distinct. Grok Build uses its observed native TOML contract; this does not
 complete the separate Grokbot, Dot, Hermes or OpenClaw plugin requests. No broad
 requirement is promoted by configuration support alone.
+The corrected candidate also includes [bounded Windows atomic-write retries](validation/2026-10-20-windows-state-locks.md)
+for a backup-status failure found before publication. Lasting denials preserve
+existing data and private permissions; this is a base reliability fix.
 
 Published 4.31.0 advances **F08/C01/C03/U01** and extends **R03/R04** with
 [desktop folder, Obsidian and JSONL source setup](service/desktop-sources.md).

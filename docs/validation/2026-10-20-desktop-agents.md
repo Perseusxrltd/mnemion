@@ -52,3 +52,8 @@ target; this report does not pre-announce a passing release.
 The installed Grok Build CLI's help and native TOML contract informed its
 profile. No real Codex/Grok settings, approval policy, sandbox settings or Argil
 harness were edited. Hosted OAuth/ChatGPT remains the separate open issue #18.
+
+The first native candidate was withheld for a Windows ARM backup-status write
+failure. The corrected source includes [bounded atomic file-lock handling](2026-10-20-windows-state-locks.md),
+with actual Windows reproduction, recovered transient locks and preserved data
+under lasting denial. Corrected native acceptance remains a publication gate.

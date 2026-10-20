@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import threading
 
 import pytest
 
@@ -26,6 +27,69 @@ def test_interrupted_replacement_preserves_existing_private_state(tmp_path, monk
     assert state.read(path) == {"credential": "original"}
     assert path.read_bytes() == before
     assert [p.name for p in root.iterdir()] == ["credentials.json"]
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows replacement sharing semantics")
+@pytest.mark.parametrize("release_reader", [True, False])
+def test_windows_atomic_state_write_tolerates_a_brief_reader_but_retains_data_on_denial(
+    tmp_path, monkeypatch, release_reader
+):
+    from client_tests.windows_acl import assert_private_acl
+
+    root = state.directory(tmp_path / "Private state Équipe with spaces")
+    path = root / "last-ledger.json"
+    original = {"version": "original"}
+    replacement = {"version": "replacement"}
+    state.write(path, original)
+    opened, release = threading.Event(), threading.Event()
+    read_values, failures, timers = [], [], []
+
+    def reader():
+        # An ordinary Windows file reader denies deletion/replacement while
+        # open, matching a status reader or scanner outside the writer's lock.
+        with path.open("rb") as stream:
+            opened.set()
+            release.wait(10)
+            read_values.append(json.load(stream))
+
+    worker = threading.Thread(target=reader)
+    worker.start()
+    real_replace = os.replace
+
+    def observed_replace(source, destination):
+        try:
+            return real_replace(source, destination)
+        except OSError as error:
+            failures.append(error.winerror)
+            if release_reader and len(failures) == 1:
+                timer = threading.Timer(0.1, release.set)
+                timers.append(timer)
+                timer.start()
+            raise
+
+    try:
+        assert opened.wait(5)
+        monkeypatch.setattr(os, "replace", observed_replace)
+        if release_reader:
+            state.write(path, replacement)
+        else:
+            with pytest.raises(
+                state.LocalSetupError, match="Existing data has been retained"
+            ) as caught:
+                state.write(path, replacement)
+            assert caught.value.code == "state_file_locked"
+            assert caught.value.__cause__.winerror in {5, 32, 33}
+    finally:
+        release.set()
+        worker.join(5)
+        for timer in timers:
+            timer.join(5)
+    assert not worker.is_alive()
+    assert failures and all(code in {5, 32, 33} for code in failures)
+    assert read_values == [original]
+    assert state.read(path) == (replacement if release_reader else original)
+    assert_private_acl(path)
+    assert not list(root.glob(".local-state-*"))
 
 
 def test_local_state_rejects_linked_or_oversized_records(tmp_path):
