@@ -1,6 +1,8 @@
 # Fair indexing dispatch — 20 October 2026
 
 Source candidate: 4.35.0, migration `029_fair_indexing.sql`.
+The unpublished candidate is included unchanged in the combined 4.37.0 release;
+see the [local setup correction](2026-10-20-state-publication.md).
 
 **18 real PostgreSQL cases passed** across the new dispatch checks and existing
 reindex suite:

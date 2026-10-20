@@ -6,7 +6,7 @@ with a bounded interval; repeated polling does not make the worker faster. A
 source import, model cold start, slow provider or resource limit can delay
 completion without losing the saved record.
 
-## Dispatch in 4.35
+## Dispatch in 4.37
 
 After migration 029, each configured indexing worker selects work in this order:
 

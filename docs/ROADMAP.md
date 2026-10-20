@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.36.0**. Roadmap updated: **2026-10-20**.
+Reviewed source distribution: **4.37.0**. Roadmap updated: **2026-10-20**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
 [Release status](RELEASE_STATUS.md) and the [maintenance board](MAINTENANCE_STATUS.md)
@@ -14,14 +14,21 @@ of the released app. A hotfix does not finish a broader requirement.
 
 ## Current delivery checkpoint
 
-- **4.36.0 source makes queue workload visible.**
+- **4.37.0 combines queue improvements with a local setup correction.**
+  A [reproduced state-publication race](validation/2026-10-20-state-publication.md)
+  briefly made a new settings file appear linked to its own staging name.
+  Status readers now wait briefly for publication while retaining link checks.
+  Focused Linux and native Windows state checks passed; full native release
+  acceptance remains separate. Unpublished 4.35/4.36 are superseded.
+
+- **The combined source makes queue workload visible.**
   [The pipeline view](service/insights.md) separates indexing and physical
   cleanup, with waiting text sizes, retries, due jobs and oldest age. The same
   scoped metrics reach agents and exports, with fallback for older servers.
   [Real database and browser checks](validation/2026-10-20-queue-visibility.md)
   passed; this is visibility into measured work, not a completion-time estimate.
 
-- **4.35.0 source fixes indexing dispatch under a source backlog.**
+- **The combined source fixes indexing dispatch under a source backlog.**
   [Purges take priority and organizations/spaces receive persistent turns](service/indexing-queues.md).
   Eighteen database/reindex cases passed with existing model and authorization
   policies retained. Migration 029 requires the normal backup/upgrade path.

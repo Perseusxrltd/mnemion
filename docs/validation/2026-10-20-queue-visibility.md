@@ -3,6 +3,8 @@
 Source candidate: 4.36.0. The existing reviewer-scoped insights response now
 includes at most six numeric groups for pending, leased or failed indexing and
 purge jobs. Historical state totals remain available.
+The unpublished candidate is included unchanged in the combined 4.37.0 release;
+see the [local setup correction](2026-10-20-state-publication.md).
 
 **Six PostgreSQL diagnostics checks passed**. The expanded scope test verifies
 current reviewer access, denial to readers and unscoped administrators, and

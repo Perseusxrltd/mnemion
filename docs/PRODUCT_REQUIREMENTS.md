@@ -19,7 +19,13 @@ not equally sized. This is coverage of the full requested scope, not a measure
 of engineering effort or the usability of the published app. Hotfixes to a
 partial feature do not automatically mark its whole requirement complete.
 
-Source 4.36.0 advances **F08/R04/V01** with
+Source 4.37.0 combines the unpublished 4.35/4.36 work and corrects a
+[first-setup state publication race](validation/2026-10-20-state-publication.md).
+The same error was reproduced with the existing code on native Windows;
+focused Linux and Windows checks passed with the correction. Full native
+publication and actual shared-host acceptance remain separate.
+
+The combined source advances **F08/R04/V01** with
 [scoped queue workload monitoring](service/insights.md): separate indexing and
 physical cleanup, pending/leased/failed counts, retries, due jobs, oldest age
 and logical text volume in the app, API, SDKs and agent interface. Existing
@@ -27,7 +33,7 @@ scope checks and bounded snapshot collection remain. [Database and browser
 acceptance](validation/2026-10-20-queue-visibility.md) passed; native release and
 representative fleet capacity remain separate. No complete requirement is promoted.
 
-Source 4.35.0 advances **R04/A09/C09/U11** with
+The combined source advances **R04/A09/C09/U11** with
 [priority purges and persistent organization/space indexing turns](service/indexing-queues.md).
 [Eighteen database/reindex cases passed](validation/2026-10-20-fair-indexing.md).
 The [actual 4.33 update/lab observation](validation/2026-10-20-433-live-updates.md)

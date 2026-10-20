@@ -12,6 +12,79 @@ import pytest
 from mnemion import local_state as state
 
 
+@pytest.mark.parametrize("finish_publication", [True, False])
+def test_status_read_waits_for_exclusive_publication_but_refuses_a_persistent_alias(
+    tmp_path, monkeypatch, finish_publication
+):
+    root = state.directory(tmp_path / "Published state Équipe")
+    path = root / "configuration.json"
+    expected = {"complete": True, "version": "first publication"}
+    published, release, observed = threading.Event(), threading.Event(), threading.Event()
+    original_link, original_lstat = os.link, Path.lstat
+    failures, timers = [], []
+
+    def pause_publication(source, target, *args, **kwargs):
+        original_link(source, target, *args, **kwargs)
+        if Path(target) == path:
+            published.set()
+            if not release.wait(10):
+                raise TimeoutError("The publication reader did not finish")
+
+    def observe_publication(candidate, *args, **kwargs):
+        info = original_lstat(candidate, *args, **kwargs)
+        if candidate == path and info.st_nlink == 2 and not observed.is_set():
+            observed.set()
+            if finish_publication:
+                timer = threading.Timer(0.02, release.set)
+                timers.append(timer)
+                timer.start()
+        return info
+
+    def writer():
+        try:
+            state.write(path, expected, replace=False)
+        except Exception as error:
+            failures.append(error)
+
+    monkeypatch.setattr(os, "link", pause_publication)
+    monkeypatch.setattr(Path, "lstat", observe_publication)
+    thread = threading.Thread(target=writer)
+    thread.start()
+    try:
+        assert published.wait(5)
+        if finish_publication:
+            assert state.read(path) == expected
+        else:
+            with pytest.raises(state.LocalSetupError, match="without links"):
+                state.read(path)
+        assert observed.is_set()
+    finally:
+        release.set()
+        thread.join(5)
+        for timer in timers:
+            timer.join(5)
+    assert not thread.is_alive() and not failures
+    assert path.lstat().st_nlink == 1 and state.read(path) == expected
+    assert [entry.name for entry in root.iterdir()] == [path.name]
+
+
+def test_record_link_added_after_path_check_is_refused_before_reading(tmp_path, monkeypatch):
+    root = state.directory(tmp_path / "Private state")
+    path, alias = root / "state.json", root / "alias.json"
+    state.write(path, {"private": True})
+    original_open = os.open
+
+    def link_before_open(candidate, *args, **kwargs):
+        if Path(candidate) == path:
+            os.link(path, alias)
+        return original_open(candidate, *args, **kwargs)
+
+    monkeypatch.setattr(os, "open", link_before_open)
+    with pytest.raises(state.LocalSetupError, match="could not be read"):
+        state.read(path)
+    assert path.lstat().st_nlink == alias.lstat().st_nlink == 2
+
+
 def test_interrupted_replacement_preserves_existing_private_state(tmp_path, monkeypatch):
     root = state.directory(tmp_path / "Workspace Équipe")
     path = root / "credentials.json"

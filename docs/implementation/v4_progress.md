@@ -21,6 +21,14 @@ Requirements and acceptance criteria are defined by the
 
 ## 20 October: agent-controlled desktop connections and hosted sign-in
 
+Source 4.37 combines the following queue milestones with a
+[private settings publication correction](../validation/2026-10-20-state-publication.md).
+The Windows ARM installed-setup gate blocked 4.35; the same failure was
+reproduced on native Windows, and 12 Linux/14 Windows state checks passed with
+the correction. The 4.36 queued build was cancelled. Neither candidate was
+published; their changes are retained together in 4.37. No real-host migration
+was started by the stopped publication-waiting controller.
+
 Source 4.36 adds workload visibility to the existing insights contract. Six
 database/permission tests and a real browser against PostgreSQL passed: the
 screen distinguishes physical purge from embedding, excludes another space's
@@ -46,8 +54,8 @@ database, recovered from a bad key, retained encrypted keys for agent changes
 and removed sources while signed out. The walkthrough also found and fixed a
 connection-selection flag that unnecessarily blocked automatic updates. All six
 4.34 native gates and uploaded-artifact verification passed; publication followed
-at 08:27 UTC. Public update rehearsals and customer-provider acceptance remain
-separate.
+at 08:27 UTC. All six public update rehearsals subsequently passed at 08:39 UTC;
+actual customer-provider acceptance remains separate.
 
 The 4.33 model-provider release passed all six native targets and independent
 artifact verification and is published. Its website update completed

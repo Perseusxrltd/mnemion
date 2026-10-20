@@ -12,11 +12,11 @@ remain gaps; counters do not invent provider prices, hardware bandwidth or score
 Runtime histories are bounded samples in the current browser session.
 
 For long queues, compare pending/leased counts and oldest job age with actual
-worker inference activity. [Dispatch from 4.35](indexing-queues.md) gives purges
+worker inference activity. [Dispatch from 4.37](indexing-queues.md) gives purges
 priority and alternates indexing across organizations/spaces; it does not
 interrupt an active model calculation or make a pending operation ready by itself.
 
-From 4.36, **Sources & pipeline → Outstanding work** separates indexing from
+From 4.37, **Sources & pipeline → Outstanding work** separates indexing from
 physical cleanup. It shows pending, leased and failed work; retry counts; oldest
 age; total saved text; and the largest outstanding indexing input. Completed and
 cancelled jobs remain in the existing historical state table. A withdrawn memory

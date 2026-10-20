@@ -25,6 +25,20 @@ class LocalSetupError(RuntimeError):
 
 def _regular(path: Path, *, directory: bool = False) -> os.stat_result:
     info = path.lstat()
+    # Exclusive publication links a complete private temporary file, then drops
+    # its old name. A status reader can observe that brief two-link interval.
+    # Wait only for that transition; a persistent link is still refused before
+    # opening the record, and no reader ever accepts a two-link file.
+    for delay in (0.01, 0.02, 0.04, 0.08, 0.16):
+        if (
+            directory
+            or info.st_nlink != 2
+            or not stat.S_ISREG(info.st_mode)
+            or getattr(info, "st_file_attributes", 0) & 0x400
+        ):
+            break
+        time.sleep(delay)
+        info = path.lstat()
     if (
         stat.S_ISLNK(info.st_mode)
         or getattr(info, "st_file_attributes", 0) & 0x400
@@ -198,7 +212,11 @@ def read_bytes(path: Path) -> bytes:
             if (info.st_dev, info.st_ino) != (
                 before.st_dev,
                 before.st_ino,
-            ) or info.st_size > MAX_RECORD_BYTES:
+            ) or (
+                not stat.S_ISREG(info.st_mode)
+                or info.st_nlink != 1
+                or info.st_size > MAX_RECORD_BYTES
+            ):
                 raise ValueError("Changed or oversized record")
             content = stream.read(MAX_RECORD_BYTES + 1)
         if len(content) > MAX_RECORD_BYTES:
