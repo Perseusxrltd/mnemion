@@ -35,6 +35,35 @@ can set `MNEMION_MODEL_SHARING=0` in the saved Supervisor environment before
 starting its children. This restores separate model owners and higher RAM use.
 Do not publish the private `model-broker` state directory or expose its listener.
 
+## Search during long local indexing
+
+The **4.43 source** lets already waiting requests run between completed local
+indexing batches. One inference still executes at a time, and a document retains
+its original admission slot while yielding execution in arrival order. This avoids holding the model for all 512 document chunks
+before a waiting query can run. Consult [release status](../RELEASE_STATUS.md)
+for native delivery and installed-version availability.
+
+Indexing starts with one chunk per batch and adapts using measured execution
+time toward a **250 ms batch target**, within the current RAM policy's smaller
+batch limit. Model generations, text spans and existing indexes are preserved;
+this scheduling update does not require reindexing. The shared worker remains
+the model owner, and tokenizer access remains serialized.
+
+New requests retain their existing queue capacity and admission deadline
+(defaults: 16 queued requests and two seconds). A document's waits at batch
+boundaries share a **30-second cumulative allowance**. If it expires, indexing
+remains retryable; a failed resume cannot release the foreground caller's active
+execution. Execution counters exclude yielded waiting time. After yielding,
+Mnemion rechecks the model and RAM policy before continuing, including an
+intervening eviction or a lower user-selected budget.
+
+The target cannot interrupt model loading, source tokenization or one native
+inference call. A slow chunk or sustained queue pressure can still produce
+`inference_busy`; explicit `on_inference_busy: "lexical"` fallback remains
+available. The [focused checks and real pinned-model comparison](../validation/2026-10-20-inference-fairness.md)
+record measured response time, indexing and process memory, with separate
+native and live acceptance gates.
+
 ## Idle model cleanup in 4.1.1
 
 Published 4.1.1 adds automatic release of local embedding sessions

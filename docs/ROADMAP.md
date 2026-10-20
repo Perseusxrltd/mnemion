@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.42.0**. Roadmap updated: **2026-10-20**.
+Reviewed source distribution: **4.43.0**. Roadmap updated: **2026-10-20**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
 [Release status](RELEASE_STATUS.md) and the [maintenance board](MAINTENANCE_STATUS.md)
@@ -20,14 +20,24 @@ issue review, publication and version-linked closure together.
 
 ## Current delivery checkpoint
 
+- **Prepared source 4.43 shares local inference between indexing and waiting queries.**
+  [Cooperative batches](service/memory-resources.md#search-during-long-local-indexing)
+  retain one native execution, adapt within RAM limits and recheck evicted models.
+  [Seventy focused checks and one offline pinned-BGE comparison](validation/2026-10-20-inference-fairness.md)
+  passed: the concurrent query changed from a two-second admission failure to
+  success in 0.269 seconds while all 512 chunks finished. The 250 ms batch target
+  and cumulative 30-second wait remain bounded controls, not latency guarantees.
+  Native publication and actual installed acceptance remain separate; R04 is partial.
+
 - **Source 4.42 repairs existing folder and conversation reconnection.** Studio retains
   the original filesystem namespace instead of creating a second source and
   suspending the original source. App/agent settings retain the verified identity;
   ambiguous or mismatching catalogs stop before import. [Focused validation](validation/2026-10-20-source-identity-recovery.md)
   passed. The combined [conversation repair](validation/2026-10-20-conversation-identity.md)
   also verifies copied prefixes before retaining their original record identities.
-  Native delivery and live acceptance remain separate. GitHub could not allocate
-  the first candidate's Mac ARM check runner on either attempt; those records remain.
+  The candidate remains unpublished while a Windows installed-workspace gate
+  failure is investigated. Earlier Mac ARM runner-allocation failures remain
+  recorded separately; native delivery and live acceptance are still required.
 
 - **Actual Windows and shared-host 4.41 acceptance passed after review.**
   The [paired acceptance](validation/2026-10-20-441-acceptance.md) retained identities,
@@ -35,7 +45,8 @@ issue review, publication and version-linked closure together.
   complete cleanup and no production-memory writes or cloud-model calls.
   The host used compatible automatic updating; Windows used a guarded agent
   restart. The earlier semantic HTTP 503 remains unexplained under issue 45.
-  Fresh post-upgrade off-host backup verification remains separate and pending.
+  The separate post-upgrade snapshot and ledger passed independent off-host
+  manifest verification at 16:33 UTC; this was not a new restore drill.
 
 - **Actual office access now passes.** [Issue 46 acceptance](validation/2026-10-20-office-access.md)
   verifies genuine source scans and list/fetch/lexical reads with both unchanged

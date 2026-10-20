@@ -39,6 +39,20 @@ let succeeded = false
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 const environment = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('MNEMION_')))
 
+function setupFailure(error) {
+  // The ordinary error/log remains private. Revalidate each diagnostic field
+  // before placing this small classification in the uploaded artifact.
+  if (typeof error !== 'string' || error.length > 512) return undefined
+  const match = /^Error: Missing setup field: (\{[^\n]+\})$/.exec(error)
+  if (!match) return undefined
+  try {
+    const value = JSON.parse(match[1])
+    const selectors = ['input[autocomplete="organization"]', 'input[autocomplete="name"]', '.ws-memory-limit input', '.ws-setup-advanced input[max="65535"]', 'unknown']
+    if (!selectors.includes(value.selector) || ![null, 1, 2, 3].includes(value.step) || !['workspace', 'help', 'other'].includes(value.route)) return undefined
+    return { selector: value.selector, step: value.step, route: value.route }
+  } catch { return undefined }
+}
+
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, { encoding: 'utf8', timeout: 180000, maxBuffer: 1024 * 1024, ...options })
   if (result.error || result.status !== 0) throw new Error(`Installed-app command failed: ${result.error?.message || result.stderr || result.stdout}`)
@@ -243,8 +257,10 @@ try {
   try { state = JSON.parse(readFileSync(smokeFile, 'utf8')) } catch { /* No private contents are copied into the report. */ }
   const shutdown = Object.fromEntries(['localActive', 'localBusy'].filter(key => typeof state?.[key] === 'boolean').map(key => [key, state[key]]))
   const lastStage = typeof state?.stage === 'string' && /^[a-z-]{1,64}$/.test(state.stage) ? state.stage : null
+  const setup = setupFailure(state?.error)
   writeFileSync(evidenceFile, JSON.stringify({ passed: false, platform: process.platform, architecture: process.arch,
     phase, childExitCode: child?.exitCode ?? null, childSignal: child?.signalCode ?? null, lastStage, ...shutdown,
+    ...(setup ? { setup } : {}),
     stage: installationComplete ? 'installed-local-hosting' : 'installation', privateDiagnostics: 'retained only in the disposable runner temporary directory' }, null, 2) + '\n')
   throw error
 } finally {

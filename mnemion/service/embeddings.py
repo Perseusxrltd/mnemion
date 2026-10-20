@@ -13,6 +13,7 @@ import importlib.metadata
 import json
 import math
 import threading
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
@@ -124,6 +125,7 @@ class LocalEmbedder:
         self._load_lock = threading.Lock()
         self._inference_gate = InferenceGate(max_queued=max_queued, wait_seconds=wait_seconds)
         self._memory_budget = None
+        self._document_seconds_per_chunk = None
 
     def prepare(self) -> None:
         with self._inference_gate.acquire():
@@ -242,12 +244,25 @@ class LocalEmbedder:
                 break
         if len(spans) > 512:
             raise ValueError("Document exceeds the 512 chunk indexing limit")
+        del offsets
         chunks = []
-        with self._tokenizer.inference():
-            offset = 0
-            while offset < len(spans):
-                size = self._memory_budget.batch_size(self) if self._memory_budget else 16
-                batch = spans[offset : offset + size]
+        offset = 0
+        while offset < len(spans):
+            if offset:
+                # Keep this operation admitted, but let already waiting work
+                # execute between batches. Never yield with the tokenizer lock.
+                self._inference_gate.checkpoint()
+            # Another profile or a changed RAM budget can release this session
+            # while execution is yielded. Revalidate before touching the model.
+            self._prepare()
+            capacity = self._memory_budget.batch_size(self) if self._memory_budget else 16
+            # Begin with one chunk and target short CPU slices. Measured native
+            # time chooses throughput only within the existing RAM batch cap.
+            cost = self._document_seconds_per_chunk
+            size = min(capacity, max(1, int(0.25 / cost))) if cost else 1
+            batch = spans[offset : offset + size]
+            started = time.monotonic()
+            with self._tokenizer.inference():
                 vectors = self._model.embed(
                     [config["document_prefix"] + text[start:end] for start, end in batch],
                     batch_size=size,
@@ -256,5 +271,7 @@ class LocalEmbedder:
                     values = vector.tolist()
                     vector_literal(values, self.generation.dimensions)
                     chunks.append(EmbeddedChunk(start, end, values))
-                offset += size
+            measured = max(0.000001, time.monotonic() - started) / len(batch)
+            self._document_seconds_per_chunk = max(measured, (cost or measured) * 0.75)
+            offset += len(batch)
         return chunks

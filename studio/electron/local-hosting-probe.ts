@@ -34,12 +34,20 @@ export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Re
     async function until(check, message, timeout = 30000) {
       const deadline = Date.now() + timeout;
       do { const value = await check(); if (value) return value; await pause(100); } while (Date.now() < deadline);
-      throw new Error(message);
+      throw new Error(typeof message === 'function' ? message() : message);
     }
     const button = text => [...document.querySelectorAll('button')].find(node => (node.querySelector('strong')?.textContent === text || node.textContent.trim() === text) && !node.matches(':disabled') && node.getClientRects().length);
     async function click(text) { (await until(() => button(text), 'Missing enabled control: ' + text)).click(); await pause(100); }
     async function input(selector, value) {
-      const field = await until(() => document.querySelector(selector), 'Missing setup field');
+      const field = await until(() => document.querySelector(selector), () => {
+        // Only fixed selectors and classifications leave the private renderer.
+        // Never include input values, page text or an arbitrary route/query.
+        const known = ['input[autocomplete="organization"]', 'input[autocomplete="name"]', '.ws-memory-limit input', '.ws-setup-advanced input[max="65535"]'];
+        const label = document.querySelector('.ws-setup-steps')?.getAttribute('aria-label');
+        const step = [1, 2, 3].find(number => label === 'Setup step ' + number + ' of 3') ?? null;
+        const route = location.hash === '#/workspace' ? 'workspace' : location.hash.startsWith('#/help?') || location.hash === '#/help' ? 'help' : 'other';
+        return 'Missing setup field: ' + JSON.stringify({ selector: known.includes(selector) ? selector : 'unknown', step, route });
+      });
       Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(field, value);
       field.dispatchEvent(new Event('input', { bubbles: true })); await pause(100);
     }
