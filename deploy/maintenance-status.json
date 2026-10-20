@@ -25,7 +25,7 @@
     {
       "number": 46,
       "title": "Deployment access: Codex/Astra cannot see the existing office task and memory spaces",
-      "updated_at": "2026-10-20T13:02:49Z",
+      "updated_at": "2026-10-20T13:38:41Z",
       "url": "https://github.com/Perseusxrltd/mnemion/issues/46",
       "labels": []
     }
@@ -76,23 +76,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39424241142",
       "job_progress": {
         "total": 31,
-        "completed": 29,
-        "succeeded": 29,
+        "completed": 30,
+        "succeeded": 30,
         "active": [
-          {
-            "id": 118644444127,
-            "name": "native / macos-15-intel / x64",
-            "status": "in_progress",
-            "steps": [
-              "Installed app creates, searches and reopens a real local workspace"
-            ]
-          },
           {
             "id": 118644444293,
             "name": "native / windows-11-arm / arm64",
             "status": "in_progress",
             "steps": [
-              "Installed app creates, searches and reopens a real local workspace"
+              "Native Windows installation, authenticated upgrade and relaunch"
             ]
           }
         ]
@@ -140,5 +132,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39427234119"
     }
   ],
-  "observed_at": "2026-10-20T13:30:50+00:00"
+  "observed_at": "2026-10-20T13:39:13+00:00"
 }

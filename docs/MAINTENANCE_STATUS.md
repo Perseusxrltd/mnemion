@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-20T13:30:50+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-20T13:39:13+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.39.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.39.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -12,7 +12,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | --- | --- | --- |
 | [#44](https://github.com/Perseusxrltd/mnemion/issues/44) | Integration acceptance: verify the separate Grok Bot cloud client end to end | 2026-10-20T11:20:12Z |
 | [#45](https://github.com/Perseusxrltd/mnemion/issues/45) | Deployment acceptance: finish guarded host upgrade and expose paused note publishing | 2026-10-20T11:54:56Z |
-| [#46](https://github.com/Perseusxrltd/mnemion/issues/46) | Deployment access: Codex/Astra cannot see the existing office task and memory spaces | 2026-10-20T13:02:49Z |
+| [#46](https://github.com/Perseusxrltd/mnemion/issues/46) | Deployment access: Codex/Astra cannot see the existing office task and memory spaces | 2026-10-20T13:38:41Z |
 
 ## Relevant builds
 
@@ -28,8 +28,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 ## Active jobs
 
-[Run 39424241142](https://github.com/Perseusxrltd/mnemion/actions/runs/39424241142): 29/31 jobs completed; 29 succeeded.
+[Run 39424241142](https://github.com/Perseusxrltd/mnemion/actions/runs/39424241142): 30/31 jobs completed; 30 succeeded.
 
-- native / macos-15-intel / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
-- native / windows-11-arm / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
+- native / windows-11-arm / arm64: in\_progress — Native Windows installation, authenticated upgrade and relaunch.
 
