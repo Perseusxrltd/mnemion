@@ -20,15 +20,16 @@
   ],
   "runs": [
     {
-      "id": 39369114587,
+      "id": 39371203002,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "9ed938930047dc61347d6026aa63b26587d17c7c",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-20T04:39:34Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39369114587"
+      "source_commit": "969e94f105ad9d18f5f6519d807ff843dca10d12",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-20T04:45:11Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39371203002",
+      "failed_jobs": []
     },
     {
       "id": 39364174502,
@@ -80,44 +81,21 @@
       "workflow": "release.yml",
       "branch": "release/4.31.0-r3",
       "source_commit": "9ed938930047dc61347d6026aa63b26587d17c7c",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-20T04:28:05Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39369300320",
-      "failed_jobs": [
-        {
-          "name": "native / windows-2022 / x64",
-          "id": 118454586639,
-          "steps": [
-            "Installed app creates, searches and reopens a real local workspace"
-          ]
-        },
-        {
-          "name": "native / ubuntu-22.04-arm / arm64",
-          "id": 118454586683,
-          "steps": [
-            "Installed Linux app creates, searches and reopens a real local workspace"
-          ]
-        },
-        {
-          "name": "native / macos-15 / arm64",
-          "id": 118454586738,
-          "steps": [
-            "Installed app creates, searches and reopens a real local workspace"
-          ]
-        }
-      ]
+      "status": "completed",
+      "conclusion": "cancelled",
+      "updated_at": "2026-10-20T04:44:40Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39369300320"
     },
     {
-      "id": 39369071060,
+      "id": 39371187491,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "2463accb8d8fed25da1ec824bb757897f5ab0981",
+      "source_commit": "0e0307e72b97c46dc126157e4b93364cddf61d7f",
       "status": "completed",
       "conclusion": "skipped",
-      "updated_at": "2026-10-20T04:20:40Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39369071060"
+      "updated_at": "2026-10-20T04:44:51Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39371187491"
     },
     {
       "id": 39364171858,
@@ -131,5 +109,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39364171858"
     }
   ],
-  "observed_at": "2026-10-20T04:40:05+00:00"
+  "observed_at": "2026-10-20T04:45:16+00:00"
 }
