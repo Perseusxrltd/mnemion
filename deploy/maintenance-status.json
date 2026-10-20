@@ -38,15 +38,27 @@
   ],
   "runs": [
     {
-      "id": 39355263998,
+      "id": 39356338837,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "4f7dd850ab7a081cf0b53deb09de5dd7ac3e6e80",
+      "source_commit": "ee7f72b7a97a0c1cf079391da8d4423185692cd6",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-20T01:46:59Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39355263998",
+      "updated_at": "2026-10-20T01:58:38Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39356338837",
+      "failed_jobs": []
+    },
+    {
+      "id": 39356250297,
+      "attempt": 1,
+      "workflow": "database-cache.yml",
+      "branch": "main",
+      "source_commit": "982d08c0386552bc241b404cfed6155ce0fb10b8",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-20T01:57:56Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39356250297",
       "failed_jobs": []
     },
     {
@@ -92,6 +104,33 @@
       "conclusion": null,
       "updated_at": "2026-10-20T01:45:22Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39353709978",
+      "failed_jobs": [
+        {
+          "name": "native / windows-11-arm / arm64",
+          "id": 118408173382,
+          "steps": [
+            "Installed app creates, searches and reopens a real local workspace"
+          ]
+        },
+        {
+          "name": "native / windows-2022 / x64",
+          "id": 118408173568,
+          "steps": [
+            "Installed app creates, searches and reopens a real local workspace"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 39356398218,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.30.1-r2",
+      "source_commit": "ee7f72b7a97a0c1cf079391da8d4423185692cd6",
+      "status": "queued",
+      "conclusion": null,
+      "updated_at": "2026-10-20T01:58:51Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39356398218",
       "failed_jobs": []
     },
     {
@@ -117,5 +156,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39352196704"
     }
   ],
-  "observed_at": "2026-10-20T01:47:17+00:00"
+  "observed_at": "2026-10-20T01:58:57+00:00"
 }
