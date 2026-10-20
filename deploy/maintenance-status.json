@@ -9,15 +9,6 @@
   },
   "issues": [
     {
-      "number": 3,
-      "title": "No built-in remote access option; operators must bring their own reverse proxy / tunnel",
-      "updated_at": "2026-10-11T03:04:30Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/issues/3",
-      "labels": [
-        "enhancement"
-      ]
-    },
-    {
       "number": 18,
       "title": "OAuth 2.1 MCP auth so ChatGPT custom connectors can connect (spec for #4)",
       "updated_at": "2026-10-10T20:58:20Z",
@@ -29,15 +20,16 @@
   ],
   "runs": [
     {
-      "id": 39356685322,
+      "id": 39361396479,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "435b6a4e1c35397fee247ae924bc2f65e2ceb2a3",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-20T02:25:15Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39356685322"
+      "source_commit": "39ae81270bdfee45182d1739691fe1e2d0440678",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-20T02:54:29Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39361396479",
+      "failed_jobs": []
     },
     {
       "id": 39356250297,
@@ -106,6 +98,18 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39356398218"
     },
     {
+      "id": 39360472861,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.30.2",
+      "source_commit": "51f4fe35f0fdaeb3b1c2557b59895d0e75a7af57",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-20T02:48:50Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39360472861",
+      "failed_jobs": []
+    },
+    {
       "id": 39359835527,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
@@ -128,5 +132,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39352196704"
     }
   ],
-  "observed_at": "2026-10-20T02:36:56+00:00"
+  "observed_at": "2026-10-20T02:55:02+00:00"
 }
