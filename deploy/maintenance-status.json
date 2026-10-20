@@ -18,7 +18,7 @@
     {
       "number": 45,
       "title": "Deployment acceptance: finish guarded host upgrade and expose paused note publishing",
-      "updated_at": "2026-10-20T13:39:27Z",
+      "updated_at": "2026-10-20T16:10:48Z",
       "url": "https://github.com/Perseusxrltd/mnemion/issues/45",
       "labels": []
     }
@@ -34,13 +34,13 @@
       "conclusion": "failure",
       "updated_at": "2026-10-20T15:45:41Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39443910430",
+      "failed_jobs": [],
       "job_progress": {
         "total": 12,
         "completed": 12,
         "succeeded": 11,
         "active": []
-      },
-      "failed_jobs": []
+      }
     },
     {
       "id": 39441745467,
@@ -98,5 +98,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39441738346"
     }
   ],
-  "observed_at": "2026-10-20T15:46:21+00:00"
+  "observed_at": "2026-10-20T16:11:26+00:00"
 }
