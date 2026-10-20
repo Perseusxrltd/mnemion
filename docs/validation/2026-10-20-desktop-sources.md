@@ -73,6 +73,17 @@ so adding a new public type does not require another manual Docker allowlist
 edit. The frozen first attempt was cancelled and superseded by a corrected
 immutable attempt; no failed candidate was published.
 
+The next attempt passed both container builds and exposed a test-suite boundary:
+the source helper's RSS test belongs to the full engine environment, while the
+small desktop bridge intentionally does not include process monitoring. The
+helper cases now run in the service suite, with actual packaged source execution
+still covered by the installed-app probe. The small bridge's dependencies remain
+unchanged. The second frozen attempt was superseded before publication.
+The corrected lightweight environment passed 200 checks, with 11 intentional
+platform/dependency skips. Release start now verifies that locked environment
+before reserving native runners, and reuses a successful receipt only while its
+runtime and relevant source/test inputs match.
+
 Other providers retain their existing adapters. This does not complete graphical
 Git/Drive/Slack/rclone enrollment, provider OAuth or organization ACL translation,
 virtual cloud-file hydration, full chat-history access, source-key transfer

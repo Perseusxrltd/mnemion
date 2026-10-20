@@ -27,6 +27,12 @@ gates; no paid service, model call or new signing credential is required.
    and Python/platform inputs. Changed inputs rerun the group; skipped database
    checks cannot pass. PostgreSQL or the development `pgserver` fixture must be
    available. These early checks do not replace the complete release gates.
+   From 4.31, `python -m deploy.client_preflight` runs the small desktop bridge's
+   tests in its own locked Python 3.13 environment. This catches engine-only
+   tests or dependencies accidentally entering the lightweight bridge. Its
+   receipt is reused only for identical relevant files and runtime. Native
+   platform checks remain separate; install Python 3.13 before release start.
+
    From 4.24, `python -m deploy.binary_preflight` also checks binary-only locked
    dependency resolution for the current Python interpreter on all five service
    targets (the two Windows desktop architectures share the x64 service). It
