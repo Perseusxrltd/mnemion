@@ -137,6 +137,14 @@ def _integration_git(root: Path, *arguments: str, check=True):
     )
 
 
+def check_source(root: Path) -> None:
+    """Refuse cheap source failures before pushing main or reserving runners."""
+    # The locked development environment supplies the pinned formatter/linter.
+    # Report the problem without changing reviewed or committed source.
+    for check in (["format", "--check", "."], ["check", "."]):
+        subprocess.run([sys.executable, "-m", "ruff", *check], cwd=root, check=True)
+
+
 def integrate(root: Path, repo: str) -> dict:
     """Push reviewed commits normally; automatically rebase only generated metadata races."""
     if repo != "Perseusxrltd/mnemion":
@@ -157,6 +165,7 @@ def integrate(root: Path, repo: str) -> dict:
         f"git@github.com:{repo}.git",
     }:
         raise ValueError("Origin does not match the authorized repository")
+    check_source(root)
     generated = {
         "deploy/published-release.json",
         "deploy/release-status.json",
@@ -416,11 +425,7 @@ def main():
     elif args.command == "integrate":
         print(json.dumps(integrate(root, args.repo)))
     elif args.command == "start":
-        # Catch inexpensive source failures before reserving an immutable
-        # release branch or consuming a native runner. Maintainers use the
-        # locked development environment, which includes the pinned Ruff.
-        for check in (["format", "--check", "."], ["check", "."]):
-            subprocess.run([sys.executable, "-m", "ruff", *check], cwd=root, check=True)
+        check_source(root)
         from deploy.binary_preflight import check as check_binaries
         from deploy.migration_preflight import check as check_migrations
 

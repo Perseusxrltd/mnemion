@@ -3,6 +3,7 @@
 import copy
 import json
 from pathlib import Path
+import subprocess
 from types import SimpleNamespace
 
 import pytest
@@ -350,3 +351,28 @@ def test_integration_never_pushes_unreviewed_source_or_rebases_a_frozen_release(
     with pytest.raises(ValueError):
         subject.integrate(tmp_path, "Perseusxrltd/mnemion")
     assert not any(args[0] in {"rebase", "push", "merge"} for args in calls)
+
+
+@pytest.mark.parametrize("contents", ["value=1\n", "from pathlib import Path\n"])
+def test_main_integration_checks_actual_source_before_contacting_remote(
+    tmp_path, monkeypatch, contents
+):
+    source = tmp_path / "example.py"
+    source.write_text(contents)
+    calls = []
+
+    def git(root, *args, check=True):
+        calls.append(args)
+        responses = {
+            ("status", "--porcelain"): "",
+            ("symbolic-ref", "--short", "HEAD"): "codex/reviewed-batch",
+            ("remote", "get-url", "origin"): "https://github.com/Perseusxrltd/mnemion.git",
+        }
+        assert args in responses, "Invalid source must stop before any remote Git operation"
+        return SimpleNamespace(stdout=responses[args], returncode=0)
+
+    monkeypatch.setattr(subject, "_integration_git", git)
+    with pytest.raises(subprocess.CalledProcessError):
+        subject.integrate(tmp_path, "Perseusxrltd/mnemion")
+    assert source.read_text() == contents
+    assert not any(args[0] in {"fetch", "rebase", "push", "merge"} for args in calls)
