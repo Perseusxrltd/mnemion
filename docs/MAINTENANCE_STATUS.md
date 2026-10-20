@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-20T12:27:48+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-20T13:01:03+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.37.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.37.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -18,22 +18,19 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 39419696237](https://github.com/Perseusxrltd/mnemion/actions/runs/39419696237) |
+| ci\.yml | main | success | [Run 39424001891](https://github.com/Perseusxrltd/mnemion/actions/runs/39424001891) |
 | public-updates\.yml | v4\.37\.0 | success | [Run 39403004762](https://github.com/Perseusxrltd/mnemion/actions/runs/39403004762) |
 | release\.yml | release/4\.37\.0 | success | [Run 39397479332](https://github.com/Perseusxrltd/mnemion/actions/runs/39397479332) |
 | release\.yml | release/4\.38\.0 | cancelled | [Run 39416800968](https://github.com/Perseusxrltd/mnemion/actions/runs/39416800968) |
 | release\.yml | release/4\.39\.0 | in\_progress | [Run 39420061069](https://github.com/Perseusxrltd/mnemion/actions/runs/39420061069) |
+| release\.yml | release/4\.40\.0 | pending | [Run 39424241142](https://github.com/Perseusxrltd/mnemion/actions/runs/39424241142) |
 | verify-artifacts\.yml | main | skipped | [Run 39420041429](https://github.com/Perseusxrltd/mnemion/actions/runs/39420041429) |
 | website-release\.yml | main | success | [Run 39419893401](https://github.com/Perseusxrltd/mnemion/actions/runs/39419893401) |
 | website-release\.yml | v4\.37\.0 | success | [Run 39403000169](https://github.com/Perseusxrltd/mnemion/actions/runs/39403000169) |
 
 ## Active jobs
 
-[Run 39420061069](https://github.com/Perseusxrltd/mnemion/actions/runs/39420061069): 26/31 jobs completed; 26 succeeded.
+[Run 39420061069](https://github.com/Perseusxrltd/mnemion/actions/runs/39420061069): 31/32 jobs completed; 31 succeeded.
 
-- checks / service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- native / windows-2022 / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
-- native / macos-15-intel / x64: in\_progress — Package the native desktop with one bounded upstream-download retry.
-- native / windows-11-arm / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
-- native / macos-15 / arm64: in\_progress — Post Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38.
+- assemble: in\_progress — Prepare or refresh the reviewable release draft.
 
