@@ -1,6 +1,6 @@
 # Open a server backup in the desktop app
 
-From **4.30.0**, Mnemion Studio can recover the database in an encrypted
+From **4.30.1**, Mnemion Studio can recover the database in an encrypted
 `.mnemion-host` server package on Windows, macOS or Linux. The installed app
 provides the database tools. The source server and the agent that created it
 can be offline.

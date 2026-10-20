@@ -14,6 +14,7 @@ from mnemion import backup_encryption as encryption, local_backup, local_recover
 from mnemion.archives import canonical_json, file_hash
 from mnemion.local_database import LocalDatabase, prepare_credentials
 from mnemion.local_workspace import configuration
+from mnemion.private_output import private_output
 from mnemion.service import recovery
 from service_tests.test_local_recovery import encrypted_recovery, native_runtime  # noqa: F401
 
@@ -44,7 +45,9 @@ def inspect(root, values):
     )
 
 
-def test_server_inspection_verifies_nested_inventory_and_excludes_host_secrets(host_copy):
+def test_server_inspection_verifies_nested_inventory_and_excludes_host_secrets(
+    host_copy, encrypted_recovery  # noqa: F811
+):
     root, values, _, _, _, report = host_copy
     view = inspect(root, values)
     assert view["kind"] == "host" and view["archive_verified"] and view["authenticated"]
@@ -56,8 +59,14 @@ def test_server_inspection_verifies_nested_inventory_and_excludes_host_secrets(h
         "private_files": 1,
         "host_configuration_restored": False,
     }
-    assert view["tenant_ids"] == [values["primary_tenant_id"]]
-    assert view["memory_count"] == 2
+    _, snapshot_values, _, _, _ = encrypted_recovery
+    snapshot = inspect(root, snapshot_values)
+    # The suite's database can contain many organizations. A complete host
+    # package must preserve the whole reviewed inventory, not just this tenant.
+    assert values["primary_tenant_id"] in view["tenant_ids"]
+    for field in ("tenant_ids", "memory_count", "snapshot_at", "backup_id"):
+        assert view[field] == snapshot[field]
+    assert view["memory_count"] >= 2
     assert len(view["embedded_ledger_sha256"]) == 64
     assert all(
         secret not in json.dumps(view)
@@ -176,9 +185,13 @@ def test_external_ledger_cannot_roll_back_the_access_state_already_included(host
     assert recovery._time(payload["snapshot_at"]) < recovery._time(view["ledger_at"])
     payload.pop("sha256")
     payload["sha256"] = hashlib.sha256(canonical_json(payload)).hexdigest()
-    local_state.write(older, payload)
+    # Ledgers can exceed the small local-settings record limit. Write the
+    # altered fixture separately without replacing the original private bytes.
+    changed = tmp_path / "modified-old-ledger.json"
+    with private_output(changed) as stream:
+        stream.write(canonical_json(payload))
     encrypted = tmp_path / "old-ledger.enc"
-    record = encryption.encrypt_file(older, encrypted, values["ledger_key"], kind="ledger")
+    record = encryption.encrypt_file(changed, encrypted, values["ledger_key"], kind="ledger")
     request = local_recovery.RecoveryRequest.model_validate_json(
         json.dumps(
             {**values, "ledger_source": str(encrypted), "ledger_sha256": record.encrypted_sha256}

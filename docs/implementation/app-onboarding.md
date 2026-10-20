@@ -58,7 +58,7 @@ acting identity without carrying credentials or agent context across boundaries.
 
 ## Current gaps and implementation order
 
-Source 4.30 adds [desktop database recovery from a server package](../service/desktop-host-recovery.md).
+Source 4.30.1 adds [desktop database recovery from a server package](../service/desktop-host-recovery.md).
 People and local agents can authenticate the complete package, review an included
 or newer ledger, create a separate native database and select the verified copy.
 Original organization/memory identities and current denials survive; fresh access

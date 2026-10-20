@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.30.0**. Roadmap updated: **2026-10-20**.
+Reviewed source distribution: **4.30.1**. Roadmap updated: **2026-10-20**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
 [Release status](RELEASE_STATUS.md) and the [maintenance board](MAINTENANCE_STATUS.md)
@@ -14,17 +14,17 @@ of the released app. A hotfix does not finish a broader requirement.
 
 ## Current delivery checkpoint
 
-- **4.30 source adds server-backup recovery in the desktop app.** The
+- **4.30.1 source adds server-backup recovery in the desktop app.** The
   [app and local-agent workflow](service/desktop-host-recovery.md) authenticates
   the full package, reviews included or newer access state and creates a separate
   native database with preserved identities and fresh access. Full host/provider
   configuration remains a separate workflow. Strict scope coverage is unchanged.
 
-- **4.29 source adds resumable large-journal recovery.** The [app, SDKs and
+- **4.29 is published with resumable large-journal recovery.** The [app, SDKs and
   private agent controls](service/journal-recovery.md) accept complete journals
   up to 2 GiB, one million records and 100,000 identities. Uploads survive
   interruption, complete review precedes approval, and bounded restoration
-  preserves denials and local edits. Release status records publication gates.
+  preserves denials and local edits. All six public installed-update checks passed.
 
 - **4.28 is published for all six targets.** [Private desktop controls](service/desktop-operator.md#select-a-team-workspace-from-a-local-agent)
   let a trusted local agent verify/select a remote account, sign in as a person,
@@ -39,7 +39,10 @@ of the released app. A hotfix does not finish a broader requirement.
   reported paths. Source 4.29 extends journal capacity; broader host provisioning remains.
 - **The real shared host now uses managed updates.** [Controlled adoption and migration](validation/2026-10-20-shared-workspace-adoption.md)
   retained agent keys, roles, notes, public OAuth and both Git sources. The actual
-  Windows app and shared server then updated automatically to 4.28. The app now
+  Windows app and shared server then updated automatically to 4.28. A subsequent
+  [guarded server upgrade and normal Windows update](validation/2026-10-20-shared-workspace-429.md)
+  brought both to 4.29, with unchanged access and a passing automatic lab cycle.
+  The app now
   uses the independent human administrator's protected login. Browser sign-in/
   sign-out and independently confirmed encrypted off-host backup also passed.
   Its [isolated Windows lab](validation/2026-10-20-windows-shared-lab.md) passed a
@@ -112,7 +115,7 @@ continues while an external account or publisher prerequisite is unavailable.
 | Priority | Next outcome | Acceptance and requirements |
 | --- | --- | --- |
 | 1 | Remaining live connections | Actual supported ChatGPT registration, consent and tool list for #4/#18; a free tunnel account, external access and lifecycle recovery for #3. Preserve existing HTTPS, local and scoped-key paths. C04–C07, A05/A08. |
-| 2 | Continuous operation and recovery from another device | Guided organization hosting, registered recovery hosts, delegated operators, key custody, off-host delivery visibility and complete app-based replacement-host setup. Source 4.30 supplies desktop database import; provider/OS configuration remains. Expand beyond the bounded 4.29 journal recovery where needed. Verify host loss and current denials without the original agent; distinguish mirrors, snapshots and replicas. A01/A06/A07/A09/A11–A13, U01/U02/U04/U06/U11. |
+| 2 | Continuous operation and recovery from another device | Guided organization hosting, registered recovery hosts, delegated operators, key custody, off-host delivery visibility and complete app-based replacement-host setup. Source 4.30.1 supplies desktop database import; provider/OS configuration remains. Expand beyond the bounded 4.29 journal recovery where needed. Verify host loss and current denials without the original agent; distinguish mirrors, snapshots and replicas. A01/A06/A07/A09/A11–A13, U01/U02/U04/U06/U11. |
 | 3 | Source and agent onboarding | Guided consent, credentials, permission mapping, exclusions, reconnect and capture coverage. Validate actual Grokbot, Dot/OpenAI, Anthropic, Hermes and OpenClaw paths before claiming native plugins. Expand adapters with provider contracts and real acceptance. C01–C09, F08. |
 | 4 | Govern several workspaces | Explicit personal/employer/client contexts, independent memberships, queued-work destinations and policies. Reviewed cross-workspace search/transfer without company access to personal data. Bookmarks alone are incomplete. F02/F08, A03/A04/A12, C09. |
 | 5 | Capacity and model choices | Modest hardware, native OS versions, RAM peaks, bandwidth, ingestion queues, concurrency, model quality and recovery-time measurements. Fleet resource views and useful budgets, preserving CPU-only/remote clients. F05–F07, R01–R04, V01/V02. |

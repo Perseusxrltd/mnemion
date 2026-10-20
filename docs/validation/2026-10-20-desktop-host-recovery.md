@@ -3,6 +3,14 @@
 Validated on 20 October 2026 for source 4.30.0. Publication and installed-platform
 acceptance remain separate gates in the [automatic release status](../RELEASE_STATUS.md).
 
+The unpublished 4.30.0 candidate exposed two fixture assumptions in the complete
+service suite: its shared database contains many organizations, and its access
+ledger exceeds the small local-settings record limit. Source **4.30.1** compares
+the host wrapper against the full ordinary-snapshot inventory and writes the
+modified private ledger fixture separately. The six focused host-import cases,
+including both real native database restores, passed again in 29.85 seconds.
+This correction changes tests, not the runtime's validation or recovery policy.
+
 ## Implemented behavior
 
 The existing desktop recovery flow now recognizes authenticated server packages.

@@ -84,7 +84,7 @@ engine** so it uses the Windows account and named-pipe implementation.
 | `backup.status`, `backup.key` | Read schedules/receipts or generate a new key into a private result file. Saved keys are never returned. |
 | `backup.configure`, `backup.run`, `backup.cancel` | Configure protected schedules, capture a snapshot/ledger, or cancel an active recovery operation. |
 | `backup.inventory`, `backup.prune` | From 4.7.1, review tracked files and apply the saved retention policy with explicit plan confirmation. The database may be stopped. |
-| `backup.inspect`, `backup.restore` | Authenticate selected encrypted files and restore into a new managed private copy. From 4.30, [server-package database imports](desktop-host-recovery.md#local-agent-equivalent) also support an explicitly reviewed included or separate ledger. |
+| `backup.inspect`, `backup.restore` | Authenticate selected encrypted files and restore into a new managed private copy. From 4.30.1, [server-package database imports](desktop-host-recovery.md#local-agent-equivalent) also support an explicitly reviewed included or separate ledger. |
 | `recovery.list`, `recovery.use` | Discover verified copies, select one, or return to the original workspace. |
 
 Native engine validators retain their bounds and requirements. See
