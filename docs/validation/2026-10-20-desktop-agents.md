@@ -46,8 +46,9 @@ The existing six-target installed-app exercise now invokes the generated
 launcher, verifies the packaged private runtime and its version, discovers MCP
 tools with a dedicated reader identity, inspects the app page and removes the
 fixture without changing unrelated agent settings. It runs on Windows,
-macOS and Linux, x64 and ARM64. Its result must pass before publishing that
-target; this report does not pre-announce a passing release.
+macOS and Linux, x64 and ARM64. The corrected candidate passed all six native
+targets; [publication and actual Windows/shared-host automatic updates](2026-10-20-432-live-updates.md)
+subsequently passed, with retained access and a 41-request isolated lab cycle.
 
 The installed Grok Build CLI's help and native TOML contract informed its
 profile. No real Codex/Grok settings, approval policy, sandbox settings or Argil
@@ -56,4 +57,4 @@ harness were edited. Hosted OAuth/ChatGPT remains the separate open issue #18.
 The first native candidate was withheld for a Windows ARM backup-status write
 failure. The corrected source includes [bounded atomic file-lock handling](2026-10-20-windows-state-locks.md),
 with actual Windows reproduction, recovered transient locks and preserved data
-under lasting denial. Corrected native acceptance remains a publication gate.
+under lasting denial. The corrected native acceptance passed before publication.

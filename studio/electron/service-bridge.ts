@@ -487,6 +487,11 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     requireLocalSteady()
     return desktopLocalStatus(await localWorkspace().checkRemote(input))
   })
+  ipcMain.handle('local:models', async (event, input: unknown) => {
+    trusted(event)
+    requireLocalSteady()
+    return desktopLocalStatus(await localWorkspace().changeModels(input))
+  })
   ipcMain.handle('local:company', async (event, input: unknown) => {
     trusted(event)
     requireLocalSteady()
@@ -706,7 +711,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
         selecting = true
         if (window && !window.webContents.isDestroyed()) window.webContents.send('local:selection-changed', 'changing')
       }
-      if (['local.company', 'local.vault', 'local.journal'].includes(request.action) && localPreferences().selected) {
+      if (['local.company', 'local.vault', 'local.journal', 'local.models'].includes(request.action) && localPreferences().selected) {
         const window = getWindow()
         if (window && !window.webContents.isDestroyed() && !await window.webContents.executeJavaScript('window.mnemion?.updateSafety?.() === true')) throw new Error('Save or discard edits and finish pending requests in the app before restarting its workspace.')
         signal.throwIfAborted()
@@ -745,6 +750,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
         case 'local.port': return desktopLocalStatus(await localWorkspace().changePort(input))
         case 'local.remote': return desktopLocalStatus(await localWorkspace().changeRemote(input))
         case 'local.remote-check': return desktopLocalStatus(await localWorkspace().checkRemote(input))
+        case 'local.models': return desktopLocalStatus(await localWorkspace().changeModels(input))
         case 'local.company': return desktopLocalStatus(await localWorkspace().changeCompany(input))
         case 'local.company-discover': return localWorkspace().discoverCompany(input)
         case 'local.vault': return desktopLocalStatus(await localWorkspace().changeVault(input))

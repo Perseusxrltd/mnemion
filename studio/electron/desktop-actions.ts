@@ -31,6 +31,7 @@ export const desktopActions = {
   'local.port': { workspace: true, mutation: true, fields: ['workspace_id', 'expected_port', 'port'] },
   'local.remote': { workspace: true, mutation: true, fields: ['workspace_id', 'expected_revision', 'mode', 'public_url', 'personal_sign_in', 'ngrok_authtoken'] },
   'local.remote-check': { workspace: true, mutation: true, fields: ['workspace_id', 'expected_revision'] },
+  'local.models': { workspace: true, mutation: true, fields: ['workspace_id', 'expected_revision', 'action', 'provider', 'kind', 'profile_id', 'api_key', 'clear_api_key', 'ca_pem'] },
   'local.company': { workspace: true, mutation: true, fields: ['workspace_id', 'expected_revision', 'expected_remote_revision', 'action', 'provider', 'provider_id', 'client_secret', 'clear_client_secret', 'ca_pem'] },
   'local.company-discover': { workspace: true, mutation: false, fields: ['workspace_id', 'expected_revision', 'expected_remote_revision', 'issuer', 'ca_pem'] },
   'local.vault': { workspace: true, mutation: true, fields: ['workspace_id', 'expected_revision', 'action', 'enabled', 'mcp_enabled', 'recovery_key', 'key_saved'] },

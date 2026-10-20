@@ -69,6 +69,11 @@ approval and current per-credential read grants. The generic MCP surface refuses
 these sensitive transport operations; it does not put file passwords or exports
 into chat context.
 
+Source **4.33.0** adds `local.models` for [private desktop model setup](desktop-models.md).
+Enrollment, key changes, removal and damaged-file repair retain the app's
+current-state checks and controlled host restart. They make no model calls and
+add no public host-configuration authority.
+
 Every call uses the application's own credential and the existing tenant,
 space and role checks. Catalog visibility describes capabilities; it does not
 grant permission to use them. Revoking a key or a space grant takes effect on

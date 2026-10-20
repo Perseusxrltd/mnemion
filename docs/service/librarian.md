@@ -1,5 +1,8 @@
 # The configurable memory librarian
 
+For a workspace hosted by Studio, source 4.33 adds [model-provider setup in the app](desktop-models.md).
+Saved profiles and keys remain separate from each space's processing approval.
+
 The shared librarian lets a space use an operator-approved local or cloud model
 to propose organization and maintenance. Open **Librarian** in Studio, select
 an approved model as a space administrator, and enable processing. Reviewers can

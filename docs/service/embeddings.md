@@ -1,5 +1,8 @@
 # Embedding models, reindexing and resources
 
+For a workspace hosted by Studio, source 4.33 adds [model-provider setup in the app](desktop-models.md).
+Saved profiles and keys remain separate from each space's processing approval.
+
 Mnemion keeps an independent embedding generation for each space. Space
 administrators can build a candidate while the active index serves users,
 preview its search, compare evaluations, and activate it only after every

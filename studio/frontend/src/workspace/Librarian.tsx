@@ -38,7 +38,7 @@ function ModelSettings({ settings, choices, busy, save }: {
           <option value="">Choose a model</option>
           {choices.map(choice => <option key={choice.id} value={choice.id}>{choice.label}</option>)}
         </select></label>
-      {!choices.length && <p className="ws-notice">No librarian model is configured. Your server operator can add a local Ollama or OpenAI-compatible endpoint using the <Link to="/workspace/help?doc=docs/service/librarian.md" className="ws-link">librarian guide</Link>.</p>}
+      {!choices.length && <p className="ws-notice">No librarian model is configured. {window.mnemion?.localModels && <><Link to="/workspace/setup" className="ws-link">Configure models hosted on this computer</Link>, or </>}ask your server operator to add an approved endpoint. See the <Link to="/workspace/help?doc=docs/service/librarian.md" className="ws-link">librarian guide</Link>.</p>}
       {selected && <div className="librarian-provider"><strong>{selected.model}</strong><p>{selected.endpoint_origin}</p>
         <p>{selected.context_budget.toLocaleString()} {selected.token_count_unit === "utf8_bytes" ? "UTF-8 bytes of context budget" : "context tokens"} · Up to {selected.max_output_tokens.toLocaleString()} output tokens · {selected.timeout_seconds}s request limit</p>
         <code>{selected.fingerprint}</code></div>}

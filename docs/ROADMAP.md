@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.32.0**. Roadmap updated: **2026-10-20**.
+Reviewed source distribution: **4.33.0**. Roadmap updated: **2026-10-20**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
 [Release status](RELEASE_STATUS.md) and the [maintenance board](MAINTENANCE_STATUS.md)
@@ -14,7 +14,14 @@ of the released app. A hotfix does not finish a broader requirement.
 
 ## Current delivery checkpoint
 
-- **4.32.0 source adds guided local agent installation.**
+- **4.33.0 source adds model-provider setup through the app.**
+  [Local hosting controls](service/desktop-models.md) enroll embedding and librarian
+  endpoints, private keys, CA trust and capacity settings. Saved profiles remain
+  separate from per-space processing approval; equivalent local-agent controls
+  and damaged-file recovery are included. Native release acceptance is pending.
+  The shared inference queue now respects the strictest approved endpoint limit.
+
+- **4.32.0 is published with guided local agent installation.**
   [Agent setup](service/desktop-agents.md) supports reviewed named connections,
   dedicated application keys, preserved client settings and offline removal.
   The private runtime keeps agents independent of a running Studio window and
@@ -22,6 +29,8 @@ of the released app. A hotfix does not finish a broader requirement.
   vendor plugins and hosted provider acceptance remain open.
   The corrected candidate also [handles temporary Windows status-file locks](validation/2026-10-20-windows-state-locks.md),
   after the first attempt's installed backup check found an atomic-write failure.
+  [All six native gates and actual Windows/shared-host updates passed](validation/2026-10-20-432-live-updates.md),
+  preserving access and completing the isolated lab without production writes.
 
 - **4.31.0 is published with folder and conversation setup through the app.**
   [Desktop sources](service/desktop-sources.md) have folder selection, scoped

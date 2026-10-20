@@ -4,6 +4,7 @@ import type { LocalOptions, LocalStatus, MemoryWrite, PortChange, RemoteChange, 
 import type { SignInCredentials, InvitationCredentials, InvitationPreview } from '@mnemion/client'
 import type { CompanyConfiguration, CompanyCredentials } from '../../../shared/company-sign-in'
 import type { VaultChange, VaultKey, VaultRequest, JournalChange } from '../../../shared/local-workspace'
+import type { ModelsChange } from '../../../shared/local-models'
 import type { CompanyChange, CompanyDiscoveryRequest, CompanyDiscoveryResult } from '../../../shared/local-workspace'
 import type { DesktopSourceView, SourceConfigure, SourceControl } from '../../../shared/desktop-sources'
 import type { AgentSetup, AgentSetupStatus, AgentPreview, AgentInstall, AgentRemove, AgentSetupResult } from '../../../shared/desktop-agents'
@@ -51,6 +52,7 @@ declare global {
       localPort?: (input: PortChange) => Promise<LocalStatus>
       localRemote?: (input: RemoteChange) => Promise<LocalStatus>
       localRemoteCheck?: (input: RemoteCheck) => Promise<LocalStatus>
+      localModels?: (input: ModelsChange) => Promise<LocalStatus>
       localCompany?: (input: CompanyChange) => Promise<LocalStatus>
       localCompanyDiscover?: (input: CompanyDiscoveryRequest) => Promise<CompanyDiscoveryResult>
       localVault?: (input: VaultChange) => Promise<LocalStatus>

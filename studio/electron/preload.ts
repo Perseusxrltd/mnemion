@@ -67,6 +67,7 @@ contextBridge.exposeInMainWorld('mnemion', {
   localPort: (input: unknown) => transfer('local:port', input),
   localRemote: (input: unknown) => transfer('local:remote', input),
   localRemoteCheck: (input: unknown) => transfer('local:remote-check', input),
+  localModels: (input: unknown) => transfer('local:models', input),
   localCompany: (input: unknown) => transfer('local:company', input),
   localCompanyDiscover: (input: unknown) => transfer('local:company-discover', input),
   localVault: (input: unknown) => transfer('local:vault', input),

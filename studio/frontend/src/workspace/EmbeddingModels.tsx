@@ -99,7 +99,7 @@ export default function EmbeddingModels({ client, space, administrator }: {
           {preview.hits.map(hit => <article className="model-preview-hit" key={hit.memory_id}><Link className="ws-link" to={`/workspace/memory/${hit.memory_id}`}>{hit.evidence.title}</Link><p>{hit.text}</p></article>)}</div>}
         <Link className="ws-link" to={`/workspace/insights?view=evaluations&generation=${candidate.generation_id}`}><FlaskConical size={16} />Evaluate this candidate on a versioned test set</Link>
       </section>}
-      <p className="ws-helper">Operators add local CPU or compatible Ollama/OpenAI endpoint profiles on the server, then register them. Credentials stay there. <Link className="ws-link" to="/workspace/help?doc=docs%2Fservice%2Fembeddings.md">Model configuration & resource guide</Link></p>
+      <p className="ws-helper">Your host operator approves model profiles and keeps their credentials on that host. {window.mnemion?.localModels && <Link className="ws-link" to="/workspace/setup">Configure providers hosted on this computer</Link>} <Link className="ws-link" to="/workspace/help?doc=docs%2Fservice%2Fembeddings.md">Model configuration & resource guide</Link></p>
     </>}
   </div>;
 }

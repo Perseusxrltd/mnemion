@@ -27,7 +27,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_valida
 
 from . import local_state as state
 from .local_database import LocalDatabase, available_port, prepare_credentials
-from . import local_company, local_journal, local_memory, local_remote, local_vault
+from . import local_company, local_journal, local_memory, local_models, local_remote, local_vault
 from .service.memory_budget import MemoryBudget, MemoryOptions, sample_memory, working_target
 from .version import __version__
 
@@ -145,6 +145,7 @@ def inspect(root: Path) -> dict:
             company_access=local_company.inspection(root, settings["workspace_id"]),
             vault_access=local_vault.inspection(root, settings["workspace_id"]),
             journal_access=local_journal.inspection(root, settings["workspace_id"]),
+            model_access=local_models.inspection(root, settings["workspace_id"]),
         )
         if (root / "readiness.json").exists():
             result["last_verification"] = state.read(root / "readiness.json")
@@ -262,6 +263,7 @@ def registry_for(root: Path, settings: dict):
         name: LocalEmbedder(cache, threads=settings["threads"], generation=generation)
         for name, generation in LOCAL_GENERATIONS.items()
     }
+    profiles.update(local_models.embedding_providers(root, settings["workspace_id"], cache))
     return ModelRegistry(profiles[settings["embedding_profile"]], profiles)
 
 
@@ -433,6 +435,7 @@ async def _serve(
         app = create_app(
             database=api,
             registry=registry,
+            librarian_registry=local_models.librarian_registry(root, settings["workspace_id"]),
             mcp_enabled=True,
             studio_enabled=True,
             hosted_oauth_settings=remote.oauth,
@@ -669,6 +672,7 @@ def arguments(parser: argparse.ArgumentParser) -> None:
             "remote-check",
             "company",
             "company-discover",
+            "models",
             "vault",
             "vault-key",
             "journal",
@@ -727,6 +731,20 @@ def dispatch(args) -> int:
                 raise state.LocalSetupError(
                     "invalid_journal_options",
                     "Check the HTTPS repository URL without credentials, its branch and folder, and the current settings revision.",
+                ) from None
+            emit({"event": "status", **inspect(root)})
+            return 0
+        if args.action == "models":
+            line = sys.stdin.buffer.readline(32769)
+            try:
+                if len(line) > 32768:
+                    raise ValueError("Model settings exceed their request limit")
+                change = local_models.ModelsChange.model_validate_json(line)
+                local_models.configure(root, change)
+            except (ValueError, ValidationError):
+                raise state.LocalSetupError(
+                    "invalid_model_options",
+                    "Check the model endpoint without URL credentials, identity, limits and current settings revision. Use private API key fields and UTF-8 budgets.",
                 ) from None
             emit({"event": "status", **inspect(root)})
             return 0

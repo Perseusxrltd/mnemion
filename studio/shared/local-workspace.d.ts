@@ -1,3 +1,4 @@
+import type { ModelsAccess } from './local-models.js'
 export type MemoryOptions = { mode: 'auto'; limit_mib: null } | { mode: 'manual'; limit_mib: number }
 export type MemoryChange = MemoryOptions & { expected_revision?: string }
 export type MemoryRepair = MemoryOptions & { repair_token: string }
@@ -78,6 +79,7 @@ export type LocalInfo = {
   company_access?: CompanyAccess;
   vault_access?: VaultAccess;
   journal_access?: JournalAccess;
+  model_access?: ModelsAccess;
 }
 export type LocalStatus = {
   available: boolean; state: 'new' | 'starting' | 'running' | 'stopping' | 'stopped' | 'error';

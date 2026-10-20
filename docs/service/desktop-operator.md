@@ -83,6 +83,7 @@ engine** so it uses the Windows account and named-pipe implementation.
 | `local.remote`, `local.remote-check` | Configure or check the existing supervised remote-access options. |
 | `local.company-discover`, `local.company` | From 4.11.0, review an OIDC provider or save/remove/repair the local host's company configuration, with current company and HTTPS revisions. |
 | `local.vault`, `local.vault-key` | From 4.12.0, configure/restore the local encrypted vault or explicitly retrieve its host key into a private result file. Requires the current workspace and vault revision. |
+| `local.models` | From 4.33.0, enroll/edit/remove embedding or librarian profiles and repair damaged private settings; confirms the current local workspace/revision and drains/restarts a running host. Keys stay on the host; per-space cloud approval remains separate. See [model setup](desktop-models.md). |
 | `local.journal` | From 4.18.0, register/change/remove a local host's Git destination or repair its damaged registrations, with the current workspace and journal revision. From 4.20, SSH accepts `destination.ssh.identity_file` and `known_hosts_file` as private OS-account references. Space publication still needs separate administrator approval. |
 | `local.preferences` | Set `start_with_app` for the selected workspace; OS login startup remains a separate app preference. |
 | `backup.status`, `backup.key` | Read schedules/receipts or generate a new key into a private result file. Saved keys are never returned. |

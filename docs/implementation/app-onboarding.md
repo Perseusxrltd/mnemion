@@ -12,6 +12,11 @@ workspace creation. Each release requires its complete installed-platform gates.
 Use the [official product page](https://www.perseusxr.com/mnemion) for published
 installers; source availability alone is not publication.
 
+Source 4.33 adds [desktop model-provider enrollment](../service/desktop-models.md)
+for an app-owned host, including private credentials, restart, repair and matching
+local-agent controls. External model installation and provider accounts remain
+separate, and cloud processing still requires per-space approval.
+
 ## Entry paths
 
 1. **On this computer:** create a private workspace with a managed local database,
@@ -105,9 +110,9 @@ complete installation or host setup.
    architectures, including explicitly disclosed Windows ARM compatibility.
    Combined installer and public update acceptance passed. Source-runner provisioning
    remains a separate app workflow; a bundled database does not finish it.
-3. Host-only settings currently require environment files or CLI commands.
-   Add authenticated operator workflows for model/provider approval, source
-   runners, server lifecycle, update adoption, diagnostics and recovery.
+3. Source 4.33 adds app-owned model/provider approval to existing native host
+   controls. Complete remote-host provisioning, remaining provider enrollment,
+   source-runner adoption and replacement-host recovery still need guided flows.
 4. Source 4.4.0 adds [guided local-host remote access](../service/remote-access.md),
    managed ngrok supervision, existing HTTPS proxy checks, public invitation
    addresses and the 4.3.0 hosted OAuth flow. The

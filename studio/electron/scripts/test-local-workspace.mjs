@@ -10,6 +10,7 @@ import { LocalWorkspace, portOptions, localDiagnostic, remoteOptions, remoteSnap
 import { companyOptions, companySnapshot, companyDiscoveryResult } from '../dist/local-company-protocol.js'
 import { vaultOptions, vaultSnapshot, vaultKeyId, vaultKeyResult } from '../dist/local-vault-protocol.js'
 import { journalOptions, journalSnapshot } from '../dist/local-journal-protocol.js'
+import { modelsOptions, modelsSnapshot } from '../dist/local-models-protocol.js'
 
 const { version } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
 const root = '/private/test-workspace'
@@ -928,4 +929,37 @@ test('a cancelled update resumes after a slow stop, unless the user explicitly s
     for (const command of f.commands) command.finish()
     await f.host.close()
   }
+})
+
+test('model setup drains the host, verifies its saved profile and never returns the private key', async t => {
+  const f = fixture(t)
+  const engine = await running(f)
+  const provider = { kind: 'embedding', profile: { id: 'embedding', label: 'Fixture provider', protocol: 'openai',
+    endpoint: 'http://127.0.0.1:1234/v1/embeddings', model: 'fixture', revision: 'fixture-v1', dimensions: 2,
+    tokenizer: { kind: 'utf8' } } }
+  const input = { workspace_id: addressChange.workspace_id, expected_revision: 'not-configured', action: 'save',
+    provider, api_key: 'private-model-key-fixture' }
+  const access = { revision: 'not-configured', repairable: true, state: 'not_configured', message: 'Fixture model status', providers: [] }
+  const before = { ...addressInfo(17400), model_access: access }
+  assert.deepEqual(modelsOptions(input), input)
+  for (const patch of [{ endpoint: 'https://person:private@provider.invalid/v1/embeddings' }, { api_key_env: 'UNREVIEWED_KEY' }, { dimensions: 0 }]) {
+    assert.throws(() => modelsOptions({ ...input, provider: { ...provider, profile: { ...provider.profile, ...patch } } }))
+  }
+  const change = f.host.changeModels(input)
+  f.last().reply(before); await settle()
+  assert.equal(f.host.status.state, 'stopping')
+  assert.equal(f.commands.filter(command => command.action === 'models').length, 0)
+  engine.finish(); await settle()
+  assert.equal(f.last().action, 'models')
+  const saved = { ...access, state: 'configured', revision: savedCompanyInfo().company_access.revision,
+    providers: [{ ...provider, profile: { ...provider.profile,
+      tokenizer: { kind: 'utf8', repository: null, revision: null, sha256: null, file_env: null } },
+      has_api_key: true, has_custom_ca: false, network_egress: false, fingerprint: 'a'.repeat(64) }] }
+  assert.throws(() => modelsSnapshot({ ...saved, providers: [{ ...saved.providers[0], api_key: input.api_key }] }))
+  f.last().reply({ ...before, model_access: saved })
+  const result = await change
+  assert.equal(result.state, 'starting')
+  assert.equal(result.info.model_access.providers[0].has_api_key, true)
+  assert.ok(!JSON.stringify(result).includes(input.api_key))
+  assert.equal(f.commands.filter(command => command.action === 'run').length, 2)
 })

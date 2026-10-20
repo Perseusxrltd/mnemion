@@ -5,6 +5,8 @@ import { backupResult } from './local-backup-protocol.js'
 import { companyOptions, companyDiscoveryOptions, companyDiscoveryResult, companySnapshot } from './local-company-protocol.js'
 import { vaultKeyId, vaultKeyResult, vaultOptions, vaultRequest, vaultSnapshot } from './local-vault-protocol.js'
 import { journalOptions, journalSnapshot } from './local-journal-protocol.js'
+import { modelsOptions, modelsSaved, modelsSnapshot } from './local-models-protocol.js'
+import type { ModelsChange } from '../shared/local-models.js'
 import type { JournalChange } from '../shared/local-workspace.js'
 import type { VaultChange, VaultKey } from '../shared/local-workspace.js'
 import type { CompanyChange, CompanyDiscoveryResult } from '../shared/local-workspace.js'
@@ -294,7 +296,7 @@ export class LocalWorkspace {
     try { return await this.operation } finally { this.operation = undefined }
   }
 
-  private readInfo(action: 'status' | 'port' | 'remote' | 'remote-check' | 'company' | 'vault' | 'journal', input?: PortChange | RemoteChange | RemoteCheck | CompanyChange | VaultChange | JournalChange): Promise<LocalInfo> {
+  private readInfo(action: 'status' | 'port' | 'remote' | 'remote-check' | 'company' | 'vault' | 'journal' | 'models', input?: PortChange | RemoteChange | RemoteCheck | CompanyChange | VaultChange | JournalChange | ModelsChange): Promise<LocalInfo> {
     return new Promise((resolve, reject) => {
       const child = this.control(action)
       child.stdin.end(input === undefined ? undefined : JSON.stringify(input) + '\n')
@@ -324,6 +326,7 @@ export class LocalWorkspace {
           const company_access = value.company_access === undefined ? undefined : companySnapshot(value.company_access)
           const vault_access = value.vault_access === undefined ? undefined : vaultSnapshot(value.vault_access)
           const journal_access = value.journal_access === undefined ? undefined : journalSnapshot(value.journal_access)
+          const model_access = value.model_access === undefined ? undefined : modelsSnapshot(value.model_access)
           const address = input as PortChange
           if (action === 'port' && (!configured || !settings || settings.workspace_id !== input!.workspace_id.toLowerCase() ||
               !Number.isInteger(settings.port) || settings.port < 1024 || settings.port > 65535 || settings.port === settings.database_port ||
@@ -359,10 +362,11 @@ export class LocalWorkspace {
                 (change.action === 'remove' && destination) || (change.action === 'reset' && journal_access.destinations.length) ||
                 (change.action === 'save' && (!destination || Object.entries(change.destination).some(([key, value]) => destination[key as keyof typeof destination] !== value)))) throw new Error('The saved journal destination could not be confirmed. Refresh before retrying.')
           }
+          if (action === 'models' && (!configured || settings?.workspace_id !== input!.workspace_id || !modelsSaved(model_access, input as ModelsChange))) throw new Error('The saved model settings could not be confirmed. Refresh before retrying.')
           if (memory_recovery && (!['memory_policy_missing', 'memory_policy_damaged', 'memory_policy_inaccessible'].includes(memory_recovery.code) ||
               typeof memory_recovery.message !== 'string' || memory_recovery.message.length > 1000 ||
               (memory_recovery.repair_token !== null && !/^[a-f0-9]{64}$/.test(memory_recovery.repair_token)))) throw new Error('Invalid RAM recovery status')
-          const info = { configured, data_directory, engine_version, resources, settings, last_verification, memory_policy, memory_recovery, memory, remote_access, company_access, vault_access, journal_access }
+          const info = { configured, data_directory, engine_version, resources, settings, last_verification, memory_policy, memory_recovery, memory, remote_access, company_access, vault_access, journal_access, model_access }
           this.info = info
           this.changed(this.status)
           resolve(info)
@@ -644,9 +648,18 @@ export class LocalWorkspace {
     try { return await this.configurationChange } finally { this.configurationChange = undefined }
   }
 
-  private async saveHostConfiguration(action: 'remote' | 'company' | 'vault' | 'journal', change: RemoteChange | CompanyChange | VaultChange | JournalChange): Promise<LocalStatus> {
+  async changeModels(input: unknown): Promise<LocalStatus> {
+    this.assertOpen()
+    if (this.operation) { await this.operation; this.assertOpen() }
+    if (!this.status.available || this.busy) throw new Error('Wait for the current local operation before changing model settings.')
+    const change = modelsOptions(input)
+    this.configurationChange = this.saveHostConfiguration('models', change)
+    try { return await this.configurationChange } finally { this.configurationChange = undefined }
+  }
+
+  private async saveHostConfiguration(action: 'remote' | 'company' | 'vault' | 'journal' | 'models', change: RemoteChange | CompanyChange | VaultChange | JournalChange | ModelsChange): Promise<LocalStatus> {
     const before = await this.readInfo('status')
-    const section = ({ remote: 'remote_access', company: 'company_access', vault: 'vault_access', journal: 'journal_access' } as const)[action]
+    const section = ({ remote: 'remote_access', company: 'company_access', vault: 'vault_access', journal: 'journal_access', models: 'model_access' } as const)[action]
     if (before.settings?.workspace_id !== change.workspace_id || before[section]?.revision !== change.expected_revision ||
         (action === 'company' && before.remote_access?.revision !== (change as CompanyChange).expected_remote_revision)) {
       throw new Error('Host settings changed. Refresh before saving them again.')
@@ -657,7 +670,7 @@ export class LocalWorkspace {
     if (resume && !await this.stopChild()) throw new Error('The local workspace is still stopping. Refresh before retrying.')
     try {
       const updated = await this.readInfo(action, change)
-      this.set({ state: 'stopped', stage: undefined, errorCode: undefined, message: action === 'remote' ? 'Remote settings saved.' : action === 'company' ? 'Company settings saved.' : action === 'journal' ? 'Journal destination saved.' : 'Vault settings saved.' })
+      this.set({ state: 'stopped', stage: undefined, errorCode: undefined, message: action === 'remote' ? 'Remote settings saved.' : action === 'company' ? 'Company settings saved.' : action === 'journal' ? 'Journal destination saved.' : action === 'models' ? 'Model settings saved.' : 'Vault settings saved.' })
       if (resume && !this.stopping && !this.closing && !this.disposed) return this.launch(updated)
       return this.status
     } catch (error) {

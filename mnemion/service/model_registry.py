@@ -38,6 +38,18 @@ class ModelRegistry:
         self._by_generation.setdefault(default.generation.id, default)
         # Switching models must not multiply simultaneous tensor allocations.
         gate = InferenceGate.from_environment()
+        # One shared queue must honor every approved endpoint's bound. Replacing
+        # each provider's gate must not silently widen its requested capacity.
+        endpoint_limits = [
+            model.profile.max_queued
+            for model in self._by_generation.values()
+            if isinstance(model, HttpEmbedder)
+        ]
+        if endpoint_limits:
+            gate = InferenceGate(
+                max_queued=min(gate.max_queued, *endpoint_limits),
+                wait_seconds=gate.wait_seconds,
+            )
         self.inference_gate = gate
         self.memory_budget = None
         self.idle_seconds = idle_seconds

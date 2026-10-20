@@ -37,12 +37,16 @@ class HttpEmbedder:
         *,
         offline: bool = False,
         transport: httpx.BaseTransport | None = None,
+        api_key: str | None = None,
+        tls: ssl.SSLContext | None = None,
     ):
         self.profile = profile
         self.generation = profile.generation
         self._tokenizer = EmbeddingTokenizer(profile.tokenizer, Path(cache_dir), offline=offline)
         self._inference_gate = InferenceGate(max_queued=profile.max_queued)
         self._transport = transport
+        self._api_key = api_key
+        self._tls = tls
         self._client = None
         self._client_lock = threading.Lock()
         self._stats_lock = threading.Lock()
@@ -77,15 +81,19 @@ class HttpEmbedder:
         with self._client_lock:
             if self._client is None:
                 profile, headers = self.profile, {}
-                if profile.api_key_env:
-                    key = os.environ.get(profile.api_key_env)
+                if profile.api_key_env or self._api_key is not None:
+                    key = (
+                        self._api_key
+                        if self._api_key is not None
+                        else os.environ.get(profile.api_key_env)
+                    )
                     if not key or any(ord(c) < 33 or ord(c) > 126 for c in key):
                         raise ProviderUnavailable()
                     headers[profile.api_key_header] = (
                         f"Bearer {key}" if profile.api_key_header == "Authorization" else key
                     )
-                verification: ssl.SSLContext | bool = True
-                if profile.ca_bundle_env:
+                verification: ssl.SSLContext | bool = self._tls or True
+                if profile.ca_bundle_env and self._tls is None:
                     path = os.environ.get(profile.ca_bundle_env)
                     if not path:
                         raise ProviderUnavailable()

@@ -86,7 +86,16 @@ def validate_grounding(output: LibrarianOutput, records: list[dict], mode: str):
 
 
 class LibrarianProvider:
-    def __init__(self, profile: LibrarianProfile, *, transport=None, cache_dir=None, offline=False):
+    def __init__(
+        self,
+        profile: LibrarianProfile,
+        *,
+        transport=None,
+        cache_dir=None,
+        offline=False,
+        api_key: str | None = None,
+        tls: ssl.SSLContext | None = None,
+    ):
         self.profile = profile
         self.tokenizer = EmbeddingTokenizer(
             profile.tokenizer,
@@ -97,6 +106,8 @@ class LibrarianProvider:
             offline=offline,
         )
         self._transport = transport
+        self._api_key = api_key
+        self._tls = tls
         self._closed = threading.Event()
         self.gate = InferenceGate(max_queued=0)
 
@@ -160,15 +171,15 @@ class LibrarianProvider:
         headers = {}
         if self._closed.is_set():
             raise LibrarianProviderError()
-        if p.api_key_env:
-            value = os.environ.get(p.api_key_env)
+        if p.api_key_env or self._api_key is not None:
+            value = self._api_key if self._api_key is not None else os.environ.get(p.api_key_env)
             if not value or any(ord(c) < 33 or ord(c) > 126 for c in value):
                 raise LibrarianProviderError("credentials_unavailable")
             headers[p.api_key_header] = (
                 "Bearer " + value if p.api_key_header == "Authorization" else value
             )
-        verification = True
-        if p.ca_bundle_env:
+        verification = self._tls or True
+        if p.ca_bundle_env and self._tls is None:
             path = os.environ.get(p.ca_bundle_env)
             if not path:
                 raise LibrarianProviderError("credentials_unavailable")
