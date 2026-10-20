@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-20T09:33:01+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-20T09:44:33+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.34.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.34.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -22,13 +22,13 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | release\.yml | release/4\.34\.0 | success | [Run 39388255080](https://github.com/Perseusxrltd/mnemion/actions/runs/39388255080) |
 | release\.yml | release/4\.35\.0 | cancelled | [Run 39392435604](https://github.com/Perseusxrltd/mnemion/actions/runs/39392435604) |
 | release\.yml | release/4\.36\.0 | cancelled | [Run 39394175777](https://github.com/Perseusxrltd/mnemion/actions/runs/39394175777) |
-| release\.yml | release/4\.37\.0 | in\_progress | [Run 39397479332](https://github.com/Perseusxrltd/mnemion/actions/runs/39397479332) |
-| verify-artifacts\.yml | main | skipped | [Run 39396659373](https://github.com/Perseusxrltd/mnemion/actions/runs/39396659373) |
+| release\.yml | release/4\.37\.0 | success | [Run 39397479332](https://github.com/Perseusxrltd/mnemion/actions/runs/39397479332) |
+| verify-artifacts\.yml | main | in\_progress | [Run 39402826454](https://github.com/Perseusxrltd/mnemion/actions/runs/39402826454) |
 | website-release\.yml | v4\.34\.0 | success | [Run 39393535317](https://github.com/Perseusxrltd/mnemion/actions/runs/39393535317) |
 
 ## Active jobs
 
-[Run 39397479332](https://github.com/Perseusxrltd/mnemion/actions/runs/39397479332): 30/31 jobs completed; 30 succeeded.
+[Run 39402826454](https://github.com/Perseusxrltd/mnemion/actions/runs/39402826454): 0/1 jobs completed; 0 succeeded.
 
-- native / windows-11-arm / arm64: in\_progress — Native Windows installation, authenticated upgrade and relaunch.
+- verify: in\_progress — Verify every uploaded byte, production signature and complete feed.
 
