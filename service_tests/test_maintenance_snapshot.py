@@ -54,11 +54,14 @@ def test_run_window_discards_foreign_and_superseded_evidence():
     ]
 
 
-def test_new_build_failure_is_retained_when_it_started_before_an_older_release_published():
+@pytest.mark.parametrize("workflow", ["release.yml", "database-cache.yml"])
+def test_new_build_failure_is_retained_when_it_started_before_an_older_release_published(
+    workflow,
+):
     release = {"published_at": "2026-10-14T12:26:00Z", "target_commitish": "a" * 40}
     row = {
         "id": 5,
-        "path": ".github/workflows/release.yml",
+        "path": ".github/workflows/" + workflow,
         "head_repository": {"full_name": subject.REPOSITORY},
         "head_branch": "release/4.2.5",
         "head_sha": "b" * 40,
@@ -68,6 +71,8 @@ def test_new_build_failure_is_retained_when_it_started_before_an_older_release_p
         "updated_at": "2026-10-14T12:45:00Z",
     }
     assert [item["id"] for item in subject.run_rows([row], release)] == [5]
+    if workflow == "database-cache.yml":
+        assert workflow not in subject.RELEASE_WORKFLOWS
 
 
 def test_active_runs_surface_failed_jobs_and_only_completed_attempts_reuse_job_evidence(

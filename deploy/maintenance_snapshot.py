@@ -12,10 +12,11 @@ import time
 
 from .published_release import REPOSITORY
 from .release_automation import gh, semver
-from .release_status import WORKFLOWS
+from .release_status import WORKFLOWS as RELEASE_WORKFLOWS
 
 LIMIT = 100
 ISSUE_LIMIT = 1000
+WORKFLOWS = {*RELEASE_WORKFLOWS, "database-cache.yml"}
 
 
 def object_from_gh(*arguments):

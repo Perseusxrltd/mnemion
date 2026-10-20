@@ -57,6 +57,8 @@ permissions, backup and crash checks before saving. Compiler-image and input
 fingerprints remain exact; missing metadata or a miss still requires compilation.
 The warmer has no signing credentials and publishes no release. It can also be
 dispatched manually after a compiler-image change, without rebuilding the app.
+Its completion refreshes the maintenance board, which includes warm-up failures
+without treating this optional cache as a product publication gate.
 
 The public-upgrade workflow explicitly dispatches status reconciliation after
 its platform jobs, including failed runs. Reconciliation waits for the

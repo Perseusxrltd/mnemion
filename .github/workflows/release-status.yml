@@ -8,7 +8,7 @@ on:
   release:
     types: [published, edited]
   workflow_run:
-    workflows: [Product checks, Prepare signed release, Verify uploaded release artifacts, Public desktop update rehearsal, Synchronize public release metadata]
+    workflows: [Product checks, Prepare signed release, Verify uploaded release artifacts, Public desktop update rehearsal, Synchronize public release metadata, Warm native database caches]
     types: [completed]
   schedule:
     - cron: '53 */6 * * *'
