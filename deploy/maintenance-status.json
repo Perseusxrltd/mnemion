@@ -7,28 +7,18 @@
     "published_at": "2026-10-20T09:45:19Z",
     "url": "https://github.com/Perseusxrltd/mnemion/releases/tag/v4.37.0"
   },
-  "issues": [
-    {
-      "number": 18,
-      "title": "OAuth 2.1 MCP auth so ChatGPT custom connectors can connect (spec for #4)",
-      "updated_at": "2026-10-10T20:58:20Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/issues/18",
-      "labels": [
-        "enhancement"
-      ]
-    }
-  ],
+  "issues": [],
   "runs": [
     {
-      "id": 39397246797,
+      "id": 39410929977,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "7eee48c7c294c542828ce180fe5d7a7398700411",
+      "source_commit": "75a72f717ba8d258169213a4f967612a04f4b598",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-20T09:19:02Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39397246797"
+      "updated_at": "2026-10-20T10:52:56Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39410929977"
     },
     {
       "id": 39403004762,
@@ -75,5 +65,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39403000169"
     }
   ],
-  "observed_at": "2026-10-20T09:59:22+00:00"
+  "observed_at": "2026-10-20T10:53:26+00:00"
 }
