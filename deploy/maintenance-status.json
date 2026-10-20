@@ -11,7 +11,7 @@
     {
       "number": 44,
       "title": "Integration acceptance: verify the separate Grok Bot cloud client end to end",
-      "updated_at": "2026-10-20T11:05:32Z",
+      "updated_at": "2026-10-20T11:20:12Z",
       "url": "https://github.com/Perseusxrltd/mnemion/issues/44",
       "labels": []
     },
@@ -20,6 +20,13 @@
       "title": "Deployment acceptance: finish guarded host upgrade and expose paused note publishing",
       "updated_at": "2026-10-20T11:07:14Z",
       "url": "https://github.com/Perseusxrltd/mnemion/issues/45",
+      "labels": []
+    },
+    {
+      "number": 46,
+      "title": "Deployment access: Codex/Astra cannot see the existing office task and memory spaces",
+      "updated_at": "2026-10-20T11:19:39Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/issues/46",
       "labels": []
     }
   ],
@@ -80,5 +87,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39403000169"
     }
   ],
-  "observed_at": "2026-10-20T11:07:46+00:00"
+  "observed_at": "2026-10-20T11:20:14+00:00"
 }
