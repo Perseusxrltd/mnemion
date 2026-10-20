@@ -20,15 +20,15 @@
   ],
   "runs": [
     {
-      "id": 39393856803,
+      "id": 39397246797,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "3b78fd8549ae21474caf219c0a696a2af5f9ca7b",
+      "source_commit": "7eee48c7c294c542828ce180fe5d7a7398700411",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-20T08:51:28Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39393856803"
+      "updated_at": "2026-10-20T09:19:02Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39397246797"
     },
     {
       "id": 39393538181,
@@ -75,6 +75,73 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39394175777"
     },
     {
+      "id": 39397479332,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.37.0",
+      "source_commit": "7eee48c7c294c542828ce180fe5d7a7398700411",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-20T09:06:22Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39397479332",
+      "job_progress": {
+        "total": 31,
+        "completed": 25,
+        "succeeded": 25,
+        "active": [
+          {
+            "id": 118543859594,
+            "name": "checks / service (3.12)",
+            "status": "in_progress",
+            "steps": [
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+            ]
+          },
+          {
+            "id": 118545845648,
+            "name": "native / windows-2022 / x64",
+            "status": "in_progress",
+            "steps": [
+              "Packaged window, sandboxed bridge, and local client"
+            ]
+          },
+          {
+            "id": 118545845699,
+            "name": "native / macos-15 / arm64",
+            "status": "in_progress",
+            "steps": [
+              "Packaged Mac update, restart guards and relaunch"
+            ]
+          },
+          {
+            "id": 118545845718,
+            "name": "native / windows-11-arm / arm64",
+            "status": "in_progress",
+            "steps": [
+              "Installed app creates, searches and reopens a real local workspace"
+            ]
+          },
+          {
+            "id": 118545845726,
+            "name": "native / ubuntu-22.04 / x64",
+            "status": "in_progress",
+            "steps": [
+              "Installed Linux app creates, searches and reopens a real local workspace"
+            ]
+          },
+          {
+            "id": 118545845932,
+            "name": "native / macos-15-intel / x64",
+            "status": "in_progress",
+            "steps": [
+              "Installed app creates, searches and reopens a real local workspace"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": []
+    },
+    {
       "id": 39396659373,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
@@ -97,5 +164,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39393535317"
     }
   ],
-  "observed_at": "2026-10-20T08:53:53+00:00"
+  "observed_at": "2026-10-20T09:19:51+00:00"
 }
