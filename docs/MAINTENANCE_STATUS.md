@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-20T02:03:02+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-20T02:03:45+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.29.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.29.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -17,12 +17,12 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | queued | [Run 39356685322](https://github.com/Perseusxrltd/mnemion/actions/runs/39356685322) |
+| ci\.yml | main | in\_progress | [Run 39356685322](https://github.com/Perseusxrltd/mnemion/actions/runs/39356685322) |
 | database-cache\.yml | main | in\_progress | [Run 39356250297](https://github.com/Perseusxrltd/mnemion/actions/runs/39356250297) |
 | public-updates\.yml | v4\.29\.0 | success | [Run 39352199551](https://github.com/Perseusxrltd/mnemion/actions/runs/39352199551) |
 | release\.yml | release/4\.29\.0 | success | [Run 39347302345](https://github.com/Perseusxrltd/mnemion/actions/runs/39347302345) |
 | release\.yml | release/4\.30\.0 | cancelled | [Run 39352016357](https://github.com/Perseusxrltd/mnemion/actions/runs/39352016357) |
 | release\.yml | release/4\.30\.1 | cancelled | [Run 39353709978](https://github.com/Perseusxrltd/mnemion/actions/runs/39353709978) |
-| release\.yml | release/4\.30\.1-r2 | queued | [Run 39356398218](https://github.com/Perseusxrltd/mnemion/actions/runs/39356398218) |
+| release\.yml | release/4\.30\.1-r2 | in\_progress | [Run 39356398218](https://github.com/Perseusxrltd/mnemion/actions/runs/39356398218) |
 | verify-artifacts\.yml | main | skipped | [Run 39356685463](https://github.com/Perseusxrltd/mnemion/actions/runs/39356685463) |
 | website-release\.yml | v4\.29\.0 | success | [Run 39352196704](https://github.com/Perseusxrltd/mnemion/actions/runs/39352196704) |
