@@ -147,6 +147,15 @@ test('an existing source cannot silently switch to a different folder or workspa
   }
 })
 
+test('an existing default conversation identity cannot silently change', async t => {
+  const f = await fixture(t), source = { ...definition(), provider: 'conversations' }
+  await f.add(source)
+  await assert.rejects(f.manager.configure({ expected_revision: (await f.manager.status()).revision,
+    source: { ...source, scope_id: 'different-conversation' } }), /folder identity changed/)
+  assert.equal(f.state.stores, 1)
+  assert.equal((await f.manager.status()).sources[0].scope_id, undefined)
+})
+
 for (const provider of ['slack', 'gdrive']) test('cloud credentials remain separate and protected across restart and scan: ' + provider, async t => {
   const f = await fixture(t), originalCall = f.options.call, privateCalls = []
   f.options.call = async (...args) => {

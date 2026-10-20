@@ -73,8 +73,31 @@ and resolve the connection rather than guessing a different identity.
 
 This does not wake a host, transfer another runner's credentials or restore
 missing files. Provider access and mapped readers are revalidated through the
-normal scan. Actual offline-source recovery remains tracked separately in
-[issue 46](https://github.com/Perseusxrltd/mnemion/issues/46).
+normal scan. The independent [office access acceptance](../validation/2026-10-20-office-access.md)
+records actual provider revalidation and unchanged-client reads separately.
+
+## Reconnect conversation capture
+
+Use the existing connection and choose the original folder or its copied folder
+with the same relative JSONL paths. Stop the previous runner before starting its
+replacement. Sources created in Studio retain their default identity. For a
+source first connected through a CLI adapter, open **Reconnect an existing
+conversation source** and enter its original `provider.scope_id`.
+
+Studio verifies the selected namespace against the existing file catalog before
+importing. An unknown namespace, unmatched folder or incomplete copy stops before changing
+the existing memories. First enrollment requires every original file still
+present in the recorded catalog; files already recorded as absent do not prevent
+reconnection. The verified private selection survives restarts, while
+normal removal of files—including the final file—continues to work.
+
+New capture checkpoints include a hash of their completed byte prefix. A copied
+file can retain its original record identities after that prefix is verified,
+even when its filesystem identity changes on another device. Older checkpoints
+without this proof need a scan on the original file with this version before
+making the replacement copy. If that original is unavailable, retain the
+existing memories and source configuration; an unverified copy is refused.
+See [validation](../validation/2026-10-20-conversation-identity.md).
 
 ## Capture and resources
 
@@ -150,10 +173,13 @@ through private stdin. The desktop catalog describes envelope/byte limits.
 
 For `filesystem`, the optional `scope_id` is the folder namespace without its
 `filesystem:` prefix. Leave it absent to discover the one existing namespace.
+For `conversations`, use the original adapter's `scope_id` for a custom identity;
+hashed conversation IDs do not reveal that original value. Omit it for the normal
+Studio default. The same verification and persistence apply to app and agent calls.
 An existing custom namespace is retained in private settings and returned by
 `source.status`; the ordinary `selected-source` default remains implicit.
 When a recorded identity already exists, a supplied value must match it, and an
-established saved identity cannot silently change. Other providers do not accept
+established saved identity cannot silently change. Cloud providers do not accept
 this field.
 Read current status before configuring a replacement; it is not a host-takeover
 control or a substitute for access to the actual folder.

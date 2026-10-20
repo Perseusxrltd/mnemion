@@ -54,8 +54,9 @@ identifies its fields as recovered from captured original output, while the
 corrected result is stored separately. The original diagnostic JSON is not
 claimed to be an immutable original artifact.
 
-[Issue 46](https://github.com/Perseusxrltd/mnemion/issues/46) remains open until the
-actual providers and mapped access revalidate. Reconnecting an available folder
+[Issue 46](https://github.com/Perseusxrltd/mnemion/issues/46) was open at the original
+source-test checkpoint. Its later [independent access acceptance](2026-10-20-office-access.md)
+verified genuine provider scans and mapped reads, and the issue is now closed. Reconnecting an available folder
 does not recover an offline host's full source data, transfer credentials or
 provide arbitrary host/runner takeover. The upstream local-note publisher's
 security pause remains in force. See the [operator guide](../service/desktop-sources.md#reconnect-an-existing-folder)

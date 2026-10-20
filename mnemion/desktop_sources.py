@@ -98,8 +98,10 @@ class Source(Command):
     def address_and_path(self):
         if self.provider != "conversations" and self.capture_mode is not None:
             raise ValueError("Capture mode applies only to live conversation sources")
-        if self.provider != "filesystem" and self.scope_id is not None:
-            raise ValueError("A folder identity applies only to filesystem sources")
+        if self.provider not in {"filesystem", "conversations"} and self.scope_id is not None:
+            raise ValueError(
+                "A folder identity applies only to filesystem and conversation sources"
+            )
         # Share the established HTTPS/loopback contract, including path prefixes.
         config = self.connector(Path("unused-capture-state"))
         self.endpoint = config.service_url
@@ -298,6 +300,12 @@ def verify(source: Source, root: Path, client: Client, private_roots=()) -> Sour
         # Ordinary desktop sources keep their previous saved-file shape. Only
         # a non-default namespace needs the new field on a replacement device.
         source.scope_id = None if namespace == "selected-source" else namespace
+    elif source.provider == "conversations":
+        from .desktop_source_identity import verify_conversation_identity
+
+        verify_conversation_identity(source, root, client, load(root).sources)
+        if source.scope_id == "selected-source":
+            source.scope_id = None
     return source
 
 

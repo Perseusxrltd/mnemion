@@ -109,7 +109,7 @@ export class DesktopSources {
       const verified = await this.options.call({ operation: 'verify', source, credential,
         ...(cloud ? { provider_credential: provider } : {}) }, signal) as DesktopSource
       signal?.throwIfAborted()
-      if (before?.scope_id !== undefined && before.scope_id !== (verified.scope_id ?? 'selected-source')) throw new Error('The existing folder identity changed. Retain its original connection settings before scanning.')
+      if (before && (before.scope_id !== undefined || before.provider === 'conversations') && (before.scope_id ?? 'selected-source') !== (verified.scope_id ?? 'selected-source')) throw new Error('The existing folder identity changed. Retain its original connection settings before scanning.')
       const sealed_key = (await this.options.cipher.encrypt(credential)).toString('base64')
       const sealed_provider = cloud ? (await this.options.cipher.encrypt(provider!)).toString('base64') : undefined
       signal?.throwIfAborted()

@@ -61,6 +61,11 @@ def checkpoint_identity(value):
             or not 0 <= state["captured"] <= state["observed"] <= 1_000_000_000_000
         ):
             return None
+        if state.get("captured_sha256") is not None and (
+            not isinstance(state["captured_sha256"], str)
+            or not re.fullmatch(r"[a-f0-9]{64}", state["captured_sha256"])
+        ):
+            return None
         return state
     except (ValueError, RecursionError):
         return None
@@ -357,6 +362,13 @@ class ConversationSnapshot:
                     remote = self.remote_identity
                     if remote["file"] == file_mark(before) and before["size"] >= remote["captured"]:
                         self.generation = remote["generation"]
+                    elif before["size"] >= remote["captured"] and remote.get("captured_sha256"):
+                        restored = yield from self._hash_prefix(stream, remote["captured"])
+                        if restored.hexdigest() == remote["captured_sha256"]:
+                            self.generation = remote["generation"]
+                            change = "restored"
+                        else:
+                            change = "rotation"
                     else:
                         change = "rotation" if remote["file"] != file_mark(before) else "truncation"
                 self.report["change"] = change
@@ -466,6 +478,7 @@ class ConversationSnapshot:
                     "sealed_end": block_start,
                     "sealed_lines": block_line,
                     "prefix_sha256": prefix_digest.hexdigest(),
+                    "complete_sha256": digest.hexdigest(),
                     "context": block_context,
                 }
                 # If bytes arrived after the frozen read boundary, force the next
@@ -490,7 +503,9 @@ class ConversationSnapshot:
             pending_bytes=max(0, stat["size"] - complete_end),
             inventory="complete_record_prefix",
         )
-        # Only bounded counters and a nonce travel in the scope checkpoint.
+        # Only bounded identity/counters and a capture digest travel in the
+        # scope checkpoint, never the source body. A replacement device can
+        # verify that its copied prefix retains the original evidence.
         # The final empty page stores them after verification; finish commits
         # them atomically with the completed inventory for app/agent monitoring.
         self.checkpoint = "jsonl:v1:" + json.dumps(
@@ -504,6 +519,11 @@ class ConversationSnapshot:
                 "reused": self.report["segments_reused"],
                 "rendered": self.report["segments_rendered"],
                 "capture_mode": self.config.capture_mode,
+                **(
+                    {"captured_sha256": self.ready["complete_sha256"]}
+                    if self.ready.get("complete_sha256")
+                    else {}
+                ),
             },
             separators=(",", ":"),
         )

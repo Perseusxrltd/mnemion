@@ -20,12 +20,20 @@ issue review, publication and version-linked closure together.
 
 ## Current delivery checkpoint
 
-- **Source 4.42 repairs existing folder reconnection.** Studio retains
+- **Source 4.42 repairs existing folder and conversation reconnection.** Studio retains
   the original filesystem namespace instead of creating a second source and
   suspending the original source. App/agent settings retain the verified identity;
   ambiguous or mismatching catalogs stop before import. [Focused validation](validation/2026-10-20-source-identity-recovery.md)
-  passed, and version/contract preparation is complete. Native delivery and live acceptance remain separate;
-  issue 46 still requires actual provider revalidation and available source data.
+  passed. The combined [conversation repair](validation/2026-10-20-conversation-identity.md)
+  also verifies copied prefixes before retaining their original record identities.
+  Native delivery and live acceptance remain separate. GitHub could not allocate
+  the first candidate's Mac ARM check runner on either attempt; those records remain.
+
+- **Actual office access now passes.** [Issue 46 acceptance](validation/2026-10-20-office-access.md)
+  verifies genuine source scans and list/fetch/lexical reads with both unchanged
+  agent credentials. Windows and the shared host run published 4.41. The later
+  synthetic cycle's semantic HTTP 503 and the deliberately paused publisher
+  remain separate work under issue 45.
 
 - **4.41 completes the selected live-capture choice.** The app and agents can
   choose complete exposed records or supported messages only, with provenance,

@@ -31,6 +31,7 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
   const [memory, setMemory] = useState(256);
   const [files, setFiles] = useState(10000);
   const [captureMode, setCaptureMode] = useState<'complete' | 'messages'>('complete');
+  const [conversationIdentity, setConversationIdentity] = useState('');
   const [key, setKey] = useState('');
   const [providerKey, setProviderKey] = useState('');
   const [team, setTeam] = useState(''), [channels, setChannels] = useState('');
@@ -53,6 +54,7 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
     setPath(current?.path ?? ''); setIntervalMinutes((current?.poll_seconds ?? 300) / 60);
     setMemory(current?.memory_limit_mib ?? 256); setFiles(current?.max_files ?? 10000);
     setCaptureMode(current?.capture_mode ?? 'complete');
+    setConversationIdentity(current?.scope_id ?? '');
     setKey(''); setProviderKey(''); setPublication(false); setRevision(query.data?.revision);
     setTeam(current?.slack?.team_id ?? ''); setChannels(current?.slack?.channels.join('\n') ?? '');
     setThreads(current?.slack?.include_threads ?? true); setRecursive(current?.gdrive?.recursive ?? true);
@@ -93,7 +95,8 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
       const source: SourceConfigure['source'] = { id, endpoint, tenant_id: me.tenant_id,
         connector_id: connection.id, principal_id: connection.principal_id, name: connection.name,
         provider: connection.provider as SourceConfigure['source']['provider'], ...selection, members,
-        ...(current?.scope_id ? { scope_id: current.scope_id } : {}),
+        ...(current?.scope_id ? { scope_id: current.scope_id }
+          : connection.provider === 'conversations' && conversationIdentity !== '' ? { scope_id: conversationIdentity } : {}),
         publish_to_mapped_members: true, poll_seconds: Math.round(interval * 60), memory_limit_mib: memory,
         max_files: files, enabled: current?.enabled ?? true };
       accept(await native!.sourceConfigure!({ expected_revision: revision ?? query.data.revision, source,
@@ -143,6 +146,12 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
           catch (error) { setError(message(error)); }
         }}><FolderOpen size={16} />Choose folder</button>}
         {connection.provider === 'conversations' && <>
+          <details className="ws-details"><summary>Reconnect an existing conversation source</summary>
+            <label>Original conversation identity<input disabled={busy} data-update-safe readOnly={!!current} value={conversationIdentity} maxLength={400} placeholder="Default for sources created in Studio" onChange={event => {
+              setConversationIdentity(event.target.value); setDirty(true); setPublication(false);
+            }} /></label>
+            <p className="ws-helper">For a source first connected through an adapter, use its original provider.scope_id. Keep the same relative file paths and stop the previous runner before reconnecting. Studio verifies existing capture identity before importing.</p>
+          </details>
           <label>What to remember<select disabled={busy} data-update-safe value={captureMode} onChange={event => {
             setCaptureMode(event.target.value as 'complete' | 'messages'); setDirty(true); setPublication(false);
           }}><option value="complete">Messages and exposed session events</option><option value="messages">Messages only</option></select></label>
