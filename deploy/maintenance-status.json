@@ -92,32 +92,41 @@
     },
     {
       "id": 39460885775,
-      "attempt": 3,
+      "attempt": 4,
       "workflow": "release.yml",
       "branch": "release/4.43.0",
       "source_commit": "603be186385f473984a6e553045077164e43f25a",
       "status": "completed",
-      "conclusion": "failure",
-      "updated_at": "2026-10-20T18:30:24Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39460885775",
-      "failed_jobs": [],
-      "job_progress": {
-        "total": 23,
-        "completed": 23,
-        "succeeded": 19,
-        "active": []
-      }
+      "conclusion": "success",
+      "updated_at": "2026-10-20T23:57:34Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39460885775"
     },
     {
-      "id": 39475334267,
+      "id": 39518325759,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "2d564aa25981d7342c604f5ee64a38bd4df04e7c",
-      "status": "completed",
-      "conclusion": "skipped",
-      "updated_at": "2026-10-20T18:30:28Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39475334267"
+      "source_commit": "b68e28a6852bb1f3e7ba106fc71254e487bee347",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-20T23:57:41Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39518325759",
+      "job_progress": {
+        "total": 1,
+        "completed": 0,
+        "succeeded": 0,
+        "active": [
+          {
+            "id": 118955764758,
+            "name": "verify",
+            "status": "in_progress",
+            "steps": [
+              "Verify every uploaded byte, production signature and complete feed"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": []
     },
     {
       "id": 39503639438,
@@ -142,5 +151,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39441738346"
     }
   ],
-  "observed_at": "2026-10-20T21:51:50+00:00"
+  "observed_at": "2026-10-20T23:58:10+00:00"
 }
