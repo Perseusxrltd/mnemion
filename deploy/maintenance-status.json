@@ -21,31 +21,31 @@
       "updated_at": "2026-10-20T13:39:27Z",
       "url": "https://github.com/Perseusxrltd/mnemion/issues/45",
       "labels": []
-    },
-    {
-      "number": 46,
-      "title": "Deployment access: Codex/Astra cannot see the existing office task and memory spaces",
-      "updated_at": "2026-10-20T13:38:41Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/issues/46",
-      "labels": []
     }
   ],
   "runs": [
     {
       "id": 39443910430,
-      "attempt": 1,
+      "attempt": 2,
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "c2e927ca15b5f1cf17b3d096e0337ac5ee45f81c",
-      "status": "completed",
-      "conclusion": "failure",
-      "updated_at": "2026-10-20T15:18:41Z",
+      "status": "queued",
+      "conclusion": null,
+      "updated_at": "2026-10-20T15:30:37Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39443910430",
       "job_progress": {
         "total": 12,
-        "completed": 12,
+        "completed": 11,
         "succeeded": 11,
-        "active": []
+        "active": [
+          {
+            "id": 118718677634,
+            "name": "supervision (macos-15)",
+            "status": "queued",
+            "steps": []
+          }
+        ]
       },
       "failed_jobs": []
     },
@@ -105,5 +105,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39441738346"
     }
   ],
-  "observed_at": "2026-10-20T15:19:30+00:00"
+  "observed_at": "2026-10-20T15:42:58+00:00"
 }
