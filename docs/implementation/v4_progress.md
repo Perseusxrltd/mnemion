@@ -21,6 +21,14 @@ Requirements and acceptance criteria are defined by the
 
 ## 20 October: agent-controlled desktop connections and hosted sign-in
 
+The 4.35 source prioritizes physical purge and gives organizations/spaces
+persistent indexing turns. It follows the [actual 4.33 lab backlog](../validation/2026-10-20-433-live-updates.md):
+both ordinary updates preserved access, but a queued synthetic cycle did not
+pass and retained cleanup. [Eighteen dispatch/reindex cases](../validation/2026-10-20-fair-indexing.md)
+passed, including restart, tenant fairness, concurrent claims, unavailable
+models and API-role denial. The new schema migration is not applied to the live
+host at this checkpoint. Original failed lab evidence remains preserved.
+
 The 4.34 source advances app-managed cloud capture: selected Slack channels and
 Drive resources, separate OS-protected provider credentials, read-only Google
 service-account token renewal, actual provider permissions and private-agent

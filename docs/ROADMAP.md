@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.34.0**. Roadmap updated: **2026-10-20**.
+Reviewed source distribution: **4.35.0**. Roadmap updated: **2026-10-20**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
 [Release status](RELEASE_STATUS.md) and the [maintenance board](MAINTENANCE_STATUS.md)
@@ -13,6 +13,13 @@ This measures complete requested capabilities, not time spent or the usability
 of the released app. A hotfix does not finish a broader requirement.
 
 ## Current delivery checkpoint
+
+- **4.35.0 source fixes indexing dispatch under a source backlog.**
+  [Purges take priority and organizations/spaces receive persistent turns](service/indexing-queues.md).
+  Eighteen database/reindex cases passed with existing model and authorization
+  policies retained. Migration 029 requires the normal backup/upgrade path.
+  [Actual 4.33 updates preserved access, but the lab stopped with queued work](validation/2026-10-20-433-live-updates.md);
+  that failure remains visible pending cleanup and new acceptance.
 
 - **4.34.0 source adds Slack and Google Drive setup through the app.**
   [Cloud sources](service/desktop-cloud-sources.md) accept existing approved

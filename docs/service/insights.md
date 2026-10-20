@@ -11,6 +11,11 @@ keyboard inspection, legends, tooltips and paged numeric tables. Missing samples
 remain gaps; counters do not invent provider prices, hardware bandwidth or scores.
 Runtime histories are bounded samples in the current browser session.
 
+For long queues, compare pending/leased counts and oldest job age with actual
+worker inference activity. [Dispatch from 4.35](indexing-queues.md) gives purges
+priority and alternates indexing across organizations/spaces; it does not
+interrupt an active model calculation or make a pending operation ready by itself.
+
 From 4.2.5, **Models & resources** also identifies supervised worker ownership
 and displays its measured RSS, loaded model count, inference pressure and idle
 cleanup. API gauges remain separate. These worker observations require the same

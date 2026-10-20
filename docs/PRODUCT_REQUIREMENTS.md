@@ -19,6 +19,14 @@ not equally sized. This is coverage of the full requested scope, not a measure
 of engineering effort or the usability of the published app. Hotfixes to a
 partial feature do not automatically mark its whole requirement complete.
 
+Source 4.35.0 advances **R04/A09/C09/U11** with
+[priority purges and persistent organization/space indexing turns](service/indexing-queues.md).
+[Eighteen database/reindex cases passed](validation/2026-10-20-fair-indexing.md).
+The [actual 4.33 update/lab observation](validation/2026-10-20-433-live-updates.md)
+retains the failed cycle, pending physical cleanup and the successful update
+identity checks separately. Schema migration, native release and real-host
+acceptance remain distinct; no complete requirement is promoted.
+
 Source 4.34.0 advances **F08/C01/C02/U01** with
 [guided desktop Slack/Drive sources](service/desktop-cloud-sources.md): selected
 resources, separate OS-protected provider credentials, short-lived read-only
