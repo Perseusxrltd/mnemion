@@ -20,50 +20,86 @@
   ],
   "runs": [
     {
-      "id": 39392286802,
+      "id": 39393856803,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "4fcab3d7ebcfc92ca3ea87dcf9e2aa208c07f587",
-      "status": "in_progress",
+      "source_commit": "3b78fd8549ae21474caf219c0a696a2af5f9ca7b",
+      "status": "queued",
       "conclusion": null,
-      "updated_at": "2026-10-20T08:18:31Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39392286802",
+      "updated_at": "2026-10-20T08:30:40Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39393856803",
       "job_progress": {
         "total": 12,
-        "completed": 8,
-        "succeeded": 8,
+        "completed": 3,
+        "succeeded": 3,
         "active": [
           {
-            "id": 118526925428,
-            "name": "service (3.14)",
+            "id": 118531762937,
+            "name": "studio",
             "status": "in_progress",
             "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+              "Run npm --prefix studio/electron ci && npm --prefix studio/electron test"
             ]
           },
           {
-            "id": 118526925475,
+            "id": 118531817572,
             "name": "service (3.13)",
             "status": "in_progress",
             "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+              "Matching PostgreSQL recovery tools"
             ]
           },
           {
-            "id": 118526925510,
-            "name": "supervision (macos-15-intel)",
-            "status": "in_progress",
-            "steps": [
-              "Verify managed installation, host recovery, signed updates and rollback with real processes"
-            ]
-          },
-          {
-            "id": 118526925567,
+            "id": 118531817659,
             "name": "service (3.12)",
             "status": "in_progress",
             "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+              "Matching PostgreSQL recovery tools"
+            ]
+          },
+          {
+            "id": 118531817698,
+            "name": "legacy",
+            "status": "in_progress",
+            "steps": [
+              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
+            ]
+          },
+          {
+            "id": 118531817754,
+            "name": "service (3.14)",
+            "status": "in_progress",
+            "steps": [
+              "Matching PostgreSQL recovery tools"
+            ]
+          },
+          {
+            "id": 118531817757,
+            "name": "supervision (macos-15-intel)",
+            "status": "queued",
+            "steps": []
+          },
+          {
+            "id": 118531817790,
+            "name": "container (ubuntu-22.04)",
+            "status": "in_progress",
+            "steps": [
+              "Build the actual deployment image with its documentation"
+            ]
+          },
+          {
+            "id": 118531817830,
+            "name": "container (ubuntu-22.04-arm)",
+            "status": "queued",
+            "steps": []
+          },
+          {
+            "id": 118531817855,
+            "name": "supervision (macos-15)",
+            "status": "in_progress",
+            "steps": [
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
             ]
           }
         ]
@@ -90,7 +126,7 @@
             "name": "linux / arm64 public upgrade",
             "status": "in_progress",
             "steps": [
-              "Linux desktop libraries"
+              "Install public release and observe its automatic update"
             ]
           },
           {
@@ -114,7 +150,7 @@
             "name": "windows / arm64 public upgrade",
             "status": "in_progress",
             "steps": [
-              "Run python -m pip install psutil==7.2.2"
+              "Install public release and observe its automatic update"
             ]
           },
           {
@@ -122,7 +158,7 @@
             "name": "linux / x64 public upgrade",
             "status": "in_progress",
             "steps": [
-              "Linux desktop libraries"
+              "Install public release and observe its automatic update"
             ]
           },
           {
@@ -130,7 +166,7 @@
             "name": "macos / arm64 public upgrade",
             "status": "in_progress",
             "steps": [
-              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
+              "Install public release and observe its automatic update"
             ]
           }
         ]
@@ -156,21 +192,13 @@
       "source_commit": "4fcab3d7ebcfc92ca3ea87dcf9e2aa208c07f587",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-20T08:28:01Z",
+      "updated_at": "2026-10-20T08:28:57Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39392435604",
       "job_progress": {
-        "total": 24,
-        "completed": 17,
-        "succeeded": 17,
+        "total": 25,
+        "completed": 19,
+        "succeeded": 19,
         "active": [
-          {
-            "id": 118530165747,
-            "name": "native / Encrypted files / Windows / arm64",
-            "status": "in_progress",
-            "steps": [
-              "Run actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1"
-            ]
-          },
           {
             "id": 118530188782,
             "name": "checks / service (3.14)",
@@ -192,7 +220,7 @@
             "name": "checks / supervision (macos-15)",
             "status": "in_progress",
             "steps": [
-              "Verify managed installation, host recovery, signed updates and rollback with real processes"
+              "Verify both pinned local models on the actual Mac runtime"
             ]
           },
           {
@@ -212,11 +240,11 @@
             ]
           },
           {
-            "id": 118530728432,
-            "name": "native / native_database / Database / Windows ARM host / x64 engine",
+            "id": 118531100558,
+            "name": "native / Service engine / Windows x64",
             "status": "in_progress",
             "steps": [
-              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
+              "Post Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
             ]
           }
         ]
@@ -246,5 +274,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39393535317"
     }
   ],
-  "observed_at": "2026-10-20T08:28:07+00:00"
+  "observed_at": "2026-10-20T08:31:12+00:00"
 }
