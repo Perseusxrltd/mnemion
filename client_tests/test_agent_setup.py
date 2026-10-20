@@ -8,7 +8,8 @@ import tomlkit
 from mnemion import agent_setup
 
 
-def test_codex_setup_preserves_policies_comments_and_other_servers(tmp_path):
+@pytest.mark.parametrize("profile", ["codex", "grok-build"])
+def test_codex_setup_preserves_policies_comments_and_other_servers(tmp_path, profile):
     target = tmp_path / "config.toml"
     original = """# Keep local access and policy settings.
 approval_policy = "never"
@@ -24,7 +25,7 @@ trust_level = "untrusted"
 """
     target.write_text(original, encoding="utf-8")
     credentials = tmp_path / "répertoire avec espaces" / "app.json"
-    planned = agent_setup.plan("codex", target, credentials, python=r"C:\Apps\Python\python.exe")
+    planned = agent_setup.plan(profile, target, credentials, python=r"C:\Apps\Python\python.exe")
     assert target.read_text() == original
     result = agent_setup.apply(planned)
     assert Path(result["backup"]).read_text() == original
@@ -39,7 +40,7 @@ trust_level = "untrusted"
     if os.name != "nt":
         assert Path(result["backup"]).stat().st_mode & 0o777 == 0o600
         assert target.stat().st_mode & 0o777 == 0o600
-    agent_setup.apply(agent_setup.plan("codex", target, credentials, remove=True))
+    agent_setup.apply(agent_setup.plan(profile, target, credentials, remove=True))
     assert tomlkit.parse(target.read_text()) == tomlkit.parse(original)
 
 
@@ -94,6 +95,10 @@ def test_changed_settings_reject_stale_preview_and_missing_remove_is_noop(tmp_pa
 def test_setup_respects_current_platform_profile(tmp_path, monkeypatch):
     monkeypatch.setenv("CODEX_HOME", str(tmp_path / "codex-wsl"))
     assert agent_setup.default_path("codex") == tmp_path / "codex-wsl/config.toml"
+    assert agent_setup.default_path("grok-build") == Path.home() / ".grok/config.toml"
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "custom-config"))
+    monkeypatch.setattr(agent_setup.sys, "platform", "linux")
+    assert agent_setup.default_path("zed") == tmp_path / "custom-config/zed/settings.json"
     monkeypatch.setattr(agent_setup.sys, "platform", "win32")
     monkeypatch.setenv("APPDATA", str(tmp_path / "roaming"))
     assert agent_setup.default_path("zed") == tmp_path / "roaming/Zed/settings.json"
@@ -101,6 +106,32 @@ def test_setup_respects_current_platform_profile(tmp_path, monkeypatch):
         agent_setup.default_path("claude-desktop")
         == tmp_path / "roaming/Claude/claude_desktop_config.json"
     )
+
+
+def test_named_standalone_setup_does_not_replace_a_different_workspace(tmp_path):
+    target = tmp_path / "config.toml"
+    target.write_text('[mcp_servers.mnemion]\ncommand = "existing-workspace"\n')
+    plan = agent_setup.plan(
+        "grok-build",
+        target,
+        tmp_path / "private.json",
+        python="included-engine",
+        standalone=True,
+        server_name="mnemion-office",
+    )
+    assert not plan.replacing
+    agent_setup.apply(plan)
+    nodes = tomlkit.parse(target.read_text())["mcp_servers"]
+    assert nodes["mnemion"]["command"] == "existing-workspace"
+    assert nodes["mnemion-office"]["args"] == [
+        "--credentials",
+        str(tmp_path / "private.json"),
+        "mcp",
+    ]
+    for name in ("../escape", "", "with space", "x" * 65):
+        with pytest.raises(ValueError):
+            agent_setup.plan("grok-build", target, tmp_path / "private.json", server_name=name)
+    assert "mnemion-office" in tomlkit.parse(target.read_text())["mcp_servers"]
 
 
 def test_failed_replacement_retains_exact_config_and_private_backup(tmp_path, monkeypatch):

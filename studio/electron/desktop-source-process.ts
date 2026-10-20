@@ -1,4 +1,4 @@
-/** Bounded native process protocol. Keys stay off argv, disk, logs and env. */
+/** Bounded native process protocol. Private input travels only through pipes. */
 import { spawn } from 'node:child_process'
 import type { SourceCall } from './desktop-sources.js'
 
@@ -10,22 +10,27 @@ const messages: Record<string, string> = {
   private_location: 'Source settings must stay private to this OS account.',
   unsafe_location: 'Choose an ordinary source folder, separate from private app settings.',
   damaged_state: 'Saved source settings could not be read. The existing file has been retained.',
+  agent_settings_changed: 'Agent settings changed. Preview again before making this change.',
+  agent_identity_mismatch: 'Use the selected application’s dedicated key in the expected workspace.',
+  agent_install_unconfirmed: 'Read installed-agent status before retrying this connection.',
+  agent_runtime_unavailable: 'The private agent runtime could not be prepared. Check free disk space or repair Studio, then retry.',
+  agent_setup_unavailable: 'Agent setup could not finish. Check the selected profile, configuration file and application key. Existing settings have been retained.',
 }
 
 export function sourceProcess(options: { executable: string; root: string; privateRoots: string[];
-  environment: NodeJS.ProcessEnv; prefix?: string[] }): SourceCall {
+  environment: NodeJS.ProcessEnv; prefix?: string[]; command?: string; arguments?: string[]; deadlineMs?: number }): SourceCall {
   return (request, signal, resources) => new Promise((resolve, reject) => {
     let input: string
     try { input = JSON.stringify(request) } catch { reject(new Error('Invalid source settings.')); return }
     if (Buffer.byteLength(input) > 256 * 1024 || signal?.aborted) { reject(new Error('The source request was cancelled or is too large.')); return }
-    const child = spawn(options.executable, [...(options.prefix ?? []), 'desktop-source', '--root', options.root,
+    const child = spawn(options.executable, [...(options.prefix ?? []), options.command ?? 'desktop-source', '--root', options.root, ...(options.arguments ?? []),
       ...options.privateRoots.flatMap(path => ['--private-root', path])],
     { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true, env: options.environment })
     let buffer = '', result: Record<string, unknown> | undefined, failure: Error | undefined
     const fail = (message: string) => { failure ??= new Error(message); child.kill() }
-    const abort = () => fail('The source operation was cancelled. Its next scan will reconcile saved progress.')
+    const abort = () => fail('The helper operation was cancelled. Review its saved status before retrying.')
     signal?.addEventListener('abort', abort, { once: true })
-    const timer = setTimeout(() => fail('The source operation timed out. Check its saved status before retrying.'), request.operation === 'scan' ? 600_000 : 45_000)
+    const timer = setTimeout(() => fail('The helper operation timed out. Check its saved status before retrying.'), options.deadlineMs ?? (request.operation === 'scan' ? 600_000 : 45_000))
     child.stdin.on('error', () => fail('The source helper could not receive its private request.'))
     child.stdin.end(input)
     child.stderr.resume()

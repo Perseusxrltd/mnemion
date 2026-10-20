@@ -31,6 +31,11 @@ Source 4.31.0 adds [folder, Obsidian and conversation source setup in Studio](do
 with protected dedicated keys, background capture, adjustable RAM/file limits,
 offline device controls and equivalent local-agent operations. Contributing
 files to a shared workspace does not require a local database or model.
+Source 4.32.0 adds [agent installation through Studio](docs/service/desktop-agents.md),
+including Grok Build and named connections for separate workspaces. Reviewed
+configuration changes preserve other agent settings; a private maintained
+runtime keeps connections working while Studio is closed. Installed connections
+can be removed before sign-in, through the app or local-agent controls.
 Studio includes guided [local workspace creation](docs/service/local-workspaces.md),
 bundled database/model runtimes, [app and agent RAM controls](docs/service/memory-resources.md),
 local recovery, a [live 3D memory map](docs/service/memory-map.md), recorded agent

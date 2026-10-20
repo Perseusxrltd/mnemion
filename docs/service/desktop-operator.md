@@ -74,6 +74,8 @@ engine** so it uses the Windows account and named-pipe implementation.
 | `workspace.disconnect`, `workspace.forget` | From 4.28.0, disconnect the selected account or remove one saved connection from this device. |
 | `source.status`, `source.configure` | From 4.31.0, inspect or configure [desktop folder/conversation runners](desktop-sources.md#local-agent-controls) with protected dedicated keys and current settings revisions. No local database is required. |
 | `source.pause`, `source.sync`, `source.remove` | Persistently pause/resume a source, queue a bounded scan, or stop and forget its local configuration. Independent of the selected workspace. |
+| `agent.status`, `agent.preview` | From 4.32.0, inspect [native agent installations](desktop-agents.md), refresh their packaged runtime and preview a named MCP entry without changing client settings. No local database is required. |
+| `agent.install`, `agent.remove` | Install a reviewed dedicated application connection or remove its matching local entry/key file, using the observed configuration hash and explicit confirmation. Other devices and server keys remain separately managed. |
 | `local.create`, `local.start`, `local.stop` | Create, start or stop the app's local workspace through the ordinary lifecycle controls. |
 | `local.open` | From 4.28.0, select the running local workspace using its independent local owner. Confirm both the local workspace ID and the current connection revision. |
 | `local.memory` | Set automatic/manual RAM limits or repair a damaged RAM policy with its current repair token. |

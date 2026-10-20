@@ -3,11 +3,12 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Bot, Copy } from 'lucide-react';
 import type { LocalStatus } from '../../../shared/local-workspace';
 import DesktopSourcesOverview from './DesktopSourcesOverview';
+import { DesktopAgentInstallations } from './DesktopAgentSetup';
 
 export default function LocalOperator({ status }: { status: LocalStatus }) {
   const [notice, setNotice] = useState('');
   const operator = status.operator;
-  if (!operator) return <DesktopSourcesOverview />;
+  if (!operator) return <><DesktopSourcesOverview /><DesktopAgentInstallations /></>;
   const setup = {
     protocol: 'mnemion-desktop-operator-v1', scope: 'owning_os_account',
     command: operator.command,
@@ -15,7 +16,7 @@ export default function LocalOperator({ status }: { status: LocalStatus }) {
     observed_workspace_id: status.info?.settings?.workspace_id ?? null,
     instructions: 'Run the command on this computer under the app owner’s OS account. Send one JSON request on stdin. Read fresh status and the operation catalog before changes. Supply secrets on private stdin and save newly generated keys with --result-file.',
   };
-  return <><DesktopSourcesOverview /><section className="ws-device-settings ws-local-operator" aria-labelledby="local-operator-title">
+  return <><DesktopSourcesOverview /><DesktopAgentInstallations /><section className="ws-device-settings ws-local-operator" aria-labelledby="local-operator-title">
     <div className="ws-memory-heading"><h2 id="local-operator-title"><Bot size={19} />Agents on this computer</h2><span className="ws-badge">{operator.state === 'ready' ? 'Ready' : operator.state === 'starting' ? 'Starting' : 'Needs attention'}</span></div>
     <p>{operator.message}</p>
     <p className="ws-helper">Let a trusted local agent connect this app to your team’s workspace, manage setup and updates, adjust RAM, and handle backups and recovery. It can work while the app is in the background. These controls use your OS account’s authority; agents using the memory API keep their workspace permissions.</p>

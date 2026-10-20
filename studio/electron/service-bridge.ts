@@ -19,6 +19,8 @@ import { desktopAction, desktopActions } from './desktop-actions.js'
 import { DesktopWorkspaceActions } from './desktop-workspace-actions.js'
 import { DesktopSources } from './desktop-sources.js'
 import { sourceProcess } from './desktop-source-process.js'
+import { DesktopAgents } from './desktop-agents.js'
+import type { AgentInstall, AgentRemove, AgentSetup } from '../shared/desktop-agents.js'
 import type { SourceConfigure, SourceControl } from '../shared/desktop-sources.js'
 import type { BackupSettings, DesktopOperatorStatus, LocalStatus, RecoveryReceipt } from '../shared/local-workspace.js'
 
@@ -180,6 +182,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
   let local: LocalWorkspace | undefined
   let backups: LocalBackups | undefined
   let sources: DesktopSources | undefined
+  let agentSetup: DesktopAgents | undefined
   const backupSelections = new Map<string, { kind: 'folder' | 'file'; path: string }>()
   let localOpenGeneration = 0
   let localSwitching = false
@@ -262,11 +265,21 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     sources = new DesktopSources({ cipher: workspaceCipher(), call: sourceProcess({ executable: engineExecutable(), root,
       environment: localEnvironment(process.env, root), privateRoots: [app.getPath('userData'),
         join(localBase(), 'mnemion-local-workspace'), join(localBase(), 'mnemion-recovered-workspaces'),
-        join(localBase(), 'mnemion-desktop-control')] }), changed: () => {
+        join(localBase(), 'mnemion-desktop-control'), join(localBase(), 'mnemion-desktop-agents')] }), changed: () => {
       const window = getWindow()
       if (window && !window.webContents.isDestroyed()) window.webContents.send('sources:changed')
     } })
     return sources
+  }
+  function desktopAgents(): DesktopAgents {
+    if (agentSetup) return agentSetup
+    const root = join(localBase(), 'mnemion-desktop-agents'), executable = engineExecutable()
+    const environment = localEnvironment(process.env, root)
+    for (const key of ['CODEX_HOME', 'XDG_CONFIG_HOME']) if (process.env[key]) environment[key] = process.env[key]
+    agentSetup = new DesktopAgents(sourceProcess({ executable, root, privateRoots: [],
+      command: 'desktop-agent', arguments: ['--engine-executable', executable], deadlineMs: 180000,
+      environment }))
+    return agentSetup
   }
   function workspaceConnections(): WorkspaceConnections {
     const signInRequest: SignInRequest = async (endpoint, operation, input) => {
@@ -410,6 +423,19 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     return desktopLocalStatus(host.status)
   }
   ipcMain.handle('local:status', event => { trusted(event); return localStatus() })
+  ipcMain.handle('agents:status', event => { trusted(event); return desktopAgents().status() })
+  ipcMain.handle('agents:choose', async (event, client: unknown) => {
+    trusted(event)
+    const profile = (await desktopAgents().status()).profiles.find(item => item.client === client)
+    if (!profile) throw new Error('Choose an agent profile.')
+    const result = await dialog.showSaveDialog({ title: 'Choose the agent configuration file',
+      ...(profile.config_path ? { defaultPath: profile.config_path } : {}),
+      filters: [{ name: 'Agent configuration', extensions: ['codex', 'grok-build'].includes(profile.client) ? ['toml'] : ['json'] }] })
+    return result.canceled ? null : result.filePath ?? null
+  })
+  ipcMain.handle('agents:preview', (event, setup: AgentSetup) => { trusted(event); return desktopAgents().preview(setup) })
+  ipcMain.handle('agents:install', (event, input: AgentInstall) => { trusted(event); requireLocalSteady(); return desktopAgents().install(input) })
+  ipcMain.handle('agents:remove', (event, input: AgentRemove) => { trusted(event); requireLocalSteady(); return desktopAgents().remove(input) })
   ipcMain.handle('sources:status', event => { trusted(event); return desktopSources().status() })
   ipcMain.handle('sources:choose', async event => {
     trusted(event)
@@ -702,6 +728,10 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
           guide: 'https://github.com/Perseusxrltd/mnemion/blob/main/docs/service/desktop-operator.md' }
         case 'status': return localStatus()
         case 'source.status': return desktopSources().status()
+        case 'agent.status': return desktopAgents().status()
+        case 'agent.preview': return desktopAgents().preview(input.setup as AgentSetup, signal)
+        case 'agent.install': return desktopAgents().install(input as AgentInstall, signal)
+        case 'agent.remove': return desktopAgents().remove(input as AgentRemove, signal)
         case 'source.configure': return desktopSources().configure(input as SourceConfigure, signal)
         case 'source.pause': case 'source.sync': case 'source.remove':
           return desktopSources().control(request.action.slice(7) as 'pause' | 'sync' | 'remove', input as SourceControl)
@@ -762,6 +792,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
 
   async function bootOperator(): Promise<void> {
     if (operatorInfo) return
+    desktopAgents().start()
     const directory = join(localBase(), 'mnemion-desktop-control')
     operatorInfo = { state: 'starting', message: 'Starting private controls for local agents.', control_directory: directory,
       command: { executable: engineExecutable(), arguments: ['desktop-control', '--control-directory', directory] } }
@@ -848,25 +879,27 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     selections.clear()
     backupSelections.clear()
   })
-  app.on('will-quit', () => { backups?.close(); void sources?.close(); void operator?.close() })
+  app.on('will-quit', () => { backups?.close(); void sources?.close(); void agentSetup?.close(); void operator?.close() })
 
   return {
-    localBusy: () => localSwitching || !!operatorMutation || !!backups?.busy || !!sources?.busy || (local?.busy ?? false),
-    localActive: () => localSwitching || !!operatorMutation || !!backups?.busy || !!sources?.busy || (local?.active ?? false),
+    localBusy: () => localSwitching || !!operatorMutation || !!backups?.busy || !!sources?.busy || !!agentSetup?.busy || (local?.busy ?? false),
+    localActive: () => localSwitching || !!operatorMutation || !!backups?.busy || !!sources?.busy || !!agentSetup?.busy || (local?.active ?? false),
     stopLocal: () => local?.stop() ?? Promise.resolve(true),
     stopLocalForUpdate: async () => {
       if (localSwitching || (sources && !sources.pauseForUpdate())) return false
+      if (agentSetup && !agentSetup.pauseForUpdate()) { sources?.resumeAfterUpdate(); return false }
       try {
         const stopped = await (local?.stopForUpdate() ?? Promise.resolve(true))
-        if (!stopped) sources?.resumeAfterUpdate()
+        if (!stopped) { sources?.resumeAfterUpdate(); agentSetup?.resumeAfterUpdate() }
         return stopped
-      } catch (error) { sources?.resumeAfterUpdate(); throw error }
+      } catch (error) { sources?.resumeAfterUpdate(); agentSetup?.resumeAfterUpdate(); throw error }
     },
-    resumeLocalAfterCancelledUpdate: async () => { try { await local?.cancelUpdateStop() } finally { sources?.resumeAfterUpdate() } },
+    resumeLocalAfterCancelledUpdate: async () => { try { await local?.cancelUpdateStop() } finally { sources?.resumeAfterUpdate(); agentSetup?.resumeAfterUpdate() } },
     closeLocal: async () => {
       if (localSwitching) return false
       operator?.cancel()
       await sources?.close()
+      await agentSetup?.close()
       const stopped = await (local?.close() ?? Promise.resolve(true))
       if (operatorWork) await Promise.race([operatorWork.catch(() => {}), new Promise(resolve => setTimeout(resolve, 5000))])
       return stopped && !operatorMutation && !backups?.busy

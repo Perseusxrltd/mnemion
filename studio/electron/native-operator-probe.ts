@@ -6,6 +6,7 @@ import { readFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import type { BackupConfiguration, LocalStatus } from '../shared/local-workspace.js'
 import { verifyNativeSources } from './native-source-probe.js'
+import { verifyNativeAgents } from './native-agent-probe.js'
 
 function call(action: string, input: Record<string, unknown> = {}, workspace?: string | null, requestId: string = randomUUID()): Promise<any> {
   const executable = !app.isPackaged && process.env.MNEMION_LOCAL_ENGINE ? process.env.MNEMION_LOCAL_ENGINE :
@@ -195,7 +196,8 @@ export async function verifyNativeOperator(window: BrowserWindow, phase: string)
     if (returned.preferences?.recoveryRoot || returned.info?.settings?.workspace_id !== workspace) throw new Error('The operator did not preserve the original workspace selection.')
     await ui(window, `(async()=>{const s=await window.mnemion.localStatus();const w=await window.mnemion.workspaceStatus();return s.state==='running' && !s.preferences?.recoveryRoot && !!w.active && !!document.querySelector('.ws-workspace-name');})()`)
     return { nativeOperatorPipe: true, nativeAppUpdateStatus: true, operatorRecoverySelection: true, operatorOriginalSelection: true, operatorPreservesUnsavedDraft: true,
-      ...await verifyWorkspaceSelection(window, workspace), ...await verifyNativeSources(window, success) }
+      ...await verifyWorkspaceSelection(window, workspace), ...await verifyNativeSources(window, success),
+      ...await verifyNativeAgents(window, success) }
   }
   return { nativeOperatorPipe: true, nativeAppUpdateStatus: true }
 }

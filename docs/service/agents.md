@@ -1,5 +1,12 @@
 # Connect assistants and applications
 
+Source **4.32.0** adds [guided installation in Studio](desktop-agents.md): select
+the local client and its dedicated application, review the exact file change,
+then install. Configuration backups and other client policies are preserved.
+The private launcher connects while Studio is closed and follows its runtime
+updates without rewriting agent settings. The manual commands below remain
+available for browsers and separately managed installations.
+
 From service/Studio **4.3.0**, open **Agents & apps** to check the workspace's
 actual sign-in mode. When personal OAuth is enabled, copy its verified public
 MCP address, add it to the agent's connector settings and choose OAuth. Sign in
@@ -59,11 +66,12 @@ is rejected. JSON with comments requires a manual merge of the displayed snippet
 | `--client` | Configuration |
 | --- | --- |
 | `codex` | `$CODEX_HOME/config.toml`, or `~/.codex/config.toml`; `mcp_servers` |
+| `grok-build` | `~/.grok/config.toml`; `mcp_servers`; separate from hosted Grokbot/plugin setup |
 | `claude-code` | `~/.claude.json`; `mcpServers` |
 | `claude-desktop` | macOS Application Support or Windows `%APPDATA%/Claude`; `mcpServers` |
 | `cursor` | `~/.cursor/mcp.json`; `mcpServers` |
 | `gemini-cli` | `~/.gemini/settings.json`; `mcpServers` |
-| `zed` | `~/.config/zed/settings.json`, or Windows `%APPDATA%/Zed/settings.json`; `context_servers` |
+| `zed` | `$XDG_CONFIG_HOME/zed/settings.json`, default `~/.config/zed/settings.json`, or Windows `%APPDATA%/Zed/settings.json`; `context_servers` |
 | `devin` | `$XDG_CONFIG_HOME/devin/mcp_config.json`, default `~/.config/devin`, or Windows `%APPDATA%/devin`; legacy Cascade MCP settings in current Devin Desktop |
 | `windsurf` | Historical `~/.codeium/windsurf/mcp_config.json`; use only with that legacy installation |
 | `generic` | Explicit `--config PATH`; standard `mcpServers` JSON |

@@ -6,6 +6,7 @@ import type { CompanyConfiguration, CompanyCredentials } from '../../../shared/c
 import type { VaultChange, VaultKey, VaultRequest, JournalChange } from '../../../shared/local-workspace'
 import type { CompanyChange, CompanyDiscoveryRequest, CompanyDiscoveryResult } from '../../../shared/local-workspace'
 import type { DesktopSourceView, SourceConfigure, SourceControl } from '../../../shared/desktop-sources'
+import type { AgentSetup, AgentSetupStatus, AgentPreview, AgentInstall, AgentRemove, AgentSetupResult } from '../../../shared/desktop-agents'
 
 declare global {
   interface Window {
@@ -33,6 +34,11 @@ declare global {
       onWorkspaceClosed?: (callback: (sessionToken: string) => void) => () => void
       localStatus?: () => Promise<LocalStatus>
       sourceStatus?: () => Promise<DesktopSourceView>
+      agentSetupStatus?: () => Promise<AgentSetupStatus>
+      agentSetupChoose?: (client: string) => Promise<string | null>
+      agentSetupPreview?: (setup: AgentSetup) => Promise<AgentPreview>
+      agentSetupInstall?: (input: AgentInstall) => Promise<AgentSetupResult>
+      agentSetupRemove?: (input: AgentRemove) => Promise<AgentSetupResult>
       sourceChoose?: () => Promise<string | null>
       sourceConfigure?: (input: SourceConfigure) => Promise<DesktopSourceView>
       sourceControl?: (action: 'pause' | 'sync' | 'remove', input: SourceControl) => Promise<DesktopSourceView>

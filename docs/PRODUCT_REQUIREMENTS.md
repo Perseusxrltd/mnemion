@@ -19,6 +19,16 @@ not equally sized. This is coverage of the full requested scope, not a measure
 of engineering effort or the usability of the published app. Hotfixes to a
 partial feature do not automatically mark its whole requirement complete.
 
+Source 4.32.0 advances **F08/C04/C05/U01** with
+[guided native agent installation](service/desktop-agents.md): reviewed named
+entries, dedicated application keys, private backups, preserved client policies,
+offline removal and matching local-agent operations. A versioned private runtime
+continues outside Studio and follows app updates without rewriting client files.
+[Focused validation](validation/2026-10-20-desktop-agents.md) and native delivery
+remain distinct. Grok Build uses its observed native TOML contract; this does not
+complete the separate Grokbot, Dot, Hermes or OpenClaw plugin requests. No broad
+requirement is promoted by configuration support alone.
+
 Source 4.31.0 advances **F08/C01/C03/U01** and extends **R03/R04** with
 [desktop folder, Obsidian and JSONL source setup](service/desktop-sources.md).
 People and local agents can manage protected dedicated keys, background capture,

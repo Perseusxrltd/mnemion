@@ -4,9 +4,11 @@ import { useQuery } from "@tanstack/react-query";
 import { MnemionError } from "@mnemion/client";
 import { Check, Copy, RefreshCw, Terminal } from "lucide-react";
 import type { Connection } from "./connection-types";
+import { DesktopAgentSetup } from "./DesktopAgentSetup";
 
 const clients = [
   ["codex", "Codex"], ["claude-code", "Claude Code"],
+  ["grok-build", "Grok Build"],
   ["claude-desktop", "Claude Desktop"], ["cursor", "Cursor"],
   ["gemini-cli", "Gemini CLI"], ["zed", "Zed"],
   ["devin", "Devin Desktop · Cascade"], ["windsurf", "Windsurf · legacy Cascade"],
@@ -41,6 +43,7 @@ export function Agents({ connection, space }: { connection: Connection; space: s
   return <div className="ws-page">
     <header className="ws-page-heading"><div><div className="ws-eyebrow">Assistants & applications</div><h1>Give your agents shared memory</h1><p>Each agent uses its own identity to recall permitted knowledge and save new evidence.</p></div><Terminal size={26} /></header>
     {error && <div className="ws-notice ws-error" role="alert">{error}</div>}
+    <DesktopAgentSetup connection={connection} />
     <section className="ws-card ws-agent-sign-in">
       <div className="ws-section-title"><h2>Connect with your account</h2><button type="button" className="ws-button ws-quiet" disabled={authentication.isFetching} onClick={() => void authentication.refetch()} aria-label="Check agent sign-in availability"><RefreshCw size={15} />Check availability</button></div>
       {authentication.isPending && <p role="status">Checking this workspace’s sign-in options…</p>}

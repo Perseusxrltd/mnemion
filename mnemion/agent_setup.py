@@ -6,6 +6,8 @@ import argparse
 import hashlib
 import json
 import os
+import re
+import stat
 import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -16,6 +18,7 @@ from .private_output import private_output
 
 CLIENTS = {
     "codex": ("toml", "mcp_servers"),
+    "grok-build": ("toml", "mcp_servers"),
     "claude-code": ("json", "mcpServers"),
     "claude-desktop": ("json", "mcpServers"),
     "cursor": ("json", "mcpServers"),
@@ -44,11 +47,12 @@ def default_path(client: str) -> Path:
             Path(os.environ.get("XDG_CONFIG_HOME", str(home / ".config"))) / "devin/mcp_config.json"
         )
     paths = {
+        "grok-build": home / ".grok/config.toml",
         "claude-code": home / ".claude.json",
         "cursor": home / ".cursor/mcp.json",
         "windsurf": home / ".codeium/windsurf/mcp_config.json",
         "gemini-cli": home / ".gemini/settings.json",
-        "zed": home / ".config/zed/settings.json",
+        "zed": Path(os.environ.get("XDG_CONFIG_HOME", str(home / ".config"))) / "zed/settings.json",
     }
     if client == "claude-desktop":
         if sys.platform == "win32":
@@ -64,11 +68,13 @@ def default_path(client: str) -> Path:
 
 
 def server_config(
-    credentials: Path, *, python: str = sys.executable, legacy_space: str | None = None
+    credentials: Path,
+    *,
+    python: str = sys.executable,
+    legacy_space: str | None = None,
+    standalone: bool = False,
 ) -> dict:
-    args = [
-        "-m",
-        "mnemion.service.cli",
+    args = ([] if standalone else ["-m", "mnemion.service.cli"]) + [
         "--credentials",
         str(credentials.expanduser().absolute()),
         "mcp",
@@ -87,6 +93,22 @@ class Plan:
     replacing: bool
 
 
+def configuration(path: Path) -> bytes | None:
+    if path.is_symlink():
+        raise ValueError("Choose the actual configuration file instead of replacing a symlink")
+    try:
+        info = path.lstat()
+        if not stat.S_ISREG(info.st_mode) or getattr(info, "st_file_attributes", 0) & 0x400:
+            raise ValueError("Choose an ordinary agent configuration file")
+        with path.open("rb") as stream:
+            content = stream.read(4_000_001)
+    except FileNotFoundError:
+        return None
+    if len(content) > 4_000_000:
+        raise ValueError("Agent configuration exceeds 4 MB")
+    return content
+
+
 def plan(
     client: str,
     target: Path,
@@ -95,15 +117,26 @@ def plan(
     python=sys.executable,
     legacy_space=None,
     remove=False,
+    server_name="mnemion",
+    standalone=False,
+    server=None,
 ) -> Plan:
+    if not re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]{0,63}", server_name):
+        raise ValueError(
+            "Use a short MCP connection name with letters, digits, underscores or hyphens"
+        )
     fmt, key = CLIENTS[client]
     target = target.expanduser().absolute()
     if target.is_symlink():
         raise ValueError("Choose the actual configuration file instead of replacing a symlink")
-    original = target.read_bytes() if target.exists() else None
-    if original is not None and len(original) > 4_000_000:
-        raise ValueError("Agent configuration exceeds 4 MB")
-    node = server_config(credentials, python=python, legacy_space=legacy_space)
+    original = configuration(target)
+    node = (
+        server
+        if server is not None
+        else server_config(
+            credentials, python=python, legacy_space=legacy_space, standalone=standalone
+        )
+    )
     if fmt == "toml":
         import tomlkit
 
@@ -115,14 +148,14 @@ def plan(
             raise ValueError("The existing MCP configuration is not a table")
         if key not in document:
             document[key] = tomlkit.table()
-        replacing = "mnemion" in document[key]
+        replacing = server_name in document[key]
         if remove:
-            document[key].pop("mnemion", None)
+            document[key].pop(server_name, None)
         else:
-            document[key]["mnemion"] = node
+            document[key][server_name] = node
         result = tomlkit.dumps(document)
         rendered = tomlkit.document()
-        rendered[key] = {"mnemion": node}
+        rendered[key] = {server_name: node}
         snippet = tomlkit.dumps(rendered)
         # Parsing the result catches unsupported escaping and malformed tables.
         tomlkit.parse(result)
@@ -138,20 +171,20 @@ def plan(
         ):
             raise ValueError("The existing MCP configuration is not an object")
         document.setdefault(key, {})
-        replacing = "mnemion" in document[key]
+        replacing = server_name in document[key]
         if remove:
-            document[key].pop("mnemion", None)
+            document[key].pop(server_name, None)
         else:
-            document[key]["mnemion"] = node
+            document[key][server_name] = node
         result = json.dumps(document, ensure_ascii=False, indent=2) + "\n"
-        snippet = json.dumps({key: {"mnemion": node}}, ensure_ascii=False, indent=2)
+        snippet = json.dumps({key: {server_name: node}}, ensure_ascii=False, indent=2)
     if remove and not replacing:
         result = original.decode("utf-8") if original is not None else ""
     return Plan(
         target,
         hashlib.sha256(original).hexdigest() if original is not None else None,
         result.encode("utf-8"),
-        "Remove only the mnemion MCP entry" if remove else snippet,
+        f"Remove only the {server_name} MCP entry" if remove else snippet,
         replacing,
     )
 
@@ -160,7 +193,7 @@ def apply(plan: Plan) -> dict:
     target = plan.path
     if target.is_symlink():
         raise ValueError("The configuration became a symlink; preview it again")
-    current = target.read_bytes() if target.exists() else None
+    current = configuration(target)
     digest = hashlib.sha256(current).hexdigest() if current is not None else None
     if digest != plan.expected_hash:
         raise ValueError("Agent settings changed after preview; preview again before applying")
@@ -182,7 +215,7 @@ def apply(plan: Plan) -> dict:
             file.write(plan.content)
         # Compare once more after writing the backup/stage. Cooperating editors
         # can still race the final replace, so close the client during setup.
-        latest = target.read_bytes() if target.exists() else None
+        latest = configuration(target)
         if latest != current:
             raise ValueError("Agent settings changed during setup; no replacement was made")
         os.replace(temporary, target)
@@ -220,6 +253,14 @@ def main(argv=None) -> int:
     )
     parser.add_argument("--legacy-space", help="Enable v3/Open Brain aliases within this space")
     parser.add_argument(
+        "--server-name", default="mnemion", help="Distinct MCP name for this workspace"
+    )
+    parser.add_argument(
+        "--standalone",
+        action="store_true",
+        help="The selected executable is the standalone Mnemion engine",
+    )
+    parser.add_argument(
         "--apply", action="store_true", help="Apply the previewed entry and create a private backup"
     )
     parser.add_argument(
@@ -236,6 +277,8 @@ def main(argv=None) -> int:
             python=args.python,
             legacy_space=args.legacy_space,
             remove=args.remove,
+            server_name=args.server_name,
+            standalone=args.standalone,
         )
         result = (
             apply(planned)

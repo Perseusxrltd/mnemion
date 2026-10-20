@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.31.0**. Roadmap updated: **2026-10-20**.
+Reviewed source distribution: **4.32.0**. Roadmap updated: **2026-10-20**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
 [Release status](RELEASE_STATUS.md) and the [maintenance board](MAINTENANCE_STATUS.md)
@@ -13,6 +13,13 @@ This measures complete requested capabilities, not time spent or the usability
 of the released app. A hotfix does not finish a broader requirement.
 
 ## Current delivery checkpoint
+
+- **4.32.0 source adds guided local agent installation.**
+  [Agent setup](service/desktop-agents.md) supports reviewed named connections,
+  dedicated application keys, preserved client settings and offline removal.
+  The private runtime keeps agents independent of a running Studio window and
+  follows its updates. Grok Build has an observed native profile; separate
+  vendor plugins and hosted provider acceptance remain open.
 
 - **4.31.0 source adds folder and conversation setup through the app.**
   [Desktop sources](service/desktop-sources.md) have folder selection, scoped

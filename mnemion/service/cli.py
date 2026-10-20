@@ -76,6 +76,13 @@ def main(argv: list[str] | None = None) -> int:
             "desktop-source", help="Private Studio source helper; JSON through process pipes"
         )
     )
+    from ..desktop_agents import arguments as agent_setup_arguments
+
+    agent_setup_arguments(
+        commands.add_parser(
+            "desktop-agent", help="Private Studio agent setup; JSON through process pipes"
+        )
+    )
     commands.add_parser(
         "migrate", help="Apply checked database migrations with administration credentials"
     )
@@ -375,6 +382,10 @@ def main(argv: list[str] | None = None) -> int:
         return dispatch(args)
     elif args.command == "desktop-source":
         from ..desktop_sources import dispatch
+
+        return dispatch(args)
+    elif args.command == "desktop-agent":
+        from ..desktop_agents import dispatch
 
         return dispatch(args)
     elif args.command == "migrate":
