@@ -3,9 +3,9 @@
   "repository": "Perseusxrltd/mnemion",
   "run_window": 100,
   "release": {
-    "version": "v4.40.0",
-    "published_at": "2026-10-20T13:51:43Z",
-    "url": "https://github.com/Perseusxrltd/mnemion/releases/tag/v4.40.0"
+    "version": "v4.41.0",
+    "published_at": "2026-10-20T14:42:46Z",
+    "url": "https://github.com/Perseusxrltd/mnemion/releases/tag/v4.41.0"
   },
   "issues": [
     {
@@ -59,26 +59,71 @@
       "failed_jobs": []
     },
     {
-      "id": 39434085500,
+      "id": 39441745467,
       "attempt": 1,
       "workflow": "public-updates.yml",
-      "branch": "v4.40.0",
-      "source_commit": "0fb647e85dcadb209990fec6ca6f81d255d9676c",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-20T14:03:50Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39434085500"
-    },
-    {
-      "id": 39424241142,
-      "attempt": 1,
-      "workflow": "release.yml",
-      "branch": "release/4.40.0",
-      "source_commit": "0fb647e85dcadb209990fec6ca6f81d255d9676c",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-20T13:50:24Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39424241142"
+      "branch": "v4.41.0",
+      "source_commit": "2f0201bc4a6f4844023ad3036509ac3fb177c5c3",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-20T14:43:19Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39441745467",
+      "job_progress": {
+        "total": 7,
+        "completed": 1,
+        "succeeded": 1,
+        "active": [
+          {
+            "id": 118693220094,
+            "name": "linux / x64 public upgrade",
+            "status": "in_progress",
+            "steps": [
+              "Linux desktop libraries"
+            ]
+          },
+          {
+            "id": 118693220122,
+            "name": "macos / x64 public upgrade",
+            "status": "in_progress",
+            "steps": [
+              "Install public release and observe its automatic update"
+            ]
+          },
+          {
+            "id": 118693220148,
+            "name": "windows / x64 public upgrade",
+            "status": "in_progress",
+            "steps": [
+              "Install public release and observe its automatic update"
+            ]
+          },
+          {
+            "id": 118693220250,
+            "name": "macos / arm64 public upgrade",
+            "status": "in_progress",
+            "steps": [
+              "Install public release and observe its automatic update"
+            ]
+          },
+          {
+            "id": 118693220252,
+            "name": "linux / arm64 public upgrade",
+            "status": "in_progress",
+            "steps": [
+              "Linux desktop libraries"
+            ]
+          },
+          {
+            "id": 118693220316,
+            "name": "windows / arm64 public upgrade",
+            "status": "in_progress",
+            "steps": [
+              "Install public release and observe its automatic update"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": []
     },
     {
       "id": 39428746847,
@@ -97,49 +142,22 @@
       "workflow": "verify-artifacts.yml",
       "branch": "main",
       "source_commit": "6f48e901393d1a1e9efb227a2509959c9b31e718",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-20T14:41:19Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39441496927",
-      "job_progress": {
-        "total": 1,
-        "completed": 0,
-        "succeeded": 0,
-        "active": [
-          {
-            "id": 118692225385,
-            "name": "verify",
-            "status": "in_progress",
-            "steps": [
-              "Verify every uploaded byte, production signature and complete feed"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
-    },
-    {
-      "id": 39438860803,
-      "attempt": 1,
-      "workflow": "website-release.yml",
-      "branch": "main",
-      "source_commit": "fca12c7db24d5defecf3e8cb583ee208aac13296",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-20T14:24:26Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39438860803"
+      "updated_at": "2026-10-20T14:42:58Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39441496927"
     },
     {
-      "id": 39434081456,
+      "id": 39441738346,
       "attempt": 1,
       "workflow": "website-release.yml",
-      "branch": "v4.40.0",
-      "source_commit": "0fb647e85dcadb209990fec6ca6f81d255d9676c",
+      "branch": "v4.41.0",
+      "source_commit": "2f0201bc4a6f4844023ad3036509ac3fb177c5c3",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-20T13:51:59Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39434081456"
+      "updated_at": "2026-10-20T14:43:07Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39441738346"
     }
   ],
-  "observed_at": "2026-10-20T14:41:43+00:00"
+  "observed_at": "2026-10-20T14:43:34+00:00"
 }
