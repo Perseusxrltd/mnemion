@@ -20,15 +20,95 @@
   ],
   "runs": [
     {
-      "id": 39388058383,
+      "id": 39392286802,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "d8e6b05e075d81382fc7f1994efe0dd36147f5da",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-20T08:00:19Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39388058383"
+      "source_commit": "4fcab3d7ebcfc92ca3ea87dcf9e2aa208c07f587",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-20T08:18:31Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39392286802",
+      "job_progress": {
+        "total": 12,
+        "completed": 3,
+        "succeeded": 3,
+        "active": [
+          {
+            "id": 118526853744,
+            "name": "studio",
+            "status": "in_progress",
+            "steps": [
+              "Post Run actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1"
+            ]
+          },
+          {
+            "id": 118526925347,
+            "name": "container (ubuntu-22.04-arm)",
+            "status": "in_progress",
+            "steps": [
+              "Build the actual deployment image with its documentation"
+            ]
+          },
+          {
+            "id": 118526925418,
+            "name": "supervision (macos-15)",
+            "status": "in_progress",
+            "steps": [
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
+            ]
+          },
+          {
+            "id": 118526925428,
+            "name": "service (3.14)",
+            "status": "in_progress",
+            "steps": [
+              "Matching PostgreSQL recovery tools"
+            ]
+          },
+          {
+            "id": 118526925475,
+            "name": "service (3.13)",
+            "status": "in_progress",
+            "steps": [
+              "Run python -m pip install uv==0.12.24"
+            ]
+          },
+          {
+            "id": 118526925487,
+            "name": "container (ubuntu-22.04)",
+            "status": "in_progress",
+            "steps": [
+              "Verify the non-root image includes Studio, guides and notices offline"
+            ]
+          },
+          {
+            "id": 118526925510,
+            "name": "supervision (macos-15-intel)",
+            "status": "in_progress",
+            "steps": [
+              "Build the current Intel cryptography runtime with static OpenSSL"
+            ]
+          },
+          {
+            "id": 118526925567,
+            "name": "service (3.12)",
+            "status": "in_progress",
+            "steps": [
+              "Matching PostgreSQL recovery tools"
+            ]
+          },
+          {
+            "id": 118526925580,
+            "name": "legacy",
+            "status": "in_progress",
+            "steps": [
+              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": []
     },
     {
       "id": 39387468667,
@@ -64,50 +144,36 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39388255080",
       "job_progress": {
         "total": 31,
-        "completed": 26,
-        "succeeded": 26,
+        "completed": 30,
+        "succeeded": 30,
         "active": [
           {
             "id": 118515119477,
             "name": "native / windows-11-arm / arm64",
             "status": "in_progress",
             "steps": [
-              "Installed app creates, searches and reopens a real local workspace"
-            ]
-          },
-          {
-            "id": 118515119494,
-            "name": "native / macos-15 / arm64",
-            "status": "in_progress",
-            "steps": [
-              "Packaged Mac update, restart guards and relaunch"
-            ]
-          },
-          {
-            "id": 118515119526,
-            "name": "native / ubuntu-22.04 / x64",
-            "status": "in_progress",
-            "steps": [
-              "Installed Linux app creates, searches and reopens a real local workspace"
-            ]
-          },
-          {
-            "id": 118515119533,
-            "name": "native / windows-2022 / x64",
-            "status": "in_progress",
-            "steps": [
               "Native Windows installation, authenticated upgrade and relaunch"
-            ]
-          },
-          {
-            "id": 118515119569,
-            "name": "native / macos-15-intel / x64",
-            "status": "in_progress",
-            "steps": [
-              "Installed app creates, searches and reopens a real local workspace"
             ]
           }
         ]
+      },
+      "failed_jobs": []
+    },
+    {
+      "id": 39392435604,
+      "attempt": 1,
+      "workflow": "release.yml",
+      "branch": "release/4.35.0",
+      "source_commit": "4fcab3d7ebcfc92ca3ea87dcf9e2aa208c07f587",
+      "status": "pending",
+      "conclusion": null,
+      "updated_at": "2026-10-20T08:18:24Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39392435604",
+      "job_progress": {
+        "total": 0,
+        "completed": 0,
+        "succeeded": 0,
+        "active": []
       },
       "failed_jobs": []
     },
@@ -134,5 +200,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39387465064"
     }
   ],
-  "observed_at": "2026-10-20T08:00:53+00:00"
+  "observed_at": "2026-10-20T08:18:55+00:00"
 }
