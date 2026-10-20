@@ -83,6 +83,13 @@ def main(argv: list[str] | None = None) -> int:
             "desktop-agent", help="Private Studio agent setup; JSON through process pipes"
         )
     )
+    from ..agent_packages import arguments as agent_package_arguments
+
+    agent_package_arguments(
+        commands.add_parser(
+            "agent-package", help="Export Perseus XR connection packages without credentials"
+        )
+    )
     commands.add_parser(
         "migrate", help="Apply checked database migrations with administration credentials"
     )
@@ -386,6 +393,10 @@ def main(argv: list[str] | None = None) -> int:
         return dispatch(args)
     elif args.command == "desktop-agent":
         from ..desktop_agents import dispatch
+
+        return dispatch(args)
+    elif args.command == "agent-package":
+        from ..agent_packages import dispatch
 
         return dispatch(args)
     elif args.command == "migrate":

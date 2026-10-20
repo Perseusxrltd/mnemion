@@ -42,6 +42,18 @@ export interface OAuthConfiguration {
   resource: string | null
   issuer: string | null
 }
+export type AgentPackageProvider = 'openai' | 'claude' | 'grok-build' | 'hermes' | 'openclaw' | 'grokbot'
+export interface AgentPackage {
+  provider: AgentPackageProvider
+  kind: 'plugin' | 'configuration' | 'guide'
+  author: 'Perseus XR'
+  version: string
+  filename: string
+  media_type: 'application/zip'
+  sha256: string
+  content_base64: string
+  contains_credentials: false
+}
 export interface SignInInvitation {
   id: string
   principal_id: string

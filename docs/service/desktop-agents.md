@@ -1,6 +1,6 @@
 # Install an agent connection from Studio
 
-Source **4.32.0** adds **Agents → Connect an agent on this computer**.
+Published **4.32.0** adds **Agents → Connect an agent on this computer**.
 [Release status](../RELEASE_STATUS.md) identifies published versions and native
 acceptance; a source version alone does not mean its installers are available.
 
@@ -66,7 +66,10 @@ entry is preserved. Manually copied configurations referencing the removed file
 will stop working. Server keys are not silently revoked; an administrator can
 revoke unused keys in **People & apps**. Other devices retain their own setup.
 
-The app does not overwrite invalid JSON, unsupported comments or linked files.
+The app does not overwrite invalid or duplicate-key settings, unsupported JSON
+comments or linked files. From 4.38, Hermes YAML retains comments and quotes;
+OpenClaw JSON5 accepts comments and is saved as ordinary JSON with an exact
+private backup. Editing a YAML alias does not change other settings sharing it.
 Use the agent's own supported configuration editor to resolve such a file, then
 review a new preview. Completed or interrupted setup remains inspectable; a lost
 response is not a reason to blindly replay an old settings revision.
@@ -74,10 +77,17 @@ response is not a reason to blindly replay an old settings revision.
 ## Profiles and boundaries
 
 Profiles cover Codex, Grok Build, Claude Code/Desktop, Cursor, Gemini CLI, Zed,
-Devin Desktop, legacy Windsurf and an explicit generic MCP file. Grok Build's
+Devin Desktop, legacy Windsurf and an explicit generic MCP file. From 4.38,
+Hermes uses `mcp_servers` in its active YAML profile; OpenClaw uses nested
+`mcp.servers` in JSON/JSON5. Hermes honors `HERMES_HOME`; OpenClaw honors
+`OPENCLAW_CONFIG_PATH`, `OPENCLAW_STATE_DIR`, `OPENCLAW_HOME` and named
+`OPENCLAW_PROFILE` defaults. Choose an explicit file for a profile selected
+inside a different running client. Grok Build's
 TOML profile is based on the installed native CLI's `mcp add --help` and current
 configuration contract. Its support is distinct from a Grokbot plugin or hosted
-Grok service. Dot, Hermes and OpenClaw native packaging remain separate work.
+Grok service. [Perseus XR packages](agent-packages.md) supply supported plugin,
+native OAuth configuration or connection-guide formats. Actual cloud/provider
+acceptance and catalog publication remain separate work.
 Hosted ChatGPT uses the [OAuth flow](hosted-agent-sign-in.md), not this local
 file installer.
 

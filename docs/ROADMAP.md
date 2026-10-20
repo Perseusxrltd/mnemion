@@ -1,13 +1,13 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.37.0**. Roadmap updated: **2026-10-20**.
+Reviewed source distribution: **4.38.0**. Roadmap updated: **2026-10-20**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
 [Release status](RELEASE_STATUS.md) and the [maintenance board](MAINTENANCE_STATUS.md)
-update automatically. This page sets delivery order; the [64 requirements](PRODUCT_REQUIREMENTS.md)
+update automatically. This page sets delivery order; the [65 requirements](PRODUCT_REQUIREMENTS.md)
 preserve every requested outcome and its evidence.
 
-Strict full-scope completion remains **17/64 shipped (26.6%)**: 41 partial,
+Strict full-scope completion remains **17/65 shipped (26.2%)**: 42 partial,
 2 planned, 3 ongoing and 1 external. Requirements differ greatly in size.
 This measures complete requested capabilities, not time spent or the usability
 of the released app. A hotfix does not finish a broader requirement.
@@ -19,6 +19,25 @@ their actual acceptance passes. The [release process](MAINTENANCE.md) keeps
 issue review, publication and version-linked closure together.
 
 ## Current delivery checkpoint
+
+- **Expanded librarian requirement R07 is planned and preserved.**
+  The [scientific study and delivery contract](research/2026-10-20-layered-librarian.md)
+  covers configurable raw capture, layered consolidation, deep review, statistics,
+  resurfacing, policy-controlled retention, visual monitoring and native agent controls.
+  TypeSafe AI Jev is assessed as an optional decision router; the free local path
+  remains required. Seven implementation slices and a recurring research watch
+  have explicit acceptance criteria. This added scope changes the denominator,
+  not the number of shipped requirements.
+
+- **4.38 source adds native Hermes/OpenClaw setup and Perseus XR packages.**
+  [Native profiles](service/desktop-agents.md) preserve settings and distinct
+  workspace identities. [Connection packages](service/agent-packages.md) are
+  downloadable in the app and generated through the API, SDKs and native CLI.
+  Provider-specific plugin, configuration and guide types stay explicit.
+  [Focused checks and actual Grok/Claude manifest validation](validation/2026-10-20-native-connectors.md)
+  passed. New GitHub **44/45/46** retain real Grok Bot cloud and private guarded-update
+  and office-access acceptance; the upstream local-note publisher's security pause is preserved.
+  Native release and live update gates remain separate.
 
 - **Published 4.37.0 combines queue improvements with a local setup correction.**
   A [reproduced state-publication race](validation/2026-10-20-state-publication.md)
@@ -199,7 +218,7 @@ continues while an external account or publisher prerequisite is unavailable.
 
 | Priority | Next outcome | Acceptance and requirements |
 | --- | --- | --- |
-| 1 | Remaining live connections | ChatGPT registration, consent, 16 tools and a profile-only request passed for #18. Finish Perseus XR-authored native Grok/Grokbot, Claude, Hermes, OpenClaw and OpenAI/Dot packages, plus separate free ngrok account/lifecycle acceptance. The bounded remote-access and delegated-authentication reports have verified evidence. Preserve existing HTTPS, local and scoped-key paths. C04–C07, A05/A08. |
+| 1 | Current real-deployment reports and remaining live connections | ChatGPT acceptance closed #18. New #44/#45 require actual Grok Bot cloud acceptance and completion of the guarded shared-host/Windows update, including backup, semantic access, cleanup and explicitly paused upstream publishing. Source 4.38 supplies Perseus XR packages and Hermes/OpenClaw native profiles. Continue real provider/directory and free ngrok lifecycle acceptance. Preserve existing HTTPS, local and scoped-key paths. C04–C07, A05/A08. |
 | 2 | Continuous operation and recovery from another device | Guided organization hosting, registered recovery hosts, delegated operators, key custody, off-host delivery visibility and complete app-based replacement-host setup. Source 4.30.2 supplies desktop database import; provider/OS configuration remains. Expand beyond the bounded 4.29 journal recovery where needed. Verify host loss and current denials without the original agent; distinguish mirrors, snapshots and replicas. A01/A06/A07/A09/A11–A13, U01/U02/U04/U06/U11. |
 | 3 | Source and agent onboarding | Guided consent, credentials, permission mapping, exclusions, reconnect and capture coverage. Validate actual Grokbot, Dot/OpenAI, Anthropic, Hermes and OpenClaw paths before claiming native plugins. Expand adapters with provider contracts and real acceptance. C01–C09, F08. |
 | 4 | Govern several workspaces | Explicit personal/employer/client contexts, independent memberships, queued-work destinations and policies. Reviewed cross-workspace search/transfer without company access to personal data. Bookmarks alone are incomplete. F02/F08, A03/A04/A12, C09. |

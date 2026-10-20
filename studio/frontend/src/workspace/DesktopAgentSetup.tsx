@@ -6,7 +6,7 @@ import type { AgentInstallation, AgentPreview, AgentSetupResult } from '../../..
 import type { Connection } from './connection-types';
 
 export const desktopAgentNames: Record<string, string> = {
-  codex: 'Codex', 'grok-build': 'Grok Build', 'claude-code': 'Claude Code',
+  codex: 'Codex', 'grok-build': 'Grok Build', hermes: 'Hermes', openclaw: 'OpenClaw', 'claude-code': 'Claude Code',
   'claude-desktop': 'Claude Desktop', cursor: 'Cursor', 'gemini-cli': 'Gemini CLI',
   zed: 'Zed', devin: 'Devin Desktop · Cascade', windsurf: 'Windsurf · legacy Cascade', generic: 'Another MCP client',
 };

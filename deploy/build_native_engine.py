@@ -97,6 +97,8 @@ def build(work: Path, output: Path) -> Path:
         "ngrok",
         "--add-data",
         str(ROOT / "mnemion/_studio") + os.pathsep + "mnemion/_studio",
+        "--add-data",
+        str(ROOT / "mnemion/assets") + os.pathsep + "mnemion/assets",
     ]
     for distribution in ("fastembed", "onnxruntime", "tokenizers", "huggingface_hub", "ngrok"):
         command += ["--copy-metadata", distribution]

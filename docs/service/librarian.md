@@ -1,5 +1,9 @@
 # The configurable memory librarian
 
+The [layered librarian study and implementation plan](../research/2026-10-20-layered-librarian.md)
+records the expanded raw-capture, consolidation, statistical resurfacing and Jev
+workstream. The documented behavior below is the current bounded librarian.
+
 For a workspace hosted by Studio, source 4.33 adds [model-provider setup in the app](desktop-models.md).
 Saved profiles and keys remain separate from each space's processing approval.
 

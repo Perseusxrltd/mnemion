@@ -5,6 +5,132 @@
       "authentication": "bearer",
       "download": false,
       "effect": "read",
+      "group": "identity",
+      "input_schema": {
+        "$defs": {
+          "AgentPackageInput": {
+            "additionalProperties": false,
+            "properties": {
+              "provider": {
+                "enum": [
+                  "openai",
+                  "claude",
+                  "grok-build",
+                  "hermes",
+                  "openclaw",
+                  "grokbot"
+                ],
+                "title": "Provider",
+                "type": "string"
+              }
+            },
+            "required": [
+              "provider"
+            ],
+            "title": "AgentPackageInput",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/AgentPackageInput"
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "POST",
+      "name": "agents.package",
+      "output_schema": {
+        "$defs": {
+          "AgentPackage": {
+            "additionalProperties": true,
+            "properties": {
+              "author": {
+                "const": "Perseus XR",
+                "title": "Author",
+                "type": "string"
+              },
+              "contains_credentials": {
+                "const": false,
+                "title": "Contains Credentials",
+                "type": "boolean"
+              },
+              "content_base64": {
+                "maxLength": 180000,
+                "title": "Content Base64",
+                "type": "string"
+              },
+              "filename": {
+                "title": "Filename",
+                "type": "string"
+              },
+              "kind": {
+                "enum": [
+                  "plugin",
+                  "configuration",
+                  "guide"
+                ],
+                "title": "Kind",
+                "type": "string"
+              },
+              "media_type": {
+                "const": "application/zip",
+                "title": "Media Type",
+                "type": "string"
+              },
+              "provider": {
+                "enum": [
+                  "openai",
+                  "claude",
+                  "grok-build",
+                  "hermes",
+                  "openclaw",
+                  "grokbot"
+                ],
+                "title": "Provider",
+                "type": "string"
+              },
+              "sha256": {
+                "title": "Sha256",
+                "type": "string"
+              },
+              "version": {
+                "title": "Version",
+                "type": "string"
+              }
+            },
+            "required": [
+              "provider",
+              "kind",
+              "author",
+              "version",
+              "filename",
+              "media_type",
+              "sha256",
+              "content_base64",
+              "contains_credentials"
+            ],
+            "title": "AgentPackage",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/AgentPackage"
+      },
+      "parameter_locations": {},
+      "path": "/v1/oauth/agent-package",
+      "retry": "read",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Agent Package"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "read",
       "group": "core-context",
       "input_schema": {
         "additionalProperties": false,

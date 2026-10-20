@@ -47,6 +47,9 @@ rename a person's account to conceal it.
 - Linux application icons and shortcuts use `icon.png`; its tray has compact
   1× and 2× renders. Browser favicons use the vector and ICO; Apple touch icons
   use the 180 px render.
+- Native [connection packages](service/agent-packages.md) use
+  `mnemion/assets/connector-icon.png`, generated from the same source and checked
+  by the branding verifier.
 - The repository overview and historical `assets/mnemion_logo.png` path use the
   same mark. Old release files and historical screenshots retain their original
   artwork; new releases contain the current assets.

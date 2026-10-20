@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -11,8 +12,42 @@ import subprocess
 import tempfile
 import threading
 import time
+from zipfile import ZipFile
 
 from deploy.probe_native_postgres import expand
+
+
+def verify_agent_package(executable: Path, root: Path) -> None:
+    """Check the installed command and logo data, without a server or model call."""
+    destination = root / "Perseus XR connection.zip"
+    result = subprocess.run(
+        [
+            str(executable),
+            "agent-package",
+            "--provider",
+            "claude",
+            "--mcp-url",
+            "https://memory.example.test/mcp",
+            "--output",
+            str(destination),
+        ],
+        cwd=root,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        timeout=60,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+    )
+    if result.returncode or len(result.stdout) > 16384:
+        raise RuntimeError("The installed engine could not export its connection package")
+    receipt = json.loads(result.stdout)
+    assert receipt["author"] == "Perseus XR" and not receipt["contains_credentials"]
+    assert hashlib.sha256(destination.read_bytes()).hexdigest() == receipt["sha256"]
+    with ZipFile(destination) as archive:
+        manifest = json.loads(archive.read(".claude-plugin/plugin.json"))
+        assert manifest["author"]["name"] == "Perseus XR"
+        assert manifest["version"] == receipt["version"]
+        assert archive.read("assets/icon.png").startswith(b"\x89PNG\r\n\x1a\n")
+        assert ".app.json" not in archive.namelist()
 
 
 class Engine:
@@ -155,6 +190,7 @@ def probe(
     root = retain.resolve() if retain else Path(temporary.name).resolve()
     root.mkdir(mode=0o700, exist_ok=True)
     try:
+        verify_agent_package(executable, root)
         database = root / "Native database with spaces"
         if not database.exists():
             expand(database_archive, database)
@@ -247,6 +283,7 @@ def probe(
                 "real_semantic_index_and_search": True,
                 "authenticated_api": True,
                 "authenticated_mcp_tools": True,
+                "perseus_agent_package": True,
                 "anonymous_access_refused": True,
                 "restart_preserves_credentials": True,
                 "restart_preserves_memories_and_identity": True,

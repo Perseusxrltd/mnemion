@@ -1041,6 +1041,14 @@ class Client(JournalUploadClient):
             body={"expected_version": expected_version, "state": state, "reason": reason},
         )
 
+    def agent_package(self, provider: str) -> dict:
+        """Download a credential-free connection package for this workspace."""
+        from .agent_packages import PROVIDERS
+
+        if provider not in PROVIDERS:
+            raise ValueError("Choose a supported connection package")
+        return self.request("POST", "/v1/oauth/agent-package", body={"provider": provider})
+
     def operation(self, operation_id: str) -> dict:
         return self.request("GET", f"/v1/operations/{operation_id}")
 

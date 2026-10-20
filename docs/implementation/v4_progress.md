@@ -19,6 +19,21 @@ Requirements and acceptance criteria are defined by the
 [architecture](../research/2026-10-09-mnemion-study/ARCHITECTURE.md), and
 [roadmap](../research/2026-10-09-mnemion-study/ROADMAP.md).
 
+## 20 October: native named clients and new deployment reports
+
+Source 4.38 implements native Hermes YAML/OpenClaw JSON5 setup and a common
+Perseus XR [connection-package generator](../service/agent-packages.md) for app,
+API, SDKs and CLI. Focused configuration/API tests and actual Windows Grok Build
+1.0.62 and Claude Code 2.1.59 manifest validation passed. An observed older-Claude
+icon-field incompatibility was corrected before publication. Broader provider
+runtime/capture and directory publication remain explicit.
+
+The watcher detected new issues 44 and 45 after issue 18 closed. The
+[issue plan](github-issues.md) keeps the real Bot cloud and guarded shared-host
+acceptance open. The original failed backup/lab evidence and deliberately paused
+PC note publisher are preserved. A service-ready report does not establish
+fresh local-note delivery. C07 moves to partial; strict completion stays 17/64.
+
 ## 20 October: actual ChatGPT acceptance and native integration requirements
 
 [Signed-in ChatGPT acceptance](../validation/2026-10-20-chatgpt-acceptance.md)
@@ -723,3 +738,7 @@ principals' records. Legacy external-buffer migration and complete writable
 reconstruction remain under issue 39. The [issue plan](github-issues.md) retains
 all 12 reports reviewed today; verified-release associations close only addressed
 issues after publication/upgrade evidence. Strict scope remains 17/64 (26.6%).
+
+## Expanded librarian workstream — 20 October 2026
+
+R07 preserves the new [layered-memory research and delivery contract](../research/2026-10-20-layered-librarian.md): configurable raw capture and available reasoning traces, episodic/claim/procedural/working layers, continuous deep review, statistics-based resurfacing, controlled retention and vault boundaries, app/agent parity, and a recurring scientific/tool watch. TypeSafe AI Jev is a candidate typed router with published cost and data-policy limits; no paid calls or account were created. The work remains planned while open deployment issues and the connector release continue.

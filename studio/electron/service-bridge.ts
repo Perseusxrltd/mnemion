@@ -430,7 +430,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     if (!profile) throw new Error('Choose an agent profile.')
     const result = await dialog.showSaveDialog({ title: 'Choose the agent configuration file',
       ...(profile.config_path ? { defaultPath: profile.config_path } : {}),
-      filters: [{ name: 'Agent configuration', extensions: ['codex', 'grok-build'].includes(profile.client) ? ['toml'] : ['json'] }] })
+      filters: [{ name: 'Agent configuration', extensions: ['codex', 'grok-build'].includes(profile.client) ? ['toml'] : profile.client === 'hermes' ? ['yaml', 'yml'] : profile.client === 'openclaw' ? ['json', 'json5'] : ['json'] }] })
     return result.canceled ? null : result.filePath ?? null
   })
   ipcMain.handle('agents:preview', (event, setup: AgentSetup) => { trusted(event); return desktopAgents().preview(setup) })

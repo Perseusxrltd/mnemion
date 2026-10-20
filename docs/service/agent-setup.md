@@ -40,6 +40,7 @@ service and installed agent launcher do not require a Studio window.
 | Embeddings and librarian models | `local.models`, followed by the selected spaces' processing permissions |
 | Folder, Obsidian, conversation, Slack and Drive sources | `source.status`, `source.configure`, `source.pause`, `source.sync`, `source.remove` |
 | Install supported local MCP clients | `agent.status`, `agent.preview`, `agent.install`, `agent.remove`; independent [mnemion-agent setup](agents.md) |
+| Export a named agent connection package | `agents.package` in the authenticated catalog, or standalone `mnemion-service agent-package`; [formats and publisher](agent-packages.md) |
 | Git journals and source delivery | `local.journal` plus the workspace's journal/publication operations |
 | Encrypted vault and recovery keys | `local.vault`, `local.vault-key`, `backup.key`, with private result files for sensitive material |
 | Backup, inspect, restore and select a recovered workspace | `backup.*`, `recovery.list`, `recovery.use`, or the independent host CLI |

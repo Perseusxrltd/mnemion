@@ -85,6 +85,16 @@ export async function verifyNativeAgents(window: BrowserWindow, call: Call): Pro
   })()`)
   let id: string | undefined
   try {
+    for (const [client, filename, content] of [
+      ['hermes', 'hermes.yaml', '# Keep Hermes policy\nmodel: {default: fixture-only}\nmcp_servers: {}\n'],
+      ['openclaw', 'openclaw.json5', '{// Keep OpenClaw policy\n gateway:{bind:"loopback"},mcp:{servers:{}}}\n'],
+    ]) {
+      const path = join(folder, filename)
+      await writeFile(path, content, { mode: 0o600, flag: 'wx' })
+      const reviewed = await call('agent.preview', { setup: { client, server_name: 'mnemion-native', config_path: path,
+        endpoint: fixture.endpoint, tenant_id: fixture.tenant, principal_id: fixture.principal } }) as AgentPreview
+      if (reviewed.replacing || !reviewed.snippet.includes('mnemion-native') || JSON.stringify(reviewed).includes(fixture.key) || (await readFile(path, 'utf8')) !== content) throw new Error('The installed engine could not safely preview the native agent format.')
+    }
     const preview = await call('agent.preview', { setup: { client: 'grok-build', server_name: 'mnemion-native', config_path: target,
       endpoint: fixture.endpoint, tenant_id: fixture.tenant, principal_id: fixture.principal } }) as AgentPreview
     id = preview.setup.id
@@ -106,7 +116,7 @@ export async function verifyNativeAgents(window: BrowserWindow, call: Call): Pro
     await call('agent.remove', { id, configuration_hash: saved.installations.find(item => item.id === id)!.configuration_hash, confirm: true })
     const remaining = await readFile(target, 'utf8')
     if (!remaining.includes('approval_policy = "never"') || !remaining.includes('[mcp_servers.existing]') || remaining.includes('mnemion-native')) throw new Error('Removing native agent setup changed unrelated settings.')
-    return { nativeAgentPreviewAndInstall: true, nativeAgentPrivateCredentials: true, nativeAgentStandaloneMcp: true,
+    return { nativeAgentPreviewAndInstall: true, nativeAgentPrivateCredentials: true, nativeAgentStandaloneMcp: true, nativeAgentAdditionalFormats: true,
       nativeAgentReaderPermissions: true, nativeAgentAppAndPrivateControls: true, nativeAgentRemovalPreservedSettings: true,
       nativeAgentIndependentRuntime: !!saved.runtime_version && !saved.runtime_attention }
   } finally {

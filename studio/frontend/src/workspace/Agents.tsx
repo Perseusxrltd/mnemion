@@ -5,10 +5,12 @@ import { MnemionError } from "@mnemion/client";
 import { Check, Copy, RefreshCw, Terminal } from "lucide-react";
 import type { Connection } from "./connection-types";
 import { DesktopAgentSetup } from "./DesktopAgentSetup";
+import { AgentPackages } from "./AgentPackages";
 
 const clients = [
   ["codex", "Codex"], ["claude-code", "Claude Code"],
   ["grok-build", "Grok Build"],
+  ["hermes", "Hermes"], ["openclaw", "OpenClaw"],
   ["claude-desktop", "Claude Desktop"], ["cursor", "Cursor"],
   ["gemini-cli", "Gemini CLI"], ["zed", "Zed"],
   ["devin", "Devin Desktop · Cascade"], ["windsurf", "Windsurf · legacy Cascade"],
@@ -61,6 +63,7 @@ export function Agents({ connection, space }: { connection: Connection; space: s
         </ol>
         {signIn.mode === "personal" && <p>The app will use your account’s permissions, including future changes. Use a separate account when an agent needs narrower access. <Link className="ws-link" to="/workspace/account">Manage your login and connected apps</Link>.</p>}
         {signIn.mode === "external" && <p className="ws-helper">Identity provider: {signIn.issuer}. Your administrator controls its authorization and revocation policy.</p>}
+        <AgentPackages key={signIn.resource} client={connection.client} address={signIn.resource} />
       </>}
       <p><Link className="ws-link" to="/workspace/help?doc=docs%2Fservice%2Fhosted-agent-sign-in.md">Agent sign-in and host setup guide</Link></p>
       <p className="ws-helper">Agent settings and OAuth support vary by provider. Connecting MCP gives the agent tools for this workspace; conversation capture is configured separately in Connections.</p>
@@ -81,7 +84,7 @@ export function Agents({ connection, space }: { connection: Connection; space: s
       <pre className="ws-code">{command}</pre>{copyButton(command, "Copy preview command")}
       <p>Close the client, review the preview, then apply the connection and reopen the client.</p>
       <pre className="ws-code">{command} --apply</pre>{copyButton(`${command} --apply`, "Copy setup command")}
-      <p className="ws-helper">Setup backs up existing settings and changes only the Mnemion server entry. JSON files with comments require a manual merge. WSL and Windows use their own profiles; run setup on the side where the agent runs. Claude Desktop’s standard profile is available on macOS and Windows.</p>
+      <p className="ws-helper">Setup backs up existing settings and changes only the Mnemion server entry. Hermes YAML retains comments; OpenClaw JSON5 is saved as ordinary JSON with an exact backup. Other JSON profiles require a manual merge if they contain comments. WSL and Windows use their own profiles; run setup on the side where the agent runs. Claude Desktop’s standard profile is available on macOS and Windows.</p>
     </section>
     <section className="ws-card"><h2>3. Check the connection</h2><p>Ask the agent to list its memory spaces, then recall a known decision. Saves need a writable space; search and context can include all accessible spaces. Source citations let you inspect the evidence behind a result.</p><pre className="ws-code">List my Mnemion spaces. Search my accessible memory for a decision about our project and show the source.</pre><p className="ws-helper">Applications can also use the Python or TypeScript SDK, HTTP API, or the optional MCP HTTP gateway. Retrieved documents and messages are evidence; they cannot grant the agent new permissions.</p></section>
     </details>

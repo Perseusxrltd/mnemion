@@ -6,7 +6,7 @@ export * from './embeddings.js'
 import type { LibrarianChoice, LibrarianSettings, LibrarianSettingsInput, LibrarianRun, LibrarianRunItem,
   LibrarianMode, LibrarianProposal, LibrarianProposalState, LibrarianDecisionReceipt } from './librarian.js'
 export * from './librarian.js'
-import type { PasswordAccount, DeviceSession, OAuthConfiguration, OAuthConnection, SignInInvitation, InvitationReceipt, CompanyConfiguration, CompanyLink } from './sign-in.js'
+import type { PasswordAccount, DeviceSession, OAuthConfiguration, OAuthConnection, SignInInvitation, InvitationReceipt, CompanyConfiguration, CompanyLink, AgentPackage, AgentPackageProvider } from './sign-in.js'
 export * from './sign-in.js'
 import type { RecoveryDirectory, RecoveryDirectoryRecord } from './recovery.js'
 export * from './recovery.js'
@@ -343,6 +343,7 @@ export class MnemionClient {
   deviceSessions() { return this.request<{ items: DeviceSession[] }>('GET', '/v1/sign-in/sessions') }
   revokeSession(id: string) { return this.request<{ id: string; revoked: boolean }>('DELETE', '/v1/sign-in/sessions/' + encodeURIComponent(id)) }
   oauthConfiguration() { return this.request<OAuthConfiguration>('GET', '/v1/oauth/configuration') }
+  agentPackage(provider: AgentPackageProvider) { return this.request<AgentPackage>('POST', '/v1/oauth/agent-package', { body: { provider } }) }
   signInConfiguration() { return this.request<{ password_sign_in: boolean; public_origin: string | null; browser_sign_in: boolean; remember_browser: boolean; minimum_password_characters: number }>('GET', '/v1/sign-in/configuration') }
   companyConfiguration(workspace: string) { return this.request<CompanyConfiguration>('GET', '/v1/sign-in/company/configuration?workspace_id=' + encodeURIComponent(workspace)) }
   companyLinks() { return this.request<{ items: CompanyLink[] }>('GET', '/v1/sign-in/company/links') }

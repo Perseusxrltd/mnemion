@@ -90,16 +90,8 @@ def observed(root: Path, record: Record) -> dict:
     target = Path(record.config_path)
     content = agent_setup.configuration(target)
     digest = hashlib.sha256(content).hexdigest() if content is not None else None
-    fmt, section = agent_setup.CLIENTS[record.client]
-    if fmt == "toml":
-        import tomlkit
-
-        document = tomlkit.parse(content.decode("utf-8") if content else "")
-    else:
-        document = json.loads(content.decode("utf-8") if content else "{}")
-    if not isinstance(document, dict) or not isinstance(document.get(section, {}), dict):
-        raise ValueError("The existing MCP configuration is not an object")
-    current = document.get(section, {}).get(record.server_name)
+    value = agent_setup.document(record.client, content)
+    current = agent_setup.servers(record.client, value).get(record.server_name)
     installed = current == node(root, record)
     credential_exists = key_path(root, record.id).is_file()
     return {
@@ -200,8 +192,13 @@ def reviewed_plan(root: Path, setup: Setup, executable: Path, *, remove=False):
     resolved = target.resolve()
     if resolved == private or private in resolved.parents or resolved in private.parents:
         raise ValueError("Agent configuration must be separate from Mnemion's private setup files")
-    suffix = ".toml" if agent_setup.CLIENTS[setup.client][0] == "toml" else ".json"
-    if target.suffix.lower() != suffix:
+    suffixes = {
+        "toml": {".toml"},
+        "yaml": {".yaml", ".yml"},
+        "json5": {".json", ".json5"},
+        "json": {".json"},
+    }
+    if target.suffix.lower() not in suffixes[agent_setup.CLIENTS[setup.client][0]]:
         raise ValueError("Choose the configuration file format used by this agent")
     return agent_setup.plan(
         setup.client,

@@ -3,7 +3,8 @@
   "source_sha256": "89817dc88eb3ec30d1630117d698542587a876f4022c490d5fa9160ace44dff1",
   "renderer": "sharp 0.35.5",
   "aliases": {
-    "assets/mnemion_logo.png": "icon.png"
+    "assets/mnemion_logo.png": "icon.png",
+    "mnemion/assets/connector-icon.png": "icon.png"
   },
   "files": {
     "mnemion.svg": {

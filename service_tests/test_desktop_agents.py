@@ -50,19 +50,20 @@ def install_request(preview, credential, **values):
     }
 
 
-@pytest.mark.parametrize("client", ["codex", "grok-build", "cursor"])
+@pytest.mark.parametrize("client", ["codex", "grok-build", "cursor", "hermes", "openclaw"])
 def test_app_install_reopen_named_connections_and_removal_preserve_other_settings(
     env, tmp_path, client
 ):
     person, key = application(env)
-    toml = client != "cursor"
-    target = tmp_path / ("agent.toml" if toml else "agent.json")
-    original = (
-        b'# Preserve policy.\napproval_policy = "never"\nsandbox_mode = "danger-full-access"\n'
-        b'[mcp_servers.existing]\ncommand = "existing"\n'
-        if toml
-        else b'{"policies":{"keep":true},"mcpServers":{"existing":{"command":"existing"}}}\n'
-    )
+    fmt = agent_setup.CLIENTS[client][0]
+    suffix = {"toml": ".toml", "yaml": ".yaml", "json": ".json", "json5": ".json5"}[fmt]
+    target = tmp_path / ("agent" + suffix)
+    original = {
+        "toml": b'# Preserve policy.\napproval_policy = "never"\nsandbox_mode = "danger-full-access"\n[mcp_servers.existing]\ncommand = "existing"\n',
+        "json": b'{"policies":{"keep":true},"mcpServers":{"existing":{"command":"existing"}}}\n',
+        "yaml": b"# Keep policy.\npolicies: {keep: true}\nmcp_servers:\n  existing: {command: existing}\n",
+        "json5": b'{// Keep policy\n policies: {keep:true}, mcp: {servers: {existing: {command: "existing"},}},}\n',
+    }[fmt]
     target.write_bytes(original)
     root, executable = tmp_path / "private", Path(sys.executable)
     with running(create_app(env.db, env.embedder)) as endpoint:
@@ -95,10 +96,10 @@ def test_app_install_reopen_named_connections_and_removal_preserve_other_setting
         view = agents.status(root)
         assert view["installations"][0]["state"] == "installed"
         assert key["api_key"] not in json.dumps(view) and key["api_key"] not in target.read_text()
-        document = tomlkit.parse(target.read_text()) if toml else json.loads(target.read_text())
-        section = "mcp_servers" if toml else "mcpServers"
-        assert document[section]["existing"]["command"] == "existing"
-        assert document[section]["mnemion-team"]["args"] == ["--credentials", str(key_file), "mcp"]
+        document = agent_setup.document(client, target.read_bytes())
+        section = agent_setup.servers(client, document)
+        assert section["existing"]["command"] == "existing"
+        assert section["mnemion-team"]["args"] == ["--credentials", str(key_file), "mcp"]
         with pytest.raises(agents.local_state.LocalSetupError, match="changed"):
             agents.perform(
                 root,
@@ -122,8 +123,8 @@ def test_app_install_reopen_named_connections_and_removal_preserve_other_setting
         )
         assert not removed["server_key_revoked"] and not key_file.exists()
         assert agents.status(root)["installations"] == []
-        restored = tomlkit.parse(target.read_text()) if toml else json.loads(target.read_text())
-        assert restored == (tomlkit.parse(original.decode()) if toml else json.loads(original))
+        restored = agent_setup.document(client, target.read_bytes())
+        assert restored == agent_setup.document(client, original)
         assert env.db.authenticate(key["api_key"]).principal_id == UUID(person["id"])
 
 

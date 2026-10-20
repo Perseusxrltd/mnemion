@@ -1,6 +1,10 @@
 """Current workspace capability discovery without leaking another tenant's setup."""
 
+import base64
+from io import BytesIO
+import json
 from uuid import uuid4
+from zipfile import ZipFile
 
 from fastapi.testclient import TestClient
 import pytest
@@ -24,6 +28,9 @@ def test_agent_connection_mode_requires_authentication_and_reports_actual_gatewa
     app = create_app(env.db, env.embedder, mcp_enabled=gateway, oauth=external)
     with TestClient(app) as client:
         assert client.get("/v1/oauth/configuration").status_code == 401
+        assert (
+            client.post("/v1/oauth/agent-package", json={"provider": "openai"}).status_code == 401
+        )
         response = client.get(
             "/v1/oauth/configuration", headers={"Authorization": "Bearer " + env.token}
         )
@@ -41,6 +48,21 @@ def test_agent_connection_mode_requires_authentication_and_reports_actual_gatewa
             if mode == "external"
             else None
         )
+        package = client.post(
+            "/v1/oauth/agent-package",
+            headers={"Authorization": "Bearer " + env.token},
+            json={"provider": "openai"},
+        )
+        assert package.status_code == (200 if mode != "disabled" and gateway else 409)
+        if package.status_code == 200:
+            assert package.headers["cache-control"] == "no-store"
+            with ZipFile(BytesIO(base64.b64decode(package.json()["content_base64"]))) as archive:
+                card = json.loads(archive.read("connection.json"))
+                assert card["mcp_url"] == data["resource"]
+                assert card["author"] == "Perseus XR"
+                assert all(
+                    env.token.encode() not in archive.read(name) for name in archive.namelist()
+                )
 
 
 @pytest.mark.parametrize("mode", ["personal", "external"])
@@ -63,3 +85,36 @@ def test_other_workspace_cannot_discover_selected_tenant_oauth_configuration(
             "resource": None,
             "issuer": None,
         }
+        package = client.post(
+            "/v1/oauth/agent-package",
+            headers={"Authorization": "Bearer " + env.token},
+            json={"provider": "openai"},
+        )
+        assert package.status_code == 409 and "private-tenant" not in package.text
+
+
+def test_nonadministrator_can_export_without_receiving_or_creating_credentials(env, monkeypatch):
+    from uuid import UUID
+    from mnemion.service.models import KeyInput, PrincipalInput
+
+    monkeypatch.setenv("MNEMION_PUBLIC_URL", "https://memory.example.test")
+    monkeypatch.setenv("MNEMION_OAUTH_BUILTIN", "1")
+    monkeypatch.setenv("MNEMION_OAUTH_TENANT_ID", str(env.owner.tenant_id))
+    person = env.identities.create_principal(
+        env.owner, PrincipalInput(name="Connection download fixture")
+    )
+    key = env.identities.create_key(
+        env.owner, UUID(person["id"]), KeyInput(name="Download fixture")
+    )
+    with env.db.transaction(env.owner) as conn:
+        before = conn.execute("SELECT count(*) AS n FROM mnemion.api_keys").fetchone()["n"]
+    with TestClient(create_app(env.db, env.embedder)) as client:
+        response = client.post(
+            "/v1/oauth/agent-package",
+            headers={"Authorization": "Bearer " + key["api_key"]},
+            json={"provider": "hermes"},
+        )
+        assert response.status_code == 200
+        assert response.json()["contains_credentials"] is False
+    with env.db.transaction(env.owner) as conn:
+        assert conn.execute("SELECT count(*) AS n FROM mnemion.api_keys").fetchone()["n"] == before

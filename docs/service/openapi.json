@@ -1,6 +1,99 @@
 {
   "components": {
     "schemas": {
+      "AgentPackage": {
+        "additionalProperties": true,
+        "properties": {
+          "author": {
+            "const": "Perseus XR",
+            "title": "Author",
+            "type": "string"
+          },
+          "contains_credentials": {
+            "const": false,
+            "title": "Contains Credentials",
+            "type": "boolean"
+          },
+          "content_base64": {
+            "maxLength": 180000,
+            "title": "Content Base64",
+            "type": "string"
+          },
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "plugin",
+              "configuration",
+              "guide"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "media_type": {
+            "const": "application/zip",
+            "title": "Media Type",
+            "type": "string"
+          },
+          "provider": {
+            "enum": [
+              "openai",
+              "claude",
+              "grok-build",
+              "hermes",
+              "openclaw",
+              "grokbot"
+            ],
+            "title": "Provider",
+            "type": "string"
+          },
+          "sha256": {
+            "title": "Sha256",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "provider",
+          "kind",
+          "author",
+          "version",
+          "filename",
+          "media_type",
+          "sha256",
+          "content_base64",
+          "contains_credentials"
+        ],
+        "title": "AgentPackage",
+        "type": "object"
+      },
+      "AgentPackageInput": {
+        "additionalProperties": false,
+        "properties": {
+          "provider": {
+            "enum": [
+              "openai",
+              "claude",
+              "grok-build",
+              "hermes",
+              "openclaw",
+              "grokbot"
+            ],
+            "title": "Provider",
+            "type": "string"
+          }
+        },
+        "required": [
+          "provider"
+        ],
+        "title": "AgentPackageInput",
+        "type": "object"
+      },
       "ApiKey": {
         "additionalProperties": true,
         "properties": {
@@ -11789,7 +11882,7 @@
   "info": {
     "description": "Shared, scoped memory and evidence for apps, teams, and assistants. Saves acknowledge canonical durability; operations report semantic indexing readiness.",
     "title": "Mnemion Memory Service",
-    "version": "4.37.0"
+    "version": "4.38.0"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -16804,6 +16897,143 @@
         "summary": "Revise",
         "tags": [
           "Memory"
+        ]
+      }
+    },
+    "/v1/oauth/agent-package": {
+      "post": {
+        "description": "Download a Perseus XR connection package for this workspace; no credentials or account creation.",
+        "operationId": "agent_package_v1_oauth_agent_package_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentPackageInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentPackage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "408": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request Timeout"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Agent Package",
+        "tags": [
+          "Identity"
         ]
       }
     },

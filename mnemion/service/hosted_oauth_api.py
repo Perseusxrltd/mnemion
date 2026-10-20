@@ -29,6 +29,11 @@ from .models import Command, json_value
 from .oauth import OAUTH_SCOPE
 from .sign_in import SignInService, normalize_username
 from .sign_in_api import BrowserPolicy
+from ..agent_packages import (
+    Provider as PackageProvider,
+    Kind as PackageKind,
+    build as build_agent_package,
+)
 
 COOKIE = "__Host-mnemion-oauth-browser"
 PROTOCOL_PATHS = frozenset({"/oauth/register", "/oauth/authorize", "/oauth/token", "/oauth/revoke"})
@@ -80,6 +85,22 @@ class OAuthConfiguration(ResponseModel):
     mcp_enabled: bool
     resource: str | None
     issuer: str | None
+
+
+class AgentPackageInput(Command):
+    provider: PackageProvider
+
+
+class AgentPackage(ResponseModel):
+    provider: PackageProvider
+    kind: PackageKind
+    author: Literal["Perseus XR"]
+    version: str
+    filename: str
+    media_type: Literal["application/zip"]
+    sha256: str
+    content_base64: str = Field(max_length=180000)
+    contains_credentials: Literal[False]
 
 
 class Disconnected(ResponseModel):
@@ -321,6 +342,25 @@ def attach_hosted_connections(
             resource=settings.resource if selected else None,
             issuer=settings.issuer if selected else None,
         )
+
+    @app.post("/v1/oauth/agent-package", tags=["Identity"], response_model=AgentPackage)
+    def agent_package(command: AgentPackageInput, identity: Auth, response: Response):
+        """Download a Perseus XR connection package for this workspace; no credentials or account creation."""
+        if settings is None or identity.tenant_id != settings.tenant_id or not mcp_enabled:
+            raise ServiceError(
+                409,
+                "agent_sign_in_unavailable",
+                "Enable this workspace's HTTPS MCP sign-in before exporting a connection package.",
+            )
+        response.headers["Cache-Control"] = "no-store"
+        try:
+            return build_agent_package(command.provider, settings.resource)
+        except ValueError:
+            raise ServiceError(
+                409,
+                "agent_package_unavailable",
+                "Check this workspace's HTTPS MCP address before exporting a connection package.",
+            ) from None
 
     @app.get("/v1/oauth/connections", tags=["Identity"], response_model=OAuthConnections)
     def connections(identity: Auth):

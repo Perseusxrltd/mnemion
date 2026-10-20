@@ -35,6 +35,8 @@ const titles: Record<string, string> = {
   "docs/service/keepass.md": "KeePass import, export & private field mapping",
   "docs/service/oauth.md": "Organization OAuth & agent access",
   "docs/service/hosted-agent-sign-in.md": "Connect agents with personal or company accounts",
+  "docs/service/agent-packages.md": "Perseus XR agent plugins and connection packages",
+  "docs/service/agent-setup.md": "Set up and operate Mnemion with an agent",
   "docs/service/remote-access.md": "Share a workspace with people & agents",
   "docs/service/connection-diagnostics.md": "Connection diagnosis & host recovery",
   "docs/service/memory-map.md": "Live 3D memory map",
@@ -54,6 +56,7 @@ const titles: Record<string, string> = {
   "docs/SUPPORT.md": "Free forever & optional support",
   "docs/CODE_SIGNING.md": "Code signing policy", "docs/service/privacy.md": "Privacy & data handling",
   "docs/service/embeddings.md": "Embedding models, reindexing & resources",
+  "docs/research/2026-10-20-layered-librarian.md": "Layered librarian, scientific evidence & Jev",
   "docs/service/librarian.md": "Librarian models, schedules & review",
 };
 const documents = Object.entries(sources).map(([key, load]) => {

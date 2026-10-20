@@ -56,8 +56,9 @@ assets.set('icon.icns', Buffer.concat([icnsHeader, ...entries]))
 await mkdir(output, { recursive: true })
 for (const [name, content] of assets) await writeFile(join(output, name), content)
 // Preserve the historical documentation asset URL with the same current mark.
-const aliases = { 'assets/mnemion_logo.png': 'icon.png' }
+const aliases = { 'assets/mnemion_logo.png': 'icon.png', 'mnemion/assets/connector-icon.png': 'icon.png' }
 for (const [path, asset] of Object.entries(aliases)) {
+  await mkdir(dirname(resolve(directory, '../..', path)), { recursive: true })
   await writeFile(resolve(directory, '../..', path), assets.get(asset))
 }
 await writeFile(join(directory, 'assets.json'), JSON.stringify({

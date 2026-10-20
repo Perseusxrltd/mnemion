@@ -63,6 +63,7 @@ oauth.bindings GET /v1/oauth/bindings
 oauth.bind POST /v1/oauth/bindings
 oauth.revoke DELETE /v1/oauth/bindings/{binding_id}
 oauth.configuration GET /v1/oauth/configuration
+agents.package POST /v1/oauth/agent-package
 oauth.connections GET /v1/oauth/connections
 oauth.disconnect POST /v1/oauth/connections/{session_id}/revoke
 sign_in.configuration GET /v1/sign-in/configuration
@@ -161,6 +162,7 @@ evaluations.export GET /v1/spaces/{space_id}/evaluations/runs/{run_id}/export
 
 READ_POST = frozenset(
     {
+        "agents.package",
         "memory.buffer.preview",
         "memory.journal.preview",
         "retrieval.search",

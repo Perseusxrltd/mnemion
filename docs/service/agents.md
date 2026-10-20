@@ -2,6 +2,10 @@
 
 For full local/remote provisioning and repair, use the [native agent setup guide](agent-setup.md).
 
+From **4.38**, download [Perseus XR connection packages](agent-packages.md)
+directly from **Agents**, or generate them through the API, SDKs or native CLI.
+Hermes and OpenClaw also join the local profile installer below.
+
 Published **4.32.0** adds [guided installation in Studio](desktop-agents.md): select
 the local client and its dedicated application, review the exact file change,
 then install. Configuration backups and other client policies are preserved.
@@ -62,13 +66,17 @@ If protection or replacement fails, the original configuration is retained;
 any completed backup remains available. Existing unrelated files are never used
 as temporary storage. See the [validation record](../validation/2026-10-20-agent-setup-private-files.md)
 and [published release status](../RELEASE_STATUS.md) for availability.
-A changed file invalidates an outstanding in-process preview. Invalid JSON/TOML
-is rejected. JSON with comments requires a manual merge of the displayed snippet.
+A changed file invalidates an outstanding in-process preview. Invalid or
+duplicate-key settings are rejected. Hermes YAML preserves comments; OpenClaw
+JSON5 is saved as ordinary JSON with its exact original backed up. Other JSON
+profiles require manual merging when they contain comments.
 
 | `--client` | Configuration |
 | --- | --- |
 | `codex` | `$CODEX_HOME/config.toml`, or `~/.codex/config.toml`; `mcp_servers` |
 | `grok-build` | `~/.grok/config.toml`; `mcp_servers`; separate from hosted Grokbot/plugin setup |
+| `hermes` | `$HERMES_HOME/config.yaml`, or `~/.hermes/config.yaml`; YAML `mcp_servers` |
+| `openclaw` | `$OPENCLAW_CONFIG_PATH`, or `$OPENCLAW_STATE_DIR/openclaw.json`; otherwise the selected `OPENCLAW_HOME`/`OPENCLAW_PROFILE` default; JSON/JSON5 `mcp.servers` |
 | `claude-code` | `~/.claude.json`; `mcpServers` |
 | `claude-desktop` | macOS Application Support or Windows `%APPDATA%/Claude`; `mcpServers` |
 | `cursor` | `~/.cursor/mcp.json`; `mcpServers` |
