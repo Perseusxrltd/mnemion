@@ -59,6 +59,10 @@ following the documented 24-hour policy, with bounded asynchronous deletion.
 Cancelling never undoes restored memories. Full accounts, vault secrets, grants,
 attachments and revision history still require complete workspace backups.
 
+Recovery controls use the explicit pending-work guard. Durable selections and
+completed forms do not leave the native generic edit guard set; active requests
+and unsubmitted source selections remain protected.
+
 The [guide](../service/journal-recovery.md) documents exact limits, quotas,
 retries, review semantics and API/SDK/agent use. Broader host provisioning,
 provider sign-in acceptance and the unavailable original office remain separate.
