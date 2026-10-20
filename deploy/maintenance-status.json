@@ -34,13 +34,13 @@
       "conclusion": "failure",
       "updated_at": "2026-10-20T17:56:37Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39467357025",
+      "failed_jobs": [],
       "job_progress": {
         "total": 12,
         "completed": 12,
         "succeeded": 11,
         "active": []
-      },
-      "failed_jobs": []
+      }
     },
     {
       "id": 39441745467,
@@ -96,75 +96,28 @@
       "workflow": "release.yml",
       "branch": "release/4.43.0",
       "source_commit": "603be186385f473984a6e553045077164e43f25a",
-      "status": "queued",
-      "conclusion": null,
-      "updated_at": "2026-10-20T17:54:52Z",
+      "status": "completed",
+      "conclusion": "failure",
+      "updated_at": "2026-10-20T18:30:24Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39460885775",
       "job_progress": {
-        "total": 21,
-        "completed": 15,
-        "succeeded": 14,
-        "active": [
-          {
-            "id": 118791858082,
-            "name": "native / windows-2022 / x64",
-            "status": "in_progress",
-            "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
-            ]
-          },
-          {
-            "id": 118791858136,
-            "name": "native / macos-15-intel / x64",
-            "status": "in_progress",
-            "steps": [
-              "Locked native service build dependencies"
-            ]
-          },
-          {
-            "id": 118791858232,
-            "name": "native / windows-11-arm / arm64",
-            "status": "in_progress",
-            "steps": [
-              "Select the service interpreter independently of the desktop client"
-            ]
-          },
-          {
-            "id": 118791858273,
-            "name": "native / ubuntu-22.04-arm / arm64",
-            "status": "in_progress",
-            "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
-            ]
-          },
-          {
-            "id": 118791858363,
-            "name": "native / macos-15 / arm64",
-            "status": "queued",
-            "steps": []
-          },
-          {
-            "id": 118791858399,
-            "name": "native / ubuntu-22.04 / x64",
-            "status": "in_progress",
-            "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
-            ]
-          }
-        ]
+        "total": 23,
+        "completed": 23,
+        "succeeded": 19,
+        "active": []
       },
       "failed_jobs": []
     },
     {
-      "id": 39468502213,
+      "id": 39475334267,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "c483b9412f4bf91e3d702bc65b3b6c3b1cf4d6ee",
+      "source_commit": "2d564aa25981d7342c604f5ee64a38bd4df04e7c",
       "status": "completed",
       "conclusion": "skipped",
-      "updated_at": "2026-10-20T17:43:07Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39468502213"
+      "updated_at": "2026-10-20T18:30:28Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39475334267"
     },
     {
       "id": 39467357011,
@@ -189,5 +142,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39441738346"
     }
   ],
-  "observed_at": "2026-10-20T17:57:16+00:00"
+  "observed_at": "2026-10-20T18:30:56+00:00"
 }
