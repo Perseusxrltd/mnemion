@@ -58,6 +58,16 @@ acting identity without carrying credentials or agent context across boundaries.
 
 ## Current gaps and implementation order
 
+Source 4.32 adds [reviewed agent installation in Studio](../service/desktop-agents.md).
+People and local agents can select a supported client, preview the exact named
+connection, supply or create a dedicated application key, preserve unrelated
+client settings and remove the connection while offline. A maintained private
+runtime lets new agent sessions follow Studio updates without requiring its
+window to stay open. Configuration status is distinct from tool discovery by
+the chosen client. Native release acceptance exercises the generated launcher;
+live hosted-provider acceptance, separate vendor plugins and automatic capture
+remain separate work.
+
 Source 4.31 adds [folder/Obsidian and live JSONL setup in Studio](../service/desktop-sources.md),
 with folder selection, dedicated-key creation, private OS storage, verified
 identities, bounded background scans and matching local-agent controls. A device
