@@ -37,26 +37,10 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "fca12c7db24d5defecf3e8cb583ee208aac13296",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-20T14:29:21Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39438860978",
-      "job_progress": {
-        "total": 12,
-        "completed": 11,
-        "succeeded": 11,
-        "active": [
-          {
-            "id": 118683157269,
-            "name": "service (3.12)",
-            "status": "in_progress",
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-20T14:44:16Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39438860978"
     },
     {
       "id": 39441745467,
@@ -78,7 +62,7 @@
             "name": "linux / x64 public upgrade",
             "status": "in_progress",
             "steps": [
-              "Linux desktop libraries"
+              "Install public release and observe its automatic update"
             ]
           },
           {
@@ -110,7 +94,7 @@
             "name": "linux / arm64 public upgrade",
             "status": "in_progress",
             "steps": [
-              "Linux desktop libraries"
+              "Install public release and observe its automatic update"
             ]
           },
           {
@@ -159,5 +143,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39441738346"
     }
   ],
-  "observed_at": "2026-10-20T14:43:34+00:00"
+  "observed_at": "2026-10-20T14:44:50+00:00"
 }

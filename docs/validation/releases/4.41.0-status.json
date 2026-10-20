@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "checked_at": "2026-10-20T14:43:12+00:00",
+  "checked_at": "2026-10-20T14:44:30+00:00",
   "tag_name": "v4.41.0",
   "source_commit": "2f0201bc4a6f4844023ad3036509ac3fb177c5c3",
   "published_at": "2026-10-20T14:42:46Z",
@@ -74,7 +74,7 @@
       "status": "pending",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39441745467",
       "run_id": 39441745467,
-      "updated_at": "2026-10-20T14:43:06Z",
+      "updated_at": "2026-10-20T14:43:19Z",
       "event": "workflow_dispatch",
       "conclusion": null
     },
