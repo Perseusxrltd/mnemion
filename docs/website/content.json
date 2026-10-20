@@ -1,0 +1,181 @@
+{
+  "schema_version": 1,
+  "minimum_release": "4.39.0",
+  "meta": {
+    "title": "Mnemion — One memory across your tools | Perseus XR",
+    "description": "Free, open-source memory for people, teams and AI agents. Connect your sources, keep control of access and bring your knowledge across platforms. Windows, macOS and Linux."
+  },
+  "hero": {
+    "heading": [
+      "Many agents.",
+      "One memory."
+    ],
+    "lead": [
+      "Your knowledge, connected across people, apps and AI.",
+      "A shared memory that stays organised, traceable and under your control."
+    ],
+    "note": "Free forever. For individuals and organisations."
+  },
+  "overview": {
+    "eyebrow": "01 / A continuous workspace",
+    "heading": [
+      "Change tools.",
+      "Keep the context."
+    ],
+    "body": "Useful knowledge should survive the next conversation, the next device and the next app. Mnemion gives it a shared home."
+  },
+  "features": [
+    {
+      "title": "Memory that stays yours.",
+      "body": "Keep decisions, facts and useful context in a workspace you control. Run the service locally or on your own infrastructure. Your apps connect to the same memory."
+    },
+    {
+      "title": "Built to work together.",
+      "body": "Give people and agents their own access. Separate private work, projects, clients and teams into spaces, with permissions checked whenever memory is used."
+    },
+    {
+      "title": "Bring your existing knowledge.",
+      "body": "Connect folders, Git, Google Drive and Slack. Extend to other storage through rclone or your own adapter, with checkpoints and review for incoming changes."
+    },
+    {
+      "title": "See where answers come from.",
+      "body": "Follow citations to source evidence and revision history. Inspect connections in Studio, or keep using ordinary Markdown and the graph in Obsidian."
+    },
+    {
+      "title": "Choose how it thinks.",
+      "body": "Start with small, local embedding models or connect an approved model endpoint. Compare a new index before switching, with controls for resources and data leaving your system."
+    },
+    {
+      "title": "Understand how it performs.",
+      "body": "Explore memory, ingestion and resource charts. Build your own evaluation sets, compare retrieval runs and inspect the evidence behind each result."
+    }
+  ],
+  "downloads": {
+    "eyebrow": "02 / Mnemion Studio",
+    "heading": [
+      "Make yourself",
+      "at home."
+    ],
+    "body": "A desktop home for your memory. Connect to your workspace from Windows, macOS or Linux, without installing a model on every computer.",
+    "background": "Automatic stable updates are on by default. Background mode keeps your workspace close at hand.",
+    "browser": "Prefer the browser? Studio is also included with your Mnemion service. Linux AppImage supports automatic updates; managed installations follow your organisation’s policy.",
+    "mac": "On Mac, move Studio into Applications. Your first launch may need approval in Privacy & Security.",
+    "windows": "Windows may show an unknown-publisher message on the first install.",
+    "platforms": {
+      "windows": "Windows 10 or later · Installer",
+      "macos": "macOS 13+ · Local workspaces on Apple silicon need macOS 14+ · Disk image",
+      "linux": "Modern Linux desktop · AppImage"
+    }
+  },
+  "setup": {
+    "eyebrow": "03 / Get started",
+    "heading": [
+      "A place for everything.",
+      "A clear first step."
+    ],
+    "steps": [
+      {
+        "title": "Open your workspace.",
+        "body": "Install Studio. Join a team with its workspace address and your personal sign-in or invitation; an administrator can also give an agent its own scoped key. Starting your own? Choose Create on this computer in the app, or connect to a service on your infrastructure.",
+        "links": [
+          {
+            "label": "Sign in or join a team",
+            "doc": "docs/service/sign-in.md"
+          },
+          {
+            "label": "Create on this computer",
+            "doc": "docs/service/local-workspaces.md"
+          },
+          {
+            "label": "Set up a workspace server",
+            "doc": "docs/service/deployment.md"
+          }
+        ]
+      },
+      {
+        "title": "Bring your knowledge.",
+        "body": "Create your spaces, connect the sources you choose and decide who can access them. Your personal notes and your team’s memory can stay separate.",
+        "links": [
+          {
+            "label": "Connect your sources",
+            "doc": "docs/service/connectors.md"
+          }
+        ]
+      },
+      {
+        "title": "Give your agents continuity.",
+        "body": "Connect assistants through MCP or the API. Search, review and explore in Studio; use Obsidian when you want your familiar notes and graph.",
+        "links": [
+          {
+            "label": "Connect your assistants",
+            "doc": "docs/service/agents.md"
+          }
+        ]
+      }
+    ]
+  },
+  "resources": {
+    "eyebrow": "04 / Built in the open",
+    "heading": [
+      "Know what’s here.",
+      "See what’s next."
+    ],
+    "body": "Read guides for the version you download and follow the latest roadmap. The same help is available inside the app, including offline.",
+    "documentation": {
+      "label": "Use Mnemion",
+      "title": "Documentation",
+      "body": "Setup, integrations, privacy and everyday operation.",
+      "doc": "docs/service/README.md"
+    },
+    "roadmap": {
+      "label": "Follow the direction",
+      "title": "Roadmap",
+      "body": "Delivered features, work in progress and next priorities.",
+      "doc": "docs/ROADMAP.md"
+    },
+    "releaseNotes": {
+      "label": "Stay current",
+      "title": "Release notes",
+      "body": "What changed, what was tested and any known limits."
+    },
+    "issues": {
+      "label": "Help it improve",
+      "title": "Report an issue",
+      "body": "Share a reproducible problem or suggest a useful addition."
+    },
+    "updateTitle": "Updates without the upkeep.",
+    "updateBody": "Supported desktop installations check for stable updates automatically and restart when idle, with protection for work in progress. Workspace administrators manage service upgrades.",
+    "updatesDoc": "docs/service/updates.md"
+  },
+  "free": {
+    "eyebrow": "05 / Free means free",
+    "heading": [
+      "Yours to use.",
+      "Always free."
+    ],
+    "body": "Mnemion is free for individuals, teams and organisations. All features and updates are included. There are no paid tiers, subscriptions or charges per person.",
+    "supportTitle": "Help keep it growing.",
+    "supportBody": "If Mnemion helps you, you can support its development from €5. Give more if you like. It is entirely optional.",
+    "contributeTitle": "Built for everyone.",
+    "contributeBody": "Use it on your own infrastructure and contribute in the way that suits you: feedback, documentation, code or optional support.",
+    "providerNote": "You control your infrastructure and model choices. Hosting, storage or model providers you select may have their own costs; Mnemion does not require a paid model or memory subscription."
+  },
+  "project": {
+    "sector": "Memory infrastructure",
+    "role": "Memory infrastructure",
+    "clientLabel": "Perseus XR · Free for individuals and teams",
+    "commercialProblem": "Useful context gets scattered across apps, agents, sources and machines.",
+    "method": "Shared memory spaces with scoped access, source-linked retrieval and Obsidian-compatible Markdown.",
+    "outcome": "One organised memory system for people, teams and AI agents, with portable data and a free, open-source foundation.",
+    "linkLabel": "Explore Mnemion"
+  },
+  "illustration": {
+    "title": "One memory across your tools",
+    "description": "Sources, people and AI agents connect to Mnemion. Private and shared spaces retain evidence. Obsidian provides a familiar view.",
+    "sources": "Files · Git · Drive · Slack",
+    "agents": "Across platforms",
+    "team": "Across devices",
+    "perspective": "Studio · Obsidian · API",
+    "caption": "Connected tools. Explicit access. Preserved evidence."
+  }
+}

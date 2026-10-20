@@ -1,0 +1,702 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Perseusxrltd/mnemion/docs/website/content.schema.json",
+  "title": "Mnemion public website text, schema 1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "minimum_release",
+    "meta",
+    "hero",
+    "overview",
+    "features",
+    "downloads",
+    "setup",
+    "resources",
+    "free",
+    "project",
+    "illustration"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "minimum_release": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 30,
+      "pattern": "^(?:0|[1-9][0-9]{0,5})\\.(?:0|[1-9][0-9]{0,5})\\.(?:0|[1-9][0-9]{0,5})$"
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "description"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+        }
+      }
+    },
+    "hero": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "heading",
+        "lead",
+        "note"
+      ],
+      "properties": {
+        "heading": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+          }
+        },
+        "lead": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240,
+            "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+          }
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+        }
+      }
+    },
+    "overview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "eyebrow",
+        "heading",
+        "body"
+      ],
+      "properties": {
+        "eyebrow": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+        },
+        "heading": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+          }
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+        }
+      }
+    },
+    "features": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title",
+          "body"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 600,
+            "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+          }
+        }
+      }
+    },
+    "downloads": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "eyebrow",
+        "heading",
+        "body",
+        "background",
+        "browser",
+        "mac",
+        "windows",
+        "platforms"
+      ],
+      "properties": {
+        "eyebrow": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+        },
+        "heading": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+          }
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+        },
+        "background": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+        },
+        "browser": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+        },
+        "mac": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+        },
+        "windows": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+        },
+        "platforms": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "windows",
+            "macos",
+            "linux"
+          ],
+          "properties": {
+            "windows": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000,
+              "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+            },
+            "macos": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000,
+              "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+            },
+            "linux": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000,
+              "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+            }
+          }
+        }
+      }
+    },
+    "setup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "eyebrow",
+        "heading",
+        "steps"
+      ],
+      "properties": {
+        "eyebrow": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+        },
+        "heading": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+          }
+        },
+        "steps": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "title",
+              "body",
+              "links"
+            ],
+            "properties": {
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000,
+                "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+              },
+              "body": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000,
+                "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+              },
+              "links": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 8,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "label",
+                    "doc"
+                  ],
+                  "properties": {
+                    "label": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1000,
+                      "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+                    },
+                    "doc": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 180,
+                      "pattern": "^docs/(?:[A-Za-z0-9_-]+/)*[A-Za-z0-9_-]+\\.md$"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "eyebrow",
+        "heading",
+        "body",
+        "documentation",
+        "roadmap",
+        "releaseNotes",
+        "issues",
+        "updateTitle",
+        "updateBody",
+        "updatesDoc"
+      ],
+      "properties": {
+        "eyebrow": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+        },
+        "heading": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+          }
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+        },
+        "documentation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "label",
+            "title",
+            "body",
+            "doc"
+          ],
+          "properties": {
+            "label": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000,
+              "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000,
+              "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+            },
+            "body": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000,
+              "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+            },
+            "doc": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 180,
+              "pattern": "^docs/(?:[A-Za-z0-9_-]+/)*[A-Za-z0-9_-]+\\.md$"
+            }
+          }
+        },
+        "roadmap": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "label",
+            "title",
+            "body",
+            "doc"
+          ],
+          "properties": {
+            "label": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000,
+              "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000,
+              "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+            },
+            "body": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000,
+              "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+            },
+            "doc": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 180,
+              "pattern": "^docs/(?:[A-Za-z0-9_-]+/)*[A-Za-z0-9_-]+\\.md$"
+            }
+          }
+        },
+        "releaseNotes": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "label",
+            "title",
+            "body"
+          ],
+          "properties": {
+            "label": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000,
+              "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000,
+              "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+            },
+            "body": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000,
+              "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+            }
+          }
+        },
+        "issues": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "label",
+            "title",
+            "body"
+          ],
+          "properties": {
+            "label": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000,
+              "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000,
+              "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+            },
+            "body": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000,
+              "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+            }
+          }
+        },
+        "updateTitle": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+        },
+        "updateBody": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+        },
+        "updatesDoc": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 180,
+          "pattern": "^docs/(?:[A-Za-z0-9_-]+/)*[A-Za-z0-9_-]+\\.md$"
+        }
+      }
+    },
+    "free": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "eyebrow",
+        "heading",
+        "body",
+        "supportTitle",
+        "supportBody",
+        "contributeTitle",
+        "contributeBody",
+        "providerNote"
+      ],
+      "properties": {
+        "eyebrow": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+        },
+        "heading": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+          }
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+        },
+        "supportTitle": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+        },
+        "supportBody": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+        },
+        "contributeTitle": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+        },
+        "contributeBody": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+        },
+        "providerNote": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+        }
+      }
+    },
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sector",
+        "role",
+        "clientLabel",
+        "commercialProblem",
+        "method",
+        "outcome",
+        "linkLabel"
+      ],
+      "properties": {
+        "sector": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+        },
+        "role": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+        },
+        "clientLabel": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+        },
+        "commercialProblem": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+        },
+        "method": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+        },
+        "outcome": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+        },
+        "linkLabel": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+        }
+      }
+    },
+    "illustration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "description",
+        "sources",
+        "agents",
+        "team",
+        "perspective",
+        "caption"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240,
+          "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+        },
+        "sources": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+        },
+        "agents": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+        },
+        "team": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+        },
+        "perspective": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+        },
+        "caption": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
+        }
+      }
+    }
+  }
+}

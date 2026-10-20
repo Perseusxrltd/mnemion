@@ -2,6 +2,17 @@ name: Synchronize public release metadata
 run-name: Public website / ${{ github.event.release.tag_name || github.ref_name }}
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'README.md'
+      - 'SECURITY.md'
+      - 'CONTRIBUTING.md'
+      - 'studio/README.md'
+      - 'deploy/website_content.py'
+      - 'deploy/verify_website.py'
+      - '.github/workflows/website-release.yml'
   release:
     types: [published, edited]
   schedule:
@@ -19,7 +30,9 @@ jobs:
   synchronize:
     if: github.repository == 'Perseusxrltd/mnemion'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # Content can pass through GitHub's CDN and the site's five-minute cache.
+    # Successful checks return immediately; a stale page gets a bounded window.
+    timeout-minutes: 15
     permissions:
       contents: write
     steps:
@@ -34,14 +47,18 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: python -m deploy.published_release
+      - name: Validate and publish the Git-owned product documentation
+        run: |
+          python -m pip install --disable-pip-version-check jsonschema==4.26.0
+          python -m deploy.website_content --write
       - name: Keep the CDN fallback current without triggering another build
         run: |
-          git add -- deploy/published-release.json
+          git add -- deploy/published-release.json deploy/website-content.json
           if git diff --cached --quiet; then
             exit 0
           fi
           git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
-            commit -m 'chore: synchronize published release metadata'
+            commit -m 'chore: synchronize published release and website documentation'
           for attempt in 1 2 3; do
             if git push origin HEAD:main; then
               exit 0
@@ -51,7 +68,7 @@ jobs:
           done
           exit 1
       - name: Verify live downloads, version, guides and roadmap
-        run: python -m deploy.verify_website
+        run: python -m deploy.verify_website --content-manifest deploy/website-content.json --attempts 61
       - name: Retain the public website verification receipt
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:

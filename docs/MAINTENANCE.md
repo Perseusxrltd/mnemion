@@ -1,6 +1,12 @@
 # Release and documentation maintenance
 
-The repository is the source of truth for documentation. The desktop and browser
+The repository is the source of truth for documentation. The [Git documentation
+contract](website/README.md) also covers public product text, homepage/Lab Notes,
+release-bound guides, automatic validation and preservation of the last good
+website content. Edit its canonical Git sources rather than duplicating copy in
+the website repository.
+
+The desktop and browser
 documentation library bundle the same Markdown under `docs/`, the project README,
 security/contribution guidance when present, and the Studio README. Help is
 available before server connection. Bundled guides match the installed app;

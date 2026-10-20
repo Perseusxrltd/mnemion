@@ -14,6 +14,9 @@ METADATA = {
     "deploy/published-release.json",
     "deploy/release-status.json",
     "deploy/research-watch.json",
+    "deploy/website-content.json",
+    "docs/website/content.json",
+    "docs/website/content.schema.json",
 }
 
 

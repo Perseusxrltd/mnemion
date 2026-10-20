@@ -9,8 +9,8 @@ import pytest
 from deploy import verify_website as website
 
 
-def fixture():
-    tag, release_version = "v4.1.6", "4.1.6"
+def fixture(release_version="4.1.6"):
+    tag = "v" + release_version
     names = [
         f"Mnemion-Studio-{release_version}-{target}"
         for target in (
@@ -133,3 +133,46 @@ def test_retry_after_cache_delay_writes_a_checked_receipt(tmp_path, monkeypatch)
     website.main()
     assert delays == [10]
     assert json.loads(output.read_text())["visible_current_version"] is True
+
+
+def content_fixture():
+    from pathlib import Path
+
+    from deploy.website_content import build
+
+    content = build(Path(__file__).resolve().parents[1])
+    manifest, product, home = fixture(content["content"]["minimum_release"])
+    digest = content["content_sha256"]
+    body = content["content"]
+    product = product.replace(b"<main>", f'<main data-mnemion-content="{digest}">'.encode())
+    product += "".join(
+        f"<p>{html.escape(text)}</p>"
+        for text in [
+            body["setup"]["steps"][0]["body"],
+            body["downloads"]["platforms"]["macos"],
+            body["features"][0]["title"],
+        ]
+    ).encode()
+    home += f'<article data-mnemion-content="{digest}">{html.escape(body["project"]["outcome"])}</article>'.encode()
+    lab = f'<article data-mnemion-content="{digest}">{html.escape(body["project"]["method"])}</article>'.encode()
+    return manifest, product, home, content, lab
+
+
+def test_git_owned_text_is_checked_on_all_three_public_surfaces():
+    manifest, product, home, content, lab = content_fixture()
+    result = website.verify(manifest, product, home, content=content, lab=lab)
+    assert result["git_owned_product_text"]
+    assert result["git_owned_homepage_text"] and result["git_owned_lab_notes_text"]
+    assert json.loads(json.dumps(result))["release_notes_url"] == (
+        f"{website.ORIGIN}/releases/tag/{manifest['tag_name']}"
+    )
+
+
+@pytest.mark.parametrize("surface", ["product", "home", "lab"])
+def test_static_or_hidden_copy_cannot_satisfy_the_git_content_gate(surface):
+    manifest, product, home, content, lab = content_fixture()
+    pages = {"product": product, "home": home, "lab": lab}
+    stale = pages[surface].replace(content["content_sha256"].encode(), b"0" * 64)
+    pages[surface] = stale + b"<template>" + pages[surface] + b"</template>"
+    with pytest.raises(ValueError, match="not current"):
+        website.verify(manifest, pages["product"], pages["home"], content=content, lab=pages["lab"])
