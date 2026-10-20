@@ -19,6 +19,27 @@ Requirements and acceptance criteria are defined by the
 [architecture](../research/2026-10-09-mnemion-study/ARCHITECTURE.md), and
 [roadmap](../research/2026-10-09-mnemion-study/ROADMAP.md).
 
+## 20 October: actual ChatGPT acceptance and native integration requirements
+
+[Signed-in ChatGPT acceptance](../validation/2026-10-20-chatgpt-acceptance.md)
+passed against the actual 4.33 host: OAuth registration, personal login, explicit
+consent with existing account/space roles, installation, 16 discovered tools and
+an authenticated profile-only request. This supplies issue 18's missing client
+proof; earlier restricted-reader protocol evidence remains separate.
+
+All six 4.37 native gates, public artifact verification, automatic website
+synchronization and all six public-feed update rehearsals passed. The private
+shared-host upgrade stopped before migration when its snapshot wrapper hit a
+ten-minute timeout, then encountered a managed-operation lock. These retained
+failures are maintenance work, not a passed live upgrade.
+
+The user reaffirmed native agent setup for every workflow and named Grok/Grokbot,
+Claude, Hermes, OpenClaw and OpenAI/Codex/Dot integrations. All distributed
+connectors/apps/plugins must be authored by **Perseus XR**. The [native setup
+contract](../service/agent-setup.md) and [publisher rules](../BRANDING.md#connector-and-plugin-authorship)
+retain these requirements without marking unfinished named clients complete.
+Strict broad-scope coverage stays 17/64 (26.6%).
+
 ## 20 October: agent-controlled desktop connections and hosted sign-in
 
 Source 4.37 combines the following queue milestones with a

@@ -12,23 +12,30 @@ Strict full-scope completion remains **17/64 shipped (26.6%)**: 41 partial,
 This measures complete requested capabilities, not time spent or the usability
 of the released app. A hotfix does not finish a broader requirement.
 
+Every release starts with current GitHub reports from real deployments. Batch
+the ready fixes and add a verified roadmap improvement when possible; urgent
+repairs take precedence. Preserve failed reports and unfinished scope until
+their actual acceptance passes. The [release process](MAINTENANCE.md) keeps
+issue review, publication and version-linked closure together.
+
 ## Current delivery checkpoint
 
-- **4.37.0 combines queue improvements with a local setup correction.**
+- **Published 4.37.0 combines queue improvements with a local setup correction.**
   A [reproduced state-publication race](validation/2026-10-20-state-publication.md)
   briefly made a new settings file appear linked to its own staging name.
   Status readers now wait briefly for publication while retaining link checks.
-  Focused Linux and native Windows state checks passed; full native release
-  acceptance remains separate. Unpublished 4.35/4.36 are superseded.
+  All six native release gates, independent artifacts, the live website and
+  all six public-update rehearsals passed. Actual shared-host migration and
+  Windows lab acceptance remain separate. Unpublished 4.35/4.36 are superseded.
 
-- **The combined source makes queue workload visible.**
+- **The combined release makes queue workload visible.**
   [The pipeline view](service/insights.md) separates indexing and physical
   cleanup, with waiting text sizes, retries, due jobs and oldest age. The same
   scoped metrics reach agents and exports, with fallback for older servers.
   [Real database and browser checks](validation/2026-10-20-queue-visibility.md)
   passed; this is visibility into measured work, not a completion-time estimate.
 
-- **The combined source fixes indexing dispatch under a source backlog.**
+- **The combined release fixes indexing dispatch under a source backlog.**
   [Purges take priority and organizations/spaces receive persistent turns](service/indexing-queues.md).
   Eighteen database/reindex cases passed with existing model and authorization
   policies retained. Migration 029 requires the normal backup/upgrade path.
@@ -121,9 +128,11 @@ of the released app. A hotfix does not finish a broader requirement.
   Its [isolated Windows lab](validation/2026-10-20-windows-shared-lab.md) passed a
   42-request memory cycle and 27-request concurrency check, with automatic
   bounded checks after app/server version changes.
-- **Issue 18 retains the remaining ChatGPT UI acceptance.** The
-  [issue resolution plan](implementation/github-issues.md) records the current
-  checks. General delegated OAuth issue 4 is closed. Remote-access issue 3 closed
+- **Issue 18 now has actual signed-in ChatGPT acceptance.**
+  [OAuth, permission review, installation, all 16 tools and a profile-only request](validation/2026-10-20-chatgpt-acceptance.md)
+  passed. The [issue plan](implementation/github-issues.md) links release closure
+  evidence. Native named-client packages must use Perseus XR authorship; broader
+  provider/capture work remains. General OAuth issue 4 is closed. Remote-access issue 3 closed
   against [reviewed acceptance and verified 4.29](validation/2026-10-20-remote-access-issue.md).
   Live managed-ngrok account/lifecycle testing remains
   separate roadmap work.
@@ -190,7 +199,7 @@ continues while an external account or publisher prerequisite is unavailable.
 
 | Priority | Next outcome | Acceptance and requirements |
 | --- | --- | --- |
-| 1 | Remaining live connections | Actual supported ChatGPT registration, consent and tool list for #18; separate free ngrok account/lifecycle acceptance and named-agent plugins. The bounded remote-access and delegated-authentication reports have verified evidence. Preserve existing HTTPS, local and scoped-key paths. C04–C07, A05/A08. |
+| 1 | Remaining live connections | ChatGPT registration, consent, 16 tools and a profile-only request passed for #18. Finish Perseus XR-authored native Grok/Grokbot, Claude, Hermes, OpenClaw and OpenAI/Dot packages, plus separate free ngrok account/lifecycle acceptance. The bounded remote-access and delegated-authentication reports have verified evidence. Preserve existing HTTPS, local and scoped-key paths. C04–C07, A05/A08. |
 | 2 | Continuous operation and recovery from another device | Guided organization hosting, registered recovery hosts, delegated operators, key custody, off-host delivery visibility and complete app-based replacement-host setup. Source 4.30.2 supplies desktop database import; provider/OS configuration remains. Expand beyond the bounded 4.29 journal recovery where needed. Verify host loss and current denials without the original agent; distinguish mirrors, snapshots and replicas. A01/A06/A07/A09/A11–A13, U01/U02/U04/U06/U11. |
 | 3 | Source and agent onboarding | Guided consent, credentials, permission mapping, exclusions, reconnect and capture coverage. Validate actual Grokbot, Dot/OpenAI, Anthropic, Hermes and OpenClaw paths before claiming native plugins. Expand adapters with provider contracts and real acceptance. C01–C09, F08. |
 | 4 | Govern several workspaces | Explicit personal/employer/client contexts, independent memberships, queued-work destinations and policies. Reviewed cross-workspace search/transfer without company access to personal data. Bookmarks alone are incomplete. F02/F08, A03/A04/A12, C09. |
@@ -208,7 +217,7 @@ or passing source test alone does not complete a requested workflow.
 A clean supported computer must create a local workspace, join a team, configure
 organization hosting or restore a backup through a resumable UI. Sources,
 access, agents, models, RAM, Obsidian and recovery belong in the same flow,
-with real readiness checks and equivalent agent operations.
+with real readiness checks and equivalent native agent operations. The [agent setup contract](service/agent-setup.md) requires structured discovery, configuration, repair and lifecycle controls for every setup workflow. [Perseus XR](BRANDING.md#connector-and-plugin-authorship) is the author/developer for all new connector and plugin packages.
 
 Local setup, protected remote connections, personal sign-in, local provider
 configuration and native backup/recovery controls are available. Complete remote

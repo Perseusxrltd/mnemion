@@ -1,6 +1,8 @@
 # Connect assistants and applications
 
-Source **4.32.0** adds [guided installation in Studio](desktop-agents.md): select
+For full local/remote provisioning and repair, use the [native agent setup guide](agent-setup.md).
+
+Published **4.32.0** adds [guided installation in Studio](desktop-agents.md): select
 the local client and its dedicated application, review the exact file change,
 then install. Configuration backups and other client policies are preserved.
 The private launcher connects while Studio is closed and follows its runtime

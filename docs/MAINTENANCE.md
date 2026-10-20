@@ -13,6 +13,15 @@ tags from checked commits. Users must have access to OS/architecture pairs that
 are ready while others are tested; a pending architecture is not a reason to hide
 a completed published download.
 
+Start each delivery by reviewing current GitHub issues and reports from agents
+using Mnemion in real deployments. Recheck the issue inventory before freezing
+the release. Bundle as many reviewed, ready bug fixes as the release can safely
+carry, and include a validated roadmap improvement when possible. Working
+installation, updates, access and memory operations take priority; do not delay
+an urgent repair to fill a feature quota. Retain reproduction and acceptance
+evidence, map completed fixes to the version below, and leave unresolved or
+newly reported failures visible. Passing CI does not invalidate a user's report.
+
 Ship coherent batches of related fixes. During implementation, run focused checks
 for changed behavior, then rely on one complete automated release run. Repeat or
 broaden local checks only for a failure, a new change or a specific unresolved

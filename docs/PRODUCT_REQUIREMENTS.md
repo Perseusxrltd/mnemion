@@ -19,13 +19,31 @@ not equally sized. This is coverage of the full requested scope, not a measure
 of engineering effort or the usability of the published app. Hotfixes to a
 partial feature do not automatically mark its whole requirement complete.
 
-Source 4.37.0 combines the unpublished 4.35/4.36 work and corrects a
+Published 4.37.0 combines the unpublished 4.35/4.36 work and corrects a
 [first-setup state publication race](validation/2026-10-20-state-publication.md).
 The same error was reproduced with the existing code on native Windows;
-focused Linux and Windows checks passed with the correction. Full native
-publication and actual shared-host acceptance remain separate.
+focused Linux and Windows checks passed with the correction. All six native
+release gates, independent artifacts, the live website and all six public-update
+rehearsals passed. Actual shared-host acceptance remains separate.
 
-The combined source advances **F08/R04/V01** with
+**Standing setup and publishing requirements:** every Mnemion setup/configuration
+workflow must have a discoverable native agent path, as well as the relevant app
+flow; see [agent setup](service/agent-setup.md). All connector/app/plugin artifacts
+and listings must identify **Perseus XR** as author/developer. Native Grok/Grokbot,
+Claude, Hermes, OpenClaw and OpenAI/Codex/Dot integrations remain explicit C04–C07
+work; generic MCP configuration alone does not complete those integrations.
+
+**Standing delivery requirement:** every update reviews current GitHub reports,
+groups the ready fixes and advances the roadmap when possible. Production
+failures take precedence; fixed issues close only against their verified public
+release. Real-agent reports remain actionable even when automated checks pass.
+
+[Actual signed-in ChatGPT acceptance](validation/2026-10-20-chatgpt-acceptance.md)
+completed issue 18: OAuth, permission review, installation, 16 discovered tools
+and a successful profile-only request. C05/A08/F08 remain partial because their
+scope also includes other clients, provider policy and complete native setup.
+
+The combined release advances **F08/R04/V01** with
 [scoped queue workload monitoring](service/insights.md): separate indexing and
 physical cleanup, pending/leased/failed counts, retries, due jobs, oldest age
 and logical text volume in the app, API, SDKs and agent interface. Existing
@@ -104,7 +122,7 @@ updated automatically to 4.28, and the app selected the independent human login
 with protected persistence. A separate
 [actual hosted HTTPS OAuth exercise](validation/2026-10-20-live-hosted-signin.md)
 preserved existing agent keys and verified off-host configuration backup;
-signed-in ChatGPT/provider acceptance remains open. Strict coverage is unchanged.
+[signed-in ChatGPT acceptance](validation/2026-10-20-chatgpt-acceptance.md) later passed. Other provider acceptance remains open. Strict coverage is unchanged.
 
 The [actual Windows shared lab](validation/2026-10-20-windows-shared-lab.md)
 advances U11/R04 with isolated contributor authority, 42 successful cycle
@@ -214,7 +232,7 @@ this addition does not promote those broad requirements to shipped.
 | C02 | Connect company messaging and collaboration systems, including Slack. | Partial | Slack ingestion and access mapping exist. Expand messaging adapters, event delivery and their actual permission/retention contracts. |
 | C03 | Gather conversations automatically across AI applications after the user or company enables capture. | Partial | [Watchers, hooks and export normalizers](service/capture.md) exist for selected sources. Finish native provider capture and coverage reporting; connecting MCP does not automatically expose a provider's full chat history. |
 | C04 | Connect Anthropic/Claude, including relevant apps, plugins, MCP and capture paths. | Partial | Claude Code/Desktop MCP setup and Claude export normalization exist. Hosted sign-in, provider-specific packaging and live end-to-end capture remain open. |
-| C05 | Connect OpenAI/ChatGPT/Codex and Dot through the supported apps/plugins and local or remote connection paths. | Partial | Codex setup and ChatGPT/Codex export normalization exist. Published 4.1.3 adds [stable authenticated MCP profile identification](validation/2026-10-12-mcp-profile.md), with all six native release gates and public package verification passed; it does not implement sign-in. The 4.3.0 [personal-agent OAuth flow](service/hosted-agent-sign-in.md) adds PKCE and consent. Dot/plugin packaging and live provider acceptance remain open; see [current platform research](research/2026-10-11-agent-platforms.md). |
+| C05 | Connect OpenAI/ChatGPT/Codex and Dot through the supported apps/plugins and local or remote connection paths. | Partial | Codex setup and ChatGPT/Codex export normalization exist. Published 4.1.3 adds [stable authenticated MCP profile identification](validation/2026-10-12-mcp-profile.md), with all six native release gates and public package verification passed; it does not implement sign-in. The 4.3.0 [personal-agent OAuth flow](service/hosted-agent-sign-in.md) adds PKCE and consent. [Actual ChatGPT OAuth installation, 16 tools and a profile-only call](validation/2026-10-20-chatgpt-acceptance.md) passed on 20 October. Perseus XR plugin distribution, Dot and other live provider acceptance remain open; see [current platform research](research/2026-10-11-agent-platforms.md). |
 | C06 | Connect Grokbot through a supported plugin/connector and retain access independently of its model quota. | Planned | Generic authenticated HTTP/MCP works when its host is reachable. Build and validate the actual Grokbot connection/capture path and independent host ownership/recovery. |
 | C07 | Support Hermes, OpenClaw and other agent platforms without inventing incompatible configuration. | Planned | [Current MCP/OAuth research](research/2026-10-11-agent-platforms.md). Add tested setup profiles and provider-specific instructions; generic MCP alone is not a completed native integration. |
 | C08 | Offer a genuinely connected system with clear capture coverage, deduplication and source provenance. | Partial | Revisions, source identity, idempotent reconciliation and evidence exist. [Published 4.1.6](validation/2026-10-13-agent-ingestion-release.md) fixes unnecessary Git revisions after unrelated commits and preserves managed scan reasons; native, artifact, website and all six public automatic-upgrade checks passed. Show per-provider last capture, gaps, exclusions, failures and removal state. Never silently label partial imports complete. Published 4.8.1 [groups matching imported document parts across search, context and evaluations](service/retrieval.md#results-from-distinct-documents); source-aware candidate selection is not a claim of complete capture coverage. Source 4.14.0 retains unchanged passage dates across source revisions, with query-specific chronology and an explicit date basis; this does not reconstruct missing historic Git blame. |

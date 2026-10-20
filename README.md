@@ -42,7 +42,7 @@ per-space processing approval and equivalent local-agent controls.
 Published 4.34.0 adds [Slack and Google Drive setup through Studio](docs/service/desktop-cloud-sources.md),
 with selected resources, separate OS-protected provider credentials, read-only
 Drive token renewal, provider permission checks and offline device controls.
-Source 4.37.0 combines [fair indexing turns and priority purges](docs/service/indexing-queues.md)
+Published 4.37.0 combines [fair indexing turns and priority purges](docs/service/indexing-queues.md)
 so a large source queue does not monopolize other organizations or spaces.
 It requires a guarded schema upgrade; model fingerprints remain unchanged.
 It adds [queue workload monitoring](docs/service/insights.md): separate
@@ -50,6 +50,9 @@ indexing and physical-cleanup counts, waiting text sizes, retries, due jobs and
 age, available through Studio and the existing scoped insights API, and fixes
 a [first-setup state publication race](docs/validation/2026-10-20-state-publication.md).
 The unpublished 4.35/4.36 candidates are superseded by this combined release.
+An [actual ChatGPT OAuth connection](docs/validation/2026-10-20-chatgpt-acceptance.md)
+passed personal sign-in, permission review, all 16 tool definitions and an
+authenticated profile request. Follow the [current connection guide](docs/service/hosted-agent-sign-in.md#chatgpt-custom-mcp-connection).
 Studio includes guided [local workspace creation](docs/service/local-workspaces.md),
 bundled database/model runtimes, [app and agent RAM controls](docs/service/memory-resources.md),
 local recovery, a [live 3D memory map](docs/service/memory-map.md), recorded agent

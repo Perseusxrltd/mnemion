@@ -5,6 +5,36 @@ palette: ink `#070b14`, gold `#c49a55`, bright gold `#e2b967` and ivory `#f2ead9
 The single editable source is [`studio/branding/mnemion.svg`](../studio/branding/mnemion.svg).
 Keep its geometry and three connection points consistent across products.
 
+## Connector and plugin authorship
+
+All Mnemion connectors, apps, plugins, setup packages and new integration
+listings use **Perseus XR** as the product author/developer. Use
+`https://www.perseusxr.com/mnemion` as the product page and the canonical Mnemion
+mark. A maintainer's personal account, name or payment address is not the
+integration's publisher identity. This is a standing release requirement.
+
+For the current portable OpenAI plugin format, set `author.name` to
+`Perseus XR` and `extensions.com.openai.interface.developerName` to
+`Perseus XR`. Its compatibility `.codex-plugin/plugin.json` uses
+`interface.developerName` directly. Set the website, repository and local icon
+paths as well. The [official packaging guide](https://developers.openai.com/plugins/build/plugins)
+defines these fields; a metadata label does not assert marketplace verification.
+
+Inspect the actual installed listing after import. Provider-generated private
+test connections may default to the creating account's display name. Correct
+their supported package metadata before distributing them, and record a
+provider restriction explicitly if an attribution field is account-controlled.
+Keep legal code-signing identity and provider ownership records accurate; product
+branding does not rename a legal entity or fabricate verification.
+
+The [20 October ChatGPT acceptance](validation/2026-10-20-chatgpt-acceptance.md)
+verified that uploading a private cloud-plugin package with both author fields
+set to Perseus XR still displayed the creating personal account as its author
+and developer. The new package version and other metadata appeared correctly.
+That account-controlled attribution is an unresolved publishing constraint;
+the private acceptance connection is not a public Perseus XR listing. Do not
+rename a person's account to conceal it.
+
 ## Where the mark appears
 
 - Studio welcome screen, workspace, documentation and legacy vault views use
