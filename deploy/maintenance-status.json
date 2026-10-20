@@ -135,35 +135,28 @@
       "workflow": "release.yml",
       "branch": "release/4.43.0",
       "source_commit": "603be186385f473984a6e553045077164e43f25a",
-      "status": "queued",
-      "conclusion": null,
-      "updated_at": "2026-10-20T17:27:59Z",
+      "status": "completed",
+      "conclusion": "failure",
+      "updated_at": "2026-10-20T17:43:03Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39460885775",
       "job_progress": {
-        "total": 14,
-        "completed": 13,
+        "total": 18,
+        "completed": 18,
         "succeeded": 12,
-        "active": [
-          {
-            "id": 118778498286,
-            "name": "native / native_database / Database / macos / arm64",
-            "status": "queued",
-            "steps": []
-          }
-        ]
+        "active": []
       },
       "failed_jobs": []
     },
     {
-      "id": 39466182278,
+      "id": 39468502213,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "612a45c5ae3bc9d6316d36bbb9714c7e5ba8409e",
+      "source_commit": "c483b9412f4bf91e3d702bc65b3b6c3b1cf4d6ee",
       "status": "completed",
       "conclusion": "skipped",
-      "updated_at": "2026-10-20T17:27:09Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39466182278"
+      "updated_at": "2026-10-20T17:43:07Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39468502213"
     },
     {
       "id": 39467357011,
@@ -188,5 +181,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39441738346"
     }
   ],
-  "observed_at": "2026-10-20T17:42:07+00:00"
+  "observed_at": "2026-10-20T17:43:39+00:00"
 }
