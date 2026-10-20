@@ -29,11 +29,18 @@ issue review, publication and version-linked closure together.
   Native delivery and live acceptance remain separate. GitHub could not allocate
   the first candidate's Mac ARM check runner on either attempt; those records remain.
 
+- **Actual Windows and shared-host 4.41 acceptance passed after review.**
+  The [paired acceptance](validation/2026-10-20-441-acceptance.md) retained identities,
+  protected login and preferences, then passed 41 of 41 synthetic requests with
+  complete cleanup and no production-memory writes or cloud-model calls.
+  The host used compatible automatic updating; Windows used a guarded agent
+  restart. The earlier semantic HTTP 503 remains unexplained under issue 45.
+  Fresh post-upgrade off-host backup verification remains separate and pending.
+
 - **Actual office access now passes.** [Issue 46 acceptance](validation/2026-10-20-office-access.md)
   verifies genuine source scans and list/fetch/lexical reads with both unchanged
-  agent credentials. Windows and the shared host run published 4.41. The later
-  synthetic cycle's semantic HTTP 503 and the deliberately paused publisher
-  remain separate work under issue 45.
+  agent credentials. Issue 46 is closed. The deliberately paused local-note
+  publisher still requires its independent guard and quality-control approval.
 
 - **4.41 completes the selected live-capture choice.** The app and agents can
   choose complete exposed records or supported messages only, with provenance,
@@ -84,8 +91,9 @@ issue review, publication and version-linked closure together.
   downloadable in the app and generated through the API, SDKs and native CLI.
   Provider-specific plugin, configuration and guide types stay explicit.
   [Focused checks and actual Grok/Claude manifest validation](validation/2026-10-20-native-connectors.md)
-  passed. New GitHub **44/45/46** retain real Grok Bot cloud and private guarded-update
-  and office-access acceptance; the upstream local-note publisher's security pause is preserved.
+  passed. GitHub **44/45** retain real cloud-history and reliability work;
+  issue **46** closed with the actual office-access proof above. The upstream
+  local-note publisher's security pause is preserved.
   Native release and live update gates remain separate.
 
 - **Published 4.37.0 combines queue improvements with a local setup correction.**
