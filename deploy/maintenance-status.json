@@ -25,7 +25,7 @@
     {
       "number": 46,
       "title": "Deployment access: Codex/Astra cannot see the existing office task and memory spaces",
-      "updated_at": "2026-10-20T12:05:17Z",
+      "updated_at": "2026-10-20T13:02:49Z",
       "url": "https://github.com/Perseusxrltd/mnemion/issues/46",
       "labels": []
     }
@@ -94,21 +94,13 @@
       "source_commit": "0fb647e85dcadb209990fec6ca6f81d255d9676c",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-20T13:02:26Z",
+      "updated_at": "2026-10-20T13:03:03Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39424241142",
       "job_progress": {
-        "total": 18,
-        "completed": 5,
-        "succeeded": 5,
+        "total": 23,
+        "completed": 15,
+        "succeeded": 15,
         "active": [
-          {
-            "id": 118641948391,
-            "name": "checks / studio",
-            "status": "in_progress",
-            "steps": [
-              "Run python deploy/bundle_studio.py"
-            ]
-          },
           {
             "id": 118642002038,
             "name": "native / Encrypted files / Windows / arm64",
@@ -118,35 +110,11 @@
             ]
           },
           {
-            "id": 118642002185,
-            "name": "native / Encrypted files / Windows / x64",
-            "status": "in_progress",
-            "steps": [
-              "Run python -m pip install pytest cryptography==50.0.2"
-            ]
-          },
-          {
-            "id": 118642002877,
-            "name": "native / native_database / Private state / Windows / x64",
-            "status": "in_progress",
-            "steps": [
-              "Check ownership, inherited privacy and restricted-token access"
-            ]
-          },
-          {
-            "id": 118642002998,
-            "name": "native / native_database / Private state / Windows / arm64",
-            "status": "in_progress",
-            "steps": [
-              "Install small private-state test dependencies"
-            ]
-          },
-          {
             "id": 118642023013,
             "name": "checks / service (3.12)",
             "status": "in_progress",
             "steps": [
-              "Initialize containers"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
@@ -158,27 +126,11 @@
             ]
           },
           {
-            "id": 118642023039,
-            "name": "checks / legacy",
-            "status": "in_progress",
-            "steps": [
-              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
-            ]
-          },
-          {
             "id": 118642023088,
             "name": "checks / service (3.13)",
             "status": "in_progress",
             "steps": [
-              "Initialize containers"
-            ]
-          },
-          {
-            "id": 118642023149,
-            "name": "checks / container (ubuntu-22.04)",
-            "status": "in_progress",
-            "steps": [
-              "Build the actual deployment image with its documentation"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
@@ -186,15 +138,7 @@
             "name": "checks / service (3.14)",
             "status": "in_progress",
             "steps": [
-              "Initialize containers"
-            ]
-          },
-          {
-            "id": 118642023348,
-            "name": "checks / container (ubuntu-22.04-arm)",
-            "status": "in_progress",
-            "steps": [
-              "Build the actual deployment image with its documentation"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
@@ -203,6 +147,22 @@
             "status": "in_progress",
             "steps": [
               "Build the current Intel cryptography runtime with static OpenSSL"
+            ]
+          },
+          {
+            "id": 118642323054,
+            "name": "native / native_database / Database / macos / x64",
+            "status": "in_progress",
+            "steps": [
+              "Relocate, initialize, verify TLS and RLS, restore backup and recover a crash"
+            ]
+          },
+          {
+            "id": 118642323388,
+            "name": "native / native_database / Database / windows / x64",
+            "status": "in_progress",
+            "steps": [
+              "Relocate, initialize, verify TLS and RLS, restore backup and recover a crash"
             ]
           }
         ]
@@ -259,5 +219,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39403000169"
     }
   ],
-  "observed_at": "2026-10-20T13:02:35+00:00"
+  "observed_at": "2026-10-20T13:03:20+00:00"
 }

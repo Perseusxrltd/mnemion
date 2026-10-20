@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-20T13:02:35+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-20T13:03:20+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.37.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.37.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -12,7 +12,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | --- | --- | --- |
 | [#44](https://github.com/Perseusxrltd/mnemion/issues/44) | Integration acceptance: verify the separate Grok Bot cloud client end to end | 2026-10-20T11:20:12Z |
 | [#45](https://github.com/Perseusxrltd/mnemion/issues/45) | Deployment acceptance: finish guarded host upgrade and expose paused note publishing | 2026-10-20T11:54:56Z |
-| [#46](https://github.com/Perseusxrltd/mnemion/issues/46) | Deployment access: Codex/Astra cannot see the existing office task and memory spaces | 2026-10-20T12:05:17Z |
+| [#46](https://github.com/Perseusxrltd/mnemion/issues/46) | Deployment access: Codex/Astra cannot see the existing office task and memory spaces | 2026-10-20T13:02:49Z |
 
 ## Relevant builds
 
@@ -30,21 +30,16 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 ## Active jobs
 
-[Run 39424241142](https://github.com/Perseusxrltd/mnemion/actions/runs/39424241142): 5/18 jobs completed; 5 succeeded.
+[Run 39424241142](https://github.com/Perseusxrltd/mnemion/actions/runs/39424241142): 15/23 jobs completed; 15 succeeded.
 
-- checks / studio: in\_progress — Run python deploy/bundle\_studio\.py.
 - native / Encrypted files / Windows / arm64: in\_progress — Run actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1.
-- native / Encrypted files / Windows / x64: in\_progress — Run python -m pip install pytest cryptography==50\.0\.2.
-- native / native\_database / Private state / Windows / x64: in\_progress — Check ownership, inherited privacy and restricted-token access.
-- native / native\_database / Private state / Windows / arm64: in\_progress — Install small private-state test dependencies.
-- checks / service \(3\.12\): in\_progress — Initialize containers.
+- checks / service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 - checks / supervision \(macos-15\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
-- checks / legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
-- checks / service \(3\.13\): in\_progress — Initialize containers.
-- checks / container \(ubuntu-22\.04\): in\_progress — Build the actual deployment image with its documentation.
-- checks / service \(3\.14\): in\_progress — Initialize containers.
-- checks / container \(ubuntu-22\.04-arm\): in\_progress — Build the actual deployment image with its documentation.
+- checks / service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- checks / service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 - checks / supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
+- native / native\_database / Database / macos / x64: in\_progress — Relocate, initialize, verify TLS and RLS, restore backup and recover a crash.
+- native / native\_database / Database / windows / x64: in\_progress — Relocate, initialize, verify TLS and RLS, restore backup and recover a crash.
 
 [Run 39426976671](https://github.com/Perseusxrltd/mnemion/actions/runs/39426976671): 0/1 jobs completed; 0 succeeded.
 
