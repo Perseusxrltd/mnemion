@@ -3,9 +3,9 @@
   "repository": "Perseusxrltd/mnemion",
   "run_window": 100,
   "release": {
-    "version": "v4.33.0",
-    "published_at": "2026-10-20T07:35:00Z",
-    "url": "https://github.com/Perseusxrltd/mnemion/releases/tag/v4.33.0"
+    "version": "v4.34.0",
+    "published_at": "2026-10-20T08:27:27Z",
+    "url": "https://github.com/Perseusxrltd/mnemion/releases/tag/v4.34.0"
   },
   "issues": [
     {
@@ -71,26 +71,71 @@
       "failed_jobs": []
     },
     {
-      "id": 39387468667,
+      "id": 39393538181,
       "attempt": 1,
       "workflow": "public-updates.yml",
-      "branch": "v4.33.0",
-      "source_commit": "8d5e2f76d62f0a26e950e6516f6c06cf72a4e93a",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-20T07:46:59Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39387468667"
-    },
-    {
-      "id": 39382743155,
-      "attempt": 1,
-      "workflow": "release.yml",
-      "branch": "release/4.33.0",
-      "source_commit": "8d5e2f76d62f0a26e950e6516f6c06cf72a4e93a",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-20T07:33:35Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39382743155"
+      "branch": "v4.34.0",
+      "source_commit": "d8e6b05e075d81382fc7f1994efe0dd36147f5da",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-20T08:28:02Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39393538181",
+      "job_progress": {
+        "total": 7,
+        "completed": 1,
+        "succeeded": 1,
+        "active": [
+          {
+            "id": 118530653964,
+            "name": "linux / arm64 public upgrade",
+            "status": "in_progress",
+            "steps": [
+              "Linux desktop libraries"
+            ]
+          },
+          {
+            "id": 118530653976,
+            "name": "windows / x64 public upgrade",
+            "status": "in_progress",
+            "steps": [
+              "Install public release and observe its automatic update"
+            ]
+          },
+          {
+            "id": 118530654030,
+            "name": "macos / x64 public upgrade",
+            "status": "in_progress",
+            "steps": [
+              "Install public release and observe its automatic update"
+            ]
+          },
+          {
+            "id": 118530654042,
+            "name": "windows / arm64 public upgrade",
+            "status": "in_progress",
+            "steps": [
+              "Run python -m pip install psutil==7.2.2"
+            ]
+          },
+          {
+            "id": 118530654125,
+            "name": "linux / x64 public upgrade",
+            "status": "in_progress",
+            "steps": [
+              "Linux desktop libraries"
+            ]
+          },
+          {
+            "id": 118530654220,
+            "name": "macos / arm64 public upgrade",
+            "status": "in_progress",
+            "steps": [
+              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": []
     },
     {
       "id": 39388255080,
@@ -109,77 +154,21 @@
       "workflow": "release.yml",
       "branch": "release/4.35.0",
       "source_commit": "4fcab3d7ebcfc92ca3ea87dcf9e2aa208c07f587",
-      "status": "queued",
+      "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-20T08:26:30Z",
+      "updated_at": "2026-10-20T08:28:01Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39392435604",
       "job_progress": {
-        "total": 18,
-        "completed": 4,
-        "succeeded": 4,
+        "total": 24,
+        "completed": 17,
+        "succeeded": 17,
         "active": [
-          {
-            "id": 118530102979,
-            "name": "checks / studio",
-            "status": "in_progress",
-            "steps": [
-              "Run python deploy/bundle_studio.py"
-            ]
-          },
           {
             "id": 118530165747,
             "name": "native / Encrypted files / Windows / arm64",
             "status": "in_progress",
             "steps": [
-              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
-            ]
-          },
-          {
-            "id": 118530165962,
-            "name": "native / Encrypted files / Windows / x64",
-            "status": "in_progress",
-            "steps": [
-              "Run python -m pip install pytest cryptography==50.0.2"
-            ]
-          },
-          {
-            "id": 118530166523,
-            "name": "native / native_database / Private state / Windows / x64",
-            "status": "in_progress",
-            "steps": [
-              "Install small private-state test dependencies"
-            ]
-          },
-          {
-            "id": 118530166543,
-            "name": "native / native_database / Private state / Windows / arm64",
-            "status": "in_progress",
-            "steps": [
-              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
-            ]
-          },
-          {
-            "id": 118530188673,
-            "name": "checks / container (ubuntu-22.04-arm)",
-            "status": "in_progress",
-            "steps": [
-              "Build the actual deployment image with its documentation"
-            ]
-          },
-          {
-            "id": 118530188735,
-            "name": "checks / container (ubuntu-22.04)",
-            "status": "in_progress",
-            "steps": [
-              "Build the actual deployment image with its documentation"
-            ]
-          },
-          {
-            "id": 118530188749,
-            "name": "checks / dependency-audit",
-            "status": "in_progress",
-            "steps": [
-              "Run uv sync --locked --no-dev --extra supervision"
+              "Run actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1"
             ]
           },
           {
@@ -187,15 +176,7 @@
             "name": "checks / service (3.14)",
             "status": "in_progress",
             "steps": [
-              "Initialize containers"
-            ]
-          },
-          {
-            "id": 118530188792,
-            "name": "checks / legacy",
-            "status": "in_progress",
-            "steps": [
-              "Run uv sync --locked --extra legacy --group dev"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
@@ -203,27 +184,39 @@
             "name": "checks / service (3.12)",
             "status": "in_progress",
             "steps": [
-              "Initialize containers"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
             "id": 118530188924,
             "name": "checks / supervision (macos-15)",
-            "status": "queued",
-            "steps": []
+            "status": "in_progress",
+            "steps": [
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
+            ]
           },
           {
             "id": 118530188980,
             "name": "checks / supervision (macos-15-intel)",
             "status": "in_progress",
-            "steps": []
+            "steps": [
+              "Build the current Intel cryptography runtime with static OpenSSL"
+            ]
           },
           {
             "id": 118530189034,
             "name": "checks / service (3.13)",
             "status": "in_progress",
             "steps": [
-              "Initialize containers"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+            ]
+          },
+          {
+            "id": 118530728432,
+            "name": "native / native_database / Database / Windows ARM host / x64 engine",
+            "status": "in_progress",
+            "steps": [
+              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
             ]
           }
         ]
@@ -236,38 +229,22 @@
       "workflow": "verify-artifacts.yml",
       "branch": "main",
       "source_commit": "c8a7bd354f16c076e723abc9b61356ab585fdc6a",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-20T08:26:17Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39393375424",
-      "job_progress": {
-        "total": 1,
-        "completed": 0,
-        "succeeded": 0,
-        "active": [
-          {
-            "id": 118530026108,
-            "name": "verify",
-            "status": "in_progress",
-            "steps": [
-              "Verify every uploaded byte, production signature and complete feed"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
-    },
-    {
-      "id": 39387465064,
-      "attempt": 1,
-      "workflow": "website-release.yml",
-      "branch": "v4.33.0",
-      "source_commit": "8d5e2f76d62f0a26e950e6516f6c06cf72a4e93a",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-20T07:35:18Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39387465064"
+      "updated_at": "2026-10-20T08:27:35Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39393375424"
+    },
+    {
+      "id": 39393535317,
+      "attempt": 1,
+      "workflow": "website-release.yml",
+      "branch": "v4.34.0",
+      "source_commit": "d8e6b05e075d81382fc7f1994efe0dd36147f5da",
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-20T08:27:48Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39393535317"
     }
   ],
-  "observed_at": "2026-10-20T08:26:45+00:00"
+  "observed_at": "2026-10-20T08:28:07+00:00"
 }
