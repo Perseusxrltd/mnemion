@@ -35,6 +35,8 @@ def inventory(dsn):
             )
             if table == "memory_revisions":
                 value = sql.SQL("jsonb_build_object('passage_times','{}'::jsonb) || to_jsonb(t)")
+            if table in {"tenants", "spaces"}:
+                value = sql.SQL("jsonb_build_object('last_index_claim',NULL) || to_jsonb(t)")
             rows = connection.execute(
                 sql.SQL("SELECT ({})::text AS value FROM mnemion.{} t ORDER BY value").format(
                     value, sql.Identifier(table)
@@ -44,7 +46,7 @@ def inventory(dsn):
         return result
 
 
-@pytest.mark.parametrize("previous_count", [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 26, 27])
+@pytest.mark.parametrize("previous_count", [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 26, 27, 28])
 def test_previous_schema_upgrade_preserves_keys_grants_and_existing_memory(
     postgres, tmp_path, monkeypatch, previous_count
 ):
@@ -123,6 +125,23 @@ def test_previous_schema_upgrade_preserves_keys_grants_and_existing_memory(
             for table, digest in before_installed.items()
             if table != "schema"
         )
+        # The new NULL default is expected; a non-NULL migration write is not.
+        # Both the installed gate and exhaustive inventory must detect it.
+        for table in ("tenants", "spaces"):
+            with psycopg.connect(admin_dsn) as connection:
+                connection.execute(
+                    sql.SQL("UPDATE mnemion.{} SET last_index_claim=42").format(
+                        sql.Identifier(table)
+                    )
+                )
+            assert probe.snapshot()[table] != before_installed[table]
+            assert inventory(admin_dsn)[table] != before[table]
+            with psycopg.connect(admin_dsn) as connection:
+                connection.execute(
+                    sql.SQL("UPDATE mnemion.{} SET last_index_claim=NULL").format(
+                        sql.Identifier(table)
+                    )
+                )
         # An erroneous session-key conversion must still fail the comparison;
         # the candidate's actual marker may never be replaced by a default.
         with psycopg.connect(admin_dsn) as connection:

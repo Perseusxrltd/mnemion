@@ -367,6 +367,7 @@ class InstalledUpgrade:
             }
             for table in (
                 "tenants",
+                "spaces",
                 "principals",
                 "api_keys",
                 "space_grants",
@@ -377,6 +378,11 @@ class InstalledUpgrade:
                 # that expected value only to the *previous* schema snapshot;
                 # never discard or overwrite the candidate's actual value.
                 value = sql.SQL("to_jsonb(t)")
+                if table in {"tenants", "spaces"}:
+                    # 029 initializes dispatch counters to NULL. Supply only
+                    # an absent field; preserve the candidate's actual value
+                    # so an unintended migration write still fails the gate.
+                    value = sql.SQL("jsonb_build_object('last_index_claim',NULL) || to_jsonb(t)")
                 if table == "api_keys" and legacy_api_keys:
                     value = sql.SQL("jsonb_build_object('session_key',false) || to_jsonb(t)")
                 if table == "memory_revisions":
