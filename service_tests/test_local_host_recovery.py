@@ -46,7 +46,8 @@ def inspect(root, values):
 
 
 def test_server_inspection_verifies_nested_inventory_and_excludes_host_secrets(
-    host_copy, encrypted_recovery  # noqa: F811
+    host_copy,
+    encrypted_recovery,  # noqa: F811
 ):
     root, values, _, _, _, report = host_copy
     view = inspect(root, values)
