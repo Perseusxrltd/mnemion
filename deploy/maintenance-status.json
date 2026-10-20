@@ -30,38 +30,15 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "3bf2a84621a37808b073e2ee53ca7ede3ec4c056",
-      "status": "queued",
+      "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-20T16:22:00Z",
+      "updated_at": "2026-10-20T16:22:10Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39456667185",
       "job_progress": {
-        "total": 3,
-        "completed": 0,
-        "succeeded": 0,
-        "active": [
-          {
-            "id": 118745638271,
-            "name": "studio",
-            "status": "in_progress",
-            "steps": [
-              "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38"
-            ]
-          },
-          {
-            "id": 118745638704,
-            "name": "Select checks",
-            "status": "queued",
-            "steps": []
-          },
-          {
-            "id": 118745638903,
-            "name": "lint",
-            "status": "in_progress",
-            "steps": [
-              "Run uv sync --locked --group dev"
-            ]
-          }
-        ]
+        "total": 8,
+        "completed": 8,
+        "succeeded": 3,
+        "active": []
       },
       "failed_jobs": []
     },
@@ -121,5 +98,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39441738346"
     }
   ],
-  "observed_at": "2026-10-20T16:22:09+00:00"
+  "observed_at": "2026-10-20T16:22:53+00:00"
 }
