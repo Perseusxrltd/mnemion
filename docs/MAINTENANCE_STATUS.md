@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-20T08:52:07+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-20T08:53:13+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.34.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.34.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -20,15 +20,14 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | public-updates\.yml | v4\.34\.0 | success | [Run 39393538181](https://github.com/Perseusxrltd/mnemion/actions/runs/39393538181) |
 | release\.yml | release/4\.34\.0 | success | [Run 39388255080](https://github.com/Perseusxrltd/mnemion/actions/runs/39388255080) |
 | release\.yml | release/4\.35\.0 | in\_progress | [Run 39392435604](https://github.com/Perseusxrltd/mnemion/actions/runs/39392435604) |
-| release\.yml | release/4\.36\.0 | pending | [Run 39394175777](https://github.com/Perseusxrltd/mnemion/actions/runs/39394175777) |
-| verify-artifacts\.yml | main | success | [Run 39393375424](https://github.com/Perseusxrltd/mnemion/actions/runs/39393375424) |
+| release\.yml | release/4\.36\.0 | cancelled | [Run 39394175777](https://github.com/Perseusxrltd/mnemion/actions/runs/39394175777) |
+| verify-artifacts\.yml | main | skipped | [Run 39396581020](https://github.com/Perseusxrltd/mnemion/actions/runs/39396581020) |
 | website-release\.yml | v4\.34\.0 | success | [Run 39393535317](https://github.com/Perseusxrltd/mnemion/actions/runs/39393535317) |
 
 ## Active jobs
 
-[Run 39392435604](https://github.com/Perseusxrltd/mnemion/actions/runs/39392435604): 29/31 jobs completed; 28 succeeded.
+[Run 39392435604](https://github.com/Perseusxrltd/mnemion/actions/runs/39392435604): 30/31 jobs completed; 28 succeeded.
 
-- native / windows-2022 / x64: in\_progress — Native Windows installation, authenticated upgrade and relaunch.
 - native / macos-15-intel / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
 
 
