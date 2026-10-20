@@ -1,9 +1,10 @@
 # Run memory sources from Studio
 
 Studio 4.31.0 adds app-managed **folders/Obsidian vaults** and **growing JSONL
-conversation folders** on Windows, macOS and Linux. This source distribution
-requires native acceptance before publication; [release status](../RELEASE_STATUS.md)
-identifies the available installers.
+conversation folders** on Windows, macOS and Linux. The release passed all six
+native targets and public installed-update checks. [Actual Windows/shared-host
+updates also passed](../validation/2026-10-20-431-live-updates.md);
+[release status](../RELEASE_STATUS.md) identifies current installers.
 
 The device can contribute to a local or remote shared workspace. Contributing
 files does not require a local database, model, GPU, Python installation or
