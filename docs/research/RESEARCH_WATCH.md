@@ -1,6 +1,6 @@
 # Scientific papers and memory-tool watch
 
-Automatically checked **2026-10-20T11:52:00+00:00**. These are public metadata
+Automatically checked **2026-10-20T12:10:17+00:00**. These are public metadata
 candidates, not reviewed recommendations, benchmark results or Mnemion features.
 No model calls, purchases, account creation or dependency upgrades occur.
 
@@ -13,18 +13,42 @@ research interpretation, Jev assessment and required adoption measurements.
 
 | Source | Latest fetch | Last successful fetch | Retained candidates |
 | --- | --- | --- | --- |
-| arXiv agent-memory papers | HTTP 429 | None recorded | 0 |
-| Crossref recent memory research | OK | 2026-10-20T11:55:48+00:00 | 1 |
-| MemPalace/mempalace | OK | 2026-10-20T11:52:00+00:00 | 5 |
-| mem0ai/mem0 | OK | 2026-10-20T11:52:00+00:00 | 5 |
-| vectorize-io/hindsight | OK | 2026-10-20T11:52:00+00:00 | 5 |
-| getzep/graphiti | OK | 2026-10-20T11:52:00+00:00 | 5 |
-| letta-ai/letta-code | OK | 2026-10-20T11:52:00+00:00 | 5 |
-| TypeSafe AI Jev model documentation | OK | 2026-10-20T11:52:00+00:00 | 2 |
+| arXiv agent-memory papers | OK | 2026-10-20T12:10:17+00:00 | 25 |
+| Crossref recent memory research | OK | 2026-10-20T12:10:17+00:00 | 1 |
+| MemPalace/mempalace | OK | 2026-10-20T12:10:17+00:00 | 5 |
+| mem0ai/mem0 | OK | 2026-10-20T12:10:17+00:00 | 5 |
+| vectorize-io/hindsight | OK | 2026-10-20T12:10:17+00:00 | 5 |
+| getzep/graphiti | OK | 2026-10-20T12:10:17+00:00 | 5 |
+| letta-ai/letta-code | OK | 2026-10-20T12:10:17+00:00 | 5 |
+| TypeSafe AI Jev model documentation | OK | 2026-10-20T12:10:17+00:00 | 2 |
 
 ## arXiv agent-memory papers
 
-No candidates are currently recorded from this bounded feed.
+- [The Geometry of Agent Memory: Forecasting Retrieval-Bound Memory Failures, and Characterizing Its Limits](https://arxiv.org/abs/2610.26433) — 2026-10-19; paper; unreviewed.
+- [MemDerive: A Diagnostic Benchmark for Agent Memory over Evolving Data](https://arxiv.org/abs/2610.25373) — 2026-10-18; paper; unreviewed.
+- [MemBubble: Benchmarking How Agent Memory Shapes LLM Response Diversity](https://arxiv.org/abs/2610.25127) — 2026-10-18; paper; unreviewed.
+- [When Agent Memory Needs to Compute: Evidence Access and Executable Aggregation](https://arxiv.org/abs/2610.19474) — 2026-10-14; paper; unreviewed.
+- [HABIT-Bench: Evaluating Habit Induction from Longitudinal Weak Evidence in Agent Memory](https://arxiv.org/abs/2610.24520) — 2026-10-17; paper; unreviewed.
+- [GLOBE: Evolving Structured Agentic Memory for E-commerce Product Optimization in Generative Search](https://arxiv.org/abs/2610.23709) — 2026-10-16; paper; unreviewed.
+- [RL-Guided Temporal Localization for Dual-Channel Retrieval in Long-Horizon Agent Memory](https://arxiv.org/abs/2610.23598) — 2026-10-16; paper; unreviewed.
+- [From Memory Hits to Answerable Evidence: Query-Conditioned Memory Compilation for Long-Term Agent Memory](https://arxiv.org/abs/2610.23313) — 2026-10-16; paper; unreviewed.
+- [HEM-Med: A Hierarchical Agentic Memory Framework for Safe Multi-Center Medication Recommendation](https://arxiv.org/abs/2610.20191) — 2026-10-14; paper; unreviewed.
+- [SAFE-Mem: Secure Agentic Memory with Fine-Grained Authority and Governance-Aware Retrieval](https://arxiv.org/abs/2610.22959) — 2026-10-16; paper; unreviewed.
+- [Beyond Downstream QA: Rethinking How We Evaluate Agent Memory](https://arxiv.org/abs/2610.22209) — 2026-10-15; paper; unreviewed.
+- [Hy-Memory-30B-A3B: Attributed Reinforcement Learning for Long-Term Memory Writing](https://arxiv.org/abs/2610.22196) — 2026-10-15; paper; unreviewed.
+- [MemCut: Every Secret Leaves a Trail in the Long-Term Memory of LLM Agents](https://arxiv.org/abs/2610.21405) — 2026-10-15; paper; unreviewed.
+- [MemScope: Evolving Agent Memory Architectures through Localized Code Repair](https://arxiv.org/abs/2610.21170) — 2026-10-15; paper; unreviewed.
+- [EGCForest: Structured Agent Memory Organization for Enterprise Group Chats](https://arxiv.org/abs/2610.19836) — 2026-10-14; paper; unreviewed.
+- [MemCode: Discrete Semantic Representations for Long-Term Agent Memory](https://arxiv.org/abs/2610.19472) — 2026-10-14; paper; unreviewed.
+- [Seeing, Maintaining, and Learning: The Evolution of Multimodal Agent Memory](https://arxiv.org/abs/2610.19366) — 2026-10-14; paper; unreviewed.
+- [Memory Echo in Single-Agent Long-Term Memory: Lifecycle Evaluation and Provenance-Guided Mitigation](https://arxiv.org/abs/2610.17763) — 2026-10-13; paper; unreviewed.
+- [Recall What Is Missing: Composing Evidence from Long-Term Agent Memory](https://arxiv.org/abs/2610.15642) — 2026-10-11; paper; unreviewed.
+- [The RNN Homunculus: Learning to Gate Long-Term Memory](https://arxiv.org/abs/2610.14279) — 2026-10-09; paper; unreviewed.
+- [Memory Type Varies: Empowering LLM Agents for Long-Term Memory with Diverse Strategies](https://arxiv.org/abs/2610.11573) — 2026-10-08; paper; unreviewed.
+- [Real Long-Term Memory for AI: A 50-Million-Token Window That Is Faster and Cheaper Than Recompute](https://arxiv.org/abs/2610.10845) — 2026-10-07; paper; unreviewed.
+- [HGP:An on-device personalized agent memory via hybrid graph storage](https://arxiv.org/abs/2610.10071) — 2026-10-07; paper; unreviewed.
+- [Relevance Is Not Sufficiency: What Actually Closes the Evidence Gap in Long-Term Memory QA](https://arxiv.org/abs/2610.09348) — 2026-10-07; paper; unreviewed.
+- [MINDSET: Energy-based Schema Evolution for Long Conversational Agent Memory](https://arxiv.org/abs/2610.08586) — 2026-10-06; paper; unreviewed.
 
 ## Crossref recent memory research
 
