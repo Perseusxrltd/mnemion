@@ -46,6 +46,50 @@ provides the configured MCP address directly. **Check availability** refreshes
 the result after a host configuration change. The page distinguishes personal
 account sign-in, an external company issuer and an unavailable or disabled gateway.
 
+## ChatGPT custom MCP connection
+
+The [current OpenAI guide](https://developers.openai.com/plugins/deploy/connect-chatgpt),
+checked on 20 October 2026, uses **ChatGPT Plugins**. Your OpenAI account and
+workspace policies must allow adding a custom MCP server.
+
+1. In Mnemion, open **Agents & apps**, check account sign-in availability and
+   copy **Workspace MCP address**. It must be the public HTTPS address including
+   `/mcp`, with hosted OAuth enabled by the workspace's operator.
+2. In **ChatGPT Plugins**, select **+ → Add custom MCP server**. Enter a name and
+   description, then choose the public-endpoint connection and paste that address.
+3. Configure **OAuth**. If asked for a registration method, choose dynamic
+   client registration (DCR). Mnemion's built-in server registers public clients
+   automatically; it does not require a manually supplied client secret.
+4. Review ChatGPT's connection notice and select **Create as a plugin**. On
+   Mnemion's consent page, sign in with your workspace account and review the
+   displayed permissions before approving. A dedicated account with narrower
+   grants is appropriate when the agent needs less authority than your account.
+5. Confirm that ChatGPT discovers the Mnemion tools. Install the resulting plugin,
+   start a new conversation and select it with `@`. Ask it to list accessible
+   spaces and fetch a known permitted memory; an inaccessible space must remain
+   inaccessible.
+
+After tool metadata changes, open this custom connection in ChatGPT Plugins and
+select **Refresh**, then start a new conversation. Mnemion's application updates
+do not control an external client's cached tool list. MCP supplies tools for the
+selected workspace; [conversation capture](capture.md) is configured separately.
+
+The [OpenAI authentication contract](https://developers.openai.com/plugins/build/auth)
+supports DCR with public-client token exchange. Mnemion advertises S256 PKCE,
+an exact resource and issuer, and issuer-bearing authorization responses.
+It does not advertise CIMD. For an external identity provider, copy the exact
+callback displayed by ChatGPT and configure that provider's supported client
+method; do not assume every deployment uses the same callback URL.
+
+OpenAI also documents **Secure MCP Tunnel** for private-server testing. Its
+workspace association and tunnel client are operated through OpenAI; Mnemion's
+workspace permissions and host availability still apply.
+
+The [live public protocol exercise](../validation/2026-10-20-live-hosted-signin.md)
+passed. Actual signed-in ChatGPT acceptance remains tracked in
+[issue 18](https://github.com/Perseusxrltd/mnemion/issues/18); these instructions
+are based on the current official contract, not a claim that its UI was tested.
+
 ## Inspect and revoke
 
 Open **Account & sessions → Connected apps** to inspect creation, last renewal,

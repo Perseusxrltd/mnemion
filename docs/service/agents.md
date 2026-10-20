@@ -6,6 +6,8 @@ MCP address, add it to the agent's connector settings and choose OAuth. Sign in
 on the workspace's page and approve the displayed permissions. Manage or revoke
 the connection under **Account & sessions**. The
 [personal-agent guide](hosted-agent-sign-in.md) explains permissions and host setup.
+Its [ChatGPT connection steps](hosted-agent-sign-in.md#chatgpt-custom-mcp-connection)
+follow OpenAI's current Plugins flow and public-client OAuth registration.
 
 The page also identifies an external company issuer, a disabled MCP gateway,
 an unconfigured workspace or a server too old to report this capability.
@@ -225,8 +227,9 @@ applies to managed-host startup changes; see
 Service 4.0.11 adds [optional trusted-issuer OAuth validation](oauth.md) with
 individual, revocable identity bindings. Service 4.3.0 adds
 [personal-account agent sign-in](hosted-agent-sign-in.md), including public-client
-registration, PKCE, consent, refresh and revocation. Live ChatGPT, Dot and other
-provider acceptance remains separate under issues 4/18. From 4.0.8,
+registration, PKCE, consent, refresh and revocation. Actual ChatGPT acceptance
+remains in issue 18; Dot and other named-provider/plugin acceptance remain in
+the product roadmap. General delegated-authentication issue 4 is resolved. From 4.0.8,
 [managed Unix server patches](managed-updates.md) are available to authorized
 host operators; a memory key alone cannot grant software-update authority.
 

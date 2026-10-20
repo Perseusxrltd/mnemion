@@ -58,10 +58,12 @@ of the released app. A hotfix does not finish a broader requirement.
   Its [isolated Windows lab](validation/2026-10-20-windows-shared-lab.md) passed a
   42-request memory cycle and 27-request concurrency check, with automatic
   bounded checks after app/server version changes.
-- **Two GitHub reports remain open: 3 and 18.** The [issue resolution plan](implementation/github-issues.md)
-  records their implementation and remaining live-provider checks. General
-  delegated OAuth issue 4 closed against verified 4.29 and actual HTTPS protocol
-  evidence; signed-in ChatGPT and managed tunnel-provider acceptance remain.
+- **Issue 18 retains the remaining ChatGPT UI acceptance.** The
+  [issue resolution plan](implementation/github-issues.md) records the current
+  checks. General delegated OAuth issue 4 is closed. Remote-access issue 3 now
+  has [reviewed acceptance and a verified 4.29 association](validation/2026-10-20-remote-access-issue.md)
+  for automatic closure. Live managed-ngrok account/lifecycle testing remains
+  separate roadmap work.
 
 History lives in [release notes](https://github.com/Perseusxrltd/mnemion/releases) and [implementation progress](implementation/v4_progress.md).
 Historical validation retains its original version/environment and is not a
@@ -125,7 +127,7 @@ continues while an external account or publisher prerequisite is unavailable.
 
 | Priority | Next outcome | Acceptance and requirements |
 | --- | --- | --- |
-| 1 | Remaining live connections | Actual supported ChatGPT registration, consent and tool list for #18; a free tunnel account, external access and lifecycle recovery for #3. General delegated authentication issue #4 is resolved. Preserve existing HTTPS, local and scoped-key paths. C04–C07, A05/A08. |
+| 1 | Remaining live connections | Actual supported ChatGPT registration, consent and tool list for #18; separate free ngrok account/lifecycle acceptance and named-agent plugins. The bounded remote-access and delegated-authentication reports have verified evidence. Preserve existing HTTPS, local and scoped-key paths. C04–C07, A05/A08. |
 | 2 | Continuous operation and recovery from another device | Guided organization hosting, registered recovery hosts, delegated operators, key custody, off-host delivery visibility and complete app-based replacement-host setup. Source 4.30.2 supplies desktop database import; provider/OS configuration remains. Expand beyond the bounded 4.29 journal recovery where needed. Verify host loss and current denials without the original agent; distinguish mirrors, snapshots and replicas. A01/A06/A07/A09/A11–A13, U01/U02/U04/U06/U11. |
 | 3 | Source and agent onboarding | Guided consent, credentials, permission mapping, exclusions, reconnect and capture coverage. Validate actual Grokbot, Dot/OpenAI, Anthropic, Hermes and OpenClaw paths before claiming native plugins. Expand adapters with provider contracts and real acceptance. C01–C09, F08. |
 | 4 | Govern several workspaces | Explicit personal/employer/client contexts, independent memberships, queued-work destinations and policies. Reviewed cross-workspace search/transfer without company access to personal data. Bookmarks alone are incomplete. F02/F08, A03/A04/A12, C09. |

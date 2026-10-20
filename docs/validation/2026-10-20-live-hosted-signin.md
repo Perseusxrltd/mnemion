@@ -47,7 +47,8 @@ The separate general OAuth request in
 scoped protocol, rotation and revocation checks above. Its reviewed release
 association uses published 4.29, whose native/public update checks passed and
 whose [live upgrade retained these identities and access](2026-10-20-shared-workspace-429.md).
-That bounded closure does not claim ChatGPT acceptance. Live managed-ngrok account
-acceptance for issue [3](https://github.com/Perseusxrltd/mnemion/issues/3) is
-separate from this existing HTTPS proxy. No paid service, trial, hosted model
+That bounded closure does not claim ChatGPT acceptance. The later
+[remote-access review](2026-10-20-remote-access-issue.md) separately verifies
+issue 3's original scope and diagnostic follow-up. Live managed-ngrok account
+acceptance remains separate from the existing HTTPS proxy. No paid service, trial, hosted model
 call or provider enrollment was used.

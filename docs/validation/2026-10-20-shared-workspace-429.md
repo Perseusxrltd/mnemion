@@ -44,6 +44,8 @@ provider health checks.
 All six public installed-update checks for 4.29 subsequently passed. Source,
 release and public upgrade receipts are in [automatic release status](../RELEASE_STATUS.md).
 The original office database/vault remain unavailable. Signed-in ChatGPT and a
-live managed tunnel account are still separate acceptance requirements for the
-three open GitHub reports. This exercise does not establish automatic failover,
+live managed tunnel account were not tested by this exercise. The
+[current issue plan](../implementation/github-issues.md) separates those remaining
+checks from completed general OAuth and remote-access reports.
+This exercise does not establish automatic failover,
 independent second-device key custody or universal hardware capacity.
