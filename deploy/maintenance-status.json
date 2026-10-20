@@ -67,12 +67,6 @@
       "conclusion": "failure",
       "updated_at": "2026-10-20T17:10:26Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39457153644",
-      "job_progress": {
-        "total": 34,
-        "completed": 34,
-        "succeeded": 30,
-        "active": []
-      },
       "failed_jobs": [
         {
           "name": "native / windows-2022 / x64",
@@ -81,7 +75,13 @@
             "Installed app creates, searches and reopens a real local workspace"
           ]
         }
-      ]
+      ],
+      "job_progress": {
+        "total": 34,
+        "completed": 34,
+        "succeeded": 30,
+        "active": []
+      }
     },
     {
       "id": 39460885775,
@@ -89,45 +89,51 @@
       "workflow": "release.yml",
       "branch": "release/4.43.0",
       "source_commit": "603be186385f473984a6e553045077164e43f25a",
-      "status": "in_progress",
+      "status": "queued",
       "conclusion": null,
-      "updated_at": "2026-10-20T17:11:22Z",
+      "updated_at": "2026-10-20T17:12:01Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39460885775",
       "job_progress": {
-        "total": 8,
-        "completed": 4,
-        "succeeded": 3,
+        "total": 13,
+        "completed": 8,
+        "succeeded": 7,
         "active": [
           {
             "id": 118769998115,
             "name": "native / Encrypted files / Windows / arm64",
             "status": "in_progress",
             "steps": [
-              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
+              "Run actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1"
             ]
           },
           {
-            "id": 118769998278,
-            "name": "native / Encrypted files / Windows / x64",
+            "id": 118770360858,
+            "name": "native / native_database / Database / windows / x64",
             "status": "in_progress",
             "steps": [
-              "Run python -m pip install pytest cryptography==50.0.2"
+              "Relocate, initialize, verify TLS and RLS, restore backup and recover a crash"
             ]
           },
           {
-            "id": 118769998773,
-            "name": "native / native_database / Private state / Windows / arm64",
+            "id": 118770360863,
+            "name": "native / native_database / Database / macos / x64",
             "status": "in_progress",
             "steps": [
-              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
+              "Relocate, initialize, verify TLS and RLS, restore backup and recover a crash"
             ]
           },
           {
-            "id": 118769998938,
-            "name": "native / native_database / Private state / Windows / x64",
+            "id": 118770360867,
+            "name": "native / native_database / Database / macos / arm64",
+            "status": "queued",
+            "steps": []
+          },
+          {
+            "id": 118770360893,
+            "name": "native / native_database / Database / linux / arm64",
             "status": "in_progress",
             "steps": [
-              "Install small private-state test dependencies"
+              "Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
             ]
           }
         ]
@@ -168,5 +174,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39441738346"
     }
   ],
-  "observed_at": "2026-10-20T17:11:34+00:00"
+  "observed_at": "2026-10-20T17:12:22+00:00"
 }
