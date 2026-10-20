@@ -159,13 +159,19 @@ try {
   if (credentialsHash() !== credentials) throw new Error('Application restart replaced the private workspace credentials')
   for (const [phase, required] of [
     ['backup-capture', ['nativeEncryptedSnapshot', 'laterDeletionLedger', 'protectedKeySaved', 'backupFormRestoresUpdateReadiness', 'nativeVaultConfiguredThroughApp', 'vaultDeletionRecordedAfterSnapshot', 'nativeOperatorPipe', 'operatorScheduleAndUiAgree', 'operatorRetryDoesNotRepeat', 'operatorStaleIdentityRefused', 'operatorRefreshesLedger', 'operatorInspectsEncryptedFiles', 'operatorRestoresIndependentCopy']],
-    ['backup-recover', ['protectedKeyReopened', 'realRecoveryControls', 'separateRecoveryCopy', 'originalOrganizationRetained', 'retainedMemoryReadable', 'postSnapshotDeletionPreserved', 'freshAdministratorConnected', 'vaultKeyRestoredThroughApp', 'vaultGrantsRequireFreshReview', 'vaultDeletionPreserved', 'vaultExcludedFromMemory', 'nativeOperatorPipe']],
+    ['backup-recover', ['protectedKeyReopened', 'realRecoveryControls', 'separateRecoveryCopy', 'originalOrganizationRetained', 'retainedMemoryReadable', 'postSnapshotDeletionPreserved', 'freshAdministratorConnected', 'vaultKeyRestoredThroughApp', 'vaultGrantsRequireFreshReview', 'vaultDeletionPreserved', 'vaultExcludedFromMemory', 'nativeOperatorPipe', 'hostPackageInspected', 'hostLedgerChoiceReviewed', 'hostDatabaseRecovered']],
     ['backup-resume', ['recoveredCopyReopened', 'deletionPreservedAfterReopen', 'originalWorkspaceReopened', 'restoredVaultSurvivesRestart', 'originalVaultRemainsIndependent', 'nativeOperatorPipe', 'operatorRecoverySelection', 'operatorOriginalSelection', 'operatorPreservesUnsavedDraft', 'nativeBackupRetention', 'retentionKeepsVerifiedPairs', 'retentionControlsAndAgentAgree', 'nativeWorkspaceOperator', 'operatorAccountIdentityBound', 'operatorConnectionDraftPreserved', 'operatorWorkspaceSelectionAndUiAgree', 'operatorSelectedReaderRestricted', 'operatorSavedConnectionRestored', 'operatorPrivateCredentialsRetained', 'operatorLocalOwnerReopened']],
   ]) {
     const backup = await launch({ phase, port, memoryId: first.memoryId })
     if (required.some(field => backup[field] !== true)) throw new Error('Installed backup/recovery acceptance failed: ' + phase)
     await stop()
     if (credentialsHash() !== credentials) throw new Error('Recovery modified the original workspace credentials')
+    if (phase === 'backup-capture') {
+      const python = process.env.MNEMION_ENGINE_PYTHON
+      if (!python) throw new Error('The native host fixture needs the pinned build interpreter')
+      run(python, ['-m', 'deploy.native_host_backup_fixture', '--fixture', join(temporary, 'native-backup-fixture.json'),
+        '--output', join(temporary, 'Server backup Équipe.mnemion-host')], { cwd: root, env: environment })
+    }
   }
   // An unrelated listener must lead to an actual recovery screen, never a new
   // workspace or silent connection to the other program.

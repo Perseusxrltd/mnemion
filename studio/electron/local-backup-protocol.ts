@@ -1,5 +1,5 @@
 import { isAbsolute } from 'node:path'
-import type { BackupAction, BackupFile, BackupInspectionData, BackupReceipt, BackupOperationResult, BackupRetentionPolicy, BackupRetentionResult } from '../shared/local-workspace.js'
+import type { BackupAction, BackupFile, BackupInspectionData, BackupReceipt, BackupOperationResult, BackupRetentionPolicy, BackupRetentionResult, RecoveryReceipt } from '../shared/local-workspace.js'
 
 const uuid = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i
 const digest = /^[a-f0-9]{64}$/
@@ -48,6 +48,15 @@ export function retentionResult(input: unknown, workspaceId?: string): BackupRet
     remaining_candidates: value.remaining_candidates }
 }
 
+function hostPackage(input: unknown) {
+  const value = object(input)
+  if (!identity(value.package_id) || !version(value.service_version) || !count(value.source_connectors, 64) ||
+      !count(value.private_files, 128) || value.host_configuration_restored !== false) throw new Error('Invalid host package inventory')
+  return { package_id: value.package_id as string, service_version: value.service_version as string,
+    source_connectors: value.source_connectors as number, private_files: value.private_files as number,
+    host_configuration_restored: false as const }
+}
+
 /** Project explicit fields only: extra native output never reaches the UI. */
 export function backupResult(action: BackupAction, input: unknown, workspaceId?: string): BackupOperationResult {
   const value = object(input)
@@ -94,7 +103,7 @@ export function backupResult(action: BackupAction, input: unknown, workspaceId?:
     return result
   }
   if (action === 'backup-inspect') {
-    if (!['snapshot', 'ledger'].includes(value.kind) || value.authenticated !== true || !keyId(value.key_id) ||
+    if (!['snapshot', 'ledger', 'host'].includes(value.kind) || value.authenticated !== true || !keyId(value.key_id) ||
         !count(value.encrypted_bytes, 50 * 1024 ** 3 + 2048) || !checksum(value.sha256) ||
         !date(value.ledger_at) || !count(value.tenant_count)) throw new Error('Invalid backup inspection')
     const result: BackupInspectionData = { kind: value.kind, authenticated: true, key_id: value.key_id,
@@ -109,6 +118,11 @@ export function backupResult(action: BackupAction, input: unknown, workspaceId?:
       Object.assign(result, { archive_verified: true, backup_id: value.backup_id, snapshot_at: value.snapshot_at,
         memory_count: value.memory_count, application_version: value.application_version, server_version: value.server_version,
         tenant_ids: [...value.tenant_ids] })
+      if (value.kind === 'host') {
+        if (!checksum(value.embedded_ledger_sha256)) throw new Error('Invalid included access ledger')
+        result.host_package = hostPackage(value.host_package)
+        result.embedded_ledger_sha256 = value.embedded_ledger_sha256
+      }
       const context = value.context?.local_workspace
       if (context !== undefined) {
         const hints = object(context)
@@ -128,9 +142,15 @@ export function backupResult(action: BackupAction, input: unknown, workspaceId?:
       !checksum(value.ledger_sha256) || !text(value.data_directory) || !isAbsolute(value.data_directory) ||
       !count(value.tenant_count) || value.keys_rotated !== true || !count(value.verified_tables) ||
       !count(value.deletions_reconciled) || !date(value.ledger_at) || value.external_connections_require_review !== true) throw new Error('Invalid recovery receipt')
-  return { format: 1, state: 'restored', started_at: value.started_at, restored_at: value.restored_at,
+  const result: RecoveryReceipt = { format: 1, state: 'restored', started_at: value.started_at, restored_at: value.restored_at,
     workspace_id: value.workspace_id, source_workspace_id: value.source_workspace_id, backup_id: value.backup_id,
     snapshot_sha256: value.snapshot_sha256, ledger_sha256: value.ledger_sha256, data_directory: value.data_directory,
     tenant_id: value.tenant_id, tenant_count: value.tenant_count, keys_rotated: true, verified_tables: value.verified_tables,
     deletions_reconciled: value.deletions_reconciled, ledger_at: value.ledger_at, external_connections_require_review: true }
+  if (value.host_package !== undefined) {
+    const host = hostPackage(value.host_package), source = value.host_package.ledger_source
+    if (source !== 'embedded' && source !== 'separate') throw new Error('Invalid host recovery ledger selection')
+    result.host_package = { ...host, ledger_source: source }
+  }
+  return result
 }

@@ -388,47 +388,61 @@ def inspect_file(root: Path, request: BackupInspection, *, cancelled=None) -> di
                 "tenant_count": len(ledger["tenant_ids"]),
                 "deletion_count": len(ledger["deletions"]),
             }
+        if receipt.kind == "bundle":
+            from .local_host_recovery import open_contents
+
+            with open_contents(unlocked, scratch, cancelled=cancelled) as host:
+                result = _inspect_snapshot(host.snapshot, scratch, cancelled=cancelled)
+                return {
+                    **common,
+                    **result,
+                    "kind": "host",
+                    "ledger_at": host.ledger_at,
+                    "embedded_ledger_sha256": host.ledger_sha256,
+                    "host_package": host.description,
+                }
         if receipt.kind != "snapshot":
             raise state.LocalSetupError(
-                "backup_format", "Choose a supported encrypted snapshot or access ledger."
+                "backup_format", "Choose an encrypted snapshot, host package or access ledger."
             )
-        with verified_archive(
-            unlocked,
-            recovery.BACKUP_FORMAT,
-            temporary_directory=scratch,
-            check_cancelled=lambda: recovery._cancel(cancelled),
-        ) as (manifest, members):
-            if set(manifest["files"]) != {"database.dump", "deletions.json"}:
-                raise state.LocalSetupError("backup_format", "The database backup is incomplete.")
-            ledger = recovery.read_ledger(members / "deletions.json")
-            context = manifest.get("context", {})
-            if not isinstance(context, dict) or len(json.dumps(context)) > 16 * 1024:
-                raise state.LocalSetupError(
-                    "backup_format", "The backup's setup metadata is invalid."
-                )
-            local = context.get("local_workspace")
-            context = (
-                {
-                    "local_workspace": LocalBackupContext.model_validate_json(
-                        json.dumps(local)
-                    ).model_dump(mode="json")
-                }
-                if local is not None
-                else {}
-            )
-            return {
-                **common,
-                "backup_id": manifest["backup_id"],
-                "snapshot_at": manifest["snapshot_at"],
-                "ledger_at": ledger["snapshot_at"],
-                "tenant_count": len(manifest["tenant_ids"]),
-                "tenant_ids": manifest["tenant_ids"],
-                "memory_count": manifest["tables"].get("memories", {}).get("count", 0),
-                "application_version": manifest["application_version"],
-                "server_version": manifest["server_version"],
-                "context": context,
-                "archive_verified": True,
+        return {**common, **_inspect_snapshot(unlocked, scratch, cancelled=cancelled)}
+
+
+def _inspect_snapshot(source: Path, scratch: Path, *, cancelled=None) -> dict:
+    with verified_archive(
+        source,
+        recovery.BACKUP_FORMAT,
+        temporary_directory=scratch,
+        check_cancelled=lambda: recovery._cancel(cancelled),
+    ) as (manifest, members):
+        if set(manifest["files"]) != {"database.dump", "deletions.json"}:
+            raise state.LocalSetupError("backup_format", "The database backup is incomplete.")
+        ledger = recovery.read_ledger(members / "deletions.json")
+        context = manifest.get("context", {})
+        if not isinstance(context, dict) or len(json.dumps(context)) > 16 * 1024:
+            raise state.LocalSetupError("backup_format", "The backup's setup metadata is invalid.")
+        local = context.get("local_workspace")
+        context = (
+            {
+                "local_workspace": LocalBackupContext.model_validate_json(
+                    json.dumps(local)
+                ).model_dump(mode="json")
             }
+            if local is not None
+            else {}
+        )
+        return {
+            "backup_id": manifest["backup_id"],
+            "snapshot_at": manifest["snapshot_at"],
+            "ledger_at": ledger["snapshot_at"],
+            "tenant_count": len(manifest["tenant_ids"]),
+            "tenant_ids": manifest["tenant_ids"],
+            "memory_count": manifest["tables"].get("memories", {}).get("count", 0),
+            "application_version": manifest["application_version"],
+            "server_version": manifest["server_version"],
+            "context": context,
+            "archive_verified": True,
+        }
 
 
 def dispatch(root: Path, runtime: Path | None, action: str, emit) -> int:

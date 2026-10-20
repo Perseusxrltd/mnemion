@@ -397,41 +397,57 @@ def opened(package: Path, secret_file: Path, expected_sha256: str | None = None)
         digest = receipt.encrypted_sha256
         if expected_sha256 is not None and digest != expected_sha256:
             raise HostRecoveryError("The package differs from the reviewed encrypted package.")
-        with verified_archive(archive, FORMAT) as (manifest, root):
-            if manifest["files"]["host.json"]["size"] > 1_048_576:
-                raise HostRecoveryError("The host recipe exceeds its size budget.")
-            host = json.loads((root / "host.json").read_bytes())
-            plan = host["plan"]
-            if (
-                plan.get("format") != FORMAT
-                or type(plan.get("version")) is not int
-                or plan["version"] != 1
-            ):
-                raise HostRecoveryError("Unsupported host recovery plan.")
-            if str(UUID(plan["package_id"])) != manifest.get("package_id"):
-                raise HostRecoveryError("The host plan and archive disagree.")
-            if not isinstance(host["assets"], list) or len(host["assets"]) > MAX_ASSETS:
-                raise HostRecoveryError("Invalid host file inventory.")
-            asset_ids = [item["id"] for item in host["assets"]]
-            if len(set(asset_ids)) != len(asset_ids) or any(
-                not ASSET.fullmatch(item) for item in asset_ids
-            ):
-                raise HostRecoveryError("Invalid host file identities.")
-            expected = {"host.json", "database.mnemion", "ledger.json"} | {
-                "assets/" + item for item in asset_ids
-            }
-            if set(manifest["files"]) != expected:
-                raise HostRecoveryError("The host package has missing or unexpected files.")
-            if sum(
-                manifest["files"]["assets/" + item]["size"] for item in asset_ids
-            ) > MAX_ASSETS_BYTES or any(
-                manifest["files"]["assets/" + item]["size"] > MAX_ASSET_BYTES for item in asset_ids
-            ):
-                raise HostRecoveryError("The private host files exceed their size budget.")
-            runtime_environment(host["environment"])
-            public_plan(plan)
-            recovery.read_ledger(root / "ledger.json")
+        with opened_archive(archive) as (host, root):
             yield host, root, digest
+
+
+@contextmanager
+def opened_archive(archive: Path, *, temporary_directory: Path | None = None, cancelled=None):
+    """Validate decrypted custody data without adopting any source host settings.
+
+    The native desktop supplies its private scratch directory and cancellation
+    hook. Unix host recovery retains its existing encrypted-file interface.
+    """
+    with verified_archive(
+        archive,
+        FORMAT,
+        temporary_directory=temporary_directory,
+        check_cancelled=lambda: recovery._cancel(cancelled),
+    ) as (manifest, root):
+        if manifest["files"]["host.json"]["size"] > 1_048_576:
+            raise HostRecoveryError("The host recipe exceeds its size budget.")
+        host = json.loads((root / "host.json").read_bytes())
+        plan = host["plan"]
+        if (
+            plan.get("format") != FORMAT
+            or type(plan.get("version")) is not int
+            or plan["version"] != 1
+        ):
+            raise HostRecoveryError("Unsupported host recovery plan.")
+        if str(UUID(plan["package_id"])) != manifest.get("package_id"):
+            raise HostRecoveryError("The host plan and archive disagree.")
+        if not isinstance(host["assets"], list) or len(host["assets"]) > MAX_ASSETS:
+            raise HostRecoveryError("Invalid host file inventory.")
+        asset_ids = [item["id"] for item in host["assets"]]
+        if len(set(asset_ids)) != len(asset_ids) or any(
+            not ASSET.fullmatch(item) for item in asset_ids
+        ):
+            raise HostRecoveryError("Invalid host file identities.")
+        expected = {"host.json", "database.mnemion", "ledger.json"} | {
+            "assets/" + item for item in asset_ids
+        }
+        if set(manifest["files"]) != expected:
+            raise HostRecoveryError("The host package has missing or unexpected files.")
+        if sum(
+            manifest["files"]["assets/" + item]["size"] for item in asset_ids
+        ) > MAX_ASSETS_BYTES or any(
+            manifest["files"]["assets/" + item]["size"] > MAX_ASSET_BYTES for item in asset_ids
+        ):
+            raise HostRecoveryError("The private host files exceed their size budget.")
+        runtime_environment(host["environment"])
+        public_plan(plan)
+        recovery.read_ledger(root / "ledger.json")
+        yield host, root
 
 
 def inspect(package: Path, secret_file: Path) -> dict:

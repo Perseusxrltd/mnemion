@@ -5,6 +5,41 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { LocalBackups, createRecoveryKey, recoveryKeyId } from '../dist/local-backups.js'
+import { backupResult } from '../dist/local-backup-protocol.js'
+
+test('host inspections retain recovery facts and discard private server settings', () => {
+  const stamp = new Date().toISOString(), tenant = randomUUID()
+  const inspection = { kind: 'host', key_id: 'a'.repeat(24), encrypted_bytes: 4096, sha256: 'b'.repeat(64),
+    authenticated: true, archive_verified: true, ledger_at: stamp, snapshot_at: stamp,
+    tenant_count: 1, tenant_ids: [tenant], backup_id: randomUUID(), memory_count: 4,
+    application_version: '4.29.0', server_version: 180006, embedded_ledger_sha256: 'c'.repeat(64),
+    host_package: { package_id: randomUUID(), service_version: '4.29.0', source_connectors: 2,
+      private_files: 3, host_configuration_restored: false, provider_secret: 'private-host-sentinel' },
+    environment: { secret: 'private-host-sentinel' } }
+  const result = backupResult('backup-inspect', inspection)
+  assert.equal(result.kind, 'host')
+  assert.equal(result.host_package.package_id, inspection.host_package.package_id)
+  assert.equal(result.embedded_ledger_sha256, inspection.embedded_ledger_sha256)
+  assert.ok(!JSON.stringify(result).includes('private-host-sentinel'))
+  for (const change of [{ source_connectors: 65 }, { private_files: 129 }, { host_configuration_restored: true }]) {
+    assert.throws(() => backupResult('backup-inspect', { ...inspection, host_package: { ...inspection.host_package, ...change } }), /host package/)
+  }
+  assert.throws(() => backupResult('backup-inspect', { ...inspection, embedded_ledger_sha256: undefined }), /included access ledger/)
+})
+
+test('completed host recovery identifies its access ledger without reviving host settings', () => {
+  const stamp = new Date().toISOString()
+  const value = { format: 1, state: 'restored', started_at: stamp, restored_at: stamp,
+    workspace_id: randomUUID(), source_workspace_id: null, backup_id: randomUUID(), tenant_id: randomUUID(),
+    snapshot_sha256: 'a'.repeat(64), ledger_sha256: 'b'.repeat(64), data_directory: join(tmpdir(), 'recovered-host'),
+    tenant_count: 1, keys_rotated: true, verified_tables: 70, deletions_reconciled: 1,
+    ledger_at: stamp, external_connections_require_review: true,
+    host_package: { package_id: randomUUID(), service_version: '4.29.0', source_connectors: 1,
+      private_files: 2, host_configuration_restored: false, ledger_source: 'embedded', token: 'private-host-sentinel' } }
+  assert.equal(backupResult('backup-restore', value).host_package.ledger_source, 'embedded')
+  assert.ok(!JSON.stringify(backupResult('backup-restore', value)).includes('private-host-sentinel'))
+  assert.throws(() => backupResult('backup-restore', { ...value, host_package: { ...value.host_package, ledger_source: 'unknown' } }), /ledger selection/)
+})
 
 async function fixture(t) {
   const base = await mkdtemp(join(tmpdir(), 'mnemion-backups-'))

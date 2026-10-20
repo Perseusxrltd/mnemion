@@ -19,6 +19,9 @@ published capability from the unfinished full product roadmap.
 Desktop releases include [encrypted backups and independent
 recovery](docs/service/native-backups.md); their published delivery evidence is
 recorded in the release status above.
+Source 4.30 adds [server-backup database recovery in the desktop app](docs/service/desktop-host-recovery.md),
+with reviewed access ledgers, fresh administrator access and matching local-agent
+controls. Server/provider configuration remains a separate recovery step.
 Studio includes guided [local workspace creation](docs/service/local-workspaces.md),
 bundled database/model runtimes, [app and agent RAM controls](docs/service/memory-resources.md),
 local recovery, a [live 3D memory map](docs/service/memory-map.md), recorded agent

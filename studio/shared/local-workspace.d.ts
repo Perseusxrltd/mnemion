@@ -119,12 +119,17 @@ export type BackupRetentionResult = {
   deleted_files: number; deleted_bytes: number; skipped_files: number; remaining_candidates: number;
 };
 export type BackupOperationResult = BackupReceipt | BackupInspectionData | RecoveryReceipt | BackupInventory | BackupRetentionResult;
+export type HostPackageDescription = {
+  package_id: string; service_version: string; source_connectors: number; private_files: number;
+  host_configuration_restored: false;
+};
 export type BackupInspectionData = {
-  kind: 'snapshot' | 'ledger'; key_id: string; encrypted_bytes: number; sha256: string;
+  kind: 'snapshot' | 'ledger' | 'host'; key_id: string; encrypted_bytes: number; sha256: string;
   authenticated: true; ledger_at: string; tenant_count: number; deletion_count?: number;
   backup_id?: string; snapshot_at?: string; memory_count?: number; application_version?: string;
   server_version?: number; archive_verified?: true; tenant_ids?: string[];
   context?: { local_workspace?: { workspace_id: string; primary_tenant_id: string; workspace_name: string; owner_name: string; embedding_profile: string; threads: number; application_version: string } };
+  host_package?: HostPackageDescription; embedded_ledger_sha256?: string;
 }
 export type RecoveryReceipt = {
   format: 1; state: 'restored'; started_at: string; restored_at: string; workspace_id: string;
@@ -132,6 +137,7 @@ export type RecoveryReceipt = {
   data_directory: string; tenant_id: string; tenant_count: number; keys_rotated: true;
   verified_tables: number; deletions_reconciled: number; ledger_at: string;
   external_connections_require_review: true;
+  host_package?: HostPackageDescription & { ledger_source: 'embedded' | 'separate' };
 }
 export type BackupConfiguration = {
   revision: string; workspace_id: string; destination: string; key_id: string;
@@ -150,8 +156,9 @@ export type BackupSettings = {
 }
 export type BackupSettingsInput = Omit<BackupSettings, 'destination'> & { destination_selection: string | null };
 export type BackupRestoreInput = {
-  snapshot_selection: string; ledger_selection: string; recovery_key: string; ledger_key?: string | null;
+  snapshot_selection: string; ledger_selection: string | null; recovery_key: string; ledger_key?: string | null;
   snapshot_sha256: string; ledger_sha256: string; primary_tenant_id: string; trusted_backup_confirmed: boolean;
+  source_kind?: 'snapshot' | 'host'; host_data_only_confirmed?: boolean;
 }
 export type LocalDiagnostic = {
   category: 'unexpected' | 'memory' | 'dependency' | 'operating_system' | 'timeout' | 'database';

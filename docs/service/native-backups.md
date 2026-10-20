@@ -6,6 +6,10 @@ verified public availability on each platform. The
 [4.6.0 publication record](../validation/2026-10-15-native-backup-release.md)
 records the first complete native release of this workflow.
 
+From 4.30.0, **Recover a workspace** also opens encrypted server packages.
+The [server-backup walkthrough](desktop-host-recovery.md) explains database
+recovery, included/newer ledgers and the host settings that require separate setup.
+
 ## Protect a local workspace
 
 Open **Setup & this device → Backups & recovery**. These controls operate the

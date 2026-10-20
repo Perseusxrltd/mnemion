@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.29.0**. Roadmap updated: **2026-10-20**.
+Reviewed source distribution: **4.30.0**. Roadmap updated: **2026-10-20**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
 [Release status](RELEASE_STATUS.md) and the [maintenance board](MAINTENANCE_STATUS.md)
@@ -13,6 +13,12 @@ This measures complete requested capabilities, not time spent or the usability
 of the released app. A hotfix does not finish a broader requirement.
 
 ## Current delivery checkpoint
+
+- **4.30 source adds server-backup recovery in the desktop app.** The
+  [app and local-agent workflow](service/desktop-host-recovery.md) authenticates
+  the full package, reviews included or newer access state and creates a separate
+  native database with preserved identities and fresh access. Full host/provider
+  configuration remains a separate workflow. Strict scope coverage is unchanged.
 
 - **4.29 source adds resumable large-journal recovery.** The [app, SDKs and
   private agent controls](service/journal-recovery.md) accept complete journals
@@ -106,7 +112,7 @@ continues while an external account or publisher prerequisite is unavailable.
 | Priority | Next outcome | Acceptance and requirements |
 | --- | --- | --- |
 | 1 | Remaining live connections | Actual supported ChatGPT registration, consent and tool list for #4/#18; a free tunnel account, external access and lifecycle recovery for #3. Preserve existing HTTPS, local and scoped-key paths. C04–C07, A05/A08. |
-| 2 | Continuous operation and recovery from another device | Guided organization hosting, registered recovery hosts, delegated operators, key custody, off-host delivery visibility and app-only replacement-host restore. Expand beyond the bounded 4.29 journal recovery where needed. Verify host loss and current denials without the original agent; distinguish mirrors, snapshots and replicas. A01/A06/A07/A09/A11–A13, U01/U02/U04/U06/U11. |
+| 2 | Continuous operation and recovery from another device | Guided organization hosting, registered recovery hosts, delegated operators, key custody, off-host delivery visibility and complete app-based replacement-host setup. Source 4.30 supplies desktop database import; provider/OS configuration remains. Expand beyond the bounded 4.29 journal recovery where needed. Verify host loss and current denials without the original agent; distinguish mirrors, snapshots and replicas. A01/A06/A07/A09/A11–A13, U01/U02/U04/U06/U11. |
 | 3 | Source and agent onboarding | Guided consent, credentials, permission mapping, exclusions, reconnect and capture coverage. Validate actual Grokbot, Dot/OpenAI, Anthropic, Hermes and OpenClaw paths before claiming native plugins. Expand adapters with provider contracts and real acceptance. C01–C09, F08. |
 | 4 | Govern several workspaces | Explicit personal/employer/client contexts, independent memberships, queued-work destinations and policies. Reviewed cross-workspace search/transfer without company access to personal data. Bookmarks alone are incomplete. F02/F08, A03/A04/A12, C09. |
 | 5 | Capacity and model choices | Modest hardware, native OS versions, RAM peaks, bandwidth, ingestion queues, concurrency, model quality and recovery-time measurements. Fleet resource views and useful budgets, preserving CPU-only/remote clients. F05–F07, R01–R04, V01/V02. |

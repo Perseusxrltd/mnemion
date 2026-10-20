@@ -10,7 +10,7 @@ export async function verifyNativeBackups(window: BrowserWindow, config: Record<
   const folder = join(base, 'Encrypted backups Équipe')
   await mkdir(folder, { recursive: true, mode: 0o700 })
   const saved = config.phase === 'backup-capture' ? null : JSON.parse(await readFile(fixturePath, 'utf8'))
-  const choices = config.phase === 'backup-capture' ? [folder] : config.phase === 'backup-recover' ? [saved.snapshot.file, saved.ledger.file] : []
+  const choices = config.phase === 'backup-capture' ? [folder] : config.phase === 'backup-recover' ? [saved.host?.file ?? saved.snapshot.file, saved.ledger.file] : []
   const originalDialog = dialog.showOpenDialog
   // Only the OS picker is replaced. The actual form, trusted IPC, OS cipher,
   // controller, engine, encrypted files, database and model remain real.
@@ -154,12 +154,21 @@ export async function verifyNativeBackups(window: BrowserWindow, config: Record<
         await input('.ws-recover-workspace input[type="password"]', saved.key);
         await click('Inspect snapshot');
         await until(() => button('Choose ledger'), 'The authenticated snapshot did not advance to its ledger');
+        if (!saved.host) throw new Error('The native server-backup fixture was not prepared');
+        await click('Use included ledger');
+        await until(() => document.querySelector('.ws-setup-review'), 'The included host ledger could not be reviewed');
+        if (!document.querySelector('.ws-setup-review').textContent.includes('included in the server backup')) throw new Error('The included host ledger was not identified');
         await click('Choose ledger');
         await click('Inspect ledger');
         await until(() => document.querySelector('.ws-setup-review'), 'The ledger did not produce a recovery review');
-        document.querySelector('.ws-setup-review input[type="checkbox"]').click(); await pause(100);
+        const confirmations = [...document.querySelectorAll('.ws-setup-review input[type="checkbox"]')];
+        if (confirmations.length !== 2) throw new Error('The host import did not require database-only confirmation');
+        for (const confirmation of confirmations) { confirmation.click(); await pause(100); }
         await click('Create verified recovery copy');
         await until(() => button('Use this recovery copy'), 'The separate native recovery copy did not verify', 300000);
+        const copies = await bridge.localRecoveryCopies();
+        const hostCopy = copies.find(value => value.receipt.host_package?.package_id === saved.host.package_id);
+        if (!hostCopy || hostCopy.receipt.host_package.host_configuration_restored !== false || hostCopy.receipt.host_package.ledger_source !== 'separate') throw new Error('The host recovery receipt did not retain its reviewed scope');
         await click('Use this recovery copy');
         session = await ready();
         const status = await bridge.localStatus();
@@ -181,6 +190,7 @@ export async function verifyNativeBackups(window: BrowserWindow, config: Record<
         await until(() => bridge.updateSafety(), 'Finished recovery leaves a stale update blocker');
         return { phase: config.phase, protectedKeyReopened: true, realRecoveryControls: true, separateRecoveryCopy: true,
           vaultKeyRestoredThroughApp: true, vaultGrantsRequireFreshReview: true, vaultDeletionPreserved: true, vaultExcludedFromMemory: true,
+          hostPackageInspected: true, hostLedgerChoiceReviewed: true, hostDatabaseRecovered: true,
           originalOrganizationRetained: true, retainedMemoryReadable: true, postSnapshotDeletionPreserved: true,
           freshAdministratorConnected: true, recoveryRoot: status.preferences.recoveryRoot };
       }

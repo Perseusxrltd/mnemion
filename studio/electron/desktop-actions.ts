@@ -36,7 +36,7 @@ export const desktopActions = {
   'backup.prune': { workspace: true, mutation: true, fields: ['expected_revision', 'plan_token', 'confirm'] },
   'backup.cancel': { workspace: true, mutation: false, fields: [] },
   'backup.inspect': { workspace: true, mutation: true, fields: ['source', 'recovery_key'] },
-  'backup.restore': { workspace: true, mutation: true, fields: ['source', 'ledger_source', 'recovery_key', 'ledger_key', 'snapshot_sha256', 'ledger_sha256', 'primary_tenant_id', 'trusted_backup_confirmed'] },
+  'backup.restore': { workspace: true, mutation: true, fields: ['source', 'ledger_source', 'recovery_key', 'ledger_key', 'snapshot_sha256', 'ledger_sha256', 'primary_tenant_id', 'trusted_backup_confirmed', 'source_kind', 'host_data_only_confirmed'] },
   'recovery.list': { workspace: false, mutation: false, fields: [] },
   'recovery.use': { workspace: true, mutation: true, fields: ['id'] },
 } as const

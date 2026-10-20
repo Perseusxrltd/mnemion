@@ -15,8 +15,11 @@ a replacement organization.
 This is an operator and agent CLI workflow for a
 [supervised service](supervision.md). The guide is also available in the app's
 documentation. Windows, macOS and Linux desktop-owned workspaces retain their
-[native backup and recovery UI](native-backups.md). A guided host-package import
-screen and Windows/Compose host adoption remain on the roadmap.
+[native backup and recovery UI](native-backups.md). From 4.30, that app can also
+[inspect a server package and recover its database into a separate local workspace](desktop-host-recovery.md)
+on all three operating systems. Provider/host configuration stays in the original
+encrypted package for separate review. Full Windows/Compose host adoption and
+guided remote-provider reconstruction remain on the roadmap.
 
 ## What you need independently of the original agent
 

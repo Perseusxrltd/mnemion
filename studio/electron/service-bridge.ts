@@ -499,7 +499,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     if (kind !== 'folder' && kind !== 'file') throw new Error('Choose a backup folder or encrypted recovery file.')
     const selected = await dialog.showOpenDialog(getWindow()!, kind === 'folder'
       ? { title: 'Choose a backup folder', properties: ['openDirectory', 'createDirectory'] }
-      : { title: 'Choose an encrypted snapshot or access ledger', properties: ['openFile'], filters: [{ name: 'Mnemion recovery files', extensions: ['enc'] }, { name: 'All files', extensions: ['*'] }] })
+      : { title: 'Choose an encrypted snapshot, server package or access ledger', properties: ['openFile'], filters: [{ name: 'Mnemion recovery files', extensions: ['enc', 'mnemion-host', 'mnemion-ledger'] }, { name: 'All files', extensions: ['*'] }] })
     if (selected.canceled || !selected.filePaths[0]) return null
     const id = randomUUID(), path = selected.filePaths[0]
     while (backupSelections.size >= 16) backupSelections.delete(backupSelections.keys().next().value!)
@@ -547,7 +547,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     const value = backupInput(input)
     return localWorkspace().runBackup('backup-inspect', { source: backupSelection(value.selection_id, 'file'), recovery_key: recoveryKey(value.recovery_key) })
   })
-  async function restoreBackup(value: Record<string, any>, source: string, ledger_source: string, signal?: AbortSignal) {
+  async function restoreBackup(value: Record<string, any>, source: string, ledger_source: string | null, signal?: AbortSignal) {
     requireLocalSteady()
     const host = localWorkspace()
     await host.waitForInspection()
@@ -558,13 +558,14 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     const receipt = await host.runBackup('backup-restore', { source, ledger_source, destination: join(parent, id),
       recovery_key: recoveryKey(value.recovery_key), ledger_key: value.ledger_key == null ? null : recoveryKey(value.ledger_key),
       snapshot_sha256: value.snapshot_sha256, ledger_sha256: value.ledger_sha256,
-      primary_tenant_id: value.primary_tenant_id, trusted_backup_confirmed: value.trusted_backup_confirmed }, signal) as RecoveryReceipt
+      primary_tenant_id: value.primary_tenant_id, trusted_backup_confirmed: value.trusted_backup_confirmed,
+      source_kind: value.source_kind, host_data_only_confirmed: value.host_data_only_confirmed }, signal) as RecoveryReceipt
     return { id, receipt }
   }
   ipcMain.handle('local:backup-restore', (event, input: unknown) => {
     trusted(event)
     const value = backupInput(input)
-    return restoreBackup(value, backupSelection(value.snapshot_selection, 'file'), backupSelection(value.ledger_selection, 'file'))
+    return restoreBackup(value, backupSelection(value.snapshot_selection, 'file'), value.ledger_selection == null ? null : backupSelection(value.ledger_selection, 'file'))
   })
   async function recoveryCopy(id: unknown): Promise<RecoveryReceipt> {
     if (typeof id !== 'string' || !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(id)) throw new Error('Choose a verified recovery copy.')
@@ -701,7 +702,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
           return localBackups().prune({ expected_revision: input.expected_revision, plan_token: input.plan_token, confirm: input.confirm }, signal)
         case 'backup.cancel': localBackups().cancel(); return desktopLocalStatus(localWorkspace().status)
         case 'backup.inspect': return localWorkspace().runBackup('backup-inspect', { source: operatorPath(input.source), recovery_key: recoveryKey(input.recovery_key) }, signal)
-        case 'backup.restore': return restoreBackup(input, operatorPath(input.source), operatorPath(input.ledger_source), signal)
+        case 'backup.restore': return restoreBackup(input, operatorPath(input.source), input.ledger_source == null ? null : operatorPath(input.ledger_source), signal)
         case 'recovery.list': return recoveryCopies()
         case 'recovery.use': return useRecovery(input.id)
         default: throw new Error('Choose an operation from the desktop catalog.')

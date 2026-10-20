@@ -180,6 +180,27 @@ def apply(host, postgres, pg_bin, **options):
     )
 
 
+def test_production_host_package_can_be_inspected_by_a_native_desktop(host_fixture, tmp_path):
+    from mnemion.local_backup import BackupInspection, inspect_file
+
+    host = host_fixture
+    result = inspect_file(
+        tmp_path / "desktop-inspection",
+        BackupInspection(
+            source=str(host["package"]), recovery_key=host_package.key_file(host["key_file"])
+        ),
+    )
+    assert result["kind"] == "host" and result["authenticated"] and result["archive_verified"]
+    assert result["sha256"] == host["report"]["sha256"]
+    assert result["host_package"]["source_connectors"] == 1
+    assert result["host_package"]["private_files"] >= 1
+    assert result["host_package"]["host_configuration_restored"] is False
+    serialized = json.dumps(result)
+    assert "synthetic-provider-secret-never-public" not in serialized
+    assert host["key"]["api_key"] not in serialized
+    assert host["source_key"]["api_key"] not in serialized
+
+
 def test_encrypted_host_loss_restores_source_runners_and_survives_second_database_loss(
     env,
     host_fixture,

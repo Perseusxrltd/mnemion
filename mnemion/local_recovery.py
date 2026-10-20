@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import ExitStack
 import json
 from pathlib import Path
 import shutil
@@ -10,7 +11,7 @@ from uuid import UUID
 import zipfile
 
 import psycopg
-from pydantic import Field, SecretStr, field_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 
 from . import backup_encryption as encryption, local_state as state
 from .archives import MANIFEST, MAX_ARCHIVE_BYTES
@@ -20,18 +21,20 @@ from .service import recovery
 
 
 class RecoveryRequest(BackupInspection):
-    ledger_source: str = Field(min_length=1, max_length=4096)
+    ledger_source: str | None = Field(default=None, min_length=1, max_length=4096)
     ledger_key: SecretStr | None = None
     destination: str = Field(min_length=1, max_length=4096)
     snapshot_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     ledger_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     primary_tenant_id: UUID
     trusted_backup_confirmed: Literal[True]
+    source_kind: Literal["snapshot", "host"] = "snapshot"
+    host_data_only_confirmed: Literal[True] | None = None
 
     @field_validator("ledger_source", "destination")
     @classmethod
     def path(cls, value):
-        return BackupInspection.file(value)
+        return BackupInspection.file(value) if value is not None else None
 
     @field_validator("ledger_key")
     @classmethod
@@ -39,6 +42,16 @@ class RecoveryRequest(BackupInspection):
         if value is not None:
             encryption.key_id(value.get_secret_value())
         return value
+
+    @model_validator(mode="after")
+    def reviewed_inputs(self):
+        if self.source_kind == "host" and self.host_data_only_confirmed is not True:
+            raise ValueError("Review and confirm database-only recovery from this host package")
+        if self.source_kind == "snapshot" and self.ledger_source is None:
+            raise ValueError("Select the current encrypted access ledger")
+        if self.ledger_source is None and self.ledger_key is not None:
+            raise ValueError("The included host ledger uses the package's recovery key")
+        return self
 
 
 def _preview(path: Path) -> dict:
@@ -85,34 +98,59 @@ def restore(
 
     from .local_backup import _decrypt_space
 
-    _decrypt_space(control, request.source, request.ledger_source)
+    _decrypt_space(control, *[p for p in (request.source, request.ledger_source) if p is not None])
     with (
         state.lock(control),
         state.temporary_directory(prefix="restore-", dir=control) as scratch,
+        ExitStack() as inputs,
     ):
         progress("authenticating", "Authenticating the snapshot and the selected access ledger…")
         snapshot = encryption.decrypt_file(
             Path(request.source),
             scratch / "snapshot",
             request.recovery_key.get_secret_value(),
-            expected_kind="snapshot",
+            expected_kind="bundle" if request.source_kind == "host" else "snapshot",
             cancelled=cancelled,
         )
-        ledger = encryption.decrypt_file(
-            Path(request.ledger_source),
-            scratch / "ledger",
-            (request.ledger_key or request.recovery_key).get_secret_value(),
-            expected_kind="ledger",
-            cancelled=cancelled,
-        )
-        if (
-            snapshot.encrypted_sha256 != request.snapshot_sha256
-            or ledger.encrypted_sha256 != request.ledger_sha256
-        ):
+        if snapshot.encrypted_sha256 != request.snapshot_sha256:
             raise state.LocalSetupError(
                 "backup_changed", "A selected recovery file changed. Inspect both files again."
             )
-        manifest = _preview(scratch / "snapshot")
+        snapshot_path = scratch / "snapshot"
+        host_description = None
+        if request.source_kind == "host":
+            from .local_host_recovery import open_contents
+
+            host = inputs.enter_context(open_contents(snapshot_path, scratch, cancelled=cancelled))
+            snapshot_path = host.snapshot
+            ledger_path, ledger_sha256 = host.ledger, host.ledger_sha256
+            host_description = {
+                **host.description,
+                "ledger_source": "separate" if request.ledger_source else "embedded",
+            }
+        if request.ledger_source is not None:
+            ledger_path = scratch / "ledger"
+            ledger = encryption.decrypt_file(
+                Path(request.ledger_source),
+                ledger_path,
+                (request.ledger_key or request.recovery_key).get_secret_value(),
+                expected_kind="ledger",
+                cancelled=cancelled,
+            )
+            ledger_sha256 = ledger.encrypted_sha256
+        if ledger_sha256 != request.ledger_sha256:
+            raise state.LocalSetupError(
+                "backup_changed", "A selected recovery file changed. Inspect both files again."
+            )
+        if host_description is not None and request.ledger_source is not None:
+            supplied = recovery.read_ledger(ledger_path)
+            if recovery._time(supplied["snapshot_at"]) < recovery._time(host.ledger_at):
+                raise state.LocalSetupError(
+                    "ledger_older",
+                    "Choose a ledger at least as recent as the one in the host package.",
+                )
+            del supplied
+        manifest = _preview(snapshot_path)
         if str(request.primary_tenant_id) not in manifest.get("tenant_ids", []):
             raise state.LocalSetupError(
                 "workspace_identity", "The selected organization is not in this backup."
@@ -159,9 +197,11 @@ def restore(
                 "source_workspace_id": str(hints.workspace_id) if hints else None,
                 "backup_id": manifest["backup_id"],
                 "snapshot_sha256": snapshot.encrypted_sha256,
-                "ledger_sha256": ledger.encrypted_sha256,
+                "ledger_sha256": ledger_sha256,
                 "data_directory": str(target),
             }
+            if host_description is not None:
+                record["host_package"] = host_description
             state.write(target / "recovery.json", record, replace=False)
             database = LocalDatabase(target, runtime, settings, credentials)
             try:
@@ -173,9 +213,9 @@ def restore(
                 )
                 restored = recovery.restore_backup(
                     database.dsn(database="postgres"),
-                    scratch / "snapshot",
+                    snapshot_path,
                     database_name="mnemion",
-                    deletion_ledger=scratch / "ledger",
+                    deletion_ledger=ledger_path,
                     credentials_output=target / "recovery-administrators.json",
                     pg_bin=runtime / "bin",
                     temporary_directory=scratch,

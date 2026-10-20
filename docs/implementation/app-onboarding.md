@@ -58,6 +58,13 @@ acting identity without carrying credentials or agent context across boundaries.
 
 ## Current gaps and implementation order
 
+Source 4.30 adds [desktop database recovery from a server package](../service/desktop-host-recovery.md).
+People and local agents can authenticate the complete package, review an included
+or newer ledger, create a separate native database and select the verified copy.
+Original organization/memory identities and current denials survive; fresh access
+and separate provider/host configuration are explicit. This advances recovery
+without claiming complete remote-provider reconstruction or in-place resume.
+
 Source 4.28 gives trusted local agents the same key/password desktop connection,
 saved-account, disconnect and local-selection paths through
 [private desktop controls](../service/desktop-operator.md#select-a-team-workspace-from-a-local-agent).
