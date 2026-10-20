@@ -143,3 +143,24 @@ On 19 October, all eleven reusable checks for 4.24 passed in release run
 then recognized all five release gates, including six public installed updates.
 The focused status suite passed 34 checks. This reads existing evidence and
 does not rerun tests, alter artifacts or relax public-update requirements.
+
+## Documentation-only push checks
+
+`deploy.ci_scope` compares the exact before/after commits for ordinary branch
+pushes. Changes limited to root/documentation Markdown, reviewed release/issue
+status metadata and generated release evidence keep the lint and Studio jobs.
+Studio still builds and verifies the packaged offline guides and runs its client
+and desktop checks. The service Python matrix, native Mac supervision, containers,
+legacy suite and Python dependency audit are reserved for runtime changes.
+
+Every release, pull request and manual run keeps the complete suite. Unknown
+paths, changed API schemas, workflow/dependency changes, a missing shallow-history
+base or a mismatched checkout also keep all checks. Rename detection is disabled
+when listing changes, so moving a source file into a documentation path still
+counts its removed runtime path. There is no network lookup or cached acceptance
+decision in this selection.
+
+Thirteen focused checks passed, including a real Git documentation push and
+source rename. The 20 October documentation-only main push selected the reduced
+scope; the same source with the release flag selected the full suite. Existing
+frozen release workflows retain their original checks.

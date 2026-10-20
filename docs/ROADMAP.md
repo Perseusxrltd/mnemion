@@ -60,9 +60,9 @@ of the released app. A hotfix does not finish a broader requirement.
   bounded checks after app/server version changes.
 - **Issue 18 retains the remaining ChatGPT UI acceptance.** The
   [issue resolution plan](implementation/github-issues.md) records the current
-  checks. General delegated OAuth issue 4 is closed. Remote-access issue 3 now
-  has [reviewed acceptance and a verified 4.29 association](validation/2026-10-20-remote-access-issue.md)
-  for automatic closure. Live managed-ngrok account/lifecycle testing remains
+  checks. General delegated OAuth issue 4 is closed. Remote-access issue 3 closed
+  against [reviewed acceptance and verified 4.29](validation/2026-10-20-remote-access-issue.md).
+  Live managed-ngrok account/lifecycle testing remains
   separate roadmap work.
 
 History lives in [release notes](https://github.com/Perseusxrltd/mnemion/releases) and [implementation progress](implementation/v4_progress.md).

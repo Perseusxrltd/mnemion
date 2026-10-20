@@ -22,7 +22,27 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
 
 jobs:
+  scope:
+    name: Select checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      runtime: ${{ steps.scope.outputs.runtime }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - id: scope
+        env:
+          MNEMION_CI_RELEASE: ${{ inputs.release || false }}
+        run: python -m deploy.ci_scope >> "$GITHUB_OUTPUT"
+
   service:
+    needs: scope
+    if: needs.scope.outputs.runtime == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -79,6 +99,8 @@ jobs:
       - run: uv run --no-sync mnemion-service agent-schema --output /tmp/agent-contract.json && diff mnemion/service/agent_contract.json /tmp/agent-contract.json
 
   supervision-macos:
+    needs: scope
+    if: needs.scope.outputs.runtime == 'true'
     name: supervision (${{ matrix.runner }})
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
@@ -134,6 +156,8 @@ jobs:
           path: ${{ runner.temp }}/mnemion-runtime-wheels/*.whl
 
   container:
+    needs: scope
+    if: needs.scope.outputs.runtime == 'true'
     name: container (${{ matrix.runner }})
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 20
@@ -170,6 +194,8 @@ jobs:
           PY
 
   legacy:
+    needs: scope
+    if: needs.scope.outputs.runtime == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -195,6 +221,8 @@ jobs:
       - run: git ls-files -z '*.sh' | xargs -0 -r -n 1 bash -n
 
   dependency-audit:
+    needs: scope
+    if: needs.scope.outputs.runtime == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
