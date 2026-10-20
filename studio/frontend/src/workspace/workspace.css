@@ -107,6 +107,8 @@ fieldset.ws-setup-fields { border: 0; padding: 0; min-width: 0; }
 .ws-device-settings > p { color: var(--ws-muted); font-size: 13px; margin-top: 12px; }
 .ws-device-settings .ws-live-memory { margin: 22px 0; }
 .ws-device-settings .ws-setup-actions > .ws-primary { margin-left: 0; }
+.ws-local-sources > summary { cursor: pointer; font-size: 13px; font-weight: 600; }
+.ws-local-sources > summary svg { display: inline-block; vertical-align: middle; margin: 0 5px 2px; }
 .ws-remote-access h2, .ws-company-setup h2 { display: flex; align-items: center; gap: 10px; }
 .ws-remote-access .ws-checkbox, .ws-company-setup .ws-checkbox { align-items: flex-start; white-space: normal; }
 .ws-remote-access .ws-checkbox input, .ws-company-setup .ws-checkbox input { flex: 0 0 16px; margin-top: 2px; }

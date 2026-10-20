@@ -6,6 +6,11 @@ They send versioned observations through the same authenticated API used by
 applications. Provider credentials stay with the adapter; the service does not
 fetch arbitrary URLs or store Slack, Google, Git, or rclone credentials.
 
+Studio 4.31.0 provides [desktop source setup](desktop-sources.md) for folders,
+Obsidian vaults and growing JSONL conversations, including protected keys,
+background scans, RAM limits and matching private-agent controls. The device
+can contribute to a shared workspace without hosting a local database.
+
 ## Included adapters
 
 | Adapter | Reads | Access model | Current boundaries |

@@ -72,6 +72,8 @@ engine** so it uses the Windows account and named-pipe implementation.
 | `workspace.status`, `workspace.verify`, `workspace.inspect` | From 4.28.0, inspect the selected/saved accounts without secrets, verify a supplied key without connecting, or read a saved account's offline details. |
 | `workspace.connect`, `workspace.sign-in`, `workspace.restore` | From 4.28.0, open an explicitly identified key connection, use a personal password login, or revalidate a saved account. |
 | `workspace.disconnect`, `workspace.forget` | From 4.28.0, disconnect the selected account or remove one saved connection from this device. |
+| `source.status`, `source.configure` | From 4.31.0, inspect or configure [desktop folder/conversation runners](desktop-sources.md#local-agent-controls) with protected dedicated keys and current settings revisions. No local database is required. |
+| `source.pause`, `source.sync`, `source.remove` | Persistently pause/resume a source, queue a bounded scan, or stop and forget its local configuration. Independent of the selected workspace. |
 | `local.create`, `local.start`, `local.stop` | Create, start or stop the app's local workspace through the ordinary lifecycle controls. |
 | `local.open` | From 4.28.0, select the running local workspace using its independent local owner. Confirm both the local workspace ID and the current connection revision. |
 | `local.memory` | Set automatic/manual RAM limits or repair a damaged RAM policy with its current repair token. |
@@ -84,7 +86,7 @@ engine** so it uses the Windows account and named-pipe implementation.
 | `backup.status`, `backup.key` | Read schedules/receipts or generate a new key into a private result file. Saved keys are never returned. |
 | `backup.configure`, `backup.run`, `backup.cancel` | Configure protected schedules, capture a snapshot/ledger, or cancel an active recovery operation. |
 | `backup.inventory`, `backup.prune` | From 4.7.1, review tracked files and apply the saved retention policy with explicit plan confirmation. The database may be stopped. |
-| `backup.inspect`, `backup.restore` | Authenticate selected encrypted files and restore into a new managed private copy. From 4.30.1, [server-package database imports](desktop-host-recovery.md#local-agent-equivalent) also support an explicitly reviewed included or separate ledger. |
+| `backup.inspect`, `backup.restore` | Authenticate selected encrypted files and restore into a new managed private copy. From 4.30.2, [server-package database imports](desktop-host-recovery.md#local-agent-equivalent) also support an explicitly reviewed included or separate ledger. |
 | `recovery.list`, `recovery.use` | Discover verified copies, select one, or return to the original workspace. |
 
 Native engine validators retain their bounds and requirements. See

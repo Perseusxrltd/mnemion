@@ -19,6 +19,15 @@ not equally sized. This is coverage of the full requested scope, not a measure
 of engineering effort or the usability of the published app. Hotfixes to a
 partial feature do not automatically mark its whole requirement complete.
 
+Source 4.31.0 advances **F08/C01/C03/U01** and extends **R03/R04** with
+[desktop folder, Obsidian and JSONL source setup](service/desktop-sources.md).
+People and local agents can manage protected dedicated keys, background capture,
+RAM/file limits and saved-source controls before sign-in or during an outage.
+A contributing app needs no local database. The existing permission/inventory
+contracts remain in force. [Focused validation](validation/2026-10-20-desktop-sources.md)
+and native/public release gates are separate. Other provider enrollment and
+fleet coverage remain open; no broader requirement is marked complete.
+
 Published 4.30.2 advances **F08/A10** with explicit Windows ownership and private
 ACLs for agent-configuration backups and staged replacements. Existing client
 policies, other servers and failed-write recovery retain their contract.

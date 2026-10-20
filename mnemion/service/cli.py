@@ -69,6 +69,13 @@ def main(argv: list[str] | None = None) -> int:
             help="Control this OS account's running Studio through its private local pipe; JSON on stdin",
         )
     )
+    from ..desktop_sources import arguments as source_arguments
+
+    source_arguments(
+        commands.add_parser(
+            "desktop-source", help="Private Studio source helper; JSON through process pipes"
+        )
+    )
     commands.add_parser(
         "migrate", help="Apply checked database migrations with administration credentials"
     )
@@ -364,6 +371,10 @@ def main(argv: list[str] | None = None) -> int:
         return dispatch(args)
     elif args.command == "desktop-control":
         from ..desktop_operator import dispatch
+
+        return dispatch(args)
+    elif args.command == "desktop-source":
+        from ..desktop_sources import dispatch
 
         return dispatch(args)
     elif args.command == "migrate":

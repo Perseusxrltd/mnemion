@@ -58,6 +58,13 @@ acting identity without carrying credentials or agent context across boundaries.
 
 ## Current gaps and implementation order
 
+Source 4.31 adds [folder/Obsidian and live JSONL setup in Studio](../service/desktop-sources.md),
+with folder selection, dedicated-key creation, private OS storage, verified
+identities, bounded background scans and matching local-agent controls. A device
+can contribute without a local database. Saved-source controls remain available
+before sign-in and during an outage. Other provider enrollment, fleet policy and
+full host reconstruction remain separate work.
+
 Source 4.30.1 adds [desktop database recovery from a server package](../service/desktop-host-recovery.md).
 People and local agents can authenticate the complete package, review an included
 or newer ledger, create a separate native database and select the verified copy.

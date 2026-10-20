@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.30.2**. Roadmap updated: **2026-10-20**.
+Reviewed source distribution: **4.31.0**. Roadmap updated: **2026-10-20**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
 [Release status](RELEASE_STATUS.md) and the [maintenance board](MAINTENANCE_STATUS.md)
@@ -13,6 +13,13 @@ This measures complete requested capabilities, not time spent or the usability
 of the released app. A hotfix does not finish a broader requirement.
 
 ## Current delivery checkpoint
+
+- **4.31.0 source adds folder and conversation setup through the app.**
+  [Desktop sources](service/desktop-sources.md) have folder selection, scoped
+  protected keys, bounded background scans, RAM/file limits and matching agent
+  controls. Saved-source controls work while signed out. Contributing to a
+  shared workspace needs no local database or model. Other provider enrollment
+  and fleet acceptance remain open; strict full-scope coverage is unchanged.
 
 - **4.30.2 is published and updated the actual Windows app and shared host.**
   [All six native gates and live update acceptance](validation/2026-10-20-4302-live-updates.md)

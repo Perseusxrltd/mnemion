@@ -5,6 +5,7 @@ import type { SignInCredentials, InvitationCredentials, InvitationPreview } from
 import type { CompanyConfiguration, CompanyCredentials } from '../../../shared/company-sign-in'
 import type { VaultChange, VaultKey, VaultRequest, JournalChange } from '../../../shared/local-workspace'
 import type { CompanyChange, CompanyDiscoveryRequest, CompanyDiscoveryResult } from '../../../shared/local-workspace'
+import type { DesktopSourceView, SourceConfigure, SourceControl } from '../../../shared/desktop-sources'
 
 declare global {
   interface Window {
@@ -31,6 +32,11 @@ declare global {
       workspaceReset?: () => Promise<void>
       onWorkspaceClosed?: (callback: (sessionToken: string) => void) => () => void
       localStatus?: () => Promise<LocalStatus>
+      sourceStatus?: () => Promise<DesktopSourceView>
+      sourceChoose?: () => Promise<string | null>
+      sourceConfigure?: (input: SourceConfigure) => Promise<DesktopSourceView>
+      sourceControl?: (action: 'pause' | 'sync' | 'remove', input: SourceControl) => Promise<DesktopSourceView>
+      onSourceStatus?: (callback: () => void) => () => void
       localCreate?: (input: LocalOptions) => Promise<LocalStatus>
       localStart?: () => Promise<LocalStatus>
       localOpen?: () => Promise<WorkspaceSession>

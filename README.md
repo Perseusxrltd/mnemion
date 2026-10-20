@@ -19,14 +19,18 @@ published capability from the unfinished full product roadmap.
 Desktop releases include [encrypted backups and independent
 recovery](docs/service/native-backups.md); their published delivery evidence is
 recorded in the release status above.
-Source 4.30.2 adds [server-backup database recovery in the desktop app](docs/service/desktop-host-recovery.md),
+Published 4.30.2 adds [server-backup database recovery in the desktop app](docs/service/desktop-host-recovery.md),
 with reviewed access ledgers, fresh administrator access and matching local-agent
 controls. Server/provider configuration remains a separate recovery step.
-Source 4.30.2 [protects agent-configuration backups and staged replacements on
+Published 4.30.2 [protects agent-configuration backups and staged replacements on
 Windows](docs/validation/2026-10-20-agent-setup-private-files.md), while retaining
 existing client policies and private Unix permissions. It also fixes
 [long Windows database-backup paths](docs/validation/2026-10-20-windows-backup-paths.md)
 and preserves safe failure details for users and local agents.
+Source 4.31.0 adds [folder, Obsidian and conversation source setup in Studio](docs/service/desktop-sources.md),
+with protected dedicated keys, background capture, adjustable RAM/file limits,
+offline device controls and equivalent local-agent operations. Contributing
+files to a shared workspace does not require a local database or model.
 Studio includes guided [local workspace creation](docs/service/local-workspaces.md),
 bundled database/model runtimes, [app and agent RAM controls](docs/service/memory-resources.md),
 local recovery, a [live 3D memory map](docs/service/memory-map.md), recorded agent

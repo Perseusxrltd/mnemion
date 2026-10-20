@@ -41,6 +41,7 @@ const titles: Record<string, string> = {
   "docs/service/retrieval.md": "Search ranking, passages & source evidence",
   "docs/service/memory-resources.md": "RAM budgets & local agent controls",
   "docs/implementation/app-onboarding.md": "Complete app setup requirements",
+  "docs/service/desktop-sources.md": "Folder and conversation setup on this computer",
   "docs/STUDIO_DESIGN.md": "Studio design system",
   "docs/BRANDING.md": "Logo & brand assets",
   "docs/service/connectors.md": "Cloud, Git & messaging sources", "docs/service/agents.md": "Agents, apps & MCP",

@@ -17,6 +17,9 @@ import { backupResult } from './local-backup-protocol.js'
 import { DesktopOperator, type DesktopRequest } from './desktop-operator.js'
 import { desktopAction, desktopActions } from './desktop-actions.js'
 import { DesktopWorkspaceActions } from './desktop-workspace-actions.js'
+import { DesktopSources } from './desktop-sources.js'
+import { sourceProcess } from './desktop-source-process.js'
+import type { SourceConfigure, SourceControl } from '../shared/desktop-sources.js'
 import type { BackupSettings, DesktopOperatorStatus, LocalStatus, RecoveryReceipt } from '../shared/local-workspace.js'
 
 const MAX_BYTES = 120 * 1024 * 1024
@@ -176,6 +179,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
   let connections: WorkspaceConnections | undefined
   let local: LocalWorkspace | undefined
   let backups: LocalBackups | undefined
+  let sources: DesktopSources | undefined
   const backupSelections = new Map<string, { kind: 'folder' | 'file'; path: string }>()
   let localOpenGeneration = 0
   let localSwitching = false
@@ -236,7 +240,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     const executable = engineExecutable()
     const database = !app.isPackaged && process.env.MNEMION_LOCAL_DATABASE ? process.env.MNEMION_LOCAL_DATABASE : join(process.resourcesPath, 'postgresql')
     local = new LocalWorkspace({ executable, database, root, version: app.getVersion(), environment: localEnvironment(process.env, root),
-      desktopMemory: () => app.getAppMetrics().reduce((sum, metric) => sum + metric.memory.workingSetSize * 1024, 0) + macosCredentialMemory() }, status => {
+      desktopMemory: () => app.getAppMetrics().reduce((sum, metric) => sum + metric.memory.workingSetSize * 1024, 0) + macosCredentialMemory() + (sources?.memoryBytes ?? 0) }, status => {
       const window = getWindow()
       if (window && !window.webContents.isDestroyed()) window.webContents.send('local:changed', desktopLocalStatus(status))
     })
@@ -251,6 +255,18 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
   function engineExecutable(): string {
     return !app.isPackaged && process.env.MNEMION_LOCAL_ENGINE ? process.env.MNEMION_LOCAL_ENGINE :
       join(process.resourcesPath, 'engine', process.platform === 'win32' ? 'mnemion-engine.exe' : 'mnemion-engine')
+  }
+  function desktopSources(): DesktopSources {
+    if (sources) return sources
+    const root = join(localBase(), 'mnemion-desktop-sources')
+    sources = new DesktopSources({ cipher: workspaceCipher(), call: sourceProcess({ executable: engineExecutable(), root,
+      environment: localEnvironment(process.env, root), privateRoots: [app.getPath('userData'),
+        join(localBase(), 'mnemion-local-workspace'), join(localBase(), 'mnemion-recovered-workspaces'),
+        join(localBase(), 'mnemion-desktop-control')] }), changed: () => {
+      const window = getWindow()
+      if (window && !window.webContents.isDestroyed()) window.webContents.send('sources:changed')
+    } })
+    return sources
   }
   function workspaceConnections(): WorkspaceConnections {
     const signInRequest: SignInRequest = async (endpoint, operation, input) => {
@@ -394,6 +410,20 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     return desktopLocalStatus(host.status)
   }
   ipcMain.handle('local:status', event => { trusted(event); return localStatus() })
+  ipcMain.handle('sources:status', event => { trusted(event); return desktopSources().status() })
+  ipcMain.handle('sources:choose', async event => {
+    trusted(event)
+    const result = await dialog.showOpenDialog({ title: 'Choose a memory source folder', properties: ['openDirectory'] })
+    return result.canceled ? null : result.filePaths[0] ?? null
+  })
+  ipcMain.handle('sources:configure', (event, input: SourceConfigure) => {
+    trusted(event); requireLocalSteady(); return desktopSources().configure(input)
+  })
+  ipcMain.handle('sources:control', (event, action: unknown, input: SourceControl) => {
+    trusted(event); requireLocalSteady()
+    if (action !== 'pause' && action !== 'sync' && action !== 'remove') throw new Error('Choose a source control.')
+    return desktopSources().control(action, input)
+  })
   async function createLocal(input: unknown): Promise<LocalStatus> {
     requireLocalSteady()
     const options = localOptions(input)
@@ -671,6 +701,10 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
           request_limit_bytes: 16384, response_limit_bytes: 262144, same_request_replay_seconds: 600,
           guide: 'https://github.com/Perseusxrltd/mnemion/blob/main/docs/service/desktop-operator.md' }
         case 'status': return localStatus()
+        case 'source.status': return desktopSources().status()
+        case 'source.configure': return desktopSources().configure(input as SourceConfigure, signal)
+        case 'source.pause': case 'source.sync': case 'source.remove':
+          return desktopSources().control(request.action.slice(7) as 'pause' | 'sync' | 'remove', input as SourceControl)
         case 'app.status': case 'app.preferences': case 'app.update-check': case 'app.update-restart':
           if (!appControl) throw new Error('The desktop app controls are not available in this session.')
           return appControl(request.action, input, signal)
@@ -814,23 +848,33 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     selections.clear()
     backupSelections.clear()
   })
-  app.on('will-quit', () => { backups?.close(); void operator?.close() })
+  app.on('will-quit', () => { backups?.close(); void sources?.close(); void operator?.close() })
 
   return {
-    localBusy: () => localSwitching || !!operatorMutation || !!backups?.busy || (local?.busy ?? false),
-    localActive: () => localSwitching || !!operatorMutation || !!backups?.busy || (local?.active ?? false),
+    localBusy: () => localSwitching || !!operatorMutation || !!backups?.busy || !!sources?.busy || (local?.busy ?? false),
+    localActive: () => localSwitching || !!operatorMutation || !!backups?.busy || !!sources?.busy || (local?.active ?? false),
     stopLocal: () => local?.stop() ?? Promise.resolve(true),
-    stopLocalForUpdate: () => localSwitching ? Promise.resolve(false) : local?.stopForUpdate() ?? Promise.resolve(true),
-    resumeLocalAfterCancelledUpdate: () => local?.cancelUpdateStop() ?? Promise.resolve(),
+    stopLocalForUpdate: async () => {
+      if (localSwitching || (sources && !sources.pauseForUpdate())) return false
+      try {
+        const stopped = await (local?.stopForUpdate() ?? Promise.resolve(true))
+        if (!stopped) sources?.resumeAfterUpdate()
+        return stopped
+      } catch (error) { sources?.resumeAfterUpdate(); throw error }
+    },
+    resumeLocalAfterCancelledUpdate: async () => { try { await local?.cancelUpdateStop() } finally { sources?.resumeAfterUpdate() } },
     closeLocal: async () => {
       if (localSwitching) return false
       operator?.cancel()
+      await sources?.close()
       const stopped = await (local?.close() ?? Promise.resolve(true))
       if (operatorWork) await Promise.race([operatorWork.catch(() => {}), new Promise(resolve => setTimeout(resolve, 5000))])
       return stopped && !operatorMutation && !backups?.busy
     },
     bootOperator,
     bootLocal: async () => {
+      // File sources can feed any reachable workspace without a local database.
+      void desktopSources().start().catch(() => {})
       const host = localWorkspace()
       if (!host.status.available) return
       try {

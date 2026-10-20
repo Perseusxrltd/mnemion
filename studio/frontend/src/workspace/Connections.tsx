@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download, Plus, RefreshCw } from "lucide-react";
 import { MnemionClient, MnemionError, conversationCapture, supportsLiveConversations, type Connector, type ConnectorProposal, type SourceInventory } from "@mnemion/client";
+import { DesktopSourceCard } from "./DesktopSource";
 
 const providers = [
   ["filesystem", "Obsidian / folder"], ["git", "Git repository"],
@@ -128,12 +129,15 @@ export function Connections({ client, administrator, endpoint, selectSpace, serv
         {!scopes.data?.items.length && <p className="ws-helper">Run the adapter to discover sources and verify access.</p>}
         {scopes.data?.next_cursor && <button className="ws-button" onClick={() => setCursor(scopes.data!.next_cursor!)}>Next sources</button>}{cursor && <button className="ws-button" onClick={() => setCursor(undefined)}>First sources</button>}
       </section>
-      <section className="ws-card"><h2>Run the adapter</h2><p>Run this configuration on a machine with access to the source. Set the dedicated Mnemion key and provider credentials there, then replace the source paths or IDs in the template.</p>
+      {window.mnemion?.sourceStatus && ["filesystem", "conversations"].includes(connection.provider) &&
+        <DesktopSourceCard key={connection.id} client={client} connection={connection} endpoint={endpoint} administrator={administrator}
+          members={[...new Set(bindings.data?.items.map(item => item.external_id) ?? [])]} />}
+      <details className="ws-card"><summary>Run on another computer or use an advanced adapter</summary><p>Run this configuration on a machine with access to the source. Set the dedicated Mnemion key and provider credentials there, then replace the source paths or IDs in the template.</p>
         <pre className="ws-code ws-connector-config">{config}</pre>
         <button className="ws-button" onClick={download}><Download size={16} />Download configuration template</button>
         <pre className="ws-code">mnemion-connect --config connector.json --inspect{"\n"}mnemion-connect --config connector.json --watch</pre>
         <p className="ws-helper">Inspect shows source IDs and memberships without importing. The template contains credential references; it does not contain a bearer token. Read the connector guide for provider scopes, file limits, and group-permission support.</p>
-      </section>
+      </details>
     </>}
   </div>;
 }

@@ -45,6 +45,15 @@ contextBridge.exposeInMainWorld('mnemion', {
     return () => ipcRenderer.removeListener('workspaces:closed', listener)
   },
   localStatus: () => transfer('local:status'),
+  sourceStatus: () => transfer('sources:status'),
+  sourceChoose: () => transfer('sources:choose'),
+  sourceConfigure: (input: unknown) => transfer('sources:configure', input),
+  sourceControl: (action: string, input: unknown) => transfer('sources:control', action, input),
+  onSourceStatus: (callback: () => void) => {
+    const listener = () => callback()
+    ipcRenderer.on('sources:changed', listener)
+    return () => ipcRenderer.removeListener('sources:changed', listener)
+  },
   localCreate: (input: unknown) => transfer('local:create', input),
   localStart: () => transfer('local:start'),
   localOpen: () => transfer('local:open'),

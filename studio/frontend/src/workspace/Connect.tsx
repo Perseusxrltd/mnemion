@@ -12,6 +12,7 @@ import RecoverWorkspace from './RecoverWorkspace';
 import WorkspaceRecovery from './WorkspaceRecovery';
 import SignInForm from './SignInForm';
 import CompanySignIn from './CompanySignIn';
+import DesktopSourcesOverview from './DesktopSourcesOverview';
 import { browserBookmarks, initialJoinLink, type JoinLink } from './sign-in';
 
 function errorMessage(error: unknown): string {
@@ -188,6 +189,7 @@ export default function Connect({ onConnect, initialError, initialJoin }: { onCo
           <p className="ws-eyebrow">Your workspace</p>
           <h2>Welcome to Mnemion</h2>
           <p>{selection === 'local' ? 'Set up once. Keep every assistant connected.' : 'Create a private workspace, or connect to your team’s shared memory.'}</p>
+          {selection !== 'local' && selection !== 'recover' && <DesktopSourcesOverview />}
           {selection === null && <div className="ws-setup-choices">
             {!!error && <div className="ws-notice ws-error" role="alert">{errorMessage(error)}</div>}
             <button className="ws-setup-choice" disabled={!!busy || !local?.available} onClick={() => { setContinueLocal(false); setSelection('local'); }}><Database size={23} /><span><strong>{local?.info?.configured ? 'Open my local workspace' : 'Create on this computer'}</strong><small>Private storage, a local model, and automatic resource management.</small></span><ArrowRight size={18} /></button>
