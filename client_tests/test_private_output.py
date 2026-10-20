@@ -42,6 +42,40 @@ def test_windows_output_has_current_user_owner_and_private_dacl_before_write(tmp
     assert path.read_bytes() == b"owner can reopen this file"
 
 
+@pytest.mark.skipif(os.name != "nt", reason="Native Windows agent configuration custody")
+def test_windows_agent_setup_protects_backup_and_replacement_before_writing(tmp_path, monkeypatch):
+    from contextlib import contextmanager
+    from pathlib import Path
+
+    from client_tests.windows_acl import assert_private_acl
+    from mnemion import agent_setup
+
+    target = tmp_path / "Agent settings Équipe.json"
+    original = b'{"provider":{"credential":"private-test-value"},"mcpServers":{}}'
+    target.write_bytes(original)
+    observed = []
+
+    @contextmanager
+    def observed_output(path):
+        with private_output(path) as output:
+            # Existing agent settings may contain other providers' secrets.
+            # Both copies must be private before the first byte is supplied.
+            assert_private_acl(path)
+            assert path.stat().st_size == 0
+            observed.append(path)
+            yield output
+
+    monkeypatch.setattr(agent_setup, "private_output", observed_output)
+    result = agent_setup.apply(agent_setup.plan("cursor", target, tmp_path / "private.json"))
+    backup = Path(result["backup"])
+    assert len(observed) == 2
+    assert backup.read_bytes() == original
+    assert b"private-test-value" in target.read_bytes()
+    assert_private_acl(backup)
+    assert_private_acl(target)
+    assert not list(tmp_path.glob(".mnemion-agent-*"))
+
+
 @pytest.mark.skipif(os.name == "nt", reason="POSIX permission verification")
 def test_a_filesystem_that_ignores_private_mode_fails_before_receiving_data(tmp_path, monkeypatch):
     original = os.fchmod

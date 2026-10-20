@@ -33,7 +33,10 @@ export async function verifyNativeBackups(window: BrowserWindow, config: Record<
         do {
           const value = await check(); if (value) return value;
           const failure = document.querySelector('.ws-recover-workspace .ws-error[role="alert"], .ws-backup-panel .ws-error[role="alert"]');
-          if (failure) throw new Error('Native recovery UI: ' + failure.textContent.slice(0, 1000));
+          if (failure) {
+            const status = await bridge.localStatus();
+            throw new Error('Native recovery UI: ' + failure.textContent.slice(0, 1000) + ' / diagnostic ' + JSON.stringify(status.backup?.diagnostic ?? status.diagnostic));
+          }
           await pause(100);
         } while (performance.now() < deadline);
         throw new Error(message);
@@ -123,7 +126,7 @@ export async function verifyNativeBackups(window: BrowserWindow, config: Record<
         await click('Back up now');
         const backed = await until(async () => {
           const view = await bridge.localBackupStatus();
-          if (view.last_error) throw new Error('Native encrypted backup: ' + view.last_error.slice(0, 1000));
+          if (view.last_error) throw new Error('Native encrypted backup: ' + view.last_error.slice(0, 1000) + ' / diagnostic ' + JSON.stringify((await bridge.localStatus()).backup?.diagnostic));
           return view.last_snapshot?.snapshot && view;
         }, 'The native encrypted snapshot did not finish', 180000);
         await request('POST', '/v1/vault/entries/' + vaultDeleted + '/delete', { expected_version: 1 });

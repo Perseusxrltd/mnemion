@@ -7,13 +7,12 @@ import hashlib
 import json
 import os
 import sys
-import tempfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from uuid import UUID
+from uuid import UUID, uuid4
 
-import tomlkit
+from .private_output import private_output
 
 CLIENTS = {
     "codex": ("toml", "mcp_servers"),
@@ -106,6 +105,8 @@ def plan(
         raise ValueError("Agent configuration exceeds 4 MB")
     node = server_config(credentials, python=python, legacy_space=legacy_space)
     if fmt == "toml":
+        import tomlkit
+
         try:
             document = tomlkit.parse(original.decode("utf-8") if original else "")
         except Exception:
@@ -170,17 +171,15 @@ def apply(plan: Plan) -> dict:
     if current is not None:
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
         backup = target.with_name(target.name + f".mnemion-backup-{stamp}")
-        descriptor = os.open(backup, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-        with os.fdopen(descriptor, "wb") as file:
+        with private_output(backup) as file:
             file.write(current)
-            file.flush()
-            os.fsync(file.fileno())
-    descriptor, temporary = tempfile.mkstemp(prefix=".mnemion-agent-", dir=target.parent)
+    temporary = target.with_name(".mnemion-agent-" + uuid4().hex)
+    staged_identity = None
     try:
-        with os.fdopen(descriptor, "wb") as file:
+        with private_output(temporary) as file:
+            info = os.fstat(file.fileno())
+            staged_identity = info.st_dev, info.st_ino
             file.write(plan.content)
-            file.flush()
-            os.fsync(file.fileno())
         # Compare once more after writing the backup/stage. Cooperating editors
         # can still race the final replace, so close the client during setup.
         latest = target.read_bytes() if target.exists() else None
@@ -188,7 +187,15 @@ def apply(plan: Plan) -> dict:
             raise ValueError("Agent settings changed during setup; no replacement was made")
         os.replace(temporary, target)
     finally:
-        Path(temporary).unlink(missing_ok=True)
+        # An exclusive-creation failure never gives us ownership of that path.
+        # Preserve any file that replaced our staging object during cleanup.
+        if staged_identity is not None:
+            try:
+                info = temporary.lstat()
+                if (info.st_dev, info.st_ino) == staged_identity:
+                    temporary.unlink()
+            except FileNotFoundError:
+                pass
     return {"changed": True, "path": str(target), "backup": str(backup) if backup else None}
 
 

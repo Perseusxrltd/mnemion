@@ -95,6 +95,7 @@ export type BackupAction = 'backup' | 'backup-ledger' | 'backup-inspect' | 'back
 export type BackupActivity = {
   action: BackupAction; state: 'running' | 'cancelling' | 'complete' | 'cancelled' | 'error';
   stage: string; message: string; started_at: string; finished_at?: string;
+  diagnostic?: LocalDiagnostic;
 }
 export type BackupFile = { file: string; bytes: number; sha256: string; key_id: string; authenticated: true };
 export type BackupReceipt = {

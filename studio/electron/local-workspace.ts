@@ -205,6 +205,7 @@ export class LocalWorkspace {
       signal?.addEventListener('abort', abort, { once: true })
       const decoder = new StringDecoder('utf8')
       let line = '', total = 0, failure: Error | undefined, result: unknown, cancelled = false
+      let diagnostic: LocalDiagnostic | undefined
       const timer = setTimeout(() => {
         failure = new Error('The recovery operation exceeded its time limit and is stopping safely.')
         this.cancelBackup()
@@ -218,6 +219,7 @@ export class LocalWorkspace {
                 typeof value.message !== 'string' || value.message.length > 1000) throw new Error()
             this.set({ backup: { action, state: this.statusValue.backup?.state === 'cancelling' ? 'cancelling' : 'running', stage: value.stage, message: value.message, started_at } })
           } else if (value.event === 'error') {
+            diagnostic = localDiagnostic(value.diagnostic)
             failure = new Error(typeof value.message === 'string' && value.message.length <= 1000 ? value.message : 'The recovery operation could not finish.')
           } else if (value.event === 'cancelled') {
             cancelled = true
@@ -257,7 +259,8 @@ export class LocalWorkspace {
           resolve(result as BackupOperationResult)
         } else {
           const message = cancelled ? 'Operation cancelled. Verified recovery points remain available; review the inventory for any completed cleanup removals.' : failure?.message ?? 'The recovery operation could not finish. Existing workspace data was retained.'
-          this.set({ backup: { action, state: cancelled ? 'cancelled' : 'error', stage: cancelled ? 'cancelled' : 'error', message, started_at, finished_at } })
+          this.set({ backup: { action, state: cancelled ? 'cancelled' : 'error', stage: cancelled ? 'cancelled' : 'error', message, started_at, finished_at,
+            ...(!cancelled && diagnostic ? { diagnostic } : {}) } })
           reject(new Error(message))
         }
       })

@@ -30,6 +30,7 @@ from psycopg.types.json import Jsonb
 
 from ..archives import canonical_json, private_json, verified_archive, write_archive
 from ..local_state import temporary_directory as private_temporary_directory
+from ..native_paths import file_argument
 from ..version import __version__
 from .db import migrate, new_token
 from .lifecycle import purge_memory
@@ -418,7 +419,7 @@ def create_backup(
                     "--schema=mnemion",
                     "--no-owner",
                     "--snapshot=" + snapshot,
-                    "--file=" + str(root / "database.dump"),
+                    "--file=" + file_argument(root / "database.dump"),
                 ],
                 pg_bin,
                 **({"cancelled": cancelled} if cancelled is not None else {}),
@@ -799,7 +800,7 @@ def restore_backup(
                         "--no-owner",
                         "--no-acl",
                         "--dbname=" + temporary,
-                        str(root / "database.dump"),
+                        file_argument(root / "database.dump"),
                     ],
                     pg_bin,
                     timezone=zone,

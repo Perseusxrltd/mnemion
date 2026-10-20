@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.30.1**. Roadmap updated: **2026-10-20**.
+Reviewed source distribution: **4.30.2**. Roadmap updated: **2026-10-20**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
 [Release status](RELEASE_STATUS.md) and the [maintenance board](MAINTENANCE_STATUS.md)
@@ -14,11 +14,21 @@ of the released app. A hotfix does not finish a broader requirement.
 
 ## Current delivery checkpoint
 
-- **4.30.1 source adds server-backup recovery in the desktop app.** The
+- **4.30.2 source fixes Windows backup paths and protects agent setup files.**
+  [Database tools accept long private backup paths](validation/2026-10-20-windows-backup-paths.md)
+  without changing Windows settings; the app and agent status retain safe failure
+  diagnostics. Configuration backups
+  and staged replacements now receive explicit private ownership and permissions
+  before writing. [Focused Linux and native Windows checks](validation/2026-10-20-agent-setup-private-files.md)
+  preserve existing client policies, exact backups and unrelated files.
+
+- **4.30.2 source includes server-backup recovery in the desktop app.** The
   [app and local-agent workflow](service/desktop-host-recovery.md) authenticates
   the full package, reviews included or newer access state and creates a separate
   native database with preserved identities and fresh access. Full host/provider
-  configuration remains a separate workflow. Strict scope coverage is unchanged.
+  configuration remains a separate workflow. The unpublished 4.30.0/4.30.1
+  candidates were withheld when release checks found fixture and Windows path
+  failures. Strict scope coverage is unchanged.
 
 - **4.29 is published with resumable large-journal recovery.** The [app, SDKs and
   private agent controls](service/journal-recovery.md) accept complete journals
@@ -48,9 +58,10 @@ of the released app. A hotfix does not finish a broader requirement.
   Its [isolated Windows lab](validation/2026-10-20-windows-shared-lab.md) passed a
   42-request memory cycle and 27-request concurrency check, with automatic
   bounded checks after app/server version changes.
-- **Three GitHub reports remain open: 3, 4 and 18.** The [issue resolution plan](implementation/github-issues.md)
-  records their implementation and remaining live-provider checks. Actual HTTPS
-  OAuth passed; signed-in ChatGPT and managed tunnel-provider acceptance remain.
+- **Two GitHub reports remain open: 3 and 18.** The [issue resolution plan](implementation/github-issues.md)
+  records their implementation and remaining live-provider checks. General
+  delegated OAuth issue 4 closed against verified 4.29 and actual HTTPS protocol
+  evidence; signed-in ChatGPT and managed tunnel-provider acceptance remain.
 
 History lives in [release notes](https://github.com/Perseusxrltd/mnemion/releases) and [implementation progress](implementation/v4_progress.md).
 Historical validation retains its original version/environment and is not a
@@ -114,8 +125,8 @@ continues while an external account or publisher prerequisite is unavailable.
 
 | Priority | Next outcome | Acceptance and requirements |
 | --- | --- | --- |
-| 1 | Remaining live connections | Actual supported ChatGPT registration, consent and tool list for #4/#18; a free tunnel account, external access and lifecycle recovery for #3. Preserve existing HTTPS, local and scoped-key paths. C04–C07, A05/A08. |
-| 2 | Continuous operation and recovery from another device | Guided organization hosting, registered recovery hosts, delegated operators, key custody, off-host delivery visibility and complete app-based replacement-host setup. Source 4.30.1 supplies desktop database import; provider/OS configuration remains. Expand beyond the bounded 4.29 journal recovery where needed. Verify host loss and current denials without the original agent; distinguish mirrors, snapshots and replicas. A01/A06/A07/A09/A11–A13, U01/U02/U04/U06/U11. |
+| 1 | Remaining live connections | Actual supported ChatGPT registration, consent and tool list for #18; a free tunnel account, external access and lifecycle recovery for #3. General delegated authentication issue #4 is resolved. Preserve existing HTTPS, local and scoped-key paths. C04–C07, A05/A08. |
+| 2 | Continuous operation and recovery from another device | Guided organization hosting, registered recovery hosts, delegated operators, key custody, off-host delivery visibility and complete app-based replacement-host setup. Source 4.30.2 supplies desktop database import; provider/OS configuration remains. Expand beyond the bounded 4.29 journal recovery where needed. Verify host loss and current denials without the original agent; distinguish mirrors, snapshots and replicas. A01/A06/A07/A09/A11–A13, U01/U02/U04/U06/U11. |
 | 3 | Source and agent onboarding | Guided consent, credentials, permission mapping, exclusions, reconnect and capture coverage. Validate actual Grokbot, Dot/OpenAI, Anthropic, Hermes and OpenClaw paths before claiming native plugins. Expand adapters with provider contracts and real acceptance. C01–C09, F08. |
 | 4 | Govern several workspaces | Explicit personal/employer/client contexts, independent memberships, queued-work destinations and policies. Reviewed cross-workspace search/transfer without company access to personal data. Bookmarks alone are incomplete. F02/F08, A03/A04/A12, C09. |
 | 5 | Capacity and model choices | Modest hardware, native OS versions, RAM peaks, bandwidth, ingestion queues, concurrency, model quality and recovery-time measurements. Fleet resource views and useful budgets, preserving CPU-only/remote clients. F05–F07, R01–R04, V01/V02. |

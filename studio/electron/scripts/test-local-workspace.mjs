@@ -235,6 +235,27 @@ test('excessive recovery output cancels the helper without reporting success or 
   assert.equal(f.host.status.backup.state, 'error')
 })
 
+test('failed backups retain bounded diagnostics and reject private error payloads', async t => {
+  const f = fixture(t)
+  const diagnostic = { category: 'operating_system', errno: 2,
+    locations: [{ module: 'mnemion.service.recovery', function: '_run_pg', line: 1 }] }
+  const work = f.host.runBackup('backup-inspect', { source: '/separate/snapshot.enc' })
+  const failed = assert.rejects(work, /could not finish/)
+  f.last().event({ event: 'error', message: 'The operation could not finish.', diagnostic })
+  f.last().finish(1)
+  await failed
+  assert.deepEqual(f.host.status.backup.diagnostic, diagnostic)
+  const invalid = f.host.runBackup('backup-inspect', { source: '/separate/snapshot.enc' })
+  assert.equal(f.host.status.backup.diagnostic, undefined)
+  const rejected = assert.rejects(invalid, /invalid recovery result/)
+  f.last().event({ event: 'error', message: 'private-error-sentinel', diagnostic: { ...diagnostic, path: 'private-path-sentinel' } })
+  f.last().finish(1)
+  await rejected
+  assert.equal(f.host.status.backup.state, 'error')
+  assert.equal(f.host.status.backup.diagnostic, undefined)
+  assert.ok(!JSON.stringify(f.host.status).includes('sentinel'))
+})
+
 test('a recovery click waits for the welcome screen status refresh before starting its helper', async t => {
   const f = fixture(t)
   const status = f.host.inspect()

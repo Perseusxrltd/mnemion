@@ -22,6 +22,13 @@ The corrected directory/private-fixture round trip passed with native Windows
 Python on the local PC; the disposable folder was removed afterward. JavaScript
 syntax and diff checks also passed.
 
+That longer private test root then exposed a real Windows PostgreSQL path
+boundary: the database dump filename reached exactly 260 characters. Both
+4.30.1 attempts remain unpublished. Source **4.30.2** carries the recovery
+feature with [extended-length native file arguments and bounded diagnostic
+retention](2026-10-20-windows-backup-paths.md); installed-platform acceptance
+still runs against that exact source.
+
 ## Implemented behavior
 
 The existing desktop recovery flow now recognizes authenticated server packages.

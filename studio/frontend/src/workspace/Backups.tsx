@@ -61,6 +61,7 @@ export default function Backups({ status, onStatus }: { status: LocalStatus; onS
     {!!error && <p className="ws-notice ws-error" role="alert">{localError(error)}</p>}
     {notice && <p className="ws-notice" role="status">{notice}</p>}
     {view?.last_error && !error && <p className="ws-notice ws-error" role="alert">Last attempt: {view.last_error}</p>}
+    {activity?.state === 'error' && activity.diagnostic && <details className="ws-setup-review"><summary>Technical details for support</summary><pre>{JSON.stringify(activity.diagnostic, null, 2)}</pre></details>}
     {view?.retry_at && view.last_error && configuration?.enabled && <p className="ws-helper">Automatic retry after {stamp(view.retry_at)}. You can also retry manually.</p>}
     {view?.last_snapshot?.retention_warning && <p className="ws-notice ws-error" role="alert">{view.last_snapshot.retention_warning}</p>}
     {view?.last_retention && <p className={`ws-notice ${['blocked', 'partial'].includes(view.last_retention.state) ? 'ws-error' : ''}`} role="status">Last cleanup: {stamp(view.last_retention.completed_at)}. {view.last_retention.message} {view.last_retention.deleted_files.toLocaleString()} files removed ({fileSize(view.last_retention.deleted_bytes)}).</p>}

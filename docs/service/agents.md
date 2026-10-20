@@ -44,6 +44,13 @@ The preview resolves the Python interpreter and credentials file to that
 machine's paths. Close the assistant before applying. Existing configuration is
 backed up before replacement; the tool changes only the `mnemion` MCP entry.
 It preserves other servers, policies, project trust settings and TOML comments.
+From 4.30.2, both the backup and staged replacement are created with explicit
+private ownership/permissions before receiving configuration bytes, including
+Windows ACL protection. Agent configuration can contain other providers' secrets.
+If protection or replacement fails, the original configuration is retained;
+any completed backup remains available. Existing unrelated files are never used
+as temporary storage. See the [validation record](../validation/2026-10-20-agent-setup-private-files.md)
+and [published release status](../RELEASE_STATUS.md) for availability.
 A changed file invalidates an outstanding in-process preview. Invalid JSON/TOML
 is rejected. JSON with comments requires a manual merge of the displayed snippet.
 

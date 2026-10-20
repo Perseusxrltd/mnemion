@@ -101,3 +101,36 @@ def test_setup_respects_current_platform_profile(tmp_path, monkeypatch):
         agent_setup.default_path("claude-desktop")
         == tmp_path / "roaming/Claude/claude_desktop_config.json"
     )
+
+
+def test_failed_replacement_retains_exact_config_and_private_backup(tmp_path, monkeypatch):
+    target = tmp_path / "settings.json"
+    original = b'{"other":{"private":"retained"}}\n'
+    target.write_bytes(original)
+    planned = agent_setup.plan("cursor", target, tmp_path / "credentials.json")
+
+    def interrupted(*args):
+        raise OSError("Interrupted replacement")
+
+    monkeypatch.setattr(agent_setup.os, "replace", interrupted)
+    with pytest.raises(OSError, match="Interrupted"):
+        agent_setup.apply(planned)
+    assert target.read_bytes() == original
+    backups = list(tmp_path.glob("settings.json.mnemion-backup-*"))
+    assert len(backups) == 1 and backups[0].read_bytes() == original
+    assert not list(tmp_path.glob(".mnemion-agent-*"))
+
+
+def test_existing_staging_path_is_never_deleted_or_overwritten(tmp_path, monkeypatch):
+    from uuid import UUID
+
+    identifier = UUID("a06bc3ac-770f-46cc-9c40-b8f0576e9a8c")
+    unrelated = tmp_path / (".mnemion-agent-" + identifier.hex)
+    unrelated.write_bytes(b"Existing unrelated file")
+    monkeypatch.setattr(agent_setup, "uuid4", lambda: identifier)
+    target = tmp_path / "settings.json"
+    planned = agent_setup.plan("cursor", target, tmp_path / "credentials.json")
+    with pytest.raises(FileExistsError):
+        agent_setup.apply(planned)
+    assert unrelated.read_bytes() == b"Existing unrelated file"
+    assert not target.exists()
