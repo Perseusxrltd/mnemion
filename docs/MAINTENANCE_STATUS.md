@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-20T18:30:56+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-20T21:51:50+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.41.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.41.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -23,7 +23,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | release\.yml | release/4\.42\.0 | failure | [Run 39457153644](https://github.com/Perseusxrltd/mnemion/actions/runs/39457153644) |
 | release\.yml | release/4\.43\.0 | failure | [Run 39460885775](https://github.com/Perseusxrltd/mnemion/actions/runs/39460885775) |
 | verify-artifacts\.yml | main | skipped | [Run 39475334267](https://github.com/Perseusxrltd/mnemion/actions/runs/39475334267) |
-| website-release\.yml | main | success | [Run 39467357011](https://github.com/Perseusxrltd/mnemion/actions/runs/39467357011) |
+| website-release\.yml | main | success | [Run 39503639438](https://github.com/Perseusxrltd/mnemion/actions/runs/39503639438) |
 | website-release\.yml | v4\.41\.0 | success | [Run 39441738346](https://github.com/Perseusxrltd/mnemion/actions/runs/39441738346) |
 
 ## Failed jobs
