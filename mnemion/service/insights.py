@@ -231,6 +231,21 @@ class InsightsService:
                 FROM mnemion.jobs WHERE space_id=%s GROUP BY state ORDER BY state""",
             (space,),
         ).fetchall()
+        queue_work = conn.execute(
+            """SELECT j.kind,j.state,count(*) AS count,
+                count(*) FILTER(WHERE j.attempts>1) AS retried,
+                min(j.created_at) AS oldest_at,
+                greatest(0,extract(epoch FROM now()-min(j.created_at)))::double precision AS oldest_age_seconds,
+                count(*) FILTER(WHERE j.available_at<=now() AND
+                    (j.state='pending' OR (j.state='leased' AND j.lease_until<now()))) AS due,
+                coalesce(sum(CASE WHEN j.kind='embed' THEN octet_length(r.content) ELSE 0 END),0)::bigint AS input_bytes,
+                coalesce(max(CASE WHEN j.kind='embed' THEN octet_length(r.content) ELSE 0 END),0)::bigint AS largest_input_bytes
+                FROM mnemion.jobs j LEFT JOIN mnemion.memory_revisions r
+                  ON (r.tenant_id,r.space_id,r.id)=(j.tenant_id,j.space_id,j.revision_id)
+                WHERE j.space_id=%s AND j.state IN ('pending','leased','failed')
+                GROUP BY j.kind,j.state ORDER BY j.kind,j.state""",
+            (space,),
+        ).fetchall()
         generations = conn.execute(
             """SELECT g.id,g.model,g.dimensions,count(e.*) AS chunks,
                 count(DISTINCT e.revision_id) AS revisions,
@@ -280,6 +295,7 @@ class InsightsService:
                 "distributions": distributions,
             },
             "queue": queue,
+            "queue_work": queue_work,
             "generations": generations,
             "source": source_health,
         }

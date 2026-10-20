@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.35.0**. Roadmap updated: **2026-10-20**.
+Reviewed source distribution: **4.36.0**. Roadmap updated: **2026-10-20**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
 [Release status](RELEASE_STATUS.md) and the [maintenance board](MAINTENANCE_STATUS.md)
@@ -14,6 +14,13 @@ of the released app. A hotfix does not finish a broader requirement.
 
 ## Current delivery checkpoint
 
+- **4.36.0 source makes queue workload visible.**
+  [The pipeline view](service/insights.md) separates indexing and physical
+  cleanup, with waiting text sizes, retries, due jobs and oldest age. The same
+  scoped metrics reach agents and exports, with fallback for older servers.
+  [Real database and browser checks](validation/2026-10-20-queue-visibility.md)
+  passed; this is visibility into measured work, not a completion-time estimate.
+
 - **4.35.0 source fixes indexing dispatch under a source backlog.**
   [Purges take priority and organizations/spaces receive persistent turns](service/indexing-queues.md).
   Eighteen database/reindex cases passed with existing model and authorization
@@ -21,12 +28,13 @@ of the released app. A hotfix does not finish a broader requirement.
   [Actual 4.33 updates preserved access, but the lab stopped with queued work](validation/2026-10-20-433-live-updates.md);
   that failure remains visible pending cleanup and new acceptance.
 
-- **4.34.0 source adds Slack and Google Drive setup through the app.**
+- **4.34.0 is published with Slack and Google Drive setup through the app.**
   [Cloud sources](service/desktop-cloud-sources.md) accept existing approved
   credentials and selected resources, with separate OS-protected keys and
   read-only Drive token renewal. Actual provider permissions govern capture.
   Offline controls and equivalent local-agent setup share the bounded source
-  runner. Interactive OAuth enrollment and live customer-provider acceptance
+  runner. [All six native targets and artifact verification passed](validation/2026-10-20-desktop-cloud-sources.md).
+  Interactive OAuth enrollment and live customer-provider acceptance
   remain open; complete source onboarding is still partial.
 
 - **4.33.0 is published with model-provider setup through the app.**

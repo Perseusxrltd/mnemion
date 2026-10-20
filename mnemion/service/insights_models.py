@@ -42,6 +42,13 @@ class QueueRow(ResponseModel):
     oldest_age_seconds: float | None
 
 
+class QueueWork(QueueRow):
+    kind: Literal["embed", "purge"]
+    due: int
+    input_bytes: int
+    largest_input_bytes: int
+
+
 class GenerationRow(ResponseModel):
     id: str
     model: str
@@ -134,6 +141,7 @@ class Insights(ResponseModel):
     generation_id: str
     memory: MemoryHealth
     queue: list[QueueRow]
+    queue_work: list[QueueWork] | None = None
     generations: list[GenerationRow]
     source: SourceHealth
     changes: list[ChangePoint]

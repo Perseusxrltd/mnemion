@@ -38,8 +38,14 @@ Slack/Google account, paid service or real provider credential was used.
 
 ## Remaining acceptance
 
-Native release jobs are pending at this checkpoint. Customer-account sign-in,
-provider-app enrollment, interactive
+All six native targets passed in [release run 39388255080](https://github.com/Perseusxrltd/mnemion/actions/runs/39388255080),
+followed by [uploaded-artifact verification](https://github.com/Perseusxrltd/mnemion/actions/runs/39393375424).
+Source `d8e6b05e075d81382fc7f1994efe0dd36147f5da` was published as
+[4.34.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.34.0) at
+08:27:27 UTC on 20 October. The public update and website workflows run
+automatically and have separate receipts in release status.
+
+Customer-account sign-in, provider-app enrollment, interactive
 Google OAuth and Slack token rotation remain separate scope. Passing the local
 fixtures does not certify those integrations or mark the complete source
 onboarding requirement shipped.

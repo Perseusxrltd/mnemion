@@ -9,7 +9,14 @@ from fastapi.testclient import TestClient
 
 from mnemion.service.api import create_app
 from mnemion.service.insights import Insights, InsightsService
-from mnemion.service.models import GrantInput, KeyInput, MemoryInput, PrincipalInput, ReviewInput
+from mnemion.service.models import (
+    GrantInput,
+    KeyInput,
+    MemoryInput,
+    PrincipalInput,
+    ReviewInput,
+    SpaceInput,
+)
 from mnemion.service.telemetry import Telemetry, percentile_bound
 from mnemion.service.worker import Worker
 
@@ -126,6 +133,7 @@ def test_memory_health_and_worker_metrics_use_current_evidence(env):
 
 
 def test_metrics_and_cached_snapshots_require_current_reviewer_access(env):
+    env.memory.save(env.owner, env.space, MemoryInput(content="Private queued evidence"), "queued")
     identities = {}
     for role in ("reader", "reviewer", "unscoped-admin"):
         p = env.identities.create_principal(
@@ -149,6 +157,7 @@ def test_metrics_and_cached_snapshots_require_current_reviewer_access(env):
             assert response.status_code == status, response.text
             if status == 200:
                 assert response.json()["metrics"]["recorded_calls"] == 1
+                assert response.json()["queue_work"][0]["count"] == 1
             with env.db.transaction(caller) as conn:
                 rows = conn.execute("SELECT space_id FROM mnemion.metric_buckets").fetchall()
                 assert len(rows) == (0 if role == "reader" else 1)
@@ -184,6 +193,67 @@ def test_metrics_and_cached_snapshots_require_current_reviewer_access(env):
             ).status_code
             == 404
         )
+
+
+def test_queue_work_distinguishes_backoff_leases_cleanup_and_space_boundaries(env):
+    text = "évidence " * 1500
+    large = env.memory.save(env.owner, env.space, MemoryInput(content=text), "large")
+    delayed = env.memory.save(env.owner, env.space, MemoryInput(content="Delayed"), "delayed")
+    retired = env.memory.save(env.owner, env.space, MemoryInput(content="Withdrawn"), "retired")
+    env.memory.forget(
+        env.owner, UUID(retired["memory_id"]), expected_version=1, key="withdraw-retired"
+    )
+    elsewhere = env.identities.create_space(env.owner, SpaceInput(name="Different space"))
+    env.memory.save(
+        env.owner, UUID(elsewhere["id"]), MemoryInput(content="Other space " * 5000), "elsewhere"
+    )
+    with psycopg.connect(env.admin_dsn) as connection:
+        connection.execute(
+            """UPDATE mnemion.jobs SET available_at=now()+interval '1 hour',attempts=2,
+                created_at=now()-interval '45 minutes' WHERE operation_id=%s""",
+            (UUID(delayed["operation_id"]),),
+        )
+    service = InsightsService(env.db, env.embedder, cache_seconds=0)
+    report = service.read(env.owner, env.space)
+    Insights.model_validate(report)
+    work = {(row["kind"], row["state"]): row for row in report["queue_work"]}
+    assert set(work) == {("embed", "pending"), ("purge", "pending")}
+    index, purge = work["embed", "pending"], work["purge", "pending"]
+    assert (index["count"], index["due"], index["retried"]) == (2, 1, 1)
+    assert index["input_bytes"] == len(text.encode()) + len(b"Delayed")
+    assert index["largest_input_bytes"] == len(text.encode())
+    assert index["oldest_age_seconds"] >= 45 * 60
+    assert (purge["count"], purge["due"], purge["input_bytes"]) == (1, 1, 0)
+    assert purge["largest_input_bytes"] == 0
+    assert any(row["state"] == "cancelled" for row in report["queue"])
+    with psycopg.connect(env.admin_dsn) as connection:
+        connection.execute(
+            """UPDATE mnemion.jobs SET state='leased',lease_id=%s,
+                lease_until=now()+interval '1 hour' WHERE operation_id=%s""",
+            (uuid4(), UUID(large["operation_id"])),
+        )
+    leased = next(
+        row for row in service.read(env.owner, env.space)["queue_work"] if row["state"] == "leased"
+    )
+    assert leased["count"] == 1 and leased["due"] == 0
+    with psycopg.connect(env.admin_dsn) as connection:
+        connection.execute(
+            "UPDATE mnemion.jobs SET lease_until=now()-interval '1 second' WHERE operation_id=%s",
+            (UUID(large["operation_id"]),),
+        )
+    expired = next(
+        row for row in service.read(env.owner, env.space)["queue_work"] if row["state"] == "leased"
+    )
+    assert expired["due"] == 1
+    with psycopg.connect(env.admin_dsn) as connection:
+        connection.execute(
+            "UPDATE mnemion.jobs SET state='failed' WHERE operation_id=%s",
+            (UUID(large["operation_id"]),),
+        )
+    failed = next(
+        row for row in service.read(env.owner, env.space)["queue_work"] if row["state"] == "failed"
+    )
+    assert failed["due"] == 0 and failed["input_bytes"] == len(text.encode())
 
 
 def test_telemetry_expiry_never_deletes_current_samples_or_memories(env):

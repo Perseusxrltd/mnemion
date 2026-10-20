@@ -3451,6 +3451,20 @@
           "queue_latency": {
             "$ref": "#/components/schemas/QueueLatency"
           },
+          "queue_work": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/QueueWork"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Queue Work"
+          },
           "snapshot_at": {
             "title": "Snapshot At",
             "type": "string"
@@ -8001,6 +8015,78 @@
         "title": "QueueState",
         "type": "object"
       },
+      "QueueWork": {
+        "additionalProperties": true,
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "due": {
+            "title": "Due",
+            "type": "integer"
+          },
+          "input_bytes": {
+            "title": "Input Bytes",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "embed",
+              "purge"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "largest_input_bytes": {
+            "title": "Largest Input Bytes",
+            "type": "integer"
+          },
+          "oldest_age_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Oldest Age Seconds"
+          },
+          "oldest_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Oldest At"
+          },
+          "retried": {
+            "title": "Retried",
+            "type": "integer"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "count",
+          "retried",
+          "oldest_at",
+          "oldest_age_seconds",
+          "kind",
+          "due",
+          "input_bytes",
+          "largest_input_bytes"
+        ],
+        "title": "QueueWork",
+        "type": "object"
+      },
       "Ranking": {
         "additionalProperties": true,
         "properties": {
@@ -11703,7 +11789,7 @@
   "info": {
     "description": "Shared, scoped memory and evidence for apps, teams, and assistants. Saves acknowledge canonical durability; operations report semantic indexing readiness.",
     "title": "Mnemion Memory Service",
-    "version": "4.35.0"
+    "version": "4.36.0"
   },
   "openapi": "3.1.0",
   "paths": {

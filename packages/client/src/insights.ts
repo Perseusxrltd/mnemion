@@ -11,6 +11,11 @@ export interface MetricValues {
 }
 export interface MetricGroup extends MetricValues { stage: string; mode: string; origin: string; generation_id: string }
 export interface MetricPoint extends MetricValues { at: string; stage: string }
+export interface QueueWork {
+  kind: 'embed' | 'purge'; state: string; count: number; retried: number
+  oldest_at: string | null; oldest_age_seconds: number | null
+  due: number; input_bytes: number; largest_input_bytes: number
+}
 export interface Insights {
   space_id: string; observed_at: string; snapshot_at: string; snapshot_cache_seconds: number; generation_id: string
   memory: {
@@ -20,6 +25,7 @@ export interface Insights {
     source_bytes: number; attachment_bytes: number; distributions: Record<string, NamedCount[]>
   }
   queue: { state: string; count: number; retried: number; oldest_at: string | null; oldest_age_seconds: number | null }[]
+  queue_work?: QueueWork[] | null
   generations: { id: string; model: string; dimensions: number; chunks: number; revisions: number; vector_bytes: number; active: boolean }[]
   source: {
     managed: boolean; operator_details_available: boolean; provider: string | null; connector_id: string | null

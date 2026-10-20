@@ -21,6 +21,14 @@ Requirements and acceptance criteria are defined by the
 
 ## 20 October: agent-controlled desktop connections and hosted sign-in
 
+Source 4.36 adds workload visibility to the existing insights contract. Six
+database/permission tests and a real browser against PostgreSQL passed: the
+screen distinguishes physical purge from embedding, excludes another space's
+large input, reports backoff/lease state and UTF-8 size accurately, fits a narrow
+screen and keeps the original queue view against an older response. The short
+snapshot cache and access recheck remain. Native publication and live capacity
+are separate; see [validation](../validation/2026-10-20-queue-visibility.md).
+
 The 4.35 source prioritizes physical purge and gives organizations/spaces
 persistent indexing turns. It follows the [actual 4.33 lab backlog](../validation/2026-10-20-433-live-updates.md):
 both ordinary updates preserved access, but a queued synthetic cycle did not
@@ -36,8 +44,10 @@ controls. [Focused service/controller checks and the real source-app walkthrough
 passed. The app captured fixture records through both adapters without a local
 database, recovered from a bad key, retained encrypted keys for agent changes
 and removed sources while signed out. The walkthrough also found and fixed a
-connection-selection flag that unnecessarily blocked automatic updates. Native
-4.34 release gates and customer-provider acceptance remain separate.
+connection-selection flag that unnecessarily blocked automatic updates. All six
+4.34 native gates and uploaded-artifact verification passed; publication followed
+at 08:27 UTC. Public update rehearsals and customer-provider acceptance remain
+separate.
 
 The 4.33 model-provider release passed all six native targets and independent
 artifact verification and is published. Its website update completed

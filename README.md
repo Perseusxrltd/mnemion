@@ -39,12 +39,15 @@ can be removed before sign-in, through the app or local-agent controls.
 Published 4.33.0 adds [model-provider setup through Studio](docs/service/desktop-models.md),
 with local/cloud embedding and librarian profiles, private keys, host restart,
 per-space processing approval and equivalent local-agent controls.
-Source 4.34.0 adds [Slack and Google Drive setup through Studio](docs/service/desktop-cloud-sources.md),
+Published 4.34.0 adds [Slack and Google Drive setup through Studio](docs/service/desktop-cloud-sources.md),
 with selected resources, separate OS-protected provider credentials, read-only
 Drive token renewal, provider permission checks and offline device controls.
 Source 4.35.0 adds [fair indexing turns and priority purges](docs/service/indexing-queues.md)
 so a large source queue does not monopolize other organizations or spaces.
 It requires a guarded schema upgrade; model fingerprints remain unchanged.
+Source 4.36.0 adds [queue workload monitoring](docs/service/insights.md): separate
+indexing and physical-cleanup counts, waiting text sizes, retries, due jobs and
+age, available through Studio and the existing scoped insights API.
 Studio includes guided [local workspace creation](docs/service/local-workspaces.md),
 bundled database/model runtimes, [app and agent RAM controls](docs/service/memory-resources.md),
 local recovery, a [live 3D memory map](docs/service/memory-map.md), recorded agent

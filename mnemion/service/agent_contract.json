@@ -8815,6 +8815,20 @@
               "queue_latency": {
                 "$ref": "#/$defs/QueueLatency"
               },
+              "queue_work": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "$ref": "#/$defs/QueueWork"
+                    },
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Queue Work"
+              },
               "snapshot_at": {
                 "title": "Snapshot At",
                 "type": "string"
@@ -9448,6 +9462,78 @@
               "oldest_age_seconds"
             ],
             "title": "QueueRow",
+            "type": "object"
+          },
+          "QueueWork": {
+            "additionalProperties": true,
+            "properties": {
+              "count": {
+                "title": "Count",
+                "type": "integer"
+              },
+              "due": {
+                "title": "Due",
+                "type": "integer"
+              },
+              "input_bytes": {
+                "title": "Input Bytes",
+                "type": "integer"
+              },
+              "kind": {
+                "enum": [
+                  "embed",
+                  "purge"
+                ],
+                "title": "Kind",
+                "type": "string"
+              },
+              "largest_input_bytes": {
+                "title": "Largest Input Bytes",
+                "type": "integer"
+              },
+              "oldest_age_seconds": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Oldest Age Seconds"
+              },
+              "oldest_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Oldest At"
+              },
+              "retried": {
+                "title": "Retried",
+                "type": "integer"
+              },
+              "state": {
+                "title": "State",
+                "type": "string"
+              }
+            },
+            "required": [
+              "state",
+              "count",
+              "retried",
+              "oldest_at",
+              "oldest_age_seconds",
+              "kind",
+              "due",
+              "input_bytes",
+              "largest_input_bytes"
+            ],
+            "title": "QueueWork",
             "type": "object"
           },
           "mnemion__service__insights_models__SourceHealth": {
