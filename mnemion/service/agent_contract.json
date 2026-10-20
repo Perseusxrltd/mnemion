@@ -13390,6 +13390,270 @@
     {
       "authentication": "bearer",
       "download": false,
+      "effect": "read",
+      "group": "librarian",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "space_id": {
+                "format": "uuid",
+                "title": "Space Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "space_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters"
+        ],
+        "type": "object"
+      },
+      "method": "GET",
+      "name": "librarian.coverage",
+      "output_schema": {
+        "$defs": {
+          "LibrarianCoverage": {
+            "additionalProperties": true,
+            "properties": {
+              "active_memories": {
+                "minimum": 0.0,
+                "title": "Active Memories",
+                "type": "integer"
+              },
+              "excluded_memories": {
+                "minimum": 0.0,
+                "title": "Excluded Memories",
+                "type": "integer"
+              },
+              "modes": {
+                "items": {
+                  "$ref": "#/$defs/LibrarianModeCoverage"
+                },
+                "title": "Modes",
+                "type": "array"
+              },
+              "observed_at": {
+                "title": "Observed At",
+                "type": "string"
+              },
+              "profile_fingerprint": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Profile Fingerprint"
+              },
+              "profile_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Profile Id"
+              },
+              "recent": {
+                "$ref": "#/$defs/LibrarianRecentUsage"
+              },
+              "space_id": {
+                "title": "Space Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "space_id",
+              "profile_id",
+              "profile_fingerprint",
+              "active_memories",
+              "excluded_memories",
+              "modes",
+              "recent",
+              "observed_at"
+            ],
+            "title": "LibrarianCoverage",
+            "type": "object"
+          },
+          "LibrarianModeCoverage": {
+            "additionalProperties": true,
+            "properties": {
+              "attempted": {
+                "minimum": 0.0,
+                "title": "Attempted",
+                "type": "integer"
+              },
+              "changed": {
+                "minimum": 0.0,
+                "title": "Changed",
+                "type": "integer"
+              },
+              "checked": {
+                "minimum": 0.0,
+                "title": "Checked",
+                "type": "integer"
+              },
+              "eligible": {
+                "minimum": 0.0,
+                "title": "Eligible",
+                "type": "integer"
+              },
+              "last_observed_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Observed At"
+              },
+              "mode": {
+                "enum": [
+                  "organize",
+                  "review"
+                ],
+                "title": "Mode",
+                "type": "string"
+              },
+              "oldest_pending_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Oldest Pending At"
+              },
+              "pending": {
+                "minimum": 0.0,
+                "title": "Pending",
+                "type": "integer"
+              },
+              "skipped": {
+                "minimum": 0.0,
+                "title": "Skipped",
+                "type": "integer"
+              },
+              "unseen": {
+                "minimum": 0.0,
+                "title": "Unseen",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "mode",
+              "eligible",
+              "checked",
+              "skipped",
+              "attempted",
+              "pending",
+              "unseen",
+              "changed",
+              "oldest_pending_at",
+              "last_observed_at"
+            ],
+            "title": "LibrarianModeCoverage",
+            "type": "object"
+          },
+          "LibrarianRecentUsage": {
+            "additionalProperties": true,
+            "properties": {
+              "active_runs": {
+                "minimum": 0.0,
+                "title": "Active Runs",
+                "type": "integer"
+              },
+              "calls_completed": {
+                "minimum": 0.0,
+                "title": "Calls Completed",
+                "type": "integer"
+              },
+              "calls_reserved": {
+                "minimum": 0.0,
+                "title": "Calls Reserved",
+                "type": "integer"
+              },
+              "cancelled_runs": {
+                "minimum": 0.0,
+                "title": "Cancelled Runs",
+                "type": "integer"
+              },
+              "failed_runs": {
+                "minimum": 0.0,
+                "title": "Failed Runs",
+                "type": "integer"
+              },
+              "provider_latency_ms": {
+                "minimum": 0.0,
+                "title": "Provider Latency Ms",
+                "type": "number"
+              },
+              "request_bytes": {
+                "minimum": 0.0,
+                "title": "Request Bytes",
+                "type": "integer"
+              },
+              "response_bytes": {
+                "minimum": 0.0,
+                "title": "Response Bytes",
+                "type": "integer"
+              },
+              "runs": {
+                "minimum": 0.0,
+                "title": "Runs",
+                "type": "integer"
+              },
+              "window_days": {
+                "const": 30,
+                "title": "Window Days",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "window_days",
+              "runs",
+              "active_runs",
+              "failed_runs",
+              "cancelled_runs",
+              "calls_reserved",
+              "calls_completed",
+              "request_bytes",
+              "response_bytes",
+              "provider_latency_ms"
+            ],
+            "title": "LibrarianRecentUsage",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/LibrarianCoverage"
+      },
+      "parameter_locations": {
+        "space_id": "path"
+      },
+      "path": "/v1/spaces/{space_id}/librarian/coverage",
+      "retry": "read",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Coverage"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
       "effect": "write",
       "group": "librarian",
       "input_schema": {

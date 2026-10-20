@@ -253,6 +253,14 @@ restarts wait for ten minutes of computer inactivity, background/lock state,
 saved work and clean completion of active operations. A release being available
 does not mean every running installation has already checked or restarted.
 
+From 4.40, `computer_idle_seconds` reports the operating system's current idle
+time and `inactivity_remaining_seconds` reports the remaining part of the
+ten-minute inactivity requirement. Both are `null` when the OS measurement is
+unavailable. A zero remaining value satisfies only that requirement: unsaved
+work, active transfers, focused use and administrator policy still apply.
+These fields are observations, not a scheduled restart countdown. Continued
+computer activity can keep a fully downloaded update waiting.
+
 ```json
 {"action":"app.update-check"}
 ```

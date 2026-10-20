@@ -23,10 +23,28 @@
 .librarian-run details { margin-bottom: .75rem; }
 .librarian-page details > summary { cursor: pointer; }
 .librarian-page pre { overflow: auto; max-height: 20rem; }
+.librarian-coverage { margin: 1rem 0; }
+.librarian-coverage-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin: 1.25rem 0; }
+.librarian-coverage-mode { min-width: 0; border: 1px solid var(--line-soft); border-radius: .5rem; padding: 1rem; }
+.librarian-coverage-mode h3 { margin: 0; }
+.librarian-coverage-mode .ws-section-title { flex-wrap: wrap; gap: .5rem; }
+.librarian-coverage-mode strong { font-size: .95rem; }
+.librarian-coverage-bar { display: block; width: 100%; height: 1rem; margin: 1rem 0; border-radius: .2rem; overflow: hidden; }
+.coverage-empty { fill: var(--line-soft); }
+.coverage-checked { fill: #d6c38e; background: #d6c38e; }
+.coverage-skipped { fill: #b08456; background: #b08456; }
+.coverage-attempted { fill: #8ea7b7; background: #8ea7b7; }
+.coverage-pending { fill: #515760; background: #515760; }
+.librarian-coverage-legend { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .7rem; margin: 0; }
+.librarian-coverage-legend > div { display: flex; align-items: center; justify-content: space-between; gap: .4rem; }
+.librarian-coverage-legend dt { display: flex; align-items: center; gap: .4rem; font-size: .8rem; }
+.librarian-coverage-legend dd { margin: 0; font-variant-numeric: tabular-nums; }
+.librarian-coverage-legend i { display: inline-block; width: .55rem; height: .55rem; border-radius: 50%; }
+.librarian-coverage code { overflow-wrap: anywhere; font-size: .75rem; }
 @media (max-width: 1000px) {
   .librarian-page .ws-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 700px) {
-  .librarian-fields, .librarian-diff > div > div { grid-template-columns: 1fr; }
+  .librarian-fields, .librarian-diff > div > div, .librarian-coverage-grid { grid-template-columns: 1fr; }
   .librarian-page .ws-section-title { flex-wrap: wrap; gap: .6rem; }
 }

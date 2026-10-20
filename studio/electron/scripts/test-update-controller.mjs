@@ -95,6 +95,15 @@ test('local agents see independent app update policy and cannot mutate the retur
   assert.equal(status.ready_version, '4.0.12')
   assert.equal(status.enabled, true)
   assert.equal(status.regular_check_seconds.minimum, 21600)
+  assert.equal(status.computer_idle_seconds, 0)
+  assert.equal(status.inactivity_remaining_seconds, 600)
+  idle = 427
+  assert.equal(localAction(controller, 'app.status').inactivity_remaining_seconds, 173)
+  idle = 900
+  assert.equal(localAction(controller, 'app.status').inactivity_remaining_seconds, 0)
+  idle = NaN
+  assert.equal(localAction(controller, 'app.status').computer_idle_seconds, null)
+  assert.equal(localAction(controller, 'app.status').inactivity_remaining_seconds, null)
   status.preferences.automaticUpdates = false
   status.status.state = 'Changed by caller'
   assert.equal(controller.preferences.automaticUpdates, true)

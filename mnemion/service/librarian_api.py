@@ -9,6 +9,7 @@ from .contracts import Page
 from .db import Identity
 from .librarian_models import (
     LibrarianChoice,
+    LibrarianCoverage,
     LibrarianDecision,
     LibrarianDecisionReceipt,
     LibrarianProposal,
@@ -32,6 +33,10 @@ def attach_librarian(app, service, authenticated):
     @app.get(base, tags=["Librarian"], response_model=LibrarianSettings)
     def settings(space_id: UUID, identity: Auth):
         return service.settings(identity, space_id)
+
+    @app.get(base + "/coverage", tags=["Librarian"], response_model=LibrarianCoverage)
+    def coverage(space_id: UUID, identity: Auth):
+        return service.coverage(identity, space_id)
 
     @app.put(base, tags=["Librarian"], response_model=LibrarianSettings)
     def configure(space_id: UUID, command: LibrarianSettingsInput, identity: Auth):

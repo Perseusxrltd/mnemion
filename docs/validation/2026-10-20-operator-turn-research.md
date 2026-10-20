@@ -47,6 +47,12 @@ a proven stable release. No model was called, account created, trial started,
 payment made or dependency adopted. The weekly workflow's actual execution is
 a separate check after main receives the implementation.
 
+That [first workflow execution](https://github.com/Perseusxrltd/mnemion/actions/runs/39420221997)
+passed at 12:10 UTC on 20 October with **eight of eight sources** and **53
+candidates**. It committed the two generated catalog files normally to main
+(`c8b48c8`). This establishes the free collection/update pipeline; it does not
+validate candidate scientific claims or adopt any dependency.
+
 The complete layered librarian remains planned as R07. A research catalog is
 useful infrastructure for that work, not evidence of autonomous consolidation
 or a benchmark improvement. The [release status](../RELEASE_STATUS.md) and

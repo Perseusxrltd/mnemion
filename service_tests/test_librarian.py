@@ -924,6 +924,9 @@ def test_python_sdk_round_trip_uses_typed_librarian_contracts(env, monkeypatch):
         assert client.librarian_runs(space).items[0].id == run.id
         run_items = client.librarian_run_items(space, run.id)
         assert len(run_items.items) == 1 and run_items.items[0].state == "completed"
+        coverage = client.librarian_coverage(space)
+        assert coverage.active_memories == 1 and coverage.modes[0].checked == 1
+        assert coverage.recent.calls_completed == 1
         proposal = client.librarian_proposals(space).items[0]
         assert proposal.references[0].revision_id == run_items.items[0].revision_id
         decision = client.decide_librarian(

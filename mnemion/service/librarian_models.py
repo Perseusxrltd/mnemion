@@ -85,6 +85,43 @@ class LibrarianSettingsInput(Command):
     interval_minutes: StrictInt | None = Field(default=None, ge=60, le=10080)
 
 
+class LibrarianModeCoverage(ResponseModel):
+    mode: Mode
+    eligible: int = Field(ge=0)
+    checked: int = Field(ge=0)
+    skipped: int = Field(ge=0)
+    attempted: int = Field(ge=0)
+    pending: int = Field(ge=0)
+    unseen: int = Field(ge=0)
+    changed: int = Field(ge=0)
+    oldest_pending_at: str | None
+    last_observed_at: str | None
+
+
+class LibrarianRecentUsage(ResponseModel):
+    window_days: Literal[30]
+    runs: int = Field(ge=0)
+    active_runs: int = Field(ge=0)
+    failed_runs: int = Field(ge=0)
+    cancelled_runs: int = Field(ge=0)
+    calls_reserved: int = Field(ge=0)
+    calls_completed: int = Field(ge=0)
+    request_bytes: int = Field(ge=0)
+    response_bytes: int = Field(ge=0)
+    provider_latency_ms: float = Field(ge=0)
+
+
+class LibrarianCoverage(ResponseModel):
+    space_id: str
+    profile_id: str | None
+    profile_fingerprint: str | None
+    active_memories: int = Field(ge=0)
+    excluded_memories: int = Field(ge=0)
+    modes: list[LibrarianModeCoverage]
+    recent: LibrarianRecentUsage
+    observed_at: str
+
+
 class LibrarianRunInput(Command):
     mode: Mode = "organize"
     memory_ids: list[UUID] = Field(default_factory=list, max_length=12)

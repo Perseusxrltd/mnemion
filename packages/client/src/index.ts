@@ -3,7 +3,7 @@ import type { Insights, RuntimeInsights, MetricOrigin, EvaluationDataset, Evalua
 export * from './insights.js'
 import type { EmbeddingSettings, EmbeddingChoice, ReindexInput, ReindexAction } from './embeddings.js'
 export * from './embeddings.js'
-import type { LibrarianChoice, LibrarianSettings, LibrarianSettingsInput, LibrarianRun, LibrarianRunItem,
+import type { LibrarianChoice, LibrarianCoverage, LibrarianSettings, LibrarianSettingsInput, LibrarianRun, LibrarianRunItem,
   LibrarianMode, LibrarianProposal, LibrarianProposalState, LibrarianDecisionReceipt } from './librarian.js'
 export * from './librarian.js'
 import type { PasswordAccount, DeviceSession, OAuthConfiguration, OAuthConnection, SignInInvitation, InvitationReceipt, CompanyConfiguration, CompanyLink, AgentPackage, AgentPackageProvider } from './sign-in.js'
@@ -208,6 +208,7 @@ export class MnemionClient {
   private librarianPath(space: string) { return '/v1/spaces/' + encodeURIComponent(space) + '/librarian' }
   librarianChoices(space: string) { return this.request<Page<LibrarianChoice>>('GET', this.librarianPath(space) + '/models') }
   librarianSettings(space: string) { return this.request<LibrarianSettings>('GET', this.librarianPath(space)) }
+  librarianCoverage(space: string) { return this.request<LibrarianCoverage>('GET', this.librarianPath(space) + '/coverage') }
   configureLibrarian(space: string, input: LibrarianSettingsInput) { return this.request<LibrarianSettings>('PUT', this.librarianPath(space), { body: input }) }
   librarianRuns(space: string, cursor?: string) {
     const params = new URLSearchParams({ limit: '50' }); if (cursor) params.set('cursor', cursor)

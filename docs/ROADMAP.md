@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.39.0**. Roadmap updated: **2026-10-20**.
+Reviewed source distribution: **4.40.0**. Roadmap updated: **2026-10-20**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
 [Release status](RELEASE_STATUS.md) and the [maintenance board](MAINTENANCE_STATUS.md)
@@ -19,6 +19,16 @@ their actual acceptance passes. The [release process](MAINTENANCE.md) keeps
 issue review, publication and version-linked closure together.
 
 ## Current delivery checkpoint
+
+- **4.40 adds measured librarian coverage and app update diagnostics.**
+  [Organization/review coverage](service/librarian.md#coverage-and-processing)
+  distinguishes successful responses, skips, attempts and pending revisions;
+  30-day usage and a JSON export are available in the app and to agents.
+  [Update controls](service/desktop-operator.md#app-updates-and-startup) expose
+  actual idle seconds without changing restart safeguards. The
+  [source and Electron checks](validation/2026-10-20-librarian-coverage.md)
+  passed. Layered consolidation and quality improvements still require their
+  own implementation and evidence; the complete shipped count is unchanged.
 
 - **4.39 source combines connectors with the busy-host and container repairs.**
   A [bounded operator turn](service/managed-upgrades.md) prevents continuous

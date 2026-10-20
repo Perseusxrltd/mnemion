@@ -6,6 +6,7 @@ import { MnemionError, type MnemionClient, type LibrarianChoice, type LibrarianM
   type LibrarianProposal, type LibrarianProposalState, type LibrarianSettings,
   type LibrarianSettingsInput } from "@mnemion/client";
 import "./librarian.css";
+import LibrarianCoverage from "./LibrarianCoverage";
 
 const failure = (error: unknown) => error instanceof Error ? error.message : "The request could not be completed.";
 const denied = (error: unknown) => error instanceof MnemionError && [401, 403, 404].includes(error.status);
@@ -175,6 +176,7 @@ export default function Librarian({ client, space, reviewer, administrator }: {
         <div><span>Awaiting review</span><strong>{data.pending_proposals}</strong><small>Changes require your approval</small></div>
         <div><span>Next scheduled sweep</span><strong>{data.next_run_at ? new Date(data.next_run_at).toLocaleString() : "Manual"}</strong><small>New or changed memories</small></div>
       </section>
+      <LibrarianCoverage client={client} space={space} />
       {data.enabled && !data.profile_available && <p className="ws-notice">The approved model configuration has changed or is unavailable. An administrator must review and save its current configuration before processing resumes.</p>}
       {administrator && <ModelSettings key={data.version} settings={data} choices={choices.data?.items ?? []} busy={busy} save={command => void act(() => client.configureLibrarian(space, command))} />}
       {administrator && data.enabled && data.profile_id && <button className="ws-button" disabled={busy} onClick={() => void act(() => client.configureLibrarian(space, {

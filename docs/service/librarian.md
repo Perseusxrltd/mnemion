@@ -56,6 +56,36 @@ did not quote are also listed. **Selected memories & outcomes** in run history
 shows each input's revision and whether it was checked, skipped or not processed.
 The before/after diff uses the source snapshot from proposal generation.
 
+## Coverage and processing
+
+From 4.40, **Librarian → Coverage and processing** shows organization and review
+coverage for the selected space and saved model profile. Each bar separates
+completed responses, skipped inputs, reserved attempts and waiting revisions.
+Waiting includes memories without an observation and memories changed since
+their previous observation. Deleted memories are excluded; memories withheld
+by review state are counted separately. A completed response does not establish
+that its conclusions are correct. Review coverage describes inspected batches,
+not all possible relationships between every pair of memories.
+
+The panel also reports completed/reserved calls, request/response bytes, recorded
+provider latency and run outcomes over the past 30 days for that profile.
+Attempts may still be active or may have been interrupted. Consult run history
+before retrying them: these counters do not bypass budgets or trigger processing.
+Waiting counts do not predict whether an input will fit its context limit.
+
+**Export data** downloads the measured JSON, including the space and profile
+identifiers. It contains no memory text or provider credentials. The view
+refreshes every 30 seconds while active; opening it makes no model call. Each
+response uses a single database snapshot and requires current reviewer access.
+Changing the saved profile fingerprint starts a separate coverage view.
+
+Agents can use `GET /v1/spaces/{space_id}/librarian/coverage`, the
+`librarian.coverage` operation in the [agent contract](agent-control.md),
+Python's `client.librarian_coverage(space_id)` or TypeScript's
+`client.librarianCoverage(spaceId)`. This is measured processing coverage;
+retrieval accuracy, grounding, calibration and quality evaluations remain
+separate measurements.
+
 ## Configure a local model
 
 Install and run a suitable model server separately. Mnemion never starts a model

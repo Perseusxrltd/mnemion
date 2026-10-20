@@ -227,6 +227,18 @@ the direct paper sources above were available. A failed feed preserves the
 previous successful catalog and its date. This automation supplies review
 candidates; it does not complete the layered librarian stages or adopt a model.
 
+The [first GitHub workflow](https://github.com/Perseusxrltd/mnemion/actions/runs/39420221997)
+then passed on 20 October at 12:10 UTC: all eight sources returned metadata,
+retaining 53 candidates. Its normal commit updated the two generated catalog
+files on main. No model call or dependency update occurred.
+
+Source **4.40** adds a [coverage and processing view](../service/librarian.md#coverage-and-processing)
+with matching API/SDK/agent access. It measures current-version organization
+and review observations, changed/unseen inputs, pending age and 30-day model
+traffic. This is a foundation for L3/L6. It does not add layered consolidation,
+statistical resurfacing or calibrated verification, and it does not complete
+those delivery stages.
+
 This work is tracked as R07 in the [complete requirements](../PRODUCT_REQUIREMENTS.md).
 Operational GitHub bugs and the current connector release continue in parallel
 with this longer implementation sequence.

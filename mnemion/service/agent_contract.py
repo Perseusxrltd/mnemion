@@ -137,6 +137,7 @@ embedding.reindex POST /v1/spaces/{space_id}/embedding/reindex
 embedding.control POST /v1/spaces/{space_id}/embedding/reindex/{run_id}/{action}
 embedding.resume POST /v1/spaces/{space_id}/embedding/resume
 librarian.settings GET /v1/spaces/{space_id}/librarian
+librarian.coverage GET /v1/spaces/{space_id}/librarian/coverage
 librarian.configure PUT /v1/spaces/{space_id}/librarian
 librarian.models GET /v1/spaces/{space_id}/librarian/models
 librarian.runs GET /v1/spaces/{space_id}/librarian/runs

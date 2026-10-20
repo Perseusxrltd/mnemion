@@ -124,12 +124,18 @@ export class DesktopUpdates {
   get policyManaged() { return this.managed }
   get canRequestRestart() { return this.enabled && this.downloaded && !this.installing }
   inspect() {
+    let idleSeconds: number | null = null
+    try {
+      const measured = powerMonitor.getSystemIdleTime()
+      if (Number.isFinite(measured) && measured >= 0) idleSeconds = Math.floor(measured)
+    } catch { /* Idle information can be unavailable during OS startup/shutdown. */ }
     return { version: app.getVersion(), platform: process.platform, architecture: process.arch,
       preferences: { ...this.preferences }, enabled: this.enabled, managed: this.managed,
       supported: this.supported, status: { ...this.status }, can_request_restart: this.canRequestRestart,
       ready_version: this.downloaded ? this.readyVersion ?? null : null,
       regular_check_seconds: { minimum: 21600, maximum: 22500 },
-      automatic_restart_idle_seconds: 600 }
+      automatic_restart_idle_seconds: 600, computer_idle_seconds: idleSeconds,
+      inactivity_remaining_seconds: idleSeconds === null ? null : Math.max(0, 600 - idleSeconds) }
   }
   requestRestart(expectedVersion: string) {
     if (!this.canRequestRestart || expectedVersion !== this.readyVersion) throw new Error('The ready update changed. Read app.status before requesting its restart.')

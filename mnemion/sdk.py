@@ -56,6 +56,7 @@ if TYPE_CHECKING:
     from .service.connector_contracts import SourceHealth, SyncStatus
     from .service.librarian_models import (
         LibrarianChoice,
+        LibrarianCoverage,
         LibrarianSettings,
         LibrarianSettingsInput,
         LibrarianRun,
@@ -296,6 +297,13 @@ class Client(JournalUploadClient):
         from .service.librarian_models import LibrarianSettings
 
         return LibrarianSettings.model_validate(self.request("GET", self._librarian_path(space_id)))
+
+    def librarian_coverage(self, space_id: str) -> LibrarianCoverage:
+        from .service.librarian_models import LibrarianCoverage
+
+        return LibrarianCoverage.model_validate(
+            self.request("GET", self._librarian_path(space_id) + "/coverage")
+        )
 
     def journal_status(self, space_id: str) -> WritebackStatus:
         from .service.writeback_models import WritebackStatus

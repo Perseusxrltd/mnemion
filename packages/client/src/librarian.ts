@@ -18,6 +18,17 @@ export interface LibrarianSettingsInput {
   expected_version: number; profile_id: string; enabled?: boolean; approve_network_egress?: boolean
   mode?: LibrarianMode; max_memories?: number; max_calls_per_day?: number; interval_minutes?: number | null
 }
+export interface LibrarianModeCoverage {
+  mode: LibrarianMode; eligible: number; checked: number; skipped: number; attempted: number
+  pending: number; unseen: number; changed: number
+  oldest_pending_at: string | null; last_observed_at: string | null
+}
+export interface LibrarianCoverage {
+  space_id: string; profile_id: string | null; profile_fingerprint: string | null
+  active_memories: number; excluded_memories: number; modes: LibrarianModeCoverage[]; observed_at: string
+  recent: { window_days: 30; runs: number; active_runs: number; failed_runs: number; cancelled_runs: number
+    calls_reserved: number; calls_completed: number; request_bytes: number; response_bytes: number; provider_latency_ms: number }
+}
 export interface LibrarianRun {
   id: string; space_id: string; profile_id: string; profile_fingerprint: string; mode: LibrarianMode
   state: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled'

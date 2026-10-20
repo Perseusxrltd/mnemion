@@ -146,6 +146,13 @@ class LibrarianService:
             require_space(conn, space, 30)
             return self._settings_output(conn, space, self._settings(conn, space))
 
+    def coverage(self, identity, space):
+        from .librarian_coverage import snapshot
+
+        with self.db.transaction(identity) as conn:
+            require_space(conn, space, 30)
+            return snapshot(conn, space, self._settings(conn, space))
+
     def configure(self, identity: Identity, space: UUID, command: LibrarianSettingsInput):
         with self.db.transaction(identity) as conn:
             require_space(conn, space, 40, writing=True)

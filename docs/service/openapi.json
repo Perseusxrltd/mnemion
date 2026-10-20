@@ -5243,6 +5243,73 @@
         "title": "LibrarianChoice",
         "type": "object"
       },
+      "LibrarianCoverage": {
+        "additionalProperties": true,
+        "properties": {
+          "active_memories": {
+            "minimum": 0.0,
+            "title": "Active Memories",
+            "type": "integer"
+          },
+          "excluded_memories": {
+            "minimum": 0.0,
+            "title": "Excluded Memories",
+            "type": "integer"
+          },
+          "modes": {
+            "items": {
+              "$ref": "#/components/schemas/LibrarianModeCoverage"
+            },
+            "title": "Modes",
+            "type": "array"
+          },
+          "observed_at": {
+            "title": "Observed At",
+            "type": "string"
+          },
+          "profile_fingerprint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile Fingerprint"
+          },
+          "profile_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile Id"
+          },
+          "recent": {
+            "$ref": "#/components/schemas/LibrarianRecentUsage"
+          },
+          "space_id": {
+            "title": "Space Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "space_id",
+          "profile_id",
+          "profile_fingerprint",
+          "active_memories",
+          "excluded_memories",
+          "modes",
+          "recent",
+          "observed_at"
+        ],
+        "title": "LibrarianCoverage",
+        "type": "object"
+      },
       "LibrarianDecision": {
         "additionalProperties": false,
         "properties": {
@@ -5309,6 +5376,90 @@
           "applied_revision_id"
         ],
         "title": "LibrarianDecisionReceipt",
+        "type": "object"
+      },
+      "LibrarianModeCoverage": {
+        "additionalProperties": true,
+        "properties": {
+          "attempted": {
+            "minimum": 0.0,
+            "title": "Attempted",
+            "type": "integer"
+          },
+          "changed": {
+            "minimum": 0.0,
+            "title": "Changed",
+            "type": "integer"
+          },
+          "checked": {
+            "minimum": 0.0,
+            "title": "Checked",
+            "type": "integer"
+          },
+          "eligible": {
+            "minimum": 0.0,
+            "title": "Eligible",
+            "type": "integer"
+          },
+          "last_observed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Observed At"
+          },
+          "mode": {
+            "enum": [
+              "organize",
+              "review"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "oldest_pending_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Oldest Pending At"
+          },
+          "pending": {
+            "minimum": 0.0,
+            "title": "Pending",
+            "type": "integer"
+          },
+          "skipped": {
+            "minimum": 0.0,
+            "title": "Skipped",
+            "type": "integer"
+          },
+          "unseen": {
+            "minimum": 0.0,
+            "title": "Unseen",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "mode",
+          "eligible",
+          "checked",
+          "skipped",
+          "attempted",
+          "pending",
+          "unseen",
+          "changed",
+          "oldest_pending_at",
+          "last_observed_at"
+        ],
+        "title": "LibrarianModeCoverage",
         "type": "object"
       },
       "LibrarianProposal": {
@@ -5428,6 +5579,75 @@
           "decided_at"
         ],
         "title": "LibrarianProposal",
+        "type": "object"
+      },
+      "LibrarianRecentUsage": {
+        "additionalProperties": true,
+        "properties": {
+          "active_runs": {
+            "minimum": 0.0,
+            "title": "Active Runs",
+            "type": "integer"
+          },
+          "calls_completed": {
+            "minimum": 0.0,
+            "title": "Calls Completed",
+            "type": "integer"
+          },
+          "calls_reserved": {
+            "minimum": 0.0,
+            "title": "Calls Reserved",
+            "type": "integer"
+          },
+          "cancelled_runs": {
+            "minimum": 0.0,
+            "title": "Cancelled Runs",
+            "type": "integer"
+          },
+          "failed_runs": {
+            "minimum": 0.0,
+            "title": "Failed Runs",
+            "type": "integer"
+          },
+          "provider_latency_ms": {
+            "minimum": 0.0,
+            "title": "Provider Latency Ms",
+            "type": "number"
+          },
+          "request_bytes": {
+            "minimum": 0.0,
+            "title": "Request Bytes",
+            "type": "integer"
+          },
+          "response_bytes": {
+            "minimum": 0.0,
+            "title": "Response Bytes",
+            "type": "integer"
+          },
+          "runs": {
+            "minimum": 0.0,
+            "title": "Runs",
+            "type": "integer"
+          },
+          "window_days": {
+            "const": 30,
+            "title": "Window Days",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "window_days",
+          "runs",
+          "active_runs",
+          "failed_runs",
+          "cancelled_runs",
+          "calls_reserved",
+          "calls_completed",
+          "request_bytes",
+          "response_bytes",
+          "provider_latency_ms"
+        ],
+        "title": "LibrarianRecentUsage",
         "type": "object"
       },
       "LibrarianReference": {
@@ -11882,7 +12102,7 @@
   "info": {
     "description": "Shared, scoped memory and evidence for apps, teams, and assistants. Saves acknowledge canonical durability; operations report semantic indexing readiness.",
     "title": "Mnemion Memory Service",
-    "version": "4.39.0"
+    "version": "4.40.0"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -28232,6 +28452,144 @@
           }
         ],
         "summary": "Configure",
+        "tags": [
+          "Librarian"
+        ]
+      }
+    },
+    "/v1/spaces/{space_id}/librarian/coverage": {
+      "get": {
+        "operationId": "coverage_v1_spaces__space_id__librarian_coverage_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "space_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Space Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibrarianCoverage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "408": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request Timeout"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Coverage",
         "tags": [
           "Librarian"
         ]
