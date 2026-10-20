@@ -157,7 +157,7 @@ try {
   if (anonymous.status !== 401) throw new Error('The installed local service permits unauthenticated data access')
   await stop()
   const credentials = credentialsHash()
-  const second = await launch({ phase: 'resume', port, memoryId: first.memoryId })
+  const second = await launch({ phase: 'resume', port, memoryId: first.memoryId, spaceId: first.spaceId })
   if (!second.automaticReopen || !second.savedMemoryPresent || first.tenantId !== second.tenantId || first.endpoint !== second.endpoint) {
     throw new Error('The installed app did not automatically reopen the same saved local workspace')
   }
@@ -168,7 +168,7 @@ try {
     ['backup-recover', ['protectedKeyReopened', 'realRecoveryControls', 'separateRecoveryCopy', 'originalOrganizationRetained', 'retainedMemoryReadable', 'postSnapshotDeletionPreserved', 'freshAdministratorConnected', 'vaultKeyRestoredThroughApp', 'vaultGrantsRequireFreshReview', 'vaultDeletionPreserved', 'vaultExcludedFromMemory', 'nativeOperatorPipe', 'hostPackageInspected', 'hostLedgerChoiceReviewed', 'hostDatabaseRecovered']],
     ['backup-resume', ['recoveredCopyReopened', 'deletionPreservedAfterReopen', 'originalWorkspaceReopened', 'restoredVaultSurvivesRestart', 'originalVaultRemainsIndependent', 'nativeOperatorPipe', 'operatorRecoverySelection', 'operatorOriginalSelection', 'operatorPreservesUnsavedDraft', 'nativeBackupRetention', 'retentionKeepsVerifiedPairs', 'retentionControlsAndAgentAgree', 'nativeWorkspaceOperator', 'operatorAccountIdentityBound', 'operatorConnectionDraftPreserved', 'operatorWorkspaceSelectionAndUiAgree', 'operatorSelectedReaderRestricted', 'operatorSavedConnectionRestored', 'operatorPrivateCredentialsRetained', 'operatorLocalOwnerReopened']],
   ]) {
-    const backup = await launch({ phase, port, memoryId: first.memoryId })
+    const backup = await launch({ phase, port, memoryId: first.memoryId, spaceId: first.spaceId })
     if (required.some(field => backup[field] !== true)) throw new Error('Installed backup/recovery acceptance failed: ' + phase)
     await stop()
     if (credentialsHash() !== credentials) throw new Error('Recovery modified the original workspace credentials')
@@ -183,7 +183,7 @@ try {
   await new Promise((resolve, reject) => { occupied.once('error', reject); occupied.listen(port, '127.0.0.1', resolve) })
   let recovered
   try {
-    recovered = await launch({ phase: 'recover-port', port, memoryId: first.memoryId })
+    recovered = await launch({ phase: 'recover-port', port, memoryId: first.memoryId, spaceId: first.spaceId })
     if (!recovered.recoveredPortConflict || !recovered.savedMemoryPresent || recovered.tenantId !== first.tenantId || recovered.endpoint === first.endpoint) {
       throw new Error('The installed address recovery did not preserve and reconnect the original workspace')
     }
@@ -191,7 +191,7 @@ try {
     if (credentialsHash() !== credentials) throw new Error('Address recovery replaced the private workspace credentials')
   } finally { await new Promise(resolve => occupied.close(resolve)) }
   const currentPort = Number(new URL(recovered.endpoint).port)
-  const personal = await launch({ phase: 'sign-in', port: currentPort, memoryId: first.memoryId })
+  const personal = await launch({ phase: 'sign-in', port: currentPort, memoryId: first.memoryId, spaceId: first.spaceId })
   if (!personal.uiInvitationAccepted || !personal.passwordSession || !personal.remembered || !personal.memberMemoryAccess || !personal.administratorAccessDenied) {
     throw new Error('The installed app did not complete a scoped invitation with the actual OS credential store')
   }
@@ -200,7 +200,7 @@ try {
     throw new Error('A remembered password session must exist without plaintext credentials')
   }
   await stop()
-  const reopened = await launch({ phase: 'sign-in-resume', port: currentPort, memoryId: first.memoryId,
+  const reopened = await launch({ phase: 'sign-in-resume', port: currentPort, memoryId: first.memoryId, spaceId: first.spaceId,
     tenantId: personal.tenantId, principalId: personal.principalId, sessionId: personal.sessionId })
   if (!reopened.sameDeviceSessionRestored || !reopened.administratorAccessDenied || !reopened.memberMemoryAccess ||
       !reopened.uiSessionRevoked || !reopened.staleNativeHandleRejected || !reopened.independentOwnerKeyPreserved) {

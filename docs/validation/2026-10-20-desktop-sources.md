@@ -89,3 +89,11 @@ Git/Drive/Slack/rclone enrollment, provider OAuth or organization ACL translatio
 virtual cloud-file hydration, full chat-history access, source-key transfer
 between devices, or fleet acceptance. Sampled RSS enforcement can miss a brief
 allocation spike. Strict complete product coverage remains **17/64**.
+
+The third candidate passed source ingestion but exposed two assumptions in the
+combined installed-app fixture. Windows canonicalizes its short temporary path,
+so its UI assertion now compares the saved canonical path. The source exercise
+also creates an additional managed space; later address-recovery checks now
+follow the original space ID explicitly. Fresh creation and its first restart
+still require exactly one private space. No production behavior or access check
+is weakened. Corrected native acceptance remains a publication prerequisite.

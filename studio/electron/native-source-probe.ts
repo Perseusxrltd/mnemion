@@ -37,6 +37,7 @@ export async function verifyNativeSources(window: BrowserWindow, call: Call): Pr
     // status, resume, scan and removal against the same saved configuration.
     const saved = await window.webContents.executeJavaScript(`window.mnemion.sourceConfigure(${JSON.stringify(input)})`) as DesktopSourceView
     if (saved.sources.find(item => item.id === id)?.enabled !== false || JSON.stringify(saved).includes(fixture.credential) || JSON.stringify(saved).includes('sealed_key')) throw new Error('Native source setup exposed a key or lost its paused state.')
+    const savedPath = saved.sources.find(item => item.id === id)!.path
     const settings = await readFile(join(process.env.MNEMION_STUDIO_USER_DATA!, 'mnemion-desktop-sources', 'sources.json'), 'utf8')
     if (settings.includes(fixture.credential)) throw new Error('A desktop source key was persisted without OS protection.')
     await call('source.pause', { expected_revision: saved.revision, id, enabled: true })
@@ -60,7 +61,7 @@ export async function verifyNativeSources(window: BrowserWindow, call: Call): Pr
         while(Date.now()<until){
           const selector=[...document.querySelectorAll('select')].find(s=>[...s.options].some(o=>o.value===${JSON.stringify(fixture.connectorId)}));
           if(selector&&selector.value!==${JSON.stringify(fixture.connectorId)}){Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(selector,${JSON.stringify(fixture.connectorId)});selector.dispatchEvent(new Event('change',{bubbles:true}));}
-          if(document.body.textContent.includes('Run on this computer')&&document.body.textContent.includes(${JSON.stringify(path)}))return true;
+          if(document.body.textContent.includes('Run on this computer')&&document.body.textContent.includes(${JSON.stringify(savedPath)}))return true;
           await new Promise(r=>setTimeout(r,100));
         }
         return false;

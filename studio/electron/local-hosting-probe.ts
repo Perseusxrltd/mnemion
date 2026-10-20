@@ -15,7 +15,7 @@ export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Re
       (await stat(path)).size > 4096) throw new Error('Hosting validation requires an isolated profile and evidence directory')
   const config = JSON.parse(await readFile(path, 'utf8'))
   if (!['create', 'resume', 'recover-port', 'sign-in', 'sign-in-resume', 'backup-capture', 'backup-recover', 'backup-resume'].includes(config.phase) || !Number.isInteger(config.port) || config.port < 1024 || config.port > 65535 ||
-      (config.phase !== 'create' && !/^[a-f0-9-]{36}$/.test(config.memoryId))) throw new Error('Invalid hosting validation configuration')
+      (config.phase !== 'create' && !['memoryId', 'spaceId'].every(key => /^[a-f0-9-]{36}$/.test(config[key])))) throw new Error('Invalid hosting validation configuration')
   if (config.phase === 'sign-in-resume' && !['tenantId', 'principalId', 'sessionId'].every(key => /^[a-f0-9-]{36}$/.test(config[key]))) throw new Error('Invalid personal-access validation identity')
   if (config.phase.startsWith('backup-')) {
     const result = await verifyNativeBackups(window, config, path)
@@ -99,10 +99,12 @@ export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Re
       return JSON.parse(new TextDecoder().decode(response.body));
     }
     const spaces = (await request('GET', '/v1/spaces')).items;
-    if (spaces.length !== 1) throw new Error('Setup must create exactly one private space');
+    if (['create', 'resume'].includes(config.phase) && spaces.length !== 1) throw new Error('Setup must create exactly one private space');
+    const originalSpace = config.phase === 'create' ? spaces[0] : spaces.find(space => space.id === config.spaceId);
+    if (!originalSpace) throw new Error('The original private space was lost after restart');
     let memoryId = config.memoryId;
     if (config.phase === 'create') {
-      const saved = await request('POST', '/v1/spaces/' + spaces[0].id + '/memories',
+      const saved = await request('POST', '/v1/spaces/' + originalSpace.id + '/memories',
         { content: 'Installed application validation: shared memory keeps assistants connected across applications.', kind: 'note' });
       await until(async () => {
         const operation = await request('GET', '/v1/operations/' + saved.operation_id);
@@ -113,7 +115,7 @@ export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Re
     } else {
       if ((await request('GET', '/v1/memories/' + memoryId)).memory_id !== memoryId) throw new Error('A memory was lost after the installed app restarted');
     }
-    const recalled = await request('POST', '/v1/recall', { query: 'assistants share memory across applications', space_ids: [spaces[0].id], mode: 'semantic' });
+    const recalled = await request('POST', '/v1/recall', { query: 'assistants share memory across applications', space_ids: [originalSpace.id], mode: 'semantic' });
     if (!recalled.hits.some(hit => hit.memory_id === memoryId)) throw new Error('The installed model did not retrieve the saved memory');
     const status = await bridge.localStatus();
     if (status.info?.resources?.remote_access?.ngrok_sdk !== '1.7.0') throw new Error('The installed engine cannot load its reviewed ngrok SDK');
@@ -128,9 +130,9 @@ export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Re
       await until(async () => {
         const current = await bridge.localStatus();
         if (current.state === 'error') throw new Error('Journal registration restart failed: ' + current.errorCode);
-        return current.state === 'running' && current.info?.journal_access?.destinations.some(item => item.space_id === spaces[0].id && item.remote === 'https://git.example.invalid/team/memory.git');
+        return current.state === 'running' && current.info?.journal_access?.destinations.some(item => item.space_id === originalSpace.id && item.remote === 'https://git.example.invalid/team/memory.git');
       }, 'Journal registration did not survive the controlled host restart', 180000);
-      const journal = await request('GET', '/v1/spaces/' + spaces[0].id + '/writeback');
+      const journal = await request('GET', '/v1/spaces/' + originalSpace.id + '/writeback');
       if (journal.configured || journal.destination?.repository !== 'https://git.example.invalid/team/memory.git') throw new Error('Host registration must retain separate space approval before publication');
       if ((await request('GET', '/v1/memories/' + memoryId)).memory_id !== memoryId) throw new Error('Journal registration lost an existing memory');
       location.hash = '/workspace/memories';
@@ -150,7 +152,7 @@ export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Re
     location.hash = '/workspace/memories';
     await until(() => !draft.isConnected && bridge.updateSafety(), 'Closing the disposable editor did not restore update readiness');
     if (typeof window.require !== 'undefined') throw new Error('The installed renderer is not sandboxed');
-    return { phase: config.phase, memoryId, endpoint: session.endpoint, tenantId: session.me.tenant_id,
+    return { phase: config.phase, memoryId, spaceId: originalSpace.id, endpoint: session.endpoint, tenantId: session.me.tenant_id,
       actualSetupControls: config.phase === 'create', uiOpenedWorkspace: true, nativeService: true,
       journalRegistrationControls: config.phase === 'create',
       authenticatedApi: true, serverVersionRetained: true, realModelInference: true, semanticSaveAndRecall: true, nativeNgrokSdkLoaded: true,
