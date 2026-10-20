@@ -18078,6 +18078,1776 @@
       "authentication": "bearer",
       "download": false,
       "effect": "write",
+      "group": "memory-recovery",
+      "input_schema": {
+        "$defs": {
+          "JournalUploadAdvance": {
+            "additionalProperties": false,
+            "properties": {
+              "acknowledge_resumable_batches": {
+                "default": false,
+                "title": "Acknowledge Resumable Batches",
+                "type": "boolean"
+              },
+              "acknowledge_source_only": {
+                "default": false,
+                "title": "Acknowledge Source Only",
+                "type": "boolean"
+              },
+              "action": {
+                "enum": [
+                  "finish_upload",
+                  "review",
+                  "restart_review",
+                  "authorize",
+                  "restore",
+                  "cancel"
+                ],
+                "title": "Action",
+                "type": "string"
+              },
+              "expected_version": {
+                "minimum": 1.0,
+                "title": "Expected Version",
+                "type": "integer"
+              },
+              "preview_sha256": {
+                "anyOf": [
+                  {
+                    "pattern": "^[a-f0-9]{64}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Preview Sha256"
+              },
+              "reviewed_complete_inventory": {
+                "default": false,
+                "title": "Reviewed Complete Inventory",
+                "type": "boolean"
+              },
+              "reviewed_withdrawals": {
+                "default": false,
+                "title": "Reviewed Withdrawals",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "expected_version",
+              "action"
+            ],
+            "title": "JournalUploadAdvance",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/JournalUploadAdvance"
+          },
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "space_id": {
+                "format": "uuid",
+                "title": "Space Id",
+                "type": "string"
+              },
+              "upload_id": {
+                "format": "uuid",
+                "title": "Upload Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "space_id",
+              "upload_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters",
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "POST",
+      "name": "memory.journal.upload.advance",
+      "output_schema": {
+        "$defs": {
+          "JournalUploadStatus": {
+            "additionalProperties": false,
+            "properties": {
+              "applied_batches": {
+                "title": "Applied Batches",
+                "type": "integer"
+              },
+              "applied_counts": {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "title": "Applied Counts",
+                "type": "object"
+              },
+              "bytes": {
+                "title": "Bytes",
+                "type": "integer"
+              },
+              "can_restore": {
+                "title": "Can Restore",
+                "type": "boolean"
+              },
+              "chunk_bytes": {
+                "default": 262144,
+                "title": "Chunk Bytes",
+                "type": "integer"
+              },
+              "completed_files": {
+                "title": "Completed Files",
+                "type": "integer"
+              },
+              "counts": {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "title": "Counts",
+                "type": "object"
+              },
+              "created_at": {
+                "title": "Created At",
+                "type": "string"
+              },
+              "duplicates": {
+                "title": "Duplicates",
+                "type": "integer"
+              },
+              "expected_records": {
+                "title": "Expected Records",
+                "type": "integer"
+              },
+              "expires_at": {
+                "title": "Expires At",
+                "type": "string"
+              },
+              "files": {
+                "title": "Files",
+                "type": "integer"
+              },
+              "id": {
+                "format": "uuid",
+                "title": "Id",
+                "type": "string"
+              },
+              "identities": {
+                "title": "Identities",
+                "type": "integer"
+              },
+              "identity_mode": {
+                "enum": [
+                  "original",
+                  "copy"
+                ],
+                "title": "Identity Mode",
+                "type": "string"
+              },
+              "input_sha256": {
+                "title": "Input Sha256",
+                "type": "string"
+              },
+              "namespace": {
+                "title": "Namespace",
+                "type": "string"
+              },
+              "physical_records": {
+                "title": "Physical Records",
+                "type": "integer"
+              },
+              "preview_sha256": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Preview Sha256"
+              },
+              "processed_identities": {
+                "title": "Processed Identities",
+                "type": "integer"
+              },
+              "received": {
+                "title": "Received",
+                "type": "integer"
+              },
+              "records": {
+                "title": "Records",
+                "type": "integer"
+              },
+              "reject_personal_data": {
+                "title": "Reject Personal Data",
+                "type": "boolean"
+              },
+              "remote_delivery_verified": {
+                "const": false,
+                "default": false,
+                "title": "Remote Delivery Verified",
+                "type": "boolean"
+              },
+              "reviewed_batches": {
+                "title": "Reviewed Batches",
+                "type": "integer"
+              },
+              "reviewed_identities": {
+                "title": "Reviewed Identities",
+                "type": "integer"
+              },
+              "source_only": {
+                "const": true,
+                "default": true,
+                "title": "Source Only",
+                "type": "boolean"
+              },
+              "space_id": {
+                "format": "uuid",
+                "title": "Space Id",
+                "type": "string"
+              },
+              "state": {
+                "enum": [
+                  "uploading",
+                  "reviewing",
+                  "reviewed",
+                  "restoring",
+                  "completed",
+                  "cancelled"
+                ],
+                "title": "State",
+                "type": "string"
+              },
+              "updated_at": {
+                "title": "Updated At",
+                "type": "string"
+              },
+              "version": {
+                "title": "Version",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "id",
+              "space_id",
+              "version",
+              "state",
+              "identity_mode",
+              "namespace",
+              "reject_personal_data",
+              "input_sha256",
+              "preview_sha256",
+              "can_restore",
+              "bytes",
+              "received",
+              "files",
+              "completed_files",
+              "records",
+              "expected_records",
+              "physical_records",
+              "duplicates",
+              "identities",
+              "reviewed_identities",
+              "processed_identities",
+              "reviewed_batches",
+              "applied_batches",
+              "counts",
+              "applied_counts",
+              "created_at",
+              "updated_at",
+              "expires_at"
+            ],
+            "title": "JournalUploadStatus",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/JournalUploadStatus"
+      },
+      "parameter_locations": {
+        "space_id": "path",
+        "upload_id": "path"
+      },
+      "path": "/v1/spaces/{space_id}/journal-recovery/uploads/{upload_id}/advance",
+      "retry": "inspect_before_retry",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Journal Upload Advance"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "write",
+      "group": "memory-recovery",
+      "input_schema": {
+        "$defs": {
+          "JournalUploadFileInput": {
+            "additionalProperties": false,
+            "properties": {
+              "bytes": {
+                "maximum": 2147483648.0,
+                "minimum": 0.0,
+                "title": "Bytes",
+                "type": "integer"
+              },
+              "path": {
+                "maxLength": 120,
+                "minLength": 1,
+                "title": "Path",
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "bytes"
+            ],
+            "title": "JournalUploadFileInput",
+            "type": "object"
+          },
+          "JournalUploadInput": {
+            "additionalProperties": false,
+            "properties": {
+              "catalog": {
+                "format": "password",
+                "maxLength": 4096,
+                "title": "Catalog",
+                "type": "string",
+                "writeOnly": true
+              },
+              "files": {
+                "items": {
+                  "$ref": "#/$defs/JournalUploadFileInput"
+                },
+                "maxItems": 8192,
+                "title": "Files",
+                "type": "array"
+              },
+              "identity_mode": {
+                "default": "original",
+                "enum": [
+                  "original",
+                  "copy"
+                ],
+                "title": "Identity Mode",
+                "type": "string"
+              },
+              "reject_personal_data": {
+                "default": true,
+                "title": "Reject Personal Data",
+                "type": "boolean"
+              },
+              "withdrawn_ids": {
+                "items": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "maxItems": 10000,
+                "title": "Withdrawn Ids",
+                "type": "array"
+              }
+            },
+            "required": [
+              "catalog",
+              "files",
+              "withdrawn_ids"
+            ],
+            "title": "JournalUploadInput",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/JournalUploadInput"
+          },
+          "idempotency_key": {
+            "maxLength": 200,
+            "minLength": 1,
+            "pattern": "^[\\x21-\\x7e]+$",
+            "type": "string"
+          },
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "space_id": {
+                "format": "uuid",
+                "title": "Space Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "space_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "idempotency_key",
+          "parameters",
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "POST",
+      "name": "memory.journal.upload.begin",
+      "output_schema": {
+        "$defs": {
+          "JournalUploadStatus": {
+            "additionalProperties": false,
+            "properties": {
+              "applied_batches": {
+                "title": "Applied Batches",
+                "type": "integer"
+              },
+              "applied_counts": {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "title": "Applied Counts",
+                "type": "object"
+              },
+              "bytes": {
+                "title": "Bytes",
+                "type": "integer"
+              },
+              "can_restore": {
+                "title": "Can Restore",
+                "type": "boolean"
+              },
+              "chunk_bytes": {
+                "default": 262144,
+                "title": "Chunk Bytes",
+                "type": "integer"
+              },
+              "completed_files": {
+                "title": "Completed Files",
+                "type": "integer"
+              },
+              "counts": {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "title": "Counts",
+                "type": "object"
+              },
+              "created_at": {
+                "title": "Created At",
+                "type": "string"
+              },
+              "duplicates": {
+                "title": "Duplicates",
+                "type": "integer"
+              },
+              "expected_records": {
+                "title": "Expected Records",
+                "type": "integer"
+              },
+              "expires_at": {
+                "title": "Expires At",
+                "type": "string"
+              },
+              "files": {
+                "title": "Files",
+                "type": "integer"
+              },
+              "id": {
+                "format": "uuid",
+                "title": "Id",
+                "type": "string"
+              },
+              "identities": {
+                "title": "Identities",
+                "type": "integer"
+              },
+              "identity_mode": {
+                "enum": [
+                  "original",
+                  "copy"
+                ],
+                "title": "Identity Mode",
+                "type": "string"
+              },
+              "input_sha256": {
+                "title": "Input Sha256",
+                "type": "string"
+              },
+              "namespace": {
+                "title": "Namespace",
+                "type": "string"
+              },
+              "physical_records": {
+                "title": "Physical Records",
+                "type": "integer"
+              },
+              "preview_sha256": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Preview Sha256"
+              },
+              "processed_identities": {
+                "title": "Processed Identities",
+                "type": "integer"
+              },
+              "received": {
+                "title": "Received",
+                "type": "integer"
+              },
+              "records": {
+                "title": "Records",
+                "type": "integer"
+              },
+              "reject_personal_data": {
+                "title": "Reject Personal Data",
+                "type": "boolean"
+              },
+              "remote_delivery_verified": {
+                "const": false,
+                "default": false,
+                "title": "Remote Delivery Verified",
+                "type": "boolean"
+              },
+              "reviewed_batches": {
+                "title": "Reviewed Batches",
+                "type": "integer"
+              },
+              "reviewed_identities": {
+                "title": "Reviewed Identities",
+                "type": "integer"
+              },
+              "source_only": {
+                "const": true,
+                "default": true,
+                "title": "Source Only",
+                "type": "boolean"
+              },
+              "space_id": {
+                "format": "uuid",
+                "title": "Space Id",
+                "type": "string"
+              },
+              "state": {
+                "enum": [
+                  "uploading",
+                  "reviewing",
+                  "reviewed",
+                  "restoring",
+                  "completed",
+                  "cancelled"
+                ],
+                "title": "State",
+                "type": "string"
+              },
+              "updated_at": {
+                "title": "Updated At",
+                "type": "string"
+              },
+              "version": {
+                "title": "Version",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "id",
+              "space_id",
+              "version",
+              "state",
+              "identity_mode",
+              "namespace",
+              "reject_personal_data",
+              "input_sha256",
+              "preview_sha256",
+              "can_restore",
+              "bytes",
+              "received",
+              "files",
+              "completed_files",
+              "records",
+              "expected_records",
+              "physical_records",
+              "duplicates",
+              "identities",
+              "reviewed_identities",
+              "processed_identities",
+              "reviewed_batches",
+              "applied_batches",
+              "counts",
+              "applied_counts",
+              "created_at",
+              "updated_at",
+              "expires_at"
+            ],
+            "title": "JournalUploadStatus",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/JournalUploadStatus"
+      },
+      "parameter_locations": {
+        "space_id": "path"
+      },
+      "path": "/v1/spaces/{space_id}/journal-recovery/uploads",
+      "retry": "idempotency_key",
+      "sensitive_input": true,
+      "sensitive_result": true,
+      "summary": "Journal Upload Begin"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "write",
+      "group": "memory-recovery",
+      "input_schema": {
+        "$defs": {
+          "JournalUploadChunk": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {
+                "format": "password",
+                "maxLength": 349528,
+                "title": "Data",
+                "type": "string",
+                "writeOnly": true
+              },
+              "offset": {
+                "maximum": 2147483648.0,
+                "minimum": 0.0,
+                "title": "Offset",
+                "type": "integer"
+              },
+              "sha256": {
+                "pattern": "^[a-f0-9]{64}$",
+                "title": "Sha256",
+                "type": "string"
+              }
+            },
+            "required": [
+              "offset",
+              "sha256",
+              "data"
+            ],
+            "title": "JournalUploadChunk",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/JournalUploadChunk"
+          },
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "file_index": {
+                "exclusiveMaximum": 8192,
+                "minimum": 0,
+                "title": "File Index",
+                "type": "integer"
+              },
+              "space_id": {
+                "format": "uuid",
+                "title": "Space Id",
+                "type": "string"
+              },
+              "upload_id": {
+                "format": "uuid",
+                "title": "Upload Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "space_id",
+              "upload_id",
+              "file_index"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters",
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "PUT",
+      "name": "memory.journal.upload.chunk",
+      "output_schema": {
+        "$defs": {
+          "JournalUploadChunkReceipt": {
+            "additionalProperties": false,
+            "properties": {
+              "file": {
+                "$ref": "#/$defs/JournalUploadFile"
+              },
+              "repeated": {
+                "title": "Repeated",
+                "type": "boolean"
+              },
+              "upload": {
+                "$ref": "#/$defs/JournalUploadStatus"
+              }
+            },
+            "required": [
+              "upload",
+              "file",
+              "repeated"
+            ],
+            "title": "JournalUploadChunkReceipt",
+            "type": "object"
+          },
+          "JournalUploadFile": {
+            "additionalProperties": false,
+            "properties": {
+              "bytes": {
+                "title": "Bytes",
+                "type": "integer"
+              },
+              "complete": {
+                "title": "Complete",
+                "type": "boolean"
+              },
+              "index": {
+                "title": "Index",
+                "type": "integer"
+              },
+              "path": {
+                "title": "Path",
+                "type": "string"
+              },
+              "received": {
+                "title": "Received",
+                "type": "integer"
+              },
+              "transport_sha256": {
+                "title": "Transport Sha256",
+                "type": "string"
+              }
+            },
+            "required": [
+              "index",
+              "path",
+              "bytes",
+              "received",
+              "transport_sha256",
+              "complete"
+            ],
+            "title": "JournalUploadFile",
+            "type": "object"
+          },
+          "JournalUploadStatus": {
+            "additionalProperties": false,
+            "properties": {
+              "applied_batches": {
+                "title": "Applied Batches",
+                "type": "integer"
+              },
+              "applied_counts": {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "title": "Applied Counts",
+                "type": "object"
+              },
+              "bytes": {
+                "title": "Bytes",
+                "type": "integer"
+              },
+              "can_restore": {
+                "title": "Can Restore",
+                "type": "boolean"
+              },
+              "chunk_bytes": {
+                "default": 262144,
+                "title": "Chunk Bytes",
+                "type": "integer"
+              },
+              "completed_files": {
+                "title": "Completed Files",
+                "type": "integer"
+              },
+              "counts": {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "title": "Counts",
+                "type": "object"
+              },
+              "created_at": {
+                "title": "Created At",
+                "type": "string"
+              },
+              "duplicates": {
+                "title": "Duplicates",
+                "type": "integer"
+              },
+              "expected_records": {
+                "title": "Expected Records",
+                "type": "integer"
+              },
+              "expires_at": {
+                "title": "Expires At",
+                "type": "string"
+              },
+              "files": {
+                "title": "Files",
+                "type": "integer"
+              },
+              "id": {
+                "format": "uuid",
+                "title": "Id",
+                "type": "string"
+              },
+              "identities": {
+                "title": "Identities",
+                "type": "integer"
+              },
+              "identity_mode": {
+                "enum": [
+                  "original",
+                  "copy"
+                ],
+                "title": "Identity Mode",
+                "type": "string"
+              },
+              "input_sha256": {
+                "title": "Input Sha256",
+                "type": "string"
+              },
+              "namespace": {
+                "title": "Namespace",
+                "type": "string"
+              },
+              "physical_records": {
+                "title": "Physical Records",
+                "type": "integer"
+              },
+              "preview_sha256": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Preview Sha256"
+              },
+              "processed_identities": {
+                "title": "Processed Identities",
+                "type": "integer"
+              },
+              "received": {
+                "title": "Received",
+                "type": "integer"
+              },
+              "records": {
+                "title": "Records",
+                "type": "integer"
+              },
+              "reject_personal_data": {
+                "title": "Reject Personal Data",
+                "type": "boolean"
+              },
+              "remote_delivery_verified": {
+                "const": false,
+                "default": false,
+                "title": "Remote Delivery Verified",
+                "type": "boolean"
+              },
+              "reviewed_batches": {
+                "title": "Reviewed Batches",
+                "type": "integer"
+              },
+              "reviewed_identities": {
+                "title": "Reviewed Identities",
+                "type": "integer"
+              },
+              "source_only": {
+                "const": true,
+                "default": true,
+                "title": "Source Only",
+                "type": "boolean"
+              },
+              "space_id": {
+                "format": "uuid",
+                "title": "Space Id",
+                "type": "string"
+              },
+              "state": {
+                "enum": [
+                  "uploading",
+                  "reviewing",
+                  "reviewed",
+                  "restoring",
+                  "completed",
+                  "cancelled"
+                ],
+                "title": "State",
+                "type": "string"
+              },
+              "updated_at": {
+                "title": "Updated At",
+                "type": "string"
+              },
+              "version": {
+                "title": "Version",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "id",
+              "space_id",
+              "version",
+              "state",
+              "identity_mode",
+              "namespace",
+              "reject_personal_data",
+              "input_sha256",
+              "preview_sha256",
+              "can_restore",
+              "bytes",
+              "received",
+              "files",
+              "completed_files",
+              "records",
+              "expected_records",
+              "physical_records",
+              "duplicates",
+              "identities",
+              "reviewed_identities",
+              "processed_identities",
+              "reviewed_batches",
+              "applied_batches",
+              "counts",
+              "applied_counts",
+              "created_at",
+              "updated_at",
+              "expires_at"
+            ],
+            "title": "JournalUploadStatus",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/JournalUploadChunkReceipt"
+      },
+      "parameter_locations": {
+        "file_index": "path",
+        "space_id": "path",
+        "upload_id": "path"
+      },
+      "path": "/v1/spaces/{space_id}/journal-recovery/uploads/{upload_id}/files/{file_index}",
+      "retry": "inspect_before_retry",
+      "sensitive_input": true,
+      "sensitive_result": true,
+      "summary": "Journal Upload Chunk"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "read",
+      "group": "memory-recovery",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "cursor": {
+                "default": 0,
+                "maximum": 100000,
+                "minimum": 0,
+                "title": "Cursor",
+                "type": "integer"
+              },
+              "space_id": {
+                "format": "uuid",
+                "title": "Space Id",
+                "type": "string"
+              },
+              "upload_id": {
+                "format": "uuid",
+                "title": "Upload Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "space_id",
+              "upload_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters"
+        ],
+        "type": "object"
+      },
+      "method": "GET",
+      "name": "memory.journal.upload.decisions",
+      "output_schema": {
+        "$defs": {
+          "JournalRecoveryItem": {
+            "additionalProperties": false,
+            "properties": {
+              "action": {
+                "enum": [
+                  "create",
+                  "already_restored",
+                  "preserved_changes",
+                  "stale_source",
+                  "withdraw",
+                  "deny",
+                  "withdrawn",
+                  "hold",
+                  "quarantine",
+                  "held",
+                  "release",
+                  "update",
+                  "conflict",
+                  "rejected"
+                ],
+                "title": "Action",
+                "type": "string"
+              },
+              "code": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Code"
+              },
+              "memory_id": {
+                "format": "uuid",
+                "title": "Memory Id",
+                "type": "string"
+              },
+              "original_id": {
+                "format": "uuid",
+                "title": "Original Id",
+                "type": "string"
+              },
+              "source_version": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Source Version"
+              },
+              "version": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Version"
+              }
+            },
+            "required": [
+              "original_id",
+              "memory_id",
+              "action"
+            ],
+            "title": "JournalRecoveryItem",
+            "type": "object"
+          },
+          "JournalUploadDecisions": {
+            "additionalProperties": false,
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/$defs/JournalRecoveryItem"
+                },
+                "title": "Items",
+                "type": "array"
+              },
+              "next_cursor": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Next Cursor"
+              }
+            },
+            "required": [
+              "items",
+              "next_cursor"
+            ],
+            "title": "JournalUploadDecisions",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/JournalUploadDecisions"
+      },
+      "parameter_locations": {
+        "cursor": "query",
+        "space_id": "path",
+        "upload_id": "path"
+      },
+      "path": "/v1/spaces/{space_id}/journal-recovery/uploads/{upload_id}/decisions",
+      "retry": "read",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Journal Upload Decisions"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "read",
+      "group": "memory-recovery",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "cursor": {
+                "default": 0,
+                "maximum": 8192,
+                "minimum": 0,
+                "title": "Cursor",
+                "type": "integer"
+              },
+              "space_id": {
+                "format": "uuid",
+                "title": "Space Id",
+                "type": "string"
+              },
+              "upload_id": {
+                "format": "uuid",
+                "title": "Upload Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "space_id",
+              "upload_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters"
+        ],
+        "type": "object"
+      },
+      "method": "GET",
+      "name": "memory.journal.upload.files",
+      "output_schema": {
+        "$defs": {
+          "JournalUploadFile": {
+            "additionalProperties": false,
+            "properties": {
+              "bytes": {
+                "title": "Bytes",
+                "type": "integer"
+              },
+              "complete": {
+                "title": "Complete",
+                "type": "boolean"
+              },
+              "index": {
+                "title": "Index",
+                "type": "integer"
+              },
+              "path": {
+                "title": "Path",
+                "type": "string"
+              },
+              "received": {
+                "title": "Received",
+                "type": "integer"
+              },
+              "transport_sha256": {
+                "title": "Transport Sha256",
+                "type": "string"
+              }
+            },
+            "required": [
+              "index",
+              "path",
+              "bytes",
+              "received",
+              "transport_sha256",
+              "complete"
+            ],
+            "title": "JournalUploadFile",
+            "type": "object"
+          },
+          "JournalUploadFiles": {
+            "additionalProperties": false,
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/$defs/JournalUploadFile"
+                },
+                "title": "Items",
+                "type": "array"
+              },
+              "next_cursor": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Next Cursor"
+              }
+            },
+            "required": [
+              "items",
+              "next_cursor"
+            ],
+            "title": "JournalUploadFiles",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/JournalUploadFiles"
+      },
+      "parameter_locations": {
+        "cursor": "query",
+        "space_id": "path",
+        "upload_id": "path"
+      },
+      "path": "/v1/spaces/{space_id}/journal-recovery/uploads/{upload_id}/files",
+      "retry": "read",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Journal Upload Files"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "read",
+      "group": "memory-recovery",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "space_id": {
+                "format": "uuid",
+                "title": "Space Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "space_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters"
+        ],
+        "type": "object"
+      },
+      "method": "GET",
+      "name": "memory.journal.upload.list",
+      "output_schema": {
+        "$defs": {
+          "JournalUploadList": {
+            "additionalProperties": false,
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/$defs/JournalUploadStatus"
+                },
+                "title": "Items",
+                "type": "array"
+              }
+            },
+            "required": [
+              "items"
+            ],
+            "title": "JournalUploadList",
+            "type": "object"
+          },
+          "JournalUploadStatus": {
+            "additionalProperties": false,
+            "properties": {
+              "applied_batches": {
+                "title": "Applied Batches",
+                "type": "integer"
+              },
+              "applied_counts": {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "title": "Applied Counts",
+                "type": "object"
+              },
+              "bytes": {
+                "title": "Bytes",
+                "type": "integer"
+              },
+              "can_restore": {
+                "title": "Can Restore",
+                "type": "boolean"
+              },
+              "chunk_bytes": {
+                "default": 262144,
+                "title": "Chunk Bytes",
+                "type": "integer"
+              },
+              "completed_files": {
+                "title": "Completed Files",
+                "type": "integer"
+              },
+              "counts": {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "title": "Counts",
+                "type": "object"
+              },
+              "created_at": {
+                "title": "Created At",
+                "type": "string"
+              },
+              "duplicates": {
+                "title": "Duplicates",
+                "type": "integer"
+              },
+              "expected_records": {
+                "title": "Expected Records",
+                "type": "integer"
+              },
+              "expires_at": {
+                "title": "Expires At",
+                "type": "string"
+              },
+              "files": {
+                "title": "Files",
+                "type": "integer"
+              },
+              "id": {
+                "format": "uuid",
+                "title": "Id",
+                "type": "string"
+              },
+              "identities": {
+                "title": "Identities",
+                "type": "integer"
+              },
+              "identity_mode": {
+                "enum": [
+                  "original",
+                  "copy"
+                ],
+                "title": "Identity Mode",
+                "type": "string"
+              },
+              "input_sha256": {
+                "title": "Input Sha256",
+                "type": "string"
+              },
+              "namespace": {
+                "title": "Namespace",
+                "type": "string"
+              },
+              "physical_records": {
+                "title": "Physical Records",
+                "type": "integer"
+              },
+              "preview_sha256": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Preview Sha256"
+              },
+              "processed_identities": {
+                "title": "Processed Identities",
+                "type": "integer"
+              },
+              "received": {
+                "title": "Received",
+                "type": "integer"
+              },
+              "records": {
+                "title": "Records",
+                "type": "integer"
+              },
+              "reject_personal_data": {
+                "title": "Reject Personal Data",
+                "type": "boolean"
+              },
+              "remote_delivery_verified": {
+                "const": false,
+                "default": false,
+                "title": "Remote Delivery Verified",
+                "type": "boolean"
+              },
+              "reviewed_batches": {
+                "title": "Reviewed Batches",
+                "type": "integer"
+              },
+              "reviewed_identities": {
+                "title": "Reviewed Identities",
+                "type": "integer"
+              },
+              "source_only": {
+                "const": true,
+                "default": true,
+                "title": "Source Only",
+                "type": "boolean"
+              },
+              "space_id": {
+                "format": "uuid",
+                "title": "Space Id",
+                "type": "string"
+              },
+              "state": {
+                "enum": [
+                  "uploading",
+                  "reviewing",
+                  "reviewed",
+                  "restoring",
+                  "completed",
+                  "cancelled"
+                ],
+                "title": "State",
+                "type": "string"
+              },
+              "updated_at": {
+                "title": "Updated At",
+                "type": "string"
+              },
+              "version": {
+                "title": "Version",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "id",
+              "space_id",
+              "version",
+              "state",
+              "identity_mode",
+              "namespace",
+              "reject_personal_data",
+              "input_sha256",
+              "preview_sha256",
+              "can_restore",
+              "bytes",
+              "received",
+              "files",
+              "completed_files",
+              "records",
+              "expected_records",
+              "physical_records",
+              "duplicates",
+              "identities",
+              "reviewed_identities",
+              "processed_identities",
+              "reviewed_batches",
+              "applied_batches",
+              "counts",
+              "applied_counts",
+              "created_at",
+              "updated_at",
+              "expires_at"
+            ],
+            "title": "JournalUploadStatus",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/JournalUploadList"
+      },
+      "parameter_locations": {
+        "space_id": "path"
+      },
+      "path": "/v1/spaces/{space_id}/journal-recovery/uploads",
+      "retry": "read",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Journal Upload List"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "read",
+      "group": "memory-recovery",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "space_id": {
+                "format": "uuid",
+                "title": "Space Id",
+                "type": "string"
+              },
+              "upload_id": {
+                "format": "uuid",
+                "title": "Upload Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "space_id",
+              "upload_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters"
+        ],
+        "type": "object"
+      },
+      "method": "GET",
+      "name": "memory.journal.upload.status",
+      "output_schema": {
+        "$defs": {
+          "JournalUploadStatus": {
+            "additionalProperties": false,
+            "properties": {
+              "applied_batches": {
+                "title": "Applied Batches",
+                "type": "integer"
+              },
+              "applied_counts": {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "title": "Applied Counts",
+                "type": "object"
+              },
+              "bytes": {
+                "title": "Bytes",
+                "type": "integer"
+              },
+              "can_restore": {
+                "title": "Can Restore",
+                "type": "boolean"
+              },
+              "chunk_bytes": {
+                "default": 262144,
+                "title": "Chunk Bytes",
+                "type": "integer"
+              },
+              "completed_files": {
+                "title": "Completed Files",
+                "type": "integer"
+              },
+              "counts": {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "title": "Counts",
+                "type": "object"
+              },
+              "created_at": {
+                "title": "Created At",
+                "type": "string"
+              },
+              "duplicates": {
+                "title": "Duplicates",
+                "type": "integer"
+              },
+              "expected_records": {
+                "title": "Expected Records",
+                "type": "integer"
+              },
+              "expires_at": {
+                "title": "Expires At",
+                "type": "string"
+              },
+              "files": {
+                "title": "Files",
+                "type": "integer"
+              },
+              "id": {
+                "format": "uuid",
+                "title": "Id",
+                "type": "string"
+              },
+              "identities": {
+                "title": "Identities",
+                "type": "integer"
+              },
+              "identity_mode": {
+                "enum": [
+                  "original",
+                  "copy"
+                ],
+                "title": "Identity Mode",
+                "type": "string"
+              },
+              "input_sha256": {
+                "title": "Input Sha256",
+                "type": "string"
+              },
+              "namespace": {
+                "title": "Namespace",
+                "type": "string"
+              },
+              "physical_records": {
+                "title": "Physical Records",
+                "type": "integer"
+              },
+              "preview_sha256": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Preview Sha256"
+              },
+              "processed_identities": {
+                "title": "Processed Identities",
+                "type": "integer"
+              },
+              "received": {
+                "title": "Received",
+                "type": "integer"
+              },
+              "records": {
+                "title": "Records",
+                "type": "integer"
+              },
+              "reject_personal_data": {
+                "title": "Reject Personal Data",
+                "type": "boolean"
+              },
+              "remote_delivery_verified": {
+                "const": false,
+                "default": false,
+                "title": "Remote Delivery Verified",
+                "type": "boolean"
+              },
+              "reviewed_batches": {
+                "title": "Reviewed Batches",
+                "type": "integer"
+              },
+              "reviewed_identities": {
+                "title": "Reviewed Identities",
+                "type": "integer"
+              },
+              "source_only": {
+                "const": true,
+                "default": true,
+                "title": "Source Only",
+                "type": "boolean"
+              },
+              "space_id": {
+                "format": "uuid",
+                "title": "Space Id",
+                "type": "string"
+              },
+              "state": {
+                "enum": [
+                  "uploading",
+                  "reviewing",
+                  "reviewed",
+                  "restoring",
+                  "completed",
+                  "cancelled"
+                ],
+                "title": "State",
+                "type": "string"
+              },
+              "updated_at": {
+                "title": "Updated At",
+                "type": "string"
+              },
+              "version": {
+                "title": "Version",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "id",
+              "space_id",
+              "version",
+              "state",
+              "identity_mode",
+              "namespace",
+              "reject_personal_data",
+              "input_sha256",
+              "preview_sha256",
+              "can_restore",
+              "bytes",
+              "received",
+              "files",
+              "completed_files",
+              "records",
+              "expected_records",
+              "physical_records",
+              "duplicates",
+              "identities",
+              "reviewed_identities",
+              "processed_identities",
+              "reviewed_batches",
+              "applied_batches",
+              "counts",
+              "applied_counts",
+              "created_at",
+              "updated_at",
+              "expires_at"
+            ],
+            "title": "JournalUploadStatus",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/JournalUploadStatus"
+      },
+      "parameter_locations": {
+        "space_id": "path",
+        "upload_id": "path"
+      },
+      "path": "/v1/spaces/{space_id}/journal-recovery/uploads/{upload_id}",
+      "retry": "read",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Journal Upload Status"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "write",
       "group": "identity",
       "input_schema": {
         "$defs": {

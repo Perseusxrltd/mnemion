@@ -46,6 +46,13 @@ memory.buffer.preview POST /v1/spaces/{space_id}/buffer-import/preview
 memory.buffer.import POST /v1/spaces/{space_id}/buffer-import
 memory.journal.preview POST /v1/spaces/{space_id}/journal-recovery/preview
 memory.journal.restore POST /v1/spaces/{space_id}/journal-recovery
+memory.journal.upload.begin POST /v1/spaces/{space_id}/journal-recovery/uploads
+memory.journal.upload.list GET /v1/spaces/{space_id}/journal-recovery/uploads
+memory.journal.upload.status GET /v1/spaces/{space_id}/journal-recovery/uploads/{upload_id}
+memory.journal.upload.files GET /v1/spaces/{space_id}/journal-recovery/uploads/{upload_id}/files
+memory.journal.upload.chunk PUT /v1/spaces/{space_id}/journal-recovery/uploads/{upload_id}/files/{file_index}
+memory.journal.upload.decisions GET /v1/spaces/{space_id}/journal-recovery/uploads/{upload_id}/decisions
+memory.journal.upload.advance POST /v1/spaces/{space_id}/journal-recovery/uploads/{upload_id}/advance
 principals.list GET /v1/principals
 principals.create POST /v1/principals
 principals.disable POST /v1/principals/{principal_id}/disable
@@ -175,6 +182,8 @@ PRIVATE_INPUTS = frozenset(
         "memory.buffer.import",
         "memory.journal.preview",
         "memory.journal.restore",
+        "memory.journal.upload.begin",
+        "memory.journal.upload.chunk",
         "sign_in.set_password",
         "sign_in.login",
         "sign_in.refresh",

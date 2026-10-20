@@ -313,88 +313,7 @@ class JournalRecoveryService:
                     "journal_recovery_review_required",
                     "Resolve conflicting or rejected records before restoring. Nothing changed.",
                 )
-            latest = inventory[1]
-            # Negative decisions are applied first; all changes still commit together.
-            for item in sorted(
-                plan["items"],
-                key=lambda item: item["action"] not in {"withdraw", "deny", "hold", "quarantine"},
-            ):
-                memory = UUID(item["memory_id"])
-                original = UUID(item["original_id"])
-                action = item["action"]
-                if action == "withdraw":
-                    self.memory.forget_in_transaction(
-                        conn,
-                        identity,
-                        memory,
-                        expected_version=item["version"],
-                        key=f"journal-withdraw:{key}:{memory}",
-                    )
-                elif action == "deny":
-                    conn.execute(
-                        "INSERT INTO mnemion.recovery_denials(tenant_id,space_id,memory_id) VALUES(%s,%s,%s) ON CONFLICT DO NOTHING",
-                        (identity.tenant_id, space, memory),
-                    )
-                elif action in {"create", "release", "update", "hold", "quarantine"}:
-                    entry = latest[original][0]
-                    local_version = item["version"]
-                    modified = states[item["original_id"]]["locally_modified"]
-                    if action in {"create", "release", "update"}:
-                        local_version = (local_version or 0) + 1
-                        if action != "update":
-                            conn.execute(
-                                "INSERT INTO mnemion.memories(tenant_id,space_id,id,subject,kind,created_by) VALUES(%s,%s,%s,%s,%s,%s)",
-                                (
-                                    identity.tenant_id,
-                                    space,
-                                    memory,
-                                    entry.subject,
-                                    entry.kind,
-                                    identity.principal_id,
-                                ),
-                            )
-                        revision = self.memory._revision(
-                            conn,
-                            identity,
-                            space,
-                            memory,
-                            local_version,
-                            _content(entry),
-                        )
-                        conn.execute(
-                            "UPDATE mnemion.memories SET current_revision_id=%s,version=%s,subject=%s,kind=%s,review_state='ordinary',updated_at=now() WHERE id=%s",
-                            (revision, local_version, entry.subject, entry.kind, memory),
-                        )
-                        self.memory._operation(conn, identity, space, memory, revision, "ingest")
-                    elif action == "quarantine":
-                        from .librarian import purge_librarian_dependencies
-
-                        purge_librarian_dependencies(conn, identity.tenant_id, space, memory)
-                        local_version += 1
-                        conn.execute(
-                            "UPDATE mnemion.memories SET review_state='quarantined',version=%s,updated_at=now() WHERE id=%s",
-                            (local_version, memory),
-                        )
-                    conn.execute(
-                        """INSERT INTO mnemion.journal_recovery_origins
-                           (tenant_id,space_id,origin,memory_id,source_version,source_digest,source_action,local_version,locally_modified)
-                           VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s)
-                           ON CONFLICT(tenant_id,space_id,origin) DO UPDATE SET
-                             source_version=excluded.source_version,source_digest=excluded.source_digest,
-                             source_action=excluded.source_action,local_version=excluded.local_version,
-                             locally_modified=excluded.locally_modified,updated_at=now()""",
-                        (
-                            identity.tenant_id,
-                            space,
-                            entry.origin,
-                            memory,
-                            entry.version,
-                            entry.digest,
-                            entry.action,
-                            local_version,
-                            modified,
-                        ),
-                    )
+            self.apply_items(conn, identity, space, key, plan, states, inventory[1])
             audit(
                 conn,
                 identity,
@@ -422,3 +341,87 @@ class JournalRecoveryService:
                 )
             }
             return remember_receipt(conn, identity, space, key, digest, json_value(result))
+
+    def apply_items(self, conn, identity, space, key, plan, states, latest):
+        """Apply a reviewed batch inside its caller-owned policy transaction."""
+        # Negative decisions are applied first; all changes still commit together.
+        for item in sorted(
+            plan["items"],
+            key=lambda item: item["action"] not in {"withdraw", "deny", "hold", "quarantine"},
+        ):
+            memory = UUID(item["memory_id"])
+            original = UUID(item["original_id"])
+            action = item["action"]
+            if action == "withdraw":
+                self.memory.forget_in_transaction(
+                    conn,
+                    identity,
+                    memory,
+                    expected_version=item["version"],
+                    key=f"journal-withdraw:{key}:{memory}",
+                )
+            elif action == "deny":
+                conn.execute(
+                    "INSERT INTO mnemion.recovery_denials(tenant_id,space_id,memory_id) VALUES(%s,%s,%s) ON CONFLICT DO NOTHING",
+                    (identity.tenant_id, space, memory),
+                )
+            elif action in {"create", "release", "update", "hold", "quarantine"}:
+                entry = latest[original][0]
+                local_version = item["version"]
+                modified = states[item["original_id"]]["locally_modified"]
+                if action in {"create", "release", "update"}:
+                    local_version = (local_version or 0) + 1
+                    if action != "update":
+                        conn.execute(
+                            "INSERT INTO mnemion.memories(tenant_id,space_id,id,subject,kind,created_by) VALUES(%s,%s,%s,%s,%s,%s)",
+                            (
+                                identity.tenant_id,
+                                space,
+                                memory,
+                                entry.subject,
+                                entry.kind,
+                                identity.principal_id,
+                            ),
+                        )
+                    revision = self.memory._revision(
+                        conn,
+                        identity,
+                        space,
+                        memory,
+                        local_version,
+                        _content(entry),
+                    )
+                    conn.execute(
+                        "UPDATE mnemion.memories SET current_revision_id=%s,version=%s,subject=%s,kind=%s,review_state='ordinary',updated_at=now() WHERE id=%s",
+                        (revision, local_version, entry.subject, entry.kind, memory),
+                    )
+                    self.memory._operation(conn, identity, space, memory, revision, "ingest")
+                elif action == "quarantine":
+                    from .librarian import purge_librarian_dependencies
+
+                    purge_librarian_dependencies(conn, identity.tenant_id, space, memory)
+                    local_version += 1
+                    conn.execute(
+                        "UPDATE mnemion.memories SET review_state='quarantined',version=%s,updated_at=now() WHERE id=%s",
+                        (local_version, memory),
+                    )
+                conn.execute(
+                    """INSERT INTO mnemion.journal_recovery_origins
+                       (tenant_id,space_id,origin,memory_id,source_version,source_digest,source_action,local_version,locally_modified)
+                       VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                       ON CONFLICT(tenant_id,space_id,origin) DO UPDATE SET
+                         source_version=excluded.source_version,source_digest=excluded.source_digest,
+                         source_action=excluded.source_action,local_version=excluded.local_version,
+                         locally_modified=excluded.locally_modified,updated_at=now()""",
+                    (
+                        identity.tenant_id,
+                        space,
+                        entry.origin,
+                        memory,
+                        entry.version,
+                        entry.digest,
+                        entry.action,
+                        local_version,
+                        modified,
+                    ),
+                )

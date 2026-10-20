@@ -462,6 +462,9 @@ def create_app(
     from .journal_recovery_api import attach_journal_recovery
 
     attach_journal_recovery(app, memory, authenticated)
+    from .journal_upload_api import attach_journal_uploads
+
+    attach_journal_uploads(app, memory, authenticated)
     attach_agents(app, authenticated)
     attach_recovery_directory(app, database, authenticated)
     attach_vault(app, vault, authenticated)

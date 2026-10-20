@@ -14,6 +14,8 @@ from uuid import UUID, uuid4
 
 import httpx
 
+from .journal.upload_client import JournalUploadClient
+
 from .service.contracts import (
     AuditEvent,
     ContextPack,
@@ -131,7 +133,7 @@ def _retry_after(response: httpx.Response) -> float | None:
         return None
 
 
-class Client:
+class Client(JournalUploadClient):
     def vault_status(self) -> dict:
         return self.request("GET", "/v1/vault/status")
 

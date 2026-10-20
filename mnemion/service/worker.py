@@ -37,6 +37,7 @@ class Worker:
         self.max_attempts = max_attempts
         self.telemetry = telemetry
         self.default_generation = default_generation or embedder.generation.id
+        self.next_journal_cleanup = 0.0
 
     def claim(self) -> dict | None:
         budget = getattr(self.embedder, "_memory_budget", None)
@@ -266,9 +267,16 @@ class Worker:
         )
 
     def run_once(self) -> bool:
+        cleaned = False
+        if time.monotonic() >= self.next_journal_cleanup:
+            with self.db.pool.connection() as conn:
+                cleaned = bool(
+                    conn.execute("SELECT mnemion.expire_journal_upload() AS n").fetchone()["n"]
+                )
+            self.next_journal_cleanup = time.monotonic() + (1 if cleaned else 30)
         job = self.claim()
         if not job:
-            return False
+            return cleaned
         started, failed, processed = time.monotonic(), False, False
         try:
             processed = self.process(job)

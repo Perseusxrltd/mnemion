@@ -19,6 +19,8 @@ import type { BufferPreviewInput, BufferImportInput, BufferPreview, BufferImport
 export * from './buffer-import.js'
 import type { JournalRecoveryInput, JournalRecoveryApply, JournalRecoveryPreview, JournalRecoveryReceipt } from './journal-recovery.js'
 export * from './journal-recovery.js'
+import type { JournalUploadAdvance, JournalUploadChunk, JournalUploadChunkReceipt, JournalUploadDecisions, JournalUploadFiles, JournalUploadInput, JournalUploadStatus } from './journal-upload.js'
+export * from './journal-upload.js'
 
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json }
 export type Kind = 'fact' | 'event' | 'preference' | 'procedure' | 'note'
@@ -185,6 +187,14 @@ interface RequestOptions { body?: unknown; key?: string; signal?: AbortSignal; b
 export class MnemionClient {
   previewJournalRecovery(space: string, input: JournalRecoveryInput) { return this.request<JournalRecoveryPreview>('POST', '/v1/spaces/' + encodeURIComponent(space) + '/journal-recovery/preview', { body: input }) }
   restoreJournal(space: string, input: JournalRecoveryApply, key: string = crypto.randomUUID()) { return this.request<JournalRecoveryReceipt>('POST', '/v1/spaces/' + encodeURIComponent(space) + '/journal-recovery', { body: input, key }) }
+  beginJournalUpload(space: string, input: JournalUploadInput, key: string = crypto.randomUUID()) { return this.request<JournalUploadStatus>('POST', this.journalUploadPath(space), { body: input, key }) }
+  listJournalUploads(space: string) { return this.request<{ items: JournalUploadStatus[] }>('GET', this.journalUploadPath(space)) }
+  journalUpload(space: string, upload: string) { return this.request<JournalUploadStatus>('GET', this.journalUploadPath(space, upload)) }
+  journalUploadFiles(space: string, upload: string, cursor = 0) { return this.request<JournalUploadFiles>('GET', this.journalUploadPath(space, upload) + '/files?cursor=' + encodeURIComponent(cursor)) }
+  journalUploadDecisions(space: string, upload: string, cursor = 0) { return this.request<JournalUploadDecisions>('GET', this.journalUploadPath(space, upload) + '/decisions?cursor=' + encodeURIComponent(cursor)) }
+  sendJournalChunk(space: string, upload: string, index: number, input: JournalUploadChunk) { return this.request<JournalUploadChunkReceipt>('PUT', this.journalUploadPath(space, upload) + '/files/' + encodeURIComponent(index), { body: input }) }
+  advanceJournalUpload(space: string, upload: string, input: JournalUploadAdvance) { return this.request<JournalUploadStatus>('POST', this.journalUploadPath(space, upload) + '/advance', { body: input }) }
+  private journalUploadPath(space: string, upload?: string) { return '/v1/spaces/' + encodeURIComponent(space) + '/journal-recovery/uploads' + (upload ? '/' + encodeURIComponent(upload) : '') }
   private journalPath(space: string) { return '/v1/spaces/' + encodeURIComponent(space) + '/writeback' }
   journalStatus(space: string) { return this.request<JournalStatus>('GET', this.journalPath(space)) }
   configureJournal(space: string, input: JournalPolicyInput) { return this.request<JournalStatus>('PUT', this.journalPath(space), { body: input }) }

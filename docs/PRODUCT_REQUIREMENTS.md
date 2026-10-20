@@ -38,6 +38,14 @@ ten in flight. A user-level scheduled task checks new app/server versions and
 runs one bounded cycle, preserving measured receipts without an agent session.
 This is a short connection-specific baseline, not a saturation or fleet claim.
 
+Source 4.29.0 advances F03/F08/A09/A13/U01 with [resumable native journal recovery](service/journal-recovery.md):
+complete uploads up to 2 GiB, durable progress across restarts, private staged
+history, original-byte resume checks, negative decisions before positives,
+reviewed batches, preserved local changes, automatic staging cleanup and app/SDK/
+agent parity. This extends the earlier bounded path without claiming full host
+provisioning, cross-admin delegation or unavailable original-office state.
+Strict full-scope coverage remains unchanged.
+
 Source 4.27.0 advances host continuity with [portable backup recovery](validation/2026-10-19-portable-host-recovery.md).
 A Git-downloaded encrypted package was restored on a different physical computer,
 retaining the original application identities and exact memories. Actual Ubuntu
@@ -50,8 +58,8 @@ Source 4.26.0 advances F03/F08/A09/A13/U01 with [native journal recovery](servic
 complete inventory review, original IDs or independent copies, editable current
 content, durable withdrawals and content-free quarantine identities, local-edit
 preservation and app/SDK/agent parity. The guided limit is 1 MiB and 1,000
-identities. Resumable larger uploads and the original office's unavailable full
-state remain separate work. Later quarantine state survives older full-backup
+identities. Source 4.29 extends this with resumable uploads; the original
+office's unavailable full state remains separate work. Later quarantine state survives older full-backup
 restoration through the current recovery ledger; newer positive text still
 needs a full snapshot or complete journal review. The batch also carries the
 withheld 4.25 importer and fixes recovery-screen update guards. Strict full-scope

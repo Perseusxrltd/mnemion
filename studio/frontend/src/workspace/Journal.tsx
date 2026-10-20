@@ -7,7 +7,8 @@ import JournalHostSetup from './JournalHostSetup';
 import JournalBackfill from './JournalBackfill';
 import LegacyBufferImport from './LegacyBufferImport';
 import JournalRecovery from './JournalRecovery';
-import { supportsJournalRecovery } from '@mnemion/client';
+import JournalUpload from './JournalUpload';
+import { supportsJournalRecovery, supportsJournalUploads } from '@mnemion/client';
 
 const states: Record<JournalStatus['state'], string> = {
   not_configured: 'Not enabled', ready: 'Automatic publication enabled', paused: 'Publication paused',
@@ -81,7 +82,9 @@ export default function Journal({ client, space, writer, serviceVersion, endpoin
       </section>
       {data.configured && data.can_configure && supportsJournalBackfill(serviceVersion) && <JournalBackfill client={client} space={space} journal={data} />}
       {data.can_configure && !data.configured && supportsBufferImport(serviceVersion) && <LegacyBufferImport key={space} client={client} space={space} />}
-      {data.can_configure && !data.configured && supportsJournalRecovery(serviceVersion) && <JournalRecovery key={space} client={client} space={space} />}
+      {data.can_configure && !data.configured && (supportsJournalUploads(serviceVersion)
+        ? <JournalUpload key={space} client={client} space={space} />
+        : supportsJournalRecovery(serviceVersion) && <JournalRecovery key={space} client={client} space={space} />)}
       {data.configured && foldingSupported && <section className="ws-card"><h2><Archive size={20} />Library & archive</h2>
         <p>The librarian files current memories as readable Markdown notes for Obsidian. Original journal files move intact into the archive once every record is old enough.</p>
         <p><strong>{data.fold_enabled ? 'Automatic filing enabled' : 'Automatic filing not enabled'}</strong>

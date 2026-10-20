@@ -88,6 +88,10 @@ retained withdrawals and preservation of local edits support recovery without
 inferring original grants or Git delivery. Encrypted originals retain their
 separate decryption/publication boundary; complete workspace backups remain
 necessary for accounts, secrets and missing history.
+Source 4.29.0 adds resumable [large-journal recovery](docs/service/journal-recovery.md)
+through the app, SDKs and private agents: up to 2 GiB and 100,000 memory identities,
+saved upload progress, complete review, bounded restoration and automatic private
+staging cleanup. Earlier withdrawals and local edits remain protected.
 Source 4.26.0 adds [editable native journal recovery](docs/service/journal-recovery.md):
 complete catalog/archive review, original IDs or independent copies, preserved
 local edits and retained withdrawals/quarantines. The app and agents share the
