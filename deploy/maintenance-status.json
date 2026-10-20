@@ -30,54 +30,15 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "669ead942084787138a81d3e379ee5d9bc82eda9",
-      "status": "queued",
-      "conclusion": null,
-      "updated_at": "2026-10-20T17:35:05Z",
+      "status": "completed",
+      "conclusion": "failure",
+      "updated_at": "2026-10-20T17:56:37Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39467357025",
       "job_progress": {
         "total": 12,
-        "completed": 7,
-        "succeeded": 7,
-        "active": [
-          {
-            "id": 118782587302,
-            "name": "supervision (macos-15)",
-            "status": "queued",
-            "steps": []
-          },
-          {
-            "id": 118782587429,
-            "name": "service (3.13)",
-            "status": "in_progress",
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 118782587444,
-            "name": "service (3.12)",
-            "status": "in_progress",
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 118782587511,
-            "name": "supervision (macos-15-intel)",
-            "status": "in_progress",
-            "steps": [
-              "Build the current Intel cryptography runtime with static OpenSSL"
-            ]
-          },
-          {
-            "id": 118782587700,
-            "name": "service (3.14)",
-            "status": "in_progress",
-            "steps": [
-              "Run uv run --no-sync mnemion-service schema --output /tmp/openapi.json && diff docs/service/openapi.json /tmp/openapi.json"
-            ]
-          }
-        ]
+        "completed": 12,
+        "succeeded": 11,
+        "active": []
       },
       "failed_jobs": []
     },
@@ -131,21 +92,68 @@
     },
     {
       "id": 39460885775,
-      "attempt": 2,
+      "attempt": 3,
       "workflow": "release.yml",
       "branch": "release/4.43.0",
       "source_commit": "603be186385f473984a6e553045077164e43f25a",
-      "status": "completed",
-      "conclusion": "failure",
-      "updated_at": "2026-10-20T17:43:03Z",
+      "status": "queued",
+      "conclusion": null,
+      "updated_at": "2026-10-20T17:54:52Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39460885775",
-      "failed_jobs": [],
       "job_progress": {
-        "total": 18,
-        "completed": 18,
-        "succeeded": 12,
-        "active": []
-      }
+        "total": 21,
+        "completed": 15,
+        "succeeded": 14,
+        "active": [
+          {
+            "id": 118791858082,
+            "name": "native / windows-2022 / x64",
+            "status": "in_progress",
+            "steps": [
+              "Package the native desktop with one bounded upstream-download retry"
+            ]
+          },
+          {
+            "id": 118791858136,
+            "name": "native / macos-15-intel / x64",
+            "status": "in_progress",
+            "steps": [
+              "Locked native service build dependencies"
+            ]
+          },
+          {
+            "id": 118791858232,
+            "name": "native / windows-11-arm / arm64",
+            "status": "in_progress",
+            "steps": [
+              "Select the service interpreter independently of the desktop client"
+            ]
+          },
+          {
+            "id": 118791858273,
+            "name": "native / ubuntu-22.04-arm / arm64",
+            "status": "in_progress",
+            "steps": [
+              "Package the native desktop with one bounded upstream-download retry"
+            ]
+          },
+          {
+            "id": 118791858363,
+            "name": "native / macos-15 / arm64",
+            "status": "queued",
+            "steps": []
+          },
+          {
+            "id": 118791858399,
+            "name": "native / ubuntu-22.04 / x64",
+            "status": "in_progress",
+            "steps": [
+              "Package the native desktop with one bounded upstream-download retry"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": []
     },
     {
       "id": 39468502213,
@@ -181,5 +189,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39441738346"
     }
   ],
-  "observed_at": "2026-10-20T17:44:21+00:00"
+  "observed_at": "2026-10-20T17:57:16+00:00"
 }
