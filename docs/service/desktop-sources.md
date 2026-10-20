@@ -54,6 +54,28 @@ Existing memories and server-side keys remain. Administrators can disable the
 connection and revoke unused keys in **People & apps**; other devices retain
 their independent settings.
 
+## Reconnect an existing folder
+
+The 4.42 repair lets Studio reuse a filesystem source first enrolled through an
+existing adapter. Select that source's existing connection in **Connections**;
+do not register a new source merely to resume the same folder. Stop its previous
+runner, then use **Run on this computer** with the genuine folder or its restored
+copy, the connection's dedicated application key and the intended mapped audience.
+An empty or unrelated folder cannot replace unavailable source data: ordinary
+complete-inventory removal rules still apply.
+
+During enrollment and before each scan, Studio checks the connection's recorded
+folder catalog. It automatically retains the one existing filesystem namespace,
+preserving source and memory identity. A new connection keeps the default
+namespace. Multiple recorded folders, an unrecognized catalog or an explicitly
+mismatching identity stop before import; retain the original adapter configuration
+and resolve the connection rather than guessing a different identity.
+
+This does not wake a host, transfer another runner's credentials or restore
+missing files. Provider access and mapped readers are revalidated through the
+normal scan. Actual offline-source recovery remains tracked separately in
+[issue 46](https://github.com/Perseusxrltd/mnemion/issues/46).
+
 ## Capture and resources
 
 The runner uses the existing [connector protocol](connectors.md): complete
@@ -125,6 +147,16 @@ The `source` object accepts `id` for an existing entry, `endpoint`, `tenant_id`,
 `poll_seconds`, `memory_limit_mib`, `max_files` and `enabled`. Obtain identifiers
 from the actual workspace and registered connector. Supply the dedicated key
 through private stdin. The desktop catalog describes envelope/byte limits.
+
+For `filesystem`, the optional `scope_id` is the folder namespace without its
+`filesystem:` prefix. Leave it absent to discover the one existing namespace.
+An existing custom namespace is retained in private settings and returned by
+`source.status`; the ordinary `selected-source` default remains implicit.
+When a recorded identity already exists, a supplied value must match it, and an
+established saved identity cannot silently change. Other providers do not accept
+this field.
+Read current status before configuring a replacement; it is not a host-takeover
+control or a substitute for access to the actual folder.
 
 ## Other providers
 

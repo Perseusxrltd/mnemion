@@ -5,6 +5,8 @@ import type { SourceCall } from './desktop-sources.js'
 const messages: Record<string, string> = {
   source_identity_mismatch: 'Use this connection’s dedicated application key in the expected workspace.',
   source_connection_unavailable: 'Enable this connection and check its application.',
+  source_scope_ambiguous: 'This connection has several or unrecognized recorded folders. Keep its original adapter configuration; Studio cannot choose one safely.',
+  source_scope_mismatch: 'The existing folder identity changed. Retain its original connection settings before scanning.',
   source_settings_changed: 'Source settings changed. Refresh before retrying.',
   source_memory_limit: 'The scan reached its RAM allowance. Increase the source allowance or narrow the source folder, then retry.',
   source_provider_credentials: 'Check the Slack token or Google service-account JSON key for the selected source. Existing credentials are retained after a failed save.',

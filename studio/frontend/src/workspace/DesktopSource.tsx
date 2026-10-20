@@ -93,6 +93,7 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
       const source: SourceConfigure['source'] = { id, endpoint, tenant_id: me.tenant_id,
         connector_id: connection.id, principal_id: connection.principal_id, name: connection.name,
         provider: connection.provider as SourceConfigure['source']['provider'], ...selection, members,
+        ...(current?.scope_id ? { scope_id: current.scope_id } : {}),
         publish_to_mapped_members: true, poll_seconds: Math.round(interval * 60), memory_limit_mib: memory,
         max_files: files, enabled: current?.enabled ?? true };
       accept(await native!.sourceConfigure!({ expected_revision: revision ?? query.data.revision, source,
@@ -136,6 +137,7 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
     <details className="ws-details" open={!current || undefined}><summary>{current ? 'Source settings and key' : 'Choose your source'}</summary>
       <form className="ws-connector-form" onSubmit={event => void configure(event)}>
         {!cloud && <label>Source folder<input disabled={busy} data-update-safe readOnly value={path} required placeholder="Choose a folder on this computer" /></label>}
+        {connection.provider === 'filesystem' && <p className="ws-helper">Reconnecting an existing folder keeps its original memory space. Choose that folder or its restored copy on this computer. Stop the previous computer’s source runner before starting its replacement.</p>}
         {!cloud && !current && <button className="ws-button" type="button" disabled={busy} onClick={async () => {
           try { const value = await native!.sourceChoose!(); if (value) { setPath(value); setDirty(true); } }
           catch (error) { setError(message(error)); }

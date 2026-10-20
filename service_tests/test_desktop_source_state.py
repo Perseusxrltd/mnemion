@@ -30,9 +30,12 @@ def source(tmp_path, **values):
     )
 
 
-def test_settings_reopen_private_compare_revision_and_retain_original_on_failure(tmp_path):
+@pytest.mark.parametrize("scope_id", [None, "established-office"])
+def test_settings_reopen_private_compare_revision_and_retain_original_on_failure(
+    tmp_path, scope_id
+):
     root = tmp_path / "private"
-    value = source(tmp_path).model_dump(mode="json")
+    value = source(tmp_path, scope_id=scope_id).model_dump(mode="json")
     value["sealed_key"] = base64.b64encode(os.urandom(96)).decode()
     initial = sources.load(root)
     assert initial.sources == []

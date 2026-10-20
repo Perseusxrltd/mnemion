@@ -74,6 +74,7 @@ class Source(Command):
     name: str = Field(min_length=1, max_length=200)
     provider: Literal["filesystem", "conversations", "slack", "gdrive"]
     capture_mode: Literal["complete", "messages"] | None = None
+    scope_id: str | None = Field(default=None, min_length=1, max_length=400)
     path: str | None = Field(default=None, min_length=1, max_length=4096)
     slack: SlackSelection | None = None
     gdrive: DriveSelection | None = None
@@ -97,6 +98,8 @@ class Source(Command):
     def address_and_path(self):
         if self.provider != "conversations" and self.capture_mode is not None:
             raise ValueError("Capture mode applies only to live conversation sources")
+        if self.provider != "filesystem" and self.scope_id is not None:
+            raise ValueError("A folder identity applies only to filesystem sources")
         # Share the established HTTPS/loopback contract, including path prefixes.
         config = self.connector(Path("unused-capture-state"))
         self.endpoint = config.service_url
@@ -136,7 +139,7 @@ class Source(Command):
             provider = {
                 "type": self.provider,
                 "path": self.path,
-                "scope_id": "selected-source",
+                "scope_id": self.scope_id or "selected-source",
                 "name": self.name,
                 "members": self.members,
                 "publish_to_mapped_members": True,
@@ -260,6 +263,41 @@ def verify(source: Source, root: Path, client: Client, private_roots=()) -> Sour
         raise local_state.LocalSetupError(
             "source_connection_unavailable", "Enable this connection and check its application."
         )
+    if source.provider == "filesystem":
+        # A replacement device must retain the established source space. Using
+        # the desktop default for an older CLI source would create a second
+        # scope and suspend the original as absent from the provider catalog.
+        page = client.request(
+            "GET", f"/v1/connectors/{source.connector_id}/scopes", params={"limit": 2}
+        )
+        scopes = page.get("items")
+        if not isinstance(scopes, list) or len(scopes) > 1 or page.get("next_cursor"):
+            raise local_state.LocalSetupError(
+                "source_scope_ambiguous",
+                "This connection has several recorded folders. Keep its original adapter configuration; Studio cannot choose one safely.",
+            )
+        namespace = source.scope_id or "selected-source"
+        if scopes:
+            scope = scopes[0]
+            external = scope.get("external_id") if isinstance(scope, dict) else None
+            if (
+                not isinstance(external, str)
+                or not external.startswith("filesystem:")
+                or not 1 <= len(external.removeprefix("filesystem:")) <= 400
+                or scope.get("connector_id") != str(source.connector_id)
+            ):
+                raise local_state.LocalSetupError(
+                    "source_scope_ambiguous", "The existing folder identity could not be verified."
+                )
+            namespace = external.removeprefix("filesystem:")
+            if source.scope_id is not None and source.scope_id != namespace:
+                raise local_state.LocalSetupError(
+                    "source_scope_mismatch",
+                    "The existing folder identity has changed. Retain its original connection settings before scanning.",
+                )
+        # Ordinary desktop sources keep their previous saved-file shape. Only
+        # a non-default namespace needs the new field on a replacement device.
+        source.scope_id = None if namespace == "selected-source" else namespace
     return source
 
 

@@ -2,6 +2,7 @@ export type DesktopSource = {
   id: string; endpoint: string; tenant_id: string; connector_id: string; principal_id: string;
   name: string; provider: 'filesystem' | 'conversations' | 'slack' | 'gdrive'; path?: string; members: string[];
   capture_mode?: 'complete' | 'messages';
+  scope_id?: string;
   slack?: { team_id: string; channels: string[]; include_threads: boolean };
   gdrive?: { folder_ids: string[]; file_ids: string[]; recursive: boolean };
   publish_to_mapped_members: true; poll_seconds: number; memory_limit_mib: number; max_files: number; enabled: boolean;

@@ -131,12 +131,15 @@ test('a committed write with a lost reply is reloaded rather than replayed', asy
 })
 
 test('an existing source cannot silently switch to a different folder or workspace', async t => {
-  const f = await fixture(t), source = definition()
+  const f = await fixture(t), source = { ...definition(), scope_id: 'established-office' }
   await f.add(source)
+  assert.equal((await f.manager.status()).sources[0].scope_id, 'established-office')
   for (const field of ['path', 'endpoint', 'tenant_id', 'connector_id', 'principal_id', 'provider']) {
     await assert.rejects(f.manager.configure({ expected_revision: (await f.manager.status()).revision,
       source: { ...source, [field]: 'different' } }), /new connection/)
   }
+  await assert.rejects(f.manager.configure({ expected_revision: (await f.manager.status()).revision,
+    source: { ...source, scope_id: 'another-folder' } }), /folder identity changed/)
   assert.equal(f.state.stores, 1)
   for (const action of ['source.status', 'source.configure', 'source.pause', 'source.sync', 'source.remove']) {
     assert.equal(desktopAction(action, {}).workspace, false)
