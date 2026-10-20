@@ -67,6 +67,12 @@ on Windows, macOS and Linux, each on x64 and ARM64. These native gates must pass
 before publication; the Linux source-app walkthrough alone is not six-platform
 installer evidence.
 
+The first 4.31 build exposed an omitted shared TypeScript declaration in the
+Docker context. The build now includes the shared declaration files as a group,
+so adding a new public type does not require another manual Docker allowlist
+edit. The frozen first attempt was cancelled and superseded by a corrected
+immutable attempt; no failed candidate was published.
+
 Other providers retain their existing adapters. This does not complete graphical
 Git/Drive/Slack/rclone enrollment, provider OAuth or organization ACL translation,
 virtual cloud-file hydration, full chat-history access, source-key transfer
