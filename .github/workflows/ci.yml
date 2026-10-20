@@ -148,7 +148,8 @@ jobs:
       - name: Audit the installed Mac dependencies
         run: uvx pip-audit --path .venv/lib/python3.12/site-packages
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        if: inputs.release && matrix.runner == 'macos-15-intel'
+        # A complete same-source main run may supply this tested wheel to a release.
+        if: matrix.runner == 'macos-15-intel'
         with:
           name: release-service-macos-x64
           retention-days: 1

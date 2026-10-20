@@ -64,8 +64,21 @@ def release_run(repo: str, run_id: int, *, wait_seconds: int = 0) -> dict:
         ):
             raise ValueError("Release jobs do not match the completed source and gates")
         pending = False
+        skipped = set()
         for job in jobs["jobs"]:
             if job.get("status") == "completed" and job.get("conclusion") == "success":
+                continue
+            name = job.get("name", "")
+            if (
+                job.get("status") == "completed"
+                and job.get("conclusion") == "skipped"
+                and (
+                    name == "Reuse verified Product checks"
+                    or name == "checks"
+                    or name.startswith("checks / ")
+                )
+            ):
+                skipped.add(name)
                 continue
             if job.get("status") not in {
                 "completed",
@@ -81,6 +94,17 @@ def release_run(repo: str, run_id: int, *, wait_seconds: int = 0) -> dict:
             {job.get("name") for job in jobs["jobs"]}
         )
         if not pending:
+            if skipped:
+                from deploy.ci_reuse import verify_release_check_lanes
+
+                allowed = verify_release_check_lanes(
+                    repo,
+                    run["head_sha"],
+                    jobs["jobs"],
+                    lambda path: json.loads(gh("api", f"repos/{repo}/{path}")),
+                )
+                if skipped != allowed:
+                    raise ValueError("Release jobs include a failed or invalid gate")
             return run
         remaining = deadline - time.monotonic()
         if remaining <= 0:
@@ -291,4 +315,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    if not __package__:
+        # Preserve direct-script use as well as the workflow's module entrypoint.
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
     main()

@@ -42,13 +42,17 @@ gates; no paid service, model call or new signing credential is required.
    dependency. Intel cryptography is the sole exception because its signed wheel
    has a separate native build/inspection gate. Target floors are macOS 13 Intel,
    macOS 14 ARM and glibc 2.28 Linux. Native execution checks still decide delivery.
-4. The release workflow runs product/native gates and creates a draft. The
+4. The release workflow requires complete product-check evidence, runs the native
+   gates and creates a draft. Its preflight can reuse a completed full CI matrix
+   for the same immutable source under the [rules below](#reusing-complete-main-ci-for-a-release);
+   otherwise it runs the full Product checks workflow. The
    independent verifier checks the exact uploaded bytes, signatures, complete
    feeds and their unchanged inventory. GitHub can report the workflow completed
    before its job listing catches up. The verification workflow waits up to
    20 minutes for that listing, checking every 15 seconds and keeping the source
-   commit and run attempt fixed. Every job must actually report completed/success;
-   a failed gate or changed identity stops immediately. No asset is downloaded
+   commit and run attempt fixed. Every required gate must report completed/success;
+   only the unused, mutually exclusive product-check lane may be skipped.
+   A failed gate or changed identity stops immediately. No asset is downloaded
    until these gates pass. The standalone verifier defaults to no waiting;
    `--wait-seconds` opts into a bounded wait, at most 1,200 seconds.
 5. A dependent publication job verifies the successful verification job, original
@@ -133,11 +137,68 @@ python -m deploy.release_automation publish \
 No download or profile diagnostic is treated as proof that a customer's actual
 installation or independently hosted workspace has upgraded. Provider access,
 customer-specific migrations and unfinished features keep their own evidence.
+
+## Reusing complete main CI for a release
+
+Release preflight uses `python -m deploy.ci_reuse` to look for an already completed
+**Product checks** run. Reuse requires the same repository, a `push` to `main`,
+the exact release commit and `.github/workflows/ci.yml` from that checkout.
+The latest matching run must be successful. Its complete job inventory must
+match every job and matrix target expanded from the checked-out CI workflow;
+each required job must have completed successfully, with no failed steps.
+An older successful run cannot override a newer failed or unfinished run.
+
+This includes the service Python matrix, both Mac supervision targets, both
+container targets, legacy checks, lint, dependency audit and Studio checks.
+A successful documentation-only push has skipped runtime jobs and does not
+qualify. Foreign repositories, another branch or commit, pull requests, manual
+runs, skipped or failed required jobs, incomplete API inventories, unavailable
+evidence and unsupported matrix syntax all select the ordinary full release
+checks. Preflight does not wait for an unfinished CI run or infer acceptance
+from a successful subset.
+
+The selected CI run must also retain exactly one unexpired
+`release-service-macos-x64` artifact, with a GitHub SHA-256 digest and matching
+run/source identity. It contains the Intel cryptography runtime wheel built
+with static OpenSSL and exercised by that run's Mac supervision checks.
+The release downloads that exact artifact, verifies the archive bytes against
+GitHub's digest, accepts only a bounded inventory of regular wheel files, and
+transfers those unchanged wheel bytes into the release's own staging artifacts.
+This preserves the tested runtime instead of recompiling it during reuse.
+An absent or unverifiable artifact at selection time runs full checks. A failed
+download or digest mismatch after selection stops the chosen lane and prevents
+assembly; it never substitutes an unverified wheel.
+
+The `product-check-reuse-selection` artifact retains the decision, reason and,
+when eligible, source run and runtime artifact identity for 14 days. Runtime
+transfers retain their existing one-day limit. A release assembles only when
+preflight, all native gates and exactly one product-check lane have succeeded;
+the unselected lane is expected to be skipped.
+
+Independent verification reloads the CI job contract from the immutable release
+commit. For the full-check path, every expanded check must have passed. For the
+reuse path, it also rechecks the original main CI evidence and required artifact.
+Only the unused complete check lane may be skipped; a skipped native,
+assembly or other required gate still prevents publication. The verifier and
+publisher install the pinned contract reader before resolving this evidence.
+
+All six native desktop installer/runtime gates still run for the release:
+Windows, macOS and Linux, each on x64 and ARM64. Their installed application,
+recovery and update checks retain their existing platform contracts, including
+the documented Windows ARM service emulation. Independent uploaded-byte and
+signature verification, publication checks, website synchronization and all six
+public-feed update checks also remain required. This uses the existing free
+pipeline and does not add a paid runner, service or model call. It changes no
+feature requirements or completion counts.
+
+See the [validation record](../validation/2026-10-20-product-check-reuse.md) for
+the distinction between source implementation and observed GitHub reuse.
+
 ## Reusing product-check evidence after a superseded branch push
 
-The release workflow calls the same complete Product checks workflow at its
-frozen source commit. A newer main push can cancel that commit's separate
-branch CI without affecting the release's checks. Status reconciliation now
+When a release runs the complete Product checks workflow at its frozen source,
+a newer main push can cancel that commit's separate branch CI without affecting
+the release's checks. Status reconciliation
 uses the successful release invocation when the standalone push was cancelled
 and contained no failed job or step.
 
@@ -163,7 +224,9 @@ Studio still builds and verifies the packaged offline guides and runs its client
 and desktop checks. The service Python matrix, native Mac supervision, containers,
 legacy suite and Python dependency audit are reserved for runtime changes.
 
-Every release, pull request and manual run keeps the complete suite. Unknown
+Every release requires the complete suite, either as eligible same-source
+evidence under the reuse rules above or a new full invocation. Pull requests and
+manual Product checks runs execute the complete suite. Unknown
 paths, changed API schemas, workflow/dependency changes, a missing shallow-history
 base or a mismatched checkout also keep all checks. Rename detection is disabled
 when listing changes, so moving a source file into a documentation path still

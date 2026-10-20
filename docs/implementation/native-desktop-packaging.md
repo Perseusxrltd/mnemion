@@ -30,6 +30,15 @@ Freezing an emulated interpreter on ARM can collect ARM system runtime DLLs;
 building the complete x64 backend once avoids that mixed-architecture package.
 Every executable and DLL is still checked before either desktop consumes it.
 
+Release assembly can reuse the Intel cryptography runtime wheel from a completed
+full Product checks run on `main` at the exact release source. The
+[release evidence rules](release-automation.md#reusing-complete-main-ci-for-a-release)
+require the complete successful CI matrix and its matching, unexpired artifact;
+the transfer verifies GitHub's archive digest before extracting the wheel.
+The six native desktop builds and installed application gates still run for
+the release. Reusing this service wheel does not reuse an old desktop installer
+or replace independent publication verification.
+
 For a local build on a target OS/architecture:
 
 ```sh

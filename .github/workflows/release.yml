@@ -15,6 +15,14 @@ jobs:
     name: Release preflight
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      reuse_checks: ${{ steps.reuse.outputs.reusable }}
+      checks_run: ${{ steps.reuse.outputs.run_id }}
+      runtime_artifact: ${{ steps.reuse.outputs.artifact_id }}
+      runtime_digest: ${{ steps.reuse.outputs.artifact_digest }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
@@ -26,7 +34,7 @@ jobs:
           import pathlib, subprocess, sys, tomllib
           packages = tomllib.loads(pathlib.Path('uv.lock').read_text())['package']
           version = next(package['version'] for package in packages if package['name'] == 'ruff')
-          subprocess.run([sys.executable, '-m', 'pip', 'install', '--disable-pip-version-check', 'ruff==' + version, 'uv==0.12.24'], check=True)
+          subprocess.run([sys.executable, '-m', 'pip', 'install', '--disable-pip-version-check', 'ruff==' + version, 'uv==0.12.24', 'PyYAML==6.0.3'], check=True)
           PY
       - run: ruff check .
       - run: ruff format --check .
@@ -34,11 +42,50 @@ jobs:
       - name: Check binary dependency availability before native builds
         run: python -m deploy.binary_preflight
       - run: git ls-files -z '*.sh' | xargs -0 -r -n 1 bash -n
+      - name: Find complete checks for this exact release source
+        id: reuse
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python -m deploy.ci_reuse >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: product-check-reuse-selection
+          path: output/ci-reuse.json
+          retention-days: 14
+          if-no-files-found: error
   checks:
     needs: preflight
+    if: needs.preflight.outputs.reuse_checks != 'true'
     uses: ./.github/workflows/ci.yml
     with:
       release: true
+  reused_checks:
+    name: Reuse verified Product checks
+    needs: preflight
+    if: needs.preflight.outputs.reuse_checks == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - run: python -m pip install PyYAML==6.0.3
+      - name: Restore the exact verified runtime artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MNEMION_CI_ARTIFACT: ${{ needs.preflight.outputs.runtime_artifact }}
+          MNEMION_CI_DIGEST: ${{ needs.preflight.outputs.runtime_digest }}
+        run: python -m deploy.ci_reuse --restore-artifact-id "$MNEMION_CI_ARTIFACT" --artifact-digest "$MNEMION_CI_DIGEST"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-service-macos-x64
+          path: output/reused-runtime/*.whl
+          retention-days: 1
+          if-no-files-found: error
   native:
     needs: preflight
     uses: ./.github/workflows/desktop.yml
@@ -46,7 +93,11 @@ jobs:
       release: true
     secrets: inherit
   assemble:
-    needs: [checks, native]
+    needs: [preflight, checks, reused_checks, native]
+    if: >-
+      always() && !cancelled() && needs.preflight.result == 'success' && needs.native.result == 'success' &&
+      ((needs.preflight.outputs.reuse_checks == 'false' && needs.checks.result == 'success' && needs.reused_checks.result == 'skipped') ||
+       (needs.preflight.outputs.reuse_checks == 'true' && needs.reused_checks.result == 'success' && needs.checks.result == 'skipped'))
     runs-on: ubuntu-latest
     permissions:
       contents: write
