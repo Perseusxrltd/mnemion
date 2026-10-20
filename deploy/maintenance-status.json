@@ -25,44 +25,48 @@
     {
       "number": 46,
       "title": "Deployment access: Codex/Astra cannot see the existing office task and memory spaces",
-      "updated_at": "2026-10-20T11:19:39Z",
+      "updated_at": "2026-10-20T12:05:17Z",
       "url": "https://github.com/Perseusxrltd/mnemion/issues/46",
       "labels": []
     }
   ],
   "runs": [
     {
-      "id": 39416524423,
+      "id": 39419696237,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "58bb4d59f0d1bfb9aa8e5375d5dd156ae91ce2bc",
-      "status": "completed",
-      "conclusion": "failure",
-      "updated_at": "2026-10-20T12:00:19Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39416524423",
+      "source_commit": "7350da2e8c67fc3434763078d374f652673a577f",
+      "status": "queued",
+      "conclusion": null,
+      "updated_at": "2026-10-20T12:05:49Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39419696237",
       "job_progress": {
-        "total": 12,
-        "completed": 12,
-        "succeeded": 10,
-        "active": []
+        "total": 3,
+        "completed": 0,
+        "succeeded": 0,
+        "active": [
+          {
+            "id": 118617261308,
+            "name": "Select checks",
+            "status": "queued",
+            "steps": []
+          },
+          {
+            "id": 118617261701,
+            "name": "studio",
+            "status": "queued",
+            "steps": []
+          },
+          {
+            "id": 118617262278,
+            "name": "lint",
+            "status": "queued",
+            "steps": []
+          }
+        ]
       },
-      "failed_jobs": [
-        {
-          "name": "container (ubuntu-22.04)",
-          "id": 118606830739,
-          "steps": [
-            "Build the actual deployment image with its documentation"
-          ]
-        },
-        {
-          "name": "container (ubuntu-22.04-arm)",
-          "id": 118606830805,
-          "steps": [
-            "Build the actual deployment image with its documentation"
-          ]
-        }
-      ]
+      "failed_jobs": []
     },
     {
       "id": 39403004762,
@@ -98,17 +102,9 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39416800968",
       "job_progress": {
         "total": 31,
-        "completed": 25,
-        "succeeded": 23,
+        "completed": 28,
+        "succeeded": 26,
         "active": [
-          {
-            "id": 118607851361,
-            "name": "checks / service (3.12)",
-            "status": "in_progress",
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
           {
             "id": 118609633867,
             "name": "native / windows-11-arm / arm64",
@@ -122,7 +118,7 @@
             "name": "native / windows-2022 / x64",
             "status": "in_progress",
             "steps": [
-              "Packaged window, sandboxed bridge, and local client"
+              "Native Windows installation, authenticated upgrade and relaunch"
             ]
           },
           {
@@ -131,22 +127,6 @@
             "status": "in_progress",
             "steps": [
               "Installed app creates, searches and reopens a real local workspace"
-            ]
-          },
-          {
-            "id": 118609633991,
-            "name": "native / macos-15 / arm64",
-            "status": "in_progress",
-            "steps": [
-              "Packaged Mac update, restart guards and relaunch"
-            ]
-          },
-          {
-            "id": 118609633992,
-            "name": "native / ubuntu-22.04 / x64",
-            "status": "in_progress",
-            "steps": [
-              "Installed Linux app creates, searches and reopens a real local workspace"
             ]
           }
         ]
@@ -191,5 +171,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39403000169"
     }
   ],
-  "observed_at": "2026-10-20T12:01:04+00:00"
+  "observed_at": "2026-10-20T12:05:54+00:00"
 }
