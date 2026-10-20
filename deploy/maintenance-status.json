@@ -74,7 +74,7 @@
             "name": "service (3.14)",
             "status": "in_progress",
             "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+              "Run uv run --no-sync mnemion-service schema --output /tmp/openapi.json && diff docs/service/openapi.json /tmp/openapi.json"
             ]
           }
         ]
@@ -139,13 +139,13 @@
       "conclusion": "failure",
       "updated_at": "2026-10-20T17:43:03Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39460885775",
+      "failed_jobs": [],
       "job_progress": {
         "total": 18,
         "completed": 18,
         "succeeded": 12,
         "active": []
-      },
-      "failed_jobs": []
+      }
     },
     {
       "id": 39468502213,
@@ -181,5 +181,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39441738346"
     }
   ],
-  "observed_at": "2026-10-20T17:43:39+00:00"
+  "observed_at": "2026-10-20T17:44:21+00:00"
 }

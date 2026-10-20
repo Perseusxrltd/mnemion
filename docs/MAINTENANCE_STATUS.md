@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-20T17:43:39+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-20T17:44:21+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.41.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.41.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -34,7 +34,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 - service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 - service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 - supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
-- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- service \(3\.14\): in\_progress — Run uv run --no-sync mnemion-service schema --output /tmp/openapi\.json && diff docs/service/openapi\.json /tmp/openapi\.json.
 
 
 ## Failed jobs
