@@ -175,6 +175,11 @@ def verify(
                 and visible(lab_page, body["project"]["method"]),
             }
         )
+        guidance = body["downloads"].get("guidance")
+        if guidance is not None:
+            checks["git_owned_download_guidance"] = digest in parsed.content_digests and visible(
+                parsed, guidance["ready"]
+            )
         content_evidence = {
             "content_sha256": digest,
             "content_source": SOURCE,

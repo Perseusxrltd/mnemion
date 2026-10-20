@@ -48,6 +48,27 @@ provided with `MNEMION_WEBSITE_SOURCE` for a reviewed build or isolated test.
 It validates both content and release metadata before replacing snapshots and
 does not downgrade an existing newer release snapshot.
 
+### Download guidance and compatible rollout
+
+The optional `downloads.guidance` group owns the mobile, processor-selection,
+download-availability and change-computer explanations. When present, all eleven
+fields are required, each with at most 400 characters of plain text; URLs, URI
+schemes, HTML and control characters are rejected. Download destinations, the
+current GitHub releases link, architecture eligibility and UI layout remain in
+the website code. Availability text must not promise a release order or refer
+users to an old initial-release note.
+
+This is an additive schema-1 field, not an app feature or version change. Deploy
+the reviewed website consumer and its updated schema **before** publishing a
+manifest with guidance. That consumer must accept older schema-1 feeds without
+the group and use its validated bundled guidance until the Git source includes
+it. An older consumer rejects the unfamiliar group and retains its existing
+validated content; it does not learn the new fields automatically. Once the
+consumer is deployed, merge the canonical content/schema change and let the
+normal workflow publish and verify it. Subsequent guidance edits need only this
+repository. The existing `minimum_release` floor remains tied to the product
+instructions, not the date of the website consumer deployment.
+
 ## Automatic invalidation and verification
 
 The existing signed repository webhook accepts release events and normal

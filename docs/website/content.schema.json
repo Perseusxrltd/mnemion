@@ -240,6 +240,91 @@
               "pattern": "^[^<>\\u0000-\\u001f\\u007f]+$"
             }
           }
+        },
+        "guidance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "mobile",
+            "unsupported32Bit",
+            "macProcessor",
+            "processor",
+            "ready",
+            "releaseUnavailable",
+            "releaseUnavailableBody",
+            "pendingDownload",
+            "chooseDownload",
+            "changeComputer",
+            "architectureUnavailable"
+          ],
+          "properties": {
+            "mobile": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 400,
+              "pattern": "^(?!.*(?:[A-Za-z][A-Za-z0-9+.-]*:|[Ww][Ww][Ww]\\.|//))[^<>\\u0000-\\u001f\\u007f]+$"
+            },
+            "unsupported32Bit": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 400,
+              "pattern": "^(?!.*(?:[A-Za-z][A-Za-z0-9+.-]*:|[Ww][Ww][Ww]\\.|//))[^<>\\u0000-\\u001f\\u007f]+$"
+            },
+            "macProcessor": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 400,
+              "pattern": "^(?!.*(?:[A-Za-z][A-Za-z0-9+.-]*:|[Ww][Ww][Ww]\\.|//))[^<>\\u0000-\\u001f\\u007f]+$"
+            },
+            "processor": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 400,
+              "pattern": "^(?!.*(?:[A-Za-z][A-Za-z0-9+.-]*:|[Ww][Ww][Ww]\\.|//))[^<>\\u0000-\\u001f\\u007f]+$"
+            },
+            "ready": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 400,
+              "pattern": "^(?!.*(?:[A-Za-z][A-Za-z0-9+.-]*:|[Ww][Ww][Ww]\\.|//))[^<>\\u0000-\\u001f\\u007f]+$"
+            },
+            "releaseUnavailable": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 400,
+              "pattern": "^(?!.*(?:[A-Za-z][A-Za-z0-9+.-]*:|[Ww][Ww][Ww]\\.|//))[^<>\\u0000-\\u001f\\u007f]+$"
+            },
+            "releaseUnavailableBody": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 400,
+              "pattern": "^(?!.*(?:[A-Za-z][A-Za-z0-9+.-]*:|[Ww][Ww][Ww]\\.|//))[^<>\\u0000-\\u001f\\u007f]+$"
+            },
+            "pendingDownload": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 400,
+              "pattern": "^(?!.*(?:[A-Za-z][A-Za-z0-9+.-]*:|[Ww][Ww][Ww]\\.|//))[^<>\\u0000-\\u001f\\u007f]+$"
+            },
+            "chooseDownload": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 400,
+              "pattern": "^(?!.*(?:[A-Za-z][A-Za-z0-9+.-]*:|[Ww][Ww][Ww]\\.|//))[^<>\\u0000-\\u001f\\u007f]+$"
+            },
+            "changeComputer": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 400,
+              "pattern": "^(?!.*(?:[A-Za-z][A-Za-z0-9+.-]*:|[Ww][Ww][Ww]\\.|//))[^<>\\u0000-\\u001f\\u007f]+$"
+            },
+            "architectureUnavailable": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 400,
+              "pattern": "^(?!.*(?:[A-Za-z][A-Za-z0-9+.-]*:|[Ww][Ww][Ww]\\.|//))[^<>\\u0000-\\u001f\\u007f]+$"
+            }
+          }
         }
       }
     },

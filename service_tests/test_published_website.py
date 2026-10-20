@@ -1,5 +1,6 @@
 """A release check must reject stale links and versions hidden only in scripts."""
 
+import hashlib
 import html
 import json
 import sys
@@ -135,12 +136,16 @@ def test_retry_after_cache_delay_writes_a_checked_receipt(tmp_path, monkeypatch)
     assert json.loads(output.read_text())["visible_current_version"] is True
 
 
-def content_fixture():
+def content_fixture(*, include_guidance=True):
     from pathlib import Path
 
     from deploy.website_content import build
 
     content = build(Path(__file__).resolve().parents[1])
+    if not include_guidance:
+        content["content"]["downloads"].pop("guidance", None)
+        compact = json.dumps(content["content"], ensure_ascii=False, separators=(",", ":"))
+        content["content_sha256"] = hashlib.sha256(compact.encode("utf-8")).hexdigest()
     manifest, product, home = fixture(content["content"]["minimum_release"])
     digest = content["content_sha256"]
     body = content["content"]
@@ -153,6 +158,8 @@ def content_fixture():
             body["features"][0]["title"],
         ]
     ).encode()
+    if guidance := body["downloads"].get("guidance"):
+        product += f"<p>{html.escape(guidance['ready'])}</p>".encode()
     home += f'<article data-mnemion-content="{digest}">{html.escape(body["project"]["outcome"])}</article>'.encode()
     lab = f'<article data-mnemion-content="{digest}">{html.escape(body["project"]["method"])}</article>'.encode()
     return manifest, product, home, content, lab
@@ -162,10 +169,31 @@ def test_git_owned_text_is_checked_on_all_three_public_surfaces():
     manifest, product, home, content, lab = content_fixture()
     result = website.verify(manifest, product, home, content=content, lab=lab)
     assert result["git_owned_product_text"]
+    assert result["git_owned_download_guidance"]
     assert result["git_owned_homepage_text"] and result["git_owned_lab_notes_text"]
     assert json.loads(json.dumps(result))["release_notes_url"] == (
         f"{website.ORIGIN}/releases/tag/{manifest['tag_name']}"
     )
+
+
+def test_older_content_without_optional_guidance_remains_verifiable():
+    manifest, product, home, content, lab = content_fixture(include_guidance=False)
+    result = website.verify(manifest, product, home, content=content, lab=lab)
+    assert result["git_owned_product_text"]
+    assert "git_owned_download_guidance" not in result
+
+
+@pytest.mark.parametrize("wrapper", [None, "script", "style", "template"])
+def test_current_digest_cannot_hide_missing_or_stale_download_guidance(wrapper):
+    manifest, product, home, content, lab = content_fixture()
+    ready = html.escape(content["content"]["downloads"]["guidance"]["ready"])
+    hidden = f"<{wrapper}>{ready}</{wrapper}>" if wrapper else ""
+    product = product.replace(
+        f"<p>{ready}</p>".encode(),
+        ("<p>Outdated download guidance.</p>" + hidden).encode(),
+    )
+    with pytest.raises(ValueError, match="git_owned_download_guidance"):
+        website.verify(manifest, product, home, content=content, lab=lab)
 
 
 @pytest.mark.parametrize("surface", ["product", "home", "lab"])

@@ -118,3 +118,68 @@ def test_content_documents_remain_eligible_for_documentation_only_push_checks():
     assert all(documentation(path) for path in [website.SOURCE, website.SCHEMA, website.OUTPUT])
     assert not documentation("deploy/website_content.py")
     assert not documentation(".github/workflows/website-release.yml")
+
+
+def test_optional_download_guidance_preserves_older_schema_one_feeds(source):
+    original = website.read_json(source / website.SOURCE)
+    guidance = original["downloads"]["guidance"]
+    assert set(guidance) == {
+        "mobile",
+        "unsupported32Bit",
+        "macProcessor",
+        "processor",
+        "ready",
+        "releaseUnavailable",
+        "releaseUnavailableBody",
+        "pendingDownload",
+        "chooseDownload",
+        "changeComputer",
+        "architectureUnavailable",
+    }
+    edit(source, lambda value: value["downloads"].pop("guidance"))
+    assert website.publish(source, write=True)["written"]
+    older = website.read_json(source / website.OUTPUT)
+    assert older["schema_version"] == older["content"]["schema_version"] == 1
+    assert "guidance" not in older["content"]["downloads"]
+    edit(source, lambda value: value["downloads"].update(guidance=guidance))
+    assert website.publish(source, write=True)["written"]
+    restored = website.read_json(source / website.OUTPUT)
+    assert restored["content"]["minimum_release"] == original["minimum_release"]
+    assert restored["content"]["downloads"]["guidance"] == guidance
+
+
+@pytest.mark.parametrize("invalid", [None, {}, {"ready": "Only one field"}])
+def test_incomplete_optional_guidance_cannot_replace_published_content(source, invalid):
+    before = (source / website.OUTPUT).read_bytes()
+    edit(source, lambda value: value["downloads"].update(guidance=invalid))
+    with pytest.raises(ValidationError):
+        website.publish(source, write=True)
+    assert (source / website.OUTPUT).read_bytes() == before
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "<b>Download</b>",
+        "https://other.example/file.exe",
+        "//other.example/file.exe",
+        "www.other.example",
+        "javascript:alert(1)",
+        "First\nsecond",
+        "x" * 401,
+    ],
+)
+def test_download_guidance_rejects_links_markup_and_unbounded_text(source, text):
+    before = (source / website.OUTPUT).read_bytes()
+    edit(source, lambda value: value["downloads"]["guidance"].update(ready=text))
+    with pytest.raises(ValidationError):
+        website.publish(source, write=True)
+    assert (source / website.OUTPUT).read_bytes() == before
+
+
+def test_guidance_cannot_introduce_a_download_destination(source):
+    before = (source / website.OUTPUT).read_bytes()
+    edit(source, lambda value: value["downloads"]["guidance"].update(href="download"))
+    with pytest.raises(ValidationError):
+        website.publish(source, write=True)
+    assert (source / website.OUTPUT).read_bytes() == before

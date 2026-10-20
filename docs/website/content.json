@@ -65,6 +65,19 @@
       "windows": "Windows 10 or later · Installer",
       "macos": "macOS 13+ · Local workspaces on Apple silicon need macOS 14+ · Disk image",
       "linux": "Modern Linux desktop · AppImage"
+    },
+    "guidance": {
+      "mobile": "Use Studio through your workspace’s browser address, or choose a download for your computer.",
+      "unsupported32Bit": "Studio requires a 64-bit computer. You can choose a download for another computer below.",
+      "macProcessor": "In Apple menu → About This Mac, “Chip” means Apple silicon; “Processor” identifies an Intel Mac.",
+      "processor": "Choose your processor. If you’re unsure, check the system information on your computer.",
+      "ready": "Free forever. Connect to your own workspace, with automatic updates included.",
+      "releaseUnavailable": "Release information is temporarily unavailable.",
+      "releaseUnavailableBody": "Check the current published releases on GitHub for available downloads.",
+      "pendingDownload": "This download is not currently available.",
+      "chooseDownload": "Choose your computer and processor to download.",
+      "changeComputer": "You can always choose a different computer.",
+      "architectureUnavailable": "Not currently available"
     }
   },
   "setup": {
