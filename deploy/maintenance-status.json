@@ -18,7 +18,7 @@
     {
       "number": 45,
       "title": "Deployment acceptance: finish guarded host upgrade and expose paused note publishing",
-      "updated_at": "2026-10-20T10:59:02Z",
+      "updated_at": "2026-10-20T11:07:14Z",
       "url": "https://github.com/Perseusxrltd/mnemion/issues/45",
       "labels": []
     }
@@ -80,5 +80,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39403000169"
     }
   ],
-  "observed_at": "2026-10-20T11:06:06+00:00"
+  "observed_at": "2026-10-20T11:07:46+00:00"
 }

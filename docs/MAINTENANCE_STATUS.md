@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-20T11:06:06+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-20T11:07:46+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.37.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.37.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -11,7 +11,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | Issue | Report | Last activity |
 | --- | --- | --- |
 | [#44](https://github.com/Perseusxrltd/mnemion/issues/44) | Integration acceptance: verify the separate Grok Bot cloud client end to end | 2026-10-20T11:05:32Z |
-| [#45](https://github.com/Perseusxrltd/mnemion/issues/45) | Deployment acceptance: finish guarded host upgrade and expose paused note publishing | 2026-10-20T10:59:02Z |
+| [#45](https://github.com/Perseusxrltd/mnemion/issues/45) | Deployment acceptance: finish guarded host upgrade and expose paused note publishing | 2026-10-20T11:07:14Z |
 
 ## Relevant builds
 
