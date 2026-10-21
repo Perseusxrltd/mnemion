@@ -1,12 +1,13 @@
 /** Native backup preferences, protected keys and one coalesced background job. */
 import { constants } from 'node:fs'
-import { lstat, mkdir, open, realpath, rename, unlink } from 'node:fs/promises'
+import { lstat, mkdir, open, realpath, unlink } from 'node:fs/promises'
 import { dirname, isAbsolute, join } from 'node:path'
 import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import type { CredentialCipher } from './workspace-store.js'
 import type { LocalWorkspace } from './local-workspace.js'
 import type { BackupFile, BackupReceipt, BackupConfiguration, BackupView, BackupSettings, BackupInventory, BackupRetentionResult } from '../shared/local-workspace.js'
 import { backupResult, retentionPolicy, retentionResult } from './local-backup-protocol.js'
+import { replaceFile } from './atomic-file.js'
 
 type Stored = Omit<BackupConfiguration, 'protected_key'> & { format: 1; sealed_key: string | null }
 const message = 'Backup settings could not be read safely. Existing recovery files were retained.'
@@ -45,7 +46,7 @@ export async function readBackupDocument(path: string): Promise<any | undefined>
   } catch { throw new Error(message) } finally { await file.close() }
 }
 
-async function writeDocument(path: string, value: unknown): Promise<void> {
+async function writeDocument(path: string, value: unknown, signal?: AbortSignal): Promise<void> {
   await mkdir(dirname(path), { recursive: true, mode: 0o700 })
   const temporary = path + '.' + randomUUID() + '.tmp'
   const file = await open(temporary, 'wx', 0o600)
@@ -53,7 +54,7 @@ async function writeDocument(path: string, value: unknown): Promise<void> {
     await file.writeFile(JSON.stringify(value) + '\n', 'utf8')
     await file.sync()
     await file.close()
-    await rename(temporary, path)
+    await replaceFile(temporary, path, signal)
   } finally {
     await file.close().catch(() => {})
     await unlink(temporary).catch(error => { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error })
@@ -193,7 +194,7 @@ export class LocalBackups {
         retention: retentionPolicy(input.retention === undefined ? previous?.retention : input.retention) }
       if (this.closed || ((await this.configuration())?.revision ?? null) !== input.expected_revision) throw new Error('Backup settings changed before the save finished. Refresh and retry.')
       signal?.throwIfAborted()
-      await writeDocument(this.file, configuration)
+      await writeDocument(this.file, configuration, signal)
       this.error = undefined
       this.retryAt = 0
       return await this.status()

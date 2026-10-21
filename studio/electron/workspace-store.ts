@@ -1,8 +1,9 @@
 /** OS-encrypted workspace credentials. This module is never imported by the renderer. */
 import { randomUUID } from 'node:crypto'
 import { constants, type Stats } from 'node:fs'
-import { chmod, lstat, mkdir, open, rename, rm } from 'node:fs/promises'
+import { chmod, lstat, mkdir, open, rm } from 'node:fs/promises'
 import { isAbsolute, join } from 'node:path'
+import { replaceFile } from './atomic-file.js'
 import { passwordSession, type PasswordSession } from './workspace-auth.js'
 import { recoveryRecord, type RecoveryDirectoryRecord } from './workspace-recovery.js'
 
@@ -158,7 +159,7 @@ export class WorkspaceStore {
       await file.writeFile(document)
       await file.sync()
       await file.close()
-      await rename(temporary, this.path)
+      await replaceFile(temporary, this.path)
       if (process.platform !== 'win32') {
         const directory = await open(this.directory, 'r')
         try { await directory.sync() } finally { await directory.close() }
