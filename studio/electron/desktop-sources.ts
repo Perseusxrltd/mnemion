@@ -2,7 +2,7 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import type { CredentialCipher } from './workspace-store.js'
 import { sourceMessages } from './desktop-source-process.js'
-import { readCaptureArchive, readCapturePreview, readCaptureRecoveries, readCaptureRestored, validCaptureCoverage } from './capture-messages.js'
+import { readCaptureArchive, readCapturePreview, readCaptureRecoveries, readCaptureRestored, validCaptureCoverage, validCaptureStorage } from './capture-messages.js'
 import type { CaptureArchiveInfo, CaptureBackupInput, CaptureInspectInput, CapturePreview, CaptureRecoveries, CaptureRestored, CaptureRestoreControl, CaptureRestoreInput, CaptureRestoreResult, DesktopSource, DesktopSourceView, SourceActivity, SourceConfigure, SourceControl, SourcePreviewSelection, SourceReason, SourceReport } from '../shared/desktop-sources.js'
 
 type SavedSource = DesktopSource & { sealed_key: string; sealed_provider?: string; sealed_inbox_key?: string; status_epoch?: string }
@@ -37,11 +37,12 @@ function readReport(value: unknown): SourceReport {
     const capture = value.capture
     const counts = ['locally_accepted', 'pending_events', 'pending_bytes', 'remote_committed_events',
       'stored_events', 'forgotten_events', 'unknown_pages', 'database_bytes', 'device_pending_bytes', 'device_database_bytes']
-    if (!object(capture) || Object.keys(capture).some(key => ![...counts, 'over_limit', 'capture_complete', 'delivery_complete', 'reason_code', 'coverage'].includes(key)) ||
+    if (!object(capture) || Object.keys(capture).some(key => ![...counts, 'over_limit', 'capture_complete', 'delivery_complete', 'reason_code', 'coverage', 'storage'].includes(key)) ||
       counts.some(key => !Number.isSafeInteger(capture[key]) || (capture[key] as number) < 0 || (capture[key] as number) > 1e12) ||
       ['over_limit', 'capture_complete', 'delivery_complete'].some(key => typeof capture[key] !== 'boolean') ||
       (capture.reason_code != null && !reason(capture.reason_code)) ||
       (capture.coverage != null && !validCaptureCoverage(capture.coverage)) ||
+      (capture.storage != null && (!validCaptureStorage(capture.storage) || capture.storage.database_bytes !== capture.database_bytes)) ||
       (value.completed && (!capture.capture_complete || !capture.delivery_complete)) ||
       (capture.delivery_complete && capture.pending_events !== 0)) {
       throw Object.assign(new Error(messages.source_invalid_response), { code: 'source_invalid_response' })

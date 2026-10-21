@@ -49,7 +49,10 @@ issue review, publication and version-linked closure together.
   enrollment, offline intake, interrupted-process recovery, pause/resume,
   encrypted backup and new-grant recovery. Its CLI, protected-file, resource,
   managed-runner and shared desktop regressions passed, along with migration
-  and updater checks. This remains unreleased source. Reviewed identity/policy
+  and updater checks. Bounded disk cleanup now returns unused database pages
+  while preserving every capture record, receipt and deletion fence. App and
+  agent status report actual reclaimed space and any deferred cleanup; retained
+  history limits remain explicit. This remains unreleased source. Reviewed identity/policy
   migration, complete capture policy and coverage, headless installed
   acceptance, bounded history and
   all six packaged targets remain required before this L1 milestone ships.

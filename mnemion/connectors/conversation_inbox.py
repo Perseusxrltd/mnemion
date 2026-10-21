@@ -546,6 +546,10 @@ def open_inbox(directory: Path, binding: dict, key: bytes, *, create=False, limi
                 connection.execute("PRAGMA journal_mode=DELETE")
                 connection.execute("PRAGMA synchronous=FULL")
                 connection.execute("PRAGMA secure_delete=ON")
+                if create:
+                    # Free pages can be returned in bounded later scans without
+                    # rewriting the full inbox or removing retained identities.
+                    connection.execute("PRAGMA auto_vacuum=INCREMENTAL")
                 page_size = connection.execute("PRAGMA page_size").fetchone()[0]
                 page_count = connection.execute("PRAGMA page_count").fetchone()[0]
                 # A reduced cap blocks admission, never receipt reconciliation

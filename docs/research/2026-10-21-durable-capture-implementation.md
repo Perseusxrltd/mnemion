@@ -71,6 +71,7 @@ does not ship this unfinished capture milestone.
 | Encrypted coverage accounting | The inbox retains per-file prefix observations and one bounded aggregate, with selection counters committed alongside accepted evidence. Missing/changed/unobserved history, continuous non-empty queue start, authenticated contact and receipt acknowledgement remain distinct. This development delta is still under validation. |
 | Source index observations | An additional unreleased delta reads current revision/index states for the authorized shared source across devices. It saves partial and completed sweeps separately, with observed generation and time interval. Source, controller and migration checks passed; installed acceptance remains open. |
 | Device resource admission | Pending selected payload and actual SQLite database pages have separate per-source and aggregate device limits. New intake also needs free disk headroom. Reducing limits preserves accepted evidence and leaves bounded delivery/forgetting work available. |
+| Free-page reclamation | An additional unreleased delta returns unused SQLite pages before intake and after delivery, preserving every logical record. Incremental work and legacy conversion have separate bounds; storage status reports actual bytes and deferred/failure reasons. Focused source, controller and migration checks passed; installed acceptance remains open and reference/history/scope caps remain unchanged. |
 | Pause and removal | Pause works offline. Retained removal requires a pause, explicit `discard_local_inbox: true` and confirmed server revocation before local discard. A current workspace administrator can retire the exact saved grant when the device key is unavailable. Its optional `retirement_credential` is used only through the private removal path and never saved by the operation. Recorded retirement can finish cleanup offline without credentials. |
 | Forgetting and recovery | One captured fragment's raw evidence, projections, parts and retained revisions are withdrawn atomically. Late deliveries stay denied. Current negative state and grant revocations survive restoring an older backup. Revoked custody also stops new background inference and vector publication. |
 
@@ -528,6 +529,57 @@ Separately, `headless-capture-migration-preflight.log` records **29 passed in
 The application source digest remained unchanged. These overlapping suites are
 reported separately. They are source checks; no installed-artifact or six-target
 acceptance is claimed, and the remaining L1 requirements below are unchanged.
+
+## Free-page reclamation source delta
+
+This **unreleased** delta is separate from the earlier headless checkpoint.
+New inbox creation enables incremental vacuum.
+`capture_storage.py` runs under the existing inbox lock, outside an active
+transaction, from the shared capture cycle before intake and after delivery.
+Each incremental pass allows 64 MiB of returned pages and a 0.5-second
+cooperative time budget. Progress checks can interrupt SQLite work; this is not
+an instantaneous hard deadline for filesystem operations.
+
+An older database converts with whole-database `VACUUM` only after both pending
+events and pending pages have settled through confirmed storage or forgetting.
+It requires free disk of at least twice the database size plus 1 MiB, uses
+temporary files on disk and the same cooperative time interruption. The
+incremental byte allowance does not bound this conversion. Every logical event,
+receipt, checkpoint, producer identity and negative fence remains; conversion
+commits or rolls back without a retention
+change. Small free-page amounts can remain available for SQLite reuse.
+
+The optional `capture.storage` observation gives exact database and remaining
+free-page bytes after the final pass, plus reclaimed bytes accumulated over both
+passes in that scan. Final-pass state is idle/reclaimed/deferred/failed, with
+bounded time, byte, disk-reserve, pending-legacy or SQLite-failure reasons as
+appropriate. Older absent/null observations remain unknown. The native validator
+checks consistency with the capture report; Studio shows the result in its
+expandable coverage/history details. Cleanup status remains independent of
+delivery success and does not invoke a model.
+
+`capture-storage-regression-tests.log` records **110 passed in 54.72 seconds**
+across storage, inbox, encrypted archive/transfer, persistent source status,
+desktop durable capture and headless durable capture. This includes backup after
+cleanup and rejection of invalid or content-bearing observations. The initial
+10 storage cases passed in 2.36 seconds and overlap this regression; the counts
+are not added.
+
+Separately, `capture-storage-controller-tests.log` records **58 passed, zero
+skips, in 197.818285 ms**. `capture-storage-migration-preflight.log` records
+**29 passed in 51.72 seconds**, fingerprint
+`894b0b916aa612e9b7d3bdc73dafbb427f0fd7827b450c56085bb6c7b51706e9`.
+Whole-tree Ruff lint and formatting checks passed across 625 files.
+`capture-storage-source-inputs.json` records the pre-check source digest
+`04420cd40d87b8a5d9ace10ea07cf6fbe841575c39d105a4ae0e83e42145774b`.
+These are scoped source checks; all installed-platform proof, release and full
+L1 acceptance remain open.
+
+Returning free pages does not prune any logical history, lift the
+100,000-event/reference or 10,000-scope caps, add expiry or satisfy the remaining
+bounded-history and backpressure requirements. The
+[operator guide](../service/durable-capture.md#reclaim-unused-database-pages-unreleased)
+describes the observed fields and deferred behavior.
 
 ## Source and deletion boundaries
 

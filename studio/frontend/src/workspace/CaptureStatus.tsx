@@ -9,6 +9,13 @@ const age = (value: string, now: number) => {
   const minutes = Math.max(0, Math.floor((now - Date.parse(value)) / 60_000));
   return minutes < 60 ? `${minutes} min` : minutes < 1440 ? `${Math.floor(minutes / 60)} h ${minutes % 60} min` : `${Math.floor(minutes / 1440)} days`;
 };
+const cleanupReasons = {
+  time_budget: 'Disk cleanup reached its time budget and will continue in a later scan.',
+  byte_budget: 'Disk cleanup reached its work limit and will continue in a later scan.',
+  disk_reserve: 'Disk cleanup is waiting for enough free space to work safely.',
+  pending_legacy: 'Disk cleanup is waiting for pending deliveries to settle.',
+  sqlite_failure: 'Disk cleanup could not finish. Check available storage before the next scan.',
+};
 
 export default function CaptureStatus({ report }: { report?: CaptureReport }) {
   const [now, setNow] = useState(Date.now);
@@ -31,6 +38,10 @@ export default function CaptureStatus({ report }: { report?: CaptureReport }) {
     {report.over_limit && <p>New intake is paused at the current capacity limit. Accepted evidence remains eligible for delivery and forgetting.</p>}
     <details>
       <summary style={{ cursor: 'pointer' }}>Capture coverage and history</summary>
+      {report.storage && <>
+        <p className="ws-helper">Disk cleanup released {mib(report.storage.reclaimed_bytes)} MiB during this scan. {mib(report.storage.reclaimable_bytes)} MiB of unused database pages remain available for reuse or later cleanup.</p>
+        {report.storage.reason && <p>{cleanupReasons[report.storage.reason]}</p>}
+      </>}
       <CaptureIndexStatus progress={coverage?.index} />
     {coverage ? <>
       {coverage.catalog === 'unobserved' ? <p className="ws-helper">Prefix coverage has not yet been observed.</p> : <>

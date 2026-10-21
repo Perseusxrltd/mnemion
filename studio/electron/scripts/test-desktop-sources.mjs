@@ -392,12 +392,36 @@ test('coverage stays available to native agents after a desktop restart', async 
   await f.add(retainedDefinition()); await f.manager.start(); await f.flush()
   const capture = queuedCapture()
   capture.coverage.index = indexProgress()
+  capture.storage = { format: 'mnemion-capture-storage-v1', state: 'reclaimed',
+    database_bytes: capture.database_bytes, reclaimable_bytes: 4096, reclaimed_bytes: 32768, reason: null }
   f.state.scans[0].finish({ ...report(), completed: false, changed: 0, remote_sync_available: false, capture })
   await f.flush()
   assert.deepEqual((await f.manager.status()).sources[0].activity.report.capture.coverage, capture.coverage)
   await f.manager.close()
   const reopened = new DesktopSources(f.options); t.after(() => reopened.close())
   assert.deepEqual((await reopened.status()).sources[0].activity.report.capture.coverage, capture.coverage)
+  assert.deepEqual((await reopened.status()).sources[0].activity.report.capture.storage, capture.storage)
+})
+
+for (const [name, damage] of [
+  ['unknown content', value => { value.raw_body = 'Never render this arbitrary field' }],
+  ['incorrect database', value => { value.database_bytes = 32768 }],
+  ['unbounded reclaimable bytes', value => { value.reclaimable_bytes = 1e15 }],
+  ['invented cleanup', value => { value.reclaimed_bytes = 1 }],
+  ['deferred without reason', value => { value.state = 'deferred' }],
+  ['failed with unrelated reason', value => { value.state = 'failed'; value.reason = 'time_budget' }],
+]) test(`invalid cleanup observations stay out of app and agent status: ${name}`, async t => {
+  const f = await fixture(t)
+  await f.add(retainedDefinition()); await f.manager.start(); await f.flush()
+  const capture = queuedCapture()
+  capture.storage = { format: 'mnemion-capture-storage-v1', state: 'idle',
+    database_bytes: capture.database_bytes, reclaimable_bytes: 0, reclaimed_bytes: 0, reason: null }
+  damage(capture.storage)
+  f.state.scans[0].finish({ ...report(), completed: false, changed: 0, remote_sync_available: false, capture })
+  await f.flush()
+  const activity = (await f.manager.status()).sources[0].activity
+  assert.equal(activity.reason_code, 'source_invalid_response')
+  assert.equal(activity.report, undefined)
 })
 
 for (const [name, damage] of [

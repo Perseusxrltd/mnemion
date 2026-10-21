@@ -9,6 +9,7 @@ import httpx
 
 from ..sdk import MnemionError
 from .capture_delivery import deliver
+from .capture_storage import reclaim
 from .conversation_inbox import InboxError
 
 
@@ -19,6 +20,7 @@ def cycle(inbox, *, collect, client, revoked, usage, started=None):
     Both callers share exact receipt reconciliation and current negative fences.
     """
     began = time.monotonic() if started is None else started
+    storage = reclaim(inbox)
     local = {"completed": False, "scopes": [], "errors": ["capture_authorization_revoked"]}
     if collect is not None:
         try:
@@ -39,6 +41,7 @@ def cycle(inbox, *, collect, client, revoked, usage, started=None):
             remote_error = "capture_authorization_revoked"
         if remote_error == "capture_authorization_revoked":
             revoked()
+    storage = reclaim(inbox, previous_bytes=storage["reclaimed_bytes"])
     status = inbox.status()
     device = usage()
     capture = {
@@ -59,6 +62,7 @@ def cycle(inbox, *, collect, client, revoked, usage, started=None):
         "device_database_bytes": device["database_bytes"],
         "reason_code": next(iter(local["errors"]), None) or remote_error,
         "coverage": status["coverage"],
+        "storage": storage,
     }
     return {
         "completed": capture["capture_complete"] and capture["delivery_complete"],

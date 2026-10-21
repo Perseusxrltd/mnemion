@@ -1,4 +1,4 @@
-import type { CaptureArchiveInfo, CaptureCoverage, CaptureIndexCounts, CaptureIndexProgress, CaptureIndexSweep, CapturePreview, CaptureReason, CaptureRecoveries, CaptureRestored } from '../shared/desktop-sources.js'
+import type { CaptureArchiveInfo, CaptureCoverage, CaptureIndexCounts, CaptureIndexProgress, CaptureIndexSweep, CapturePreview, CaptureReason, CaptureRecoveries, CaptureRestored, CaptureStorage } from '../shared/desktop-sources.js'
 
 const coverageCounts = ['tracked_scopes', 'checking_scopes', 'failed_scopes', 'missing_scopes',
   'uncertain_scopes', 'unknown_prefix_scopes', 'uncertain_intervals', 'observed_bytes',
@@ -14,6 +14,18 @@ const keys = (value: unknown, names: string[]): value is Record<string, unknown>
   Object.keys(value).length === names.length && Object.keys(value).every(key => names.includes(key))
 const cursor = (value: unknown) => value === null || typeof value === 'string' && /^[a-f0-9]{64}$/.test(value)
 const uuid = (value: unknown) => typeof value === 'string' && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(value)
+export const validCaptureStorage = (value: unknown): value is CaptureStorage => {
+  const counts = ['database_bytes', 'reclaimable_bytes', 'reclaimed_bytes']
+  if (!keys(value, ['format', 'state', ...counts, 'reason']) || value.format !== 'mnemion-capture-storage-v1' ||
+    !['idle', 'reclaimed', 'deferred', 'failed'].includes(String(value.state)) ||
+    counts.some(key => !count(value[key]) || (value[key] as number) > 1e12) ||
+    (value.reclaimable_bytes as number) > (value.database_bytes as number)) return false
+  const deferred = value.state === 'deferred' || value.state === 'failed'
+  return (deferred ? ['time_budget', 'byte_budget', 'disk_reserve', 'pending_legacy', 'sqlite_failure'].includes(String(value.reason)) : value.reason === null) &&
+    (value.state === 'failed') === (value.reason === 'sqlite_failure') &&
+    (value.state !== 'idle' || value.reclaimed_bytes === 0) &&
+    (value.state !== 'reclaimed' || (value.reclaimed_bytes as number) > 0)
+}
 const indexCounts = ['events', 'lexical_indexed', 'vector_indexed', 'waiting', 'failed', 'withheld', 'forgotten', 'unknown']
 const validIndexCounts = (value: unknown): value is CaptureIndexCounts => {
   if (!keys(value, indexCounts) || indexCounts.some(key => !count(value[key]))) return false

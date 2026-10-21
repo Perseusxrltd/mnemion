@@ -30,6 +30,12 @@ export type CaptureReport = {
   capture_complete: boolean; delivery_complete: boolean;
   device_pending_bytes: number; device_database_bytes: number; reason_code?: CaptureReason | null;
   coverage?: CaptureCoverage | null;
+  storage?: CaptureStorage | null;
+}
+export type CaptureStorage = {
+  format: 'mnemion-capture-storage-v1'; state: 'idle' | 'reclaimed' | 'deferred' | 'failed';
+  database_bytes: number; reclaimable_bytes: number; reclaimed_bytes: number;
+  reason: 'time_budget' | 'byte_budget' | 'disk_reserve' | 'pending_legacy' | 'sqlite_failure' | null;
 }
 export type CaptureCoverage = {
   format: 'mnemion-capture-coverage-v1'; catalog: 'unobserved' | 'available' | 'unavailable';

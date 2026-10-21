@@ -18,12 +18,13 @@ import time
 from typing import Literal
 from uuid import UUID
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 
 from . import local_state
 from .capture_coverage import CaptureCoverage
 from .connectors.capture_delivery import retire_grant, verify_grant
 from .connectors.capture_cycle import cycle
+from .connectors.capture_storage import StorageReport
 from .connectors.conversation_capture import capture_available
 from .connectors.conversation_inbox import InboxError, Limits, open_inbox
 from .connectors.live_conversations import ConversationProvider
@@ -93,6 +94,13 @@ class CaptureReport(Command):
     delivery_complete: bool = Field(strict=True)
     reason_code: str | None = None
     coverage: CaptureCoverage | None = None
+    storage: StorageReport | None = None
+
+    @model_validator(mode="after")
+    def storage_matches(self):
+        if self.storage is not None and self.storage.database_bytes != self.database_bytes:
+            raise ValueError("Storage cleanup must describe the observed inbox")
+        return self
 
     @field_validator("reason_code")
     @classmethod

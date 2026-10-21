@@ -148,6 +148,7 @@ in `activity.report.capture`.
 | `delivery_complete` | The observed pending queue and current forgetting sweep finished without a delivery error. |
 | `database_bytes`, `device_database_bytes`, `device_pending_bytes`, `over_limit` | Local storage observations and whether the inbox exceeds an admission limit. |
 | `coverage` | Encrypted prefix accounting, history uncertainty, queue/contact observations and saved source index observations, described below. |
+| `storage` | Optional free-page cleanup observation, separate from intake and delivery success. Missing or null means unobserved, including older saved reports; see [database cleanup](#reclaim-unused-database-pages-unreleased). |
 
 Delivery reuses each saved page's exact identity and body. After an uncertain
 reply, the runner looks up the receipt before resending the same page. It applies
@@ -298,6 +299,45 @@ authorization. Free storage or let the backlog deliver, then check status again.
 The [desktop resource limits](desktop-sources.md#capture-and-resources), including
 the sampled RAM limit and process deadline, also apply. Capture does not need a
 local model; server indexing follows the workspace's model policy.
+
+### Reclaim unused database pages (unreleased)
+
+An additional development delta returns unused SQLite pages to disk without
+removing any logical event, receipt, checkpoint, producer identity or denial.
+It adds no expiry. New inboxes enable incremental vacuum; the shared desktop
+and headless cycle attempts cleanup before intake and after delivery. Each
+incremental pass has a **64 MiB page allowance** and a **0.5-second cooperative
+time budget**. SQLite progress checks and checks between work steps can interrupt
+cleanup, but a filesystem operation can outlast that budget; it is not an
+instantaneous hard deadline.
+
+An older inbox first needs a whole-database conversion. This runs only when no
+events or delivery pages remain pending, including records settled by confirmed
+storage or forgetting. It requires free disk of at least twice the current
+database size plus 1 MiB and uses the same cooperative time budget.
+The conversion is not bounded to 64 MiB; SQLite commits the completed conversion
+or rolls it back. A deferred conversion leaves the existing inbox available.
+Incremental work also checks disk reserve before each step. Unused pages may
+remain for reuse or a later eligible scan.
+
+Studio shows cleanup observations under **Capture coverage and history**.
+Agents read `activity.report.capture.storage`, format
+`mnemion-capture-storage-v1`:
+
+| Field | Meaning |
+| --- | --- |
+| `database_bytes` | Observed SQLite page bytes after the final cleanup pass, matching the capture report's database size. |
+| `reclaimable_bytes` | Unused SQLite page bytes still available for reuse or later reclamation. This is not pending-content size. |
+| `reclaimed_bytes` | Actual reduction in database page bytes accumulated across both passes of this scan, not a lifetime total. |
+| `state` | `idle`, `reclaimed`, `deferred` or `failed`; `idle` can still leave free pages below the cleanup threshold. |
+| `reason` | Final-pass bounded reason: `time_budget`, `byte_budget`, `disk_reserve` or `pending_legacy` when deferred; `sqlite_failure` when failed; otherwise null. |
+
+The final pass can report deferred or failed cleanup even after some bytes were
+reclaimed. Cleanup status does not acknowledge a delivery or establish index
+readiness. It does not reduce the **100,000 retained-reference** or **10,000
+producer-scope** counts, or solve the remaining bounded-history requirement.
+The [focused source, controller and migration checks](../research/2026-10-21-durable-capture-implementation.md#free-page-reclamation-source-delta)
+passed; all installed-platform, release and full L1 acceptance remain open.
 
 ## Pause, remove and forget
 

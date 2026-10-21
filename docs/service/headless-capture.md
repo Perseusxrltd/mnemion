@@ -291,6 +291,21 @@ subject to usable storage and authority. After a killed process, inspect status
 and reuse the existing inbox and exact pending pages; SQLite recovery and later
 delivery reconcile committed work. Do not generate a new key for that inbox.
 
+The additional unreleased [free-page cleanup](durable-capture.md#reclaim-unused-database-pages-unreleased)
+delta attempts reclamation before intake and after delivery. New inboxes use
+incremental vacuum with a 64 MiB allowance and 0.5-second cooperative time budget
+per pass. Older inboxes need whole-database conversion after all pending events
+and delivery pages settle through confirmed storage or forgetting, with disk
+reserve and the same cooperative time interruption; the 64 MiB allowance does
+not cap that conversion.
+`activity.report.capture.storage` reports final database/reclaimable page bytes,
+bytes reclaimed across the scan's two passes and the final pass's bounded
+state/reason. Older absent/null observations remain unknown. Cleanup preserves
+every logical record and denial, introduces no expiry and does not relieve the
+100,000-reference or 10,000-scope caps. Its focused source, controller and
+migration checks passed separately from the earlier headless proof; all
+installed-platform, release and full L1 acceptance remain open.
+
 ## Back up and inspect locally
 
 Generate a separate recovery key into a new protected file:
