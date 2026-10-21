@@ -41,6 +41,16 @@ The new [native capture probe](../../studio/electron/native-capture-probe.ts)
 is wired into the [installed-hosting check](../../studio/electron/scripts/smoke-installed-hosting.mjs)
 for all six required desktop targets. Its packaged executions remain pending.
 
+Development [CI run 39527490005](https://github.com/Perseusxrltd/mnemion/actions/runs/39527490005)
+identified a missing capture helper in the container build and stale upgrade-table
+and health-contract expectations. The helper is now included, and all **15**
+targeted upgrade/health checks passed, including the released schema 29 to capture
+schema 30 transition with existing keys, grants and memories preserved. The six
+new capture modules are measured by the service coverage suite; the legacy 45%
+and service 75% thresholds remain unchanged. Full corrected CI and native
+acceptance remain pending. The separate [4.44 security hotfix](../releases/4.44.0.md)
+does not ship this unfinished capture milestone.
+
 ## Implemented components
 
 | Component | Current implementation |

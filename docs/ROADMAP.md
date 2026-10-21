@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.43.0**. Roadmap updated: **2026-10-21**.
+Reviewed source distribution: **4.44.0**. Roadmap updated: **2026-10-21**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
 [Release status](RELEASE_STATUS.md) and the [maintenance board](MAINTENANCE_STATUS.md)
@@ -28,6 +28,13 @@ issue review, publication and version-linked closure together.
   restart, delivery and administrator-assisted removal. Portable recovery,
   complete capture policy and coverage, headless operation, bounded history and
   all six packaged targets remain required before this L1 milestone ships.
+
+- **4.44 is a standalone security hotfix candidate.** Certifi 2026.10.19 and
+  Pillow 13.0.0 address the reported dependency advisories while preserving the
+  pinned text models. [Dependency and offline E5/BGE validation](validation/2026-10-21-security-dependencies.md)
+  passed within its recorded scope. Native packaging, publication, public update
+  checks and actual installed acceptance remain pending. Capture/L1 delivery and
+  all requirement statuses remain unchanged.
 
 - **4.43 is published and accepted on the actual Windows app and shared host.**
   The [paired acceptance](validation/2026-10-21-443-acceptance.md) retained
