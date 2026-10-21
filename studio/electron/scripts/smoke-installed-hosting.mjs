@@ -154,6 +154,9 @@ function credentialsHash() {
 try {
   const nativeRuntime = await install()
   const port = await freePort()
+  const preview = await launch({ phase: 'capture-preview', port })
+  if (!preview.nativeEmptyCapturePreview) throw new Error('The installed empty capture preview did not complete')
+  await stop()
   const first = await launch({ phase: 'create', port, emulated: nativeRuntime.engine_emulation === true })
   if (!first.actualSetupControls || !first.realModelInference) throw new Error('The installed UI did not exercise real setup and inference')
   if (!first.nativeNgrokSdkLoaded) throw new Error('The installed engine did not load its remote connection runtime')
@@ -238,7 +241,7 @@ try {
   if (credentialsHash() !== credentials) throw new Error('Individual sign-in or revocation replaced the independent workspace credentials')
   const evidence = { passed: true, platform: process.platform, architecture: process.arch, nativeRuntime,
     installer: process.platform === 'win32' ? 'NSIS per-user' : process.platform === 'darwin' ? 'DMG copied application' : 'AppImage portable user installation',
-    installationPathWithSpacesAndUnicode: true, actualSetupControls: true, authenticatedApi: true,
+    installationPathWithSpacesAndUnicode: true, nativeEmptyCapturePreview: true, actualSetupControls: true, authenticatedApi: true,
     nativeNgrokSdkLoaded: true, hostedBrowserAndConsentAssets: true,
     nativeJournalRegistrationAndSeparateApproval: true,
     nativeEncryptedSnapshotAndLedger: true, backupKeyProtectedAndReopenedByOsStore: true,

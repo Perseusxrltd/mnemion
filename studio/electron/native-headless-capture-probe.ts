@@ -4,9 +4,11 @@ import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import { mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
+import { StringDecoder } from 'node:string_decoder'
 import { callNativeOperator as call } from './native-operator-probe.js'
 import { inRenderer, until } from './native-capture-probe.js'
 import { NativeCaptureRelay } from './native-capture-relay.js'
+import { isolatedPreviewDiagnostic } from './native-capture-diagnostics.js'
 
 const digest = (value: Buffer) => createHash('sha256').update(value).digest('hex')
 const row = (text: string) => [
@@ -29,7 +31,7 @@ function diagnosticLine(line: string): string | undefined {
   return undefined
 }
 
-function launch(config: string, environment: NodeJS.ProcessEnv, options: string[], input?: Record<string, unknown>) {
+function launch(config: string, environment: NodeJS.ProcessEnv, options: string[], input?: Record<string, unknown>, isolatedPreview = false) {
   const executable = !app.isPackaged && process.env.MNEMION_LOCAL_ENGINE ? process.env.MNEMION_LOCAL_ENGINE :
     join(process.resourcesPath, 'engine', process.platform === 'win32' ? 'mnemion-engine.exe' : 'mnemion-engine')
   const child = spawn(executable, ['connect', '--config', config, ...options], {
@@ -40,22 +42,26 @@ function launch(config: string, environment: NodeJS.ProcessEnv, options: string[
   const operation = String(input?.action ?? options[0] ?? 'scan')
   let failure: Error | undefined, size = 0
   const pending = { out: '', error: '' }
+  const decoders = { out: new StringDecoder('utf8'), error: new StringDecoder('utf8') }
+  const receive = (kind: 'out' | 'error', line: string) => {
+    if (!line.trim()) return
+    try { (kind === 'out' ? reports : errors).push(JSON.parse(line)) } catch {
+      failure ??= new Error('The installed connector emitted an unstructured diagnostic (' + operation + '; ' + kind + ').')
+      const diagnostic = diagnosticLine(line.trim()) ?? (isolatedPreview ?
+        'isolated_preview:' + isolatedPreviewDiagnostic(line, environment, [config, executable]) : undefined)
+      if (diagnostic && !diagnostics.includes(diagnostic)) diagnostics.push(diagnostic)
+      if (diagnostics.length > 8) diagnostics.shift()
+      // Keep the bounded tail until exit. Unstructured output still fails.
+    }
+  }
   const collect = (kind: 'out' | 'error', buffer: Buffer) => {
     size += buffer.length
     if (size > 1024 * 1024) { failure = new Error('The native connector exceeded its bounded diagnostic output.'); child.kill(); return }
-    pending[kind] += buffer.toString('utf8')
+    pending[kind] += decoders[kind].write(buffer)
     while (pending[kind].includes('\n')) {
       const end = pending[kind].indexOf('\n'), line = pending[kind].slice(0, end).trim()
       pending[kind] = pending[kind].slice(end + 1)
-      if (!line) continue
-      try { (kind === 'out' ? reports : errors).push(JSON.parse(line)) } catch {
-        failure ??= new Error('The installed connector emitted an unstructured diagnostic (' + operation + '; ' + kind + ').')
-        const diagnostic = diagnosticLine(line)
-        if (diagnostic && !diagnostics.includes(diagnostic)) diagnostics.push(diagnostic)
-        if (diagnostics.length > 8) diagnostics.shift()
-        // Preserve the bounded traceback tail before the process exits. This
-        // remains a failing check; command/watch deadlines still stop the child.
-      }
+      receive(kind, line)
     }
   }
   child.stdout.on('data', value => collect('out', value))
@@ -63,8 +69,18 @@ function launch(config: string, environment: NodeJS.ProcessEnv, options: string[
   child.stdin.on('error', () => {})
   child.stdin.end(input ? JSON.stringify(input) : undefined)
   child.on('error', () => { failure = new Error('The installed independent connector could not start.') })
-  const done = new Promise<number | null>(resolve => child.on('close', code => resolve(code)))
-  const check = () => { if (failure) throw new Error(failure.message + (diagnostics.length ? ' ' + diagnostics.join(', ') : '')) }
+  const done = new Promise<number | null>(resolve => child.on('close', code => {
+    for (const kind of ['out', 'error'] as const) receive(kind, pending[kind] + decoders[kind].end())
+    resolve(code)
+  }))
+  const check = () => {
+    if (!failure) return
+    const last = errors.at(-1)?.error
+    const errorCode = typeof last === 'string' && /^[a-z_]{1,80}$/.test(last) ? last : 'none'
+    throw new Error(failure.message + ' exit=' + child.exitCode + ' signal=' + child.signalCode +
+      ' json_stdout=' + reports.length + ' json_stderr=' + errors.length + ' error=' + errorCode +
+      (diagnostics.length ? ' ' + diagnostics.join(', ') : ''))
+  }
   const stop = async () => {
     if (child.exitCode === null && child.signalCode === null) child.kill()
     await Promise.race([done, new Promise<never>((_, reject) => {
@@ -76,8 +92,8 @@ function launch(config: string, environment: NodeJS.ProcessEnv, options: string[
   return { child, reports, errors, done, check, stop }
 }
 
-async function command(file: string, env: NodeJS.ProcessEnv, options: string[], input?: Record<string, unknown>, expected = 0) {
-  const running = launch(file, env, options, input)
+async function command(file: string, env: NodeJS.ProcessEnv, options: string[], input?: Record<string, unknown>, expected = 0, isolatedPreview = false) {
+  const running = launch(file, env, options, input, isolatedPreview)
   const timer = setTimeout(() => running.child.kill(), 120000)
   try {
     const code = await running.done
@@ -88,6 +104,36 @@ async function command(file: string, env: NodeJS.ProcessEnv, options: string[], 
     if (!report || input && report.ok !== true) throw new Error('The installed connector did not return its complete command receipt.')
     return input ? report.result : report
   } finally { clearTimeout(timer); await running.stop() }
+}
+
+export async function verifyNativeHeadlessPreview(probePath: string): Promise<Record<string, unknown>> {
+  // Run before creating any workspace: this fixture has no source contents,
+  // enrollment, working service credential, model or remote connection.
+  const base = dirname(probePath), id = randomUUID()
+  const folder = join(base, 'Empty preview Équipe ' + id)
+  const config = join(base, 'preview-' + id + '.json')
+  const environment = { ...Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith('MNEMION_'))),
+    MNEMION_CAPTURE_GATE_DEVICE: 'disposable-preview-' + randomUUID() }
+  await mkdir(folder, { mode: 0o700 })
+  try {
+    await writeFile(config, JSON.stringify({ version: 1, service_url: 'http://127.0.0.1:1',
+      service_token: { env: 'MNEMION_CAPTURE_GATE_DEVICE' }, connector_id: randomUUID(),
+      provider: { type: 'conversations', path: folder, capture_mode: 'messages', scope_id: 'native-empty-preview',
+        name: 'Empty preview', members: [], publish_to_mapped_members: true, state_directory: 'preview-state-' + id + '/provider-state' },
+      capture: { id, tenant_id: randomUUID(), principal_id: randomUUID(), source_id: randomUUID(), grant_id: randomUUID(),
+        keep_accepted: true, state_directory: 'preview-state-' + id, inbox_key: { file: 'unused-inbox-' + id + '.key' },
+        pending_limit_mib: 32, history_limit_events: 3000, database_limit_mib: 128, memory_limit_mib: 256 },
+    }), { mode: 0o600, flag: 'wx' })
+    const preview = await command(config, environment, ['--capture-control'], { action: 'preview' }, 0, true)
+    if (preview.content_saved || preview.records.selected !== 0 || preview.hidden_reasoning !== 'unavailable') {
+      throw new Error('The isolated native preview saved content or claimed hidden data access.')
+    }
+    return { phase: 'capture-preview', nativeEmptyCapturePreview: true }
+  } finally {
+    await rm(config, { force: true })
+    await rm(folder, { recursive: true, force: true })
+    await rm(join(base, 'preview-state-' + id), { recursive: true, force: true })
+  }
 }
 
 export async function verifyNativeHeadlessCapture(window: BrowserWindow, probePath: string): Promise<Record<string, unknown>> {

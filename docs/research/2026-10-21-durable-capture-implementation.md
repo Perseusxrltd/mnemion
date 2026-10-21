@@ -1190,11 +1190,30 @@ production memory writes or paid model calls. Its qualified receipt,
 `capture-key-controls-qualified-preview.receipt.json`, pins **557** current
 runtime inputs to
 `0137e830971628769eab164a68b25995b0fb4b5b676939d86ba4168eecaa770e`.
-All six packaged targets for this source and the remaining L1 requirements
-remain open. No new release is claimed. The batch is on main at `9095372a`;
-[native run 39613577682](https://github.com/Perseusxrltd/mnemion/actions/runs/39613577682)
-uses that exact source. Website synchronization completed successfully without
-a corporate site code deployment.
+Complete six-target packaged acceptance and the remaining L1 requirements
+remain open. No new release is claimed. The batch is on main at `9095372a`.
+Website synchronization completed successfully without a corporate site code
+deployment.
+
+### Native matrix checkpoint
+
+[Native run 39613577682](https://github.com/Perseusxrltd/mnemion/actions/runs/39613577682)
+uses frozen source `9095372a7b56679e8ab8d4e18bb59d32721a3746`.
+Linux x64/ARM64 and Windows x64 jobs passed; Windows ARM64 remains pending.
+Intel macOS failed in its first headless preview with unclassified stderr.
+Apple Silicon was cancelled before runner assignment; GitHub annotations
+confirm hosted capacity prevented that execution.
+
+An early installed empty-source preview now runs before workspace creation,
+using the same installed engine from the application process. Four diagnostic
+redaction checks and its Linux source dispatcher/CLI preview passed; native
+execution remains pending. The empty fixture has no conversation contents,
+working service credential or model call. Its bounded diagnostics redact
+environment values, credentials and paths, and still fail on unstructured
+output. Other capture phases retain code-only diagnostics and now report exit
+status and structured-response counts. The stream reader preserves split UTF-8
+and examines the final unterminated line. This is diagnostic work, not a
+diagnosed Mac product fix or additional installed acceptance.
 
 ## Supervised headless inbox-key forwarding
 
@@ -1231,6 +1250,7 @@ The current **557** runtime inputs have digest
 `4d965a0ee58eba33d15205993876b4759a2ba3ec54d828d893929e17a7da90a7`.
 Only `mnemion/service/supervision.py` differs from the preceding native matrix's
 runtime inputs; that running matrix is not validation of this later change.
+The later Supervisor source `466efe57` has CI pending.
 Independent Windows supervision, boot registration, broader managed lifecycle
 acceptance and all remaining L1 requirements remain open. Public **4.44.0** is
 unchanged.

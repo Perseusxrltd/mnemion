@@ -13,6 +13,22 @@ Git connection. Existing file adapters still require complete stable files.
 Git memory journals must use the [journal connector](git-journal.md), including
 its complete catalog and denials. This adapter rejects journal records.
 
+## Provider stores and exports
+
+This adapter follows selected JSONL files; it does not read providers' native
+databases. At the [studied OpenClaw and Hermes revisions](../research/2026-10-21-provider-capture-stores.md),
+both live agent stores use SQLite. OpenClaw's old session JSONL is legacy/archive
+material, and its `transcripts` command concerns meetings. Hermes' canonical
+JSONL export contains one whole session with a `messages` array per line.
+Compatible session exports can receive a generic readable projection, within
+the record limit, but that parser does not interpret Hermes' inactive/compacted
+flags. Its pretty-printed `/save json` output belongs in the
+[complete-file export workflow](capture.md).
+
+Importing an export does not establish live provider coverage, branch/rewrite/deletion
+tracking or native database acceptance. The linked study records the provider
+readers and lifecycle handling still needed for full capture.
+
 ## Set up in the app
 
 1. Upgrade the server and source runner to **4.17.0 or later**.
