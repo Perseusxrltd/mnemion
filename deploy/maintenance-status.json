@@ -25,62 +25,98 @@
   ],
   "runs": [
     {
-      "id": 39637812408,
+      "id": 39641324637,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "7e83a1857f2768fe2e837bf8d10ea7ee67edd6ef",
+      "source_commit": "8c2e236c52574e8688f4b7a3980d8cae7055f823",
       "status": "queued",
       "conclusion": null,
-      "updated_at": "2026-10-21T16:46:40Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39637812408",
+      "updated_at": "2026-10-21T17:11:08Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39641324637",
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 7,
-        "succeeded": 7,
+        "completed": 3,
+        "succeeded": 3,
         "active": [
           {
-            "id": 119353120534,
-            "name": "supervision (macos-15)",
-            "status": "queued",
-            "runner_assigned": null,
-            "steps": []
-          },
-          {
-            "id": 119353120714,
-            "name": "service (3.13)",
+            "id": 119365881305,
+            "name": "studio",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+              "Run python deploy/bundle_studio.py"
             ]
           },
           {
-            "id": 119353120951,
+            "id": 119365954042,
             "name": "service (3.14)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+              "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38"
             ]
           },
           {
-            "id": 119353120956,
-            "name": "supervision (macos-15-intel)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify managed installation, host recovery, signed updates and rollback with real processes"
-            ]
-          },
-          {
-            "id": 119353121251,
+            "id": 119365954052,
             "name": "service (3.12)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+              "Initialize containers"
+            ]
+          },
+          {
+            "id": 119365954092,
+            "name": "service (3.13)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run python -m pip install uv==0.12.24"
+            ]
+          },
+          {
+            "id": 119365954113,
+            "name": "supervision (macos-15-intel)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the current Intel cryptography runtime with static OpenSSL"
+            ]
+          },
+          {
+            "id": 119365954178,
+            "name": "legacy",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
+            ]
+          },
+          {
+            "id": 119365954185,
+            "name": "container (ubuntu-22.04)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the actual deployment image with its documentation"
+            ]
+          },
+          {
+            "id": 119365954187,
+            "name": "supervision (macos-15)",
+            "status": "queued",
+            "runner_assigned": false,
+            "steps": []
+          },
+          {
+            "id": 119365954197,
+            "name": "container (ubuntu-22.04-arm)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the actual deployment image with its documentation"
             ]
           }
         ]
@@ -161,120 +197,23 @@
       "workflow": "release.yml",
       "branch": "release/4.44.1-r2",
       "source_commit": "92d5e5053e960c64331b5446f989f3d421c47c7c",
-      "status": "queued",
+      "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-21T16:59:10Z",
+      "updated_at": "2026-10-21T17:11:19Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39637945958",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 19,
-        "completed": 5,
-        "succeeded": 4,
+        "total": 26,
+        "completed": 22,
+        "succeeded": 21,
         "active": [
-          {
-            "id": 119359626555,
-            "name": "checks / studio",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
-            ]
-          },
-          {
-            "id": 119359695449,
-            "name": "native / Encrypted files / Windows / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run python -m pip install pytest cryptography==50.0.2"
-            ]
-          },
-          {
-            "id": 119359695588,
-            "name": "native / Encrypted files / Windows / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
-            ]
-          },
-          {
-            "id": 119359696369,
-            "name": "native / native_database / Private state / Windows / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
-            ]
-          },
-          {
-            "id": 119359696459,
-            "name": "native / native_database / Private state / Windows / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install small private-state test dependencies"
-            ]
-          },
-          {
-            "id": 119359704749,
-            "name": "checks / dependency-audit",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uvx pip-audit --path .venv/lib/python3.12/site-packages"
-            ]
-          },
-          {
-            "id": 119359704751,
-            "name": "checks / legacy",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
-            ]
-          },
           {
             "id": 119359704805,
             "name": "checks / service (3.12)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Initialize containers"
-            ]
-          },
-          {
-            "id": 119359704831,
-            "name": "checks / service (3.13)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Initialize containers"
-            ]
-          },
-          {
-            "id": 119359704870,
-            "name": "checks / supervision (macos-15)",
-            "status": "queued",
-            "runner_assigned": false,
-            "steps": []
-          },
-          {
-            "id": 119359704960,
-            "name": "checks / container (ubuntu-22.04-arm)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the actual deployment image with its documentation"
-            ]
-          },
-          {
-            "id": 119359704967,
-            "name": "checks / container (ubuntu-22.04)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the actual deployment image with its documentation"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
@@ -283,7 +222,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
             ]
           },
           {
@@ -292,7 +231,16 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Initialize containers"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+            ]
+          },
+          {
+            "id": 119366021948,
+            "name": "native / native_database / Database / Windows ARM host / x64 engine",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093"
             ]
           }
         ]
@@ -311,16 +259,16 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39639569502"
     },
     {
-      "id": 39637812433,
+      "id": 39641324691,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "7e83a1857f2768fe2e837bf8d10ea7ee67edd6ef",
+      "source_commit": "8c2e236c52574e8688f4b7a3980d8cae7055f823",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-21T16:46:56Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39637812433"
+      "updated_at": "2026-10-21T17:10:10Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39641324691"
     }
   ],
-  "observed_at": "2026-10-21T16:59:33+00:00"
+  "observed_at": "2026-10-21T17:11:34+00:00"
 }
