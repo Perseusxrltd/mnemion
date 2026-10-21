@@ -1207,13 +1207,36 @@ confirm hosted capacity prevented that execution.
 An early installed empty-source preview now runs before workspace creation,
 using the same installed engine from the application process. Four diagnostic
 redaction checks and its Linux source dispatcher/CLI preview passed; native
-execution remains pending. The empty fixture has no conversation contents,
+execution subsequently identified the warning described below. The empty fixture has no conversation contents,
 working service credential or model call. Its bounded diagnostics redact
 environment values, credentials and paths, and still fail on unstructured
 output. Other capture phases retain code-only diagnostics and now report exit
 status and structured-response counts. The stream reader preserves split UTF-8
 and examines the final unterminated line. This is diagnostic work, not a
 diagnosed Mac product fix or additional installed acceptance.
+
+### Intel Mac OpenSSL provider selection
+
+[Targeted run 39620657759](https://github.com/Perseusxrltd/mnemion/actions/runs/39620657759)
+at `2431ac86` failed in the early preview, before workspace creation. The engine
+exited **0** with one structured stdout receipt and no structured error. Its
+stderr was the OpenSSL warning that the optional legacy provider failed to load.
+The test correctly retained that distinction; the failure was not a missing
+capture receipt or an observed encryption failure.
+
+The native engine now sets the documented
+[`CRYPTOGRAPHY_OPENSSL_NO_LEGACY`](https://github.com/pyca/cryptography/blob/50.0.2/docs/openssl.rst)
+switch before importing service code or dispatching a worker. Mnemion's supported
+encryption, signature and password formats use the default provider; no legacy
+algorithm is required. This selects the runtime provider explicitly and does not
+suppress warnings or weaken the strict installed check.
+
+One fresh-interpreter regression failed before the change and passes afterward:
+the actual native entry initializes without the legacy cipher, while AES-GCM,
+Ed25519, RSA and Argon2id work. Changed ciphertext bindings, changed signed data
+and an incorrect password are rejected. Installed Mac reruns remain required;
+this source result is not six-platform acceptance or a new release. The earlier
+failed native receipts remain retained. Public **4.44.0** is unchanged.
 
 ## Supervised headless inbox-key forwarding
 
@@ -1243,14 +1266,14 @@ PID, the same protected inbox key reopened, and the accepted memory delivered
 exactly once to the isolated PostgreSQL-backed workspace. Private process logs
 contained no inbox key, and Supervisor stopped cleanly. The final journey's wait
 also tolerates legitimately absent initial observations. It used no production
-memories or paid model calls. Both macOS supervision CI jobs now include these
-regressions; their actual results remain pending.
+memories or paid model calls. Both macOS supervision CI jobs include these
+regressions and passed in [CI run 39615924894](https://github.com/Perseusxrltd/mnemion/actions/runs/39615924894),
+along with all 12 jobs for Supervisor source `466efe57`.
 
-The current **557** runtime inputs have digest
+That Supervisor checkpoint's **557** runtime inputs have digest
 `4d965a0ee58eba33d15205993876b4759a2ba3ec54d828d893929e17a7da90a7`.
 Only `mnemion/service/supervision.py` differs from the preceding native matrix's
-runtime inputs; that running matrix is not validation of this later change.
-The later Supervisor source `466efe57` has CI pending.
+runtime inputs; that native matrix is not validation of this later change.
 Independent Windows supervision, boot registration, broader managed lifecycle
 acceptance and all remaining L1 requirements remain open. Public **4.44.0** is
 unchanged.
