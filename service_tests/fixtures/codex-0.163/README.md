@@ -39,3 +39,8 @@ modes, including resume, restart and forgetting boundaries. Follow the
 [current implementation checkpoint](../../../docs/research/2026-10-21-durable-capture-implementation.md#current-codex-producer-21-october-2026)
 for the scoped results and retained failures. Full native acceptance at the
 current exact source, shared-host operation and device recovery remain open.
+
+The same exact producer corpus also qualifies the separate public 4.44.2
+[mirror-connector correction](../../../docs/validation/2026-10-21-codex-compatibility.md).
+That focused patch excludes unfinished L1; its 66-case source result remains
+separate from this development branch's durable-inbox and native acceptance.
