@@ -37,18 +37,9 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 5,
-        "succeeded": 5,
+        "completed": 7,
+        "succeeded": 7,
         "active": [
-          {
-            "id": 119217268079,
-            "name": "legacy",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
-            ]
-          },
           {
             "id": 119217268321,
             "name": "service (3.13)",
@@ -64,7 +55,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Matching PostgreSQL recovery tools"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
@@ -83,15 +74,6 @@
             "runner_assigned": true,
             "steps": [
               "Build the current Intel cryptography runtime with static OpenSSL"
-            ]
-          },
-          {
-            "id": 119217268389,
-            "name": "container (ubuntu-22.04-arm)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify the non-root image includes Studio, guides and notices offline"
             ]
           },
           {
@@ -124,22 +106,33 @@
       "workflow": "desktop.yml",
       "branch": "main",
       "source_commit": "8aacc859bb2fa4d60d3036ac4ad0655ef354c214",
-      "status": "queued",
+      "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-21T12:20:00Z",
+      "updated_at": "2026-10-21T12:21:35Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39598747700",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 1,
-        "completed": 0,
-        "succeeded": 0,
+        "total": 11,
+        "completed": 9,
+        "succeeded": 9,
         "active": [
           {
-            "id": 119217554678,
-            "name": "targets",
+            "id": 119217620898,
+            "name": "Encrypted files / Windows / arm64",
             "status": "in_progress",
             "runner_assigned": true,
-            "steps": []
+            "steps": [
+              "Run actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1"
+            ]
+          },
+          {
+            "id": 119218221561,
+            "name": "native_database / Database / Windows ARM host / x64 engine",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
+            ]
           }
         ]
       },
@@ -179,15 +172,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39534260688"
     },
     {
-      "id": 39598649202,
+      "id": 39598867307,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "8aacc859bb2fa4d60d3036ac4ad0655ef354c214",
+      "source_commit": "662633736fbd6b0c0619a5f6d1d28769a1aa4e76",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-21T12:19:29Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39598649202"
+      "updated_at": "2026-10-21T12:21:12Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39598867307"
     },
     {
       "id": 39534391338,
@@ -201,5 +194,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39534391338"
     }
   ],
-  "observed_at": "2026-10-21T12:20:06+00:00"
+  "observed_at": "2026-10-21T12:21:49+00:00"
 }
