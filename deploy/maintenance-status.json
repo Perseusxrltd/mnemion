@@ -30,55 +30,10 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "8aacc859bb2fa4d60d3036ac4ad0655ef354c214",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-21T12:19:28Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39598649170",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 12,
-        "completed": 8,
-        "succeeded": 8,
-        "active": [
-          {
-            "id": 119217268321,
-            "name": "service (3.13)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 119217268328,
-            "name": "service (3.12)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 119217268343,
-            "name": "service (3.14)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 119217268358,
-            "name": "supervision (macos-15-intel)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the current Intel cryptography runtime with static OpenSSL"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-21T12:43:04Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39598649170"
     },
     {
       "id": 39576347122,
@@ -113,7 +68,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
+              "Installed app creates, searches and reopens a real local workspace"
             ]
           },
           {
@@ -122,7 +77,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
+              "Installed app creates, searches and reopens a real local workspace"
             ]
           },
           {
@@ -131,7 +86,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run uv run --project studio/client --no-sync python -m pytest client_tests -q"
+              "Installed app creates, searches and reopens a real local workspace"
             ]
           },
           {
@@ -140,7 +95,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run npm --prefix studio/electron ci"
+              "Installed app creates, searches and reopens a real local workspace"
             ]
           },
           {
@@ -149,7 +104,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
+              "Installed Linux app creates, searches and reopens a real local workspace"
             ]
           },
           {
@@ -158,7 +113,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
+              "Installed Linux app creates, searches and reopens a real local workspace"
             ]
           }
         ]
@@ -221,5 +176,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39534391338"
     }
   ],
-  "observed_at": "2026-10-21T12:29:35+00:00"
+  "observed_at": "2026-10-21T12:43:43+00:00"
 }
