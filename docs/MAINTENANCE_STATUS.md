@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-21T17:38:32+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-21T17:42:40+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.44.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.44.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -31,14 +31,14 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 - supervision \(macos-15\): queued.
 - service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
+- supervision \(macos-15-intel\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
 - service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 - service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 
 [Run 39637945958](https://github.com/Perseusxrltd/mnemion/actions/runs/39637945958): 30/32 jobs completed; 29 succeeded.
 
-- native / macos-15-intel / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
-- native / windows-11-arm / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
+- native / macos-15-intel / x64: in\_progress — Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02.
+- native / windows-11-arm / arm64: in\_progress — Native Windows installation, authenticated upgrade and relaunch.
 
 
 ## Unsuccessful jobs
