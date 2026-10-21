@@ -41,66 +41,10 @@
       "workflow": "public-updates.yml",
       "branch": "v4.43.0",
       "source_commit": "603be186385f473984a6e553045077164e43f25a",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-20T23:59:50Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39518522368",
-      "job_progress": {
-        "total": 7,
-        "completed": 1,
-        "succeeded": 1,
-        "active": [
-          {
-            "id": 118956465883,
-            "name": "windows / arm64 public upgrade",
-            "status": "in_progress",
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 118956465901,
-            "name": "macos / arm64 public upgrade",
-            "status": "in_progress",
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 118956465955,
-            "name": "macos / x64 public upgrade",
-            "status": "in_progress",
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 118956466013,
-            "name": "linux / arm64 public upgrade",
-            "status": "in_progress",
-            "steps": [
-              "Linux desktop libraries"
-            ]
-          },
-          {
-            "id": 118956466028,
-            "name": "linux / x64 public upgrade",
-            "status": "in_progress",
-            "steps": [
-              "Linux desktop libraries"
-            ]
-          },
-          {
-            "id": 118956466093,
-            "name": "windows / x64 public upgrade",
-            "status": "in_progress",
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-21T00:11:28Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39518522368"
     },
     {
       "id": 39460885775,
@@ -147,5 +91,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39518520187"
     }
   ],
-  "observed_at": "2026-10-21T00:00:17+00:00"
+  "observed_at": "2026-10-21T00:11:54+00:00"
 }
