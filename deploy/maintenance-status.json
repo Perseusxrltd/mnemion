@@ -37,45 +37,9 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 3,
-        "succeeded": 3,
+        "completed": 7,
+        "succeeded": 7,
         "active": [
-          {
-            "id": 119375928239,
-            "name": "studio",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run npm --prefix packages/client test"
-            ]
-          },
-          {
-            "id": 119376017137,
-            "name": "legacy",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
-            ]
-          },
-          {
-            "id": 119376017143,
-            "name": "container (ubuntu-22.04)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the actual deployment image with its documentation"
-            ]
-          },
-          {
-            "id": 119376017187,
-            "name": "container (ubuntu-22.04-arm)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the actual deployment image with its documentation"
-            ]
-          },
           {
             "id": 119376017250,
             "name": "supervision (macos-15)",
@@ -89,7 +53,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Matching PostgreSQL recovery tools"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
@@ -107,7 +71,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run uv sync --locked --python 3.12 --group dev"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
@@ -116,7 +80,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Matching PostgreSQL recovery tools"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           }
         ]
@@ -204,18 +168,9 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 32,
-        "completed": 29,
-        "succeeded": 28,
+        "completed": 30,
+        "succeeded": 29,
         "active": [
-          {
-            "id": 119366541692,
-            "name": "native / windows-2022 / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Native Windows installation, authenticated upgrade and relaunch"
-            ]
-          },
           {
             "id": 119366541777,
             "name": "native / macos-15-intel / x64",
@@ -250,16 +205,16 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39639569502"
     },
     {
-      "id": 39644195219,
+      "id": 39645475009,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "795c1e3321f8fa6df21fdb8eac7cc9304af191e1",
+      "source_commit": "787349800acd9a1d7a3159e7f2e2233f9e10d65a",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-21T17:29:24Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39644195219"
+      "updated_at": "2026-10-21T17:37:57Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39645475009"
     }
   ],
-  "observed_at": "2026-10-21T17:30:57+00:00"
+  "observed_at": "2026-10-21T17:38:32+00:00"
 }
