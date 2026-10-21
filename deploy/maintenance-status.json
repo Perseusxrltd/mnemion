@@ -30,15 +30,15 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "aa134483899d8a05b8b8fb459f12235484c1e215",
-      "status": "queued",
+      "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-21T01:56:22Z",
+      "updated_at": "2026-10-21T01:56:40Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39530171334",
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 2,
-        "succeeded": 2,
+        "completed": 5,
+        "succeeded": 3,
         "active": [
           {
             "id": 118993995586,
@@ -46,23 +46,16 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run python deploy/bundle_studio.py"
+              "Run npm --prefix studio/electron ci && npm --prefix studio/electron test"
             ]
           },
           {
             "id": 118994044477,
             "name": "supervision (macos-15)",
-            "status": "queued",
-            "runner_assigned": null,
-            "steps": []
-          },
-          {
-            "id": 118994044489,
-            "name": "container (ubuntu-22.04)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
             ]
           },
           {
@@ -71,7 +64,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Set up job"
+              "Run npm --prefix packages/client ci && npm --prefix packages/client test"
             ]
           },
           {
@@ -79,46 +72,61 @@
             "name": "legacy",
             "status": "in_progress",
             "runner_assigned": true,
-            "steps": []
-          },
-          {
-            "id": 118994044555,
-            "name": "container (ubuntu-22.04-arm)",
-            "status": "queued",
-            "runner_assigned": null,
-            "steps": []
+            "steps": [
+              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
+            ]
           },
           {
             "id": 118994044561,
             "name": "supervision (macos-15-intel)",
             "status": "in_progress",
             "runner_assigned": true,
-            "steps": []
+            "steps": [
+              "Build the current Intel cryptography runtime with static OpenSSL"
+            ]
           },
           {
             "id": 118994044581,
             "name": "service (3.14)",
             "status": "in_progress",
             "runner_assigned": true,
-            "steps": []
-          },
-          {
-            "id": 118994044588,
-            "name": "dependency-audit",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": []
+            "steps": [
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+            ]
           },
           {
             "id": 118994044605,
             "name": "service (3.12)",
             "status": "in_progress",
             "runner_assigned": true,
-            "steps": []
+            "steps": [
+              "Run npm --prefix packages/client ci && npm --prefix packages/client test"
+            ]
           }
         ]
       },
-      "failed_jobs": []
+      "failed_jobs": [
+        {
+          "name": "container (ubuntu-22.04)",
+          "id": 118994044489,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 6,
+          "steps": [
+            "Build the actual deployment image with its documentation"
+          ]
+        },
+        {
+          "name": "container (ubuntu-22.04-arm)",
+          "id": 118994044555,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 6,
+          "steps": [
+            "Build the actual deployment image with its documentation"
+          ]
+        }
+      ]
     },
     {
       "id": 39518522368,
@@ -159,18 +167,10 @@
       "workflow": "website-release.yml",
       "branch": "main",
       "source_commit": "aa134483899d8a05b8b8fb459f12235484c1e215",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-21T01:56:26Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39530171313",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 1,
-        "completed": 1,
-        "succeeded": 1,
-        "active": []
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-21T01:56:36Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39530171313"
     },
     {
       "id": 39518520187,
@@ -184,5 +184,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39518520187"
     }
   ],
-  "observed_at": "2026-10-21T01:56:38+00:00"
+  "observed_at": "2026-10-21T01:57:11+00:00"
 }
