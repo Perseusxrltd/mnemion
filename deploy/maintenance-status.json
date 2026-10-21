@@ -25,15 +25,31 @@
   ],
   "runs": [
     {
-      "id": 39521717907,
+      "id": 39523524014,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "5ec5457279e34aa9338fd637f130c8f6aed4f9df",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-21T00:31:12Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39521717907"
+      "source_commit": "8465fd8cd217e1854eba37ee90c8790811b44403",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-21T00:48:25Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39523524014",
+      "job_progress": {
+        "total": 8,
+        "completed": 7,
+        "succeeded": 2,
+        "active": [
+          {
+            "id": 118972751247,
+            "name": "studio",
+            "status": "in_progress",
+            "steps": [
+              "Post Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": []
     },
     {
       "id": 39518522368,
@@ -69,15 +85,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39518325759"
     },
     {
-      "id": 39521717853,
+      "id": 39523523857,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "5ec5457279e34aa9338fd637f130c8f6aed4f9df",
+      "source_commit": "8465fd8cd217e1854eba37ee90c8790811b44403",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-21T00:30:38Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39521717853"
+      "updated_at": "2026-10-21T00:48:35Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39523523857"
     },
     {
       "id": 39518520187,
@@ -91,5 +107,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39518520187"
     }
   ],
-  "observed_at": "2026-10-21T00:31:49+00:00"
+  "observed_at": "2026-10-21T00:49:11+00:00"
 }
