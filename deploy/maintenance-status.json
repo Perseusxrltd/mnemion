@@ -41,37 +41,10 @@
       "workflow": "public-updates.yml",
       "branch": "v4.44.0",
       "source_commit": "2d9736649dcee74362b9d9ebe0d73af3ae984305",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-21T02:41:37Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39534394111",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 7,
-        "completed": 5,
-        "succeeded": 5,
-        "active": [
-          {
-            "id": 119007613465,
-            "name": "linux / x64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 119007613522,
-            "name": "linux / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-21T02:53:05Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39534394111"
     },
     {
       "id": 39530357580,
@@ -107,5 +80,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39534391338"
     }
   ],
-  "observed_at": "2026-10-21T02:51:39+00:00"
+  "observed_at": "2026-10-21T02:53:28+00:00"
 }
