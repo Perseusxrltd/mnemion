@@ -339,9 +339,12 @@ deletion of matching text across unrelated files, new generations or imports.
 
 ## Recovery boundaries
 
-The new [portable archive work](#back-up-and-inspect-an-inbox-unreleased) provides
-export/inspection and a library for restoring a new local inbox. Native restore,
-enrollment on another device and reviewed policy/device migration remain open.
+The [portable archive checkpoint](#back-up-and-inspect-an-inbox-unreleased)
+provides export/inspection and a library for restoring a new local inbox. A
+separate [device recovery delta](#recover-onto-another-device-unreleased) now
+adds native enrollment under a replacement grant, with the original source and
+policy retained. This development work and its installed acceptance remain open;
+changing the original source identity or policy is still unsupported.
 
 Each inbox uses a separately generated, random 256-bit key sealed by the OS
 credential store. Selected payloads, checkpoints and coverage records are
@@ -378,9 +381,9 @@ normal automatic checks resume at their next interval.
 
 ### Back up and inspect an inbox (unreleased)
 
-This development work remains unreleased. Core, helper and controller checks
-and local builds passed; the Electron export/restart-inspection journey and
-packaged acceptance remain pending. Its
+This development work remains unreleased. Core, helper/controller, migration
+and Linux Electron export/restart-inspection checks passed at archive checkpoint
+`7aca19e9`; packaged acceptance remains pending. Its
 [archive proof](../research/2026-10-21-durable-capture-implementation.md#portable-inbox-archive-source-delta)
 is separate from the earlier policy, index and stable-release evidence.
 **Sources on this computer** now exposes **Back up this capture inbox** for
@@ -418,9 +421,65 @@ The library can restore an inspected archive into a **new private inbox
 directory**, preserving its original grant binding and inbox key. This is a
 foundation for local restoration under the same grant. It does not enroll a
 source, replace an existing inbox, reseal keys for a new OS account, migrate a
-device/policy or resume capture. Current authority and later server forgetting
-decisions still need separate verification. Those native recovery journeys,
-portable migration and six-platform acceptance remain open.
+device/policy or resume capture. The separate coordinator below adds a reviewed
+replacement-device path. Current authority, later server forgetting decisions,
+broader migration and six-platform acceptance retain their own gates.
+
+### Recover onto another device (unreleased)
+
+This unreleased implementation passed its three-phase Linux source journey on
+2026-10-21 at **05:06 UTC**. App recovery preserved the source/policy, installed
+new protected keys and a grant, remained paused after restart, delivered without
+duplicating old memory, captured new memory and cleaned up its fixtures. Source,
+controller, operator and migration checks also passed. The
+[development evidence](../research/2026-10-21-durable-capture-implementation.md#device-recovery-source-delta)
+retains all three earlier failed journeys. Six-platform packaged acceptance and
+full L1 acceptance remain open.
+
+Inspect the original archive with its separate recovery key and retain the
+returned hash. An administrator must approve a new dedicated device key and
+grant for the **same** organization, connector and capture source. The namespace,
+capture mode and policy also stay unchanged, including a mode-only policy in an
+older archive. This recovery changes the device authorization and local inbox
+key; it cannot change what evidence was selected or which source owns it.
+
+In Studio, use the original conversation connection with a current workspace
+administrator session and open **Recover an existing capture inbox**. Choose and
+verify the archive, preview the selected folder and approve previous-device
+retirement, then select **Recover as a paused source**. The app creates the
+replacement dedicated key and approved grant for this operation.
+
+Select and preview the replacement conversation folder. The archive contains no
+producer files. If files corresponding to saved checkpoints are present, their
+captured prefixes must verify before retirement. Missing files do not prevent
+recovering accepted backlog, but their history remains missing or unobserved;
+the operation does not reconstruct them.
+
+The native operation needs unlocked OS credential storage, fresh source settings
+and explicit confirmation of previous-device retirement. It authenticates the
+archive, re-encrypts its inbox under a new random 256-bit key, checks current
+replacement authority and confirms revocation of the original grant. It then
+publishes a protected recovery intent and installs a **new, paused** source.
+Existing inboxes are never overwritten. The replacement device credential and
+inbox key are OS-sealed; the one-use retirement credential is not saved. Grant
+retirement does not revoke the old API key's unrelated rights.
+
+Pending evidence, exact pages, checkpoints, forgetting fences and saved
+observations retain their identities; historical receipts still name their
+original issuing grant. Resuming later delivery rechecks current authority and
+server forgetting. Successful local recovery does not prove complete history,
+current index readiness or L2/L3 consolidation.
+
+After an uncertain reply, inspect `source.status` and `source.restore.list`;
+there is no automatic replay. A saved intent supports explicit
+`source.restore.finish` using the protected replacement keys and current server
+authority. If its inbox copy was not yet published, finishing also needs the
+original archive and recovery key. Explicit `source.restore.discard` first
+revokes the replacement grant and then removes the unfinished local evidence;
+it preserves the archive and does not reactivate the original grant. An already
+installed source must use ordinary source removal instead. The
+[agent guide](desktop-operator.md#recover-a-capture-device-unreleased) describes
+the inputs and interrupted-operation controls.
 
 ## Agent and administrator setup
 

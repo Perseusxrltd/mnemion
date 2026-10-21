@@ -5,7 +5,7 @@ import { test } from 'node:test'
 import { DesktopSources } from '../dist/desktop-sources.js'
 import { sourceProcess } from '../dist/desktop-source-process.js'
 import { desktopAction } from '../dist/desktop-actions.js'
-import { readCaptureArchive, readCapturePreview } from '../dist/capture-messages.js'
+import { readCaptureArchive, readCapturePreview, readCaptureRecoveries, readCaptureRestored } from '../dist/capture-messages.js'
 import { workspaceFixture, fixtureCredential as credential } from './workspace-fixture.mjs'
 
 const report = () => ({ completed: true, timestamp: new Date().toISOString(), duration_seconds: 0.1,
@@ -177,6 +177,140 @@ test('capture archive inspection does not load damaged settings or open OS crede
   assert.equal(desktopAction('source.backup.inspect', input).mutation, false)
   assert.throws(() => readCaptureArchive({ ...expected, inbox_key: 'must not escape the helper' }))
   assert.throws(() => readCaptureArchive({ ...expected, workspace_credentials_included: true }))
+})
+
+const recoveryReport = source => ({ format: 'mnemion-capture-restored-v1', id: source.id, archive_sha256: 'c'.repeat(64),
+  previous_grant_id: randomUUID(), grant_id: source.custody.grant_id, previous_grant_revoked: true,
+  source_enrolled: true, source_enabled: false, status: archiveReport(source).status })
+
+test('device recovery seals independent keys and reloads a committed source after a lost reply without replay', async t => {
+  const f = await fixture(t), source = { ...retainedDefinition(), enabled: false }, requests = []
+  const handle = 'native_session_administrator_handle'
+  const manager = new DesktopSources({ ...f.options, retirementCredential: async (selected, supplied) => {
+    assert.equal(supplied, handle); assert.equal(selected.endpoint, source.endpoint)
+    assert.equal(selected.custody.grant_id, source.custody.grant_id)
+    assert.equal(selected.sealed_key, undefined); assert.equal(selected.sealed_inbox_key, undefined)
+    return 'one-use-administrator-token'
+  }, call: async (request, ...rest) => {
+    if (request.operation !== 'capture_restore') return f.options.call(request, ...rest)
+    requests.push(request)
+    assert.equal(request.credential, credential)
+    assert.equal(request.retirement_credential, 'one-use-administrator-token')
+    assert.equal(Buffer.from(request.inbox_key, 'base64').length, 32)
+    assert.equal(await f.cipher.decrypt(Buffer.from(request.source.sealed_key, 'base64')), credential)
+    assert.equal(await f.cipher.decrypt(Buffer.from(request.source.sealed_inbox_key, 'base64')), request.inbox_key)
+    assert.notEqual(request.source.sealed_key, request.source.sealed_inbox_key)
+    const document = f.document()
+    document.sources = [structuredClone(request.source)]; document.revision = randomUUID()
+    throw new Error('Synthetic return lost after source installation')
+  } })
+  t.after(() => manager.close())
+  const input = { source, expected_revision: (await manager.status()).revision, credential,
+    retirement_credential: handle, file: '/synthetic/backup.mnemion-capture',
+    recovery_key: 'mnm_bk_' + 'x'.repeat(43), archive_sha256: 'c'.repeat(64), preview_hash: 'a'.repeat(64), confirm: true }
+  await assert.rejects(manager.restore({ ...input, expected_revision: 'obsolete' }), /settings changed/)
+  assert.equal(requests.length, 0)
+  await assert.rejects(manager.restore(input), /return lost/)
+  const view = await manager.status()
+  assert.equal(view.sources.length, 1); assert.equal(view.sources[0].enabled, false)
+  assert.equal(view.sources[0].activity.phase, 'paused')
+  for (const secret of [credential, input.retirement_credential, 'one-use-administrator-token', requests[0].inbox_key,
+    requests[0].source.sealed_key, requests[0].source.sealed_inbox_key]) assert.equal(JSON.stringify(view).includes(secret), false)
+  await assert.rejects(manager.restore(input), /settings changed/)
+  await assert.rejects(manager.restore({ ...input, expected_revision: view.revision }), /already exists/)
+  assert.equal(requests.length, 1); assert.equal(manager.busy, false)
+  assert.equal(desktopAction('source.restore', input).mutation, true)
+})
+
+test('finishing recovery unwraps protected intent keys; discard never unwraps the inbox or exposes private records', async t => {
+  const f = await fixture(t), source = { ...retainedDefinition(), enabled: false }, unsealed = [], requests = []
+  const inboxKey = Buffer.alloc(32, 7).toString('base64')
+  const saved = { ...source, sealed_key: f.cipher.encrypt(credential).toString('base64'),
+    sealed_inbox_key: f.cipher.encrypt(inboxKey).toString('base64') }
+  const receipt = recoveryReport(source)
+  const manager = new DesktopSources({ ...f.options, cipher: { ...f.cipher,
+    decrypt: value => { unsealed.push(value.toString('base64')); return f.cipher.decrypt(value) } },
+    call: async (request, ...rest) => {
+      requests.push(request)
+      if (request.operation === 'capture_restore_load') return { source: saved, archive_sha256: receipt.archive_sha256,
+        previous_grant_id: receipt.previous_grant_id }
+      if (request.operation === 'capture_restore_finish') {
+        assert.equal(request.credential, credential); assert.equal(request.inbox_key, inboxKey)
+        const document = f.document(); document.sources = [saved]; document.revision = randomUUID()
+        return { document: structuredClone(document), recovery: receipt }
+      }
+      if (request.operation === 'capture_restore_discard') {
+        assert.equal(request.credential, credential); assert.equal(request.inbox_key, undefined)
+        return { discarded: true, replacement_grant_revoked: true, archive_modified: false }
+      }
+      return f.options.call(request, ...rest)
+    } })
+  t.after(() => manager.close())
+  let input = { id: source.id, expected_revision: (await manager.status()).revision, confirm: true }
+  const result = await manager.finishRecovery(input)
+  assert.deepEqual(result.recovery, receipt); assert.equal(result.view.sources[0].enabled, false)
+  assert.deepEqual(unsealed, [saved.sealed_key, saved.sealed_inbox_key])
+  assert.equal(JSON.stringify(result).includes(credential), false); assert.equal(JSON.stringify(result).includes(inboxKey), false)
+  assert.equal(JSON.stringify(result).includes(saved.sealed_inbox_key), false)
+  // The private helper separately verifies that only an unfinished recovery can be discarded.
+  input = { ...input, expected_revision: result.view.revision }
+  unsealed.length = 0
+  assert.deepEqual(await manager.finishRecovery(input, true), { discarded: true, replacement_grant_revoked: true, archive_modified: false })
+  assert.deepEqual(unsealed, [saved.sealed_key])
+  assert.equal(requests.filter(r => r.operation === 'capture_restore_finish').length, 1)
+  assert.equal(desktopAction('source.restore.finish', input).mutation, true)
+  assert.equal(desktopAction('source.restore.discard', input).mutation, true)
+  assert.throws(() => readCaptureRestored({ ...receipt, credential }))
+  assert.throws(() => readCaptureRestored({ ...receipt, previous_grant_id: receipt.grant_id }))
+  assert.throws(() => readCaptureRestored({ ...receipt, previous_grant_revoked: false }))
+})
+
+test('recovery discovery needs no source settings or unlocked key store and rejects extra private fields', async t => {
+  const source = retainedDefinition(), expected = { format: 'mnemion-capture-recoveries-v1', items: [{ id: source.id,
+    name: source.name, endpoint: source.endpoint, archive_sha256: 'c'.repeat(64), created_at: '2026-10-21T04:00:00Z', copy_available: false }] }
+  let fail = true, calls = 0
+  const manager = new DesktopSources({ cipher: { available: () => { throw new Error('No OS key store') } },
+    call: request => { calls++; assert.equal(request.operation, 'capture_restore_list')
+      if (fail) throw new Error('Synthetic synchronous refusal')
+      return Promise.resolve(expected)
+    } })
+  t.after(() => manager.close())
+  await assert.rejects(manager.recoveries(), /synchronous refusal/)
+  assert.equal(manager.busy, false)
+  fail = false
+  assert.deepEqual(await manager.recoveries(), expected); assert.equal(calls, 2)
+  assert.equal(desktopAction('source.restore.list', {}).mutation, false)
+  assert.throws(() => readCaptureRecoveries({ ...expected, items: [{ ...expected.items[0], sealed_key: 'private' }] }))
+  assert.throws(() => readCaptureRecoveries({ ...expected, items: [expected.items[0], expected.items[0]] }))
+})
+
+test('background recovery reads coalesce without rejecting a user backup and are drained on close', async t => {
+  const f = await fixture(t), source = { ...retainedDefinition(), enabled: false }
+  await f.add(source)
+  let finishRead, reads = 0, backups = 0
+  const manager = new DesktopSources({ ...f.options, call: async (request, ...rest) => {
+    if (request.operation === 'capture_restore_list') {
+      reads++
+      return new Promise(resolve => { finishRead = resolve })
+    }
+    if (request.operation === 'capture_export') { backups++; return archiveReport(source) }
+    return f.options.call(request, ...rest)
+  } })
+  t.after(() => manager.close())
+  const view = await manager.status()
+  const first = manager.recoveries(), second = manager.recoveries()
+  await f.flush()
+  assert.equal(reads, 1); assert.equal(manager.busy, false)
+  await manager.backup({ id: source.id, expected_revision: view.revision, file: '/synthetic/backup.mnemion-capture',
+    recovery_key: 'mnm_bk_' + 'x'.repeat(43), confirm: true })
+  assert.equal(backups, 1)
+  let closed = false
+  const closing = manager.close().then(() => { closed = true })
+  await f.flush(); assert.equal(closed, false)
+  finishRead({ format: 'mnemion-capture-recoveries-v1', items: [] })
+  assert.deepEqual(await first, await second)
+  await closing; assert.equal(closed, true)
+  await assert.rejects(manager.recoveries(), /app update/)
 })
 
 const previewReport = () => ({ format: 'mnemion-capture-preview-v1', configuration_hash: 'a'.repeat(64), policy_revision: 'b'.repeat(64),

@@ -60,7 +60,8 @@ does not ship this unfinished capture milestone.
 | --- | --- |
 | Native enrollment | Studio offers explicit retained capture only for a new conversation connection. The administrator approves the source policy and exact device-key grant before native enrollment. App and private agents use the same typed `source.custody` object; existing mirrors cannot silently convert. |
 | Capture policy and local preview | An additional unreleased delta adds Selected/Conversation/Detailed choices, relative JSONL file rules, size caps and explicit mirror/retained selection through the same app/agent configuration. A bounded local preview returns counts and capability statuses; explicit-policy retained fragments carry the immutable approved policy fingerprint. Source, Linux journey and separate recovery/migration checks passed; full L1 acceptance remains open. |
-| Portable inbox archive | An additional unreleased foundation exports and inspects encrypted local evidence, and restores a new private inbox under its original binding. Core, helper/controller, migration and Linux app export/restart-inspection checks passed. Native restoration, enrollment, device/policy migration and packaged acceptance remain open. |
+| Portable inbox archive | Unreleased checkpoint `7aca19e9` exports and inspects encrypted local evidence, and restores a new private inbox under its original binding. Core, helper/controller, migration and Linux app export/restart-inspection checks passed. These checks do not establish the separate device-recovery delta or packaged acceptance. |
+| Device recovery | An unreleased source checkpoint re-encrypts an inspected archive for a new approved grant and inbox key, retires the old grant and installs a new paused native source. The original organization/source/namespace/policy stays fixed. Protected intents support explicit finish/discard after interrupted local publication. Source, controller, operator and migration checks plus the three-phase Linux source journey passed. All three earlier failed journeys are retained below; six-platform packaged and full L1 acceptance remain open. |
 | Encrypted selected inbox | The native controller creates an independent random 256-bit key and seals it through OS credential storage. Selected items and a verified capture checkpoint commit together under AES-256-GCM. Both messages and complete modes use the existing renderer. Messages mode cannot retain a raw transcript or hide raw text in its source evidence. |
 | Local capture and scheduling | The normal desktop runner commits available selected JSONL evidence before any service request in a scan. Accepted events survive restart and producer removal/rotation; unfinished tails wait. Missing source files can stop new capture while already accepted evidence remains deliverable. |
 | Durable service custody | Explicit administrator consent, immutable selection/source identity, exact device-key grants, current audience/role checks, immutable event receipts and idempotent pages. Existing provider permission leases remain unchanged. |
@@ -279,7 +280,8 @@ describe the current supported controls.
 
 ## Portable inbox archive source delta
 
-This additional **unreleased foundation is still under validation**. The original
+This **unreleased foundation**, recorded at checkpoint `7aca19e9`, retains its
+own proof separately from the device-recovery delta below. The original
 combined run retained **6 failed, 26 passed**: export compared a write receipt's
 `authenticated: false` with the successful read-back receipt's `true`. After
 correcting that comparison, the [archive suite](../../service_tests/test_capture_archive.py)
@@ -291,6 +293,9 @@ unsealing only the inbox key and inspection without source settings or OS key
 storage. Local native, frontend and desktop builds passed. The final migration
 preflight passed **29 checks**, fingerprint
 `994435e6a384e5e4789f1c14044100beb5189bd0cf159e6465f3c3b2d8e2fee7`.
+The exact archive checkpoint `7aca19e9` subsequently passed
+[CI run 39543234033](https://github.com/Perseusxrltd/mnemion/actions/runs/39543234033),
+and its website sync succeeded. These results precede the device-recovery delta.
 Earlier policy, index, Linux journey and 4.44 release proofs retain their
 original scope.
 
@@ -305,8 +310,8 @@ paid model calls occurred. `preview.QcJAa3re/result.json` and
 `capture-archive-final-source-inputs.json` retain the private proof, source digest
 `e04f5821fa1b0f17f05119e4ef016eb7c608f4b9df67fe992fb64a3bfe39751b`.
 The earlier passing `preview.OlQ6dTAd` journey remains recorded separately.
-This is source development proof: packaged acceptance and native
-restoration/migration remain open.
+This is source development proof for archive export/inspection. It does not
+establish packaged acceptance or the later native restoration/migration work.
 
 The [archive core](../../mnemion/connectors/capture_archive.py) snapshots a
 caller-locked inbox, audits its schema and retained encrypted values, then writes
@@ -339,8 +344,132 @@ without requiring the original source settings/key. **Sources on this computer**
 exposes export and verify controls, including a separately saved recovery key.
 The [app guide](../service/durable-capture.md#back-up-and-inspect-an-inbox-unreleased)
 and [agent inputs](../service/desktop-operator.md#capture-inbox-archives-unreleased)
-keep these operations separate from native restore, enrollment, reviewed
-migration, six packaged targets and full L1 acceptance, which remain open.
+keep these operations separate from the later native restore/enrollment delta,
+reviewed migration, six packaged targets and full L1 acceptance.
+
+## Device recovery source delta
+
+This **unreleased checkpoint passed its focused source acceptance**. Its evidence is
+separate from archive checkpoint `7aca19e9`, the policy/index proofs and the
+released 4.44 security update:
+
+| Run | Observed result and scope |
+| --- | --- |
+| `capture-device-transfer-initial-tests.log` | **8 passed in 10.98 s** across the [transfer core](../../service_tests/test_capture_transfer.py) and [real HTTP recovery](../../service_tests/test_capture_device_recovery.py) checks. |
+| `capture-device-restore-helper-initial-tests.log` | **7 fixture errors in 13.59 s**: the fixture omitted `normalize`'s required `private_roots` argument. This run did not validate the helper cases. |
+| `capture-device-restore-helper-fixture-fixed-tests.log` | **6 passed, 1 failed in 18.71 s**; the remaining failure was the wrong-copy diagnostic. |
+| `capture-device-restore-copy-reason-test.log` | **1 passed, 6 deselected in 9.18 s** after preserving `source_conversation_copy_unverified` through the inbox boundary. This targeted recheck does not rerun the other helper cases. |
+| `capture-device-controller-initial-tests.log` | **51 passed in 356.6 ms**, including new restore uncertainty, private-key handling, pending list, finish and discard checks. |
+| `capture-device-final-regression-tests.log` | **25 passed in 55.70 s** in a later combined transfer, real HTTP recovery, helper, archive and backup regression. These overlap earlier cases and are not additional distinct checks. |
+| `capture-device-migration-preflight.log` | **29 passed in 110.14 s**; the later frontend/controller fixes did not change these Python inputs. |
+| `capture-device-read-poll-fixed-controller-tests.log` | **52 passed in 200.9 ms**, including a new regression for metadata polling concurrent with source operations. This supersedes the earlier controller run for the polling fix. |
+| `capture-device-authority-fixed-controller-tests.log` | **52 passed in 174.6 ms** after resolving the protected retirement session handle through the native bridge; the extended check verifies resolution and absence of key leakage. |
+| `capture-device-operator-boundary-tests.log` | **26 passed in 1.9226 s** across desktop operator and workspace-connection boundaries. The successful journey's runtime input digest remained unchanged. |
+
+The Python migration fingerprint is
+`83775dba121e62b9900910de925a3d01c6d1696d8e0ef79541d6521705e0ea19`.
+Python inputs remained unchanged through the frontend/controller corrections;
+the migration preflight was not rerun or promoted to different Python inputs.
+
+The native/controller and desktop frontend builds passed before the first
+three-phase Linux attempt, `preview.qaJtcFkO`. That attempt failed in
+`capture-enroll` **before any source enrollment**: the new `CaptureRestore` empty
+state compared two undefined selection values, then accessed `preview.value`.
+The private error and screenshot are retained. Source now requires `preview &&`
+before that comparison, and the corrected desktop frontend build passed.
+
+The second attempt, `preview.jFwri4zH`, passed enrollment but failed before the
+backup mutation: background recovery-list polling occupied the controller's
+mutation slot. `recoveries()` now coalesces concurrent read-only metadata calls
+independently of mutations. Mutating actions still revalidate their intent and
+source revision, and closing the controller waits for the outstanding read.
+The polling-specific 52-check controller run above and the rebuilt native
+controller passed.
+
+The third attempt, `preview.NOfJ6Eu3`, used
+`capture-device-read-poll-fixed-source-inputs.json`, digest
+`693b7d4849939d8c066a8e58f4547cb9542823cf6890ed67539e324e4e5b574e`.
+Its complete `capture-enroll` phase passed, including consent, offline queue,
+app backup and narrow layout. `capture-resume` delivered the old queue and removed
+the old source, then app restore failed with `capture_retirement_credentials`:
+the controller passed the renderer's protected session handle directly to the
+helper. It now resolves that handle through the existing origin-bound native
+retirement-credential bridge. The authority-specific controller run above and
+the native rebuild passed. All three failed journey receipts remain retained;
+the third attempt's passed enrollment does not make its recovery phase pass.
+
+The fourth attempt, `preview.sYtog70x`, passed **all three phases** at
+**2026-10-21T05:06:18.782382Z**. Its `result.json` and individual phase receipts
+are bound to `capture-device-authority-fixed-source-inputs.json`, digest
+`f287a9188ff7be73a8da5b3c261fa074f66b1571ad50079b6e0e175c9d184006`:
+
+| Phase | Observed source behavior |
+| --- | --- |
+| `capture-enroll` | Actual consent, independent OS-protected inbox key, encrypted offline queue, pause before restart, app backup and agreement with agent inspection; narrow layout passed. |
+| `capture-resume` | Queue/key survival after restart, delivery after producer removal, administrator retirement, then actual app archive recovery under the original policy/source with new OS-sealed keys and grant. The recovered source was paused and app/agent results agreed. |
+| `capture-restored-resume` | New key reopened after another app restart; source stayed paused until explicit resume. Old queued memory was not duplicated, new memory was captured and fixture cleanup passed, with `acceptedEvents: 2`. |
+
+Every phase reported OS credential storage available, **zero production memory
+writes and zero paid model calls**. The recovered receipt was readable at
+720×1000 in `native-capture-recovery.png`, which was visually reviewed. Independent
+cleanup verification found no capture fixture, archive or selected/recovered
+producer folders left behind. Runtime inputs still matched the successful
+journey digest after the operator checks. This completes the bounded Linux
+source proof; all six packaged acceptance journeys and full L1 remain open.
+The earlier archive checkpoint retains its separate export/inspection proof.
+
+The [transfer core](../../mnemion/connectors/capture_transfer.py) authenticates the
+inspected archive hash and creates a new private inbox with a new supplied key.
+It permits only `grant_id` to change in the binding: organization, connector,
+capture source, namespace, mode and optional policy must match exactly. Encrypted
+payloads, pages/receipts, checkpoints, producer references and coverage/index
+observations are re-encrypted without changing evidence identities or deletion
+fences. Historical receipts retain their issuing grant. Existing destinations,
+changed archives and interrupted re-encryption cannot publish a replacement.
+The core does not issue grants, enroll a native source or resume capture.
+
+The HTTP checks cover an old acknowledgement lost after server acceptance,
+additional undelivered backlog and forgetting added after backup. Replacement
+delivery preserves event identity, applies current negative state and leaves the
+original grant revoked. Recovery does not reactivate old authority or treat a
+saved archive as proof of current permission.
+
+The [native helper](../../mnemion/desktop_capture_restore.py) and controller add
+`source.restore`, `source.restore.list`, `source.restore.finish` and
+`source.restore.discard`. Restore takes an inspected archive, current source
+revision, matching local preview, paused replacement settings, a newly approved
+dedicated credential/grant and explicit previous-device retirement consent.
+Mode-only archives also require a matching preview for this action. It checks
+captured prefixes for checkpoint files present in the selected producer folder;
+missing logs do not prevent backlog recovery and do not become known history.
+The archive itself includes no producer files or workspace API credential.
+
+The native controller generates a new random inbox key and OS-seals both it and
+the replacement device credential. The helper verifies current source, audience,
+connector and grant authority before retiring the original grant. The one-use
+retirement credential is not saved, and retiring a grant does not revoke its API
+key's unrelated rights. Once retirement is confirmed, a private intent with
+OS-sealed replacement settings precedes local inbox/settings publication. A new
+source is installed paused. The original archive and existing inboxes are never
+overwritten; authorization/retirement requests invoke no model.
+
+An uncertain mutation is not replayed automatically. Read source status and the
+bounded pending-intent list first; listing requires neither credentials nor OS
+key access. Explicit finish uses the saved replacement keys and current service
+authority, and needs the same archive/recovery key if its local copy was not yet
+published. It does not duplicate an already installed source or reverse a later
+explicit enable choice. Explicit discard first revokes the replacement grant,
+then removes unfinished local evidence and the intent while preserving the
+archive. An already installed source requires ordinary source removal. The
+[helper cases](../../service_tests/test_desktop_capture_restore.py) cover local
+interruptions before copy publication, before settings and after settings; the
+separate results above preserve each run's limits.
+
+The [app recovery boundaries](../service/durable-capture.md#recover-onto-another-device-unreleased)
+and [private agent inputs](../service/desktop-operator.md#recover-a-capture-device-unreleased)
+describe this fixed-policy device replacement. Broader organization/source/policy
+migration, complete historical coverage, current index acceptance, L2/L3 and
+all six packaged journeys remain open.
 
 ## Source and deletion boundaries
 
@@ -408,11 +537,12 @@ a scan. It cannot stand in for evidence or key recovery.
   preset contract: current Selected/Conversation/Detailed choices and existing
   Pause do not provide automatic expiry, field redaction or attachment fetching.
   Keep unavailable capabilities explicit and retain reviewed migration requirements.
-- Complete packaged archive export/inspection acceptance and native restoration,
-  protected-key enrollment and reviewed migration for changes of device, capture
-  selection, identity or dedicated key. The new-inbox library foundation does
-  not close those journeys. Retain existing mirror behavior and past forgetting
-  decisions; current files alone are insufficient.
+- Complete packaged archive export/inspection and device-recovery acceptance,
+  including protected-key enrollment and interrupted publication/finish/discard.
+  The new fixed-policy device/grant replacement does not close those journeys
+  or provide migration of the original organization, source identity or capture
+  selection. Retain the broader reviewed migration requirement, existing mirror
+  behavior and past forgetting decisions; current files alone are insufficient.
 - Complete the independent headless retained-source enrollment, scheduling and
   lifecycle journey. Ordinary `mnemion-connect` configurations still use their
   existing mirror protocol; desktop helper wiring does not establish that journey.

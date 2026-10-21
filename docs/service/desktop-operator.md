@@ -76,6 +76,9 @@ engine** so it uses the Windows account and named-pipe implementation.
 | `source.preview` | **Unreleased development:** inspect a bounded local JSONL selection without credentials, saved content or model calls. Explicit `capture_policy` configuration uses its matching preview hash; see below. |
 | `source.backup` | **Unreleased development:** export a paused retained inbox to a new encrypted archive using a separate recovery key and the current source revision. |
 | `source.backup.inspect` | **Unreleased development:** verify an archive offline and return bounded identity/policy/status information. Does not restore native enrollment or authorize delivery. |
+| `source.restore` | **Unreleased development:** recover an inspected archive into a new paused source, keeping its original identity/policy while replacing its device grant and inbox key. Requires current authority and confirmed retirement of the old grant. |
+| `source.restore.list` | **Unreleased development:** list pending recovery identities without source credentials or OS key access. |
+| `source.restore.finish`, `source.restore.discard` | **Unreleased development:** explicitly finish a protected recovery intent or revoke the replacement grant and discard the unfinished local copy. No automatic replay. |
 | `source.pause`, `source.sync`, `source.remove` | Persistently pause/resume a source, queue a bounded scan, or stop and forget its local configuration. Independent of the selected workspace. |
 | `agent.status`, `agent.preview` | From 4.32.0, inspect [native agent installations](desktop-agents.md), refresh their packaged runtime and preview a named MCP entry without changing client settings. No local database is required. |
 | `agent.install`, `agent.remove` | Install a reviewed dedicated application connection or remove its matching local entry/key file, using the observed configuration hash and explicit confirmation. Other devices and server keys remain separately managed. |
@@ -410,9 +413,9 @@ recovery limits. This addition does not complete L1 or installed acceptance.
 ## Capture inbox archives (unreleased)
 
 The app's **Sources on this computer** export/verify controls and these actions
-share the same archive implementation. Core, helper and controller checks and
-local builds passed; the Electron export/restart-inspection journey and packaged
-acceptance remain pending. See the [current proof](../research/2026-10-21-durable-capture-implementation.md#portable-inbox-archive-source-delta).
+share the same archive implementation. Core, helper/controller, migration and
+Linux Electron export/restart-inspection checks passed at archive checkpoint
+`7aca19e9`; packaged acceptance remains pending. See the [archive proof](../research/2026-10-21-durable-capture-implementation.md#portable-inbox-archive-source-delta).
 Read the installed catalog before use. Neither action needs a selected workspace
 or a workspace API credential, and neither invokes a model.
 
@@ -458,7 +461,77 @@ output filename.
 The archive preserves pending evidence, pages, checkpoints, forgetting fences
 and coverage, with the inbox key protected inside its encrypted manifest. It
 contains no workspace API credential. These native actions provide export and
-inspection only. The separate library restore creates a new private inbox under
-the original binding; it does not enroll or activate a device. Native restore,
-key resealing, current-grant verification and reviewed device/policy migration
-remain unfinished. See [recovery boundaries](durable-capture.md#recovery-boundaries).
+inspection only. The same-grant library restore creates a new private inbox
+under the original binding; it does not enroll or activate a device. The separate
+device-recovery actions below add current-grant verification, key resealing and
+paused enrollment. Their acceptance and broader identity/policy migration remain
+open. See [recovery boundaries](durable-capture.md#recovery-boundaries).
+
+## Recover a capture device (unreleased)
+
+This unreleased source checkpoint passed its three-phase Linux recovery journey,
+52 controller checks, 26 operator/workspace checks, 25 service regressions and
+29 Python migration checks. The frontend and native builds passed. The journey
+verified actual app recovery, agreement with agent status, new OS-protected keys
+reopened after restart, paused startup, delivery without duplicate old memory,
+new capture and cleanup. All three earlier failed attempts remain recorded;
+six-platform packaged and full L1 acceptance remain open. See the separate
+[recovery proof](../research/2026-10-21-durable-capture-implementation.md#device-recovery-source-delta).
+
+Read the current catalog and `source.status`, inspect the archive, then preview
+the intended conversation folder with `source.preview`. An administrator must
+approve a new dedicated key and device grant for the original capture source.
+`source.restore` takes these private inputs:
+
+| Input | Required value |
+| --- | --- |
+| `expected_revision` | Fresh revision from `source.status`. |
+| `file`, `recovery_key`, `archive_sha256` | Original archive, separately saved recovery key and exact hash returned by inspection. |
+| `source` | Complete [source settings](desktop-sources.md#local-agent-controls), with `provider: "conversations"`, `enabled: false` and the replacement `custody.grant_id`. Keep the original organization, connector, `custody.source_id`, namespace, capture mode and policy. Use a new local source ID or omit it for native allocation. |
+| `credential` | Replacement dedicated application credential; it must authenticate as the connector's non-administrator principal. |
+| `retirement_credential` | Credential authorized to retire the original grant, such as a current workspace administrator key. Studio's matching protected session handle is resolved by the native bridge. Used for retirement and never saved. |
+| `preview_hash` | Matching preview of the selected folder and settings, including when recovering an older mode-only source. |
+| `confirm` | Literal `true`, confirming recovery and retirement of the old device grant. |
+
+OS credential storage must be available. The controller generates a new inbox
+key and seals it and the replacement device credential internally; do not supply
+an inbox key in the public source object. Present producer files with saved
+checkpoints must prove their captured prefixes. Missing producer files can leave
+retained backlog recoverable, but their absence is not proof of complete history.
+The helper verifies current service authority, confirms old-grant revocation and
+installs the new source paused, without overwriting an existing inbox. Recovery
+makes authorization/retirement requests but does not invoke a model.
+
+An uncertain result requires reading both `source.status` and
+`source.restore.list` before another mutation. Listing takes no inputs and returns
+bounded recovery IDs, names, endpoints, archive hashes, creation times and
+`copy_available`; it does not unseal keys. Concurrent metadata reads are shared
+without occupying the mutation slot. A listing can become stale; mutations still
+validate the current intent and source revision. A protected pending intent
+retains the same recovery ID. To finish it, use a fresh revision and consent:
+
+```json
+{
+  "action": "source.restore.finish",
+  "input": {
+    "id": "RECOVERY_UUID_FROM_LIST",
+    "expected_revision": "REVISION_FROM_SOURCE_STATUS",
+    "confirm": true
+  }
+}
+```
+
+If `copy_available` is false, also supply the original `file` and `recovery_key`;
+the saved archive hash must still match. Finishing uses the OS-protected
+replacement keys and verifies current server authority. A newly installed source
+starts paused; finishing an already published source preserves a later explicit
+enable choice. There is no automatic replay of restore or finish.
+
+To abandon an unfinished recovery, use `source.restore.discard` with only `id`,
+fresh `expected_revision` and `confirm: true`. It unseals the replacement device
+credential, confirms revocation of that grant, then discards the unfinished local
+copy and intent. The original archive stays unchanged and the old grant stays
+retired. If source settings were already published, use ordinary paused source
+removal instead. These actions cannot change the original organization, source,
+namespace or capture policy, and do not complete portable or six-target L1
+acceptance.

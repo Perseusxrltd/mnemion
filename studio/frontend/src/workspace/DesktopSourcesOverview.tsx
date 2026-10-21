@@ -6,6 +6,7 @@ import type { DesktopSource } from '../../../shared/desktop-sources';
 import SourceScanHistory from './SourceScanHistory';
 import CaptureStatus from './CaptureStatus';
 import CaptureBackup from './CaptureBackup';
+import CaptureRecoveries from './CaptureRecoveries';
 
 /** These device controls remain available before signing in to a workspace. */
 export default function DesktopSourcesOverview() {
@@ -55,6 +56,7 @@ export default function DesktopSourcesOverview() {
         : 'Stop local scans and forget this computer’s saved source credentials? Existing memories and server keys remain available to their authorized users.'}</p>{source.custody && <details><summary>Device key unavailable?</summary><p>Sign in as a workspace administrator and remove this source in Connections, or supply a current administrator key for this workspace. It is used only to confirm removal and is never saved.</p><label>Administrator key for {source.endpoint}<input type="password" autoComplete="new-password" data-update-safe value={retirementCredential} disabled={busy} onChange={event => setRetirementCredential(event.target.value)} /></label></details>}<button type="button" className="ws-button" disabled={busy || (!!source.custody && source.enabled)} onClick={() => void control(source, 'remove')}>{source.custody ? 'Revoke grant and discard local inbox' : 'Confirm removal'}</button><button type="button" className="ws-button" onClick={() => { setRemove(undefined); setRetirementCredential(''); }}>Cancel</button></div>}
     </div>)}
     <CaptureBackup busy={busy} setBusy={setBusy} />
+    <CaptureRecoveries revision={query.data?.revision} busy={busy} setBusy={setBusy} />
     <p className="ws-helper">Connect to the relevant workspace and open Connections to change its sharing, scan limits or application key.</p>
     <Link className="ws-link" to="/help?doc=docs%2Fservice%2Fdesktop-sources.md">Desktop source guide</Link>
   </details>;

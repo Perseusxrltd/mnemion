@@ -118,3 +118,16 @@ export type CaptureArchiveInfo = {
 }
 export type CaptureBackupInput = { expected_revision: string; id: string; file: string; recovery_key: string; confirm: true }
 export type CaptureInspectInput = { file: string; recovery_key: string }
+export type CaptureRestoreInput = CaptureInspectInput & {
+  expected_revision: string; archive_sha256: string; source: SourceConfigure['source'];
+  credential: string; retirement_credential: string; preview_hash: string; confirm: true;
+}
+export type CaptureRecovery = { id: string; name: string; endpoint: string; archive_sha256: string; created_at: string; copy_available: boolean }
+export type CaptureRecoveries = { format: 'mnemion-capture-recoveries-v1'; items: CaptureRecovery[] }
+export type CaptureRestoreControl = { id: string; expected_revision: string; confirm: true; file?: string; recovery_key?: string }
+export type CaptureRestored = {
+  format: 'mnemion-capture-restored-v1'; id: string; archive_sha256: string;
+  previous_grant_id: string; grant_id: string; previous_grant_revoked: true;
+  source_enrolled: true; source_enabled: boolean; status: CaptureArchiveInfo['status'];
+}
+export type CaptureRestoreResult = { view: DesktopSourceView; recovery: CaptureRestored }

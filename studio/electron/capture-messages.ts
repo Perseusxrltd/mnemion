@@ -1,4 +1,4 @@
-import type { CaptureArchiveInfo, CaptureCoverage, CaptureIndexCounts, CaptureIndexProgress, CaptureIndexSweep, CapturePreview, CaptureReason } from '../shared/desktop-sources.js'
+import type { CaptureArchiveInfo, CaptureCoverage, CaptureIndexCounts, CaptureIndexProgress, CaptureIndexSweep, CapturePreview, CaptureReason, CaptureRecoveries, CaptureRestored } from '../shared/desktop-sources.js'
 
 const coverageCounts = ['tracked_scopes', 'checking_scopes', 'failed_scopes', 'missing_scopes',
   'uncertain_scopes', 'unknown_prefix_scopes', 'uncertain_intervals', 'observed_bytes',
@@ -13,6 +13,7 @@ const timestamp = (value: unknown) => value === null || typeof value === 'string
 const keys = (value: unknown, names: string[]): value is Record<string, unknown> => object(value) &&
   Object.keys(value).length === names.length && Object.keys(value).every(key => names.includes(key))
 const cursor = (value: unknown) => value === null || typeof value === 'string' && /^[a-f0-9]{64}$/.test(value)
+const uuid = (value: unknown) => typeof value === 'string' && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(value)
 const indexCounts = ['events', 'lexical_indexed', 'vector_indexed', 'waiting', 'failed', 'withheld', 'forgotten', 'unknown']
 const validIndexCounts = (value: unknown): value is CaptureIndexCounts => {
   if (!keys(value, indexCounts) || indexCounts.some(key => !count(value[key]))) return false
@@ -78,7 +79,6 @@ export function validCaptureCoverage(value: unknown): value is CaptureCoverage {
 }
 
 export function readCaptureArchive(value: unknown): CaptureArchiveInfo {
-  const uuid = (v: unknown) => typeof v === 'string' && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(v)
   if (!keys(value, ['format', 'created_at', 'name', 'binding', 'database_bytes', 'archive_sha256', 'status', 'authenticated', 'workspace_credentials_included', 'source_enrolled']) ||
     value.format !== 'mnemion-capture-archive-v1' || typeof value.created_at !== 'string' || !timestamp(value.created_at) ||
     typeof value.name !== 'string' || !value.name.length || value.name.length > 200 ||
@@ -99,11 +99,41 @@ export function readCaptureArchive(value: unknown): CaptureArchiveInfo {
       !count(policy.max_file_bytes) || policy.max_file_bytes < 1 || policy.max_file_bytes > 1e12 ||
       !count(policy.max_record_bytes) || policy.max_record_bytes < 1 || policy.max_record_bytes > 16e6 || policy.max_record_bytes > policy.max_file_bytes) throw new Error('The archived capture policy could not be verified.')
   }
-  const counts = ['pending_events', 'pending_bytes', 'database_bytes', 'stored_events', 'forgotten_events', 'unknown_pages']
-  if (!keys(status, ['format', ...counts, 'over_limit', 'coverage']) || status.format !== 'mnemion-selected-inbox-v1' ||
-    counts.some(name => !count(status[name])) || status.database_bytes !== value.database_bytes || typeof status.over_limit !== 'boolean' ||
-    !validCaptureCoverage(status.coverage) || status.coverage.capture_mode !== binding.capture_mode) throw new Error('The archived capture status could not be verified.')
+  if (!validInboxStatus(status) || status.database_bytes !== value.database_bytes ||
+    status.coverage.capture_mode !== binding.capture_mode) throw new Error('The archived capture status could not be verified.')
   return value as CaptureArchiveInfo
+}
+
+function validInboxStatus(status: unknown): status is CaptureArchiveInfo['status'] {
+  const counts = ['pending_events', 'pending_bytes', 'database_bytes', 'stored_events', 'forgotten_events', 'unknown_pages']
+  return keys(status, ['format', ...counts, 'over_limit', 'coverage']) && status.format === 'mnemion-selected-inbox-v1' &&
+    counts.every(name => count(status[name]) && (status[name] as number) <= 1e12) &&
+    (status.database_bytes as number) >= 65536 && (status.database_bytes as number) <= 2 * 1024 ** 3 &&
+    typeof status.over_limit === 'boolean' && validCaptureCoverage(status.coverage)
+}
+
+export function readCaptureRecoveries(value: unknown): CaptureRecoveries {
+  if (!keys(value, ['format', 'items']) || value.format !== 'mnemion-capture-recoveries-v1' ||
+    !Array.isArray(value.items) || value.items.length > 16) throw new Error('Pending capture recoveries could not be read.')
+  const ids = new Set<string>()
+  for (const item of value.items) {
+    if (!keys(item, ['id', 'name', 'endpoint', 'archive_sha256', 'created_at', 'copy_available']) || !uuid(item.id) ||
+      typeof item.name !== 'string' || !item.name.length || item.name.length > 200 ||
+      typeof item.endpoint !== 'string' || item.endpoint.length > 2048 ||
+      typeof item.archive_sha256 !== 'string' || !cursor(item.archive_sha256) ||
+      typeof item.created_at !== 'string' || !timestamp(item.created_at) || typeof item.copy_available !== 'boolean' || ids.has(item.id as string)) throw new Error('A pending capture recovery could not be verified.')
+    ids.add(item.id as string)
+  }
+  return value as CaptureRecoveries
+}
+
+export function readCaptureRestored(value: unknown): CaptureRestored {
+  if (!keys(value, ['format', 'id', 'archive_sha256', 'previous_grant_id', 'grant_id', 'previous_grant_revoked', 'source_enrolled', 'source_enabled', 'status']) ||
+    value.format !== 'mnemion-capture-restored-v1' || !uuid(value.id) || !uuid(value.previous_grant_id) || !uuid(value.grant_id) ||
+    value.previous_grant_id === value.grant_id || typeof value.archive_sha256 !== 'string' || !cursor(value.archive_sha256) ||
+    value.previous_grant_revoked !== true || value.source_enrolled !== true || typeof value.source_enabled !== 'boolean' ||
+    !validInboxStatus(value.status)) throw new Error('Capture restoration could not be confirmed. Inspect pending recoveries before retrying.')
+  return value as CaptureRestored
 }
 
 export const captureMessages: Record<CaptureReason, string> = {

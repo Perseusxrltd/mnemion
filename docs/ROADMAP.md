@@ -37,8 +37,15 @@ issue review, publication and version-linked closure together.
   separate from the later policy-recovery checks. Portable encrypted inbox
   export and inspection now have a Linux app/agent journey covering offline
   export, restart and inspection after source removal; bounded archive and
-  migration checks passed. Restoring and enrolling that inbox through the app,
-  reviewed device/policy migration, complete capture policy and coverage,
+  migration checks passed. New-device recovery now retains the original source
+  and capture policy, rotates the protected inbox key and grant, confirms old
+  grant retirement, and installs a paused source. App and agent controls expose
+  pending recoveries with explicit finish/discard; component/controller checks
+  passed. The final Linux source journey now covers app recovery, reopening the
+  new protected key after restart, reconciling old queued memories without
+  duplicates and capturing new memories. Three earlier UI/controller failures
+  and their corrections remain in the validation record. Reviewed identity/policy
+  migration, complete capture policy and coverage,
   headless operation, bounded history and
   all six packaged targets remain required before this L1 milestone ships.
 

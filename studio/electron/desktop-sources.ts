@@ -2,8 +2,8 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import type { CredentialCipher } from './workspace-store.js'
 import { sourceMessages } from './desktop-source-process.js'
-import { readCaptureArchive, readCapturePreview, validCaptureCoverage } from './capture-messages.js'
-import type { CaptureArchiveInfo, CaptureBackupInput, CaptureInspectInput, CapturePreview, DesktopSource, DesktopSourceView, SourceActivity, SourceConfigure, SourceControl, SourcePreviewSelection, SourceReason, SourceReport } from '../shared/desktop-sources.js'
+import { readCaptureArchive, readCapturePreview, readCaptureRecoveries, readCaptureRestored, validCaptureCoverage } from './capture-messages.js'
+import type { CaptureArchiveInfo, CaptureBackupInput, CaptureInspectInput, CapturePreview, CaptureRecoveries, CaptureRestored, CaptureRestoreControl, CaptureRestoreInput, CaptureRestoreResult, DesktopSource, DesktopSourceView, SourceActivity, SourceConfigure, SourceControl, SourcePreviewSelection, SourceReason, SourceReport } from '../shared/desktop-sources.js'
 
 type SavedSource = DesktopSource & { sealed_key: string; sealed_provider?: string; sealed_inbox_key?: string; status_epoch?: string }
 type Document = { format: 1; revision: string; sources: SavedSource[] }
@@ -88,6 +88,7 @@ export class DesktopSources {
   private loading?: Promise<void>
   private controlling = false
   private controlWork?: Promise<unknown>
+  private recoveryReading?: Promise<CaptureRecoveries>
   private timer?: ReturnType<typeof setInterval>
   private startRequested = false
   private suspended = false
@@ -222,6 +223,81 @@ export class DesktopSources {
     this.controlWork = work
     try { return readCaptureArchive(await work) }
     finally { this.controlling = false; this.controlWork = undefined; this.changed() }
+  }
+
+  async recoveries(signal?: AbortSignal): Promise<CaptureRecoveries> {
+    if (this.closed || this.suspended) throw new Error('Wait for the app update before inspecting recoveries.')
+    // This bounded read exposes only intent metadata, never a key or inbox.
+    // Polling must not take the mutation slot and reject a user's backup or
+    // restore. Share concurrent reads; actions revalidate the current intent
+    // and settings rather than treating a possibly stale listing as authority.
+    if (!this.recoveryReading) this.recoveryReading = Promise.resolve()
+      .then(() => this.options.call({ operation: 'capture_restore_list' }, signal))
+      .then(readCaptureRecoveries)
+      .finally(() => { this.recoveryReading = undefined })
+    return this.recoveryReading
+  }
+
+  private recovered(value: Record<string, unknown>, id: string, archive: string, grant: string): CaptureRestored {
+    const result = readCaptureRestored(value.recovery), document = value.document
+    if (result.id !== id || result.archive_sha256 !== archive || result.grant_id !== grant ||
+      !object(document) || document.format !== 1 || typeof document.revision !== 'string' ||
+      !Array.isArray(document.sources) || document.sources.length > 16) throw new Error('The recovered source could not be confirmed. Read source status and pending recoveries before retrying.')
+    const source = document.sources.find(item => object(item) && item.id === id)
+    if (!object(source) || !object(source.custody) || source.custody.grant_id !== grant || source.enabled !== result.source_enabled) throw new Error('Recovery changed the expected source identity. Inspect its saved status.')
+    this.document = document as Document
+    this.activities.set(id, { phase: 'waiting', durability: 'unknown' })
+    return result
+  }
+
+  async restore(input: CaptureRestoreInput, signal?: AbortSignal): Promise<CaptureRestoreResult> {
+    if (!object(input) || Object.keys(input).some(key => !['expected_revision', 'file', 'recovery_key', 'archive_sha256', 'source', 'credential', 'retirement_credential', 'preview_hash', 'confirm'].includes(key)) ||
+      input.confirm !== true || !object(input.source) || input.source.provider !== 'conversations' || input.source.enabled !== false || !input.source.custody ||
+      typeof input.credential !== 'string' || typeof input.retirement_credential !== 'string') throw new Error('Review the archive, paused source, new device grant and previous-device retirement.')
+    const recovery = await this.mutate(input.expected_revision, async () => {
+      if (this.active) throw new Error('Wait for the active scan before recovering a capture source.')
+      if (!await this.options.cipher.available()) throw new Error('Unlock OS credential storage before recovering this device.')
+      const id = input.source.id ?? randomUUID(), source = { ...input.source, id }
+      if (!UUID.test(id) || this.document!.sources.some(item => item.id === id || item.endpoint === source.endpoint && item.connector_id === source.connector_id)) throw new Error('This source already exists on this computer. Inspect its saved state before recovery.')
+      const retirement_credential = this.options.retirementCredential
+        ? await this.options.retirementCredential(source, input.retirement_credential) : input.retirement_credential
+      const inboxKey = randomBytes(32).toString('base64')
+      const sealed_key = (await this.options.cipher.encrypt(input.credential)).toString('base64')
+      const sealed_inbox_key = (await this.options.cipher.encrypt(inboxKey)).toString('base64')
+      signal?.throwIfAborted()
+      try {
+        const result = await this.options.call({ ...input, operation: 'capture_restore', retirement_credential,
+          source: { ...source, sealed_key, sealed_inbox_key }, inbox_key: inboxKey }, signal)
+        return this.recovered(result, id, input.archive_sha256, source.custody!.grant_id)
+      } catch (error) { this.document = undefined; throw error }
+    }, false)
+    return { view: await this.status(), recovery }
+  }
+
+  async finishRecovery(input: CaptureRestoreControl, discard = false, signal?: AbortSignal): Promise<CaptureRestoreResult | { discarded: true; replacement_grant_revoked: true; archive_modified: false }> {
+    if (!object(input) || !UUID.test(input.id) || input.confirm !== true || Object.keys(input).some(key =>
+      !(discard ? ['id', 'expected_revision', 'confirm'] : ['id', 'expected_revision', 'confirm', 'file', 'recovery_key']).includes(key))) throw new Error('Confirm the selected unfinished capture recovery.')
+    const result = await this.mutate(input.expected_revision, async () => {
+      if (this.active) throw new Error('Wait for the active scan before finishing recovery.')
+      if (!await this.options.cipher.available()) throw new Error('Unlock this device’s protected keys before finishing recovery.')
+      const pending = await this.options.call({ operation: 'capture_restore_load', id: input.id, expected_revision: input.expected_revision }, signal)
+      const source = pending.source
+      if (!object(source) || source.id !== input.id || typeof source.sealed_key !== 'string' || typeof source.sealed_inbox_key !== 'string' ||
+        !object(source.custody) || typeof source.custody.grant_id !== 'string' || !UUID.test(source.custody.grant_id) ||
+        typeof pending.archive_sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(pending.archive_sha256)) throw new Error('The protected recovery record could not be verified.')
+      const credential = await this.options.cipher.decrypt(Buffer.from(source.sealed_key, 'base64'))
+      const inbox_key = discard ? undefined : await this.options.cipher.decrypt(Buffer.from(source.sealed_inbox_key, 'base64'))
+      signal?.throwIfAborted()
+      try {
+        const value = await this.options.call({ ...input, operation: discard ? 'capture_restore_discard' : 'capture_restore_finish', credential, ...(inbox_key ? { inbox_key } : {}) }, signal)
+        if (discard) {
+          if (Object.keys(value).length !== 3 || value.discarded !== true || value.replacement_grant_revoked !== true || value.archive_modified !== false) throw new Error('Discard could not be confirmed. Inspect the pending recovery before retrying.')
+          return value as { discarded: true; replacement_grant_revoked: true; archive_modified: false }
+        }
+        return this.recovered(value, input.id, pending.archive_sha256, source.custody.grant_id)
+      } catch (error) { this.document = undefined; throw error }
+    }, false)
+    return 'discarded' in result ? result : { view: await this.status(), recovery: result }
   }
 
   async configure(input: SourceConfigure, signal?: AbortSignal): Promise<DesktopSourceView> {
@@ -413,5 +489,6 @@ export class DesktopSources {
     this.active?.abort.abort()
     if (this.active) await this.active.work
     if (this.controlWork) await this.controlWork.catch(() => {})
+    if (this.recoveryReading) await this.recoveryReading.catch(() => {})
   }
 }

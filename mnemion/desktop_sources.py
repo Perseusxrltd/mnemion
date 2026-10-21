@@ -398,6 +398,16 @@ def verify_cloud(adapter, provider: str):
 
 def perform(root: Path, request: dict, private_roots=()) -> dict:
     operation = request.get("operation")
+    if operation in {
+        "capture_restore",
+        "capture_restore_list",
+        "capture_restore_load",
+        "capture_restore_finish",
+        "capture_restore_discard",
+    }:
+        from .desktop_capture_restore import perform as capture_restore
+
+        return capture_restore(root, request, private_roots)
     if operation in {"capture_export", "capture_inspect"}:
         from .desktop_capture_backup import perform as capture_backup
 
