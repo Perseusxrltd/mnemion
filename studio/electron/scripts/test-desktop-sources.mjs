@@ -135,6 +135,56 @@ async function fixture(t) {
 const retainedDefinition = () => ({ ...definition(), provider: 'conversations', capture_mode: 'messages',
   custody: { source_id: randomUUID(), grant_id: randomUUID(), keep_accepted: true, pending_limit_mib: 256 } })
 
+for (const phase of ['load', 'status']) test('closing drains startup ' + phase + ' before declaring sources stopped', async t => {
+  const f = await workspaceFixture(t)
+  const loaded = Promise.withResolvers(), observed = Promise.withResolvers()
+  const document = { format: 1, revision: 'not-configured', sources: [] }
+  const observations = { format: 1, sources: [] }, requests = []
+  const manager = new DesktopSources({ cipher: f.cipher, call: request => {
+    requests.push(request.operation)
+    if (request.operation === 'load') return loaded.promise
+    if (request.operation === 'status') return observed.promise
+    throw new Error('Closing must not begin a new source operation')
+  } })
+  const interval = t.mock.method(globalThis, 'setInterval')
+  const starting = manager.start()
+  if (phase === 'status') loaded.resolve(document)
+  await setImmediate()
+  let closed = false
+  const closing = manager.close().then(() => { closed = true })
+  try {
+    await setImmediate()
+    assert.equal(closed, false, 'An in-flight startup read must drain before app quit retries')
+    assert.equal(manager.busy, true)
+    loaded.resolve(document); observed.resolve(observations)
+    await starting; await closing
+    assert.equal(manager.busy, false)
+    assert.equal(interval.mock.callCount(), 0, 'A finished startup must not recreate its timer after close')
+    assert.equal((await manager.status()).running, false)
+    await manager.start()
+    assert.deepEqual(requests, ['load', 'status'])
+  } finally {
+    loaded.resolve(document); observed.resolve(observations)
+    await Promise.allSettled([starting, closing]); await manager.close()
+  }
+})
+
+test('failed startup inspection drains on close without restarting capture', async t => {
+  const f = await workspaceFixture(t), loaded = Promise.withResolvers()
+  let calls = 0
+  const manager = new DesktopSources({ cipher: f.cipher, call: () => { calls++; return loaded.promise } })
+  const interval = t.mock.method(globalThis, 'setInterval')
+  const starting = assert.rejects(manager.start(), /Saved settings unavailable/)
+  const closing = manager.close()
+  loaded.reject(new Error('Saved settings unavailable'))
+  await starting; await closing
+  assert.equal(manager.busy, false)
+  assert.equal(interval.mock.callCount(), 0)
+  await manager.start()
+  await assert.rejects(manager.status(), /closing/)
+  assert.equal(calls, 1)
+})
+
 const backfillReport = (delivered = false, deliveryOnly = false) => ({ ...report(), completed: false,
   capture: { locally_accepted: 2, pending_events: delivered ? 0 : 2, pending_bytes: delivered ? 0 : 1024,
     remote_committed_events: delivered ? 2 : 0, stored_events: delivered ? 2 : 0, forgotten_events: 0,

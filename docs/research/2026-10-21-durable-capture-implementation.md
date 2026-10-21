@@ -8,6 +8,23 @@ L1–L7 remain in scope; this checkpoint does not close L1 or R07. The current
 [app and agent guide](../service/durable-capture.md) describes the implemented
 enrollment, prefix/queue observations, limits, removal and recovery boundaries.
 
+## Current installed qualification
+
+Public **4.44.0** remains the released version. L1 is not accepted or released.
+
+| Artifacts | Frozen source and native run | Current evidence |
+| --- | --- | --- |
+| Linux x64/arm64 and Windows x64/arm64 | `9095372a` · [39613577682](https://github.com/Perseusxrltd/mnemion/actions/runs/39613577682) | All 58 required true fields qualify for each of these four artifacts. |
+| macOS x64 | `4f434ecb` · [39623463543](https://github.com/Perseusxrltd/mnemion/actions/runs/39623463543) | Empty engine preview succeeded, then fresh-app shutdown timed out before workspace creation. No installed qualification. |
+| macOS arm64 | `4f434ecb` · [39623463543](https://github.com/Perseusxrltd/mnemion/actions/runs/39623463543) | Installed hosting and separate packaged update/relaunch passed. All 59 required true fields qualify for this artifact. |
+
+The [receipt update](#native-matrix-checkpoint) binds the four Linux/Windows
+artifacts to `9095372a`; the Apple Silicon receipt binds its artifact to
+`4f434ecb`. These results span two frozen sources and do not establish six-target
+acceptance or validate the later [startup-drain correction](#source-startup-drain-correction).
+The source checkpoints below preserve earlier failures and their contemporaneous
+validation state. The remaining L1 contracts stay open.
+
 ## Development proof, 21 October 2026
 
 The Linux x64 source preview passed both `capture-enroll` and `capture-resume`
@@ -39,7 +56,8 @@ scenario's pass. These receipts do not rewrite the original combined result.
 
 The new [native capture probe](../../studio/electron/native-capture-probe.ts)
 is wired into the [installed-hosting check](../../studio/electron/scripts/smoke-installed-hosting.mjs)
-for all six required desktop targets. Its packaged executions remain pending.
+for all six required desktop targets. At this initial source checkpoint, packaged
+executions were pending; current qualification is recorded above.
 
 Development [CI run 39527490005](https://github.com/Perseusxrltd/mnemion/actions/runs/39527490005)
 identified a missing capture helper in the container build and stale upgrade-table
@@ -967,8 +985,9 @@ an endpoint-bound login handle was correctly refused as a transferable key;
 the second launch needed to await normal host startup; and an audit query needed
 to request all fragments instead of the ordinary grouped recall. TypeScript
 builds initially caught missing optional-value guards in the probe itself.
-Those were fixture corrections, not weakened product checks. All six packaged
-runs remain pending; no new release or L1 completion is claimed here.
+Those were fixture corrections, not weakened product checks. At that source
+checkpoint, all six packaged runs were pending; no release or L1 completion was
+claimed from those source checks.
 
 ## Independent native engine capture lifecycle
 
@@ -1207,6 +1226,13 @@ Intel macOS failed in its first headless preview with unclassified stderr.
 Apple Silicon was cancelled before runner assignment; GitHub annotations
 confirm hosted capacity prevented that execution.
 
+`capture-key-controls-installed-qualified.receipt.json` now verifies all **58**
+required true fields for each of the four Linux/Windows artifacts at this exact
+source. `native-receipt-qualification-negative-checks.json` preserves four
+passing negative qualification checks. The receipt does not qualify either Mac
+artifact or the later crypto source; the original Mac failure/cancellation
+evidence remains intact.
+
 An early installed empty-source preview now runs before workspace creation,
 using the same installed engine from the application process. Four diagnostic
 redaction checks and its Linux source dispatcher/CLI preview passed; native
@@ -1237,9 +1263,45 @@ suppress warnings or weaken the strict installed check.
 One fresh-interpreter regression failed before the change and passes afterward:
 the actual native entry initializes without the legacy cipher, while AES-GCM,
 Ed25519, RSA and Argon2id work. Changed ciphertext bindings, changed signed data
-and an incorrect password are rejected. Installed Mac reruns remain required;
-this source result is not six-platform acceptance or a new release. The earlier
-failed native receipts remain retained. Public **4.44.0** is unchanged.
+and an incorrect password are rejected. The installed Mac reruns use
+[native run 39623463543](https://github.com/Perseusxrltd/mnemion/actions/runs/39623463543)
+at `4f434ecbe205a715bd8ecd03d44426fc1274b9ac`. Intel Mac passed the empty engine
+preview, then failed while quitting the fresh app, before any workspace was
+created. `native-receipt-12356269049.evidence.json` records phase `capture-preview`
+and last stage `local-shutdown-pending`, with local activity and busy state still
+true. `native-openssl-macos-intel-failure.log` reports a stop timeout, not the
+earlier OpenSSL warning. This original failure remains retained; the source
+correction below still requires installed Intel validation.
+
+The completed run has **6 successful workflow jobs, 3 skipped and 1 failed**.
+Apple Silicon installed hosting and its separate packaged update/relaunch passed.
+`native-openssl-macos-arm-installed-qualified.receipt.json` qualifies all **59**
+required true fields for that one artifact at `4f434ecb`. The four passing
+Linux/Windows artifacts above use the earlier `9095372a` source. These results do
+not establish six-target acceptance of the crypto correction or qualification of
+the subsequent startup-drain correction. The earlier failed native receipts
+remain retained. Public **4.44.0** is unchanged.
+
+### Source startup-drain correction
+
+A source regression reproduced `DesktopSources.close()` returning while startup
+loading still counted as busy. Repeated application quit attempts could then
+starve the helper completion. The correction awaits an existing load during
+close, refuses new uncached loads after close, and checks the closed state again
+after startup's `ensure()` before creating its timer.
+
+Two new lifecycle cases failed on the baseline; the third, covering a failed
+load, already passed. The corrected native TypeScript build and all **150**
+desktop source, agent and local-workspace cases passed, recorded in
+`capture-startup-drain-qualified-tests.json` and
+`capture-startup-drain-corrected-tests.log`. This is source proof of the reproduced
+defect. Targeted Intel installed validation is still required to determine
+whether it resolves the observed fresh-app shutdown failure; none of the earlier
+passing artifacts validates this runtime correction.
+
+Frozen released source `2d9736649dcee74362b9d9ebe0d73af3ae984305` also omits
+the startup-loading drain. A separate public hotfix remains a possibility after
+native confirmation; no release is claimed here.
 
 ## Supervised headless inbox-key forwarding
 
