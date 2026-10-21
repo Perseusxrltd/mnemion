@@ -195,3 +195,51 @@ for (const provider of ['slack', 'gdrive']) test('cloud credentials remain separ
   assert.deepEqual(f.document().sources, [])
   assert.equal(f.state.running, 0)
 })
+
+test('closing drains startup loading before declaring sources stopped', async t => {
+  const f = await workspaceFixture(t)
+  const loaded = Promise.withResolvers()
+  const document = { format: 1, revision: 'not-configured', sources: [] }
+  const requests = []
+  const manager = new DesktopSources({ cipher: f.cipher, call: request => {
+    requests.push(request.operation)
+    if (request.operation === 'load') return loaded.promise
+    throw new Error('Closing must not begin a new source operation')
+  } })
+  const interval = t.mock.method(globalThis, 'setInterval')
+  const starting = manager.start()
+  await setImmediate()
+  let closed = false
+  const closing = manager.close().then(() => { closed = true })
+  try {
+    await setImmediate()
+    assert.equal(closed, false, 'An in-flight startup read must drain before app quit retries')
+    assert.equal(manager.busy, true)
+    loaded.resolve(document)
+    await starting; await closing
+    assert.equal(manager.busy, false)
+    assert.equal(interval.mock.callCount(), 0, 'A finished startup must not recreate its timer after close')
+    assert.equal((await manager.status()).running, false)
+    await manager.start()
+    assert.deepEqual(requests, ['load'])
+  } finally {
+    loaded.resolve(document)
+    await Promise.allSettled([starting, closing]); await manager.close()
+  }
+})
+
+test('failed startup inspection drains on close without restarting capture', async t => {
+  const f = await workspaceFixture(t), loaded = Promise.withResolvers()
+  let calls = 0
+  const manager = new DesktopSources({ cipher: f.cipher, call: () => { calls++; return loaded.promise } })
+  const interval = t.mock.method(globalThis, 'setInterval')
+  const starting = assert.rejects(manager.start(), /Saved settings unavailable/)
+  const closing = manager.close()
+  loaded.reject(new Error('Saved settings unavailable'))
+  await starting; await closing
+  assert.equal(manager.busy, false)
+  assert.equal(interval.mock.callCount(), 0)
+  await manager.start()
+  await assert.rejects(manager.status(), /closing/)
+  assert.equal(calls, 1)
+})

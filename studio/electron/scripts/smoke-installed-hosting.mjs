@@ -154,6 +154,9 @@ function credentialsHash() {
 try {
   const nativeRuntime = await install()
   const port = await freePort()
+  const startup = await launch({ phase: 'startup', port })
+  if (!startup.emptyWorkspaceProfile) throw new Error('The installed app did not verify its fresh startup profile')
+  await stop()
   const first = await launch({ phase: 'create', port, emulated: nativeRuntime.engine_emulation === true })
   if (!first.actualSetupControls || !first.realModelInference) throw new Error('The installed UI did not exercise real setup and inference')
   if (!first.nativeNgrokSdkLoaded) throw new Error('The installed engine did not load its remote connection runtime')
@@ -226,6 +229,7 @@ try {
   const evidence = { passed: true, platform: process.platform, architecture: process.arch, nativeRuntime,
     installer: process.platform === 'win32' ? 'NSIS per-user' : process.platform === 'darwin' ? 'DMG copied application' : 'AppImage portable user installation',
     installationPathWithSpacesAndUnicode: true, actualSetupControls: true, authenticatedApi: true,
+    freshProfileShutdownBeforeSetup: true,
     nativeNgrokSdkLoaded: true, hostedBrowserAndConsentAssets: true,
     nativeJournalRegistrationAndSeparateApproval: true,
     nativeEncryptedSnapshotAndLedger: true, backupKeyProtectedAndReopenedByOsStore: true,

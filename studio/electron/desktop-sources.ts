@@ -37,6 +37,7 @@ export class DesktopSources {
 
   private async ensure(): Promise<void> {
     if (this.document) return
+    if (this.closed && !this.loading) throw new Error('Source controls are closing. Reopen the app before loading sources.')
     if (!this.loading) this.loading = (async () => {
       const result = await this.options.call({ operation: 'load' })
       if (result.format !== 1 || typeof result.revision !== 'string' || !Array.isArray(result.sources) || result.sources.length > 16) throw new Error('Saved source settings could not be read. The existing file has been retained.')
@@ -60,6 +61,7 @@ export class DesktopSources {
     this.startRequested = true
     if (this.closed) return
     await this.ensure()
+    if (this.closed) return
     if (!this.timer) { this.timer = setInterval(() => { void this.tick() }, 2000); this.timer.unref() }
     void this.tick()
   }
@@ -196,6 +198,10 @@ export class DesktopSources {
     if (this.timer) clearInterval(this.timer)
     this.timer = undefined
     this.active?.abort.abort()
+    // App quit retries only after all work counted by busy has drained. A
+    // startup read otherwise keeps busy true while repeated quit promises
+    // starve the event loop that needs to receive its helper's completion.
+    if (this.loading) await this.loading.catch(() => {})
     if (this.active) await this.active.work
     if (this.controlWork) await this.controlWork.catch(() => {})
   }

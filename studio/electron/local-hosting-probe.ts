@@ -14,9 +14,13 @@ export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Re
   if (!profile || !smoke || dirname(resolve(path)) !== dirname(resolve(profile)) || dirname(resolve(smoke)) !== dirname(resolve(path)) ||
       (await stat(path)).size > 4096) throw new Error('Hosting validation requires an isolated profile and evidence directory')
   const config = JSON.parse(await readFile(path, 'utf8'))
-  if (!['create', 'resume', 'recover-port', 'sign-in', 'sign-in-resume', 'backup-capture', 'backup-recover', 'backup-resume'].includes(config.phase) || !Number.isInteger(config.port) || config.port < 1024 || config.port > 65535 ||
-      (config.phase !== 'create' && !['memoryId', 'spaceId'].every(key => /^[a-f0-9-]{36}$/.test(config[key])))) throw new Error('Invalid hosting validation configuration')
+  if (!['startup', 'create', 'resume', 'recover-port', 'sign-in', 'sign-in-resume', 'backup-capture', 'backup-recover', 'backup-resume'].includes(config.phase) || !Number.isInteger(config.port) || config.port < 1024 || config.port > 65535 ||
+      (!['startup', 'create'].includes(config.phase) && !['memoryId', 'spaceId'].every(key => /^[a-f0-9-]{36}$/.test(config[key])))) throw new Error('Invalid hosting validation configuration')
   if (config.phase === 'sign-in-resume' && !['tenantId', 'principalId', 'sessionId'].every(key => /^[a-f0-9-]{36}$/.test(config[key]))) throw new Error('Invalid personal-access validation identity')
+  if (config.phase === 'startup') {
+    if (existsSync(join(profile, 'mnemion-local-workspace', 'configuration.json'))) throw new Error('The startup shutdown check needs a fresh workspace profile')
+    return { phase: 'startup', emptyWorkspaceProfile: true }
+  }
   if (config.phase.startsWith('backup-')) {
     const result = await verifyNativeBackups(window, config, path)
     await writeFile(join(dirname(path), config.phase + '-workspace.png'), (await window.webContents.capturePage()).toPNG(), { mode: 0o600 })
