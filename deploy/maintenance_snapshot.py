@@ -16,7 +16,7 @@ from .release_status import WORKFLOWS as RELEASE_WORKFLOWS
 
 LIMIT = 100
 ISSUE_LIMIT = 1000
-WORKFLOWS = {*RELEASE_WORKFLOWS, "database-cache.yml"}
+WORKFLOWS = {*RELEASE_WORKFLOWS, "database-cache.yml", "desktop.yml"}
 
 
 def object_from_gh(*arguments):

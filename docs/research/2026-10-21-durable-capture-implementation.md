@@ -1012,6 +1012,42 @@ startup/restart handling. The existing `--watch --managed-state` path follows
 verified runtime updates on an adopted Linux/macOS host; this command does not
 add standalone Windows watcher supervision or automatic restart.
 
+## Damaged inbox controls and lightweight-client correction
+
+This further **unreleased source delta** fixes a reproduced local-control bug:
+a missing or malformed enrollment record, or altered protected-key ciphertext,
+previously prevented saving a pause. An exact pause or unchanged source now
+preserves its accepted evidence and existing failure when saved settings remain
+readable and valid. An unchanged damaged sibling cannot block another source's
+controls. Resume, other edits and retirement retain their validation; this does
+not repair an unreadable settings file or reset an inbox.
+
+The original three failing pause cases remain in the private evidence. The final
+scoped run passed **67** cases covering the new damage controls, scheduling,
+encrypted inbox, command entrypoints and headless controls. A fresh migration
+preflight passed **30** cases. The Linux source boundary journey now passes
+**24** checks across two real Electron launches, including actual app/agent
+pause after missing or damaged enrollment/database files, unchanged keys and
+evidence, refused invalid enrollment resume, and reopening the accepted queue
+after restoring only the exact matching fixture files. The qualified receipt
+`capture-damage-qualified-preview.receipt.json` pins 555 runtime files to
+`a24e8375500a4cf7f3ac8d0d765eb92dff6ac2e48454581648195e0808fc4610`.
+No production memory writes or paid model calls occurred.
+
+The first complete [six-target native run 39588502974](https://github.com/Perseusxrltd/mnemion/actions/runs/39588502974)
+failed on every target during the lightweight client suite, before packaging.
+Ordinary connector imports unnecessarily loaded the encryption runtime, which
+is deliberately absent from that client. Shared errors and pure scheduling
+decisions now live in lightweight modules, preserving their previous import
+paths. The exact locked Python 3.13 client environment passes **235** cases with
+**13** platform skips and no encryption dependency installed. The normal CI
+Studio job now checks that environment before the six-platform packaging gate;
+maintenance monitoring also retains independent desktop validation failures.
+
+These results establish the stated source checks only. A corrected six-target
+packaging run, broader damaged-key/recovery acceptance and the remaining L1
+contracts are still required. Public **4.44.0** does not include this milestone.
+
 ## Source and deletion boundaries
 
 The staged service exposes a `durable_capture: "v1"` capability. An administrator

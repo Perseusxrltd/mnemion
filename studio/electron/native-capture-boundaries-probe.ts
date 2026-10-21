@@ -7,6 +7,7 @@ import type { CapturePolicy, CaptureReport, DesktopSource, DesktopSourceView } f
 import { callNativeOperator as call } from './native-operator-probe.js'
 import { inRenderer, pauseSource, sourceStatus, until } from './native-capture-probe.js'
 import { NativeCaptureRelay } from './native-capture-relay.js'
+import { verifyNativeCaptureDamage } from './native-capture-damage-probe.js'
 
 const hash = (value: string | Buffer) => createHash('sha256').update(value).digest('hex')
 const line = (value: unknown) => Buffer.from(JSON.stringify(value) + '\n')
@@ -276,6 +277,7 @@ export async function verifyNativeCaptureBoundaries(window: BrowserWindow, confi
     relay.capture(fixture.grantId, 'offline')
     await appendFile(fixture.selectedLog, message('Queued before reviewed policy revocation ' + randomUUID()))
     await cycle(fixture.id, relay, report => report.pending_events === 1 && report.reason_code === 'capture_delivery_unavailable', 'The fixture did not accept its later message before policy review.')
+    const damage = await verifyNativeCaptureDamage(window, fixture.id, fixture.connectorId, relay)
     relay.capture(fixture.grantId, 'pass')
     await inRenderer(window, `
       const route='/v1/connectors/'+${JSON.stringify(fixture.connectorId)}+'/capture-sources/'+${JSON.stringify(fixture.id)};
@@ -304,7 +306,7 @@ export async function verifyNativeCaptureBoundaries(window: BrowserWindow, confi
     if (await readSaved(fixture.id)) throw new Error('Native boundary removal left its source credentials.')
     await rm(fixture.selectedLog); await rm(fixture.rolledLog); await rm(fixture.folder, { recursive: true }); await rm(fixturePath)
     relay.check()
-    return { phase: config.phase, nativeCaptureUnknownReceiptSurvivesRestart: true,
+    return { phase: config.phase, ...damage, nativeCaptureUnknownReceiptSurvivesRestart: true,
       nativeCaptureReceiptReconciledWithoutWrite: true, nativeCaptureMemoryIdsAndVersionsRetained: true,
       nativeCaptureIndexObservedSeparately: true, nativeCaptureRevokedReaderStaysRevoked: true,
       nativeCaptureReplayRespectsForget: true, nativeCaptureLocalDeletionHistory: true,

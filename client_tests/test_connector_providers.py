@@ -273,7 +273,9 @@ def test_runner_reports_managed_scan_reason_but_plain_watch_starts_fresh(
     from mnemion.connectors import runner
 
     monkeypatch.setenv(runner.SCAN_TRIGGER_ENV, reason)
-    monkeypatch.setattr(runner, "read_config", lambda _: SimpleNamespace(poll_seconds=30))
+    monkeypatch.setattr(
+        runner, "read_config", lambda _: SimpleNamespace(poll_seconds=30, capture=None)
+    )
     monkeypatch.setattr(runner, "sync", lambda *args, **kwargs: {"completed": True})
 
     def stop(*args, **kwargs):

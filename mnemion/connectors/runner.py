@@ -17,9 +17,9 @@ from pydantic import ValidationError
 from ..local_state import LocalSetupError
 from ..sdk import Client, MnemionError
 from ..version import __version__
-from .capture_cycle import BACKFILL_POLL_SECONDS, backfill_pending
+from .capture_errors import InboxError
+from .capture_scheduling import BACKFILL_POLL_SECONDS, backfill_pending
 from .config import read_config
-from .conversation_inbox import InboxError
 from .protocol import ConnectorClient, SkippedDocument
 from .live_conversations import ConversationProvider
 from .journal_projection import project_documents

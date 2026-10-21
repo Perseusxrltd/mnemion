@@ -257,7 +257,16 @@ def store(root: Path, expected: str, sources: list) -> dict:
             old = previous.get(source.id)
             if old and old.custody and not source.custody:
                 raise InboxError("capture_policy_change_requires_migration")
-            if source.custody:
+            # A damaged/missing enrollment must not prevent an exact local
+            # pause, or block another source's controls through an unchanged
+            # sibling. Neither operation repairs custody or grants new intake.
+            # Resume and every other edit still validate the saved enrollment.
+            preserves_stopped_or_current = (
+                old is not None
+                and settings(old) == settings(source)
+                and (not source.enabled or source.enabled == old.enabled)
+            )
+            if source.custody and not preserves_stopped_or_current:
                 register(root, source, old)
             source.status_epoch = (
                 old.status_epoch

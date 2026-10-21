@@ -1,7 +1,8 @@
 # Keep selected conversations after chat logs disappear
 
 **Unreleased implementation.** This guide describes the current development
-source. Check [release status](../RELEASE_STATUS.md) for published availability.
+source; it is not included in public 4.44.0. Check
+[release status](../RELEASE_STATUS.md) for published availability.
 For desktop use, both Studio and the workspace server must support retained
 capture; the server advertises `durable_capture: "v1"` in `GET /health/live`.
 This work advances L1 of the [layered librarian](../research/2026-10-20-layered-librarian.md); full L1
@@ -332,7 +333,7 @@ local model; server indexing follows the workspace's model policy.
 In **Source settings and key**, set **Maximum entries per history counter** and
 **Maximum encrypted storage for this source (MiB)**. These are strict integer
 fields `custody.history_limit_events` and `custody.database_limit_mib` in native
-settings, or the same fields under `capture` in the [headless configuration](headless-capture.md#write-the-configuration).
+settings, or the same fields under `capture` in the [headless configuration](headless-capture.md#prepare-the-approved-source-and-private-files).
 They also participate in the preview fingerprint. Re-preview explicit-policy
 settings before saving. Changing only these quotas preserves the source, grant,
 inbox key and approved capture policy; it does not migrate existing evidence.
@@ -499,6 +500,20 @@ passed; all installed-platform, release and full L1 acceptance remain open.
 scan and retains its inbox and committed progress. Resume starts from that saved
 state and delivery rechecks current authorization.
 
+In the unreleased source, missing or malformed capture enrollment records and
+altered protected inbox-key ciphertext do not block pause **when the saved source
+configuration is still readable and valid**. Use the app's pause button, or
+`source.pause` with `enabled: false` and a fresh `expected_revision`, without
+changing other source settings. An unchanged source with this damage also does
+not block controls on another source.
+
+This exception only preserves an unchanged source or saves its pause. Resume,
+key/audience/policy edits, other settings changes and retirement retain their
+validation. Pausing preserves the failure observation and accepted evidence;
+it does not repair or recreate the enrollment record, inbox or key. An unreadable
+or invalid saved source configuration still needs recovery before these
+controls can load it.
+
 To remove retained capture, pause it first, then select **Remove from this
 computer → Revoke device grant and discard local inbox**. This permanently
 discards the local inbox, including pending content and deliveries whose outcome
@@ -558,9 +573,14 @@ enrollment/binding mismatch stop capture visibly. The runner does not silently
 create an empty replacement and claim previous work was preserved.
 
 Unlock OS credential storage when it is merely locked. For lost or corrupted
-state, preserve the existing files and restore the verified matching inbox,
-enrollment, settings and usable protected key. A new computer cannot infer past
-accepted or forgotten ranges from today's chat files. Restoring the original
+state, pause if the source settings can still load, without making other
+settings changes. Preserve the existing files and restore the verified matching
+inbox, enrollment, settings and usable protected key. A successful pause does
+not verify that this set is usable. Do not invent an enrollment record or
+replace an initialized database with an empty one. Resume retains enrollment
+and key binding checks; capture must reopen the matching inbox successfully
+before it can continue. A new computer cannot infer
+past accepted or forgotten ranges from today's chat files. Restoring the original
 verified state or completing an explicitly reviewed migration is required; new
 IDs, a new key or a fresh source are not a recovery substitute. An OS-sealed key
 is not automatically portable between accounts or computers, and a server
@@ -575,9 +595,10 @@ an ordinary settings update remains unsupported.
 **Repair saved scan history**, also exposed as `source.repair`, repairs only
 observations. It preserves the damaged diagnostic file and resets scan history
 for **every source on this computer** to unknown. Settings, credentials, inboxes
-and capture checkpoints remain. It does not recover lost evidence, restore
-encryption keys or prove a previous scan succeeded. Repair does not start a scan;
-normal automatic checks resume at their next interval.
+and capture checkpoints remain. It does not repair capture enrollment, recover
+lost evidence, restore encryption keys or prove a previous scan succeeded.
+Repair does not start a scan; normal automatic checks resume at their next
+interval.
 
 ### Back up and inspect an inbox (unreleased)
 

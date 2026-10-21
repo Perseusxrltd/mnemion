@@ -18,7 +18,7 @@ from uuid import UUID, uuid4
 from pydantic import Field, ValidationError, field_validator, model_validator
 
 from . import local_state
-from .connectors.capture_cycle import BACKFILL_POLL_SECONDS, BACKFILL_REASONS, backfill_pending
+from .connectors.capture_scheduling import BACKFILL_POLL_SECONDS, BACKFILL_REASONS, backfill_pending
 from .desktop_capture import CAPTURE_REASONS, CaptureReport
 from .service.models import Command
 

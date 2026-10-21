@@ -29,6 +29,7 @@ from ..private_output import private_output
 from ..service.capture_custody import selected_item
 from ..service.connector_models import ConnectorItemInput
 from ..service.errors import ServiceError
+from .capture_errors import InboxError as InboxError
 
 FORMAT = "mnemion-selected-inbox-v1"
 PAGE_BYTES = 1_500_000
@@ -63,12 +64,6 @@ CREATE TABLE producer_events (
 );
 CREATE INDEX producer_event_position ON producer_events(scope,position);
 """
-
-
-class InboxError(RuntimeError):
-    def __init__(self, code: str):
-        super().__init__(code)
-        self.code = code
 
 
 @dataclass(frozen=True)

@@ -54,7 +54,7 @@ def test_run_window_discards_foreign_and_superseded_evidence():
     ]
 
 
-@pytest.mark.parametrize("workflow", ["release.yml", "database-cache.yml"])
+@pytest.mark.parametrize("workflow", ["release.yml", "database-cache.yml", "desktop.yml"])
 def test_new_build_failure_is_retained_when_it_started_before_an_older_release_published(
     workflow,
 ):
@@ -71,7 +71,7 @@ def test_new_build_failure_is_retained_when_it_started_before_an_older_release_p
         "updated_at": "2026-10-14T12:45:00Z",
     }
     assert [item["id"] for item in subject.run_rows([row], release)] == [5]
-    if workflow == "database-cache.yml":
+    if workflow in {"database-cache.yml", "desktop.yml"}:
         assert workflow not in subject.RELEASE_WORKFLOWS
 
 

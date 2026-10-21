@@ -79,7 +79,12 @@ issue review, publication and version-linked closure together.
   adds `connect` to the service and bundled-engine CLI, with a 13-check Linux
   source journey for offline process restarts, protected inbox failures,
   encrypted recovery and later deletion fences. The 20 CLI/control cases and
-  30 migration checks passed; all six packaged capture journeys remain pending.
+  30 migration checks passed. The [damage-control correction](research/2026-10-21-durable-capture-implementation.md#damaged-inbox-controls-and-lightweight-client-correction)
+  preserves pause and accepted evidence with missing or damaged enrollment or
+  inbox files; the expanded Linux source journey passed 24 checks. The first
+  six-target run failed before packaging on a shared client import; the corrected
+  locked client suite passed 235 cases with 13 platform skips and now runs in
+  ordinary CI. All six packaged capture journeys remain pending.
   The prior
   policy checkpoint's failed health-response CI and its later test correction
   remain recorded. This remains unreleased source. Reviewed identity/policy

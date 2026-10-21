@@ -9,7 +9,8 @@ updates also passed](../validation/2026-10-20-431-live-updates.md);
 **Unreleased:** [retained conversation capture](durable-capture.md) adds an
 explicit choice to keep selected, locally accepted evidence after chat logs
 rotate or disappear. Existing sources keep their mirror policy. The new workflow
-still requires complete native and L1 acceptance; it is not a published guarantee.
+is not included in public 4.44.0 and still requires complete native and L1
+acceptance.
 
 The device can contribute to a local or remote shared workspace. Contributing
 files does not require a local database, model, GPU, Python installation or
@@ -48,6 +49,14 @@ current access again. Pause before changing settings or replacing a key. Save
 again after changing the mapped audience. An existing entry cannot silently
 switch folders, applications, providers or workspaces; use a separate connection
 for a different source.
+
+For retained capture in the unreleased source, pause remains available with a
+missing or malformed enrollment record or altered protected inbox-key ciphertext,
+provided the saved source configuration is still readable and valid. Change
+only the enabled state; resume and other edits still validate the enrollment.
+An unchanged damaged source does not block controls on another source. Pause
+preserves the failure and accepted evidence without repairing or recreating
+private files; follow the [pause and recovery boundaries](durable-capture.md#pause-remove-and-forget).
 
 **Sources on this computer** appears under **Setup & this device** and on the
 local setup screen before connecting. It lists saved sources across workspaces.
@@ -176,6 +185,10 @@ enroll a replacement device with its own key and verified source identity. A
 retained inbox also has an independent random 256-bit OS-sealed encryption key;
 lost keys or initialized databases stop capture instead of creating an empty
 replacement. Current chat files cannot reconstruct its accepted/forgotten history.
+After pausing, preserve damaged files and restore only the verified matching
+inbox, enrollment, settings and usable protected key. Pausing does not establish
+recovery, and an unreadable or invalid saved source configuration cannot be
+salvaged by the pause control. Resume and retirement retain their validation.
 Follow [retained capture recovery](durable-capture.md#recovery-boundaries).
 Recover authoritative server memory, permissions and deletion state from a
 verified workspace backup; that cannot recover undelivered local content.
@@ -193,7 +206,7 @@ The same OS-account [private desktop interface](desktop-operator.md) exposes:
 | --- | --- |
 | `source.status` | None; returns the settings revision, sources, counts and RSS without keys. The unreleased capture report also separates local acceptance, pending content, server acknowledgements, unknown pages and incomplete scans. |
 | `source.configure` | `expected_revision`, `source`, and `credential` for a new entry; an existing entry can keep its key. Cloud sources also use a separate `provider_credential`. |
-| `source.pause` | `expected_revision`, `id`, `enabled` (`false` to pause, `true` to resume). |
+| `source.pause` | `expected_revision`, `id`, `enabled` (`false` to pause, `true` to resume). The unreleased retained-source pause tolerates damaged enrollment with valid saved settings; resume retains validation. |
 | `source.sync` | `expected_revision`, `id`; queues a scan of an enabled source. |
 | `source.remove` | `expected_revision`, `id`, `confirm: true`. Retained capture also requires a paused source and `discard_local_inbox: true`; server revocation must be confirmed before local discard. Optional `retirement_credential` supplies current administrator authority through the private pipe and is never saved. Already recorded retirement permits cleanup offline without credentials. |
 | `source.repair` (unreleased) | `expected_revision`, `id`, current `repair_token`, `confirm: true`; repairs scan observations for every source on this computer, preserving the damaged diagnostic file and retaining settings, keys, inboxes and checkpoints. |
