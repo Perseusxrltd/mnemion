@@ -25,59 +25,57 @@
   ],
   "runs": [
     {
-      "id": 39552925412,
+      "id": 39555330786,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "d71a1cb7cec1ee2d3fe817e60544df3a7d101c42",
-      "status": "in_progress",
+      "source_commit": "fc4e25caebcc72a858e9382243441bfe73f769e5",
+      "status": "queued",
       "conclusion": null,
-      "updated_at": "2026-10-21T06:03:29Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39552925412",
+      "updated_at": "2026-10-21T06:26:12Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39555330786",
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 3,
-        "succeeded": 3,
+        "completed": 2,
+        "succeeded": 2,
         "active": [
           {
-            "id": 119066420386,
+            "id": 119073830693,
             "name": "studio",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Verify wheel and source package include the matching web Studio"
+              "Run python deploy/bundle_studio.py"
             ]
           },
           {
-            "id": 119066466907,
-            "name": "supervision (macos-15-intel)",
+            "id": 119073890588,
+            "name": "legacy",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Build the current Intel cryptography runtime with static OpenSSL"
+              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
             ]
           },
           {
-            "id": 119066466930,
-            "name": "supervision (macos-15)",
+            "id": 119073890599,
+            "name": "container (ubuntu-22.04-arm)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": []
+          },
+          {
+            "id": 119073890602,
+            "name": "service (3.12)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Verify managed installation, host recovery, signed updates and rollback with real processes"
+              "Initialize containers"
             ]
           },
           {
-            "id": 119066466943,
-            "name": "service (3.14)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run python -m pip install uv==0.12.24"
-            ]
-          },
-          {
-            "id": 119066467002,
+            "id": 119073890618,
             "name": "service (3.13)",
             "status": "in_progress",
             "runner_assigned": true,
@@ -86,39 +84,46 @@
             ]
           },
           {
-            "id": 119066467015,
-            "name": "legacy",
+            "id": 119073890622,
+            "name": "supervision (macos-15-intel)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
+              "Set up job"
             ]
           },
           {
-            "id": 119066467019,
+            "id": 119073890644,
+            "name": "dependency-audit",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run python -m pip install uv==0.12.24"
+            ]
+          },
+          {
+            "id": 119073890667,
             "name": "container (ubuntu-22.04)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Build the actual deployment image with its documentation"
+              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
             ]
           },
           {
-            "id": 119066467041,
-            "name": "service (3.12)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Matching PostgreSQL recovery tools"
-            ]
+            "id": 119073890698,
+            "name": "supervision (macos-15)",
+            "status": "queued",
+            "runner_assigned": false,
+            "steps": []
           },
           {
-            "id": 119066467145,
-            "name": "container (ubuntu-22.04-arm)",
+            "id": 119073890710,
+            "name": "service (3.14)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Build the actual deployment image with its documentation"
+              "Set up job"
             ]
           }
         ]
@@ -159,15 +164,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39534260688"
     },
     {
-      "id": 39552171577,
+      "id": 39555330785,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "4ff30247714dbca1947ad99ab213068546352079",
+      "source_commit": "fc4e25caebcc72a858e9382243441bfe73f769e5",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-21T05:54:08Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39552171577"
+      "updated_at": "2026-10-21T06:25:57Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39555330785"
     },
     {
       "id": 39534391338,
@@ -181,5 +186,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39534391338"
     }
   ],
-  "observed_at": "2026-10-21T06:03:47+00:00"
+  "observed_at": "2026-10-21T06:26:29+00:00"
 }
