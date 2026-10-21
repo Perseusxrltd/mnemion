@@ -1199,7 +1199,10 @@ deployment.
 
 [Native run 39613577682](https://github.com/Perseusxrltd/mnemion/actions/runs/39613577682)
 uses frozen source `9095372a7b56679e8ab8d4e18bb59d32721a3746`.
-Linux x64/ARM64 and Windows x64 jobs passed; Windows ARM64 remains pending.
+Linux x64/ARM64 and Windows x64/ARM64 jobs passed, including the Windows native
+upgrade and relaunch checks. The Windows ARM64 job completed in 59 minutes with
+its x64 service engine running under emulation. Its outer CI budget is now
+75 minutes to allow runner variation; the individual probe deadlines are unchanged.
 Intel macOS failed in its first headless preview with unclassified stderr.
 Apple Silicon was cancelled before runner assignment; GitHub annotations
 confirm hosted capacity prevented that execution.
