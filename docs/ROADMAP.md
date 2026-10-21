@@ -34,8 +34,12 @@ issue review, publication and version-linked closure together.
   recovery ledgers preserve the approved policy. Source and migration checks
   passed. The Linux app source journey passed preview, enrollment, offline
   intake, restart, delivery and administrator-assisted removal; its evidence is
-  separate from the later policy-recovery checks. Portable inbox recovery,
-  complete capture policy and coverage, headless operation, bounded history and
+  separate from the later policy-recovery checks. Portable encrypted inbox
+  export and inspection now have a Linux app/agent journey covering offline
+  export, restart and inspection after source removal; bounded archive and
+  migration checks passed. Restoring and enrolling that inbox through the app,
+  reviewed device/policy migration, complete capture policy and coverage,
+  headless operation, bounded history and
   all six packaged targets remain required before this L1 milestone ships.
 
 - **4.44 is published and accepted on the actual Windows app and shared host.** Certifi 2026.10.19 and

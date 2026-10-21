@@ -5,6 +5,7 @@ import { FolderSync, Pause, Play, Trash2 } from 'lucide-react';
 import type { DesktopSource } from '../../../shared/desktop-sources';
 import SourceScanHistory from './SourceScanHistory';
 import CaptureStatus from './CaptureStatus';
+import CaptureBackup from './CaptureBackup';
 
 /** These device controls remain available before signing in to a workspace. */
 export default function DesktopSourcesOverview() {
@@ -16,7 +17,7 @@ export default function DesktopSourcesOverview() {
   const [remove, setRemove] = useState<string>();
   const [retirementCredential, setRetirementCredential] = useState('');
   useEffect(() => native?.onSourceStatus?.(() => { void cache.invalidateQueries({ queryKey: ['desktop-sources'] }); }), [native, cache]);
-  if (!native?.sourceStatus || (!query.error && !query.data?.sources.length)) return null;
+  if (!native?.sourceStatus || (!query.error && !query.data?.sources.length && !native.sourceBackupInspect)) return null;
   async function control(source: DesktopSource, action: 'pause' | 'remove' | 'repair' = 'pause') {
     if (!query.data) return;
     setBusy(true); setError(undefined);
@@ -43,6 +44,7 @@ export default function DesktopSourcesOverview() {
       {source.activity.message && <p className="ws-helper">{source.activity.message}</p>}
       <SourceScanHistory activity={source.activity} busy={busy} onRepair={() => void control(source, 'repair')} />
       {source.custody && <CaptureStatus report={source.activity.report?.capture} />}
+      {source.custody && <CaptureBackup source={source} revision={query.data?.revision} busy={busy} setBusy={setBusy} />}
       {source.enabled && source.activity.next_scan_at && source.activity.phase !== 'scanning' && <p className="ws-helper">Next check: {new Date(source.activity.next_scan_at).toLocaleString()}.</p>}
       <div className="ws-actions">
         <button type="button" className="ws-button" disabled={busy} onClick={() => void control(source)}>{source.enabled ? <Pause size={15} /> : <Play size={15} />}{source.enabled ? 'Pause source' : 'Resume source'}</button>
@@ -52,6 +54,7 @@ export default function DesktopSourcesOverview() {
         ? 'Pause first. Removal revokes this device’s capture grant and discards all pending local evidence, including unknown delivery outcomes. The workspace must confirm revocation online. Original files, server memories and the application key’s other permissions remain.'
         : 'Stop local scans and forget this computer’s saved source credentials? Existing memories and server keys remain available to their authorized users.'}</p>{source.custody && <details><summary>Device key unavailable?</summary><p>Sign in as a workspace administrator and remove this source in Connections, or supply a current administrator key for this workspace. It is used only to confirm removal and is never saved.</p><label>Administrator key for {source.endpoint}<input type="password" autoComplete="new-password" data-update-safe value={retirementCredential} disabled={busy} onChange={event => setRetirementCredential(event.target.value)} /></label></details>}<button type="button" className="ws-button" disabled={busy || (!!source.custody && source.enabled)} onClick={() => void control(source, 'remove')}>{source.custody ? 'Revoke grant and discard local inbox' : 'Confirm removal'}</button><button type="button" className="ws-button" onClick={() => { setRemove(undefined); setRetirementCredential(''); }}>Cancel</button></div>}
     </div>)}
+    <CaptureBackup busy={busy} setBusy={setBusy} />
     <p className="ws-helper">Connect to the relevant workspace and open Connections to change its sharing, scan limits or application key.</p>
     <Link className="ws-link" to="/help?doc=docs%2Fservice%2Fdesktop-sources.md">Desktop source guide</Link>
   </details>;

@@ -53,6 +53,9 @@ contextBridge.exposeInMainWorld('mnemion', {
   sourceStatus: () => transfer('sources:status'),
   sourceChoose: () => transfer('sources:choose'),
   sourcePreview: (selection: unknown) => transfer('sources:preview', selection),
+  sourceBackup: (input: unknown) => transfer('sources:backup', input),
+  sourceBackupInspect: (input: unknown) => transfer('sources:backup-inspect', input),
+  sourceBackupChoose: (kind: unknown) => transfer('sources:backup-choose', kind),
   sourceConfigure: (input: unknown) => transfer('sources:configure', input),
   sourceControl: (action: string, input: unknown) => transfer('sources:control', action, input),
   onSourceStatus: (callback: () => void) => {

@@ -261,15 +261,21 @@ def _decrypt(
     *,
     expected_kind: Kind | None = None,
     cancelled: Callable[[], bool] | None = None,
+    maximum_plaintext_bytes: int | None = None,
 ) -> Receipt:
+    maximum = MAX_ARCHIVE_BYTES if maximum_plaintext_bytes is None else maximum_plaintext_bytes
+    if type(maximum) is not int or not 0 <= maximum <= MAX_ARCHIVE_BYTES:
+        raise EncryptionError("Choose a supported backup size limit.")
     key = _key(secret)
     plain_digest, encrypted_digest = hashlib.sha256(), hashlib.sha256()
-    with _source(source, MAX_ARCHIVE_BYTES + HEADER_LIMIT + len(MAGIC) + 4 + TAG_BYTES) as (
+    with _source(source, maximum + HEADER_LIMIT + len(MAGIC) + 4 + TAG_BYTES) as (
         reader,
         size,
     ):
         _cancel(cancelled)
         header, nonce, prefix = _header(reader, size, secret)
+        if header["plaintext_bytes"] > maximum:
+            raise EncryptionError("The backup exceeds this operation's supported size.")
         if expected_kind is not None and header["kind"] != expected_kind:
             raise EncryptionError("Choose the expected snapshot, ledger or recovery bundle.")
         encrypted_digest.update(prefix)
@@ -314,9 +320,16 @@ def verify_file(
     *,
     expected_kind: Kind | None = None,
     cancelled: Callable[[], bool] | None = None,
+    maximum_plaintext_bytes: int | None = None,
 ) -> Receipt:
     """Authenticate all bytes without retaining any plaintext output."""
-    return _decrypt(source, secret, expected_kind=expected_kind, cancelled=cancelled)
+    return _decrypt(
+        source,
+        secret,
+        expected_kind=expected_kind,
+        cancelled=cancelled,
+        maximum_plaintext_bytes=maximum_plaintext_bytes,
+    )
 
 
 def decrypt_file(
@@ -326,6 +339,7 @@ def decrypt_file(
     *,
     expected_kind: Kind | None = None,
     cancelled: Callable[[], bool] | None = None,
+    maximum_plaintext_bytes: int | None = None,
 ) -> Receipt:
     """Publish an authenticated private file; callers own its eventual cleanup."""
     output = Path(output)
@@ -336,7 +350,12 @@ def decrypt_file(
             info = os.fstat(writer.fileno())
             staged_identity = info.st_dev, info.st_ino
             receipt = _decrypt(
-                source, secret, writer, expected_kind=expected_kind, cancelled=cancelled
+                source,
+                secret,
+                writer,
+                expected_kind=expected_kind,
+                cancelled=cancelled,
+                maximum_plaintext_bytes=maximum_plaintext_bytes,
             )
         _cancel(cancelled)
         publish_file(staged, output)

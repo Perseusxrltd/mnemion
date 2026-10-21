@@ -5,7 +5,7 @@ import { test } from 'node:test'
 import { DesktopSources } from '../dist/desktop-sources.js'
 import { sourceProcess } from '../dist/desktop-source-process.js'
 import { desktopAction } from '../dist/desktop-actions.js'
-import { readCapturePreview } from '../dist/capture-messages.js'
+import { readCaptureArchive, readCapturePreview } from '../dist/capture-messages.js'
 import { workspaceFixture, fixtureCredential as credential } from './workspace-fixture.mjs'
 
 const report = () => ({ completed: true, timestamp: new Date().toISOString(), duration_seconds: 0.1,
@@ -124,6 +124,60 @@ async function fixture(t) {
 
 const retainedDefinition = () => ({ ...definition(), provider: 'conversations', capture_mode: 'messages',
   custody: { source_id: randomUUID(), grant_id: randomUUID(), keep_accepted: true, pending_limit_mib: 256 } })
+
+const archiveReport = source => ({ format: 'mnemion-capture-archive-v1', created_at: '2026-10-21T04:00:00Z', name: source.name,
+  binding: { tenant_id: source.tenant_id, connector_id: source.connector_id, source_id: source.custody.source_id,
+    grant_id: source.custody.grant_id, namespace: 'selected-source', capture_mode: 'messages' },
+  database_bytes: 81920, archive_sha256: 'c'.repeat(64), authenticated: true, workspace_credentials_included: false, source_enrolled: false,
+  status: { format: 'mnemion-selected-inbox-v1', pending_events: 1, pending_bytes: 1024, database_bytes: 81920,
+    stored_events: 0, forgotten_events: 0, unknown_pages: 1, over_limit: false,
+    coverage: { format: 'mnemion-capture-coverage-v1', capture_mode: 'messages', catalog: 'unobserved',
+      tracked_scopes: 0, checking_scopes: 0, failed_scopes: 0, missing_scopes: 0, uncertain_scopes: 0,
+      unknown_prefix_scopes: 0, uncertain_intervals: 0, observed_bytes: 0, examined_prefix_bytes: 0,
+      unaccepted_observed_bytes: 0, unresolved_previous_bytes: 0, records: { lines: 0, selected: 0, omitted: 0, unsupported: 0 },
+      tracked_from: null, observed_at: null, complete_prefix_at: null, last_contact_at: null, last_acknowledged_at: null,
+      queue_nonempty_since: null, history_before_tracking: 'unknown' } } })
+
+test('capture backup unwraps only the inbox key and never replays an uncertain export', async t => {
+  const f = await fixture(t), source = retainedDefinition(), calls = [], unsealed = []
+  await f.add(source)
+  let view = await f.manager.status()
+  await f.manager.control('pause', { id: source.id, expected_revision: view.revision, enabled: false })
+  const saved = f.document().sources[0]
+  let lose = false
+  const manager = new DesktopSources({ ...f.options, cipher: {
+    available: () => f.cipher.available(), encrypt: value => f.cipher.encrypt(value),
+    decrypt: async value => { unsealed.push(value.toString('base64')); assert.equal(value.toString('base64'), saved.sealed_inbox_key); return f.cipher.decrypt(value) },
+  }, call: async (request, ...rest) => {
+    if (request.operation !== 'capture_export') return f.options.call(request, ...rest)
+    calls.push(request)
+    if (lose) throw new Error('Export return lost after publication')
+    return archiveReport(source)
+  } })
+  t.after(() => manager.close())
+  view = await manager.status()
+  const input = { id: source.id, expected_revision: view.revision, file: '/synthetic/backup.mnemion-capture', recovery_key: 'mnm_bk_' + 'x'.repeat(43), confirm: true }
+  assert.deepEqual(await manager.backup(input), archiveReport(source))
+  assert.equal(calls[0].credential, undefined); assert.equal(unsealed.length, 1)
+  assert.equal(calls[0].inbox_key, await f.cipher.decrypt(Buffer.from(saved.sealed_inbox_key, 'base64')))
+  lose = true
+  await assert.rejects(manager.backup(input), /return lost/)
+  assert.equal(calls.length, 2); assert.equal(manager.busy, false)
+  assert.equal(desktopAction('source.backup', input).mutation, true)
+})
+
+test('capture archive inspection does not load damaged settings or open OS credentials', async t => {
+  const source = retainedDefinition(), expected = archiveReport(source), requests = []
+  const manager = new DesktopSources({ cipher: { available: () => { throw new Error('No OS key store') } },
+    call: async request => { requests.push(request); assert.equal(request.operation, 'capture_inspect'); return expected } })
+  t.after(() => manager.close())
+  const input = { file: '/synthetic/backup.mnemion-capture', recovery_key: 'mnm_bk_' + 'x'.repeat(43) }
+  assert.deepEqual(await manager.inspectBackup(input), expected)
+  assert.equal(requests.length, 1)
+  assert.equal(desktopAction('source.backup.inspect', input).mutation, false)
+  assert.throws(() => readCaptureArchive({ ...expected, inbox_key: 'must not escape the helper' }))
+  assert.throws(() => readCaptureArchive({ ...expected, workspace_credentials_included: true }))
+})
 
 const previewReport = () => ({ format: 'mnemion-capture-preview-v1', configuration_hash: 'a'.repeat(64), policy_revision: 'b'.repeat(64),
   observed_at: '2026-10-21T03:00:00+00:00', capture_mode: 'messages', catalog: 'complete', visited_entries: 1, read_bytes: 120,

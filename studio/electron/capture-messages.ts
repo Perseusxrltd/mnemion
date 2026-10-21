@@ -1,4 +1,4 @@
-import type { CaptureCoverage, CaptureIndexCounts, CaptureIndexProgress, CaptureIndexSweep, CapturePreview, CaptureReason } from '../shared/desktop-sources.js'
+import type { CaptureArchiveInfo, CaptureCoverage, CaptureIndexCounts, CaptureIndexProgress, CaptureIndexSweep, CapturePreview, CaptureReason } from '../shared/desktop-sources.js'
 
 const coverageCounts = ['tracked_scopes', 'checking_scopes', 'failed_scopes', 'missing_scopes',
   'uncertain_scopes', 'unknown_prefix_scopes', 'uncertain_intervals', 'observed_bytes',
@@ -75,6 +75,35 @@ export function validCaptureCoverage(value: unknown): value is CaptureCoverage {
     coverage.uncertain_scopes <= coverage.tracked_scopes && coverage.unknown_prefix_scopes <= coverage.tracked_scopes &&
     coverage.examined_prefix_bytes + coverage.unaccepted_observed_bytes === coverage.observed_bytes &&
     coverage.records.lines === coverage.records.selected + coverage.records.omitted + coverage.records.unsupported
+}
+
+export function readCaptureArchive(value: unknown): CaptureArchiveInfo {
+  const uuid = (v: unknown) => typeof v === 'string' && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(v)
+  if (!keys(value, ['format', 'created_at', 'name', 'binding', 'database_bytes', 'archive_sha256', 'status', 'authenticated', 'workspace_credentials_included', 'source_enrolled']) ||
+    value.format !== 'mnemion-capture-archive-v1' || typeof value.created_at !== 'string' || !timestamp(value.created_at) ||
+    typeof value.name !== 'string' || !value.name.length || value.name.length > 200 ||
+    !count(value.database_bytes) || value.database_bytes < 65536 || value.database_bytes > 2 * 1024 ** 3 ||
+    typeof value.archive_sha256 !== 'string' || !cursor(value.archive_sha256) || value.authenticated !== true ||
+    value.workspace_credentials_included !== false || value.source_enrolled !== false) throw new Error('The capture archive report could not be verified.')
+  const binding = value.binding, status = value.status
+  const bindingFields = ['tenant_id', 'connector_id', 'source_id', 'grant_id', 'namespace', 'capture_mode']
+  if (!object(binding) || !keys(binding, [...bindingFields, ...(Object.hasOwn(binding, 'capture_policy') ? ['capture_policy'] : [])]) ||
+    bindingFields.slice(0, 4).some(name => !uuid(binding[name])) || typeof binding.namespace !== 'string' ||
+    !binding.namespace.length || binding.namespace.length > 512 || !['messages', 'complete'].includes(String(binding.capture_mode))) throw new Error('The archived source identity could not be verified.')
+  if (Object.hasOwn(binding, 'capture_policy')) {
+    const policy = binding.capture_policy
+    const patterns = (v: unknown, required: boolean) => Array.isArray(v) && v.length <= 64 && (!required || v.length > 0) && v.every(p => typeof p === 'string' && p.length > 0 && p.length <= 512)
+    if (!keys(policy, ['format', 'preset', 'capture_mode', 'include', 'exclude', 'retention', 'max_file_bytes', 'max_record_bytes']) ||
+      policy.format !== 'mnemion-capture-policy-v1' || !['selected', 'conversation', 'detailed'].includes(String(policy.preset)) ||
+      policy.capture_mode !== binding.capture_mode || policy.retention !== 'until_deleted' || !patterns(policy.include, true) || !patterns(policy.exclude, false) ||
+      !count(policy.max_file_bytes) || policy.max_file_bytes < 1 || policy.max_file_bytes > 1e12 ||
+      !count(policy.max_record_bytes) || policy.max_record_bytes < 1 || policy.max_record_bytes > 16e6 || policy.max_record_bytes > policy.max_file_bytes) throw new Error('The archived capture policy could not be verified.')
+  }
+  const counts = ['pending_events', 'pending_bytes', 'database_bytes', 'stored_events', 'forgotten_events', 'unknown_pages']
+  if (!keys(status, ['format', ...counts, 'over_limit', 'coverage']) || status.format !== 'mnemion-selected-inbox-v1' ||
+    counts.some(name => !count(status[name])) || status.database_bytes !== value.database_bytes || typeof status.over_limit !== 'boolean' ||
+    !validCaptureCoverage(status.coverage) || status.coverage.capture_mode !== binding.capture_mode) throw new Error('The archived capture status could not be verified.')
+  return value as CaptureArchiveInfo
 }
 
 export const captureMessages: Record<CaptureReason, string> = {

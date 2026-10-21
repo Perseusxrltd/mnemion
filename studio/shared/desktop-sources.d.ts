@@ -57,7 +57,7 @@ export type CaptureIndexProgress = {
   last_attempt_at: string | null; active: CaptureIndexSweep | null; completed: CaptureIndexSweep | null;
 }
 export type SourceReason = CaptureReason | 'history_reset' | 'partial' | 'interrupted' | 'source_cancelled' | 'source_timeout' |
-  'source_preview_required' |
+  'source_preview_required' | 'capture_backup_unavailable' |
   'source_unavailable' | 'source_helper_unavailable' | 'source_invalid_response' |
   'source_identity_mismatch' | 'source_connection_unavailable' | 'source_scope_ambiguous' |
   'source_scope_mismatch' | 'source_conversation_identity_required' | 'source_conversation_copy_unverified' |
@@ -106,3 +106,15 @@ export type CapturePreview = {
   field_redaction: 'not_supported'; automatic_expiry: 'not_enabled'; content_saved: false;
 }
 export type SourceControl = { expected_revision: string; id: string; enabled?: boolean; confirm?: boolean; repair_token?: string; discard_local_inbox?: boolean; retirement_credential?: string }
+export type CaptureArchiveInfo = {
+  format: 'mnemion-capture-archive-v1'; created_at: string; name: string;
+  binding: { tenant_id: string; connector_id: string; source_id: string; grant_id: string;
+    namespace: string; capture_mode: 'messages' | 'complete'; capture_policy?: CapturePolicy };
+  database_bytes: number; archive_sha256: string; authenticated: true;
+  workspace_credentials_included: false; source_enrolled: false;
+  status: { format: 'mnemion-selected-inbox-v1'; pending_events: number; pending_bytes: number;
+    database_bytes: number; over_limit: boolean; stored_events: number; forgotten_events: number;
+    unknown_pages: number; coverage: CaptureCoverage };
+}
+export type CaptureBackupInput = { expected_revision: string; id: string; file: string; recovery_key: string; confirm: true }
+export type CaptureInspectInput = { file: string; recovery_key: string }

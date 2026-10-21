@@ -47,8 +47,11 @@ and health-contract expectations. The helper is now included, and all **15**
 targeted upgrade/health checks passed, including the released schema 29 to capture
 schema 30 transition with existing keys, grants and memories preserved. The six
 new capture modules are measured by the service coverage suite; the legacy 45%
-and service 75% thresholds remain unchanged. Full corrected CI and native
-acceptance remain pending. The separate [4.44 security hotfix](../releases/4.44.0.md)
+and service 75% thresholds remain unchanged. Subsequent
+[CI run 39539827891](https://github.com/Perseusxrltd/mnemion/actions/runs/39539827891)
+passed all 12 jobs on the policy checkpoint `0ed2130`, before the archive delta
+below. Packaged capture acceptance remains pending. The separate
+[4.44 security hotfix](../releases/4.44.0.md)
 does not ship this unfinished capture milestone.
 
 ## Implemented components
@@ -57,6 +60,7 @@ does not ship this unfinished capture milestone.
 | --- | --- |
 | Native enrollment | Studio offers explicit retained capture only for a new conversation connection. The administrator approves the source policy and exact device-key grant before native enrollment. App and private agents use the same typed `source.custody` object; existing mirrors cannot silently convert. |
 | Capture policy and local preview | An additional unreleased delta adds Selected/Conversation/Detailed choices, relative JSONL file rules, size caps and explicit mirror/retained selection through the same app/agent configuration. A bounded local preview returns counts and capability statuses; explicit-policy retained fragments carry the immutable approved policy fingerprint. Source, Linux journey and separate recovery/migration checks passed; full L1 acceptance remains open. |
+| Portable inbox archive | An additional unreleased foundation exports and inspects encrypted local evidence, and restores a new private inbox under its original binding. Core, helper/controller, migration and Linux app export/restart-inspection checks passed. Native restoration, enrollment, device/policy migration and packaged acceptance remain open. |
 | Encrypted selected inbox | The native controller creates an independent random 256-bit key and seals it through OS credential storage. Selected items and a verified capture checkpoint commit together under AES-256-GCM. Both messages and complete modes use the existing renderer. Messages mode cannot retain a raw transcript or hide raw text in its source evidence. |
 | Local capture and scheduling | The normal desktop runner commits available selected JSONL evidence before any service request in a scan. Accepted events survive restart and producer removal/rotation; unfinished tails wait. Missing source files can stop new capture while already accepted evidence remains deliverable. |
 | Durable service custody | Explicit administrator consent, immutable selection/source identity, exact device-key grants, current audience/role checks, immutable event receipts and idempotent pages. Existing provider permission leases remain unchanged. |
@@ -273,6 +277,71 @@ history and all six packaged acceptance journeys remain open. The
 and [native example](../service/desktop-operator.md#preview-conversation-capture-unreleased)
 describe the current supported controls.
 
+## Portable inbox archive source delta
+
+This additional **unreleased foundation is still under validation**. The original
+combined run retained **6 failed, 26 passed**: export compared a write receipt's
+`authenticated: false` with the successful read-back receipt's `true`. After
+correcting that comparison, the [archive suite](../../service_tests/test_capture_archive.py)
+passed **8 cases**. A later bounded delivery-membership lookup and damaged-page
+case passed **9 archive checks**. The original 26 passes include 24 crypto-regression cases;
+those were not rerun or promoted into new archive/native acceptance. A separate
+helper test passed, and **48 native controller checks** passed, including export
+unsealing only the inbox key and inspection without source settings or OS key
+storage. Local native, frontend and desktop builds passed. The final migration
+preflight passed **29 checks**, fingerprint
+`994435e6a384e5e4789f1c14044100beb5189bd0cf159e6465f3c3b2d8e2fee7`.
+Earlier policy, index, Linux journey and 4.44 release proofs retain their
+original scope.
+
+The extended real Linux Electron journey passed both phases at **04:15 UTC**
+after the bounded lookup and recovery-key field styling. It exported through
+the app while the workspace was offline, inspected the same identity/counts
+through the native agent, reopened the backup after app restart, then verified
+it again after administrator retirement removed the original source and its
+saved credentials. The 720-pixel app view had no horizontal overflow. Test
+archive and recovery-key fixtures were removed; no production memory writes or
+paid model calls occurred. `preview.QcJAa3re/result.json` and
+`capture-archive-final-source-inputs.json` retain the private proof, source digest
+`e04f5821fa1b0f17f05119e4ef016eb7c608f4b9df67fe992fb64a3bfe39751b`.
+The earlier passing `preview.OlQ6dTAd` journey remains recorded separately.
+This is source development proof: packaged acceptance and native
+restoration/migration remain open.
+
+The [archive core](../../mnemion/connectors/capture_archive.py) snapshots a
+caller-locked inbox, audits its schema and retained encrypted values, then writes
+and verifies an encrypted bundle. Its manifest carries the original binding,
+policy, limits and inbox key under a separate recovery key. The database retains
+selected pending evidence, exact pending pages/receipts, checkpoints, denials,
+producer references and saved coverage/index sweeps. It includes no workspace
+API credential or producer files. Already delivered memories require separate
+workspace backup; the archive exports the retained local custody state.
+
+Inspection authenticates/decrypts in private staging, checks database integrity
+and bounded evidence records, and returns identity/policy/status information
+without raw messages or keys. Bounds include a 2 GiB database, 512 KiB manifest,
+8 MiB individual SQLite values, one million rows per table and at most 51
+delivery-membership rows in memory during page validation. Export/inspection
+uses no workspace request or model invocation. A lost export reply calls for
+inspection of the saved file, preserving the no-overwrite rule.
+
+`restore_new_inbox` requires the inspected archive hash and a new private
+destination. It preserves the original binding, pending delivery state and
+inbox key; damaged archives, wrong keys, changed hashes, cancellation and existing
+destinations cannot publish a replacement inbox. This is local restoration under
+the same grant. The caller must still protect the returned key and separately
+verify current enrollment/authority; the library does not create or activate a
+native source, migrate its policy/device, or grant workspace access.
+
+The current native wiring adds `source.backup` for a paused retained source with
+its current revision and OS-protected inbox key, and `source.backup.inspect`
+without requiring the original source settings/key. **Sources on this computer**
+exposes export and verify controls, including a separately saved recovery key.
+The [app guide](../service/durable-capture.md#back-up-and-inspect-an-inbox-unreleased)
+and [agent inputs](../service/desktop-operator.md#capture-inbox-archives-unreleased)
+keep these operations separate from native restore, enrollment, reviewed
+migration, six packaged targets and full L1 acceptance, which remain open.
+
 ## Source and deletion boundaries
 
 The staged service exposes a `durable_capture: "v1"` capability. An administrator
@@ -339,9 +408,11 @@ a scan. It cannot stand in for evidence or key recovery.
   preset contract: current Selected/Conversation/Detailed choices and existing
   Pause do not provide automatic expiry, field redaction or attachment fetching.
   Keep unavailable capabilities explicit and retain reviewed migration requirements.
-- Complete verified encrypted export/recovery and reviewed migration for changes
-  of device, capture selection, identity or dedicated key. Retain existing mirror
-  behavior and past forgetting decisions; current files alone are insufficient.
+- Complete packaged archive export/inspection acceptance and native restoration,
+  protected-key enrollment and reviewed migration for changes of device, capture
+  selection, identity or dedicated key. The new-inbox library foundation does
+  not close those journeys. Retain existing mirror behavior and past forgetting
+  decisions; current files alone are insufficient.
 - Complete the independent headless retained-source enrollment, scheduling and
   lifecycle journey. Ordinary `mnemion-connect` configurations still use their
   existing mirror protocol; desktop helper wiring does not establish that journey.

@@ -121,17 +121,56 @@ export async function verifyNativeCapture(window: BrowserWindow, config: Record<
     let refused = false
     try { await call('source.remove', { id: configured.id, expected_revision: current.view.revision, confirm: true, discard_local_inbox: true }) } catch { refused = true }
     if (!refused || !(await readFile(inboxPath)).equals(ciphertext)) throw new Error('Offline removal did not preserve the unconfirmed inbox.')
+    const archivePath = join(base, 'Capture Équipe ' + randomUUID() + '.mnemion-capture')
+    const originalSave = dialog.showSaveDialog
+    let archiveSelected = false
+    dialog.showSaveDialog = (async () => {
+      if (archiveSelected) throw new Error('Unexpected second capture archive destination.')
+      archiveSelected = true
+      return { canceled: false, filePath: archivePath }
+    }) as typeof dialog.showSaveDialog
+    let recoveryKey: string
+    try {
+      recoveryKey = await inRenderer(window, `
+        const overview=await until(()=>document.querySelector('.ws-local-sources'),'Offline source controls were not available');overview.open=true;
+        const backup=await until(()=>[...overview.querySelectorAll('details')].find(e=>e.querySelector('summary')?.textContent==='Back up this capture inbox'),'The app did not offer inbox backup');backup.open=true;
+        const press=async text=>{const button=await until(()=>[...backup.querySelectorAll('button')].find(e=>e.textContent.trim()===text&&!e.disabled),'Missing backup control: '+text);button.click();await pause(100);};
+        await press('Choose where to save');
+        await press('Generate recovery key');
+        const key=await until(()=>{const v=backup.querySelector('input[type="text"]')?.value;return v?.length===50?v:false;},'A separate backup recovery key was not generated');
+        backup.querySelector('input[type="checkbox"]').click();await pause(100);
+        await press('Create encrypted backup');
+        await until(()=>{const error=backup.querySelector('[role="alert"]');if(error)throw new Error('Capture backup UI: '+error.textContent.slice(0,500));return backup.querySelector('[data-capture-backup="verified"]');},'The real app did not verify its capture backup',90000);
+        if(backup.querySelector('input[type="password"]')?.value||backup.hasAttribute('data-update-pending'))throw new Error('Capture backup retained its recovery key or unfinished form');
+        return key;
+      `)
+    } finally { dialog.showSaveDialog = originalSave }
+    const archive = await call('source.backup.inspect', { file: archivePath, recovery_key: recoveryKey })
+    if (!archiveSelected || !archive.authenticated || archive.workspace_credentials_included || archive.source_enrolled ||
+        archive.binding.source_id !== configured.custody.source_id || archive.binding.grant_id !== configured.custody.grant_id ||
+        archive.status.pending_events !== queued.activity.report!.capture!.pending_events) throw new Error('The native capture archive lost its original identity or pending evidence.')
+    const archiveBytes = await readFile(archivePath)
+    if (archiveBytes.includes(Buffer.from(selectedText)) || archiveBytes.includes(Buffer.from(excludedText))) throw new Error('The portable capture archive contains plaintext conversation content.')
+    const [width, height] = window.getContentSize()
+    try {
+      window.setContentSize(720, 1000)
+      await inRenderer(window, `await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));const receipt=document.querySelector('[data-capture-backup="verified"]');receipt.scrollIntoView({block:'center'});if(document.documentElement.scrollWidth>innerWidth+1)throw new Error('Capture backup controls overflow the narrow app window');`)
+      await writeFile(join(base, 'native-capture-backup.png'), (await window.webContents.capturePage()).toPNG(), { mode: 0o600, flag: 'wx' })
+    } finally { window.setContentSize(width, height) }
     // Provider files are no longer available on the next app launch. Only the
     // OS-protected key and the accepted encrypted inbox can complete delivery.
     await rm(selectedLog)
     await rmdir(folder)
     const captured = { ...fixture, id: configured.id, grantId: configured.custody.grant_id,
       workspace, folder, selectedText, excludedText, pending: queued.activity.report!.capture!.pending_events,
+      archivePath, recoveryKey, archiveSha256: archive.archive_sha256,
       sealedInboxSha256: createHash('sha256').update(saved.sealed_inbox_key).digest('hex') }
     await writeFile(fixturePath, JSON.stringify(captured), { mode: 0o600, flag: 'wx' })
     return { phase: config.phase, nativeCaptureConsentControls: true, nativeCaptureIndependentOsKey: true,
       nativeCaptureBeforeDelivery: true, nativeCaptureOfflineRemovalPreservesInbox: true,
-      nativeCaptureSelectedPayloadEncrypted: true, nativeCapturePausedBeforeRestart: true }
+      nativeCaptureSelectedPayloadEncrypted: true, nativeCapturePausedBeforeRestart: true,
+      nativeCaptureBackupThroughApp: true, nativeCaptureBackupEncrypted: true,
+      nativeCaptureBackupAppAndAgentAgree: true, nativeCaptureBackupNarrowLayout: true }
   }
 
   const fixture = JSON.parse(await readFile(fixturePath, 'utf8'))
@@ -139,6 +178,13 @@ export async function verifyNativeCapture(window: BrowserWindow, config: Record<
   if (!saved || saved.enabled || createHash('sha256').update(saved.sealed_inbox_key).digest('hex') !== fixture.sealedInboxSha256) throw new Error('App restart changed the capture key or lost its paused configuration.')
   let current = await sourceStatus(fixture.id)
   if (current.source.activity.durability !== 'saved' || current.source.activity.report?.capture?.pending_events !== fixture.pending) throw new Error('The app did not restore its last saved offline queue observation.')
+  const checkArchive = async () => {
+    const archive = await call('source.backup.inspect', { file: fixture.archivePath, recovery_key: fixture.recoveryKey })
+    if (!archive.authenticated || archive.archive_sha256 !== fixture.archiveSha256 ||
+        archive.binding.grant_id !== fixture.grantId || archive.status.pending_events !== fixture.pending ||
+        archive.workspace_credentials_included || archive.source_enrolled) throw new Error('Portable capture backup inspection changed its identity or contents.')
+  }
+  await checkArchive()
   // local.stop intentionally disables host auto-start. Resume it explicitly,
   // retaining the same workspace and endpoint, before requesting delivery.
   await call('local.start', {}, fixture.workspace)
@@ -176,8 +222,12 @@ export async function verifyNativeCapture(window: BrowserWindow, config: Record<
     location.hash='/workspace/memories';
   `)
   if (JSON.parse(await readFile(sourcesPath, 'utf8')).sources.some((s: any) => s.id === fixture.id)) throw new Error('Removed capture credentials remain in source settings.')
+  await checkArchive()
+  await rm(fixture.archivePath)
+  await rm(fixturePath)
   return { phase: config.phase, nativeCaptureQueueSurvivesAppRestart: true, nativeCaptureKeyReopenedByOs: true,
     nativeCaptureDeliversAfterProducerRemoval: true, nativeCaptureVisibleAppCounts: true,
     nativeCaptureAdministratorRemovalAfterKeyRevocation: true, nativeCaptureRemovalRetainsServerMemory: true,
+    nativeCaptureBackupSurvivesAppRestart: true, nativeCaptureBackupInspectAfterSourceRemoval: true,
     nativeCaptureFixtureCleanup: true, acceptedEvents: delivered.stored_events }
 }

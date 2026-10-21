@@ -74,6 +74,8 @@ engine** so it uses the Windows account and named-pipe implementation.
 | `workspace.disconnect`, `workspace.forget` | From 4.28.0, disconnect the selected account or remove one saved connection from this device. |
 | `source.status`, `source.configure` | From 4.31.0, inspect or configure [desktop folder/conversation runners](desktop-sources.md#local-agent-controls) with protected dedicated keys and current settings revisions. From 4.34.0, [Slack/Drive selections](desktop-cloud-sources.md#private-agent-setup) accept a separate private provider credential. No local database is required. |
 | `source.preview` | **Unreleased development:** inspect a bounded local JSONL selection without credentials, saved content or model calls. Explicit `capture_policy` configuration uses its matching preview hash; see below. |
+| `source.backup` | **Unreleased development:** export a paused retained inbox to a new encrypted archive using a separate recovery key and the current source revision. |
+| `source.backup.inspect` | **Unreleased development:** verify an archive offline and return bounded identity/policy/status information. Does not restore native enrollment or authorize delivery. |
 | `source.pause`, `source.sync`, `source.remove` | Persistently pause/resume a source, queue a bounded scan, or stop and forget its local configuration. Independent of the selected workspace. |
 | `agent.status`, `agent.preview` | From 4.32.0, inspect [native agent installations](desktop-agents.md), refresh their packaged runtime and preview a named MCP entry without changing client settings. No local database is required. |
 | `agent.install`, `agent.remove` | Install a reviewed dedicated application connection or remove its matching local entry/key file, using the observed configuration hash and explicit confirmation. Other devices and server keys remain separately managed. |
@@ -404,3 +406,59 @@ reviewed migration. Older sources without `capture_policy` retain their
 Automatic expiry, field redaction, attachment fetching and hidden reasoning are
 unavailable. See the [capture guide](durable-capture.md) for retention, size and
 recovery limits. This addition does not complete L1 or installed acceptance.
+
+## Capture inbox archives (unreleased)
+
+The app's **Sources on this computer** export/verify controls and these actions
+share the same archive implementation. Core, helper and controller checks and
+local builds passed; the Electron export/restart-inspection journey and packaged
+acceptance remain pending. See the [current proof](../research/2026-10-21-durable-capture-implementation.md#portable-inbox-archive-source-delta).
+Read the installed catalog before use. Neither action needs a selected workspace
+or a workspace API credential, and neither invokes a model.
+
+For export, pause the retained source, wait for active scans to finish and read
+fresh `source.status`. Use the existing `backup.key` private-result-file flow to
+generate a recovery key, and keep it separately from the archive. Export needs
+the source's OS-protected inbox key; the native controller unseals it internally.
+Supply a new absolute output filename and the observed source ID/revision:
+
+```json
+{
+  "action": "source.backup",
+  "input": {
+    "expected_revision": "REVISION_FROM_SOURCE_STATUS",
+    "id": "SOURCE_UUID_FROM_STATUS",
+    "file": "/absolute/new-capture-archive",
+    "recovery_key": "RECOVERY_KEY_FROM_PRIVATE_STORAGE",
+    "confirm": true
+  }
+}
+```
+
+Inspection needs only the archive and its recovery key. It remains available
+when the original source settings or OS-sealed inbox key are unavailable:
+
+```json
+{
+  "action": "source.backup.inspect",
+  "input": {
+    "file": "/absolute/existing-capture-archive",
+    "recovery_key": "RECOVERY_KEY_FROM_PRIVATE_STORAGE"
+  }
+}
+```
+
+The result includes `archive_sha256`, the original binding/policy, creation time,
+database size and archived status counts. `authenticated: true` confirms archive
+verification; `workspace_credentials_included` and `source_enrolled` are both
+false. Raw messages and encryption keys are not returned. After an uncertain
+export, inspect that file before retrying; the exporter refuses an existing
+output filename.
+
+The archive preserves pending evidence, pages, checkpoints, forgetting fences
+and coverage, with the inbox key protected inside its encrypted manifest. It
+contains no workspace API credential. These native actions provide export and
+inspection only. The separate library restore creates a new private inbox under
+the original binding; it does not enroll or activate a device. Native restore,
+key resealing, current-grant verification and reviewed device/policy migration
+remain unfinished. See [recovery boundaries](durable-capture.md#recovery-boundaries).

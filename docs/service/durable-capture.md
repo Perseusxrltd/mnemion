@@ -339,6 +339,10 @@ deletion of matching text across unrelated files, new generations or imports.
 
 ## Recovery boundaries
 
+The new [portable archive work](#back-up-and-inspect-an-inbox-unreleased) provides
+export/inspection and a library for restoring a new local inbox. Native restore,
+enrollment on another device and reviewed policy/device migration remain open.
+
 Each inbox uses a separately generated, random 256-bit key sealed by the OS
 credential store. Selected payloads, checkpoints and coverage records are
 encrypted with AES-256-GCM in private local storage. The dedicated API key does
@@ -371,6 +375,52 @@ for **every source on this computer** to unknown. Settings, credentials, inboxes
 and capture checkpoints remain. It does not recover lost evidence, restore
 encryption keys or prove a previous scan succeeded. Repair does not start a scan;
 normal automatic checks resume at their next interval.
+
+### Back up and inspect an inbox (unreleased)
+
+This development work remains unreleased. Core, helper and controller checks
+and local builds passed; the Electron export/restart-inspection journey and
+packaged acceptance remain pending. Its
+[archive proof](../research/2026-10-21-durable-capture-implementation.md#portable-inbox-archive-source-delta)
+is separate from the earlier policy, index and stable-release evidence.
+**Sources on this computer** now exposes **Back up this capture inbox** for
+retained sources and a separate **Inspect a capture backup** control.
+
+1. Pause the retained source and wait for active scans to finish. Export needs
+   the current source settings and access to its OS-protected inbox key.
+2. Open **Back up this capture inbox**, choose a **new** archive file, and
+   generate or supply a separate recovery key. Save the key separately and
+   confirm that it will remain available if the computer is lost.
+3. Select **Create encrypted backup**. The exporter checks a consistent inbox
+   snapshot, encrypts the bundle and verifies the written ciphertext before
+   returning its archive identity and saved counts.
+4. To check an archive independently, open **Inspect a capture backup**, choose
+   the file, supply its recovery key and select **Verify backup**. Inspection
+   works offline without the original source settings or OS-sealed inbox key.
+
+The encrypted bundle retains the original binding and policy, selected pending
+payloads, saved delivery pages/receipts, checkpoints, deletion fences, producer
+references and coverage/index observations. It also carries the inbox encryption
+key inside the encrypted manifest. The separate recovery key is required to
+open it. No workspace API credential or producer files are included. Already
+delivered memory bodies that have left the local queue require a workspace
+backup; archive counts describe the saved local snapshot.
+
+Inspection returns bounded identity, policy and status information, with
+`authenticated: true`, `workspace_credentials_included: false` and
+`source_enrolled: false`. It returns neither raw messages nor secret keys and
+makes no model or workspace request. If an export reply is lost or uncertain,
+inspect the chosen file before deciding whether another export is needed; an
+existing destination is never overwritten. Native actions are documented in
+the [agent guide](desktop-operator.md#capture-inbox-archives-unreleased).
+
+The library can restore an inspected archive into a **new private inbox
+directory**, preserving its original grant binding and inbox key. This is a
+foundation for local restoration under the same grant. It does not enroll a
+source, replace an existing inbox, reseal keys for a new OS account, migrate a
+device/policy or resume capture. Current authority and later server forgetting
+decisions still need separate verification. Those native recovery journeys,
+portable migration and six-platform acceptance remain open.
 
 ## Agent and administrator setup
 
@@ -453,7 +503,7 @@ is then needed. Native history repair requires its current
 `repair_token` and `confirm: true`, with no active source scan; its source ID
 identifies the displayed context, not a source-only reset.
 
-Broader migration/export, the complete installed Windows/macOS/Linux journey
+Full archive recovery/migration, the complete installed Windows/macOS/Linux journey
 and full L1 acceptance remain pending. This workflow does not replace those
 gates or narrow the [65 product requirements](../PRODUCT_REQUIREMENTS.md) and
 L1–L7 scope.

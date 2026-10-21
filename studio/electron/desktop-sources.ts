@@ -2,8 +2,8 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import type { CredentialCipher } from './workspace-store.js'
 import { sourceMessages } from './desktop-source-process.js'
-import { readCapturePreview, validCaptureCoverage } from './capture-messages.js'
-import type { CapturePreview, DesktopSource, DesktopSourceView, SourceActivity, SourceConfigure, SourceControl, SourcePreviewSelection, SourceReason, SourceReport } from '../shared/desktop-sources.js'
+import { readCaptureArchive, readCapturePreview, validCaptureCoverage } from './capture-messages.js'
+import type { CaptureArchiveInfo, CaptureBackupInput, CaptureInspectInput, CapturePreview, DesktopSource, DesktopSourceView, SourceActivity, SourceConfigure, SourceControl, SourcePreviewSelection, SourceReason, SourceReport } from '../shared/desktop-sources.js'
 
 type SavedSource = DesktopSource & { sealed_key: string; sealed_provider?: string; sealed_inbox_key?: string; status_epoch?: string }
 type Document = { format: 1; revision: string; sources: SavedSource[] }
@@ -194,6 +194,33 @@ export class DesktopSources {
     const work = Promise.resolve().then(() => this.options.call({ operation: 'preview', selection }, signal))
     this.controlWork = work
     try { return readCapturePreview(await work) }
+    finally { this.controlling = false; this.controlWork = undefined; this.changed() }
+  }
+
+  async backup(input: CaptureBackupInput, signal?: AbortSignal): Promise<CaptureArchiveInfo> {
+    if (!object(input) || Object.keys(input).some(k => !['expected_revision', 'id', 'file', 'recovery_key', 'confirm'].includes(k)) || input.confirm !== true || !UUID.test(input.id)) throw new Error('Choose a paused source and confirm its encrypted backup.')
+    return this.mutate(input.expected_revision, async () => {
+      if (this.active) throw new Error('Wait for the current scan before creating a capture backup.')
+      const source = this.document!.sources.find(item => item.id === input.id)
+      if (!source?.custody || source.enabled || !source.sealed_inbox_key) throw new Error('Pause a retained conversation source before creating its backup.')
+      if (!await this.options.cipher.available()) throw new Error('Unlock OS credential storage to back up this inbox.')
+      const inbox_key = await this.options.cipher.decrypt(Buffer.from(source.sealed_inbox_key, 'base64'))
+      signal?.throwIfAborted()
+      const result = readCaptureArchive(await this.options.call({ ...input, operation: 'capture_export', inbox_key }, signal))
+      if (result.binding.tenant_id !== source.tenant_id || result.binding.connector_id !== source.connector_id ||
+        result.binding.source_id !== source.custody.source_id || result.binding.grant_id !== source.custody.grant_id) throw new Error('The backup report does not match the selected inbox. Inspect the saved archive before retrying.')
+      return result
+    }, false)
+  }
+
+  async inspectBackup(input: CaptureInspectInput, signal?: AbortSignal): Promise<CaptureArchiveInfo> {
+    if (!object(input) || Object.keys(input).some(k => !['file', 'recovery_key'].includes(k))) throw new Error('Choose an archive and its separate recovery key.')
+    // Inspection remains possible when source settings or OS-sealed keys are lost.
+    if (this.busy || this.closed || this.suspended) throw new Error('Wait for the current source operation before inspecting an archive.')
+    this.controlling = true
+    const work = Promise.resolve().then(() => this.options.call({ ...input, operation: 'capture_inspect' }, signal))
+    this.controlWork = work
+    try { return readCaptureArchive(await work) }
     finally { this.controlling = false; this.controlWork = undefined; this.changed() }
   }
 

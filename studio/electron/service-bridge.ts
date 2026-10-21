@@ -21,7 +21,7 @@ import { DesktopSources } from './desktop-sources.js'
 import { sourceProcess } from './desktop-source-process.js'
 import { DesktopAgents } from './desktop-agents.js'
 import type { AgentInstall, AgentRemove, AgentSetup } from '../shared/desktop-agents.js'
-import type { SourceConfigure, SourceControl, SourcePreviewSelection } from '../shared/desktop-sources.js'
+import type { CaptureBackupInput, CaptureInspectInput, SourceConfigure, SourceControl, SourcePreviewSelection } from '../shared/desktop-sources.js'
 import type { BackupSettings, DesktopOperatorStatus, LocalStatus, RecoveryReceipt } from '../shared/local-workspace.js'
 
 const MAX_BYTES = 120 * 1024 * 1024
@@ -443,6 +443,20 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
   ipcMain.handle('agents:remove', (event, input: AgentRemove) => { trusted(event); requireLocalSteady(); return desktopAgents().remove(input) })
   ipcMain.handle('sources:status', event => { trusted(event); return desktopSources().status() })
   ipcMain.handle('sources:preview', (event, selection: SourcePreviewSelection) => { trusted(event); return desktopSources().preview(selection) })
+  ipcMain.handle('sources:backup', (event, input: CaptureBackupInput) => { trusted(event); requireLocalSteady(); return desktopSources().backup(input) })
+  ipcMain.handle('sources:backup-inspect', (event, input: CaptureInspectInput) => { trusted(event); requireLocalSteady(); return desktopSources().inspectBackup(input) })
+  ipcMain.handle('sources:backup-choose', async (event, kind: unknown) => {
+    trusted(event)
+    const filters = [{ name: 'Mnemion capture archive', extensions: ['mnemion-capture'] }]
+    if (kind === 'save') {
+      const result = await dialog.showSaveDialog({ title: 'Save an encrypted capture backup', filters,
+        defaultPath: join(app.getPath('documents'), `mnemion-capture-${Date.now()}.mnemion-capture`) })
+      return result.canceled ? null : result.filePath ?? null
+    }
+    if (kind !== 'open') throw new Error('Choose a capture archive operation.')
+    const result = await dialog.showOpenDialog({ title: 'Inspect an encrypted capture backup', filters, properties: ['openFile'] })
+    return result.canceled ? null : result.filePaths[0] ?? null
+  })
   ipcMain.handle('sources:choose', async event => {
     trusted(event)
     const result = await dialog.showOpenDialog({ title: 'Choose a memory source folder', properties: ['openDirectory'] })
@@ -740,6 +754,8 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
         case 'status': return localStatus()
         case 'source.status': return desktopSources().status()
         case 'source.preview': return desktopSources().preview(input.selection as SourcePreviewSelection, signal)
+        case 'source.backup': return desktopSources().backup(input as CaptureBackupInput, signal)
+        case 'source.backup.inspect': return desktopSources().inspectBackup(input as CaptureInspectInput, signal)
         case 'agent.status': return desktopAgents().status()
         case 'agent.preview': return desktopAgents().preview(input.setup as AgentSetup, signal)
         case 'agent.install': return desktopAgents().install(input as AgentInstall, signal)

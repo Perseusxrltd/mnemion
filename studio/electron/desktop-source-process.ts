@@ -13,6 +13,7 @@ export const sourceMessages: Record<string, string> = {
   source_conversation_incomplete_copy: 'The replacement is missing original conversation files. Copy the complete source with its relative paths before reconnecting.',
   source_settings_changed: 'Source settings changed. Refresh before retrying.',
   source_preview_required: 'Preview the current capture settings before saving.',
+  capture_backup_unavailable: 'The capture archive could not be created or verified. Pause the source and check its protected inbox key, archive path, recovery key and free disk space. Original evidence was retained.',
   source_memory_limit: 'The scan reached its RAM allowance. Increase the source allowance or narrow the source folder, then retry.',
   source_provider_credentials: 'Check the Slack token or Google service-account JSON key for the selected source. Existing credentials are retained after a failed save.',
   provider_access_lost: 'The provider denied access. Check the credential, enabled API and permissions for the selected source.',
@@ -54,7 +55,7 @@ export function sourceProcess(options: { executable: string; root: string; priva
     const fail = (message: string, code = 'source_helper_unavailable') => { failure ??= Object.assign(new Error(message), { code }); child.kill() }
     const abort = () => fail('The helper operation was cancelled. Review its saved status before retrying.', 'source_cancelled')
     signal?.addEventListener('abort', abort, { once: true })
-    const timer = setTimeout(() => fail('The helper operation timed out. Check its saved status before retrying.', 'source_timeout'), options.deadlineMs ?? (request.operation === 'scan' ? 600_000 : request.operation === 'preview' ? 15_000 : 45_000))
+    const timer = setTimeout(() => fail('The helper operation timed out. Check its saved status before retrying.', 'source_timeout'), options.deadlineMs ?? (['scan', 'capture_export', 'capture_inspect'].includes(String(request.operation)) ? 600_000 : request.operation === 'preview' ? 15_000 : 45_000))
     child.stdin.on('error', () => fail('The source helper could not receive its private request.'))
     child.stdin.end(input)
     child.stderr.resume()

@@ -6,7 +6,7 @@ import type { CompanyConfiguration, CompanyCredentials } from '../../../shared/c
 import type { VaultChange, VaultKey, VaultRequest, JournalChange } from '../../../shared/local-workspace'
 import type { ModelsChange } from '../../../shared/local-models'
 import type { CompanyChange, CompanyDiscoveryRequest, CompanyDiscoveryResult } from '../../../shared/local-workspace'
-import type { CapturePreview, DesktopSourceView, SourceConfigure, SourceControl, SourcePreviewSelection } from '../../../shared/desktop-sources'
+import type { CaptureArchiveInfo, CaptureBackupInput, CaptureInspectInput, CapturePreview, DesktopSourceView, SourceConfigure, SourceControl, SourcePreviewSelection } from '../../../shared/desktop-sources'
 import type { AgentSetup, AgentSetupStatus, AgentPreview, AgentInstall, AgentRemove, AgentSetupResult } from '../../../shared/desktop-agents'
 
 declare global {
@@ -42,6 +42,9 @@ declare global {
       agentSetupRemove?: (input: AgentRemove) => Promise<AgentSetupResult>
       sourceChoose?: () => Promise<string | null>
       sourcePreview?: (selection: SourcePreviewSelection) => Promise<CapturePreview>
+      sourceBackup?: (input: CaptureBackupInput) => Promise<CaptureArchiveInfo>
+      sourceBackupInspect?: (input: CaptureInspectInput) => Promise<CaptureArchiveInfo>
+      sourceBackupChoose?: (kind: 'save' | 'open') => Promise<string | null>
       sourceConfigure?: (input: SourceConfigure) => Promise<DesktopSourceView>
       sourceControl?: (action: 'pause' | 'sync' | 'remove' | 'repair', input: SourceControl) => Promise<DesktopSourceView>
       onSourceStatus?: (callback: () => void) => () => void

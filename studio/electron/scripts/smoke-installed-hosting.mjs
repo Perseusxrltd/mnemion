@@ -193,8 +193,8 @@ try {
     }
   }
   for (const [phase, required] of [
-    ['capture-enroll', ['nativeCaptureConsentControls', 'nativeCaptureIndependentOsKey', 'nativeCaptureBeforeDelivery', 'nativeCaptureOfflineRemovalPreservesInbox', 'nativeCaptureSelectedPayloadEncrypted', 'nativeCapturePausedBeforeRestart']],
-    ['capture-resume', ['nativeCaptureQueueSurvivesAppRestart', 'nativeCaptureKeyReopenedByOs', 'nativeCaptureDeliversAfterProducerRemoval', 'nativeCaptureVisibleAppCounts', 'nativeCaptureAdministratorRemovalAfterKeyRevocation', 'nativeCaptureRemovalRetainsServerMemory', 'nativeCaptureFixtureCleanup']],
+    ['capture-enroll', ['nativeCaptureConsentControls', 'nativeCaptureIndependentOsKey', 'nativeCaptureBeforeDelivery', 'nativeCaptureOfflineRemovalPreservesInbox', 'nativeCaptureSelectedPayloadEncrypted', 'nativeCapturePausedBeforeRestart', 'nativeCaptureBackupThroughApp', 'nativeCaptureBackupEncrypted', 'nativeCaptureBackupAppAndAgentAgree', 'nativeCaptureBackupNarrowLayout']],
+    ['capture-resume', ['nativeCaptureQueueSurvivesAppRestart', 'nativeCaptureKeyReopenedByOs', 'nativeCaptureDeliversAfterProducerRemoval', 'nativeCaptureVisibleAppCounts', 'nativeCaptureAdministratorRemovalAfterKeyRevocation', 'nativeCaptureRemovalRetainsServerMemory', 'nativeCaptureBackupSurvivesAppRestart', 'nativeCaptureBackupInspectAfterSourceRemoval', 'nativeCaptureFixtureCleanup']],
   ]) {
     const capture = await launch({ phase, port, memoryId: first.memoryId, spaceId: first.spaceId })
     if (required.some(field => capture[field] !== true)) throw new Error('Installed retained capture acceptance failed: ' + phase)
