@@ -23,6 +23,11 @@ def object_from_gh(*arguments):
     return json.loads(gh(*arguments))
 
 
+def runner_assigned(job: dict) -> bool | None:
+    value = job.get("runner_id")
+    return value > 0 if type(value) is int and value >= 0 else None
+
+
 def issue_rows(rows: list[dict]) -> list[dict]:
     # Never infer that missing issues closed from a truncated first page.
     if not isinstance(rows, list) or len(rows) >= ISSUE_LIMIT:
@@ -120,7 +125,9 @@ def collect(previous: dict) -> dict:
                 for field in ("attempt", "updated_at", "status", "conclusion")
             )
             and "failed_jobs" in old
+            and old.get("job_details_schema") == 2
         ):
+            row["job_details_schema"] = 2
             row["failed_jobs"] = old["failed_jobs"]
             if "job_progress" in old:
                 row["job_progress"] = old["job_progress"]
@@ -130,6 +137,7 @@ def collect(previous: dict) -> dict:
         )
         if jobs["total_count"] > 100:
             raise ValueError("This run needs paginated job inspection")
+        row["job_details_schema"] = 2
         row["job_progress"] = {
             "total": jobs["total_count"],
             "completed": sum(job.get("status") == "completed" for job in jobs["jobs"]),
@@ -139,6 +147,7 @@ def collect(previous: dict) -> dict:
                     "id": job["id"],
                     "name": job["name"],
                     "status": job["status"],
+                    "runner_assigned": runner_assigned(job),
                     "steps": [
                         step["name"]
                         for step in job.get("steps", [])
@@ -153,14 +162,18 @@ def collect(previous: dict) -> dict:
             {
                 "name": job["name"],
                 "id": job["id"],
+                "conclusion": job["conclusion"],
+                "runner_assigned": runner_assigned(job),
+                "steps_reported": len(job.get("steps", [])),
                 "steps": [
                     step["name"]
                     for step in job.get("steps", [])
-                    if step.get("conclusion") == "failure"
+                    if step.get("conclusion") in {"failure", "cancelled", "timed_out"}
                 ],
             }
             for job in jobs["jobs"]
-            if job.get("conclusion") == "failure"
+            if job.get("conclusion")
+            in {"failure", "cancelled", "timed_out", "action_required", "startup_failure"}
         ]
     return {
         "schema": 1,
@@ -257,10 +270,21 @@ def markdown(data: dict) -> str:
             lines.append("")
     failures = [row for row in data["runs"] if row.get("failed_jobs")]
     if failures:
-        lines.extend(["", "## Failed jobs", ""])
+        lines.extend(["", "## Unsuccessful jobs", ""])
         for row in failures:
             lines.extend(
-                f"- [Run {row['id']}]({row['url']}): {escaped(job['name'])}. Steps: {escaped(', '.join(job['steps']))}."
+                f"- [Run {row['id']}]({row['url']}): {escaped(job['name'])} "
+                f"({escaped(job.get('conclusion', 'failure'))}). "
+                + (
+                    f"Steps: {escaped(', '.join(job['steps']))}."
+                    if job["steps"]
+                    else "No unsuccessful step was reported."
+                )
+                + (
+                    " No runner was assigned and no steps were reported."
+                    if job.get("runner_assigned") is False and job.get("steps_reported") == 0
+                    else ""
+                )
                 for job in row["failed_jobs"]
             )
     return "\n".join(lines) + "\n"

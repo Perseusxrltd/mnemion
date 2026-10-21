@@ -70,6 +70,10 @@ export interface Memory {
   valid_from: string | null; valid_to: string | null; recorded_at: string
   created_at: string; updated_at: string; created_by: string; evidence: Evidence
   can_forget?: boolean | null
+  capture_forget?: {
+    scope: 'conversation_fragment'; lineage_id: string; retained_memories: number
+    includes_adjacent_messages: true; includes_revisions_and_projections: true
+  } | null
 }
 export interface RankingPolicy {
   recency_weight?: number; half_life_days?: number; archive_weight?: number

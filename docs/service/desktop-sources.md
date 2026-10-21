@@ -6,6 +6,11 @@ native targets and public installed-update checks. [Actual Windows/shared-host
 updates also passed](../validation/2026-10-20-431-live-updates.md);
 [release status](../RELEASE_STATUS.md) identifies current installers.
 
+**Unreleased:** [retained conversation capture](durable-capture.md) adds an
+explicit choice to keep selected, locally accepted evidence after chat logs
+rotate or disappear. Existing sources keep their mirror policy. The new workflow
+still requires complete native and L1 acceptance; it is not a published guarantee.
+
 The device can contribute to a local or remote shared workspace. Contributing
 files does not require a local database, model, GPU, Python installation or
 terminal. Embedding happens on the workspace under its existing model policy.
@@ -33,8 +38,9 @@ See [capture choices and retention boundaries](live-conversations.md#choose-how-
    the workspace, application and connector identities before saving the key
    with OS protection. Counts and failures also appear in **Source status**.
 5. Keep **Run in background** and **Start at login** enabled for unattended
-   capture. The computer, source and network must be available. Quitting Studio
-   completely stops the device's scans.
+   capture. The computer and source must be available; workspace delivery needs
+   the network. Enrolled retained inboxes can accept locally while the workspace
+   is offline. Quitting Studio completely stops the device's scans.
 
 **Scan now** coalesces repeated requests. **Pause on this computer** persists the
 pause and stops its active scan, retaining committed progress. **Resume** checks
@@ -45,14 +51,27 @@ for a different source.
 
 **Sources on this computer** appears under **Setup & this device** and on the
 local setup screen before connecting. It lists saved sources across workspaces.
-Pause, resume and removal work while signed out or when a workspace is offline.
-Changing sharing or credentials requires reconnecting and verifying the
-workspace. Selecting another workspace does not stop unrelated sources.
+Pause and resume are available while signed out or when a workspace is offline.
+Ordinary source settings can also be removed offline. Removing a retained inbox
+requires confirmed server revocation before discarding local content; see
+[pause, remove and forget](durable-capture.md#pause-remove-and-forget).
+Changing sharing or credentials requires reconnecting and verifying the workspace.
+Selecting another workspace does not stop unrelated sources.
 
-Removing a source stops this computer's runner and removes its saved key.
-Existing memories and server-side keys remain. Administrators can disable the
-connection and revoke unused keys in **People & apps**; other devices retain
-their independent settings.
+Removing an ordinary source stops this computer's runner and removes its saved
+key. Existing memories and server-side keys remain. Retained capture additionally
+requires a pause and explicit consent to discard its entire local inbox,
+including deliveries with unknown outcomes, after device-grant revocation is
+confirmed. Administrators can disable the connection and revoke unused keys in
+**People & apps**; other devices retain their independent settings.
+
+For an unavailable retained-source key, **Connections** uses the current
+administrator session when it matches that source's workspace. **Sources on
+this computer → Device key unavailable?** also accepts an optional administrator
+key for the displayed workspace. This credential is used only for removal and
+is never saved by that operation. If retirement was already confirmed and saved
+locally, interrupted cleanup can finish offline without a surviving credential.
+See the [removal and recovery rules](durable-capture.md#pause-remove-and-forget).
 
 ## Reconnect an existing folder
 
@@ -78,6 +97,10 @@ records actual provider revalidation and unchanged-client reads separately.
 
 ## Reconnect conversation capture
 
+These reconnection steps apply to conversation mirrors. A retained inbox needs
+its original verified private state and protected key, or a reviewed migration;
+see [retained capture recovery](durable-capture.md#recovery-boundaries).
+
 Use the existing connection and choose the original folder or its copied folder
 with the same relative JSONL paths. Stop the previous runner before starting its
 replacement. Sources created in Studio retain their default identity. For a
@@ -101,11 +124,13 @@ See [validation](../validation/2026-10-20-conversation-identity.md).
 
 ## Capture and resources
 
-The runner uses the existing [connector protocol](connectors.md): complete
-inventories govern removals; partial scans retain last good data; human
-corrections produce review proposals. [Conversation capture](live-conversations.md)
-reads complete JSONL records, waits for unfinished tails and reuses captured
-fragments, with one scope per file. It requires a server at least 4.17.0.
+Ordinary sources use the existing [connector protocol](connectors.md): complete
+inventories govern removals; partial scans retain last good data; human corrections
+produce review proposals. [Conversation mirrors](live-conversations.md) read
+complete JSONL records, wait for unfinished tails and reuse captured fragments,
+with one scope per file. They require a server at least 4.17.0. Retained capture
+uses a separate approved inbox and custody protocol; producer disappearance
+does not remove already accepted evidence.
 
 Only one source scans at a time, with one pending request per source. The helper
 reports resident memory every two seconds and stops when it exceeds its RAM
@@ -123,10 +148,18 @@ and database budgets remain separate.
 | Ordinary text file size | At most 20 MB | Also bounded by RAM allowance |
 | Process deadline | 10 minutes | Stops and retains committed progress |
 
+The unreleased retained inbox adds [content and database limits](durable-capture.md#storage-and-resource-limits):
+256 MiB pending per source by default (1–1,024 MiB selectable), 1 GiB pending
+across the device, 512 MiB database admission per source and 2 GiB across the
+device, plus at least 512 MiB free disk for new intake. Bounded delivery reserve
+does not increase the allowance for new intake. Accepted evidence has no automatic
+expiry; a limit below current usage blocks new intake without trimming the queue.
+
 Remote agents' durable sync requests are picked up at the next scheduled scan.
-Capture does not call a model on this device; the workspace may enqueue
-embedding work. Pausing a device does not certify access indefinitely: the normal
-permission lease expires when successful checks stop.
+Capture does not call a model on this device; the workspace may enqueue embedding
+work. Ordinary source permission leases expire when successful checks stop.
+Retained custody checks its current source, device grant and audience on delivery
+and access; a saved inbox never authorizes delivery after revocation.
 
 ## Private storage, restart and recovery
 
@@ -138,9 +171,14 @@ Selected source folders cannot overlap Mnemion's private app state. Known
 credential files and generated mirrors retain the connector's safe exclusions.
 
 Settings and conversation checkpoints belong to this computer; they are not a
-cross-device backup or transfer of OS-protected keys. Enroll a replacement device
-with its own key and the intended source identity. Recover authoritative memory,
-permissions and deletion state from a verified workspace backup.
+cross-device backup or transfer of OS-protected keys. For ordinary mirrors,
+enroll a replacement device with its own key and verified source identity. A
+retained inbox also has an independent random 256-bit OS-sealed encryption key;
+lost keys or initialized databases stop capture instead of creating an empty
+replacement. Current chat files cannot reconstruct its accepted/forgotten history.
+Follow [retained capture recovery](durable-capture.md#recovery-boundaries).
+Recover authoritative server memory, permissions and deletion state from a
+verified workspace backup; that cannot recover undelivered local content.
 
 Updates wait for scans and settings writes. Once the updater pauses scheduling,
 no new scan starts during shutdown. A cancelled update resumes scheduling; a
@@ -153,11 +191,12 @@ The same OS-account [private desktop interface](desktop-operator.md) exposes:
 
 | Action | Input |
 | --- | --- |
-| `source.status` | None; returns the settings revision, sources, counts and RSS without keys. |
+| `source.status` | None; returns the settings revision, sources, counts and RSS without keys. The unreleased capture report also separates local acceptance, pending content, server acknowledgements, unknown pages and incomplete scans. |
 | `source.configure` | `expected_revision`, `source`, and `credential` for a new entry; an existing entry can keep its key. Cloud sources also use a separate `provider_credential`. |
 | `source.pause` | `expected_revision`, `id`, `enabled` (`false` to pause, `true` to resume). |
 | `source.sync` | `expected_revision`, `id`; queues a scan of an enabled source. |
-| `source.remove` | `expected_revision`, `id`, `confirm: true`. |
+| `source.remove` | `expected_revision`, `id`, `confirm: true`. Retained capture also requires a paused source and `discard_local_inbox: true`; server revocation must be confirmed before local discard. Optional `retirement_credential` supplies current administrator authority through the private pipe and is never saved. Already recorded retirement permits cleanup offline without credentials. |
+| `source.repair` (unreleased) | `expected_revision`, `id`, current `repair_token`, `confirm: true`; repairs scan observations for every source on this computer, preserving the damaged diagnostic file and retaining settings, keys, inboxes and checkpoints. |
 
 These actions do not need a selected local workspace or `expected_workspace_id`.
 They require the owning OS account's private pipe. Network MCP/memory credentials
@@ -167,9 +206,18 @@ an uncertain reply, read status instead of replaying an old revision.
 The `source` object accepts `id` for an existing entry, `endpoint`, `tenant_id`,
 `connector_id`, `principal_id`, `name`, `provider` (`filesystem` or
 `conversations`), absolute `path`, `members`, `publish_to_mapped_members: true`,
-`poll_seconds`, `memory_limit_mib`, `max_files` and `enabled`. Obtain identifiers
-from the actual workspace and registered connector. Supply the dedicated key
-through private stdin. The desktop catalog describes envelope/byte limits.
+`poll_seconds`, `memory_limit_mib`, `max_files` and `enabled`. Conversations also
+accept `capture_mode: "complete" | "messages"`. The unreleased retained workflow
+adds `custody: {source_id, grant_id, keep_accepted: true, pending_limit_mib}` only
+for a new conversation connection after independent server approval of its
+source and exact device-key grant. Follow the [administrator and native setup](durable-capture.md#agent-and-administrator-setup)
+before configuring it. Existing inbox identity, selection and dedicated key
+cannot be replaced through an ordinary settings update.
+
+Obtain identifiers from the actual workspace and registered connector. Supply
+the dedicated key through private stdin. The desktop catalog describes
+envelope/byte limits. Read current status after an uncertain reply; do not reset
+an inbox or fabricate a successful scan to resolve missing observations.
 
 For `filesystem`, the optional `scope_id` is the folder namespace without its
 `filesystem:` prefix. Leave it absent to discover the one existing namespace.

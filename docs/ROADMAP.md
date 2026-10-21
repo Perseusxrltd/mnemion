@@ -20,6 +20,15 @@ issue review, publication and version-linked closure together.
 
 ## Current delivery checkpoint
 
+- **Durable conversation capture is in development, not yet released.**
+  The [implementation checkpoint](research/2026-10-21-durable-capture-implementation.md)
+  records encrypted local intake before network delivery, current permission and
+  forgetting checks, persistent app/agent observations, and explicit retirement
+  when a device key is lost. A Linux app source preview passed offline intake,
+  restart, delivery and administrator-assisted removal. Portable recovery,
+  complete capture policy and coverage, headless operation, bounded history and
+  all six packaged targets remain required before this L1 milestone ships.
+
 - **4.43 is published and accepted on the actual Windows app and shared host.**
   The [paired acceptance](validation/2026-10-21-443-acceptance.md) retained
   identities, protected login and preferences, then passed 47 of 47 synthetic

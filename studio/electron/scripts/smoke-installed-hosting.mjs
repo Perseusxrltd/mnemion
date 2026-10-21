@@ -192,6 +192,15 @@ try {
         '--output', join(temporary, 'Server backup Équipe.mnemion-host')], { cwd: root, env: environment })
     }
   }
+  for (const [phase, required] of [
+    ['capture-enroll', ['nativeCaptureConsentControls', 'nativeCaptureIndependentOsKey', 'nativeCaptureBeforeDelivery', 'nativeCaptureOfflineRemovalPreservesInbox', 'nativeCaptureSelectedPayloadEncrypted', 'nativeCapturePausedBeforeRestart']],
+    ['capture-resume', ['nativeCaptureQueueSurvivesAppRestart', 'nativeCaptureKeyReopenedByOs', 'nativeCaptureDeliversAfterProducerRemoval', 'nativeCaptureVisibleAppCounts', 'nativeCaptureAdministratorRemovalAfterKeyRevocation', 'nativeCaptureRemovalRetainsServerMemory', 'nativeCaptureFixtureCleanup']],
+  ]) {
+    const capture = await launch({ phase, port, memoryId: first.memoryId, spaceId: first.spaceId })
+    if (required.some(field => capture[field] !== true)) throw new Error('Installed retained capture acceptance failed: ' + phase)
+    await stop()
+    if (credentialsHash() !== credentials) throw new Error('Retained capture modified the original workspace credentials')
+  }
   // An unrelated listener must lead to an actual recovery screen, never a new
   // workspace or silent connection to the other program.
   const occupied = createServer(socket => socket.end())
@@ -242,10 +251,14 @@ try {
     sameIndividualSessionRestoredAfterRestart: true, contributorCannotAdministerOrganization: true,
     ownHostReadyBeforeSavedLoginRefresh: true, currentSessionRevokedThroughApp: true,
     revokedHandleRejected: true, independentOwnerKeyPreserved: true,
+    retainedCaptureConsentThroughApp: true, captureKeyProtectedAndReopenedByOs: true,
+    selectedCaptureWhileWorkspaceOffline: true, pendingQueueSurvivesAppRestart: true,
+    offlineRemovalRefusesUnconfirmedDiscard: true, captureDeliveryAfterProducerRemoval: true,
+    captureAppCountsAndAgentControls: true, captureAdministratorRemovalAfterDeviceKeyRevocation: true,
     scope: 'Locally built installer, new private profile and real model download. Public download acceptance and update migration are separate gates.' }
   mkdirSync(join(root, 'build-tmp'), { recursive: true })
   writeFileSync(evidenceFile, JSON.stringify(evidence, null, 2) + '\n')
-  for (const phase of ['create', 'resume', 'backup-capture', 'backup-recover', 'backup-resume', 'recover-port', 'sign-in', 'sign-in-resume']) copyFileSync(join(temporary, phase + '-workspace.png'), join(root, 'build-tmp/installed-hosting-' + phase + '.png'))
+  for (const phase of ['create', 'resume', 'backup-capture', 'backup-recover', 'backup-resume', 'capture-enroll', 'capture-resume', 'recover-port', 'sign-in', 'sign-in-resume']) copyFileSync(join(temporary, phase + '-workspace.png'), join(root, 'build-tmp/installed-hosting-' + phase + '.png'))
   console.log(JSON.stringify(evidence, null, 2))
   succeeded = true
 } catch (error) {

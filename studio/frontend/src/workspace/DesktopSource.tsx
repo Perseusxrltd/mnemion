@@ -3,6 +3,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FolderOpen, Pause, Play, RefreshCw, Trash2 } from 'lucide-react';
 import type { Connector, MnemionClient } from '@mnemion/client';
 import type { DesktopSourceView, SourceConfigure } from '../../../shared/desktop-sources';
+import SourceScanHistory from './SourceScanHistory';
+import CaptureStatus from './CaptureStatus';
 
 const message = (error: unknown) => error instanceof Error ? error.message : 'The source operation could not finish.';
 const when = (value?: string) => value ? new Date(value).toLocaleString() : 'Waiting for its first scan';
@@ -31,6 +33,9 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
   const [memory, setMemory] = useState(256);
   const [files, setFiles] = useState(10000);
   const [captureMode, setCaptureMode] = useState<'complete' | 'messages'>('complete');
+  const [keepAccepted, setKeepAccepted] = useState(false);
+  const [pendingLimit, setPendingLimit] = useState(256);
+  const [deviceKeyId, setDeviceKeyId] = useState('');
   const [conversationIdentity, setConversationIdentity] = useState('');
   const [key, setKey] = useState('');
   const [providerKey, setProviderKey] = useState('');
@@ -54,6 +59,7 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
     setPath(current?.path ?? ''); setIntervalMinutes((current?.poll_seconds ?? 300) / 60);
     setMemory(current?.memory_limit_mib ?? 256); setFiles(current?.max_files ?? 10000);
     setCaptureMode(current?.capture_mode ?? 'complete');
+    setKeepAccepted(!!current?.custody); setPendingLimit(current?.custody?.pending_limit_mib ?? 256); setDeviceKeyId('');
     setConversationIdentity(current?.scope_id ?? '');
     setKey(''); setProviderKey(''); setPublication(false); setRevision(query.data?.revision);
     setTeam(current?.slack?.team_id ?? ''); setChannels(current?.slack?.channels.join('\n') ?? '');
@@ -65,12 +71,17 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
     void cache.invalidateQueries({ queryKey: ['connector-scopes', connection.id] });
     void cache.invalidateQueries({ queryKey: ['connector-sync', connection.id] });
   }
-  async function control(action: 'pause' | 'sync' | 'remove') {
+  async function control(action: 'pause' | 'sync' | 'remove' | 'repair') {
     if (!current || !query.data) return;
     setBusy(true); setError(undefined);
     try {
+      const session = action === 'remove' && current.custody && administrator ? (await native!.workspaceStatus?.())?.active : undefined;
+      const retirement = session?.me.administrator && session.me.tenant_id === current.tenant_id && session.endpoint === current.endpoint ? session.sessionToken : undefined;
       accept(await native!.sourceControl!(action, { expected_revision: query.data.revision, id: current.id,
-        ...(action === 'pause' ? { enabled: !current.enabled } : {}), ...(action === 'remove' ? { confirm: true } : {}) }));
+        ...(action === 'pause' ? { enabled: !current.enabled } : {}), ...(action === 'remove' ? { confirm: true } : {}),
+        ...(action === 'remove' && current.custody ? { discard_local_inbox: true } : {}),
+        ...(retirement ? { retirement_credential: retirement } : {}),
+        ...(action === 'repair' ? { confirm: true, repair_token: current.activity.repair_token } : {}) }));
       setRemoving(false);
     } catch (error) { setError(message(error)); await query.refetch(); }
     finally { setBusy(false); }
@@ -87,14 +98,34 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
         : connection.provider === 'gdrive' ? { gdrive: { folder_ids: driveIds(folders), file_ids: driveIds(driveFiles), recursive } }
         : { path, ...(connection.provider === 'conversations' ? { capture_mode: captureMode } : {}) };
       const me = await client.me();
+      if (keepAccepted) {
+        const health = await client.request<{ durable_capture?: string }>('GET', '/health/live');
+        if (health.durable_capture !== 'v1') throw new Error('Update this workspace server before enabling retained conversation capture.');
+        const catalog = await client.request<{ items: unknown[]; next_cursor?: string | null }>('GET', `/v1/connectors/${encodeURIComponent(connection.id)}/scopes?limit=1`);
+        if (!Array.isArray(catalog.items) || catalog.items.length || catalog.next_cursor) throw new Error('This connection already mirrors conversation history. Keep its current policy until a reviewed migration is available; retained capture needs a new connection.');
+        if (!current && key && !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(deviceKeyId)) throw new Error('Provide the ID of this dedicated application key so its device grant can be bound correctly.');
+      }
       let credential = key || undefined;
+      let issuedKeyId = deviceKeyId;
       if (!current && !credential) {
         const issued = await client.createKey(connection.principal_id, 'Studio source ' + id.slice(0, 8));
-        createdKey = issued.id; credential = issued.api_key;
+        createdKey = issued.id; credential = issued.api_key; issuedKeyId = issued.id;
+      }
+      const custody = keepAccepted ? { ...(current?.custody ?? { source_id: id, grant_id: crypto.randomUUID(), keep_accepted: true as const }), pending_limit_mib: pendingLimit } : undefined;
+      if (custody) {
+        const route = `/v1/connectors/${encodeURIComponent(connection.id)}/capture-sources/${encodeURIComponent(custody.source_id)}`;
+        const policy = { namespace: current?.scope_id ?? (conversationIdentity || 'selected-source'),
+          name: connection.name, members, capture_mode: captureMode, keep_accepted: true };
+        const existing = current?.custody ? await client.request<{ version: number; name: string; members: string[] }>('GET', route) : undefined;
+        if (!existing || existing.name !== policy.name || JSON.stringify([...existing.members].sort()) !== JSON.stringify([...members].sort())) {
+          await client.request('PUT', route, { body: { ...policy, expected_version: existing?.version ?? 0 } });
+        }
+        if (!current?.custody) await client.request('PUT', `/v1/capture-sources/${encodeURIComponent(custody.source_id)}/grants/${encodeURIComponent(custody.grant_id)}`, { body: { device_key_id: issuedKeyId } });
       }
       const source: SourceConfigure['source'] = { id, endpoint, tenant_id: me.tenant_id,
         connector_id: connection.id, principal_id: connection.principal_id, name: connection.name,
         provider: connection.provider as SourceConfigure['source']['provider'], ...selection, members,
+        ...(custody ? { custody } : {}),
         ...(current?.scope_id ? { scope_id: current.scope_id }
           : connection.provider === 'conversations' && conversationIdentity !== '' ? { scope_id: conversationIdentity } : {}),
         publish_to_mapped_members: true, poll_seconds: Math.round(interval * 60), memory_limit_mib: memory,
@@ -121,21 +152,25 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
   const hasLocation = connection.provider === 'slack' ? !!team.trim() && !!channels.trim()
     : connection.provider === 'gdrive' ? !!folders.trim() || !!driveFiles.trim() : !!path;
   return <section className="ws-card" data-update-pending={busy || dirty || key || removing ? '' : undefined}>
-    <div className="ws-section-title"><h2>Run on this computer</h2>{current && <span className="ws-badge">{scanning ? 'Scanning' : current.enabled ? 'Automatic scans on' : 'Paused'}</span>}</div>
+    <div className="ws-section-title"><h2>Run on this computer</h2>{current && <span className="ws-badge">{scanning ? 'Scanning' : !current.enabled ? 'Paused' : current.activity.phase === 'attention' ? 'Needs attention' : 'Automatic scans on'}</span>}</div>
     <p>Studio can keep this {connection.provider === 'slack' ? 'Slack source' : connection.provider === 'gdrive' ? 'Google Drive source' : connection.provider === 'conversations' ? 'conversation folder' : 'folder or Obsidian vault'} connected while the app runs in the background. It uses a dedicated application key protected by your operating system.</p>
     {(error || query.error) && <div className="ws-notice ws-error" role="alert">{error ?? message(query.error)}</div>}
     {query.data && !query.data.secure_storage && <p className="ws-notice">Enable or unlock secure credential storage in your desktop session to save a background source.</p>}
     {current && <>
       <p className="ws-helper" style={{ overflowWrap: 'anywhere' }}>{current.slack ? `Slack ${current.slack.team_id} · ${current.slack.channels.length} selected channels` : current.gdrive ? `Drive · ${current.gdrive.folder_ids.length} folders and ${current.gdrive.file_ids.length} files` : current.path}</p>
       <p>{current.activity.message ?? (scanning ? 'Reading and reconciling this source…' : current.enabled ? 'Changes are checked automatically.' : 'This computer’s scans are paused.')}</p>
-      {current.activity.report && <p className="ws-helper">{when(current.activity.report.timestamp)} · {current.activity.report.changed} changed · {current.activity.report.removed} removed · {current.activity.report.unchanged} unchanged · {current.activity.report.duration_seconds.toFixed(1)} seconds</p>}
+      {current.activity.report && <p className="ws-helper">Last report: {when(current.activity.report.timestamp)} · {current.activity.report.changed} changed · {current.activity.report.removed} removed · {current.activity.report.unchanged} unchanged · {current.activity.report.duration_seconds.toFixed(1)} seconds</p>}
+      <SourceScanHistory activity={current.activity} busy={busy} onRepair={() => void control('repair')} />
+      {current.custody && <CaptureStatus report={current.activity.report?.capture} />}
       <p className="ws-helper">Every {current.poll_seconds / 60} minutes · up to {current.memory_limit_mib} MiB RAM · {current.max_files.toLocaleString()} {cloud && connection.provider === 'slack' ? 'messages per channel' : 'files'}. {current.enabled && !scanning && current.activity.next_scan_at ? `Next check: ${when(current.activity.next_scan_at)}.` : ''}</p>
       <div className="ws-actions">
         <button className="ws-button" disabled={busy || !current.enabled || !!connection.disabled_at} onClick={() => void control('sync')}><RefreshCw size={15} />{scanning ? 'Queue another scan' : 'Scan now'}</button>
         <button className="ws-button" disabled={busy} onClick={() => void control('pause')}>{current.enabled ? <Pause size={15} /> : <Play size={15} />}{current.enabled ? 'Pause on this computer' : 'Resume'}</button>
         <button className="ws-button" disabled={busy} onClick={() => setRemoving(!removing)}><Trash2 size={15} />Remove from this computer</button>
       </div>
-      {removing && <div className="ws-notice"><p>This stops local scans and removes the saved connection here. Existing memories and the server’s application keys are retained. Revoke unused keys in People & apps.</p><button className="ws-button" disabled={busy} onClick={() => void control('remove')}>Confirm removal</button><button className="ws-button" onClick={() => setRemoving(false)}>Cancel</button></div>}
+      {removing && <div className="ws-notice"><p>{current.custody
+        ? 'Pause this source first. Removal revokes this device’s capture grant and permanently discards every locally queued memory, including deliveries with an unknown outcome. The workspace must be reachable to confirm revocation. Original chat files and server memories remain; the application key’s other permissions remain until you revoke it in People & apps.'
+        : 'This stops local scans and removes the saved connection here. Existing memories and the server’s application keys are retained. Revoke unused keys in People & apps.'}</p>{current.custody && administrator && <p>Your current administrator connection can confirm removal if this device’s saved key is unavailable.</p>}<button className="ws-button" disabled={busy || (!!current.custody && current.enabled)} onClick={() => void control('remove')}>{current.custody ? 'Revoke device grant and discard local inbox' : 'Confirm removal'}</button><button className="ws-button" onClick={() => setRemoving(false)}>Cancel</button></div>}
     </>}
     <details className="ws-details" open={!current || undefined}><summary>{current ? 'Source settings and key' : 'Choose your source'}</summary>
       <form className="ws-connector-form" onSubmit={event => void configure(event)}>
@@ -152,13 +187,21 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
             }} /></label>
             <p className="ws-helper">For a source first connected through an adapter, use its original provider.scope_id. Keep the same relative file paths and stop the previous runner before reconnecting. Studio verifies existing capture identity before importing.</p>
           </details>
-          <label>What to remember<select disabled={busy} data-update-safe value={captureMode} onChange={event => {
+          <label>What to remember<select disabled={busy || !!current?.custody} data-update-safe value={captureMode} onChange={event => {
             setCaptureMode(event.target.value as 'complete' | 'messages'); setDirty(true); setPublication(false);
           }}><option value="complete">Messages and exposed session events</option><option value="messages">Messages only</option></select></label>
           <p className="ws-helper">{captureMode === 'complete'
             ? 'Keep the selected session records, including tool activity and reasoning traces your agent actually saves, plus readable messages.'
             : 'Copy supported user and assistant message text. Structured tool and reasoning records remain in the original files. Unknown formats produce no message copy.'}
-            {' '}Changing this choice takes effect after a complete scan. Earlier copies, reviewed edits and backups follow their existing retention rules.</p>
+            {' '}{current?.custody ? 'This retained inbox keeps its approved selection. Changing selection requires a reviewed migration.' : 'Changing this choice takes effect after a complete scan. Earlier copies, reviewed edits and backups follow their existing retention rules.'}</p>
+          <label className="ws-checkbox"><input disabled={busy || !!current || !administrator} data-update-safe type="checkbox" checked={keepAccepted} onChange={event => {
+            setKeepAccepted(event.target.checked); setDirty(true); setPublication(false);
+          }} />Keep captured memories when original chat logs rotate or are removed</label>
+          <p className="ws-helper">Retained capture stores only the selected mode in a separately encrypted local inbox before delivery. The workspace administrator approves its audience and device grant. Existing source mirrors keep their current policy; changing an established source needs a reviewed migration.</p>
+          {keepAccepted && <>
+            <label>Maximum pending content for this source (MiB)<input disabled={busy} data-update-safe type="number" min="1" max="1024" step="1" value={pendingLimit} onChange={event => { setPendingLimit(Number(event.target.value)); setDirty(true); }} required /></label>
+            <p className="ws-helper">Across this computer, pending selected content is capped at 1 GiB; encrypted databases have separate size limits. New intake needs at least 512 MiB free disk. Accepted evidence waits without automatic expiry. Reducing a limit stops new intake while existing evidence can still be delivered.</p>
+          </>}
         </>}
         {connection.provider === 'slack' && <>
           <label>Slack workspace ID<input disabled={busy} data-update-safe value={team} readOnly={!!current} maxLength={128} required placeholder="T0123456789" onChange={event => { setTeam(event.target.value); setDirty(true); setPublication(false); }} /></label>
@@ -185,9 +228,11 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
         <label>Check every (minutes)<input disabled={busy} data-update-safe type="number" min="0.5" max="60" step="0.5" value={interval} onChange={e => { setIntervalMinutes(Number(e.target.value)); setDirty(true); }} required /></label>
         <label>Maximum source RAM (MiB)<input disabled={busy} data-update-safe type="number" min="128" max="2048" step="1" value={memory} onChange={e => { setMemory(Number(e.target.value)); setDirty(true); }} required /></label>
         <label>{connection.provider === 'slack' ? 'Maximum messages per channel' : 'Maximum files per scan'}<input disabled={busy} data-update-safe type="number" min="1" max="100000" step="1" value={files} onChange={e => { setFiles(Number(e.target.value)); setDirty(true); }} required /></label>
-        <label>{current ? 'Replace application key (optional)' : administrator ? 'Existing application key (optional)' : 'Dedicated application key'}<input disabled={busy} data-update-safe type="password" autoComplete="new-password" value={key} onChange={e => { setKey(e.target.value); setDirty(true); }} required={!current && !administrator} /></label>
+        <label>{current?.custody ? 'Dedicated key retained with this inbox' : current ? 'Replace application key (optional)' : administrator ? 'Existing application key (optional)' : 'Dedicated application key'}<input disabled={busy || !!current?.custody} data-update-safe type="password" autoComplete="new-password" value={key} onChange={e => { setKey(e.target.value); setDirty(true); }} required={!current && !administrator} /></label>
+        {keepAccepted && !current && key && <label>Dedicated application key ID<input disabled={busy} data-update-safe value={deviceKeyId} maxLength={36} required placeholder="Key ID from People & apps" onChange={event => { setDeviceKeyId(event.target.value); setDirty(true); }} /></label>}
         {!current && administrator && <p className="ws-helper">Leave the key empty to create one for this connection’s application automatically.</p>}
         <label className="ws-checkbox"><input disabled={busy} data-update-safe type="checkbox" checked={publication} onChange={e => { setPublication(e.target.checked); setDirty(true); }} required />{cloud ? `I have reviewed the selected source and ${members.length} mapped identities. Current provider permissions will govern access.` : `Publish this folder to the ${members.length} source ${members.length === 1 ? 'identity' : 'identities'} mapped above.`}</label>
+        {members.length === 0 && <p className="ws-notice">Only the source application can read imported memories until you map a person or agent above. Organization administration alone does not grant access to this source’s content.</p>}
         <p className="ws-helper">Choose only material intended for this workspace. {cloud ? 'Provider credentials stay in OS-protected storage on this computer. The first scan checks the selected channels or files and their memberships before publishing. Partial scans retain earlier good memories; Source status shows permission and quota failures.' : connection.provider === 'conversations' ? 'Complete JSONL records are captured incrementally; unfinished records wait for the next scan.' : 'Text files are imported; the source folder and Obsidian files stay editable in their original apps.'} Save again after changing its mapped audience.</p>
         {scanning && <p className="ws-helper">Pause the source before changing its settings.</p>}
         {stale && <p className="ws-notice">Source settings changed while you were editing. Discard edits to load the current settings before making another change.</p>}

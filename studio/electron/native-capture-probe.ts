@@ -1,0 +1,181 @@
+/** Selected capture through real app controls, a stopped host and an app restart.
+ * Only the outer installed-hosting gate's disposable profile invokes this.
+ */
+import { dialog, type BrowserWindow } from 'electron'
+import { createHash, randomUUID } from 'node:crypto'
+import { mkdir, readFile, rm, rmdir, writeFile } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
+import type { DesktopSourceView } from '../shared/desktop-sources.js'
+import { callNativeOperator as call } from './native-operator-probe.js'
+
+const pause = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+async function until<T>(check: () => Promise<T | false>, message: string, timeout = 90000): Promise<T> {
+  const end = Date.now() + timeout
+  do { const value = await check(); if (value !== false) return value; await pause(200) } while (Date.now() < end)
+  throw new Error(message)
+}
+
+const rendererHelpers = `
+  const pause=ms=>new Promise(r=>setTimeout(r,ms));
+  async function until(check,message,timeout=30000){const end=Date.now()+timeout;do{const value=await check();if(value)return value;await pause(100);}while(Date.now()<end);throw new Error(message);}
+  const card=()=>[...document.querySelectorAll('section.ws-card')].find(e=>e.querySelector('h2')?.textContent==='Run on this computer');
+  async function click(text){const node=await until(()=>[...card().querySelectorAll('button')].find(e=>e.textContent.trim()===text&&!e.disabled&&e.getClientRects().length),'Missing capture control: '+text);await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));if(!node.isConnected||node.disabled)throw new Error('Capture control changed before selection');node.click();await pause(100);}
+  async function selectConnection(id){location.hash='/workspace/connections';await until(()=>{const field=[...document.querySelectorAll('select')].find(s=>[...s.options].some(o=>o.value===id));if(!field)return false;if(field.value!==id){Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(field,id);field.dispatchEvent(new Event('change',{bubbles:true}));return false;}return !!card();},'The capture connection did not appear');}
+  async function request(method,path,body,expected=200){const session=(await window.mnemion.workspaceStatus()).active;if(!session?.me.administrator)throw new Error('Capture fixture requires its disposable workspace owner');const response=await window.mnemion.serviceRequest({url:session.endpoint+path,method,headers:{Authorization:'Bearer '+session.sessionToken,'Content-Type':'application/json','Idempotency-Key':crypto.randomUUID()},...(body?{body:JSON.stringify(body)}:{})});if(response.status!==expected)throw new Error('Capture fixture request failed: '+path+' / '+response.status);return JSON.parse(new TextDecoder().decode(response.body));}
+`
+
+async function inRenderer(window: BrowserWindow, source: string): Promise<any> {
+  return window.webContents.executeJavaScript(`(async()=>{${rendererHelpers}\n${source}\n})()`)
+}
+
+async function sourceStatus(id: string) {
+  const view = await call('source.status') as DesktopSourceView
+  const source = view.sources.find(item => item.id === id)
+  if (!source) throw new Error('The installed capture source disappeared.')
+  return { view, source }
+}
+
+async function pauseSource(id: string) {
+  const { view } = await sourceStatus(id)
+  return call('source.pause', { id, expected_revision: view.revision, enabled: false })
+}
+
+export async function verifyNativeCapture(window: BrowserWindow, config: Record<string, unknown>, probePath: string): Promise<Record<string, unknown>> {
+  const base = dirname(probePath), profile = process.env.MNEMION_STUDIO_USER_DATA!
+  const fixturePath = join(base, 'native-capture-fixture.json')
+  const sourcesPath = join(profile, 'mnemion-desktop-sources', 'sources.json')
+  const selectWorkspace = async (action: string, input: Record<string, unknown>, workspace: string) => {
+    const end = Date.now() + 30000
+    for (;;) {
+      await inRenderer(window, `await until(()=>window.mnemion.updateSafety(),'Finish app work before the capture host transition');`)
+      try { return await call(action, input, workspace) } catch (error) {
+        // A background read can start between the two guards. Only this
+        // pre-mutation refusal may be retried; uncertain effects never are.
+        if (!(error instanceof Error) || !error.message.endsWith('Save or discard edits and finish pending requests in the app before changing its workspace.') || Date.now() >= end) throw error
+        await pause(100)
+      }
+    }
+  }
+  await until(async () => (await window.webContents.executeJavaScript('window.mnemion.localStatus()')).operator?.state === 'ready', 'The native capture operator did not start.')
+  if (config.phase === 'capture-enroll') {
+    await inRenderer(window, `await until(async()=>!!document.querySelector('.ws-workspace-name')&&window.mnemion.updateSafety()&&!!(await window.mnemion.workspaceStatus()).active?.me.administrator,'The disposable owner interface did not reopen',180000);`)
+    const folder = join(base, 'Selected conversations Équipe ' + randomUUID())
+    await mkdir(folder, { mode: 0o700 })
+    const fixture = await inRenderer(window, `
+      const session=(await window.mnemion.workspaceStatus()).active;
+      const person=await request('POST','/v1/principals',{name:'Native retained capture',kind:'application',administrator:false},201);
+      const connection=await request('POST','/v1/connectors',{name:'Native retained conversations',provider:'conversations',principal_id:person.id,access_mode:'published'},201);
+      await request('PUT','/v1/connectors/'+connection.id+'/bindings',{external_id:'native-capture-owner',principal_id:session.me.principal_id,role:'reviewer'});
+      return {endpoint:session.endpoint,tenantId:session.me.tenant_id,principalId:person.id,connectorId:connection.id};
+    `)
+    const originalDialog = dialog.showOpenDialog
+    let selected = false
+    dialog.showOpenDialog = (async () => {
+      if (selected) throw new Error('Unexpected second capture folder selection.')
+      selected = true
+      return { canceled: false, filePaths: [folder] }
+    }) as typeof dialog.showOpenDialog
+    let configured
+    try {
+      configured = await inRenderer(window, `
+        await selectConnection(${JSON.stringify(fixture.connectorId)});
+        await click('Choose folder');
+        const mode=card().querySelector('select');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(mode,'messages');mode.dispatchEvent(new Event('change',{bubbles:true}));await pause(100);
+        const keep=[...card().querySelectorAll('label')].find(e=>e.textContent.includes('Keep captured memories when original chat logs rotate or are removed'))?.querySelector('input');
+        if(!keep||keep.disabled)throw new Error('The app did not offer explicit retained capture consent');keep.click();await pause(100);
+        card().querySelector('input[type="checkbox"][required]').click();await pause(100);
+        await click('Save and start scanning');
+        return await until(async()=>{const view=await window.mnemion.sourceStatus();const item=view.sources.find(s=>s.connector_id===${JSON.stringify(fixture.connectorId)});const error=card()?.querySelector('[role="alert"]');if(error)throw new Error('Capture enrollment UI: '+error.textContent.slice(0,500));return item?.custody?item:false;},'The real app did not enroll its retained source',90000);
+      `)
+    } finally { dialog.showOpenDialog = originalDialog }
+    if (!selected || configured.capture_mode !== 'messages' || configured.custody.keep_accepted !== true || !configured.members.includes('native-capture-owner')) throw new Error('The actual capture form lost its reviewed choices or mapped audience.')
+    await pauseSource(configured.id)
+    const saved = JSON.parse(await readFile(sourcesPath, 'utf8')).sources.find((s: any) => s.id === configured.id)
+    if (!saved?.sealed_inbox_key || saved.sealed_inbox_key === saved.sealed_key) throw new Error('The installed app did not seal a separate inbox key.')
+    const state = await call('status')
+    const workspace = state.info.settings.workspace_id
+    await inRenderer(window, `location.hash='/workspace/memories';await until(()=>window.mnemion.updateSafety(),'Capture enrollment left unsaved work');`)
+    await selectWorkspace('local.stop', {}, workspace)
+    await until(async () => (await call('status')).state === 'stopped', 'The disposable host did not stop for offline capture.')
+    const selectedText = 'Native offline capture ' + randomUUID()
+    const excludedText = 'Excluded structured tool trace ' + randomUUID()
+    const selectedLog = join(folder, 'codex-session.jsonl')
+    await writeFile(selectedLog, JSON.stringify({ type: 'session_meta', payload: { id: randomUUID() } }) + '\n' +
+      JSON.stringify({ type: 'event_msg', payload: { type: 'user_message', message: selectedText } }) + '\n' +
+      JSON.stringify({ type: 'response_item', payload: { type: 'function_call_output', call_id: 'synthetic', output: excludedText } }) + '\n', { mode: 0o600, flag: 'wx' })
+    let current = await sourceStatus(configured.id)
+    await call('source.pause', { id: configured.id, expected_revision: current.view.revision, enabled: true })
+    const queued = await until(async () => {
+      const { source } = await sourceStatus(configured.id)
+      const capture = source.activity.report?.capture
+      if (source.activity.phase === 'attention' && capture?.pending_events && capture.capture_complete && capture.reason_code === 'capture_delivery_unavailable') return source
+      return false
+    }, 'The stopped host did not leave accepted selected memories queued.')
+    await pauseSource(configured.id)
+    const inboxPath = join(profile, 'mnemion-desktop-sources', 'inbox-' + configured.id, 'inbox.sqlite3')
+    const ciphertext = await readFile(inboxPath)
+    if (ciphertext.includes(Buffer.from(selectedText)) || ciphertext.includes(Buffer.from(excludedText))) throw new Error('The native inbox contains unencrypted selected or excluded text.')
+    current = await sourceStatus(configured.id)
+    let refused = false
+    try { await call('source.remove', { id: configured.id, expected_revision: current.view.revision, confirm: true, discard_local_inbox: true }) } catch { refused = true }
+    if (!refused || !(await readFile(inboxPath)).equals(ciphertext)) throw new Error('Offline removal did not preserve the unconfirmed inbox.')
+    // Provider files are no longer available on the next app launch. Only the
+    // OS-protected key and the accepted encrypted inbox can complete delivery.
+    await rm(selectedLog)
+    await rmdir(folder)
+    const captured = { ...fixture, id: configured.id, grantId: configured.custody.grant_id,
+      workspace, folder, selectedText, excludedText, pending: queued.activity.report!.capture!.pending_events,
+      sealedInboxSha256: createHash('sha256').update(saved.sealed_inbox_key).digest('hex') }
+    await writeFile(fixturePath, JSON.stringify(captured), { mode: 0o600, flag: 'wx' })
+    return { phase: config.phase, nativeCaptureConsentControls: true, nativeCaptureIndependentOsKey: true,
+      nativeCaptureBeforeDelivery: true, nativeCaptureOfflineRemovalPreservesInbox: true,
+      nativeCaptureSelectedPayloadEncrypted: true, nativeCapturePausedBeforeRestart: true }
+  }
+
+  const fixture = JSON.parse(await readFile(fixturePath, 'utf8'))
+  const saved = JSON.parse(await readFile(sourcesPath, 'utf8')).sources.find((s: any) => s.id === fixture.id)
+  if (!saved || saved.enabled || createHash('sha256').update(saved.sealed_inbox_key).digest('hex') !== fixture.sealedInboxSha256) throw new Error('App restart changed the capture key or lost its paused configuration.')
+  let current = await sourceStatus(fixture.id)
+  if (current.source.activity.durability !== 'saved' || current.source.activity.report?.capture?.pending_events !== fixture.pending) throw new Error('The app did not restore its last saved offline queue observation.')
+  // local.stop intentionally disables host auto-start. Resume it explicitly,
+  // retaining the same workspace and endpoint, before requesting delivery.
+  await call('local.start', {}, fixture.workspace)
+  await until(async () => (await call('status')).state === 'running', 'The original disposable host did not resume.', 180000)
+  await inRenderer(window, `await until(()=>window.mnemion.updateSafety(),'The stopped workspace page retained unfinished work');`)
+  await selectWorkspace('local.open', { expected_revision: (await call('workspace.status')).revision }, fixture.workspace)
+  await inRenderer(window, `await until(async()=>{const s=(await window.mnemion.workspaceStatus()).active;return s?.endpoint===${JSON.stringify(fixture.endpoint)}&&s.me.tenant_id===${JSON.stringify(fixture.tenantId)};},'Host resume changed capture identity');`)
+  await inRenderer(window, `await until(()=>!!document.querySelector('.ws-workspace-name')&&window.mnemion.updateSafety(),'The resumed workspace interface did not settle');`)
+  current = await sourceStatus(fixture.id)
+  await call('source.pause', { id: fixture.id, expected_revision: current.view.revision, enabled: true })
+  const delivered = await until(async () => {
+    const { source } = await sourceStatus(fixture.id), report = source.activity.report?.capture
+    return report?.delivery_complete && report.pending_events === 0 && report.stored_events === fixture.pending && report.reason_code === 'capture_source_unavailable' ? report : false
+  }, 'The installed app did not deliver its encrypted queue after restart and producer removal.')
+  const memory = await inRenderer(window, `
+    const results=await request('POST','/v1/recall',{query:${JSON.stringify(fixture.selectedText)},all_accessible:true,mode:'lexical'});
+    const matching=[];for(const hit of results.hits){const m=await request('GET','/v1/memories/'+hit.memory_id);if(m.content.includes(${JSON.stringify(fixture.selectedText)})){if(JSON.stringify(m).includes(${JSON.stringify(fixture.excludedText)}))throw new Error('Messages-only custody included the excluded tool trace');matching.push(m.memory_id);}}
+    if(matching.length!==1)throw new Error('Offline delivery did not produce exactly one selected memory');
+    await selectConnection(${JSON.stringify(fixture.connectorId)});
+    await until(()=>{const counts=card()?.querySelector('[aria-label="Retained capture status"]');return counts?.textContent.includes('acknowledged by the workspace')&&counts.textContent.includes('0 queued');},'The installed app did not display its retained queue counts');
+    return matching[0];
+  `)
+  await pauseSource(fixture.id)
+  await inRenderer(window, `
+    const grant=await request('GET','/v1/capture-grants/'+${JSON.stringify(fixture.grantId)});
+    await request('DELETE','/v1/keys/'+grant.device_key_id);
+    await click('Remove from this computer');
+    await click('Revoke device grant and discard local inbox');
+    await until(async()=>!(await window.mnemion.sourceStatus()).sources.some(s=>s.id===${JSON.stringify(fixture.id)}),'The administrator could not remove capture after its device key was revoked',60000);
+    const retired=await request('GET','/v1/capture-grants/'+${JSON.stringify(fixture.grantId)});
+    if(!retired.revoked_at||retired.active)throw new Error('The native removal did not revoke its exact device grant');
+    if((await request('GET','/v1/memories/'+${JSON.stringify(memory)})).memory_id!==${JSON.stringify(memory)})throw new Error('Device removal deleted an already accepted server memory');
+    await request('DELETE','/v1/connectors/'+${JSON.stringify(fixture.connectorId)});
+    await request('POST','/v1/principals/'+${JSON.stringify(fixture.principalId)}+'/disable');
+    location.hash='/workspace/memories';
+  `)
+  if (JSON.parse(await readFile(sourcesPath, 'utf8')).sources.some((s: any) => s.id === fixture.id)) throw new Error('Removed capture credentials remain in source settings.')
+  return { phase: config.phase, nativeCaptureQueueSurvivesAppRestart: true, nativeCaptureKeyReopenedByOs: true,
+    nativeCaptureDeliversAfterProducerRemoval: true, nativeCaptureVisibleAppCounts: true,
+    nativeCaptureAdministratorRemovalAfterKeyRevocation: true, nativeCaptureRemovalRetainsServerMemory: true,
+    nativeCaptureFixtureCleanup: true, acceptedEvents: delivered.stored_events }
+}

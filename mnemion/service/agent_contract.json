@@ -329,6 +329,1515 @@
       "summary": "Put Block"
     },
     {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "read",
+      "group": "connectors",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "after": {
+                "anyOf": [
+                  {
+                    "pattern": "^[a-f0-9]{64}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "After"
+              },
+              "grant_id": {
+                "format": "uuid",
+                "title": "Grant Id",
+                "type": "string"
+              },
+              "limit": {
+                "default": 100,
+                "maximum": 100,
+                "minimum": 1,
+                "title": "Limit",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "grant_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters"
+        ],
+        "type": "object"
+      },
+      "method": "GET",
+      "name": "capture.fences",
+      "output_schema": {
+        "$defs": {
+          "CaptureFence": {
+            "additionalProperties": true,
+            "properties": {
+              "forgotten_at": {
+                "title": "Forgotten At",
+                "type": "string"
+              },
+              "lineage_id": {
+                "title": "Lineage Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "lineage_id",
+              "forgotten_at"
+            ],
+            "title": "CaptureFence",
+            "type": "object"
+          },
+          "CaptureFencePage": {
+            "additionalProperties": true,
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/$defs/CaptureFence"
+                },
+                "title": "Items",
+                "type": "array"
+              },
+              "next_cursor": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Next Cursor"
+              }
+            },
+            "required": [
+              "items",
+              "next_cursor"
+            ],
+            "title": "CaptureFencePage",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/CaptureFencePage"
+      },
+      "parameter_locations": {
+        "after": "query",
+        "grant_id": "path",
+        "limit": "query"
+      },
+      "path": "/v1/capture-grants/{grant_id}/fences",
+      "retry": "read",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Forgotten Lineages"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "write",
+      "group": "connectors",
+      "input_schema": {
+        "$defs": {
+          "CaptureGrantInput": {
+            "additionalProperties": false,
+            "properties": {
+              "device_key_id": {
+                "format": "uuid",
+                "title": "Device Key Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "device_key_id"
+            ],
+            "title": "CaptureGrantInput",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/CaptureGrantInput"
+          },
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "grant_id": {
+                "format": "uuid",
+                "title": "Grant Id",
+                "type": "string"
+              },
+              "source_id": {
+                "format": "uuid",
+                "title": "Source Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "source_id",
+              "grant_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters",
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "PUT",
+      "name": "capture.grant.configure",
+      "output_schema": {
+        "$defs": {
+          "CaptureGrant": {
+            "additionalProperties": true,
+            "properties": {
+              "active": {
+                "title": "Active",
+                "type": "boolean"
+              },
+              "capture_mode": {
+                "enum": [
+                  "messages",
+                  "complete"
+                ],
+                "title": "Capture Mode",
+                "type": "string"
+              },
+              "connector_id": {
+                "title": "Connector Id",
+                "type": "string"
+              },
+              "device_key_id": {
+                "title": "Device Key Id",
+                "type": "string"
+              },
+              "grant_id": {
+                "title": "Grant Id",
+                "type": "string"
+              },
+              "namespace": {
+                "title": "Namespace",
+                "type": "string"
+              },
+              "revoked_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Revoked At"
+              },
+              "source_id": {
+                "title": "Source Id",
+                "type": "string"
+              },
+              "source_revoked_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Source Revoked At"
+              },
+              "space_id": {
+                "title": "Space Id",
+                "type": "string"
+              },
+              "tenant_id": {
+                "title": "Tenant Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "grant_id",
+              "source_id",
+              "connector_id",
+              "space_id",
+              "tenant_id",
+              "device_key_id",
+              "namespace",
+              "capture_mode",
+              "revoked_at",
+              "source_revoked_at",
+              "active"
+            ],
+            "title": "CaptureGrant",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/CaptureGrant"
+      },
+      "parameter_locations": {
+        "grant_id": "path",
+        "source_id": "path"
+      },
+      "path": "/v1/capture-sources/{source_id}/grants/{grant_id}",
+      "retry": "inspect_before_retry",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Authorize Device"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "write",
+      "group": "connectors",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "grant_id": {
+                "format": "uuid",
+                "title": "Grant Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "grant_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters"
+        ],
+        "type": "object"
+      },
+      "method": "DELETE",
+      "name": "capture.grant.revoke",
+      "output_schema": {
+        "$defs": {
+          "CaptureGrant": {
+            "additionalProperties": true,
+            "properties": {
+              "active": {
+                "title": "Active",
+                "type": "boolean"
+              },
+              "capture_mode": {
+                "enum": [
+                  "messages",
+                  "complete"
+                ],
+                "title": "Capture Mode",
+                "type": "string"
+              },
+              "connector_id": {
+                "title": "Connector Id",
+                "type": "string"
+              },
+              "device_key_id": {
+                "title": "Device Key Id",
+                "type": "string"
+              },
+              "grant_id": {
+                "title": "Grant Id",
+                "type": "string"
+              },
+              "namespace": {
+                "title": "Namespace",
+                "type": "string"
+              },
+              "revoked_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Revoked At"
+              },
+              "source_id": {
+                "title": "Source Id",
+                "type": "string"
+              },
+              "source_revoked_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Source Revoked At"
+              },
+              "space_id": {
+                "title": "Space Id",
+                "type": "string"
+              },
+              "tenant_id": {
+                "title": "Tenant Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "grant_id",
+              "source_id",
+              "connector_id",
+              "space_id",
+              "tenant_id",
+              "device_key_id",
+              "namespace",
+              "capture_mode",
+              "revoked_at",
+              "source_revoked_at",
+              "active"
+            ],
+            "title": "CaptureGrant",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/CaptureGrant"
+      },
+      "parameter_locations": {
+        "grant_id": "path"
+      },
+      "path": "/v1/capture-grants/{grant_id}",
+      "retry": "inspect_before_retry",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Revoke Device"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "read",
+      "group": "connectors",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "grant_id": {
+                "format": "uuid",
+                "title": "Grant Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "grant_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters"
+        ],
+        "type": "object"
+      },
+      "method": "GET",
+      "name": "capture.grant.status",
+      "output_schema": {
+        "$defs": {
+          "CaptureGrant": {
+            "additionalProperties": true,
+            "properties": {
+              "active": {
+                "title": "Active",
+                "type": "boolean"
+              },
+              "capture_mode": {
+                "enum": [
+                  "messages",
+                  "complete"
+                ],
+                "title": "Capture Mode",
+                "type": "string"
+              },
+              "connector_id": {
+                "title": "Connector Id",
+                "type": "string"
+              },
+              "device_key_id": {
+                "title": "Device Key Id",
+                "type": "string"
+              },
+              "grant_id": {
+                "title": "Grant Id",
+                "type": "string"
+              },
+              "namespace": {
+                "title": "Namespace",
+                "type": "string"
+              },
+              "revoked_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Revoked At"
+              },
+              "source_id": {
+                "title": "Source Id",
+                "type": "string"
+              },
+              "source_revoked_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Source Revoked At"
+              },
+              "space_id": {
+                "title": "Space Id",
+                "type": "string"
+              },
+              "tenant_id": {
+                "title": "Tenant Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "grant_id",
+              "source_id",
+              "connector_id",
+              "space_id",
+              "tenant_id",
+              "device_key_id",
+              "namespace",
+              "capture_mode",
+              "revoked_at",
+              "source_revoked_at",
+              "active"
+            ],
+            "title": "CaptureGrant",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/CaptureGrant"
+      },
+      "parameter_locations": {
+        "grant_id": "path"
+      },
+      "path": "/v1/capture-grants/{grant_id}",
+      "retry": "read",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Grant Status"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "write",
+      "group": "connectors",
+      "input_schema": {
+        "$defs": {
+          "CaptureEvent": {
+            "additionalProperties": false,
+            "properties": {
+              "event_id": {
+                "pattern": "^[a-f0-9]{64}$",
+                "title": "Event Id",
+                "type": "string"
+              },
+              "item": {
+                "$ref": "#/$defs/ConnectorItemInput"
+              },
+              "producer_scope": {
+                "pattern": "^conversation:[a-f0-9]{64}$",
+                "title": "Producer Scope",
+                "type": "string"
+              }
+            },
+            "required": [
+              "event_id",
+              "producer_scope",
+              "item"
+            ],
+            "title": "CaptureEvent",
+            "type": "object"
+          },
+          "CapturePageInput": {
+            "additionalProperties": false,
+            "properties": {
+              "events": {
+                "items": {
+                  "$ref": "#/$defs/CaptureEvent"
+                },
+                "maxItems": 50,
+                "minItems": 1,
+                "title": "Events",
+                "type": "array"
+              },
+              "page_id": {
+                "format": "uuid",
+                "title": "Page Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "page_id",
+              "events"
+            ],
+            "title": "CapturePageInput",
+            "type": "object"
+          },
+          "ConnectorItemInput": {
+            "additionalProperties": false,
+            "properties": {
+              "action": {
+                "default": "upsert",
+                "enum": [
+                  "upsert",
+                  "delete",
+                  "retain"
+                ],
+                "title": "Action",
+                "type": "string"
+              },
+              "external_id": {
+                "maxLength": 512,
+                "minLength": 1,
+                "pattern": "^[^\\x00-\\x1f]+$",
+                "title": "External Id",
+                "type": "string"
+              },
+              "memory": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/MemoryInput"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "revision": {
+                "maxLength": 512,
+                "minLength": 1,
+                "title": "Revision",
+                "type": "string"
+              }
+            },
+            "required": [
+              "external_id",
+              "revision"
+            ],
+            "title": "ConnectorItemInput",
+            "type": "object"
+          },
+          "MemoryInput": {
+            "additionalProperties": false,
+            "properties": {
+              "claim_status": {
+                "default": "observed",
+                "enum": [
+                  "observed",
+                  "verified",
+                  "contested",
+                  "superseded",
+                  "retracted"
+                ],
+                "title": "Claim Status",
+                "type": "string"
+              },
+              "content": {
+                "maxLength": 65536,
+                "minLength": 1,
+                "title": "Content",
+                "type": "string"
+              },
+              "kind": {
+                "default": "fact",
+                "enum": [
+                  "fact",
+                  "event",
+                  "preference",
+                  "procedure",
+                  "note"
+                ],
+                "title": "Kind",
+                "type": "string"
+              },
+              "metadata": {
+                "additionalProperties": true,
+                "title": "Metadata",
+                "type": "object"
+              },
+              "source": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/SourceInput"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "subject": {
+                "anyOf": [
+                  {
+                    "maxLength": 500,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Subject"
+              },
+              "valid_from": {
+                "anyOf": [
+                  {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Valid From"
+              },
+              "valid_to": {
+                "anyOf": [
+                  {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Valid To"
+              }
+            },
+            "required": [
+              "content"
+            ],
+            "title": "MemoryInput",
+            "type": "object"
+          },
+          "SourceInput": {
+            "additionalProperties": false,
+            "properties": {
+              "content": {
+                "anyOf": [
+                  {
+                    "maxLength": 1000000,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Original source text. If omitted, the saved memory itself is the evidence.",
+                "title": "Content"
+              },
+              "end": {
+                "anyOf": [
+                  {
+                    "minimum": 0.0,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Exclusive Unicode character offset; omitted means the end of source content.",
+                "title": "End"
+              },
+              "media_type": {
+                "default": "text/plain",
+                "description": "Format of the source text.",
+                "enum": [
+                  "text/plain",
+                  "text/markdown"
+                ],
+                "title": "Media Type",
+                "type": "string"
+              },
+              "start": {
+                "default": 0,
+                "description": "Inclusive Unicode character offset of the cited span in source content.",
+                "minimum": 0.0,
+                "title": "Start",
+                "type": "integer"
+              },
+              "title": {
+                "default": "Captured evidence",
+                "description": "Human-readable title of the cited evidence.",
+                "maxLength": 300,
+                "minLength": 1,
+                "title": "Title",
+                "type": "string"
+              },
+              "uri": {
+                "anyOf": [
+                  {
+                    "maxLength": 4096,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Optional source location for citations; never include credentials in the URL.",
+                "title": "Uri"
+              }
+            },
+            "title": "SourceInput",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/CapturePageInput"
+          },
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "grant_id": {
+                "format": "uuid",
+                "title": "Grant Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "grant_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters",
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "POST",
+      "name": "capture.pages.accept",
+      "output_schema": {
+        "$defs": {
+          "CaptureEventReceipt": {
+            "additionalProperties": true,
+            "properties": {
+              "event_id": {
+                "title": "Event Id",
+                "type": "string"
+              },
+              "lineage_id": {
+                "title": "Lineage Id",
+                "type": "string"
+              },
+              "memory_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Memory Id"
+              },
+              "operation_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Operation Id"
+              },
+              "outcome": {
+                "enum": [
+                  "stored",
+                  "forgotten"
+                ],
+                "title": "Outcome",
+                "type": "string"
+              }
+            },
+            "required": [
+              "event_id",
+              "lineage_id",
+              "memory_id",
+              "operation_id",
+              "outcome"
+            ],
+            "title": "CaptureEventReceipt",
+            "type": "object"
+          },
+          "CapturePageReceipt": {
+            "additionalProperties": true,
+            "properties": {
+              "durable": {
+                "const": true,
+                "default": true,
+                "title": "Durable",
+                "type": "boolean"
+              },
+              "grant_id": {
+                "title": "Grant Id",
+                "type": "string"
+              },
+              "items": {
+                "items": {
+                  "$ref": "#/$defs/CaptureEventReceipt"
+                },
+                "title": "Items",
+                "type": "array"
+              },
+              "page_id": {
+                "title": "Page Id",
+                "type": "string"
+              },
+              "source_id": {
+                "title": "Source Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "page_id",
+              "grant_id",
+              "source_id",
+              "items"
+            ],
+            "title": "CapturePageReceipt",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/CapturePageReceipt"
+      },
+      "parameter_locations": {
+        "grant_id": "path"
+      },
+      "path": "/v1/capture-grants/{grant_id}/pages",
+      "retry": "inspect_before_retry",
+      "sensitive_input": true,
+      "sensitive_result": true,
+      "summary": "Accept Page"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "read",
+      "group": "connectors",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "grant_id": {
+                "format": "uuid",
+                "title": "Grant Id",
+                "type": "string"
+              },
+              "page_id": {
+                "format": "uuid",
+                "title": "Page Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "grant_id",
+              "page_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters"
+        ],
+        "type": "object"
+      },
+      "method": "GET",
+      "name": "capture.pages.receipt",
+      "output_schema": {
+        "$defs": {
+          "CaptureEventReceipt": {
+            "additionalProperties": true,
+            "properties": {
+              "event_id": {
+                "title": "Event Id",
+                "type": "string"
+              },
+              "lineage_id": {
+                "title": "Lineage Id",
+                "type": "string"
+              },
+              "memory_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Memory Id"
+              },
+              "operation_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Operation Id"
+              },
+              "outcome": {
+                "enum": [
+                  "stored",
+                  "forgotten"
+                ],
+                "title": "Outcome",
+                "type": "string"
+              }
+            },
+            "required": [
+              "event_id",
+              "lineage_id",
+              "memory_id",
+              "operation_id",
+              "outcome"
+            ],
+            "title": "CaptureEventReceipt",
+            "type": "object"
+          },
+          "CapturePageReceipt": {
+            "additionalProperties": true,
+            "properties": {
+              "durable": {
+                "const": true,
+                "default": true,
+                "title": "Durable",
+                "type": "boolean"
+              },
+              "grant_id": {
+                "title": "Grant Id",
+                "type": "string"
+              },
+              "items": {
+                "items": {
+                  "$ref": "#/$defs/CaptureEventReceipt"
+                },
+                "title": "Items",
+                "type": "array"
+              },
+              "page_id": {
+                "title": "Page Id",
+                "type": "string"
+              },
+              "source_id": {
+                "title": "Source Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "page_id",
+              "grant_id",
+              "source_id",
+              "items"
+            ],
+            "title": "CapturePageReceipt",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/CapturePageReceipt"
+      },
+      "parameter_locations": {
+        "grant_id": "path",
+        "page_id": "path"
+      },
+      "path": "/v1/capture-grants/{grant_id}/pages/{page_id}",
+      "retry": "read",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Page Receipt"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "write",
+      "group": "connectors",
+      "input_schema": {
+        "$defs": {
+          "CaptureSourceInput": {
+            "additionalProperties": false,
+            "properties": {
+              "capture_mode": {
+                "enum": [
+                  "messages",
+                  "complete"
+                ],
+                "title": "Capture Mode",
+                "type": "string"
+              },
+              "expected_version": {
+                "default": 0,
+                "minimum": 0.0,
+                "title": "Expected Version",
+                "type": "integer"
+              },
+              "keep_accepted": {
+                "const": true,
+                "title": "Keep Accepted",
+                "type": "boolean"
+              },
+              "members": {
+                "items": {
+                  "maxLength": 512,
+                  "minLength": 1,
+                  "pattern": "^[^\\x00-\\x1f]+$",
+                  "type": "string"
+                },
+                "maxItems": 128,
+                "title": "Members",
+                "type": "array"
+              },
+              "name": {
+                "maxLength": 200,
+                "minLength": 1,
+                "title": "Name",
+                "type": "string"
+              },
+              "namespace": {
+                "maxLength": 400,
+                "minLength": 1,
+                "title": "Namespace",
+                "type": "string"
+              }
+            },
+            "required": [
+              "namespace",
+              "name",
+              "members",
+              "capture_mode",
+              "keep_accepted"
+            ],
+            "title": "CaptureSourceInput",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/CaptureSourceInput"
+          },
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "connector_id": {
+                "format": "uuid",
+                "title": "Connector Id",
+                "type": "string"
+              },
+              "source_id": {
+                "format": "uuid",
+                "title": "Source Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "connector_id",
+              "source_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters",
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "PUT",
+      "name": "capture.source.configure",
+      "output_schema": {
+        "$defs": {
+          "CaptureSource": {
+            "additionalProperties": true,
+            "properties": {
+              "capture_mode": {
+                "enum": [
+                  "messages",
+                  "complete"
+                ],
+                "title": "Capture Mode",
+                "type": "string"
+              },
+              "connector_id": {
+                "title": "Connector Id",
+                "type": "string"
+              },
+              "has_capture_history": {
+                "default": false,
+                "title": "Has Capture History",
+                "type": "boolean"
+              },
+              "keep_accepted": {
+                "const": true,
+                "default": true,
+                "title": "Keep Accepted",
+                "type": "boolean"
+              },
+              "members": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Members",
+                "type": "array"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "namespace": {
+                "title": "Namespace",
+                "type": "string"
+              },
+              "revoked_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Revoked At"
+              },
+              "source_id": {
+                "title": "Source Id",
+                "type": "string"
+              },
+              "space_id": {
+                "title": "Space Id",
+                "type": "string"
+              },
+              "version": {
+                "title": "Version",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "version",
+              "source_id",
+              "connector_id",
+              "space_id",
+              "namespace",
+              "name",
+              "members",
+              "capture_mode",
+              "revoked_at"
+            ],
+            "title": "CaptureSource",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/CaptureSource"
+      },
+      "parameter_locations": {
+        "connector_id": "path",
+        "source_id": "path"
+      },
+      "path": "/v1/connectors/{connector_id}/capture-sources/{source_id}",
+      "retry": "inspect_before_retry",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Configure Source"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "write",
+      "group": "connectors",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "connector_id": {
+                "format": "uuid",
+                "title": "Connector Id",
+                "type": "string"
+              },
+              "source_id": {
+                "format": "uuid",
+                "title": "Source Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "connector_id",
+              "source_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters"
+        ],
+        "type": "object"
+      },
+      "method": "DELETE",
+      "name": "capture.source.revoke",
+      "output_schema": {
+        "$defs": {
+          "CaptureSource": {
+            "additionalProperties": true,
+            "properties": {
+              "capture_mode": {
+                "enum": [
+                  "messages",
+                  "complete"
+                ],
+                "title": "Capture Mode",
+                "type": "string"
+              },
+              "connector_id": {
+                "title": "Connector Id",
+                "type": "string"
+              },
+              "has_capture_history": {
+                "default": false,
+                "title": "Has Capture History",
+                "type": "boolean"
+              },
+              "keep_accepted": {
+                "const": true,
+                "default": true,
+                "title": "Keep Accepted",
+                "type": "boolean"
+              },
+              "members": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Members",
+                "type": "array"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "namespace": {
+                "title": "Namespace",
+                "type": "string"
+              },
+              "revoked_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Revoked At"
+              },
+              "source_id": {
+                "title": "Source Id",
+                "type": "string"
+              },
+              "space_id": {
+                "title": "Space Id",
+                "type": "string"
+              },
+              "version": {
+                "title": "Version",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "version",
+              "source_id",
+              "connector_id",
+              "space_id",
+              "namespace",
+              "name",
+              "members",
+              "capture_mode",
+              "revoked_at"
+            ],
+            "title": "CaptureSource",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/CaptureSource"
+      },
+      "parameter_locations": {
+        "connector_id": "path",
+        "source_id": "path"
+      },
+      "path": "/v1/connectors/{connector_id}/capture-sources/{source_id}",
+      "retry": "inspect_before_retry",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Revoke Source"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "read",
+      "group": "connectors",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "connector_id": {
+                "format": "uuid",
+                "title": "Connector Id",
+                "type": "string"
+              },
+              "source_id": {
+                "format": "uuid",
+                "title": "Source Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "connector_id",
+              "source_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters"
+        ],
+        "type": "object"
+      },
+      "method": "GET",
+      "name": "capture.source.status",
+      "output_schema": {
+        "$defs": {
+          "CaptureSource": {
+            "additionalProperties": true,
+            "properties": {
+              "capture_mode": {
+                "enum": [
+                  "messages",
+                  "complete"
+                ],
+                "title": "Capture Mode",
+                "type": "string"
+              },
+              "connector_id": {
+                "title": "Connector Id",
+                "type": "string"
+              },
+              "has_capture_history": {
+                "default": false,
+                "title": "Has Capture History",
+                "type": "boolean"
+              },
+              "keep_accepted": {
+                "const": true,
+                "default": true,
+                "title": "Keep Accepted",
+                "type": "boolean"
+              },
+              "members": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Members",
+                "type": "array"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "namespace": {
+                "title": "Namespace",
+                "type": "string"
+              },
+              "revoked_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Revoked At"
+              },
+              "source_id": {
+                "title": "Source Id",
+                "type": "string"
+              },
+              "space_id": {
+                "title": "Space Id",
+                "type": "string"
+              },
+              "version": {
+                "title": "Version",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "version",
+              "source_id",
+              "connector_id",
+              "space_id",
+              "namespace",
+              "name",
+              "members",
+              "capture_mode",
+              "revoked_at"
+            ],
+            "title": "CaptureSource",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/CaptureSource"
+      },
+      "parameter_locations": {
+        "connector_id": "path",
+        "source_id": "path"
+      },
+      "path": "/v1/connectors/{connector_id}/capture-sources/{source_id}",
+      "retry": "read",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Source Status"
+    },
+    {
       "authentication": "none",
       "download": false,
       "effect": "read",
@@ -8092,6 +9601,18 @@
                 "title": "Connector Partial Inventory",
                 "type": "boolean"
               },
+              "durable_capture": {
+                "anyOf": [
+                  {
+                    "const": "v1",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Durable Capture"
+              },
               "service_version": {
                 "anyOf": [
                   {
@@ -12497,6 +14018,43 @@
       "name": "knowledge.map",
       "output_schema": {
         "$defs": {
+          "CaptureForgetScope": {
+            "additionalProperties": true,
+            "properties": {
+              "includes_adjacent_messages": {
+                "const": true,
+                "default": true,
+                "title": "Includes Adjacent Messages",
+                "type": "boolean"
+              },
+              "includes_revisions_and_projections": {
+                "const": true,
+                "default": true,
+                "title": "Includes Revisions And Projections",
+                "type": "boolean"
+              },
+              "lineage_id": {
+                "title": "Lineage Id",
+                "type": "string"
+              },
+              "retained_memories": {
+                "title": "Retained Memories",
+                "type": "integer"
+              },
+              "scope": {
+                "const": "conversation_fragment",
+                "title": "Scope",
+                "type": "string"
+              }
+            },
+            "required": [
+              "scope",
+              "lineage_id",
+              "retained_memories"
+            ],
+            "title": "CaptureForgetScope",
+            "type": "object"
+          },
           "Edge": {
             "additionalProperties": true,
             "properties": {
@@ -12712,6 +14270,17 @@
                 ],
                 "description": "Current withdrawal permission for a fetched memory. Missing/null on older services or views without a permission observation; the write rechecks authorization.",
                 "title": "Can Forget"
+              },
+              "capture_forget": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/CaptureForgetScope"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "When present, forgetting withdraws every retained part, projection and revision of this captured fragment, which can include adjacent messages. The count is an observation; the write rechecks the current family atomically. This is not cross-generation semantic forgetting."
               },
               "claim_status": {
                 "enum": [
@@ -15333,6 +16902,43 @@
       "name": "memories.forget",
       "output_schema": {
         "$defs": {
+          "CaptureForgetScope": {
+            "additionalProperties": true,
+            "properties": {
+              "includes_adjacent_messages": {
+                "const": true,
+                "default": true,
+                "title": "Includes Adjacent Messages",
+                "type": "boolean"
+              },
+              "includes_revisions_and_projections": {
+                "const": true,
+                "default": true,
+                "title": "Includes Revisions And Projections",
+                "type": "boolean"
+              },
+              "lineage_id": {
+                "title": "Lineage Id",
+                "type": "string"
+              },
+              "retained_memories": {
+                "title": "Retained Memories",
+                "type": "integer"
+              },
+              "scope": {
+                "const": "conversation_fragment",
+                "title": "Scope",
+                "type": "string"
+              }
+            },
+            "required": [
+              "scope",
+              "lineage_id",
+              "retained_memories"
+            ],
+            "title": "CaptureForgetScope",
+            "type": "object"
+          },
           "JournalDelivery": {
             "additionalProperties": true,
             "properties": {
@@ -15386,6 +16992,16 @@
           "Receipt": {
             "additionalProperties": true,
             "properties": {
+              "capture_forget": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/CaptureForgetScope"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "deleted": {
                 "default": false,
                 "title": "Deleted",
@@ -15488,7 +17104,7 @@
       "retry": "idempotency_key",
       "sensitive_input": false,
       "sensitive_result": false,
-      "summary": "Forget"
+      "summary": "Forget a memory; inspect capture_forget before deleting an entire captured fragment"
     },
     {
       "authentication": "bearer",
@@ -15539,6 +17155,43 @@
       "name": "memories.get",
       "output_schema": {
         "$defs": {
+          "CaptureForgetScope": {
+            "additionalProperties": true,
+            "properties": {
+              "includes_adjacent_messages": {
+                "const": true,
+                "default": true,
+                "title": "Includes Adjacent Messages",
+                "type": "boolean"
+              },
+              "includes_revisions_and_projections": {
+                "const": true,
+                "default": true,
+                "title": "Includes Revisions And Projections",
+                "type": "boolean"
+              },
+              "lineage_id": {
+                "title": "Lineage Id",
+                "type": "string"
+              },
+              "retained_memories": {
+                "title": "Retained Memories",
+                "type": "integer"
+              },
+              "scope": {
+                "const": "conversation_fragment",
+                "title": "Scope",
+                "type": "string"
+              }
+            },
+            "required": [
+              "scope",
+              "lineage_id",
+              "retained_memories"
+            ],
+            "title": "CaptureForgetScope",
+            "type": "object"
+          },
           "Evidence": {
             "additionalProperties": true,
             "properties": {
@@ -15624,6 +17277,17 @@
                 ],
                 "description": "Current withdrawal permission for a fetched memory. Missing/null on older services or views without a permission observation; the write rechecks authorization.",
                 "title": "Can Forget"
+              },
+              "capture_forget": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/CaptureForgetScope"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "When present, forgetting withdraws every retained part, projection and revision of this captured fragment, which can include adjacent messages. The count is an observation; the write rechecks the current family atomically. This is not cross-generation semantic forgetting."
               },
               "claim_status": {
                 "enum": [
@@ -15812,6 +17476,43 @@
       "name": "memories.history",
       "output_schema": {
         "$defs": {
+          "CaptureForgetScope": {
+            "additionalProperties": true,
+            "properties": {
+              "includes_adjacent_messages": {
+                "const": true,
+                "default": true,
+                "title": "Includes Adjacent Messages",
+                "type": "boolean"
+              },
+              "includes_revisions_and_projections": {
+                "const": true,
+                "default": true,
+                "title": "Includes Revisions And Projections",
+                "type": "boolean"
+              },
+              "lineage_id": {
+                "title": "Lineage Id",
+                "type": "string"
+              },
+              "retained_memories": {
+                "title": "Retained Memories",
+                "type": "integer"
+              },
+              "scope": {
+                "const": "conversation_fragment",
+                "title": "Scope",
+                "type": "string"
+              }
+            },
+            "required": [
+              "scope",
+              "lineage_id",
+              "retained_memories"
+            ],
+            "title": "CaptureForgetScope",
+            "type": "object"
+          },
           "Evidence": {
             "additionalProperties": true,
             "properties": {
@@ -15897,6 +17598,17 @@
                 ],
                 "description": "Current withdrawal permission for a fetched memory. Missing/null on older services or views without a permission observation; the write rechecks authorization.",
                 "title": "Can Forget"
+              },
+              "capture_forget": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/CaptureForgetScope"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "When present, forgetting withdraws every retained part, projection and revision of this captured fragment, which can include adjacent messages. The count is an observation; the write rechecks the current family atomically. This is not cross-generation semantic forgetting."
               },
               "claim_status": {
                 "enum": [
@@ -16120,6 +17832,43 @@
       "name": "memories.list",
       "output_schema": {
         "$defs": {
+          "CaptureForgetScope": {
+            "additionalProperties": true,
+            "properties": {
+              "includes_adjacent_messages": {
+                "const": true,
+                "default": true,
+                "title": "Includes Adjacent Messages",
+                "type": "boolean"
+              },
+              "includes_revisions_and_projections": {
+                "const": true,
+                "default": true,
+                "title": "Includes Revisions And Projections",
+                "type": "boolean"
+              },
+              "lineage_id": {
+                "title": "Lineage Id",
+                "type": "string"
+              },
+              "retained_memories": {
+                "title": "Retained Memories",
+                "type": "integer"
+              },
+              "scope": {
+                "const": "conversation_fragment",
+                "title": "Scope",
+                "type": "string"
+              }
+            },
+            "required": [
+              "scope",
+              "lineage_id",
+              "retained_memories"
+            ],
+            "title": "CaptureForgetScope",
+            "type": "object"
+          },
           "Evidence": {
             "additionalProperties": true,
             "properties": {
@@ -16205,6 +17954,17 @@
                 ],
                 "description": "Current withdrawal permission for a fetched memory. Missing/null on older services or views without a permission observation; the write rechecks authorization.",
                 "title": "Can Forget"
+              },
+              "capture_forget": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/CaptureForgetScope"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "When present, forgetting withdraws every retained part, projection and revision of this captured fragment, which can include adjacent messages. The count is an observation; the write rechecks the current family atomically. This is not cross-generation semantic forgetting."
               },
               "claim_status": {
                 "enum": [
@@ -16430,6 +18190,43 @@
       "name": "memories.resolve",
       "output_schema": {
         "$defs": {
+          "CaptureForgetScope": {
+            "additionalProperties": true,
+            "properties": {
+              "includes_adjacent_messages": {
+                "const": true,
+                "default": true,
+                "title": "Includes Adjacent Messages",
+                "type": "boolean"
+              },
+              "includes_revisions_and_projections": {
+                "const": true,
+                "default": true,
+                "title": "Includes Revisions And Projections",
+                "type": "boolean"
+              },
+              "lineage_id": {
+                "title": "Lineage Id",
+                "type": "string"
+              },
+              "retained_memories": {
+                "title": "Retained Memories",
+                "type": "integer"
+              },
+              "scope": {
+                "const": "conversation_fragment",
+                "title": "Scope",
+                "type": "string"
+              }
+            },
+            "required": [
+              "scope",
+              "lineage_id",
+              "retained_memories"
+            ],
+            "title": "CaptureForgetScope",
+            "type": "object"
+          },
           "Evidence": {
             "additionalProperties": true,
             "properties": {
@@ -16515,6 +18312,17 @@
                 ],
                 "description": "Current withdrawal permission for a fetched memory. Missing/null on older services or views without a permission observation; the write rechecks authorization.",
                 "title": "Can Forget"
+              },
+              "capture_forget": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/CaptureForgetScope"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "When present, forgetting withdraws every retained part, projection and revision of this captured fragment, which can include adjacent messages. The count is an observation; the write rechecks the current family atomically. This is not cross-generation semantic forgetting."
               },
               "claim_status": {
                 "enum": [
@@ -16996,6 +18804,43 @@
       "name": "memories.revise",
       "output_schema": {
         "$defs": {
+          "CaptureForgetScope": {
+            "additionalProperties": true,
+            "properties": {
+              "includes_adjacent_messages": {
+                "const": true,
+                "default": true,
+                "title": "Includes Adjacent Messages",
+                "type": "boolean"
+              },
+              "includes_revisions_and_projections": {
+                "const": true,
+                "default": true,
+                "title": "Includes Revisions And Projections",
+                "type": "boolean"
+              },
+              "lineage_id": {
+                "title": "Lineage Id",
+                "type": "string"
+              },
+              "retained_memories": {
+                "title": "Retained Memories",
+                "type": "integer"
+              },
+              "scope": {
+                "const": "conversation_fragment",
+                "title": "Scope",
+                "type": "string"
+              }
+            },
+            "required": [
+              "scope",
+              "lineage_id",
+              "retained_memories"
+            ],
+            "title": "CaptureForgetScope",
+            "type": "object"
+          },
           "JournalDelivery": {
             "additionalProperties": true,
             "properties": {
@@ -17049,6 +18894,16 @@
           "Receipt": {
             "additionalProperties": true,
             "properties": {
+              "capture_forget": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/CaptureForgetScope"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "deleted": {
                 "default": false,
                 "title": "Deleted",
@@ -17360,6 +19215,43 @@
       "name": "memories.save",
       "output_schema": {
         "$defs": {
+          "CaptureForgetScope": {
+            "additionalProperties": true,
+            "properties": {
+              "includes_adjacent_messages": {
+                "const": true,
+                "default": true,
+                "title": "Includes Adjacent Messages",
+                "type": "boolean"
+              },
+              "includes_revisions_and_projections": {
+                "const": true,
+                "default": true,
+                "title": "Includes Revisions And Projections",
+                "type": "boolean"
+              },
+              "lineage_id": {
+                "title": "Lineage Id",
+                "type": "string"
+              },
+              "retained_memories": {
+                "title": "Retained Memories",
+                "type": "integer"
+              },
+              "scope": {
+                "const": "conversation_fragment",
+                "title": "Scope",
+                "type": "string"
+              }
+            },
+            "required": [
+              "scope",
+              "lineage_id",
+              "retained_memories"
+            ],
+            "title": "CaptureForgetScope",
+            "type": "object"
+          },
           "JournalDelivery": {
             "additionalProperties": true,
             "properties": {
@@ -17413,6 +19305,16 @@
           "Receipt": {
             "additionalProperties": true,
             "properties": {
+              "capture_forget": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/CaptureForgetScope"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "deleted": {
                 "default": false,
                 "title": "Deleted",

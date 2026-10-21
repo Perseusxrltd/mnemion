@@ -1,17 +1,83 @@
 /** One bounded source scan at a time, independent of the selected workspace. */
-import { randomUUID } from 'node:crypto'
+import { randomBytes, randomUUID } from 'node:crypto'
 import type { CredentialCipher } from './workspace-store.js'
-import type { DesktopSource, DesktopSourceView, SourceActivity, SourceConfigure, SourceControl, SourceReport } from '../shared/desktop-sources.js'
+import { sourceMessages } from './desktop-source-process.js'
+import type { DesktopSource, DesktopSourceView, SourceActivity, SourceConfigure, SourceControl, SourceReason, SourceReport } from '../shared/desktop-sources.js'
 
-type SavedSource = DesktopSource & { sealed_key: string; sealed_provider?: string }
+type SavedSource = DesktopSource & { sealed_key: string; sealed_provider?: string; sealed_inbox_key?: string; status_epoch?: string }
 type Document = { format: 1; revision: string; sources: SavedSource[] }
 export type SourceCall = (request: Record<string, unknown>, signal?: AbortSignal,
   resources?: (bytes: number) => void) => Promise<Record<string, unknown>>
-type Options = { call: SourceCall; cipher: CredentialCipher; changed?: () => void; now?: () => number }
+type Options = { call: SourceCall; cipher: CredentialCipher; changed?: () => void; now?: () => number;
+  retirementCredential?: (source: DesktopSource, supplied: string) => Promise<string> }
 const UUID = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/
+const messages: Partial<Record<SourceReason, string>> = { ...sourceMessages,
+  history_reset: 'Scan history was reset after preserving its damaged record. Earlier outcomes are unknown; source settings and memories were retained.',
+  partial: 'The scan was partial. Earlier good memories are retained; check Source status.',
+  interrupted: 'An earlier scan did not record its outcome before Studio restarted. Completion and coverage are unknown; its next run will reconcile saved progress.',
+  storage_locked: 'Unlock OS credential storage to resume this source.',
+  source_credentials_unavailable: 'The source credential could not be unlocked. Check OS credential storage before retrying.',
+}
+const time = (value: unknown): value is string => typeof value === 'string' &&
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|\+00:00)$/.test(value) && Number.isFinite(Date.parse(value))
+const reason = (value: unknown): value is SourceReason => typeof value === 'string' &&
+  !value.startsWith('agent_') && Object.hasOwn(messages, value)
+const object = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value)
+
+function readReport(value: unknown): SourceReport {
+  if (!object(value) || Object.keys(value).some(key => !['completed', 'timestamp', 'duration_seconds',
+    'changed', 'removed', 'unchanged', 'conflicts', 'remote_sync_available', 'capture'].includes(key)) ||
+    typeof value.completed !== 'boolean' || !time(value.timestamp) || typeof value.remote_sync_available !== 'boolean' ||
+    typeof value.duration_seconds !== 'number' || !Number.isFinite(value.duration_seconds) || value.duration_seconds < 0 || value.duration_seconds > 86400 ||
+    ['changed', 'removed', 'unchanged', 'conflicts'].some(key => !Number.isSafeInteger(value[key]) || (value[key] as number) < 0 || (value[key] as number) > 1e12)) {
+    throw Object.assign(new Error(messages.source_invalid_response), { code: 'source_invalid_response' })
+  }
+  if (value.capture !== undefined) {
+    const capture = value.capture
+    const counts = ['locally_accepted', 'pending_events', 'pending_bytes', 'remote_committed_events',
+      'stored_events', 'forgotten_events', 'unknown_pages', 'database_bytes', 'device_pending_bytes', 'device_database_bytes']
+    if (!object(capture) || Object.keys(capture).some(key => ![...counts, 'over_limit', 'capture_complete', 'delivery_complete', 'reason_code'].includes(key)) ||
+      counts.some(key => !Number.isSafeInteger(capture[key]) || (capture[key] as number) < 0 || (capture[key] as number) > 1e12) ||
+      ['over_limit', 'capture_complete', 'delivery_complete'].some(key => typeof capture[key] !== 'boolean') ||
+      (capture.reason_code != null && !reason(capture.reason_code)) ||
+      (value.completed && (!capture.capture_complete || !capture.delivery_complete)) ||
+      (capture.delivery_complete && capture.pending_events !== 0)) {
+      throw Object.assign(new Error(messages.source_invalid_response), { code: 'source_invalid_response' })
+    }
+  }
+  return value as SourceReport
+}
+
+function readActivity(value: unknown): SourceActivity {
+  if (!object(value) || Object.keys(value).some(key => !['phase', 'durability', 'started_at', 'finished_at', 'next_scan_at',
+    'reason_code', 'report', 'last_success_report', 'last_failure', 'repair_token'].includes(key))) throw new Error('Invalid saved source observation')
+  if (value.durability === 'unavailable' && value.phase === 'attention' && value.reason_code === 'source_status_invalid') {
+    if (Object.keys(value).some(key => !['phase', 'durability', 'reason_code', 'repair_token'].includes(key)) ||
+      (value.repair_token !== undefined && (typeof value.repair_token !== 'string' || !/^[a-f0-9]{64}$/.test(value.repair_token)))) throw new Error('Invalid scan repair observation')
+    return { ...value, message: messages.source_status_invalid } as SourceActivity
+  }
+  if (!['waiting', 'scanning', 'complete', 'attention'].includes(String(value.phase)) || value.durability !== 'saved' || value.repair_token !== undefined ||
+    (value.phase !== 'waiting' && !time(value.started_at)) ||
+    ['finished_at', 'next_scan_at'].some(key => value[key] !== undefined && !time(value[key])) ||
+    (value.reason_code !== undefined && !reason(value.reason_code))) throw new Error('Invalid saved source observation')
+  if (value.phase === 'waiting' && (value.reason_code !== 'history_reset' || !time(value.next_scan_at) ||
+    ['started_at', 'finished_at', 'report', 'last_success_report', 'last_failure'].some(key => value[key] !== undefined))) throw new Error('Invalid history reset observation')
+  if (value.report !== undefined) readReport(value.report)
+  if (value.last_success_report !== undefined && !readReport(value.last_success_report).completed) throw new Error('Invalid successful observation')
+  if (value.last_failure !== undefined && (!object(value.last_failure) || Object.keys(value.last_failure).some(key => !['observed_at', 'reason_code'].includes(key)) ||
+    !time(value.last_failure.observed_at) || !reason(value.last_failure.reason_code))) throw new Error('Invalid failed observation')
+  if (value.phase === 'complete' && (!value.report || !(value.report as SourceReport).completed || !time(value.finished_at) || !time(value.next_scan_at) || value.reason_code !== undefined)) throw new Error('Unconfirmed source completion')
+  if (value.phase === 'attention' && value.reason_code === undefined) throw new Error('Missing source failure reason')
+  return { ...value, ...(reason(value.reason_code) ? { message: messages[value.reason_code] } : {}) } as SourceActivity
+}
+
+function failureReason(error: unknown): SourceReason {
+  const code = object(error) ? error.code : undefined
+  return reason(code) && code !== 'history_reset' && !code.startsWith('source_status_') ? code : 'source_unavailable'
+}
 
 function publicSource(source: SavedSource): DesktopSource {
-  const { sealed_key: _private, sealed_provider: _providerPrivate, ...value } = source
+  const { sealed_key: _private, sealed_provider: _providerPrivate, sealed_inbox_key: _inboxPrivate, status_epoch: _statusPrivate, ...value } = source
   return value
 }
 
@@ -28,6 +94,7 @@ export class DesktopSources {
   private pending = new Set<string>()
   private next = new Map<string, number>()
   private activities = new Map<string, SourceActivity>()
+  private readonly owner = randomUUID()
   private rss = 0
   constructor(private readonly options: Options) {}
   get busy(): boolean { return this.controlling || !!this.active || !!this.loading }
@@ -35,12 +102,41 @@ export class DesktopSources {
   private now(): number { return this.options.now?.() ?? Date.now() }
   private changed() { this.options.changed?.() }
 
+  private unconfirmed(id: string, error: unknown, observed?: SourceActivity): void {
+    const code = object(error) && error.code === 'source_status_invalid' ? 'source_status_invalid' : 'source_status_unavailable'
+    this.activities.set(id, { ...(observed ?? this.activities.get(id)), phase: 'attention',
+      durability: 'unavailable', reason_code: code, message: messages[code] })
+  }
+
+  private remember(id: string, activity: SourceActivity) {
+    this.activities.set(id, activity)
+    if (activity.next_scan_at) this.next.set(id, Date.parse(activity.next_scan_at))
+    else this.next.delete(id)
+  }
+
+  private async observations(document: Document): Promise<void> {
+    try {
+      const result = await this.options.call({ operation: 'status', owner: this.owner, expected_revision: document.revision })
+      if (result.format !== 1 || !Array.isArray(result.sources) || result.sources.length > 16) throw new Error('Invalid source observations')
+      const items = new Map<string, SourceActivity>()
+      for (const entry of result.sources) {
+        if (!object(entry) || Object.keys(entry).some(key => !['id', 'activity'].includes(key)) ||
+          typeof entry.id !== 'string' || !document.sources.some(source => source.id === entry.id) || items.has(entry.id)) throw new Error('Invalid source observation identity')
+        items.set(entry.id, readActivity(entry.activity))
+      }
+      for (const source of document.sources) this.remember(source.id, items.get(source.id) ?? { phase: 'waiting', durability: 'unknown' })
+    } catch (error) {
+      for (const source of document.sources) this.unconfirmed(source.id, error)
+    }
+  }
+
   private async ensure(): Promise<void> {
-    if (this.document) return
+    if (this.document && !this.loading) return
     if (!this.loading) this.loading = (async () => {
       const result = await this.options.call({ operation: 'load' })
       if (result.format !== 1 || typeof result.revision !== 'string' || !Array.isArray(result.sources) || result.sources.length > 16) throw new Error('Saved source settings could not be read. The existing file has been retained.')
       // The native helper validates every field before returning its private file.
+      await this.observations(result as Document)
       this.document = result as Document
     })().finally(() => { this.loading = undefined })
     return this.loading
@@ -48,12 +144,14 @@ export class DesktopSources {
 
   async status(): Promise<DesktopSourceView> {
     await this.ensure()
+    if (!this.busy && this.document!.sources.some(source => this.activities.get(source.id)?.reason_code === 'source_status_invalid' &&
+      !this.activities.get(source.id)?.repair_token)) await this.observations(this.document!)
     return { revision: this.document!.revision, secure_storage: await this.options.cipher.available(),
       running: !!this.timer && !this.suspended && !this.closed, memory_bytes: this.rss,
       sources: this.document!.sources.map(source => ({ ...publicSource(source), activity: source.enabled ? {
-        ...(this.activities.get(source.id) ?? { phase: 'waiting' }),
+        ...(this.activities.get(source.id) ?? { phase: 'waiting', durability: 'unknown' }),
         ...(this.next.has(source.id) ? { next_scan_at: new Date(this.next.get(source.id)!).toISOString() } : {}),
-      } : { phase: 'paused', report: this.activities.get(source.id)?.report } })) }
+      } : { ...(this.activities.get(source.id) ?? { durability: 'unknown' }), phase: 'paused' } })) }
   }
 
   async start(): Promise<void> {
@@ -64,14 +162,14 @@ export class DesktopSources {
     void this.tick()
   }
 
-  private async mutate<T>(expected: string, work: () => Promise<T>): Promise<T> {
+  private async mutate<T>(expected: string, work: () => Promise<T>, schedule = true): Promise<T> {
     await this.ensure()
     if (this.closed || this.suspended || this.controlling) throw new Error('Source controls are busy. Wait for the current operation or app update to finish.')
     if (expected !== this.document!.revision) throw new Error('Source settings changed. Refresh before retrying.')
     this.controlling = true
     const pending = work()
     this.controlWork = pending
-    try { return await pending } finally { this.controlWork = undefined; this.controlling = false; this.changed(); void this.tick() }
+    try { return await pending } finally { this.controlWork = undefined; this.controlling = false; this.changed(); if (schedule) void this.tick() }
   }
 
   private async save(sources: SavedSource[]) {
@@ -98,6 +196,9 @@ export class DesktopSources {
       if (!before && this.document!.sources.length >= 16) throw new Error('This app can host up to 16 sources. Pause or remove an unused source first.')
       if (this.active?.id === id) throw new Error('Pause this source before changing its settings.')
       const source = { ...input.source, id }
+      if (before && !!before.custody !== !!source.custody) throw new Error('Changing an existing source’s retention policy needs a reviewed migration. Its current policy is retained.')
+      if (before?.custody && (['source_id', 'grant_id', 'keep_accepted'] as const).some(key => before.custody![key] !== source.custody?.[key])) throw new Error('Retain the existing source and device capture authorization.')
+      if (before?.custody && ((before.capture_mode ?? 'complete') !== (source.capture_mode ?? 'complete') || input.credential !== undefined)) throw new Error('Drain and migrate this inbox before changing its capture selection or dedicated key.')
       if (before && ['endpoint', 'tenant_id', 'connector_id', 'principal_id', 'provider', 'path'].some(key => source[key as keyof DesktopSource] !== before[key as keyof DesktopSource])) throw new Error('Use a new connection for a different source folder or workspace.')
       if (before?.slack?.team_id !== undefined && before.slack.team_id !== source.slack?.team_id) throw new Error('Use a new connection for a different Slack workspace.')
       if (this.document!.sources.some(item => item.id !== id && item.endpoint === source.endpoint && item.connector_id === source.connector_id)) throw new Error('This connection already runs on this computer.')
@@ -112,20 +213,40 @@ export class DesktopSources {
       if (before && (before.scope_id !== undefined || before.provider === 'conversations') && (before.scope_id ?? 'selected-source') !== (verified.scope_id ?? 'selected-source')) throw new Error('The existing folder identity changed. Retain its original connection settings before scanning.')
       const sealed_key = (await this.options.cipher.encrypt(credential)).toString('base64')
       const sealed_provider = cloud ? (await this.options.cipher.encrypt(provider!)).toString('base64') : undefined
+      const sealed_inbox_key = source.custody ? before?.sealed_inbox_key ??
+        (await this.options.cipher.encrypt(randomBytes(32).toString('base64'))).toString('base64') : undefined
       signal?.throwIfAborted()
       await this.save([...this.document!.sources.filter(item => item.id !== id), { ...verified, sealed_key,
-        ...(sealed_provider ? { sealed_provider } : {}) }])
+        ...(sealed_provider ? { sealed_provider } : {}), ...(sealed_inbox_key ? { sealed_inbox_key } : {}) }])
+      this.activities.set(id, { phase: 'waiting', durability: 'unknown' })
       this.next.set(id, this.now())
     })
     if (this.startRequested && !this.timer) await this.start()
     return this.status()
   }
 
-  async control(action: 'pause' | 'sync' | 'remove', input: SourceControl): Promise<DesktopSourceView> {
-    if (!input || !UUID.test(input.id) || Object.keys(input).some(k => !['expected_revision', 'id', 'enabled', 'confirm'].includes(k))) throw new Error('Choose a source from current desktop status.')
+  async control(action: 'pause' | 'sync' | 'remove' | 'repair', input: SourceControl): Promise<DesktopSourceView> {
+    const fields = action === 'repair' ? ['expected_revision', 'id', 'confirm', 'repair_token'] : ['expected_revision', 'id', 'enabled', 'confirm', ...(action === 'remove' ? ['discard_local_inbox', 'retirement_credential'] : [])]
+    if (!input || !UUID.test(input.id) || Object.keys(input).some(k => !fields.includes(k))) throw new Error('Choose a source from current desktop status.')
     await this.mutate(input.expected_revision, async () => {
       const source = this.document!.sources.find(item => item.id === input.id)
       if (!source) throw new Error('This source is no longer configured on this computer.')
+      if (action === 'repair') {
+        if (this.active) throw new Error('Wait for the active source scan to finish or pause it before repairing device scan history.')
+        if (input.confirm !== true || typeof input.repair_token !== 'string' || !/^[a-f0-9]{64}$/.test(input.repair_token)) throw new Error('Read source status and confirm repair of scan history for every source on this computer.')
+        // Do not turn history repair (including a lost reply) into an immediate
+        // scan. The saved repair record also defers normal work until next poll.
+        for (const item of this.document!.sources) {
+          this.next.set(item.id, Math.max(this.next.get(item.id) ?? 0, this.now() + item.poll_seconds * 1000))
+          this.pending.delete(item.id)
+        }
+        try {
+          const result = await this.options.call({ operation: 'status_repair', owner: this.owner,
+            expected_revision: input.expected_revision, id: input.id, repair_token: input.repair_token, confirm: true })
+          if (result.format !== 1 || result.repaired !== true || result.history_restored !== false || result.original_preserved !== true) throw new Error('Repair could not be confirmed. Read source status before retrying.')
+        } finally { await this.observations(this.document!) }
+        return
+      }
       if (action === 'sync') {
         if (!source.enabled) throw new Error('Resume this source before requesting a scan.')
         this.pending.add(source.id)
@@ -133,6 +254,23 @@ export class DesktopSources {
       }
       if (action === 'pause' && typeof input.enabled !== 'boolean') throw new Error('Choose whether to run this source.')
       if (action === 'remove' && input.confirm !== true) throw new Error('Confirm removal of this computer’s source settings. Existing memories are retained.')
+      if (input.retirement_credential !== undefined && (!source.custody || typeof input.retirement_credential !== 'string' || !/^[A-Za-z0-9_.~+/=-]{16,1024}$/.test(input.retirement_credential))) throw new Error('Use a current workspace administrator credential only for retained inbox removal.')
+      if (action === 'remove' && source.custody) {
+        if (source.enabled || this.active?.id === source.id) throw new Error('Pause this source before removing its retained inbox.')
+        if (input.discard_local_inbox !== true) throw new Error('Confirm discarding every locally pending memory. Server memories are retained; this device’s capture grant will be revoked.')
+        let credential: string | null = null
+        if (input.retirement_credential !== undefined) {
+          credential = this.options.retirementCredential ? await this.options.retirementCredential(publicSource(source), input.retirement_credential) : input.retirement_credential
+        } else {
+          // Confirmed retirement can resume local cleanup without a surviving
+          // key. The native helper refuses first-time removal without current
+          // server authority; an unavailable key never grants offline consent.
+          try { if (await this.options.cipher.available()) credential = await this.options.cipher.decrypt(Buffer.from(source.sealed_key, 'base64')) } catch { /* The helper returns a bounded recovery instruction. */ }
+        }
+        const retired = await this.options.call({ operation: 'capture_retire', id: source.id,
+          expected_revision: this.document!.revision, credential, discard_local_inbox: true })
+        if (retired.retired !== true || retired.remote_grant_revoked !== true || retired.local_inbox_discarded !== true) throw new Error('Removal is unconfirmed. Read source status before retrying.')
+      }
       const next = action === 'remove' ? this.document!.sources.filter(item => item.id !== input.id) :
         this.document!.sources.map(item => item.id === input.id ? { ...item, enabled: input.enabled! } : item)
       // Persist a pause before stopping work. A failed settings save must not
@@ -143,7 +281,7 @@ export class DesktopSources {
         if (this.active?.id === input.id) { this.active.abort.abort(); await this.active.work }
       } else this.next.set(input.id, this.now())
       if (action === 'remove') { this.activities.delete(input.id); this.next.delete(input.id) }
-    })
+    }, action !== 'repair')
     return this.status()
   }
 
@@ -156,27 +294,63 @@ export class DesktopSources {
     if (!source) return
     this.pending.delete(source.id)
     const abort = new AbortController()
+    const run = randomUUID()
     const activity = { id: source.id, abort, work: Promise.resolve() }
     this.active = activity
-    this.activities.set(source.id, { phase: 'scanning', report: this.activities.get(source.id)?.report })
     this.changed()
     activity.work = (async () => {
+      let began = false
+      let observation: SourceActivity | undefined
       try {
-        if (!await this.options.cipher.available()) throw new Error('Unlock OS credential storage to resume this source.')
-        const credential = await this.options.cipher.decrypt(Buffer.from(source.sealed_key, 'base64'))
-        const provider = source.sealed_provider ? await this.options.cipher.decrypt(Buffer.from(source.sealed_provider, 'base64')) : undefined
+        const opened = await this.options.call({ operation: 'status_begin', owner: this.owner, run,
+          id: source.id, expected_revision: this.document!.revision })
+        if (opened.format !== 1 || opened.id !== source.id) throw new Error('Unconfirmed scan start')
+        const started = readActivity(opened.activity)
+        if (started.phase !== 'scanning') throw new Error('Unconfirmed scan start')
+        this.remember(source.id, started)
+        began = true
+        this.changed()
+        if (!await this.options.cipher.available()) throw Object.assign(new Error(messages.storage_locked), { code: 'storage_locked' })
+        let credential: string, provider: string | undefined, inboxKey: string | undefined
+        try {
+          credential = await this.options.cipher.decrypt(Buffer.from(source.sealed_key, 'base64'))
+          provider = source.sealed_provider ? await this.options.cipher.decrypt(Buffer.from(source.sealed_provider, 'base64')) : undefined
+        } catch { throw Object.assign(new Error(messages.source_credentials_unavailable), { code: 'source_credentials_unavailable' }) }
+        if (source.custody) {
+          try {
+            if (!source.sealed_inbox_key) throw new Error('Missing inbox key')
+            inboxKey = await this.options.cipher.decrypt(Buffer.from(source.sealed_inbox_key, 'base64'))
+          } catch { throw Object.assign(new Error(messages.capture_key_unavailable), { code: 'capture_key_unavailable' }) }
+        }
         abort.signal.throwIfAborted()
-        const report = await this.options.call({ operation: 'scan', source: publicSource(source), credential,
-          ...(provider ? { provider_credential: provider } : {}) }, abort.signal,
-          bytes => { this.rss = bytes }) as SourceReport
-        this.activities.set(source.id, { phase: report.completed ? 'complete' : 'attention', report,
-          ...(report.completed ? {} : { message: 'The scan was partial. Earlier good memories are retained; check Source status.' }) })
+        const report = readReport(await this.options.call({ operation: 'scan', source: publicSource(source), credential,
+          ...(provider ? { provider_credential: provider } : {}), ...(inboxKey ? { inbox_key: inboxKey } : {}) }, abort.signal,
+          bytes => { this.rss = bytes }))
+        observation = { ...this.activities.get(source.id), phase: report.completed ? 'complete' : 'attention', report,
+          ...(report.completed ? {} : { reason_code: 'partial', message: messages.partial }) }
+        const completed = await this.options.call({ operation: 'status_finish', owner: this.owner, id: source.id, run, report })
+        if (completed.ignored === true && !this.document?.sources.some(item => item.id === source.id)) return
+        if (completed.format !== 1 || completed.id !== source.id) throw new Error('Unconfirmed scan outcome')
+        const finished = readActivity(completed.activity)
+        if (finished.phase === 'scanning') throw new Error('Unconfirmed scan outcome')
+        this.remember(source.id, finished)
       } catch (error) {
-        this.activities.set(source.id, { phase: 'attention', report: this.activities.get(source.id)?.report,
-          message: abort.signal.aborted ? 'The scan stopped. Its next run will reconcile saved progress.' :
-            error instanceof Error ? error.message : 'The source could not be scanned. Check its folder, key and connection.' })
+        if (!began || observation) this.unconfirmed(source.id, error, observation)
+        else {
+          const code = abort.signal.aborted ? 'source_cancelled' : failureReason(error)
+          observation = { ...this.activities.get(source.id), phase: 'attention', reason_code: code, message: messages[code],
+            last_failure: { observed_at: new Date(this.now()).toISOString(), reason_code: code } }
+          try {
+            const failed = await this.options.call({ operation: 'status_finish', owner: this.owner, id: source.id, run, reason_code: code })
+            if (failed.ignored === true && !this.document?.sources.some(item => item.id === source.id)) return
+            if (failed.format !== 1 || failed.id !== source.id) throw new Error('Unconfirmed scan failure')
+            const finished = readActivity(failed.activity)
+            if (finished.phase === 'scanning') throw new Error('Unconfirmed scan failure')
+            this.remember(source.id, finished)
+          } catch (failure) { this.unconfirmed(source.id, failure, observation) }
+        }
       } finally {
-        this.next.set(source.id, this.now() + source.poll_seconds * 1000)
+        if (this.activities.get(source.id)?.durability !== 'saved' || !this.next.has(source.id)) this.next.set(source.id, this.now() + source.poll_seconds * 1000)
         this.rss = 0
         if (this.active === activity) this.active = undefined
         this.changed()

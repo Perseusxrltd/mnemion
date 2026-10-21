@@ -4,8 +4,11 @@ from uuid import UUID
 
 
 def capture(conn) -> dict:
+    from .capture_recovery import capture as capture_custody
+
     return {
-        "version": 2,
+        "version": 3,
+        "custody": capture_custody(conn),
         "connections": conn.execute(
             "SELECT tenant_id,id,disabled_at FROM mnemion.connectors ORDER BY tenant_id,id"
         ).fetchall(),
@@ -23,8 +26,12 @@ def capture(conn) -> dict:
 
 
 def validate(state: dict, tenants: set[str]) -> None:
-    if not isinstance(state, dict) or state.get("version") not in (1, 2):
+    if not isinstance(state, dict) or state.get("version") not in (1, 2, 3):
         raise ValueError("Unsupported connector recovery ledger")
+    if state["version"] == 3:
+        from .capture_recovery import validate as validate_custody
+
+        validate_custody(state.get("custody"), tenants)
     for group, fields in (
         ("connections", ("id",)),
         ("bindings", ("connector_id", "principal_id")),
@@ -48,7 +55,7 @@ def validate(state: dict, tenants: set[str]) -> None:
                 UUID(row["memory_id"])
             if (
                 group == "scopes"
-                and state["version"] == 2
+                and state["version"] >= 2
                 and not isinstance(row.get("operator_paused"), bool)
             ):
                 raise ValueError("Invalid connector recovery pause")
@@ -140,3 +147,6 @@ def restore(conn, ledger: dict) -> None:
                 row["last_seen_run"],
             ),
         )
+    from .capture_recovery import restore as restore_custody
+
+    restore_custody(conn, state.get("custody"))

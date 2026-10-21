@@ -452,6 +452,11 @@ def create_app(
     from .connectors import ConnectorService
 
     install_routes(app, authenticated, ConnectorService(memory))
+
+    from .capture_api import install_routes as install_capture_routes
+    from .capture_custody import CaptureCustody
+
+    install_capture_routes(app, authenticated, CaptureCustody(memory))
     attach_evaluations(app, database, embedder, authenticated, registry=registry)
     attach_embeddings(app, database, registry, authenticated)
     attach_librarian(app, librarian, authenticated)
@@ -502,6 +507,7 @@ def create_app(
             "api_version": "v1",
             "service_version": __version__,
             "connector_partial_inventory": True,
+            "durable_capture": "v1",
         }
 
     @app.get("/health/ready", tags=["Operations"], response_model=c.ReadyStatus)
@@ -651,7 +657,11 @@ def create_app(
         return memory.review(identity, memory_id, command)
 
     @app.delete(
-        "/v1/memories/{memory_id}", status_code=202, tags=["Memory"], response_model=c.Receipt
+        "/v1/memories/{memory_id}",
+        status_code=202,
+        tags=["Memory"],
+        response_model=c.Receipt,
+        summary="Forget a memory; inspect capture_forget before deleting an entire captured fragment",
     )
     def forget(
         memory_id: UUID, identity: Auth, idempotency_key: Key, expected_version: int = Query(ge=1)
@@ -662,6 +672,11 @@ def create_app(
         when every revision belongs to them. Otherwise returns requires_reviewer.
         Authorization and expected_version are checked at the write boundary;
         can_forget on memory details is an observation, not a reusable grant.
+        Read capture_forget on current memory details and explain its scope to
+        the user before confirmation. A captured fragment deletion includes its
+        raw evidence, conversation projections and older revisions, and may
+        include adjacent messages. Later deliveries of that fragment remain
+        forgotten; this is not semantic deletion across producer generations.
         """
         return memory.forget(
             identity, memory_id, expected_version=expected_version, key=idempotency_key

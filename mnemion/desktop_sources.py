@@ -23,6 +23,8 @@ from . import local_state
 from .connectors.config import ConnectorConfig
 from .connectors.providers import ProviderError
 from .connectors.runner import sync
+from .desktop_capture import Custody
+from .connectors.conversation_inbox import InboxError
 from .desktop_provider_credentials import credential as provider_credential
 from .sdk import Client, MnemionError
 from .service.models import Command
@@ -74,6 +76,7 @@ class Source(Command):
     name: str = Field(min_length=1, max_length=200)
     provider: Literal["filesystem", "conversations", "slack", "gdrive"]
     capture_mode: Literal["complete", "messages"] | None = None
+    custody: Custody | None = None
     scope_id: str | None = Field(default=None, min_length=1, max_length=400)
     path: str | None = Field(default=None, min_length=1, max_length=4096)
     slack: SlackSelection | None = None
@@ -98,6 +101,8 @@ class Source(Command):
     def address_and_path(self):
         if self.provider != "conversations" and self.capture_mode is not None:
             raise ValueError("Capture mode applies only to live conversation sources")
+        if self.provider != "conversations" and self.custody is not None:
+            raise ValueError("Retained capture applies only to conversation sources")
         if self.provider not in {"filesystem", "conversations"} and self.scope_id is not None:
             raise ValueError(
                 "A folder identity applies only to filesystem and conversation sources"
@@ -173,8 +178,12 @@ class Source(Command):
 class SavedSource(Source):
     sealed_key: str = Field(min_length=16, max_length=16384)
     sealed_provider: str | None = Field(default=None, min_length=16, max_length=32768)
+    sealed_inbox_key: str | None = Field(default=None, min_length=16, max_length=16384)
+    # Private configuration identity. Never a public setting or caller authority.
+    # Old settings remain readable; enabled-only changes retain their old epoch.
+    status_epoch: UUID | None = None
 
-    @field_validator("sealed_key", "sealed_provider")
+    @field_validator("sealed_key", "sealed_provider", "sealed_inbox_key")
     @classmethod
     def encrypted_bytes(cls, value):
         if value is not None and not base64.b64decode(value, validate=True):
@@ -185,6 +194,8 @@ class SavedSource(Source):
     def cloud_credential(self):
         if (self.provider in {"slack", "gdrive"}) != bool(self.sealed_provider):
             raise ValueError("Cloud credentials must use separate OS-protected storage")
+        if bool(self.custody) != bool(self.sealed_inbox_key):
+            raise ValueError("Retained capture needs a separate OS-protected inbox key")
         return self
 
 
@@ -212,12 +223,36 @@ def load(root: Path) -> SourceState:
 
 
 def store(root: Path, expected: str, sources: list) -> dict:
+    from .desktop_source_status import settings
+    from .desktop_capture import enrollment, register
+
     candidate = SourceState(revision=str(uuid4()), sources=sources)
     local_state.directory(root)
     with local_state.lock(root):
-        if load(root).revision != expected:
+        current = load(root)
+        if current.revision != expected:
             raise local_state.LocalSetupError(
                 "source_settings_changed", "Source settings changed. Refresh before retrying."
+            )
+        previous = {source.id: source for source in current.sources}
+        remaining = {source.id for source in candidate.sources}
+        for source in current.sources:
+            if (
+                source.custody
+                and source.id not in remaining
+                and enrollment(root, source)["state"] != "discarded"
+            ):
+                raise InboxError("capture_retire_required")
+        for source in candidate.sources:
+            old = previous.get(source.id)
+            if old and old.custody and not source.custody:
+                raise InboxError("capture_policy_change_requires_migration")
+            if source.custody:
+                register(root, source, old)
+            source.status_epoch = (
+                old.status_epoch
+                if old is not None and settings(old) == settings(source)
+                else uuid4()
             )
         local_state.write(
             root / "sources.json", candidate.model_dump(mode="json", exclude_none=True)
@@ -306,6 +341,10 @@ def verify(source: Source, root: Path, client: Client, private_roots=()) -> Sour
         verify_conversation_identity(source, root, client, load(root).sources)
         if source.scope_id == "selected-source":
             source.scope_id = None
+        if source.custody:
+            from .desktop_capture import verify as verify_capture
+
+            verify_capture(source, root, client)
     return source
 
 
@@ -349,14 +388,24 @@ def verify_cloud(adapter, provider: str):
 
 def perform(root: Path, request: dict, private_roots=()) -> dict:
     operation = request.get("operation")
+    if operation == "capture_retire":
+        from .desktop_capture import retire
+
+        return retire(root, request)
+    if operation in {"status", "status_begin", "status_finish", "status_repair"}:
+        from .desktop_source_status import perform as status_operation
+
+        return status_operation(root, request)
     fields = {
         "load": {"operation"},
         "store": {"operation", "expected_revision", "sources"},
         "verify": {"operation", "source", "credential"},
         "scan": {"operation", "source", "credential"},
     }
-    allowed = fields.get(operation, set()) | (
-        {"provider_credential"} if operation in {"verify", "scan"} else set()
+    allowed = (
+        fields.get(operation, set())
+        | ({"provider_credential"} if operation in {"verify", "scan"} else set())
+        | ({"inbox_key"} if operation == "scan" else set())
     )
     if operation not in fields or not fields[operation] <= set(request) <= allowed:
         raise ValueError("Choose a supported private source operation")
@@ -376,6 +425,12 @@ def perform(root: Path, request: dict, private_roots=()) -> dict:
     cloud = source.provider in {"slack", "gdrive"}
     if cloud != ("provider_credential" in request):
         raise ValueError("Supply separate credentials only for cloud sources")
+    if operation == "scan" and source.custody:
+        from .desktop_capture import scan as capture_scan
+
+        return capture_scan(root, source, request.get("inbox_key"), credential, private_roots)
+    if "inbox_key" in request:
+        raise ValueError("Only retained capture accepts a separate inbox key")
     with Client(source.endpoint, credential, timeout=20, retries=0) as client:
         verify(source, root, client, private_roots)
         adapter = cloud_adapter(source, request["provider_credential"]) if cloud else None
@@ -463,10 +518,15 @@ def dispatch(args) -> int:
         local_state.LocalSetupError,
         MnemionError,
         ProviderError,
+        InboxError,
         httpx.HTTPError,
     ) as exc:
         stopped.set()
-        code = exc.code if isinstance(exc, local_state.LocalSetupError) else "source_unavailable"
+        code = (
+            exc.code
+            if isinstance(exc, (local_state.LocalSetupError, InboxError))
+            else "source_unavailable"
+        )
         if isinstance(exc, ProviderError) and getattr(exc, "code", None) in {
             "provider_access_lost",
             "slack_access_lost",

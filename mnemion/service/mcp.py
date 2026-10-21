@@ -638,7 +638,7 @@ def create_mcp(
         idempotency_key: IdempotencyKey,
         ctx: Context,
     ) -> Receipt:
-        """Deny reads and queue purge. Reviewers may forget any granted memory; contributors may withdraw their own ordinary, unverified memory only if no other identity has revised it. Other cases return requires_reviewer. Memory details report can_forget; authorization is rechecked on every write."""
+        """Deny reads and queue purge. Reviewers may forget any granted memory; contributors may withdraw their own ordinary, unverified memory only if no other identity has revised it. Other cases return requires_reviewer. Memory details report can_forget and optional capture_forget. Before confirming deletion, explain capture_forget: a captured fragment includes its raw evidence, conversation views, older revisions and possibly adjacent messages; later deliveries of that fragment stay forgotten. This is not semantic deletion across producer generations. Authorization is rechecked on every write."""
         return await invoke(
             ctx,
             lambda client: client.forget(

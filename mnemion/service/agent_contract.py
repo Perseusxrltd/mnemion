@@ -16,6 +16,15 @@ _OPERATIONS = """
 health.live GET /health/live
 health.ready GET /health/ready
 health.sources GET /v1/health/sources
+capture.source.configure PUT /v1/connectors/{connector_id}/capture-sources/{source_id}
+capture.source.status GET /v1/connectors/{connector_id}/capture-sources/{source_id}
+capture.source.revoke DELETE /v1/connectors/{connector_id}/capture-sources/{source_id}
+capture.grant.configure PUT /v1/capture-sources/{source_id}/grants/{grant_id}
+capture.grant.status GET /v1/capture-grants/{grant_id}
+capture.grant.revoke DELETE /v1/capture-grants/{grant_id}
+capture.pages.accept POST /v1/capture-grants/{grant_id}/pages
+capture.pages.receipt GET /v1/capture-grants/{grant_id}/pages/{page_id}
+capture.fences GET /v1/capture-grants/{grant_id}/fences
 identity.me GET /v1/me
 recovery.directory GET /v1/recovery-directory
 recovery.configure PUT /v1/recovery-directory
@@ -181,6 +190,7 @@ READ_POST = frozenset(
 DOWNLOADS = frozenset({"sources.attachment", "obsidian.export", "evaluations.export"})
 PRIVATE_INPUTS = frozenset(
     {
+        "capture.pages.accept",
         "memory.buffer.preview",
         "memory.buffer.import",
         "memory.journal.preview",

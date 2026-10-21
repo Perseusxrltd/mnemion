@@ -999,12 +999,18 @@ function MemoryDetail() {
                     disabled={busy}
                     onClick={() => setConfirmDelete(true)}
                   >
-                    {reviewer ? 'Delete memory' : 'Withdraw memory'}
+                    {memory.capture_forget ? 'Forget captured fragment' : reviewer ? 'Delete memory' : 'Withdraw memory'}
                   </button>}
                 </div>
                 {confirmDelete && (
                   <div className="ws-notice ws-delete-confirm">
-                    <strong>Delete this memory and its saved sources?</strong>
+                    <strong>{memory.capture_forget ? 'Forget this captured conversation fragment?' : 'Delete this memory and its saved sources?'}</strong>
+                    {memory.capture_forget && <p>
+                      This removes its raw evidence, conversation views and older revisions
+                      ({memory.capture_forget.retained_memories} retained memories when last checked).
+                      The fragment may include adjacent messages. Later deliveries of the same
+                      fragment stay forgotten.
+                    </p>}
                     <p>
                       Access is removed immediately. The worker then purges
                       content and retains a deletion receipt.
@@ -1016,7 +1022,7 @@ function MemoryDetail() {
                         disabled={busy}
                         onClick={forget}
                       >
-                        Delete this memory
+                        {memory.capture_forget ? 'Forget the entire fragment' : 'Delete this memory'}
                       </button>
                       <button
                         className="ws-button"

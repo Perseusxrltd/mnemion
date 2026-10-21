@@ -262,7 +262,12 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
   function desktopSources(): DesktopSources {
     if (sources) return sources
     const root = join(localBase(), 'mnemion-desktop-sources')
-    sources = new DesktopSources({ cipher: workspaceCipher(), call: sourceProcess({ executable: engineExecutable(), root,
+    sources = new DesktopSources({ cipher: workspaceCipher(), retirementCredential: async (source, supplied) => {
+      const header = 'Bearer ' + supplied
+      // Renderer handles remain bound to their own origin and API prefix. The
+      // server independently checks current tenant/grant authority for removal.
+      return (await workspaceConnections().authorization(new URL(source.endpoint + '/v1/capture-grants/' + source.custody!.grant_id), header)).replace(/^Bearer /, '')
+    }, call: sourceProcess({ executable: engineExecutable(), root,
       environment: localEnvironment(process.env, root), privateRoots: [app.getPath('userData'),
         join(localBase(), 'mnemion-local-workspace'), join(localBase(), 'mnemion-recovered-workspaces'),
         join(localBase(), 'mnemion-desktop-control'), join(localBase(), 'mnemion-desktop-agents')] }), changed: () => {
@@ -447,7 +452,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
   })
   ipcMain.handle('sources:control', (event, action: unknown, input: SourceControl) => {
     trusted(event); requireLocalSteady()
-    if (action !== 'pause' && action !== 'sync' && action !== 'remove') throw new Error('Choose a source control.')
+    if (action !== 'pause' && action !== 'sync' && action !== 'remove' && action !== 'repair') throw new Error('Choose a source control.')
     return desktopSources().control(action, input)
   })
   async function createLocal(input: unknown): Promise<LocalStatus> {
@@ -738,8 +743,8 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
         case 'agent.install': return desktopAgents().install(input as AgentInstall, signal)
         case 'agent.remove': return desktopAgents().remove(input as AgentRemove, signal)
         case 'source.configure': return desktopSources().configure(input as SourceConfigure, signal)
-        case 'source.pause': case 'source.sync': case 'source.remove':
-          return desktopSources().control(request.action.slice(7) as 'pause' | 'sync' | 'remove', input as SourceControl)
+        case 'source.pause': case 'source.sync': case 'source.remove': case 'source.repair':
+          return desktopSources().control(request.action.slice(7) as 'pause' | 'sync' | 'remove' | 'repair', input as SourceControl)
         case 'app.status': case 'app.preferences': case 'app.update-check': case 'app.update-restart':
           if (!appControl) throw new Error('The desktop app controls are not available in this session.')
           return appControl(request.action, input, signal)

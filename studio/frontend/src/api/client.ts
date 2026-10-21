@@ -42,7 +42,7 @@ declare global {
       agentSetupRemove?: (input: AgentRemove) => Promise<AgentSetupResult>
       sourceChoose?: () => Promise<string | null>
       sourceConfigure?: (input: SourceConfigure) => Promise<DesktopSourceView>
-      sourceControl?: (action: 'pause' | 'sync' | 'remove', input: SourceControl) => Promise<DesktopSourceView>
+      sourceControl?: (action: 'pause' | 'sync' | 'remove' | 'repair', input: SourceControl) => Promise<DesktopSourceView>
       onSourceStatus?: (callback: () => void) => () => void
       localCreate?: (input: LocalOptions) => Promise<LocalStatus>
       localStart?: () => Promise<LocalStatus>

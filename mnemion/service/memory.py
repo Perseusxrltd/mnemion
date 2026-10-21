@@ -264,9 +264,15 @@ class MemoryService:
     ) -> dict:
         with self.db.transaction(identity) as conn:
             from .withdrawal import allowed
+            from .capture_withdrawal import preview
 
             row = memory_row(conn, memory, review=review)
-            return {**hydrate(conn, row, revision), "can_forget": allowed(conn, identity, row)}
+            can_forget = allowed(conn, identity, row)
+            return {
+                **hydrate(conn, row, revision),
+                "can_forget": can_forget,
+                "capture_forget": preview(conn, memory) if can_forget else None,
+            }
 
     def resolve_alias(
         self, identity: Identity, space: UUID, legacy_id: str, *, review: bool = False
@@ -435,11 +441,21 @@ class MemoryService:
             )
 
     def forget_in_transaction(
-        self, conn, identity: Identity, memory: UUID, *, expected_version: int, key: str
+        self,
+        conn,
+        identity: Identity,
+        memory: UUID,
+        *,
+        expected_version: int,
+        key: str,
+        _capture_family: bool = True,
     ) -> dict:
         from .withdrawal import target
 
         row = target(conn, identity, memory)
+        from .capture_custody import lock_memory_lineage
+
+        lock_memory_lineage(conn, memory)
         space = row["space_id"]
         require_space(conn, space, 20, writing=True)
         digest, previous = idempotency(
@@ -483,6 +499,9 @@ class MemoryService:
                 },
             )
         _version(row, expected_version)
+        from .capture_withdrawal import forget_siblings
+
+        capture_forget = forget_siblings(self, conn, identity, memory) if _capture_family else None
         from .librarian import purge_librarian_dependencies
 
         purge_librarian_dependencies(conn, identity.tenant_id, space, memory)
@@ -521,7 +540,12 @@ class MemoryService:
             space,
             key,
             digest,
-            {**receipt, "deleted": True, "version": row["version"] + 1},
+            {
+                **receipt,
+                "deleted": True,
+                "version": row["version"] + 1,
+                **({"capture_forget": capture_forget} if capture_forget else {}),
+            },
         )
 
     def operation(self, identity: Identity, operation: UUID) -> dict:

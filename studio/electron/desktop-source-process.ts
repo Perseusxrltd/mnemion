@@ -1,8 +1,9 @@
 /** Bounded native process protocol. Private input travels only through pipes. */
 import { spawn } from 'node:child_process'
+import { captureMessages } from './capture-messages.js'
 import type { SourceCall } from './desktop-sources.js'
 
-const messages: Record<string, string> = {
+export const sourceMessages: Record<string, string> = {
   source_identity_mismatch: 'Use this connection’s dedicated application key in the expected workspace.',
   source_connection_unavailable: 'Enable this connection and check its application.',
   source_scope_ambiguous: 'This connection has several or unrecognized recorded folders. Keep its original adapter configuration; Studio cannot choose one safely.',
@@ -22,6 +23,16 @@ const messages: Record<string, string> = {
   private_location: 'Source settings must stay private to this OS account.',
   unsafe_location: 'Choose an ordinary source folder, separate from private app settings.',
   damaged_state: 'Saved source settings could not be read. The existing file has been retained.',
+  source_status_invalid: 'Saved scan observations could not be read. Their file has been retained; scan history is unknown.',
+  source_status_unconfirmed: 'The scan observation changed or its save was not confirmed. Read source status before retrying.',
+  source_status_unavailable: 'The scan result could not be durably saved. Check local storage; completion is unconfirmed.',
+  source_status_changed: 'Scan status changed. Read it before attempting repair again.',
+  source_timeout: 'The scan timed out. Its next run will reconcile saved progress.',
+  source_cancelled: 'The scan stopped. Its next run will reconcile saved progress.',
+  source_helper_unavailable: 'The source helper could not run. Repair or update the app.',
+  source_invalid_response: 'The source helper returned an invalid response. Completion is unconfirmed.',
+  source_unavailable: 'The source could not be read or reached. Check its folder, dedicated key, workspace and network.',
+  ...captureMessages,
   agent_settings_changed: 'Agent settings changed. Preview again before making this change.',
   agent_identity_mismatch: 'Use the selected application’s dedicated key in the expected workspace.',
   agent_install_unconfirmed: 'Read installed-agent status before retrying this connection.',
@@ -39,10 +50,10 @@ export function sourceProcess(options: { executable: string; root: string; priva
       ...options.privateRoots.flatMap(path => ['--private-root', path])],
     { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true, env: options.environment })
     let buffer = '', result: Record<string, unknown> | undefined, failure: Error | undefined
-    const fail = (message: string) => { failure ??= new Error(message); child.kill() }
-    const abort = () => fail('The helper operation was cancelled. Review its saved status before retrying.')
+    const fail = (message: string, code = 'source_helper_unavailable') => { failure ??= Object.assign(new Error(message), { code }); child.kill() }
+    const abort = () => fail('The helper operation was cancelled. Review its saved status before retrying.', 'source_cancelled')
     signal?.addEventListener('abort', abort, { once: true })
-    const timer = setTimeout(() => fail('The helper operation timed out. Check its saved status before retrying.'), options.deadlineMs ?? (request.operation === 'scan' ? 600_000 : 45_000))
+    const timer = setTimeout(() => fail('The helper operation timed out. Check its saved status before retrying.', 'source_timeout'), options.deadlineMs ?? (request.operation === 'scan' ? 600_000 : 45_000))
     child.stdin.on('error', () => fail('The source helper could not receive its private request.'))
     child.stdin.end(input)
     child.stderr.resume()
@@ -50,7 +61,7 @@ export function sourceProcess(options: { executable: string; root: string; priva
     child.stdout.on('data', (chunk: string) => {
       if (failure) return
       buffer += chunk
-      if (Buffer.byteLength(buffer) > 256 * 1024) { fail('The source helper returned an oversized response.'); return }
+      if (Buffer.byteLength(buffer) > 256 * 1024) { fail('The source helper returned an oversized response.', 'source_invalid_response'); return }
       let end: number
       while ((end = buffer.indexOf('\n')) >= 0) {
         const line = buffer.slice(0, end); buffer = buffer.slice(end + 1)
@@ -59,15 +70,16 @@ export function sourceProcess(options: { executable: string; root: string; priva
           if (value.event === 'resources' && !result && Number.isSafeInteger(value.rss_bytes) && value.rss_bytes >= 0 && value.rss_bytes <= 16 * 1024 ** 3) resources?.(value.rss_bytes)
           else if (value.event === 'result' && !result) result = value
           else throw new Error()
-        } catch { fail('The source helper returned an invalid response.'); return }
+        } catch { fail('The source helper returned an invalid response.', 'source_invalid_response'); return }
       }
     })
-    child.on('error', () => { failure ??= new Error('The source helper could not start. Repair or update the app.'); })
+    child.on('error', () => { failure ??= Object.assign(new Error('The source helper could not start. Repair or update the app.'), { code: 'source_helper_unavailable' }); })
     child.on('close', code => {
       clearTimeout(timer); signal?.removeEventListener('abort', abort); resources?.(0)
       if (failure) { reject(failure); return }
       if (buffer.trim() || !result || code !== 0 || result.ok !== true || !result.result || typeof result.result !== 'object' || Array.isArray(result.result)) {
-        reject(new Error(messages[String(result?.error)] ?? 'The source could not be read or reached. Check its folder, dedicated key, workspace and network.')); return
+        const reason = typeof result?.error === 'string' && Object.hasOwn(sourceMessages, result.error) ? result.error : 'source_unavailable'
+        reject(Object.assign(new Error(sourceMessages[reason]), { code: reason })); return
       }
       resolve(result.result as Record<string, unknown>)
     })

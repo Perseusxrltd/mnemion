@@ -14,13 +14,19 @@ Source 4.34.0 adds [guided Slack and Drive setup](desktop-cloud-sources.md) with
 existing approved credentials. Interactive provider-account enrollment remains
 separate from this selected-source workflow.
 
+**Unreleased:** [retained conversation capture](durable-capture.md) adds explicit
+source and device approval, an encrypted local inbox and delivery after producer
+logs disappear. Existing adapters remain mirrors. Its native journey and full L1
+acceptance are still pending; consult [release status](../RELEASE_STATUS.md) for
+published availability.
+
 ## Included adapters
 
 | Adapter | Reads | Access model | Current boundaries |
 | --- | --- | --- | --- |
 | Git | Committed text from a selected local repository or HTTPS/SSH remote and ref | Explicit publication to mapped identities | No checkout, hooks, submodule execution, or writes upstream. Uncommitted files are excluded. |
 | Filesystem / Obsidian vault | UTF-8 Markdown, text, JSON, JSONL, CSV from a chosen folder | Explicit publication to mapped identities | Preserves text and wikilinks. Ignores Obsidian settings, common credential files, and generated Mnemion mirrors by default. Internal symlinks produce an error. |
-| [Live conversations](live-conversations.md) (4.17.0+) | Complete records from selected growing JSONL logs | Explicit mapped audience; one managed scope per file | Bounded fragments, deferred tails, metadata checkpoints and body-free reuse. Raw evidence and source offsets are retained. Requires an independently running capture host. |
+| [Live conversations](live-conversations.md) (4.17.0+) | Selected complete records or supported messages from growing JSONL logs | Explicit mapped audience; one managed scope per file for mirrors | Bounded fragments, deferred tails, metadata checkpoints and body-free reuse. Capture mode controls whether raw records are copied. Requires a running source host; [retained custody](durable-capture.md) is a separate unreleased choice. |
 | Google Drive | Selected files or recursive folders; text files; Docs, Slides and all sheets in Sheets exports | A managed permission scope for each file; mapped effective user permissions | Shared-drive API flags are enabled. Unmapped users, groups, domains and `anyone` grants confer no Mnemion access. Group expansion requires an identity-aware custom adapter. |
 | Slack | Explicitly selected channels, messages, edits, and threads | Channel membership mapped to Mnemion identities | Read-only. No messages are sent. Attachment references are retained; attachment binaries are not downloaded. The credential must be allowed to read history, membership, and requested threads. |
 | rclone | Text objects from an operator-configured remote | Explicit publication to mapped identities | Supports the storage providers available in the installed rclone, including S3-compatible stores, OneDrive, Dropbox, WebDAV, and private endpoints. No automatic provider ACL translation. |
@@ -50,7 +56,9 @@ A connected Git repository appears in a connector-managed source space. Its
 imported content remains controlled by the repository and the connector's access
 mappings. The same applies to other connected providers. Your team's writable
 memory, such as an **Office** space, remains a separate compartment. This keeps
-source permissions, source changes and provider deletions enforceable.
+ordinary source permissions, source changes and provider deletions enforceable.
+Retained conversation custody has its own explicitly approved source space;
+producer-file deletion does not withdraw already accepted retained evidence.
 
 **Search both together.** First map the person or agent to the source identities
 it is allowed to read. Then use **Search & context → All accessible memory** in
@@ -95,6 +103,36 @@ connectors permission to write upstream. Replay requires the complete journal
 root, including its catalog and archive.
 Do not copy its contents into a writable space merely to make search unified;
 that would detach the copy from the source's access and deletion lifecycle.
+
+## Retained conversation capture (unreleased)
+
+The [retained capture guide](durable-capture.md) covers the app choice, current
+limits, status, recovery and equivalent native-agent controls. An administrator
+approves `capture_mode`, namespace and mapped audience through
+`capture.source.configure`, then binds `capture.grant.configure` to one exact
+dedicated application key. The normal source key cannot authorize itself.
+Desktop enrollment supplies those approvals as the typed `source.custody`
+object and creates a separate OS-sealed inbox key.
+
+Each scan commits selected evidence and its verified position locally before
+HTTP. It retries exact saved pages, applies current forgetting fences and retains
+accepted evidence through offline operation or raw-log rotation/removal. The
+capture selection is immutable for that inbox; new devices cannot infer earlier
+accepted or forgotten history from current files. Existing mirrors need a
+reviewed migration before changing retention.
+
+The ordinary `mnemion-connect` configurations and commands below keep their
+existing mirror behavior. `custody` belongs to private desktop source settings;
+it is not a new field for their provider configuration. Server custody approval
+alone does not enroll a local runner. Successful delivery also does not establish
+indexing readiness or completed librarian work.
+
+Retained-source removal requires a pause, explicit local discard and confirmed
+grant revocation. A current workspace administrator can confirm retirement if
+the saved device key is unavailable, using a removal-only credential that is
+never saved by the operation. See [removal and recovery](durable-capture.md#pause-remove-and-forget)
+for the app and private-agent paths, including offline cleanup after a confirmed
+retirement was recorded locally.
 
 ## Set up an adapter
 
@@ -344,8 +382,8 @@ provider access rules.
 
 ## Updates, permissions, and deletion
 
-Each provider scope has an access lease, default **15 minutes**, configurable
-from 60 seconds to 24 hours. The adapter records when it actually observed
+Each ordinary provider scope has an access lease, default **15 minutes**,
+configurable from 60 seconds to 24 hours. The adapter records when it actually observed
 permissions. Expired or suspended access is denied in database row-level policies,
 including search, source/history fetches, context, and exports. The connector
 identity retains access to its own scope so it can perform recovery and fresh

@@ -38,6 +38,7 @@ class LiveStatus(ResponseModel):
     api_version: Literal["v1"]
     service_version: str | None = None
     connector_partial_inventory: bool = False
+    durable_capture: Literal["v1"] | None = None
 
 
 class ReadyStatus(ResponseModel):
@@ -59,7 +60,16 @@ class JournalDelivery(ResponseModel):
     external_history_retained: Literal[True] = True
 
 
+class CaptureForgetScope(ResponseModel):
+    scope: Literal["conversation_fragment"]
+    lineage_id: str
+    retained_memories: int
+    includes_adjacent_messages: Literal[True] = True
+    includes_revisions_and_projections: Literal[True] = True
+
+
 class Receipt(ResponseModel):
+    capture_forget: CaptureForgetScope | None = None
     operation_id: str
     memory_id: str
     revision_id: str | None = None
@@ -110,6 +120,10 @@ class MemoryMetadata(ResponseModel):
 
 class Memory(MemoryMetadata):
     content: str
+    capture_forget: CaptureForgetScope | None = Field(
+        default=None,
+        description="When present, forgetting withdraws every retained part, projection and revision of this captured fragment, which can include adjacent messages. The count is an observation; the write rechecks the current family atomically. This is not cross-generation semantic forgetting.",
+    )
     can_forget: bool | None = Field(
         default=None,
         description="Current withdrawal permission for a fetched memory. Missing/null on older services or views without a permission observation; the write rechecks authorization.",

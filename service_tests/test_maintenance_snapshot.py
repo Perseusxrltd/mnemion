@@ -131,6 +131,7 @@ def test_active_runs_surface_failed_jobs_and_only_completed_attempts_reuse_job_e
     assert subject.changes({}, first)["failed_runs"] == 1
     assert subject.changes({}, first)["active_runs"] == 1
     assert first["runs"][0]["job_progress"]["active"][0]["steps"] == ["Install"]
+    assert first["runs"][0]["job_progress"]["active"][0]["runner_assigned"] is None
     jobs[1]["steps"] = [{"name": "Upgrade and relaunch", "status": "in_progress"}]
     second = subject.collect(first)
     # GitHub's enclosing run timestamp need not change with each job step.
@@ -155,6 +156,31 @@ def test_active_runs_surface_failed_jobs_and_only_completed_attempts_reuse_job_e
     }
     assert subject.collect(completed) == completed
     assert len(observed) == 4
+
+    # Hosted capacity loss can fail the workflow with a cancelled, never-started
+    # job and skipped dependents, without any job/step labelled failure.
+    jobs[0].update(conclusion="cancelled", runner_id=0)
+    jobs[1].update(conclusion="skipped")
+    legacy = copy.deepcopy(completed)
+    legacy["runs"][0].pop("job_details_schema")
+    legacy["runs"][0]["failed_jobs"] = []
+    interrupted = subject.collect(legacy)
+    assert len(observed) == 5  # Old cached summaries are refreshed once.
+    assert interrupted["runs"][0]["failed_jobs"] == [
+        {
+            "name": "Mac startup",
+            "id": 50,
+            "conclusion": "cancelled",
+            "runner_assigned": False,
+            "steps_reported": 0,
+            "steps": [],
+        }
+    ]
+    rendered = subject.markdown({**interrupted, "observed_at": "2026-10-20T17:43:03Z"})
+    assert "Mac startup (cancelled)" in rendered
+    assert "No runner was assigned and no steps were reported" in rendered
+    assert subject.collect(interrupted) == interrupted
+    assert len(observed) == 5
 
 
 def test_generated_titles_are_text_instead_of_remote_images_or_html():

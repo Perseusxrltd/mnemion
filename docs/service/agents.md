@@ -132,6 +132,57 @@ validation has no service request ID. Diagnostic errors omit rejected values and
 Python tracebacks. Preserve the same idempotency key when retrying a write; do not
 repeat an uncertain administrative change without checking its result.
 
+## Conversation capture (unreleased)
+
+Connecting an assistant to Mnemion does not automatically copy its conversation
+history. Capture requires a selected source, an approved audience and a running
+source host. The [desktop source guide](desktop-sources.md) covers existing
+mirrors; [retained conversation capture](durable-capture.md) describes the
+unreleased inbox workflow that keeps locally accepted selection after original
+logs rotate or disappear. It advances L1 without closing L1, R07 or the remaining
+layered-librarian work.
+
+For a new retained connection, the administrator first configures its source
+policy and exact device-key grant through the `capture.source.configure` and
+`capture.grant.configure` operations. Then the owning OS account uses the private
+desktop `source.configure` action with that approved
+`custody: {source_id, grant_id, keep_accepted: true, pending_limit_mib}` object.
+The selected `capture_mode` is `messages` or `complete` and is immutable for that
+inbox. A source key cannot authorize itself, and a network MCP credential cannot
+control another computer. Follow the [same ordered enrollment as Studio](durable-capture.md#agent-and-administrator-setup)
+and discover current schemas before writing; these controls are not a released
+automatic migration for existing sources.
+
+Read `source.status` and use a fresh settings revision for local mutations.
+Report locally accepted events, pending content, server acknowledgements, unknown
+delivery pages and incomplete scans separately. These saved observations are
+distinct from indexing readiness and librarian completion. A lost delivery reply
+keeps the original page for reconciliation. Do not replace the inbox, generate
+new identities or infer success from an empty report to resolve uncertainty.
+
+`source.pause` works offline and retains committed progress. Retained removal
+requires a paused source, `confirm: true` and `discard_local_inbox: true`; server
+revocation must be confirmed before its local inbox is discarded. Producer files,
+server memories and the API key's other permissions remain. When the saved key
+is unavailable, `source.remove` accepts optional `retirement_credential`: current
+administrator authority for that workspace, passed only through the private
+desktop pipe and never saved by removal. The native helper verifies the saved
+grant binding and the server checks current rights before discarding anything.
+Failed authorization preserves the inbox. Once confirmed retirement is recorded
+locally, cleanup can finish offline without credentials. See the
+[administrator fallback](durable-capture.md#pause-remove-and-forget).
+
+`source.repair` repairs only saved observations for **all sources on the
+computer**, preserving the damaged diagnostic file; it does not recreate lost
+inbox data or keys.
+
+Before `memory_forget`, fetch the current memory and inspect `capture_forget`
+when present. Explain its scope: deletion withdraws every retained part,
+projection and revision of that captured fragment, potentially including adjacent
+messages. The reported count is an observation; the write rechecks the family
+atomically. Later delivery of the same fragment stays forgotten. It does not
+erase matching text in unrelated imports or new file generations.
+
 ## Remote HTTP connections
 
 ### Compact discovery and session compatibility

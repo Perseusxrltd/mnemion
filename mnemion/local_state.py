@@ -269,7 +269,7 @@ def replace_damaged(path: Path, value: dict, *, expected: bytes, kind: str = "me
     Ordinary write() still refuses malformed records. Links, unsafe ownership,
     unreadable/oversized records and failed preservation never reach replacement.
     """
-    if kind not in {"memory", "remote", "company", "vault", "journal", "models"}:
+    if kind not in {"memory", "remote", "company", "vault", "journal", "models", "source-status"}:
         raise ValueError("Unsupported private recovery record")
     directory(path.parent)
     if read_bytes(path) != expected:
