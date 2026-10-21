@@ -5,11 +5,14 @@ retain uncertainty; a later successful scan cannot reconstruct unseen history.
 Status reads one aggregate record instead of decrypting every source checkpoint.
 """
 
+from bisect import bisect_right
+import hashlib
 import json
 import re
 
 from ..capture_coverage import (
     CaptureCoverage,
+    CaptureSchedule,
     IndexCounts,
     PrefixObservation,
     SelectionCounts,
@@ -20,6 +23,7 @@ from .conversation_inbox import InboxError
 
 PREFIX = "coverage:"
 SUMMARY = "coverage-summary"
+SCHEDULE = "coverage-schedule"
 COUNTERS = (
     "tracked_scopes",
     "checking_scopes",
@@ -98,7 +102,7 @@ class Observations:
     def _finish(self, summary):
         self._save(SUMMARY, CaptureCoverage.model_validate(summary))
 
-    def catalog(self, scopes):
+    def catalog(self, scopes, *, scheduled=False):
         if not isinstance(scopes, (list, tuple)) or len(set(scopes)) != len(scopes):
             raise InboxError("capture_checkpoint_invalid")
         with self.inbox._transaction():
@@ -112,6 +116,23 @@ class Observations:
             current = set(scopes)
             if len(known | current) > self.inbox.limits.scopes:
                 raise InboxError("capture_capacity_blocked")
+            work, reset = list(scopes), True
+            if scheduled:
+                ordered = sorted(current)
+                digest = hashlib.sha256(canonical_capture_json(ordered)).hexdigest()
+                schedule = self._read(SCHEDULE, CaptureSchedule)
+                reset = schedule is None or schedule.catalog != digest or schedule.remaining == 0
+                if reset:
+                    schedule = CaptureSchedule(
+                        catalog=digest,
+                        remaining=len(ordered),
+                        last_scope=schedule.last_scope if schedule else None,
+                    )
+                if schedule.remaining > len(ordered):
+                    raise InboxError("capture_integrity_failed")
+                offset = bisect_right(ordered, schedule.last_scope or "")
+                work = (ordered[offset:] + ordered[:offset])[: schedule.remaining]
+                self._save(SCHEDULE, schedule)
             summary = self._summary()
             interrupted = False
             observed = utc_now()
@@ -130,9 +151,17 @@ class Observations:
                             examined_bytes=prior["complete_end"],
                             uncertain=True,
                         )
-                after["outcome"] = "checking" if scope in current else "missing"
                 if scope not in current:
+                    after["outcome"] = "missing"
                     after["uncertain"] = True
+                elif not scheduled:
+                    after["outcome"] = "checking"
+                elif reset or before is None or before.outcome in {"checking", "missing"}:
+                    # Deferred work is intentional. Only scan_started records
+                    # an actual attempt; a crash then remains distinguishable.
+                    after["outcome"] = (
+                        "failed" if before and before.outcome == "failed" else "deferred"
+                    )
                 self._replace(summary, scope, before, after)
             if interrupted:
                 summary["uncertain_intervals"] += 1
@@ -140,6 +169,24 @@ class Observations:
                 summary["complete_prefix_at"] = observed
             self._finish(summary)
             self.inbox._capacity()
+            return work
+
+    def scan_started(self, scope):
+        """Persist the next turn before reading, including if this process dies."""
+        with self.inbox._transaction():
+            before = self._scope(scope)
+            schedule = self._read(SCHEDULE, CaptureSchedule)
+            if before is None or schedule is None or not schedule.remaining:
+                raise InboxError("capture_checkpoint_invalid")
+            self._save(
+                SCHEDULE,
+                schedule.model_copy(
+                    update={"last_scope": scope, "remaining": schedule.remaining - 1}
+                ),
+            )
+            summary = self._summary()
+            self._replace(summary, scope, before, {**before.model_dump(), "outcome": "checking"})
+            self._finish(summary)
 
     def catalog_unavailable(self):
         with self.inbox._transaction():

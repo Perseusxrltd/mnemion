@@ -15,7 +15,7 @@ export type SourceReport = {
   capture?: CaptureReport;
 }
 export type CaptureReason = 'capture_authorization_revoked' | 'capture_binding_mismatch' | 'capture_binding_invalid' |
-  'capture_delivery_unavailable' | 'capture_capacity_blocked' | 'capture_scan_pending' | 'capture_disk_full' |
+  'capture_delivery_unavailable' | 'capture_delivery_pending' | 'capture_capacity_blocked' | 'capture_scan_pending' | 'capture_disk_full' |
   'capture_enrollment_missing' | 'capture_integrity_failed' | 'capture_inbox_missing' |
   'capture_key_unavailable' | 'capture_not_initialized' | 'capture_policy_change_requires_migration' |
   'capture_server_upgrade_required' | 'capture_settings_changed' | 'capture_source_changed' |

@@ -72,11 +72,14 @@ async function fixture(t) {
       if (!current || !record || record.epoch !== current.status_epoch) return { format: 1, ignored: true }
       assert.equal(record.owner, request.owner); assert.equal(record.run, request.run)
       assert.equal(record.activity.phase, 'scanning')
+      const capture = request.report?.capture
       const backfill = request.report?.completed === false && request.report.remote_sync_available === true &&
-        request.report.capture?.capture_complete === false && request.report.capture.reason_code === 'capture_scan_pending'
-      const reason_code = request.reason_code ?? (backfill ? 'capture_scan_pending' : request.report.completed ? undefined : 'partial')
+        (capture?.capture_complete === false && capture.reason_code === 'capture_scan_pending' ||
+          capture?.capture_complete === true && capture.delivery_complete === false && capture.reason_code === 'capture_delivery_pending')
+      const reason_code = request.reason_code ?? (backfill ? capture.reason_code : request.report.completed ? undefined : 'partial')
+      const interval = backfill ? Math.min(current.poll_seconds, 5) : current.poll_seconds
       const activity = { ...record.activity, phase: backfill ? 'backfill' : reason_code ? 'attention' : 'complete',
-        finished_at: new Date(now).toISOString(), next_scan_at: new Date(now + current.poll_seconds * 1000).toISOString(),
+        finished_at: new Date(now).toISOString(), next_scan_at: new Date(now + interval * 1000).toISOString(),
         ...(request.report ? { report: request.report } : {}), ...(request.report?.completed ? { last_success_report: request.report } : {}),
         ...(reason_code ? { reason_code } : {}),
         ...(reason_code && !backfill ? { last_failure: { observed_at: new Date(now).toISOString(), reason_code } } : {}) }
@@ -128,11 +131,12 @@ async function fixture(t) {
 const retainedDefinition = () => ({ ...definition(), provider: 'conversations', capture_mode: 'messages',
   custody: { source_id: randomUUID(), grant_id: randomUUID(), keep_accepted: true, pending_limit_mib: 256 } })
 
-const backfillReport = (delivered = false) => ({ ...report(), completed: false,
+const backfillReport = (delivered = false, deliveryOnly = false) => ({ ...report(), completed: false,
   capture: { locally_accepted: 2, pending_events: delivered ? 0 : 2, pending_bytes: delivered ? 0 : 1024,
     remote_committed_events: delivered ? 2 : 0, stored_events: delivered ? 2 : 0, forgotten_events: 0,
-    unknown_pages: 0, database_bytes: 65536, over_limit: false, capture_complete: false, delivery_complete: delivered,
-    device_pending_bytes: delivered ? 0 : 1024, device_database_bytes: 65536, reason_code: 'capture_scan_pending' } })
+    unknown_pages: 0, database_bytes: 65536, over_limit: false, capture_complete: deliveryOnly, delivery_complete: delivered,
+    device_pending_bytes: delivered ? 0 : 1024, device_database_bytes: 65536,
+    reason_code: deliveryOnly ? 'capture_delivery_pending' : 'capture_scan_pending' } })
 
 const archiveReport = source => ({ format: 'mnemion-capture-archive-v1', created_at: '2026-10-21T04:00:00Z', name: source.name,
   binding: { tenant_id: source.tenant_id, connector_id: source.connector_id, source_id: source.custody.source_id,
@@ -483,16 +487,17 @@ test('retained capture keeps an independent protected key and sends it only thro
   assert.deepEqual(activity.report.capture, capture)
 })
 
-for (const delivered of [false, true]) test(`saved backfill remains progress after restart; delivered=${delivered}`, async t => {
+for (const [delivered, deliveryOnly] of [[false, false], [true, false], [false, true]]) test(`saved backfill remains progress after restart; delivered=${delivered}, deliveryOnly=${deliveryOnly}`, async t => {
   const f = await fixture(t)
   await f.add(retainedDefinition()); await f.manager.start(); await f.flush()
-  const pending = backfillReport(delivered)
+  const pending = backfillReport(delivered, deliveryOnly)
   f.state.scans[0].finish(pending); await f.flush()
   const activity = (await f.manager.status()).sources[0].activity
   assert.equal(activity.phase, 'backfill')
   assert.equal(activity.durability, 'saved')
-  assert.equal(activity.reason_code, 'capture_scan_pending')
-  assert.match(activity.message, /continue from its checkpoint/)
+  assert.equal(activity.reason_code, pending.capture.reason_code)
+  assert.equal(Date.parse(activity.next_scan_at) - Date.parse(activity.finished_at), 5000)
+  assert.match(activity.message, deliveryOnly ? /continue in small batches/ : /continue from its checkpoint/)
   assert.equal(activity.last_failure, undefined)
   assert.equal(activity.last_success_report, undefined)
   assert.deepEqual(activity.report, pending)
@@ -509,6 +514,9 @@ for (const [name, damage] of [
   ['remote unavailable', value => { value.report.remote_sync_available = false }],
   ['missing next scan time', value => { delete value.next_scan_at }],
   ['invented failure', value => { value.last_failure = { observed_at: value.finished_at, reason_code: 'capture_scan_pending' } }],
+  ['invented delivery failure', value => { value.last_failure = { observed_at: value.finished_at, reason_code: 'capture_delivery_pending' } }],
+  ['mismatched delivery reason', value => { value.reason_code = 'capture_delivery_pending' }],
+  ['completed delivery', value => { value.reason_code = value.report.capture.reason_code = 'capture_delivery_pending'; value.report.capture.capture_complete = value.report.capture.delivery_complete = true; value.report.capture.pending_events = 0 }],
 ]) test(`invalid backfill receipt does not claim saved progress: ${name}`, async t => {
   const f = await fixture(t)
   await f.add(retainedDefinition()); await f.manager.start(); await f.flush()

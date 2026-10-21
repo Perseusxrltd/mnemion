@@ -293,11 +293,11 @@ def _scan(
             code = process.wait()
         finally:
             _stop(process)
-        source = {}
+        source = {"backfill_pending": False}
         if code == 0:
             # Never mistake an old receipt, a failed scan, or an older runtime
             # without receipts for newly verified source freshness.
-            source = {"scanned_commit": None, "scanned_at": None}
+            source.update(scanned_commit=None, scanned_at=None)
             if receipt.exists():
                 try:
                     value = update_state.read(receipt)
@@ -311,11 +311,23 @@ def _scan(
                     ):
                         observed = datetime.fromisoformat(value["scanned_at"])
                         if observed.utcoffset() is not None:
-                            source = {"scanned_commit": commit, "scanned_at": observed.isoformat()}
+                            source.update(scanned_commit=commit, scanned_at=observed.isoformat())
                 except (KeyError, TypeError, ValueError, OSError):
                     # Missing/invalid optional provenance cannot claim freshness
                     # or prevent the next source scan from running.
                     pass
+        elif code == 2 and config.capture is not None and receipt.exists():
+            try:
+                value = update_state.read(receipt)
+                source["backfill_pending"] = (
+                    value.get("format") == 1
+                    and value.get("connector_id") == str(config.connector_id)
+                    and value.get("runner_version") == runtime["version"]
+                    and value.get("completed") is False
+                    and value.get("capture_backfill") is True
+                )
+            except (KeyError, TypeError, ValueError, OSError):
+                pass
         observation.record("waiting", scan_identity=None, last_exit_code=code, **source)
         return code
 
@@ -368,7 +380,12 @@ def run(state: Path, config_path: Path, control: Control) -> int:
                 if code is None:
                     control.sleep(5)
                 else:
-                    trigger = wait_for_sync(config, failed=code != 0, sleep=control.sleep)
+                    trigger = wait_for_sync(
+                        config,
+                        failed=code != 0,
+                        backfill=observation.value.get("backfill_pending") is True,
+                        sleep=control.sleep,
+                    )
         finally:
             observation.record("stopped")
 

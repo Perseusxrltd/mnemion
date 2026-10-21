@@ -60,13 +60,14 @@ does not ship this unfinished capture milestone.
 | --- | --- |
 | Native enrollment | Studio offers explicit retained capture only for a new conversation connection. The administrator approves the source policy and exact device-key grant before native enrollment. App and private agents use the same typed `source.custody` object; existing mirrors cannot silently convert. |
 | Capture policy and local preview | An additional unreleased delta adds Selected/Conversation/Detailed choices, relative JSONL file rules, size caps and explicit mirror/retained selection through the same app/agent configuration. A bounded local preview returns counts and capability statuses; explicit-policy retained fragments carry the immutable approved policy fingerprint. Source, Linux journey and separate recovery/migration checks passed; full L1 acceptance remains open. |
-| Policy versions and administrator controls | A further unreleased batch adds immutable policies bound to grants, reviewed defaults for new grants, and explicit retention or revocation of existing authorizations through the shared hosted/desktop panel and MCP/HTTP. Original-policy archive recovery requires explicit reauthorization. Regression, actual backup/ledger restore, migration, native controller and Linux browser administration checks plus app/native builds passed. The integrated checkpoint's CI failed the health-response expectation; its correction is under validation below. Packaged acceptance and existing-device selection/organization migration remain open. |
+| Policy versions and administrator controls | A further unreleased batch adds immutable policies bound to grants, reviewed defaults for new grants, and explicit retention or revocation of existing authorizations through the shared hosted/desktop panel and MCP/HTTP. Original-policy archive recovery requires explicit reauthorization. Regression, actual backup/ledger restore, migration, native controller and Linux browser administration checks plus app/native builds passed. The integrated checkpoint's failed health-response expectation is retained; its correction passed the later per-file backfill CI below. Packaged acceptance and existing-device selection/organization migration remain open. |
 | Portable inbox archive | Unreleased checkpoint `7aca19e9` exports and inspects encrypted local evidence, and restores a new private inbox under its original binding. Core, helper/controller, migration and Linux app export/restart-inspection checks passed. These checks do not establish the separate device-recovery delta or packaged acceptance. |
 | Device recovery | An unreleased source checkpoint re-encrypts an inspected archive for a new approved grant and inbox key, retires the old grant and installs a new paused native source. The original organization/source/namespace/policy stays fixed. Protected intents support explicit finish/discard after interrupted local publication. Source, controller, operator and migration checks plus the three-phase Linux source journey passed. All three earlier failed journeys are retained below; six-platform packaged and full L1 acceptance remain open. |
 | Independent headless capture | An additional unreleased delta gives `mnemion-connect` explicit JSON custody and stdin controls for paused enrollment, resume, status, encrypted backup and fixed-policy device recovery. Protected file/environment references replace automatic desktop OS sealing. Local intake precedes service access. Source regression, migration and updater checks passed, including polling and verified managed-runtime integration; packaged acceptance remains open. Configurations without `capture` retain mirror behavior. |
 | Encrypted selected inbox | The native controller creates an independent random 256-bit key and seals it through OS credential storage. Selected items and a verified capture checkpoint commit together under AES-256-GCM. Both messages and complete modes use the existing renderer. Messages mode cannot retain a raw transcript or hide raw text in its source evidence. |
 | Local capture and scheduling | The normal desktop runner commits available selected JSONL evidence before any service request in a scan. Accepted events survive restart and producer removal/rotation; unfinished tails wait. Missing source files can stop new capture while already accepted evidence remains deliverable. |
-| Bounded retained backfill | A new unreleased delta commits verified prefixes at existing fragment boundaries and resumes unchanged files on later scans. Per-file work allowances preserve selection and event identities; deferred coverage remains awaiting verification. Focused Python/controller and migration checks, the native build and an isolated Linux measurement passed. The final app/documentation build, full CI and packaged acceptance remain pending. Aggregate scan bandwidth, multi-file fairness and total history caps remain open. |
+| Bounded retained backfill | An unreleased checkpoint commits verified prefixes at existing fragment boundaries and resumes unchanged files on later scans. Per-file work allowances preserve selection and event identities; deferred coverage remains awaiting verification. Focused Python/controller and migration checks, native/app/documentation builds, all 12 CI jobs on `763a8341` and an isolated Linux measurement passed. Packaged acceptance remains open; those checks do not establish the later connection-budget work. |
+| Connection intake budgets and rotation | A further unreleased batch bounds local intake cooperatively across files and saves encrypted sweep/cursor state before each attempt. Catalog changes preserve rotation and evidence; archive validation and device-key rotation include the schedule. Healthy intake or delivery backfill gets a five-second follow-up, with a fresh matching receipt required for managed runs. Scoped service/controller and migration checks passed; original setup/assertion failures remain recorded. Current full CI and packaged acceptance remain open. This does not remove history caps or coordinate separate connections/devices. |
 | Durable service custody | Explicit administrator consent, immutable source identity and selection for each device grant, current audience/role checks, immutable event receipts and idempotent pages. Existing provider permission leases remain unchanged. |
 | Delivery and reconciliation | The runner saves exact pages before delivery, looks up uncertain receipts and resends only the same page. Current revocation and forgetting fences apply to backlog. Revoked grants retain local pending evidence without attempting ingestion; observed revocation also stops later local intake. |
 | Private scan observations | Last success, failure, interrupted attempt and next check survive restart. App and native status separate local acceptance, pending content, server acknowledgements, unknown pages, incomplete scans and capacity. Explicit repair preserves damaged diagnostics and resets history for every source on the device to unknown without changing sources, credentials or capture data. |
@@ -667,7 +668,7 @@ The run finished with nine successful jobs and three failed service jobs.
 the newly advertised `capture_policy_versions: "v1"`. The inspected Python 3.12
 log records one failure, 1,935 passes and eight skips; Python 3.14 records one
 failure, 1,928 passes and 15 skips. All three failures were that same expectation.
-The current backfill batch corrects it while retaining the exact assertion and
+The later per-file backfill checkpoint corrects it while retaining the exact assertion and
 response-byte bounds. The original failed CI remains evidence; earlier focused
 passes do not make it an accepted checkpoint.
 
@@ -700,7 +701,7 @@ history, including after a later failed scan.
 
 Native saved status now distinguishes `phase: "backfill"` from attention and
 completion. It requires a validated incomplete `capture_scan_pending` report
-with available remote control; it preserves prior success/failure observations
+with successful delivery contact; it preserves prior success/failure observations
 and the actual next scan time after restart. Both app source panels show
 **Backfilling** for this state. Pending and already delivered batches are
 eligible, while missing/invalid reports and actual errors cannot claim this
@@ -730,9 +731,11 @@ Separately, `capture-windows-migration-preflight.log` records **30 passed in
 `capture-windows-native-tests.log` records **64 passed, zero skips, in
 524.335982 ms**; `capture-windows-native-build.log` records the successful native
 build. The app/documentation build, 630-file formatting and whole-tree Ruff
-also passed. Full CI remains a separate integration check;
-the [product-check workflow](https://github.com/Perseusxrltd/mnemion/actions/workflows/ci.yml)
-reports the current source outcome. These checks do not establish packaged acceptance.
+also passed. `capture-windows-final-ci-status.json` records **all 12 jobs passed**
+for checkpoint `763a8341` in
+[CI 39565726199](https://github.com/Perseusxrltd/mnemion/actions/runs/39565726199).
+These checks predate the connection-budget/cadence batch below and do not
+establish packaged acceptance.
 
 With the final source, `window-benchmark-final-20261021/result.json` measured
 **40,000 synthetic rows / 33,588,890 source bytes** across three reopened passes
@@ -745,9 +748,101 @@ and 67.58 MiB peak RSS. These are synthetic local intake measurements, with no
 delivery; neither establishes a resource guarantee or installed acceptance.
 
 The 100,000 event/reference and 10,000 scope caps, existing byte limits and
-retained-history requirements remain. Multi-file fairness, aggregate scan
-bandwidth, all six packaged targets and full L1 acceptance remain open. This
-batch does not change stable 4.44 or any roadmap requirement status.
+retained-history requirements remain. That checkpoint did not establish
+multi-file fairness or aggregate scan bandwidth. All six packaged targets and
+full L1 acceptance remain open. It does not change stable 4.44 or any roadmap
+requirement status.
+
+## Connection intake budget and rotation source delta
+
+This **unreleased** batch adds a `ScanBudget` to each retained
+connection's local intake pass: 256 producer-file attempts, 256 rendered
+fragments, 64 MiB of actual input reads including prefix verification/read-ahead,
+and 30 seconds or the configured per-file maximum when smaller. Failed attempts
+also consume the allowance. The timer begins before catalog work, with at least
+one attempt permitted after a slow catalog. Current fragment completion and
+verification can overrun the cooperative limits; the existing per-file window,
+hard per-file deadline and exact admission checks remain. Delivery, cleanup and
+work from separate connections/devices are outside this shared intake budget.
+
+`CaptureSchedule`, stored as encrypted `coverage-schedule` metadata, contains a
+catalog hash, remaining sweep slots and last attempted scope. Stable scope-ID
+rotation resumes after that cursor, including after process restart. A changed
+catalog restarts the sweep but retains the cursor and evidence. `scan_started`
+atomically saves the attempt/cursor and checking observation before file reads;
+it does not assert acceptance. Unvisited work stays deferred, actual interrupted
+attempts remain distinguishable, and previous failures cannot become invisible
+merely because their files were not attempted in the current pass.
+
+Archive auditing validates the schedule schema and device-key rotation
+re-encrypts it with the other observations. The original capture/event identities,
+policy, checkpoints, receipts and deletion fences remain.
+
+The shared `backfill_pending` predicate requires an incomplete report, successful
+delivery contact, no failed optional control report and one of two consistent outcomes:
+`capture_scan_pending` with intake incomplete, or `capture_delivery_pending`
+with intake complete and delivery incomplete. The latter covers queued events
+or unfinished forgetting sweeps; index observations remain separate. Both are
+validated native `backfill` progress and preserve prior success/failure history.
+Native status saves its next scan five seconds after finish; direct `--watch`
+uses the same follow-up interval. Managed runs require
+a fresh private `capture_backfill` receipt from the actual launched runtime,
+matching connector ID/runtime version, exit 2 and `completed: false`. The old
+receipt is removed before launch. Missing/invalid receipts and capture-aware
+runtimes without the field keep normal polling. Partial work does not become a
+successful scan or new successful-scan provenance. Runtime/update leases and
+pause/resource/admission checks remain; failures, paused/complete scans and
+legacy mirrors keep ordinary polling. `remote_sync: false` disables optional
+triggers/reporting while preserving delivery and prompt continuation. This is a
+fixed cadence, not a new profile.
+
+`capture-scheduling-initial-tests.log` records **11 passed and one setup error in
+28.88 seconds**. The real headless case did not start because its imported
+`conversation_source` fixture was missing. The fixture import was corrected;
+the original error remains evidence.
+
+`capture-scheduling-cadence-tests.log` then records **14 passed and two failures
+in 88.07 seconds**. The 257-file case incorrectly expected one pass to deliver
+everything despite the existing four-page/50-event delivery limits; local
+status showed 200 stored and 57 pending. The failure-polling case expected exit 0
+after Ctrl-C, which intentionally exits 130. These assertion failures are
+retained. Review also identified that healthy remaining delivery used ordinary
+polling and appeared partial; the added `capture_delivery_pending` behavior
+addresses that separate gap. That partial run included a passing 97-record
+watcher case, which is not separate final-candidate evidence.
+
+`capture-scheduling-final-source-inputs.json` records this source checkpoint's
+**547 runtime files**, digest
+`2cdbb6099d4eb3fcf4e84a53a8ce5ca5d8124a31a6237570b83b5033ad188abe`.
+`capture-scheduling-final-native-tests.log` records **68 passed, zero skips, in
+564.473063 ms**, and `capture-scheduling-final-native-build.log` records the
+successful build. Separately, `capture-scheduling-final-migration-preflight.log`
+records **30 passed in 138.30 seconds**, fingerprint
+`cb6a8680d74fda612ec00361111559be9f598c59273bcd8a410973c0d456a5d4`.
+`capture-scheduling-final-regression.log` records **149 passed and one failure
+in 229.89 seconds**. The CLI fixture assumed the 256-file allowance would always
+be reached; the cooperative 30-second limit correctly stopped that loaded run
+at 174 files. Runtime code and its digest are unchanged. Only that end-to-end
+case was rerun in `capture-scheduling-watch-retry.log`: **one passed in
+42.39 seconds**. The corrected fixture uses nine files of 64 small records and
+accepts any positive first pass within budget. Its real HTTP/PostgreSQL watcher
+recovered from offline intake, reported both `capture_scan_pending` and
+`capture_delivery_pending`, then completed with **576 stored events, zero pending
+and zero uncertain intervals**.
+
+Together, the 149 unchanged-source results and corrected-case retry establish
+**150 distinct affected service cases passed**. The original full-run log remains
+failed; the earlier 11- and 14-pass runs are not added to this total. Final input
+verification still matches the 547-file digest above. These checks, the 68 native
+controller cases and 30 migration cases establish their source scope.
+`capture-scheduling-qualified-tests.receipt.json` records that qualification,
+the original failed full log, verified source inputs, and zero production writes
+or paid model calls. Current full CI, total event/scope/history/storage
+requirements, all six packaged targets and full L1 acceptance remain open.
+
+The earlier `763a8341` source, all 12 CI jobs and Git-driven website synchronization
+were verified separately from this unreleased batch.
+Earlier per-file proof and the retained policy-CI failure keep their original scope.
 
 ## Source and deletion boundaries
 

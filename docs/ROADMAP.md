@@ -57,10 +57,14 @@ issue review, publication and version-linked closure together.
   files on later scans. The app now labels verified partial progress **Backfilling**
   and preserves prior success/failure observations and the next scan time.
   Focused source/controller and migration checks, the app/documentation build
-  and an isolated Linux intake measurement passed; current full CI is pending.
-  Its cooperative per-file limits do not resolve aggregate scan bandwidth,
-  multi-file fairness or the existing event, scope and history caps. The prior
-  policy checkpoint's failed health-response CI and its current test correction
+  and an isolated Linux intake measurement passed; all 12 CI jobs passed on `763a8341`.
+  A further [unreleased source batch](research/2026-10-21-durable-capture-implementation.md#connection-intake-budget-and-rotation-source-delta)
+  adds cooperative connection-wide intake budgets, encrypted rotation across
+  file attempts and a five-second follow-up for healthy unfinished intake or delivery.
+  Scoped service/controller and migration checks plus the real headless watcher
+  passed. Current full CI, coordination across separate connections/devices and
+  full-history acceptance remain open; event and scope caps are unchanged. The prior
+  policy checkpoint's failed health-response CI and its later test correction
   remain recorded. This remains unreleased source. Reviewed identity/policy
   migration, complete capture policy and coverage, headless installed acceptance,
   bounded history and all six packaged targets remain required before L1 ships.

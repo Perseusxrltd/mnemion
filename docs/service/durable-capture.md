@@ -147,8 +147,8 @@ in `activity.report.capture`.
 | `forgotten_events` | Events covered by the workspace's current forgetting decisions. |
 | `remote_committed_events` | Delivery acknowledgements received during the reported scan, including `stored` and `forgotten` outcomes. |
 | `unknown_pages` | Saved delivery pages awaiting reconciliation. A lost reply does not prove failure or authorize a different page. |
-| `capture_complete`, `reason_code` | Whether that local scan finished. `capture_scan_pending` means a verified prefix was saved and backfill remains; other reasons identify observed source, capacity, integrity or authorization problems. |
-| `delivery_complete` | The observed pending queue and current forgetting sweep finished without a delivery error. |
+| `capture_complete`, `reason_code` | Whether local intake finished. `capture_scan_pending` means verified progress was saved and intake remains; `capture_delivery_pending` means intake finished but queued delivery or the forgetting sweep remains. Other reasons identify observed errors. |
+| `delivery_complete` | The observed pending queue and current forgetting sweep finished without a delivery error. An empty queue alone does not prove the sweep finished. |
 | `database_bytes`, `device_database_bytes`, `device_pending_bytes`, `over_limit` | Local storage observations and whether the inbox exceeds an admission limit. |
 | `coverage` | Encrypted prefix accounting, history uncertainty, queue/contact observations and saved source index observations, described below. |
 | `storage` | Optional free-page cleanup observation, separate from intake and delivery success. Missing or null means unobserved, including older saved reports; see [database cleanup](#reclaim-unused-database-pages-unreleased). |
@@ -156,15 +156,20 @@ in `activity.report.capture`.
 During [bounded backfill](#continue-a-bounded-backfill-unreleased), capture can
 remain incomplete while delivery completes for every event accepted so far.
 `capture_scan_pending` is reported when no source or delivery error takes
-precedence. Continue with the saved inbox and checkpoint on the next scan.
+precedence. Once intake is complete, healthy remaining delivery or forgetting
+work reports `capture_delivery_pending`, with `capture_complete: true` and
+`delivery_complete: false`. By default, delivery attempts at most four pages of
+up to 50 events per cycle; a larger queue can need several cycles. Continue with
+the saved inbox, exact pages and checkpoint.
 
-The app saves a validated incomplete report with available remote control as
-`activity.phase: "backfill"`; both source panels show **Backfilling**. This
+For either continuation reason, the app saves a validated incomplete report
+with successful delivery contact as `activity.phase: "backfill"`; both source
+panels show **Backfilling**. This
 preserves any prior `last_success_report` and `last_failure`, and saves the next
 scan time across restart. It does not invent a success or failure for normal
 deferred work. Pending and fully delivered batches can both be backfilling.
 A missing or invalid report cannot establish this state; actual errors or
-unavailable remote control still need attention.
+an unavailable delivery service still need attention.
 
 Delivery reuses each saved page's exact identity and body. After an uncertain
 reply, the runner looks up the receipt before resending the same page. It applies
@@ -342,11 +347,59 @@ commit atomically. Retained-prefix reuse avoids decrypting and updating every
 old fragment reference; it does not remove source-prefix verification. The
 existing mirror protocol keeps its full-inventory behavior.
 
-These per-file windows do not bound work across a connection or device, provide
-multi-file fairness, or remove the event, scope, storage and retained-history
+These per-file windows alone do not bound work across a connection or device,
+provide multi-file fairness, or remove the event, scope, storage and retained-history
 limits above. [Focused source, controller and migration checks](../research/2026-10-21-durable-capture-implementation.md#bounded-retained-backfill-source-delta),
 the app/documentation build and an isolated Linux intake measurement passed.
-Current full CI, installed-platform and full L1 acceptance remain open.
+All 12 CI jobs also passed for that checkpoint, `763a8341`. The later connection
+budget has separate source evidence below; installed-platform and full L1
+acceptance remain open.
+
+### Share an intake pass across files (unreleased)
+
+A further development batch adds cooperative allowances across one retained
+connection's local intake pass:
+
+| Work | Allowance per pass |
+| --- | --- |
+| Producer-file attempts, including failures | 256 |
+| Rendered fragments across those files | 256 |
+| Actual producer input read, including prefix verification and read-ahead | 64 MiB |
+| Elapsed local intake time | 30 seconds, or the configured per-file scan time when smaller |
+
+The timer starts before catalog work. One file attempt is allowed even after a
+slow catalog; the current fragment and verification can exceed the byte/time
+allowances. Existing per-file windows, exact admission limits and the hard
+per-file scan deadline still apply. These budgets exclude delivery and database
+cleanup and do not combine work across separate connections or devices.
+
+An encrypted schedule records the catalog hash, remaining sweep slots and last
+attempted scope. Files rotate in stable scope-ID order, resuming after that
+scope across restarts. A catalog change restarts the sweep while preserving the
+rotation cursor and all accepted evidence. The attempt, cursor and checking
+observation commit before reading the file; a killed attempt remains distinct
+from deliberately unvisited work. A cursor advance does not prove acceptance.
+
+Unvisited files keep their deferred or failed coverage. An unvisited file's
+earlier failure still prevents a complete report while it remains in the
+catalog; disappearance is recorded separately as missing history. Archive
+inspection validates the saved schedule, and device-key rotation preserves it.
+
+Healthy intake or delivery backfill now schedules another scan **five seconds
+after the current pass finishes**. It requires a matching `capture_scan_pending`
+or `capture_delivery_pending` report, successful delivery contact and no failed
+optional control report. Native status saves that next scan
+time; the headless watcher uses the same interval. [Managed headless runs](headless-capture.md#run-scans-and-choose-scheduling)
+also require a fresh matching private runtime receipt. This changes follow-up
+scheduling, not the incomplete result or prior success/failure history. Failed,
+paused, complete and legacy mirror scans keep ordinary polling. It is not a new
+configurable profile; pause, resource and admission controls still apply.
+
+[Scoped source, controller and migration checks](../research/2026-10-21-durable-capture-implementation.md#connection-intake-budget-and-rotation-source-delta)
+passed, including a real headless watcher that completed intake and delivery of
+576 synthetic events after an outage. The initial setup and assertion failures
+remain recorded. These are source checks; current full CI, history/storage
+requirements, all six packaged targets and full L1 acceptance remain open.
 
 ### Reclaim unused database pages (unreleased)
 

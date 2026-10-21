@@ -6,6 +6,7 @@ module performs no service requests; even control/health polling happens later.
 
 import hashlib
 import json
+import time
 
 from ..capture_identity import canonical_capture_json, capture_event_id
 from .conversation_inbox import InboxError
@@ -14,14 +15,42 @@ from .providers import ProviderError
 
 WINDOW_BYTES = 32 * 1024**2
 WINDOW_SEGMENTS = 64
+PASS_BYTES = 64 * 1024**2
+PASS_SEGMENTS = 256
+PASS_SCOPES = 256
+PASS_SECONDS = 30
+
+
+class ScanBudget:
+    """Cooperative whole-connection allowance, including verified prefix reads."""
+
+    def __init__(self, max_seconds):
+        self.deadline = time.monotonic() + min(PASS_SECONDS, max_seconds)
+        self.bytes = self.segments = self.scopes = 0
+
+    @property
+    def exhausted(self):
+        return (
+            self.scopes >= PASS_SCOPES
+            or self.segments >= PASS_SEGMENTS
+            or self.bytes >= PASS_BYTES
+            or time.monotonic() >= self.deadline
+        )
+
+    def charge(self, report):
+        self.scopes += 1
+        if report is not None:
+            self.bytes += report.get("bytes_read", 0)
+            self.segments += report.get("segments_rendered", 0)
 
 
 class LocalCaptureState:
     observes_selection = True
     resumable_capture = True
 
-    def __init__(self, inbox, scope):
+    def __init__(self, inbox, scope, budget=None):
         self.inbox, self.connection, self.scope = inbox, inbox.connection, scope
+        self.budget = budget
         self.event_count = self.connection.execute(
             "SELECT COUNT(*) FROM producer_events"
         ).fetchone()[0]
@@ -35,12 +64,22 @@ class LocalCaptureState:
         self.window_bytes = min(
             WINDOW_BYTES, max(1024, (inbox.limits.pending_bytes - pending) // 8)
         )
+        if budget is not None:
+            self.window_bytes = min(self.window_bytes, max(1024, PASS_BYTES - budget.bytes))
 
-    def window_reached(self, *, segments, new_bytes, remaining_seconds, scan_seconds):
+    def window_reached(self, *, segments, new_bytes, read_bytes, remaining_seconds, scan_seconds):
         return (
             segments >= WINDOW_SEGMENTS
             or new_bytes >= self.window_bytes
             or remaining_seconds <= scan_seconds / 4
+            or (
+                self.budget is not None
+                and (
+                    self.budget.segments + segments >= PASS_SEGMENTS
+                    or self.budget.bytes + read_bytes >= PASS_BYTES
+                    or time.monotonic() >= self.budget.deadline
+                )
+            )
         )
 
     def retain_prefix(self, before, scan):
@@ -128,11 +167,11 @@ class LocalCaptureState:
         )
 
 
-def capture_scope(inbox, provider, scope):
+def capture_scope(inbox, provider, scope, *, budget=None):
     """Stream a verified producer prefix into one atomic local acceptance."""
     snapshot = None
     try:
-        state = LocalCaptureState(inbox, scope)
+        state = LocalCaptureState(inbox, scope, budget)
         previous = state.read()
         snapshot = ConversationSnapshot(
             provider, scope, state, previous["checkpoint"] if previous else None
@@ -160,15 +199,19 @@ def capture_scope(inbox, provider, scope):
     except (ProviderError, OSError, ValueError, InboxError):
         inbox.observations.failed(scope, snapshot.report if snapshot is not None else None)
         raise
+    finally:
+        if budget is not None:
+            budget.charge(snapshot.report if snapshot is not None else None)
     return {**result, "capture": snapshot.report}
 
 
 def capture_available(inbox, provider):
     """Capture what is available without treating disappearance as forgetting."""
     reports, failures = [], []
+    budget = ScanBudget(provider.config.max_scan_seconds)
     try:
         scopes = provider.scopes()
-        inbox.observations.catalog(scopes)
+        work = inbox.observations.catalog(scopes, scheduled=True)
     except (ProviderError, OSError, ValueError, InboxError) as error:
         inbox.observations.catalog_unavailable()
         return {
@@ -179,9 +222,18 @@ def capture_available(inbox, provider):
             ],
             **inbox.status(),
         }
-    for scope in scopes:
+    for scope in work:
+        # Always allow one attempt after a slow catalog. The existing per-file
+        # deadline still applies, and the next pass starts after this scope.
+        if budget.scopes and budget.exhausted:
+            break
+        started = False
         try:
-            reports.append({"external_id": scope, **capture_scope(inbox, provider, scope)})
+            inbox.observations.scan_started(scope)
+            started = True
+            reports.append(
+                {"external_id": scope, **capture_scope(inbox, provider, scope, budget=budget)}
+            )
         except (ProviderError, OSError, ValueError, InboxError) as error:
             code = getattr(error, "code", "capture_source_unavailable")
             failures.append(
@@ -203,13 +255,17 @@ def capture_available(inbox, provider):
                 }
                 else "capture_source_unavailable"
             )
-            if code in {"capture_capacity_blocked", "capture_disk_full"}:
+            if not started or code in {"capture_capacity_blocked", "capture_disk_full"}:
                 break
-    deferred = any(item["capture"].get("scan_complete") is False for item in reports)
+    status = inbox.status()
+    if not failures and status["coverage"]["failed_scopes"]:
+        # A source that failed earlier in this sweep has not been retried yet.
+        failures.append("capture_source_unavailable")
+    deferred = status["coverage"]["checking_scopes"] > 0
     return {
         "completed": not failures and not deferred,
         "deferred": deferred,
         "scopes": reports,
         "errors": failures,
-        **inbox.status(),
+        **status,
     }

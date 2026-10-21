@@ -251,10 +251,21 @@ gets an allowance of 64 newly rendered fragments or 32 MiB of newly parsed input
 per pass, reduced when pending-byte headroom is small. The soft stop reserves
 the final quarter of that file's scan time for verification. These are
 cooperative limits; prefix hashing, read-ahead and a finishing fragment can
-exceed the new-input allowance. They do not bound the whole connection's work
-or guarantee RAM usage or multi-file fairness. The next ordinary scan resumes
-the saved prefix even when file metadata is unchanged; the same watcher and
-polling schedule apply. Existing mirror configurations retain full inventories.
+exceed the new-input allowance. Those per-file limits alone do not bound the
+whole connection's work or guarantee RAM usage or multi-file fairness. The next
+scan resumes the saved prefix even when file metadata is unchanged. Existing
+mirror configurations retain full inventories.
+
+An additional **unreleased** source batch adds [connection-wide intake allowances](durable-capture.md#share-an-intake-pass-across-files-unreleased):
+256 file attempts, 256 rendered fragments, 64 MiB of actual producer reads
+including prefix verification, and 30 seconds or the smaller per-file scan
+budget. A saved encrypted cursor rotates file attempts across restarts; catalog
+changes retain that cursor and existing evidence. The first file after a slow
+catalog and the current fragment/verification may overrun the cooperative
+budget. Delivery and cleanup remain separate, and the existing per-file limits
+still apply. Unvisited and previously failed files stay visible in coverage.
+Archive inspection validates the schedule, and device-key recovery preserves
+it. Scoped source validation passed; packaged acceptance remains open.
 
 `--watch` reloads configuration and referenced key files for each scan. Normal
 polling defaults to 300 seconds, configurable from 30 to 86,400. With
@@ -264,6 +275,16 @@ state is checked between polls and can wake the watcher. Unavailable remote
 control does not remove the normal scan schedule. `remote_sync: false` disables
 remote triggers and control reporting; it does **not** disable queued delivery
 or the current authorization checks needed to deliver.
+
+Healthy retained backfill now uses a **five-second follow-up** in `--watch`,
+requiring `completed: false`, successful delivery contact, no failed optional control report
+and either healthy unfinished intake (`capture_scan_pending`) or remaining
+delivery/forgetting work after intake (`capture_delivery_pending`). The one-shot
+result still exits 2; this cadence does not count incomplete work as success.
+Failed, paused, complete and legacy mirror scans use ordinary polling.
+`remote_sync: false` still permits delivery and prompt continuation; it disables
+only optional remote triggers/reporting. There is no new profile setting;
+pause, resource and admission controls still apply.
 
 The direct watcher uses its installed development runner until the operator
 updates it. Keep one runner for the configured inbox and arrange process startup
@@ -278,6 +299,14 @@ runtime explicitly refuses retained capture. Mirror configurations keep their
 service-readiness gate. This option selects an existing managed service; it
 does not install a process manager, enroll a source or provide Windows managed
 hosting. Stable 4.44 is not a capture-aware runtime.
+
+For the five-second follow-up, the managed launcher removes the old optional
+receipt before each scan and reads a new private `capture_backfill` boolean.
+Only exit 2 with `completed: false`, the matching connector ID and the version
+of the freshly resolved, verified runtime can enable it. This receipt does not
+establish successful-scan provenance. Missing, stale or invalid receipts, or a
+capture-aware runtime without the new field, keep ordinary polling. Runtime
+and update leases remain in force; this does not bypass update transitions.
 
 ## Read status and respect resource limits
 
@@ -310,17 +339,29 @@ failed scopes or interrupted intervals. Selected-line counters still describe
 the latest accepted prefixes. Removed unexamined suffixes remain unresolved
 history; draining the queue does not recover them.
 
-Headless activity keeps `state: "finished"` with this incomplete report; read
+`capture_delivery_pending` instead requires `capture_complete: true` and
+`delivery_complete: false`: intake finished, but accepted events or the current
+forgetting sweep need another bounded cycle. Normal delivery attempts at most
+four pages of up to 50 events per cycle. A zero pending-event count can still
+leave unfinished forgetting work. Real errors take precedence over either
+continuation reason and retain ordinary failure polling.
+
+Headless activity keeps `state: "finished"` with either incomplete report; read
 the capture reason and flags. The separate native desktop status now saves
 validated progress as `phase: "backfill"`, displayed as **Backfilling**, with
 its actual next scan time and prior success/failure observations preserved.
-That native state requires its valid report and available remote control;
+That native state requires its valid report and successful delivery contact;
 missing proof or genuine errors cannot be presented as normal backfill.
 
-The [backfill validation record](../research/2026-10-21-durable-capture-implementation.md#bounded-retained-backfill-source-delta)
+The [earlier per-file backfill checkpoint](../research/2026-10-21-durable-capture-implementation.md#bounded-retained-backfill-source-delta)
 records passing source, controller and migration checks, the app/documentation
-build and an isolated Linux intake measurement. Current full CI and packaged
-acceptance remain pending; this source work is unreleased.
+build, all 12 CI jobs on `763a8341` and an isolated Linux intake measurement.
+The separate [connection scheduling and continuation proof](../research/2026-10-21-durable-capture-implementation.md#connection-intake-budget-and-rotation-source-delta)
+now covers 150 distinct service cases, 68 native controller checks and 30
+migration checks. Its real watcher moved through intake-pending and
+delivery-pending to 576 stored events, zero pending and zero uncertain intervals.
+Original failed runs remain recorded. Current full CI and all six packaged
+targets remain separate; this source work is unreleased and full L1 remains open.
 
 Saved [prefix coverage](durable-capture.md#read-prefix-coverage), queue age and
 authenticated contact/acknowledgement observations keep their separate meanings.

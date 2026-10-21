@@ -23,7 +23,13 @@ from pydantic import Field, field_validator
 
 from .. import backup_encryption as encryption, local_state
 from ..archives import _rename_exclusive
-from ..capture_coverage import CaptureCoverage, PrefixObservation, utc_now, utc_timestamp
+from ..capture_coverage import (
+    CaptureCoverage,
+    CaptureSchedule,
+    PrefixObservation,
+    utc_now,
+    utc_timestamp,
+)
 from ..capture_identity import canonical_capture_json
 from ..private_output import private_output
 from ..service.capture_models import CapturePageInput
@@ -179,6 +185,8 @@ def _audit_values(inbox, cancelled=None):
             cursor = _decoded(inbox, encrypted, name)
             if cursor is not None and (not isinstance(cursor, str) or not HASH.fullmatch(cursor)):
                 raise CaptureArchiveError("The archived deletion position is invalid.")
+        elif name == "coverage-schedule":
+            CaptureSchedule.model_validate(_decoded(inbox, encrypted, "observation:" + name))
         elif name == "coverage-summary":
             CaptureCoverage.model_validate(_decoded(inbox, encrypted, "observation:" + name))
         elif name.startswith("coverage:") and SCOPE.fullmatch(name[len("coverage:") :]):

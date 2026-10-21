@@ -180,3 +180,12 @@ class PrefixObservation(Bounded):
         if self.examined_bytes > self.observed_bytes:
             raise ValueError("An accepted prefix cannot exceed the observed file")
         return self
+
+
+class CaptureSchedule(Bounded):
+    """Private round-robin position; never a claim that a scope was accepted."""
+
+    format: Literal["mnemion-capture-schedule-v1"] = "mnemion-capture-schedule-v1"
+    catalog: Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
+    remaining: Count
+    last_scope: Annotated[str, Field(pattern=r"^conversation:[a-f0-9]{64}$")] | None = None

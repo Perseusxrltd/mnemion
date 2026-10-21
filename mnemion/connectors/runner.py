@@ -17,6 +17,7 @@ from pydantic import ValidationError
 from ..local_state import LocalSetupError
 from ..sdk import Client, MnemionError
 from ..version import __version__
+from .capture_cycle import BACKFILL_POLL_SECONDS, backfill_pending
 from .config import read_config
 from .conversation_inbox import InboxError
 from .protocol import ConnectorClient, SkippedDocument
@@ -331,6 +332,7 @@ def _report_managed(report):
             "connector_id": report["connector_id"],
             "runner_version": __version__,
             "completed": report["completed"],
+            "capture_backfill": backfill_pending(report),
             "scanned_commit": git_commit("git:" + str(report.get("scanned_commit", ""))),
             "scanned_at": report["timestamp"],
         },
@@ -392,10 +394,15 @@ def sync(config, *, inspect=False, adapter=None, client=None) -> dict:
             client.close()
 
 
-def wait_for_sync(config, *, failed=False, client=None, clock=None, sleep=None):
+def wait_for_sync(config, *, failed=False, backfill=False, client=None, clock=None, sleep=None):
     """Poll only a small control record; never fetch the source between scans."""
     clock, sleep = clock or time.monotonic, sleep or time.sleep
-    deadline = clock() + config.poll_seconds
+    interval = (
+        min(config.poll_seconds, BACKFILL_POLL_SECONDS)
+        if config.capture is not None and backfill
+        else config.poll_seconds
+    )
+    deadline = clock() + interval
     retry_at = clock() + (min(30, config.poll_seconds) if failed else 0)
     was_paused = False
 
@@ -503,6 +510,7 @@ def main(argv=None) -> int:
     trigger = "startup" if args.watch or args.inspect else scan_trigger()
     while True:
         started, started_at = time.monotonic(), datetime.now(timezone.utc).isoformat()
+        backfill = False
         try:
             config = read_config(args.config)
             if args.capture_control:
@@ -530,6 +538,7 @@ def main(argv=None) -> int:
             if not args.inspect:
                 _report_managed(report)
             print(json.dumps(report, ensure_ascii=False), flush=True)
+            backfill = config.capture is not None and backfill_pending(report)
             code = 0 if report["completed"] and report.get("control_reported") is not False else 2
         except ValidationError as exc:
             # Pydantic repr may include submitted token-shaped values. Report
@@ -598,7 +607,7 @@ def main(argv=None) -> int:
             return code
         try:
             if "config" in locals():
-                trigger = wait_for_sync(config, failed=code != 0)
+                trigger = wait_for_sync(config, failed=code != 0, backfill=backfill)
             else:
                 time.sleep(300)
         except KeyboardInterrupt:

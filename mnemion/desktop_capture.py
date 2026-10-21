@@ -49,6 +49,7 @@ CAPTURE_REASONS = frozenset(
         "capture_binding_mismatch",
         "capture_binding_invalid",
         "capture_delivery_unavailable",
+        "capture_delivery_pending",
         "capture_capacity_blocked",
         "capture_scan_pending",
         "capture_disk_full",

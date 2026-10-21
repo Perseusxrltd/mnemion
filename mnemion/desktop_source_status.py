@@ -18,6 +18,7 @@ from uuid import UUID, uuid4
 from pydantic import Field, ValidationError, field_validator, model_validator
 
 from . import local_state
+from .connectors.capture_cycle import BACKFILL_POLL_SECONDS, BACKFILL_REASONS, backfill_pending
 from .desktop_capture import CAPTURE_REASONS, CaptureReport
 from .service.models import Command
 
@@ -83,14 +84,7 @@ class Report(Command):
 
 
 def backfilling(report: Report | None) -> bool:
-    return (
-        report is not None
-        and not report.completed
-        and report.remote_sync_available
-        and report.capture is not None
-        and not report.capture.capture_complete
-        and report.capture.reason_code == "capture_scan_pending"
-    )
+    return backfill_pending(report.model_dump() if report is not None else None)
 
 
 class Failure(Command):
@@ -102,7 +96,7 @@ class Failure(Command):
     @field_validator("reason_code")
     @classmethod
     def failure_reason(cls, value):
-        if value == "capture_scan_pending":
+        if value in BACKFILL_REASONS:
             raise ValueError("Backfill progress is not a failed scan")
         return value
 
@@ -156,11 +150,11 @@ class Record(Command):
             raise ValueError("A completed observation needs a successful report")
         if self.phase == "attention" and self.reason_code is None:
             raise ValueError("Attention needs a known reason")
-        if self.phase == "backfill" or self.reason_code == "capture_scan_pending":
+        if self.phase == "backfill" or self.reason_code in BACKFILL_REASONS:
             if (
                 self.phase != "backfill"
-                or self.reason_code != "capture_scan_pending"
                 or not backfilling(self.report)
+                or self.reason_code != self.report.capture.reason_code
             ):
                 raise ValueError("Backfill progress needs its observed capture report")
         if self.reason_code == "partial" and (self.report is None or self.report.completed):
@@ -219,7 +213,7 @@ class Request(Command):
                 raise ValueError("Do not combine a report with a separate failure")
             if self.reason_code == "history_reset":
                 raise ValueError("A scan cannot reset observation history")
-            if self.reason_code == "capture_scan_pending":
+            if self.reason_code in BACKFILL_REASONS:
                 raise ValueError("Backfill progress needs its observed capture report")
         if self.operation == "status_repair" and self.confirm is not True:
             raise ValueError("Confirm repair of this computer's scan observations")
@@ -427,8 +421,11 @@ def perform(root: Path, value: dict) -> dict:
                 )
             finished = now()
             backfill = backfilling(request.report)
+            interval = (
+                min(source.poll_seconds, BACKFILL_POLL_SECONDS) if backfill else source.poll_seconds
+            )
             reason = request.reason_code or (
-                "capture_scan_pending"
+                request.report.capture.reason_code
                 if backfill
                 else "partial"
                 if request.report and not request.report.completed
@@ -441,7 +438,7 @@ def perform(root: Path, value: dict) -> dict:
                     "phase": "backfill" if backfill else "attention" if reason else "complete",
                     "finished_at": finished,
                     "next_scan_at": (
-                        datetime.fromisoformat(finished) + timedelta(seconds=source.poll_seconds)
+                        datetime.fromisoformat(finished) + timedelta(seconds=interval)
                     ).isoformat(),
                     "reason_code": reason,
                     "report": report,

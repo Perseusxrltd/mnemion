@@ -494,6 +494,7 @@ class ConversationSnapshot:
                         if self.resumable_capture and self.state.window_reached(
                             segments=self.report["segments_rendered"],
                             new_bytes=offset - start,
+                            read_bytes=self.report["bytes_read"],
                             remaining_seconds=self.deadline - time.monotonic(),
                             scan_seconds=self.config.max_scan_seconds,
                         ):
