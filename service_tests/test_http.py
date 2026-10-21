@@ -21,6 +21,7 @@ def test_health_reports_running_version_without_exposing_workspace_or_update_det
         "api_version": "v1",
         "service_version": __version__,
         "connector_partial_inventory": True,
+        "durable_capture": "v1",
     }
     assert ready.json() == {
         "status": "ready",
