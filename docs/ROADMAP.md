@@ -25,7 +25,9 @@ issue review, publication and version-linked closure together.
   identities, protected login and preferences, then passed 47 of 47 synthetic
   requests with complete cleanup. The host used compatible automatic updating;
   Windows used a guarded agent restart. All six native and public upgrade
-  targets passed. Fresh post-upgrade backup delivery remains pending; the
+  targets passed. Fresh post-upgrade snapshot and ledger delivery passed
+  independent manifest verification at 00:41 UTC after a bounded private-mirror
+  quota correction; this was not a new restore drill. The
   earlier 4.41 semantic HTTP 503 remains unexplained under issue 45.
 
 - **4.43 shares local inference between indexing and waiting queries.**
