@@ -10,7 +10,6 @@ from __future__ import annotations
 import base64
 from contextlib import contextmanager
 from dataclasses import replace
-from datetime import datetime, timezone
 import hashlib
 import os
 import re
@@ -23,11 +22,12 @@ from pydantic import Field, field_validator
 
 from . import local_state
 from .capture_coverage import CaptureCoverage
-from .connectors.capture_delivery import deliver, verify_grant
+from .connectors.capture_delivery import retire_grant, verify_grant
+from .connectors.capture_cycle import cycle
 from .connectors.conversation_capture import capture_available
 from .connectors.conversation_inbox import InboxError, Limits, open_inbox
 from .connectors.live_conversations import ConversationProvider
-from .sdk import Client, MnemionError
+from .sdk import Client
 from .service.models import Command
 
 DEVICE_PENDING_BYTES = 1024**3
@@ -325,65 +325,28 @@ def local_capture(root, source, inbox, private_roots):
 
 
 def scan(root, source, encoded_key, credential, private_roots=()):
-    import httpx
-
     began = time.monotonic()
     saved = saved_source(root, source)
     if not source.enabled:
         raise InboxError("capture_settings_changed")
     with opened(root, saved, encoded_key, initialize=True) as (inbox, state):
-        local = {"completed": False, "scopes": [], "errors": ["capture_authorization_revoked"]}
-        if state["state"] == "ready":
-            try:
-                local = local_capture(root, source, inbox, private_roots)
-            except InboxError as error:
-                local["errors"] = [error.code]
-        delivered, remote_error, fence_pending = 0, None, False
-        # Client creation and all requests happen AFTER the local transaction.
-        try:
-            with Client(source.endpoint, credential, timeout=10, retries=0) as client:
-                remote = deliver(inbox, client)
-                delivered = remote["remote_committed_events"]
-                fence_pending = remote["fence_sweep_pending"]
-        except (MnemionError, httpx.HTTPError, InboxError, ValueError) as error:
-            remote_error = (
-                error.code if isinstance(error, InboxError) else "capture_delivery_unavailable"
-            )
-            if remote_error == "capture_authorization_revoked":
-                local_state.write(record_path(root, source.id), {**state, "state": "revoked"})
-        status = inbox.status()
-        with local_state.lock(local_state.directory(root / "inbox-budget")):
-            usage = device_usage(root, inbox)
-        capture = {
-            "locally_accepted": sum(item["locally_accepted"] for item in local["scopes"]),
-            "pending_events": status["pending_events"],
-            "pending_bytes": status["pending_bytes"],
-            "remote_committed_events": delivered,
-            "stored_events": status["stored_events"],
-            "forgotten_events": status["forgotten_events"],
-            "unknown_pages": status["unknown_pages"],
-            "database_bytes": status["database_bytes"],
-            "over_limit": status["over_limit"],
-            "capture_complete": local["completed"],
-            "delivery_complete": not remote_error
-            and not status["pending_events"]
-            and not fence_pending,
-            "device_pending_bytes": usage["pending_bytes"],
-            "device_database_bytes": usage["database_bytes"],
-            "reason_code": next(iter(local["errors"]), None) or remote_error,
-            "coverage": status["coverage"],
-        }
-        return {
-            "completed": capture["capture_complete"] and capture["delivery_complete"],
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "duration_seconds": time.monotonic() - began,
-            "changed": delivered,
-            "removed": 0,
-            "unchanged": 0,
-            "conflicts": 0,
-            "remote_sync_available": remote_error is None,
-            "capture": capture,
-        }
+
+        def usage():
+            with local_state.lock(local_state.directory(root / "inbox-budget")):
+                return device_usage(root, inbox)
+
+        return cycle(
+            inbox,
+            collect=(lambda: local_capture(root, source, inbox, private_roots))
+            if state["state"] == "ready"
+            else None,
+            client=lambda: Client(source.endpoint, credential, timeout=10, retries=0),
+            revoked=lambda: local_state.write(
+                record_path(root, source.id), {**state, "state": "revoked"}
+            ),
+            usage=usage,
+            started=began,
+        )
 
 
 def verify(source, root, client):
@@ -429,30 +392,12 @@ def verify(source, root, client):
 
 
 def revoke_for_removal(source, credential):
-    from .service.capture_models import CaptureGrant
-
     if not isinstance(credential, str) or not re.fullmatch(
         r"[A-Za-z0-9_.~+/=-]{16,1024}", credential
     ):
         raise InboxError("capture_retirement_credentials")
-    base = f"/v1/capture-grants/{source.custody.grant_id}"
-    try:
-        with Client(source.endpoint, credential, timeout=10, retries=0) as client:
-            grant = CaptureGrant.model_validate(client.request("GET", base))
-            if any(grant.model_dump()[key] != value for key, value in binding(source).items()):
-                raise InboxError("capture_binding_mismatch")
-            if not grant.revoked_at and not grant.source_revoked_at:
-                grant = CaptureGrant.model_validate(client.request("DELETE", base))
-            if (
-                not (grant.revoked_at or grant.source_revoked_at)
-                or grant.active
-                or any(grant.model_dump()[key] != value for key, value in binding(source).items())
-            ):
-                raise InboxError("capture_retire_required")
-    except MnemionError as error:
-        if error.status in {401, 403}:
-            raise InboxError("capture_retirement_credentials") from None
-        raise
+    with Client(source.endpoint, credential, timeout=10, retries=0) as client:
+        retire_grant(binding(source), client)
 
 
 def retire(root, request):

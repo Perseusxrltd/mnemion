@@ -275,12 +275,13 @@ def setup(
             shutil.copyfileobj(source, destination, length=1024 * 1024)
         pinned_uv.chmod(0o700)
         state_io.write(root / "owner.json", {"admin_database_url": owner}, replace=False)
-        from ..connectors.runner import MANAGED_PROTOCOL
+        from ..connectors.runner import HEADLESS_CAPTURE_PROTOCOL, MANAGED_PROTOCOL
 
         runtime = {
             "version": __version__,
             "readiness_protocol": supervision.READINESS_PROTOCOL,
             "connector_protocol": MANAGED_PROTOCOL,
+            "capture_protocol": HEADLESS_CAPTURE_PROTOCOL,
             "python": settings["python"],
             "directory": settings["directory"],
             "isolated": False,
@@ -532,7 +533,7 @@ def _stage(root: Path, settings: dict) -> dict:
         "from mnemion.service import supervision as lifecycle; "
         "from mnemion.connectors import runner as connector; "
         "from mnemion.service.update_state import local_migrations; "
-        "p,s=resolve_studio(); print(json.dumps({'version':__version__,'studio':p is not None,'migrations':local_migrations(),'package':str(Path(mnemion.__file__).parent),'readiness_protocol':getattr(lifecycle,'READINESS_PROTOCOL',0),'connector_protocol':getattr(connector,'MANAGED_PROTOCOL',0)}))"
+        "p,s=resolve_studio(); print(json.dumps({'version':__version__,'studio':p is not None,'migrations':local_migrations(),'package':str(Path(mnemion.__file__).parent),'readiness_protocol':getattr(lifecycle,'READINESS_PROTOCOL',0),'connector_protocol':getattr(connector,'MANAGED_PROTOCOL',0),'capture_protocol':getattr(connector,'HEADLESS_CAPTURE_PROTOCOL',0)}))"
     )
     output = _command(
         [str(python), "-I", "-c", code],
@@ -546,10 +547,13 @@ def _stage(root: Path, settings: dict) -> dict:
         package = Path(preflight.pop("package"))
         protocol = preflight.pop("readiness_protocol")
         connector_protocol = preflight.pop("connector_protocol", 0)
+        capture_protocol = preflight.pop("capture_protocol", 0)
         if type(protocol) is not int or protocol not in {0, supervision.READINESS_PROTOCOL}:
             raise ValueError("readiness protocol")
         if type(connector_protocol) is not int or connector_protocol not in {0, 1}:
             raise ValueError("connector protocol")
+        if type(capture_protocol) is not int or capture_protocol not in {0, 1}:
+            raise ValueError("capture protocol")
         if not package.resolve().is_relative_to((slot / "venv").resolve()):
             raise ValueError("package location")
         if preflight != {
@@ -563,6 +567,7 @@ def _stage(root: Path, settings: dict) -> dict:
     runtime["package"] = str(package)
     runtime["readiness_protocol"] = protocol
     runtime["connector_protocol"] = connector_protocol
+    runtime["capture_protocol"] = capture_protocol
     verify_installed_package(artifacts, release, package)
     runtime_wheels.verify_installed(artifacts, release, package, source / "uv.lock")
     compatible = _automatic_compatible(active, runtime)

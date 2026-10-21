@@ -113,6 +113,8 @@ def restore_device_copy(
         expected_sha256=expected_sha256,
         cancelled=cancelled,
     ) as archive:
+        if inbox_key == _key(archive.manifest.inbox_key):
+            raise CaptureArchiveError("Use a new private inbox key for device recovery.")
         binding = device_binding(archive.manifest.binding, selected_binding)
         _space(destination.parent, archive.manifest.database_bytes * 2)
         with local_state.temporary_directory(

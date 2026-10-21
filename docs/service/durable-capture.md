@@ -2,15 +2,21 @@
 
 **Unreleased implementation.** This guide describes the current development
 source. Check [release status](../RELEASE_STATUS.md) for published availability.
-Both Studio and the workspace server must support retained capture; the server
-advertises `durable_capture: "v1"` in `GET /health/live`. This work advances L1
-of the [layered librarian](../research/2026-10-20-layered-librarian.md); full L1
+For desktop use, both Studio and the workspace server must support retained
+capture; the server advertises `durable_capture: "v1"` in `GET /health/live`.
+This work advances L1 of the [layered librarian](../research/2026-10-20-layered-librarian.md); full L1
 and R07 acceptance remain open.
 
 Retained capture commits the selected conversation items to an encrypted local
 inbox before making any service request in a scan. Once accepted locally, those
 items can still be delivered after the original JSONL file rotates or disappears.
 Delivery checks the workspace's current authorization and forgetting decisions.
+
+For the independent development runner, use the [headless capture guide](headless-capture.md).
+It describes explicit paused enrollment, protected key references, scheduling
+and recovery through `mnemion-connect --capture-control`. Its source checkpoint
+checks passed; packaged acceptance remains open. The Studio controls below and
+stable 4.44 availability remain separate.
 
 ## Choose retention before enrollment
 
@@ -483,11 +489,13 @@ the inputs and interrupted-operation controls.
 
 ## Agent and administrator setup
 
-Remote administration uses the server's capture APIs. The local runner uses the
+Remote administration uses the server's capture APIs. The desktop runner uses the
 same OS-account [private desktop interface](desktop-operator.md) as Studio;
 a network memory credential does not authorize control of the computer. Discover
 the current [agent operation schemas](agent-control.md) before submitting a
-request. These operations are part of the unreleased implementation:
+request. The independent [headless runner](headless-capture.md) uses an explicit
+JSON capture configuration and local stdin controls; it does not require Studio.
+These operations are part of the unreleased implementation:
 
 | Operation | HTTP route |
 | --- | --- |

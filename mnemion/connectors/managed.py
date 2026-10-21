@@ -133,6 +133,8 @@ def _environment(config) -> dict[str, str]:
         SCAN_REPORT_ENV,
     }
     tokens = [config.service_token]
+    if config.capture is not None:
+        tokens.append(config.capture.inbox_key)
     if hasattr(config.provider, "token"):
         tokens.append(config.provider.token)
     references = {token.env for token in tokens if token.env}
@@ -144,7 +146,9 @@ def _environment(config) -> dict[str, str]:
 
 
 def _snapshot(path: Path, config) -> None:
-    data = (config.model_dump_json() + "\n").encode()
+    # Older rollback runtimes must not receive newly added optional fields with
+    # null values. An explicitly retained source requires its runtime protocol.
+    data = (config.model_dump_json(exclude_none=True) + "\n").encode()
     if len(data) > 1_000_000:
         raise ManifestError("Managed connector configuration exceeds 1 MB")
     descriptor, name = tempfile.mkstemp(prefix=".scan-", dir=path.parent)
@@ -234,12 +238,16 @@ def _scan(
         if (root / "journal.json").exists() or update_state.connector_update_waiting(root):
             observation.record("waiting_for_update")
             return None
-        if not supervision.status(state)["ready"]:
+        if config.capture is None and not supervision.status(state)["ready"]:
             observation.record("service_unavailable")
             return None
         # Resolve afresh for every scan, after obtaining the lease. This checks
         # the signature, immutable staging identity and installed package bytes.
         runtime = service_updates.resolved_runtime(state)
+        if config.capture is not None and runtime.get("capture_protocol") != 1:
+            raise ManifestError(
+                "The verified runtime does not support retained headless capture; update it before starting this source"
+            )
         if (
             handoff
             and runtime.get("connector_protocol") == 1

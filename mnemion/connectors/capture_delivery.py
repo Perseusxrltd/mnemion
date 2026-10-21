@@ -25,6 +25,32 @@ def verify_grant(inbox, client):
     return grant
 
 
+def retire_grant(binding, client):
+    """Reconcile an uncertain retirement by reading its irreversible state first."""
+    base = f"/v1/capture-grants/{binding['grant_id']}"
+    try:
+        grant = CaptureGrant.model_validate(client.request("GET", base))
+        value = grant.model_dump(mode="json")
+        if any(value.get(key) != expected for key, expected in binding.items()) or (
+            value.get("capture_policy") != binding.get("capture_policy")
+        ):
+            raise InboxError("capture_binding_mismatch")
+        if not grant.revoked_at and not grant.source_revoked_at:
+            grant = CaptureGrant.model_validate(client.request("DELETE", base))
+        value = grant.model_dump(mode="json")
+        if (
+            not (grant.revoked_at or grant.source_revoked_at)
+            or grant.active
+            or any(value.get(key) != expected for key, expected in binding.items())
+            or value.get("capture_policy") != binding.get("capture_policy")
+        ):
+            raise InboxError("capture_retire_required")
+    except MnemionError as error:
+        if error.status in {401, 403}:
+            raise InboxError("capture_retirement_credentials") from None
+        raise
+
+
 def deliver(inbox, client, *, maximum_pages=4, maximum_seconds=20):
     """Use exact saved pages; unknown replies never reset or rename evidence.
 

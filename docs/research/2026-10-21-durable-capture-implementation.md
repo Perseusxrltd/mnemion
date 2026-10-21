@@ -62,6 +62,7 @@ does not ship this unfinished capture milestone.
 | Capture policy and local preview | An additional unreleased delta adds Selected/Conversation/Detailed choices, relative JSONL file rules, size caps and explicit mirror/retained selection through the same app/agent configuration. A bounded local preview returns counts and capability statuses; explicit-policy retained fragments carry the immutable approved policy fingerprint. Source, Linux journey and separate recovery/migration checks passed; full L1 acceptance remains open. |
 | Portable inbox archive | Unreleased checkpoint `7aca19e9` exports and inspects encrypted local evidence, and restores a new private inbox under its original binding. Core, helper/controller, migration and Linux app export/restart-inspection checks passed. These checks do not establish the separate device-recovery delta or packaged acceptance. |
 | Device recovery | An unreleased source checkpoint re-encrypts an inspected archive for a new approved grant and inbox key, retires the old grant and installs a new paused native source. The original organization/source/namespace/policy stays fixed. Protected intents support explicit finish/discard after interrupted local publication. Source, controller, operator and migration checks plus the three-phase Linux source journey passed. All three earlier failed journeys are retained below; six-platform packaged and full L1 acceptance remain open. |
+| Independent headless capture | An additional unreleased delta gives `mnemion-connect` explicit JSON custody and stdin controls for paused enrollment, resume, status, encrypted backup and fixed-policy device recovery. Protected file/environment references replace automatic desktop OS sealing. Local intake precedes service access. Source regression, migration and updater checks passed, including polling and verified managed-runtime integration; packaged acceptance remains open. Configurations without `capture` retain mirror behavior. |
 | Encrypted selected inbox | The native controller creates an independent random 256-bit key and seals it through OS credential storage. Selected items and a verified capture checkpoint commit together under AES-256-GCM. Both messages and complete modes use the existing renderer. Messages mode cannot retain a raw transcript or hide raw text in its source evidence. |
 | Local capture and scheduling | The normal desktop runner commits available selected JSONL evidence before any service request in a scan. Accepted events survive restart and producer removal/rotation; unfinished tails wait. Missing source files can stop new capture while already accepted evidence remains deliverable. |
 | Durable service custody | Explicit administrator consent, immutable selection/source identity, exact device-key grants, current audience/role checks, immutable event receipts and idempotent pages. Existing provider permission leases remain unchanged. |
@@ -471,6 +472,63 @@ describe this fixed-policy device replacement. Broader organization/source/polic
 migration, complete historical coverage, current index acceptance, L2/L3 and
 all six packaged journeys remain open.
 
+## Headless retained capture source delta
+
+This **unreleased** addition is separate from the accepted desktop/Linux source
+journey above and from stable 4.44. The [operator and agent guide](../service/headless-capture.md)
+documents the exact JSON configuration, bounded local preview and
+`--capture-control` requests. An explicit `capture` object binds the approved
+tenant, principal, connector, source, grant, namespace and policy. Configuration
+alone cannot enroll or resume. Initial enrollment verifies current authority and
+creates a paused inbox; existing mode-only policies remain supported under their
+default selection limits. Existing mirror configurations do not convert.
+
+The independent runner uses protected file/environment key references, including
+an inbox key separate from its API credential. It does not automatically use the
+desktop OS store. The shared capture cycle commits selected complete evidence
+before opening a service credential/client. Saved activity distinguishes a live
+scan from an interrupted process; its report is the latest attempt, not lifetime
+coverage. Queue, prefix and source-wide index observations retain their bounded
+scopes, and L2/L3 consolidation remains unavailable. Sampled per-process RAM
+enforcement, per-inbox limits and aggregate admission under the configured
+private state root constrain local work without deleting accepted evidence.
+
+Direct polling uses strict protected credential reads and observes local
+paused-to-resumed state between remote polls. On an adopted Linux/macOS host,
+the managed path can launch retained intake while service readiness is false,
+but preserves runtime/update leases and the update-journal gate. Verified runtime
+preflight must advertise `capture_protocol: 1`; older runtimes explicitly refuse
+retained configurations. Mirror readiness behavior is unchanged, and managed
+configuration snapshots omit absent optional fields for rollback compatibility.
+
+Local backup/inspection use the existing encrypted archive without exporting an
+API credential. New-grant recovery stages and authenticates the archive, validates
+present producer prefixes, destination and capacity before retiring the old
+grant, and refuses reuse of its inbox key. Original organization, connector,
+source, namespace and policy remain fixed. An explicit `recovering` record
+supports finish/discard after publication failures; successful recovery remains
+paused. Headless retirement retains the established inbox, whereas discard is
+limited to an unfinished replacement. These are distinct from the native
+desktop control names and OS-protected enrollment above.
+
+The initial **seven** real CLI/HTTP/PostgreSQL checks passed in **23.24 seconds**
+before the recovery-ordering, protected polling and managed-readiness follow-ups.
+`headless-capture-regression-tests.log` then recorded **70 passed in 76.19 seconds**,
+including 21 new headless cases and existing desktop, transfer, runner and managed
+regressions. The new cases cover actual CLI interruption after local commit and
+restart recovery, offline managed intake, old-runtime refusal, paused wakeup,
+sampled RAM enforcement, and prefix/collision/capacity/key rejection before old
+grant retirement. The application source snapshot is recorded in
+`headless-capture-source-inputs.json`, digest
+`8e0bac3ab5d6dc042b04523f966fef674868b0d6f6fc9898a439b92638d5dea0`.
+Separately, `headless-capture-migration-preflight.log` records **29 passed in
+55.54 seconds**, fingerprint
+`554868bb00470959202563c8be0ac3d068298bc2438dd2086cada2c5102d4e48`;
+`headless-capture-updater-regression.log` records **30 passed in 3.37 seconds**.
+The application source digest remained unchanged. These overlapping suites are
+reported separately. They are source checks; no installed-artifact or six-target
+acceptance is claimed, and the remaining L1 requirements below are unchanged.
+
 ## Source and deletion boundaries
 
 The staged service exposes a `durable_capture: "v1"` capability. An administrator
@@ -543,9 +601,12 @@ a scan. It cannot stand in for evidence or key recovery.
   or provide migration of the original organization, source identity or capture
   selection. Retain the broader reviewed migration requirement, existing mirror
   behavior and past forgetting decisions; current files alone are insufficient.
-- Complete the independent headless retained-source enrollment, scheduling and
-  lifecycle journey. Ordinary `mnemion-connect` configurations still use their
-  existing mirror protocol; desktop helper wiring does not establish that journey.
+- Complete acceptance of the independent headless retained-source enrollment,
+  scheduling and lifecycle journey. Its explicit JSON `capture` configuration
+  and local controls passed the bounded source checks above; packaged acceptance
+  remains open. Configurations without `capture` keep the existing mirror
+  protocol. Desktop helper or source-journey proof does not establish headless
+  acceptance.
 - Complete bounded retained-history behavior and L1 acceptance for backpressure,
   retention and aggregate limits, including interrupted enrollment and current
   permission changes. Existing admission caps and the Linux source journey do

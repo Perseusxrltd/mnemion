@@ -44,9 +44,14 @@ issue review, publication and version-linked closure together.
   passed. The final Linux source journey now covers app recovery, reopening the
   new protected key after restart, reconciling old queued memories without
   duplicates and capturing new memories. Three earlier UI/controller failures
-  and their corrections remain in the validation record. Reviewed identity/policy
-  migration, complete capture policy and coverage,
-  headless operation, bounded history and
+  and their corrections remain in the validation record. The independent
+  [headless source journey](service/headless-capture.md) now covers explicit
+  enrollment, offline intake, interrupted-process recovery, pause/resume,
+  encrypted backup and new-grant recovery. Its CLI, protected-file, resource,
+  managed-runner and shared desktop regressions passed, along with migration
+  and updater checks. This remains unreleased source. Reviewed identity/policy
+  migration, complete capture policy and coverage, headless installed
+  acceptance, bounded history and
   all six packaged targets remain required before this L1 milestone ships.
 
 - **4.44 is published and accepted on the actual Windows app and shared host.** Certifi 2026.10.19 and

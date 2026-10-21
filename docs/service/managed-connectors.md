@@ -48,7 +48,11 @@ for access pauses new scans and retries in about 30 seconds. Existing scans
 finish normally. This prevents continuous ingestion from starving an update.
 An abandoned pause expires and also requires a matching live process identity.
 
-Scans wait while the service is unavailable or recovering an interrupted update.
+Mirror scans wait while the service is unavailable. The unreleased
+[headless retained-capture mode](headless-capture.md) can accept selected evidence
+locally during a service outage when its verified runtime advertises capture
+protocol 1. All modes still wait through update journals and runtime transitions;
+an older runtime explicitly refuses a retained configuration.
 After cutover, the next scan uses the new version. After rollback, it uses the
 verified restored version. Future runtimes that advertise managed-launcher
 protocol 1 also replace the launcher between scans. Older rollback runtimes

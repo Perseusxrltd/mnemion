@@ -14,9 +14,11 @@ from pathlib import Path
 import httpx
 from pydantic import ValidationError
 
+from ..local_state import LocalSetupError
 from ..sdk import Client, MnemionError
 from ..version import __version__
 from .config import read_config
+from .conversation_inbox import InboxError
 from .protocol import ConnectorClient, SkippedDocument
 from .live_conversations import ConversationProvider
 from .journal_projection import project_documents
@@ -24,6 +26,7 @@ from .provenance import git_commit
 from .providers import FilesystemProvider, GitProvider, ProviderError, RcloneProvider
 
 MANAGED_PROTOCOL = 1
+HEADLESS_CAPTURE_PROTOCOL = 1
 SCAN_TRIGGER_ENV = "MNEMION_CONNECTOR_SCAN_TRIGGER"
 SCAN_REPORT_ENV = "MNEMION_CONNECTOR_REPORT_PATH"
 
@@ -276,10 +279,18 @@ def _stamp(report, started_at, started):
         started_at=started_at,
         timestamp=datetime.now(timezone.utc).isoformat(),
         duration_seconds=round(time.monotonic() - started, 3),
-        changed=outcomes.get("created", 0) + outcomes.get("revised", 0),
-        removed=removed + outcomes.get("deleted", 0),
-        unchanged=outcomes.get("unchanged", 0),
-        conflicts=outcomes.get("conflict", 0),
+        changed=report.get("changed", 0)
+        if "capture" in report
+        else outcomes.get("created", 0) + outcomes.get("revised", 0),
+        removed=report.get("removed", 0)
+        if "capture" in report
+        else removed + outcomes.get("deleted", 0),
+        unchanged=report.get("unchanged", 0)
+        if "capture" in report
+        else outcomes.get("unchanged", 0),
+        conflicts=report.get("conflicts", 0)
+        if "capture" in report
+        else outcomes.get("conflict", 0),
     )
 
 
@@ -328,6 +339,37 @@ def _report_managed(report):
 
 def sync(config, *, inspect=False, adapter=None, client=None) -> dict:
     started, started_at = time.monotonic(), datetime.now(timezone.utc).isoformat()
+    if config.capture is not None:
+        from . import headless_capture
+
+        if adapter is not None:
+            raise ValueError("Retained capture owns its selected conversation adapter")
+        if inspect:
+            return {
+                "completed": True,
+                "connector_id": str(config.connector_id),
+                "preview": headless_capture.preview(config),
+            }
+        # The entire local cycle must precede credential reads, HTTP setup and
+        # remote scheduling. Offline intake is not conditional on control health.
+        report = headless_capture.scan(
+            config, client_factory=(lambda: nullcontext(client)) if client else None
+        )
+        _stamp(report, started_at, started)
+        if not report.get("paused") and config.remote_sync:
+            try:
+                with nullcontext(client) if client else headless_capture.connect(config) as remote:
+                    control = control_status(remote, config.connector_id)
+                    _report_control(remote, config.connector_id, control, report)
+            except (
+                MnemionError,
+                OSError,
+                ValueError,
+                httpx.HTTPError,
+                headless_capture.InboxError,
+            ):
+                report["control_reported"] = False
+        return report
     owned_client = client is None
     client = client or Client(config.service_url, config.service_token.read())
     control = None
@@ -355,25 +397,52 @@ def wait_for_sync(config, *, failed=False, client=None, clock=None, sleep=None):
     clock, sleep = clock or time.monotonic, sleep or time.sleep
     deadline = clock() + config.poll_seconds
     retry_at = clock() + (min(30, config.poll_seconds) if failed else 0)
+    was_paused = False
+
+    def capture_active():
+        from .headless_capture import read_record
+
+        try:
+            record = read_record(config)
+            return record["enabled"] and record["state"] == "ready"
+        except (InboxError, LocalSetupError, OSError, ValueError):
+            return False
+
+    if config.capture is not None:
+        was_paused = not capture_active()
     while clock() < deadline:
         sleep(min(config.trigger_poll_seconds, max(0, deadline - clock())))
         if clock() >= deadline:
             break
+        if config.capture is not None:
+            active = capture_active()
+            if was_paused and active:
+                return "requested"
+            was_paused = not active
+            if not active:
+                continue
         if not config.remote_sync or clock() < retry_at:
             continue
         owned_client = client is None
         current = None
         try:
-            current = client or Client(
-                config.service_url, config.service_token.read(), timeout=10, retries=0
-            )
+            if client is None:
+                if config.capture is not None:
+                    from .headless_capture import reference
+
+                    credential = reference(config.service_token)
+                else:
+                    credential = config.service_token.read()
+                current = Client(config.service_url, credential, timeout=10, retries=0)
+            else:
+                current = client
             control = control_status(current, config.connector_id)
             if control is None:
                 sleep(max(0, deadline - clock()))
                 break
             if control["pending"]:
                 return "requested"
-        except (MnemionError, OSError, ValueError, httpx.HTTPError):
+        except (MnemionError, OSError, ValueError, httpx.HTTPError, InboxError):
             # Back off control failures without suppressing the normal source scan.
             retry_at = clock() + 30
         finally:
@@ -388,6 +457,11 @@ def main(argv=None) -> int:
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     parser.add_argument("--config", type=Path, required=True)
+    parser.add_argument(
+        "--capture-control",
+        action="store_true",
+        help="Run a retained-capture control from bounded JSON on stdin; secrets use private references",
+    )
     parser.add_argument(
         "--inspect",
         action="store_true",
@@ -404,6 +478,8 @@ def main(argv=None) -> int:
         help="Use this local managed Linux/macOS service's verified runtime for each scan",
     )
     args = parser.parse_args(argv)
+    if args.capture_control and (args.watch or args.inspect or args.managed_state):
+        parser.error("--capture-control cannot be combined with another mode")
     if args.inspect and args.watch:
         parser.error("--inspect cannot be combined with --watch")
     if args.managed_state is not None:
@@ -429,7 +505,26 @@ def main(argv=None) -> int:
         started, started_at = time.monotonic(), datetime.now(timezone.utc).isoformat()
         try:
             config = read_config(args.config)
-            report = sync(config, inspect=args.inspect)
+            if args.capture_control:
+                from .capture_resources import bounded
+                from .headless_capture_control import perform
+
+                body = sys.stdin.buffer.read(65537)
+                if len(body) > 65536:
+                    raise ValueError("Capture control input exceeds its limit")
+                if config.capture is None:
+                    raise InboxError("capture_enrollment_missing")
+                with bounded(config.capture.memory_limit_mib):
+                    result = perform(config, json.loads(body))
+                print(json.dumps({"ok": True, "result": result}, ensure_ascii=False), flush=True)
+                return 0
+            if config.capture is not None:
+                from .capture_resources import bounded
+
+                with bounded(config.capture.memory_limit_mib):
+                    report = sync(config, inspect=args.inspect)
+            else:
+                report = sync(config, inspect=args.inspect)
             report["trigger"] = trigger
             report["poll_seconds"] = config.poll_seconds
             if not args.inspect:
@@ -469,7 +564,15 @@ def main(argv=None) -> int:
                 file=sys.stderr,
             )
             return 2
-        except (ProviderError, MnemionError, ValueError, OSError, httpx.HTTPError) as exc:
+        except (
+            ProviderError,
+            MnemionError,
+            ValueError,
+            OSError,
+            httpx.HTTPError,
+            InboxError,
+            LocalSetupError,
+        ) as exc:
             print(
                 json.dumps(
                     {

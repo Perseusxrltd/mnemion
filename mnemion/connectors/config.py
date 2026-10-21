@@ -5,7 +5,7 @@ from typing import Annotated, Literal
 from urllib.parse import urlsplit
 from uuid import UUID
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, PrivateAttr, field_validator, model_validator
 
 from ..service.models import Command
 from ..capture_policy import CapturePolicy, SOURCE_EXCLUSIONS
@@ -43,6 +43,28 @@ class Token(Command):
         if not token or len(token) > 16384 or any(ord(c) < 33 or ord(c) > 126 for c in token):
             raise ValueError("The credential reference does not contain a valid token")
         return token
+
+
+class RetainedCapture(Command):
+    """Explicit headless custody; the service must already approve this grant."""
+
+    id: UUID
+    tenant_id: UUID
+    principal_id: UUID
+    source_id: UUID
+    grant_id: UUID
+    keep_accepted: Literal[True]
+    state_directory: Path
+    inbox_key: Token
+    pending_limit_mib: int = Field(default=256, ge=1, le=1024, strict=True)
+    memory_limit_mib: int = Field(default=256, ge=128, le=2048, strict=True)
+
+    @field_validator("keep_accepted", mode="before")
+    @classmethod
+    def explicit_retention(cls, value):
+        if value is not True:
+            raise ValueError("Explicitly approve retaining accepted conversations")
+        return value
 
 
 class FileSelection(Command):
@@ -171,6 +193,7 @@ Provider = Annotated[
 
 
 class ConnectorConfig(Command):
+    _file_path: Path | None = PrivateAttr(default=None)
     version: Literal[1] = 1
     service_url: str
     service_token: Token
@@ -180,19 +203,48 @@ class ConnectorConfig(Command):
     poll_seconds: int = Field(default=300, ge=30, le=86400)
     remote_sync: bool = True
     trigger_poll_seconds: int = Field(default=5, ge=1, le=60)
+    capture: RetainedCapture | None = None
 
     _service_url = field_validator("service_url")(service_url)
+
+    @model_validator(mode="after")
+    def retained_conversations(self):
+        if self.capture is not None and (
+            self.provider.type != "conversations"
+            or self.provider.max_files > 100000
+            or (
+                self.provider.capture_policy is not None
+                and self.provider.capture_policy.retention != "until_deleted"
+            )
+        ):
+            raise ValueError("Retained headless capture requires a matching conversation policy")
+        if self.capture is not None:
+            if not self.provider.normalize_conversations or self.provider.include_generated:
+                raise ValueError("Retained capture requires normalized, selected conversations")
+            if self.provider.capture_policy is None and (
+                self.provider.include != ["*.jsonl"]
+                or self.provider.exclude != list(SOURCE_EXCLUSIONS)
+                or self.provider.max_file_bytes != 1_000_000_000
+                or self.provider.max_record_bytes != 2_000_000
+            ):
+                raise ValueError("Custom retained selection requires an explicit capture policy")
+        return self
 
 
 def read_config(path: Path) -> ConnectorConfig:
     if path.stat().st_size > 1_000_000:
         raise ValueError("Connector configuration exceeds 1 MB")
     result = ConnectorConfig.model_validate_json(path.read_text(encoding="utf-8"))
+    result._file_path = path.absolute()
     # Relative paths consistently resolve beside the configuration on every OS.
     base = path.resolve().parent
     tokens = [result.service_token]
     if isinstance(result.provider, (SlackConfig, DriveConfig)):
         tokens.append(result.provider.token)
+    if result.capture is not None:
+        tokens.append(result.capture.inbox_key)
+        if not result.capture.state_directory.is_absolute():
+            result.capture.state_directory = base / result.capture.state_directory
     for token in tokens:
         if token.file is not None and not token.file.is_absolute():
             token.file = base / token.file

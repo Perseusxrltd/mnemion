@@ -122,12 +122,14 @@ accepted or forgotten history from current files. Existing mirrors need a
 reviewed migration before changing retention.
 
 The ordinary `mnemion-connect` configurations and commands below keep their
-existing mirror behavior. `custody` belongs to private desktop source settings;
-it is not a new field for their provider configuration. Server custody approval
-alone does not enroll a local runner. Successful delivery also does not establish
-indexing readiness or completed librarian work.
+existing mirror behavior. The unreleased [headless capture guide](headless-capture.md)
+describes the separate top-level `capture` configuration and local stdin
+controls for retained enrollment, scheduling and recovery. `custody` belongs
+to private desktop source settings; neither field belongs inside `provider`.
+Server custody approval alone does not enroll a local runner. Successful
+delivery also does not establish indexing readiness or completed librarian work.
 
-Retained-source removal requires a pause, explicit local discard and confirmed
+Desktop retained-source removal requires a pause, explicit local discard and confirmed
 grant revocation. A current workspace administrator can confirm retirement if
 the saved device key is unavailable, using a removal-only credential that is
 never saved by the operation. See [removal and recovery](durable-capture.md#pause-remove-and-forget)
