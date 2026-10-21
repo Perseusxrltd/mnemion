@@ -926,6 +926,50 @@ Product memory, privacy-scanning and batch-time limits are unchanged.
 including the four corrected cases and six existing headless-control checks.
 The original CI logs remain preserved. Replacement full CI is still required.
 
+## Installed capture boundary gate
+
+The existing installed-hosting gate already includes capture enrollment through
+the app, offline intake, app restart, encrypted archive export, administrator
+retirement and recovery onto a separately authorized device. Two additional
+launches now extend that gate through the [native boundary probe](../../studio/electron/native-capture-boundaries-probe.ts).
+They use the installed engine's private agent controls and the real app,
+PostgreSQL service and OS credential store in a disposable workspace.
+
+The new journey enrolls a source agentically, changes its history and storage
+limits through the app, accepts a complete message beside an unfinished UTF-8
+record, completes that record, and rotates the log after another unfinished
+tail. It checks exact accepted event IDs, fragment byte ranges and digests,
+policy revision, stable queue age, and the unresolved bytes left by rotation.
+Completing an open fragment produces another immutable event revision; the
+earlier accepted revision is retained. An audit query uses `max_per_source: 0`
+to inspect every matching fragment. Ordinary recall keeps its existing default
+of one result per original source.
+
+A [loopback-only relay](../../studio/electron/native-capture-relay.ts) drops a
+reply only after the real service has committed and completed its response.
+Later capture traffic remains unavailable until the next launch. The second
+launch must reconcile that saved page with a receipt read, without another page
+write or new memory revision. It also checks separately observed indexing,
+reader revocation while queued, forgetting both revisions of a fragment,
+replaying its original delivery page, and a reviewed policy transition that
+revokes the old device's delivery authority. The administrator then retires the
+paused device through the app while its later accepted message is still queued.
+
+These checks are wired into the normal six-target
+[installed-hosting script](../../studio/electron/scripts/smoke-installed-hosting.mjs).
+Adding the script is not packaged acceptance. The corrected private Linux source
+preview passed both launches and all 19 required boundary checks against 550
+runtime inputs, fingerprint
+`cf684aa970dccf99689c3fa00e47b7421c8a573c210b62d3b150ddc11eb83964`.
+It used the real UI, helper, local service and libsecret, with no production
+memory writes or paid model calls. Its failed earlier observations are retained:
+an endpoint-bound login handle was correctly refused as a transferable key;
+the second launch needed to await normal host startup; and an audit query needed
+to request all fragments instead of the ordinary grouped recall. TypeScript
+builds initially caught missing optional-value guards in the probe itself.
+Those were fixture corrections, not weakened product checks. All six packaged
+runs remain pending; no new release or L1 completion is claimed here.
+
 ## Source and deletion boundaries
 
 The staged service exposes a `durable_capture: "v1"` capability. An administrator

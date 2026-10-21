@@ -196,6 +196,8 @@ try {
     ['capture-enroll', ['nativeCaptureConsentControls', 'nativeCaptureIndependentOsKey', 'nativeCaptureBeforeDelivery', 'nativeCaptureOfflineRemovalPreservesInbox', 'nativeCaptureSelectedPayloadEncrypted', 'nativeCapturePausedBeforeRestart', 'nativeCaptureBackupThroughApp', 'nativeCaptureBackupEncrypted', 'nativeCaptureBackupAppAndAgentAgree', 'nativeCaptureBackupNarrowLayout']],
     ['capture-resume', ['nativeCaptureQueueSurvivesAppRestart', 'nativeCaptureKeyReopenedByOs', 'nativeCaptureDeliversAfterProducerRemoval', 'nativeCaptureVisibleAppCounts', 'nativeCaptureAdministratorRemovalAfterKeyRevocation', 'nativeCaptureRemovalRetainsServerMemory', 'nativeCaptureBackupSurvivesAppRestart', 'nativeCaptureBackupInspectAfterSourceRemoval', 'nativeCaptureRestoreThroughApp', 'nativeCaptureRestoreAppAndAgentAgree', 'nativeCaptureRestorePausedWithNewKeys', 'nativeCaptureRestoreNarrowLayout']],
     ['capture-restored-resume', ['nativeCaptureRestoredKeyReopenedByOs', 'nativeCaptureRestoredPausedAfterRestart', 'nativeCaptureRestoredQueueReconcilesWithoutDuplicates', 'nativeCaptureRestoredNewMemoriesCaptured', 'nativeCaptureFixtureCleanup']],
+    ['capture-boundaries-enroll', ['nativeCaptureAgentEnrollment', 'nativeCaptureIncompleteUnicode', 'nativeCaptureQuotaAppAndAgentAgree', 'nativeCaptureCompletedUnicode', 'nativeCaptureRotationKeepsAcceptedAndGap', 'nativeCaptureExactEventProvenance', 'nativeCaptureLostRealCommitReply', 'nativeCaptureReaderRevokedWhileQueued', 'nativeCaptureBoundaryPrivateState']],
+    ['capture-boundaries-resume', ['nativeCaptureUnknownReceiptSurvivesRestart', 'nativeCaptureReceiptReconciledWithoutWrite', 'nativeCaptureMemoryIdsAndVersionsRetained', 'nativeCaptureIndexObservedSeparately', 'nativeCaptureRevokedReaderStaysRevoked', 'nativeCaptureReplayRespectsForget', 'nativeCaptureLocalDeletionHistory', 'nativeCaptureReviewedPolicyStopsOldGrant', 'nativeCapturePendingRetiredThroughApp', 'nativeCaptureBoundaryCleanup']],
   ]) {
     const capture = await launch({ phase, port, memoryId: first.memoryId, spaceId: first.spaceId })
     if (required.some(field => capture[field] !== true)) throw new Error('Installed retained capture acceptance failed: ' + phase)
@@ -256,10 +258,13 @@ try {
     selectedCaptureWhileWorkspaceOffline: true, pendingQueueSurvivesAppRestart: true,
     offlineRemovalRefusesUnconfirmedDiscard: true, captureDeliveryAfterProducerRemoval: true,
     captureAppCountsAndAgentControls: true, captureAdministratorRemovalAfterDeviceKeyRevocation: true,
+    captureIncompleteUnicodeAndRotation: true, captureExactEventProvenance: true,
+    captureLostCommitReplyReconciledAfterRestart: true, captureHistoryQuotasThroughAppAndAgent: true,
+    captureReaderRevocationAndDeletionFences: true, captureReviewedPolicyStopsOldDeviceDelivery: true,
     scope: 'Locally built installer, new private profile and real model download. Public download acceptance and update migration are separate gates.' }
   mkdirSync(join(root, 'build-tmp'), { recursive: true })
   writeFileSync(evidenceFile, JSON.stringify(evidence, null, 2) + '\n')
-  for (const phase of ['create', 'resume', 'backup-capture', 'backup-recover', 'backup-resume', 'capture-enroll', 'capture-resume', 'capture-restored-resume', 'recover-port', 'sign-in', 'sign-in-resume']) copyFileSync(join(temporary, phase + '-workspace.png'), join(root, 'build-tmp/installed-hosting-' + phase + '.png'))
+  for (const phase of ['create', 'resume', 'backup-capture', 'backup-recover', 'backup-resume', 'capture-enroll', 'capture-resume', 'capture-restored-resume', 'capture-boundaries-enroll', 'capture-boundaries-resume', 'recover-port', 'sign-in', 'sign-in-resume']) copyFileSync(join(temporary, phase + '-workspace.png'), join(root, 'build-tmp/installed-hosting-' + phase + '.png'))
   console.log(JSON.stringify(evidence, null, 2))
   succeeded = true
 } catch (error) {

@@ -9,7 +9,7 @@ import type { DesktopSourceView } from '../shared/desktop-sources.js'
 import { callNativeOperator as call } from './native-operator-probe.js'
 
 const pause = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
-async function until<T>(check: () => Promise<T | false>, message: string, timeout = 90000): Promise<T> {
+export async function until<T>(check: () => Promise<T | false>, message: string, timeout = 90000): Promise<T> {
   const end = Date.now() + timeout
   do { const value = await check(); if (value !== false) return value; await pause(200) } while (Date.now() < end)
   throw new Error(message)
@@ -24,18 +24,18 @@ const rendererHelpers = `
   async function request(method,path,body,expected=200){const session=(await window.mnemion.workspaceStatus()).active;if(!session?.me.administrator)throw new Error('Capture fixture requires its disposable workspace owner');const response=await window.mnemion.serviceRequest({url:session.endpoint+path,method,headers:{Authorization:'Bearer '+session.sessionToken,'Content-Type':'application/json','Idempotency-Key':crypto.randomUUID()},...(body?{body:JSON.stringify(body)}:{})});if(response.status!==expected)throw new Error('Capture fixture request failed: '+path+' / '+response.status);return JSON.parse(new TextDecoder().decode(response.body));}
 `
 
-async function inRenderer(window: BrowserWindow, source: string): Promise<any> {
+export async function inRenderer(window: BrowserWindow, source: string): Promise<any> {
   return window.webContents.executeJavaScript(`(async()=>{${rendererHelpers}\n${source}\n})()`)
 }
 
-async function sourceStatus(id: string) {
+export async function sourceStatus(id: string) {
   const view = await call('source.status') as DesktopSourceView
   const source = view.sources.find(item => item.id === id)
   if (!source) throw new Error('The installed capture source disappeared.')
   return { view, source }
 }
 
-async function pauseSource(id: string) {
+export async function pauseSource(id: string) {
   const { view } = await sourceStatus(id)
   return call('source.pause', { id, expected_revision: view.revision, enabled: false })
 }
