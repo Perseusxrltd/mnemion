@@ -43,6 +43,7 @@ studio/shared/*
 studio/electron/*
 !studio/electron/workspace-recovery.ts
 !studio/electron/company-sign-in-protocol.ts
+!studio/electron/capture-messages.ts
 !studio/README.md
 !assets/
 assets/*
