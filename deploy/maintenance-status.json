@@ -30,26 +30,10 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "5ec5457279e34aa9338fd637f130c8f6aed4f9df",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-21T00:30:31Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39521717907",
-      "job_progress": {
-        "total": 8,
-        "completed": 7,
-        "succeeded": 2,
-        "active": [
-          {
-            "id": 118966873694,
-            "name": "studio",
-            "status": "in_progress",
-            "steps": [
-              "Post Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-21T00:31:12Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39521717907"
     },
     {
       "id": 39518522368,
@@ -107,5 +91,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39518520187"
     }
   ],
-  "observed_at": "2026-10-21T00:31:11+00:00"
+  "observed_at": "2026-10-21T00:31:49+00:00"
 }
