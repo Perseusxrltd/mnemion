@@ -14,7 +14,7 @@ from uuid import UUID, uuid4
 import httpx
 import pytest
 
-from mnemion import desktop_capture as capture, desktop_sources as desktop
+from mnemion import desktop_capture as capture, desktop_sources as desktop, local_state
 from mnemion.connectors.conversation_inbox import InboxError
 from mnemion.service.api import create_app
 from service_tests.test_clients import running
@@ -385,8 +385,11 @@ def test_older_retained_history_requires_the_matching_private_inbox(env, enrolle
         assert administrator.request("DELETE", route)["has_capture_history"]
 
 
+@pytest.mark.parametrize(
+    "lost_material", ["none", "api_key", "inbox_key", "both_keys", "malformed_inbox_key"]
+)
 def test_administrator_can_retire_after_device_key_revocation(
-    env, enrolled, conversation_source, monkeypatch
+    env, enrolled, conversation_source, monkeypatch, lost_material
 ):
     root, source, request, _ = enrolled
     (Path(source.path) / "chat.jsonl").write_bytes(
@@ -406,6 +409,15 @@ def test_administrator_can_retire_after_device_key_revocation(
         "credential": request["credential"],
         "discard_local_inbox": True,
     }
+    if lost_material != "none":
+        damaged = local_state.read(root / "sources.json")
+        if lost_material in {"api_key", "both_keys"}:
+            del damaged["sources"][0]["sealed_key"]
+        if lost_material in {"inbox_key", "both_keys"}:
+            del damaged["sources"][0]["sealed_inbox_key"]
+        if lost_material == "malformed_inbox_key":
+            damaged["sources"][0]["sealed_inbox_key"] = "%not-base64%"
+        local_state.write(root / "sources.json", damaged)
     env.identities.revoke_key(env.owner, conversation_source[2].key_id)
     database = capture.inbox_path(root, source.id) / "inbox.sqlite3"
     before = database.read_bytes()

@@ -58,6 +58,26 @@ def test_settings_reopen_private_compare_revision_and_retain_original_on_failure
     assert (root / "sources.json").read_bytes() == b"damaged"
 
 
+def test_pause_command_cannot_accept_replacement_settings_or_a_stale_revision(tmp_path):
+    root = tmp_path / "private"
+    value = source(tmp_path).model_dump(mode="json")
+    value["sealed_key"] = base64.b64encode(os.urandom(96)).decode()
+    saved = sources.store(root, "not-configured", [value])
+    request = {"operation": "pause", "id": value["id"], "expected_revision": saved["revision"]}
+    before = (root / "sources.json").read_bytes()
+    for extra in ({"enabled": True}, {"sources": []}, {"sealed_key": value["sealed_key"]}):
+        with pytest.raises(ValueError):
+            sources.perform(root, {**request, **extra})
+        assert (root / "sources.json").read_bytes() == before
+    with pytest.raises(LocalSetupError, match="settings changed"):
+        sources.perform(root, {**request, "expected_revision": "not-configured"})
+    assert (root / "sources.json").read_bytes() == before
+    paused = sources.perform(root, request)
+    assert paused["sources"][0]["enabled"] is False
+    assert paused["sources"][0]["sealed_key"] == value["sealed_key"]
+    assert paused["sources"][0]["status_epoch"] == saved["sources"][0]["status_epoch"]
+
+
 def test_source_folder_never_ingests_private_app_state_or_follows_replaced_link(tmp_path):
     root = tmp_path / "source-control"
     root.mkdir()

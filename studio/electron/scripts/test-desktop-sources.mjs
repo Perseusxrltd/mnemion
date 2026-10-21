@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { setImmediate } from 'node:timers/promises'
 import { test } from 'node:test'
+import { isDeepStrictEqual } from 'node:util'
 import { DesktopSources } from '../dist/desktop-sources.js'
 import { sourceProcess } from '../dist/desktop-source-process.js'
 import { desktopAction } from '../dist/desktop-actions.js'
@@ -21,8 +22,9 @@ async function fixture(t) {
   const status = new Map()
   const state = { running: 0, maximum: 0, scans: [], stores: 0, failSave: false, loseSave: false, failVerify: false,
     statusCalls: [], failBegin: false, loseBegin: false, failFinish: false, loseFinish: false, corruptStatus: false,
-    repairs: 0, loseRepair: false, failRepair: false, captureRetireRequests: [], failCaptureRetire: false }
-  const settings = value => { const { enabled, status_epoch, ...other } = value; return JSON.stringify(other) }
+    repairs: 0, loseRepair: false, failRepair: false, captureRetireRequests: [], failCaptureRetire: false, pauseRequests: [] }
+  const settings = value => { const { enabled, status_epoch, ...other } = value; return structuredClone(other) }
+  const matching = (record, source) => record && source && record.epoch === source.status_epoch && isDeepStrictEqual(record.settings, settings(source))
   const call = async (request, signal, resources) => {
     if (request.operation === 'load') return structuredClone(document)
     if (request.operation.startsWith('status')) {
@@ -34,7 +36,7 @@ async function fixture(t) {
           activity: { phase: 'attention', durability: 'unavailable', reason_code: 'source_status_invalid', repair_token: 'a'.repeat(64) } })) }
         return { format: 1, sources: document.sources.flatMap(source => {
           const saved = status.get(source.id)
-          if (!saved || saved.epoch !== source.status_epoch) return []
+          if (!matching(saved, source)) return []
           const activity = structuredClone(saved.activity)
           if (activity.phase === 'scanning' && saved.owner !== request.owner) Object.assign(activity, { phase: 'attention', reason_code: 'interrupted' })
           return [{ id: source.id, activity }]
@@ -48,7 +50,7 @@ async function fixture(t) {
         if (state.failRepair) throw new Error('synthetic repair refused')
         if (!state.corruptStatus || request.repair_token !== 'a'.repeat(64)) throw Object.assign(new Error('Changed observation'), { code: 'source_status_changed' })
         state.corruptStatus = false
-        for (const source of document.sources) status.set(source.id, { epoch: source.status_epoch, owner: request.owner, run: randomUUID(),
+        for (const source of document.sources) status.set(source.id, { epoch: source.status_epoch, settings: settings(source), owner: request.owner, run: randomUUID(),
           activity: { phase: 'waiting', durability: 'saved', reason_code: 'history_reset', next_scan_at: new Date(now + source.poll_seconds * 1000).toISOString() } })
         if (state.loseRepair) { state.loseRepair = false; throw new Error('synthetic lost repair return') }
         return { format: 1, repaired: true, history_restored: false, original_preserved: true }
@@ -58,18 +60,18 @@ async function fixture(t) {
         if (state.failBegin) throw new Error('private status write failure')
         assert.equal(request.expected_revision, document.revision)
         assert.ok(current?.enabled)
-        const previous = record?.epoch === current.status_epoch ? record.activity : {}
+        const previous = matching(record, current) ? record.activity : {}
         const activity = { phase: 'scanning', durability: 'saved', started_at: new Date(now).toISOString(),
           ...(previous.report ? { report: previous.report } : {}),
           ...(previous.last_success_report ? { last_success_report: previous.last_success_report } : {}),
           ...(previous.last_failure ? { last_failure: previous.last_failure } : {}) }
-        status.set(current.id, { owner: request.owner, run: request.run, epoch: current.status_epoch, activity })
+        status.set(current.id, { owner: request.owner, run: request.run, epoch: current.status_epoch, settings: settings(current), activity })
         if (state.loseBegin) { state.loseBegin = false; throw new Error('private reply lost after start') }
         return structuredClone({ format: 1, id: current.id, activity })
       }
       assert.equal(request.operation, 'status_finish')
       if (state.failFinish) throw new Error('private outcome persistence failure')
-      if (!current || !record || record.epoch !== current.status_epoch) return { format: 1, ignored: true }
+      if (!matching(record, current)) return { format: 1, ignored: true }
       assert.equal(record.owner, request.owner); assert.equal(record.run, request.run)
       assert.equal(record.activity.phase, 'scanning')
       const capture = request.report?.capture
@@ -92,13 +94,15 @@ async function fixture(t) {
       if (state.failVerify) throw new Error('Source identity mismatch')
       return structuredClone(request.source)
     }
-    if (request.operation === 'store') {
+    if (request.operation === 'store' || request.operation === 'pause') {
       state.stores++
       if (state.failSave) throw new Error('Storage unavailable')
       assert.equal(request.expected_revision, document.revision)
-      document = { format: 1, revision: randomUUID(), sources: structuredClone(request.sources).map(source => {
+      if (request.operation === 'pause') state.pauseRequests.push(structuredClone(request))
+      const sources = request.operation === 'pause' ? document.sources.map(source => source.id === request.id ? { ...source, enabled: false } : source) : request.sources
+      document = { format: 1, revision: randomUUID(), sources: structuredClone(sources).map(source => {
         const old = document.sources.find(item => item.id === source.id)
-        return { ...source, status_epoch: old && settings(old) === settings(source) ? old.status_epoch : randomUUID() }
+        return { ...source, status_epoch: old && isDeepStrictEqual(settings(old), settings(source)) ? old.status_epoch : randomUUID() }
       }) }
       if (state.loseSave) { state.loseSave = false; throw new Error('Reply lost after commit') }
       return structuredClone(document)
@@ -651,6 +655,70 @@ test('lost enrollment reply retains the first key and a damaged key stops scans 
   const activity = (await reopened.status()).sources[0].activity
   assert.equal(activity.reason_code, 'capture_key_unavailable')
   assert.equal(activity.durability, 'saved')
+})
+
+for (const field of ['sealed_key', 'sealed_inbox_key']) {
+  for (const damage of ['missing', 'malformed', 'valid-prefix-with-junk']) {
+    test(`reopened ${field} ${damage} stops capture but preserves another source and pause`, async t => {
+      const f = await fixture(t), source = retainedDefinition(), sibling = definition()
+      await f.add(source); await f.add(sibling); await f.manager.close()
+      const saved = f.document().sources.find(item => item.id === source.id)
+      if (damage === 'missing') delete saved[field]
+      else if (damage === 'malformed') saved[field] = '%invalid-protected-bytes%'
+      else saved[field] += '!'
+      const original = saved[field]
+      const reopened = new DesktopSources(f.options)
+      t.after(() => reopened.close())
+      await reopened.start(); await f.flush()
+      assert.equal(f.state.scans.length, 0, 'No scan may receive an unavailable credential')
+      let view = await reopened.status()
+      const failed = view.sources.find(item => item.id === source.id)
+      assert.equal(failed.activity.reason_code, field === 'sealed_key' ? 'source_credentials_unavailable' : 'capture_key_unavailable')
+      assert.equal(failed.activity.durability, 'saved')
+      assert.ok(!JSON.stringify(view).includes('sealed_'))
+      const next = reopened.tick(); await f.flush()
+      assert.equal(f.state.scans.length, 1)
+      assert.equal(f.state.scans[0].id, sibling.id, 'The damaged source cannot block an unrelated source')
+      f.state.scans[0].finish(); await next
+      view = await reopened.control('pause', { expected_revision: view.revision, id: source.id, enabled: false })
+      assert.equal(view.sources.find(item => item.id === source.id).enabled, false)
+      assert.equal(f.document().sources.find(item => item.id === source.id)[field], original)
+    })
+  }
+}
+
+test('pause after a disk key changes sends no cached key or replacement settings', async t => {
+  const f = await fixture(t), source = retainedDefinition()
+  const view = await f.add(source)
+  const saved = f.document().sources[0]
+  delete saved.sealed_inbox_key
+  const paused = await f.manager.control('pause', { expected_revision: view.revision, id: source.id, enabled: false })
+  assert.equal(paused.sources[0].enabled, false)
+  assert.equal(f.document().sources[0].sealed_inbox_key, undefined)
+  assert.deepEqual(f.state.pauseRequests, [{ operation: 'pause', expected_revision: view.revision, id: source.id }])
+})
+
+for (const original of [true, false]) test(`key recovery restores saved observations only for matching keys: ${original}`, async t => {
+  const f = await fixture(t), source = retainedDefinition()
+  await f.add(source); await f.manager.start(); await f.flush()
+  const capture = queuedCapture()
+  f.state.scans[0].finish({ ...report(), completed: false, changed: 0, capture })
+  await f.flush()
+  const before = await f.manager.control('pause', { expected_revision: (await f.manager.status()).revision, id: source.id, enabled: false })
+  assert.deepEqual(before.sources[0].activity.report.capture, capture)
+  await f.manager.close()
+  const saved = f.document().sources[0], keys = { sealed_key: saved.sealed_key, sealed_inbox_key: saved.sealed_inbox_key }
+  delete saved.sealed_key; saved.sealed_inbox_key = '%missing-inbox-key%'
+  const reopened = new DesktopSources(f.options); t.after(() => reopened.close())
+  let view = await reopened.status()
+  assert.equal(view.sources[0].activity.durability, 'unknown')
+  Object.assign(saved, keys)
+  if (!original) saved.sealed_inbox_key = Buffer.from('different protected inbox key').toString('base64')
+  view = await reopened.control('pause', { expected_revision: view.revision, id: source.id, enabled: false })
+  assert.equal(view.sources[0].enabled, false)
+  assert.equal(view.sources[0].activity.durability, original ? 'saved' : 'unknown')
+  assert.deepEqual(view.sources[0].activity.report?.capture, original ? capture : undefined)
+  assert.equal(f.state.scans.length, 1, 'Reading recovered observations must not start another scan')
 })
 
 test('one-use removal authority can replace a lost device key without changing saved capture keys', async t => {

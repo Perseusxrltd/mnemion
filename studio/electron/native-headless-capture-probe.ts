@@ -14,6 +14,21 @@ const row = (text: string) => [
   { type: 'event_msg', payload: { type: 'user_message', message: text } },
 ].map(value => JSON.stringify(value)).join('\n') + '\n'
 
+function diagnosticLine(line: string): string | undefined {
+  // A failed packaged process can emit a Python/native traceback before its
+  // JSON protocol starts. Keep only code locations and exception/dependency
+  // names; never include raw lines, exception messages, locals or private paths.
+  const frame = /File "(?:.*[\\/])?(mnemion(?:[\\/][a-z_][a-z0-9_]*){1,5})\.py", line ([0-9]{1,7}), in ([A-Za-z_][A-Za-z0-9_]{0,63})/.exec(line)
+  if (frame) return frame[1].replaceAll('\\', '.').replaceAll('/', '.') + ':' + frame[2] + ':' + frame[3]
+  const missing = /^ModuleNotFoundError: No module named '([A-Za-z_][A-Za-z0-9_.]{0,127})'$/.exec(line)
+  if (missing) return 'missing_module:' + missing[1]
+  const kind = /^(?:[A-Za-z_][A-Za-z0-9_]{0,63}\.)?([A-Za-z_][A-Za-z0-9_]{0,63}(?:Error|Exception|Warning))(?::|$)/.exec(line)
+  if (kind) return kind[1]
+  if (line === 'Traceback (most recent call last):') return 'python_traceback'
+  if (/^\[PYI-[0-9]+:/.test(line)) return 'packaged_python_runtime'
+  return undefined
+}
+
 function launch(config: string, environment: NodeJS.ProcessEnv, options: string[], input?: Record<string, unknown>) {
   const executable = !app.isPackaged && process.env.MNEMION_LOCAL_ENGINE ? process.env.MNEMION_LOCAL_ENGINE :
     join(process.resourcesPath, 'engine', process.platform === 'win32' ? 'mnemion-engine.exe' : 'mnemion-engine')
@@ -21,6 +36,8 @@ function launch(config: string, environment: NodeJS.ProcessEnv, options: string[
     env: environment, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true,
   }) as ChildProcessWithoutNullStreams
   const reports: any[] = [], errors: any[] = []
+  const diagnostics: string[] = []
+  const operation = String(input?.action ?? options[0] ?? 'scan')
   let failure: Error | undefined, size = 0
   const pending = { out: '', error: '' }
   const collect = (kind: 'out' | 'error', buffer: Buffer) => {
@@ -32,7 +49,12 @@ function launch(config: string, environment: NodeJS.ProcessEnv, options: string[
       pending[kind] = pending[kind].slice(end + 1)
       if (!line) continue
       try { (kind === 'out' ? reports : errors).push(JSON.parse(line)) } catch {
-        failure = new Error('The installed connector emitted an unstructured diagnostic.'); child.kill()
+        failure ??= new Error('The installed connector emitted an unstructured diagnostic (' + operation + '; ' + kind + ').')
+        const diagnostic = diagnosticLine(line)
+        if (diagnostic && !diagnostics.includes(diagnostic)) diagnostics.push(diagnostic)
+        if (diagnostics.length > 8) diagnostics.shift()
+        // Preserve the bounded traceback tail before the process exits. This
+        // remains a failing check; command/watch deadlines still stop the child.
       }
     }
   }
@@ -42,7 +64,7 @@ function launch(config: string, environment: NodeJS.ProcessEnv, options: string[
   child.stdin.end(input ? JSON.stringify(input) : undefined)
   child.on('error', () => { failure = new Error('The installed independent connector could not start.') })
   const done = new Promise<number | null>(resolve => child.on('close', code => resolve(code)))
-  const check = () => { if (failure) throw failure }
+  const check = () => { if (failure) throw new Error(failure.message + (diagnostics.length ? ' ' + diagnostics.join(', ') : '')) }
   const stop = async () => {
     if (child.exitCode === null && child.signalCode === null) child.kill()
     await Promise.race([done, new Promise<never>((_, reject) => {

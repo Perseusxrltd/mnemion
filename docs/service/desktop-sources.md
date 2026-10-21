@@ -61,13 +61,20 @@ again after changing the mapped audience. An existing entry cannot silently
 switch folders, applications, providers or workspaces; use a separate connection
 for a different source.
 
-For retained capture in the unreleased source, pause remains available with a
-missing or malformed enrollment record or altered protected inbox-key ciphertext,
-provided the saved source configuration is still readable and valid. Change
-only the enabled state; resume and other edits still validate the enrollment.
-An unchanged damaged source does not block controls on another source. Pause
-preserves the failure and accepted evidence without repairing or recreating
-private files; follow the [pause and recovery boundaries](durable-capture.md#pause-remove-and-forget).
+In the unreleased source, missing protected credentials or malformed credential
+strings within their saved size bounds leave otherwise-valid source records
+readable. Missing or malformed capture enrollment also does not prevent pause.
+Use **Pause on this computer** without other settings edits: it changes the
+current disk flag without replacing a lost disk key from Studio's memory.
+An unchanged damaged source does not block controls on another source.
+Enrollment, resume and edits retain strict credential and enrollment validation.
+Invalid whole-file JSON, public source settings, credential field types or
+oversized values still fail validation. Pause preserves accepted evidence;
+follow the [pause and recovery boundaries](durable-capture.md#pause-remove-and-forget).
+Current source checks passed 80 service cases, 88 controller cases and 30 fresh
+migration checks. The Linux source preview also passed all 29 boundary and
+key-recovery checks across two real app launches. All six packaged journeys
+remain pending for this batch.
 
 **Sources on this computer** appears under **Setup & this device** and on the
 local setup screen before connecting. It lists saved sources across workspaces.
@@ -85,11 +92,14 @@ including deliveries with unknown outcomes, after device-grant revocation is
 confirmed. Administrators can disable the connection and revoke unused keys in
 **People & apps**; other devices retain their independent settings.
 
-For an unavailable retained-source key, **Connections** uses the current
+For an unavailable retained-source API key, **Connections** uses the current
 administrator session when it matches that source's workspace. **Sources on
 this computer → Device key unavailable?** also accepts an optional administrator
 key for the displayed workspace. This credential is used only for removal and
-is never saved by that operation. If retirement was already confirmed and saved
+is never saved by that operation. Explicit retirement can also proceed with a
+missing or malformed inbox key, after verifying the original source identity,
+policy and enrollment and current server revocation. It does not decrypt the
+inbox, replace keys or resume capture. If retirement was already confirmed and saved
 locally, interrupted cleanup can finish offline without a surviving credential.
 See the [removal and recovery rules](durable-capture.md#pause-remove-and-forget).
 
@@ -197,9 +207,18 @@ retained inbox also has an independent random 256-bit OS-sealed encryption key;
 lost keys or initialized databases stop capture instead of creating an empty
 replacement. Current chat files cannot reconstruct its accepted/forgotten history.
 After pausing, preserve damaged files and restore only the verified matching
-inbox, enrollment, settings and usable protected key. Pausing does not establish
-recovery, and an unreadable or invalid saved source configuration cannot be
-salvaged by the pause control. Resume and retirement retain their validation.
+inbox, enrollment, settings and usable protected key. Pausing or reading a source
+with damaged credential fields does not establish recovery. Invalid whole-file
+JSON or public source settings cannot be salvaged by the pause control. Resume
+retains strict credential and enrollment validation; retirement verifies the
+original enrollment and current server revocation.
+
+After exact original protected keys and matching settings are restored, a pause
+that detects the change refreshes only this source's matching saved observations,
+after its active scan stops. It starts no new scan and leaves other source
+statuses unchanged. Missing or mismatched observations stay unknown; the refresh
+does not reconstruct keys or lost evidence.
+
 Follow [retained capture recovery](durable-capture.md#recovery-boundaries).
 Recover authoritative server memory, permissions and deletion state from a
 verified workspace backup; that cannot recover undelivered local content.
@@ -217,7 +236,7 @@ The same OS-account [private desktop interface](desktop-operator.md) exposes:
 | --- | --- |
 | `source.status` | None; returns the settings revision, sources, counts and RSS without keys. The unreleased capture report also separates local acceptance, pending content, server acknowledgements, unknown pages and incomplete scans. |
 | `source.configure` | `expected_revision`, `source`, and `credential` for a new entry; an existing entry can keep its key. Cloud sources also use a separate `provider_credential`. |
-| `source.pause` | `expected_revision`, `id`, `enabled` (`false` to pause, `true` to resume). The unreleased retained-source pause tolerates damaged enrollment with valid saved settings; resume retains validation. |
+| `source.pause` | `expected_revision`, `id`, `enabled` (`false` to pause, `true` to resume). Pause uses the current disk record and tolerates missing/malformed bounded credential strings or damaged capture enrollment with valid public settings; resume retains strict validation. |
 | `source.sync` | `expected_revision`, `id`; queues a scan of an enabled source. |
 | `source.remove` | `expected_revision`, `id`, `confirm: true`. Retained capture also requires a paused source and `discard_local_inbox: true`; server revocation must be confirmed before local discard. Optional `retirement_credential` supplies current administrator authority through the private pipe and is never saved. Already recorded retirement permits cleanup offline without credentials. |
 | `source.repair` (unreleased) | `expected_revision`, `id`, current `repair_token`, `confirm: true`; repairs scan observations for every source on this computer, preserving the damaged diagnostic file and retaining settings, keys, inboxes and checkpoints. |

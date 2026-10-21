@@ -5,7 +5,7 @@ import { sourceMessages } from './desktop-source-process.js'
 import { matchingCaptureHistory, readCaptureArchive, readCapturePreview, readCaptureRecoveries, readCaptureRestored, validCaptureCoverage, validCaptureStorage } from './capture-messages.js'
 import type { CaptureArchiveInfo, CaptureBackupInput, CaptureInspectInput, CapturePreview, CaptureRecoveries, CaptureRestored, CaptureRestoreControl, CaptureRestoreInput, CaptureRestoreResult, DesktopSource, DesktopSourceView, SourceActivity, SourceConfigure, SourceControl, SourcePreviewSelection, SourceReason, SourceReport } from '../shared/desktop-sources.js'
 
-type SavedSource = DesktopSource & { sealed_key: string; sealed_provider?: string; sealed_inbox_key?: string; status_epoch?: string }
+type SavedSource = DesktopSource & { sealed_key?: string | null; sealed_provider?: string | null; sealed_inbox_key?: string | null; status_epoch?: string }
 type Document = { format: 1; revision: string; sources: SavedSource[] }
 export type SourceCall = (request: Record<string, unknown>, signal?: AbortSignal,
   resources?: (bytes: number) => void) => Promise<Record<string, unknown>>
@@ -25,6 +25,13 @@ const reason = (value: unknown): value is SourceReason => typeof value === 'stri
   !value.startsWith('agent_') && Object.hasOwn(messages, value)
 const continuing = (value: unknown) => value === 'capture_scan_pending' || value === 'capture_delivery_pending'
 const object = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value)
+
+function sealedBytes(value: unknown): Buffer {
+  if (typeof value !== 'string' || value.length < 16 || value.length > 32768) throw new Error('The saved protected credential is unavailable.')
+  const bytes = Buffer.from(value, 'base64')
+  if (!bytes.length || bytes.toString('base64') !== value) throw new Error('The saved protected credential is unavailable.')
+  return bytes
+}
 
 function readReport(value: unknown): SourceReport {
   if (!object(value) || Object.keys(value).some(key => !['completed', 'timestamp', 'duration_seconds',
@@ -129,7 +136,7 @@ export class DesktopSources {
     else this.next.delete(id)
   }
 
-  private async observations(document: Document): Promise<void> {
+  private async observations(document: Document, selected?: string): Promise<void> {
     try {
       const result = await this.options.call({ operation: 'status', owner: this.owner, expected_revision: document.revision })
       if (result.format !== 1 || !Array.isArray(result.sources) || result.sources.length > 16) throw new Error('Invalid source observations')
@@ -139,9 +146,13 @@ export class DesktopSources {
           typeof entry.id !== 'string' || !document.sources.some(source => source.id === entry.id) || items.has(entry.id)) throw new Error('Invalid source observation identity')
         items.set(entry.id, readActivity(entry.activity))
       }
-      for (const source of document.sources) this.remember(source.id, items.get(source.id) ?? { phase: 'waiting', durability: 'unknown' })
+      for (const source of document.sources) {
+        if (!selected || source.id === selected) this.remember(source.id, items.get(source.id) ?? { phase: 'waiting', durability: 'unknown' })
+      }
     } catch (error) {
-      for (const source of document.sources) this.unconfirmed(source.id, error)
+      for (const source of document.sources) {
+        if (!selected || source.id === selected) this.unconfirmed(source.id, error)
+      }
     }
   }
 
@@ -188,8 +199,12 @@ export class DesktopSources {
   }
 
   private async save(sources: SavedSource[]) {
+    return this.updateDocument({ operation: 'store', expected_revision: this.document!.revision, sources })
+  }
+
+  private async updateDocument(request: Record<string, unknown>) {
     try {
-      const result = await this.options.call({ operation: 'store', expected_revision: this.document!.revision, sources })
+      const result = await this.options.call(request)
       if (result.format !== 1 || typeof result.revision !== 'string' || !Array.isArray(result.sources)) throw new Error('Source settings could not be confirmed. Refresh before retrying.')
       this.document = result as Document
     } catch (error) {
@@ -217,7 +232,7 @@ export class DesktopSources {
       const source = this.document!.sources.find(item => item.id === input.id)
       if (!source?.custody || source.enabled || !source.sealed_inbox_key) throw new Error('Pause a retained conversation source before creating its backup.')
       if (!await this.options.cipher.available()) throw new Error('Unlock OS credential storage to back up this inbox.')
-      const inbox_key = await this.options.cipher.decrypt(Buffer.from(source.sealed_inbox_key, 'base64'))
+      const inbox_key = await this.options.cipher.decrypt(sealedBytes(source.sealed_inbox_key))
       signal?.throwIfAborted()
       const result = readCaptureArchive(await this.options.call({ ...input, operation: 'capture_export', inbox_key }, signal))
       if (result.binding.tenant_id !== source.tenant_id || result.binding.connector_id !== source.connector_id ||
@@ -297,8 +312,8 @@ export class DesktopSources {
       if (!object(source) || source.id !== input.id || typeof source.sealed_key !== 'string' || typeof source.sealed_inbox_key !== 'string' ||
         !object(source.custody) || typeof source.custody.grant_id !== 'string' || !UUID.test(source.custody.grant_id) ||
         typeof pending.archive_sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(pending.archive_sha256)) throw new Error('The protected recovery record could not be verified.')
-      const credential = await this.options.cipher.decrypt(Buffer.from(source.sealed_key, 'base64'))
-      const inbox_key = discard ? undefined : await this.options.cipher.decrypt(Buffer.from(source.sealed_inbox_key, 'base64'))
+      const credential = await this.options.cipher.decrypt(sealedBytes(source.sealed_key))
+      const inbox_key = discard ? undefined : await this.options.cipher.decrypt(sealedBytes(source.sealed_inbox_key))
       signal?.throwIfAborted()
       try {
         const value = await this.options.call({ ...input, operation: discard ? 'capture_restore_discard' : 'capture_restore_finish', credential, ...(inbox_key ? { inbox_key } : {}) }, signal)
@@ -330,10 +345,10 @@ export class DesktopSources {
       if (before && ['endpoint', 'tenant_id', 'connector_id', 'principal_id', 'provider', 'path'].some(key => source[key as keyof DesktopSource] !== before[key as keyof DesktopSource])) throw new Error('Use a new connection for a different source folder or workspace.')
       if (before?.slack?.team_id !== undefined && before.slack.team_id !== source.slack?.team_id) throw new Error('Use a new connection for a different Slack workspace.')
       if (this.document!.sources.some(item => item.id !== id && item.endpoint === source.endpoint && item.connector_id === source.connector_id)) throw new Error('This connection already runs on this computer.')
-      const credential = input.credential ?? (before ? await this.options.cipher.decrypt(Buffer.from(before.sealed_key, 'base64')) : '')
+      const credential = input.credential ?? (before ? await this.options.cipher.decrypt(sealedBytes(before.sealed_key)) : '')
       const cloud = ['slack', 'gdrive'].includes(source.provider)
       if (!cloud && input.provider_credential !== undefined) throw new Error('Only a cloud source accepts provider credentials.')
-      const provider = input.provider_credential ?? (before?.sealed_provider ? await this.options.cipher.decrypt(Buffer.from(before.sealed_provider, 'base64')) : undefined)
+      const provider = input.provider_credential ?? (before?.sealed_provider ? await this.options.cipher.decrypt(sealedBytes(before.sealed_provider)) : undefined)
       if (cloud && (typeof provider !== 'string' || !provider || Buffer.byteLength(provider, 'utf8') > 8192)) throw new Error('Supply the selected cloud provider’s credential, up to 8 KiB.')
       const verified = await this.options.call({ operation: 'verify', source, credential,
         ...(input.preview_hash ? { preview_hash: input.preview_hash } : {}),
@@ -394,7 +409,7 @@ export class DesktopSources {
           // Confirmed retirement can resume local cleanup without a surviving
           // key. The native helper refuses first-time removal without current
           // server authority; an unavailable key never grants offline consent.
-          try { if (await this.options.cipher.available()) credential = await this.options.cipher.decrypt(Buffer.from(source.sealed_key, 'base64')) } catch { /* The helper returns a bounded recovery instruction. */ }
+          try { if (await this.options.cipher.available()) credential = await this.options.cipher.decrypt(sealedBytes(source.sealed_key)) } catch { /* The helper returns a bounded recovery instruction. */ }
         }
         const retired = await this.options.call({ operation: 'capture_retire', id: source.id,
           expected_revision: this.document!.revision, credential, discard_local_inbox: true })
@@ -404,11 +419,24 @@ export class DesktopSources {
         this.document!.sources.map(item => item.id === input.id ? { ...item, enabled: input.enabled! } : item)
       // Persist a pause before stopping work. A failed settings save must not
       // misleadingly claim that a source will stay paused after restart.
-      await this.save(next)
+      if (action === 'pause' && input.enabled === false) {
+        // Only the selected flag is written. A stale in-memory credential must
+        // never replace a lost/damaged disk key while the user is stopping work.
+        await this.updateDocument({ operation: 'pause', expected_revision: this.document!.revision, id: input.id })
+      } else await this.save(next)
       if (action === 'remove' || !input.enabled) {
         this.pending.delete(input.id)
         if (this.active?.id === input.id) { this.active.abort.abort(); await this.active.work }
       } else this.next.set(input.id, this.now())
+      if (action === 'pause' && input.enabled === false) {
+        const saved = this.document!.sources.find(item => item.id === source.id)
+        if (saved && (source.sealed_key !== saved.sealed_key || source.sealed_provider !== saved.sealed_provider ||
+          source.sealed_inbox_key !== saved.sealed_inbox_key || source.status_epoch !== saved.status_epoch)) {
+          // Only matching persisted observations may return after exact-key
+          // recovery. Do not reset another source's live activity or scan again.
+          await this.observations(this.document!, source.id)
+        }
+      }
       if (action === 'remove') { this.activities.delete(input.id); this.next.delete(input.id) }
     }, action !== 'repair')
     return this.status()
@@ -442,13 +470,14 @@ export class DesktopSources {
         if (!await this.options.cipher.available()) throw Object.assign(new Error(messages.storage_locked), { code: 'storage_locked' })
         let credential: string, provider: string | undefined, inboxKey: string | undefined
         try {
-          credential = await this.options.cipher.decrypt(Buffer.from(source.sealed_key, 'base64'))
-          provider = source.sealed_provider ? await this.options.cipher.decrypt(Buffer.from(source.sealed_provider, 'base64')) : undefined
+          credential = await this.options.cipher.decrypt(sealedBytes(source.sealed_key))
+          provider = source.sealed_provider ? await this.options.cipher.decrypt(sealedBytes(source.sealed_provider)) : undefined
+          if (['slack', 'gdrive'].includes(source.provider) !== !!source.sealed_provider) throw new Error('The saved provider credential is unavailable.')
         } catch { throw Object.assign(new Error(messages.source_credentials_unavailable), { code: 'source_credentials_unavailable' }) }
         if (source.custody) {
           try {
             if (!source.sealed_inbox_key) throw new Error('Missing inbox key')
-            inboxKey = await this.options.cipher.decrypt(Buffer.from(source.sealed_inbox_key, 'base64'))
+            inboxKey = await this.options.cipher.decrypt(sealedBytes(source.sealed_inbox_key))
           } catch { throw Object.assign(new Error(messages.capture_key_unavailable), { code: 'capture_key_unavailable' }) }
         }
         abort.signal.throwIfAborted()

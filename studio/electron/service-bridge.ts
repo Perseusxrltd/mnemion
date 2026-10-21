@@ -28,7 +28,7 @@ const MAX_BYTES = 120 * 1024 * 1024
 const selections = new Map<string, string>()
 const children = new Set<ChildProcess>()
 
-function workspaceCipher() {
+export function workspaceCipher() {
   // Windows Chromium profile keys are flushed later. Direct current-user DPAPI
   // keeps a successful save readable even if a new app profile crashes at once.
   // The bundled helper only accepts fixed operations over private process pipes.

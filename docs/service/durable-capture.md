@@ -550,19 +550,32 @@ passed; all installed-platform, release and full L1 acceptance remain open.
 scan and retains its inbox and committed progress. Resume starts from that saved
 state and delivery rechecks current authorization.
 
-In the unreleased source, missing or malformed capture enrollment records and
-altered protected inbox-key ciphertext do not block pause **when the saved source
-configuration is still readable and valid**. Use the app's pause button, or
-`source.pause` with `enabled: false` and a fresh `expected_revision`, without
-changing other source settings. An unchanged source with this damage also does
-not block controls on another source.
+In the unreleased source, a missing protected credential or an invalid credential
+string within the saved-field size bounds no longer hides an otherwise valid
+source from status or blocks pause. Missing or malformed capture enrollment
+records also do not block pause. Source identity, provider, paths, audience and
+other public settings still validate; invalid whole-file JSON, credential field
+types or oversized values can still prevent loading. This is not reconstruction
+of a damaged settings file.
 
-This exception only preserves an unchanged source or saves its pause. Resume,
-key/audience/policy edits, other settings changes and retirement retain their
-validation. Pausing preserves the failure observation and accepted evidence;
-it does not repair or recreate the enrollment record, inbox or key. An unreadable
-or invalid saved source configuration still needs recovery before these
-controls can load it.
+Use the app's pause button, or `source.pause` with `enabled: false` and a fresh
+`expected_revision`, without changing other source settings. Pause reads the
+current disk record and changes only its enabled state and settings revision;
+it does not write a cached credential back if a key was lost while Studio was
+open. An unchanged damaged source also does not block controls on another source.
+
+New enrollment, resume and other edits retain strict credential-field and
+capture-enrollment validation. Readable status or a saved pause does not prove
+that keys are usable. Pausing preserves the failure observation and accepted
+evidence without repairing or recreating the enrollment record, inbox or key.
+Retirement uses the separate identity and server checks below.
+
+Current source checks for these credential controls passed **80 service cases,
+88 controller cases and 30 fresh migration checks**. The Linux source preview
+also passed **all 29 boundary and key-recovery checks** across two real app
+launches using the UI, native engine, PostgreSQL and libsecret, with clean shutdown.
+All six packaged journeys remain pending for this batch. This additional work
+is unreleased and is not included in public 4.44.0.
 
 To remove retained capture, pause it first, then select **Remove from this
 computer → Revoke device grant and discard local inbox**. This permanently
@@ -572,16 +585,20 @@ source, is revoked before local data is discarded. Original chat files, server
 memories and the application key's other permissions remain. Revoke an unused
 application key separately in **People & apps** when intended.
 
-If the saved device key is lost, expired or revoked, use a current administrator
-connection for the **same workspace**. Removal from **Connections** automatically
-uses that matching administrator session.
+If the saved device API key is lost, expired or revoked, use a current
+administrator connection for the **same workspace**. This path also permits
+explicit retirement when the protected inbox key is missing or malformed.
+Removal from **Connections** automatically uses that matching administrator session.
 Alternatively, expand **Device key unavailable?** under **Sources on this
 computer** and supply the optional **Administrator key** for the displayed
 workspace. The removal operation uses this credential only to check and revoke
 the saved grant; it does not save the credential, replace the source's key or
-authorize new capture. The native helper checks the exact saved grant binding,
-and the server checks the caller's current rights. A refused credential leaves
-the inbox in place.
+authorize new capture. The native helper verifies the original source identity,
+path, principal and approved policy against its saved enrollment, then the server
+checks the exact grant binding, current rights and revocation. A missing or
+mismatched enrollment or refused authority leaves local evidence in place.
+No inbox decryption or usable local encryption key is needed for this verified
+retirement; that grants no recovery or permission for new intake.
 
 A lost revocation reply leaves local data in place. Read fresh status before
 retrying: the removal flow checks the existing grant and can recognize an
@@ -636,7 +653,17 @@ IDs, a new key or a fresh source are not a recovery substitute. An OS-sealed key
 is not automatically portable between accounts or computers, and a server
 backup cannot reconstruct undelivered local evidence.
 
-An expired or revoked device API key can be handled through the
+After the exact original protected keys and matching source settings have been
+restored, a pause that detects the changed credentials or saved status identity
+rereads only that source's matching persisted observations. It waits for the
+source's active scan to stop first. The previous saved observation can then
+reappear instead of **Unknown**, without starting a new scan or resetting another
+source's status. Missing or mismatched observations remain unknown. This refresh
+does not reconstruct keys, recover missing evidence or establish that a new scan
+succeeded.
+
+An unavailable device API key or missing/damaged protected inbox key can be
+handled through the
 [administrator removal fallback](#pause-remove-and-forget). That fallback
 permits retirement and explicit local discard; it does not recover a missing
 encryption key or restore capture. Replacing an established inbox's key through
@@ -972,7 +999,9 @@ Native removal requires `source.pause` with `enabled: false`, followed by
 `source.remove` with a fresh `expected_revision`, `id`, `confirm: true` and
 `discard_local_inbox: true`. Its optional `retirement_credential` supplies a
 current administrator credential for that workspace when the device key is
-unavailable. Pass it only through the private desktop pipe; it is never saved
+unavailable, including removal when the local inbox key is lost. The original
+source identity, policy and enrollment must still verify. Pass the credential
+only through the private desktop pipe; it is never saved
 by removal or used for intake. The app can pass a matching administrator session
 handle for native resolution. Omit the field when completing cleanup after
 retirement was already recorded locally; no surviving credential or HTTP request

@@ -1102,9 +1102,96 @@ writes and zero paid model calls.
 
 `capture-fields-qualified-preview.receipt.json` pins **556** runtime inputs to
 `502ad7fa5a93fe0f4a6f2e8d2c0ac95443e5d1305faab93e5de2b74f277949ab`.
-This Linux source proof does not establish the corrected six-target packaged
-matrix, which remains pending. Public **4.44.0**, all original failure receipts
-and the full L1 acceptance requirements remain unchanged.
+The subsequent [general CI run](https://github.com/Perseusxrltd/mnemion/actions/runs/39598649170)
+passed all 12 jobs on `8aacc859`. Its [six-target validation](https://github.com/Perseusxrltd/mnemion/actions/runs/39598747700)
+finished with 15 successful jobs and three failures. Both Linux architectures
+and Apple Silicon completed their installed-app journeys. Both Windows jobs
+failed during boundary replay because the probe used Chromium `safeStorage`
+to decode a source key protected by the app's direct Windows DPAPI backend.
+Intel macOS completed the desktop capture phases, then failed when its
+independent connector emitted an unstructured diagnostic. These are preserved
+failures, not full packaged acceptance; the corrections and diagnostic work
+below are later source. Public **4.44.0** and the full L1 requirements remain.
+
+## Saved-key controls and platform validation
+
+This **unreleased source batch** keeps otherwise-valid saved sources readable
+when their expected credential strings are missing or damaged within the
+existing size bounds. An operator can inspect and pause the source or control
+another unchanged source. Whole-file JSON, public settings, credential types,
+unexpected credential roles and oversized fields retain their validation.
+New enrollment, resume and other edits still require valid protected settings.
+
+The private pause operation writes only the selected source's disabled flag
+under the current settings revision and lock. It reads current disk records
+instead of saving cached credentials, so stopping a source cannot restore a
+key that disappeared while the app was open. This does not turn file deletion
+into immediate API-key revocation: an already running operation may hold a key
+in memory. Server revocation remains the authority for ending its access.
+
+Administrator retirement can also proceed after loss of the local API or inbox
+key. The original tenant, connector, source, grant, namespace, policy, path and
+principal must still match enrollment, whose saved key digest must retain its
+valid format. Current server revocation is required before deleting accepted
+local evidence. This path grants no capture, re-enrollment, decryption or
+migration authority, and never creates a replacement inbox or key.
+
+The original six damaged-key cases failed during settings load; that baseline
+is retained. The final affected service run passed **80** cases, the native
+controller run **88**, and fresh migration preflight **30**. They cover missing,
+malformed and junk-suffixed credentials, unrelated-source controls, current-disk
+pause, refused resume, unchanged accepted evidence and current administrator
+retirement. Mismatching original enrollment or malformed enrollment digests
+still refuse retirement before a remote request. The service and migration
+inputs remain unchanged since those checks. The expanded controller suite also
+covers the observation-recovery correction below.
+
+The boundary probe now uses the app's actual platform credential backend for
+both saved source keys and its private fixture keys. This corrects the diagnosed
+Windows backend mismatch without changing product encryption. Quota edits wait
+for their actual enabled form controls. Independent connector failures retain
+bounded command/code-location diagnostics without printing exception messages,
+private paths or credentials; unstructured output still fails validation.
+Six focused diagnostic checks and the native build passed. The Intel macOS
+failure is not yet diagnosed or accepted.
+
+The expanded source boundary journey requires **29** checks, including a real
+restart with missing API and damaged inbox keys, refused resume, exact-key
+recovery preserving accepted evidence, and administrator retirement after a
+second key loss. Its first local attempt stopped before enrollment because the
+isolated libsecret control socket exceeded Linux's path limit; the next exposed
+the quota-form timing assumption. A separate attempt timed out while the private
+harness observed host startup, before capture validation. These failed fixtures
+remain intact. The private harness now retries only that exact read-only status
+timeout within its original startup deadline; product limits are unchanged.
+
+A later run passed all ten enrollment checks, then exposed an actual recovery
+status bug. Exact restored keys and accepted inbox/enrollment bytes verified,
+but the controller still showed unknown history because it had loaded while
+keys were missing. A focused regression retained one pass and one failure.
+After a confirmed pause changes protected credentials or the status epoch, the
+controller now rereads only that source's matching saved observations. It keeps
+the source paused and leaves other live activities alone. Different keys do not
+recover the old report. The complete 88-case controller run passed after this
+correction; the original failing native fixture remains intact.
+
+The updated independent headless source journey passed all **13** checks in a
+real Electron launch through the official dispatcher from Help, with actual
+CLI processes, PostgreSQL and libsecret. Offline process restarts, encrypted
+recovery and later deletion fences passed; its host stopped cleanly, with zero
+production memory writes or paid model calls. The qualified receipt is
+`capture-key-controls-headless-qualified-preview.receipt.json`.
+That headless proof pins the preceding `9c3e5a91` runtime digest; the subsequent
+change is confined to the desktop controller and its regression fixture. The
+final boundary preview passed all **29** checks across two actual app launches,
+including restart, exact-key observation recovery and administrator retirement.
+Both launches exited cleanly and the private PostgreSQL host stopped, with zero
+production memory writes or paid model calls. Its qualified receipt,
+`capture-key-controls-qualified-preview.receipt.json`, pins **557** current
+runtime inputs to
+`0137e830971628769eab164a68b25995b0fb4b5b676939d86ba4168eecaa770e`.
+All six packaged targets for this source and the remaining L1 requirements
+remain open. No new release is claimed.
 
 ## Source and deletion boundaries
 

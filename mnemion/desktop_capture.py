@@ -150,7 +150,7 @@ def inbox_path(root, source_id):
     return root / f"inbox-{source_id}"
 
 
-def identity(source):
+def _source_identity(source):
     return {
         "format": 1,
         "id": str(source.id),
@@ -158,24 +158,48 @@ def identity(source):
         "principal_id": str(source.principal_id),
         "path": source.path,
         "binding": binding(source),
+    }
+
+
+def identity(source):
+    if not source.sealed_inbox_key:
+        raise InboxError("capture_key_unavailable")
+    return {
+        **_source_identity(source),
         "sealed_key_sha256": hashlib.sha256(source.sealed_inbox_key.encode()).hexdigest(),
     }
 
 
-def enrollment(root, source):
+def _enrollment(root, source, expected):
     try:
         value = local_state.read(record_path(root, source.id))
     except FileNotFoundError:
         raise InboxError("capture_enrollment_missing") from None
-    expected = identity(source)
     if (
         not isinstance(value, dict)
-        or set(value) != {*expected, "state"}
+        or set(value) != {*expected, "sealed_key_sha256", "state"}
+        or not isinstance(value.get("sealed_key_sha256"), str)
+        or not re.fullmatch(r"[a-f0-9]{64}", value["sealed_key_sha256"])
         or any(value[key] != item for key, item in expected.items())
         or value.get("state") not in {"pending", "ready", "revoked", "retired", "discarded"}
     ):
         raise InboxError("capture_binding_mismatch")
     return value
+
+
+def enrollment(root, source):
+    return _enrollment(root, source, identity(source))
+
+
+def retirement_enrollment(root, source):
+    """Verify the original source for revocation without recovering a lost key.
+
+    This permits only retirement, never capture, re-enrollment or migration.
+    Tenant, connector, source, grant, namespace, policy, path and principal still
+    match the original enrollment. The caller must confirm current server
+    revocation before deleting any local evidence.
+    """
+    return _enrollment(root, source, _source_identity(source))
 
 
 def register(root, source, previous):
@@ -217,8 +241,10 @@ def saved_source(root, source):
         or Source.model_validate(saved.model_dump(include=set(Source.model_fields))) != source
     ):
         raise InboxError("capture_settings_changed")
-    if not saved.custody or not saved.sealed_inbox_key:
+    if not saved.custody:
         raise InboxError("capture_enrollment_missing")
+    if not saved.sealed_inbox_key:
+        raise InboxError("capture_key_unavailable")
     return saved
 
 
@@ -451,7 +477,7 @@ def retire(root, request):
             or source.enabled
         ):
             raise InboxError("capture_settings_changed")
-        state = enrollment(root, source)
+        state = retirement_enrollment(root, source)
     if state["state"] not in {"retired", "discarded"}:
         # An administrator can confirm this exact grant after a device key is
         # lost or revoked. This one-use credential never changes saved keys or

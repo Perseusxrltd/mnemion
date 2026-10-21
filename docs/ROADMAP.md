@@ -93,9 +93,20 @@ issue review, publication and version-linked closure together.
   and migration checks passed. The Linux source journey passed 31 checks across
   three real app launches, including field exclusions through archive recovery
   and the corrected Help-to-workspace transition.
-  All six packaged capture journeys remain pending.
-  The prior
-  policy checkpoint's failed health-response CI and its later test correction
+  All 12 ordinary CI jobs passed on `8aacc859`. The subsequent six-target run
+  completed the installed journeys on both Linux architectures and Apple
+  Silicon, but failed on both Windows targets and Intel macOS. The
+  [saved-key control batch](research/2026-10-21-durable-capture-implementation.md#saved-key-controls-and-platform-validation)
+  preserves inspect/pause and administrator retirement when saved credentials
+  are lost, without replacing accepted evidence or restoring cached keys to
+  disk. Exact-key recovery also refreshes that source's matching saved queue
+  observations while it stays paused. Its 80 service, 88 controller and 30
+  migration checks passed. The native probe's Windows credential-backend
+  mismatch is corrected; Intel Mac connector
+  diagnostics are improved while its failure remains unresolved. The expanded
+  Linux source boundary preview passed all 29 checks across two app launches;
+  all six current-source packaged targets remain pending. The prior policy
+  checkpoint's failed health-response CI and its later test correction
   remain recorded. This remains unreleased source. Reviewed identity/policy
   migration, complete capture policy and coverage, headless installed acceptance,
   bounded history and all six packaged targets remain required before L1 ships.

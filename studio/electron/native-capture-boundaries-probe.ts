@@ -1,5 +1,5 @@
 /** Real installed capture boundaries, across two launches of one private profile. */
-import { safeStorage, type BrowserWindow } from 'electron'
+import type { BrowserWindow } from 'electron'
 import { createHash, randomUUID } from 'node:crypto'
 import { appendFile, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
@@ -8,6 +8,8 @@ import { callNativeOperator as call } from './native-operator-probe.js'
 import { inRenderer, pauseSource, sourceStatus, until } from './native-capture-probe.js'
 import { NativeCaptureRelay } from './native-capture-relay.js'
 import { verifyNativeCaptureDamage } from './native-capture-damage-probe.js'
+import { discardHeldCaptureKeys, holdNativeCaptureKeys, restoreNativeCaptureKeys } from './native-capture-key-probe.js'
+import { workspaceCipher } from './service-bridge.js'
 
 const hash = (value: string | Buffer) => createHash('sha256').update(value).digest('hex')
 const line = (value: unknown) => Buffer.from(JSON.stringify(value) + '\n')
@@ -93,7 +95,10 @@ export async function verifyNativeCaptureBoundaries(window: BrowserWindow, confi
     return state.state === 'running' ? state : false
   }, 'The capture boundary host did not finish its normal startup.', 180000)
   const workspace = local.info.settings.workspace_id
-  if (!safeStorage.isEncryptionAvailable()) throw new Error('The installed boundary gate needs its real OS key store.')
+  // Saved source keys use the app's platform backend, including direct DPAPI on
+  // Windows. Chromium safeStorage cannot decode that backend's ciphertext.
+  const cipher = workspaceCipher()
+  if (!await cipher.available()) throw new Error('The installed boundary gate needs its real OS key store.')
   await inRenderer(window, `await until(async()=>!!document.querySelector('.ws-workspace-name')&&window.mnemion.updateSafety()&&!!(await window.mnemion.workspaceStatus()).active?.me.administrator,'The boundary fixture owner did not reopen',180000);`)
   const owner = await inRenderer(window, `return (await window.mnemion.workspaceStatus()).active;`)
   const resume = config.phase === 'capture-boundaries-resume'
@@ -134,7 +139,7 @@ export async function verifyNativeCaptureBoundaries(window: BrowserWindow, confi
       `)
       const { credential, readerKey, ...identities } = created
       Object.assign(fixture, identities, { captureEndpoint: endpoint, folder, selectedLog, rolledLog,
-        policyRevision: hash(canonical(policy)), sealedReaderKey: safeStorage.encryptString(readerKey).toString('base64'),
+        policyRevision: hash(canonical(policy)), sealedReaderKey: (await cipher.encrypt(readerKey)).toString('base64'),
         selectedText: 'First complete boundary message ' + randomUUID(),
         completedText: 'Completed Unicode boundary é 🧠 ' + randomUUID(),
         rotatedText: 'Accepted after actual log rotation ' + randomUUID(),
@@ -170,8 +175,7 @@ export async function verifyNativeCaptureBoundaries(window: BrowserWindow, confi
       relay.capture(fixture.grantId, 'pass')
       await inRenderer(window, `
         await selectConnection(${JSON.stringify(fixture.connectorId)});
-        const settings=[...card().querySelectorAll('details')].find(e=>e.querySelector('form'));if(!settings)throw new Error('Missing source settings form');settings.open=true;
-        const set=async(label,value)=>{const input=[...settings.querySelectorAll('label')].find(e=>e.textContent.startsWith(label))?.querySelector('input');if(!input||input.disabled)throw new Error('Missing native quota control: '+label);Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,String(value));input.dispatchEvent(new Event('input',{bubbles:true}));await pause(100);};
+        const set=async(label,value)=>{const input=await until(()=>{const settings=[...card().querySelectorAll('details')].find(e=>e.querySelector('form'));if(!settings)return false;settings.open=true;const field=[...settings.querySelectorAll('label')].find(e=>e.textContent.startsWith(label))?.querySelector('input');return field&&!field.disabled&&field.getClientRects().length?field:false;},'The native quota control did not become available: '+label);Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,String(value));input.dispatchEvent(new Event('input',{bubbles:true}));await pause(100);};
         await set('Maximum entries per history counter',3000);await set('Maximum encrypted storage for this source (MiB)',192);
         await click('Preview capture');await until(()=>card().querySelector('[data-capture-preview="ready"]'),'Capacity changes were not previewed');
         card().querySelector('input[type="checkbox"][required]').click();await pause(100);await click('Save source settings');
@@ -212,20 +216,22 @@ export async function verifyNativeCaptureBoundaries(window: BrowserWindow, confi
       const ciphertext = await readFile(join(profile, 'mnemion-desktop-sources', 'inbox-' + fixture.id, 'inbox.sqlite3'))
       if ([fixture.selectedText, fixture.completedText, fixture.rotatedText, fixture.excludedText].some(text => ciphertext.includes(Buffer.from(text)))) throw new Error('The native boundary inbox stored plaintext conversation content.')
       Object.assign(fixture, evidence, { unknownPages: lost.unknown_pages })
+      await holdNativeCaptureKeys(fixture.id, probePath)
       await writeFile(fixturePath, JSON.stringify(fixture), { mode: 0o600, flag: 'wx' })
       return { phase: config.phase, nativeCaptureAgentEnrollment: true, nativeCaptureIncompleteUnicode: true,
         nativeCaptureQuotaAppAndAgentAgree: true, nativeCaptureCompletedUnicode: true,
         nativeCaptureRotationKeepsAcceptedAndGap: true, nativeCaptureExactEventProvenance: true,
         nativeCaptureLostRealCommitReply: true, nativeCaptureReaderRevokedWhileQueued: true,
-        nativeCaptureBoundaryPrivateState: true, acceptedEvents: 3 }
+        nativeCaptureBoundaryPrivateState: true, nativeCaptureKeyLossPausePreservesDisk: true, acceptedEvents: 3 }
     }
 
+    const keys = await restoreNativeCaptureKeys(window, fixture.id, fixture.connectorId, probePath)
     const saved = await readSaved(fixture.id), current = await sourceStatus(fixture.id)
     const previous = current.source.activity.report?.capture
     if (!saved || saved.enabled || hash(saved.sealed_inbox_key) !== fixture.sealedInboxSha256 ||
         current.source.activity.durability !== 'saved' || !previous || previous.unknown_pages !== fixture.unknownPages ||
         previous.pending_events !== 3 || previous.stored_events !== 0) throw new Error('Restart lost the uncertain capture queue, pause or protected key.')
-    const readerKey = safeStorage.decryptString(Buffer.from(fixture.sealedReaderKey, 'base64'))
+    const readerKey = await cipher.decrypt(Buffer.from(fixture.sealedReaderKey, 'base64'))
     relay.capture(fixture.grantId, 'pass')
     const delivered = await cycle(fixture.id, relay, report => report.pending_events === 0 && report.stored_events === 3 && report.unknown_pages === 0 && report.delivery_complete, 'The installed app did not reconcile its lost commit after restart.')
     const coverage = delivered.coverage
@@ -263,7 +269,7 @@ export async function verifyNativeCaptureBoundaries(window: BrowserWindow, confi
       if(!preview.capture_forget)throw new Error('A captured fragment did not expose its deletion scope');
       await request('DELETE','/v1/memories/'+${JSON.stringify(forgotten.memory_id)}+'?expected_version='+preview.version,null,202);
     `)
-    const deviceKey = safeStorage.decryptString(Buffer.from(saved.sealed_key, 'base64'))
+    const deviceKey = await cipher.decrypt(Buffer.from(saved.sealed_key, 'base64'))
     const replay = await inRenderer(window, `
       const response=await window.mnemion.serviceRequest({url:${JSON.stringify(endpoint + '/v1/capture-grants/' + fixture.grantId + '/pages')},method:'POST',
         headers:{Authorization:'Bearer '+${JSON.stringify(deviceKey)},'Content-Type':'application/json','Idempotency-Key':'capture:'+${JSON.stringify(fixture.page.page_id)}},body:JSON.stringify(${JSON.stringify(fixture.page)})});
@@ -289,6 +295,7 @@ export async function verifyNativeCaptureBoundaries(window: BrowserWindow, confi
     const postsBefore = relay.pages.length
     const revoked = await cycle(fixture.id, relay, report => report.pending_events === 1 && report.reason_code === 'capture_authorization_revoked', 'An old native capture grant continued delivery after reviewed revocation.')
     if (relay.pages.length !== postsBefore || revoked.stored_events !== 1 || (await sourceStatus(fixture.id)).source.capture_mode !== 'messages') throw new Error('Policy revocation rewrote old selection, delivered without authority or lost accepted evidence.')
+    await holdNativeCaptureKeys(fixture.id, probePath)
     await inRenderer(window, `
       await selectConnection(${JSON.stringify(fixture.connectorId)});
       await click('Remove from this computer');await click('Revoke device grant and discard local inbox');
@@ -304,14 +311,15 @@ export async function verifyNativeCaptureBoundaries(window: BrowserWindow, confi
       location.hash='/workspace/memories';
     `)
     if (await readSaved(fixture.id)) throw new Error('Native boundary removal left its source credentials.')
+    await discardHeldCaptureKeys(probePath)
     await rm(fixture.selectedLog); await rm(fixture.rolledLog); await rm(fixture.folder, { recursive: true }); await rm(fixturePath)
     relay.check()
-    return { phase: config.phase, ...damage, nativeCaptureUnknownReceiptSurvivesRestart: true,
+    return { phase: config.phase, ...damage, ...keys, nativeCaptureUnknownReceiptSurvivesRestart: true,
       nativeCaptureReceiptReconciledWithoutWrite: true, nativeCaptureMemoryIdsAndVersionsRetained: true,
       nativeCaptureIndexObservedSeparately: true, nativeCaptureRevokedReaderStaysRevoked: true,
       nativeCaptureReplayRespectsForget: true, nativeCaptureLocalDeletionHistory: true,
       nativeCaptureReviewedPolicyStopsOldGrant: true, nativeCapturePendingRetiredThroughApp: true,
-      nativeCaptureBoundaryCleanup: true, acceptedEvents: 3 }
+      nativeCaptureBoundaryCleanup: true, nativeCaptureLostKeysRetiredThroughApp: true, acceptedEvents: 3 }
   } finally {
     // Restore the real host before closing its temporary transport. No saved
     // workspace credential or permanent listener is created by the fixture.

@@ -185,13 +185,34 @@ class Source(Command):
         )
 
 
-class SavedSource(Source):
-    sealed_key: str = Field(min_length=16, max_length=16384)
-    sealed_provider: str | None = Field(default=None, min_length=16, max_length=32768)
-    sealed_inbox_key: str | None = Field(default=None, min_length=16, max_length=16384)
+class SourceRecord(Source):
+    """Read bounded private records even when a protected credential is lost.
+
+    Source identity, paths, audience and every public setting remain validated.
+    An unavailable key must not prevent an exact pause or another source's
+    controls. New enrollment, resume and edits use strict SavedSource validation.
+    """
+
+    sealed_key: str | None = Field(default=None, max_length=16384)
+    sealed_provider: str | None = Field(default=None, max_length=32768)
+    sealed_inbox_key: str | None = Field(default=None, max_length=16384)
     # Private configuration identity. Never a public setting or caller authority.
     # Old settings remain readable; enabled-only changes retain their old epoch.
     status_epoch: UUID | None = None
+
+    @model_validator(mode="after")
+    def credential_roles(self):
+        if self.provider not in {"slack", "gdrive"} and self.sealed_provider is not None:
+            raise ValueError("Only a cloud source may have a protected provider credential")
+        if not self.custody and self.sealed_inbox_key is not None:
+            raise ValueError("Only retained capture may have a protected inbox key")
+        return self
+
+
+class SavedSource(SourceRecord):
+    sealed_key: str = Field(min_length=16, max_length=16384)
+    sealed_provider: str | None = Field(default=None, min_length=16, max_length=32768)
+    sealed_inbox_key: str | None = Field(default=None, min_length=16, max_length=16384)
 
     @field_validator("sealed_key", "sealed_provider", "sealed_inbox_key")
     @classmethod
@@ -212,7 +233,7 @@ class SavedSource(Source):
 class SourceState(Command):
     format: Literal[1] = 1
     revision: str = Field(pattern=r"^(not-configured|[a-f0-9-]{36})$")
-    sources: list[SavedSource] = Field(max_length=MAX_SOURCES)
+    sources: list[SourceRecord] = Field(max_length=MAX_SOURCES)
 
     @model_validator(mode="after")
     def distinct(self):
@@ -234,7 +255,7 @@ def load(root: Path) -> SourceState:
 
 def store(root: Path, expected: str, sources: list) -> dict:
     from .desktop_source_status import settings
-    from .desktop_capture import enrollment, register
+    from .desktop_capture import register, retirement_enrollment
 
     candidate = SourceState(revision=str(uuid4()), sources=sources)
     local_state.directory(root)
@@ -250,7 +271,7 @@ def store(root: Path, expected: str, sources: list) -> dict:
             if (
                 source.custody
                 and source.id not in remaining
-                and enrollment(root, source)["state"] != "discarded"
+                and retirement_enrollment(root, source)["state"] != "discarded"
             ):
                 raise InboxError("capture_retire_required")
         for source in candidate.sources:
@@ -266,6 +287,10 @@ def store(root: Path, expected: str, sources: list) -> dict:
                 and settings(old) == settings(source)
                 and (not source.enabled or source.enabled == old.enabled)
             )
+            if not preserves_stopped_or_current:
+                # Reading a damaged key grants no authority to enroll, resume,
+                # replace credentials or alter any other setting.
+                SavedSource.model_validate(source.model_dump())
             if source.custody and not preserves_stopped_or_current:
                 register(root, source, old)
             source.status_epoch = (
@@ -277,6 +302,23 @@ def store(root: Path, expected: str, sources: list) -> dict:
             root / "sources.json", candidate.model_dump(mode="json", exclude_none=True)
         )
     return candidate.model_dump(mode="json", exclude_none=True)
+
+
+def pause(root: Path, expected: str, identifier: str) -> dict:
+    """Persist only a pause, using current disk credentials rather than a cache."""
+    identifier = UUID(identifier)
+    local_state.directory(root)
+    with local_state.lock(root):
+        current = load(root)
+        source = next((item for item in current.sources if item.id == identifier), None)
+        if current.revision != expected or source is None:
+            raise local_state.LocalSetupError(
+                "source_settings_changed", "Source settings changed. Refresh before retrying."
+            )
+        source.enabled = False
+        current.revision = str(uuid4())
+        local_state.write(root / "sources.json", current.model_dump(mode="json", exclude_none=True))
+    return current.model_dump(mode="json", exclude_none=True)
 
 
 def source_folder(source: Source, root: Path, private_roots=()) -> Path:
@@ -438,6 +480,7 @@ def perform(root: Path, request: dict, private_roots=()) -> dict:
     fields = {
         "load": {"operation"},
         "store": {"operation", "expected_revision", "sources"},
+        "pause": {"operation", "expected_revision", "id"},
         "verify": {"operation", "source", "credential"},
         "scan": {"operation", "source", "credential"},
     }
@@ -453,6 +496,8 @@ def perform(root: Path, request: dict, private_roots=()) -> dict:
         return load(root).model_dump(mode="json", exclude_none=True)
     if operation == "store":
         return store(root, request["expected_revision"], request["sources"])
+    if operation == "pause":
+        return pause(root, request["expected_revision"], request["id"])
     source = Source.model_validate(request["source"])
     if operation == "verify" and source.capture_policy is not None:
         from .desktop_capture_preview import normalize, selection_for
