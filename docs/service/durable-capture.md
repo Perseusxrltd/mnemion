@@ -70,6 +70,7 @@ in `activity.report.capture`.
 | `capture_complete`, `reason_code` | Whether that local scan finished and any observed source, capacity, integrity or authorization problem. An incomplete scan can leave earlier accepted evidence available. |
 | `delivery_complete` | The observed pending queue and current forgetting sweep finished without a delivery error. |
 | `database_bytes`, `device_database_bytes`, `device_pending_bytes`, `over_limit` | Local storage observations and whether the inbox exceeds an admission limit. |
+| `coverage` | Encrypted, durable prefix accounting, history uncertainty and queue/contact observations, described below. |
 
 Delivery reuses each saved page's exact identity and body. After an uncertain
 reply, the runner looks up the receipt before resending the same page. It applies
@@ -82,6 +83,58 @@ are separate stages. An empty queue or successful HTTP reply does not establish
 semantic-search readiness or completed librarian processing. Saved scan history
 also reports the last success, failure or interrupted attempt; an unknown or
 unsaved observation must remain unknown in an agent's report.
+
+### Read prefix coverage
+
+`activity.report.capture.coverage` describes the last accepted prefixes where
+accounting is known for tracked producer files. Its counters replace each file's
+previous contribution; they are **not lifetime totals** or counts of unique
+conversations, messages or retained fragments. Missing files keep their last
+known observations. The coverage record is encrypted in the inbox, and accepted-prefix accounting
+commits with the selected items and verified checkpoint.
+
+In the app, expand **Capture coverage and history** to view these observations.
+Interpret selection using the saved `capture_mode`. `records.lines` counts
+complete, newline-terminated input lines in the accounted prefixes and equals
+`records.selected + records.omitted + records.unsupported`:
+
+| Selection count | Meaning |
+| --- | --- |
+| `records.selected` | Lines contributing selected message text in `messages` mode. In `complete` mode, all accepted complete input lines are selected as raw records. |
+| `records.omitted` | Lines omitted by the message selection, including blank lines, recognized non-message records and duplicates excluded by the reader. |
+| `records.unsupported` | Complete lines the selected message reader does not understand. A parsing/read failure is reported separately as a failed scan. |
+
+A selected line may contain several messages and fields that are not selected.
+These are not field or attachment coverage counts. Complete mode's zero
+unsupported count reflects raw selection, not support for every record format.
+Selection also stays separate from current storage, forgetting and delivery
+outcomes; a selected fragment can be covered by an existing forgetting fence.
+An unfinished final line is outside these counts until a later accepted prefix.
+
+| Coverage observation | Meaning |
+| --- | --- |
+| `catalog` | `unobserved`, `available` or `unavailable`. Initial zero counters with an unobserved catalog are not a measured empty history. |
+| `tracked_scopes`, `checking_scopes`, `failed_scopes`, `missing_scopes` | Tracked producer files and their latest observed verification state. A missing file is not treated as forgotten. |
+| `observed_bytes`, `examined_prefix_bytes`, `unaccepted_observed_bytes` | Last recorded source sizes, examined complete prefixes, and their difference. Unaccepted source bytes can include unfinished tails or failed reads; they are separate from queued selected-payload `pending_bytes`. |
+| `unknown_prefix_scopes` | Files without known selection accounting, including earlier checkpoints that predate it. Zero selection counts do not fill that missing observation. |
+| `uncertain_scopes`, `uncertain_intervals`, `unresolved_previous_bytes` | Files with uncertain history, unavailable/interrupted observation periods, and known unaccepted bytes carried from earlier observed generations. These do not measure everything that may have disappeared. |
+| `tracked_from`, `observed_at`, `complete_prefix_at` | Tracking start, last catalog observation, and the last time all tracked prefixes finished without checking, failed or missing scopes. A prior complete-prefix timestamp does not establish current or historical completeness. |
+| `queue_nonempty_since` | Start of the observed continuous non-empty queue period, retained across restarts. It is reported as null when empty; a later empty-to-non-empty transition starts a new period. Older pending queues can have an unknown start. This is not the oldest fragment's age. |
+| `last_contact_at` | Last successful authenticated delivery preflight verifying the saved, matching active device grant. An arbitrary HTTP response or failed authorization check does not update it. |
+| `last_acknowledged_at` | Last validated page receipt applied locally, including reconciled receipts and stored/forgotten outcomes. It does not timestamp index completion. |
+
+Time since contact is not a measured continuous outage, and queue age is not
+offline duration. These remain the last saved observations. History before
+tracking and records never exposed by the producer are always unknown. A later
+successful scan retains missing/changed-history uncertainty; it cannot prove
+what vanished between observations. **Index readiness is currently unobserved
+in this report; L2/L3 consolidation progress is unavailable.**
+
+Coverage component checks and Electron/frontend builds passed. A synthetic source
+preview worked in a real browser. The
+[development validation record](../research/2026-10-21-durable-capture-implementation.md#coverageaccounting-source-delta)
+preserves the detailed-mode failure and successful rechecks. Installed-artifact
+acceptance and the remaining L1 requirements remain open.
 
 ## Storage and resource limits
 
@@ -157,9 +210,10 @@ deletion of matching text across unrelated files, new generations or imports.
 ## Recovery boundaries
 
 Each inbox uses a separately generated, random 256-bit key sealed by the OS
-credential store. Selected payloads and checkpoints are encrypted with
-AES-256-GCM in private local storage. The dedicated API key does not derive or
-replace that encryption key. Neither key is returned by `source.status`.
+credential store. Selected payloads, checkpoints and coverage records are
+encrypted with AES-256-GCM in private local storage. The dedicated API key does
+not derive or replace that encryption key. Neither key is returned by
+`source.status`.
 
 Only a new, pending enrollment may initialize an empty inbox, before any intake.
 Missing or damaged keys, an initialized database that has disappeared, or an

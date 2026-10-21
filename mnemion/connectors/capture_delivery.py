@@ -32,6 +32,7 @@ def deliver(inbox, client, *, maximum_pages=4, maximum_seconds=20):
         raise ValueError("Choose bounded capture delivery limits")
     deadline = time.monotonic() + maximum_seconds
     grant = verify_grant(inbox, client)
+    inbox.observations.contacted()
     base = f"/v1/capture-grants/{grant.grant_id}"
     # This is an ID-ordered sweep, not a persistent chronological watermark.
     # Applying its final page resets the cursor, so newly added earlier IDs

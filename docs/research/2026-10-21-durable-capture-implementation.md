@@ -6,7 +6,7 @@ published Studio provides the complete journey. Existing sources keep their
 mirror behavior. All [65 product requirements](../PRODUCT_REQUIREMENTS.md) and
 L1–L7 remain in scope; this checkpoint does not close L1 or R07. The current
 [app and agent guide](../service/durable-capture.md) describes the implemented
-enrollment, limits, removal and recovery boundaries.
+enrollment, prefix/queue observations, limits, removal and recovery boundaries.
 
 ## Development proof, 21 October 2026
 
@@ -61,6 +61,7 @@ does not ship this unfinished capture milestone.
 | Durable service custody | Explicit administrator consent, immutable selection/source identity, exact device-key grants, current audience/role checks, immutable event receipts and idempotent pages. Existing provider permission leases remain unchanged. |
 | Delivery and reconciliation | The runner saves exact pages before delivery, looks up uncertain receipts and resends only the same page. Current revocation and forgetting fences apply to backlog. Revoked grants retain local pending evidence without attempting ingestion; observed revocation also stops later local intake. |
 | Private scan observations | Last success, failure, interrupted attempt and next check survive restart. App and native status separate local acceptance, pending content, server acknowledgements, unknown pages, incomplete scans and capacity. Explicit repair preserves damaged diagnostics and resets history for every source on the device to unknown without changing sources, credentials or capture data. |
+| Encrypted coverage accounting | The inbox retains per-file prefix observations and one bounded aggregate, with selection counters committed alongside accepted evidence. Missing/changed/unobserved history, continuous non-empty queue start, authenticated contact and receipt acknowledgement remain distinct. This development delta is still under validation. |
 | Device resource admission | Pending selected payload and actual SQLite database pages have separate per-source and aggregate device limits. New intake also needs free disk headroom. Reducing limits preserves accepted evidence and leaves bounded delivery/forgetting work available. |
 | Pause and removal | Pause works offline. Retained removal requires a pause, explicit `discard_local_inbox: true` and confirmed server revocation before local discard. A current workspace administrator can retire the exact saved grant when the device key is unavailable. Its optional `retirement_credential` is used only through the private removal path and never saved by the operation. Recorded retirement can finish cleanup offline without credentials. |
 | Forgetting and recovery | One captured fragment's raw evidence, projections, parts and retained revisions are withdrawn atomically. Late deliveries stay denied. Current negative state and grant revocations survive restoring an older backup. Revoked custody also stops new background inference and vector publication. |
@@ -86,6 +87,62 @@ are distinct states. Transport success does not prove semantic readiness. The
 source-status report is an observation, not a raw-capture receipt. Clearing saved
 ciphertext is logical local cleanup; it does not promise forensic erasure from
 storage hardware, old backups or previously published Git commits.
+
+## Coverage/accounting source delta
+
+Development checks observed 65 existing affected Python cases passing. A new
+mixed batch had 20 passes and one detailed-mode/session-header failure; the fix
+then passed its targeted recheck. The latest run passed all 11
+[coverage cases](../../service_tests/test_capture_coverage.py), including damaged
+checkpoint reporting, plus the public-command/standalone-schema contract check.
+All 35 Electron controller checks passed. Electron and frontend
+builds passed, as did Python lint and formatting for nine changed modules. A
+real-browser source preview with synthetic data worked; its only observed console
+error was the fixture's missing favicon. Expanded details were inspected at a
+720-pixel window width and remain collapsible. These receipts cover development source;
+installed-artifact acceptance and complete L1 acceptance remain open. The earlier
+journey and test receipts above predate this delta.
+
+The [typed coverage model](../../mnemion/capture_coverage.py)
+and [encrypted observations](../../mnemion/connectors/capture_observations.py)
+are separate from the device's repairable scan-diagnostic history.
+
+Parser accounting partitions **complete input lines**, with
+`selected + omitted + unsupported = lines`. Message selection counts lines
+contributing supported text, understood omissions/deduplication, and unsupported
+input separately. A line can contain multiple messages or unselected fields;
+these counters do not account for individual fields or attachments. Complete
+mode selects the accepted raw lines, so its zero unsupported count is not a
+claim that every producer record is understood. The saved capture mode defines
+the interpretation. No raw message-mode archive is added by this accounting.
+
+The inbox encrypts per-file observations and a bounded aggregate using its
+existing key. A verified prefix's counters commit in the same transaction as
+selected items and the capture checkpoint; a failed acceptance cannot advance
+them. Aggregation replaces the prior contribution for that scope, including
+when a generation changes. The totals describe **last accepted prefixes where
+accounting is known**, not lifetime intake, distinct messages or current server
+memories. Status reads the aggregate without decrypting every producer checkpoint.
+
+Catalog state distinguishes unobserved, available and unavailable. Initial zero
+counters do not assert an empty history. Missing scopes retain their previous
+observations, and older checkpoints without selection accounting remain unknown
+until re-examined. Missing files, generation changes, rewrites and unavailable
+or interrupted observation periods preserve uncertainty. Previously observed
+but unaccepted bytes remain separately reported after a generation change.
+They cannot measure records that disappeared unseen. History before tracking
+always remains unknown, even after a later successful scan.
+
+`queue_nonempty_since` is a persistent empty-to-non-empty transition timestamp;
+status reports null when the queue is empty and the next such transition starts
+a new period. It is not an individual event age or a continuous outage measure.
+`last_contact_at` advances only after authenticated delivery preflight verifies
+the matching active grant. `last_acknowledged_at` advances when a validated page
+receipt is applied locally, including reconciliation and forgotten outcomes.
+Neither observation establishes indexing completion. **Index readiness remains
+unobserved here, and L2/L3 consolidation progress is unavailable.** The
+[status guide](../service/durable-capture.md#read-prefix-coverage) documents the
+source-byte, selected-payload and history counters separately.
 
 ## Source and deletion boundaries
 
@@ -141,11 +198,13 @@ a scan. It cannot stand in for evidence or key recovery.
 
 ## Required before L1 can be released
 
-- Finish durable coverage/gap accounting and selected, omitted and unsupported
-  event breakdowns, including offline age and separately observed index readiness.
-  Join observed, locally accepted and server-acknowledged progress without turning
-  unknown history into zero gaps. Consolidated progress remains unavailable until
-  the corresponding L2/L3 work exists.
+- Finish acceptance of the encrypted coverage/gap accounting, including selected,
+  omitted and unsupported complete-line counts and persistent queue/contact
+  observations. Complete separately observed index readiness and the remaining
+  historical coverage work. Join observed, locally accepted and server-acknowledged
+  progress without turning unknown history into zero gaps or queue age into
+  measured offline duration. Consolidated progress remains unavailable until the
+  corresponding L2/L3 work exists.
 - Complete the bounded enrollment/capability preview, source/session include and
   exclude controls, explicit retention selections, attachment/field availability
   and policy revisions for accepted segments. The two content modes are partial

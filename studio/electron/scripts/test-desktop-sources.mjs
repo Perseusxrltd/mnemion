@@ -124,6 +124,52 @@ async function fixture(t) {
 const retainedDefinition = () => ({ ...definition(), provider: 'conversations', capture_mode: 'messages',
   custody: { source_id: randomUUID(), grant_id: randomUUID(), keep_accepted: true, pending_limit_mib: 256 } })
 
+const coverage = () => ({ format: 'mnemion-capture-coverage-v1', capture_mode: 'messages', catalog: 'available',
+  tracked_scopes: 1, checking_scopes: 0, failed_scopes: 0, missing_scopes: 0,
+  uncertain_scopes: 0, unknown_prefix_scopes: 0, uncertain_intervals: 0,
+  observed_bytes: 120, examined_prefix_bytes: 100, unaccepted_observed_bytes: 20,
+  unresolved_previous_bytes: 0, records: { lines: 3, selected: 1, omitted: 1, unsupported: 1 },
+  tracked_from: '2026-10-21T01:00:00+00:00', observed_at: '2026-10-21T01:01:00+00:00',
+  complete_prefix_at: '2026-10-21T01:01:00+00:00', last_contact_at: null,
+  last_acknowledged_at: null, queue_nonempty_since: '2026-10-21T01:01:00+00:00',
+  history_before_tracking: 'unknown' })
+const queuedCapture = () => ({ locally_accepted: 1, pending_events: 1, pending_bytes: 1024,
+  remote_committed_events: 0, stored_events: 0, forgotten_events: 0, unknown_pages: 0,
+  database_bytes: 65536, over_limit: false, capture_complete: true, delivery_complete: false,
+  device_pending_bytes: 1024, device_database_bytes: 65536, reason_code: 'capture_delivery_unavailable',
+  coverage: coverage() })
+
+test('coverage stays available to native agents after a desktop restart', async t => {
+  const f = await fixture(t)
+  await f.add(retainedDefinition()); await f.manager.start(); await f.flush()
+  const capture = queuedCapture()
+  f.state.scans[0].finish({ ...report(), completed: false, changed: 0, remote_sync_available: false, capture })
+  await f.flush()
+  assert.deepEqual((await f.manager.status()).sources[0].activity.report.capture.coverage, capture.coverage)
+  await f.manager.close()
+  const reopened = new DesktopSources(f.options); t.after(() => reopened.close())
+  assert.deepEqual((await reopened.status()).sources[0].activity.report.capture.coverage, capture.coverage)
+})
+
+for (const [name, damage] of [
+  ['counter inconsistency', value => { value.records.selected = 30 }],
+  ['unknown content field', value => { value.raw_body = 'Never render this arbitrary field' }],
+  ['unknown selection', value => { value.capture_mode = 'all' }],
+  ['invalid time', value => { value.last_contact_at = 'not-a-time' }],
+  ['unsafe integer', value => { value.observed_bytes = Number.MAX_SAFE_INTEGER + 1 }],
+  ['invented history completeness', value => { value.history_before_tracking = 'complete' }],
+]) test(`invalid coverage is visible as a source error: ${name}`, async t => {
+  const f = await fixture(t)
+  await f.add(retainedDefinition()); await f.manager.start(); await f.flush()
+  const capture = queuedCapture(); damage(capture.coverage)
+  f.state.scans[0].finish({ ...report(), completed: false, changed: 0, remote_sync_available: false, capture })
+  await f.flush()
+  const activity = (await f.manager.status()).sources[0].activity
+  assert.equal(activity.phase, 'attention')
+  assert.equal(activity.reason_code, 'source_invalid_response')
+  assert.equal(activity.report, undefined)
+})
+
 test('retained capture keeps an independent protected key and sends it only through the scan pipe', async t => {
   const f = await fixture(t), source = retainedDefinition()
   let view = await f.add(source)

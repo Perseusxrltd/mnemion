@@ -122,7 +122,7 @@ def _chatgpt(conversation: dict, fallback: str, *, messages_only=False) -> Trans
     )
 
 
-def _acp_sessions(rows, fallback):
+def _acp_sessions(rows, fallback, selection=None):
     """Grok Build and other ACP session/update logs, preserving streamed text."""
     sessions = {}
 
@@ -130,11 +130,15 @@ def _acp_sessions(rows, fallback):
         current = session.pop("current", None)
         if current is None:
             return
+        content = "".join(current["parts"])
+        if selection is not None:
+            for index in current["record_indices"]:
+                selection[index] = "selected" if content.strip() else "omitted"
         first, last = current["first"], current["last"]
         stamp = f"{first} → {last}" if first and last and first != last else first or last
-        session["turns"].append((current["role"], "".join(current["parts"]), stamp))
+        session["turns"].append((current["role"], content, stamp))
 
-    for row in rows:
+    for index, row in enumerate(rows):
         if not isinstance(row, dict) or row.get("method") != "session/update":
             continue
         params = row.get("params")
@@ -145,6 +149,22 @@ def _acp_sessions(rows, fallback):
         if not isinstance(kind, str):
             continue
         role = {"user_message_chunk": "user", "agent_message_chunk": "assistant"}.get(kind)
+        if selection is not None and kind in {
+            "user_message_chunk",
+            "agent_message_chunk",
+            "tool_call",
+            "tool_call_update",
+            "agent_thought_chunk",
+            "turn_end",
+            "message_end",
+            "session_end",
+            "available_commands_update",
+            "current_mode_update",
+            "config_option_update",
+            "usage_update",
+            "plan",
+        }:
+            selection[index] = "omitted"
         identifier = params.get("sessionId", fallback)
         if not isinstance(identifier, str) or not identifier.strip() or len(identifier) > 1024:
             raise ConversationError("conversation_session_invalid")
@@ -199,9 +219,12 @@ def _acp_sessions(rows, fallback):
                 "parts": [],
                 "first": stamp,
                 "last": stamp,
+                "record_indices": [],
             }
             session["current"] = current
         current["parts"].append(value)
+        if selection is not None:
+            current["record_indices"].append(index)
         if stamp:
             current["first"] = current["first"] or stamp
             current["last"] = stamp
@@ -214,7 +237,9 @@ def _acp_sessions(rows, fallback):
     return result
 
 
-def parse(text: str, source_id: str, *, messages_only=False) -> list[Transcript]:
+def parse(
+    text: str, source_id: str, *, messages_only=False, selection: list[str] | None = None
+) -> list[Transcript]:
     """Parse complete JSON/JSONL only. In-progress files fail without pruning a scan."""
     try:
         data = json.loads(text)
@@ -228,6 +253,11 @@ def parse(text: str, source_id: str, *, messages_only=False) -> list[Transcript]
         data = rows
     if len(rows) > 100000:
         raise ConversationError("conversation_turn_limit")
+    # Optional per-input accounting uses the same parser decisions as the
+    # resulting projection. Unknown formats are never counted as understood
+    # omissions. This neither changes transcript content nor retains raw text.
+    if selection is not None:
+        selection[:] = ["unsupported"] * len(rows)
     fallback = hashlib.sha256(source_id.encode()).hexdigest()
     result = []
 
@@ -235,30 +265,53 @@ def parse(text: str, source_id: str, *, messages_only=False) -> list[Transcript]
         if value:
             result.append(value)
 
+    def selected(index, value):
+        if selection is not None:
+            selection[index] = "selected" if value else "omitted"
+
     if any(isinstance(row, dict) and row.get("method") == "session/update" for row in rows):
-        return _acp_sessions(rows, fallback)
+        return _acp_sessions(rows, fallback, selection)
 
     if any(isinstance(row, dict) and row.get("type") == "session_meta" for row in rows):
         turns, identifier = [], fallback
-        for row in rows:
+        for index, row in enumerate(rows):
             if not isinstance(row, dict):
                 continue
             payload = row.get("payload", {})
             if not isinstance(payload, dict):
                 continue
+            if row.get("type") in {"session_meta", "turn_context", "compacted", "response_item"}:
+                selected(index, False)
             if row.get("type") == "session_meta":
                 identifier = payload.get("id") or identifier
             if row.get("type") == "event_msg" and payload.get("type") in {
                 "user_message",
                 "agent_message",
             }:
+                content = _text(payload.get("message"), messages_only=messages_only)
+                selected(index, content.strip())
                 turns.append(
                     (
                         "user" if payload["type"] == "user_message" else "assistant",
-                        _text(payload.get("message"), messages_only=messages_only),
+                        content,
                         row.get("timestamp"),
                     )
                 )
+            elif row.get("type") == "event_msg" and payload.get("type") in {
+                "token_count",
+                "agent_reasoning",
+                "task_started",
+                "task_complete",
+                "turn_aborted",
+                "context_compacted",
+                "item_started",
+                "item_completed",
+                "tool_call",
+                "tool_result",
+                "warning",
+                "error",
+            }:
+                selected(index, False)
         add(_transcript(identifier, "Codex session", "codex", turns))
         return result
 
@@ -269,16 +322,26 @@ def parse(text: str, source_id: str, *, messages_only=False) -> list[Transcript]
         for row in rows
     ):
         turns, identifier = [], fallback
-        for row in rows:
+        for index, row in enumerate(rows):
+            if isinstance(row, dict) and row.get("type") in {
+                "system",
+                "summary",
+                "queue-operation",
+                "file-history-snapshot",
+                "progress",
+            }:
+                selected(index, False)
             if not isinstance(row, dict) or not isinstance(row.get("message"), dict):
                 continue
             identifier = row.get("sessionId") or identifier
             role = row.get("type")
             if role in {"user", "human", "assistant"}:
+                content = _text(row["message"].get("content"), messages_only=messages_only)
+                selected(index, content.strip())
                 turns.append(
                     (
                         "user" if role == "human" else role,
-                        _text(row["message"].get("content"), messages_only=messages_only),
+                        content,
                         row.get("timestamp"),
                     )
                 )
@@ -288,14 +351,16 @@ def parse(text: str, source_id: str, *, messages_only=False) -> list[Transcript]
     if any(isinstance(row, dict) and "mapping" in row for row in rows):
         for index, row in enumerate(rows):
             if isinstance(row, dict) and "mapping" in row:
-                add(_chatgpt(row, f"{fallback}:{index}", messages_only=messages_only))
+                transcript = _chatgpt(row, f"{fallback}:{index}", messages_only=messages_only)
+                selected(index, transcript)
+                add(transcript)
         return result
 
     if isinstance(data, dict) and ("chat_messages" in data or "messages" in data):
         rows = [data]
     if any(isinstance(row, dict) and ("chat_messages" in row or "messages" in row) for row in rows):
         for index, row in enumerate(rows):
-            if not isinstance(row, dict):
+            if not isinstance(row, dict) or not ("chat_messages" in row or "messages" in row):
                 continue
             messages = row.get("chat_messages", row.get("messages", []))
             if not isinstance(messages, list):
@@ -317,14 +382,14 @@ def parse(text: str, source_id: str, *, messages_only=False) -> list[Transcript]
                         message.get("created_at"),
                     )
                 )
-            add(
-                _transcript(
-                    row.get("uuid", row.get("id", f"{fallback}:{index}")),
-                    row.get("name", row.get("title", "Conversation")),
-                    "claude-export",
-                    turns,
-                )
+            transcript = _transcript(
+                row.get("uuid", row.get("id", f"{fallback}:{index}")),
+                row.get("name", row.get("title", "Conversation")),
+                "claude-export",
+                turns,
             )
+            selected(index, transcript)
+            add(transcript)
         return result
 
     if any(
@@ -332,14 +397,16 @@ def parse(text: str, source_id: str, *, messages_only=False) -> list[Transcript]
     ):
         # Preserve actual Slack identities, including multi-person conversations.
         threads = {}
-        for row in rows:
+        for index, row in enumerate(rows):
             if not isinstance(row, dict) or row.get("type") != "message":
                 continue
             identifier = str(row.get("thread_ts", row.get("ts", "channel")))
+            content = _text(row.get("text"))
+            selected(index, content.strip())
             threads.setdefault(identifier, []).append(
                 (
                     row.get("user", row.get("username", row.get("bot_id", "unknown"))),
-                    _text(row.get("text")),
+                    content,
                     row.get("ts"),
                 )
             )
@@ -348,24 +415,22 @@ def parse(text: str, source_id: str, *, messages_only=False) -> list[Transcript]
         return result
 
     if rows and all(isinstance(row, dict) and "role" in row and "content" in row for row in rows):
+        turns = []
+        for index, row in enumerate(rows):
+            eligible = not messages_only or (
+                row["role"] in {"human", "user", "assistant"}
+                and row.get("channel") not in {"analysis", "reasoning"}
+            )
+            content = _text(row["content"], messages_only=messages_only) if eligible else ""
+            selected(index, content.strip())
+            if eligible:
+                turns.append((row["role"], content, row.get("timestamp")))
         add(
             _transcript(
                 fallback,
                 "Conversation",
                 "messages",
-                [
-                    (
-                        row["role"],
-                        _text(row["content"], messages_only=messages_only),
-                        row.get("timestamp"),
-                    )
-                    for row in rows
-                    if not messages_only
-                    or (
-                        row["role"] in {"human", "user", "assistant"}
-                        and row.get("channel") not in {"analysis", "reasoning"}
-                    )
-                ],
+                turns,
             )
         )
     return result

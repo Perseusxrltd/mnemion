@@ -1,4 +1,30 @@
-import type { CaptureReason } from '../shared/desktop-sources.js'
+import type { CaptureCoverage, CaptureReason } from '../shared/desktop-sources.js'
+
+const coverageCounts = ['tracked_scopes', 'checking_scopes', 'failed_scopes', 'missing_scopes',
+  'uncertain_scopes', 'unknown_prefix_scopes', 'uncertain_intervals', 'observed_bytes',
+  'examined_prefix_bytes', 'unaccepted_observed_bytes', 'unresolved_previous_bytes'] as const
+const coverageTimes = ['tracked_from', 'observed_at', 'complete_prefix_at', 'last_contact_at',
+  'last_acknowledged_at', 'queue_nonempty_since'] as const
+const coverageKeys = [...coverageCounts, ...coverageTimes, 'format', 'capture_mode', 'catalog', 'records', 'history_before_tracking']
+const object = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value)
+const count = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) >= 0
+const timestamp = (value: unknown) => value === null || typeof value === 'string' &&
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|\+00:00)$/.test(value) && Number.isFinite(Date.parse(value))
+
+export function validCaptureCoverage(value: unknown): value is CaptureCoverage {
+  if (!object(value) || Object.keys(value).length !== coverageKeys.length ||
+    Object.keys(value).some(key => !coverageKeys.includes(key)) || value.format !== 'mnemion-capture-coverage-v1' ||
+    !['complete', 'messages'].includes(String(value.capture_mode)) ||
+    !['unobserved', 'available', 'unavailable'].includes(String(value.catalog)) || value.history_before_tracking !== 'unknown' ||
+    coverageCounts.some(key => !count(value[key])) || coverageTimes.some(key => !timestamp(value[key])) ||
+    !object(value.records) || Object.keys(value.records).length !== 4 ||
+    ['lines', 'selected', 'omitted', 'unsupported'].some(key => !count((value.records as Record<string, unknown>)[key]))) return false
+  const coverage = value as CaptureCoverage
+  return coverage.checking_scopes + coverage.failed_scopes + coverage.missing_scopes <= coverage.tracked_scopes &&
+    coverage.uncertain_scopes <= coverage.tracked_scopes && coverage.unknown_prefix_scopes <= coverage.tracked_scopes &&
+    coverage.examined_prefix_bytes + coverage.unaccepted_observed_bytes === coverage.observed_bytes &&
+    coverage.records.lines === coverage.records.selected + coverage.records.omitted + coverage.records.unsupported
+}
 
 export const captureMessages: Record<CaptureReason, string> = {
   capture_authorization_revoked: 'This capture authorization was revoked. Local evidence is retained; no new evidence is accepted under it.',

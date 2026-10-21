@@ -14,6 +14,8 @@ from .providers import ProviderError
 
 
 class LocalCaptureState:
+    observes_selection = True
+
     def __init__(self, inbox, scope):
         self.inbox, self.connection, self.scope = inbox, inbox.connection, scope
         self.event_count = self.connection.execute(
@@ -100,30 +102,36 @@ class LocalCaptureState:
 
 def capture_scope(inbox, provider, scope):
     """Stream a verified producer prefix into one atomic local acceptance."""
-    state = LocalCaptureState(inbox, scope)
-    previous = state.read()
-    snapshot = ConversationSnapshot(
-        provider, scope, state, previous["checkpoint"] if previous else None
-    )
+    snapshot = None
+    try:
+        state = LocalCaptureState(inbox, scope)
+        previous = state.read()
+        snapshot = ConversationSnapshot(
+            provider, scope, state, previous["checkpoint"] if previous else None
+        )
 
-    def selected():
-        for item in snapshot.items():
-            if item is None or item.action == "retain":
-                continue
-            value = item.model_dump(mode="json")
-            yield {
-                "event_id": capture_event_id(inbox.binding["source_id"], scope, value),
-                "producer_scope": scope,
-                "item": value,
-            }
+        def selected():
+            for item in snapshot.items():
+                if item is None or item.action == "retain":
+                    continue
+                value = item.model_dump(mode="json")
+                yield {
+                    "event_id": capture_event_id(inbox.binding["source_id"], scope, value),
+                    "producer_scope": scope,
+                    "item": value,
+                }
 
-    def verified():
-        if snapshot.ready is None:
-            return False
-        state.finish(snapshot.scan_id)
-        return True
+        def verified():
+            if snapshot.ready is None:
+                return False
+            state.finish(snapshot.scan_id)
+            inbox.observations.accepted(scope, snapshot.ready, snapshot.report)
+            return True
 
-    result = inbox.accept(scope, selected(), lambda: snapshot.ready, verify=verified)
+        result = inbox.accept(scope, selected(), lambda: snapshot.ready, verify=verified)
+    except (ProviderError, OSError, ValueError, InboxError):
+        inbox.observations.failed(scope, snapshot.report if snapshot is not None else None)
+        raise
     return {**result, "capture": snapshot.report}
 
 
@@ -132,11 +140,15 @@ def capture_available(inbox, provider):
     reports, failures = [], []
     try:
         scopes = provider.scopes()
-    except (ProviderError, OSError, ValueError):
+        inbox.observations.catalog(scopes)
+    except (ProviderError, OSError, ValueError, InboxError) as error:
+        inbox.observations.catalog_unavailable()
         return {
             "completed": False,
             "scopes": [],
-            "errors": ["capture_source_unavailable"],
+            "errors": [
+                error.code if isinstance(error, InboxError) else "capture_source_unavailable"
+            ],
             **inbox.status(),
         }
     for scope in scopes:
@@ -151,6 +163,10 @@ def capture_available(inbox, provider):
                     "capture_capacity_blocked",
                     "capture_disk_full",
                     "capture_prefix_changed",
+                    "capture_checkpoint_invalid",
+                    "capture_integrity_failed",
+                    "capture_event_invalid",
+                    "capture_event_conflict",
                     "source_changed_during_read",
                     "conversation_scan_deadline",
                     "conversation_record_limit",

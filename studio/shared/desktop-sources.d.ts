@@ -28,6 +28,19 @@ export type CaptureReport = {
   unknown_pages: number; database_bytes: number; over_limit: boolean;
   capture_complete: boolean; delivery_complete: boolean;
   device_pending_bytes: number; device_database_bytes: number; reason_code?: CaptureReason | null;
+  coverage?: CaptureCoverage | null;
+}
+export type CaptureCoverage = {
+  format: 'mnemion-capture-coverage-v1'; catalog: 'unobserved' | 'available' | 'unavailable';
+  capture_mode: 'complete' | 'messages';
+  tracked_scopes: number; checking_scopes: number; failed_scopes: number; missing_scopes: number;
+  uncertain_scopes: number; unknown_prefix_scopes: number; uncertain_intervals: number;
+  observed_bytes: number; examined_prefix_bytes: number; unaccepted_observed_bytes: number;
+  unresolved_previous_bytes: number;
+  records: { lines: number; selected: number; omitted: number; unsupported: number };
+  tracked_from: string | null; observed_at: string | null; complete_prefix_at: string | null;
+  last_contact_at: string | null; last_acknowledged_at: string | null; queue_nonempty_since: string | null;
+  history_before_tracking: 'unknown';
 }
 export type SourceReason = CaptureReason | 'history_reset' | 'partial' | 'interrupted' | 'source_cancelled' | 'source_timeout' |
   'source_unavailable' | 'source_helper_unavailable' | 'source_invalid_response' |

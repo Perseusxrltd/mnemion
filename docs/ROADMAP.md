@@ -24,7 +24,10 @@ issue review, publication and version-linked closure together.
   The [implementation checkpoint](research/2026-10-21-durable-capture-implementation.md)
   records encrypted local intake before network delivery, current permission and
   forgetting checks, persistent app/agent observations, and explicit retirement
-  when a device key is lost. A Linux app source preview passed offline intake,
+  when a device key is lost. Encrypted prefix accounting now distinguishes
+  selected, omitted and unsupported lines, retained history gaps, queue age and
+  confirmed workspace contact in development source. Index readiness remains
+  unobserved in this report. A Linux app source preview passed offline intake,
   restart, delivery and administrator-assisted removal. Portable recovery,
   complete capture policy and coverage, headless operation, bounded history and
   all six packaged targets remain required before this L1 milestone ships.

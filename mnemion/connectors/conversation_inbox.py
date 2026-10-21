@@ -108,9 +108,12 @@ def binding_value(value: dict) -> dict:
 
 class Inbox:
     def __init__(self, connection, root, binding, key, limits):
+        from .capture_observations import Observations
+
         self.connection, self.root, self.binding, self.limits = connection, root, binding, limits
         self.cipher = AESGCM(key)
         self.aad = canonical_capture_json({"format": FORMAT, "binding": binding})
+        self.observations = Observations(self)
 
     def _seal(self, value: bytes, identity: str) -> bytes:
         nonce = os.urandom(12)
@@ -256,6 +259,7 @@ class Inbox:
                 "INSERT INTO checkpoints(scope,payload) VALUES(?,?) ON CONFLICT(scope) DO UPDATE SET payload=excluded.payload",
                 (scope, self._seal(encoded_checkpoint, "checkpoint:" + scope)),
             )
+            self.observations.queued(usage[1], added_bytes)
             self._capacity(added_bytes, added_events, usage=usage)
         return {"locally_accepted": accepted, **self.status()}
 
@@ -289,6 +293,7 @@ class Inbox:
             "unknown_pages": self.connection.execute(
                 "SELECT COUNT(*) FROM pages WHERE state='pending'"
             ).fetchone()[0],
+            "coverage": self.observations.status(size),
         }
 
     def page(self) -> dict | None:
@@ -418,6 +423,7 @@ class Inbox:
                 "UPDATE pages SET state='settled',payload=NULL,receipt=coalesce(receipt,?) WHERE page_id=?",
                 (self._seal(encoded, "receipt:" + receipt["page_id"]), receipt["page_id"]),
             )
+            self.observations.acknowledged()
         return self.status()
 
     def _deny(self, lineage: str):

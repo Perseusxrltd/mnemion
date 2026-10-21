@@ -9,6 +9,7 @@ import time
 from urllib.parse import quote
 from uuid import uuid4
 
+from ..capture_coverage import SelectionCounts
 from ..conversations import VERSION, parse
 from ..service.connector_models import ConnectorItemInput
 from ..version import __version__
@@ -139,12 +140,29 @@ class ConversationSnapshot:
             ).encode()
         ).hexdigest()
         self.previous = state.read()
+        self.observe_selection = getattr(state, "observes_selection", False)
+        if self.observe_selection and self.previous and "accounting" in self.previous:
+            accounting = self.previous["accounting"]
+            try:
+                if (
+                    set(accounting) != {"version", "sealed", "current"}
+                    or accounting["version"] != 1
+                ):
+                    raise ValueError()
+                for value in (accounting["sealed"], accounting["current"]):
+                    SelectionCounts.model_validate(value)
+                if accounting["sealed"]["lines"] != self.previous["sealed_lines"]:
+                    raise ValueError()
+            except (ValueError, TypeError, KeyError):
+                raise ProviderError("capture_checkpoint_invalid") from None
         self.remote_identity = checkpoint_identity(remote_checkpoint)
         self.trusted = bool(
             self.previous
             and self.previous["settings"] == self.settings
             and self.previous["checkpoint"] == remote_checkpoint
+            and (not self.observe_selection or "accounting" in self.previous)
         )
+        self.selection = SelectionCounts().model_dump()
         self.deadline = time.monotonic() + self.config.max_scan_seconds
         self.ready = None
         self.report = {
@@ -268,6 +286,7 @@ class ConversationSnapshot:
         document = Document(external, digest, self.relative, text, uri, metadata=metadata)
         messages_only = self.config.capture_mode == "messages"
         items = [] if messages_only else list(document.items())
+        outcomes = [] if self.observe_selection and messages_only else None
         if self.config.normalize_conversations:
             visible = rows
             if context:
@@ -276,6 +295,7 @@ class ConversationSnapshot:
                 json.dumps(visible, ensure_ascii=False),
                 self.identifier,
                 messages_only=messages_only,
+                selection=outcomes,
             ):
                 provenance = (
                     {
@@ -314,6 +334,26 @@ class ConversationSnapshot:
                     },
                 )
                 items.extend(companion.items())
+        if self.observe_selection:
+            lines = record_end - record_start
+            values = (outcomes[1:] if context and outcomes is not None else outcomes) or []
+            chosen = values.count("selected") if messages_only else lines
+            unsupported = (
+                (
+                    values.count("unsupported")
+                    + (len(rows) if not self.config.normalize_conversations else 0)
+                )
+                if messages_only
+                else 0
+            )
+            additions = SelectionCounts(
+                lines=lines,
+                selected=chosen,
+                unsupported=unsupported,
+                omitted=lines - chosen - unsupported,
+            ).model_dump()
+            for field, value in additions.items():
+                self.selection[field] += value
         known = self.state.segment(start, items, self.scan_id, reuse=self.trusted)
         for item in items:
             if (item.external_id, item.revision) in known:
@@ -327,6 +367,7 @@ class ConversationSnapshot:
         try:
             with open_selected(self.provider.root, self.relative) as stream:
                 before = stat_value(os.fstat(stream.fileno()))
+                self.report["observed_size_bytes"] = before["size"]
                 if before["size"] > self.config.max_file_bytes:
                     raise ProviderError("conversation_file_limit")
                 previous = self.previous if self.trusted else None
@@ -372,6 +413,7 @@ class ConversationSnapshot:
                     else:
                         change = "rotation" if remote["file"] != file_mark(before) else "truncation"
                 self.report["change"] = change
+                self.report["generation"] = self.generation
                 if previous and change == "unchanged":
                     yield from self._retain(previous["complete_end"] + 1)
                     # An unchanged stat is rechecked through a fresh source handle.
@@ -392,6 +434,8 @@ class ConversationSnapshot:
                             start = candidate
                             record_start = previous["sealed_lines"]
                             context = previous["context"]
+                            if self.observe_selection:
+                                self.selection = dict(previous["accounting"]["sealed"])
                             yield from self._retain(start)
                         else:
                             self.report["change"] = "rewrite"
@@ -402,6 +446,7 @@ class ConversationSnapshot:
                 block, rows, block_size = [], [], 0
                 block_start, block_line, block_context = start, record_start, context
                 prefix_digest = digest.copy()
+                sealed_selection = dict(self.selection)
                 while offset < before["size"]:
                     self._check_time()
                     raw = stream.readline(
@@ -429,6 +474,7 @@ class ConversationSnapshot:
                         block, rows, block_size = [], [], 0
                         block_start, block_line, block_context = offset, line_number, context
                         prefix_digest = digest.copy()
+                        sealed_selection = dict(self.selection)
                     row = self._row(raw, offset)
                     if (
                         self.config.normalize_conversations
@@ -481,6 +527,12 @@ class ConversationSnapshot:
                     "complete_sha256": digest.hexdigest(),
                     "context": block_context,
                 }
+                if self.observe_selection:
+                    self.ready["accounting"] = {
+                        "version": 1,
+                        "sealed": sealed_selection,
+                        "current": SelectionCounts.model_validate(self.selection).model_dump(),
+                    }
                 # If bytes arrived after the frozen read boundary, force the next
                 # scan to inspect them even if that file no longer changes.
                 if after != before:
@@ -503,6 +555,8 @@ class ConversationSnapshot:
             pending_bytes=max(0, stat["size"] - complete_end),
             inventory="complete_record_prefix",
         )
+        if self.observe_selection:
+            self.report["selection"] = self.ready["accounting"]["current"]
         # Only bounded identity/counters and a capture digest travel in the
         # scope checkpoint, never the source body. A replacement device can
         # verify that its copied prefix retains the original evidence.

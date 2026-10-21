@@ -22,6 +22,7 @@ from uuid import UUID
 from pydantic import Field, field_validator
 
 from . import local_state
+from .capture_coverage import CaptureCoverage
 from .connectors.capture_delivery import deliver, verify_grant
 from .connectors.conversation_capture import capture_available
 from .connectors.conversation_inbox import InboxError, Limits, open_inbox
@@ -91,6 +92,7 @@ class CaptureReport(Command):
     capture_complete: bool = Field(strict=True)
     delivery_complete: bool = Field(strict=True)
     reason_code: str | None = None
+    coverage: CaptureCoverage | None = None
 
     @field_validator("reason_code")
     @classmethod
@@ -364,6 +366,7 @@ def scan(root, source, encoded_key, credential, private_roots=()):
             "device_pending_bytes": usage["pending_bytes"],
             "device_database_bytes": usage["database_bytes"],
             "reason_code": next(iter(local["errors"]), None) or remote_error,
+            "coverage": status["coverage"],
         }
         return {
             "completed": capture["capture_complete"] and capture["delivery_complete"],

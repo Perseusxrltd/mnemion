@@ -1,0 +1,218 @@
+"""Encrypted source accounting committed with the local inbox, without HTTP.
+
+The current prefix is not lifetime coverage. Missing files and generation changes
+retain uncertainty; a later successful scan cannot reconstruct unseen history.
+Status reads one aggregate record instead of decrypting every source checkpoint.
+"""
+
+import json
+import re
+
+from ..capture_coverage import CaptureCoverage, PrefixObservation, SelectionCounts, utc_now
+from ..capture_identity import canonical_capture_json
+from .conversation_inbox import InboxError
+
+PREFIX = "coverage:"
+SUMMARY = "coverage-summary"
+COUNTERS = (
+    "tracked_scopes",
+    "checking_scopes",
+    "failed_scopes",
+    "missing_scopes",
+    "uncertain_scopes",
+    "unknown_prefix_scopes",
+    "observed_bytes",
+    "examined_prefix_bytes",
+    "unaccepted_observed_bytes",
+    "unresolved_previous_bytes",
+)
+
+
+def contribution(value):
+    if value is None:
+        return {**dict.fromkeys(COUNTERS, 0), "records": SelectionCounts().model_dump()}
+    return {
+        "tracked_scopes": 1,
+        "checking_scopes": int(value.outcome == "checking"),
+        "failed_scopes": int(value.outcome == "failed"),
+        "missing_scopes": int(value.outcome == "missing"),
+        "uncertain_scopes": int(value.uncertain),
+        "unknown_prefix_scopes": int(value.records is None),
+        "observed_bytes": value.observed_bytes,
+        "examined_prefix_bytes": value.examined_bytes,
+        "unaccepted_observed_bytes": value.observed_bytes - value.examined_bytes,
+        "unresolved_previous_bytes": value.unresolved_bytes,
+        "records": (value.records or SelectionCounts()).model_dump(),
+    }
+
+
+class Observations:
+    def __init__(self, inbox):
+        self.inbox, self.connection = inbox, inbox.connection
+
+    def _read(self, name, model, default=None):
+        row = self.connection.execute("SELECT value FROM metadata WHERE name=?", (name,)).fetchone()
+        if row is None:
+            return default
+        try:
+            if len(row[0]) > 32768:
+                raise ValueError()
+            return model.model_validate(json.loads(self.inbox._open(row[0], "observation:" + name)))
+        except (ValueError, TypeError, KeyError):
+            raise InboxError("capture_integrity_failed") from None
+
+    def _save(self, name, value):
+        encoded = canonical_capture_json(value.model_dump())
+        self.connection.execute(
+            "INSERT INTO metadata(name,value) VALUES(?,?) ON CONFLICT(name) DO UPDATE SET value=excluded.value",
+            (name, self.inbox._seal(encoded, "observation:" + name)),
+        )
+
+    def _summary(self):
+        mode = self.inbox.binding["capture_mode"]
+        summary = self._read(SUMMARY, CaptureCoverage, CaptureCoverage(capture_mode=mode))
+        if summary.capture_mode != mode:
+            raise InboxError("capture_integrity_failed")
+        return summary.model_dump()
+
+    def _scope(self, scope):
+        if not isinstance(scope, str) or not re.fullmatch(r"conversation:[a-f0-9]{64}", scope):
+            raise InboxError("capture_checkpoint_invalid")
+        return self._read(PREFIX + scope, PrefixObservation)
+
+    def _replace(self, summary, scope, before, after):
+        after = PrefixObservation.model_validate(after)
+        old, new = contribution(before), contribution(after)
+        for field in COUNTERS:
+            summary[field] += new[field] - old[field]
+        for field in summary["records"]:
+            summary["records"][field] += new["records"][field] - old["records"][field]
+        self._save(PREFIX + scope, after)
+
+    def _finish(self, summary):
+        self._save(SUMMARY, CaptureCoverage.model_validate(summary))
+
+    def catalog(self, scopes):
+        if not isinstance(scopes, (list, tuple)) or len(set(scopes)) != len(scopes):
+            raise InboxError("capture_checkpoint_invalid")
+        with self.inbox._transaction():
+            known = {
+                row[0][len(PREFIX) :]
+                for row in self.connection.execute(
+                    "SELECT name FROM metadata WHERE name LIKE 'coverage:%'"
+                )
+            }
+            known.update(row[0] for row in self.connection.execute("SELECT scope FROM checkpoints"))
+            current = set(scopes)
+            if len(known | current) > self.inbox.limits.scopes:
+                raise InboxError("capture_capacity_blocked")
+            summary = self._summary()
+            if summary["checking_scopes"]:
+                summary["uncertain_intervals"] += 1
+            observed = utc_now()
+            summary.update(catalog="available", observed_at=observed)
+            summary["tracked_from"] = summary["tracked_from"] or observed
+            for scope in sorted(known | current):
+                before = self._scope(scope)
+                after = (before or PrefixObservation()).model_dump()
+                if before is None and scope in known:
+                    prior = self.inbox.checkpoint(scope)
+                    if prior and {"generation", "stat", "complete_end"} <= prior.keys():
+                        after.update(
+                            generation=prior["generation"],
+                            observed_bytes=prior["stat"]["size"],
+                            examined_bytes=prior["complete_end"],
+                            uncertain=True,
+                        )
+                after["outcome"] = "checking" if scope in current else "missing"
+                if scope not in current:
+                    after["uncertain"] = True
+                self._replace(summary, scope, before, after)
+            if not current and not known:
+                summary["complete_prefix_at"] = observed
+            self._finish(summary)
+            self.inbox._capacity()
+
+    def catalog_unavailable(self):
+        with self.inbox._transaction():
+            summary = self._summary()
+            if summary["catalog"] != "unavailable":
+                summary["uncertain_intervals"] += 1
+            summary.update(catalog="unavailable", observed_at=utc_now())
+            self._finish(summary)
+
+    def accepted(self, scope, checkpoint, report):
+        # Called inside the same transaction as selected bytes and checkpoint.
+        if not self.connection.in_transaction:
+            raise RuntimeError("Prefix coverage needs the local acceptance transaction")
+        before = self._scope(scope)
+        after = (before or PrefixObservation()).model_dump()
+        changed = bool(
+            before
+            and before.generation
+            and (before.generation != checkpoint["generation"] or report.get("change") == "rewrite")
+        )
+        if changed:
+            after["uncertain"] = True
+            after["unresolved_bytes"] += before.observed_bytes - before.examined_bytes
+        after.update(
+            outcome="accepted",
+            generation=checkpoint["generation"],
+            observed_bytes=report["observed_size_bytes"],
+            examined_bytes=checkpoint["complete_end"],
+            records=checkpoint["accounting"]["current"],
+        )
+        summary = self._summary()
+        self._replace(summary, scope, before, after)
+        if not (
+            summary["checking_scopes"] or summary["failed_scopes"] or summary["missing_scopes"]
+        ):
+            summary["complete_prefix_at"] = utc_now()
+        self._finish(summary)
+
+    def failed(self, scope, report=None):
+        with self.inbox._transaction():
+            before = self._scope(scope)
+            after = (before or PrefixObservation()).model_dump()
+            after.update(outcome="failed")
+            if report and type(report.get("observed_size_bytes")) is int:
+                generation = report.get("generation")
+                changed = bool(
+                    before
+                    and before.generation
+                    and (generation != before.generation or report.get("change") == "rewrite")
+                )
+                if changed:
+                    after["uncertain"] = True
+                    after["unresolved_bytes"] += before.observed_bytes - before.examined_bytes
+                    after.update(examined_bytes=0, records=None)
+                after.update(
+                    generation=generation,
+                    observed_bytes=max(report["observed_size_bytes"], after["examined_bytes"]),
+                )
+            summary = self._summary()
+            self._replace(summary, scope, before, after)
+            self._finish(summary)
+
+    def queued(self, previous_bytes, added_bytes):
+        if not previous_bytes and added_bytes:
+            summary = self._summary()
+            summary["queue_nonempty_since"] = utc_now()
+            self._finish(summary)
+
+    def acknowledged(self):
+        summary = self._summary()
+        summary["last_acknowledged_at"] = utc_now()
+        self._finish(summary)
+
+    def contacted(self):
+        with self.inbox._transaction():
+            summary = self._summary()
+            summary["last_contact_at"] = utc_now()
+            self._finish(summary)
+
+    def status(self, pending_bytes):
+        summary = self._summary()
+        if not pending_bytes:
+            summary["queue_nonempty_since"] = None
+        return CaptureCoverage.model_validate(summary).model_dump()
