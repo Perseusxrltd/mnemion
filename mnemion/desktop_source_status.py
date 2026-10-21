@@ -82,11 +82,29 @@ class Report(Command):
     _timestamp = field_validator("timestamp")(observation_time)
 
 
+def backfilling(report: Report | None) -> bool:
+    return (
+        report is not None
+        and not report.completed
+        and report.remote_sync_available
+        and report.capture is not None
+        and not report.capture.capture_complete
+        and report.capture.reason_code == "capture_scan_pending"
+    )
+
+
 class Failure(Command):
     observed_at: str = Field(max_length=32)
     reason_code: Reason
 
     _timestamp = field_validator("observed_at")(observation_time)
+
+    @field_validator("reason_code")
+    @classmethod
+    def failure_reason(cls, value):
+        if value == "capture_scan_pending":
+            raise ValueError("Backfill progress is not a failed scan")
+        return value
 
 
 class Record(Command):
@@ -94,7 +112,7 @@ class Record(Command):
     fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
     owner: UUID
     run: UUID
-    phase: Literal["waiting", "scanning", "complete", "attention"]
+    phase: Literal["waiting", "scanning", "backfill", "complete", "attention"]
     started_at: str | None = Field(default=None, max_length=32)
     finished_at: str | None = Field(default=None, max_length=32)
     next_scan_at: str | None = Field(default=None, max_length=32)
@@ -138,6 +156,13 @@ class Record(Command):
             raise ValueError("A completed observation needs a successful report")
         if self.phase == "attention" and self.reason_code is None:
             raise ValueError("Attention needs a known reason")
+        if self.phase == "backfill" or self.reason_code == "capture_scan_pending":
+            if (
+                self.phase != "backfill"
+                or self.reason_code != "capture_scan_pending"
+                or not backfilling(self.report)
+            ):
+                raise ValueError("Backfill progress needs its observed capture report")
         if self.reason_code == "partial" and (self.report is None or self.report.completed):
             raise ValueError("A partial observation needs its incomplete report")
         if self.last_success_report is not None and not self.last_success_report.completed:
@@ -194,6 +219,8 @@ class Request(Command):
                 raise ValueError("Do not combine a report with a separate failure")
             if self.reason_code == "history_reset":
                 raise ValueError("A scan cannot reset observation history")
+            if self.reason_code == "capture_scan_pending":
+                raise ValueError("Backfill progress needs its observed capture report")
         if self.operation == "status_repair" and self.confirm is not True:
             raise ValueError("Confirm repair of this computer's scan observations")
         return self
@@ -399,14 +426,19 @@ def perform(root: Path, value: dict) -> dict:
                     "The scan observation changed. Read status before retrying.",
                 )
             finished = now()
+            backfill = backfilling(request.report)
             reason = request.reason_code or (
-                "partial" if request.report and not request.report.completed else None
+                "capture_scan_pending"
+                if backfill
+                else "partial"
+                if request.report and not request.report.completed
+                else None
             )
             report = request.report or previous.report
             record = Record(
                 **{
                     **previous.model_dump(),
-                    "phase": "attention" if reason else "complete",
+                    "phase": "backfill" if backfill else "attention" if reason else "complete",
                     "finished_at": finished,
                     "next_scan_at": (
                         datetime.fromisoformat(finished) + timedelta(seconds=source.poll_seconds)
@@ -417,7 +449,7 @@ def perform(root: Path, value: dict) -> dict:
                     if request.report and request.report.completed
                     else previous.last_success_report,
                     "last_failure": Failure(observed_at=finished, reason_code=reason)
-                    if reason
+                    if reason and not backfill
                     else previous.last_failure,
                 }
             )

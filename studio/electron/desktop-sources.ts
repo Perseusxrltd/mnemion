@@ -59,7 +59,7 @@ function readActivity(value: unknown): SourceActivity {
       (value.repair_token !== undefined && (typeof value.repair_token !== 'string' || !/^[a-f0-9]{64}$/.test(value.repair_token)))) throw new Error('Invalid scan repair observation')
     return { ...value, message: messages.source_status_invalid } as SourceActivity
   }
-  if (!['waiting', 'scanning', 'complete', 'attention'].includes(String(value.phase)) || value.durability !== 'saved' || value.repair_token !== undefined ||
+  if (!['waiting', 'scanning', 'backfill', 'complete', 'attention'].includes(String(value.phase)) || value.durability !== 'saved' || value.repair_token !== undefined ||
     (value.phase !== 'waiting' && !time(value.started_at)) ||
     ['finished_at', 'next_scan_at'].some(key => value[key] !== undefined && !time(value[key])) ||
     (value.reason_code !== undefined && !reason(value.reason_code))) throw new Error('Invalid saved source observation')
@@ -68,15 +68,21 @@ function readActivity(value: unknown): SourceActivity {
   if (value.report !== undefined) readReport(value.report)
   if (value.last_success_report !== undefined && !readReport(value.last_success_report).completed) throw new Error('Invalid successful observation')
   if (value.last_failure !== undefined && (!object(value.last_failure) || Object.keys(value.last_failure).some(key => !['observed_at', 'reason_code'].includes(key)) ||
-    !time(value.last_failure.observed_at) || !reason(value.last_failure.reason_code))) throw new Error('Invalid failed observation')
+    !time(value.last_failure.observed_at) || !reason(value.last_failure.reason_code) || value.last_failure.reason_code === 'capture_scan_pending')) throw new Error('Invalid failed observation')
   if (value.phase === 'complete' && (!value.report || !(value.report as SourceReport).completed || !time(value.finished_at) || !time(value.next_scan_at) || value.reason_code !== undefined)) throw new Error('Unconfirmed source completion')
   if (value.phase === 'attention' && value.reason_code === undefined) throw new Error('Missing source failure reason')
+  if (value.phase === 'backfill' || value.reason_code === 'capture_scan_pending') {
+    const report = value.report as SourceReport | undefined
+    if (value.phase !== 'backfill' || value.reason_code !== 'capture_scan_pending' || !time(value.finished_at) || !time(value.next_scan_at) ||
+      !report || report.completed || !report.remote_sync_available || !report.capture || report.capture.capture_complete ||
+      report.capture.reason_code !== 'capture_scan_pending') throw new Error('Unconfirmed backfill progress')
+  }
   return { ...value, ...(reason(value.reason_code) ? { message: messages[value.reason_code] } : {}) } as SourceActivity
 }
 
 function failureReason(error: unknown): SourceReason {
   const code = object(error) ? error.code : undefined
-  return reason(code) && code !== 'history_reset' && !code.startsWith('source_status_') ? code : 'source_unavailable'
+  return reason(code) && code !== 'history_reset' && code !== 'capture_scan_pending' && !code.startsWith('source_status_') ? code : 'source_unavailable'
 }
 
 function publicSource(source: SavedSource): DesktopSource {

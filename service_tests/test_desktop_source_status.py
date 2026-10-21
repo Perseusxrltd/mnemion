@@ -51,6 +51,29 @@ def report(completed=True, **changes):
     }
 
 
+def backfill_report(delivered=False):
+    pending = 0 if delivered else 2
+    return report(
+        completed=False,
+        capture=CaptureReport(
+            locally_accepted=2,
+            pending_events=pending,
+            pending_bytes=pending * 512,
+            remote_committed_events=2 - pending,
+            stored_events=2 - pending,
+            forgotten_events=0,
+            unknown_pages=0,
+            database_bytes=65536,
+            device_pending_bytes=pending * 512,
+            device_database_bytes=65536,
+            over_limit=False,
+            capture_complete=False,
+            delivery_complete=delivered,
+            reason_code="capture_scan_pending",
+        ).model_dump(mode="json"),
+    )
+
+
 def begin(saved, owner=None, run=None):
     root, source, revision = saved
     owner, run = owner or str(uuid4()), run or str(uuid4())
@@ -127,6 +150,57 @@ def test_success_failure_partial_and_schedule_survive_reopen_without_settings_ch
     )
     assert (saved[0] / "sources.json").read_bytes() == original
     assert observe(saved)[0]["activity"] == later
+
+
+@pytest.mark.parametrize("delivered", [False, True])
+def test_backfill_survives_reopen_without_inventing_success_or_failure(
+    saved, monkeypatch, delivered
+):
+    monkeypatch.setattr(status, "now", lambda: "2026-10-21T07:00:00+00:00")
+    original = (saved[0] / "sources.json").read_bytes()
+    owner, run, _ = begin(saved)
+    first = finish(saved, owner, run, report=backfill_report(delivered))["activity"]
+    assert first["phase"] == "backfill"
+    assert first["durability"] == "saved"
+    assert first["reason_code"] == "capture_scan_pending"
+    assert first["next_scan_at"] == "2026-10-21T07:05:00+00:00"
+    assert "last_success_report" not in first and "last_failure" not in first
+    assert observe(saved)[0]["activity"] == first
+
+    owner, run, _ = begin(saved)
+    good = finish(saved, owner, run, report=report())["activity"]
+    owner, run, _ = begin(saved)
+    failed = finish(saved, owner, run, reason_code="provider_unavailable")["activity"]
+    owner, run, _ = begin(saved)
+    resumed = finish(saved, owner, run, report=backfill_report(delivered))["activity"]
+    assert resumed["phase"] == "backfill"
+    assert resumed["report"] == backfill_report(delivered)
+    assert resumed["last_success_report"] == good["report"]
+    assert resumed["last_failure"] == failed["last_failure"]
+    assert observe(saved)[0]["activity"] == resumed
+    assert (saved[0] / "sources.json").read_bytes() == original
+
+
+def test_backfill_claim_requires_an_observed_report_and_remote_availability(saved):
+    owner, run, _ = begin(saved)
+    before = (saved[0] / "source-status.json").read_bytes()
+    with pytest.raises(ValidationError):
+        finish(saved, owner, run, reason_code="capture_scan_pending")
+    assert (saved[0] / "source-status.json").read_bytes() == before
+    incomplete = backfill_report()
+    incomplete["remote_sync_available"] = False
+    failed = finish(saved, owner, run, report=incomplete)["activity"]
+    assert failed["phase"] == "attention"
+    assert failed["last_failure"]["reason_code"] == "partial"
+
+    path = saved[0] / "source-status.json"
+    claimed = json.loads(path.read_bytes())
+    claimed["records"][0].update(phase="backfill", reason_code="capture_scan_pending")
+    path.write_text(json.dumps(claimed))
+    preserved = path.read_bytes()
+    damaged = observe(saved)[0]["activity"]
+    assert damaged["reason_code"] == "source_status_invalid"
+    assert path.read_bytes() == preserved, "An invalid success claim cannot silently repair itself"
 
 
 def test_fresh_process_observes_crashed_scan_as_unknown_not_complete(saved):

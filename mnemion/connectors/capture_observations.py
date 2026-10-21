@@ -39,7 +39,7 @@ def contribution(value):
         return {**dict.fromkeys(COUNTERS, 0), "records": SelectionCounts().model_dump()}
     return {
         "tracked_scopes": 1,
-        "checking_scopes": int(value.outcome == "checking"),
+        "checking_scopes": int(value.outcome in {"checking", "deferred"}),
         "failed_scopes": int(value.outcome == "failed"),
         "missing_scopes": int(value.outcome == "missing"),
         "uncertain_scopes": int(value.uncertain),
@@ -113,13 +113,13 @@ class Observations:
             if len(known | current) > self.inbox.limits.scopes:
                 raise InboxError("capture_capacity_blocked")
             summary = self._summary()
-            if summary["checking_scopes"]:
-                summary["uncertain_intervals"] += 1
+            interrupted = False
             observed = utc_now()
             summary.update(catalog="available", observed_at=observed)
             summary["tracked_from"] = summary["tracked_from"] or observed
             for scope in sorted(known | current):
                 before = self._scope(scope)
+                interrupted |= bool(before and before.outcome == "checking")
                 after = (before or PrefixObservation()).model_dump()
                 if before is None and scope in known:
                     prior = self.inbox.checkpoint(scope)
@@ -134,6 +134,8 @@ class Observations:
                 if scope not in current:
                     after["uncertain"] = True
                 self._replace(summary, scope, before, after)
+            if interrupted:
+                summary["uncertain_intervals"] += 1
             if not current and not known:
                 summary["complete_prefix_at"] = observed
             self._finish(summary)
@@ -161,8 +163,15 @@ class Observations:
         if changed:
             after["uncertain"] = True
             after["unresolved_bytes"] += before.observed_bytes - before.examined_bytes
+        elif before and report["observed_size_bytes"] < before.observed_bytes:
+            # A producer may remove an unexamined suffix between bounded
+            # passes while keeping the already accepted prefix intact.
+            lost = before.observed_bytes - max(report["observed_size_bytes"], before.examined_bytes)
+            if lost > 0:
+                after["uncertain"] = True
+                after["unresolved_bytes"] += lost
         after.update(
-            outcome="accepted",
+            outcome="deferred" if report.get("scan_complete") is False else "accepted",
             generation=checkpoint["generation"],
             observed_bytes=report["observed_size_bytes"],
             examined_bytes=checkpoint["complete_end"],
@@ -192,6 +201,13 @@ class Observations:
                     after["uncertain"] = True
                     after["unresolved_bytes"] += before.observed_bytes - before.examined_bytes
                     after.update(examined_bytes=0, records=None)
+                elif before and report["observed_size_bytes"] < before.observed_bytes:
+                    lost = before.observed_bytes - max(
+                        report["observed_size_bytes"], before.examined_bytes
+                    )
+                    if lost > 0:
+                        after["uncertain"] = True
+                        after["unresolved_bytes"] += lost
                 after.update(
                     generation=generation,
                     observed_bytes=max(report["observed_size_bytes"], after["examined_bytes"]),

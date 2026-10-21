@@ -123,6 +123,8 @@ class ConversationSnapshot:
         self.relative = provider.paths[identifier]
         self.scan_id = uuid4().hex
         self.checkpoint = "jsonl:" + self.scan_id
+        self.resumable_capture = getattr(state, "resumable_capture", False)
+        self.deferred = False
         # An upgraded renderer re-examines the source. Stable output still keeps
         # the same evidence revisions, so an upgrade cannot force re-embedding.
         self.settings = hashlib.sha256(
@@ -136,11 +138,15 @@ class ConversationSnapshot:
                     self.config.segment_bytes,
                     self.config.segment_records,
                     *([self.config.capture_policy.revision] if self.config.capture_policy else []),
+                    *(["retained-window-v1"] if self.resumable_capture else []),
                 ],
                 separators=(",", ":"),
             ).encode()
         ).hexdigest()
         self.previous = state.read()
+        if self.previous and "scan_complete" in self.previous:
+            if type(self.previous["scan_complete"]) is not bool:
+                raise ProviderError("capture_checkpoint_invalid")
         self.observe_selection = getattr(state, "observes_selection", False)
         if self.observe_selection and self.previous and "accounting" in self.previous:
             accounting = self.previous["accounting"]
@@ -197,6 +203,11 @@ class ConversationSnapshot:
         return digest
 
     def _retain(self, before):
+        if self.resumable_capture:
+            self._check_time()
+            self.report["segments_reused"] += self.state.retain_prefix(before, self.scan_id)
+            self._limit_segments()
+            return
         for refs in self.state.references(before, self.scan_id):
             self._check_time()
             self.report["segments_reused"] += 1
@@ -417,7 +428,7 @@ class ConversationSnapshot:
                         change = "rotation" if remote["file"] != file_mark(before) else "truncation"
                 self.report["change"] = change
                 self.report["generation"] = self.generation
-                if previous and change == "unchanged":
+                if previous and change == "unchanged" and previous.get("scan_complete", True):
                     yield from self._retain(previous["complete_end"] + 1)
                     # An unchanged stat is rechecked through a fresh source handle.
                     after = self._current(before, previous["complete_end"])
@@ -426,6 +437,8 @@ class ConversationSnapshot:
                     self.ready = {**previous, "checkpoint": self.checkpoint}
                     self._report_capture(after, previous["complete_end"])
                     return
+                if previous and change == "unchanged":
+                    self.report["change"] = "resume"
 
                 start, record_start, context = 0, 0, None
                 digest = hashlib.sha256()
@@ -478,6 +491,17 @@ class ConversationSnapshot:
                         block_start, block_line, block_context = offset, line_number, context
                         prefix_digest = digest.copy()
                         sealed_selection = dict(self.selection)
+                        if self.resumable_capture and self.state.window_reached(
+                            segments=self.report["segments_rendered"],
+                            new_bytes=offset - start,
+                            remaining_seconds=self.deadline - time.monotonic(),
+                            scan_seconds=self.config.max_scan_seconds,
+                        ):
+                            # The next line has only been read ahead. Stop at
+                            # the existing fragment boundary; its text, event
+                            # identity and accounting have not been consumed.
+                            self.deferred = True
+                            break
                     row = self._row(raw, offset)
                     if (
                         self.config.normalize_conversations
@@ -530,6 +554,8 @@ class ConversationSnapshot:
                     "complete_sha256": digest.hexdigest(),
                     "context": block_context,
                 }
+                if self.resumable_capture:
+                    self.ready["scan_complete"] = not self.deferred
                 if self.observe_selection:
                     self.ready["accounting"] = {
                         "version": 1,
@@ -558,6 +584,11 @@ class ConversationSnapshot:
             pending_bytes=max(0, stat["size"] - complete_end),
             inventory="complete_record_prefix",
         )
+        if self.resumable_capture:
+            self.report.update(
+                scan_complete=not self.deferred,
+                inventory="bounded_record_prefix" if self.deferred else "complete_record_prefix",
+            )
         if self.observe_selection:
             self.report["selection"] = self.ready["accounting"]["current"]
         # Only bounded identity/counters and a capture digest travel in the

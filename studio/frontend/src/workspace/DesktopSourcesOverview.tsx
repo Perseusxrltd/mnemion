@@ -40,7 +40,7 @@ export default function DesktopSourcesOverview() {
     <p>These sources keep syncing with their saved workspaces while Studio runs. You can pause them here while offline or signed out. Removing a retained inbox needs confirmed device-grant revocation; other local source settings can be removed offline.</p>
     {(error || query.error) && <p className="ws-notice ws-error" role="alert">{error ?? (query.error instanceof Error ? query.error.message : 'Saved sources could not be read.')}</p>}
     {query.data?.sources.map(source => <div className="ws-card" key={source.id}>
-      <div className="ws-section-title"><h3>{source.name}</h3><span className="ws-badge">{!source.enabled ? 'Paused' : source.activity.phase === 'scanning' ? 'Scanning' : source.activity.phase === 'attention' ? 'Needs attention' : 'Automatic scans on'}</span></div>
+      <div className="ws-section-title"><h3>{source.name}</h3><span className="ws-badge">{!source.enabled ? 'Paused' : source.activity.phase === 'scanning' ? 'Scanning' : source.activity.phase === 'backfill' ? 'Backfilling' : source.activity.phase === 'attention' ? 'Needs attention' : 'Automatic scans on'}</span></div>
       <p className="ws-helper" style={{ overflowWrap: 'anywhere' }}>{source.endpoint}<br />{source.slack ? `Slack ${source.slack.team_id} · ${source.slack.channels.length} channels` : source.gdrive ? `Drive · ${source.gdrive.folder_ids.length} folders and ${source.gdrive.file_ids.length} files` : source.path}</p>
       {source.activity.message && <p className="ws-helper">{source.activity.message}</p>}
       <SourceScanHistory activity={source.activity} busy={busy} onRepair={() => void control(source, 'repair')} />

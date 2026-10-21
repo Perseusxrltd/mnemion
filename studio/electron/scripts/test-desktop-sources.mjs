@@ -72,11 +72,14 @@ async function fixture(t) {
       if (!current || !record || record.epoch !== current.status_epoch) return { format: 1, ignored: true }
       assert.equal(record.owner, request.owner); assert.equal(record.run, request.run)
       assert.equal(record.activity.phase, 'scanning')
-      const reason_code = request.reason_code ?? (request.report.completed ? undefined : 'partial')
-      const activity = { ...record.activity, phase: reason_code ? 'attention' : 'complete',
+      const backfill = request.report?.completed === false && request.report.remote_sync_available === true &&
+        request.report.capture?.capture_complete === false && request.report.capture.reason_code === 'capture_scan_pending'
+      const reason_code = request.reason_code ?? (backfill ? 'capture_scan_pending' : request.report.completed ? undefined : 'partial')
+      const activity = { ...record.activity, phase: backfill ? 'backfill' : reason_code ? 'attention' : 'complete',
         finished_at: new Date(now).toISOString(), next_scan_at: new Date(now + current.poll_seconds * 1000).toISOString(),
         ...(request.report ? { report: request.report } : {}), ...(request.report?.completed ? { last_success_report: request.report } : {}),
-        ...(reason_code ? { reason_code, last_failure: { observed_at: new Date(now).toISOString(), reason_code } } : {}) }
+        ...(reason_code ? { reason_code } : {}),
+        ...(reason_code && !backfill ? { last_failure: { observed_at: new Date(now).toISOString(), reason_code } } : {}) }
       record.activity = activity
       if (state.loseFinish) { state.loseFinish = false; throw new Error('private reply lost after finish') }
       return structuredClone({ format: 1, id: current.id, activity })
@@ -124,6 +127,12 @@ async function fixture(t) {
 
 const retainedDefinition = () => ({ ...definition(), provider: 'conversations', capture_mode: 'messages',
   custody: { source_id: randomUUID(), grant_id: randomUUID(), keep_accepted: true, pending_limit_mib: 256 } })
+
+const backfillReport = (delivered = false) => ({ ...report(), completed: false,
+  capture: { locally_accepted: 2, pending_events: delivered ? 0 : 2, pending_bytes: delivered ? 0 : 1024,
+    remote_committed_events: delivered ? 2 : 0, stored_events: delivered ? 2 : 0, forgotten_events: 0,
+    unknown_pages: 0, database_bytes: 65536, over_limit: false, capture_complete: false, delivery_complete: delivered,
+    device_pending_bytes: delivered ? 0 : 1024, device_database_bytes: 65536, reason_code: 'capture_scan_pending' } })
 
 const archiveReport = source => ({ format: 'mnemion-capture-archive-v1', created_at: '2026-10-21T04:00:00Z', name: source.name,
   binding: { tenant_id: source.tenant_id, connector_id: source.connector_id, source_id: source.custody.source_id,
@@ -472,6 +481,48 @@ test('retained capture keeps an independent protected key and sends it only thro
   assert.equal(activity.phase, 'attention')
   assert.equal(activity.durability, 'saved')
   assert.deepEqual(activity.report.capture, capture)
+})
+
+for (const delivered of [false, true]) test(`saved backfill remains progress after restart; delivered=${delivered}`, async t => {
+  const f = await fixture(t)
+  await f.add(retainedDefinition()); await f.manager.start(); await f.flush()
+  const pending = backfillReport(delivered)
+  f.state.scans[0].finish(pending); await f.flush()
+  const activity = (await f.manager.status()).sources[0].activity
+  assert.equal(activity.phase, 'backfill')
+  assert.equal(activity.durability, 'saved')
+  assert.equal(activity.reason_code, 'capture_scan_pending')
+  assert.match(activity.message, /continue from its checkpoint/)
+  assert.equal(activity.last_failure, undefined)
+  assert.equal(activity.last_success_report, undefined)
+  assert.deepEqual(activity.report, pending)
+  await f.manager.close()
+  const reopened = new DesktopSources(f.options)
+  t.after(() => reopened.close())
+  await reopened.start(); await f.flush()
+  assert.deepEqual((await reopened.status()).sources[0].activity, activity)
+  assert.equal(f.state.scans.length, 1, 'Restart retains the saved next scan time')
+})
+
+for (const [name, damage] of [
+  ['missing report', value => { delete value.report }],
+  ['remote unavailable', value => { value.report.remote_sync_available = false }],
+  ['missing next scan time', value => { delete value.next_scan_at }],
+  ['invented failure', value => { value.last_failure = { observed_at: value.finished_at, reason_code: 'capture_scan_pending' } }],
+]) test(`invalid backfill receipt does not claim saved progress: ${name}`, async t => {
+  const f = await fixture(t)
+  await f.add(retainedDefinition()); await f.manager.start(); await f.flush()
+  const call = f.options.call
+  f.options.call = async (...args) => {
+    const result = await call(...args)
+    if (args[0].operation === 'status_finish') damage(result.activity)
+    return result
+  }
+  f.state.scans[0].finish(backfillReport()); await f.flush()
+  const activity = (await f.manager.status()).sources[0].activity
+  assert.equal(activity.phase, 'attention')
+  assert.equal(activity.durability, 'unavailable')
+  assert.equal(activity.reason_code, 'source_status_unavailable')
 })
 
 test('retained source removal requires pause, explicit discard and confirmed native retirement', async t => {

@@ -147,11 +147,24 @@ in `activity.report.capture`.
 | `forgotten_events` | Events covered by the workspace's current forgetting decisions. |
 | `remote_committed_events` | Delivery acknowledgements received during the reported scan, including `stored` and `forgotten` outcomes. |
 | `unknown_pages` | Saved delivery pages awaiting reconciliation. A lost reply does not prove failure or authorize a different page. |
-| `capture_complete`, `reason_code` | Whether that local scan finished and any observed source, capacity, integrity or authorization problem. An incomplete scan can leave earlier accepted evidence available. |
+| `capture_complete`, `reason_code` | Whether that local scan finished. `capture_scan_pending` means a verified prefix was saved and backfill remains; other reasons identify observed source, capacity, integrity or authorization problems. |
 | `delivery_complete` | The observed pending queue and current forgetting sweep finished without a delivery error. |
 | `database_bytes`, `device_database_bytes`, `device_pending_bytes`, `over_limit` | Local storage observations and whether the inbox exceeds an admission limit. |
 | `coverage` | Encrypted prefix accounting, history uncertainty, queue/contact observations and saved source index observations, described below. |
 | `storage` | Optional free-page cleanup observation, separate from intake and delivery success. Missing or null means unobserved, including older saved reports; see [database cleanup](#reclaim-unused-database-pages-unreleased). |
+
+During [bounded backfill](#continue-a-bounded-backfill-unreleased), capture can
+remain incomplete while delivery completes for every event accepted so far.
+`capture_scan_pending` is reported when no source or delivery error takes
+precedence. Continue with the saved inbox and checkpoint on the next scan.
+
+The app saves a validated incomplete report with available remote control as
+`activity.phase: "backfill"`; both source panels show **Backfilling**. This
+preserves any prior `last_success_report` and `last_failure`, and saves the next
+scan time across restart. It does not invent a success or failure for normal
+deferred work. Pending and fully delivered batches can both be backfilling.
+A missing or invalid report cannot establish this state; actual errors or
+unavailable remote control still need attention.
 
 Delivery reuses each saved page's exact identity and body. After an uncertain
 reply, the runner looks up the receipt before resending the same page. It applies
@@ -196,14 +209,18 @@ An unfinished final line is outside these counts until a later accepted prefix.
 | Coverage observation | Meaning |
 | --- | --- |
 | `catalog` | `unobserved`, `available` or `unavailable`. Initial zero counters with an unobserved catalog are not a measured empty history. |
-| `tracked_scopes`, `checking_scopes`, `failed_scopes`, `missing_scopes` | Tracked producer files and their latest observed verification state. A missing file is not treated as forgotten. |
-| `observed_bytes`, `examined_prefix_bytes`, `unaccepted_observed_bytes` | Last recorded source sizes, examined complete prefixes, and their difference. Unaccepted source bytes can include unfinished tails or failed reads; they are separate from queued selected-payload `pending_bytes`. |
+| `tracked_scopes`, `checking_scopes`, `failed_scopes`, `missing_scopes` | Tracked producer files and their latest observed verification state. `checking_scopes` includes backfill deferred until a later scan. A missing file is not treated as forgotten. |
+| `observed_bytes`, `examined_prefix_bytes`, `unaccepted_observed_bytes` | Last recorded source sizes, examined complete prefixes, and their difference. Unaccepted source bytes can include deferred backfill, unfinished tails or failed reads; they are separate from queued selected-payload `pending_bytes`. |
 | `unknown_prefix_scopes` | Files without known selection accounting, including earlier checkpoints that predate it. Zero selection counts do not fill that missing observation. |
-| `uncertain_scopes`, `uncertain_intervals`, `unresolved_previous_bytes` | Files with uncertain history, unavailable/interrupted observation periods, and known unaccepted bytes carried from earlier observed generations. These do not measure everything that may have disappeared. |
+| `uncertain_scopes`, `uncertain_intervals`, `unresolved_previous_bytes` | Files with uncertain history, unavailable/interrupted observation periods, and known unaccepted bytes lost from an earlier observation, including removed unexamined suffixes. These do not measure everything that may have disappeared. |
 | `tracked_from`, `observed_at`, `complete_prefix_at` | Tracking start, last catalog observation, and the last time all tracked prefixes finished without checking, failed or missing scopes. A prior complete-prefix timestamp does not establish current or historical completeness. |
 | `queue_nonempty_since` | Start of the observed continuous non-empty queue period, retained across restarts. It is reported as null when empty; a later empty-to-non-empty transition starts a new period. Older pending queues can have an unknown start. This is not the oldest fragment's age. |
 | `last_contact_at` | Last successful authenticated delivery preflight verifying the saved, matching active device grant. An arbitrary HTTP response or failed authorization check does not update it. |
 | `last_acknowledged_at` | Last validated page receipt applied locally, including reconciled receipts and stored/forgotten outcomes. It does not timestamp index completion. |
+
+Deferred scopes are awaiting verification; deferral alone does not add a failed
+scope or an interrupted observation interval. A suffix removed before its next
+window stays visible as unresolved history, including when the later scan fails.
 
 Time since contact is not a measured continuous outage, and queue age is not
 offline duration. These remain the last saved observations. History before
@@ -302,6 +319,34 @@ authorization. Free storage or let the backlog deliver, then check status again.
 The [desktop resource limits](desktop-sources.md#capture-and-resources), including
 the sampled RAM limit and process deadline, also apply. Capture does not need a
 local model; server indexing follows the workspace's model policy.
+
+### Continue a bounded backfill (unreleased)
+
+Each producer file (scope) can save part of its history and resume on the next
+scan, even if the file's size and modification time have not changed. The new
+work allowance is **64 newly rendered fragments or 32 MiB of newly parsed input
+per file per pass**. The input allowance shrinks to one-eighth of the inbox's
+remaining pending-byte budget, with a 1 KiB floor and the 32 MiB maximum.
+Exact selected-payload admission limits still apply.
+
+These limits are checked at existing fragment boundaries. A fragment finishes
+before stopping, preserving normal segmentation, selected output and event
+identities. A fragment may produce several selected events. The allowances are
+cooperative work limits, not hard byte or RAM ceilings. A soft stop leaves the
+final quarter of that file's configured scan time for verification; verification
+can still exhaust the deadline. Prefix hashing and read-ahead are outside the
+new-input allowance.
+
+Selected evidence, the verified prefix checkpoint and selection accounting
+commit atomically. Retained-prefix reuse avoids decrypting and updating every
+old fragment reference; it does not remove source-prefix verification. The
+existing mirror protocol keeps its full-inventory behavior.
+
+These per-file windows do not bound work across a connection or device, provide
+multi-file fairness, or remove the event, scope, storage and retained-history
+limits above. [Focused source, controller and migration checks](../research/2026-10-21-durable-capture-implementation.md#bounded-retained-backfill-source-delta),
+the app/documentation build and an isolated Linux intake measurement passed.
+Current full CI, installed-platform and full L1 acceptance remain open.
 
 ### Reclaim unused database pages (unreleased)
 

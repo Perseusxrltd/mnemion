@@ -167,7 +167,7 @@ class CaptureCoverage(Bounded):
 
 
 class PrefixObservation(Bounded):
-    outcome: Literal["checking", "accepted", "failed", "missing"] = "checking"
+    outcome: Literal["checking", "deferred", "accepted", "failed", "missing"] = "checking"
     generation: Annotated[str, Field(pattern=r"^[a-f0-9]{32}$")] | None = None
     observed_bytes: Count = 0
     examined_bytes: Count = 0

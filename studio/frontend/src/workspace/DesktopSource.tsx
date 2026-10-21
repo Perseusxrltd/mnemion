@@ -187,7 +187,7 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
   const hasLocation = connection.provider === 'slack' ? !!team.trim() && !!channels.trim()
     : connection.provider === 'gdrive' ? !!folders.trim() || !!driveFiles.trim() : !!path;
   return <section className="ws-card" data-update-pending={busy || dirty || key || removing ? '' : undefined}>
-    <div className="ws-section-title"><h2>Run on this computer</h2>{current && <span className="ws-badge">{scanning ? 'Scanning' : !current.enabled ? 'Paused' : current.activity.phase === 'attention' ? 'Needs attention' : 'Automatic scans on'}</span>}</div>
+    <div className="ws-section-title"><h2>Run on this computer</h2>{current && <span className="ws-badge">{scanning ? 'Scanning' : !current.enabled ? 'Paused' : current.activity.phase === 'backfill' ? 'Backfilling' : current.activity.phase === 'attention' ? 'Needs attention' : 'Automatic scans on'}</span>}</div>
     <p>Studio can keep this {connection.provider === 'slack' ? 'Slack source' : connection.provider === 'gdrive' ? 'Google Drive source' : connection.provider === 'conversations' ? 'conversation folder' : 'folder or Obsidian vault'} connected while the app runs in the background. It uses a dedicated application key protected by your operating system.</p>
     {(error || query.error) && <div className="ws-notice ws-error" role="alert">{error ?? message(query.error)}</div>}
     {query.data && !query.data.secure_storage && <p className="ws-notice">Enable or unlock secure credential storage in your desktop session to save a background source.</p>}

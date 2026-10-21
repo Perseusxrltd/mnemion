@@ -60,12 +60,13 @@ does not ship this unfinished capture milestone.
 | --- | --- |
 | Native enrollment | Studio offers explicit retained capture only for a new conversation connection. The administrator approves the source policy and exact device-key grant before native enrollment. App and private agents use the same typed `source.custody` object; existing mirrors cannot silently convert. |
 | Capture policy and local preview | An additional unreleased delta adds Selected/Conversation/Detailed choices, relative JSONL file rules, size caps and explicit mirror/retained selection through the same app/agent configuration. A bounded local preview returns counts and capability statuses; explicit-policy retained fragments carry the immutable approved policy fingerprint. Source, Linux journey and separate recovery/migration checks passed; full L1 acceptance remains open. |
-| Policy versions and administrator controls | A further unreleased batch adds immutable policies bound to grants, reviewed defaults for new grants, and explicit retention or revocation of existing authorizations through the shared hosted/desktop panel and MCP/HTTP. Original-policy archive recovery requires explicit reauthorization. Regression, actual backup/ledger restore, migration, native controller and Linux browser administration checks plus app/native builds passed. CI after integration and packaged acceptance remain pending; these controls do not implement existing-device selection/organization migration. |
+| Policy versions and administrator controls | A further unreleased batch adds immutable policies bound to grants, reviewed defaults for new grants, and explicit retention or revocation of existing authorizations through the shared hosted/desktop panel and MCP/HTTP. Original-policy archive recovery requires explicit reauthorization. Regression, actual backup/ledger restore, migration, native controller and Linux browser administration checks plus app/native builds passed. The integrated checkpoint's CI failed the health-response expectation; its correction is under validation below. Packaged acceptance and existing-device selection/organization migration remain open. |
 | Portable inbox archive | Unreleased checkpoint `7aca19e9` exports and inspects encrypted local evidence, and restores a new private inbox under its original binding. Core, helper/controller, migration and Linux app export/restart-inspection checks passed. These checks do not establish the separate device-recovery delta or packaged acceptance. |
 | Device recovery | An unreleased source checkpoint re-encrypts an inspected archive for a new approved grant and inbox key, retires the old grant and installs a new paused native source. The original organization/source/namespace/policy stays fixed. Protected intents support explicit finish/discard after interrupted local publication. Source, controller, operator and migration checks plus the three-phase Linux source journey passed. All three earlier failed journeys are retained below; six-platform packaged and full L1 acceptance remain open. |
 | Independent headless capture | An additional unreleased delta gives `mnemion-connect` explicit JSON custody and stdin controls for paused enrollment, resume, status, encrypted backup and fixed-policy device recovery. Protected file/environment references replace automatic desktop OS sealing. Local intake precedes service access. Source regression, migration and updater checks passed, including polling and verified managed-runtime integration; packaged acceptance remains open. Configurations without `capture` retain mirror behavior. |
 | Encrypted selected inbox | The native controller creates an independent random 256-bit key and seals it through OS credential storage. Selected items and a verified capture checkpoint commit together under AES-256-GCM. Both messages and complete modes use the existing renderer. Messages mode cannot retain a raw transcript or hide raw text in its source evidence. |
 | Local capture and scheduling | The normal desktop runner commits available selected JSONL evidence before any service request in a scan. Accepted events survive restart and producer removal/rotation; unfinished tails wait. Missing source files can stop new capture while already accepted evidence remains deliverable. |
+| Bounded retained backfill | A new unreleased delta commits verified prefixes at existing fragment boundaries and resumes unchanged files on later scans. Per-file work allowances preserve selection and event identities; deferred coverage remains awaiting verification. Focused Python/controller and migration checks, the native build and an isolated Linux measurement passed. The final app/documentation build, full CI and packaged acceptance remain pending. Aggregate scan bandwidth, multi-file fairness and total history caps remain open. |
 | Durable service custody | Explicit administrator consent, immutable source identity and selection for each device grant, current audience/role checks, immutable event receipts and idempotent pages. Existing provider permission leases remain unchanged. |
 | Delivery and reconciliation | The runner saves exact pages before delivery, looks up uncertain receipts and resends only the same page. Current revocation and forgetting fences apply to backlog. Revoked grants retain local pending evidence without attempting ingestion; observed revocation also stops later local intake. |
 | Private scan observations | Last success, failure, interrupted attempt and next check survive restart. App and native status separate local acceptance, pending content, server acknowledgements, unknown pages, incomplete scans and capacity. Explicit repair preserves damaged diagnostics and resets history for every source on the device to unknown without changing sources, credentials or capture data. |
@@ -658,14 +659,95 @@ its launch path was corrected before the successful journey. Both fixture
 failures remain recorded separately from the passing results.
 Earlier baseline `fc4e25ca` passed all 12 jobs in
 [CI 39555330786](https://github.com/Perseusxrltd/mnemion/actions/runs/39555330786);
-that run predates this modified policy batch. CI for the policy batch remains
-pending until integration.
+that run predates this policy batch. The integrated policy checkpoint `09f259e1`
+then failed [CI 39561318253](https://github.com/Perseusxrltd/mnemion/actions/runs/39561318253).
+The run finished with nine successful jobs and three failed service jobs.
+`capture-policy-versions-ci-313.log` records **one failure, 1,928 passes and
+15 skips**, with 87% coverage: the exact health-response expectation omitted
+the newly advertised `capture_policy_versions: "v1"`. The inspected Python 3.12
+log records one failure, 1,935 passes and eight skips; Python 3.14 records one
+failure, 1,928 passes and 15 skips. All three failures were that same expectation.
+The current backfill batch corrects it while retaining the exact assertion and
+response-byte bounds. The original failed CI remains evidence; earlier focused
+passes do not make it an accepted checkpoint.
 
 These source results do not establish six-package archive recovery, complete
 history, full L1 or release acceptance. Existing-device selection and
 organization migration remain open, as do the remaining policy, coverage,
 retained-history and backpressure requirements. Stable 4.44 and all earlier
 checkpoint proofs keep their original scope.
+
+## Bounded retained backfill source delta
+
+This **unreleased** delta gives each producer file its own continuation window:
+64 newly rendered fragments or 32 MiB of newly parsed input per pass. The input
+allowance is the smaller of 32 MiB and one-eighth of remaining pending-payload
+headroom, with a 1 KiB floor. Checks occur at existing fragment boundaries, and
+a soft stop reserves the final quarter of that file's configured scan time for
+verification. A finishing fragment, prefix hashing and read-ahead prevent these
+allowances from being hard byte, RAM or global scan-bandwidth ceilings.
+
+Selected evidence, verified prefix and selection accounting commit together.
+An incomplete checkpoint resumes even when file metadata is unchanged. The
+renderer keeps standard fragmentation and event identities in both capture
+modes; retained-prefix reuse avoids decrypting/updating every old reference.
+Prefix verification remains required, and mirrors keep full-inventory behavior.
+`capture_scan_pending` identifies normal incomplete backfill when no source or
+delivery error takes precedence; already accepted events can finish delivery.
+Deferred scopes stay in the awaiting-verification count without adding failed
+scopes or interrupted intervals. Removed unexamined suffixes remain unresolved
+history, including after a later failed scan.
+
+Native saved status now distinguishes `phase: "backfill"` from attention and
+completion. It requires a validated incomplete `capture_scan_pending` report
+with available remote control; it preserves prior success/failure observations
+and the actual next scan time after restart. Both app source panels show
+**Backfilling** for this state. Pending and already delivered batches are
+eligible, while missing/invalid reports and actual errors cannot claim this
+progress. Headless activity retains its separate `finished` state and incomplete
+report. The saved-status/controller cases cover reopening, history and schedule
+preservation, and invalid claims.
+
+`capture-windows-initial-tests.log` records **eight passed in 27.95 seconds**.
+The cases compare both modes against one-pass identities, reopen real inboxes,
+exercise the soft deadline and duplicate ACP events, preserve lost suffixes
+including on failure, and resume an archived partial checkpoint. A real headless
+CLI run accepted 64 events offline, reached 128 online and completed at 130,
+draining delivery between windows. These initial checks predate the native
+saved-status delta.
+
+`capture-windows-final-source-inputs.json` pins **547 runtime files**, digest
+`e8d85cf21d0afc21bf1bd5b8dea148d73111ba9ab9e9a0972e6bce7a4ebf23f4`.
+`capture-windows-final-regression.log` records **136 passed in 137.99 seconds,
+no skips**. This includes the eight initial backfill cases, existing
+render/inbox/coverage/delivery/archive/recovery/headless/policy regressions, new
+saved-status cases and the corrected exact health-response expectation. The
+initial eight are not additional passes. The runtime digest still matched.
+
+Separately, `capture-windows-migration-preflight.log` records **30 passed in
+116.80 seconds**, uncached, fingerprint
+`905cf8022901b54ab688c4ee1244d5a2308f6b1ab7130d4642a4096e44b81bf1`.
+`capture-windows-native-tests.log` records **64 passed, zero skips, in
+524.335982 ms**; `capture-windows-native-build.log` records the successful native
+build. The app/documentation build, 630-file formatting and whole-tree Ruff
+also passed. Full CI remains a separate integration check;
+the [product-check workflow](https://github.com/Perseusxrltd/mnemion/actions/workflows/ci.yml)
+reports the current source outcome. These checks do not establish packaged acceptance.
+
+With the final source, `window-benchmark-final-20261021/result.json` measured
+**40,000 synthetic rows / 33,588,890 source bytes** across three reopened passes
+in an isolated Linux process. Total observed time was **3.48 seconds**, peak RSS
+**67.57 MiB**, and final pending selected payload **67,078,418 bytes**. An unchanged
+follow-up scan added no events. The receipt records no HTTP requests, production
+writes or paid model calls. The earlier `window-benchmark-20261021/result.json`
+measurement, before the saved-status changes, remains recorded at 3.26 seconds
+and 67.58 MiB peak RSS. These are synthetic local intake measurements, with no
+delivery; neither establishes a resource guarantee or installed acceptance.
+
+The 100,000 event/reference and 10,000 scope caps, existing byte limits and
+retained-history requirements remain. Multi-file fairness, aggregate scan
+bandwidth, all six packaged targets and full L1 acceptance remain open. This
+batch does not change stable 4.44 or any roadmap requirement status.
 
 ## Source and deletion boundaries
 

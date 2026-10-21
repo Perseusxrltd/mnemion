@@ -154,6 +154,7 @@ export const captureMessages: Record<CaptureReason, string> = {
   capture_binding_invalid: 'Review the workspace, source and device capture authorization.',
   capture_delivery_unavailable: 'The workspace could not confirm delivery. Locally accepted memories remain queued for a later attempt.',
   capture_capacity_blocked: 'The local inbox reached a configured limit. Accepted memories are retained; new intake waits for capacity.',
+  capture_scan_pending: 'A verified part of this source was saved. Backfill will continue from its checkpoint during the next scan; accepted memories can already be delivered.',
   capture_disk_full: 'The device needs more free disk space. Accepted memories are retained.',
   capture_enrollment_missing: 'The protected capture enrollment is missing. Restore its matching settings and inbox; a new inbox was not created.',
   capture_integrity_failed: 'The inbox key or encrypted data could not be verified. Existing data was retained for recovery.',

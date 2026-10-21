@@ -245,6 +245,17 @@ credential therefore does not undo accepted local content. Missing producer
 files can block new intake while the existing queue still delivers. Unfinished JSONL tails wait
 for another scan. Anything deleted before local acceptance remains unavailable.
 
+The unreleased [bounded backfill](durable-capture.md#continue-a-bounded-backfill-unreleased)
+saves verified progress at the existing fragment boundaries. Each producer file
+gets an allowance of 64 newly rendered fragments or 32 MiB of newly parsed input
+per pass, reduced when pending-byte headroom is small. The soft stop reserves
+the final quarter of that file's scan time for verification. These are
+cooperative limits; prefix hashing, read-ahead and a finishing fragment can
+exceed the new-input allowance. They do not bound the whole connection's work
+or guarantee RAM usage or multi-file fairness. The next ordinary scan resumes
+the saved prefix even when file metadata is unchanged; the same watcher and
+polling schedule apply. Existing mirror configurations retain full inventories.
+
 `--watch` reloads configuration and referenced key files for each scan. Normal
 polling defaults to 300 seconds, configurable from 30 to 86,400. With
 `remote_sync: true` (the default), it also polls for server **Sync now** requests
@@ -288,8 +299,28 @@ events in that scan, current pending events/bytes, this delivery's committed
 events, forgotten events, unknown pages, database usage and completion flags.
 One event is a selected fragment, not necessarily one message. A process can
 finish with `completed: false`; a one-shot exit 2 can still mean useful local
-acceptance followed by deferred delivery or failed control reporting. Read the
+acceptance with more backfill, deferred delivery or failed control reporting. Read the
 report before retrying and never clear the inbox to turn an error into success.
+
+`capture_scan_pending` means a verified prefix committed and more input awaits
+another scan, unless a source or delivery error takes precedence. In this state
+`capture_complete` is false while `delivery_complete` can be true. Deferred
+files contribute to coverage's awaiting-verification count without becoming
+failed scopes or interrupted intervals. Selected-line counters still describe
+the latest accepted prefixes. Removed unexamined suffixes remain unresolved
+history; draining the queue does not recover them.
+
+Headless activity keeps `state: "finished"` with this incomplete report; read
+the capture reason and flags. The separate native desktop status now saves
+validated progress as `phase: "backfill"`, displayed as **Backfilling**, with
+its actual next scan time and prior success/failure observations preserved.
+That native state requires its valid report and available remote control;
+missing proof or genuine errors cannot be presented as normal backfill.
+
+The [backfill validation record](../research/2026-10-21-durable-capture-implementation.md#bounded-retained-backfill-source-delta)
+records passing source, controller and migration checks, the app/documentation
+build and an isolated Linux intake measurement. Current full CI and packaged
+acceptance remain pending; this source work is unreleased.
 
 Saved [prefix coverage](durable-capture.md#read-prefix-coverage), queue age and
 authenticated contact/acknowledgement observations keep their separate meanings.

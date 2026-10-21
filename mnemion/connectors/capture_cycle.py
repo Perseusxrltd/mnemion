@@ -60,7 +60,9 @@ def cycle(inbox, *, collect, client, revoked, usage, started=None):
         and not fence_pending,
         "device_pending_bytes": device["pending_bytes"],
         "device_database_bytes": device["database_bytes"],
-        "reason_code": next(iter(local["errors"]), None) or remote_error,
+        "reason_code": next(iter(local["errors"]), None)
+        or remote_error
+        or ("capture_scan_pending" if local.get("deferred") else None),
         "coverage": status["coverage"],
         "storage": storage,
     }

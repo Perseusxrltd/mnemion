@@ -15,7 +15,7 @@ export type SourceReport = {
   capture?: CaptureReport;
 }
 export type CaptureReason = 'capture_authorization_revoked' | 'capture_binding_mismatch' | 'capture_binding_invalid' |
-  'capture_delivery_unavailable' | 'capture_capacity_blocked' | 'capture_disk_full' |
+  'capture_delivery_unavailable' | 'capture_capacity_blocked' | 'capture_scan_pending' | 'capture_disk_full' |
   'capture_enrollment_missing' | 'capture_integrity_failed' | 'capture_inbox_missing' |
   'capture_key_unavailable' | 'capture_not_initialized' | 'capture_policy_change_requires_migration' |
   'capture_server_upgrade_required' | 'capture_settings_changed' | 'capture_source_changed' |
@@ -73,7 +73,7 @@ export type SourceReason = CaptureReason | 'history_reset' | 'partial' | 'interr
   'unsafe_location' | 'damaged_state' | 'storage_locked' | 'source_credentials_unavailable' |
   'source_status_invalid' | 'source_status_unconfirmed' | 'source_status_unavailable' | 'source_status_changed'
 export type SourceActivity = {
-  phase: 'waiting' | 'scanning' | 'paused' | 'complete' | 'attention';
+  phase: 'waiting' | 'scanning' | 'paused' | 'backfill' | 'complete' | 'attention';
   message?: string; report?: SourceReport; next_scan_at?: string;
   durability?: 'saved' | 'unavailable' | 'unknown'; reason_code?: SourceReason;
   started_at?: string; finished_at?: string; last_success_report?: SourceReport;

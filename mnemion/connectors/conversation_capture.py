@@ -12,9 +12,13 @@ from .conversation_inbox import InboxError
 from .live_conversations import ConversationSnapshot
 from .providers import ProviderError
 
+WINDOW_BYTES = 32 * 1024**2
+WINDOW_SEGMENTS = 64
+
 
 class LocalCaptureState:
     observes_selection = True
+    resumable_capture = True
 
     def __init__(self, inbox, scope):
         self.inbox, self.connection, self.scope = inbox, inbox.connection, scope
@@ -23,6 +27,29 @@ class LocalCaptureState:
         ).fetchone()[0]
         self.segment_count = self.connection.execute(
             "SELECT COUNT(*) FROM producer_segments"
+        ).fetchone()[0]
+        self.retained_before = 0
+        _, pending = inbox._usage()
+        # This is a work allowance, not a promise that a fragment fits. The
+        # inbox still checks exact selected bytes and commits them atomically.
+        self.window_bytes = min(
+            WINDOW_BYTES, max(1024, (inbox.limits.pending_bytes - pending) // 8)
+        )
+
+    def window_reached(self, *, segments, new_bytes, remaining_seconds, scan_seconds):
+        return (
+            segments >= WINDOW_SEGMENTS
+            or new_bytes >= self.window_bytes
+            or remaining_seconds <= scan_seconds / 4
+        )
+
+    def retain_prefix(self, before, scan):
+        # Retained sources never need to resend old reference lists. Preserve
+        # this prefix by position instead of decrypting/updating its whole
+        # history on every scan. The mirror keeps its original reference path.
+        self.retained_before = before
+        return self.connection.execute(
+            "SELECT COUNT(*) FROM producer_segments WHERE scope=? AND start<?", (self.scope, before)
         ).fetchone()[0]
 
     def read(self):
@@ -96,7 +123,8 @@ class LocalCaptureState:
 
     def finish(self, scan):
         self.connection.execute(
-            "DELETE FROM producer_segments WHERE scope=? AND seen<>?", (self.scope, scan)
+            "DELETE FROM producer_segments WHERE scope=? AND seen<>? AND start>=?",
+            (self.scope, scan, self.retained_before),
         )
 
 
@@ -177,4 +205,11 @@ def capture_available(inbox, provider):
             )
             if code in {"capture_capacity_blocked", "capture_disk_full"}:
                 break
-    return {"completed": not failures, "scopes": reports, "errors": failures, **inbox.status()}
+    deferred = any(item["capture"].get("scan_complete") is False for item in reports)
+    return {
+        "completed": not failures and not deferred,
+        "deferred": deferred,
+        "scopes": reports,
+        "errors": failures,
+        **inbox.status(),
+    }

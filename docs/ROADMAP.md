@@ -52,10 +52,18 @@ issue review, publication and version-linked closure together.
   and updater checks. Bounded disk cleanup now returns unused database pages
   while preserving every capture record, receipt and deletion fence. App and
   agent status report actual reclaimed space and any deferred cleanup; retained
-  history limits remain explicit. This remains unreleased source. Reviewed identity/policy
-  migration, complete capture policy and coverage, headless installed
-  acceptance, bounded history and
-  all six packaged targets remain required before this L1 milestone ships.
+  history limits remain explicit. A new [bounded backfill delta](research/2026-10-21-durable-capture-implementation.md#bounded-retained-backfill-source-delta)
+  saves verified prefixes at existing fragment boundaries and resumes unchanged
+  files on later scans. The app now labels verified partial progress **Backfilling**
+  and preserves prior success/failure observations and the next scan time.
+  Focused source/controller and migration checks, the app/documentation build
+  and an isolated Linux intake measurement passed; current full CI is pending.
+  Its cooperative per-file limits do not resolve aggregate scan bandwidth,
+  multi-file fairness or the existing event, scope and history caps. The prior
+  policy checkpoint's failed health-response CI and its current test correction
+  remain recorded. This remains unreleased source. Reviewed identity/policy
+  migration, complete capture policy and coverage, headless installed acceptance,
+  bounded history and all six packaged targets remain required before L1 ships.
 
 - **4.44 is published and accepted on the actual Windows app and shared host.** Certifi 2026.10.19 and
   Pillow 13.0.0 address the reported dependency advisories while preserving the
