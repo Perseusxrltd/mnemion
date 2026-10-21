@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-21T14:52:22+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-21T14:52:59+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.44.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.44.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -19,39 +19,26 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | --- | --- | --- | --- |
 | ci\.yml | main | queued | [Run 39620599958](https://github.com/Perseusxrltd/mnemion/actions/runs/39620599958) |
 | database-cache\.yml | main | success | [Run 39576347122](https://github.com/Perseusxrltd/mnemion/actions/runs/39576347122) |
-| desktop\.yml | main | in\_progress | [Run 39613577682](https://github.com/Perseusxrltd/mnemion/actions/runs/39613577682) |
+| desktop\.yml | main | in\_progress | [Run 39620657759](https://github.com/Perseusxrltd/mnemion/actions/runs/39620657759) |
 | public-updates\.yml | v4\.44\.0 | success | [Run 39534394111](https://github.com/Perseusxrltd/mnemion/actions/runs/39534394111) |
 | release\.yml | release/4\.44\.0 | success | [Run 39530357580](https://github.com/Perseusxrltd/mnemion/actions/runs/39530357580) |
 | verify-artifacts\.yml | main | success | [Run 39534260688](https://github.com/Perseusxrltd/mnemion/actions/runs/39534260688) |
-| website-release\.yml | main | queued | [Run 39620599994](https://github.com/Perseusxrltd/mnemion/actions/runs/39620599994) |
+| website-release\.yml | main | success | [Run 39620599994](https://github.com/Perseusxrltd/mnemion/actions/runs/39620599994) |
 | website-release\.yml | v4\.44\.0 | success | [Run 39534391338](https://github.com/Perseusxrltd/mnemion/actions/runs/39534391338) |
 
 ## Active jobs
 
-[Run 39620599958](https://github.com/Perseusxrltd/mnemion/actions/runs/39620599958): 1/12 jobs completed; 1 succeeded.
+[Run 39620599958](https://github.com/Perseusxrltd/mnemion/actions/runs/39620599958): 6/12 jobs completed; 6 succeeded.
 
-- Select checks: queued.
-- studio: queued.
-- dependency-audit: queued.
-- service \(3\.13\): queued.
-- legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
+- dependency-audit: in\_progress.
+- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 - supervision \(macos-15\): queued.
-- supervision \(macos-15-intel\): queued.
-- service \(3\.12\): in\_progress — Initialize containers.
-- service \(3\.14\): in\_progress — Initialize containers.
-- container \(ubuntu-22\.04-arm\): queued.
-- container \(ubuntu-22\.04\): queued.
+- supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
+- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 
-[Run 39613577682](https://github.com/Perseusxrltd/mnemion/actions/runs/39613577682): 17/18 jobs completed; 15 succeeded.
+[Run 39620657759](https://github.com/Perseusxrltd/mnemion/actions/runs/39620657759): 3/5 jobs completed; 1 succeeded.
 
-- windows-11-arm / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
+- native\_database / Private state / Windows / x64: in\_progress — Check ownership, inherited privacy and restricted-token access.
+- native\_database / Private state / Windows / arm64: in\_progress — Install small private-state test dependencies.
 
-[Run 39620599994](https://github.com/Perseusxrltd/mnemion/actions/runs/39620599994): 0/1 jobs completed; 0 succeeded.
-
-- synchronize: in\_progress.
-
-
-## Unsuccessful jobs
-
-- [Run 39613577682](https://github.com/Perseusxrltd/mnemion/actions/runs/39613577682): macos-15-intel / x64 (failure). Steps: Installed app creates, searches and reopens a real local workspace.
-- [Run 39613577682](https://github.com/Perseusxrltd/mnemion/actions/runs/39613577682): macos-15 / arm64 (cancelled). No unsuccessful step was reported. No runner was assigned and no steps were reported.
