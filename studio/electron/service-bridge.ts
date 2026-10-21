@@ -21,7 +21,7 @@ import { DesktopSources } from './desktop-sources.js'
 import { sourceProcess } from './desktop-source-process.js'
 import { DesktopAgents } from './desktop-agents.js'
 import type { AgentInstall, AgentRemove, AgentSetup } from '../shared/desktop-agents.js'
-import type { SourceConfigure, SourceControl } from '../shared/desktop-sources.js'
+import type { SourceConfigure, SourceControl, SourcePreviewSelection } from '../shared/desktop-sources.js'
 import type { BackupSettings, DesktopOperatorStatus, LocalStatus, RecoveryReceipt } from '../shared/local-workspace.js'
 
 const MAX_BYTES = 120 * 1024 * 1024
@@ -442,6 +442,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
   ipcMain.handle('agents:install', (event, input: AgentInstall) => { trusted(event); requireLocalSteady(); return desktopAgents().install(input) })
   ipcMain.handle('agents:remove', (event, input: AgentRemove) => { trusted(event); requireLocalSteady(); return desktopAgents().remove(input) })
   ipcMain.handle('sources:status', event => { trusted(event); return desktopSources().status() })
+  ipcMain.handle('sources:preview', (event, selection: SourcePreviewSelection) => { trusted(event); return desktopSources().preview(selection) })
   ipcMain.handle('sources:choose', async event => {
     trusted(event)
     const result = await dialog.showOpenDialog({ title: 'Choose a memory source folder', properties: ['openDirectory'] })
@@ -738,6 +739,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
           guide: 'https://github.com/Perseusxrltd/mnemion/blob/main/docs/service/desktop-operator.md' }
         case 'status': return localStatus()
         case 'source.status': return desktopSources().status()
+        case 'source.preview': return desktopSources().preview(input.selection as SourcePreviewSelection, signal)
         case 'agent.status': return desktopAgents().status()
         case 'agent.preview': return desktopAgents().preview(input.setup as AgentSetup, signal)
         case 'agent.install': return desktopAgents().install(input as AgentInstall, signal)

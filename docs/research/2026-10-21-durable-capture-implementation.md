@@ -56,6 +56,7 @@ does not ship this unfinished capture milestone.
 | Component | Current implementation |
 | --- | --- |
 | Native enrollment | Studio offers explicit retained capture only for a new conversation connection. The administrator approves the source policy and exact device-key grant before native enrollment. App and private agents use the same typed `source.custody` object; existing mirrors cannot silently convert. |
+| Capture policy and local preview | An additional unreleased delta adds Selected/Conversation/Detailed choices, relative JSONL file rules, size caps and explicit mirror/retained selection through the same app/agent configuration. A bounded local preview returns counts and capability statuses; explicit-policy retained fragments carry the immutable approved policy fingerprint. Source, Linux journey and separate recovery/migration checks passed; full L1 acceptance remains open. |
 | Encrypted selected inbox | The native controller creates an independent random 256-bit key and seals it through OS credential storage. Selected items and a verified capture checkpoint commit together under AES-256-GCM. Both messages and complete modes use the existing renderer. Messages mode cannot retain a raw transcript or hide raw text in its source evidence. |
 | Local capture and scheduling | The normal desktop runner commits available selected JSONL evidence before any service request in a scan. Accepted events survive restart and producer removal/rotation; unfinished tails wait. Missing source files can stop new capture while already accepted evidence remains deliverable. |
 | Durable service custody | Explicit administrator consent, immutable selection/source identity, exact device-key grants, current audience/role checks, immutable event receipts and idempotent pages. Existing provider permission leases remain unchanged. |
@@ -191,6 +192,87 @@ the final page is not an atomic census or a promise of current search results.
 The app labels saved, partial and completed observations and keeps their scope
 separate from local delivery. **L2/L3 consolidation remains unavailable.**
 
+## Capture policy and preview source delta
+
+This additional **development delta remains unreleased**.
+Separate source runs passed 6 policy checks, 50 regression cases, 46 native
+controller checks and 1 public-contract check. Local native, frontend and desktop
+build checks passed. The earlier capture, index and 4.44 release receipts retain
+their original scope.
+
+A Linux source journey passed preview and enrollment, then exposed a saved-status
+serialization failure: recursively omitting nulls removed required nullable
+capture coverage/index fields, so Studio rejected the report before another
+scan. The corrected status view preserves those fields in current and
+last-success capture reports. A 31-case status/wire regression run passed,
+including finish, reopen and next-scan behavior. Earlier attempted journeys and
+harness-version mismatch receipts remain retained.
+
+The corrected Linux source journey passed at **03:34:07 UTC on 21 October 2026**,
+with the OS credential store available in both enrollment and resume phases.
+It verified encrypted local acceptance, restart with the same protected key,
+delivery after producer removal and administrator-assisted removal/cleanup.
+Both phases recorded zero production-memory writes and zero paid-model calls.
+Its source-input digest is
+`f7466da8452f58a75ac0b8a63cbf3a71f148d09ddd460742cbbee11e725bac2d`.
+This proof predates a later recovery-only correction and covers those recorded
+inputs; the passing native journey was not rerun for that correction.
+
+Review then found that service restore omitted the new capture-policy column and
+needed policy validation and immutable-binding checks. The correction passed
+**2 dedicated recovery checks in 14.45 seconds**: an actual snapshot plus a later
+ledger restored a policy-bearing source with current denial/grant state preserved;
+the separate check rejected an existing policy's removal/change and invalid
+retention. The final migration preflight passed **29 checks in 56.01 seconds**,
+with fingerprint
+`48372ae8999b3dc3fe0f89c504316e1732d4675ef7f5bb53a9bcece75fb70c88`.
+These source and service-recovery proofs leave portable inbox recovery,
+six packaged targets and complete L1 acceptance open.
+
+A separate **720×800 layout check** used the actual `CapturePreviewPanel` and
+production CSS with synthetic data and a long filename. Counts remained readable
+without horizontal overflow. Its only console error was the temporary fixture's
+favicon 404; this is layout evidence only.
+
+The [typed policy](../../mnemion/capture_policy.py) defines Selected with either
+content mode, Conversation with `messages`, and Detailed with `complete`.
+Existing Pause remains a lifecycle control. Session selection uses relative
+JSONL filename globs, including exclusions; it does not inspect session IDs or
+redact fields inside a file. Patterns are case-sensitive, `*` matches subfolders,
+and built-in private-file exclusions remain mandatory. File/record size caps
+default to 1,000,000,000 and 2,000,000 bytes; the record cap cannot exceed the file
+cap. Source RAM, file-count, pending-content and database limits remain separate.
+
+The [local preview](../../mnemion/desktop_capture_preview.py) considers at most
+eight matching files, reads at most 128 KiB per file and 1 MiB total, visits at
+most 10,000 directory entries and checks a three-second soft deadline between
+entries. It returns relative paths, per-file outcomes and sampled complete-line
+counts without raw bodies, saved source content or model calls. A complete
+catalog describes traversal, not full file contents. Duplicate/context handling
+and changing files can yield different counts during actual capture.
+
+App and agent call the same preview/configuration path. The returned
+`configuration_hash` must match native `preview_hash` for explicit-policy sources;
+it binds the normalized selection/resource settings rather than the sampled
+bytes. Capability statuses explicitly report no attachment-binary reads, no
+external-link following, unavailable hidden reasoning, unsupported field
+redaction and no automatic expiry. Server capability and authority are checked
+separately during enrollment.
+
+`source_mirror` retains existing reconciliation/removal behavior;
+`until_deleted` requires administrator-approved retained custody. The server
+stores the immutable policy in its source/grant contract; the local enrollment
+binds the same policy. Explicit-policy fragments carry `capture_policy_revision`,
+checked by both inbox and service alongside the approved mode/path and declared
+file boundary. The collector enforces record-size admission. A different policy
+requires reviewed migration. Legacy sources without a policy keep their existing
+`complete`/`messages` behavior and mode-only fragments; they are not silently
+migrated. Portable recovery, broader policy controls, headless operation, bounded
+history and all six packaged acceptance journeys remain open. The
+[app guide](../service/durable-capture.md#content-file-selection-and-retention)
+and [native example](../service/desktop-operator.md#preview-conversation-capture-unreleased)
+describe the current supported controls.
+
 ## Source and deletion boundaries
 
 The staged service exposes a `durable_capture: "v1"` capability. An administrator
@@ -252,10 +334,11 @@ a scan. It cannot stand in for evidence or key recovery.
   server-acknowledged progress without turning unknown history into zero gaps or
   queue age into measured offline duration. Consolidated progress remains unavailable until the
   corresponding L2/L3 work exists.
-- Complete the bounded enrollment/capability preview, source/session include and
-  exclude controls, explicit retention selections, attachment/field availability
-  and policy revisions for accepted segments. The two content modes are partial
-  controls, not the full Selected/Conversation/Detailed/Paused preset contract.
+- Finish acceptance of the bounded preview, filename/session selection, explicit
+  retention and per-fragment policy revisions. Complete the broader policy and
+  preset contract: current Selected/Conversation/Detailed choices and existing
+  Pause do not provide automatic expiry, field redaction or attachment fetching.
+  Keep unavailable capabilities explicit and retain reviewed migration requirements.
 - Complete verified encrypted export/recovery and reviewed migration for changes
   of device, capture selection, identity or dedicated key. Retain existing mirror
   behavior and past forgetting decisions; current files alone are insufficient.

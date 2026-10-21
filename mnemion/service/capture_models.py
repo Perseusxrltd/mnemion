@@ -6,6 +6,7 @@ from uuid import UUID
 from pydantic import Field, field_validator, model_validator
 
 from ..capture_identity import canonical_capture_json
+from ..capture_policy import CapturePolicy
 from .connector_models import ConnectorItemInput, ExternalID
 from .contracts import ResponseModel
 from ..capture_coverage import Cursor, Generation, IndexCounts, utc_timestamp
@@ -22,9 +23,15 @@ class CaptureSourceInput(Command):
     members: list[ExternalID] = Field(max_length=128)
     capture_mode: Literal["messages", "complete"]
     keep_accepted: Literal[True]
+    capture_policy: CapturePolicy | None = None
 
     @model_validator(mode="after")
     def distinct_members(self):
+        if self.capture_policy is not None and (
+            self.capture_policy.capture_mode != self.capture_mode
+            or self.capture_policy.retention != "until_deleted"
+        ):
+            raise ValueError("Capture custody requires its approved content and retention policy")
         if len(set(self.members)) != len(self.members):
             raise ValueError("Choose distinct mapped members")
         return self
@@ -68,6 +75,7 @@ class CaptureSource(ResponseModel):
     name: str
     members: list[str]
     capture_mode: Literal["messages", "complete"]
+    capture_policy: CapturePolicy | None = None
     keep_accepted: Literal[True] = True
     revoked_at: str | None
     has_capture_history: bool = False
@@ -82,6 +90,7 @@ class CaptureGrant(ResponseModel):
     device_key_id: str
     namespace: str
     capture_mode: Literal["messages", "complete"]
+    capture_policy: CapturePolicy | None = None
     revoked_at: str | None
     source_revoked_at: str | None
     active: bool

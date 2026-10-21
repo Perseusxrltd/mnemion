@@ -4,7 +4,10 @@ import hashlib
 import re
 from uuid import UUID, uuid4
 
+from psycopg.types.json import Jsonb
+
 from ..capture_identity import canonical_capture_json, capture_event_id, capture_lineage_id
+from ..capture_policy import CapturePolicy
 from .db import require_administrator, require_space
 from .errors import ServiceError, not_found
 from .models import json_value
@@ -32,7 +35,7 @@ def lock_memory_lineage(conn, memory_id):
         source_lock(conn, row["source_id"])
 
 
-def selected_item(item, capture_mode, producer_scope, namespace):
+def selected_item(item, capture_mode, producer_scope, namespace, capture_policy=None):
     """Require actual selected-fragment provenance; never accept raw message mode."""
     data = item.model_dump(mode="json")
     metadata = data["memory"]["metadata"]
@@ -85,6 +88,16 @@ def selected_item(item, capture_mode, producer_scope, namespace):
             and "raw_source_external_id" not in metadata
             and "raw_document_sha256" not in metadata
         )
+    if capture_policy is not None:
+        policy = CapturePolicy.model_validate(capture_policy)
+        valid = valid and (
+            policy.capture_mode == capture_mode
+            and policy.allows_path(path)
+            and metadata.get("capture_policy_revision") == policy.revision
+            and end <= policy.max_file_bytes
+        )
+    elif "capture_policy_revision" in metadata:
+        valid = False
     if not valid:
         raise ServiceError(
             422, "capture_selection_invalid", "Send only the source's approved selected evidence."
@@ -139,6 +152,12 @@ class CaptureCustody(CaptureProgress):
                     row["connector_id"] != connector_id
                     or row["namespace"] != command.namespace
                     or row["capture_mode"] != command.capture_mode
+                    or row["capture_policy"]
+                    != (
+                        command.capture_policy.model_dump(mode="json")
+                        if command.capture_policy
+                        else None
+                    )
                     or row["revoked_at"]
                 ):
                     raise ServiceError(
@@ -170,8 +189,8 @@ class CaptureCustody(CaptureProgress):
                     (identity.tenant_id, space, command.name),
                 )
                 row = conn.execute(
-                    """INSERT INTO mnemion.capture_sources(tenant_id,source_id,connector_id,space_id,namespace,name,members,capture_mode)
-                       VALUES(%s,%s,%s,%s,%s,%s,%s,%s) RETURNING *""",
+                    """INSERT INTO mnemion.capture_sources(tenant_id,source_id,connector_id,space_id,namespace,name,members,capture_mode,capture_policy)
+                       VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING *""",
                     (
                         identity.tenant_id,
                         source_id,
@@ -181,6 +200,9 @@ class CaptureCustody(CaptureProgress):
                         command.name,
                         command.members,
                         command.capture_mode,
+                        Jsonb(command.capture_policy.model_dump(mode="json"))
+                        if command.capture_policy
+                        else None,
                     ),
                 ).fetchone()
             audit(
@@ -256,7 +278,7 @@ class CaptureCustody(CaptureProgress):
 
     def _grant(self, conn, identity, grant_id, *, active=True):
         row = conn.execute(
-            """SELECT g.*,s.connector_id,s.space_id,s.namespace,s.capture_mode,s.revoked_at AS source_revoked_at,
+            """SELECT g.*,s.connector_id,s.space_id,s.namespace,s.capture_mode,s.capture_policy,s.revoked_at AS source_revoked_at,
                       c.disabled_at AS connector_disabled,k.revoked_at AS key_revoked,
                       k.expires_at AS key_expires,p.disabled_at AS principal_disabled,p.administrator,
                       mnemion.administrator() AS caller_admin,
@@ -374,7 +396,11 @@ class CaptureCustody(CaptureProgress):
             ids = []
             for event in command.events:
                 data = selected_item(
-                    event.item, grant["capture_mode"], event.producer_scope, grant["namespace"]
+                    event.item,
+                    grant["capture_mode"],
+                    event.producer_scope,
+                    grant["namespace"],
+                    grant["capture_policy"],
                 )
                 if capture_event_id(source_id, event.producer_scope, data) != event.event_id:
                     raise ServiceError(

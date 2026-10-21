@@ -1,4 +1,4 @@
-import type { CaptureCoverage, CaptureIndexCounts, CaptureIndexProgress, CaptureIndexSweep, CaptureReason } from '../shared/desktop-sources.js'
+import type { CaptureCoverage, CaptureIndexCounts, CaptureIndexProgress, CaptureIndexSweep, CapturePreview, CaptureReason } from '../shared/desktop-sources.js'
 
 const coverageCounts = ['tracked_scopes', 'checking_scopes', 'failed_scopes', 'missing_scopes',
   'uncertain_scopes', 'unknown_prefix_scopes', 'uncertain_intervals', 'observed_bytes',
@@ -33,6 +33,33 @@ const validIndexProgress = (value: unknown): value is CaptureIndexProgress => ke
   (value.status === 'unobserved' ? value.last_attempt_at === null && value.active === null && value.completed === null : value.last_attempt_at !== null) &&
   (value.active === null || validIndexSweep(value.active) && value.active.next_cursor !== null) &&
   (value.completed === null || validIndexSweep(value.completed) && value.completed.next_cursor === null)
+
+export function readCapturePreview(value: unknown): CapturePreview {
+  const records = (item: unknown) => keys(item, ['lines', 'selected', 'omitted', 'unsupported']) &&
+    Object.values(item).every(count) && item.lines === (item.selected as number) + (item.omitted as number) + (item.unsupported as number)
+  if (!keys(value, ['format', 'configuration_hash', 'policy_revision', 'observed_at', 'capture_mode', 'catalog',
+    'visited_entries', 'read_bytes', 'files', 'records', 'file_limit', 'byte_limit', 'attachment_binaries',
+    'external_links', 'hidden_reasoning', 'field_redaction', 'automatic_expiry', 'content_saved']) ||
+    value.format !== 'mnemion-capture-preview-v1' || typeof value.configuration_hash !== 'string' || !cursor(value.configuration_hash) ||
+    !cursor(value.policy_revision) || typeof value.observed_at !== 'string' || !timestamp(value.observed_at) ||
+    !['messages', 'complete'].includes(String(value.capture_mode)) || !['complete', 'limited', 'unavailable'].includes(String(value.catalog)) ||
+    !count(value.visited_entries) || value.visited_entries > 10000 || !count(value.read_bytes) || value.read_bytes > 1048576 ||
+    !Array.isArray(value.files) || value.files.length > 8 || !records(value.records) || value.file_limit !== 8 || value.byte_limit !== 1048576 ||
+    value.attachment_binaries !== 'not_read' || value.external_links !== 'not_followed' || value.hidden_reasoning !== 'unavailable' ||
+    value.field_redaction !== 'not_supported' || value.automatic_expiry !== 'not_enabled' || value.content_saved !== false) throw new Error('The capture preview could not be verified.')
+  for (const file of value.files) {
+    if (!keys(file, ['path', 'status', 'file_bytes', 'read_bytes', 'prefix_bytes', 'records']) || typeof file.path !== 'string' ||
+      !file.path || file.path.length > 4096 || file.path.startsWith('/') || file.path.split('/').includes('..') || /[\\\x00-\x1f\x7f]/.test(file.path) ||
+      !['sampled', 'unreadable', 'changed', 'too_large', 'record_too_large', 'private_control', 'invalid_jsonl'].includes(String(file.status)) ||
+      !count(file.file_bytes) || !count(file.read_bytes) || file.read_bytes > 131072 || !count(file.prefix_bytes) ||
+      file.prefix_bytes > file.read_bytes || file.prefix_bytes > file.file_bytes || !records(file.records) ||
+      file.status !== 'sampled' && (file.prefix_bytes !== 0 || (file.records as { lines: number }).lines !== 0)) throw new Error('The capture preview contains an invalid file observation.')
+  }
+  const preview = value as CapturePreview
+  if (preview.read_bytes !== preview.files.reduce((sum, file) => sum + file.read_bytes, 0) ||
+    (['lines', 'selected', 'omitted', 'unsupported'] as const).some(key => preview.records[key] !== preview.files.reduce((sum, file) => sum + file.records[key], 0))) throw new Error('The capture preview counters could not be verified.')
+  return preview
+}
 
 export function validCaptureCoverage(value: unknown): value is CaptureCoverage {
   if (!object(value) || Object.keys(value).length !== coverageKeys.length + Number(Object.hasOwn(value, 'index')) ||

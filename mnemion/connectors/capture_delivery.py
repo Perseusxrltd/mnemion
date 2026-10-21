@@ -16,7 +16,9 @@ def verify_grant(inbox, client):
         client.request("GET", f"/v1/capture-grants/{inbox.binding['grant_id']}")
     )
     value = grant.model_dump(mode="json")
-    if any(value[field] != expected for field, expected in inbox.binding.items()):
+    if any(value[field] != expected for field, expected in inbox.binding.items()) or (
+        value.get("capture_policy") != inbox.binding.get("capture_policy")
+    ):
         raise InboxError("capture_binding_mismatch")
     if not grant.active or grant.revoked_at or grant.source_revoked_at:
         raise InboxError("capture_authorization_revoked")

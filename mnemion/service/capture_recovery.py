@@ -4,6 +4,10 @@ import re
 from datetime import datetime
 from uuid import UUID
 
+from psycopg.types.json import Jsonb
+
+from ..capture_policy import CapturePolicy
+
 
 def capture(conn):
     return {
@@ -69,6 +73,15 @@ def validate(state, tenants):
                     or not 1 <= len(row["namespace"]) <= 400
                 ):
                     raise ValueError("Invalid capture custody selection")
+                policy = row.get("capture_policy")
+                if policy is not None:
+                    approved = CapturePolicy.model_validate(policy)
+                    if (
+                        approved.capture_mode != row["capture_mode"]
+                        or approved.retention != "until_deleted"
+                        or approved.model_dump(mode="json") != policy
+                    ):
+                        raise ValueError("Invalid capture custody policy")
                 if not isinstance(row.get("name"), str) or not 1 <= len(row["name"]) <= 200:
                     raise ValueError("Invalid capture custody name")
                 if (
@@ -115,9 +128,12 @@ def restore(conn, state):
             "SELECT * FROM mnemion.capture_sources WHERE tenant_id=%s AND source_id=%s",
             (row["tenant_id"], row["source_id"]),
         ).fetchone()
-        if previous and any(
-            str(previous[field]) != str(row[field])
-            for field in ("connector_id", "space_id", "namespace", "capture_mode")
+        if previous and (
+            any(
+                str(previous[field]) != str(row[field])
+                for field in ("connector_id", "space_id", "namespace", "capture_mode")
+            )
+            or previous["capture_policy"] != row.get("capture_policy")
         ):
             raise ValueError("The custody ledger changed an immutable source binding")
         if (
@@ -133,8 +149,8 @@ def restore(conn, state):
             (row["tenant_id"], row["space_id"], row["name"]),
         )
         conn.execute(
-            """INSERT INTO mnemion.capture_sources(tenant_id,source_id,connector_id,space_id,namespace,name,members,capture_mode,revoked_at,version)
-               VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(tenant_id,source_id) DO UPDATE
+            """INSERT INTO mnemion.capture_sources(tenant_id,source_id,connector_id,space_id,namespace,name,members,capture_mode,revoked_at,version,capture_policy)
+               VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(tenant_id,source_id) DO UPDATE
                SET members=excluded.members,name=excluded.name,revoked_at=excluded.revoked_at,version=excluded.version""",
             tuple(
                 row[key]
@@ -150,7 +166,8 @@ def restore(conn, state):
                     "revoked_at",
                     "version",
                 )
-            ),
+            )
+            + (Jsonb(row["capture_policy"]) if row.get("capture_policy") is not None else None,),
         )
     for row in state["grants"]:
         previous = conn.execute(

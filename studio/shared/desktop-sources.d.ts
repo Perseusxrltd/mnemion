@@ -2,6 +2,7 @@ export type DesktopSource = {
   id: string; endpoint: string; tenant_id: string; connector_id: string; principal_id: string;
   name: string; provider: 'filesystem' | 'conversations' | 'slack' | 'gdrive'; path?: string; members: string[];
   capture_mode?: 'complete' | 'messages';
+  capture_policy?: CapturePolicy;
   custody?: { source_id: string; grant_id: string; keep_accepted: true; pending_limit_mib: number };
   scope_id?: string;
   slack?: { team_id: string; channels: string[]; include_threads: boolean };
@@ -56,6 +57,7 @@ export type CaptureIndexProgress = {
   last_attempt_at: string | null; active: CaptureIndexSweep | null; completed: CaptureIndexSweep | null;
 }
 export type SourceReason = CaptureReason | 'history_reset' | 'partial' | 'interrupted' | 'source_cancelled' | 'source_timeout' |
+  'source_preview_required' |
   'source_unavailable' | 'source_helper_unavailable' | 'source_invalid_response' |
   'source_identity_mismatch' | 'source_connection_unavailable' | 'source_scope_ambiguous' |
   'source_scope_mismatch' | 'source_conversation_identity_required' | 'source_conversation_copy_unverified' |
@@ -79,5 +81,28 @@ export type DesktopSourceView = {
 export type SourceConfigure = {
   expected_revision: string; source: Omit<DesktopSource, 'id'> & { id?: string }; credential?: string;
   provider_credential?: string;
+  preview_hash?: string;
+}
+export type CapturePolicy = {
+  format: 'mnemion-capture-policy-v1'; preset: 'selected' | 'conversation' | 'detailed';
+  capture_mode: 'messages' | 'complete'; include: string[]; exclude: string[];
+  retention: 'source_mirror' | 'until_deleted'; max_file_bytes: number; max_record_bytes: number;
+}
+export type SourcePreviewSelection = {
+  path: string; capture_mode: 'messages' | 'complete'; capture_policy?: CapturePolicy | null;
+  keep_accepted: boolean; memory_limit_mib: number; max_files: number; pending_limit_mib: number;
+}
+export type CapturePreviewFile = {
+  path: string; status: 'sampled' | 'unreadable' | 'changed' | 'too_large' | 'record_too_large' | 'private_control' | 'invalid_jsonl';
+  file_bytes: number; read_bytes: number; prefix_bytes: number;
+  records: { lines: number; selected: number; omitted: number; unsupported: number };
+}
+export type CapturePreview = {
+  format: 'mnemion-capture-preview-v1'; configuration_hash: string; policy_revision: string | null;
+  observed_at: string; capture_mode: 'messages' | 'complete'; catalog: 'complete' | 'limited' | 'unavailable';
+  visited_entries: number; read_bytes: number; files: CapturePreviewFile[];
+  records: CapturePreviewFile['records']; file_limit: 8; byte_limit: 1048576;
+  attachment_binaries: 'not_read'; external_links: 'not_followed'; hidden_reasoning: 'unavailable';
+  field_redaction: 'not_supported'; automatic_expiry: 'not_enabled'; content_saved: false;
 }
 export type SourceControl = { expected_revision: string; id: string; enabled?: boolean; confirm?: boolean; repair_token?: string; discard_local_inbox?: boolean; retirement_credential?: string }

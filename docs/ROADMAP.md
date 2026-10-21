@@ -28,9 +28,13 @@ issue review, publication and version-linked closure together.
   selected, omitted and unsupported lines, retained history gaps, queue age and
   confirmed workspace contact in development source. Bounded, resumable source
   index sweeps now report text/vector indexing, waiting, failed, withheld,
-  forgotten and unknown events under the observed model generation. Source and
-  migration checks passed; packaged acceptance remains open. A Linux app source preview passed offline intake,
-  restart, delivery and administrator-assisted removal. Portable recovery,
+  forgotten and unknown events under the observed model generation. App and
+  agents now share explicit capture presets, filename filters, size/retention
+  choices and a bounded local preview. Saved status preserves unknown values;
+  recovery ledgers preserve the approved policy. Source and migration checks
+  passed. The Linux app source journey passed preview, enrollment, offline
+  intake, restart, delivery and administrator-assisted removal; its evidence is
+  separate from the later policy-recovery checks. Portable inbox recovery,
   complete capture policy and coverage, headless operation, bounded history and
   all six packaged targets remain required before this L1 milestone ships.
 

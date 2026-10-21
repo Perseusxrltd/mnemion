@@ -2,8 +2,8 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import type { CredentialCipher } from './workspace-store.js'
 import { sourceMessages } from './desktop-source-process.js'
-import { validCaptureCoverage } from './capture-messages.js'
-import type { DesktopSource, DesktopSourceView, SourceActivity, SourceConfigure, SourceControl, SourceReason, SourceReport } from '../shared/desktop-sources.js'
+import { readCapturePreview, validCaptureCoverage } from './capture-messages.js'
+import type { CapturePreview, DesktopSource, DesktopSourceView, SourceActivity, SourceConfigure, SourceControl, SourcePreviewSelection, SourceReason, SourceReport } from '../shared/desktop-sources.js'
 
 type SavedSource = DesktopSource & { sealed_key: string; sealed_provider?: string; sealed_inbox_key?: string; status_epoch?: string }
 type Document = { format: 1; revision: string; sources: SavedSource[] }
@@ -187,8 +187,19 @@ export class DesktopSources {
     }
   }
 
+  async preview(selection: SourcePreviewSelection, signal?: AbortSignal): Promise<CapturePreview> {
+    await this.ensure()
+    if (this.busy || this.closed) throw new Error('Wait for the current source operation before previewing.')
+    this.controlling = true
+    const work = Promise.resolve().then(() => this.options.call({ operation: 'preview', selection }, signal))
+    this.controlWork = work
+    try { return readCapturePreview(await work) }
+    finally { this.controlling = false; this.controlWork = undefined; this.changed() }
+  }
+
   async configure(input: SourceConfigure, signal?: AbortSignal): Promise<DesktopSourceView> {
-    if (!input || !input.source || Object.keys(input).some(k => !['expected_revision', 'source', 'credential', 'provider_credential'].includes(k))) throw new Error('Review the source settings and its dedicated application key.')
+    if (!input || !input.source || Object.keys(input).some(k => !['expected_revision', 'source', 'credential', 'provider_credential', 'preview_hash'].includes(k))) throw new Error('Review the source settings and its dedicated application key.')
+    if (input.source.capture_policy && (typeof input.preview_hash !== 'string' || !/^[a-f0-9]{64}$/.test(input.preview_hash))) throw new Error('Preview the current capture settings before saving.')
     await this.mutate(input.expected_revision, async () => {
       signal?.throwIfAborted()
       if (!await this.options.cipher.available()) throw new Error('Unlock OS credential storage before remembering a background source.')
@@ -210,6 +221,7 @@ export class DesktopSources {
       const provider = input.provider_credential ?? (before?.sealed_provider ? await this.options.cipher.decrypt(Buffer.from(before.sealed_provider, 'base64')) : undefined)
       if (cloud && (typeof provider !== 'string' || !provider || Buffer.byteLength(provider, 'utf8') > 8192)) throw new Error('Supply the selected cloud provider’s credential, up to 8 KiB.')
       const verified = await this.options.call({ operation: 'verify', source, credential,
+        ...(input.preview_hash ? { preview_hash: input.preview_hash } : {}),
         ...(cloud ? { provider_credential: provider } : {}) }, signal) as DesktopSource
       signal?.throwIfAborted()
       if (before && (before.scope_id !== undefined || before.provider === 'conversations') && (before.scope_id ?? 'selected-source') !== (verified.scope_id ?? 'selected-source')) throw new Error('The existing folder identity changed. Retain its original connection settings before scanning.')

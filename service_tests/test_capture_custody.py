@@ -15,6 +15,7 @@ from psycopg import sql
 from psycopg.conninfo import make_conninfo
 
 from mnemion.capture_identity import canonical_capture_json, capture_event_id
+from mnemion.capture_policy import CapturePolicy
 from mnemion.connectors.live_conversations import ConversationProvider
 from mnemion.service.api import create_app
 from mnemion.service import recovery
@@ -443,13 +444,25 @@ def test_recovery_preserves_current_custody_revocation_and_late_forget_fences(
     recovery.create_backup(env.admin_dsn, archive, pg_bin=pg_bin)
     # This second source and its negative identity exist only after the backup.
     later_source, later_grant = uuid4(), uuid4()
+    later_policy = CapturePolicy(
+        preset="conversation",
+        capture_mode="messages",
+        include=["chat.jsonl"],
+        retention="until_deleted",
+    )
     service.source(
-        env.owner, connector, later_source, command.model_copy(update={"namespace": "later"})
+        env.owner,
+        connector,
+        later_source,
+        command.model_copy(update={"namespace": "later", "capture_policy": later_policy}),
     )
     service.grant(
         env.owner, later_source, later_grant, CaptureGrantInput(device_key_id=operator.key_id)
     )
     config.provider.scope_id = "later"
+    config.provider = type(config.provider).model_validate(
+        {**config.provider.model_dump(), "capture_policy": later_policy}
+    )
     config.provider.state_directory = config.provider.state_directory.parent / "later-state"
     later_scope, later_items = selected(config)
     later_receipt = service.page(
@@ -505,6 +518,10 @@ def test_recovery_preserves_current_custody_revocation_and_late_forget_fences(
         device = db.authenticate(key["api_key"])
         restored = CaptureCustody(MemoryService(db, env.embedder.generation))
         assert restored.source_status(owner, connector, source_id)["version"] == 2
+        assert restored.source_status(owner, connector, source_id)["capture_policy"] is None
+        assert restored.source_status(owner, connector, later_source)["capture_policy"] == (
+            later_policy.model_dump(mode="json")
+        )
         with pytest.raises(ServiceError, match="reload"):
             restored.source(owner, connector, source_id, command)
         assert restored.status(owner, grant_id)["revoked_at"] is not None

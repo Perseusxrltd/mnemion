@@ -2,9 +2,10 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FolderOpen, Pause, Play, RefreshCw, Trash2 } from 'lucide-react';
 import type { Connector, MnemionClient } from '@mnemion/client';
-import type { DesktopSourceView, SourceConfigure } from '../../../shared/desktop-sources';
+import type { CapturePolicy, CapturePreview, DesktopSourceView, SourceConfigure, SourcePreviewSelection } from '../../../shared/desktop-sources';
 import SourceScanHistory from './SourceScanHistory';
 import CaptureStatus from './CaptureStatus';
+import CapturePreviewPanel from './CapturePreviewPanel';
 
 const message = (error: unknown) => error instanceof Error ? error.message : 'The source operation could not finish.';
 const when = (value?: string) => value ? new Date(value).toLocaleString() : 'Waiting for its first scan';
@@ -39,6 +40,10 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
   const [conversationIdentity, setConversationIdentity] = useState('');
   const [key, setKey] = useState('');
   const [providerKey, setProviderKey] = useState('');
+  const [preset, setPreset] = useState<CapturePolicy['preset']>('detailed');
+  const [sessionIncludes, setSessionIncludes] = useState('*.jsonl'), [sessionExcludes, setSessionExcludes] = useState('');
+  const [maxFileBytes, setMaxFileBytes] = useState(1_000_000_000), [maxRecordBytes, setMaxRecordBytes] = useState(2_000_000);
+  const [previewState, setPreviewState] = useState<{ configuration: string; result: CapturePreview }>();
   const [team, setTeam] = useState(''), [channels, setChannels] = useState('');
   const [folders, setFolders] = useState(''), [driveFiles, setDriveFiles] = useState('');
   const [threads, setThreads] = useState(true), [recursive, setRecursive] = useState(true);
@@ -59,6 +64,10 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
     setPath(current?.path ?? ''); setIntervalMinutes((current?.poll_seconds ?? 300) / 60);
     setMemory(current?.memory_limit_mib ?? 256); setFiles(current?.max_files ?? 10000);
     setCaptureMode(current?.capture_mode ?? 'complete');
+    setPreset(current?.capture_policy?.preset ?? (current?.capture_mode === 'messages' ? 'conversation' : 'detailed'));
+    setSessionIncludes(current?.capture_policy?.include.join('\n') ?? '*.jsonl'); setSessionExcludes(current?.capture_policy?.exclude.join('\n') ?? '');
+    setMaxFileBytes(current?.capture_policy?.max_file_bytes ?? 1_000_000_000); setMaxRecordBytes(current?.capture_policy?.max_record_bytes ?? 2_000_000);
+    setPreviewState(undefined);
     setKeepAccepted(!!current?.custody); setPendingLimit(current?.custody?.pending_limit_mib ?? 256); setDeviceKeyId('');
     setConversationIdentity(current?.scope_id ?? '');
     setKey(''); setProviderKey(''); setPublication(false); setRevision(query.data?.revision);
@@ -66,6 +75,25 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
     setThreads(current?.slack?.include_threads ?? true); setRecursive(current?.gdrive?.recursive ?? true);
     setFolders(current?.gdrive?.folder_ids.join('\n') ?? ''); setDriveFiles(current?.gdrive?.file_ids.join('\n') ?? '');
   }, [current?.id, query.data?.revision, dirty]);
+  const rules = (text: string) => text.split('\n').map(value => value.trim()).filter(Boolean);
+  const capturePolicy: CapturePolicy | undefined = connection.provider === 'conversations' && (!current?.custody || current.capture_policy) ? {
+    format: 'mnemion-capture-policy-v1', preset, capture_mode: captureMode,
+    include: rules(sessionIncludes), exclude: rules(sessionExcludes), retention: keepAccepted ? 'until_deleted' : 'source_mirror',
+    max_file_bytes: maxFileBytes, max_record_bytes: maxRecordBytes,
+  } : undefined;
+  const previewSelection: SourcePreviewSelection = { path, capture_mode: captureMode, capture_policy: capturePolicy,
+    keep_accepted: keepAccepted, memory_limit_mib: memory, max_files: files, pending_limit_mib: keepAccepted ? pendingLimit : 256 };
+  const previewConfiguration = JSON.stringify(previewSelection);
+  const capturePreview = previewState?.configuration === previewConfiguration ? previewState.result : undefined;
+  async function previewCapture() {
+    setBusy(true); setError(undefined);
+    try {
+      if (!native?.sourcePreview) throw new Error('Update Studio to preview capture settings.');
+      const result = await native.sourcePreview(previewSelection);
+      setPreviewState({ configuration: previewConfiguration, result });
+    } catch (error) { setError(message(error)); }
+    finally { setBusy(false); }
+  }
   function accept(value: DesktopSourceView) {
     cache.setQueryData(['desktop-sources'], value);
     void cache.invalidateQueries({ queryKey: ['connector-scopes', connection.id] });
@@ -93,10 +121,11 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
     const id = current?.id ?? crypto.randomUUID();
     let createdKey: string | undefined;
     try {
+      if (capturePolicy && !capturePreview) throw new Error('Preview these capture settings before saving.');
       const selection = connection.provider === 'slack' ? { slack: { team_id: team.trim(),
         channels: [...new Set(channels.split(/[\s,]+/).filter(Boolean))], include_threads: threads } }
         : connection.provider === 'gdrive' ? { gdrive: { folder_ids: driveIds(folders), file_ids: driveIds(driveFiles), recursive } }
-        : { path, ...(connection.provider === 'conversations' ? { capture_mode: captureMode } : {}) };
+        : { path, ...(connection.provider === 'conversations' ? { capture_mode: captureMode, ...(capturePolicy ? { capture_policy: capturePolicy } : {}) } : {}) };
       const me = await client.me();
       if (keepAccepted) {
         const health = await client.request<{ durable_capture?: string }>('GET', '/health/live');
@@ -115,7 +144,8 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
       if (custody) {
         const route = `/v1/connectors/${encodeURIComponent(connection.id)}/capture-sources/${encodeURIComponent(custody.source_id)}`;
         const policy = { namespace: current?.scope_id ?? (conversationIdentity || 'selected-source'),
-          name: connection.name, members, capture_mode: captureMode, keep_accepted: true };
+          name: connection.name, members, capture_mode: captureMode, keep_accepted: true,
+          ...(capturePolicy ? { capture_policy: capturePolicy } : {}) };
         const existing = current?.custody ? await client.request<{ version: number; name: string; members: string[] }>('GET', route) : undefined;
         if (!existing || existing.name !== policy.name || JSON.stringify([...existing.members].sort()) !== JSON.stringify([...members].sort())) {
           await client.request('PUT', route, { body: { ...policy, expected_version: existing?.version ?? 0 } });
@@ -131,6 +161,7 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
         publish_to_mapped_members: true, poll_seconds: Math.round(interval * 60), memory_limit_mib: memory,
         max_files: files, enabled: current?.enabled ?? true };
       accept(await native!.sourceConfigure!({ expected_revision: revision ?? query.data.revision, source,
+        ...(capturePolicy && capturePreview ? { preview_hash: capturePreview.configuration_hash } : {}),
         ...(credential ? { credential } : {}), ...(providerKey ? { provider_credential: providerKey } : {}) }));
       setKey(''); setProviderKey(''); setDirty(false); setPublication(false);
     } catch (error) {
@@ -187,13 +218,25 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
             }} /></label>
             <p className="ws-helper">For a source first connected through an adapter, use its original provider.scope_id. Keep the same relative file paths and stop the previous runner before reconnecting. Studio verifies existing capture identity before importing.</p>
           </details>
-          <label>What to remember<select disabled={busy || !!current?.custody} data-update-safe value={captureMode} onChange={event => {
-            setCaptureMode(event.target.value as 'complete' | 'messages'); setDirty(true); setPublication(false);
-          }}><option value="complete">Messages and exposed session events</option><option value="messages">Messages only</option></select></label>
+          <label>What to remember<select disabled={busy || !!current?.custody} data-update-safe value={preset === 'selected' && capturePolicy ? 'selected' : captureMode} onChange={event => {
+            if (event.target.value === 'selected') setPreset('selected');
+            else { setCaptureMode(event.target.value as 'complete' | 'messages'); setPreset(event.target.value === 'complete' ? 'detailed' : 'conversation'); }
+            setDirty(true); setPublication(false);
+          }}><option value="complete">Detailed · messages and exposed session events</option><option value="messages">Conversation · messages only</option>{capturePolicy && <option value="selected">Selected · choose sessions and content</option>}</select></label>
+          {capturePolicy && preset === 'selected' && <label className="ws-checkbox"><input type="checkbox" data-update-safe disabled={busy || !!current?.custody} checked={captureMode === 'complete'} onChange={event => {
+            setCaptureMode(event.target.checked ? 'complete' : 'messages'); setDirty(true); setPublication(false);
+          }} />Include exposed tool activity and session events in selected sessions</label>}
           <p className="ws-helper">{captureMode === 'complete'
             ? 'Keep the selected session records, including tool activity and reasoning traces your agent actually saves, plus readable messages.'
             : 'Copy supported user and assistant message text. Structured tool and reasoning records remain in the original files. Unknown formats produce no message copy.'}
             {' '}{current?.custody ? 'This retained inbox keeps its approved selection. Changing selection requires a reviewed migration.' : 'Changing this choice takes effect after a complete scan. Earlier copies, reviewed edits and backups follow their existing retention rules.'}</p>
+          {capturePolicy && <details className="ws-details" open={preset === 'selected' || undefined}><summary>Session filters and capture sizes</summary>
+            <label>Include filenames or patterns<textarea disabled={busy || !!current?.custody} data-update-safe rows={2} maxLength={32768} value={sessionIncludes} onChange={event => { setSessionIncludes(event.target.value); setPreset('selected'); setDirty(true); setPublication(false); }} /></label>
+            <label>Additional exclusions<textarea disabled={busy || !!current?.custody} data-update-safe rows={2} maxLength={32768} value={sessionExcludes} onChange={event => { setSessionExcludes(event.target.value); setPreset('selected'); setDirty(true); setPublication(false); }} /></label>
+            <p className="ws-helper">One relative filename or pattern per line, such as team/*.jsonl or private/*.jsonl. Patterns are case-sensitive and * can match subfolders. Built-in private-file exclusions always apply. New matching files are included automatically.</p>
+            <label>Maximum file size (MB)<input type="number" disabled={busy || !!current?.custody} data-update-safe min="0.001" max="1000000" step="0.001" value={maxFileBytes / 1_000_000} onChange={event => { setMaxFileBytes(Math.round(Number(event.target.value) * 1_000_000)); setDirty(true); setPublication(false); }} /></label>
+            <label>Maximum event record (KB)<input type="number" disabled={busy || !!current?.custody} data-update-safe min="0.001" max="16000" step="0.001" value={maxRecordBytes / 1000} onChange={event => { setMaxRecordBytes(Math.round(Number(event.target.value) * 1000)); setDirty(true); setPublication(false); }} /></label>
+          </details>}
           <label className="ws-checkbox"><input disabled={busy || !!current || !administrator} data-update-safe type="checkbox" checked={keepAccepted} onChange={event => {
             setKeepAccepted(event.target.checked); setDirty(true); setPublication(false);
           }} />Keep captured memories when original chat logs rotate or are removed</label>
@@ -202,6 +245,9 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
             <label>Maximum pending content for this source (MiB)<input disabled={busy} data-update-safe type="number" min="1" max="1024" step="1" value={pendingLimit} onChange={event => { setPendingLimit(Number(event.target.value)); setDirty(true); }} required /></label>
             <p className="ws-helper">Across this computer, pending selected content is capped at 1 GiB; encrypted databases have separate size limits. New intake needs at least 512 MiB free disk. Accepted evidence waits without automatic expiry. Reducing a limit stops new intake while existing evidence can still be delivered.</p>
           </>}
+          <button className="ws-button" type="button" disabled={busy || !path} onClick={() => void previewCapture()}>Preview capture</button>
+          {capturePreview && <CapturePreviewPanel preview={capturePreview} />}
+          {capturePolicy && !capturePreview && <p className="ws-helper">Preview the current folder, content choices and limits before saving. Changing these choices requires a new preview.</p>}
         </>}
         {connection.provider === 'slack' && <>
           <label>Slack workspace ID<input disabled={busy} data-update-safe value={team} readOnly={!!current} maxLength={128} required placeholder="T0123456789" onChange={event => { setTeam(event.target.value); setDirty(true); setPublication(false); }} /></label>
@@ -236,7 +282,7 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
         <p className="ws-helper">Choose only material intended for this workspace. {cloud ? 'Provider credentials stay in OS-protected storage on this computer. The first scan checks the selected channels or files and their memberships before publishing. Partial scans retain earlier good memories; Source status shows permission and quota failures.' : connection.provider === 'conversations' ? 'Complete JSONL records are captured incrementally; unfinished records wait for the next scan.' : 'Text files are imported; the source folder and Obsidian files stay editable in their original apps.'} Save again after changing its mapped audience.</p>
         {scanning && <p className="ws-helper">Pause the source before changing its settings.</p>}
         {stale && <p className="ws-notice">Source settings changed while you were editing. Discard edits to load the current settings before making another change.</p>}
-        <button className="ws-button ws-primary" disabled={busy || scanning || stale || !hasLocation || !publication || (cloud && !current && !providerKey) || !query.data?.secure_storage || !!connection.disabled_at || members.length > 128}><Play size={15} />{current ? 'Save source settings' : 'Save and start scanning'}</button>
+        <button className="ws-button ws-primary" disabled={busy || scanning || stale || !hasLocation || !publication || (!!capturePolicy && !capturePreview) || (cloud && !current && !providerKey) || !query.data?.secure_storage || !!connection.disabled_at || members.length > 128}><Play size={15} />{current ? 'Save source settings' : 'Save and start scanning'}</button>
         {dirty && <button className="ws-button" type="button" disabled={busy} onClick={() => {
           setPath(current?.path ?? ''); setIntervalMinutes((current?.poll_seconds ?? 300) / 60); setMemory(current?.memory_limit_mib ?? 256);
           setFiles(current?.max_files ?? 10000); setCaptureMode(current?.capture_mode ?? 'complete'); setKey(''); setProviderKey(''); setPublication(false); setDirty(false);

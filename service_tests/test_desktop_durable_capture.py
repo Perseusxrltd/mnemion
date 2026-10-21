@@ -133,6 +133,7 @@ def test_native_offline_capture_then_missing_folder_delivery_and_status(env, enr
         },
     )
     assert finished["activity"]["report"]["capture"]["stored_events"] == 1
+    assert finished["activity"]["report"]["capture"] == second["capture"]
     assert "Durably selected text" not in json.dumps(finished)
 
 

@@ -135,6 +135,7 @@ class ConversationSnapshot:
                     self.config.capture_mode,
                     self.config.segment_bytes,
                     self.config.segment_records,
+                    *([self.config.capture_policy.revision] if self.config.capture_policy else []),
                 ],
                 separators=(",", ":"),
             ).encode()
@@ -282,6 +283,8 @@ class ConversationSnapshot:
             "source_segment_sha256": digest,
             "source_fragment": True,
         }
+        if self.config.capture_policy:
+            metadata["capture_policy_revision"] = self.config.capture_policy.revision
         text = raw.decode("utf-8-sig" if start == 0 else "utf-8")
         document = Document(external, digest, self.relative, text, uri, metadata=metadata)
         messages_only = self.config.capture_mode == "messages"

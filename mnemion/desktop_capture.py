@@ -110,6 +110,11 @@ def binding(source):
         "grant_id": str(source.custody.grant_id),
         "namespace": source.scope_id or "selected-source",
         "capture_mode": source.capture_mode or "complete",
+        **(
+            {"capture_policy": source.capture_policy.model_dump(mode="json")}
+            if source.capture_policy
+            else {}
+        ),
     }
 
 
@@ -402,6 +407,7 @@ def verify(source, root, client):
         or policy.connector_id != str(source.connector_id)
         or policy.namespace != (source.scope_id or "selected-source")
         or policy.capture_mode != (source.capture_mode or "complete")
+        or policy.capture_policy != source.capture_policy
         or set(policy.members) != set(source.members)
         or policy.revoked_at
     ):

@@ -20,6 +20,7 @@ import httpx
 from pydantic import Field, ValidationError, field_validator, model_validator
 
 from . import local_state
+from .capture_policy import CapturePolicy
 from .connectors.config import ConnectorConfig
 from .connectors.providers import ProviderError
 from .connectors.runner import sync
@@ -76,6 +77,7 @@ class Source(Command):
     name: str = Field(min_length=1, max_length=200)
     provider: Literal["filesystem", "conversations", "slack", "gdrive"]
     capture_mode: Literal["complete", "messages"] | None = None
+    capture_policy: CapturePolicy | None = None
     custody: Custody | None = None
     scope_id: str | None = Field(default=None, min_length=1, max_length=400)
     path: str | None = Field(default=None, min_length=1, max_length=4096)
@@ -99,6 +101,13 @@ class Source(Command):
 
     @model_validator(mode="after")
     def address_and_path(self):
+        if self.capture_policy is not None:
+            if (
+                self.provider != "conversations"
+                or self.capture_mode != self.capture_policy.capture_mode
+                or bool(self.custody) != (self.capture_policy.retention == "until_deleted")
+            ):
+                raise ValueError("Match the source's approved capture policy and retention")
         if self.provider != "conversations" and self.capture_mode is not None:
             raise ValueError("Capture mode applies only to live conversation sources")
         if self.provider != "conversations" and self.custody is not None:
@@ -157,6 +166,7 @@ class Source(Command):
                     state_directory=str(capture),
                     max_scan_seconds=60,
                     capture_mode=self.capture_mode or "complete",
+                    capture_policy=self.capture_policy,
                 )
             else:
                 provider["max_file_bytes"] = min(20_000_000, self.memory_limit_mib * 65536)
@@ -388,6 +398,12 @@ def verify_cloud(adapter, provider: str):
 
 def perform(root: Path, request: dict, private_roots=()) -> dict:
     operation = request.get("operation")
+    if operation == "preview":
+        from .desktop_capture_preview import preview
+
+        if set(request) != {"operation", "selection"}:
+            raise ValueError("Choose a bounded conversation preview")
+        return preview(root, request["selection"], private_roots)
     if operation == "capture_retire":
         from .desktop_capture import retire
 
@@ -406,6 +422,7 @@ def perform(root: Path, request: dict, private_roots=()) -> dict:
         fields.get(operation, set())
         | ({"provider_credential"} if operation in {"verify", "scan"} else set())
         | ({"inbox_key"} if operation == "scan" else set())
+        | ({"preview_hash"} if operation == "verify" else set())
     )
     if operation not in fields or not fields[operation] <= set(request) <= allowed:
         raise ValueError("Choose a supported private source operation")
@@ -414,6 +431,14 @@ def perform(root: Path, request: dict, private_roots=()) -> dict:
     if operation == "store":
         return store(root, request["expected_revision"], request["sources"])
     source = Source.model_validate(request["source"])
+    if operation == "verify" and source.capture_policy is not None:
+        from .desktop_capture_preview import normalize, selection_for
+
+        selection = normalize(root, selection_for(source), private_roots)
+        if request.get("preview_hash") != selection.fingerprint:
+            raise local_state.LocalSetupError(
+                "source_preview_required", "Preview the current capture settings before saving."
+            )
     credential = request["credential"]
     if (
         not isinstance(credential, str)

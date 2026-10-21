@@ -515,6 +515,16 @@
                 "title": "Capture Mode",
                 "type": "string"
               },
+              "capture_policy": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/CapturePolicy"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "connector_id": {
                 "title": "Connector Id",
                 "type": "string"
@@ -580,6 +590,80 @@
               "active"
             ],
             "title": "CaptureGrant",
+            "type": "object"
+          },
+          "CapturePolicy": {
+            "additionalProperties": false,
+            "properties": {
+              "capture_mode": {
+                "enum": [
+                  "messages",
+                  "complete"
+                ],
+                "title": "Capture Mode",
+                "type": "string"
+              },
+              "exclude": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 64,
+                "title": "Exclude",
+                "type": "array"
+              },
+              "format": {
+                "const": "mnemion-capture-policy-v1",
+                "default": "mnemion-capture-policy-v1",
+                "title": "Format",
+                "type": "string"
+              },
+              "include": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 64,
+                "minItems": 1,
+                "title": "Include",
+                "type": "array"
+              },
+              "max_file_bytes": {
+                "default": 1000000000,
+                "maximum": 1000000000000.0,
+                "minimum": 1.0,
+                "title": "Max File Bytes",
+                "type": "integer"
+              },
+              "max_record_bytes": {
+                "default": 2000000,
+                "maximum": 16000000.0,
+                "minimum": 1.0,
+                "title": "Max Record Bytes",
+                "type": "integer"
+              },
+              "preset": {
+                "enum": [
+                  "selected",
+                  "conversation",
+                  "detailed"
+                ],
+                "title": "Preset",
+                "type": "string"
+              },
+              "retention": {
+                "enum": [
+                  "source_mirror",
+                  "until_deleted"
+                ],
+                "title": "Retention",
+                "type": "string"
+              }
+            },
+            "required": [
+              "preset",
+              "capture_mode",
+              "retention"
+            ],
+            "title": "CapturePolicy",
             "type": "object"
           }
         },
@@ -642,6 +726,16 @@
                 "title": "Capture Mode",
                 "type": "string"
               },
+              "capture_policy": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/CapturePolicy"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "connector_id": {
                 "title": "Connector Id",
                 "type": "string"
@@ -707,6 +801,80 @@
               "active"
             ],
             "title": "CaptureGrant",
+            "type": "object"
+          },
+          "CapturePolicy": {
+            "additionalProperties": false,
+            "properties": {
+              "capture_mode": {
+                "enum": [
+                  "messages",
+                  "complete"
+                ],
+                "title": "Capture Mode",
+                "type": "string"
+              },
+              "exclude": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 64,
+                "title": "Exclude",
+                "type": "array"
+              },
+              "format": {
+                "const": "mnemion-capture-policy-v1",
+                "default": "mnemion-capture-policy-v1",
+                "title": "Format",
+                "type": "string"
+              },
+              "include": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 64,
+                "minItems": 1,
+                "title": "Include",
+                "type": "array"
+              },
+              "max_file_bytes": {
+                "default": 1000000000,
+                "maximum": 1000000000000.0,
+                "minimum": 1.0,
+                "title": "Max File Bytes",
+                "type": "integer"
+              },
+              "max_record_bytes": {
+                "default": 2000000,
+                "maximum": 16000000.0,
+                "minimum": 1.0,
+                "title": "Max Record Bytes",
+                "type": "integer"
+              },
+              "preset": {
+                "enum": [
+                  "selected",
+                  "conversation",
+                  "detailed"
+                ],
+                "title": "Preset",
+                "type": "string"
+              },
+              "retention": {
+                "enum": [
+                  "source_mirror",
+                  "until_deleted"
+                ],
+                "title": "Retention",
+                "type": "string"
+              }
+            },
+            "required": [
+              "preset",
+              "capture_mode",
+              "retention"
+            ],
+            "title": "CapturePolicy",
             "type": "object"
           }
         },
@@ -768,6 +936,16 @@
                 "title": "Capture Mode",
                 "type": "string"
               },
+              "capture_policy": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/CapturePolicy"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "connector_id": {
                 "title": "Connector Id",
                 "type": "string"
@@ -833,6 +1011,80 @@
               "active"
             ],
             "title": "CaptureGrant",
+            "type": "object"
+          },
+          "CapturePolicy": {
+            "additionalProperties": false,
+            "properties": {
+              "capture_mode": {
+                "enum": [
+                  "messages",
+                  "complete"
+                ],
+                "title": "Capture Mode",
+                "type": "string"
+              },
+              "exclude": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 64,
+                "title": "Exclude",
+                "type": "array"
+              },
+              "format": {
+                "const": "mnemion-capture-policy-v1",
+                "default": "mnemion-capture-policy-v1",
+                "title": "Format",
+                "type": "string"
+              },
+              "include": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 64,
+                "minItems": 1,
+                "title": "Include",
+                "type": "array"
+              },
+              "max_file_bytes": {
+                "default": 1000000000,
+                "maximum": 1000000000000.0,
+                "minimum": 1.0,
+                "title": "Max File Bytes",
+                "type": "integer"
+              },
+              "max_record_bytes": {
+                "default": 2000000,
+                "maximum": 16000000.0,
+                "minimum": 1.0,
+                "title": "Max Record Bytes",
+                "type": "integer"
+              },
+              "preset": {
+                "enum": [
+                  "selected",
+                  "conversation",
+                  "detailed"
+                ],
+                "title": "Preset",
+                "type": "string"
+              },
+              "retention": {
+                "enum": [
+                  "source_mirror",
+                  "until_deleted"
+                ],
+                "title": "Retention",
+                "type": "string"
+              }
+            },
+            "required": [
+              "preset",
+              "capture_mode",
+              "retention"
+            ],
+            "title": "CapturePolicy",
             "type": "object"
           }
         },
@@ -1587,6 +1839,80 @@
       "group": "connectors",
       "input_schema": {
         "$defs": {
+          "CapturePolicy": {
+            "additionalProperties": false,
+            "properties": {
+              "capture_mode": {
+                "enum": [
+                  "messages",
+                  "complete"
+                ],
+                "title": "Capture Mode",
+                "type": "string"
+              },
+              "exclude": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 64,
+                "title": "Exclude",
+                "type": "array"
+              },
+              "format": {
+                "const": "mnemion-capture-policy-v1",
+                "default": "mnemion-capture-policy-v1",
+                "title": "Format",
+                "type": "string"
+              },
+              "include": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 64,
+                "minItems": 1,
+                "title": "Include",
+                "type": "array"
+              },
+              "max_file_bytes": {
+                "default": 1000000000,
+                "maximum": 1000000000000.0,
+                "minimum": 1.0,
+                "title": "Max File Bytes",
+                "type": "integer"
+              },
+              "max_record_bytes": {
+                "default": 2000000,
+                "maximum": 16000000.0,
+                "minimum": 1.0,
+                "title": "Max Record Bytes",
+                "type": "integer"
+              },
+              "preset": {
+                "enum": [
+                  "selected",
+                  "conversation",
+                  "detailed"
+                ],
+                "title": "Preset",
+                "type": "string"
+              },
+              "retention": {
+                "enum": [
+                  "source_mirror",
+                  "until_deleted"
+                ],
+                "title": "Retention",
+                "type": "string"
+              }
+            },
+            "required": [
+              "preset",
+              "capture_mode",
+              "retention"
+            ],
+            "title": "CapturePolicy",
+            "type": "object"
+          },
           "CaptureSourceInput": {
             "additionalProperties": false,
             "properties": {
@@ -1597,6 +1923,16 @@
                 ],
                 "title": "Capture Mode",
                 "type": "string"
+              },
+              "capture_policy": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/CapturePolicy"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "expected_version": {
                 "default": 0,
@@ -1680,6 +2016,80 @@
       "name": "capture.source.configure",
       "output_schema": {
         "$defs": {
+          "CapturePolicy": {
+            "additionalProperties": false,
+            "properties": {
+              "capture_mode": {
+                "enum": [
+                  "messages",
+                  "complete"
+                ],
+                "title": "Capture Mode",
+                "type": "string"
+              },
+              "exclude": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 64,
+                "title": "Exclude",
+                "type": "array"
+              },
+              "format": {
+                "const": "mnemion-capture-policy-v1",
+                "default": "mnemion-capture-policy-v1",
+                "title": "Format",
+                "type": "string"
+              },
+              "include": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 64,
+                "minItems": 1,
+                "title": "Include",
+                "type": "array"
+              },
+              "max_file_bytes": {
+                "default": 1000000000,
+                "maximum": 1000000000000.0,
+                "minimum": 1.0,
+                "title": "Max File Bytes",
+                "type": "integer"
+              },
+              "max_record_bytes": {
+                "default": 2000000,
+                "maximum": 16000000.0,
+                "minimum": 1.0,
+                "title": "Max Record Bytes",
+                "type": "integer"
+              },
+              "preset": {
+                "enum": [
+                  "selected",
+                  "conversation",
+                  "detailed"
+                ],
+                "title": "Preset",
+                "type": "string"
+              },
+              "retention": {
+                "enum": [
+                  "source_mirror",
+                  "until_deleted"
+                ],
+                "title": "Retention",
+                "type": "string"
+              }
+            },
+            "required": [
+              "preset",
+              "capture_mode",
+              "retention"
+            ],
+            "title": "CapturePolicy",
+            "type": "object"
+          },
           "CaptureSource": {
             "additionalProperties": true,
             "properties": {
@@ -1690,6 +2100,16 @@
                 ],
                 "title": "Capture Mode",
                 "type": "string"
+              },
+              "capture_policy": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/CapturePolicy"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "connector_id": {
                 "title": "Connector Id",
@@ -1810,6 +2230,80 @@
       "name": "capture.source.revoke",
       "output_schema": {
         "$defs": {
+          "CapturePolicy": {
+            "additionalProperties": false,
+            "properties": {
+              "capture_mode": {
+                "enum": [
+                  "messages",
+                  "complete"
+                ],
+                "title": "Capture Mode",
+                "type": "string"
+              },
+              "exclude": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 64,
+                "title": "Exclude",
+                "type": "array"
+              },
+              "format": {
+                "const": "mnemion-capture-policy-v1",
+                "default": "mnemion-capture-policy-v1",
+                "title": "Format",
+                "type": "string"
+              },
+              "include": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 64,
+                "minItems": 1,
+                "title": "Include",
+                "type": "array"
+              },
+              "max_file_bytes": {
+                "default": 1000000000,
+                "maximum": 1000000000000.0,
+                "minimum": 1.0,
+                "title": "Max File Bytes",
+                "type": "integer"
+              },
+              "max_record_bytes": {
+                "default": 2000000,
+                "maximum": 16000000.0,
+                "minimum": 1.0,
+                "title": "Max Record Bytes",
+                "type": "integer"
+              },
+              "preset": {
+                "enum": [
+                  "selected",
+                  "conversation",
+                  "detailed"
+                ],
+                "title": "Preset",
+                "type": "string"
+              },
+              "retention": {
+                "enum": [
+                  "source_mirror",
+                  "until_deleted"
+                ],
+                "title": "Retention",
+                "type": "string"
+              }
+            },
+            "required": [
+              "preset",
+              "capture_mode",
+              "retention"
+            ],
+            "title": "CapturePolicy",
+            "type": "object"
+          },
           "CaptureSource": {
             "additionalProperties": true,
             "properties": {
@@ -1820,6 +2314,16 @@
                 ],
                 "title": "Capture Mode",
                 "type": "string"
+              },
+              "capture_policy": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/CapturePolicy"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "connector_id": {
                 "title": "Connector Id",
@@ -1940,6 +2444,80 @@
       "name": "capture.source.status",
       "output_schema": {
         "$defs": {
+          "CapturePolicy": {
+            "additionalProperties": false,
+            "properties": {
+              "capture_mode": {
+                "enum": [
+                  "messages",
+                  "complete"
+                ],
+                "title": "Capture Mode",
+                "type": "string"
+              },
+              "exclude": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 64,
+                "title": "Exclude",
+                "type": "array"
+              },
+              "format": {
+                "const": "mnemion-capture-policy-v1",
+                "default": "mnemion-capture-policy-v1",
+                "title": "Format",
+                "type": "string"
+              },
+              "include": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 64,
+                "minItems": 1,
+                "title": "Include",
+                "type": "array"
+              },
+              "max_file_bytes": {
+                "default": 1000000000,
+                "maximum": 1000000000000.0,
+                "minimum": 1.0,
+                "title": "Max File Bytes",
+                "type": "integer"
+              },
+              "max_record_bytes": {
+                "default": 2000000,
+                "maximum": 16000000.0,
+                "minimum": 1.0,
+                "title": "Max Record Bytes",
+                "type": "integer"
+              },
+              "preset": {
+                "enum": [
+                  "selected",
+                  "conversation",
+                  "detailed"
+                ],
+                "title": "Preset",
+                "type": "string"
+              },
+              "retention": {
+                "enum": [
+                  "source_mirror",
+                  "until_deleted"
+                ],
+                "title": "Retention",
+                "type": "string"
+              }
+            },
+            "required": [
+              "preset",
+              "capture_mode",
+              "retention"
+            ],
+            "title": "CapturePolicy",
+            "type": "object"
+          },
           "CaptureSource": {
             "additionalProperties": true,
             "properties": {
@@ -1950,6 +2528,16 @@
                 ],
                 "title": "Capture Mode",
                 "type": "string"
+              },
+              "capture_policy": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/CapturePolicy"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "connector_id": {
                 "title": "Connector Id",

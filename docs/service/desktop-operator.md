@@ -73,6 +73,7 @@ engine** so it uses the Windows account and named-pipe implementation.
 | `workspace.connect`, `workspace.sign-in`, `workspace.restore` | From 4.28.0, open an explicitly identified key connection, use a personal password login, or revalidate a saved account. |
 | `workspace.disconnect`, `workspace.forget` | From 4.28.0, disconnect the selected account or remove one saved connection from this device. |
 | `source.status`, `source.configure` | From 4.31.0, inspect or configure [desktop folder/conversation runners](desktop-sources.md#local-agent-controls) with protected dedicated keys and current settings revisions. From 4.34.0, [Slack/Drive selections](desktop-cloud-sources.md#private-agent-setup) accept a separate private provider credential. No local database is required. |
+| `source.preview` | **Unreleased development:** inspect a bounded local JSONL selection without credentials, saved content or model calls. Explicit `capture_policy` configuration uses its matching preview hash; see below. |
 | `source.pause`, `source.sync`, `source.remove` | Persistently pause/resume a source, queue a bounded scan, or stop and forget its local configuration. Independent of the selected workspace. |
 | `agent.status`, `agent.preview` | From 4.32.0, inspect [native agent installations](desktop-agents.md), refresh their packaged runtime and preview a named MCP entry without changing client settings. No local database is required. |
 | `agent.install`, `agent.remove` | Install a reviewed dedicated application connection or remove its matching local entry/key file, using the observed configuration hash and explicit confirmation. Other devices and server keys remain separately managed. |
@@ -140,7 +141,7 @@ with the current `expected_workspace_id`. To clean up, submit `backup.prune`
 with `expected_revision` from `backup.status.configuration`, `plan_token` from
 that inventory and `confirm: true`. Neither operation requires a recovery key.
 Plans are bound to the current recorded scope and policy; stale plans are refused.
-See [retention safeguards](native-backups.md#retention-and-inventory-470-source)
+See [retention safeguards](native-backups.md#retention-and-inventory-471)
 for protected pairs, other keys, untracked copies and cloud deletion behavior.
 
 Generate a key with `{"action":"backup.key"}` and **`--result-file NEW_PRIVATE_FILE`**.
@@ -333,3 +334,73 @@ This interface does not start a powered-off computer, grant SSH/cloud-console
 access, establish company recovery custodians, verify cloud backup delivery or
 fence another host. Those remain part of
 [workspace continuity](../implementation/workspace-continuity.md).
+
+## Preview conversation capture (unreleased)
+
+This addition remains unreleased. [Source validation](../research/2026-10-21-durable-capture-implementation.md#capture-policy-and-preview-source-delta)
+records component checks, a Linux source journey and separate recovery/migration
+proof; installed acceptance and full L1 remain open. The app's **Preview capture**
+and native `source.preview` use the same selection object.
+Read the installed `catalog` before using this action; no selected local
+workspace or workspace credential is needed for preview. Use a folder path
+absolute in the app's operating system:
+
+```json
+{
+  "action": "source.preview",
+  "input": {
+    "selection": {
+      "path": "/absolute/conversation-folder",
+      "capture_mode": "messages",
+      "capture_policy": {
+        "format": "mnemion-capture-policy-v1",
+        "preset": "selected",
+        "capture_mode": "messages",
+        "include": ["team/*.jsonl"],
+        "exclude": ["team/private/*.jsonl"],
+        "retention": "until_deleted",
+        "max_file_bytes": 1000000000,
+        "max_record_bytes": 2000000
+      },
+      "keep_accepted": true,
+      "memory_limit_mib": 256,
+      "max_files": 10000,
+      "pending_limit_mib": 256
+    }
+  }
+}
+```
+
+`selected` permits either content mode; `conversation` requires `messages` and
+`detailed` requires `complete`. Include/exclude patterns select relative JSONL
+filenames, not session IDs or fields within a file. They are case-sensitive;
+`*` can match subfolders and built-in private-file exclusions always apply.
+`source_mirror` pairs with `keep_accepted: false`; `until_deleted` pairs with
+`true` and requires approved custody when configuring the source. Pause remains
+the separate `source.pause` action.
+
+The result contains relative paths, per-file outcomes, complete-line counts,
+`configuration_hash`, optional `policy_revision` and capability statuses. It
+returns no raw body and saves no source content. Limits are eight matching files,
+128 KiB per file, 1 MiB total, 10,000 directory entries and a three-second soft
+deadline. `catalog: complete` describes finished traversal of that sample, not
+complete transcript coverage. Inspect the [preview limits and unsupported
+capabilities](durable-capture.md#preview-the-selection) before reporting coverage.
+
+For a source with an explicit `capture_policy`, pass
+`result.configuration_hash` as `input.preview_hash` in `source.configure`, with
+the same selection/resource settings in `input.source` and a fresh
+`expected_revision` from `source.status`. Changing the normalized folder, content
+policy, retention, RAM, file-count or pending-content choice requires a new
+preview. This hash binds settings, not file contents; it does not replace
+server consent, current authorization or capture-time verification.
+
+The app and agent use the same configuration path. Retained enrollment requires
+the exact administrator-approved policy and device grant. Each fragment under
+an explicit policy carries a policy fingerprint checked locally and by the
+service. A retained policy cannot be edited in place; changing it requires
+reviewed migration. Older sources without `capture_policy` retain their
+`complete`/`messages` mode-only behavior and do not require the new preview hash.
+Automatic expiry, field redaction, attachment fetching and hidden reasoning are
+unavailable. See the [capture guide](durable-capture.md) for retention, size and
+recovery limits. This addition does not complete L1 or installed acceptance.

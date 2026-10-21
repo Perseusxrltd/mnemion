@@ -13,6 +13,8 @@ from pydantic import ValidationError
 from mnemion import desktop_source_status as status
 from mnemion import desktop_sources as sources
 from mnemion import local_state
+from mnemion.capture_coverage import CaptureCoverage, IndexCounts, IndexProgress, IndexSweep
+from mnemion.desktop_capture import CaptureReport
 
 
 @pytest.fixture
@@ -159,6 +161,51 @@ print(json.dumps(perform(Path(sys.argv[1]), json.loads(sys.argv[2]))))
     with pytest.raises(local_state.LocalSetupError):
         finish(saved, owner, run, report=report())
     finish(saved, next_owner, next_run, report=report())
+
+
+@pytest.mark.parametrize("index_observed", [False, True])
+def test_saved_capture_keeps_nullable_wire_fields_across_finish_reopen_and_next_scan(
+    saved, index_observed
+):
+    index = IndexProgress()
+    if index_observed:
+        index = IndexProgress(
+            status="available",
+            last_attempt_at="2026-10-20T12:00:00Z",
+            completed=IndexSweep(
+                generation_id="synthetic-generation",
+                inference_paused=True,
+                started_at="2026-10-20T12:00:00Z",
+                observed_at="2026-10-20T12:00:00Z",
+                pages=1,
+                counts=IndexCounts(),
+            ),
+        )
+    capture = CaptureReport(
+        locally_accepted=0,
+        pending_events=0,
+        pending_bytes=0,
+        remote_committed_events=0,
+        stored_events=0,
+        forgotten_events=0,
+        unknown_pages=0,
+        database_bytes=0,
+        device_pending_bytes=0,
+        device_database_bytes=0,
+        over_limit=False,
+        capture_complete=True,
+        delivery_complete=True,
+        coverage=CaptureCoverage(capture_mode="messages", index=index),
+    ).model_dump(mode="json")
+    owner, run, _ = begin(saved)
+    finished = finish(saved, owner, run, report=report(capture=capture))["activity"]
+    reopened = observe(saved)[0]["activity"]
+    _, _, restarted = begin(saved)
+    for activity in (finished, reopened, restarted["activity"]):
+        for field in ("report", "last_success_report"):
+            assert activity[field]["capture"] == capture, (
+                "Unknown coverage and index fields must remain explicit nulls on the desktop wire"
+            )
 
 
 def test_ambiguous_writes_are_not_replayed_and_original_observations_remain(saved, monkeypatch):

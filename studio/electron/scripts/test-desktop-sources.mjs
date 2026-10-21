@@ -5,6 +5,7 @@ import { test } from 'node:test'
 import { DesktopSources } from '../dist/desktop-sources.js'
 import { sourceProcess } from '../dist/desktop-source-process.js'
 import { desktopAction } from '../dist/desktop-actions.js'
+import { readCapturePreview } from '../dist/capture-messages.js'
 import { workspaceFixture, fixtureCredential as credential } from './workspace-fixture.mjs'
 
 const report = () => ({ completed: true, timestamp: new Date().toISOString(), duration_seconds: 0.1,
@@ -123,6 +124,59 @@ async function fixture(t) {
 
 const retainedDefinition = () => ({ ...definition(), provider: 'conversations', capture_mode: 'messages',
   custody: { source_id: randomUUID(), grant_id: randomUUID(), keep_accepted: true, pending_limit_mib: 256 } })
+
+const previewReport = () => ({ format: 'mnemion-capture-preview-v1', configuration_hash: 'a'.repeat(64), policy_revision: 'b'.repeat(64),
+  observed_at: '2026-10-21T03:00:00+00:00', capture_mode: 'messages', catalog: 'complete', visited_entries: 1, read_bytes: 120,
+  files: [{ path: 'selected/session.jsonl', status: 'sampled', file_bytes: 150, read_bytes: 120, prefix_bytes: 100,
+    records: { lines: 2, selected: 1, omitted: 1, unsupported: 0 } }], records: { lines: 2, selected: 1, omitted: 1, unsupported: 0 },
+  file_limit: 8, byte_limit: 1048576, attachment_binaries: 'not_read', external_links: 'not_followed', hidden_reasoning: 'unavailable',
+  field_redaction: 'not_supported', automatic_expiry: 'not_enabled', content_saved: false })
+
+test('capture preview is read-only and passes its reviewed hash to configuration', async t => {
+  const f = await fixture(t), requests = []
+  const manager = new DesktopSources({ ...f.options, call: async (request, ...rest) => {
+    requests.push(request)
+    return request.operation === 'preview' ? previewReport() : f.options.call(request, ...rest)
+  } })
+  t.after(() => manager.close())
+  const source = { ...retainedDefinition(), capture_policy: { format: 'mnemion-capture-policy-v1', preset: 'selected',
+    capture_mode: 'messages', include: ['selected/*.jsonl'], exclude: [], retention: 'until_deleted', max_file_bytes: 1e9, max_record_bytes: 2e6 } }
+  const selection = { path: source.path, capture_mode: source.capture_mode, capture_policy: source.capture_policy,
+    keep_accepted: true, memory_limit_mib: 256, max_files: 10000, pending_limit_mib: 256 }
+  const result = await manager.preview(selection)
+  assert.deepEqual(result, previewReport()); assert.equal(f.state.stores, 0)
+  assert.deepEqual(requests.find(request => request.operation === 'preview'), { operation: 'preview', selection })
+  await assert.rejects(manager.configure({ expected_revision: (await manager.status()).revision, source, credential }), /Preview the current capture settings/)
+  assert.equal(f.state.stores, 0)
+  const configured = await manager.configure({ expected_revision: (await manager.status()).revision, source, credential, preview_hash: result.configuration_hash })
+  assert.equal(requests.find(request => request.operation === 'verify').preview_hash, result.configuration_hash)
+  assert.deepEqual(configured.sources[0].capture_policy, source.capture_policy)
+  assert.equal(manager.busy, false)
+  assert.equal(desktopAction('source.preview', { selection }).mutation, false)
+})
+
+for (const [name, mutate] of [
+  ['private content', value => { value.files[0].content = 'never cross the preview boundary' }],
+  ['outside path', value => { value.files[0].path = '../outside.jsonl' }],
+  ['inconsistent prefix', value => { value.files[0].prefix_bytes = 200 }],
+  ['invented supported content', value => { value.hidden_reasoning = 'available' }],
+  ['inconsistent aggregate', value => { value.read_bytes += 1 }],
+]) test(`capture preview rejects ${name}`, () => {
+  const result = previewReport(); mutate(result)
+  assert.throws(() => readCapturePreview(result), /preview/)
+})
+
+test('a failed capture preview releases the controller for updates and later work', async t => {
+  const f = await fixture(t)
+  const manager = new DesktopSources({ ...f.options, call: (request, ...rest) => {
+    if (request.operation === 'preview') throw new Error('synthetic helper failure')
+    return f.options.call(request, ...rest)
+  } })
+  t.after(() => manager.close())
+  await assert.rejects(manager.preview({}), /synthetic helper failure/)
+  assert.equal(manager.busy, false)
+  assert.equal((await manager.status()).sources.length, 0)
+})
 
 const coverage = () => ({ format: 'mnemion-capture-coverage-v1', capture_mode: 'messages', catalog: 'available',
   tracked_scopes: 1, checking_scopes: 0, failed_scopes: 0, missing_scopes: 0,

@@ -8,6 +8,7 @@ from uuid import UUID
 from pydantic import Field, field_validator, model_validator
 
 from ..service.models import Command
+from ..capture_policy import CapturePolicy, SOURCE_EXCLUSIONS
 
 
 def service_url(value: str) -> str:
@@ -48,25 +49,7 @@ class FileSelection(Command):
     include: list[str] = Field(
         default_factory=lambda: ["*.md", "*.markdown", "*.txt", "*.json", "*.jsonl", "*.csv"]
     )
-    exclude: list[str] = Field(
-        default_factory=lambda: [
-            ".git/*",
-            "*/.git/*",
-            ".obsidian/*",
-            "*/.obsidian/*",
-            ".mnemion*",
-            "*/.mnemion*",
-            "node_modules/*",
-            "*/node_modules/*",
-            ".env*",
-            "*/.env*",
-            "*credentials*.json",
-            "*secrets*.json",
-            "*service-account*.json",
-            "*.pem",
-            "*.key",
-        ]
-    )
+    exclude: list[str] = Field(default_factory=lambda: list(SOURCE_EXCLUSIONS))
     max_files: int = Field(default=100000, ge=1, le=1000000)
     max_file_bytes: int = Field(default=20_000_000, ge=1, le=100_000_000)
     include_generated: bool = False
@@ -93,6 +76,7 @@ class ConversationConfig(PublishedSource):
     include: list[str] = Field(default_factory=lambda: ["*.jsonl"])
     normalize_conversations: bool = True
     capture_mode: Literal["complete", "messages"] = "complete"
+    capture_policy: CapturePolicy | None = None
     max_files: int = Field(default=1000, ge=1, le=100000)
     # Streaming limits are independent of ordinary whole-file text extraction.
     max_file_bytes: int = Field(default=1_000_000_000, ge=1, le=1_000_000_000_000)
@@ -104,6 +88,11 @@ class ConversationConfig(PublishedSource):
 
     @model_validator(mode="after")
     def capture_selection(self):
+        if self.capture_policy is not None:
+            if self.capture_mode != self.capture_policy.capture_mode:
+                raise ValueError("Match the source's approved capture policy")
+            for key, value in self.capture_policy.provider_fields().items():
+                setattr(self, key, value)
         if self.capture_mode == "messages" and not self.normalize_conversations:
             raise ValueError("Message-only capture requires conversation normalization")
         return self

@@ -25,19 +25,20 @@ administration alone does not grant access to a source's content. With no mapped
 people or agents, only the dedicated source application can read its copies.
 
 1. In **Connections → Run on this computer**, choose the conversation folder.
-2. Choose **What to remember**. **Messages only** (`messages`) copies supported
-   user and assistant message text. **Messages and exposed session events**
-   (`complete`) also keeps the session records actually saved by the producer,
-   including exposed tool activity and reasoning traces. Unknown message formats
-   produce no message copy. Neither mode obtains hidden provider reasoning.
+2. Choose **What to remember**: **Conversation** for supported user and assistant
+   messages, **Detailed** for messages and exposed session events, or **Selected**
+   to choose filename patterns and either content mode. Review the controls below.
 3. As a workspace administrator, select **Keep captured memories when original
    chat logs rotate or are removed**. Review the audience and the pending content
-   limit. The selection is fixed for this inbox: changing `capture_mode`, its
-   identity or its dedicated key requires a reviewed migration.
-4. Leave the application key empty to have Studio create a dedicated key, or
+   limit. The approved policy is fixed for this inbox: changing its selection,
+   file/record size rules, identity or dedicated key requires a reviewed migration.
+4. Review **Session filters and capture sizes**, source RAM, maximum files and
+   pending-content limits, then select **Preview capture**. Review its bounded
+   sample and unavailable capabilities. Changing these choices requires a new preview.
+5. Leave the application key empty to have Studio create a dedicated key, or
    supply the existing dedicated key **and its key ID**. The key ID binds the
    device grant; it is separate from the inbox's encryption key.
-5. Confirm publication to the mapped identities and select **Save and start
+6. Confirm publication to the mapped identities and select **Save and start
    scanning**. Studio first configures the server's retention policy and device
    grant, then verifies and saves the local enrollment with OS-protected keys.
 
@@ -52,6 +53,76 @@ inside the inbox's source evidence. Unfinished JSONL tails wait for a later scan
 Material removed before a successful local commit cannot be recovered by this
 feature. A completed scan covers the available input; it does not prove that
 every historical conversation was captured.
+
+### Content, file selection and retention
+
+These controls remain **unreleased**. The [recorded source validation](../research/2026-10-21-durable-capture-implementation.md#capture-policy-and-preview-source-delta)
+covers component checks, a Linux source journey and separate recovery/migration
+checks; six packaged targets and complete L1 acceptance remain open. The app and
+[local agent interface](desktop-operator.md#preview-conversation-capture-unreleased)
+use the same `capture_policy` and configuration checks.
+
+| Choice | Current behavior |
+| --- | --- |
+| Conversation | `messages`: copies supported user and assistant message text. Unknown formats produce no message copy. |
+| Detailed | `complete`: also retains the selected producer's complete records, including tool activity and reasoning traces actually exposed in its files. |
+| Selected | Chooses relative JSONL filename patterns and either `messages` or `complete` content. |
+| Pause | Uses the existing source pause control; it does not rewrite the approved policy. |
+
+Session selection currently means **file selection**, using relative paths such
+as `team/*.jsonl` and exclusions such as `team/private/*.jsonl`. It does not select
+session IDs, messages or individual fields inside a file. Patterns are
+case-sensitive, use forward slashes, and `*` can match subfolders. The default
+include is `*.jsonl`; new matching files become eligible automatically. Each
+include/exclude list allows up to 64 distinct patterns of at most 512 characters.
+Absolute paths, parent traversal and backslashes are refused in these patterns.
+Filename rules apply to all three presets; built-in private-file exclusions
+remain in force.
+
+`source_mirror` uses the existing source reconciliation/removal behavior.
+`until_deleted` requires retained custody and keeps accepted selection after
+producer rotation/removal, subject to explicit forgetting and current access
+decisions. Automatic expiry, field redaction, attachment-binary fetching and
+hidden provider reasoning are unavailable. Exposed attachment descriptions or
+links may still be ordinary selected text; links are not followed.
+
+File and record caps default to **1,000 MB per file** and **2,000 KB per complete
+input record**. The policy permits up to 1 TB per file and 16 MB per record, with
+the record cap no larger than the file cap; these use decimal bytes. The existing
+RAM, files-per-scan, pending-content and database limits remain separate.
+
+For an explicit policy, accepted fragments carry its `capture_policy_revision`
+fingerprint. The local inbox and service check the approved fingerprint, content
+mode and relative path; the collector enforces the file/record limits. Retained
+policy changes require reviewed migration. Older `complete`/`messages`
+configurations without `capture_policy` keep their mode-only behavior and existing
+fragments; an old retained inbox is not silently given a new policy or revision.
+
+### Preview the selection
+
+Preview is local and returns relative filenames, per-file outcomes, complete-line
+selection counts, configuration/policy fingerprints and capability statuses.
+It saves no source content, returns no raw body, requires no workspace credential
+and invokes no model. Enrollment still verifies server capability, consent and
+the dedicated device grant separately.
+
+The preview considers at most **8 matching files**, reads at most **128 KiB per
+file and 1 MiB in total**, visits at most **10,000 directory entries**, and uses
+a **3-second soft deadline** checked between entries. The configured file-count
+limit can reduce the sample further. A filesystem operation can outlast that
+soft deadline. Only complete newline-terminated records in sampled prefixes
+contribute to counts; duplicates and later context are reconciled during capture.
+
+`catalog: complete` means directory traversal finished within these bounds, not
+that every file body was examined. `limited` marks a traversal/sample limit and
+`unavailable` marks an observed access problem. Per-file outcomes distinguish
+sampled prefixes, changed/unreadable files, size limits, private control data and
+invalid JSONL. A preview with no sampled records does not prove an empty history.
+
+Saving an explicit policy requires its matching `configuration_hash` as native
+`preview_hash`. It binds normalized folder and selection/resource settings, not
+file contents or future changes. A preview is not a local acceptance receipt;
+normal capture rechecks the source before committing selected evidence.
 
 ## Read capture and delivery status
 

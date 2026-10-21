@@ -83,12 +83,14 @@ export async function verifyNativeCapture(window: BrowserWindow, config: Record<
         const mode=card().querySelector('select');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(mode,'messages');mode.dispatchEvent(new Event('change',{bubbles:true}));await pause(100);
         const keep=[...card().querySelectorAll('label')].find(e=>e.textContent.includes('Keep captured memories when original chat logs rotate or are removed'))?.querySelector('input');
         if(!keep||keep.disabled)throw new Error('The app did not offer explicit retained capture consent');keep.click();await pause(100);
+        await click('Preview capture');
+        await until(()=>!!card().querySelector('[data-capture-preview="ready"]'),'Capture choices were not previewed',30000);
         card().querySelector('input[type="checkbox"][required]').click();await pause(100);
         await click('Save and start scanning');
         return await until(async()=>{const view=await window.mnemion.sourceStatus();const item=view.sources.find(s=>s.connector_id===${JSON.stringify(fixture.connectorId)});const error=card()?.querySelector('[role="alert"]');if(error)throw new Error('Capture enrollment UI: '+error.textContent.slice(0,500));return item?.custody?item:false;},'The real app did not enroll its retained source',90000);
       `)
     } finally { dialog.showOpenDialog = originalDialog }
-    if (!selected || configured.capture_mode !== 'messages' || configured.custody.keep_accepted !== true || !configured.members.includes('native-capture-owner')) throw new Error('The actual capture form lost its reviewed choices or mapped audience.')
+    if (!selected || configured.capture_mode !== 'messages' || configured.capture_policy?.preset !== 'conversation' || configured.capture_policy?.retention !== 'until_deleted' || configured.custody.keep_accepted !== true || !configured.members.includes('native-capture-owner')) throw new Error('The actual capture form lost its reviewed choices or mapped audience.')
     await pauseSource(configured.id)
     const saved = JSON.parse(await readFile(sourcesPath, 'utf8')).sources.find((s: any) => s.id === configured.id)
     if (!saved?.sealed_inbox_key || saved.sealed_inbox_key === saved.sealed_key) throw new Error('The installed app did not seal a separate inbox key.')

@@ -241,6 +241,13 @@ def _view(record: Record, owner: UUID) -> dict:
     value = record.model_dump(
         mode="json", exclude={"id", "fingerprint", "owner", "run"}, exclude_none=True
     )
+    # Capture coverage uses explicit nulls for unknown times and unfinished index
+    # observations. Recursive exclude_none strips that wire contract, so the
+    # desktop rejects saved reports and cannot start the next scan.
+    for field in ("report", "last_success_report"):
+        report = getattr(record, field)
+        if report is not None and report.capture is not None:
+            value[field]["capture"] = report.capture.model_dump(mode="json")
     value["durability"] = "saved"
     if record.phase == "scanning" and record.owner != owner:
         value.update(phase="attention", reason_code="interrupted")

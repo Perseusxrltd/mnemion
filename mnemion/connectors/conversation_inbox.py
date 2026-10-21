@@ -87,7 +87,7 @@ class Limits:
 
 def binding_value(value: dict) -> dict:
     fields = {"tenant_id", "connector_id", "source_id", "grant_id", "namespace", "capture_mode"}
-    if not isinstance(value, dict) or set(value) != fields:
+    if not isinstance(value, dict) or not fields <= set(value) <= fields | {"capture_policy"}:
         raise InboxError("capture_binding_invalid")
     try:
         if any(
@@ -103,6 +103,19 @@ def binding_value(value: dict) -> dict:
         or any(ord(char) < 32 for char in value["namespace"])
     ):
         raise InboxError("capture_binding_invalid")
+    if "capture_policy" in value:
+        from ..capture_policy import CapturePolicy
+
+        try:
+            policy = CapturePolicy.model_validate(value["capture_policy"])
+            if (
+                policy.capture_mode != value["capture_mode"]
+                or policy.retention != "until_deleted"
+                or policy.model_dump(mode="json") != value["capture_policy"]
+            ):
+                raise ValueError()
+        except ValueError:
+            raise InboxError("capture_binding_invalid") from None
     return dict(value)
 
 
@@ -173,6 +186,7 @@ class Inbox:
                 self.binding["capture_mode"],
                 event["producer_scope"],
                 self.binding["namespace"],
+                self.binding.get("capture_policy"),
             )
             if canonical_capture_json(normalized) != canonical_capture_json(event["item"]):
                 raise ValueError()
