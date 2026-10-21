@@ -25,44 +25,60 @@
   ],
   "runs": [
     {
-      "id": 39571717128,
+      "id": 39576717888,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "6b883fbaa117f9d82b20daf401aab5a2b2038a93",
-      "status": "completed",
-      "conclusion": "failure",
-      "updated_at": "2026-10-21T09:17:54Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39571717128",
+      "source_commit": "c18a439ccced3b8d4329b82701c6770e4e8a02ea",
+      "status": "queued",
+      "conclusion": null,
+      "updated_at": "2026-10-21T09:24:31Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39576717888",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 12,
-        "completed": 12,
-        "succeeded": 10,
-        "active": []
+        "total": 3,
+        "completed": 0,
+        "succeeded": 0,
+        "active": [
+          {
+            "id": 119143931685,
+            "name": "lint",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run python -m pip install uv==0.12.24"
+            ]
+          },
+          {
+            "id": 119143932003,
+            "name": "studio",
+            "status": "queued",
+            "runner_assigned": null,
+            "steps": []
+          },
+          {
+            "id": 119143933065,
+            "name": "Select checks",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
+            ]
+          }
+        ]
       },
-      "failed_jobs": [
-        {
-          "name": "service (3.14)",
-          "id": 119127335666,
-          "conclusion": "failure",
-          "runner_assigned": true,
-          "steps_reported": 19,
-          "steps": [
-            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-          ]
-        },
-        {
-          "name": "service (3.13)",
-          "id": 119127335955,
-          "conclusion": "failure",
-          "runner_assigned": true,
-          "steps_reported": 19,
-          "steps": [
-            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-          ]
-        }
-      ]
+      "failed_jobs": []
+    },
+    {
+      "id": 39576347122,
+      "attempt": 1,
+      "workflow": "database-cache.yml",
+      "branch": "main",
+      "source_commit": "5e5a466d76d062ac9d437e44968e2b6e5a87a0db",
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-21T09:24:05Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39576347122"
     },
     {
       "id": 39534394111,
@@ -98,15 +114,33 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39534260688"
     },
     {
-      "id": 39571717286,
+      "id": 39576717896,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "6b883fbaa117f9d82b20daf401aab5a2b2038a93",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-21T08:45:56Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39571717286"
+      "source_commit": "c18a439ccced3b8d4329b82701c6770e4e8a02ea",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-21T09:24:35Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39576717896",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 1,
+        "completed": 0,
+        "succeeded": 0,
+        "active": [
+          {
+            "id": 119143931920,
+            "name": "synchronize",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Verify the latest published asset inventory"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": []
     },
     {
       "id": 39534391338,
@@ -120,5 +154,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39534391338"
     }
   ],
-  "observed_at": "2026-10-21T09:18:31+00:00"
+  "observed_at": "2026-10-21T09:24:39+00:00"
 }
