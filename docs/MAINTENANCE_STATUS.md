@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-21T12:43:43+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-21T14:04:49+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.44.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.44.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -17,23 +17,33 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 39598649170](https://github.com/Perseusxrltd/mnemion/actions/runs/39598649170) |
+| ci\.yml | main | queued | [Run 39613526044](https://github.com/Perseusxrltd/mnemion/actions/runs/39613526044) |
 | database-cache\.yml | main | success | [Run 39576347122](https://github.com/Perseusxrltd/mnemion/actions/runs/39576347122) |
-| desktop\.yml | main | in\_progress | [Run 39598747700](https://github.com/Perseusxrltd/mnemion/actions/runs/39598747700) |
+| desktop\.yml | main | in\_progress | [Run 39613577682](https://github.com/Perseusxrltd/mnemion/actions/runs/39613577682) |
 | public-updates\.yml | v4\.44\.0 | success | [Run 39534394111](https://github.com/Perseusxrltd/mnemion/actions/runs/39534394111) |
 | release\.yml | release/4\.44\.0 | success | [Run 39530357580](https://github.com/Perseusxrltd/mnemion/actions/runs/39530357580) |
 | verify-artifacts\.yml | main | success | [Run 39534260688](https://github.com/Perseusxrltd/mnemion/actions/runs/39534260688) |
-| website-release\.yml | main | success | [Run 39598867307](https://github.com/Perseusxrltd/mnemion/actions/runs/39598867307) |
+| website-release\.yml | main | success | [Run 39613526125](https://github.com/Perseusxrltd/mnemion/actions/runs/39613526125) |
 | website-release\.yml | v4\.44\.0 | success | [Run 39534391338](https://github.com/Perseusxrltd/mnemion/actions/runs/39534391338) |
 
 ## Active jobs
 
-[Run 39598747700](https://github.com/Perseusxrltd/mnemion/actions/runs/39598747700): 12/18 jobs completed; 12 succeeded.
+[Run 39613526044](https://github.com/Perseusxrltd/mnemion/actions/runs/39613526044): 3/12 jobs completed; 3 succeeded.
 
-- windows-2022 / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
-- macos-15 / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
-- windows-11-arm / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
-- macos-15-intel / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
-- ubuntu-22\.04-arm / arm64: in\_progress — Installed Linux app creates, searches and reopens a real local workspace.
-- ubuntu-22\.04 / x64: in\_progress — Installed Linux app creates, searches and reopens a real local workspace.
+- studio: in\_progress — Run npm --prefix studio/electron ci && npm --prefix studio/electron test.
+- legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
+- supervision \(macos-15\): queued.
+- container \(ubuntu-22\.04\): queued.
+- service \(3\.12\): in\_progress — Run npm --prefix packages/client ci && npm --prefix packages/client test.
+- service \(3\.13\): in\_progress — Matching PostgreSQL recovery tools.
+- service \(3\.14\): in\_progress — Matching PostgreSQL recovery tools.
+- container \(ubuntu-22\.04-arm\): in\_progress — Build the actual deployment image with its documentation.
+- supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
+
+[Run 39613577682](https://github.com/Perseusxrltd/mnemion/actions/runs/39613577682): 1/5 jobs completed; 1 succeeded.
+
+- Encrypted files / Windows / x64: in\_progress — Run python -m pip install pytest cryptography==50\.0\.2.
+- Encrypted files / Windows / arm64: in\_progress — Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
+- native\_database / Private state / Windows / arm64: in\_progress — Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
+- native\_database / Private state / Windows / x64: in\_progress — Install small private-state test dependencies.
 
