@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-21T11:53:57+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-21T12:20:06+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.44.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.44.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -17,26 +17,28 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 39592497905](https://github.com/Perseusxrltd/mnemion/actions/runs/39592497905) |
+| ci\.yml | main | in\_progress | [Run 39598649170](https://github.com/Perseusxrltd/mnemion/actions/runs/39598649170) |
 | database-cache\.yml | main | success | [Run 39576347122](https://github.com/Perseusxrltd/mnemion/actions/runs/39576347122) |
-| desktop\.yml | main | in\_progress | [Run 39592777333](https://github.com/Perseusxrltd/mnemion/actions/runs/39592777333) |
+| desktop\.yml | main | queued | [Run 39598747700](https://github.com/Perseusxrltd/mnemion/actions/runs/39598747700) |
 | public-updates\.yml | v4\.44\.0 | success | [Run 39534394111](https://github.com/Perseusxrltd/mnemion/actions/runs/39534394111) |
 | release\.yml | release/4\.44\.0 | success | [Run 39530357580](https://github.com/Perseusxrltd/mnemion/actions/runs/39530357580) |
 | verify-artifacts\.yml | main | success | [Run 39534260688](https://github.com/Perseusxrltd/mnemion/actions/runs/39534260688) |
-| website-release\.yml | main | success | [Run 39592497883](https://github.com/Perseusxrltd/mnemion/actions/runs/39592497883) |
+| website-release\.yml | main | success | [Run 39598649202](https://github.com/Perseusxrltd/mnemion/actions/runs/39598649202) |
 | website-release\.yml | v4\.44\.0 | success | [Run 39534391338](https://github.com/Perseusxrltd/mnemion/actions/runs/39534391338) |
 
 ## Active jobs
 
-[Run 39592777333](https://github.com/Perseusxrltd/mnemion/actions/runs/39592777333): 14/18 jobs completed; 12 succeeded.
+[Run 39598649170](https://github.com/Perseusxrltd/mnemion/actions/runs/39598649170): 5/12 jobs completed; 5 succeeded.
 
-- windows-11-arm / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
-- windows-2022 / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
-- macos-15-intel / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
-- ubuntu-22\.04 / x64: in\_progress — Installed Linux app creates, searches and reopens a real local workspace.
+- legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
+- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- service \(3\.12\): in\_progress — Matching PostgreSQL recovery tools.
+- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
+- container \(ubuntu-22\.04-arm\): in\_progress — Verify the non-root image includes Studio, guides and notices offline.
+- supervision \(macos-15\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
 
+[Run 39598747700](https://github.com/Perseusxrltd/mnemion/actions/runs/39598747700): 0/1 jobs completed; 0 succeeded.
 
-## Unsuccessful jobs
+- targets: in\_progress.
 
-- [Run 39592777333](https://github.com/Perseusxrltd/mnemion/actions/runs/39592777333): ubuntu-22\.04-arm / arm64 (failure). Steps: Installed Linux app creates, searches and reopens a real local workspace.
-- [Run 39592777333](https://github.com/Perseusxrltd/mnemion/actions/runs/39592777333): macos-15 / arm64 (failure). Steps: Installed app creates, searches and reopens a real local workspace.
