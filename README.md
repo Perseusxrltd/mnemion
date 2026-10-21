@@ -223,6 +223,12 @@ uv sync --locked --python 3.13
 uv run mnemion-service --help
 ```
 
+Use this locked uv setup for development, or official installers for published
+releases. The project explicitly overrides FastEmbed 0.9.0's `Pillow<13` ceiling
+to select patched Pillow 13. Ordinary `pip install` does not apply uv overrides
+and cannot resolve these conflicting requirements. See the
+[security dependency validation](docs/validation/2026-10-21-security-dependencies.md).
+
 Follow [the service setup guide](docs/service/README.md) to migrate the database,
 provision separate API and worker logins, create an organization/private space,
 and start the service. Administration credentials stay with setup and recovery;
