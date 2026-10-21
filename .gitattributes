@@ -18,3 +18,6 @@ uv.lock text eol=lf
 
 # License provenance hashes cover exact upstream bytes on every operating system.
 deploy/license-overrides/** -text
+
+# Capture fixtures retain the actual producer bytes for provenance checks.
+service_tests/fixtures/codex-0.163/*.jsonl -text

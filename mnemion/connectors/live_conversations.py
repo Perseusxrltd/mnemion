@@ -9,7 +9,7 @@ import time
 from urllib.parse import quote
 from uuid import uuid4
 
-from ..conversations import VERSION, parse
+from ..conversations import RENDERER_REVISION, VERSION, parse
 from ..service.connector_models import ConnectorItemInput
 from ..version import __version__
 from .conversation_state import capture_state
@@ -129,6 +129,7 @@ class ConversationSnapshot:
                 [
                     CAPTURE,
                     VERSION,
+                    RENDERER_REVISION,
                     __version__,
                     self.config.normalize_conversations,
                     self.config.capture_mode,
