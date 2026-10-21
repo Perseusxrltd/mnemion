@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-21T05:13:19+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-21T05:17:23+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.44.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.44.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -21,20 +21,16 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | public-updates\.yml | v4\.44\.0 | success | [Run 39534394111](https://github.com/Perseusxrltd/mnemion/actions/runs/39534394111) |
 | release\.yml | release/4\.44\.0 | success | [Run 39530357580](https://github.com/Perseusxrltd/mnemion/actions/runs/39530357580) |
 | verify-artifacts\.yml | main | success | [Run 39534260688](https://github.com/Perseusxrltd/mnemion/actions/runs/39534260688) |
-| website-release\.yml | main | success | [Run 39548259624](https://github.com/Perseusxrltd/mnemion/actions/runs/39548259624) |
+| website-release\.yml | main | success | [Run 39548629574](https://github.com/Perseusxrltd/mnemion/actions/runs/39548629574) |
 | website-release\.yml | v4\.44\.0 | success | [Run 39534391338](https://github.com/Perseusxrltd/mnemion/actions/runs/39534391338) |
 
 ## Active jobs
 
-[Run 39548259787](https://github.com/Perseusxrltd/mnemion/actions/runs/39548259787): 3/12 jobs completed; 3 succeeded.
+[Run 39548259787](https://github.com/Perseusxrltd/mnemion/actions/runs/39548259787): 7/12 jobs completed; 7 succeeded.
 
-- studio: in\_progress — Run npm --prefix studio/electron ci && npm --prefix studio/electron test.
-- service \(3\.13\): in\_progress — Matching PostgreSQL recovery tools.
-- container \(ubuntu-22\.04\): in\_progress — Verify the non-root image includes Studio, guides and notices offline.
+- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 - supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
 - supervision \(macos-15\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
-- container \(ubuntu-22\.04-arm\): in\_progress — Build the actual deployment image with its documentation.
-- service \(3\.14\): in\_progress — Matching PostgreSQL recovery tools.
-- legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
-- service \(3\.12\): in\_progress — Matching PostgreSQL recovery tools.
+- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 
