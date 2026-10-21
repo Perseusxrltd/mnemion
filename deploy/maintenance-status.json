@@ -35,12 +35,6 @@
       "updated_at": "2026-10-21T18:01:22Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39644195180",
       "job_details_schema": 2,
-      "job_progress": {
-        "total": 12,
-        "completed": 12,
-        "succeeded": 11,
-        "active": []
-      },
       "failed_jobs": [
         {
           "name": "supervision (macos-15)",
@@ -50,7 +44,13 @@
           "steps_reported": 0,
           "steps": []
         }
-      ]
+      ],
+      "job_progress": {
+        "total": 12,
+        "completed": 12,
+        "succeeded": 11,
+        "active": []
+      }
     },
     {
       "id": 39648047355,
@@ -58,73 +58,10 @@
       "workflow": "public-updates.yml",
       "branch": "v4.44.1",
       "source_commit": "92d5e5053e960c64331b5446f989f3d421c47c7c",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-21T17:57:33Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39648047355",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 7,
-        "completed": 1,
-        "succeeded": 1,
-        "active": [
-          {
-            "id": 119388869658,
-            "name": "macos / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 119388869670,
-            "name": "windows / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 119388869734,
-            "name": "macos / x64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 119388869851,
-            "name": "linux / x64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 119388869949,
-            "name": "windows / x64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 119388870271,
-            "name": "linux / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-21T18:07:30Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39648047355"
     },
     {
       "id": 39637945958,
@@ -160,5 +97,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39648042222"
     }
   ],
-  "observed_at": "2026-10-21T18:02:00+00:00"
+  "observed_at": "2026-10-21T18:07:54+00:00"
 }
