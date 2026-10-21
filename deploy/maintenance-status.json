@@ -25,90 +25,102 @@
   ],
   "runs": [
     {
-      "id": 39615924894,
+      "id": 39620599958,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "466efe57d12b9b7c5fe33ed80a901f496a7f5c61",
-      "status": "in_progress",
+      "source_commit": "2431ac860e0d46d5ac88907bb44e59212a4a9074",
+      "status": "queued",
       "conclusion": null,
-      "updated_at": "2026-10-21T14:26:57Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39615924894",
+      "updated_at": "2026-10-21T14:51:57Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39620599958",
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 3,
-        "succeeded": 3,
+        "completed": 1,
+        "succeeded": 1,
         "active": [
           {
-            "id": 119277328114,
-            "name": "studio",
-            "status": "in_progress",
-            "runner_assigned": true,
+            "id": 119292687796,
+            "name": "Select checks",
+            "status": "queued",
+            "runner_assigned": null,
             "steps": []
           },
           {
-            "id": 119277403910,
-            "name": "service (3.14)",
+            "id": 119292688262,
+            "name": "studio",
+            "status": "queued",
+            "runner_assigned": null,
+            "steps": []
+          },
+          {
+            "id": 119292753066,
+            "name": "dependency-audit",
+            "status": "queued",
+            "runner_assigned": null,
+            "steps": []
+          },
+          {
+            "id": 119292753185,
+            "name": "service (3.13)",
+            "status": "queued",
+            "runner_assigned": null,
+            "steps": []
+          },
+          {
+            "id": 119292753186,
+            "name": "legacy",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
             ]
           },
           {
-            "id": 119277404154,
+            "id": 119292753190,
+            "name": "supervision (macos-15)",
+            "status": "queued",
+            "runner_assigned": null,
+            "steps": []
+          },
+          {
+            "id": 119292753203,
+            "name": "supervision (macos-15-intel)",
+            "status": "queued",
+            "runner_assigned": null,
+            "steps": []
+          },
+          {
+            "id": 119292753248,
             "name": "service (3.12)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+              "Initialize containers"
             ]
           },
           {
-            "id": 119277404176,
-            "name": "legacy",
+            "id": 119292753345,
+            "name": "service (3.14)",
             "status": "in_progress",
             "runner_assigned": true,
-            "steps": []
+            "steps": [
+              "Initialize containers"
+            ]
           },
           {
-            "id": 119277404211,
+            "id": 119292753347,
             "name": "container (ubuntu-22.04-arm)",
-            "status": "in_progress",
-            "runner_assigned": true,
+            "status": "queued",
+            "runner_assigned": null,
             "steps": []
           },
           {
-            "id": 119277404262,
-            "name": "supervision (macos-15-intel)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify managed installation, host recovery, signed updates and rollback with real processes"
-            ]
-          },
-          {
-            "id": 119277404331,
-            "name": "service (3.13)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 119277404467,
-            "name": "supervision (macos-15)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": []
-          },
-          {
-            "id": 119277404483,
+            "id": 119292755154,
             "name": "container (ubuntu-22.04)",
-            "status": "in_progress",
-            "runner_assigned": true,
+            "status": "queued",
+            "runner_assigned": null,
             "steps": []
           }
         ]
@@ -132,41 +144,16 @@
       "workflow": "desktop.yml",
       "branch": "main",
       "source_commit": "9095372a7b56679e8ab8d4e18bb59d32721a3746",
-      "status": "queued",
+      "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-21T14:09:20Z",
+      "updated_at": "2026-10-21T14:29:44Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39613577682",
       "job_details_schema": 2,
       "job_progress": {
         "total": 18,
-        "completed": 12,
-        "succeeded": 12,
+        "completed": 17,
+        "succeeded": 15,
         "active": [
-          {
-            "id": 119271252859,
-            "name": "macos-15-intel / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Installed app creates, searches and reopens a real local workspace"
-            ]
-          },
-          {
-            "id": 119271252865,
-            "name": "macos-15 / arm64",
-            "status": "queued",
-            "runner_assigned": null,
-            "steps": []
-          },
-          {
-            "id": 119271252885,
-            "name": "windows-2022 / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Installed app creates, searches and reopens a real local workspace"
-            ]
-          },
           {
             "id": 119271252931,
             "name": "windows-11-arm / arm64",
@@ -175,28 +162,29 @@
             "steps": [
               "Installed app creates, searches and reopens a real local workspace"
             ]
-          },
-          {
-            "id": 119271253006,
-            "name": "ubuntu-22.04 / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Installed Linux app creates, searches and reopens a real local workspace"
-            ]
-          },
-          {
-            "id": 119271253328,
-            "name": "ubuntu-22.04-arm / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Installed Linux app creates, searches and reopens a real local workspace"
-            ]
           }
         ]
       },
-      "failed_jobs": []
+      "failed_jobs": [
+        {
+          "name": "macos-15-intel / x64",
+          "id": 119271252859,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 38,
+          "steps": [
+            "Installed app creates, searches and reopens a real local workspace"
+          ]
+        },
+        {
+          "name": "macos-15 / arm64",
+          "id": 119271252865,
+          "conclusion": "cancelled",
+          "runner_assigned": false,
+          "steps_reported": 0,
+          "steps": []
+        }
+      ]
     },
     {
       "id": 39534394111,
@@ -232,15 +220,31 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39534260688"
     },
     {
-      "id": 39615924980,
+      "id": 39620599994,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "466efe57d12b9b7c5fe33ed80a901f496a7f5c61",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-21T14:20:33Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39615924980"
+      "source_commit": "2431ac860e0d46d5ac88907bb44e59212a4a9074",
+      "status": "queued",
+      "conclusion": null,
+      "updated_at": "2026-10-21T14:51:57Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39620599994",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 1,
+        "completed": 0,
+        "succeeded": 0,
+        "active": [
+          {
+            "id": 119292688641,
+            "name": "synchronize",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": []
+          }
+        ]
+      },
+      "failed_jobs": []
     },
     {
       "id": 39534391338,
@@ -254,5 +258,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39534391338"
     }
   ],
-  "observed_at": "2026-10-21T14:27:17+00:00"
+  "observed_at": "2026-10-21T14:52:22+00:00"
 }
