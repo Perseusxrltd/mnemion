@@ -25,23 +25,23 @@
   ],
   "runs": [
     {
-      "id": 39624140521,
+      "id": 39628022495,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "b630be1f4a3b3f0ebf3e949537bfb4927b2ebc81",
+      "source_commit": "64326de1255ace3cbf13dc1b60f9326d46f5a1a9",
       "status": "queued",
       "conclusion": null,
-      "updated_at": "2026-10-21T15:18:02Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39624140521",
+      "updated_at": "2026-10-21T15:42:16Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39628022495",
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 3,
-        "succeeded": 3,
+        "completed": 2,
+        "succeeded": 2,
         "active": [
           {
-            "id": 119305763215,
+            "id": 119318607128,
             "name": "studio",
             "status": "in_progress",
             "runner_assigned": true,
@@ -50,32 +50,14 @@
             ]
           },
           {
-            "id": 119305826608,
-            "name": "supervision (macos-15-intel)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the current Intel cryptography runtime with static OpenSSL"
-            ]
-          },
-          {
-            "id": 119305826688,
-            "name": "container (ubuntu-22.04)",
+            "id": 119318701032,
+            "name": "dependency-audit",
             "status": "queued",
             "runner_assigned": false,
             "steps": []
           },
           {
-            "id": 119305826753,
-            "name": "service (3.13)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Matching PostgreSQL recovery tools"
-            ]
-          },
-          {
-            "id": 119305826792,
+            "id": 119318701051,
             "name": "container (ubuntu-22.04-arm)",
             "status": "in_progress",
             "runner_assigned": true,
@@ -84,25 +66,16 @@
             ]
           },
           {
-            "id": 119305826814,
-            "name": "service (3.14)",
+            "id": 119318701061,
+            "name": "supervision (macos-15-intel)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run npm --prefix packages/client ci && npm --prefix packages/client test"
+              "Run python -m pip install uv==0.12.24"
             ]
           },
           {
-            "id": 119305826840,
-            "name": "service (3.12)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Matching PostgreSQL recovery tools"
-            ]
-          },
-          {
-            "id": 119305826879,
+            "id": 119318701077,
             "name": "legacy",
             "status": "in_progress",
             "runner_assigned": true,
@@ -111,12 +84,48 @@
             ]
           },
           {
-            "id": 119305826884,
+            "id": 119318701084,
             "name": "supervision (macos-15)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
               "Verify managed installation, host recovery, signed updates and rollback with real processes"
+            ]
+          },
+          {
+            "id": 119318701103,
+            "name": "service (3.12)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Initialize containers"
+            ]
+          },
+          {
+            "id": 119318701107,
+            "name": "container (ubuntu-22.04)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the actual deployment image with its documentation"
+            ]
+          },
+          {
+            "id": 119318701132,
+            "name": "service (3.14)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Initialize containers"
+            ]
+          },
+          {
+            "id": 119318701287,
+            "name": "service (3.13)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
             ]
           }
         ]
@@ -135,38 +144,41 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39576347122"
     },
     {
-      "id": 39623463543,
+      "id": 39628117517,
       "attempt": 1,
       "workflow": "desktop.yml",
       "branch": "main",
-      "source_commit": "4f434ecbe205a715bd8ecd03d44426fc1274b9ac",
-      "status": "in_progress",
+      "source_commit": "64326de1255ace3cbf13dc1b60f9326d46f5a1a9",
+      "status": "queued",
       "conclusion": null,
-      "updated_at": "2026-10-21T15:18:31Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39623463543",
+      "updated_at": "2026-10-21T15:42:39Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39628117517",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 10,
-        "completed": 8,
-        "succeeded": 5,
+        "total": 5,
+        "completed": 2,
+        "succeeded": 0,
         "active": [
           {
-            "id": 119303330170,
-            "name": "macos-15-intel / x64",
+            "id": 119318733628,
+            "name": "targets",
             "status": "in_progress",
             "runner_assigned": true,
-            "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
-            ]
+            "steps": []
           },
           {
-            "id": 119303330461,
-            "name": "macos-15 / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --project studio/client --no-sync python -m pytest client_tests -q"
-            ]
+            "id": 119318818739,
+            "name": "native_database / Private state / Windows / arm64",
+            "status": "queued",
+            "runner_assigned": null,
+            "steps": []
+          },
+          {
+            "id": 119318819431,
+            "name": "native_database / Private state / Windows / x64",
+            "status": "queued",
+            "runner_assigned": null,
+            "steps": []
           }
         ]
       },
@@ -184,38 +196,16 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39534394111"
     },
     {
-      "id": 39534260688,
-      "attempt": 1,
-      "workflow": "verify-artifacts.yml",
-      "branch": "main",
-      "source_commit": "2e8a00a1cb9954676ad2f23d29cdea9946ccb381",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-21T02:41:20Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39534260688"
-    },
-    {
-      "id": 39624140595,
+      "id": 39628022657,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "b630be1f4a3b3f0ebf3e949537bfb4927b2ebc81",
+      "source_commit": "64326de1255ace3cbf13dc1b60f9326d46f5a1a9",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-21T15:16:55Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39624140595"
-    },
-    {
-      "id": 39534391338,
-      "attempt": 1,
-      "workflow": "website-release.yml",
-      "branch": "v4.44.0",
-      "source_commit": "2d9736649dcee74362b9d9ebe0d73af3ae984305",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-21T02:41:30Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39534391338"
+      "updated_at": "2026-10-21T15:42:09Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39628022657"
     }
   ],
-  "observed_at": "2026-10-21T15:18:44+00:00"
+  "observed_at": "2026-10-21T15:42:46+00:00"
 }
