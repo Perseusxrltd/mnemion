@@ -13,6 +13,7 @@ from .errors import ServiceError, not_found
 from .models import json_value
 from .repository import audit
 from .capture_progress import CaptureProgress
+from .capture_policies import CapturePolicies
 
 
 def source_lock(conn, source_id):
@@ -105,7 +106,7 @@ def selected_item(item, capture_mode, producer_scope, namespace, capture_policy=
     return data
 
 
-class CaptureCustody(CaptureProgress):
+class CaptureCustody(CaptureProgress, CapturePolicies):
     def __init__(self, memory):
         self.memory, self.db = memory, memory.db
 
@@ -205,6 +206,19 @@ class CaptureCustody(CaptureProgress):
                         else None,
                     ),
                 ).fetchone()
+                conn.execute(
+                    """INSERT INTO mnemion.capture_policy_versions
+                       (tenant_id,source_id,policy_version,capture_mode,capture_policy)
+                       VALUES(%s,%s,1,%s,%s)""",
+                    (
+                        identity.tenant_id,
+                        source_id,
+                        command.capture_mode,
+                        Jsonb(command.capture_policy.model_dump(mode="json"))
+                        if command.capture_policy
+                        else None,
+                    ),
+                )
             audit(
                 conn,
                 identity,
@@ -253,9 +267,19 @@ class CaptureCustody(CaptureProgress):
             before = conn.execute(
                 "SELECT * FROM mnemion.capture_grants WHERE grant_id=%s", (grant_id,)
             ).fetchone()
+            policy_version = before["policy_version"] if before else source["policy_version"]
+            if command.previous_grant_id is not None:
+                original = conn.execute(
+                    "SELECT policy_version FROM mnemion.capture_grants WHERE grant_id=%s AND source_id=%s",
+                    (command.previous_grant_id, source_id),
+                ).fetchone()
+                if not original:
+                    raise not_found()
+                policy_version = original["policy_version"]
             if before and (
                 before["source_id"] != source_id
                 or before["device_key_id"] != command.device_key_id
+                or before["policy_version"] != policy_version
                 or before["revoked_at"]
             ):
                 raise ServiceError(
@@ -264,32 +288,50 @@ class CaptureCustody(CaptureProgress):
                     "Use a new grant for a different or revoked device authorization.",
                 )
             conn.execute(
-                "INSERT INTO mnemion.capture_grants(tenant_id,grant_id,source_id,device_key_id) VALUES(%s,%s,%s,%s) ON CONFLICT DO NOTHING",
-                (identity.tenant_id, grant_id, source_id, command.device_key_id),
+                "INSERT INTO mnemion.capture_grants(tenant_id,grant_id,source_id,device_key_id,policy_version) VALUES(%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING",
+                (identity.tenant_id, grant_id, source_id, command.device_key_id, policy_version),
             )
             audit(
                 conn,
                 identity,
                 "capture.device_authorized",
                 grant_id,
-                details={"source_id": source_id, "device_key_id": command.device_key_id},
+                details={
+                    "source_id": source_id,
+                    "device_key_id": command.device_key_id,
+                    "policy_version": policy_version,
+                    "previous_grant_id": command.previous_grant_id,
+                },
             )
             return self._grant(conn, identity, grant_id, active=False)
 
     def _grant(self, conn, identity, grant_id, *, active=True):
         row = conn.execute(
-            """SELECT g.*,s.connector_id,s.space_id,s.namespace,s.capture_mode,s.capture_policy,s.revoked_at AS source_revoked_at,
+            """SELECT g.*,s.connector_id,s.space_id,s.namespace,v.capture_mode,v.capture_policy,s.revoked_at AS source_revoked_at,
+                      s.policy_version AS source_policy_version,
                       c.disabled_at AS connector_disabled,k.revoked_at AS key_revoked,
                       k.expires_at AS key_expires,p.disabled_at AS principal_disabled,p.administrator,
                       mnemion.administrator() AS caller_admin,
                       (k.expires_at IS NULL OR k.expires_at>clock_timestamp()) AS key_current
                FROM mnemion.capture_grants g JOIN mnemion.capture_sources s USING(tenant_id,source_id)
+                 JOIN mnemion.capture_policy_versions v
+                   ON v.tenant_id=g.tenant_id AND v.source_id=g.source_id AND v.policy_version=g.policy_version
                  JOIN mnemion.connectors c ON c.tenant_id=s.tenant_id AND c.id=s.connector_id
                  JOIN mnemion.api_keys k ON k.tenant_id=g.tenant_id AND k.id=g.device_key_id
                  JOIN mnemion.principals p ON p.tenant_id=c.tenant_id AND p.id=c.principal_id
                WHERE g.grant_id=%s""",
             (grant_id,),
         ).fetchone()
+        if (
+            not row
+            and conn.execute(
+                "SELECT mnemion.capture_grant_refused(%s,%s) AS refused",
+                (grant_id, identity.key_id),
+            ).fetchone()["refused"]
+        ):
+            raise ServiceError(
+                403, "capture_grant_inactive", "This device no longer has active capture custody."
+            )
         if not row or (not row["caller_admin"] and row["device_key_id"] != identity.key_id):
             raise not_found()
         row["active"] = (

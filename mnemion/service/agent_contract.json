@@ -451,10 +451,27 @@
           "CaptureGrantInput": {
             "additionalProperties": false,
             "properties": {
+              "confirm_previous_policy": {
+                "default": false,
+                "title": "Confirm Previous Policy",
+                "type": "boolean"
+              },
               "device_key_id": {
                 "format": "uuid",
                 "title": "Device Key Id",
                 "type": "string"
+              },
+              "previous_grant_id": {
+                "anyOf": [
+                  {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Previous Grant Id"
               }
             },
             "required": [
@@ -540,6 +557,11 @@
               "namespace": {
                 "title": "Namespace",
                 "type": "string"
+              },
+              "policy_version": {
+                "default": 1,
+                "title": "Policy Version",
+                "type": "integer"
               },
               "revoked_at": {
                 "anyOf": [
@@ -752,6 +774,11 @@
                 "title": "Namespace",
                 "type": "string"
               },
+              "policy_version": {
+                "default": 1,
+                "title": "Policy Version",
+                "type": "integer"
+              },
               "revoked_at": {
                 "anyOf": [
                   {
@@ -961,6 +988,11 @@
               "namespace": {
                 "title": "Namespace",
                 "type": "string"
+              },
+              "policy_version": {
+                "default": 1,
+                "title": "Policy Version",
+                "type": "integer"
               },
               "revoked_at": {
                 "anyOf": [
@@ -1913,6 +1945,1026 @@
             "title": "CapturePolicy",
             "type": "object"
           },
+          "CapturePolicyChange": {
+            "additionalProperties": false,
+            "properties": {
+              "capture_policy": {
+                "$ref": "#/$defs/CapturePolicy"
+              },
+              "confirm": {
+                "title": "Confirm",
+                "type": "boolean"
+              },
+              "expected_version": {
+                "minimum": 1.0,
+                "title": "Expected Version",
+                "type": "integer"
+              },
+              "previous_grants": {
+                "enum": [
+                  "retain",
+                  "revoke"
+                ],
+                "title": "Previous Grants",
+                "type": "string"
+              },
+              "review_token": {
+                "pattern": "^[a-f0-9]{64}$",
+                "title": "Review Token",
+                "type": "string"
+              }
+            },
+            "required": [
+              "expected_version",
+              "review_token",
+              "capture_policy",
+              "previous_grants",
+              "confirm"
+            ],
+            "title": "CapturePolicyChange",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/CapturePolicyChange"
+          },
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "connector_id": {
+                "format": "uuid",
+                "title": "Connector Id",
+                "type": "string"
+              },
+              "source_id": {
+                "format": "uuid",
+                "title": "Source Id",
+                "type": "string"
+              },
+              "transition_id": {
+                "format": "uuid",
+                "title": "Transition Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "connector_id",
+              "source_id",
+              "transition_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters",
+          "body"
+        ],
+        "type": "object"
+      },
+      "method": "PUT",
+      "name": "capture.policy.change",
+      "output_schema": {
+        "$defs": {
+          "CapturePolicy": {
+            "additionalProperties": false,
+            "properties": {
+              "capture_mode": {
+                "enum": [
+                  "messages",
+                  "complete"
+                ],
+                "title": "Capture Mode",
+                "type": "string"
+              },
+              "exclude": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 64,
+                "title": "Exclude",
+                "type": "array"
+              },
+              "format": {
+                "const": "mnemion-capture-policy-v1",
+                "default": "mnemion-capture-policy-v1",
+                "title": "Format",
+                "type": "string"
+              },
+              "include": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 64,
+                "minItems": 1,
+                "title": "Include",
+                "type": "array"
+              },
+              "max_file_bytes": {
+                "default": 1000000000,
+                "maximum": 1000000000000.0,
+                "minimum": 1.0,
+                "title": "Max File Bytes",
+                "type": "integer"
+              },
+              "max_record_bytes": {
+                "default": 2000000,
+                "maximum": 16000000.0,
+                "minimum": 1.0,
+                "title": "Max Record Bytes",
+                "type": "integer"
+              },
+              "preset": {
+                "enum": [
+                  "selected",
+                  "conversation",
+                  "detailed"
+                ],
+                "title": "Preset",
+                "type": "string"
+              },
+              "retention": {
+                "enum": [
+                  "source_mirror",
+                  "until_deleted"
+                ],
+                "title": "Retention",
+                "type": "string"
+              }
+            },
+            "required": [
+              "preset",
+              "capture_mode",
+              "retention"
+            ],
+            "title": "CapturePolicy",
+            "type": "object"
+          },
+          "CapturePolicyChanged": {
+            "additionalProperties": true,
+            "properties": {
+              "source": {
+                "$ref": "#/$defs/CaptureSource"
+              },
+              "transition": {
+                "$ref": "#/$defs/CapturePolicyVersion"
+              }
+            },
+            "required": [
+              "source",
+              "transition"
+            ],
+            "title": "CapturePolicyChanged",
+            "type": "object"
+          },
+          "CapturePolicyVersion": {
+            "additionalProperties": true,
+            "properties": {
+              "affected_grants": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Affected Grants"
+              },
+              "capture_mode": {
+                "enum": [
+                  "messages",
+                  "complete"
+                ],
+                "title": "Capture Mode",
+                "type": "string"
+              },
+              "capture_policy": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/CapturePolicy"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "created_at": {
+                "title": "Created At",
+                "type": "string"
+              },
+              "policy_version": {
+                "title": "Policy Version",
+                "type": "integer"
+              },
+              "previous_grants": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "retain",
+                      "revoke"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Previous Grants"
+              },
+              "source_id": {
+                "title": "Source Id",
+                "type": "string"
+              },
+              "transition_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Transition Id"
+              }
+            },
+            "required": [
+              "source_id",
+              "policy_version",
+              "capture_mode",
+              "capture_policy",
+              "created_at"
+            ],
+            "title": "CapturePolicyVersion",
+            "type": "object"
+          },
+          "CaptureSource": {
+            "additionalProperties": true,
+            "properties": {
+              "capture_mode": {
+                "enum": [
+                  "messages",
+                  "complete"
+                ],
+                "title": "Capture Mode",
+                "type": "string"
+              },
+              "capture_policy": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/CapturePolicy"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "connector_id": {
+                "title": "Connector Id",
+                "type": "string"
+              },
+              "has_capture_history": {
+                "default": false,
+                "title": "Has Capture History",
+                "type": "boolean"
+              },
+              "keep_accepted": {
+                "const": true,
+                "default": true,
+                "title": "Keep Accepted",
+                "type": "boolean"
+              },
+              "members": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Members",
+                "type": "array"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "namespace": {
+                "title": "Namespace",
+                "type": "string"
+              },
+              "policy_version": {
+                "default": 1,
+                "title": "Policy Version",
+                "type": "integer"
+              },
+              "revoked_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Revoked At"
+              },
+              "source_id": {
+                "title": "Source Id",
+                "type": "string"
+              },
+              "space_id": {
+                "title": "Space Id",
+                "type": "string"
+              },
+              "version": {
+                "title": "Version",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "version",
+              "source_id",
+              "connector_id",
+              "space_id",
+              "namespace",
+              "name",
+              "members",
+              "capture_mode",
+              "revoked_at"
+            ],
+            "title": "CaptureSource",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/CapturePolicyChanged"
+      },
+      "parameter_locations": {
+        "connector_id": "path",
+        "source_id": "path",
+        "transition_id": "path"
+      },
+      "path": "/v1/connectors/{connector_id}/capture-sources/{source_id}/policy-transitions/{transition_id}",
+      "retry": "inspect_before_retry",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Change Policy"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "read",
+      "group": "connectors",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "after": {
+                "anyOf": [
+                  {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "After"
+              },
+              "connector_id": {
+                "format": "uuid",
+                "title": "Connector Id",
+                "type": "string"
+              },
+              "limit": {
+                "default": 100,
+                "maximum": 100,
+                "minimum": 1,
+                "title": "Limit",
+                "type": "integer"
+              },
+              "source_id": {
+                "format": "uuid",
+                "title": "Source Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "connector_id",
+              "source_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters"
+        ],
+        "type": "object"
+      },
+      "method": "GET",
+      "name": "capture.policy.review",
+      "output_schema": {
+        "$defs": {
+          "CaptureDeviceSummary": {
+            "additionalProperties": true,
+            "properties": {
+              "active": {
+                "title": "Active",
+                "type": "boolean"
+              },
+              "created_at": {
+                "title": "Created At",
+                "type": "string"
+              },
+              "device_key_id": {
+                "title": "Device Key Id",
+                "type": "string"
+              },
+              "device_name": {
+                "title": "Device Name",
+                "type": "string"
+              },
+              "grant_id": {
+                "title": "Grant Id",
+                "type": "string"
+              },
+              "policy_version": {
+                "title": "Policy Version",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "grant_id",
+              "device_key_id",
+              "device_name",
+              "policy_version",
+              "created_at",
+              "active"
+            ],
+            "title": "CaptureDeviceSummary",
+            "type": "object"
+          },
+          "CapturePolicy": {
+            "additionalProperties": false,
+            "properties": {
+              "capture_mode": {
+                "enum": [
+                  "messages",
+                  "complete"
+                ],
+                "title": "Capture Mode",
+                "type": "string"
+              },
+              "exclude": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 64,
+                "title": "Exclude",
+                "type": "array"
+              },
+              "format": {
+                "const": "mnemion-capture-policy-v1",
+                "default": "mnemion-capture-policy-v1",
+                "title": "Format",
+                "type": "string"
+              },
+              "include": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 64,
+                "minItems": 1,
+                "title": "Include",
+                "type": "array"
+              },
+              "max_file_bytes": {
+                "default": 1000000000,
+                "maximum": 1000000000000.0,
+                "minimum": 1.0,
+                "title": "Max File Bytes",
+                "type": "integer"
+              },
+              "max_record_bytes": {
+                "default": 2000000,
+                "maximum": 16000000.0,
+                "minimum": 1.0,
+                "title": "Max Record Bytes",
+                "type": "integer"
+              },
+              "preset": {
+                "enum": [
+                  "selected",
+                  "conversation",
+                  "detailed"
+                ],
+                "title": "Preset",
+                "type": "string"
+              },
+              "retention": {
+                "enum": [
+                  "source_mirror",
+                  "until_deleted"
+                ],
+                "title": "Retention",
+                "type": "string"
+              }
+            },
+            "required": [
+              "preset",
+              "capture_mode",
+              "retention"
+            ],
+            "title": "CapturePolicy",
+            "type": "object"
+          },
+          "CapturePolicyReview": {
+            "additionalProperties": true,
+            "properties": {
+              "active_grants": {
+                "title": "Active Grants",
+                "type": "integer"
+              },
+              "devices": {
+                "items": {
+                  "$ref": "#/$defs/CaptureDeviceSummary"
+                },
+                "title": "Devices",
+                "type": "array"
+              },
+              "next_cursor": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Next Cursor"
+              },
+              "review_token": {
+                "title": "Review Token",
+                "type": "string"
+              },
+              "source": {
+                "$ref": "#/$defs/CaptureSource"
+              },
+              "unrevoked_grants": {
+                "title": "Unrevoked Grants",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "source",
+              "review_token",
+              "unrevoked_grants",
+              "active_grants",
+              "devices",
+              "next_cursor"
+            ],
+            "title": "CapturePolicyReview",
+            "type": "object"
+          },
+          "CaptureSource": {
+            "additionalProperties": true,
+            "properties": {
+              "capture_mode": {
+                "enum": [
+                  "messages",
+                  "complete"
+                ],
+                "title": "Capture Mode",
+                "type": "string"
+              },
+              "capture_policy": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/CapturePolicy"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "connector_id": {
+                "title": "Connector Id",
+                "type": "string"
+              },
+              "has_capture_history": {
+                "default": false,
+                "title": "Has Capture History",
+                "type": "boolean"
+              },
+              "keep_accepted": {
+                "const": true,
+                "default": true,
+                "title": "Keep Accepted",
+                "type": "boolean"
+              },
+              "members": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Members",
+                "type": "array"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "namespace": {
+                "title": "Namespace",
+                "type": "string"
+              },
+              "policy_version": {
+                "default": 1,
+                "title": "Policy Version",
+                "type": "integer"
+              },
+              "revoked_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Revoked At"
+              },
+              "source_id": {
+                "title": "Source Id",
+                "type": "string"
+              },
+              "space_id": {
+                "title": "Space Id",
+                "type": "string"
+              },
+              "version": {
+                "title": "Version",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "version",
+              "source_id",
+              "connector_id",
+              "space_id",
+              "namespace",
+              "name",
+              "members",
+              "capture_mode",
+              "revoked_at"
+            ],
+            "title": "CaptureSource",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/CapturePolicyReview"
+      },
+      "parameter_locations": {
+        "after": "query",
+        "connector_id": "path",
+        "limit": "query",
+        "source_id": "path"
+      },
+      "path": "/v1/connectors/{connector_id}/capture-sources/{source_id}/policy-review",
+      "retry": "read",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Policy Review"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "read",
+      "group": "connectors",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "after": {
+                "default": 0,
+                "minimum": 0,
+                "title": "After",
+                "type": "integer"
+              },
+              "connector_id": {
+                "format": "uuid",
+                "title": "Connector Id",
+                "type": "string"
+              },
+              "limit": {
+                "default": 100,
+                "maximum": 100,
+                "minimum": 1,
+                "title": "Limit",
+                "type": "integer"
+              },
+              "source_id": {
+                "format": "uuid",
+                "title": "Source Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "connector_id",
+              "source_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters"
+        ],
+        "type": "object"
+      },
+      "method": "GET",
+      "name": "capture.policy.versions",
+      "output_schema": {
+        "$defs": {
+          "CapturePolicy": {
+            "additionalProperties": false,
+            "properties": {
+              "capture_mode": {
+                "enum": [
+                  "messages",
+                  "complete"
+                ],
+                "title": "Capture Mode",
+                "type": "string"
+              },
+              "exclude": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 64,
+                "title": "Exclude",
+                "type": "array"
+              },
+              "format": {
+                "const": "mnemion-capture-policy-v1",
+                "default": "mnemion-capture-policy-v1",
+                "title": "Format",
+                "type": "string"
+              },
+              "include": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 64,
+                "minItems": 1,
+                "title": "Include",
+                "type": "array"
+              },
+              "max_file_bytes": {
+                "default": 1000000000,
+                "maximum": 1000000000000.0,
+                "minimum": 1.0,
+                "title": "Max File Bytes",
+                "type": "integer"
+              },
+              "max_record_bytes": {
+                "default": 2000000,
+                "maximum": 16000000.0,
+                "minimum": 1.0,
+                "title": "Max Record Bytes",
+                "type": "integer"
+              },
+              "preset": {
+                "enum": [
+                  "selected",
+                  "conversation",
+                  "detailed"
+                ],
+                "title": "Preset",
+                "type": "string"
+              },
+              "retention": {
+                "enum": [
+                  "source_mirror",
+                  "until_deleted"
+                ],
+                "title": "Retention",
+                "type": "string"
+              }
+            },
+            "required": [
+              "preset",
+              "capture_mode",
+              "retention"
+            ],
+            "title": "CapturePolicy",
+            "type": "object"
+          },
+          "CapturePolicyVersion": {
+            "additionalProperties": true,
+            "properties": {
+              "affected_grants": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Affected Grants"
+              },
+              "capture_mode": {
+                "enum": [
+                  "messages",
+                  "complete"
+                ],
+                "title": "Capture Mode",
+                "type": "string"
+              },
+              "capture_policy": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/CapturePolicy"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "created_at": {
+                "title": "Created At",
+                "type": "string"
+              },
+              "policy_version": {
+                "title": "Policy Version",
+                "type": "integer"
+              },
+              "previous_grants": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "retain",
+                      "revoke"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Previous Grants"
+              },
+              "source_id": {
+                "title": "Source Id",
+                "type": "string"
+              },
+              "transition_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Transition Id"
+              }
+            },
+            "required": [
+              "source_id",
+              "policy_version",
+              "capture_mode",
+              "capture_policy",
+              "created_at"
+            ],
+            "title": "CapturePolicyVersion",
+            "type": "object"
+          },
+          "CapturePolicyVersionPage": {
+            "additionalProperties": true,
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/$defs/CapturePolicyVersion"
+                },
+                "title": "Items",
+                "type": "array"
+              },
+              "next_cursor": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Next Cursor"
+              }
+            },
+            "required": [
+              "items",
+              "next_cursor"
+            ],
+            "title": "CapturePolicyVersionPage",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/CapturePolicyVersionPage"
+      },
+      "parameter_locations": {
+        "after": "query",
+        "connector_id": "path",
+        "limit": "query",
+        "source_id": "path"
+      },
+      "path": "/v1/connectors/{connector_id}/capture-sources/{source_id}/policies",
+      "retry": "read",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Policy Versions"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "write",
+      "group": "connectors",
+      "input_schema": {
+        "$defs": {
+          "CapturePolicy": {
+            "additionalProperties": false,
+            "properties": {
+              "capture_mode": {
+                "enum": [
+                  "messages",
+                  "complete"
+                ],
+                "title": "Capture Mode",
+                "type": "string"
+              },
+              "exclude": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 64,
+                "title": "Exclude",
+                "type": "array"
+              },
+              "format": {
+                "const": "mnemion-capture-policy-v1",
+                "default": "mnemion-capture-policy-v1",
+                "title": "Format",
+                "type": "string"
+              },
+              "include": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 64,
+                "minItems": 1,
+                "title": "Include",
+                "type": "array"
+              },
+              "max_file_bytes": {
+                "default": 1000000000,
+                "maximum": 1000000000000.0,
+                "minimum": 1.0,
+                "title": "Max File Bytes",
+                "type": "integer"
+              },
+              "max_record_bytes": {
+                "default": 2000000,
+                "maximum": 16000000.0,
+                "minimum": 1.0,
+                "title": "Max Record Bytes",
+                "type": "integer"
+              },
+              "preset": {
+                "enum": [
+                  "selected",
+                  "conversation",
+                  "detailed"
+                ],
+                "title": "Preset",
+                "type": "string"
+              },
+              "retention": {
+                "enum": [
+                  "source_mirror",
+                  "until_deleted"
+                ],
+                "title": "Retention",
+                "type": "string"
+              }
+            },
+            "required": [
+              "preset",
+              "capture_mode",
+              "retention"
+            ],
+            "title": "CapturePolicy",
+            "type": "object"
+          },
           "CaptureSourceInput": {
             "additionalProperties": false,
             "properties": {
@@ -2141,6 +3193,11 @@
                 "title": "Namespace",
                 "type": "string"
               },
+              "policy_version": {
+                "default": 1,
+                "title": "Policy Version",
+                "type": "integer"
+              },
               "revoked_at": {
                 "anyOf": [
                   {
@@ -2191,6 +3248,268 @@
       "sensitive_input": false,
       "sensitive_result": false,
       "summary": "Configure Source"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
+      "effect": "read",
+      "group": "connectors",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "after": {
+                "anyOf": [
+                  {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "After"
+              },
+              "connector_id": {
+                "format": "uuid",
+                "title": "Connector Id",
+                "type": "string"
+              },
+              "limit": {
+                "default": 100,
+                "maximum": 100,
+                "minimum": 1,
+                "title": "Limit",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "connector_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters"
+        ],
+        "type": "object"
+      },
+      "method": "GET",
+      "name": "capture.source.list",
+      "output_schema": {
+        "$defs": {
+          "CapturePolicy": {
+            "additionalProperties": false,
+            "properties": {
+              "capture_mode": {
+                "enum": [
+                  "messages",
+                  "complete"
+                ],
+                "title": "Capture Mode",
+                "type": "string"
+              },
+              "exclude": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 64,
+                "title": "Exclude",
+                "type": "array"
+              },
+              "format": {
+                "const": "mnemion-capture-policy-v1",
+                "default": "mnemion-capture-policy-v1",
+                "title": "Format",
+                "type": "string"
+              },
+              "include": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 64,
+                "minItems": 1,
+                "title": "Include",
+                "type": "array"
+              },
+              "max_file_bytes": {
+                "default": 1000000000,
+                "maximum": 1000000000000.0,
+                "minimum": 1.0,
+                "title": "Max File Bytes",
+                "type": "integer"
+              },
+              "max_record_bytes": {
+                "default": 2000000,
+                "maximum": 16000000.0,
+                "minimum": 1.0,
+                "title": "Max Record Bytes",
+                "type": "integer"
+              },
+              "preset": {
+                "enum": [
+                  "selected",
+                  "conversation",
+                  "detailed"
+                ],
+                "title": "Preset",
+                "type": "string"
+              },
+              "retention": {
+                "enum": [
+                  "source_mirror",
+                  "until_deleted"
+                ],
+                "title": "Retention",
+                "type": "string"
+              }
+            },
+            "required": [
+              "preset",
+              "capture_mode",
+              "retention"
+            ],
+            "title": "CapturePolicy",
+            "type": "object"
+          },
+          "CaptureSource": {
+            "additionalProperties": true,
+            "properties": {
+              "capture_mode": {
+                "enum": [
+                  "messages",
+                  "complete"
+                ],
+                "title": "Capture Mode",
+                "type": "string"
+              },
+              "capture_policy": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/CapturePolicy"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "connector_id": {
+                "title": "Connector Id",
+                "type": "string"
+              },
+              "has_capture_history": {
+                "default": false,
+                "title": "Has Capture History",
+                "type": "boolean"
+              },
+              "keep_accepted": {
+                "const": true,
+                "default": true,
+                "title": "Keep Accepted",
+                "type": "boolean"
+              },
+              "members": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Members",
+                "type": "array"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "namespace": {
+                "title": "Namespace",
+                "type": "string"
+              },
+              "policy_version": {
+                "default": 1,
+                "title": "Policy Version",
+                "type": "integer"
+              },
+              "revoked_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Revoked At"
+              },
+              "source_id": {
+                "title": "Source Id",
+                "type": "string"
+              },
+              "space_id": {
+                "title": "Space Id",
+                "type": "string"
+              },
+              "version": {
+                "title": "Version",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "version",
+              "source_id",
+              "connector_id",
+              "space_id",
+              "namespace",
+              "name",
+              "members",
+              "capture_mode",
+              "revoked_at"
+            ],
+            "title": "CaptureSource",
+            "type": "object"
+          },
+          "CaptureSourcePage": {
+            "additionalProperties": true,
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/$defs/CaptureSource"
+                },
+                "title": "Items",
+                "type": "array"
+              },
+              "next_cursor": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Next Cursor"
+              }
+            },
+            "required": [
+              "items",
+              "next_cursor"
+            ],
+            "title": "CaptureSourcePage",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/CaptureSourcePage"
+      },
+      "parameter_locations": {
+        "after": "query",
+        "connector_id": "path",
+        "limit": "query"
+      },
+      "path": "/v1/connectors/{connector_id}/capture-sources",
+      "retry": "read",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Source List"
     },
     {
       "authentication": "bearer",
@@ -2354,6 +3673,11 @@
               "namespace": {
                 "title": "Namespace",
                 "type": "string"
+              },
+              "policy_version": {
+                "default": 1,
+                "title": "Policy Version",
+                "type": "integer"
               },
               "revoked_at": {
                 "anyOf": [
@@ -2568,6 +3892,11 @@
               "namespace": {
                 "title": "Namespace",
                 "type": "string"
+              },
+              "policy_version": {
+                "default": 1,
+                "title": "Policy Version",
+                "type": "integer"
               },
               "revoked_at": {
                 "anyOf": [
@@ -10378,6 +11707,18 @@
                 "const": "v1",
                 "title": "Api Version",
                 "type": "string"
+              },
+              "capture_policy_versions": {
+                "anyOf": [
+                  {
+                    "const": "v1",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Capture Policy Versions"
               },
               "connector_partial_inventory": {
                 "default": false,

@@ -60,12 +60,13 @@ does not ship this unfinished capture milestone.
 | --- | --- |
 | Native enrollment | Studio offers explicit retained capture only for a new conversation connection. The administrator approves the source policy and exact device-key grant before native enrollment. App and private agents use the same typed `source.custody` object; existing mirrors cannot silently convert. |
 | Capture policy and local preview | An additional unreleased delta adds Selected/Conversation/Detailed choices, relative JSONL file rules, size caps and explicit mirror/retained selection through the same app/agent configuration. A bounded local preview returns counts and capability statuses; explicit-policy retained fragments carry the immutable approved policy fingerprint. Source, Linux journey and separate recovery/migration checks passed; full L1 acceptance remains open. |
+| Policy versions and administrator controls | A further unreleased batch adds immutable policies bound to grants, reviewed defaults for new grants, and explicit retention or revocation of existing authorizations through the shared hosted/desktop panel and MCP/HTTP. Original-policy archive recovery requires explicit reauthorization. Regression, actual backup/ledger restore, migration, native controller and Linux browser administration checks plus app/native builds passed. CI after integration and packaged acceptance remain pending; these controls do not implement existing-device selection/organization migration. |
 | Portable inbox archive | Unreleased checkpoint `7aca19e9` exports and inspects encrypted local evidence, and restores a new private inbox under its original binding. Core, helper/controller, migration and Linux app export/restart-inspection checks passed. These checks do not establish the separate device-recovery delta or packaged acceptance. |
 | Device recovery | An unreleased source checkpoint re-encrypts an inspected archive for a new approved grant and inbox key, retires the old grant and installs a new paused native source. The original organization/source/namespace/policy stays fixed. Protected intents support explicit finish/discard after interrupted local publication. Source, controller, operator and migration checks plus the three-phase Linux source journey passed. All three earlier failed journeys are retained below; six-platform packaged and full L1 acceptance remain open. |
 | Independent headless capture | An additional unreleased delta gives `mnemion-connect` explicit JSON custody and stdin controls for paused enrollment, resume, status, encrypted backup and fixed-policy device recovery. Protected file/environment references replace automatic desktop OS sealing. Local intake precedes service access. Source regression, migration and updater checks passed, including polling and verified managed-runtime integration; packaged acceptance remains open. Configurations without `capture` retain mirror behavior. |
 | Encrypted selected inbox | The native controller creates an independent random 256-bit key and seals it through OS credential storage. Selected items and a verified capture checkpoint commit together under AES-256-GCM. Both messages and complete modes use the existing renderer. Messages mode cannot retain a raw transcript or hide raw text in its source evidence. |
 | Local capture and scheduling | The normal desktop runner commits available selected JSONL evidence before any service request in a scan. Accepted events survive restart and producer removal/rotation; unfinished tails wait. Missing source files can stop new capture while already accepted evidence remains deliverable. |
-| Durable service custody | Explicit administrator consent, immutable selection/source identity, exact device-key grants, current audience/role checks, immutable event receipts and idempotent pages. Existing provider permission leases remain unchanged. |
+| Durable service custody | Explicit administrator consent, immutable source identity and selection for each device grant, current audience/role checks, immutable event receipts and idempotent pages. Existing provider permission leases remain unchanged. |
 | Delivery and reconciliation | The runner saves exact pages before delivery, looks up uncertain receipts and resends only the same page. Current revocation and forgetting fences apply to backlog. Revoked grants retain local pending evidence without attempting ingestion; observed revocation also stops later local intake. |
 | Private scan observations | Last success, failure, interrupted attempt and next check survive restart. App and native status separate local acceptance, pending content, server acknowledgements, unknown pages, incomplete scans and capacity. Explicit repair preserves damaged diagnostics and resets history for every source on the device to unknown without changing sources, credentials or capture data. |
 | Encrypted coverage accounting | The inbox retains per-file prefix observations and one bounded aggregate, with selection counters committed alongside accepted evidence. Missing/changed/unobserved history, continuous non-empty queue start, authenticated contact and receipt acknowledgement remain distinct. This development delta is still under validation. |
@@ -268,11 +269,12 @@ separately during enrollment.
 
 `source_mirror` retains existing reconciliation/removal behavior;
 `until_deleted` requires administrator-approved retained custody. The server
-stores the immutable policy in its source/grant contract; the local enrollment
+preserves each grant's immutable policy; the local enrollment
 binds the same policy. Explicit-policy fragments carry `capture_policy_revision`,
 checked by both inbox and service alongside the approved mode/path and declared
-file boundary. The collector enforces record-size admission. A different policy
-requires reviewed migration. Legacy sources without a policy keep their existing
+file boundary. The collector enforces record-size admission. Changing an existing
+inbox's selection requires reviewed migration. Legacy sources without a policy
+keep their existing
 `complete`/`messages` behavior and mode-only fragments; they are not silently
 migrated. Portable recovery, broader policy controls, headless operation, bounded
 history and all six packaged acceptance journeys remain open. The
@@ -580,6 +582,90 @@ Returning free pages does not prune any logical history, lift the
 bounded-history and backpressure requirements. The
 [operator guide](../service/durable-capture.md#reclaim-unused-database-pages-unreleased)
 describes the observed fields and deferred behavior.
+
+## Capture policy versions source delta
+
+This **unreleased** batch adds `capture_policy_versions: "v1"`. Migration 033
+preserves each existing source and grant as policy version 1, including original
+mode-only policies. Policy versions are immutable; a reviewed transition changes
+the source default for new grants. Existing grants are explicitly retained on
+their original policies, including permission for future capture, or all
+unrevoked grants are revoked. Source identity, custody space, audience, accepted
+memories and deletion fences remain unchanged; no local queue is rewritten.
+
+The shared hosted/Studio administrator panel and `capture.source.list`,
+`capture.policy.review`, `capture.policy.versions` and `capture.policy.change`
+use the same server contract. Review covers the entire unrevoked-grant set while
+source/device/history pages remain bounded. A change requires the current source
+edit version, review token and explicit consent. Exact retries keep the same
+transition UUID and request; replay does not revoke later-created grants.
+The [administrator procedure](../service/durable-capture.md#manage-source-defaults-and-device-authorizations-unreleased)
+documents the request envelope and confirmation steps.
+
+An archive's exact original policy can be reauthorized on a new grant with
+`previous_grant_id` and `confirm_previous_policy: true`. Local recovery still
+preserves that archive's original selection and identity. The current custody
+recovery ledger includes immutable policy history and each grant's bound version;
+validation rejects unknown or conflicting versions and a default downgrade.
+An older ledger maps each source and grant to its original version 1. This does
+not provide in-place selection/organization migration or remove the local
+enrollment guard against existing capture history.
+
+The batch also corrects revocation observation when row-level security hides a
+retired source/connector/device authorization. A narrowly scoped SQL boolean
+checks only the current tenant/principal and exact device key/grant. A known
+inactive authorization returns `403 capture_grant_inactive`, allowing the runner
+to stop later local intake while preserving its inbox; an unknown grant remains
+404. No hidden source or grant metadata is returned by this fallback.
+
+`capture-policy-versions-source-inputs.json` pins **547 runtime files**, digest
+`6f4f061189f70c28504e88422ff0aabd961934f2a77bc73e5b0ce832be145e55`.
+`capture-policy-versions-regression-tests.log` records **97 passed in 156.67 seconds**.
+The later `capture-policy-versions-final-tests.log` records **12 passed in
+17.50 seconds**: 11 repeated policy cases and one new actual `pg_dump`/restore
+scenario, for 98 distinct affected Python cases across these two runs. A backup
+containing policy 1 was restored with a current ledger containing policies 1–3.
+The source kept default 3, the original/recovered grants kept policy 1, a later
+grant kept policy 2, and the deleted memory stayed forgotten. The run also
+rejects a version-2 ledger grant missing its explicit `policy_version`.
+
+Separately, `capture-policy-versions-migration-preflight.log` records **30 passed
+in 100.49 seconds**, fingerprint
+`2598c9e18d8436d8c279f1f34bfaf9851d6b3ba2416cc044895da87a6a5136af`.
+`capture-policy-versions-native-tests.log` records **58 passed, zero skips, in
+213.888783 ms**, and `capture-policy-versions-native-build.log` records the
+successful native build. The app build passed. No runtime edits intervened
+between the source receipt and these checks. Whole-tree Ruff checks passed,
+with 629 files passing the formatting check; whitespace checks passed.
+
+`capture-policy-versions-browser.receipt.json` records a passing Linux source
+journey at **07:15:47 UTC**, with the same runtime digest. It used the actual
+component, TypeScript SDK, HTTP and PostgreSQL in an isolated fixture: three
+policy-1 grants stayed on policy 1 after the default changed to 2; individual
+revocation left two unrevoked grants; reviewed revoke-all created policy 3 and
+left none. History remained `[1, 2, 3]`, with source and space IDs unchanged.
+At widths **1,280 and 390 pixels**, there was no horizontal overflow or error
+alert, and the edit guard cleared after completion. Product console errors were
+zero; one fixture-only `favicon.ico` 404 remains recorded. Fixture database and
+browser were closed, temporary credentials were removed, and the receipt records
+zero production writes and paid model calls. This is Linux browser source proof;
+installed-platform acceptance remains open.
+
+The first eight-case run retained **seven passes and one fixture failure**:
+the test queried the nonexistent `memories.content` column. The test was
+corrected. The first browser fixture failed to import its private harness module;
+its launch path was corrected before the successful journey. Both fixture
+failures remain recorded separately from the passing results.
+Earlier baseline `fc4e25ca` passed all 12 jobs in
+[CI 39555330786](https://github.com/Perseusxrltd/mnemion/actions/runs/39555330786);
+that run predates this modified policy batch. CI for the policy batch remains
+pending until integration.
+
+These source results do not establish six-package archive recovery, complete
+history, full L1 or release acceptance. Existing-device selection and
+organization migration remain open, as do the remaining policy, coverage,
+retained-history and backpressure requirements. Stable 4.44 and all earlier
+checkpoint proofs keep their original scope.
 
 ## Source and deletion boundaries
 

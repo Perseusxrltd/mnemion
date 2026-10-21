@@ -377,8 +377,6 @@ def verify(source, root, client):
         policy.source_id != str(source.custody.source_id)
         or policy.connector_id != str(source.connector_id)
         or policy.namespace != (source.scope_id or "selected-source")
-        or policy.capture_mode != (source.capture_mode or "complete")
-        or policy.capture_policy != source.capture_policy
         or set(policy.members) != set(source.members)
         or policy.revoked_at
     ):

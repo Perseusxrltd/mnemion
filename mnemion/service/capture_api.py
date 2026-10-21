@@ -13,6 +13,61 @@ def install_routes(app, authenticated, service):
     Auth = Annotated[Identity, Depends(authenticated)]
 
     @app.get(
+        "/v1/connectors/{connector_id}/capture-sources",
+        tags=["Connectors"],
+        response_model=c.CaptureSourcePage,
+    )
+    def source_list(
+        connector_id: UUID,
+        identity: Auth,
+        after: UUID | None = None,
+        limit: Annotated[int, Query(ge=1, le=100)] = 100,
+    ):
+        return service.source_list(identity, connector_id, after=after, limit=limit)
+
+    @app.get(
+        "/v1/connectors/{connector_id}/capture-sources/{source_id}/policy-review",
+        tags=["Connectors"],
+        response_model=c.CapturePolicyReview,
+    )
+    def policy_review(
+        connector_id: UUID,
+        source_id: UUID,
+        identity: Auth,
+        after: UUID | None = None,
+        limit: Annotated[int, Query(ge=1, le=100)] = 100,
+    ):
+        return service.policy_review(identity, connector_id, source_id, after=after, limit=limit)
+
+    @app.get(
+        "/v1/connectors/{connector_id}/capture-sources/{source_id}/policies",
+        tags=["Connectors"],
+        response_model=c.CapturePolicyVersionPage,
+    )
+    def policy_versions(
+        connector_id: UUID,
+        source_id: UUID,
+        identity: Auth,
+        after: Annotated[int, Query(ge=0)] = 0,
+        limit: Annotated[int, Query(ge=1, le=100)] = 100,
+    ):
+        return service.policy_versions(identity, connector_id, source_id, after=after, limit=limit)
+
+    @app.put(
+        "/v1/connectors/{connector_id}/capture-sources/{source_id}/policy-transitions/{transition_id}",
+        tags=["Connectors"],
+        response_model=c.CapturePolicyChanged,
+    )
+    def change_policy(
+        connector_id: UUID,
+        source_id: UUID,
+        transition_id: UUID,
+        command: c.CapturePolicyChange,
+        identity: Auth,
+    ):
+        return service.change_policy(identity, connector_id, source_id, transition_id, command)
+
+    @app.get(
         "/v1/connectors/{connector_id}/capture-sources/{source_id}",
         tags=["Connectors"],
         response_model=c.CaptureSource,

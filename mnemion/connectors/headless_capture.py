@@ -288,8 +288,6 @@ def verify(config, client, *, existing=False):
         policy.source_id != str(config.capture.source_id)
         or policy.connector_id != str(config.connector_id)
         or policy.namespace != config.provider.scope_id
-        or policy.capture_mode != config.provider.capture_mode
-        or policy.capture_policy != config.provider.capture_policy
         or set(policy.members) != set(config.provider.members)
         or policy.revoked_at
     ):

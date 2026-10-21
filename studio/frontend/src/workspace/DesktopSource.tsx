@@ -147,9 +147,12 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
         const policy = { namespace: current?.scope_id ?? (conversationIdentity || 'selected-source'),
           name: connection.name, members, capture_mode: captureMode, keep_accepted: true,
           ...(capturePolicy ? { capture_policy: capturePolicy } : {}) };
-        const existing = current?.custody ? await client.request<{ version: number; name: string; members: string[] }>('GET', route) : undefined;
+        const existing = current?.custody ? await client.request<{ version: number; name: string; members: string[];
+          capture_mode: 'messages' | 'complete'; capture_policy?: CapturePolicy | null }>('GET', route) : undefined;
         if (!existing || existing.name !== policy.name || JSON.stringify([...existing.members].sort()) !== JSON.stringify([...members].sort())) {
-          await client.request('PUT', route, { body: { ...policy, expected_version: existing?.version ?? 0 } });
+          await client.request('PUT', route, { body: { ...policy,
+            ...(existing ? { capture_mode: existing.capture_mode, capture_policy: existing.capture_policy ?? null } : {}),
+            expected_version: existing?.version ?? 0 } });
         }
         if (!current?.custody) await client.request('PUT', `/v1/capture-sources/${encodeURIComponent(custody.source_id)}/grants/${encodeURIComponent(custody.grant_id)}`, { body: { device_key_id: issuedKeyId } });
       }

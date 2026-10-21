@@ -16,6 +16,7 @@ TESTS = (
     "service_tests/test_author_withdrawal_upgrade.py",
     "service_tests/test_company_sign_in_upgrade.py",
     "service_tests/test_journal_folding_upgrade.py",
+    "service_tests/test_capture_policy_upgrade.py",
     "service_tests/test_installed_upgrade_inventory.py",
 )
 

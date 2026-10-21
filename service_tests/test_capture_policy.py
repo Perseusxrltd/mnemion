@@ -199,7 +199,8 @@ def test_recovery_ledger_cannot_drop_or_change_an_approved_capture_policy(env, c
     for replacement in (None, policy(include=["*.jsonl"]).model_dump(mode="json")):
         changed = deepcopy(ledger)
         changed["sources"][0]["capture_policy"] = replacement
-        capture_recovery.validate(changed, tenants)
+        with pytest.raises(ValueError, match="immutable source binding"):
+            capture_recovery.validate(changed, tenants)
         with pytest.raises(ValueError, match="immutable source binding"):
             with env.db.transaction(env.owner) as connection:
                 capture_recovery.restore(connection, changed)

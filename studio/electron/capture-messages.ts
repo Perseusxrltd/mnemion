@@ -149,7 +149,7 @@ export function readCaptureRestored(value: unknown): CaptureRestored {
 }
 
 export const captureMessages: Record<CaptureReason, string> = {
-  capture_authorization_revoked: 'This capture authorization was revoked. Local evidence is retained; no new evidence is accepted under it.',
+  capture_authorization_revoked: 'This capture authorization is no longer active. Local evidence is retained; no new evidence is accepted under it.',
   capture_binding_mismatch: 'The saved inbox does not match this source authorization. Its data was retained for recovery.',
   capture_binding_invalid: 'Review the workspace, source and device capture authorization.',
   capture_delivery_unavailable: 'The workspace could not confirm delivery. Locally accepted memories remain queued for a later attempt.',

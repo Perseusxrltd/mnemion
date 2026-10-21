@@ -39,6 +39,28 @@ class CaptureSourceInput(Command):
 
 class CaptureGrantInput(Command):
     device_key_id: UUID
+    previous_grant_id: UUID | None = None
+    confirm_previous_policy: bool = Field(default=False, strict=True)
+
+    @model_validator(mode="after")
+    def reviewed_recovery(self):
+        if bool(self.previous_grant_id) != self.confirm_previous_policy:
+            raise ValueError("Explicitly approve the previous device's original capture policy")
+        return self
+
+
+class CapturePolicyChange(Command):
+    expected_version: int = Field(ge=1, strict=True)
+    review_token: Digest
+    capture_policy: CapturePolicy
+    previous_grants: Literal["retain", "revoke"]
+    confirm: bool = Field(strict=True)
+
+    @model_validator(mode="after")
+    def consent(self):
+        if not self.confirm or self.capture_policy.retention != "until_deleted":
+            raise ValueError("Approve retained capture and the treatment of existing device grants")
+        return self
 
 
 class CaptureEvent(Command):
@@ -68,6 +90,7 @@ class CapturePageInput(Command):
 
 class CaptureSource(ResponseModel):
     version: int
+    policy_version: int = 1
     source_id: str
     connector_id: str
     space_id: str
@@ -91,9 +114,54 @@ class CaptureGrant(ResponseModel):
     namespace: str
     capture_mode: Literal["messages", "complete"]
     capture_policy: CapturePolicy | None = None
+    policy_version: int = 1
     revoked_at: str | None
     source_revoked_at: str | None
     active: bool
+
+
+class CaptureSourcePage(ResponseModel):
+    items: list[CaptureSource]
+    next_cursor: str | None
+
+
+class CaptureDeviceSummary(ResponseModel):
+    grant_id: str
+    device_key_id: str
+    device_name: str
+    policy_version: int
+    created_at: str
+    active: bool
+
+
+class CapturePolicyReview(ResponseModel):
+    source: CaptureSource
+    review_token: str
+    unrevoked_grants: int
+    active_grants: int
+    devices: list[CaptureDeviceSummary]
+    next_cursor: str | None
+
+
+class CapturePolicyVersion(ResponseModel):
+    source_id: str
+    policy_version: int
+    capture_mode: Literal["messages", "complete"]
+    capture_policy: CapturePolicy | None
+    created_at: str
+    transition_id: str | None = None
+    previous_grants: Literal["retain", "revoke"] | None = None
+    affected_grants: int | None = None
+
+
+class CapturePolicyVersionPage(ResponseModel):
+    items: list[CapturePolicyVersion]
+    next_cursor: int | None
+
+
+class CapturePolicyChanged(ResponseModel):
+    source: CaptureSource
+    transition: CapturePolicyVersion
 
 
 class CaptureEventReceipt(ResponseModel):

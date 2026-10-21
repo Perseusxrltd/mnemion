@@ -7,11 +7,12 @@ from uuid import UUID
 from psycopg.types.json import Jsonb
 
 from ..capture_policy import CapturePolicy
+from . import capture_policy_recovery
 
 
 def capture(conn):
     return {
-        "version": 1,
+        "version": 2,
         "sources": conn.execute(
             "SELECT * FROM mnemion.capture_sources ORDER BY tenant_id,source_id"
         ).fetchall(),
@@ -21,14 +22,19 @@ def capture(conn):
         "denials": conn.execute(
             "SELECT * FROM mnemion.capture_denials ORDER BY tenant_id,source_id,lineage_id"
         ).fetchall(),
+        "policies": conn.execute(
+            "SELECT * FROM mnemion.capture_policy_versions ORDER BY tenant_id,source_id,policy_version"
+        ).fetchall(),
     }
 
 
 def validate(state, tenants):
     if (
         not isinstance(state, dict)
-        or state.get("version") != 1
-        or set(state) != {"version", "sources", "grants", "denials"}
+        or state.get("version") not in {1, 2}
+        or set(state)
+        != {"version", "sources", "grants", "denials"}
+        | ({"policies"} if state.get("version") == 2 else set())
     ):
         raise ValueError("Invalid capture custody recovery ledger")
     known_sources, known_grants, known_spaces, known_denials = set(), set(), set(), set()
@@ -106,6 +112,7 @@ def validate(state, tenants):
                 if denial in known_denials:
                     raise ValueError("Duplicate capture custody denial")
                 known_denials.add(denial)
+    capture_policy_recovery.validate(state)
 
 
 def restore(conn, state):
@@ -115,6 +122,7 @@ def restore(conn, state):
                 "Obtain a current custody-aware recovery ledger before restoring capture sources"
             )
         return
+    capture_policy_recovery.validate(state)
     # A device absent from the current ledger cannot regain an older grant.
     conn.execute("UPDATE mnemion.capture_grants SET revoked_at=coalesce(revoked_at,now())")
     conn.execute("UPDATE mnemion.capture_sources SET revoked_at=coalesce(revoked_at,now())")
@@ -131,9 +139,9 @@ def restore(conn, state):
         if previous and (
             any(
                 str(previous[field]) != str(row[field])
-                for field in ("connector_id", "space_id", "namespace", "capture_mode")
+                for field in ("connector_id", "space_id", "namespace")
             )
-            or previous["capture_policy"] != row.get("capture_policy")
+            or previous["policy_version"] > row.get("policy_version", 1)
         ):
             raise ValueError("The custody ledger changed an immutable source binding")
         if (
@@ -149,9 +157,10 @@ def restore(conn, state):
             (row["tenant_id"], row["space_id"], row["name"]),
         )
         conn.execute(
-            """INSERT INTO mnemion.capture_sources(tenant_id,source_id,connector_id,space_id,namespace,name,members,capture_mode,revoked_at,version,capture_policy)
-               VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(tenant_id,source_id) DO UPDATE
-               SET members=excluded.members,name=excluded.name,revoked_at=excluded.revoked_at,version=excluded.version""",
+            """INSERT INTO mnemion.capture_sources(tenant_id,source_id,connector_id,space_id,namespace,name,members,capture_mode,revoked_at,version,capture_policy,policy_version)
+               VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(tenant_id,source_id) DO UPDATE
+               SET members=excluded.members,name=excluded.name,revoked_at=excluded.revoked_at,version=excluded.version,
+                   capture_mode=excluded.capture_mode,capture_policy=excluded.capture_policy,policy_version=excluded.policy_version""",
             tuple(
                 row[key]
                 for key in (
@@ -167,20 +176,25 @@ def restore(conn, state):
                     "version",
                 )
             )
-            + (Jsonb(row["capture_policy"]) if row.get("capture_policy") is not None else None,),
+            + (
+                Jsonb(row["capture_policy"]) if row.get("capture_policy") is not None else None,
+                row.get("policy_version", 1),
+            ),
         )
+    capture_policy_recovery.restore(conn, state)
     for row in state["grants"]:
         previous = conn.execute(
             "SELECT * FROM mnemion.capture_grants WHERE tenant_id=%s AND grant_id=%s",
             (row["tenant_id"], row["grant_id"]),
         ).fetchone()
-        if previous and any(
-            str(previous[field]) != str(row[field]) for field in ("source_id", "device_key_id")
+        if previous and (
+            any(str(previous[field]) != str(row[field]) for field in ("source_id", "device_key_id"))
+            or previous["policy_version"] != row.get("policy_version", 1)
         ):
             raise ValueError("The custody ledger changed an immutable device binding")
         conn.execute(
-            """INSERT INTO mnemion.capture_grants(tenant_id,grant_id,source_id,device_key_id,revoked_at)
-               SELECT %s,%s,%s,%s,%s WHERE EXISTS(SELECT FROM mnemion.capture_sources WHERE tenant_id=%s AND source_id=%s)
+            """INSERT INTO mnemion.capture_grants(tenant_id,grant_id,source_id,device_key_id,revoked_at,policy_version)
+               SELECT %s,%s,%s,%s,%s,%s WHERE EXISTS(SELECT FROM mnemion.capture_sources WHERE tenant_id=%s AND source_id=%s)
                  AND EXISTS(SELECT FROM mnemion.api_keys WHERE tenant_id=%s AND id=%s)
                ON CONFLICT(tenant_id,grant_id) DO UPDATE SET revoked_at=excluded.revoked_at""",
             (
@@ -189,6 +203,7 @@ def restore(conn, state):
                 row["source_id"],
                 row["device_key_id"],
                 row["revoked_at"],
+                row.get("policy_version", 1),
                 row["tenant_id"],
                 row["source_id"],
                 row["tenant_id"],

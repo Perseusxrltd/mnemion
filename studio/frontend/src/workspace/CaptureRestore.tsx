@@ -46,7 +46,11 @@ export default function CaptureRestore({ client, connection, endpoint, existing,
       const issued = await client.createKey(connection.principal_id, 'Recovered Studio source ' + id.slice(0, 8));
       createdKey = issued.id;
       const grant = crypto.randomUUID();
-      await client.request('PUT', `/v1/capture-sources/${archive.binding.source_id}/grants/${grant}`, { body: { device_key_id: issued.id } });
+      const health = await client.request<{ capture_policy_versions?: string }>('GET', '/health/live');
+      await client.request('PUT', `/v1/capture-sources/${archive.binding.source_id}/grants/${grant}`, { body: {
+        device_key_id: issued.id,
+        ...(health.capture_policy_versions === 'v1' ? { previous_grant_id: archive.binding.grant_id, confirm_previous_policy: true } : {}),
+      } });
       const result = await native!.sourceRestore!({ expected_revision: revision, file, recovery_key: key,
         archive_sha256: archive.archive_sha256, preview_hash: ready.configuration_hash, confirm: true,
         credential: issued.api_key, retirement_credential: session.sessionToken,

@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download, Plus, RefreshCw } from "lucide-react";
 import { MnemionClient, MnemionError, conversationCapture, supportsLiveConversations, type Connector, type ConnectorProposal, type SourceInventory } from "@mnemion/client";
 import { DesktopSourceCard } from "./DesktopSource";
+import CaptureAdministration from './CaptureAdministration';
 
 const providers = [
   ["filesystem", "Obsidian / folder"], ["git", "Git repository"],
@@ -129,6 +130,8 @@ export function Connections({ client, administrator, endpoint, selectSpace, serv
         {!scopes.data?.items.length && <p className="ws-helper">Run the adapter to discover sources and verify access.</p>}
         {scopes.data?.next_cursor && <button className="ws-button" onClick={() => setCursor(scopes.data!.next_cursor!)}>Next sources</button>}{cursor && <button className="ws-button" onClick={() => setCursor(undefined)}>First sources</button>}
       </section>
+      {administrator && connection.provider === 'conversations' && connection.access_mode === 'published' &&
+        <CaptureAdministration key={connection.id} client={client} connection={connection} endpoint={endpoint} />}
       {window.mnemion?.sourceStatus && ["filesystem", "conversations", "slack", "gdrive"].includes(connection.provider) &&
         <DesktopSourceCard key={connection.id} client={client} connection={connection} endpoint={endpoint} administrator={administrator}
           members={[...new Set(bindings.data?.items.map(item => item.external_id) ?? [])]} />}

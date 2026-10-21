@@ -39,6 +39,7 @@ class LiveStatus(ResponseModel):
     service_version: str | None = None
     connector_partial_inventory: bool = False
     durable_capture: Literal["v1"] | None = None
+    capture_policy_versions: Literal["v1"] | None = None
 
 
 class ReadyStatus(ResponseModel):

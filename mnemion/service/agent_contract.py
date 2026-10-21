@@ -16,9 +16,13 @@ _OPERATIONS = """
 health.live GET /health/live
 health.ready GET /health/ready
 health.sources GET /v1/health/sources
+capture.source.list GET /v1/connectors/{connector_id}/capture-sources
 capture.source.configure PUT /v1/connectors/{connector_id}/capture-sources/{source_id}
 capture.source.status GET /v1/connectors/{connector_id}/capture-sources/{source_id}
 capture.source.revoke DELETE /v1/connectors/{connector_id}/capture-sources/{source_id}
+capture.policy.review GET /v1/connectors/{connector_id}/capture-sources/{source_id}/policy-review
+capture.policy.versions GET /v1/connectors/{connector_id}/capture-sources/{source_id}/policies
+capture.policy.change PUT /v1/connectors/{connector_id}/capture-sources/{source_id}/policy-transitions/{transition_id}
 capture.grant.configure PUT /v1/capture-sources/{source_id}/grants/{grant_id}
 capture.grant.status GET /v1/capture-grants/{grant_id}
 capture.index.progress GET /v1/capture-grants/{grant_id}/index-progress

@@ -16,7 +16,7 @@ of Studio and its [private desktop controls](desktop-operator.md).
 
 Use the [administrator capture setup](durable-capture.md#agent-and-administrator-setup)
 to create a new published `conversations` connector, approve its audience and
-immutable source policy, and grant its dedicated non-administrator application
+initial policy, and grant its dedicated non-administrator application
 key custody. The runner verifies the exact tenant, principal, connector, source,
 namespace, policy, audience and device grant. Initial enrollment refuses existing
 mirror scopes or previous capture history; use recovery for an existing inbox.
@@ -102,7 +102,8 @@ that file, including both key references, state directories and the producer
 path. Remote service URLs require HTTPS; HTTP is allowed only on loopback.
 Configuration input is limited to 1 MB.
 
-An explicit policy must match the server's full policy. Its include/exclude and
+An explicit policy must match the full policy returned by the device grant,
+which can differ from the source's current default. Its include/exclude and
 file/record limits supply the provider settings. Conversation selects supported
 messages; Detailed uses `complete`; Selected permits either mode with relative
 JSONL file patterns. Session filters select filenames, not records within a
@@ -112,12 +113,35 @@ files excluded. Automatic expiry, field redaction, attachment fetching and
 hidden reasoning remain unavailable.
 
 Older mode-only `complete` or `messages` configurations can explicitly enroll
-with `capture` only against a matching mode-only approved source. They must keep
+with `capture` only against a matching mode-only approved grant. They must keep
 the default filename and file/record limits. Custom selection requires an
 explicit policy; adding one to an existing inbox is a reviewed migration.
 Changing enrolled identity, source path, selection, audience or credential
 references also requires explicit recovery or re-enrollment. Runtime resource
 limits and polling settings do not change the approved capture policy.
+
+## Administrator policy changes (unreleased)
+
+With `capture_policy_versions: "v1"`, administrators can manage source defaults,
+policy history and device authorizations from Studio or the hosted workspace's
+Connections page. The equivalent operations are `capture.source.list`,
+`capture.policy.review`, `capture.policy.versions` and `capture.policy.change`;
+use `mnemion_read`/`mnemion_write` with the standard parameters/body envelope, or
+the matching HTTP routes in the [administrator procedure](durable-capture.md#manage-source-defaults-and-device-authorizations-unreleased).
+These server controls are separate from `--capture-control` and do not read or
+change this computer's files.
+
+A reviewed default change applies to new grants. Existing grants are explicitly
+retained on their original policies, including permission for new capture, or
+all revoked. Keep the local configuration bound to its grant; copying the new
+default into an existing inbox is not a migration. Revocation stops server
+delivery and, when observed locally, future intake; it preserves offline inbox
+evidence. The [policy checkpoint](../research/2026-10-21-durable-capture-implementation.md#capture-policy-versions-source-delta)
+records the separate source, server recovery and browser administration checks.
+They do not complete existing-device selection/organization migration or the
+six packaged journeys. Known inactive authorizations remain
+observable even after their retired source/connector metadata is hidden, so
+that denial stops later intake without exposing the hidden metadata.
 
 ## Use the local control interface
 
@@ -346,9 +370,16 @@ migrate selection or create a new origin to bypass forgetting.
 1. Inspect the archive and retain its authenticated `archive_sha256`. Keep the
    archive and recovery key available through any interrupted recovery.
 2. Have the administrator approve a replacement device key/grant for the same
-   source. Create a new local device ID/configuration and unused inbox destination
-   with that grant. Generate a **new** inbox key; reusing the archive's key is
-   refused. Supply the replacement service credential by protected reference.
+   source. On a policy-version-aware server, explicitly supply the archive's
+   original `previous_grant_id` and `confirm_previous_policy: true` to
+   `capture.grant.configure`, alongside the new `device_key_id`. This preserves
+   the exact old policy even after a default change; see
+   [original-policy approval](durable-capture.md#approve-original-policy-recovery).
+   Read the returned grant before configuring recovery. Create a new local
+   device ID/configuration and unused inbox destination with that grant and the
+   archive's unchanged selection. Generate a **new** inbox key; reusing the
+   archive's key is refused. Supply the replacement service credential by
+   protected reference.
 3. Select the copied producer folder and preview its approved policy. Present
    captured prefixes must match; missing historical files are permitted but do
    not establish complete history. Keep the approved audience unchanged.

@@ -99,8 +99,11 @@ RAM, files-per-scan, pending-content and database limits remain separate.
 
 For an explicit policy, accepted fragments carry its `capture_policy_revision`
 fingerprint. The local inbox and service check the approved fingerprint, content
-mode and relative path; the collector enforces the file/record limits. Retained
-policy changes require reviewed migration. Older `complete`/`messages`
+mode and relative path; the collector enforces the file/record limits. Changing
+an existing inbox's selection still requires reviewed migration. The additional
+unreleased [administrator controls](#manage-source-defaults-and-device-authorizations-unreleased)
+can change the default for new grants while preserving each existing grant's
+approved policy or explicitly revoking it. Older `complete`/`messages`
 configurations without `capture_policy` keep their mode-only behavior and existing
 fragments; an old retained inbox is not silently given a new policy or revision.
 
@@ -495,6 +498,14 @@ verify the archive, preview the selected folder and approve previous-device
 retirement, then select **Recover as a paused source**. The app creates the
 replacement dedicated key and approved grant for this operation.
 
+With the additional policy-version capability, recovery explicitly requests the
+archive's original policy using its previous grant, even if the source default
+has since changed. See [original-policy authorization](#approve-original-policy-recovery).
+The [new policy checkpoint](../research/2026-10-21-durable-capture-implementation.md#capture-policy-versions-source-delta)
+records separate service/recovery checks for this authorization. The earlier
+Linux source journey above predates this batch; all six packaged recovery
+journeys remain open.
+
 Select and preview the replacement conversation folder. The archive contains no
 producer files. If files corresponding to saved checkpoints are present, their
 captured prefixes must verify before retirement. Missing files do not prevent
@@ -527,6 +538,128 @@ installed source must use ordinary source removal instead. The
 [agent guide](desktop-operator.md#recover-a-capture-device-unreleased) describes
 the inputs and interrupted-operation controls.
 
+## Manage source defaults and device authorizations (unreleased)
+
+This additional development batch requires `capture_policy_versions: "v1"` in
+`GET /health/live`. In **Connections**, an administrator can open a published
+conversation connection's **Retained conversation capture** panel from Studio
+or the hosted workspace. These are shared server controls: the page does not
+read producer files, change local settings, decrypt inboxes or invoke a model.
+
+Each device grant binds an immutable `policy_version`. The source's current
+policy is the default for newly created grants; it does not replace existing
+approvals. **Device authorizations** separates unrevoked grants from those that
+can currently authenticate and shows each grant's approved version. These are
+authorization observations, not counts of online computers or pending messages.
+Source, device and policy-history lists are paginated, at most 100 per page.
+
+1. Select the retained source and review **Device authorizations** and
+   **Approved policy history**, including earlier mode-only approvals.
+2. Open **Change the policy for new device authorizations**. Choose the preset,
+   relative JSONL path patterns and read limits. Each new local enrollment still
+   needs its own folder preview and confirmation.
+3. Explicitly choose how to treat existing authorizations: **Keep their previously
+   approved policies**, which also permits future capture under those rules, or
+   **Revoke every existing authorization**, covering all unrevoked grants for this
+   source, including keys that cannot currently authenticate.
+4. Select **Review policy change**. The app obtains a fresh source version and
+   review token covering the whole unrevoked-grant set, not only the visible page.
+   Review the effect, confirm the checkbox and select **Approve policy change**.
+   Changed settings or device permissions require a fresh review.
+
+The transition preserves the source, custody space, mapped audience, accepted
+memories and deletion fences. It does not rewrite queued content. Revocation
+stops server delivery; a runner stops further intake when it observes that
+revocation. Offline inbox evidence remains available for explicitly approved
+recovery. To revoke one authorization independently, use its **Revoke** action
+and confirmation; this does not delete server memories or erase the local inbox.
+
+### Equivalent MCP and HTTP steps
+
+Discover the current schemas with `mnemion_operations` and `mnemion_operation`.
+Use `mnemion_read` for `capture.source.list`, `capture.policy.review` and
+`capture.policy.versions`. Supply connector/source IDs and any `after`/`limit`
+query values in `request.parameters`. Source and device cursors are UUIDs;
+policy-history cursors are policy-version integers. Routes are listed in
+[administrator setup](#agent-and-administrator-setup).
+
+Use `review.source.version` as `expected_version`, rather than its
+`policy_version`, and preserve the returned `review_token`. Choose a new
+`transition_id` UUID for this reviewed change. The following is a template for
+`mnemion_write`; replace the IDs, version, review token and selection with the
+freshly reviewed values:
+
+```json
+{
+  "operation": "capture.policy.change",
+  "request": {
+    "parameters": {
+      "connector_id": "CONNECTOR_UUID",
+      "source_id": "SOURCE_UUID",
+      "transition_id": "NEW_TRANSITION_UUID"
+    },
+    "body": {
+      "expected_version": 1,
+      "review_token": "REPLACE_WITH_REVIEW_TOKEN",
+      "capture_policy": {
+        "format": "mnemion-capture-policy-v1",
+        "preset": "selected",
+        "capture_mode": "messages",
+        "include": ["team/*.jsonl"],
+        "exclude": [],
+        "retention": "until_deleted",
+        "max_file_bytes": 1000000000,
+        "max_record_bytes": 2000000
+      },
+      "previous_grants": "retain",
+      "confirm": true
+    }
+  }
+}
+```
+
+For HTTP, put the IDs in the policy-transition route and send only the inner
+`body` object as JSON. `previous_grants` must explicitly be `retain` or `revoke`;
+`confirm` must be true. A retired source, unchanged policy or stale review is
+refused. Name/audience edits through the ordinary source PUT remain separate.
+
+After an uncertain write, inspect source status and policy history before
+retrying through the [agent gateway](agent-control.md#retry-and-outcome-rules).
+Keep the exact same transition UUID and body for an exact retry. A committed
+transition returns its original receipt without revoking grants created later;
+reusing its UUID with a different request conflicts. The response's source may
+already have a newer default, so inspect the returned transition separately.
+
+### Approve original-policy recovery
+
+When authorizing a replacement for an inspected archive, an administrator can
+request the exact policy of its original grant. Use `capture.grant.configure`
+with the original source ID and a **new** grant ID, or
+`PUT /v1/capture-sources/{source_id}/grants/{grant_id}`, with this body:
+
+```json
+{
+  "device_key_id": "REPLACEMENT_DEVICE_KEY_UUID",
+  "previous_grant_id": "ARCHIVE_ORIGINAL_GRANT_UUID",
+  "confirm_previous_policy": true
+}
+```
+
+Both recovery fields are required together. The previous grant must belong to
+the same source. This expressly reauthorizes its original selection, including
+an older mode-only policy; omitting these fields on a new grant selects the
+current source default. A revoked grant is not reactivated. Read the replacement
+grant's policy and use the unchanged archive policy during local recovery.
+Studio's archive-recovery path requests this original-policy approval when the
+server advertises the capability, under the existing explicit recovery consent.
+
+Authorizing a grant does not restore an archive, resume a device or migrate an
+existing inbox's selection. Fresh local enrollment still refuses a source with
+capture history. Broader selection/organization migration, complete history,
+all six packaged recovery journeys and full L1 acceptance remain open. This
+policy version batch passed its scoped source and browser administration checks;
+it remains unreleased and is not in stable 4.44.
+
 ## Agent and administrator setup
 
 Remote administration uses the server's capture APIs. The desktop runner uses the
@@ -539,7 +672,11 @@ These operations are part of the unreleased implementation:
 
 | Operation | HTTP route |
 | --- | --- |
+| `capture.source.list` | `GET /v1/connectors/{connector_id}/capture-sources` |
 | `capture.source.configure` / `capture.source.status` / `capture.source.revoke` | `PUT` / `GET` / `DELETE /v1/connectors/{connector_id}/capture-sources/{source_id}` |
+| `capture.policy.review` | `GET /v1/connectors/{connector_id}/capture-sources/{source_id}/policy-review` |
+| `capture.policy.versions` | `GET /v1/connectors/{connector_id}/capture-sources/{source_id}/policies` |
+| `capture.policy.change` | `PUT /v1/connectors/{connector_id}/capture-sources/{source_id}/policy-transitions/{transition_id}` |
 | `capture.grant.configure` | `PUT /v1/capture-sources/{source_id}/grants/{grant_id}` |
 | `capture.grant.status` / `capture.grant.revoke` | `GET` / `DELETE /v1/capture-grants/{grant_id}` |
 | `capture.pages.accept` | `POST /v1/capture-grants/{grant_id}/pages` |
@@ -562,12 +699,15 @@ with a stable `source_id`. The initial source PUT body is:
 ```
 
 Use the original approved namespace if it differs from `selected-source`.
-Updating the name or audience uses the current source version from GET. The
-source identity and capture selection remain immutable. Then approve a stable
-`grant_id` through the device-grant PUT with
+Updating the name or audience uses the current source version and default-policy
+fields from GET. The source identity and every approved policy version remain
+immutable; a [reviewed transition](#manage-source-defaults-and-device-authorizations-unreleased)
+can change the default for new grants. Then approve a stable `grant_id` through
+the device-grant PUT with
 `{"device_key_id": "DEDICATED_APPLICATION_KEY_UUID"}`. Only an administrator
 can authorize the source and grant; the source's application key cannot grant
-itself custody or expand its audience.
+itself custody or expand its audience. Match local capture settings to the
+returned grant's policy, which can differ from the source's current default.
 
 Read `source.status` locally, then send `source.configure` with its fresh
 `expected_revision`, the complete [source settings](desktop-sources.md#local-agent-controls)

@@ -184,6 +184,8 @@ def test_previous_schema_upgrade_preserves_keys_grants_and_existing_memory(
                 "capture_pages",
                 "capture_denials",
             }
+        if previous_count < 33:
+            expected_tables.add("capture_policy_versions")
         if previous_count < 20:
             expected_tables |= {
                 "vault_entries",
