@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-21T14:21:12+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-21T14:27:17+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.44.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.44.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -17,7 +17,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | queued | [Run 39615924894](https://github.com/Perseusxrltd/mnemion/actions/runs/39615924894) |
+| ci\.yml | main | in\_progress | [Run 39615924894](https://github.com/Perseusxrltd/mnemion/actions/runs/39615924894) |
 | database-cache\.yml | main | success | [Run 39576347122](https://github.com/Perseusxrltd/mnemion/actions/runs/39576347122) |
 | desktop\.yml | main | queued | [Run 39613577682](https://github.com/Perseusxrltd/mnemion/actions/runs/39613577682) |
 | public-updates\.yml | v4\.44\.0 | success | [Run 39534394111](https://github.com/Perseusxrltd/mnemion/actions/runs/39534394111) |
@@ -28,20 +28,17 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 ## Active jobs
 
-[Run 39615924894](https://github.com/Perseusxrltd/mnemion/actions/runs/39615924894): 0/12 jobs completed; 0 succeeded.
+[Run 39615924894](https://github.com/Perseusxrltd/mnemion/actions/runs/39615924894): 3/12 jobs completed; 3 succeeded.
 
-- lint: in\_progress.
-- studio: queued.
-- Select checks: queued.
-- service \(3\.14\): queued.
-- dependency-audit: queued.
-- service \(3\.12\): queued.
-- legacy: queued.
-- container \(ubuntu-22\.04-arm\): queued.
-- supervision \(macos-15-intel\): queued.
-- service \(3\.13\): queued.
-- supervision \(macos-15\): queued.
-- container \(ubuntu-22\.04\): queued.
+- studio: in\_progress.
+- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- legacy: in\_progress.
+- container \(ubuntu-22\.04-arm\): in\_progress.
+- supervision \(macos-15-intel\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
+- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- supervision \(macos-15\): in\_progress.
+- container \(ubuntu-22\.04\): in\_progress.
 
 [Run 39613577682](https://github.com/Perseusxrltd/mnemion/actions/runs/39613577682): 12/18 jobs completed; 12 succeeded.
 
