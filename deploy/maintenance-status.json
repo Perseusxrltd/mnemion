@@ -30,96 +30,39 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "6b883fbaa117f9d82b20daf401aab5a2b2038a93",
-      "status": "queued",
-      "conclusion": null,
-      "updated_at": "2026-10-21T08:45:52Z",
+      "status": "completed",
+      "conclusion": "failure",
+      "updated_at": "2026-10-21T09:17:54Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39571717128",
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 3,
-        "succeeded": 3,
-        "active": [
-          {
-            "id": 119127265198,
-            "name": "studio",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run npm --prefix studio/electron ci && npm --prefix studio/electron test"
-            ]
-          },
-          {
-            "id": 119127335666,
-            "name": "service (3.14)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run npm --prefix packages/client ci && npm --prefix packages/client test"
-            ]
-          },
-          {
-            "id": 119127335694,
-            "name": "container (ubuntu-22.04-arm)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the actual deployment image with its documentation"
-            ]
-          },
-          {
-            "id": 119127335743,
-            "name": "supervision (macos-15)",
-            "status": "queued",
-            "runner_assigned": null,
-            "steps": []
-          },
-          {
-            "id": 119127335830,
-            "name": "supervision (macos-15-intel)",
-            "status": "queued",
-            "runner_assigned": null,
-            "steps": []
-          },
-          {
-            "id": 119127335850,
-            "name": "legacy",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
-            ]
-          },
-          {
-            "id": 119127335883,
-            "name": "container (ubuntu-22.04)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the actual deployment image with its documentation"
-            ]
-          },
-          {
-            "id": 119127335904,
-            "name": "service (3.12)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 119127335955,
-            "name": "service (3.13)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Matching PostgreSQL recovery tools"
-            ]
-          }
-        ]
+        "completed": 12,
+        "succeeded": 10,
+        "active": []
       },
-      "failed_jobs": []
+      "failed_jobs": [
+        {
+          "name": "service (3.14)",
+          "id": 119127335666,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 19,
+          "steps": [
+            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+          ]
+        },
+        {
+          "name": "service (3.13)",
+          "id": 119127335955,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 19,
+          "steps": [
+            "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+          ]
+        }
+      ]
     },
     {
       "id": 39534394111,
@@ -177,5 +120,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39534391338"
     }
   ],
-  "observed_at": "2026-10-21T08:46:27+00:00"
+  "observed_at": "2026-10-21T09:18:31+00:00"
 }
