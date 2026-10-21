@@ -74,8 +74,8 @@ def deliver(inbox, client, *, maximum_pages=4, maximum_seconds=20):
         value = client.request(
             "GET", base + "/fences", params={"limit": 100, **({"after": cursor} if cursor else {})}
         )
-        inbox.apply_fences(value)
-        if value["next_cursor"] is None:
+        retained = inbox.apply_fences(value)
+        if not retained or value["next_cursor"] is None:
             break
     delivered = 0
     for _ in range(maximum_pages):
@@ -125,6 +125,6 @@ def deliver(inbox, client, *, maximum_pages=4, maximum_seconds=20):
             break
     return {
         "remote_committed_events": delivered,
-        "fence_sweep_pending": inbox.fence_cursor() is not None,
+        "fence_sweep_pending": inbox.fence_cursor() is not None or inbox.fence_history_blocked(),
         **inbox.status(),
     }

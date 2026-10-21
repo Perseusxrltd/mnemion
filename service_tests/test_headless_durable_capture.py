@@ -315,8 +315,14 @@ def test_private_references_and_selection_change_never_reenroll_silently(headles
     budget = config.model_copy(deep=True)
     budget.capture.memory_limit_mib = 512
     budget.capture.pending_limit_mib = 32
+    budget.capture.history_limit_events = 200000
+    budget.capture.database_limit_mib = 1024
     budget.provider.max_files = 100
-    assert device.status(budget)["configuration_matches"]
+    changed = device.status(budget)
+    assert changed["configuration_matches"]
+    assert changed["history_limit_events"] == 200000 and changed["database_limit_mib"] == 1024
+    with device.opened(budget, device.read_record(budget)) as (inbox, _, _):
+        assert inbox.limits.events == 200000 and inbox.limits.database_bytes == 1024**3
     missing = config.service_token.file.with_suffix(".missing")
     config.service_token.file.rename(missing)
     assert device.status(config)["state"] == "ready"

@@ -29,6 +29,7 @@ export default function CaptureStatus({ report }: { report?: CaptureReport }) {
   }, [observed]);
   if (!report) return <p className="ws-helper">Retained capture is selected. Local intake and delivery have not yet been observed.</p>;
   const coverage = report.coverage;
+  const history = report.history;
   return <div className="ws-notice" aria-label="Retained capture status">
     <p><strong>{report.pending_events.toLocaleString()} queued</strong> · {report.stored_events.toLocaleString()} acknowledged by the workspace · {report.forgotten_events.toLocaleString()} forgotten</p>
     <p className="ws-helper">Last scan accepted {report.locally_accepted.toLocaleString()} fragments locally and received {report.remote_committed_events.toLocaleString()} delivery acknowledgements.</p>
@@ -38,6 +39,14 @@ export default function CaptureStatus({ report }: { report?: CaptureReport }) {
     {report.over_limit && <p>New intake is paused at the current capacity limit. Accepted evidence remains eligible for delivery and forgetting.</p>}
     <details>
       <summary style={{ cursor: 'pointer' }}>Capture coverage and history</summary>
+      {history ? <>
+        <p><strong>Local history</strong> · largest counter {Math.max(history.events, history.producer_events, history.fragments, history.denials).toLocaleString()} / {history.event_limit.toLocaleString()} entries</p>
+        <progress aria-label="Local history capacity used" max={history.event_limit} value={Math.min(history.event_limit, Math.max(history.events, history.producer_events, history.fragments, history.denials))} />
+        <p className="ws-helper">{history.events.toLocaleString()} accepted fragments · {history.producer_events.toLocaleString()} source event identities · {history.fragments.toLocaleString()} saved source fragments · {history.denials.toLocaleString()} deletion records. The entry limit applies separately to each counter.</p>
+        <p className="ws-helper">{history.scopes.toLocaleString()} / {history.scope_limit.toLocaleString()} tracked file identities · {history.delivery_pages.toLocaleString()} delivery pages · {mib(history.database_bytes)} / {mib(history.database_limit_bytes)} MiB effective storage limit.</p>
+        <p className="ws-helper">Raise history or storage limits in Source settings and key, then scan again to resume. Deleting held memories remains available above the history limit; their deletion protection is retained.</p>
+        {history.fence_history_blocked && report.reason_code !== 'capture_fence_capacity' && <p>{captureMessages.capture_fence_capacity}</p>}
+      </> : <p className="ws-helper">History usage and capacity are unknown until this source records a new scan.</p>}
       {report.storage && <>
         <p className="ws-helper">Disk cleanup released {mib(report.storage.reclaimed_bytes)} MiB during this scan. {mib(report.storage.reclaimable_bytes)} MiB of unused database pages remain available for reuse or later cleanup.</p>
         {report.storage.reason && <p>{cleanupReasons[report.storage.reason]}</p>}

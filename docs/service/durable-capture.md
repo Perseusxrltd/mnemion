@@ -22,7 +22,7 @@ stable 4.44 availability remain separate.
 
 Use [desktop source setup](desktop-sources.md#set-up-a-source) with a **new
 conversation connection**, its own non-administrator application and an explicitly
-mapped audience. Existing conversation mirrors keep their existing inventory and
+   mapped audience. Existing conversation mirrors keep their existing inventory and
 removal policy. Changing a mirror into retained capture requires a reviewed
 migration; this guide does not provide that migration.
 
@@ -35,11 +35,11 @@ people or agents, only the dedicated source application can read its copies.
    messages, **Detailed** for messages and exposed session events, or **Selected**
    to choose filename patterns and either content mode. Review the controls below.
 3. As a workspace administrator, select **Keep captured memories when original
-   chat logs rotate or are removed**. Review the audience and the pending content
-   limit. The approved policy is fixed for this inbox: changing its selection,
+   chat logs rotate or are removed**. Review the audience, pending content,
+   local history and encrypted storage limits. The approved policy is fixed for this inbox: changing its selection,
    file/record size rules, identity or dedicated key requires a reviewed migration.
 4. Review **Session filters and capture sizes**, source RAM, maximum files and
-   pending-content limits, then select **Preview capture**. Review its bounded
+   local quotas, then select **Preview capture**. Review its bounded
    sample and unavailable capabilities. Changing these choices requires a new preview.
 5. Leave the application key empty to have Studio create a dedicated key, or
    supply the existing dedicated key **and its key ID**. The key ID binds the
@@ -151,6 +151,7 @@ in `activity.report.capture`.
 | `delivery_complete` | The observed pending queue and current forgetting sweep finished without a delivery error. An empty queue alone does not prove the sweep finished. |
 | `database_bytes`, `device_database_bytes`, `device_pending_bytes`, `over_limit` | Local storage observations and whether the inbox exceeds an admission limit. |
 | `coverage` | Encrypted prefix accounting, history uncertainty, queue/contact observations and saved source index observations, described below. |
+| `history` | Optional retained-record counts, effective admission limits and deletion-history pause. Missing or null means unobserved; see [history usage](#read-history-usage-and-change-local-quotas-unreleased). |
 | `storage` | Optional free-page cleanup observation, separate from intake and delivery success. Missing or null means unobserved, including older saved reports; see [database cleanup](#reclaim-unused-database-pages-unreleased). |
 
 During [bounded backfill](#continue-a-bounded-backfill-unreleased), capture can
@@ -304,10 +305,10 @@ generation and timestamps. L2/L3 consolidation progress remains unavailable.
 | --- | --- |
 | Pending selected content per source | Default 256 MiB; configurable from 1 to 1,024 MiB |
 | Pending selected content across this device's saved sources | 1 GiB |
-| Inbox database admission per source | 512 MiB |
+| Inbox database admission per source | `database_limit_mib`: default 512 MiB; configurable from 64 to 2,048 MiB |
 | Aggregate inbox database admission on this device | 2 GiB |
 | Free disk required for new intake | At least 512 MiB, plus room for the incoming transaction |
-| Retained event references per inbox | 100,000; producer tracking is also bounded |
+| Entries in each local history counter | `history_limit_events`: default 100,000; configurable from 1,000 to 500,000 |
 | Producer scopes per inbox | 10,000 |
 | Source RAM | Default 256 MiB; configurable from 128 to 2,048 MiB |
 
@@ -317,13 +318,64 @@ limits. Database admission counts SQLite pages. Bounded delivery bookkeeping can
 use reserve above the database limit so reconciliation and forgetting can still
 finish; this is not extra allowance for new capture.
 
-At capacity, new intake stops and already accepted evidence stays available.
-Lowering a limit does not trim the queue or silently discard events. Delivery
-and forgetting remain available, subject to usable disk space and current
-authorization. Free storage or let the backlog deliver, then check status again.
+At admission capacity, new intake stops and already accepted evidence stays available.
+Lowering a limit does not trim the queue or silently discard events. The new
+deletion-history handling below preserves authenticated forgetting of held data
+above the event limit. Delivery and cleanup remain subject to usable disk space
+and current authorization; delivering the queue does not erase its history.
 The [desktop resource limits](desktop-sources.md#capture-and-resources), including
 the sampled RAM limit and process deadline, also apply. Capture does not need a
 local model; server indexing follows the workspace's model policy.
+
+### Read history usage and change local quotas (unreleased)
+
+In **Source settings and key**, set **Maximum entries per history counter** and
+**Maximum encrypted storage for this source (MiB)**. These are strict integer
+fields `custody.history_limit_events` and `custody.database_limit_mib` in native
+settings, or the same fields under `capture` in the [headless configuration](headless-capture.md#write-the-configuration).
+They also participate in the preview fingerprint. Re-preview explicit-policy
+settings before saving. Changing only these quotas preserves the source, grant,
+inbox key and approved capture policy; it does not migrate existing evidence.
+
+Expand **Capture coverage and history**, or read
+`activity.report.capture.history` (`mnemion-capture-history-v1`):
+
+| Field | Meaning |
+| --- | --- |
+| `events` | All locally accepted event records: pending, stored and forgotten. |
+| `producer_events`, `fragments` | Retained producer-event identities and saved producer-fragment references. These are separate counters, not message totals. |
+| `denials` | Exact retained deletion records, including applicable fences for lineages absent from this inbox. |
+| `event_limit` | Admission allowance applied separately to `events`, `producer_events`, `fragments` and `denials`, not their sum. |
+| `scopes`, `scope_limit` | Tracked producer-file identities and the unchanged 10,000-scope limit. |
+| `delivery_pages` | Retained delivery-page records. This observation does not introduce a separate page quota. |
+| `database_bytes`, `database_limit_bytes` | Actual SQLite page bytes and this observation's effective database allowance, which aggregate device usage can reduce below the configured per-source value. |
+| `over_limit` | Whether one of the four entry counters, scopes or database bytes exceeds its corresponding limit. Equality alone is not over-limit, but the next admission can still be blocked. |
+| `fence_history_blocked` | A persistent intake pause because an authenticated deletion fence could not be retained. This is independent of `over_limit`. |
+
+These are saved scan observations. Older absent/null history stays unknown, and
+a changed quota does not rewrite an earlier report. Source settings show the
+configured limits; the next scan records their effective values.
+
+Authenticated forgetting of a lineage already held locally retains its exact
+denial even above a lowered history limit, including forgotten delivery
+receipts. If a fence for an unheld lineage cannot fit, the same fence page still
+commits known held-data purges, leaves its cursor unadvanced and persists an
+encrypted intake pause. Already accepted delivery is still attempted; history
+is never deleted to make space. `capture_fence_capacity` needs attention and is
+not a healthy five-second backfill condition.
+
+Raise the history allowance enough to retain the outstanding fences, then scan
+again. The pause clears only at the successful end of an authenticated fence
+sweep, not merely when settings change or one page succeeds. Intake runs before
+that sweep, so another scan can be needed after it clears. Explicit **Pause**
+remains separate and stops both intake and delivery.
+
+The [focused source, controller and migration checks](../research/2026-10-21-durable-capture-implementation.md#deletion-fences-and-history-limits-source-delta)
+passed after four reproduced failures, including real HTTP delivery while
+fence history is full and preservation across device-key recovery. Finite
+history, scope, delivery-page and archive
+bounds, coordination across independent devices and all packaged/L1 acceptance
+remain open.
 
 ### Continue a bounded backfill (unreleased)
 
@@ -435,8 +487,9 @@ Agents read `activity.report.capture.storage`, format
 
 The final pass can report deferred or failed cleanup even after some bytes were
 reclaimed. Cleanup status does not acknowledge a delivery or establish index
-readiness. It does not reduce the **100,000 retained-reference** or **10,000
-producer-scope** counts, or solve the remaining bounded-history requirement.
+readiness. It does not reduce retained history counters (default limit
+**100,000 each**) or **10,000 producer-scope** counts, or solve the remaining
+bounded-history requirement.
 The [focused source, controller and migration checks](../research/2026-10-21-durable-capture-implementation.md#free-page-reclamation-source-delta)
 passed; all installed-platform, release and full L1 acceptance remain open.
 
@@ -819,7 +872,9 @@ and the dedicated credential through private stdin. Add these fields to the
     "source_id": "APPROVED_SOURCE_UUID",
     "grant_id": "APPROVED_GRANT_UUID",
     "keep_accepted": true,
-    "pending_limit_mib": 256
+    "pending_limit_mib": 256,
+    "history_limit_events": 100000,
+    "database_limit_mib": 512
   }
 }
 ```

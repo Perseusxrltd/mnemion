@@ -34,6 +34,8 @@ class PreviewSelection(Command):
     memory_limit_mib: int = Field(default=256, ge=128, le=2048, strict=True)
     max_files: int = Field(default=10000, ge=1, le=100000, strict=True)
     pending_limit_mib: int = Field(default=256, ge=1, le=1024, strict=True)
+    history_limit_events: int = Field(default=100000, ge=1000, le=500000, strict=True)
+    database_limit_mib: int = Field(default=512, ge=64, le=2048, strict=True)
 
     @model_validator(mode="after")
     def valid(self):
@@ -98,6 +100,8 @@ def selection_for(source):
         memory_limit_mib=source.memory_limit_mib,
         max_files=source.max_files,
         pending_limit_mib=source.custody.pending_limit_mib if source.custody else 256,
+        history_limit_events=source.custody.history_limit_events if source.custody else 100000,
+        database_limit_mib=source.custody.database_limit_mib if source.custody else 512,
     )
 
 

@@ -185,6 +185,9 @@ def _audit_values(inbox, cancelled=None):
             cursor = _decoded(inbox, encrypted, name)
             if cursor is not None and (not isinstance(cursor, str) or not HASH.fullmatch(cursor)):
                 raise CaptureArchiveError("The archived deletion position is invalid.")
+        elif name == "fence_blocked":
+            if type(_decoded(inbox, encrypted, name)) is not bool:
+                raise CaptureArchiveError("The archived deletion history state is invalid.")
         elif name == "coverage-schedule":
             CaptureSchedule.model_validate(_decoded(inbox, encrypted, "observation:" + name))
         elif name == "coverage-summary":

@@ -37,6 +37,8 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
   const [captureMode, setCaptureMode] = useState<'complete' | 'messages'>('complete');
   const [keepAccepted, setKeepAccepted] = useState(false);
   const [pendingLimit, setPendingLimit] = useState(256);
+  const [historyLimit, setHistoryLimit] = useState(100000);
+  const [databaseLimit, setDatabaseLimit] = useState(512);
   const [deviceKeyId, setDeviceKeyId] = useState('');
   const [conversationIdentity, setConversationIdentity] = useState('');
   const [key, setKey] = useState('');
@@ -70,6 +72,7 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
     setMaxFileBytes(current?.capture_policy?.max_file_bytes ?? 1_000_000_000); setMaxRecordBytes(current?.capture_policy?.max_record_bytes ?? 2_000_000);
     setPreviewState(undefined);
     setKeepAccepted(!!current?.custody); setPendingLimit(current?.custody?.pending_limit_mib ?? 256); setDeviceKeyId('');
+    setHistoryLimit(current?.custody?.history_limit_events ?? 100000); setDatabaseLimit(current?.custody?.database_limit_mib ?? 512);
     setConversationIdentity(current?.scope_id ?? '');
     setKey(''); setProviderKey(''); setPublication(false); setRevision(query.data?.revision);
     setTeam(current?.slack?.team_id ?? ''); setChannels(current?.slack?.channels.join('\n') ?? '');
@@ -83,7 +86,8 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
     max_file_bytes: maxFileBytes, max_record_bytes: maxRecordBytes,
   } : undefined;
   const previewSelection: SourcePreviewSelection = { path, capture_mode: captureMode, capture_policy: capturePolicy,
-    keep_accepted: keepAccepted, memory_limit_mib: memory, max_files: files, pending_limit_mib: keepAccepted ? pendingLimit : 256 };
+    keep_accepted: keepAccepted, memory_limit_mib: memory, max_files: files, pending_limit_mib: keepAccepted ? pendingLimit : 256,
+    history_limit_events: keepAccepted ? historyLimit : 100000, database_limit_mib: keepAccepted ? databaseLimit : 512 };
   const previewConfiguration = JSON.stringify(previewSelection);
   const capturePreview = previewState?.configuration === previewConfiguration ? previewState.result : undefined;
   async function previewCapture() {
@@ -141,7 +145,8 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
         const issued = await client.createKey(connection.principal_id, 'Studio source ' + id.slice(0, 8));
         createdKey = issued.id; credential = issued.api_key; issuedKeyId = issued.id;
       }
-      const custody = keepAccepted ? { ...(current?.custody ?? { source_id: id, grant_id: crypto.randomUUID(), keep_accepted: true as const }), pending_limit_mib: pendingLimit } : undefined;
+      const custody = keepAccepted ? { ...(current?.custody ?? { source_id: id, grant_id: crypto.randomUUID(), keep_accepted: true as const }),
+        pending_limit_mib: pendingLimit, history_limit_events: historyLimit, database_limit_mib: databaseLimit } : undefined;
       if (custody) {
         const route = `/v1/connectors/${encodeURIComponent(connection.id)}/capture-sources/${encodeURIComponent(custody.source_id)}`;
         const policy = { namespace: current?.scope_id ?? (conversationIdentity || 'selected-source'),
@@ -247,6 +252,9 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
           <p className="ws-helper">Retained capture stores only the selected mode in a separately encrypted local inbox before delivery. The workspace administrator approves its audience and device grant. Existing source mirrors keep their current policy; changing an established source needs a reviewed migration.</p>
           {keepAccepted && <>
             <label>Maximum pending content for this source (MiB)<input disabled={busy} data-update-safe type="number" min="1" max="1024" step="1" value={pendingLimit} onChange={event => { setPendingLimit(Number(event.target.value)); setDirty(true); }} required /></label>
+            <label>Maximum entries per history counter<input disabled={busy} data-update-safe type="number" min="1000" max="500000" step="1" value={historyLimit} onChange={event => { setHistoryLimit(Number(event.target.value)); setDirty(true); setPublication(false); }} required /></label>
+            <label>Maximum encrypted storage for this source (MiB)<input disabled={busy} data-update-safe type="number" min="64" max="2048" step="1" value={databaseLimit} onChange={event => { setDatabaseLimit(Number(event.target.value)); setDirty(true); setPublication(false); }} required /></label>
+            <p className="ws-helper">History protects against duplicate capture and restores deletion decisions. Its entry limit applies separately to accepted fragments, source event identities, saved source fragments and deletion records. Changing these limits preserves the inbox, its key and delivery history.</p>
             <p className="ws-helper">Across this computer, pending selected content is capped at 1 GiB; encrypted databases have separate size limits. New intake needs at least 512 MiB free disk. Accepted evidence waits without automatic expiry. Reducing a limit stops new intake while existing evidence can still be delivered.</p>
           </>}
           <button className="ws-button" type="button" disabled={busy || !path} onClick={() => void previewCapture()}>Preview capture</button>

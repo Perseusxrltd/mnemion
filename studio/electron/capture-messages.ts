@@ -1,4 +1,4 @@
-import type { CaptureArchiveInfo, CaptureCoverage, CaptureIndexCounts, CaptureIndexProgress, CaptureIndexSweep, CapturePreview, CaptureReason, CaptureRecoveries, CaptureRestored, CaptureStorage } from '../shared/desktop-sources.js'
+import type { CaptureArchiveInfo, CaptureCoverage, CaptureHistory, CaptureIndexCounts, CaptureIndexProgress, CaptureIndexSweep, CapturePreview, CaptureReason, CaptureRecoveries, CaptureRestored, CaptureStorage } from '../shared/desktop-sources.js'
 
 const coverageCounts = ['tracked_scopes', 'checking_scopes', 'failed_scopes', 'missing_scopes',
   'uncertain_scopes', 'unknown_prefix_scopes', 'uncertain_intervals', 'observed_bytes',
@@ -14,6 +14,21 @@ const keys = (value: unknown, names: string[]): value is Record<string, unknown>
   Object.keys(value).length === names.length && Object.keys(value).every(key => names.includes(key))
 const cursor = (value: unknown) => value === null || typeof value === 'string' && /^[a-f0-9]{64}$/.test(value)
 const uuid = (value: unknown) => typeof value === 'string' && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(value)
+export const validCaptureHistory = (value: unknown): value is CaptureHistory => {
+  const counts = ['events', 'producer_events', 'fragments', 'scopes', 'delivery_pages', 'denials',
+    'event_limit', 'scope_limit', 'database_bytes', 'database_limit_bytes']
+  if (!keys(value, ['format', ...counts, 'fence_history_blocked', 'over_limit']) ||
+    value.format !== 'mnemion-capture-history-v1' || counts.some(key => !count(value[key])) ||
+    typeof value.fence_history_blocked !== 'boolean' || typeof value.over_limit !== 'boolean') return false
+  const history = value as CaptureHistory
+  return history.event_limit > 0 && history.scope_limit > 0 && history.database_limit_bytes >= 65536 &&
+    history.over_limit === (Math.max(history.events, history.producer_events, history.fragments, history.denials) > history.event_limit ||
+      history.scopes > history.scope_limit || history.database_bytes > history.database_limit_bytes)
+}
+export const matchingCaptureHistory = (history: unknown, status: Record<string, unknown>) =>
+  validCaptureHistory(history) && history.database_bytes === status.database_bytes &&
+  history.events === (status.pending_events as number) + (status.stored_events as number) + (status.forgotten_events as number) &&
+  (!history.over_limit || status.over_limit === true) && (!history.fence_history_blocked || status.delivery_complete !== true)
 export const validCaptureStorage = (value: unknown): value is CaptureStorage => {
   const counts = ['database_bytes', 'reclaimable_bytes', 'reclaimed_bytes']
   if (!keys(value, ['format', 'state', ...counts, 'reason']) || value.format !== 'mnemion-capture-storage-v1' ||
@@ -118,10 +133,11 @@ export function readCaptureArchive(value: unknown): CaptureArchiveInfo {
 
 function validInboxStatus(status: unknown): status is CaptureArchiveInfo['status'] {
   const counts = ['pending_events', 'pending_bytes', 'database_bytes', 'stored_events', 'forgotten_events', 'unknown_pages']
-  return keys(status, ['format', ...counts, 'over_limit', 'coverage']) && status.format === 'mnemion-selected-inbox-v1' &&
+  return object(status) && keys(status, ['format', ...counts, 'over_limit', 'coverage', ...(Object.hasOwn(status, 'history') ? ['history'] : [])]) && status.format === 'mnemion-selected-inbox-v1' &&
     counts.every(name => count(status[name]) && (status[name] as number) <= 1e12) &&
     (status.database_bytes as number) >= 65536 && (status.database_bytes as number) <= 2 * 1024 ** 3 &&
-    typeof status.over_limit === 'boolean' && validCaptureCoverage(status.coverage)
+    typeof status.over_limit === 'boolean' && validCaptureCoverage(status.coverage) &&
+    (!Object.hasOwn(status, 'history') || matchingCaptureHistory(status.history, status))
 }
 
 export function readCaptureRecoveries(value: unknown): CaptureRecoveries {
@@ -154,6 +170,7 @@ export const captureMessages: Record<CaptureReason, string> = {
   capture_binding_invalid: 'Review the workspace, source and device capture authorization.',
   capture_delivery_unavailable: 'The workspace could not confirm delivery. Locally accepted memories remain queued for a later attempt.',
   capture_capacity_blocked: 'The local inbox reached a configured limit. Accepted memories are retained; new intake waits for capacity.',
+  capture_fence_capacity: 'New capture is paused because deletion protection needs more history space. Raise the history limit in source settings, then scan again. Accepted memories can still be delivered or forgotten.',
   capture_scan_pending: 'A verified part of this source was saved. Backfill will continue from its checkpoint during the next scan; accepted memories can already be delivered.',
   capture_delivery_pending: 'Selected memories are saved locally. Delivery will continue in small batches until the queue and deletion checks are complete.',
   capture_disk_full: 'The device needs more free disk space. Accepted memories are retained.',

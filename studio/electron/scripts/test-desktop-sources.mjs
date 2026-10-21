@@ -394,6 +394,53 @@ const queuedCapture = () => ({ locally_accepted: 1, pending_events: 1, pending_b
   device_pending_bytes: 1024, device_database_bytes: 65536, reason_code: 'capture_delivery_unavailable',
   coverage: coverage() })
 
+const history = () => ({ format: 'mnemion-capture-history-v1', events: 1, producer_events: 2,
+  fragments: 1, scopes: 1, delivery_pages: 0, denials: 2, event_limit: 100000, scope_limit: 10000,
+  database_bytes: 65536, database_limit_bytes: 512 * 1024 ** 2, fence_history_blocked: true, over_limit: false })
+
+test('deletion history pause survives restart and uses the normal retry interval', async t => {
+  const f = await fixture(t)
+  await f.add(retainedDefinition()); await f.manager.start(); await f.flush()
+  const capture = { ...queuedCapture(), history: history(), reason_code: 'capture_fence_capacity' }
+  f.state.scans[0].finish({ ...report(), completed: false, changed: 0, capture })
+  await f.flush()
+  const activity = (await f.manager.status()).sources[0].activity
+  assert.equal(activity.phase, 'attention')
+  assert.equal(activity.reason_code, 'partial')
+  assert.equal(activity.report.capture.reason_code, 'capture_fence_capacity')
+  assert.equal(Date.parse(activity.next_scan_at) - Date.parse(activity.finished_at), 300000)
+  await f.manager.close()
+  const reopened = new DesktopSources(f.options); t.after(() => reopened.close())
+  assert.deepEqual((await reopened.status()).sources[0].activity.report.capture.history, capture.history)
+})
+
+for (const [name, damage] of [
+  ['untrusted content field', value => { value.history.raw_content = 'Never display producer content here' }],
+  ['incorrect inbox size', value => { value.history.database_bytes = 32768 }],
+  ['incorrect event total', value => { value.history.events = 2 }],
+  ['hidden limit overrun', value => { value.history.denials = 100001 }],
+  ['unbounded integer', value => { value.history.denials = Number.MAX_SAFE_INTEGER + 1 }],
+  ['string pause flag', value => { value.history.fence_history_blocked = 'false' }],
+  ['unconfirmed deletion sweep marked complete', value => { value.pending_events = 0; value.stored_events = 1; value.delivery_complete = true }],
+]) test(`invalid history observations stay out of app and agent status: ${name}`, async t => {
+  const f = await fixture(t)
+  await f.add(retainedDefinition()); await f.manager.start(); await f.flush()
+  const capture = { ...queuedCapture(), history: history() }; damage(capture)
+  f.state.scans[0].finish({ ...report(), completed: false, changed: 0, capture })
+  await f.flush()
+  const activity = (await f.manager.status()).sources[0].activity
+  assert.equal(activity.reason_code, 'source_invalid_response')
+  assert.equal(activity.report, undefined)
+})
+
+test('archive and restore reports authenticate history alongside the existing inbox counters', () => {
+  const archive = archiveReport(retainedDefinition())
+  archive.status.history = { ...history(), database_bytes: archive.database_bytes }
+  assert.deepEqual(readCaptureArchive(archive).status.history, archive.status.history)
+  archive.status.history.events = 2
+  assert.throws(() => readCaptureArchive(archive), /status could not be verified/)
+})
+
 const indexProgress = () => ({ status: 'available', last_attempt_at: '2026-10-21T02:00:00+00:00', active: null,
   completed: { generation_id: 'fixture-generation', inference_paused: false,
     started_at: '2026-10-21T01:59:00+00:00', observed_at: '2026-10-21T02:00:00+00:00',
@@ -470,8 +517,10 @@ test('retained capture keeps an independent protected key and sends it only thro
   assert.ok(!JSON.stringify(view).includes('sealed_inbox_key'))
   assert.ok(!JSON.stringify(view).includes(privateKey))
   view = await f.manager.configure({ expected_revision: view.revision,
-    source: { ...source, custody: { ...source.custody, pending_limit_mib: 128 } } })
+    source: { ...source, custody: { ...source.custody, pending_limit_mib: 128, history_limit_events: 200000, database_limit_mib: 1024 } } })
   assert.equal(f.document().sources[0].sealed_inbox_key, sealed, 'Changing a limit cannot replace the inbox key')
+  assert.equal(view.sources[0].custody.history_limit_events, 200000)
+  assert.equal(view.sources[0].custody.database_limit_mib, 1024)
   await f.manager.start(); await f.flush()
   assert.equal(f.state.scans[0].privateRequest.inbox_key, privateKey)
   assert.ok(!JSON.stringify(f.state.scans[0].privateRequest.source).includes(privateKey))

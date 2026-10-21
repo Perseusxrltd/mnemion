@@ -1,6 +1,7 @@
 """Fair retained-source work survives bounded passes, failures and recovery."""
 
 from dataclasses import replace
+from contextlib import nullcontext
 import json
 import os
 from pathlib import Path
@@ -342,6 +343,12 @@ def watch_reports(headless, tmp_path):
 
 @pytest.mark.parametrize("failure", ["exception", "control", "delivery"])
 def test_watch_drops_fast_cadence_after_an_error(headless, monkeypatch, failure):
+    from mnemion.connectors import capture_resources
+
+    # This mocks scans to test scheduling inside the whole pytest process.
+    # That process includes service/model/coverage allocations unrelated to a
+    # capture child. The real CLI RSS guard has independent subprocess tests.
+    monkeypatch.setattr(capture_resources, "bounded", lambda _: nullcontext())
     config = headless["config"]
     config.remote_sync = False
     headless["file"].write_text(config.model_dump_json(), encoding="utf-8")
@@ -385,6 +392,7 @@ def test_watch_drops_fast_cadence_after_an_error(headless, monkeypatch, failure)
     monkeypatch.setattr(runner, "sync", scan)
     monkeypatch.setattr(runner, "wait_for_sync", wait)
     assert runner.main(["--config", str(headless["file"]), "--watch"]) == 130
+    assert not iterations, "Both scans must run before testing their retry cadence"
     assert waits == [5, config.poll_seconds]
 
 

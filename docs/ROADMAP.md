@@ -63,7 +63,15 @@ issue review, publication and version-linked closure together.
   file attempts and a five-second follow-up for healthy unfinished intake or delivery.
   Scoped service/controller and migration checks plus the real headless watcher
   passed. Current full CI, coordination across separate connections/devices and
-  full-history acceptance remain open; event and scope caps are unchanged. The prior
+  full-history acceptance remain open; that scheduling delta leaves event and scope caps unchanged.
+  A separate [deletion-at-capacity correction](research/2026-10-21-durable-capture-implementation.md#deletion-fences-and-history-limits-source-delta)
+  now preserves held-data forgetting above lowered quotas and pauses intake when
+  additional deletion history cannot fit. App/headless history usage and local
+  quota controls are implemented; 167 distinct focused service cases, 77 native
+  controller cases and 30 migration checks are qualified after four reproduced
+  failures. This batch also corrects the preceding CI's memory/speed-dependent
+  test assumptions without changing product limits. Current CI and packaged
+  acceptance remain pending. The prior
   policy checkpoint's failed health-response CI and its later test correction
   remain recorded. This remains unreleased source. Reviewed identity/policy
   migration, complete capture policy and coverage, headless installed acceptance,

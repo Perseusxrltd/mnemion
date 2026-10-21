@@ -172,6 +172,8 @@ def selection(config):
         memory_limit_mib=config.capture.memory_limit_mib,
         max_files=config.provider.max_files,
         pending_limit_mib=config.capture.pending_limit_mib,
+        history_limit_events=config.capture.history_limit_events,
+        database_limit_mib=config.capture.database_limit_mib,
     )
 
 
@@ -311,7 +313,11 @@ def opened(config, record, *, initialize=False):
         binding(config),
         key,
         create=pending and not (inbox_path / "inbox.sqlite3").exists(),
-        limits=Limits(pending_bytes=config.capture.pending_limit_mib * MIB),
+        limits=Limits(
+            pending_bytes=config.capture.pending_limit_mib * MIB,
+            database_bytes=config.capture.database_limit_mib * MIB,
+            events=config.capture.history_limit_events,
+        ),
     ) as inbox:
         if pending:
             if any(
@@ -389,6 +395,8 @@ def status(config):
         "inbox_present": (paths(config)[2] / "inbox.sqlite3").is_file(),
         "memory_limit_mib": config.capture.memory_limit_mib,
         "pending_limit_mib": config.capture.pending_limit_mib,
+        "history_limit_events": config.capture.history_limit_events,
+        "database_limit_mib": config.capture.database_limit_mib,
         "activity": None,
         "recovery": record.get("recovery") if record else None,
     }

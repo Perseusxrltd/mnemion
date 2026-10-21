@@ -1,6 +1,7 @@
 """Device/key transfer keeps selected evidence and authenticates a separate copy."""
 
 import hashlib
+from dataclasses import replace
 import json
 import os
 from uuid import uuid4
@@ -8,10 +9,58 @@ from uuid import uuid4
 import pytest
 
 from mnemion import backup_encryption as encryption
-from mnemion.connectors.capture_archive import CaptureArchiveError, export_archive, inspect_archive
+from mnemion.connectors.capture_archive import (
+    CaptureArchiveError,
+    export_archive,
+    inspect_archive,
+    restore_new_inbox,
+)
 from mnemion.connectors.capture_transfer import restore_device_copy
-from mnemion.connectors.conversation_inbox import Inbox, InboxError, open_inbox
+from mnemion.connectors.conversation_inbox import Inbox, InboxError, Limits, open_inbox
 from service_tests.test_capture_archive import captured as captured, exported
+
+
+@pytest.mark.parametrize("rotate_key", [False, True])
+def test_unretained_fence_pause_survives_archive_and_device_key_recovery(
+    tmp_path, captured, rotate_key
+):
+    root, binding, key, pending, _ = captured
+    limits = replace(Limits(), events=1)
+    archive, secret, staging = (
+        tmp_path / "paused.capture",
+        encryption.new_key(),
+        tmp_path / "staging",
+    )
+    with open_inbox(root, binding, key, limits=limits) as inbox:
+        assert not inbox.apply_fences({"items": [{"lineage_id": "f" * 64}], "next_cursor": None})
+        state = inbox.status()
+        exported = export_archive(
+            inbox, key, archive, secret, staging_root=staging, name="Paused history"
+        )
+    assert inspect_archive(archive, secret, staging_root=staging)["status"] == state
+    args = {
+        "staging_root": staging,
+        "expected_sha256": exported["archive_sha256"],
+    }
+    if rotate_key:
+        restored = restore_device_copy(
+            archive,
+            secret,
+            tmp_path / "recovered",
+            **args,
+            selected_binding={**binding, "grant_id": str(uuid4())},
+            inbox_key=os.urandom(32),
+        )
+    else:
+        restored = restore_new_inbox(archive, secret, tmp_path / "recovered", **args)
+    with open_inbox(
+        restored.directory, restored.binding, restored.inbox_key, limits=limits
+    ) as inbox:
+        assert inbox.status() == state
+        assert inbox.fence_history_blocked() and inbox.fence_cursor() is None
+        assert inbox.page() == {"reconcile": True, "page": pending}
+        with pytest.raises(InboxError, match="capture_fence_capacity"):
+            inbox.accept(pending["events"][0]["producer_scope"], [], {}, verify=lambda: True)
 
 
 def test_new_device_key_preserves_unknown_pages_fences_and_original_receipts(tmp_path, captured):

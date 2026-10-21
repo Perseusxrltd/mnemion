@@ -57,6 +57,8 @@ class RetainedCapture(Command):
     state_directory: Path
     inbox_key: Token
     pending_limit_mib: int = Field(default=256, ge=1, le=1024, strict=True)
+    history_limit_events: int = Field(default=100000, ge=1000, le=500000, strict=True)
+    database_limit_mib: int = Field(default=512, ge=64, le=2048, strict=True)
     memory_limit_mib: int = Field(default=256, ge=128, le=2048, strict=True)
 
     @field_validator("keep_accepted", mode="before")

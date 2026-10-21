@@ -305,15 +305,19 @@ def test_failed_scanner_blocks_without_advancing_and_can_resume_after_repair(
 
 
 def test_rejection_details_have_a_fixed_bound_and_do_not_store_text(env, tmp_path):
-    for index in range(53):
+    count = 53
+    for index in range(count):
         save(env, f"Private fixture contact person{index}@example.invalid")
     service, _ = setup(env, tmp_path)
     start(env, service)
-    for _ in range(10):
-        service.backfill_batch(env.owner, env.space)
+    # Each bounded batch processes at least one record. Slow privacy scans can
+    # legitimately exhaust the time allowance before the entry allowance.
+    for _ in range(count + 1):
+        step = service.backfill_batch(env.owner, env.space)
         result = service.backfill_status(env.owner, env.space)
         if result["run"]["state"] == "completed":
             break
+        assert step["examined"] > 0, "An active batch must make progress"
     assert result["run"]["state"] == "completed"
     assert result["run"]["rejected"] == 53 and len(result["run"]["errors"]) == 50
     assert "example.invalid" not in str(result) and not events(env)

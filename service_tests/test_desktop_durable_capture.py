@@ -172,6 +172,36 @@ def test_device_capacity_stops_acceptance_but_can_deliver_existing_backlog(enrol
     assert result["capture"]["delivery_complete"]
 
 
+def test_history_budget_edits_keep_device_identity_key_and_accepted_evidence(enrolled, monkeypatch):
+    root, source, request, _ = enrolled
+    (Path(source.path) / "chat.jsonl").write_bytes(encoded("Accepted before a budget change"))
+    with monkeypatch.context() as patch:
+        offline(patch, root, source)
+        desktop.perform(root, request)
+    state = desktop.load(root)
+    original = state.sources[0]
+    enrollment = capture.enrollment(root, original)
+    database = capture.inbox_path(root, source.id) / "inbox.sqlite3"
+    before = database.read_bytes()
+    changed = original.model_copy(deep=True)
+    changed.custody.history_limit_events = 1000
+    changed.custody.database_limit_mib = 64
+    desktop.store(root, state.revision, [changed])
+    saved = desktop.load(root).sources[0]
+    assert capture.enrollment(root, saved) == enrollment
+    assert saved.sealed_key == original.sealed_key
+    assert saved.sealed_inbox_key == original.sealed_inbox_key
+    assert database.read_bytes() == before
+    public = desktop.Source.model_validate(
+        saved.model_dump(include=set(desktop.Source.model_fields))
+    )
+    result = desktop.perform(root, {**request, "source": public.model_dump(mode="json")})
+    history = result["capture"]["history"]
+    assert history["event_limit"] == 1000 and history["database_limit_bytes"] == 64 * 1024**2
+    assert history["events"] == result["capture"]["stored_events"] == 1
+    assert result["capture"]["pending_events"] == 0
+
+
 def test_pending_capacity_is_shared_across_actual_sources_and_ignores_retired_folders(
     env, enrolled, custody, conversation_source, monkeypatch
 ):

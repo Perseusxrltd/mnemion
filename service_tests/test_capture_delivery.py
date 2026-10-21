@@ -1,6 +1,7 @@
 """Real HTTP service commits, lost replies and restarted local inbox delivery."""
 
 import os
+from dataclasses import replace
 from uuid import UUID
 
 import httpx
@@ -8,7 +9,7 @@ import pytest
 
 from mnemion.connectors.capture_delivery import deliver
 from mnemion.connectors.conversation_capture import capture_available
-from mnemion.connectors.conversation_inbox import InboxError, open_inbox
+from mnemion.connectors.conversation_inbox import InboxError, Limits, open_inbox
 from mnemion.connectors.live_conversations import ConversationProvider
 from mnemion.sdk import Client, MnemionError
 from mnemion.service.api import create_app
@@ -136,3 +137,66 @@ def test_revoked_device_retains_local_evidence_without_attempting_delivery(
             deliver(inbox, client)
         assert inbox.status()["pending_events"] == 1
         assert inbox.status()["unknown_pages"] == 0
+
+
+def test_real_service_fence_overflow_preserves_delivery_and_all_held_deletions(
+    env, custody, conversation_source, tmp_path
+):
+    private = settings(env, custody, conversation_source, tmp_path)
+    _, binding, key = private
+    _, _, _, reader, secret, config = conversation_source
+    provider = ConversationProvider(config.provider)
+    with running(create_app(env.db, env.embedder)) as url, Client(url, secret, retries=0) as client:
+        # A different device already learned three deletions for this source.
+        for index in range(3):
+            (config.provider.path / f"foreign-{index}.jsonl").write_bytes(
+                encoded(f"Foreign {index}")
+            )
+        with open_inbox(tmp_path / "other-device", binding, key, create=True) as other:
+            capture_available(other, provider)
+            page = other.page()["page"]
+            accepted = client.request(
+                "POST", f"/v1/capture-grants/{binding['grant_id']}/pages", body=page
+            )
+            other.acknowledge(accepted)
+        for index, item in enumerate(accepted["items"]):
+            env.memory.forget(
+                reader,
+                UUID(item["memory_id"]),
+                expected_version=1,
+                key=f"foreign-forgotten-{index}",
+            )
+        for path in config.provider.path.glob("foreign-*.jsonl"):
+            path.unlink()
+        for index in range(3):
+            (config.provider.path / f"held-{index}.jsonl").write_bytes(encoded(f"Held {index}"))
+        with open_inbox(*private, create=True) as inbox:
+            assert capture_available(inbox, provider)["pending_events"] == 3
+            held_page = inbox.page()["page"]
+        with open_inbox(*private, limits=replace(Limits(), events=1)) as inbox:
+            result = deliver(inbox, client)
+            assert result["history"]["fence_history_blocked"] and result["fence_sweep_pending"]
+            assert result["remote_committed_events"] == result["stored_events"] == 3
+            assert result["pending_events"] == result["unknown_pages"] == 0
+            held = client.request(
+                "GET", f"/v1/capture-grants/{binding['grant_id']}/pages/{held_page['page_id']}"
+            )
+            for index, item in enumerate(held["items"]):
+                env.memory.forget(
+                    reader,
+                    UUID(item["memory_id"]),
+                    expected_version=1,
+                    key=f"held-forgotten-{index}",
+                )
+            result = deliver(inbox, client)
+            assert result["forgotten_events"] == 3 and result["stored_events"] == 0
+            assert result["history"]["fence_history_blocked"]
+            paused = capture_available(inbox, provider)
+            assert not paused["completed"] and paused["errors"] == ["capture_fence_capacity"]
+        with open_inbox(*private) as inbox:
+            assert inbox.fence_history_blocked(), "A larger limit alone cannot erase the pause"
+            recovered = deliver(inbox, client)
+            assert not recovered["fence_sweep_pending"]
+            assert not recovered["history"]["fence_history_blocked"]
+            assert recovered["history"]["denials"] == 6
+            assert recovered["forgotten_events"] == 3

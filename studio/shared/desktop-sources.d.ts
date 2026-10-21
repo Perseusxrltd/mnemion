@@ -3,7 +3,8 @@ export type DesktopSource = {
   name: string; provider: 'filesystem' | 'conversations' | 'slack' | 'gdrive'; path?: string; members: string[];
   capture_mode?: 'complete' | 'messages';
   capture_policy?: CapturePolicy;
-  custody?: { source_id: string; grant_id: string; keep_accepted: true; pending_limit_mib: number };
+  custody?: { source_id: string; grant_id: string; keep_accepted: true; pending_limit_mib: number;
+    history_limit_events?: number; database_limit_mib?: number };
   scope_id?: string;
   slack?: { team_id: string; channels: string[]; include_threads: boolean };
   gdrive?: { folder_ids: string[]; file_ids: string[]; recursive: boolean };
@@ -15,7 +16,7 @@ export type SourceReport = {
   capture?: CaptureReport;
 }
 export type CaptureReason = 'capture_authorization_revoked' | 'capture_binding_mismatch' | 'capture_binding_invalid' |
-  'capture_delivery_unavailable' | 'capture_delivery_pending' | 'capture_capacity_blocked' | 'capture_scan_pending' | 'capture_disk_full' |
+  'capture_delivery_unavailable' | 'capture_delivery_pending' | 'capture_capacity_blocked' | 'capture_fence_capacity' | 'capture_scan_pending' | 'capture_disk_full' |
   'capture_enrollment_missing' | 'capture_integrity_failed' | 'capture_inbox_missing' |
   'capture_key_unavailable' | 'capture_not_initialized' | 'capture_policy_change_requires_migration' |
   'capture_server_upgrade_required' | 'capture_settings_changed' | 'capture_source_changed' |
@@ -31,6 +32,12 @@ export type CaptureReport = {
   device_pending_bytes: number; device_database_bytes: number; reason_code?: CaptureReason | null;
   coverage?: CaptureCoverage | null;
   storage?: CaptureStorage | null;
+  history?: CaptureHistory | null;
+}
+export type CaptureHistory = {
+  format: 'mnemion-capture-history-v1'; events: number; producer_events: number; fragments: number;
+  scopes: number; delivery_pages: number; denials: number; event_limit: number; scope_limit: number;
+  database_bytes: number; database_limit_bytes: number; fence_history_blocked: boolean; over_limit: boolean;
 }
 export type CaptureStorage = {
   format: 'mnemion-capture-storage-v1'; state: 'idle' | 'reclaimed' | 'deferred' | 'failed';
@@ -97,6 +104,7 @@ export type CapturePolicy = {
 export type SourcePreviewSelection = {
   path: string; capture_mode: 'messages' | 'complete'; capture_policy?: CapturePolicy | null;
   keep_accepted: boolean; memory_limit_mib: number; max_files: number; pending_limit_mib: number;
+  history_limit_events?: number; database_limit_mib?: number;
 }
 export type CapturePreviewFile = {
   path: string; status: 'sampled' | 'unreadable' | 'changed' | 'too_large' | 'record_too_large' | 'private_control' | 'invalid_jsonl';
@@ -120,7 +128,7 @@ export type CaptureArchiveInfo = {
   workspace_credentials_included: false; source_enrolled: false;
   status: { format: 'mnemion-selected-inbox-v1'; pending_events: number; pending_bytes: number;
     database_bytes: number; over_limit: boolean; stored_events: number; forgotten_events: number;
-    unknown_pages: number; coverage: CaptureCoverage };
+    unknown_pages: number; coverage: CaptureCoverage; history?: CaptureHistory };
 }
 export type CaptureBackupInput = { expected_revision: string; id: string; file: string; recovery_key: string; confirm: true }
 export type CaptureInspectInput = { file: string; recovery_key: string }

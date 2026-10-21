@@ -22,6 +22,7 @@ from pydantic import Field, field_validator, model_validator
 
 from . import local_state
 from .capture_coverage import CaptureCoverage
+from .capture_history import CaptureHistory
 from .connectors.capture_delivery import retire_grant, verify_grant
 from .connectors.capture_cycle import cycle
 from .connectors.capture_storage import StorageReport
@@ -41,6 +42,8 @@ class Custody(Command):
     grant_id: UUID
     keep_accepted: Literal[True]
     pending_limit_mib: int = Field(default=256, ge=1, le=1024, strict=True)
+    history_limit_events: int = Field(default=100000, ge=1000, le=500000, strict=True)
+    database_limit_mib: int = Field(default=512, ge=64, le=2048, strict=True)
 
 
 CAPTURE_REASONS = frozenset(
@@ -51,6 +54,7 @@ CAPTURE_REASONS = frozenset(
         "capture_delivery_unavailable",
         "capture_delivery_pending",
         "capture_capacity_blocked",
+        "capture_fence_capacity",
         "capture_scan_pending",
         "capture_disk_full",
         "capture_enrollment_missing",
@@ -97,11 +101,20 @@ class CaptureReport(Command):
     reason_code: str | None = None
     coverage: CaptureCoverage | None = None
     storage: StorageReport | None = None
+    history: CaptureHistory | None = None
 
     @model_validator(mode="after")
     def storage_matches(self):
         if self.storage is not None and self.storage.database_bytes != self.database_bytes:
             raise ValueError("Storage cleanup must describe the observed inbox")
+        if self.history is not None and (
+            self.history.database_bytes != self.database_bytes
+            or self.history.events
+            != self.pending_events + self.stored_events + self.forgotten_events
+            or (self.history.over_limit and not self.over_limit)
+            or (self.history.fence_history_blocked and self.delivery_complete)
+        ):
+            raise ValueError("History usage must describe the observed inbox")
         return self
 
     @field_validator("reason_code")
@@ -209,7 +222,11 @@ def saved_source(root, source):
 
 
 def limits(source):
-    return Limits(pending_bytes=source.custody.pending_limit_mib * MIB)
+    return Limits(
+        pending_bytes=source.custody.pending_limit_mib * MIB,
+        database_bytes=source.custody.database_limit_mib * MIB,
+        events=source.custody.history_limit_events,
+    )
 
 
 @contextmanager

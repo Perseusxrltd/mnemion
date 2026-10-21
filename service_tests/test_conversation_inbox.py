@@ -317,8 +317,9 @@ def test_lowered_admission_limits_keep_backlog_delivery_and_forgetting_available
         lineage = capture_lineage_id(SCOPE, selected[0]["item"])
         inbox.forget(lineage)
         assert inbox.forget(lineage)["forgotten_events"] == 1
-        with pytest.raises(InboxError, match="capture_capacity_blocked"):
+        with pytest.raises(InboxError, match="capture_fence_capacity"):
             inbox.forget("c" * 64)
+        assert inbox.status()["history"]["fence_history_blocked"] is True
 
 
 def test_actual_sqlite_page_size_and_reduced_database_limit_are_reported(inbox_settings):

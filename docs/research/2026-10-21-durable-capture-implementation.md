@@ -74,6 +74,7 @@ does not ship this unfinished capture milestone.
 | Encrypted coverage accounting | The inbox retains per-file prefix observations and one bounded aggregate, with selection counters committed alongside accepted evidence. Missing/changed/unobserved history, continuous non-empty queue start, authenticated contact and receipt acknowledgement remain distinct. This development delta is still under validation. |
 | Source index observations | An additional unreleased delta reads current revision/index states for the authorized shared source across devices. It saves partial and completed sweeps separately, with observed generation and time interval. Source, controller and migration checks passed; installed acceptance remains open. |
 | Device resource admission | Pending selected payload and actual SQLite database pages have separate per-source and aggregate device limits. New intake also needs free disk headroom. Reducing limits preserves accepted evidence and leaves bounded delivery/forgetting work available. |
+| Local history and deletion capacity | The new unreleased delta exposes separate retained-record counters and mutable local history/database quotas. Held-data deletion records bypass lowered admission caps; foreign-fence overflow persists an intake pause without rolling back known purges. Focused service, native controller and migration checks passed; full CI and packaged acceptance remain open. |
 | Free-page reclamation | An additional unreleased delta returns unused SQLite pages before intake and after delivery, preserving every logical record. Incremental work and legacy conversion have separate bounds; storage status reports actual bytes and deferred/failure reasons. Focused source, controller and migration checks passed; installed acceptance remains open and reference/history/scope caps remain unchanged. |
 | Pause and removal | Pause works offline. Retained removal requires a pause, explicit `discard_local_inbox: true` and confirmed server revocation before local discard. A current workspace administrator can retire the exact saved grant when the device key is unavailable. Its optional `retirement_credential` is used only through the private removal path and never saved by the operation. Recorded retirement can finish cleanup offline without credentials. |
 | Forgetting and recovery | One captured fragment's raw evidence, projections, parts and retained revisions are withdrawn atomically. Late deliveries stay denied. Current negative state and grant revocations survive restoring an older backup. Revoked custody also stops new background inference and vector publication. |
@@ -82,15 +83,21 @@ does not ship this unfinished capture milestone.
 
 The local queue defaults to 256 MiB of pending selected payload per source,
 configurable from 1 to 1,024 MiB, with a 1 GiB aggregate pending limit on the
-device. Database admission is 512 MiB per source and 2 GiB across the device,
-counting actual SQLite pages. New intake requires at least 512 MiB free disk
-plus room for its transaction. Each inbox also bounds retained event references
-at 100,000 and producer scopes at 10,000. The desktop source RAM allowance
+device. Database admission defaults to 512 MiB per source, configurable from
+64 to 2,048 MiB, with 2 GiB across the device, counting actual SQLite pages.
+New intake requires at least 512 MiB free disk plus room for its transaction.
+Each inbox defaults to 100,000 entries separately for accepted events,
+producer-event identities, producer-fragment references and deletion records;
+the new history control allows 1,000–500,000. Producer scopes remain capped at
+10,000. The desktop source RAM allowance
 defaults to 256 MiB and accepts 128–2,048 MiB, with sampled enforcement.
 
 A limit below current usage blocks new admission without trimming the queue.
-Inspection, delivery and forgetting remain available subject to usable disk and
-current authorization. Bounded delivery bookkeeping may use reserve above a
+Inspection, ordinary delivery and held-data forgetting remain subject to usable
+disk and current authorization. The [new deletion-capacity correction](#deletion-fences-and-history-limits-source-delta)
+retains held-data denials above lowered limits and pauses intake when additional
+foreign fences cannot fit; focused source checks passed and packaged acceptance remains open.
+Bounded delivery bookkeeping may use reserve above a
 database admission limit, reported as over-limit. It is not extra capture
 allowance. Pending selected evidence has no automatic expiry.
 
@@ -844,12 +851,88 @@ The earlier `763a8341` source, all 12 CI jobs and Git-driven website synchroniza
 were verified separately from this unreleased batch.
 Earlier per-file proof and the retained policy-CI failure keep their original scope.
 
+## Deletion fences and history limits source delta
+
+This **unreleased** correction has focused service, controller and migration
+qualification; full CI and packaged acceptance remain open. On scheduling checkpoint
+`6b883fba`, `capture-fence-capacity-initial-tests.log` records **four failed in
+2.92 seconds** using real encrypted inboxes. Lowering the event allowance blocks
+forgetting already-held pending or settled lineages, and blocks applying a
+receipt that confirms those accepted items were forgotten. A full deletion-record
+allowance can also make a fence for a lineage absent from the local inbox prevent
+held-data deletions from committing for that authenticated page.
+
+The [inbox correction](../../mnemion/connectors/conversation_inbox.py) retains an
+authenticated denial for any already-held lineage even above a lowered event
+limit, including receipt settlement as forgotten. When an unheld foreign fence
+cannot fit, its page still commits known purges, retains the retry cursor and
+saves an encrypted intake pause. A directly supplied overflowing fence restarts
+the sweep so an earlier lineage cannot be skipped. Existing accepted delivery
+is still attempted. Raising capacity alone does not clear the pause: a later
+authenticated sweep must finish successfully. No deletion history is removed
+to make space. Archive inspection validates the pause rather than silently
+resetting malformed metadata.
+
+Native `custody`, headless `capture` and preview settings now share strict integer
+`history_limit_events` (default 100,000; 1,000–500,000) and
+`database_limit_mib` (default 512; 64–2,048). They preserve the source, grant,
+inbox key and policy identity; preview fingerprints include the settings.
+Pending-content defaults and aggregate limits remain unchanged.
+
+The [history model](../../mnemion/capture_history.py), app's advanced status and
+headless saved report expose `mnemion-capture-history-v1`: `events`,
+`producer_events`, `fragments`, `scopes`, `delivery_pages`, `denials`,
+`event_limit`, `scope_limit`, `database_bytes`, `database_limit_bytes`,
+`fence_history_blocked` and `over_limit`. The event allowance applies separately
+to events, producer events, fragments and denials. Scope allowance remains
+10,000; delivery pages are observed separately. Database allowance can be
+reduced by aggregate device usage. `over_limit` means strictly exceeded;
+the persistent fence pause can also exist without it. Older absent/null history
+is unobserved. `capture_fence_capacity` is an attention condition, not healthy
+five-second continuation, and a blocked sweep cannot report delivery complete.
+
+`capture-history-inbox-tests.log` records **27 passed in 8.69 seconds**, covering
+the original four failures and existing inbox cases. The later combined run,
+`capture-history-final-regression.log`, records **166 passed in 307.41 seconds**.
+It includes actual HTTP overflow with accepted delivery and later held-data
+deletion, persistent pause and full-sweep recovery, authenticated archive and
+new-key restoration, and desktop/headless quota changes preserving identity.
+The final native controller run records **77 passed, zero skipped** in
+645.19 ms; **30 migration checks passed in 170.80 seconds**.
+
+The first native run retained one failed test assertion: it expected the detailed
+capture reason at the top-level activity, which intentionally reports `partial`.
+The corrected check verifies that activity and the nested `capture_fence_capacity`
+reason, normal retry interval and persistence. No runtime behavior was changed
+to satisfy that assertion. The final service qualification below replaces three
+cadence test cases and adds one journal case, for **167 distinct service cases**.
+Original failures remain retained. Lifetime history, page and archive bounds,
+coordination across independent devices, migration, six packaged targets and
+full L1 acceptance remain open.
+
+The preceding scheduling source checkpoint and Git-driven website synchronization
+([39571717286](https://github.com/Perseusxrltd/mnemion/actions/runs/39571717286)) passed.
+Its [CI 39571717128](https://github.com/Perseusxrltd/mnemion/actions/runs/39571717128)
+finished with ten successful jobs and failures on Python 3.13 and 3.14.
+Both failed three mocked cadence cases because the full pytest/coverage process
+exceeded the capture child's default 256 MiB allowance before the mock scan ran.
+The cadence test now isolates that unrelated process guard and asserts both
+mock scans ran; the real CLI guard remains covered by its independent subprocess
+test. Python 3.13 also exposed a journal privacy test that assumed ten bounded
+batches would always finish 53 records. It now allows at most one batch per
+record plus completion, requiring forward progress in every unfinished batch.
+Product memory, privacy-scanning and batch-time limits are unchanged.
+`capture-history-ci-regressions.log` records **10 passed in 18.00 seconds**,
+including the four corrected cases and six existing headless-control checks.
+The original CI logs remain preserved. Replacement full CI is still required.
+
 ## Source and deletion boundaries
 
 The staged service exposes a `durable_capture: "v1"` capability. An administrator
 configures custody through the source PUT and approves the device through the
 grant PUT before local enrollment. Native `source.configure` accepts
-`custody: {source_id, grant_id, keep_accepted: true, pending_limit_mib}`. The client
+`custody: {source_id, grant_id, keep_accepted: true, pending_limit_mib,
+history_limit_events, database_limit_mib}`. The client
 binds its local encryption to tenant, connector, source, grant, namespace and
 capture selection. An ordinary source key cannot grant itself custody or expand
 its audience. Source edits require the current version; stale administrative

@@ -23,6 +23,7 @@ from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 from .. import local_state
+from ..capture_history import CaptureHistory
 from ..capture_identity import canonical_capture_json, capture_event_id, capture_lineage_id
 from ..private_output import private_output
 from ..service.capture_custody import selected_item
@@ -158,10 +159,20 @@ class Inbox:
             * self.connection.execute("PRAGMA page_count").fetchone()[0]
         )
 
-    def _capacity(self, added_bytes=0, added_events=0, *, usage=None):
+    def _fence_usage(self):
+        return (
+            self.connection.execute("SELECT COUNT(*) FROM denials").fetchone()[0],
+            self.fence_history_blocked(),
+        )
+
+    def _capacity(self, added_bytes=0, added_events=0, *, usage=None, fences=None):
         count, size = self._usage() if usage is None else usage
+        denials, blocked = self._fence_usage() if fences is None else fences
+        if blocked:
+            raise InboxError("capture_fence_capacity")
         if (
             count + added_events > self.limits.events
+            or denials > self.limits.events
             or size + added_bytes > self.limits.pending_bytes
             or self._database_bytes() > self.limits.database_bytes
         ):
@@ -220,6 +231,8 @@ class Inbox:
         accepted = 0
         with self._transaction():
             usage = self._usage()
+            fences = self._fence_usage()
+            self._capacity(usage=usage, fences=fences)
             added_bytes = added_events = 0
             for event in events:
                 raw, lineage = self._event(event)
@@ -239,7 +252,7 @@ class Inbox:
                 ).fetchone()
                 added_bytes += 0 if denied else len(raw)
                 added_events += 1
-                self._capacity(added_bytes, added_events, usage=usage)
+                self._capacity(added_bytes, added_events, usage=usage, fences=fences)
                 self.connection.execute(
                     "INSERT INTO events(event_id,scope,lineage,digest,size,payload,state) VALUES(?,?,?,?,?,?,?)",
                     (
@@ -268,13 +281,13 @@ class Inbox:
             )
             if len(encoded_checkpoint) > 32768:
                 raise InboxError("capture_checkpoint_invalid")
-            self._capacity(added_bytes, added_events, usage=usage)
+            self._capacity(added_bytes, added_events, usage=usage, fences=fences)
             self.connection.execute(
                 "INSERT INTO checkpoints(scope,payload) VALUES(?,?) ON CONFLICT(scope) DO UPDATE SET payload=excluded.payload",
                 (scope, self._seal(encoded_checkpoint, "checkpoint:" + scope)),
             )
             self.observations.queued(usage[1], added_bytes)
-            self._capacity(added_bytes, added_events, usage=usage)
+            self._capacity(added_bytes, added_events, usage=usage, fences=fences)
         return {"locally_accepted": accepted, **self.status()}
 
     def checkpoint(self, scope: str) -> dict | None:
@@ -294,20 +307,46 @@ class Inbox:
         }
         pending, size = counts.get("pending", (0, 0))
         database_bytes = self._database_bytes()
+        history = {
+            "events": sum(value[0] for value in counts.values()),
+            **{
+                name: self.connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+                for name, table in (
+                    ("producer_events", "producer_events"),
+                    ("fragments", "producer_segments"),
+                    ("delivery_pages", "pages"),
+                    ("denials", "denials"),
+                )
+            },
+            "scopes": self.connection.execute(
+                "SELECT COUNT(*) FROM (SELECT scope FROM checkpoints UNION "
+                "SELECT substr(name,10) FROM metadata WHERE name LIKE 'coverage:%')"
+            ).fetchone()[0],
+            "event_limit": self.limits.events,
+            "scope_limit": self.limits.scopes,
+            "database_bytes": database_bytes,
+            "database_limit_bytes": self.limits.database_bytes,
+            "fence_history_blocked": self.fence_history_blocked(),
+        }
+        history["over_limit"] = (
+            max(history[name] for name in ("events", "producer_events", "fragments", "denials"))
+            > self.limits.events
+            or history["scopes"] > self.limits.scopes
+            or database_bytes > self.limits.database_bytes
+        )
         return {
             "format": FORMAT,
             "pending_events": pending,
             "pending_bytes": size,
             "database_bytes": database_bytes,
-            "over_limit": size > self.limits.pending_bytes
-            or sum(value[0] for value in counts.values()) > self.limits.events
-            or database_bytes > self.limits.database_bytes,
+            "over_limit": size > self.limits.pending_bytes or history["over_limit"],
             "stored_events": counts.get("stored", (0, 0))[0],
             "forgotten_events": counts.get("forgotten", (0, 0))[0],
             "unknown_pages": self.connection.execute(
                 "SELECT COUNT(*) FROM pages WHERE state='pending'"
             ).fetchone()[0],
             "coverage": self.observations.status(size),
+            "history": CaptureHistory.model_validate(history).model_dump(mode="json"),
         }
 
     def page(self) -> dict | None:
@@ -440,15 +479,20 @@ class Inbox:
             self.observations.acknowledged()
         return self.status()
 
-    def _deny(self, lineage: str):
+    def _deny(self, lineage: str) -> bool:
         if (
             not self.connection.execute(
                 "SELECT 1 FROM denials WHERE lineage=?", (lineage,)
             ).fetchone()
             and self.connection.execute("SELECT COUNT(*) FROM denials").fetchone()[0]
             >= self.limits.events
+            and not self.connection.execute(
+                "SELECT 1 FROM events WHERE lineage=? LIMIT 1", (lineage,)
+            ).fetchone()
         ):
-            raise InboxError("capture_capacity_blocked")
+            # A foreign fence needs new history capacity. Held evidence must
+            # still be purged, even when limits were lowered after acceptance.
+            return False
         self.connection.execute("INSERT OR IGNORE INTO denials(lineage) VALUES(?)", (lineage,))
         self.connection.execute(
             "UPDATE events SET state='forgotten',payload=NULL WHERE lineage=?", (lineage,)
@@ -460,13 +504,42 @@ class Inbox:
             "SELECT p.page_id FROM page_events p JOIN events e USING(event_id) WHERE e.lineage=?)",
             (lineage,),
         )
+        return True
+
+    def fence_history_blocked(self) -> bool:
+        row = self.connection.execute(
+            "SELECT value FROM metadata WHERE name='fence_blocked'"
+        ).fetchone()
+        if row is None:
+            return False
+        try:
+            value = json.loads(self._open(row[0], "fence_blocked"))
+            if type(value) is not bool:
+                raise ValueError()
+            return value
+        except (ValueError, TypeError, RecursionError):
+            raise InboxError("capture_integrity_failed") from None
+
+    def _block_fences(self, blocked: bool):
+        self.connection.execute(
+            "INSERT INTO metadata(name,value) VALUES('fence_blocked',?) "
+            "ON CONFLICT(name) DO UPDATE SET value=excluded.value",
+            (self._seal(canonical_capture_json(blocked), "fence_blocked"),),
+        )
 
     def forget(self, lineage: str) -> dict:
         """Record a CURRENT authenticated service lineage fence, not an ACL grant."""
         if not isinstance(lineage, str) or not re.fullmatch(r"[a-f0-9]{64}", lineage):
             raise InboxError("capture_fence_invalid")
         with self._transaction():
-            self._deny(lineage)
+            retained = self._deny(lineage)
+            if not retained:
+                self._block_fences(True)
+                # A directly supplied fence may sort before the sweep cursor.
+                # Revisit the whole service fence list before lifting the pause.
+                self.connection.execute("DELETE FROM metadata WHERE name='fence_scan'")
+        if not retained:
+            raise InboxError("capture_fence_capacity")
         return self.status()
 
     def fence_cursor(self) -> str | None:
@@ -475,8 +548,9 @@ class Inbox:
         ).fetchone()
         return json.loads(self._open(row[0], "fence_scan")) if row else None
 
-    def apply_fences(self, value: dict) -> None:
+    def apply_fences(self, value: dict) -> bool:
         """Advance one bounded sweep, resetting at its end for later new fences."""
+        self.fence_history_blocked()
         try:
             entries, cursor = value["items"], value["next_cursor"]
             if not isinstance(entries, list) or len(entries) > 100:
@@ -497,12 +571,23 @@ class Inbox:
         except (KeyError, TypeError, ValueError):
             raise InboxError("capture_fence_invalid") from None
         with self._transaction():
+            retained = True
             for lineage in identifiers:
-                self._deny(lineage)
+                if not self._deny(lineage):
+                    retained = False
+            if not retained:
+                # Keep the cursor at the unretained page. Persist the pause so
+                # a restart/offline scan cannot reintroduce omitted deletions.
+                # Known-lineage purges above still commit in this transaction.
+                self._block_fences(True)
+                return False
             self.connection.execute(
                 "INSERT INTO metadata(name,value) VALUES('fence_scan',?) ON CONFLICT(name) DO UPDATE SET value=excluded.value",
                 (self._seal(canonical_capture_json(cursor), "fence_scan"),),
             )
+            if cursor is None:
+                self._block_fences(False)
+        return True
 
 
 @contextmanager
@@ -574,6 +659,7 @@ def open_inbox(directory: Path, binding: dict, key: bytes, *, create=False, limi
                     ).fetchone()
                     if row is None or inbox._open(row[0], "owner") != FORMAT.encode():
                         raise InboxError("capture_integrity_failed")
+                    inbox.fence_history_blocked()
                 yield inbox
             finally:
                 connection.rollback()

@@ -79,14 +79,17 @@ def cycle(inbox, *, collect, client, revoked, usage, started=None):
         "capture_complete": local["completed"],
         "delivery_complete": not remote_error
         and not status["pending_events"]
-        and not fence_pending,
+        and not fence_pending
+        and not status["history"]["fence_history_blocked"],
         "device_pending_bytes": device["pending_bytes"],
         "device_database_bytes": device["database_bytes"],
         "reason_code": next(iter(local["errors"]), None)
         or remote_error
+        or ("capture_fence_capacity" if status["history"]["fence_history_blocked"] else None)
         or ("capture_scan_pending" if local.get("deferred") else None)
         or ("capture_delivery_pending" if status["pending_events"] or fence_pending else None),
         "coverage": status["coverage"],
+        "history": status["history"],
         "storage": storage,
     }
     return {

@@ -241,6 +241,7 @@ def capture_available(inbox, provider):
                 if code
                 in {
                     "capture_capacity_blocked",
+                    "capture_fence_capacity",
                     "capture_disk_full",
                     "capture_prefix_changed",
                     "capture_checkpoint_invalid",
@@ -255,7 +256,11 @@ def capture_available(inbox, provider):
                 }
                 else "capture_source_unavailable"
             )
-            if not started or code in {"capture_capacity_blocked", "capture_disk_full"}:
+            if not started or code in {
+                "capture_capacity_blocked",
+                "capture_fence_capacity",
+                "capture_disk_full",
+            }:
                 break
     status = inbox.status()
     if not failures and status["coverage"]["failed_scopes"]:

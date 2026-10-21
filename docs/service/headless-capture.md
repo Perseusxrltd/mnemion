@@ -88,6 +88,8 @@ the exact approved identities. Save this configuration as, for example,
     "state_directory": "capture-state",
     "inbox_key": {"file": "keys/inbox.key"},
     "pending_limit_mib": 256,
+    "history_limit_events": 100000,
+    "database_limit_mib": 512,
     "memory_limit_mib": 256
   },
   "poll_seconds": 300,
@@ -375,17 +377,40 @@ is unavailable, and these observations invoke no model.
 | --- | --- |
 | Process memory | `memory_limit_mib: 256`, configurable 128–2,048 MiB. RSS is checked before controls/scans and sampled once per second during them. Exceeding it stops the process; this is not an instantaneous peak-memory reservation. |
 | Pending selected payload | `pending_limit_mib: 256`, configurable 1–1,024 MiB per inbox; 1 GiB across inboxes under the same capture state root. |
-| SQLite admission | 512 MiB per inbox and 2 GiB across that root, measured using actual database pages. |
+| SQLite admission | `database_limit_mib: 512`, configurable 64–2,048 MiB per inbox; 2 GiB across that root, measured using actual database pages. |
+| Retained history | `history_limit_events: 100000`, configurable 1,000–500,000; applies separately to accepted events, producer-event identities, producer fragments and deletion records. |
+| Producer scopes | 10,000 per inbox; unchanged by the history setting. |
 | Free disk | At least 512 MiB plus room for the intake transaction. |
 | Enrollment records | At most 64 in the configured state root, including retained retired/discarded records. |
 | Streaming work | Defaults shown above; file count allows 1–100,000 and the scan budget 1–600 seconds. Policy file/record caps remain separate. |
 
 These aggregate limits apply to the configured root, not all independent roots
-on the computer. Lowering a cap below current usage blocks new admission without
-trimming evidence. Bounded delivery/forgetting bookkeeping can still proceed
-subject to usable storage and authority. After a killed process, inspect status
+on the computer. The history and database controls accept strict integers.
+Changing only these quotas preserves the existing enrollment, binding and key;
+`--watch` reloads them for the next scan. Lowering a cap below current usage
+blocks new admission without trimming evidence. After a killed process, inspect status
 and reuse the existing inbox and exact pending pages; SQLite recovery and later
 delivery reconcile committed work. Do not generate a new key for that inbox.
+
+The new **unreleased** [history observation](durable-capture.md#read-history-usage-and-change-local-quotas-unreleased)
+is saved in `activity.report.capture.history`; it reports each retained counter,
+effective limits, database bytes and `fence_history_blocked`. `status` exposes
+the currently configured `history_limit_events` and `database_limit_mib`
+separately. It does not decrypt the inbox or refresh an old observation; missing
+history remains unknown until a new scan. Aggregate usage can lower the observed
+database allowance below the configured value.
+
+Authenticated deletion of held data and forgotten receipts can exceed a lowered
+history allowance. A foreign fence that cannot be retained instead commits any
+held-data purges from its page, preserves the retry cursor and persists an
+encrypted intake pause while accepted deliveries remain eligible. The reason
+`capture_fence_capacity` retains ordinary failure polling. Raise the history
+limit and scan until the authenticated fence sweep finishes; a further scan
+can then resume intake. Explicit pause still stops both intake and delivery.
+No history is pruned to make room, and delivery still needs usable disk and
+current authorization. Focused source, controller and migration checks passed,
+including real HTTP overflow and key recovery. Current CI,
+lifetime/history/page/archive limits and packaged L1 acceptance remain open.
 
 The additional unreleased [free-page cleanup](durable-capture.md#reclaim-unused-database-pages-unreleased)
 delta attempts reclamation before intake and after delivery. New inboxes use
@@ -398,7 +423,7 @@ not cap that conversion.
 bytes reclaimed across the scan's two passes and the final pass's bounded
 state/reason. Older absent/null observations remain unknown. Cleanup preserves
 every logical record and denial, introduces no expiry and does not relieve the
-100,000-reference or 10,000-scope caps. Its focused source, controller and
+configured history allowance (default 100,000 per counter) or 10,000-scope cap. Its focused source, controller and
 migration checks passed separately from the earlier headless proof; all
 installed-platform, release and full L1 acceptance remain open.
 
