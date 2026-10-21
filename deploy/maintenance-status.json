@@ -25,72 +25,21 @@
   ],
   "runs": [
     {
-      "id": 39620599958,
+      "id": 39623430574,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "2431ac860e0d46d5ac88907bb44e59212a4a9074",
-      "status": "queued",
+      "source_commit": "4f434ecbe205a715bd8ecd03d44426fc1274b9ac",
+      "status": "pending",
       "conclusion": null,
-      "updated_at": "2026-10-21T14:51:57Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39620599958",
+      "updated_at": "2026-10-21T15:11:28Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39623430574",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 12,
-        "completed": 6,
-        "succeeded": 6,
-        "active": [
-          {
-            "id": 119292753066,
-            "name": "dependency-audit",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": []
-          },
-          {
-            "id": 119292753185,
-            "name": "service (3.13)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 119292753190,
-            "name": "supervision (macos-15)",
-            "status": "queued",
-            "runner_assigned": null,
-            "steps": []
-          },
-          {
-            "id": 119292753203,
-            "name": "supervision (macos-15-intel)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the current Intel cryptography runtime with static OpenSSL"
-            ]
-          },
-          {
-            "id": 119292753248,
-            "name": "service (3.12)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 119292753345,
-            "name": "service (3.14)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          }
-        ]
+        "total": 0,
+        "completed": 0,
+        "succeeded": 0,
+        "active": []
       },
       "failed_jobs": []
     },
@@ -106,15 +55,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39576347122"
     },
     {
-      "id": 39620657759,
+      "id": 39623463543,
       "attempt": 1,
       "workflow": "desktop.yml",
       "branch": "main",
-      "source_commit": "2431ac860e0d46d5ac88907bb44e59212a4a9074",
+      "source_commit": "4f434ecbe205a715bd8ecd03d44426fc1274b9ac",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-21T14:52:39Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39620657759",
+      "updated_at": "2026-10-21T15:11:58Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39623463543",
       "job_details_schema": 2,
       "job_progress": {
         "total": 5,
@@ -122,21 +71,21 @@
         "succeeded": 1,
         "active": [
           {
-            "id": 119292994493,
-            "name": "native_database / Private state / Windows / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Check ownership, inherited privacy and restricted-token access"
-            ]
-          },
-          {
-            "id": 119292994771,
+            "id": 119302703031,
             "name": "native_database / Private state / Windows / arm64",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
               "Install small private-state test dependencies"
+            ]
+          },
+          {
+            "id": 119302703115,
+            "name": "native_database / Private state / Windows / x64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Check ownership, inherited privacy and restricted-token access"
             ]
           }
         ]
@@ -177,15 +126,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39534260688"
     },
     {
-      "id": 39620599994,
+      "id": 39623430643,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "2431ac860e0d46d5ac88907bb44e59212a4a9074",
+      "source_commit": "4f434ecbe205a715bd8ecd03d44426fc1274b9ac",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-21T14:52:22Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39620599994"
+      "updated_at": "2026-10-21T15:11:40Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39623430643"
     },
     {
       "id": 39534391338,
@@ -199,5 +148,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39534391338"
     }
   ],
-  "observed_at": "2026-10-21T14:52:59+00:00"
+  "observed_at": "2026-10-21T15:12:20+00:00"
 }
