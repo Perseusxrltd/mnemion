@@ -1,6 +1,6 @@
 # Headless retained conversation capture
 
-**Unreleased development source.** The stable 4.44 release does not include this
+**Unreleased development source.** The public 4.44.0 release does not include this
 mode. Use a matching development runner and workspace with
 `durable_capture: "v1"` in `GET /health/live`. The [source checkpoint checks](../research/2026-10-21-durable-capture-implementation.md#headless-retained-capture-source-delta)
 passed; all six packaged target journeys remain pending. This guide does not
@@ -11,6 +11,42 @@ in an encrypted local inbox before attempting delivery. A configuration without
 that object keeps its existing mirror behavior. Configuration alone never
 enrolls, resumes or recreates a missing inbox. This runner operates independently
 of Studio and its [private desktop controls](desktop-operator.md).
+
+## Choose a runner entrypoint (unreleased)
+
+The new `connect` subcommand is implemented in unreleased development source;
+all six packaged journeys remain pending. These entrypoints share the same
+connector options, configuration and control body:
+
+| Runner | Command prefix |
+| --- | --- |
+| Existing console runner | `mnemion-connect` |
+| Service CLI | `mnemion-service connect` |
+| Matching bundled engine | `mnemion-engine connect` (`mnemion-engine.exe connect` on Windows) |
+
+Use the [locked source installation](../../README.md#development-and-support)
+for the `uv run --locked mnemion-connect` examples below. You can substitute
+`uv run --locked mnemion-service connect`, or invoke the matching bundled engine
+by its full executable path with `connect` as the first argument. All accept
+`--config`, `--capture-control`, `--inspect`, `--watch`, `--managed-state` and
+`--version`; the mode restrictions below apply to every entrypoint.
+
+The [desktop package](../implementation/native-desktop-packaging.md) places
+`engine/mnemion-engine` (`engine/mnemion-engine.exe` on Windows) inside its
+resource directory: `resources` under the Windows installation,
+`Mnemion Studio.app/Contents/Resources` on macOS, or `squashfs-root/resources` for
+an extracted Linux AppImage. To find your actual installed executable, use
+**Setup & this device → Agents on this computer → Copy local agent setup** as
+described in [local desktop controls](desktop-operator.md). Reuse the executable
+path with the `connect` arguments above. The copied desktop discovery requests
+are not part of this interface.
+
+Invoke the executable directly and pass arguments separately. `connect` starts
+the independent connector; it does not start Studio or the memory service.
+Send capture controls through private stdin using the same JSON body below,
+with secrets held in protected file or environment references. The new
+entrypoints are not available in the public 4.44.0 engine, and their installed
+journeys have not yet established acceptance on any of the six targets.
 
 ## Prepare the approved source and private files
 
@@ -39,11 +75,9 @@ the `key` control below generates it without printing it. Referenced values
 must be nonempty printable ASCII and fit within 16 KiB. Do not put key values
 in JSON, command arguments or logs.
 
-Use the [locked source installation](../../README.md#development-and-support)
-and run the examples from that development checkout. All paths, IDs and members
-below are synthetic placeholders; replace them with your private locations and
-the exact approved identities. Save this configuration as, for example,
-`/private/headless-source.json`:
+All paths, IDs and members below are synthetic placeholders; replace them with
+your private locations and the exact approved identities. Save this
+configuration as, for example, `/private/headless-source.json`:
 
 ```json
 {
@@ -147,7 +181,8 @@ that denial stops later intake without exposing the hidden metadata.
 
 ## Use the local control interface
 
-Send one JSON object on stdin. The maximum request size is 64 KiB.
+Send one JSON object on private stdin, unchanged across the three entrypoints.
+The maximum request size is 64 KiB.
 `--capture-control` cannot be combined with `--watch`, `--inspect` or
 `--managed-state`:
 
@@ -288,19 +323,27 @@ Failed, paused, complete and legacy mirror scans use ordinary polling.
 only optional remote triggers/reporting. There is no new profile setting;
 pause, resource and admission controls still apply.
 
-The direct watcher uses its installed development runner until the operator
-updates it. Keep one runner for the configured inbox and arrange process startup
-and bounded log rotation through your existing process manager.
+The direct watcher runs independently of Studio and uses the runtime with which
+it was started. Arrange startup, restart and bounded log rotation through your
+own process manager, with one runner per inbox. Stopping the watcher leaves its
+accepted queue on disk; restart with the same configuration, state and key
+references to continue. A Studio restart does not restart this process. To
+update, stop the watcher, update the source installation or engine package,
+then launch the replacement explicitly. In particular, a standalone Windows
+`mnemion-engine.exe connect --watch` process does not automatically follow
+Studio updates.
 
 On an adopted Linux/macOS host, `--watch --managed-state /private/managed-service`
-uses the [managed runtime](managed-connectors.md). In this development delta,
+uses the [managed runtime](managed-connectors.md). Every entrypoint accepts this
+option, but it requires `--watch` and the existing adopted host's verified state;
+it cannot be combined with `--capture-control`. In this development delta,
 retained capture may scan while local service readiness is false. It still
 holds the runtime/update leases, waits through update journals and cutovers,
 and requires `capture_protocol: 1` from the verified runtime preflight. An older
 runtime explicitly refuses retained capture. Mirror configurations keep their
 service-readiness gate. This option selects an existing managed service; it
 does not install a process manager, enroll a source or provide Windows managed
-hosting. Stable 4.44 is not a capture-aware runtime.
+hosting. Public 4.44.0 is not a capture-aware runtime.
 
 For the five-second follow-up, the managed launcher removes the old optional
 receipt before each scan and reads a new private `capture_backfill` boolean.

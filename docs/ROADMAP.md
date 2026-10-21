@@ -70,8 +70,17 @@ issue review, publication and version-linked closure together.
   quota controls are implemented; 167 distinct focused service cases, 77 native
   controller cases and 30 migration checks are qualified after four reproduced
   failures. This batch also corrects the preceding CI's memory/speed-dependent
-  test assumptions without changing product limits. Current CI and packaged
-  acceptance remain pending. The prior
+  test assumptions without changing product limits. All 12 CI jobs passed for
+  that correction on `c18a439c`; later source and packaged acceptance remain
+  separately observed. The native boundary gate now covers incomplete Unicode,
+  rotation gaps, a lost commit reply, current reader/policy revocation and
+  fragment-family forgetting through two real app launches. Its Linux source
+  preview passed 19 checks. The [independent engine lifecycle](research/2026-10-21-durable-capture-implementation.md#independent-native-engine-capture-lifecycle)
+  adds `connect` to the service and bundled-engine CLI, with a 13-check Linux
+  source journey for offline process restarts, protected inbox failures,
+  encrypted recovery and later deletion fences. The 20 CLI/control cases and
+  30 migration checks passed; all six packaged capture journeys remain pending.
+  The prior
   policy checkpoint's failed health-response CI and its later test correction
   remain recorded. This remains unreleased source. Reviewed identity/policy
   migration, complete capture policy and coverage, headless installed acceptance,

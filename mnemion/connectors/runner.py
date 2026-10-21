@@ -459,32 +459,17 @@ def wait_for_sync(config, *, failed=False, backfill=False, client=None, clock=No
 
 
 def main(argv=None) -> int:
+    from .runner_options import arguments
+
     parser = argparse.ArgumentParser(
         description="Connect company sources to a scoped Mnemion memory service"
     )
-    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
-    parser.add_argument("--config", type=Path, required=True)
-    parser.add_argument(
-        "--capture-control",
-        action="store_true",
-        help="Run a retained-capture control from bounded JSON on stdin; secrets use private references",
-    )
-    parser.add_argument(
-        "--inspect",
-        action="store_true",
-        help="Read provider scope IDs and membership without importing or changing service access",
-    )
-    parser.add_argument(
-        "--watch",
-        action="store_true",
-        help="Repeat complete scans; configuration and token files reload between runs",
-    )
-    parser.add_argument(
-        "--managed-state",
-        type=Path,
-        help="Use this local managed Linux/macOS service's verified runtime for each scan",
-    )
-    args = parser.parse_args(argv)
+    arguments(parser)
+    return execute(parser.parse_args(argv), parser)
+
+
+def execute(args, parser) -> int:
+    """Run the same connector contract from either installed entry point."""
     if args.capture_control and (args.watch or args.inspect or args.managed_state):
         parser.error("--capture-control cannot be combined with another mode")
     if args.inspect and args.watch:

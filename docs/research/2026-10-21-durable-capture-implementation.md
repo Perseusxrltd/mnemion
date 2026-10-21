@@ -970,6 +970,48 @@ builds initially caught missing optional-value guards in the probe itself.
 Those were fixture corrections, not weakened product checks. All six packaged
 runs remain pending; no new release or L1 completion is claimed here.
 
+## Independent native engine capture lifecycle
+
+The independent connector is now reachable through `mnemion-service connect`
+and the bundled `mnemion-engine connect` entrypoint in development source.
+Both use the existing `mnemion-connect` parser options and execution body.
+Capture controls still receive bounded JSON on private stdin, with credentials
+and encryption keys supplied through protected references. Importing the
+service command parser does not import the full connector implementation.
+Public 4.44.0 does not include this new command or retained capture.
+
+The normal installed-hosting gate now includes an independent connector phase.
+It creates no desktop-managed source and starts the actual engine with the
+`connect` command. Its approved, paused enrollment generates a private inbox
+key, then keeps one accepted memory through two offline watcher launches, even
+after the original producer file is removed. Offline pause, encrypted backup
+and authenticated inspection preserve that pending evidence. A changed key
+and a missing initialized database each refuse to reset or replace the inbox.
+The original queued memory later arrives once, with its identity and version
+intact.
+
+The phase then forgets that memory on the server, restores the older pending
+archive to a new device grant and encryption key, and checks the current
+deletion fence before any repeat page write. It captures a new memory, retires
+both grants and cleans up the disposable fixture. This extends the required
+six-target gate; adding it is not evidence that the packaged targets passed.
+
+The corrected Linux source preview passed all 13 phase checks with the real
+app, service, CLI processes, PostgreSQL and OS key store. Its 552 runtime inputs
+have fingerprint
+`38e9c143ced506a6bfaf5d959182772384ac39f16371757db253b471a398a2ab`.
+The earlier failed preview is retained: the synthetic Codex file omitted its
+session header and was correctly counted as unsupported. Only the fixture was
+corrected. Fourteen entrypoint cases and six existing headless-control cases
+passed; the fresh migration preflight passed all 30 cases. No production memory
+writes or paid model calls occurred. Installed acceptance remains pending.
+
+The [headless guide](../service/headless-capture.md) documents the shared
+entrypoints and actual package locations. A direct watcher still needs its own
+startup/restart handling. The existing `--watch --managed-state` path follows
+verified runtime updates on an adopted Linux/macOS host; this command does not
+add standalone Windows watcher supervision or automatic restart.
+
 ## Source and deletion boundaries
 
 The staged service exposes a `durable_capture: "v1"` capability. An administrator

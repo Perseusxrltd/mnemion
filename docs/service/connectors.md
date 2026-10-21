@@ -129,6 +129,13 @@ to private desktop source settings; neither field belongs inside `provider`.
 Server custody approval alone does not enroll a local runner. Successful
 delivery also does not establish indexing readiness or completed librarian work.
 
+Unreleased development source adds `mnemion-service connect` and bundled
+`mnemion-engine connect` (`mnemion-engine.exe connect` on Windows). They use the
+same `mnemion-connect` options, configuration and private stdin control body;
+see [runner entrypoints and installed locations](headless-capture.md#choose-a-runner-entrypoint-unreleased).
+The `capture` object still controls retention. All six packaged journeys remain
+pending; these new entrypoints are not included in public 4.44.0.
+
 Desktop retained-source removal requires a pause, explicit local discard and confirmed
 grant revocation. A current workspace administrator can confirm retirement if
 the saved device key is unavailable, using a removal-only credential that is
@@ -174,6 +181,11 @@ service hotfixes. A plain `--watch` process keeps its installed runtime; its
 startup record identifies that manual update mode. Scan reports include the
 actual runner version. Stop the old runner before transferring its existing
 configuration to managed mode.
+
+The new service/engine entrypoints follow the same rule: `--managed-state`
+requires `--watch` and an existing adopted Linux/macOS host. An independently
+started engine watcher needs its own process startup and restart handling.
+Standalone Windows watchers do not automatically follow Studio updates.
 
 For a local or synchronized vault:
 

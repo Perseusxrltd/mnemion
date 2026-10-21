@@ -76,6 +76,12 @@ def main(argv: list[str] | None = None) -> int:
             "desktop-source", help="Private Studio source helper; JSON through process pipes"
         )
     )
+    from ..connectors.runner_options import arguments as connector_arguments
+
+    connector = commands.add_parser(
+        "connect", help="Run an independent source connector with private capture controls"
+    )
+    connector_arguments(connector)
     from ..desktop_agents import arguments as agent_setup_arguments
 
     agent_setup_arguments(
@@ -391,6 +397,10 @@ def main(argv: list[str] | None = None) -> int:
         from ..desktop_sources import dispatch
 
         return dispatch(args)
+    elif args.command == "connect":
+        from ..connectors.runner import execute as connector_execute
+
+        return connector_execute(args, connector)
     elif args.command == "desktop-agent":
         from ..desktop_agents import dispatch
 
