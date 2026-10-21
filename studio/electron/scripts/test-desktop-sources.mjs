@@ -192,6 +192,25 @@ test('capture archive inspection does not load damaged settings or open OS crede
   assert.throws(() => readCaptureArchive({ ...expected, workspace_credentials_included: true }))
 })
 
+test('archive inspection accepts preserved v1 and bounded v2 field policies', () => {
+  const archive = archiveReport(retainedDefinition())
+  const legacy = { format: 'mnemion-capture-policy-v1', preset: 'conversation', capture_mode: 'messages',
+    include: ['*.jsonl'], exclude: [], retention: 'until_deleted', max_file_bytes: 1e9, max_record_bytes: 2e6 }
+  archive.binding.capture_policy = legacy
+  assert.deepEqual(readCaptureArchive(archive), archive)
+  const selected = { ...legacy, format: 'mnemion-capture-policy-v2', exclude_fields: ['api_key', 'text'] }
+  archive.binding.capture_policy = selected
+  assert.deepEqual(readCaptureArchive(archive), archive)
+  for (const invalid of [
+    { ...selected, format: legacy.format }, { ...selected, exclude_fields: [] },
+    { ...selected, exclude_fields: ['text', 'api_key'] }, { ...selected, exclude_fields: ['text', 'text'] },
+    { ...selected, exclude_fields: ['*'] }, { ...selected, exclude_fields: ['API_KEY'] },
+  ]) {
+    archive.binding.capture_policy = invalid
+    assert.throws(() => readCaptureArchive(archive), /archived capture policy/)
+  }
+})
+
 const recoveryReport = source => ({ format: 'mnemion-capture-restored-v1', id: source.id, archive_sha256: 'c'.repeat(64),
   previous_grant_id: randomUUID(), grant_id: source.custody.grant_id, previous_grant_revoked: true,
   source_enrolled: true, source_enabled: false, status: archiveReport(source).status })
@@ -354,6 +373,21 @@ test('capture preview is read-only and passes its reviewed hash to configuration
   assert.deepEqual(configured.sources[0].capture_policy, source.capture_policy)
   assert.equal(manager.busy, false)
   assert.equal(desktopAction('source.preview', { selection }).mutation, false)
+})
+
+test('field-selection previews preserve explicit capability and bounded-failure observations', () => {
+  for (const state of ['not_supported', 'disabled', 'json_field_names']) {
+    const value = previewReport(); value.field_redaction = state
+    assert.deepEqual(readCapturePreview(value), value)
+  }
+  const value = previewReport()
+  value.field_redaction = 'json_field_names'
+  value.files[0].status = 'field_selection_limit'; value.files[0].prefix_bytes = 0
+  value.files[0].records = { lines: 0, selected: 0, omitted: 0, unsupported: 0 }
+  value.records = { ...value.files[0].records }
+  assert.deepEqual(readCapturePreview(value), value)
+  value.field_redaction = 'all_secrets_removed'
+  assert.throws(() => readCapturePreview(value), /preview could not be verified/)
 })
 
 for (const [name, mutate] of [

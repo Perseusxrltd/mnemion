@@ -145,8 +145,8 @@ messages; Detailed uses `complete`; Selected permits either mode with relative
 JSONL file patterns. Session filters select filenames, not records within a
 file. See the [selection and capability limits](durable-capture.md#content-file-selection-and-retention).
 Retained capture requires `until_deleted`, normalization enabled and generated
-files excluded. Automatic expiry, field redaction, attachment fetching and
-hidden reasoning remain unavailable.
+files excluded. Automatic expiry, automatic secret detection, attachment fetching
+and hidden reasoning remain unavailable.
 
 Older mode-only `complete` or `messages` configurations can explicitly enroll
 with `capture` only against a matching mode-only approved grant. They must keep
@@ -155,6 +155,44 @@ explicit policy; adding one to an existing inbox is a reviewed migration.
 Changing enrolled identity, source path, selection, audience or credential
 references also requires explicit recovery or re-enrollment. Runtime resource
 limits and polling settings do not change the approved capture policy.
+
+### Exclude JSON fields (unreleased)
+
+This additional development feature uses the same policy as native source setup
+and hosted administrator review. Focused source, service, controller and migration
+checks and the Linux desktop source preview passed; all six packaged journeys
+remain pending. It is not included in public 4.44.0. For a new enrollment, set
+`provider.capture_policy` to the exact approved v2 policy, for example:
+
+```json
+{
+  "format": "mnemion-capture-policy-v2",
+  "preset": "conversation",
+  "capture_mode": "messages",
+  "include": ["*.jsonl"],
+  "exclude": [],
+  "exclude_fields": ["api_key", "authorization", "password"],
+  "retention": "until_deleted",
+  "max_file_bytes": 1000000000,
+  "max_record_bytes": 2000000
+}
+```
+
+`exclude_fields` allows at most 32 distinct, case-insensitive literal ASCII names,
+normalized and sorted. Identity and structural fields are refused. Matching keys
+are removed recursively before selected evidence is persisted or normalized in
+both `messages` and `complete` modes. Producer files remain untouched. String
+contents, including JSON embedded in strings, are not inspected or scrubbed.
+The [field rules and source-check evidence](durable-capture.md#exclude-json-fields-unreleased)
+give the name constraints and the visible refusal when traversal exceeds 64
+levels or 250,000 visited values per record. This is not automatic secret detection.
+
+For existing v1 policies without exclusions, an omitted or empty `exclude_fields`
+list preserves their serialization and fingerprints. Preview the selected
+policy again before enrollment and use its matching hash. Changing an existing
+retained inbox's selection requires reviewed migration; copying this example
+over an enrolled configuration does not migrate it. New exclusions do not remove
+previously accepted memories, queued evidence or backups.
 
 ## Administrator policy changes (unreleased)
 

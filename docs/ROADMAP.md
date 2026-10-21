@@ -84,7 +84,16 @@ issue review, publication and version-linked closure together.
   inbox files; the expanded Linux source journey passed 24 checks. The first
   six-target run failed before packaging on a shared client import; the corrected
   locked client suite passed 235 cases with 13 platform skips and now runs in
-  ordinary CI. All six packaged capture journeys remain pending.
+  ordinary CI. All 12 CI jobs passed on `d9b40cca`; the next six-target run
+  reached installed hosting but failed before capture enrollment completed.
+  The [new source batch](research/2026-10-21-durable-capture-implementation.md#json-field-exclusions-and-installed-capture-navigation)
+  corrects capture navigation after the packaged Help check and adds optional
+  literal JSON field exclusions, preserving old policy fingerprints and
+  encrypted archive/recovery bindings. Focused field, service, native controller
+  and migration checks passed. The Linux source journey passed 31 checks across
+  three real app launches, including field exclusions through archive recovery
+  and the corrected Help-to-workspace transition.
+  All six packaged capture journeys remain pending.
   The prior
   policy checkpoint's failed health-response CI and its later test correction
   remain recorded. This remains unreleased source. Reviewed identity/policy

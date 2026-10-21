@@ -81,6 +81,9 @@ export async function verifyNativeCapture(window: BrowserWindow, config: Record<
         await selectConnection(${JSON.stringify(fixture.connectorId)});
         await click('Choose folder');
         const mode=card().querySelector('select');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(mode,'messages');mode.dispatchEvent(new Event('change',{bubbles:true}));await pause(100);
+        const fields=[...card().querySelectorAll('label')].find(e=>e.textContent.startsWith('Exclude JSON fields'))?.querySelector('textarea');
+        if(!fields||fields.disabled)throw new Error('The app did not offer JSON field exclusions');
+        fields.closest('details').open=true;Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(fields,'text');fields.dispatchEvent(new Event('input',{bubbles:true}));await pause(100);
         const keep=[...card().querySelectorAll('label')].find(e=>e.textContent.includes('Keep captured memories when original chat logs rotate or are removed'))?.querySelector('input');
         if(!keep||keep.disabled)throw new Error('The app did not offer explicit retained capture consent');keep.click();await pause(100);
         await click('Preview capture');
@@ -91,6 +94,7 @@ export async function verifyNativeCapture(window: BrowserWindow, config: Record<
       `)
     } finally { dialog.showOpenDialog = originalDialog }
     if (!selected || configured.capture_mode !== 'messages' || configured.capture_policy?.preset !== 'conversation' || configured.capture_policy?.retention !== 'until_deleted' || configured.custody.keep_accepted !== true || !configured.members.includes('native-capture-owner')) throw new Error('The actual capture form lost its reviewed choices or mapped audience.')
+    if (configured.capture_policy.format !== 'mnemion-capture-policy-v2' || JSON.stringify(configured.capture_policy.exclude_fields) !== '["text"]') throw new Error('Native field exclusions were not retained under the reviewed v2 policy.')
     await pauseSource(configured.id)
     const saved = JSON.parse(await readFile(sourcesPath, 'utf8')).sources.find((s: any) => s.id === configured.id)
     if (!saved?.sealed_inbox_key || saved.sealed_inbox_key === saved.sealed_key) throw new Error('The installed app did not seal a separate inbox key.')
@@ -101,9 +105,11 @@ export async function verifyNativeCapture(window: BrowserWindow, config: Record<
     await until(async () => (await call('status')).state === 'stopped', 'The disposable host did not stop for offline capture.')
     const selectedText = 'Native offline capture ' + randomUUID()
     const excludedText = 'Excluded structured tool trace ' + randomUUID()
+    const excludedFieldText = 'Excluded JSON text field ' + randomUUID()
     const selectedLog = join(folder, 'codex-session.jsonl')
     await writeFile(selectedLog, JSON.stringify({ type: 'session_meta', payload: { id: randomUUID() } }) + '\n' +
       JSON.stringify({ type: 'event_msg', payload: { type: 'user_message', message: selectedText } }) + '\n' +
+      JSON.stringify({ type: 'response_item', payload: { type: 'message', role: 'assistant', content: [{ type: 'output_text', text: excludedFieldText }] } }) + '\n' +
       JSON.stringify({ type: 'response_item', payload: { type: 'function_call_output', call_id: 'synthetic', output: excludedText } }) + '\n', { mode: 0o600, flag: 'wx' })
     let current = await sourceStatus(configured.id)
     await call('source.pause', { id: configured.id, expected_revision: current.view.revision, enabled: true })
@@ -149,6 +155,7 @@ export async function verifyNativeCapture(window: BrowserWindow, config: Record<
     if (!archiveSelected || !archive.authenticated || archive.workspace_credentials_included || archive.source_enrolled ||
         archive.binding.source_id !== configured.custody.source_id || archive.binding.grant_id !== configured.custody.grant_id ||
         archive.status.pending_events !== queued.activity.report!.capture!.pending_events) throw new Error('The native capture archive lost its original identity or pending evidence.')
+    if (archive.binding.capture_policy?.format !== 'mnemion-capture-policy-v2' || JSON.stringify(archive.binding.capture_policy.exclude_fields) !== '["text"]') throw new Error('The native archive lost its approved field exclusions.')
     const archiveBytes = await readFile(archivePath)
     if (archiveBytes.includes(Buffer.from(selectedText)) || archiveBytes.includes(Buffer.from(excludedText))) throw new Error('The portable capture archive contains plaintext conversation content.')
     const [width, height] = window.getContentSize()
@@ -162,13 +169,14 @@ export async function verifyNativeCapture(window: BrowserWindow, config: Record<
     await rm(selectedLog)
     await rmdir(folder)
     const captured = { ...fixture, id: configured.id, grantId: configured.custody.grant_id,
-      workspace, folder, selectedText, excludedText, pending: queued.activity.report!.capture!.pending_events,
+      workspace, folder, selectedText, excludedText, excludedFieldText, pending: queued.activity.report!.capture!.pending_events,
       archivePath, recoveryKey, archiveSha256: archive.archive_sha256,
       sealedInboxSha256: createHash('sha256').update(saved.sealed_inbox_key).digest('hex') }
     await writeFile(fixturePath, JSON.stringify(captured), { mode: 0o600, flag: 'wx' })
     return { phase: config.phase, nativeCaptureConsentControls: true, nativeCaptureIndependentOsKey: true,
       nativeCaptureBeforeDelivery: true, nativeCaptureOfflineRemovalPreservesInbox: true,
       nativeCaptureSelectedPayloadEncrypted: true, nativeCapturePausedBeforeRestart: true,
+      nativeCaptureFieldExclusionsReviewed: true, nativeCaptureFieldPolicyArchived: true,
       nativeCaptureBackupThroughApp: true, nativeCaptureBackupEncrypted: true,
       nativeCaptureBackupAppAndAgentAgree: true, nativeCaptureBackupNarrowLayout: true }
   }
@@ -177,6 +185,7 @@ export async function verifyNativeCapture(window: BrowserWindow, config: Record<
   const recoveredPhase = config.phase === 'capture-restored-resume'
   const sourceId = recoveredPhase ? fixture.restoredId : fixture.id
   const saved = JSON.parse(await readFile(sourcesPath, 'utf8')).sources.find((s: any) => s.id === sourceId)
+  if (saved?.capture_policy?.format !== 'mnemion-capture-policy-v2' || JSON.stringify(saved.capture_policy.exclude_fields) !== '["text"]') throw new Error('Capture restart or recovery changed its approved field exclusions.')
   const keySha = recoveredPhase ? fixture.restoredSealedInboxSha256 : fixture.sealedInboxSha256
   if (!saved || saved.enabled || createHash('sha256').update(saved.sealed_inbox_key).digest('hex') !== keySha) throw new Error('App restart changed the capture key or lost its paused configuration.')
   let current = await sourceStatus(sourceId)
@@ -200,7 +209,8 @@ export async function verifyNativeCapture(window: BrowserWindow, config: Record<
   if (recoveredPhase) {
     await writeFile(join(fixture.restoredFolder, 'recovered-session.jsonl'),
       JSON.stringify({ type: 'session_meta', payload: { id: randomUUID() } }) + '\n' +
-      JSON.stringify({ type: 'event_msg', payload: { type: 'user_message', message: fixture.newText } }) + '\n', { mode: 0o600, flag: 'wx' })
+      JSON.stringify({ type: 'event_msg', payload: { type: 'user_message', message: fixture.newText } }) + '\n' +
+      JSON.stringify({ type: 'response_item', payload: { type: 'message', role: 'assistant', content: [{ type: 'output_text', text: fixture.excludedFieldText }] } }) + '\n', { mode: 0o600, flag: 'wx' })
   }
   current = await sourceStatus(sourceId)
   await call('source.pause', { id: sourceId, expected_revision: current.view.revision, enabled: true })
@@ -211,7 +221,7 @@ export async function verifyNativeCapture(window: BrowserWindow, config: Record<
   }, 'The installed app did not deliver its encrypted queue after restart and producer removal.')
   const memory = await inRenderer(window, `
     const results=await request('POST','/v1/recall',{query:${JSON.stringify(fixture.selectedText)},all_accessible:true,mode:'lexical'});
-    const matching=[];for(const hit of results.hits){const m=await request('GET','/v1/memories/'+hit.memory_id);if(m.content.includes(${JSON.stringify(fixture.selectedText)})){if(JSON.stringify(m).includes(${JSON.stringify(fixture.excludedText)}))throw new Error('Messages-only custody included the excluded tool trace');matching.push(m.memory_id);}}
+    const matching=[];for(const hit of results.hits){const m=await request('GET','/v1/memories/'+hit.memory_id);if(m.content.includes(${JSON.stringify(fixture.selectedText)})){if(JSON.stringify(m).includes(${JSON.stringify(fixture.excludedText)}))throw new Error('Messages-only custody included the excluded tool trace');if(JSON.stringify(m).includes(${JSON.stringify(fixture.excludedFieldText)})||m.metadata.field_redaction!=='json_field_names')throw new Error('The shared workspace did not preserve approved field exclusions');matching.push(m.memory_id);}}
     if(matching.length!==1)throw new Error('Offline delivery did not produce exactly one selected memory');
     await selectConnection(${JSON.stringify(fixture.connectorId)});
     await until(()=>{const counts=card()?.querySelector('[aria-label="Retained capture status"]');return counts?.textContent.includes('acknowledged by the workspace')&&counts.textContent.includes('0 queued');},'The installed app did not display its retained queue counts');
@@ -221,7 +231,7 @@ export async function verifyNativeCapture(window: BrowserWindow, config: Record<
     if (memory !== fixture.memory) throw new Error('Recovery duplicated an already accepted source memory.')
     await inRenderer(window, `
       const result=await request('POST','/v1/recall',{query:${JSON.stringify(fixture.newText)},all_accessible:true,mode:'lexical'});
-      let count=0;for(const hit of result.hits){const m=await request('GET','/v1/memories/'+hit.memory_id);if(m.content.includes(${JSON.stringify(fixture.newText)}))count++;}
+      let count=0;for(const hit of result.hits){const m=await request('GET','/v1/memories/'+hit.memory_id);if(m.content.includes(${JSON.stringify(fixture.newText)})){if(JSON.stringify(m).includes(${JSON.stringify(fixture.excludedFieldText)})||m.metadata.field_redaction!=='json_field_names')throw new Error('Recovered capture did not retain its field exclusions');count++;}}
       if(count!==1)throw new Error('The recovered source did not capture exactly one new memory');
     `)
   }
@@ -281,6 +291,7 @@ export async function verifyNativeCapture(window: BrowserWindow, config: Record<
       restoredSealedInboxSha256: createHash('sha256').update(fresh.sealed_inbox_key).digest('hex'), newText: 'Native recovered future memory ' + randomUUID() })
     await writeFile(fixturePath, JSON.stringify(fixture), { mode: 0o600 })
     return { phase: config.phase, nativeCaptureQueueSurvivesAppRestart: true, nativeCaptureKeyReopenedByOs: true,
+      nativeCaptureFieldExclusionsDelivered: true,
       nativeCaptureDeliversAfterProducerRemoval: true, nativeCaptureVisibleAppCounts: true,
       nativeCaptureAdministratorRemovalAfterKeyRevocation: true, nativeCaptureRemovalRetainsServerMemory: true,
       nativeCaptureBackupSurvivesAppRestart: true, nativeCaptureBackupInspectAfterSourceRemoval: true,
@@ -297,6 +308,7 @@ export async function verifyNativeCapture(window: BrowserWindow, config: Record<
   await rm(fixture.archivePath)
   await rm(fixturePath)
   return { phase: config.phase, nativeCaptureRestoredKeyReopenedByOs: true, nativeCaptureRestoredPausedAfterRestart: true,
+    nativeCaptureFieldExclusionsSurviveRecovery: true,
     nativeCaptureRestoredQueueReconcilesWithoutDuplicates: true, nativeCaptureRestoredNewMemoriesCaptured: true,
     nativeCaptureFixtureCleanup: true, acceptedEvents: delivered.stored_events }
 }

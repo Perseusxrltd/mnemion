@@ -55,6 +55,7 @@ function SourcePolicy({ source, client, connection, endpoint }: {
   const [deviceAfter, setDeviceAfter] = useState<string>(), [policyAfter, setPolicyAfter] = useState(0);
   const [policy, setPolicy] = useState(() => policyFor(source));
   const [include, setInclude] = useState(policy.include.join('\n')), [exclude, setExclude] = useState(policy.exclude.join('\n'));
+  const [fields, setFields] = useState(policy.exclude_fields?.join('\n') ?? '');
   const [treatment, setTreatment] = useState<'retain' | 'revoke'>('retain');
   const [dirty, setDirty] = useState(false), [busy, setBusy] = useState(false), [confirmed, setConfirmed] = useState(false);
   const [error, setError] = useState<string>(), [notice, setNotice] = useState<string>(), [retiring, setRetiring] = useState<string>();
@@ -70,6 +71,7 @@ function SourcePolicy({ source, client, connection, endpoint }: {
     if (!dirty) {
       const selected = policyFor(current);
       setPolicy(selected); setInclude(selected.include.join('\n')); setExclude(selected.exclude.join('\n'));
+      setFields(selected.exclude_fields?.join('\n') ?? '');
     }
   }, [current.version, dirty]);
   function editing() { setDirty(true); setCandidate(undefined); setConfirmed(false); setNotice(undefined); }
@@ -114,8 +116,11 @@ function SourcePolicy({ source, client, connection, endpoint }: {
       <summary>Change the policy for new device authorizations</summary>
       <form className="ws-form" onSubmit={event => { event.preventDefault(); void act(async () => {
         const fresh = await client.request<Review>('GET', route + '/policy-review');
+        const excludedFields = fields.split('\n').map(value => value.trim().toLowerCase()).filter(Boolean).sort();
         const selected: CapturePolicy = { ...policy, include: include.split('\n').map(value => value.trim()).filter(Boolean),
-          exclude: exclude.split('\n').map(value => value.trim()).filter(Boolean) };
+          exclude: exclude.split('\n').map(value => value.trim()).filter(Boolean),
+          format: excludedFields.length ? 'mnemion-capture-policy-v2' : policy.format,
+          exclude_fields: excludedFields.length ? excludedFields : undefined };
         setCandidate({ id: crypto.randomUUID(), review: fresh, command: { expected_version: fresh.source.version,
           review_token: fresh.review_token, capture_policy: selected, previous_grants: treatment, confirm: true } });
         setConfirmed(false);
@@ -128,6 +133,8 @@ function SourcePolicy({ source, client, connection, endpoint }: {
         {policy.preset === 'selected' && <label className="ws-field"><span>Content</span><select data-update-safe disabled={busy} value={policy.capture_mode} onChange={event => { editing(); setPolicy({ ...policy, capture_mode: event.target.value as CapturePolicy['capture_mode'] }); }}><option value="messages">User and assistant messages</option><option value="complete">Available exported event fields</option></select></label>}
         <label className="ws-field"><span>Included session paths, one pattern per line</span><textarea data-update-safe disabled={busy} required maxLength={32768} value={include} onChange={event => { editing(); setInclude(event.target.value); }} /></label>
         <label className="ws-field"><span>Excluded session paths, one pattern per line</span><textarea data-update-safe disabled={busy} maxLength={32768} value={exclude} onChange={event => { editing(); setExclude(event.target.value); }} /></label>
+        <label className="ws-field"><span>Exclude JSON fields</span><textarea data-update-safe disabled={busy} maxLength={4128} placeholder={'api_key\npassword'} value={fields} onChange={event => { editing(); setFields(event.target.value); }} /></label>
+        <p className="ws-helper">Up to 32 literal ASCII names, one per line. Matching fields are excluded recursively, ignoring case, before content is stored. Identity and structural fields are preserved; string contents are unchanged. Existing approved policies and memories are not rewritten.</p>
         <details className="ws-details"><summary>Read limits</summary>
           <label className="ws-field"><span>Maximum file size (MB)</span><input type="number" data-update-safe disabled={busy} min={0.001} max={1000000} step={0.001} value={policy.max_file_bytes / 1_000_000} onChange={event => { editing(); setPolicy({ ...policy, max_file_bytes: Math.round(Number(event.target.value) * 1_000_000) }); }} /></label>
           <label className="ws-field"><span>Maximum event record (KB)</span><input type="number" data-update-safe disabled={busy} min={0.001} max={16000} step={0.001} value={policy.max_record_bytes / 1000} onChange={event => { editing(); setPolicy({ ...policy, max_record_bytes: Math.round(Number(event.target.value) * 1000) }); }} /></label>
@@ -140,6 +147,7 @@ function SourcePolicy({ source, client, connection, endpoint }: {
       </form>
       {candidate && <div className="ws-notice" data-capture-policy-review="ready">
         <p>Change the default from policy {candidate.review.source.policy_version} ({candidate.review.source.capture_mode}) to <strong>{candidate.command.capture_policy.capture_mode === 'messages' ? 'user and assistant messages' : 'all available exported event fields'}</strong>.</p>
+        <p>Excluded JSON fields: {candidate.command.capture_policy.exclude_fields?.join(', ') || 'None'}.</p>
         <p>{candidate.command.previous_grants === 'retain'
           ? `Keep all ${candidate.review.unrevoked_grants} existing authorizations on their approved policies, including their permission to collect new content.`
           : `Revoke all ${candidate.review.unrevoked_grants} existing authorizations. Pending deliveries from those grants will be refused until an administrator approves recovery.`}</p>
@@ -156,7 +164,7 @@ function SourcePolicy({ source, client, connection, endpoint }: {
       {history.data?.items.map(item => <details className="ws-details" key={item.policy_version}>
         <summary>Policy {item.policy_version} · {item.capture_policy?.preset ?? item.capture_mode}{item.policy_version === current.policy_version ? ' · current default' : ''}</summary>
         <p>Approved {new Date(item.created_at).toLocaleString()}{item.previous_grants ? ` · ${item.affected_grants} earlier authorizations ${item.previous_grants === 'retain' ? 'retained' : 'revoked'}` : ' · original approval'}.</p>
-        {item.capture_policy ? <><p>Include: {item.capture_policy.include.join(', ')}</p><p>Exclude: {item.capture_policy.exclude.join(', ') || 'Default exclusions only'}</p><p>File limit {item.capture_policy.max_file_bytes.toLocaleString()} bytes · record limit {item.capture_policy.max_record_bytes.toLocaleString()} bytes</p></> : <p>The original mode-only approval is preserved. No later selection rules are assumed.</p>}
+        {item.capture_policy ? <><p>Include: {item.capture_policy.include.join(', ')}</p><p>Exclude: {item.capture_policy.exclude.join(', ') || 'Default exclusions only'}</p><p>Excluded JSON fields: {item.capture_policy.exclude_fields?.join(', ') || 'None'}</p><p>File limit {item.capture_policy.max_file_bytes.toLocaleString()} bytes · record limit {item.capture_policy.max_record_bytes.toLocaleString()} bytes</p></> : <p>The original mode-only approval is preserved. No later selection rules are assumed.</p>}
       </details>)}
       <div className="ws-actions">{history.data?.next_cursor && <button className="ws-button" disabled={busy} onClick={() => setPolicyAfter(history.data!.next_cursor!)}>Next policies</button>}{policyAfter > 0 && <button className="ws-button" disabled={busy} onClick={() => setPolicyAfter(0)}>First policies</button>}</div>
     </details>

@@ -6,6 +6,7 @@ const statuses = {
   sampled: 'Prefix sampled', unreadable: 'Could not read', changed: 'Changed during preview',
   too_large: 'Above file limit', record_too_large: 'Above record limit',
   private_control: 'Private control data excluded', invalid_jsonl: 'Invalid JSONL prefix',
+  field_selection_limit: 'JSON field selection limit reached',
 };
 
 export default function CapturePreviewPanel({ preview }: { preview: CapturePreview }) {
@@ -19,7 +20,7 @@ export default function CapturePreviewPanel({ preview }: { preview: CapturePrevi
       <strong>{file.path}</strong> — {statuses[file.status]} · {size(file.prefix_bytes)} examined of {size(file.file_bytes)}
     </li>)}</ul>}
     <p className="ws-helper">This is a sample of exposed file prefixes, up to eight files and 1 MiB. Counts can change as sessions grow; duplicate events and later context are reconciled during capture. This preview saves no content and calls no model.</p>
-    <p className="ws-helper">Attachments are not read and external links are not followed. Hidden reasoning is unavailable. Field redaction and automatic expiry are not enabled; ordinary message text may contain sensitive information.</p>
+    <p className="ws-helper">{preview.field_redaction === 'json_field_names' ? 'Configured JSON fields are excluded recursively before local storage. Free text and JSON encoded inside strings are unchanged.' : 'No JSON field exclusions are applied.'} Attachments are not read, external links are not followed, and hidden reasoning is unavailable. Automatic expiry is not enabled.</p>
     {preview.policy_revision && <details className="ws-details"><summary>Policy identity</summary><code style={{ overflowWrap: 'anywhere' }}>{preview.policy_revision}</code><p className="ws-helper">Each accepted fragment records this policy revision.</p></details>}
   </div>;
 }

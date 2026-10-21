@@ -633,9 +633,21 @@
                 "title": "Exclude",
                 "type": "array"
               },
+              "exclude_fields": {
+                "description": "Case-insensitive literal ASCII JSON field names removed recursively before storage. Requires policy v2. String contents and record identity fields remain unchanged.",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 32,
+                "title": "Exclude Fields",
+                "type": "array"
+              },
               "format": {
-                "const": "mnemion-capture-policy-v1",
                 "default": "mnemion-capture-policy-v1",
+                "enum": [
+                  "mnemion-capture-policy-v1",
+                  "mnemion-capture-policy-v2"
+                ],
                 "title": "Format",
                 "type": "string"
               },
@@ -849,9 +861,21 @@
                 "title": "Exclude",
                 "type": "array"
               },
+              "exclude_fields": {
+                "description": "Case-insensitive literal ASCII JSON field names removed recursively before storage. Requires policy v2. String contents and record identity fields remain unchanged.",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 32,
+                "title": "Exclude Fields",
+                "type": "array"
+              },
               "format": {
-                "const": "mnemion-capture-policy-v1",
                 "default": "mnemion-capture-policy-v1",
+                "enum": [
+                  "mnemion-capture-policy-v1",
+                  "mnemion-capture-policy-v2"
+                ],
                 "title": "Format",
                 "type": "string"
               },
@@ -1064,9 +1088,21 @@
                 "title": "Exclude",
                 "type": "array"
               },
+              "exclude_fields": {
+                "description": "Case-insensitive literal ASCII JSON field names removed recursively before storage. Requires policy v2. String contents and record identity fields remain unchanged.",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 32,
+                "title": "Exclude Fields",
+                "type": "array"
+              },
               "format": {
-                "const": "mnemion-capture-policy-v1",
                 "default": "mnemion-capture-policy-v1",
+                "enum": [
+                  "mnemion-capture-policy-v1",
+                  "mnemion-capture-policy-v2"
+                ],
                 "title": "Format",
                 "type": "string"
               },
@@ -1890,9 +1926,21 @@
                 "title": "Exclude",
                 "type": "array"
               },
+              "exclude_fields": {
+                "description": "Case-insensitive literal ASCII JSON field names removed recursively before storage. Requires policy v2. String contents and record identity fields remain unchanged.",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 32,
+                "title": "Exclude Fields",
+                "type": "array"
+              },
               "format": {
-                "const": "mnemion-capture-policy-v1",
                 "default": "mnemion-capture-policy-v1",
+                "enum": [
+                  "mnemion-capture-policy-v1",
+                  "mnemion-capture-policy-v2"
+                ],
                 "title": "Format",
                 "type": "string"
               },
@@ -2046,9 +2094,21 @@
                 "title": "Exclude",
                 "type": "array"
               },
+              "exclude_fields": {
+                "description": "Case-insensitive literal ASCII JSON field names removed recursively before storage. Requires policy v2. String contents and record identity fields remain unchanged.",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 32,
+                "title": "Exclude Fields",
+                "type": "array"
+              },
               "format": {
-                "const": "mnemion-capture-policy-v1",
                 "default": "mnemion-capture-policy-v1",
+                "enum": [
+                  "mnemion-capture-policy-v1",
+                  "mnemion-capture-policy-v2"
+                ],
                 "title": "Format",
                 "type": "string"
               },
@@ -2422,9 +2482,21 @@
                 "title": "Exclude",
                 "type": "array"
               },
+              "exclude_fields": {
+                "description": "Case-insensitive literal ASCII JSON field names removed recursively before storage. Requires policy v2. String contents and record identity fields remain unchanged.",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 32,
+                "title": "Exclude Fields",
+                "type": "array"
+              },
               "format": {
-                "const": "mnemion-capture-policy-v1",
                 "default": "mnemion-capture-policy-v1",
+                "enum": [
+                  "mnemion-capture-policy-v1",
+                  "mnemion-capture-policy-v2"
+                ],
                 "title": "Format",
                 "type": "string"
               },
@@ -2704,9 +2776,21 @@
                 "title": "Exclude",
                 "type": "array"
               },
+              "exclude_fields": {
+                "description": "Case-insensitive literal ASCII JSON field names removed recursively before storage. Requires policy v2. String contents and record identity fields remain unchanged.",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 32,
+                "title": "Exclude Fields",
+                "type": "array"
+              },
               "format": {
-                "const": "mnemion-capture-policy-v1",
                 "default": "mnemion-capture-policy-v1",
+                "enum": [
+                  "mnemion-capture-policy-v1",
+                  "mnemion-capture-policy-v2"
+                ],
                 "title": "Format",
                 "type": "string"
               },
@@ -2910,9 +2994,21 @@
                 "title": "Exclude",
                 "type": "array"
               },
+              "exclude_fields": {
+                "description": "Case-insensitive literal ASCII JSON field names removed recursively before storage. Requires policy v2. String contents and record identity fields remain unchanged.",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 32,
+                "title": "Exclude Fields",
+                "type": "array"
+              },
               "format": {
-                "const": "mnemion-capture-policy-v1",
                 "default": "mnemion-capture-policy-v1",
+                "enum": [
+                  "mnemion-capture-policy-v1",
+                  "mnemion-capture-policy-v2"
+                ],
                 "title": "Format",
                 "type": "string"
               },
@@ -3087,9 +3183,21 @@
                 "title": "Exclude",
                 "type": "array"
               },
+              "exclude_fields": {
+                "description": "Case-insensitive literal ASCII JSON field names removed recursively before storage. Requires policy v2. String contents and record identity fields remain unchanged.",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 32,
+                "title": "Exclude Fields",
+                "type": "array"
+              },
               "format": {
-                "const": "mnemion-capture-policy-v1",
                 "default": "mnemion-capture-policy-v1",
+                "enum": [
+                  "mnemion-capture-policy-v1",
+                  "mnemion-capture-policy-v2"
+                ],
                 "title": "Format",
                 "type": "string"
               },
@@ -3319,9 +3427,21 @@
                 "title": "Exclude",
                 "type": "array"
               },
+              "exclude_fields": {
+                "description": "Case-insensitive literal ASCII JSON field names removed recursively before storage. Requires policy v2. String contents and record identity fields remain unchanged.",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 32,
+                "title": "Exclude Fields",
+                "type": "array"
+              },
               "format": {
-                "const": "mnemion-capture-policy-v1",
                 "default": "mnemion-capture-policy-v1",
+                "enum": [
+                  "mnemion-capture-policy-v1",
+                  "mnemion-capture-policy-v2"
+                ],
                 "title": "Format",
                 "type": "string"
               },
@@ -3568,9 +3688,21 @@
                 "title": "Exclude",
                 "type": "array"
               },
+              "exclude_fields": {
+                "description": "Case-insensitive literal ASCII JSON field names removed recursively before storage. Requires policy v2. String contents and record identity fields remain unchanged.",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 32,
+                "title": "Exclude Fields",
+                "type": "array"
+              },
               "format": {
-                "const": "mnemion-capture-policy-v1",
                 "default": "mnemion-capture-policy-v1",
+                "enum": [
+                  "mnemion-capture-policy-v1",
+                  "mnemion-capture-policy-v2"
+                ],
                 "title": "Format",
                 "type": "string"
               },
@@ -3787,9 +3919,21 @@
                 "title": "Exclude",
                 "type": "array"
               },
+              "exclude_fields": {
+                "description": "Case-insensitive literal ASCII JSON field names removed recursively before storage. Requires policy v2. String contents and record identity fields remain unchanged.",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 32,
+                "title": "Exclude Fields",
+                "type": "array"
+              },
               "format": {
-                "const": "mnemion-capture-policy-v1",
                 "default": "mnemion-capture-policy-v1",
+                "enum": [
+                  "mnemion-capture-policy-v1",
+                  "mnemion-capture-policy-v2"
+                ],
                 "title": "Format",
                 "type": "string"
               },

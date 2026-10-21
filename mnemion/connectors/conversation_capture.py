@@ -253,6 +253,7 @@ def capture_available(inbox, provider):
                     "conversation_record_limit",
                     "conversation_file_limit",
                     "conversation_event_conflict",
+                    "conversation_field_selection_limit",
                 }
                 else "capture_source_unavailable"
             )

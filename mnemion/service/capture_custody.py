@@ -96,8 +96,10 @@ def selected_item(item, capture_mode, producer_scope, namespace, capture_policy=
             and policy.allows_path(path)
             and metadata.get("capture_policy_revision") == policy.revision
             and end <= policy.max_file_bytes
+            and metadata.get("field_redaction")
+            == ("json_field_names" if policy.exclude_fields else None)
         )
-    elif "capture_policy_revision" in metadata:
+    elif "capture_policy_revision" in metadata or "field_redaction" in metadata:
         valid = False
     if not valid:
         raise ServiceError(

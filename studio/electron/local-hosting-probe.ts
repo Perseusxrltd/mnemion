@@ -21,6 +21,9 @@ export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Re
       (config.phase !== 'create' && !['memoryId', 'spaceId'].every(key => /^[a-f0-9-]{36}$/.test(config[key])))) throw new Error('Invalid hosting validation configuration')
   if (config.phase === 'sign-in-resume' && !['tenantId', 'principalId', 'sessionId'].every(key => /^[a-f0-9-]{36}$/.test(config[key]))) throw new Error('Invalid personal-access validation identity')
   if (config.phase.startsWith('capture-')) {
+    // Packaged startup checks finish on Help. Capture needs the same explicit
+    // workspace navigation already used by the backup and ordinary host probes.
+    await window.webContents.executeJavaScript("window.location.hash = '/workspace'")
     const result = config.phase === 'capture-headless' ? await verifyNativeHeadlessCapture(window, path) :
       await (config.phase.startsWith('capture-boundaries-') ? verifyNativeCaptureBoundaries : verifyNativeCapture)(window, config, path)
     await writeFile(join(dirname(path), config.phase + '-workspace.png'), (await window.webContents.capturePage()).toPNG(), { mode: 0o600 })

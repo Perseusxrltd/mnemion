@@ -74,11 +74,11 @@ export function readCapturePreview(value: unknown): CapturePreview {
     !count(value.visited_entries) || value.visited_entries > 10000 || !count(value.read_bytes) || value.read_bytes > 1048576 ||
     !Array.isArray(value.files) || value.files.length > 8 || !records(value.records) || value.file_limit !== 8 || value.byte_limit !== 1048576 ||
     value.attachment_binaries !== 'not_read' || value.external_links !== 'not_followed' || value.hidden_reasoning !== 'unavailable' ||
-    value.field_redaction !== 'not_supported' || value.automatic_expiry !== 'not_enabled' || value.content_saved !== false) throw new Error('The capture preview could not be verified.')
+    !['not_supported', 'disabled', 'json_field_names'].includes(String(value.field_redaction)) || value.automatic_expiry !== 'not_enabled' || value.content_saved !== false) throw new Error('The capture preview could not be verified.')
   for (const file of value.files) {
     if (!keys(file, ['path', 'status', 'file_bytes', 'read_bytes', 'prefix_bytes', 'records']) || typeof file.path !== 'string' ||
       !file.path || file.path.length > 4096 || file.path.startsWith('/') || file.path.split('/').includes('..') || /[\\\x00-\x1f\x7f]/.test(file.path) ||
-      !['sampled', 'unreadable', 'changed', 'too_large', 'record_too_large', 'private_control', 'invalid_jsonl'].includes(String(file.status)) ||
+      !['sampled', 'unreadable', 'changed', 'too_large', 'record_too_large', 'private_control', 'invalid_jsonl', 'field_selection_limit'].includes(String(file.status)) ||
       !count(file.file_bytes) || !count(file.read_bytes) || file.read_bytes > 131072 || !count(file.prefix_bytes) ||
       file.prefix_bytes > file.read_bytes || file.prefix_bytes > file.file_bytes || !records(file.records) ||
       file.status !== 'sampled' && (file.prefix_bytes !== 0 || (file.records as { lines: number }).lines !== 0)) throw new Error('The capture preview contains an invalid file observation.')
@@ -120,8 +120,12 @@ export function readCaptureArchive(value: unknown): CaptureArchiveInfo {
   if (Object.hasOwn(binding, 'capture_policy')) {
     const policy = binding.capture_policy
     const patterns = (v: unknown, required: boolean) => Array.isArray(v) && v.length <= 64 && (!required || v.length > 0) && v.every(p => typeof p === 'string' && p.length > 0 && p.length <= 512)
-    if (!keys(policy, ['format', 'preset', 'capture_mode', 'include', 'exclude', 'retention', 'max_file_bytes', 'max_record_bytes']) ||
-      policy.format !== 'mnemion-capture-policy-v1' || !['selected', 'conversation', 'detailed'].includes(String(policy.preset)) ||
+    const fieldNames = object(policy) && Object.hasOwn(policy, 'exclude_fields')
+    if (!keys(policy, ['format', 'preset', 'capture_mode', 'include', 'exclude', 'retention', 'max_file_bytes', 'max_record_bytes', ...(fieldNames ? ['exclude_fields'] : [])]) ||
+      !['mnemion-capture-policy-v1', 'mnemion-capture-policy-v2'].includes(String(policy.format)) || !['selected', 'conversation', 'detailed'].includes(String(policy.preset)) ||
+      fieldNames && (policy.format !== 'mnemion-capture-policy-v2' || !Array.isArray(policy.exclude_fields) ||
+        !policy.exclude_fields.length || policy.exclude_fields.length > 32 ||
+        policy.exclude_fields.some((name, index, names) => typeof name !== 'string' || !/^[a-z_][a-z0-9_.-]{0,127}$/.test(name) || index > 0 && names[index - 1] >= name)) ||
       policy.capture_mode !== binding.capture_mode || policy.retention !== 'until_deleted' || !patterns(policy.include, true) || !patterns(policy.exclude, false) ||
       !count(policy.max_file_bytes) || policy.max_file_bytes < 1 || policy.max_file_bytes > 1e12 ||
       !count(policy.max_record_bytes) || policy.max_record_bytes < 1 || policy.max_record_bytes > 16e6 || policy.max_record_bytes > policy.max_file_bytes) throw new Error('The archived capture policy could not be verified.')
@@ -197,4 +201,5 @@ export const captureMessages: Record<CaptureReason, string> = {
   conversation_record_limit: 'A chat record exceeds the selected capture limit. Earlier accepted evidence was retained.',
   conversation_file_limit: 'The source exceeds its selected file limit. Narrow the folder or adjust its limits.',
   conversation_event_conflict: 'The producer reused an event identity with different content. Review the source before resuming.',
+  conversation_field_selection_limit: 'A chat record is too deeply nested or complex to apply its approved field exclusions. Earlier accepted evidence was retained.',
 }

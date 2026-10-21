@@ -23,6 +23,17 @@ complete exposed session records or copy supported messages only. The same
 `capture_mode: "complete" | "messages"` selection is available to agents.
 See [capture choices and retention boundaries](live-conversations.md#choose-how-much-to-capture).
 
+**Unreleased:** open **Session filters, JSON fields and sizes** and use
+**Exclude JSON fields** for up to 32 literal ASCII field names, one per line,
+before **Preview capture**. Approved exclusions remove
+matching keys recursively before capture in both content modes. Producer files
+remain untouched; the rule does not scrub strings or detect secrets in text.
+See [field rules, refusal limits and policy v2](durable-capture.md#exclude-json-fields-unreleased).
+Focused source, service, controller and migration checks and the Linux source
+preview passed; all six packaged journeys remain pending. Existing retained
+source selection still requires reviewed migration; changing rules does not
+remove already accepted memories or backups.
+
 1. Connect to the intended workspace. An administrator creates a dedicated
    application in **People & apps**, then registers its folder or conversation
    connection in **Connections**. Each source uses its own application.
@@ -226,6 +237,12 @@ for a new conversation connection after independent server approval of its
 source and exact device-key grant. Follow the [administrator and native setup](durable-capture.md#agent-and-administrator-setup)
 before configuring it. Existing inbox identity, selection and dedicated key
 cannot be replaced through an ordinary settings update.
+
+The additional field-exclusion policy belongs in `source.capture_policy`, with
+`format: "mnemion-capture-policy-v2"` and `exclude_fields`, matching the approved
+device grant and a fresh preview. With no exclusions, existing v1 serialization
+and fingerprints remain unchanged. The [headless policy example](headless-capture.md#exclude-json-fields-unreleased)
+uses the same policy under `provider.capture_policy`.
 
 Obtain identifiers from the actual workspace and registered connector. Supply
 the dedicated key through private stdin. The desktop catalog describes

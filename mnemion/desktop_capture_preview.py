@@ -13,6 +13,7 @@ from pydantic import Field, model_validator
 from .capture_coverage import Count, SelectionCounts, utc_now
 from .capture_identity import canonical_capture_json
 from .capture_policy import CapturePolicy
+from .capture_fields import FieldSelectionLimit, select_fields
 from .connectors.config import ConversationConfig
 from .connectors.providers import private_vault_content, selected
 from .connectors.source_files import SourceReadError, open_selected
@@ -63,6 +64,7 @@ class PreviewFile(Command):
         "record_too_large",
         "private_control",
         "invalid_jsonl",
+        "field_selection_limit",
     ]
     file_bytes: Count = 0
     read_bytes: Count = 0
@@ -86,7 +88,7 @@ class CapturePreview(Command):
     attachment_binaries: Literal["not_read"] = "not_read"
     external_links: Literal["not_followed"] = "not_followed"
     hidden_reasoning: Literal["unavailable"] = "unavailable"
-    field_redaction: Literal["not_supported"] = "not_supported"
+    field_redaction: Literal["disabled", "json_field_names"] = "disabled"
     automatic_expiry: Literal["not_enabled"] = "not_enabled"
     content_saved: Literal[False] = False
 
@@ -154,7 +156,11 @@ def _sample(config, relative, maximum):
                 }:
                     report.status = "private_control"
                     return report
-                rows.append(row)
+                rows.append(
+                    select_fields(row, config.capture_policy.exclude_fields)
+                    if config.capture_policy and config.capture_policy.exclude_fields
+                    else row
+                )
         outcomes = []
         parse(
             json.dumps(rows, ensure_ascii=False), relative, messages_only=True, selection=outcomes
@@ -171,6 +177,8 @@ def _sample(config, relative, maximum):
             unsupported=outcomes.count("unsupported"),
         )
         report.status, report.prefix_bytes, report.records = "sampled", len(prefix), counts
+    except FieldSelectionLimit:
+        report.status = "field_selection_limit"
     except (OSError, SourceReadError):
         report.status = "unreadable"
     except (UnicodeError, ValueError, RecursionError):
@@ -199,6 +207,11 @@ def preview(root, value, private_roots=()):
         read_bytes=0,
         files=[],
         records=SelectionCounts(),
+        field_redaction=(
+            "json_field_names"
+            if selection.capture_policy and selection.capture_policy.exclude_fields
+            else "disabled"
+        ),
     )
     deadline, pending = time.monotonic() + MAX_SECONDS, [Path(selection.path)]
     # Scandir is streamed: even an enormous single directory cannot allocate an

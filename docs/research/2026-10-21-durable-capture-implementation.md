@@ -1048,6 +1048,64 @@ These results establish the stated source checks only. A corrected six-target
 packaging run, broader damaged-key/recovery acceptance and the remaining L1
 contracts are still required. Public **4.44.0** does not include this milestone.
 
+## JSON field exclusions and installed capture navigation
+
+This additional **unreleased source batch** gives app and agent users an optional
+`exclude_fields` list in a `mnemion-capture-policy-v2` policy. Up to 32 distinct
+literal ASCII field names are normalized and sorted; matching JSON keys and
+their values are removed recursively before retained payloads or readable
+projections are created. The same rule applies to explicitly selected mirrors.
+It leaves producer files and string contents untouched, including JSON embedded
+inside strings. It is not a general detector of secrets in conversation text.
+
+Existing v1 policies omit an empty exclusion list, preserving their exact
+serialized policy and fingerprint. Reserved identity/structural names cannot be
+excluded directly. A field-selection limit fails visibly before accepting that
+fragment; previously accepted evidence and checkpoints are retained. Preview
+uses the same bounded transformation and reports its capability explicitly.
+New choices require a new preview and approved policy; older memories, queued
+evidence and backups keep their original policy. Existing-device selection
+migration remains a separate requirement.
+
+The initial dedicated run recorded **12 passes and one failure**: the new
+work-limit error was collapsed into a generic source-unavailable message. The
+product now preserves that reason through the helper and app; the corrected,
+expanded suite passed **15** cases. These include frozen v1 compatibility,
+both capture modes, explicitly selected mirrors, untouched producer files,
+retention of ordinary string values, field/depth work bounds, original-prefix
+preservation and actual encrypted archive inspection/recovery. A separate
+affected service run passed **73** cases, native controller checks passed **79**,
+and a fresh migration preflight passed **30**. Native and app/documentation
+builds passed. These are source results, not six-platform acceptance.
+
+The preceding general [CI run 39592497905](https://github.com/Perseusxrltd/mnemion/actions/runs/39592497905)
+passed all 12 jobs on `d9b40cca`. The corresponding
+[six-target run 39592777333](https://github.com/Perseusxrltd/mnemion/actions/runs/39592777333)
+passed its 12 prerequisite jobs but failed all six installed-app jobs. Unlike
+the earlier thin-client failure, it reached the installed hosting checks. The
+completed logs show all six failures stopped at `capture-enroll`, waiting
+for workspace controls while the preceding packaged-documentation check had
+left the app on Help. The capture dispatcher now explicitly returns to the
+workspace, matching the ordinary host probe. Acceptance guards and authorization
+checks are unchanged. A new isolated source harness enters that actual
+dispatcher from Help so it exercises the formerly missed transition.
+
+The new source journey passed **31** checks across three real Electron launches:
+enrollment, offline intake, reopening the OS-protected key, delivery after
+producer-file removal, portable archive inspection and recovery, another
+restart, later selected capture and fixture cleanup. Each launch began capture
+validation from the bundled Help page. The reviewed field policy survived the
+encrypted archive and recovered grant; excluded text was absent from delivered
+content while selected messages remained available. All launches exited cleanly
+and the private PostgreSQL host stopped. There were zero production memory
+writes and zero paid model calls.
+
+`capture-fields-qualified-preview.receipt.json` pins **556** runtime inputs to
+`502ad7fa5a93fe0f4a6f2e8d2c0ac95443e5d1305faab93e5de2b74f277949ab`.
+This Linux source proof does not establish the corrected six-target packaged
+matrix, which remains pending. Public **4.44.0**, all original failure receipts
+and the full L1 acceptance requirements remain unchanged.
+
 ## Source and deletion boundaries
 
 The staged service exposes a `durable_capture: "v1"` capability. An administrator
@@ -1113,7 +1171,9 @@ a scan. It cannot stand in for evidence or key recovery.
 - Finish acceptance of the bounded preview, filename/session selection, explicit
   retention and per-fragment policy revisions. Complete the broader policy and
   preset contract: current Selected/Conversation/Detailed choices and existing
-  Pause do not provide automatic expiry, field redaction or attachment fetching.
+  Pause do not provide automatic expiry or attachment fetching. The new optional
+  JSON-field exclusion rule requires its remaining packaged acceptance and does
+  not provide general redaction of secrets embedded in text.
   Keep unavailable capabilities explicit and retain reviewed migration requirements.
 - Complete packaged archive export/inspection and device-recovery acceptance,
   including protected-key enrollment and interrupted publication/finish/discard.

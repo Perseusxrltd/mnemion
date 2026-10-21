@@ -45,6 +45,7 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
   const [providerKey, setProviderKey] = useState('');
   const [preset, setPreset] = useState<CapturePolicy['preset']>('detailed');
   const [sessionIncludes, setSessionIncludes] = useState('*.jsonl'), [sessionExcludes, setSessionExcludes] = useState('');
+  const [fieldExclusions, setFieldExclusions] = useState('');
   const [maxFileBytes, setMaxFileBytes] = useState(1_000_000_000), [maxRecordBytes, setMaxRecordBytes] = useState(2_000_000);
   const [previewState, setPreviewState] = useState<{ configuration: string; result: CapturePreview }>();
   const [team, setTeam] = useState(''), [channels, setChannels] = useState('');
@@ -69,6 +70,7 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
     setCaptureMode(current?.capture_mode ?? 'complete');
     setPreset(current?.capture_policy?.preset ?? (current?.capture_mode === 'messages' ? 'conversation' : 'detailed'));
     setSessionIncludes(current?.capture_policy?.include.join('\n') ?? '*.jsonl'); setSessionExcludes(current?.capture_policy?.exclude.join('\n') ?? '');
+    setFieldExclusions(current?.capture_policy?.exclude_fields?.join('\n') ?? '');
     setMaxFileBytes(current?.capture_policy?.max_file_bytes ?? 1_000_000_000); setMaxRecordBytes(current?.capture_policy?.max_record_bytes ?? 2_000_000);
     setPreviewState(undefined);
     setKeepAccepted(!!current?.custody); setPendingLimit(current?.custody?.pending_limit_mib ?? 256); setDeviceKeyId('');
@@ -80,10 +82,12 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
     setFolders(current?.gdrive?.folder_ids.join('\n') ?? ''); setDriveFiles(current?.gdrive?.file_ids.join('\n') ?? '');
   }, [current?.id, query.data?.revision, dirty]);
   const rules = (text: string) => text.split('\n').map(value => value.trim()).filter(Boolean);
+  const excludedFields = rules(fieldExclusions).map(value => value.toLowerCase()).sort();
   const capturePolicy: CapturePolicy | undefined = connection.provider === 'conversations' && (!current?.custody || current.capture_policy) ? {
-    format: 'mnemion-capture-policy-v1', preset, capture_mode: captureMode,
+    format: excludedFields.length ? 'mnemion-capture-policy-v2' : current?.capture_policy?.format ?? 'mnemion-capture-policy-v1', preset, capture_mode: captureMode,
     include: rules(sessionIncludes), exclude: rules(sessionExcludes), retention: keepAccepted ? 'until_deleted' : 'source_mirror',
     max_file_bytes: maxFileBytes, max_record_bytes: maxRecordBytes,
+    ...(excludedFields.length ? { exclude_fields: excludedFields } : {}),
   } : undefined;
   const previewSelection: SourcePreviewSelection = { path, capture_mode: captureMode, capture_policy: capturePolicy,
     keep_accepted: keepAccepted, memory_limit_mib: memory, max_files: files, pending_limit_mib: keepAccepted ? pendingLimit : 256,
@@ -239,10 +243,12 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
             ? 'Keep the selected session records, including tool activity and reasoning traces your agent actually saves, plus readable messages.'
             : 'Copy supported user and assistant message text. Structured tool and reasoning records remain in the original files. Unknown formats produce no message copy.'}
             {' '}{current?.custody ? 'This retained inbox keeps its approved selection. Changing selection requires a reviewed migration.' : 'Changing this choice takes effect after a complete scan. Earlier copies, reviewed edits and backups follow their existing retention rules.'}</p>
-          {capturePolicy && <details className="ws-details" open={preset === 'selected' || undefined}><summary>Session filters and capture sizes</summary>
+          {capturePolicy && <details className="ws-details" open={preset === 'selected' || undefined}><summary>Session filters, JSON fields and sizes</summary>
             <label>Include filenames or patterns<textarea disabled={busy || !!current?.custody} data-update-safe rows={2} maxLength={32768} value={sessionIncludes} onChange={event => { setSessionIncludes(event.target.value); setPreset('selected'); setDirty(true); setPublication(false); }} /></label>
             <label>Additional exclusions<textarea disabled={busy || !!current?.custody} data-update-safe rows={2} maxLength={32768} value={sessionExcludes} onChange={event => { setSessionExcludes(event.target.value); setPreset('selected'); setDirty(true); setPublication(false); }} /></label>
             <p className="ws-helper">One relative filename or pattern per line, such as team/*.jsonl or private/*.jsonl. Patterns are case-sensitive and * can match subfolders. Built-in private-file exclusions always apply. New matching files are included automatically.</p>
+            <label>Exclude JSON fields<textarea disabled={busy || !!current?.custody} data-update-safe rows={2} maxLength={4128} placeholder={'api_key\npassword'} value={fieldExclusions} onChange={event => { setFieldExclusions(event.target.value); setDirty(true); setPublication(false); }} /></label>
+            <p className="ws-helper">Optional: one literal ASCII field name per line, up to 32. Matching fields are removed from every JSON object before storage, ignoring case. Values inside ordinary text are unchanged. Identity and structural fields are preserved. New field rules require a new preview and approval; earlier memories and backups keep their original policy.</p>
             <label>Maximum file size (MB)<input type="number" disabled={busy || !!current?.custody} data-update-safe min="0.001" max="1000000" step="0.001" value={maxFileBytes / 1_000_000} onChange={event => { setMaxFileBytes(Math.round(Number(event.target.value) * 1_000_000)); setDirty(true); setPublication(false); }} /></label>
             <label>Maximum event record (KB)<input type="number" disabled={busy || !!current?.custody} data-update-safe min="0.001" max="16000" step="0.001" value={maxRecordBytes / 1000} onChange={event => { setMaxRecordBytes(Math.round(Number(event.target.value) * 1000)); setDirty(true); setPublication(false); }} /></label>
           </details>}

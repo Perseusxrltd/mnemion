@@ -23,7 +23,7 @@ export type CaptureReason = 'capture_authorization_revoked' | 'capture_binding_m
   'capture_source_unavailable' | 'capture_storage_not_private' | 'capture_storage_unavailable' |
   'capture_event_invalid' | 'capture_event_conflict' | 'capture_checkpoint_invalid' | 'capture_retire_required' | 'capture_retirement_credentials' |
   'capture_prefix_changed' | 'source_changed_during_read' | 'conversation_scan_deadline' |
-  'conversation_record_limit' | 'conversation_file_limit' | 'conversation_event_conflict';
+  'conversation_record_limit' | 'conversation_file_limit' | 'conversation_event_conflict' | 'conversation_field_selection_limit';
 export type CaptureReport = {
   locally_accepted: number; pending_events: number; pending_bytes: number;
   remote_committed_events: number; stored_events: number; forgotten_events: number;
@@ -97,9 +97,10 @@ export type SourceConfigure = {
   preview_hash?: string;
 }
 export type CapturePolicy = {
-  format: 'mnemion-capture-policy-v1'; preset: 'selected' | 'conversation' | 'detailed';
+  format: 'mnemion-capture-policy-v1' | 'mnemion-capture-policy-v2'; preset: 'selected' | 'conversation' | 'detailed';
   capture_mode: 'messages' | 'complete'; include: string[]; exclude: string[];
   retention: 'source_mirror' | 'until_deleted'; max_file_bytes: number; max_record_bytes: number;
+  exclude_fields?: string[];
 }
 export type SourcePreviewSelection = {
   path: string; capture_mode: 'messages' | 'complete'; capture_policy?: CapturePolicy | null;
@@ -107,7 +108,7 @@ export type SourcePreviewSelection = {
   history_limit_events?: number; database_limit_mib?: number;
 }
 export type CapturePreviewFile = {
-  path: string; status: 'sampled' | 'unreadable' | 'changed' | 'too_large' | 'record_too_large' | 'private_control' | 'invalid_jsonl';
+  path: string; status: 'sampled' | 'unreadable' | 'changed' | 'too_large' | 'record_too_large' | 'private_control' | 'invalid_jsonl' | 'field_selection_limit';
   file_bytes: number; read_bytes: number; prefix_bytes: number;
   records: { lines: number; selected: number; omitted: number; unsupported: number };
 }
@@ -117,7 +118,7 @@ export type CapturePreview = {
   visited_entries: number; read_bytes: number; files: CapturePreviewFile[];
   records: CapturePreviewFile['records']; file_limit: 8; byte_limit: 1048576;
   attachment_binaries: 'not_read'; external_links: 'not_followed'; hidden_reasoning: 'unavailable';
-  field_redaction: 'not_supported'; automatic_expiry: 'not_enabled'; content_saved: false;
+  field_redaction: 'not_supported' | 'disabled' | 'json_field_names'; automatic_expiry: 'not_enabled'; content_saved: false;
 }
 export type SourceControl = { expected_revision: string; id: string; enabled?: boolean; confirm?: boolean; repair_token?: string; discard_local_inbox?: boolean; retirement_credential?: string }
 export type CaptureArchiveInfo = {

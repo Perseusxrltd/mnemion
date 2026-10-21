@@ -10,6 +10,7 @@ from urllib.parse import quote
 from uuid import uuid4
 
 from ..capture_coverage import SelectionCounts
+from ..capture_fields import FieldSelectionLimit, select_fields, selected_jsonl
 from ..conversations import VERSION, parse
 from ..service.connector_models import ConnectorItemInput
 from ..version import __version__
@@ -297,8 +298,19 @@ class ConversationSnapshot:
         if self.config.capture_policy:
             metadata["capture_policy_revision"] = self.config.capture_policy.revision
         text = raw.decode("utf-8-sig" if start == 0 else "utf-8")
-        document = Document(external, digest, self.relative, text, uri, metadata=metadata)
         messages_only = self.config.capture_mode == "messages"
+        revision = digest
+        if self.config.capture_policy and self.config.capture_policy.exclude_fields:
+            excluded = self.config.capture_policy.exclude_fields
+            try:
+                rows = [select_fields(row, excluded) for row in rows]
+                if not messages_only:
+                    text = selected_jsonl(text, excluded)
+                    revision = hashlib.sha256(text.encode()).hexdigest()
+            except FieldSelectionLimit:
+                raise ProviderError("conversation_field_selection_limit") from None
+            metadata["field_redaction"] = "json_field_names"
+        document = Document(external, revision, self.relative, text, uri, metadata=metadata)
         items = [] if messages_only else list(document.items())
         outcomes = [] if self.observe_selection and messages_only else None
         if self.config.normalize_conversations:
