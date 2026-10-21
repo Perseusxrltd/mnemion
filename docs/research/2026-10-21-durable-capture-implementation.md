@@ -15,15 +15,67 @@ Public **4.44.0** remains the released version. L1 is not accepted or released.
 | Artifacts | Frozen source and native run | Current evidence |
 | --- | --- | --- |
 | Linux x64/arm64 and Windows x64/arm64 | `9095372a` · [39613577682](https://github.com/Perseusxrltd/mnemion/actions/runs/39613577682) | All 58 required true fields qualify for each of these four artifacts. |
-| macOS x64 | `4f434ecb` · [39623463543](https://github.com/Perseusxrltd/mnemion/actions/runs/39623463543) | Empty engine preview succeeded, then fresh-app shutdown timed out before workspace creation. No installed qualification. |
+| macOS x64 | `64326de1` · [39628117517](https://github.com/Perseusxrltd/mnemion/actions/runs/39628117517) | Installed hosting passed. All 59 required true fields qualify for this artifact. |
 | macOS arm64 | `4f434ecb` · [39623463543](https://github.com/Perseusxrltd/mnemion/actions/runs/39623463543) | Installed hosting and separate packaged update/relaunch passed. All 59 required true fields qualify for this artifact. |
 
-The [receipt update](#native-matrix-checkpoint) binds the four Linux/Windows
-artifacts to `9095372a`; the Apple Silicon receipt binds its artifact to
-`4f434ecb`. These results span two frozen sources and do not establish six-target
-acceptance or validate the later [startup-drain correction](#source-startup-drain-correction).
-The source checkpoints below preserve earlier failures and their contemporaneous
-validation state. The remaining L1 contracts stay open.
+The [receipt update](#native-matrix-checkpoint) and
+[startup-drain checkpoint](#source-startup-drain-correction) bind these artifacts
+to three different frozen sources. Six-target acceptance of the current
+development source remains open. The source checkpoints below preserve earlier
+failures and their contemporaneous validation state; the remaining L1 contracts
+stay open.
+
+## Current Codex producer, 21 October 2026
+
+An actual **Codex CLI 0.163.0** producer run passed with three turns across two
+JSONL files, including resume of the first thread and creation of a distinct
+second thread. The CLI used a deterministic local Responses provider with
+synthetic prompts and replies. Its normal profile was hidden, there were no
+outbound routes or paid model calls, and no production memories were written.
+`producer.receipt.json` records the successful second attempt; the failed first
+mount attempt remains preserved.
+
+The [producer fixtures and provenance](../../service_tests/fixtures/codex-0.163/README.md)
+retain the exact emitted bytes and a manifest of file hashes, thread identities
+and the prefix before resume. Original metadata includes `/fixture/project` and
+the unchanged HOME-derived system-skills path; no real user sources or
+credentials were supplied.
+
+The records expose a parser gap: current `event_msg` / `item_completed` envelopes
+carry `UserMessage` and `AgentMessage` items that the preceding parser skipped.
+The correction reads their public text blocks once, omits malformed/non-text
+blocks and response-item duplicates, and keeps repeated messages as separate turns.
+Legacy Codex message events remain supported. The existing v1 projection format
+stays compatible; a separate renderer revision re-examines previously omitted
+prefixes. Static readable companions include their text hash in the revision so
+changed output cannot retain an unchanged revision.
+
+| Retained evidence | Result and scope |
+| --- | --- |
+| `parser-baseline.log` | **6 failed** on the preceding source: four actual-corpus cases, private-block/repeated-text handling, and changed-output/unchanged-revision collision. |
+| `parser-corrected.log` | **54 passed in 11.21 seconds** across parser, normalization, ACP and live-stream cases. |
+| `real-producer-final-tests.log` | **29 passed in 34.64 seconds**: eight parser cases, including cache re-examination and malformed item types; two actual-corpus HTTP/PostgreSQL journeys; and 19 existing live/coverage cases. |
+
+These runs overlap and are not additive. The original
+`real-producer-capture-tests.log` retains **7 passes and 2 fixture failures**:
+the harness read the wrong memory response field. Using the public `memory_id`
+corrected that fixture; it was not a product fix. Ruff checks passed for the Git
+source.
+
+The two actual-corpus journeys exercised both `complete` and `messages` modes:
+offline intake and reopening, partial UTF-8 completed by the real resumed suffix,
+producer files removed before delivery, and a real server commit followed by a
+lost reply. Restart reconciled the receipt without reposting the accepted page.
+All six messages were readable; exact raw byte ranges and hashes were verified
+only in `complete` mode. The journeys also checked reader-binding removal and
+restoration, then forgetting the full resumed-fragment family while the
+independent thread remained readable.
+
+These results cover the producer and capture implementation in source. Full
+native acceptance at the current exact source, shared-host and device-recovery
+acceptance, and the remaining L1/R07 contracts stay open. Public 4.44.1 revision 2 contains the
+startup, native crypto and Windows settings fixes; it does not include this
+Codex parser work.
 
 ## Development proof, 21 October 2026
 
@@ -1294,20 +1346,28 @@ Two new lifecycle cases failed on the baseline; the third, covering a failed
 load, already passed. The corrected native TypeScript build and all **150**
 desktop source, agent and local-workspace cases passed, recorded in
 `capture-startup-drain-qualified-tests.json` and
-`capture-startup-drain-corrected-tests.log`. This is source proof of the reproduced
-defect. Targeted Intel installed validation is still required to determine
-whether it resolves the observed fresh-app shutdown failure; none of the earlier
-passing artifacts validates this runtime correction.
+`capture-startup-drain-corrected-tests.log`. These checks provided source proof
+of the reproduced defect. The subsequent [Intel run 39628117517](https://github.com/Perseusxrltd/mnemion/actions/runs/39628117517)
+passed at `64326de1`; its exact installed artifact qualified all **59** required
+true fields. The original shutdown failure remains recorded above. This result
+qualifies that artifact and source; later development and the public patch retain
+their own acceptance gates.
 
 Frozen released source `2d9736649dcee74362b9d9ebe0d73af3ae984305` also omits
-the startup-loading drain. The separate public [4.44.1 candidate](../releases/4.44.1.md)
-is committed at `e45e2b1b` and retained on main through `053aafe2`. It contains
+the startup-loading drain. The first public [4.44.1 candidate](../releases/4.44.1.md)
+was committed at `e45e2b1b` and retained on main through `053aafe2`. It contained
 the startup-drain and native crypto initialization corrections without L1
-retained capture. Its own release workflow was dispatched after the candidate's
-source and preflight checks passed. The [validation record](../validation/2026-10-21-desktop-startup.md)
-keeps those results separate from installed acceptance; [release status](../RELEASE_STATUS.md)
-tracks the gates and publication automatically. Public **4.44.0** was current at
-this checkpoint, and L1 remains unfinished.
+retained capture. Revision 2, `92d5e505`, is retained through main `7e83a185` and
+adds the Windows atomic-settings replacement correction. Its `release/4.44.1-r2`
+[release run 39637945958](https://github.com/Perseusxrltd/mnemion/actions/runs/39637945958)
+has been dispatched and is waiting behind the first run at this checkpoint.
+The first release's Linux x64 check annotation reports that the hosted runner
+lost communication; `first-linux-x64-infrastructure.json` preserves that
+infrastructure failure. It does not establish installed acceptance.
+The [validation record](../validation/2026-10-21-desktop-startup.md) preserves the
+first candidate's failure and separates source checks from installed acceptance;
+[release status](../RELEASE_STATUS.md) tracks publication automatically.
+Public **4.44.0** remains current, and L1 remains unfinished.
 
 ## Supervised headless inbox-key forwarding
 

@@ -11,6 +11,9 @@ import json
 from dataclasses import dataclass
 
 VERSION = "mnemion-conversation-v1"
+# The evidence format remains compatible with existing services. A parser
+# correction still needs to re-examine retained prefixes previously omitted.
+RENDERER_REVISION = "codex-completed-items-v2"
 
 
 class ConversationError(ValueError):
@@ -297,6 +300,31 @@ def parse(
                         row.get("timestamp"),
                     )
                 )
+            elif row.get("type") == "event_msg" and payload.get("type") == "item_completed":
+                selected(index, False)
+                item = payload.get("item")
+                if not isinstance(item, dict):
+                    continue
+                kind = item.get("type")
+                if not isinstance(kind, str):
+                    continue
+                role = {"UserMessage": "user", "AgentMessage": "assistant"}.get(kind)
+                parts = item.get("content")
+                if role is None or not isinstance(parts, list):
+                    continue
+                # Current Codex writes the same messages as response_item rows.
+                # Only its completed public message items are spoken turns;
+                # context, reasoning and tool items are not alternate messages.
+                content = _text(
+                    [
+                        part
+                        for part in parts
+                        if isinstance(part, dict) and part.get("type") in ("text", "Text")
+                    ],
+                    messages_only=True,
+                )
+                selected(index, content.strip())
+                turns.append((role, content, row.get("timestamp")))
             elif row.get("type") == "event_msg" and payload.get("type") in {
                 "token_count",
                 "agent_reasoning",
@@ -305,7 +333,6 @@ def parse(
                 "turn_aborted",
                 "context_compacted",
                 "item_started",
-                "item_completed",
                 "tool_call",
                 "tool_result",
                 "warning",

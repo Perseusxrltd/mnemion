@@ -101,7 +101,11 @@ class Document:
             for transcript in parse(self.text, self.external_id):
                 companion = Document(
                     external_id=self.external_id + "#conversation:" + transcript.identifier,
-                    revision=self.revision + ":" + VERSION,
+                    revision=self.revision
+                    + ":"
+                    + VERSION
+                    + ":"
+                    + hashlib.sha256(transcript.text.encode()).hexdigest(),
                     title=transcript.title,
                     text=transcript.text,
                     uri=self.uri,
