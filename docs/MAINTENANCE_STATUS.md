@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-21T16:05:57+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-21T16:34:29+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.44.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.44.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -17,26 +17,23 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | queued | [Run 39631411950](https://github.com/Perseusxrltd/mnemion/actions/runs/39631411950) |
+| ci\.yml | main | success | [Run 39632347413](https://github.com/Perseusxrltd/mnemion/actions/runs/39632347413) |
 | database-cache\.yml | main | success | [Run 39576347122](https://github.com/Perseusxrltd/mnemion/actions/runs/39576347122) |
-| desktop\.yml | main | in\_progress | [Run 39628117517](https://github.com/Perseusxrltd/mnemion/actions/runs/39628117517) |
-| website-release\.yml | main | success | [Run 39631412024](https://github.com/Perseusxrltd/mnemion/actions/runs/39631412024) |
+| desktop\.yml | main | success | [Run 39628117517](https://github.com/Perseusxrltd/mnemion/actions/runs/39628117517) |
+| release\.yml | release/4\.44\.1 | in\_progress | [Run 39631942686](https://github.com/Perseusxrltd/mnemion/actions/runs/39631942686) |
+| website-release\.yml | main | success | [Run 39632347414](https://github.com/Perseusxrltd/mnemion/actions/runs/39632347414) |
 
 ## Active jobs
 
-[Run 39631411950](https://github.com/Perseusxrltd/mnemion/actions/runs/39631411950): 3/12 jobs completed; 3 succeeded.
+[Run 39631942686](https://github.com/Perseusxrltd/mnemion/actions/runs/39631942686): 28/32 jobs completed; 25 succeeded.
 
-- studio: in\_progress — Run python deploy/bundle\_studio\.py.
-- container \(ubuntu-22\.04-arm\): in\_progress — Build the actual deployment image with its documentation.
-- service \(3\.13\): in\_progress — Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38.
-- supervision \(macos-15\): queued.
-- legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
-- container \(ubuntu-22\.04\): in\_progress — Build the actual deployment image with its documentation.
-- supervision \(macos-15-intel\): in\_progress — Run python -m pip install uv==0\.12\.24.
-- service \(3\.12\): in\_progress — Run python -m pip install uv==0\.12\.24.
-- service \(3\.14\): in\_progress — Run python -m pip install uv==0\.12\.24.
+- native / macos-15-intel / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
+- native / macos-15 / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
+- native / windows-11-arm / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
+- native / ubuntu-22\.04 / x64: in\_progress — Linux desktop libraries.
 
-[Run 39628117517](https://github.com/Perseusxrltd/mnemion/actions/runs/39628117517): 7/8 jobs completed; 4 succeeded.
 
-- macos-15-intel / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
+## Unsuccessful jobs
 
+- [Run 39631942686](https://github.com/Perseusxrltd/mnemion/actions/runs/39631942686): checks / supervision \(macos-15\) (cancelled). No unsuccessful step was reported. No runner was assigned and no steps were reported.
+- [Run 39631942686](https://github.com/Perseusxrltd/mnemion/actions/runs/39631942686): native / windows-2022 / x64 (failure). Steps: Installed app creates, searches and reopens a real local workspace.
