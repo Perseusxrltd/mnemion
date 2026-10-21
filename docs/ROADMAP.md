@@ -105,7 +105,13 @@ issue review, publication and version-linked closure together.
   mismatch is corrected; Intel Mac connector
   diagnostics are improved while its failure remains unresolved. The expanded
   Linux source boundary preview passed all 29 checks across two app launches;
-  all six current-source packaged targets remain pending. The prior policy
+  all six packaged targets remain pending in run 39613577682 on `9095372a`.
+  A later [Supervisor correction](research/2026-10-21-durable-capture-implementation.md#supervised-headless-inbox-key-forwarding)
+  retains explicitly configured inbox-key environment references across a
+  registered connector launch. Six focused checks and an actual Linux
+  Supervisor crash/restart/offline-delivery journey passed; both macOS
+  supervision CI jobs now include them. Independent Windows supervision and
+  broader lifecycle acceptance remain open. The prior policy
   checkpoint's failed health-response CI and its later test correction
   remain recorded. This remains unreleased source. Reviewed identity/policy
   migration, complete capture policy and coverage, headless installed acceptance,

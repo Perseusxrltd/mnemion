@@ -872,6 +872,8 @@ def connector_child(state: Path, identifier: str) -> int:
     if "SSH_AUTH_SOCK" in os.environ:
         environment["SSH_AUTH_SOCK"] = os.environ["SSH_AUTH_SOCK"]
     tokens = [config.service_token]
+    if config.capture is not None:
+        tokens.append(config.capture.inbox_key)
     if hasattr(config.provider, "token"):
         tokens.append(config.provider.token)
     for token in tokens:

@@ -38,6 +38,35 @@ reference is supported; unrelated API/owner credentials and all database-role
 variables are removed from scan and launcher-handoff environments. Git/SSH,
 proxy and explicitly configured provider authentication remain available.
 
+## Retained inbox environment references (unreleased)
+
+An unreleased correction lets a registered Linux/macOS Supervisor connector pass
+an explicit `capture.inbox_key.env` reference alongside its service/provider
+credential references. For example, use `{"env":"MNEMION_CAPTURE_INBOX_KEY"}`
+for `capture.inbox_key` in the [headless configuration](headless-capture.md#prepare-the-approved-source-and-private-files).
+The value comes first from the Supervisor's private environment settings,
+otherwise from its process environment when the child launches. Key values
+remain outside the connector configuration.
+
+Missing environment references and reserved names are refused before the
+connector executes. This includes `MNEMION_ADMIN_DATABASE_URL`,
+`MNEMION_VAULT_KEY` and `PYTHONPATH`; the existing role and loader restrictions
+remain in force. The correction does not inherit arbitrary credentials or
+database-role variables. File references and their normal reload behavior are
+unchanged.
+
+Six focused source checks passed for forwarding, private-settings precedence and
+missing/reserved references. One real Supervisor/API/worker/PostgreSQL journey
+also passed: content accepted offline survived producer removal and a connector
+process restart, then delivered once using the same inbox key. Supervisor stopped
+cleanly.
+
+Register each connector explicitly through the existing `--connector-config`
+setup and retain the host's startup arrangement. This does not add independent
+Windows supervision, boot registration or update management. Packaged acceptance
+for this correction remains pending; retained capture and this correction are
+not in public 4.44.0.
+
 ## Update and recovery behavior
 
 Each scan starts a separate process from the current runtime, after rechecking

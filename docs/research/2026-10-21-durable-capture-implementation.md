@@ -1191,7 +1191,49 @@ production memory writes or paid model calls. Its qualified receipt,
 runtime inputs to
 `0137e830971628769eab164a68b25995b0fb4b5b676939d86ba4168eecaa770e`.
 All six packaged targets for this source and the remaining L1 requirements
-remain open. No new release is claimed.
+remain open. No new release is claimed. The batch is on main at `9095372a`;
+[native run 39613577682](https://github.com/Perseusxrltd/mnemion/actions/runs/39613577682)
+uses that exact source. Website synchronization completed successfully without
+a corporate site code deployment.
+
+## Supervised headless inbox-key forwarding
+
+A later unreleased correction forwards an explicitly configured
+`capture.inbox_key.env` through an existing registered Linux/macOS Supervisor
+connector. Previously only service/provider references survived that launch
+boundary, leaving the new retained runner unable to reopen an environment-backed
+inbox key. The correction uses the same private-settings precedence, dedicated
+credential checks and missing-reference refusal as those existing references.
+It adds no general environment inheritance, new custody authority or implicit
+registration. File references keep their existing reload behavior.
+
+Six focused regressions now pass, including actual child-process key reading
+from inherited and private-settings values, plus refusal of missing or reserved
+references before launch. The corrected baseline failed all six checks on the
+preceding implementation. Earlier fixture failures are also retained: the first
+key-reader fixture passed a string where the configuration reader requires a
+`Path`. Its mixed run had 29 passes and two fixture failures; four of those passes
+are covered again by the six new checks. The distinct affected coverage is
+25 existing headless/managed cases, six credential checks and the real journey
+below, not the sum of repeated run totals.
+
+The real Supervisor journey also passed on Linux: a registered connector retained
+one memory while its target workspace was unavailable; after the producer file
+was removed, its owned process was killed. Supervisor restarted it with a new
+PID, the same protected inbox key reopened, and the accepted memory delivered
+exactly once to the isolated PostgreSQL-backed workspace. Private process logs
+contained no inbox key, and Supervisor stopped cleanly. The final journey's wait
+also tolerates legitimately absent initial observations. It used no production
+memories or paid model calls. Both macOS supervision CI jobs now include these
+regressions; their actual results remain pending.
+
+The current **557** runtime inputs have digest
+`4d965a0ee58eba33d15205993876b4759a2ba3ec54d828d893929e17a7da90a7`.
+Only `mnemion/service/supervision.py` differs from the preceding native matrix's
+runtime inputs; that running matrix is not validation of this later change.
+Independent Windows supervision, boot registration, broader managed lifecycle
+acceptance and all remaining L1 requirements remain open. Public **4.44.0** is
+unchanged.
 
 ## Source and deletion boundaries
 

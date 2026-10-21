@@ -130,7 +130,7 @@ jobs:
           MNEMION_TEST_MANAGED_INSTALL: '1'
           MNEMION_TEST_RUNTIME_WHEELS: ${{ runner.temp }}/mnemion-runtime-wheels
           MNEMION_TEST_PROCESS_DIAGNOSTICS: '1'
-        run: uv run --no-sync python -m pytest service_tests/test_model_broker.py service_tests/test_supervision.py service_tests/test_managed_service.py service_tests/test_managed_connectors.py service_tests/test_passwords.py service_tests/test_host_recovery.py service_tests/test_application_key_recovery.py service_tests/test_keepass_portability.py -q
+        run: uv run --no-sync python -m pytest service_tests/test_model_broker.py service_tests/test_supervision.py service_tests/test_supervised_capture.py service_tests/test_managed_service.py service_tests/test_managed_connectors.py service_tests/test_passwords.py service_tests/test_host_recovery.py service_tests/test_application_key_recovery.py service_tests/test_keepass_portability.py -q
       - name: Verify both pinned local models on the actual Mac runtime
         env:
           MNEMION_TEST_LOCAL_MODEL: '1'

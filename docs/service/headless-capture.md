@@ -73,7 +73,7 @@ an OS credential store. Provision service credentials through your existing
 protected channel. The inbox key is a base64-encoded 32-byte random value;
 the `key` control below generates it without printing it. Referenced values
 must be nonempty printable ASCII and fit within 16 KiB. Do not put key values
-in JSON, command arguments or logs.
+in connector JSON, command arguments or logs.
 
 All paths, IDs and members below are synthetic placeholders; replace them with
 your private locations and the exact approved identities. Save this
@@ -382,6 +382,17 @@ runtime explicitly refuses retained capture. Mirror configurations keep their
 service-readiness gate. This option selects an existing managed service; it
 does not install a process manager, enroll a source or provide Windows managed
 hosting. Public 4.44.0 is not a capture-aware runtime.
+
+An additional **unreleased Supervisor correction** passes an explicitly configured
+`capture.inbox_key.env` to registered Linux/macOS connector processes. It reads
+the value from private Supervisor settings, falling back to the Supervisor's
+process environment at launch. Missing references and reserved names such as
+`MNEMION_ADMIN_DATABASE_URL`, `MNEMION_VAULT_KEY` or `PYTHONPATH` refuse launch;
+arbitrary credentials and database-role variables are not inherited. File key
+references retain their normal reload behavior. See [Supervisor inbox-key references](managed-connectors.md#retained-inbox-environment-references-unreleased).
+Six focused source checks and one real Supervisor restart journey passed.
+Startup registration stays explicit; packaged acceptance for this correction
+remains pending.
 
 For the five-second follow-up, the managed launcher removes the old optional
 receipt before each scan and reads a new private `capture_backfill` boolean.
