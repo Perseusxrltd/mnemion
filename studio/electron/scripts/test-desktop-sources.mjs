@@ -139,10 +139,17 @@ const queuedCapture = () => ({ locally_accepted: 1, pending_events: 1, pending_b
   device_pending_bytes: 1024, device_database_bytes: 65536, reason_code: 'capture_delivery_unavailable',
   coverage: coverage() })
 
+const indexProgress = () => ({ status: 'available', last_attempt_at: '2026-10-21T02:00:00+00:00', active: null,
+  completed: { generation_id: 'fixture-generation', inference_paused: false,
+    started_at: '2026-10-21T01:59:00+00:00', observed_at: '2026-10-21T02:00:00+00:00',
+    pages: 1, next_cursor: null, counts: { events: 10, lexical_indexed: 10, vector_indexed: 8,
+      waiting: 2, failed: 0, withheld: 0, forgotten: 0, unknown: 0 } } })
+
 test('coverage stays available to native agents after a desktop restart', async t => {
   const f = await fixture(t)
   await f.add(retainedDefinition()); await f.manager.start(); await f.flush()
   const capture = queuedCapture()
+  capture.coverage.index = indexProgress()
   f.state.scans[0].finish({ ...report(), completed: false, changed: 0, remote_sync_available: false, capture })
   await f.flush()
   assert.deepEqual((await f.manager.status()).sources[0].activity.report.capture.coverage, capture.coverage)
@@ -158,6 +165,10 @@ for (const [name, damage] of [
   ['invalid time', value => { value.last_contact_at = 'not-a-time' }],
   ['unsafe integer', value => { value.observed_bytes = Number.MAX_SAFE_INTEGER + 1 }],
   ['invented history completeness', value => { value.history_before_tracking = 'complete' }],
+  ['inconsistent index counts', value => { value.index = indexProgress(); value.index.completed.counts.vector_indexed = 10 }],
+  ['incomplete index marked complete', value => { value.index = indexProgress(); value.index.completed.next_cursor = '1'.repeat(64) }],
+  ['invalid index observation time', value => { value.index = indexProgress(); value.index.completed.observed_at = 'yesterday' }],
+  ['unbounded model identity', value => { value.index = indexProgress(); value.index.completed.generation_id = 'x'.repeat(129) }],
 ]) test(`invalid coverage is visible as a source error: ${name}`, async t => {
   const f = await fixture(t)
   await f.add(retainedDefinition()); await f.manager.start(); await f.flush()

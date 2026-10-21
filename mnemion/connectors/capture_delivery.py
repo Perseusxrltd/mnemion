@@ -2,6 +2,8 @@
 
 import time
 
+import httpx
+
 from ..sdk import MnemionError
 from ..service.capture_models import CaptureGrant, CapturePageReceipt
 from .conversation_inbox import InboxError
@@ -71,6 +73,28 @@ def deliver(inbox, client, *, maximum_pages=4, maximum_seconds=20):
         value = CapturePageReceipt.model_validate(receipt).model_dump(mode="json")
         inbox.acknowledge(value)
         delivered += len(value["items"])
+    # A successful write is not evidence of indexing. Observe bounded source
+    # pages after delivery; a transient statistics outage must not erase the
+    # confirmed receipts or turn them into unconfirmed delivery.
+    for _ in range(2):
+        if time.monotonic() >= deadline:
+            break
+        cursor = inbox.observations.index_cursor()
+        try:
+            value = client.request(
+                "GET",
+                base + "/index-progress",
+                params={"limit": 1000, **({"after": cursor} if cursor else {})},
+            )
+            if inbox.observations.indexed(value):
+                break
+        except (MnemionError, httpx.HTTPError, ValueError, TypeError, KeyError) as error:
+            if isinstance(error, MnemionError) and error.status in (401, 403):
+                raise InboxError("capture_authorization_revoked") from None
+            inbox.observations.index_unavailable(
+                unsupported=isinstance(error, MnemionError) and error.status == 404
+            )
+            break
     return {
         "remote_committed_events": delivered,
         "fence_sweep_pending": inbox.fence_cursor() is not None,

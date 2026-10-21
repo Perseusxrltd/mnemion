@@ -62,6 +62,7 @@ does not ship this unfinished capture milestone.
 | Delivery and reconciliation | The runner saves exact pages before delivery, looks up uncertain receipts and resends only the same page. Current revocation and forgetting fences apply to backlog. Revoked grants retain local pending evidence without attempting ingestion; observed revocation also stops later local intake. |
 | Private scan observations | Last success, failure, interrupted attempt and next check survive restart. App and native status separate local acceptance, pending content, server acknowledgements, unknown pages, incomplete scans and capacity. Explicit repair preserves damaged diagnostics and resets history for every source on the device to unknown without changing sources, credentials or capture data. |
 | Encrypted coverage accounting | The inbox retains per-file prefix observations and one bounded aggregate, with selection counters committed alongside accepted evidence. Missing/changed/unobserved history, continuous non-empty queue start, authenticated contact and receipt acknowledgement remain distinct. This development delta is still under validation. |
+| Source index observations | An additional unreleased delta reads current revision/index states for the authorized shared source across devices. It saves partial and completed sweeps separately, with observed generation and time interval. Source, controller and migration checks passed; installed acceptance remains open. |
 | Device resource admission | Pending selected payload and actual SQLite database pages have separate per-source and aggregate device limits. New intake also needs free disk headroom. Reducing limits preserves accepted evidence and leaves bounded delivery/forgetting work available. |
 | Pause and removal | Pause works offline. Retained removal requires a pause, explicit `discard_local_inbox: true` and confirmed server revocation before local discard. A current workspace administrator can retire the exact saved grant when the device key is unavailable. Its optional `retirement_credential` is used only through the private removal path and never saved by the operation. Recorded retirement can finish cleanup offline without credentials. |
 | Forgetting and recovery | One captured fragment's raw evidence, projections, parts and retained revisions are withdrawn atomically. Late deliveries stay denied. Current negative state and grant revocations survive restoring an older backup. Revoked custody also stops new background inference and vector publication. |
@@ -139,10 +140,56 @@ a new period. It is not an individual event age or a continuous outage measure.
 `last_contact_at` advances only after authenticated delivery preflight verifies
 the matching active grant. `last_acknowledged_at` advances when a validated page
 receipt is applied locally, including reconciliation and forgotten outcomes.
-Neither observation establishes indexing completion. **Index readiness remains
-unobserved here, and L2/L3 consolidation progress is unavailable.** The
+Neither observation establishes indexing completion. At the committed
+prefix-only checkpoint `15a678b`, index readiness remained unobserved. The
 [status guide](../service/durable-capture.md#read-prefix-coverage) documents the
-source-byte, selected-payload and history counters separately.
+source-byte, selected-payload and history counters separately. **L2/L3
+consolidation progress remains unavailable.**
+
+## Index-observation source delta
+
+This **unreleased development delta** follows the prefix-only checkpoint
+`15a678b`. Six targeted [database, permission and restart checks](../../service_tests/test_capture_index_progress.py)
+have passing receipts. They cover worker commit, current revision and model
+generation, bounded authenticated pagination and revocation, failed/withheld/
+forgotten classifications, resumable sweeps and recovery after a source-lock
+timeout. The broader batch recorded 19 passes and one fixture validation failure
+(a revision lacked its required reason); the corrected case and new busy-source
+case then passed. Final focused checks passed after the strict progress validator
+and narrow SQL projection changes.
+
+All 39 desktop controller checks, 29 migration checks, the delivery/prefix/API
+contract checks and Electron/frontend builds passed. The new panel was visually
+inspected at 720 pixels with zero browser errors or warnings. These results do
+not establish installed-artifact, six-native or complete L1 acceptance.
+
+The [service observer](../../mnemion/service/capture_progress.py) reads current
+memory revisions and the observed active embedding generation through the typed
+`CaptureIndexPage` response. Each authorized page covers at most 1,000 accepted
+events for the **shared source across its devices**, including forgotten events.
+Lexical/vector, waiting, failed, withheld, forgotten and unknown counts have the
+definitions in the [status guide](../service/durable-capture.md#read-source-index-observations).
+Lexical counts overlap the vector/waiting/failed states; event counts are distinct
+from unique memories and from this device inbox's pending/stored/forgotten totals.
+The observer invokes no model and starts no indexing work.
+
+Normal delivery requests at most two index pages after its other work, checking
+the existing time allowance before each request; network timeouts remain separate.
+The revision/generation job index avoids a full job scan per observed memory.
+Queries use a one-second pool wait, a 500 ms lock timeout and a two-second
+statement timeout, with busy-source recovery covered by the focused checks.
+The inbox validates source, grant, cursor and bounded
+counts, then encrypts the accepted page contribution. `IndexProgress` preserves
+an active sweep and the prior completed sweep separately across restarts.
+Generation changes discard the active accumulation and restart at the beginning;
+partial or unavailable observations preserve the completed result with its
+original generation and timestamps. An unsupported server remains explicit.
+
+Sweep start/end timestamps describe a sequence of page observations. Revisions
+can change and earlier-ID events can arrive during that sequence, so reaching
+the final page is not an atomic census or a promise of current search results.
+The app labels saved, partial and completed observations and keeps their scope
+separate from local delivery. **L2/L3 consolidation remains unavailable.**
 
 ## Source and deletion boundaries
 
@@ -200,10 +247,10 @@ a scan. It cannot stand in for evidence or key recovery.
 
 - Finish acceptance of the encrypted coverage/gap accounting, including selected,
   omitted and unsupported complete-line counts and persistent queue/contact
-  observations. Complete separately observed index readiness and the remaining
-  historical coverage work. Join observed, locally accepted and server-acknowledged
-  progress without turning unknown history into zero gaps or queue age into
-  measured offline duration. Consolidated progress remains unavailable until the
+  observations. Finish acceptance of separately observed index progress and the
+  remaining historical coverage work. Join observed, locally accepted and
+  server-acknowledged progress without turning unknown history into zero gaps or
+  queue age into measured offline duration. Consolidated progress remains unavailable until the
   corresponding L2/L3 work exists.
 - Complete the bounded enrollment/capability preview, source/session include and
   exclude controls, explicit retention selections, attachment/field availability

@@ -70,7 +70,7 @@ in `activity.report.capture`.
 | `capture_complete`, `reason_code` | Whether that local scan finished and any observed source, capacity, integrity or authorization problem. An incomplete scan can leave earlier accepted evidence available. |
 | `delivery_complete` | The observed pending queue and current forgetting sweep finished without a delivery error. |
 | `database_bytes`, `device_database_bytes`, `device_pending_bytes`, `over_limit` | Local storage observations and whether the inbox exceeds an admission limit. |
-| `coverage` | Encrypted, durable prefix accounting, history uncertainty and queue/contact observations, described below. |
+| `coverage` | Encrypted prefix accounting, history uncertainty, queue/contact observations and saved source index observations, described below. |
 
 Delivery reuses each saved page's exact identity and body. After an uncertain
 reply, the runner looks up the receipt before resending the same page. It applies
@@ -86,12 +86,13 @@ unsaved observation must remain unknown in an agent's report.
 
 ### Read prefix coverage
 
-`activity.report.capture.coverage` describes the last accepted prefixes where
-accounting is known for tracked producer files. Its counters replace each file's
-previous contribution; they are **not lifetime totals** or counts of unique
-conversations, messages or retained fragments. Missing files keep their last
-known observations. The coverage record is encrypted in the inbox, and accepted-prefix accounting
-commits with the selected items and verified checkpoint.
+The prefix fields in `activity.report.capture.coverage` describe the last accepted
+prefixes of tracked producer files where accounting is known. Each file's latest
+counters replace its previous contribution; they are **not lifetime totals** or
+counts of unique conversations, messages or retained fragments. Missing files
+keep their last known observations. The coverage record is encrypted in the
+inbox, and accepted-prefix accounting commits with the selected items and
+verified checkpoint.
 
 In the app, expand **Capture coverage and history** to view these observations.
 Interpret selection using the saved `capture_mode`. `records.lines` counts
@@ -127,14 +128,72 @@ Time since contact is not a measured continuous outage, and queue age is not
 offline duration. These remain the last saved observations. History before
 tracking and records never exposed by the producer are always unknown. A later
 successful scan retains missing/changed-history uncertainty; it cannot prove
-what vanished between observations. **Index readiness is currently unobserved
-in this report; L2/L3 consolidation progress is unavailable.**
+what vanished between observations. Prefix and delivery observations do not
+establish index readiness; source index observations are reported separately below.
+**L2/L3 consolidation progress remains unavailable.**
 
 Coverage component checks and Electron/frontend builds passed. A synthetic source
 preview worked in a real browser. The
 [development validation record](../research/2026-10-21-durable-capture-implementation.md#coverageaccounting-source-delta)
 preserves the detailed-mode failure and successful rechecks. Installed-artifact
 acceptance and the remaining L1 requirements remain open.
+
+### Read source index observations
+
+An additional **unreleased development delta** exposes
+`activity.report.capture.coverage.index` under **Capture coverage and history**.
+Its [source validation](../research/2026-10-21-durable-capture-implementation.md#index-observation-source-delta)
+is separate from the earlier prefix-only checkpoint; installed acceptance remains
+open. It covers **service-accepted events for the authorized shared source
+across its devices**. Local `pending_events`, `stored_events` and
+`forgotten_events` describe this inbox, so those totals have a different scope.
+
+After normal delivery, the runner requests at most two index pages, each covering
+up to 1,000 events, checking the existing delivery time allowance before each
+request. Network request timeouts still apply. The authenticated
+`GET /v1/capture-grants/{grant_id}/index-progress` endpoint rechecks current grant,
+key and source access. Observation reads existing service state without invoking
+models or starting indexing work. If no time remains, the saved observation stays
+unchanged.
+
+Observation queries use a revision/generation job index, a one-second pool wait,
+a 500 ms lock timeout and a two-second statement timeout. A busy observer returns
+503 and preserves the previous saved result; it does not undo delivery receipts.
+
+Each event is classified using its memory's current revision and the active
+embedding generation observed on that page:
+
+| Count | Meaning |
+| --- | --- |
+| `events` | Service-accepted events examined during the sweep. |
+| `lexical_indexed` | Visible ordinary current revisions counted as text indexed. Equals `vector_indexed + waiting + failed`, so it overlaps the vector count. |
+| `vector_indexed` | The current revision has a stored embedding for the observed active generation. |
+| `waiting` | No matching vector and no failure meeting the rule below. This can include paused inference; it does not establish that a job is running. |
+| `failed` | No matching vector, with a failed job for this revision/generation and no pending or leased job for it. |
+| `withheld` | Review state or source visibility excludes the revision from ordinary search. |
+| `forgotten` | The event has no retained memory link, or its memory is deleted. |
+| `unknown` | The referenced memory or its current revision could not be observed. |
+
+The six states from `vector_indexed` through `unknown` partition `events`.
+These count accepted event records, including retained fragments and revisions;
+they are not counts of distinct conversations or ideas. Stored index
+observations do not guarantee a search result: current permissions, review state
+and query filters still apply.
+
+The encrypted record keeps an unfinished `active` sweep and the last `completed`
+sweep separately across restarts. The app displays the completed observation
+when one exists and labels newer partial progress separately. `status` is
+`unobserved`, `available`, `unavailable` or `unsupported`; an unavailable or
+unsupported refresh preserves saved results. `last_attempt_at` records the last
+saved attempt, while each sweep carries its own generation, page count,
+`started_at` and `observed_at`. `inference_paused` reflects its last observed page.
+
+A completed sweep reached the end of its event-ID traversal. Its timestamps
+cover a sequence of observations, **not an atomic census**. Revisions can change,
+and newly accepted events earlier than the cursor can appear in the next sweep.
+A changed generation restarts the active sweep from the beginning; partial
+results do not replace a prior completed observation, which retains its original
+generation and timestamps. L2/L3 consolidation progress remains unavailable.
 
 ## Storage and resource limits
 

@@ -96,6 +96,10 @@ def test_local_capture_then_lost_http_reply_restart_and_current_forgetting(
         result = deliver(inbox, client)
         assert result["pending_events"] == result["unknown_pages"] == 0
         assert result["forgotten_events"] == int(forget_while_offline)
+        observed = result["coverage"]["index"]
+        assert observed["status"] == "available"
+        assert observed["completed"]["counts"]["events"] == 1
+        assert observed["completed"]["counts"]["forgotten"] == int(forget_while_offline)
         assert not any(method == "POST" for method, _ in requests)
         if not forget_while_offline:
             assert any(route.endswith("/pages/" + committed[0]["page_id"]) for _, route in requests)

@@ -1,4 +1,4 @@
-import type { CaptureCoverage, CaptureReason } from '../shared/desktop-sources.js'
+import type { CaptureCoverage, CaptureIndexCounts, CaptureIndexProgress, CaptureIndexSweep, CaptureReason } from '../shared/desktop-sources.js'
 
 const coverageCounts = ['tracked_scopes', 'checking_scopes', 'failed_scopes', 'missing_scopes',
   'uncertain_scopes', 'unknown_prefix_scopes', 'uncertain_intervals', 'observed_bytes',
@@ -10,10 +10,34 @@ const object = (value: unknown): value is Record<string, unknown> => !!value && 
 const count = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) >= 0
 const timestamp = (value: unknown) => value === null || typeof value === 'string' &&
   /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|\+00:00)$/.test(value) && Number.isFinite(Date.parse(value))
+const keys = (value: unknown, names: string[]): value is Record<string, unknown> => object(value) &&
+  Object.keys(value).length === names.length && Object.keys(value).every(key => names.includes(key))
+const cursor = (value: unknown) => value === null || typeof value === 'string' && /^[a-f0-9]{64}$/.test(value)
+const indexCounts = ['events', 'lexical_indexed', 'vector_indexed', 'waiting', 'failed', 'withheld', 'forgotten', 'unknown']
+const validIndexCounts = (value: unknown): value is CaptureIndexCounts => {
+  if (!keys(value, indexCounts) || indexCounts.some(key => !count(value[key]))) return false
+  const c = value as CaptureIndexCounts
+  return c.events === c.vector_indexed + c.waiting + c.failed + c.withheld + c.forgotten + c.unknown &&
+    c.lexical_indexed === c.vector_indexed + c.waiting + c.failed
+}
+const validIndexSweep = (value: unknown): value is CaptureIndexSweep => keys(value,
+  ['generation_id', 'inference_paused', 'started_at', 'observed_at', 'pages', 'counts', 'next_cursor']) &&
+  typeof value.generation_id === 'string' && /^[a-zA-Z0-9:._-]{1,128}$/.test(value.generation_id) &&
+  typeof value.inference_paused === 'boolean' && count(value.pages) && value.pages > 0 &&
+  typeof value.started_at === 'string' && timestamp(value.started_at) &&
+  typeof value.observed_at === 'string' && timestamp(value.observed_at) &&
+  validIndexCounts(value.counts) && cursor(value.next_cursor)
+const validIndexProgress = (value: unknown): value is CaptureIndexProgress => keys(value,
+  ['status', 'last_attempt_at', 'active', 'completed']) &&
+  ['unobserved', 'available', 'unavailable', 'unsupported'].includes(String(value.status)) && timestamp(value.last_attempt_at) &&
+  (value.status === 'unobserved' ? value.last_attempt_at === null && value.active === null && value.completed === null : value.last_attempt_at !== null) &&
+  (value.active === null || validIndexSweep(value.active) && value.active.next_cursor !== null) &&
+  (value.completed === null || validIndexSweep(value.completed) && value.completed.next_cursor === null)
 
 export function validCaptureCoverage(value: unknown): value is CaptureCoverage {
-  if (!object(value) || Object.keys(value).length !== coverageKeys.length ||
-    Object.keys(value).some(key => !coverageKeys.includes(key)) || value.format !== 'mnemion-capture-coverage-v1' ||
+  if (!object(value) || Object.keys(value).length !== coverageKeys.length + Number(Object.hasOwn(value, 'index')) ||
+    Object.keys(value).some(key => !coverageKeys.includes(key) && key !== 'index') || value.format !== 'mnemion-capture-coverage-v1' ||
+    Object.hasOwn(value, 'index') && !validIndexProgress(value.index) ||
     !['complete', 'messages'].includes(String(value.capture_mode)) ||
     !['unobserved', 'available', 'unavailable'].includes(String(value.catalog)) || value.history_before_tracking !== 'unknown' ||
     coverageCounts.some(key => !count(value[key])) || coverageTimes.some(key => !timestamp(value[key])) ||

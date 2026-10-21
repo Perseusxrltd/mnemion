@@ -21,6 +21,7 @@ capture.source.status GET /v1/connectors/{connector_id}/capture-sources/{source_
 capture.source.revoke DELETE /v1/connectors/{connector_id}/capture-sources/{source_id}
 capture.grant.configure PUT /v1/capture-sources/{source_id}/grants/{grant_id}
 capture.grant.status GET /v1/capture-grants/{grant_id}
+capture.index.progress GET /v1/capture-grants/{grant_id}/index-progress
 capture.grant.revoke DELETE /v1/capture-grants/{grant_id}
 capture.pages.accept POST /v1/capture-grants/{grant_id}/pages
 capture.pages.receipt GET /v1/capture-grants/{grant_id}/pages/{page_id}

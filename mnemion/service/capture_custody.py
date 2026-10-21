@@ -9,6 +9,7 @@ from .db import require_administrator, require_space
 from .errors import ServiceError, not_found
 from .models import json_value
 from .repository import audit
+from .capture_progress import CaptureProgress
 
 
 def source_lock(conn, source_id):
@@ -91,7 +92,7 @@ def selected_item(item, capture_mode, producer_scope, namespace):
     return data
 
 
-class CaptureCustody:
+class CaptureCustody(CaptureProgress):
     def __init__(self, memory):
         self.memory, self.db = memory, memory.db
 

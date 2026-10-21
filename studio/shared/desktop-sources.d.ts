@@ -41,6 +41,19 @@ export type CaptureCoverage = {
   tracked_from: string | null; observed_at: string | null; complete_prefix_at: string | null;
   last_contact_at: string | null; last_acknowledged_at: string | null; queue_nonempty_since: string | null;
   history_before_tracking: 'unknown';
+  index?: CaptureIndexProgress;
+}
+export type CaptureIndexCounts = {
+  events: number; lexical_indexed: number; vector_indexed: number; waiting: number;
+  failed: number; withheld: number; forgotten: number; unknown: number;
+}
+export type CaptureIndexSweep = {
+  generation_id: string; inference_paused: boolean; started_at: string; observed_at: string;
+  pages: number; counts: CaptureIndexCounts; next_cursor: string | null;
+}
+export type CaptureIndexProgress = {
+  status: 'unobserved' | 'available' | 'unavailable' | 'unsupported';
+  last_attempt_at: string | null; active: CaptureIndexSweep | null; completed: CaptureIndexSweep | null;
 }
 export type SourceReason = CaptureReason | 'history_reset' | 'partial' | 'interrupted' | 'source_cancelled' | 'source_timeout' |
   'source_unavailable' | 'source_helper_unavailable' | 'source_invalid_response' |

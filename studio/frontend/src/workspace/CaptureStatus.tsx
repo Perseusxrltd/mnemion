@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { CaptureReport } from '../../../shared/desktop-sources';
 import { captureMessages } from '../../../electron/capture-messages';
+import CaptureIndexStatus from './CaptureIndexStatus';
 
 const mib = (bytes: number) => (bytes / 1024 ** 2).toLocaleString(undefined, { maximumFractionDigits: 1 });
 const stamp = (value: string | null) => value ? new Date(value).toLocaleString() : 'not yet observed';
@@ -23,13 +24,14 @@ export default function CaptureStatus({ report }: { report?: CaptureReport }) {
   const coverage = report.coverage;
   return <div className="ws-notice" aria-label="Retained capture status">
     <p><strong>{report.pending_events.toLocaleString()} queued</strong> · {report.stored_events.toLocaleString()} acknowledged by the workspace · {report.forgotten_events.toLocaleString()} forgotten</p>
-    <p className="ws-helper">Last scan accepted {report.locally_accepted.toLocaleString()} fragments locally and received {report.remote_committed_events.toLocaleString()} delivery acknowledgements. Index readiness has not been observed here. Librarian consolidation progress is not yet available.</p>
+    <p className="ws-helper">Last scan accepted {report.locally_accepted.toLocaleString()} fragments locally and received {report.remote_committed_events.toLocaleString()} delivery acknowledgements.</p>
     <p className="ws-helper">This inbox: {mib(report.pending_bytes)} MiB pending · {mib(report.database_bytes)} MiB encrypted storage. This computer: {mib(report.device_pending_bytes)} / 1,024 MiB pending content.</p>
     {report.unknown_pages > 0 && <p>{report.unknown_pages} delivery {report.unknown_pages === 1 ? 'page awaits' : 'pages await'} reconciliation. Its saved identity is retained after a lost reply.</p>}
     {report.reason_code && <p>{captureMessages[report.reason_code]}</p>}
     {report.over_limit && <p>New intake is paused at the current capacity limit. Accepted evidence remains eligible for delivery and forgetting.</p>}
     <details>
       <summary style={{ cursor: 'pointer' }}>Capture coverage and history</summary>
+      <CaptureIndexStatus progress={coverage?.index} />
     {coverage ? <>
       {coverage.catalog === 'unobserved' ? <p className="ws-helper">Prefix coverage has not yet been observed.</p> : <>
       <p><strong>Observed file prefixes</strong> · {coverage.records.selected.toLocaleString()} selected lines · {coverage.records.omitted.toLocaleString()} omitted by selection or deduplication · {coverage.records.unsupported.toLocaleString()} unsupported by the selected reader</p>

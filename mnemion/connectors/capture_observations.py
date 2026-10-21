@@ -8,7 +8,13 @@ Status reads one aggregate record instead of decrypting every source checkpoint.
 import json
 import re
 
-from ..capture_coverage import CaptureCoverage, PrefixObservation, SelectionCounts, utc_now
+from ..capture_coverage import (
+    CaptureCoverage,
+    IndexCounts,
+    PrefixObservation,
+    SelectionCounts,
+    utc_now,
+)
 from ..capture_identity import canonical_capture_json
 from .conversation_inbox import InboxError
 
@@ -210,6 +216,69 @@ class Observations:
             summary = self._summary()
             summary["last_contact_at"] = utc_now()
             self._finish(summary)
+
+    def index_cursor(self):
+        active = self._summary()["index"]["active"]
+        return active["next_cursor"] if active else None
+
+    def index_unavailable(self, *, unsupported=False):
+        with self.inbox._transaction():
+            summary = self._summary()
+            summary["index"].update(
+                status="unsupported" if unsupported else "unavailable", last_attempt_at=utc_now()
+            )
+            self._finish(summary)
+
+    def indexed(self, page):
+        """Commit one verified page, retaining the previous completed sweep.
+
+        Server source counts cover all devices authorized for this source, not
+        just this inbox. Their observation interval is not an atomic snapshot.
+        """
+        from ..service.capture_models import CaptureIndexPage
+
+        page = CaptureIndexPage.model_validate(page)
+        if any(
+            getattr(page, field) != self.inbox.binding[field] for field in ("source_id", "grant_id")
+        ):
+            raise InboxError("capture_binding_mismatch")
+        with self.inbox._transaction():
+            summary = self._summary()
+            progress = summary["index"]
+            active = progress["active"]
+            expected = active["next_cursor"] if active else None
+            if page.after != expected:
+                raise InboxError("capture_checkpoint_invalid")
+            progress.update(status="available", last_attempt_at=utc_now())
+            if active and active["generation_id"] != page.generation_id:
+                # Restart from the beginning; a page following an older
+                # generation's cursor cannot establish the new prefix.
+                progress["active"] = None
+                self._finish(summary)
+                return False
+            active = active or {
+                "generation_id": page.generation_id,
+                "started_at": page.observed_at,
+                "observed_at": page.observed_at,
+                "inference_paused": page.inference_paused,
+                "pages": 0,
+                "counts": IndexCounts().model_dump(),
+                "next_cursor": None,
+            }
+            active.update(
+                observed_at=page.observed_at,
+                inference_paused=page.inference_paused,
+                pages=active["pages"] + 1,
+                next_cursor=page.next_cursor,
+            )
+            for key, value in page.counts.model_dump().items():
+                active["counts"][key] += value
+            if page.next_cursor is None:
+                progress.update(active=None, completed=active)
+            else:
+                progress["active"] = active
+            self._finish(summary)
+            return page.next_cursor is None
 
     def status(self, pending_bytes):
         summary = self._summary()

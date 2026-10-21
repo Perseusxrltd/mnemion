@@ -850,6 +850,201 @@
     {
       "authentication": "bearer",
       "download": false,
+      "effect": "read",
+      "group": "connectors",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "after": {
+                "anyOf": [
+                  {
+                    "pattern": "^[a-f0-9]{64}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "After"
+              },
+              "grant_id": {
+                "format": "uuid",
+                "title": "Grant Id",
+                "type": "string"
+              },
+              "limit": {
+                "default": 1000,
+                "maximum": 1000,
+                "minimum": 1,
+                "title": "Limit",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "grant_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters"
+        ],
+        "type": "object"
+      },
+      "method": "GET",
+      "name": "capture.index.progress",
+      "output_schema": {
+        "$defs": {
+          "CaptureIndexPage": {
+            "additionalProperties": true,
+            "properties": {
+              "after": {
+                "anyOf": [
+                  {
+                    "pattern": "^[a-f0-9]{64}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "After"
+              },
+              "counts": {
+                "$ref": "#/$defs/IndexCounts"
+              },
+              "generation_id": {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[a-zA-Z0-9:._-]+$",
+                "title": "Generation Id",
+                "type": "string"
+              },
+              "grant_id": {
+                "title": "Grant Id",
+                "type": "string"
+              },
+              "inference_paused": {
+                "title": "Inference Paused",
+                "type": "boolean"
+              },
+              "next_cursor": {
+                "anyOf": [
+                  {
+                    "pattern": "^[a-f0-9]{64}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Next Cursor"
+              },
+              "observed_at": {
+                "title": "Observed At",
+                "type": "string"
+              },
+              "source_id": {
+                "title": "Source Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "source_id",
+              "grant_id",
+              "generation_id",
+              "inference_paused",
+              "observed_at",
+              "after",
+              "counts",
+              "next_cursor"
+            ],
+            "title": "CaptureIndexPage",
+            "type": "object"
+          },
+          "IndexCounts": {
+            "additionalProperties": false,
+            "properties": {
+              "events": {
+                "default": 0,
+                "maximum": 9007199254740991.0,
+                "minimum": 0.0,
+                "title": "Events",
+                "type": "integer"
+              },
+              "failed": {
+                "default": 0,
+                "maximum": 9007199254740991.0,
+                "minimum": 0.0,
+                "title": "Failed",
+                "type": "integer"
+              },
+              "forgotten": {
+                "default": 0,
+                "maximum": 9007199254740991.0,
+                "minimum": 0.0,
+                "title": "Forgotten",
+                "type": "integer"
+              },
+              "lexical_indexed": {
+                "default": 0,
+                "maximum": 9007199254740991.0,
+                "minimum": 0.0,
+                "title": "Lexical Indexed",
+                "type": "integer"
+              },
+              "unknown": {
+                "default": 0,
+                "maximum": 9007199254740991.0,
+                "minimum": 0.0,
+                "title": "Unknown",
+                "type": "integer"
+              },
+              "vector_indexed": {
+                "default": 0,
+                "maximum": 9007199254740991.0,
+                "minimum": 0.0,
+                "title": "Vector Indexed",
+                "type": "integer"
+              },
+              "waiting": {
+                "default": 0,
+                "maximum": 9007199254740991.0,
+                "minimum": 0.0,
+                "title": "Waiting",
+                "type": "integer"
+              },
+              "withheld": {
+                "default": 0,
+                "maximum": 9007199254740991.0,
+                "minimum": 0.0,
+                "title": "Withheld",
+                "type": "integer"
+              }
+            },
+            "title": "IndexCounts",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/CaptureIndexPage"
+      },
+      "parameter_locations": {
+        "after": "query",
+        "grant_id": "path",
+        "limit": "query"
+      },
+      "path": "/v1/capture-grants/{grant_id}/index-progress",
+      "retry": "read",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Index Progress"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
       "effect": "write",
       "group": "connectors",
       "input_schema": {

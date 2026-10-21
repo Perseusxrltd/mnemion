@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import re
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -12,6 +13,16 @@ Count = Annotated[int, Field(ge=0, le=2**53 - 1, strict=True)]
 
 def utc_now():
     return datetime.now(timezone.utc).isoformat()
+
+
+def utc_timestamp(value):
+    if value is not None:
+        if not isinstance(value, str) or not re.fullmatch(
+            r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|\+00:00)", value
+        ):
+            raise ValueError("Use a bounded UTC timestamp")
+        datetime.fromisoformat(value)
+    return value
 
 
 class Bounded(BaseModel):
@@ -29,6 +40,79 @@ class SelectionCounts(Bounded):
         if self.lines != self.selected + self.omitted + self.unsupported:
             raise ValueError(
                 "Selected, omitted and unsupported lines must cover the examined prefix"
+            )
+        return self
+
+
+Cursor = Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
+Generation = Annotated[str, Field(min_length=1, max_length=128, pattern=r"^[a-zA-Z0-9:._-]+$")]
+
+
+class IndexCounts(Bounded):
+    events: Count = 0
+    lexical_indexed: Count = 0
+    vector_indexed: Count = 0
+    waiting: Count = 0
+    failed: Count = 0
+    withheld: Count = 0
+    forgotten: Count = 0
+    unknown: Count = 0
+
+    @model_validator(mode="after")
+    def partition(self):
+        if (
+            self.events
+            != self.vector_indexed
+            + self.waiting
+            + self.failed
+            + self.withheld
+            + self.forgotten
+            + self.unknown
+            or self.lexical_indexed != self.vector_indexed + self.waiting + self.failed
+        ):
+            raise ValueError("Index observations must partition the examined events")
+        return self
+
+
+class IndexSweep(Bounded):
+    generation_id: Generation
+    inference_paused: bool
+    started_at: str
+    observed_at: str
+    pages: Count = Field(ge=1)
+    counts: IndexCounts
+    next_cursor: Cursor | None = None
+
+    _timestamps = field_validator("started_at", "observed_at")(utc_timestamp)
+
+
+class IndexProgress(Bounded):
+    status: Literal["unobserved", "available", "unavailable", "unsupported"] = "unobserved"
+    last_attempt_at: str | None = None
+    active: IndexSweep | None = None
+    completed: IndexSweep | None = None
+
+    _timestamp = field_validator("last_attempt_at")(utc_timestamp)
+
+    @model_validator(mode="after")
+    def cursors(self):
+        if self.status == "unobserved":
+            if (
+                self.last_attempt_at is not None
+                or self.active is not None
+                or self.completed is not None
+            ):
+                raise ValueError("An unobserved index cannot contain observed progress")
+        elif self.last_attempt_at is None:
+            raise ValueError("Observed index status needs an attempt timestamp")
+        if (
+            self.active
+            and not self.active.next_cursor
+            or self.completed
+            and self.completed.next_cursor
+        ):
+            raise ValueError(
+                "Keep an unfinished index sweep separate from its completed observation"
             )
         return self
 
@@ -56,6 +140,7 @@ class CaptureCoverage(Bounded):
     last_acknowledged_at: str | None = None
     queue_nonempty_since: str | None = None
     history_before_tracking: Literal["unknown"] = "unknown"
+    index: IndexProgress = Field(default_factory=IndexProgress)
 
     @field_validator(
         "tracked_from",
@@ -67,13 +152,7 @@ class CaptureCoverage(Bounded):
     )
     @classmethod
     def timestamp(cls, value):
-        if value is not None:
-            if len(value) > 40:
-                raise ValueError("Use a bounded UTC timestamp")
-            parsed = datetime.fromisoformat(value)
-            if parsed.utcoffset() != timezone.utc.utcoffset(parsed):
-                raise ValueError("Use a UTC timestamp")
-        return value
+        return utc_timestamp(value)
 
     @model_validator(mode="after")
     def consistent(self):

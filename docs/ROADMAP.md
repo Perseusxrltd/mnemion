@@ -26,18 +26,24 @@ issue review, publication and version-linked closure together.
   forgetting checks, persistent app/agent observations, and explicit retirement
   when a device key is lost. Encrypted prefix accounting now distinguishes
   selected, omitted and unsupported lines, retained history gaps, queue age and
-  confirmed workspace contact in development source. Index readiness remains
-  unobserved in this report. A Linux app source preview passed offline intake,
+  confirmed workspace contact in development source. Bounded, resumable source
+  index sweeps now report text/vector indexing, waiting, failed, withheld,
+  forgotten and unknown events under the observed model generation. Source and
+  migration checks passed; packaged acceptance remains open. A Linux app source preview passed offline intake,
   restart, delivery and administrator-assisted removal. Portable recovery,
   complete capture policy and coverage, headless operation, bounded history and
   all six packaged targets remain required before this L1 milestone ships.
 
-- **4.44 is a standalone security hotfix candidate.** Certifi 2026.10.19 and
+- **4.44 is published and accepted on the actual Windows app and shared host.** Certifi 2026.10.19 and
   Pillow 13.0.0 address the reported dependency advisories while preserving the
   pinned text models. [Dependency and offline E5/BGE validation](validation/2026-10-21-security-dependencies.md)
-  passed within its recorded scope. Native packaging, publication, public update
-  checks and actual installed acceptance remain pending. Capture/L1 delivery and
-  all requirement statuses remain unchanged.
+  passed within its recorded scope. All six native targets, artifact verification
+  and public update checks passed; the website synchronized automatically.
+  [Paired acceptance](validation/2026-10-21-444-acceptance.md) confirmed ordinary
+  4.43→4.44 updates, retained identities/login/bookmarks/preferences and 50 isolated
+  lab requests with complete cleanup. Unattended idle restart remains unproven.
+  This is a standalone security hotfix; capture/L1 delivery and all requirement
+  statuses remain unchanged.
 
 - **4.43 is published and accepted on the actual Windows app and shared host.**
   The [paired acceptance](validation/2026-10-21-443-acceptance.md) retained

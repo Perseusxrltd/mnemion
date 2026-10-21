@@ -52,6 +52,19 @@ def install_routes(app, authenticated, service):
     def grant_status(grant_id: UUID, identity: Auth):
         return service.status(identity, grant_id)
 
+    @app.get(
+        "/v1/capture-grants/{grant_id}/index-progress",
+        tags=["Connectors"],
+        response_model=c.CaptureIndexPage,
+    )
+    def index_progress(
+        grant_id: UUID,
+        identity: Auth,
+        after: Annotated[str | None, Query(pattern=r"^[a-f0-9]{64}$")] = None,
+        limit: Annotated[int, Query(ge=1, le=1000)] = 1000,
+    ):
+        return service.index_progress(identity, grant_id, after=after, limit=limit)
+
     @app.delete("/v1/capture-grants/{grant_id}", tags=["Connectors"], response_model=c.CaptureGrant)
     def revoke_device(grant_id: UUID, identity: Auth):
         return service.status(identity, grant_id, revoke=True)

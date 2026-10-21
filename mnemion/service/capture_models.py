@@ -3,11 +3,12 @@
 from typing import Annotated, Literal
 from uuid import UUID
 
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator, model_validator
 
 from ..capture_identity import canonical_capture_json
 from .connector_models import ConnectorItemInput, ExternalID
 from .contracts import ResponseModel
+from ..capture_coverage import Cursor, Generation, IndexCounts, utc_timestamp
 from .models import Command
 
 Digest = Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
@@ -110,3 +111,26 @@ class CaptureFence(ResponseModel):
 class CaptureFencePage(ResponseModel):
     items: list[CaptureFence]
     next_cursor: str | None
+
+
+class CaptureIndexPage(ResponseModel):
+    source_id: str
+    grant_id: str
+    generation_id: Generation
+    inference_paused: bool
+    observed_at: str
+    after: Cursor | None
+    counts: IndexCounts
+    next_cursor: Cursor | None
+
+    _timestamp = field_validator("observed_at")(utc_timestamp)
+
+    @model_validator(mode="after")
+    def advancing(self):
+        if (
+            self.counts.events > 1000
+            or self.next_cursor
+            and (not self.counts.events or self.after and self.next_cursor <= self.after)
+        ):
+            raise ValueError("Use a bounded, advancing index observation page")
+        return self
