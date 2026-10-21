@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-21T06:27:03+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-21T06:48:20+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.44.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.44.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -17,23 +17,9 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | in\_progress | [Run 39555330786](https://github.com/Perseusxrltd/mnemion/actions/runs/39555330786) |
+| ci\.yml | main | success | [Run 39555330786](https://github.com/Perseusxrltd/mnemion/actions/runs/39555330786) |
 | public-updates\.yml | v4\.44\.0 | success | [Run 39534394111](https://github.com/Perseusxrltd/mnemion/actions/runs/39534394111) |
 | release\.yml | release/4\.44\.0 | success | [Run 39530357580](https://github.com/Perseusxrltd/mnemion/actions/runs/39530357580) |
 | verify-artifacts\.yml | main | success | [Run 39534260688](https://github.com/Perseusxrltd/mnemion/actions/runs/39534260688) |
 | website-release\.yml | main | success | [Run 39555330785](https://github.com/Perseusxrltd/mnemion/actions/runs/39555330785) |
 | website-release\.yml | v4\.44\.0 | success | [Run 39534391338](https://github.com/Perseusxrltd/mnemion/actions/runs/39534391338) |
-
-## Active jobs
-
-[Run 39555330786](https://github.com/Perseusxrltd/mnemion/actions/runs/39555330786): 4/12 jobs completed; 4 succeeded.
-
-- legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
-- container \(ubuntu-22\.04-arm\): in\_progress — Build the actual deployment image with its documentation.
-- service \(3\.12\): in\_progress — Check release versions before building clients and running the service matrix.
-- service \(3\.13\): in\_progress — Matching PostgreSQL recovery tools.
-- supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
-- container \(ubuntu-22\.04\): in\_progress — Build the actual deployment image with its documentation.
-- supervision \(macos-15\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
-- service \(3\.14\): in\_progress — Matching PostgreSQL recovery tools.
-
