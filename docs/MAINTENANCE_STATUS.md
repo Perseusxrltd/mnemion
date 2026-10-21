@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-21T15:42:46+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-21T15:43:23+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.44.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.44.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -17,30 +17,26 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | queued | [Run 39628022495](https://github.com/Perseusxrltd/mnemion/actions/runs/39628022495) |
+| ci\.yml | main | in\_progress | [Run 39628022495](https://github.com/Perseusxrltd/mnemion/actions/runs/39628022495) |
 | database-cache\.yml | main | success | [Run 39576347122](https://github.com/Perseusxrltd/mnemion/actions/runs/39576347122) |
-| desktop\.yml | main | queued | [Run 39628117517](https://github.com/Perseusxrltd/mnemion/actions/runs/39628117517) |
+| desktop\.yml | main | in\_progress | [Run 39628117517](https://github.com/Perseusxrltd/mnemion/actions/runs/39628117517) |
 | public-updates\.yml | v4\.44\.0 | success | [Run 39534394111](https://github.com/Perseusxrltd/mnemion/actions/runs/39534394111) |
 | website-release\.yml | main | success | [Run 39628022657](https://github.com/Perseusxrltd/mnemion/actions/runs/39628022657) |
 
 ## Active jobs
 
-[Run 39628022495](https://github.com/Perseusxrltd/mnemion/actions/runs/39628022495): 2/12 jobs completed; 2 succeeded.
+[Run 39628022495](https://github.com/Perseusxrltd/mnemion/actions/runs/39628022495): 5/12 jobs completed; 5 succeeded.
 
-- studio: in\_progress — Run python deploy/bundle\_studio\.py.
-- dependency-audit: queued.
-- container \(ubuntu-22\.04-arm\): in\_progress — Build the actual deployment image with its documentation.
-- supervision \(macos-15-intel\): in\_progress — Run python -m pip install uv==0\.12\.24.
+- container \(ubuntu-22\.04-arm\): in\_progress.
+- supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
 - legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
 - supervision \(macos-15\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
-- service \(3\.12\): in\_progress — Initialize containers.
-- container \(ubuntu-22\.04\): in\_progress — Build the actual deployment image with its documentation.
-- service \(3\.14\): in\_progress — Initialize containers.
-- service \(3\.13\): in\_progress — Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
+- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 
-[Run 39628117517](https://github.com/Perseusxrltd/mnemion/actions/runs/39628117517): 2/5 jobs completed; 0 succeeded.
+[Run 39628117517](https://github.com/Perseusxrltd/mnemion/actions/runs/39628117517): 4/6 jobs completed; 2 succeeded.
 
-- targets: in\_progress.
-- native\_database / Private state / Windows / arm64: queued.
-- native\_database / Private state / Windows / x64: queued.
+- native\_database / Private state / Windows / arm64: in\_progress.
+- native\_database / Database / macos / x64: queued.
 
