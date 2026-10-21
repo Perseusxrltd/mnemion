@@ -1,7 +1,8 @@
 # Cooperative inference during long local indexing
 
-Recorded 20 October 2026 for the prepared **4.43.0 source candidate**. Native
-release, publication and actual installed-update acceptance remain separate.
+Recorded 20 October 2026 for the prepared **4.43.0 source candidate**. The later
+[4.43 publication, actual update and live contention acceptance](2026-10-21-443-acceptance.md)
+is recorded separately from this source experiment.
 The original 4.41 deployment's semantic HTTP 503 had no retained error body;
 this study establishes a reproducible contention mechanism without assigning
 that historical failure a definitive cause.
@@ -103,7 +104,10 @@ The private real-model evidence is under `2026-10-20-inference-fairness/`:
 `real-model-original.json`, `real-model-corrected.json`, their corresponding
 `.npz` outputs and `focused-final.log`. The original deterministic reproduction
 is preserved separately in `2026-10-20-semantic-contention-review/reproduction.json`.
-Native packaging, public update delivery, the actual shared-host/Windows cycle
-and broader hardware/workload acceptance remain required. The
+Native packaging, public update delivery and the actual shared-host/Windows cycle
+subsequently passed. The [later acceptance](2026-10-21-443-acceptance.md) also records
+two live semantic queries during the same indexing operation and final document
+readiness; its observation is operation overlap, without native-batch instrumentation.
+Broader hardware/workload acceptance remains required. The
 [65 requirements](../PRODUCT_REQUIREMENTS.md) and their statuses are unchanged;
 R04 remains partial.

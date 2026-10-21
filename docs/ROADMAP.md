@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.43.0**. Roadmap updated: **2026-10-20**.
+Reviewed source distribution: **4.43.0**. Roadmap updated: **2026-10-21**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
 [Release status](RELEASE_STATUS.md) and the [maintenance board](MAINTENANCE_STATUS.md)
@@ -20,33 +20,35 @@ issue review, publication and version-linked closure together.
 
 ## Current delivery checkpoint
 
-- **Prepared source 4.43 shares local inference between indexing and waiting queries.**
+- **4.43 is published and accepted on the actual Windows app and shared host.**
+  The [paired acceptance](validation/2026-10-21-443-acceptance.md) retained
+  identities, protected login and preferences, then passed 47 of 47 synthetic
+  requests with complete cleanup. The host used compatible automatic updating;
+  Windows used a guarded agent restart. All six native and public upgrade
+  targets passed. Fresh post-upgrade backup delivery remains pending; the
+  earlier 4.41 semantic HTTP 503 remains unexplained under issue 45.
+
+- **4.43 shares local inference between indexing and waiting queries.**
   [Cooperative batches](service/memory-resources.md#search-during-long-local-indexing)
   retain one native execution, adapt within RAM limits and recheck evicted models.
   [Seventy focused checks and one offline pinned-BGE comparison](validation/2026-10-20-inference-fairness.md)
   passed: the concurrent query changed from a two-second admission failure to
   success in 0.269 seconds while all 512 chunks finished. The 250 ms batch target
   and cumulative 30-second wait remain bounded controls, not latency guarantees.
-  Native publication and actual installed acceptance remain separate; R04 is partial.
+  A [bounded live cycle](validation/2026-10-21-443-acceptance.md) also passed two
+  semantic queries during the same indexing operation, followed by document
+  readiness and full synthetic cleanup. Native batches were not instrumented;
+  broader hardware/workload acceptance remains open and R04 is partial.
 
-- **Source 4.42 repairs existing folder and conversation reconnection.** Studio retains
+- **4.43 includes the folder and conversation reconnection repairs.** Studio retains
   the original filesystem namespace instead of creating a second source and
   suspending the original source. App/agent settings retain the verified identity;
   ambiguous or mismatching catalogs stop before import. [Focused validation](validation/2026-10-20-source-identity-recovery.md)
   passed. The combined [conversation repair](validation/2026-10-20-conversation-identity.md)
   also verifies copied prefixes before retaining their original record identities.
-  The candidate remains unpublished while a Windows installed-workspace gate
-  failure is investigated. Earlier Mac ARM runner-allocation failures remain
-  recorded separately; native delivery and live acceptance are still required.
-
-- **Actual Windows and shared-host 4.41 acceptance passed after review.**
-  The [paired acceptance](validation/2026-10-20-441-acceptance.md) retained identities,
-  protected login and preferences, then passed 41 of 41 synthetic requests with
-  complete cleanup and no production-memory writes or cloud-model calls.
-  The host used compatible automatic updating; Windows used a guarded agent
-  restart. The earlier semantic HTTP 503 remains unexplained under issue 45.
-  The separate post-upgrade snapshot and ledger passed independent off-host
-  manifest verification at 16:33 UTC; this was not a new restore drill.
+  These component checks remain separate from full source/conversation
+  reconnection acceptance. The withheld 4.42 setup failure and its unresolved
+  cause remain in the [native-gate record](validation/2026-10-20-inference-fairness.md#withheld-442-native-gate-and-diagnostic-addendum).
 
 - **Actual office access now passes.** [Issue 46 acceptance](validation/2026-10-20-office-access.md)
   verifies genuine source scans and list/fetch/lexical reads with both unchanged
