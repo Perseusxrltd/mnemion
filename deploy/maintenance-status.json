@@ -30,16 +30,96 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "b630be1f4a3b3f0ebf3e949537bfb4927b2ebc81",
-      "status": "pending",
+      "status": "queued",
       "conclusion": null,
-      "updated_at": "2026-10-21T15:16:33Z",
+      "updated_at": "2026-10-21T15:18:02Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39624140521",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 0,
-        "completed": 0,
-        "succeeded": 0,
-        "active": []
+        "total": 12,
+        "completed": 3,
+        "succeeded": 3,
+        "active": [
+          {
+            "id": 119305763215,
+            "name": "studio",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run python deploy/bundle_studio.py"
+            ]
+          },
+          {
+            "id": 119305826608,
+            "name": "supervision (macos-15-intel)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the current Intel cryptography runtime with static OpenSSL"
+            ]
+          },
+          {
+            "id": 119305826688,
+            "name": "container (ubuntu-22.04)",
+            "status": "queued",
+            "runner_assigned": false,
+            "steps": []
+          },
+          {
+            "id": 119305826753,
+            "name": "service (3.13)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Matching PostgreSQL recovery tools"
+            ]
+          },
+          {
+            "id": 119305826792,
+            "name": "container (ubuntu-22.04-arm)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the actual deployment image with its documentation"
+            ]
+          },
+          {
+            "id": 119305826814,
+            "name": "service (3.14)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run npm --prefix packages/client ci && npm --prefix packages/client test"
+            ]
+          },
+          {
+            "id": 119305826840,
+            "name": "service (3.12)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Matching PostgreSQL recovery tools"
+            ]
+          },
+          {
+            "id": 119305826879,
+            "name": "legacy",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
+            ]
+          },
+          {
+            "id": 119305826884,
+            "name": "supervision (macos-15)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
+            ]
+          }
+        ]
       },
       "failed_jobs": []
     },
@@ -60,9 +140,9 @@
       "workflow": "desktop.yml",
       "branch": "main",
       "source_commit": "4f434ecbe205a715bd8ecd03d44426fc1274b9ac",
-      "status": "queued",
+      "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-21T15:13:15Z",
+      "updated_at": "2026-10-21T15:18:31Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39623463543",
       "job_details_schema": 2,
       "job_progress": {
@@ -76,15 +156,17 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run npm --prefix studio/electron ci"
+              "Package the native desktop with one bounded upstream-download retry"
             ]
           },
           {
             "id": 119303330461,
             "name": "macos-15 / arm64",
-            "status": "queued",
-            "runner_assigned": null,
-            "steps": []
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --project studio/client --no-sync python -m pytest client_tests -q"
+            ]
           }
         ]
       },
@@ -135,5 +217,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39534391338"
     }
   ],
-  "observed_at": "2026-10-21T15:17:36+00:00"
+  "observed_at": "2026-10-21T15:18:44+00:00"
 }
