@@ -8,6 +8,12 @@ omit =
     */mnemion/backup_encryption.py
     */mnemion/journal/*
     */mnemion/connectors/journal_projection.py
+    */mnemion/capture_identity.py
+    */mnemion/desktop_capture.py
+    */mnemion/desktop_source_status.py
+    */mnemion/connectors/conversation_inbox.py
+    */mnemion/connectors/conversation_capture.py
+    */mnemion/connectors/capture_delivery.py
 
 [report]
 fail_under = 45

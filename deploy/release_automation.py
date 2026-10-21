@@ -189,7 +189,10 @@ def integrate(root: Path, repo: str) -> dict:
                 "Main contains source changes; review and integrate them before publication"
             )
         if git("merge-base", "--is-ancestor", "origin/main", "HEAD", check=False).returncode:
-            git("rebase", "origin/main")
+            # Keep reviewed hotfix parents reachable when main also contains
+            # unfinished feature work. Frozen releases require that ancestry;
+            # a generated-status race must not flatten the reviewed merge.
+            git("rebase", "--rebase-merges", "origin/main")
         commit = git("rev-parse", "HEAD").stdout.strip()
         if git("push", "origin", "HEAD:main", check=False).returncode:
             continue

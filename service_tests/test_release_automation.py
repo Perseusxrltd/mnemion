@@ -376,3 +376,63 @@ def test_main_integration_checks_actual_source_before_contacting_remote(
         subject.integrate(tmp_path, "Perseusxrltd/mnemion")
     assert source.read_text() == contents
     assert not any(args[0] in {"fetch", "rebase", "push", "merge"} for args in calls)
+
+
+def test_generated_status_race_preserves_the_reviewed_hotfix_parent(tmp_path, monkeypatch):
+    remote, writer, reviewed = (tmp_path / name for name in ("remote.git", "writer", "reviewed"))
+
+    def git(root, *args):
+        return subprocess.check_output(
+            [
+                "git",
+                "-c",
+                "user.name=Perseusxrltd",
+                "-c",
+                "user.email=226232767+Perseusxrltd@users.noreply.github.com",
+                *args,
+            ],
+            cwd=root,
+            text=True,
+            stderr=subprocess.PIPE,
+        ).strip()
+
+    git(tmp_path, "init", "--bare", "--initial-branch=main", str(remote))
+    git(tmp_path, "clone", str(remote), str(writer))
+    (writer / "deploy").mkdir()
+    (writer / "deploy/release-status.json").write_text('{"observed":1}\n')
+    (writer / "app.py").write_text("VALUE = 1\n")
+    git(writer, "add", ".")
+    git(writer, "commit", "-m", "Published baseline")
+    published = git(writer, "rev-parse", "HEAD")
+    (writer / "future-feature.txt").write_text("Unreleased feature work\n")
+    git(writer, "add", ".")
+    git(writer, "commit", "-m", "Main continues development")
+    git(writer, "push", "origin", "main")
+    git(tmp_path, "clone", str(remote), str(reviewed))
+    git(reviewed, "checkout", "-b", "hotfix/security", published)
+    (reviewed / "security.txt").write_text("Reviewed security fix\n")
+    git(reviewed, "add", ".")
+    git(reviewed, "commit", "-m", "Standalone reviewed hotfix")
+    hotfix = git(reviewed, "rev-parse", "HEAD")
+    git(reviewed, "checkout", "-b", "codex/reviewed", "main")
+    git(reviewed, "merge", "--no-ff", "-m", "Retain hotfix ancestry", hotfix)
+    (writer / "deploy/release-status.json").write_text('{"observed":2}\n')
+    git(writer, "add", ".")
+    git(writer, "commit", "-m", "Concurrent generated status")
+    git(writer, "push", "origin", "main")
+
+    actual = subject._integration_git
+
+    def local_remote(root, *args, check=True):
+        if args == ("remote", "get-url", "origin"):
+            return SimpleNamespace(stdout="https://github.com/Perseusxrltd/mnemion.git\n")
+        return actual(root, *args, check=check)
+
+    monkeypatch.setattr(subject, "_integration_git", local_remote)
+    result = subject.integrate(reviewed, "Perseusxrltd/mnemion")
+    assert result["pushed_to"] == "main"
+    assert git(reviewed, "merge-base", "--is-ancestor", hotfix, "HEAD") == ""
+    assert git(remote, "rev-parse", "main") == result["source_commit"]
+    assert (reviewed / "future-feature.txt").read_text() == "Unreleased feature work\n"
+    assert "future-feature.txt" not in git(reviewed, "ls-tree", "-r", "--name-only", hotfix)
+    assert json.loads((reviewed / "deploy/release-status.json").read_text()) == {"observed": 2}
