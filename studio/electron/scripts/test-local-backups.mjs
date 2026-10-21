@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { createCipheriv, createDecipheriv, randomBytes, randomUUID } from 'node:crypto'
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import fs, { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { syncBuiltinESMExports } from 'node:module'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
@@ -105,6 +106,49 @@ test('scheduled keys remain protected across reopen and never appear in status',
   assert.equal(f.calls[0].input.recovery_key, f.key)
   assert.ok((await reopened.status()).last_snapshot.snapshot.authenticated)
 })
+
+for (const cancel of [false, true]) {
+  test(`backup retention ${cancel ? 'cancellation' : 'save'} under a Windows sharing lock preserves the protected key`, async t => {
+    const f = await fixture(t), configured = await f.manager.configure(f.settings)
+    const path = join(f.root, 'backup-policy.json'), before = await readFile(path, 'utf8')
+    const descriptor = Object.getOwnPropertyDescriptor(process, 'platform'), rename = fs.rename
+    const controller = new AbortController()
+    let calls = 0
+    const mock = t.mock.method(fs, 'rename', async (temporary, destination) => {
+      assert.equal(destination, path)
+      assert.equal(await readFile(path, 'utf8'), before)
+      assert.equal(f.manager.busy, true)
+      if (++calls === 1) {
+        if (cancel) setImmediate(() => controller.abort())
+        throw Object.assign(new Error('fixture sharing lock'), { code: 'EPERM' })
+      }
+      return rename(temporary, destination)
+    })
+    Object.defineProperty(process, 'platform', { ...descriptor, value: 'win32' })
+    syncBuiltinESMExports()
+    const retention = { mode: 'limited', snapshots: 2, ledgers: 2 }
+    try {
+      const pending = f.manager.configure({ ...f.settings, recovery_key: undefined,
+        expected_revision: configured.configuration.revision, retention }, controller.signal)
+      if (cancel) await assert.rejects(pending, { name: 'AbortError' })
+      else assert.deepEqual((await pending).configuration.retention, retention)
+    } finally {
+      mock.mock.restore()
+      syncBuiltinESMExports()
+      Object.defineProperty(process, 'platform', descriptor)
+    }
+    const after = await readFile(path, 'utf8')
+    assert.equal(calls, cancel ? 1 : 2)
+    assert.equal(f.manager.busy, false)
+    assert.ok(!after.includes(f.key))
+    assert.equal(JSON.parse(after).sealed_key, JSON.parse(before).sealed_key)
+    if (cancel) assert.equal(after, before)
+    else assert.notEqual(JSON.parse(after).revision, JSON.parse(before).revision)
+    assert.equal((await fs.readdir(f.root)).some(name => name.endsWith('.tmp')), false)
+    await f.manager.run()
+    assert.equal(f.calls[0].input.recovery_key, f.key)
+  })
+}
 
 test('legacy settings keep every copy, and later schedule edits preserve the chosen retention', async t => {
   const f = await fixture(t)
