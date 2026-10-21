@@ -1300,8 +1300,14 @@ whether it resolves the observed fresh-app shutdown failure; none of the earlier
 passing artifacts validates this runtime correction.
 
 Frozen released source `2d9736649dcee74362b9d9ebe0d73af3ae984305` also omits
-the startup-loading drain. A separate public hotfix remains a possibility after
-native confirmation; no release is claimed here.
+the startup-loading drain. The separate public [4.44.1 candidate](../releases/4.44.1.md)
+is committed at `e45e2b1b` and retained on main through `053aafe2`. It contains
+the startup-drain and native crypto initialization corrections without L1
+retained capture. Its own release workflow was dispatched after the candidate's
+source and preflight checks passed. The [validation record](../validation/2026-10-21-desktop-startup.md)
+keeps those results separate from installed acceptance; [release status](../RELEASE_STATUS.md)
+tracks the gates and publication automatically. Public **4.44.0** was current at
+this checkpoint, and L1 remains unfinished.
 
 ## Supervised headless inbox-key forwarding
 

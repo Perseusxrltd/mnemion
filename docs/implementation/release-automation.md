@@ -11,8 +11,10 @@ gates; no paid service, model call or new signing credential is required.
    targets and reviewed-source marker, generates OpenAPI and agent contracts, and
    validates the version boundaries. Unrelated dependency pins are preserved.
 3. Run checks appropriate to the change, then commit reviewed source.
-   `python -m deploy.release_automation integrate` pushes it normally to main,
-   rebasing only incoming generated metadata; incoming source changes need review.
+   `python -m deploy.release_automation integrate` pushes it normally to main.
+   Incoming commits containing only allowlisted generated metadata are merged
+   into the reviewed source, preserving resolved hotfix merges. Incoming source
+   changes need review; the clean-worktree, repository and source checks still apply.
    It also fast-forwards a clean local main worktree. It never stashes user work,
    force-pushes or rebases a frozen release branch.
    `python -m deploy.release_automation start` freezes its `release/X.Y.Z`

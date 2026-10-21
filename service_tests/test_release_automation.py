@@ -378,7 +378,10 @@ def test_main_integration_checks_actual_source_before_contacting_remote(
     assert not any(args[0] in {"fetch", "rebase", "push", "merge"} for args in calls)
 
 
-def test_generated_status_race_preserves_the_reviewed_hotfix_parent(tmp_path, monkeypatch):
+@pytest.mark.parametrize("resolved_conflict", [False, True])
+def test_generated_status_race_preserves_the_reviewed_hotfix_parent(
+    tmp_path, monkeypatch, resolved_conflict
+):
     remote, writer, reviewed = (tmp_path / name for name in ("remote.git", "writer", "reviewed"))
 
     def git(root, *args):
@@ -405,17 +408,28 @@ def test_generated_status_race_preserves_the_reviewed_hotfix_parent(tmp_path, mo
     git(writer, "commit", "-m", "Published baseline")
     published = git(writer, "rev-parse", "HEAD")
     (writer / "future-feature.txt").write_text("Unreleased feature work\n")
+    if resolved_conflict:
+        (writer / "app.py").write_text("VALUE = 2\n")
     git(writer, "add", ".")
     git(writer, "commit", "-m", "Main continues development")
     git(writer, "push", "origin", "main")
     git(tmp_path, "clone", str(remote), str(reviewed))
     git(reviewed, "checkout", "-b", "hotfix/security", published)
     (reviewed / "security.txt").write_text("Reviewed security fix\n")
+    if resolved_conflict:
+        (reviewed / "app.py").write_text("VALUE = 3\n")
     git(reviewed, "add", ".")
     git(reviewed, "commit", "-m", "Standalone reviewed hotfix")
     hotfix = git(reviewed, "rev-parse", "HEAD")
     git(reviewed, "checkout", "-b", "codex/reviewed", "main")
-    git(reviewed, "merge", "--no-ff", "-m", "Retain hotfix ancestry", hotfix)
+    if resolved_conflict:
+        with pytest.raises(subprocess.CalledProcessError):
+            git(reviewed, "merge", "--no-ff", "--no-commit", hotfix)
+        git(reviewed, "restore", "--source=main", "--staged", "--worktree", "app.py")
+        git(reviewed, "commit", "-m", "Retain hotfix ancestry and reviewed resolution")
+    else:
+        git(reviewed, "merge", "--no-ff", "-m", "Retain hotfix ancestry", hotfix)
+    reviewed_merge = git(reviewed, "rev-parse", "HEAD")
     (writer / "deploy/release-status.json").write_text('{"observed":2}\n')
     git(writer, "add", ".")
     git(writer, "commit", "-m", "Concurrent generated status")
@@ -432,7 +446,12 @@ def test_generated_status_race_preserves_the_reviewed_hotfix_parent(tmp_path, mo
     result = subject.integrate(reviewed, "Perseusxrltd/mnemion")
     assert result["pushed_to"] == "main"
     assert git(reviewed, "merge-base", "--is-ancestor", hotfix, "HEAD") == ""
+    assert git(reviewed, "merge-base", "--is-ancestor", reviewed_merge, "HEAD") == ""
     assert git(remote, "rev-parse", "main") == result["source_commit"]
     assert (reviewed / "future-feature.txt").read_text() == "Unreleased feature work\n"
     assert "future-feature.txt" not in git(reviewed, "ls-tree", "-r", "--name-only", hotfix)
     assert json.loads((reviewed / "deploy/release-status.json").read_text()) == {"observed": 2}
+    assert (reviewed / "app.py").read_text() == (
+        "VALUE = 2\n" if resolved_conflict else "VALUE = 1\n"
+    )
+    assert not git(reviewed, "status", "--porcelain")

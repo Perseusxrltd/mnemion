@@ -146,7 +146,7 @@ def check_source(root: Path) -> None:
 
 
 def integrate(root: Path, repo: str) -> dict:
-    """Push reviewed commits normally; automatically rebase only generated metadata races."""
+    """Push reviewed commits normally; merge only generated metadata races automatically."""
     if repo != "Perseusxrltd/mnemion":
         raise ValueError("This integration policy is configured only for the Mnemion repository")
 
@@ -189,10 +189,11 @@ def integrate(root: Path, repo: str) -> dict:
                 "Main contains source changes; review and integrate them before publication"
             )
         if git("merge-base", "--is-ancestor", "origin/main", "HEAD", check=False).returncode:
-            # Keep reviewed hotfix parents reachable when main also contains
-            # unfinished feature work. Frozen releases require that ancestry;
-            # a generated-status race must not flatten the reviewed merge.
-            git("rebase", "--rebase-merges", "origin/main")
+            # Preserve exact hotfix parents and reviewed conflict resolutions.
+            # Replaying a merge can reopen conflicts even when the only new
+            # commits contain generated status. Ordinary merge keeps the
+            # reviewed source intact and still refuses any metadata conflict.
+            git("merge", "--no-edit", "origin/main")
         commit = git("rev-parse", "HEAD").stdout.strip()
         if git("push", "origin", "HEAD:main", check=False).returncode:
             continue
