@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-22T17:06:18+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-22T17:07:21+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.44.2](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.44.2). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -17,7 +17,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | in\_progress | [Run 39819616723](https://github.com/Perseusxrltd/mnemion/actions/runs/39819616723) |
+| ci\.yml | main | success | [Run 39819616723](https://github.com/Perseusxrltd/mnemion/actions/runs/39819616723) |
 | ci\.yml | v4\.44\.2 | in\_progress | [Run 39815622908](https://github.com/Perseusxrltd/mnemion/actions/runs/39815622908) |
 | desktop\.yml | main | in\_progress | [Run 39814732365](https://github.com/Perseusxrltd/mnemion/actions/runs/39814732365) |
 | public-updates\.yml | v4\.44\.2 | success | [Run 39762122867](https://github.com/Perseusxrltd/mnemion/actions/runs/39762122867) |
@@ -28,10 +28,6 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 ## Active jobs
 
-[Run 39819616723](https://github.com/Perseusxrltd/mnemion/actions/runs/39819616723): 7/8 jobs completed; 2 succeeded.
-
-- studio: in\_progress — Run python deploy/bundle\_studio\.py.
-
 [Run 39815622908](https://github.com/Perseusxrltd/mnemion/actions/runs/39815622908): 11/12 jobs completed; 10 succeeded.
 
 - service \(3\.14\): in\_progress.
@@ -39,7 +35,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 [Run 39814732365](https://github.com/Perseusxrltd/mnemion/actions/runs/39814732365): 15/18 jobs completed; 15 succeeded.
 
 - macos-15-intel / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
-- windows-2022 / x64: in\_progress — Packaged window, sandboxed bridge, and local client.
+- windows-2022 / x64: in\_progress — Native Windows installation, authenticated upgrade and relaunch.
 - windows-11-arm / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
 
 
