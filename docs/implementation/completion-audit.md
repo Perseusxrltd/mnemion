@@ -43,15 +43,21 @@ The current public distribution is **4.44.2**, source
 10:18:29 UTC; see its [publication receipt](../validation/releases/4.44.2-publication.json)
 and [release status](../RELEASE_STATUS.md). Native release gates, independent
 artifacts, all six public-update targets and website synchronization passed.
-The generated 14:08 UTC status still lists product checks on that release source
-as **not recorded**. Separate main source `38eb3021d517a193b47501f902b4595a49d44178`
+The previously missing Product checks for the exact public source were dispatched
+as [39815622908](https://github.com/Perseusxrltd/mnemion/actions/runs/39815622908).
+Its first Intel macOS dependency build encountered a PyPI connection timeout;
+that failed attempt is retained. The automatic [release status](../RELEASE_STATUS.md)
+supplies the current outcome. Separate main source `38eb3021d517a193b47501f902b4595a49d44178`
 passed [CI](https://github.com/Perseusxrltd/mnemion/actions/runs/39795183358) and
 [Git website synchronization](https://github.com/Perseusxrltd/mnemion/actions/runs/39795183441);
-its [native attempt 2](https://github.com/Perseusxrltd/mnemion/actions/runs/39795261005/attempts/2)
+its earlier [native attempt 2](https://github.com/Perseusxrltd/mnemion/actions/runs/39795261005/attempts/2)
 finished with three installed targets passing, both Windows targets failing the
 policy comparison and Apple Silicon never acquiring a runner. The
 [Windows path comparison correction](../validation/2026-10-22-native-policy-path.md)
-has local evidence; the corrected installed qualification remains pending.
+has local evidence. The corrected installed qualification is
+[39814732365](https://github.com/Perseusxrltd/mnemion/actions/runs/39814732365),
+on `d358726366bfef0e4cbddcb69741512de1d2fd78`; full six-target qualification
+remains pending.
 Those checks belong to different sources. Full durable capture
 **L1 remains unreleased and unaccepted**; retain its
 [remaining acceptance work](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released)
@@ -62,9 +68,14 @@ Actual installation acceptance remains separate. The VPS was observed on
 still ran **4.44.1**, with 4.44.2 downloaded and ready, waiting for its configured
 600 seconds of computer inactivity; only 35 seconds had elapsed. The normal
 guarded agent restart subsequently installed **4.44.2**, observed at
-**16:05:11 UTC**. Paired acceptance stopped for inspection of intervening
-authorized agent-space additions; the original baseline and failure remain
-preserved. Unattended idle restart is not claimed. The earlier
+**16:05:11 UTC**. The [paired acceptance](../validation/2026-10-22-4442-live-acceptance.md)
+completed at **16:35:34 UTC**, retaining the three identities, exact witness
+memories, protected human login, bookmarks and preferences. All **41** isolated
+lab requests passed with complete cleanup. Its first observer stopped for
+inspection of intervening authorized agent-space additions; those exact
+additions were reconciled against their original setup/grant records before
+resuming acceptance. The original baseline and failure remain preserved.
+Unattended idle restart is not claimed. The earlier
 [4.44.0 paired receipt](../validation/2026-10-21-444-acceptance.md) retains its
 50-request pass, preserved identities and complete cleanup; it does not prove
 the later update or unattended idle restart. The
