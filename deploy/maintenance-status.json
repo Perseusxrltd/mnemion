@@ -25,15 +25,105 @@
   ],
   "runs": [
     {
-      "id": 39855370968,
+      "id": 39859826761,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "22316905600d4db1ab630c977b8420c5974ba454",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-22T21:38:13Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39855370968"
+      "source_commit": "70ec58d8dbf4018ee35a9a57bd0a4677ee45cdf1",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-22T21:45:58Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39859826761",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 12,
+        "completed": 3,
+        "succeeded": 3,
+        "active": [
+          {
+            "id": 120107332321,
+            "name": "studio",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run npm --prefix studio/electron ci && npm --prefix studio/electron test"
+            ]
+          },
+          {
+            "id": 120107400616,
+            "name": "supervision (macos-15)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
+            ]
+          },
+          {
+            "id": 120107400621,
+            "name": "legacy",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
+            ]
+          },
+          {
+            "id": 120107400711,
+            "name": "supervision (macos-15-intel)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the current Intel cryptography runtime with static OpenSSL"
+            ]
+          },
+          {
+            "id": 120107400723,
+            "name": "service (3.12)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Matching PostgreSQL recovery tools"
+            ]
+          },
+          {
+            "id": 120107400746,
+            "name": "service (3.13)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run npm --prefix packages/client ci && npm --prefix packages/client test"
+            ]
+          },
+          {
+            "id": 120107400772,
+            "name": "service (3.14)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Matching PostgreSQL recovery tools"
+            ]
+          },
+          {
+            "id": 120107400824,
+            "name": "container (ubuntu-22.04-arm)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the actual deployment image with its documentation"
+            ]
+          },
+          {
+            "id": 120107400886,
+            "name": "container (ubuntu-22.04)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the actual deployment image with its documentation"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": []
     },
     {
       "id": 39843181077,
@@ -70,8 +160,8 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 32,
-        "completed": 26,
-        "succeeded": 24,
+        "completed": 27,
+        "succeeded": 25,
         "active": [
           {
             "id": 120093444093,
@@ -88,7 +178,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
+              "Installed app creates, searches and reopens a real local workspace"
             ]
           },
           {
@@ -107,15 +197,6 @@
             "runner_assigned": true,
             "steps": [
               "Installed app creates, searches and reopens a real local workspace"
-            ]
-          },
-          {
-            "id": 120095733017,
-            "name": "native / ubuntu-22.04-arm / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Installed Linux app creates, searches and reopens a real local workspace"
             ]
           },
           {
@@ -154,15 +235,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39840069973"
     },
     {
-      "id": 39855370825,
+      "id": 39859826720,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "22316905600d4db1ab630c977b8420c5974ba454",
+      "source_commit": "70ec58d8dbf4018ee35a9a57bd0a4677ee45cdf1",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-22T21:12:58Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39855370825"
+      "updated_at": "2026-10-22T21:45:54Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39859826720"
     },
     {
       "id": 39843176416,
@@ -176,5 +257,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39843176416"
     }
   ],
-  "observed_at": "2026-10-22T21:38:51+00:00"
+  "observed_at": "2026-10-22T21:46:32+00:00"
 }
