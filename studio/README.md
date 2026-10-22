@@ -100,6 +100,12 @@ npm --prefix studio/frontend ci
 npm --prefix studio/frontend run dev
 ```
 
+The development help library reads the same repository Markdown as the packaged
+app. Its Vite configuration explicitly allows the public documentation and the
+four top-level guides; unrelated files elsewhere in the checkout remain outside
+the dev server's filesystem allowlist. Keep that boundary when adding guides.
+See the [development-help verification](../docs/validation/2026-10-22-development-help.md).
+
 In a second terminal, install/build the Electron shell and run it:
 
 ```sh
