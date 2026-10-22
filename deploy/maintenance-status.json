@@ -37,18 +37,9 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 5,
-        "succeeded": 5,
+        "completed": 7,
+        "succeeded": 7,
         "active": [
-          {
-            "id": 119772985675,
-            "name": "legacy",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
-            ]
-          },
           {
             "id": 119772985683,
             "name": "supervision (macos-15)",
@@ -59,21 +50,12 @@
             ]
           },
           {
-            "id": 119772985741,
-            "name": "container (ubuntu-22.04-arm)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the actual deployment image with its documentation"
-            ]
-          },
-          {
             "id": 119772985796,
             "name": "service (3.14)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run npm --prefix packages/client ci && npm --prefix packages/client test"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
@@ -91,7 +73,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run npm --prefix packages/client ci && npm --prefix packages/client test"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
@@ -113,37 +95,10 @@
       "workflow": "public-updates.yml",
       "branch": "v4.44.2",
       "source_commit": "3bdb3371ccd31bcf095d2e25a4b7d8263260b735",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-22T10:18:59Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39762122867",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 7,
-        "completed": 5,
-        "succeeded": 5,
-        "active": [
-          {
-            "id": 119768690412,
-            "name": "linux / x64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 119768690448,
-            "name": "linux / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-22T10:30:23Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39762122867"
     },
     {
       "id": 39753067641,
@@ -190,5 +145,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39762118327"
     }
   ],
-  "observed_at": "2026-10-22T10:29:48+00:00"
+  "observed_at": "2026-10-22T10:30:50+00:00"
 }
