@@ -30,50 +30,16 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "e23ce161de9ec799ca98968ce98892dae094b678",
-      "status": "queued",
+      "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-22T09:15:43Z",
+      "updated_at": "2026-10-22T09:21:05Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39754044036",
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 4,
-        "succeeded": 4,
+        "completed": 8,
+        "succeeded": 8,
         "active": [
-          {
-            "id": 119741504562,
-            "name": "legacy",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
-            ]
-          },
-          {
-            "id": 119741504623,
-            "name": "supervision (macos-15)",
-            "status": "queued",
-            "runner_assigned": null,
-            "steps": []
-          },
-          {
-            "id": 119741504721,
-            "name": "container (ubuntu-22.04)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the actual deployment image with its documentation"
-            ]
-          },
-          {
-            "id": 119741504857,
-            "name": "container (ubuntu-22.04-arm)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify the non-root image includes Studio, guides and notices offline"
-            ]
-          },
           {
             "id": 119741504862,
             "name": "service (3.12)",
@@ -98,7 +64,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Build the current Intel cryptography runtime with static OpenSSL"
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
             ]
           },
           {
@@ -113,6 +79,17 @@
         ]
       },
       "failed_jobs": []
+    },
+    {
+      "id": 39755197344,
+      "attempt": 1,
+      "workflow": "database-cache.yml",
+      "branch": "main",
+      "source_commit": "f7a16e01d1c239fac77f1aff339f137ab6be504e",
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-22T09:26:59Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39755197344"
     },
     {
       "id": 39648047355,
@@ -142,15 +119,15 @@
       "workflow": "release.yml",
       "branch": "release/4.44.2",
       "source_commit": "3bdb3371ccd31bcf095d2e25a4b7d8263260b735",
-      "status": "queued",
+      "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-22T09:08:38Z",
+      "updated_at": "2026-10-22T09:24:25Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39753067641",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 25,
-        "completed": 19,
-        "succeeded": 18,
+        "total": 27,
+        "completed": 25,
+        "succeeded": 21,
         "active": [
           {
             "id": 119738340346,
@@ -167,44 +144,21 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Build the current Intel cryptography runtime with static OpenSSL"
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
             ]
-          },
-          {
-            "id": 119738340409,
-            "name": "checks / supervision (macos-15)",
-            "status": "queued",
-            "runner_assigned": null,
-            "steps": []
-          },
-          {
-            "id": 119738340416,
-            "name": "checks / service (3.13)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 119738340641,
-            "name": "checks / service (3.14)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 119738653359,
-            "name": "native / native_database / Database / macos / arm64",
-            "status": "queued",
-            "runner_assigned": null,
-            "steps": []
           }
         ]
       },
-      "failed_jobs": []
+      "failed_jobs": [
+        {
+          "name": "native / native_database / Database / macos / arm64",
+          "id": 119738653359,
+          "conclusion": "cancelled",
+          "runner_assigned": false,
+          "steps_reported": 0,
+          "steps": []
+        }
+      ]
     },
     {
       "id": 39647805616,
@@ -240,5 +194,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39648042222"
     }
   ],
-  "observed_at": "2026-10-22T09:16:37+00:00"
+  "observed_at": "2026-10-22T09:27:41+00:00"
 }
