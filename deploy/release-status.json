@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "checked_at": "2026-10-22T17:14:12+00:00",
+  "checked_at": "2026-10-22T18:01:37+00:00",
   "tag_name": "v4.44.2",
   "source_commit": "3bdb3371ccd31bcf095d2e25a4b7d8263260b735",
   "published_at": "2026-10-22T10:18:29Z",
   "release_url": "https://github.com/Perseusxrltd/mnemion/releases/tag/v4.44.2",
   "availability": "published",
-  "release_checks": "evidence incomplete",
+  "release_checks": "passed",
   "asset_count": 38,
   "checksum_digest": "sha256:3d14c43ce68afa6566aae1ad5bc0b67fc7bb29c60fbe92ad1b61cc438c4a67cf",
   "platforms": [
@@ -44,17 +44,21 @@
   "gates": [
     {
       "name": "Product checks on the release source",
-      "status": "not passed",
+      "status": "passed",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39815622908",
       "run_id": 39815622908,
-      "updated_at": "2026-10-22T17:13:52Z",
+      "updated_at": "2026-10-22T17:31:07Z",
       "event": "workflow_dispatch",
-      "conclusion": "cancelled"
+      "conclusion": "success"
     },
     {
       "name": "Native packages and installed-workspace release gates",
-      "status": "not recorded",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/workflows/release.yml"
+      "status": "passed",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39753067641",
+      "run_id": 39753067641,
+      "updated_at": "2026-10-22T10:16:19Z",
+      "event": "workflow_dispatch",
+      "conclusion": "success"
     },
     {
       "name": "Independent uploaded-byte and signature verification",
