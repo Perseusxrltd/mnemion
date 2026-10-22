@@ -25,78 +25,80 @@
   ],
   "runs": [
     {
-      "id": 39762122867,
+      "id": 39763423936,
       "attempt": 1,
-      "workflow": "public-updates.yml",
-      "branch": "v4.44.2",
-      "source_commit": "3bdb3371ccd31bcf095d2e25a4b7d8263260b735",
+      "workflow": "ci.yml",
+      "branch": "main",
+      "source_commit": "3e71de1d66665bcdfefb9414caa418aaa25d8668",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-22T10:18:59Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39762122867",
+      "updated_at": "2026-10-22T10:29:15Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39763423936",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 7,
-        "completed": 1,
-        "succeeded": 1,
+        "total": 12,
+        "completed": 7,
+        "succeeded": 7,
         "active": [
           {
-            "id": 119768690355,
-            "name": "macos / x64 public upgrade",
+            "id": 119772985683,
+            "name": "supervision (macos-15)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Install public release and observe its automatic update"
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
             ]
           },
           {
-            "id": 119768690358,
-            "name": "macos / arm64 public upgrade",
+            "id": 119772985796,
+            "name": "service (3.14)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Install public release and observe its automatic update"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
-            "id": 119768690412,
-            "name": "linux / x64 public upgrade",
+            "id": 119772985864,
+            "name": "supervision (macos-15-intel)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Linux desktop libraries"
+              "Build the current Intel cryptography runtime with static OpenSSL"
             ]
           },
           {
-            "id": 119768690448,
-            "name": "linux / arm64 public upgrade",
+            "id": 119772985876,
+            "name": "service (3.13)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Linux desktop libraries"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
-            "id": 119768690465,
-            "name": "windows / arm64 public upgrade",
+            "id": 119772986165,
+            "name": "service (3.12)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run python -m pip install psutil==7.2.2"
-            ]
-          },
-          {
-            "id": 119768690582,
-            "name": "windows / x64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           }
         ]
       },
       "failed_jobs": []
+    },
+    {
+      "id": 39762122867,
+      "attempt": 1,
+      "workflow": "public-updates.yml",
+      "branch": "v4.44.2",
+      "source_commit": "3bdb3371ccd31bcf095d2e25a4b7d8263260b735",
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-22T10:30:23Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39762122867"
     },
     {
       "id": 39753067641,
@@ -121,34 +123,27 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39761844389"
     },
     {
+      "id": 39763423746,
+      "attempt": 1,
+      "workflow": "website-release.yml",
+      "branch": "main",
+      "source_commit": "3e71de1d66665bcdfefb9414caa418aaa25d8668",
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-22T10:29:15Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39763423746"
+    },
+    {
       "id": 39762118327,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "v4.44.2",
       "source_commit": "3bdb3371ccd31bcf095d2e25a4b7d8263260b735",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-22T10:18:37Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39762118327",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 1,
-        "completed": 0,
-        "succeeded": 0,
-        "active": [
-          {
-            "id": 119768583726,
-            "name": "synchronize",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify live downloads, version, guides and roadmap"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-22T10:24:39Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39762118327"
     }
   ],
-  "observed_at": "2026-10-22T10:19:09+00:00"
+  "observed_at": "2026-10-22T10:30:50+00:00"
 }
