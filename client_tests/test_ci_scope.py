@@ -14,6 +14,12 @@ from deploy.ci_scope import documentation, scope
         ("deploy/research-watch.json", True),
         ("deploy/research_watch.py", False),
         ("docs/validation/releases/4.30.2-status.json", True),
+        ("docs/validation/2026-10-22-l1-release-native-acceptance.json", True),
+        ("docs/validation/2026-10-13-v4_1_6-hosted-verification.json", True),
+        ("docs/validation/current.json", False),
+        ("docs/validation/2026-10-22-native.json.py", False),
+        ("docs/validation/2026-10-22-fixtures/records.json", False),
+        ("docs/validation/../../mnemion/2026-10-22-native.json", False),
         ("docs/service/openapi.json", False),
         ("mnemion/service/README.md", False),
         ("service_tests/fixtures/README.md", False),
@@ -41,7 +47,11 @@ def test_real_push_diff_preserves_release_pr_and_renamed_source_checks(tmp_path)
     git("commit", "--quiet", "-m", "Initial fixture")
     before = git("rev-parse", "HEAD")
     (tmp_path / "README.md").write_text("Updated guide\n")
-    git("commit", "--quiet", "-am", "Update only the guide")
+    evidence = tmp_path / "docs/validation/2026-10-22-native-acceptance.json"
+    evidence.parent.mkdir(parents=True)
+    evidence.write_text('{"scope":"dated validation report"}\n')
+    git("add", "README.md", str(evidence.relative_to(tmp_path)))
+    git("commit", "--quiet", "-m", "Update the guide and its dated evidence")
     after = git("rev-parse", "HEAD")
     event = {"before": before, "after": after}
     assert scope(tmp_path, event, event_name="push") == {

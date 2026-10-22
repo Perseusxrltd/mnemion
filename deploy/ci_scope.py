@@ -28,6 +28,9 @@ def documentation(path: str) -> bool:
         path in METADATA
         or (len(parts) == 1 and path.endswith(".md"))
         or (parts[0] == "docs" and path.endswith(".md"))
+        # Dated acceptance reports accompany guides; schemas, nested fixtures
+        # and unknown JSON still require runtime checks. Releases always do.
+        or bool(re.fullmatch(r"docs/validation/\d{4}-\d{2}-\d{2}-[a-z0-9][a-z0-9_.-]*\.json", path))
         or bool(re.fullmatch(r"docs/validation/releases/\d+\.\d+\.\d+-status\.json", path))
     )
 

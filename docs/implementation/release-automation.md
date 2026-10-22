@@ -242,6 +242,8 @@ does not rerun tests, alter artifacts or relax public-update requirements.
 `deploy.ci_scope` compares the exact before/after commits for ordinary branch
 pushes. Changes limited to root/documentation Markdown, reviewed release/issue
 status metadata and generated release evidence keep the lint and Studio jobs.
+The allowlist includes flat, dated JSON acceptance reports under `docs/validation/`;
+other JSON schemas, nested fixtures and unrecognized files still select runtime checks.
 Studio still builds and verifies the packaged offline guides and runs its client
 and desktop checks. The service Python matrix, native Mac supervision, containers,
 legacy suite and Python dependency audit are reserved for runtime changes.
@@ -259,3 +261,9 @@ Thirteen focused checks passed, including a real Git documentation push and
 source rename. The 20 October documentation-only main push selected the reduced
 scope; the same source with the release flag selected the full suite. Existing
 frozen release workflows retain their original checks.
+
+The [22 October correction](../validation/2026-10-22-dated-evidence-ci-scope.md)
+adds dated JSON reports to this classification. Its real six-file documentation
+diff selected the documentation checks, while the same input selected every
+runtime check when evaluated as a release. This avoids re-running the service
+matrix merely to publish its already qualified evidence.
