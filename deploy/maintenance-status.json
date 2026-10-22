@@ -37,18 +37,9 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 3,
-        "succeeded": 3,
+        "completed": 7,
+        "succeeded": 6,
         "active": [
-          {
-            "id": 120152072113,
-            "name": "studio",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify wheel and source package include the matching web Studio"
-            ]
-          },
           {
             "id": 120152122150,
             "name": "service (3.13)",
@@ -56,22 +47,6 @@
             "runner_assigned": true,
             "steps": [
               "Matching PostgreSQL recovery tools"
-            ]
-          },
-          {
-            "id": 120152122172,
-            "name": "container (ubuntu-22.04-arm)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": []
-          },
-          {
-            "id": 120152122178,
-            "name": "container (ubuntu-22.04)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Post Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
             ]
           },
           {
@@ -84,21 +59,12 @@
             ]
           },
           {
-            "id": 120152122218,
-            "name": "legacy",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
-            ]
-          },
-          {
             "id": 120152122249,
             "name": "service (3.12)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Matching PostgreSQL recovery tools"
+              "Run uv sync --locked --python 3.12 --group dev"
             ]
           },
           {
@@ -116,12 +82,23 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run npm --prefix packages/client ci && npm --prefix packages/client test"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           }
         ]
       },
-      "failed_jobs": []
+      "failed_jobs": [
+        {
+          "name": "legacy",
+          "id": 120152122218,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 9,
+          "steps": [
+            "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
+          ]
+        }
+      ]
     },
     {
       "id": 39843181077,
@@ -207,12 +184,6 @@
       "updated_at": "2026-10-22T23:38:43Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39872601355",
       "job_details_schema": 2,
-      "job_progress": {
-        "total": 2,
-        "completed": 2,
-        "succeeded": 0,
-        "active": []
-      },
       "failed_jobs": [
         {
           "name": "verify",
@@ -224,7 +195,13 @@
             "Scan the exact downloaded distributions before publication"
           ]
         }
-      ]
+      ],
+      "job_progress": {
+        "total": 2,
+        "completed": 2,
+        "succeeded": 0,
+        "active": []
+      }
     },
     {
       "id": 39873108664,
@@ -249,5 +226,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39843176416"
     }
   ],
-  "observed_at": "2026-10-22T23:39:18+00:00"
+  "observed_at": "2026-10-22T23:40:00+00:00"
 }
