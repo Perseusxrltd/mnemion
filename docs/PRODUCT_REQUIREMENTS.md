@@ -1,13 +1,15 @@
 # Complete product requirements
 
-Updated **2026-10-20**. This is the persistent checklist for the Mnemion rebuild,
+Updated **2026-10-22**. This is the persistent checklist for the Mnemion rebuild,
 including additions made during implementation. The [roadmap](ROADMAP.md)
 explains delivery order; this file preserves the complete requested scope.
 
 The [complete-milestone audit](implementation/completion-audit.md) decomposes all
 42 partial requirements into missing acceptance work, dependencies and evidence.
 It retains every requirement and keeps effort estimates unknown until inspected.
-The current published distribution and release evidence are linked there.
+The current published distribution, **4.44.2**, and its separate release and
+actual-deployment evidence are linked there. Full durable capture L1 remains
+unreleased; the historical source milestones below do not change that boundary.
 
 **Shipped** means an available, documented capability. **Partial** means useful
 behavior is available but the complete request remains open. **Building** means
@@ -36,9 +38,15 @@ Source **4.39** carries [native Hermes/OpenClaw setup](service/desktop-agents.md
 and [Perseus XR connection packages](service/agent-packages.md) through the app,
 API, SDKs and standalone CLI. C07 moves from planned to partial after
 implementation and focused/native-manifest validation. C04/C05/F08 advance
-without changing the strict shipped count. **Issues 44/45/46** preserve actual
-cloud-client, guarded deployment and office-access acceptance; a deliberately paused upstream
-note publisher remains distinct from the API and native memory journal.
+without changing the strict shipped count. **Issues 44/45 remain open** for
+actual cloud-client and guarded deployment acceptance. **Issue 46 closed on
+20 October** after [genuine source revalidation and unchanged-client reads](validation/2026-10-20-office-access.md).
+The [current issue plan](implementation/github-issues.md) separately records
+the 22 October 12:06 UTC lease-expiry episode and the successful unchanged-reader
+checks at 15:48:54 UTC after independent provider revalidation. Continuing
+availability, source-host custody and complete inventory remain unproven. A
+deliberately paused upstream note publisher remains distinct from the API and
+native memory journal.
 The combined candidate also fixes container branding inputs and gives explicit
 host upgrades a bounded turn under frequent source scans. Its free
 [research watch](research/RESEARCH_WATCH.md) supplies review candidates for R07;

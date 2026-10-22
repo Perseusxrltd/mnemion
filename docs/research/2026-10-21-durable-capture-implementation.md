@@ -16,6 +16,7 @@ L1 is not accepted or released; the public patch releases are separate work.
 
 | Artifacts | Frozen source and native run | Current evidence |
 | --- | --- | --- |
+| Current Windows, macOS and Linux, x64 and arm64 | `38eb3021` · [39795261005, attempt 2](https://github.com/Perseusxrltd/mnemion/actions/runs/39795261005/attempts/2) | Both Linux targets and Intel macOS passed. Both Windows targets failed the policy path comparison; Apple Silicon again never acquired a runner. The [corrected comparison](../validation/2026-10-22-native-policy-path.md) requires its own installed qualification. Attempt 1's hosted-runner capacity failure and the single retry of unfinished jobs remain preserved. |
 | Linux x64/arm64 and Windows x64/arm64 | `9095372a` · [39613577682](https://github.com/Perseusxrltd/mnemion/actions/runs/39613577682) | All 58 required true fields qualify for each of these four artifacts. |
 | macOS x64 | `64326de1` · [39628117517](https://github.com/Perseusxrltd/mnemion/actions/runs/39628117517) | Installed hosting passed. All 59 required true fields qualify for this artifact. |
 | macOS arm64 | `4f434ecb` · [39623463543](https://github.com/Perseusxrltd/mnemion/actions/runs/39623463543) | Installed hosting and separate packaged update/relaunch passed. All 59 required true fields qualify for this artifact. |
@@ -26,6 +27,16 @@ to three different frozen sources. Six-target acceptance of the current
 development source remains open. The source checkpoints below preserve earlier
 failures and their contemporaneous validation state; the remaining L1 contracts
 stay open.
+
+The [shared-host actual-Codex journey](../validation/2026-10-22-shared-codex-capture.md)
+completed on 22 October using the same `38eb3021` source app and an independent
+isolated VPS database/API. It accepted offline intake, partial Unicode,
+restarts, original-file removal, lost-reply reconciliation, reader revocation,
+exact raw ranges, separate indexing, persistent forgetting and app/agent source
+retirement. Its original UI-harness and application-name failures remain
+preserved; the documented continuation completed without replaying uncertain
+mutations. This closes that bounded source journey, not the installed matrix or
+the other L1 gates below.
 
 ## Current Codex producer, 21 October 2026
 

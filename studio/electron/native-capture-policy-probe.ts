@@ -3,7 +3,7 @@
  */
 import { dialog, type BrowserWindow } from 'electron'
 import { createHash, randomUUID } from 'node:crypto'
-import { appendFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { appendFile, mkdir, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import type { CapturePolicy, DesktopSource, DesktopSourceView } from '../shared/desktop-sources.js'
 import { callNativeOperator as call } from './native-operator-probe.js'
@@ -75,6 +75,7 @@ export async function verifyNativeCapturePolicy(window: BrowserWindow, probePath
     await call('source.configure', { expected_revision: (await call('source.status')).revision, source,
       credential: fixture.credential, preview_hash: preview.configuration_hash })
     const saved = await readSaved(id)
+    if (typeof saved?.path !== 'string' || await realpath(saved.path) !== await realpath(folder)) throw new Error('The configured policy source did not retain the selected folder.')
     const keptText = 'Kept native policy evidence ' + randomUUID(), forgottenText = 'Forgotten native policy evidence ' + randomUUID()
     const laterText = 'Must wait for reviewed native policy ' + randomUUID(), toolText = 'Newly selected native tool event ' + randomUUID()
     const keptFile = join(folder, 'kept.jsonl'), forgottenFile = join(folder, 'forgotten.jsonl')
@@ -182,14 +183,27 @@ export async function verifyNativeCapturePolicy(window: BrowserWindow, probePath
         const view=await window.mnemion.sourceStatus();return view.sources.find(s=>s.id===receipt.dataset.sourceId);
       `)
     } finally { dialog.showOpenDialog = originalOpen }
-    if (opens !== 2 || relay.retirementRequests !== 1 || relay.retirementRepliesDropped !== 1 || !replacement || replacement.id === id || replacement.enabled || replacement.capture_mode !== 'complete' ||
-        replacement.capture_policy?.preset !== 'detailed' || replacement.capture_policy.format !== 'mnemion-capture-policy-v3' ||
-        replacement.capture_policy.retention !== 'expire_after' || replacement.capture_policy.retention_days !== 7 ||
-        replacement.capture_policy.expiry_scope !== 'captured_fragment_family' || replacement.capture_policy.exclude_fields?.join(',') !== 'test_secret' ||
-        replacement.path !== folder || replacement.scope_id !== source.scope_id ||
-        replacement.custody?.source_id !== id || replacement.custody.grant_id === grantId || replacement.max_files !== limits.max_files ||
-        replacement.memory_limit_mib !== limits.memory_limit_mib || replacement.custody.pending_limit_mib !== limits.pending_limit_mib ||
-        replacement.custody.history_limit_events !== limits.history_limit_events || replacement.custody.database_limit_mib !== limits.database_limit_mib) throw new Error('The policy form changed the reviewed source identity, resource limits or paused state.')
+    if (!replacement?.custody) throw new Error('The policy form did not return its recovered retained source.')
+    const retained = {
+      archiveSelections: opens === 2, retirementRequests: relay.retirementRequests === 1,
+      retirementRepliesDropped: relay.retirementRepliesDropped === 1,
+      newDevice: replacement.id !== id, paused: !replacement.enabled,
+      captureMode: replacement.capture_mode === 'complete', preset: replacement.capture_policy?.preset === 'detailed',
+      policyFormat: replacement.capture_policy?.format === 'mnemion-capture-policy-v3',
+      retention: replacement.capture_policy?.retention === 'expire_after', retentionDays: replacement.capture_policy?.retention_days === 7,
+      expiryScope: replacement.capture_policy?.expiry_scope === 'captured_fragment_family',
+      excludedFields: replacement.capture_policy?.exclude_fields?.join(',') === 'test_secret',
+      // Enrollment resolves Windows short-name aliases (such as RUNNER~1).
+      // Retain that verified path exactly across recovery, not its input spelling.
+      sourcePath: replacement.path === saved.path, scope: replacement.scope_id === source.scope_id,
+      sourceIdentity: replacement.custody?.source_id === id, newGrant: !!replacement.custody && replacement.custody.grant_id !== grantId,
+      maxFiles: replacement.max_files === limits.max_files, memoryLimit: replacement.memory_limit_mib === limits.memory_limit_mib,
+      pendingLimit: replacement.custody?.pending_limit_mib === limits.pending_limit_mib,
+      historyLimit: replacement.custody?.history_limit_events === limits.history_limit_events,
+      databaseLimit: replacement.custody?.database_limit_mib === limits.database_limit_mib,
+    }
+    const mismatches = Object.entries(retained).filter(([, matches]) => !matches).map(([field]) => field)
+    if (mismatches.length) throw new Error('The policy form changed the reviewed source identity, resource limits or paused state: ' + mismatches.join(', '))
     const current = await call('source.status') as DesktopSourceView, fresh = await readSaved(replacement.id)
     if (current.sources.some(item => item.id === id) || !current.sources.some(item => item.id === replacement.id) ||
         !fresh?.sealed_inbox_key || fresh.sealed_inbox_key === fresh.sealed_key || fresh.sealed_inbox_key === saved.sealed_inbox_key || fresh.sealed_key === saved.sealed_key ||

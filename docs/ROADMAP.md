@@ -62,13 +62,21 @@ issue review, publication and version-linked closure together.
   Source checks include real Codex 0.163.0 producer bytes, PostgreSQL recovery and
   current-access scenarios. The latest matching-input Linux app journey passed
   19 policy/expiry/recovery checks; the independent headless journey passed 17 checks.
-  The full installed run for the preceding scheduled-retention source is
-  [39788603173](https://github.com/Perseusxrltd/mnemion/actions/runs/39788603173).
-  Its Windows, macOS and Linux targets, each x64 and arm64, must pass before
-  installed acceptance is claimed. Earlier native receipts cover different
+  The [shared-host actual-Codex journey](validation/2026-10-22-shared-codex-capture.md)
+  now passed with the same app/agent source across offline intake, restarts,
+  removed originals, a lost committed reply, reader revocation, indexing,
+  forgetting and administrator removal. Its isolated database and forward were
+  stopped; both private test-harness failures remain preserved.
+  Final installed qualification for source `38eb3021` is
+  [39795261005, attempt 2](https://github.com/Perseusxrltd/mnemion/actions/runs/39795261005/attempts/2).
+  GitHub did not acquire an Apple Silicon dependency runner in attempt 1; only
+  unfinished jobs were retried. The earlier scheduled-retention run passed its
+  four Linux/macOS targets and failed both Windows policy-recovery checks before
+  the correction above. Current Windows, macOS and Linux targets, each x64 and
+  arm64, still must pass before installed acceptance is claimed. Earlier receipts cover different
   frozen sources and remain [documented separately](research/2026-10-21-durable-capture-implementation.md#current-installed-qualification).
   Finish the [remaining L1 acceptance work](research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released),
-  including the shared-host/real-producer journey. Broader provider coverage,
+  alongside the now-accepted shared-host/real-producer journey. Broader provider coverage,
   migration, text redaction and later librarian layers remain in scope.
 
 - **4.44.2 is publicly available.** The Codex-format and Windows startup hotfix

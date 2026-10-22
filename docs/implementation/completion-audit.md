@@ -1,6 +1,6 @@
 # Complete-milestone acceptance audit
 
-Reviewed 20 October 2026 against all **42 partial requirements** in the
+Reviewed 22 October 2026 against all **42 partial requirements** in the
 [complete inventory](../PRODUCT_REQUIREMENTS.md). All 65 requirement IDs, the
 expanded librarian, scientific/Jev work and every open issue remain retained.
 This audit changes work order; it neither narrows scope nor marks a parent done.
@@ -19,11 +19,59 @@ individual implementation, provider waiting time and representative workload
 have not yet been measured. The 26.2% full-requirement count is not a linear
 schedule estimate. The earlier provisional 4–8 week estimate is not a commitment.
 
-Issues 44–46 retain their actual outstanding provider/source/deployment checks.
-The intentionally paused local publisher has a separate guard/QC prerequisite.
-An unavailable source host cannot be repaired by inventing a permission lease.
+The [issue plan](github-issues.md) and live GitHub review retain **#44 and #45
+as open**. **#46 closed on 20 October** after genuine source revalidation and
+[unchanged-client access acceptance](../validation/2026-10-20-office-access.md).
+A separate 22 October 12:06 UTC receipt found both filesystem access leases
+expired and normal/admin reads unavailable again. Genuine provider scans
+subsequently resumed independently. At **15:48:54 UTC**, unchanged Codex and Grok
+Build identities passed list, fetch and lexical recall in all four combinations
+with the two filesystem spaces, each returning its sampled memory. This restores
+observed reader access while preserving the earlier expiry episode. A subsequent
+20-minute observer completed at 16:11:54 UTC: all 21 samples had current leases,
+with renewals beyond their initial expiry. C01/C09 still require longer-term
+availability, source-host custody and complete-inventory acceptance. The separate
+administrator setup restored the existing cloud source runners; this verifier
+made no source, grant or scan changes. The intentionally paused local
+publisher has a separate guard/QC prerequisite. An unavailable source host cannot
+be repaired by inventing a permission lease.
 Complete an unblocked part or the next independent milestone while retaining
 that dependency and resuming it after an observed change.
+
+The current public distribution is **4.44.2**, source
+`3bdb3371ccd31bcf095d2e25a4b7d8263260b735`, published on 22 October at
+10:18:29 UTC; see its [publication receipt](../validation/releases/4.44.2-publication.json)
+and [release status](../RELEASE_STATUS.md). Native release gates, independent
+artifacts, all six public-update targets and website synchronization passed.
+The generated 14:08 UTC status still lists product checks on that release source
+as **not recorded**. Separate main source `38eb3021d517a193b47501f902b4595a49d44178`
+passed [CI](https://github.com/Perseusxrltd/mnemion/actions/runs/39795183358) and
+[Git website synchronization](https://github.com/Perseusxrltd/mnemion/actions/runs/39795183441);
+its [native attempt 2](https://github.com/Perseusxrltd/mnemion/actions/runs/39795261005/attempts/2)
+finished with three installed targets passing, both Windows targets failing the
+policy comparison and Apple Silicon never acquiring a runner. The
+[Windows path comparison correction](../validation/2026-10-22-native-policy-path.md)
+has local evidence; the corrected installed qualification remains pending.
+Those checks belong to different sources. Full durable capture
+**L1 remains unreleased and unaccepted**; retain its
+[remaining acceptance work](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released)
+and all L1–L7 scope.
+
+Actual installation acceptance remains separate. The VPS was observed on
+**4.44.2 at 12:06 UTC** on 22 October. At **15:32:08 UTC**, the actual Windows app
+still ran **4.44.1**, with 4.44.2 downloaded and ready, waiting for its configured
+600 seconds of computer inactivity; only 35 seconds had elapsed. The normal
+guarded agent restart subsequently installed **4.44.2**, observed at
+**16:05:11 UTC**. Paired acceptance stopped for inspection of intervening
+authorized agent-space additions; the original baseline and failure remain
+preserved. Unattended idle restart is not claimed. The earlier
+[4.44.0 paired receipt](../validation/2026-10-21-444-acceptance.md) retains its
+50-request pass, preserved identities and complete cleanup; it does not prove
+the later update or unattended idle restart. The
+[4.43 backup/contention receipt](../validation/2026-10-21-443-acceptance.md)
+preserves independent delivery proof, its repaired mirror-capacity failure and
+the still-unexplained earlier 4.41 HTTP 503. Private dated observation filenames
+and the source-access/recovery receipts are recorded in the [issue plan](github-issues.md).
 
 | Requirement | Missing acceptance work | Dependencies | Required proof |
 | --- | --- | --- | --- |
