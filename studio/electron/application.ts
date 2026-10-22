@@ -595,18 +595,18 @@ if (!hasSingleInstanceLock) {
       })
     } catch (e) {
       console.error('[main] App startup failed:', e)
-      writeSmokeStatus('startup-error', { error: String(e) })
+      writeSmokeStatus('startup-error', { error: String(e), localDiagnostic: desktopBridge.localDiagnostic() })
     }
   })
 }
 
 process.on('uncaughtException', (e) => {
-  writeSmokeStatus('uncaught-exception', { error: String(e) })
+  writeSmokeStatus('uncaught-exception', { error: String(e), localDiagnostic: desktopBridge.localDiagnostic() })
   throw e
 })
 
 process.on('unhandledRejection', (e) => {
-  writeSmokeStatus('unhandled-rejection', { error: String(e) })
+  writeSmokeStatus('unhandled-rejection', { error: String(e), localDiagnostic: desktopBridge.localDiagnostic() })
 })
 
 app.on('window-all-closed', () => {

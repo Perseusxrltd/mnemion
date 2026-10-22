@@ -1,6 +1,8 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { StringDecoder } from 'node:string_decoder'
+import { localDiagnostic, processExitDiagnostic } from './local-diagnostics.js'
+export { localDiagnostic } from './local-diagnostics.js'
 import { backupResult } from './local-backup-protocol.js'
 import { companyOptions, companyDiscoveryOptions, companyDiscoveryResult, companySnapshot } from './local-company-protocol.js'
 import { vaultKeyId, vaultKeyResult, vaultOptions, vaultRequest, vaultSnapshot } from './local-vault-protocol.js'
@@ -14,22 +16,6 @@ import type { BackupAction, BackupOperationResult } from '../shared/local-worksp
 import type { LocalOptions, LocalInfo, LocalStatus, MemoryChange, MemoryWrite, MemorySnapshot, MemoryPolicy, PortChange, LocalDiagnostic, RemoteChange, RemoteAccess, RemoteCheck } from '../shared/local-workspace.js'
 type Connection = { endpoint: string; credential: string; workspaceId: string; tenantId: string; version: string }
 type Options = { executable: string; database: string; root: string; version: string; environment: NodeJS.ProcessEnv; desktopMemory?: () => number }
-
-export function localDiagnostic(input: unknown): LocalDiagnostic | undefined {
-  if (input === undefined) return undefined
-  if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Invalid setup diagnostic')
-  const value = input as LocalDiagnostic
-  if (Object.keys(value).some(key => !['category', 'locations', 'errno', 'winerror', 'sqlstate'].includes(key)) ||
-      !['unexpected', 'memory', 'dependency', 'operating_system', 'timeout', 'database'].includes(value.category) ||
-      [value.errno, value.winerror].some(code => code !== undefined && (!Number.isInteger(code) || code < 0 || code > 4294967295)) ||
-      (value.sqlstate !== undefined && (typeof value.sqlstate !== 'string' || !/^[A-Z0-9]{5}$/.test(value.sqlstate))) ||
-      !Array.isArray(value.locations) || value.locations.length > 8 || value.locations.some(location =>
-        !location || typeof location !== 'object' || Array.isArray(location) || Object.keys(location).sort().join(',') !== 'function,line,module' ||
-        typeof location.module !== 'string' || !/^mnemion(?:\.[a-z_][a-z0-9_]{0,63}){1,4}$/.test(location.module) ||
-        typeof location.function !== 'string' || !/^[A-Za-z_][A-Za-z0-9_]{0,63}$/.test(location.function) ||
-        !Number.isInteger(location.line) || location.line < 1 || location.line > 1000000)) throw new Error('Invalid setup diagnostic')
-  return structuredClone(value)
-}
 
 export function memoryOptions(input: unknown, revision = false): MemoryChange & { repair_token?: string } {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Choose automatic memory management or a RAM budget of at least 256 MiB.')
@@ -458,15 +444,18 @@ export class LocalWorkspace {
     child.on('error', () => {
       this.set({ state: 'stopping', errorCode: 'engine_start', message: 'The local runtime could not start. Reinstall the complete app; your saved data will remain in its separate folder.' })
     })
-    child.on('close', code => {
+    child.on('close', (code, signal) => {
       clearInterval(memoryTimer)
       if (this.child !== child) return
       this.child = undefined
       this.connection = undefined
       this.shutdownFailed = code !== 0 || !!this.statusValue.errorCode
-      if (this.intentionalStop && !this.shutdownFailed) this.set({ state: 'stopped', stage: undefined, message: 'Local workspace paused. Your memories remain on this computer.', errorCode: undefined })
-      else if (this.statusValue.errorCode) this.set({ state: 'error' })
-      else if (this.statusValue.state !== 'error') this.set({ state: 'error', errorCode: 'engine_stopped', message: code === 0 ? 'The local workspace stopped. Start it again to reconnect.' : 'The local workspace stopped unexpectedly. Retry to resume it; saved data has been retained.' })
+      if (this.intentionalStop && !this.shutdownFailed) this.set({ state: 'stopped', stage: undefined, message: 'Local workspace paused. Your memories remain on this computer.', errorCode: undefined, diagnostic: undefined })
+      else {
+        const diagnostic = processExitDiagnostic(code, signal ?? null, this.statusValue.diagnostic)
+        if (this.statusValue.errorCode) this.set({ state: 'error', diagnostic })
+        else if (this.statusValue.state !== 'error') this.set({ state: 'error', errorCode: 'engine_stopped', diagnostic, message: code === 0 ? 'The local workspace stopped. Start it again to reconnect.' : 'The local workspace stopped unexpectedly. Retry to resume it; saved data has been retained.' })
+      }
       this.set({ memory: undefined })
       if (this.cancelledUpdateStop && this.updateResumeRequested) {
         // Let the stop promise finish before reopening after a slow shutdown.

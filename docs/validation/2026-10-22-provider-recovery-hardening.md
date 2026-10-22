@@ -38,6 +38,37 @@ socket budget; their elapsed time is checked before further work. The optional
 browser policy is an operator setting, not a replacement for authentication,
 source permissions or network controls on native desktop connections.
 
+## Native qualification and exit diagnostics
+
+At the **22 October 2026** checkpoint, release run
+[39855689596](https://github.com/Perseusxrltd/mnemion/actions/runs/39855689596)
+failed installed hosting on [Mac ARM job 120095732920](https://github.com/Perseusxrltd/mnemion/actions/runs/39855689596/job/120095732920)
+during `backup-resume`. The local engine reached ready and then stopped while
+the parent Electron process remained alive. The exact cause is unknown; the
+original receipt and log remain preserved privately. A requested same-job retry
+was refused with **HTTP 403** because the entire workflow was still running.
+No retry executed.
+
+The source revision adds a bounded numeric process exit code or allowlisted
+signal to the existing structured diagnostic. Any original error code, category
+and validated code locations are retained. The installed-hosting evidence
+revalidates the engine diagnostic before including it in the bounded failure
+receipt; raw stderr, exception text and private paths remain outside that record.
+An invalid diagnostic is reported as invalid rather than copied into evidence.
+
+The diagnostic revision subsequently passed its **TypeScript build** and
+**84 focused component tests**, with **0 failed or skipped**, in **3.515 seconds**.
+These cover local workspaces, local backups and the desktop operator. The
+installed-hosting script syntax check and `git diff --check` also passed. An
+initial build caught a missing imported type; it was corrected before the passing
+build and tests, and the original initial log remains preserved privately.
+
+The other five native jobs were **still running** at the recorded failure
+checkpoint. These bounded source results do not establish the cause of the
+original failure, corrected Mac qualification, publication or actual updates.
+The source acceptances above retain their stated scope. Current outcomes come
+from [release status](../RELEASE_STATUS.md).
+
 Frozen native builds, signed uploaded artifacts, public installed-update checks,
 website synchronization and the next real Windows/shared-host acceptance remain
 required through the normal release process. No database migration is introduced.

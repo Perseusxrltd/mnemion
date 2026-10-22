@@ -163,8 +163,10 @@ export type BackupRestoreInput = {
   snapshot_sha256: string; ledger_sha256: string; primary_tenant_id: string; trusted_backup_confirmed: boolean;
   source_kind?: 'snapshot' | 'host'; host_data_only_confirmed?: boolean;
 }
+export type LocalProcessExit = { code: number | null; signal: string | null };
 export type LocalDiagnostic = {
-  category: 'unexpected' | 'memory' | 'dependency' | 'operating_system' | 'timeout' | 'database';
+  category: 'unexpected' | 'memory' | 'dependency' | 'operating_system' | 'timeout' | 'database' | 'process_exit';
   errno?: number; winerror?: number; sqlstate?: string;
+  exit?: LocalProcessExit;
   locations: Array<{ module: string; function: string; line: number }>;
 }

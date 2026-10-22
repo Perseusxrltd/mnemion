@@ -30,8 +30,15 @@ availability and release gates; each deployment requires its own acceptance.
   recovery subprocess isolation, private validation diagnostics and spreadsheet
   policy consistency. It adds required source/distribution secret scans and an
   optional company browser connection policy. [Focused acceptance](validation/2026-10-22-provider-recovery-hardening.md)
-  passed within its stated scope; native, public and actual-update gates remain
-  separate. All 65 requirement states and open #44/#45 remain unchanged.
+  passed within its stated scope. The initial [Mac ARM native job](https://github.com/Perseusxrltd/mnemion/actions/runs/39855689596/job/120095732920)
+  failed in `backup-resume` after the local engine reached ready; the Electron
+  parent remained alive and the exact cause is unknown. The original failure
+  and refused same-job retry remain in the [validation record](validation/2026-10-22-provider-recovery-hardening.md#native-qualification-and-exit-diagnostics).
+  A source revision adds bounded engine exit diagnostics; its TypeScript build
+  and 84 focused component tests passed. The other five native jobs were still
+  running at the failure checkpoint; corrected Mac qualification, public and
+  actual-update gates remain separate.
+  All 65 requirement states and open #44/#45 remain unchanged.
 
 - **4.45.0 public updates and actual acceptance — 22 October 2026.** All six
   [public installed-update targets](https://github.com/Perseusxrltd/mnemion/actions/runs/39843181077)

@@ -7,6 +7,7 @@ import { PassThrough } from 'node:stream'
 import { resolve } from 'node:path'
 import { test } from 'node:test'
 import { LocalWorkspace, portOptions, localDiagnostic, remoteOptions, remoteSnapshot } from '../dist/local-workspace.js'
+import { processExitDiagnostic } from '../dist/local-diagnostics.js'
 import { companyOptions, companySnapshot, companyDiscoveryResult } from '../dist/local-company-protocol.js'
 import { vaultOptions, vaultSnapshot, vaultKeyId, vaultKeyResult } from '../dist/local-vault-protocol.js'
 import { journalOptions, journalSnapshot } from '../dist/local-journal-protocol.js'
@@ -126,9 +127,19 @@ test('setup diagnostics admit bounded code locations and refuse private provider
   for (const input of [null, [], { ...diagnostic, message: 'private provider error' }, { ...diagnostic, sqlstate: 'private' },
     { ...diagnostic, errno: -1 }, { ...diagnostic, locations: Array(9).fill(diagnostic.locations[0]) },
     { ...diagnostic, locations: [{ ...diagnostic.locations[0], module: '/private/path' }] },
-    { ...diagnostic, locations: [{ ...diagnostic.locations[0], source: 'private memory' }] }]) {
+    { ...diagnostic, locations: [{ ...diagnostic.locations[0], source: 'private memory' }] },
+    { ...diagnostic, exit: { code: 1, signal: null, stderr: 'private provider output' } },
+    { ...diagnostic, exit: { code: 'private', signal: null } },
+    { ...diagnostic, exit: { code: 4294967296, signal: null } },
+    { ...diagnostic, exit: { code: null, signal: 'SIGPRIVATE' } },
+    { ...diagnostic, exit: { code: 1, signal: 'SIGTERM' } },
+    { ...diagnostic, exit: { code: null, signal: {} } },
+    { ...diagnostic, exit: {} }, { ...diagnostic, exit: null }]) {
     assert.throws(() => localDiagnostic(input), /Invalid setup diagnostic/)
   }
+  assert.deepEqual(processExitDiagnostic(null, 'unknown-private-os-value'), {
+    category: 'process_exit', locations: [], exit: { code: null, signal: null },
+  })
 })
 
 class Command extends EventEmitter {
@@ -139,7 +150,7 @@ class Command extends EventEmitter {
   constructor(action) { super(); this.action = action }
   reply(value) { this.stdout.write(JSON.stringify(value)); this.finish() }
   event(value) { this.stdout.write(JSON.stringify(value) + '\n') }
-  finish(code = 0) { if (!this.closed) { this.closed = true; this.emit('close', code) } }
+  finish(code = 0, signal = null) { if (!this.closed) { this.closed = true; this.emit('close', code, signal) } }
   kill() { this.finish(); return true }
 }
 
@@ -890,6 +901,40 @@ test('an unexplained nonzero exit cannot confirm an intentional database stop', 
   await settle(); engine.finish(1)
   assert.equal(await stop, false)
   assert.equal(f.host.status.state, 'error')
+  assert.deepEqual(f.host.status.diagnostic, { category: 'process_exit', locations: [], exit: { code: 1, signal: null } })
+})
+
+test('unexpected engine termination retains its exit code or signal without copying stderr', async t => {
+  for (const [code, signal] of [[0, null], [1, null], [3221225477, null], [null, 'SIGKILL'], [null, 'SIGABRT']]) {
+    const f = fixture(t)
+    const engine = await running(f)
+    engine.stderr.write('private-path-and-provider-secret-sentinel')
+    engine.finish(code, signal)
+    assert.equal(f.host.status.state, 'error')
+    assert.equal(f.host.status.errorCode, 'engine_stopped')
+    assert.deepEqual(f.host.status.diagnostic, { category: 'process_exit', locations: [], exit: { code, signal } })
+    assert.ok(!JSON.stringify(f.host.status).includes('private-path-and-provider-secret-sentinel'))
+    if (f.last().action === 'status') f.last().reply(info('first'))
+    await f.host.close()
+  }
+})
+
+test('engine exit preserves the original structured failure and a clean restart clears it', async t => {
+  const f = fixture(t)
+  const engine = await running(f)
+  const diagnostic = { category: 'database', sqlstate: '08001', locations: [{ module: 'mnemion.local_database', function: 'start', line: 1 }] }
+  engine.event({ event: 'error', code: 'setup_failed', message: 'The operation could not finish.', diagnostic })
+  engine.finish(1)
+  assert.equal(f.host.status.errorCode, 'setup_failed')
+  assert.deepEqual(f.host.status.diagnostic, { ...diagnostic, exit: { code: 1, signal: null } })
+  f.last().reply(info('first'))
+  await settle()
+  const restarted = await running(f)
+  assert.equal(f.host.status.diagnostic, undefined)
+  const stopping = f.host.stop()
+  await settle(); restarted.finish()
+  assert.equal(await stopping, true)
+  assert.equal(f.host.status.diagnostic, undefined)
 })
 
 test('cancelling an update reopens its previously running workspace exactly once', async t => {

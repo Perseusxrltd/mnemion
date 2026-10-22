@@ -12,6 +12,7 @@ import { WorkspaceCompanyAuth } from './workspace-company-auth.js'
 import { macosCredentialCipher, macosCredentialMemory } from './macos-credentials.js'
 import { workspaceFetch } from './workspace-fetch.js'
 import { LocalWorkspace, localEnvironment, localOptions } from './local-workspace.js'
+import { localDiagnostic } from './local-diagnostics.js'
 import { LocalBackups, createRecoveryKey, readBackupDocument, recoveryKey } from './local-backups.js'
 import { backupResult } from './local-backup-protocol.js'
 import { DesktopOperator, type DesktopRequest } from './desktop-operator.js'
@@ -921,6 +922,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
   app.on('will-quit', () => { backups?.close(); void sources?.close(); void agentSetup?.close(); void operator?.close() })
 
   return {
+    localDiagnostic: () => localDiagnostic(local?.status.diagnostic),
     localBusy: () => localSwitching || !!operatorMutation || !!backups?.busy || !!sources?.busy || !!agentSetup?.busy || (local?.busy ?? false),
     localActive: () => localSwitching || !!operatorMutation || !!backups?.busy || !!sources?.busy || !!agentSetup?.busy || (local?.active ?? false),
     stopLocal: () => local?.stop() ?? Promise.resolve(true),
