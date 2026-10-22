@@ -50,8 +50,8 @@
           {
             "id": 119872188599,
             "name": "Select checks",
-            "status": "queued",
-            "runner_assigned": null,
+            "status": "in_progress",
+            "runner_assigned": true,
             "steps": []
           },
           {
@@ -65,7 +65,7 @@
             "id": 119872271895,
             "name": "service (3.12)",
             "status": "queued",
-            "runner_assigned": null,
+            "runner_assigned": false,
             "steps": []
           },
           {
@@ -100,7 +100,7 @@
             "id": 119872272325,
             "name": "legacy",
             "status": "queued",
-            "runner_assigned": null,
+            "runner_assigned": false,
             "steps": []
           }
         ]
@@ -175,9 +175,7 @@
             "name": "ubuntu-22.04-arm / arm64",
             "status": "in_progress",
             "runner_assigned": true,
-            "steps": [
-              "Linux encrypted workspace reconnect after process restart"
-            ]
+            "steps": []
           }
         ]
       },
@@ -250,5 +248,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39762118327"
     }
   ],
-  "observed_at": "2026-10-22T14:08:12+00:00"
+  "observed_at": "2026-10-22T14:08:49+00:00"
 }

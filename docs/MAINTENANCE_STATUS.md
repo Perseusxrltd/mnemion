@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-22T14:08:12+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-22T14:08:49+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.44.2](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.44.2). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -30,7 +30,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 [Run 39792490489](https://github.com/Perseusxrltd/mnemion/actions/runs/39792490489): 3/12 jobs completed; 2 succeeded.
 
 - studio: in\_progress.
-- Select checks: queued.
+- Select checks: in\_progress.
 - container \(ubuntu-22\.04\): in\_progress.
 - service \(3\.12\): queued.
 - service \(3\.14\): queued.
@@ -45,7 +45,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 - macos-15 / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
 - macos-15-intel / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
 - windows-11-arm / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
-- ubuntu-22\.04-arm / arm64: in\_progress — Linux encrypted workspace reconnect after process restart.
+- ubuntu-22\.04-arm / arm64: in\_progress.
 
 
 ## Unsuccessful jobs
