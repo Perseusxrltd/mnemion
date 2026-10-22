@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "checked_at": "2026-10-22T14:47:55+00:00",
+  "checked_at": "2026-10-22T17:05:57+00:00",
   "tag_name": "v4.44.2",
   "source_commit": "3bdb3371ccd31bcf095d2e25a4b7d8263260b735",
   "published_at": "2026-10-22T10:18:29Z",
@@ -44,8 +44,12 @@
   "gates": [
     {
       "name": "Product checks on the release source",
-      "status": "not recorded",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/workflows/ci.yml"
+      "status": "pending",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39815622908",
+      "run_id": 39815622908,
+      "updated_at": "2026-10-22T16:45:09Z",
+      "event": "workflow_dispatch",
+      "conclusion": null
     },
     {
       "name": "Native packages and installed-workspace release gates",
@@ -67,13 +71,8 @@
     },
     {
       "name": "Automatic upgrades from public installers",
-      "status": "passed",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39762122867",
-      "run_id": 39762122867,
-      "updated_at": "2026-10-22T10:30:23Z",
-      "event": "workflow_dispatch",
-      "conclusion": "success",
-      "targets_passed": 6
+      "status": "not recorded",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/workflows/public-updates.yml"
     },
     {
       "name": "Live website downloads, version, notes and guides",
