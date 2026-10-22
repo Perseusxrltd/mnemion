@@ -35,9 +35,18 @@ availability and release gates; each deployment requires its own acceptance.
   parent remained alive and the exact cause is unknown. The original failure
   and refused same-job retry remain in the [validation record](validation/2026-10-22-provider-recovery-hardening.md#native-qualification-and-exit-diagnostics).
   A source revision adds bounded engine exit diagnostics; its TypeScript build
-  and 84 focused component tests passed. The other five native jobs were still
-  running at the failure checkpoint; corrected Mac qualification, public and
-  actual-update gates remain separate.
+  and 84 focused component tests passed. The original release run ended in
+  failure at **22:21:53 UTC on 22 October 2026**. [Mac Intel](https://github.com/Perseusxrltd/mnemion/actions/runs/39855689596/job/120095732809)
+  progressed to `capture-headless` before its **60-minute job timeout**; no
+  installed-hosting receipt was uploaded. [Main Product CI](https://github.com/Perseusxrltd/mnemion/actions/runs/39859826761)
+  passed, and immutable `release/4.45.1-r2` source `70ec58d8` started
+  [release run 39860098559](https://github.com/Perseusxrltd/mnemion/actions/runs/39860098559)
+  after queueing. It remained in progress at this checkpoint; corrected native
+  qualification, public and actual-update gates remain separate.
+  A separate source correction raises the Intel Mac job budget to 90 minutes
+  for future runs, preserving individual probe limits and required observations;
+  the active immutable r2 retains 60 minutes for Intel Mac. The original Mac ARM
+  engine-stop cause remains unknown.
   All 65 requirement states and open #44/#45 remain unchanged.
 
 - **4.45.0 public updates and actual acceptance — 22 October 2026.** All six
