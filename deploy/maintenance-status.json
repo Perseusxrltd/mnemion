@@ -85,39 +85,39 @@
       "workflow": "release.yml",
       "branch": "release/4.45.0",
       "source_commit": "d8083b068ea0d6866747b8128b1edd8b5f256f69",
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-22T19:26:25Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39829833717"
+    },
+    {
+      "id": 39840069973,
+      "attempt": 1,
+      "workflow": "verify-artifacts.yml",
+      "branch": "main",
+      "source_commit": "82e9093bd8f953d7c528bf438cecbfe1ee744d25",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-22T18:21:19Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39829833717",
+      "updated_at": "2026-10-22T19:26:31Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39840069973",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 32,
-        "completed": 31,
-        "succeeded": 30,
+        "total": 1,
+        "completed": 0,
+        "succeeded": 0,
         "active": [
           {
-            "id": 120005209488,
-            "name": "native / windows-11-arm / arm64",
+            "id": 120038437180,
+            "name": "verify",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Installed app creates, searches and reopens a real local workspace"
+              "Resolve the completed repository release and all its gates"
             ]
           }
         ]
       },
       "failed_jobs": []
-    },
-    {
-      "id": 39761844389,
-      "attempt": 1,
-      "workflow": "verify-artifacts.yml",
-      "branch": "main",
-      "source_commit": "07c43b25aa2f390aa626740e2f3f23d94e31194a",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-22T10:18:39Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39761844389"
     },
     {
       "id": 39833094831,
@@ -142,5 +142,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39762118327"
     }
   ],
-  "observed_at": "2026-10-22T19:11:54+00:00"
+  "observed_at": "2026-10-22T19:26:54+00:00"
 }
