@@ -25,15 +25,87 @@
   ],
   "runs": [
     {
-      "id": 39764386052,
+      "id": 39788182702,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "8a74bdcca415d014f87ad8c5c124b2ebe3caffe5",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-22T11:03:55Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39764386052"
+      "source_commit": "b0daf377363000f90168829bbb59fb5018f2f4e3",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-22T13:36:53Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39788182702",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 12,
+        "completed": 5,
+        "succeeded": 5,
+        "active": [
+          {
+            "id": 119856907073,
+            "name": "legacy",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv sync --locked --extra legacy --group dev"
+            ]
+          },
+          {
+            "id": 119856907086,
+            "name": "container (ubuntu-22.04-arm)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": []
+          },
+          {
+            "id": 119856907089,
+            "name": "service (3.12)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Set up job",
+              "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38",
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+            ]
+          },
+          {
+            "id": 119856907100,
+            "name": "supervision (macos-15)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Set up job",
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
+            ]
+          },
+          {
+            "id": 119856907118,
+            "name": "service (3.14)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Matching PostgreSQL recovery tools",
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+            ]
+          },
+          {
+            "id": 119856907149,
+            "name": "supervision (macos-15-intel)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the current Intel cryptography runtime with static OpenSSL"
+            ]
+          },
+          {
+            "id": 119856907181,
+            "name": "service (3.13)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": []
+          }
+        ]
+      },
+      "failed_jobs": []
     },
     {
       "id": 39762122867,
@@ -69,15 +141,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39761844389"
     },
     {
-      "id": 39777772697,
+      "id": 39788182452,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "ab24b679f2eba24425a2fd3aa1466d854ac50cd3",
+      "source_commit": "b0daf377363000f90168829bbb59fb5018f2f4e3",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-22T12:22:30Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39777772697"
+      "updated_at": "2026-10-22T13:36:38Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39788182452"
     },
     {
       "id": 39762118327,
@@ -91,5 +163,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39762118327"
     }
   ],
-  "observed_at": "2026-10-22T12:23:04+00:00"
+  "observed_at": "2026-10-22T13:37:12+00:00"
 }
