@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-22T19:48:50+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-22T19:53:23+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.45.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.45.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -18,31 +18,25 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
 | ci\.yml | main | in\_progress | [Run 39843078723](https://github.com/Perseusxrltd/mnemion/actions/runs/39843078723) |
-| public-updates\.yml | v4\.45\.0 | queued | [Run 39843181077](https://github.com/Perseusxrltd/mnemion/actions/runs/39843181077) |
+| public-updates\.yml | v4\.45\.0 | in\_progress | [Run 39843181077](https://github.com/Perseusxrltd/mnemion/actions/runs/39843181077) |
 | release\.yml | release/4\.45\.0 | success | [Run 39829833717](https://github.com/Perseusxrltd/mnemion/actions/runs/39829833717) |
-| verify-artifacts\.yml | main | in\_progress | [Run 39840069973](https://github.com/Perseusxrltd/mnemion/actions/runs/39840069973) |
+| verify-artifacts\.yml | main | success | [Run 39840069973](https://github.com/Perseusxrltd/mnemion/actions/runs/39840069973) |
 | website-release\.yml | v4\.45\.0 | success | [Run 39843176416](https://github.com/Perseusxrltd/mnemion/actions/runs/39843176416) |
 
 ## Active jobs
 
-[Run 39843078723](https://github.com/Perseusxrltd/mnemion/actions/runs/39843078723): 3/12 jobs completed; 3 succeeded.
+[Run 39843078723](https://github.com/Perseusxrltd/mnemion/actions/runs/39843078723): 7/12 jobs completed; 7 succeeded.
 
-- studio: in\_progress — Run python deploy/bundle\_studio\.py.
-- container \(ubuntu-22\.04\): in\_progress — Build the actual deployment image with its documentation.
-- legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
-- service \(3\.12\): in\_progress — Matching PostgreSQL recovery tools.
-- service \(3\.13\): in\_progress — Matching PostgreSQL recovery tools.
-- supervision \(macos-15\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
-- container \(ubuntu-22\.04-arm\): in\_progress — Build the actual deployment image with its documentation.
+- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- supervision \(macos-15\): in\_progress — Verify both pinned local models on the actual Mac runtime.
 - supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
-- service \(3\.14\): in\_progress — Matching PostgreSQL recovery tools.
+- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 
-[Run 39843181077](https://github.com/Perseusxrltd/mnemion/actions/runs/39843181077): 1/7 jobs completed; 1 succeeded.
+[Run 39843181077](https://github.com/Perseusxrltd/mnemion/actions/runs/39843181077): 3/7 jobs completed; 3 succeeded.
 
-- windows / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
-- linux / x64 public upgrade: in\_progress — Linux desktop libraries.
-- macos / arm64 public upgrade: queued.
-- windows / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
+- linux / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
+- macos / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
 - linux / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
 - macos / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
 

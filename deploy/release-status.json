@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "checked_at": "2026-10-22T19:48:29+00:00",
+  "checked_at": "2026-10-22T19:53:01+00:00",
   "tag_name": "v4.45.0",
   "source_commit": "d8083b068ea0d6866747b8128b1edd8b5f256f69",
   "published_at": "2026-10-22T19:47:33Z",
@@ -65,19 +65,19 @@
     },
     {
       "name": "Independent uploaded-byte and signature verification",
-      "status": "pending",
+      "status": "passed",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39840069973",
       "run_id": 39840069973,
-      "updated_at": "2026-10-22T19:47:19Z",
+      "updated_at": "2026-10-22T19:52:37Z",
       "event": "workflow_run",
-      "conclusion": null
+      "conclusion": "success"
     },
     {
       "name": "Automatic upgrades from public installers",
       "status": "pending",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39843181077",
       "run_id": 39843181077,
-      "updated_at": "2026-10-22T19:47:53Z",
+      "updated_at": "2026-10-22T19:50:28Z",
       "event": "workflow_dispatch",
       "conclusion": null
     },
