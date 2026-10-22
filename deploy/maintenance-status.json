@@ -37,8 +37,8 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 8,
-        "succeeded": 8,
+        "completed": 10,
+        "succeeded": 10,
         "active": [
           {
             "id": 119741504862,
@@ -52,24 +52,6 @@
           {
             "id": 119741504884,
             "name": "service (3.13)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 119741504928,
-            "name": "supervision (macos-15-intel)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify managed installation, host recovery, signed updates and rollback with real processes"
-            ]
-          },
-          {
-            "id": 119741504938,
-            "name": "service (3.14)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
@@ -115,61 +97,43 @@
     },
     {
       "id": 39753067641,
-      "attempt": 1,
+      "attempt": 2,
       "workflow": "release.yml",
       "branch": "release/4.44.2",
       "source_commit": "3bdb3371ccd31bcf095d2e25a4b7d8263260b735",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-22T09:24:25Z",
+      "updated_at": "2026-10-22T09:35:44Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39753067641",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 27,
-        "completed": 25,
-        "succeeded": 21,
+        "total": 25,
+        "completed": 24,
+        "succeeded": 23,
         "active": [
           {
-            "id": 119738340346,
-            "name": "checks / service (3.12)",
+            "id": 119750124227,
+            "name": "native / native_database / Database / macos / arm64",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 119738340385,
-            "name": "checks / supervision (macos-15-intel)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify managed installation, host recovery, signed updates and rollback with real processes"
+              "Relocate, initialize, verify TLS and RLS, restore backup and recover a crash"
             ]
           }
         ]
       },
-      "failed_jobs": [
-        {
-          "name": "native / native_database / Database / macos / arm64",
-          "id": 119738653359,
-          "conclusion": "cancelled",
-          "runner_assigned": false,
-          "steps_reported": 0,
-          "steps": []
-        }
-      ]
+      "failed_jobs": []
     },
     {
-      "id": 39647805616,
+      "id": 39756590686,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "245e89b4c6365cb0f73c360a1e334626be7333cd",
+      "source_commit": "694a5bc10a818dd99fbb90fa3c57b4837b023f23",
       "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-21T17:55:16Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39647805616"
+      "conclusion": "skipped",
+      "updated_at": "2026-10-22T09:35:23Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39756590686"
     },
     {
       "id": 39754043731,
@@ -194,5 +158,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39648042222"
     }
   ],
-  "observed_at": "2026-10-22T09:27:41+00:00"
+  "observed_at": "2026-10-22T09:35:58+00:00"
 }
