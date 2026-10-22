@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "checked_at": "2026-10-22T17:06:58+00:00",
+  "checked_at": "2026-10-22T17:14:12+00:00",
   "tag_name": "v4.44.2",
   "source_commit": "3bdb3371ccd31bcf095d2e25a4b7d8263260b735",
   "published_at": "2026-10-22T10:18:29Z",
@@ -44,21 +44,17 @@
   "gates": [
     {
       "name": "Product checks on the release source",
-      "status": "pending",
+      "status": "not passed",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39815622908",
       "run_id": 39815622908,
-      "updated_at": "2026-10-22T16:45:09Z",
+      "updated_at": "2026-10-22T17:13:52Z",
       "event": "workflow_dispatch",
-      "conclusion": null
+      "conclusion": "cancelled"
     },
     {
       "name": "Native packages and installed-workspace release gates",
-      "status": "passed",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39753067641",
-      "run_id": 39753067641,
-      "updated_at": "2026-10-22T10:16:19Z",
-      "event": "workflow_dispatch",
-      "conclusion": "success"
+      "status": "not recorded",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/workflows/release.yml"
     },
     {
       "name": "Independent uploaded-byte and signature verification",
@@ -81,8 +77,12 @@
     },
     {
       "name": "Live website downloads, version, notes and guides",
-      "status": "not recorded",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/workflows/website-release.yml"
+      "status": "passed",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39762118327",
+      "run_id": 39762118327,
+      "updated_at": "2026-10-22T10:24:39Z",
+      "event": "workflow_dispatch",
+      "conclusion": "success"
     }
   ],
   "requirements": {

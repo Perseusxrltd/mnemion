@@ -37,41 +37,41 @@
     },
     {
       "id": 39815622908,
-      "attempt": 1,
+      "attempt": 2,
       "workflow": "ci.yml",
       "branch": "v4.44.2",
       "source_commit": "3bdb3371ccd31bcf095d2e25a4b7d8263260b735",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-22T16:45:09Z",
+      "updated_at": "2026-10-22T17:14:27Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39815622908",
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 11,
+        "completed": 10,
         "succeeded": 10,
         "active": [
           {
-            "id": 119953421344,
+            "id": 119971508981,
             "name": "service (3.14)",
             "status": "in_progress",
             "runner_assigned": true,
-            "steps": []
+            "steps": [
+              "Initialize containers"
+            ]
+          },
+          {
+            "id": 119971509473,
+            "name": "supervision (macos-15-intel)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the current Intel cryptography runtime with static OpenSSL"
+            ]
           }
         ]
       },
-      "failed_jobs": [
-        {
-          "name": "supervision (macos-15-intel)",
-          "id": 119953421225,
-          "conclusion": "failure",
-          "runner_assigned": true,
-          "steps_reported": 14,
-          "steps": [
-            "Build the current Intel cryptography runtime with static OpenSSL"
-          ]
-        }
-      ]
+      "failed_jobs": []
     },
     {
       "id": 39814732365,
@@ -86,8 +86,8 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 18,
-        "completed": 15,
-        "succeeded": 15,
+        "completed": 16,
+        "succeeded": 16,
         "active": [
           {
             "id": 119952343614,
@@ -96,15 +96,6 @@
             "runner_assigned": true,
             "steps": [
               "Installed app creates, searches and reopens a real local workspace"
-            ]
-          },
-          {
-            "id": 119952343691,
-            "name": "windows-2022 / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Native Windows installation, authenticated upgrade and relaunch"
             ]
           },
           {
@@ -176,5 +167,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39762118327"
     }
   ],
-  "observed_at": "2026-10-22T17:07:21+00:00"
+  "observed_at": "2026-10-22T17:14:40+00:00"
 }
