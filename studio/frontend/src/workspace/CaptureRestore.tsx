@@ -4,6 +4,10 @@ import type { Connector, MnemionClient } from '@mnemion/client';
 import type { CaptureArchiveInfo, CapturePolicy, CapturePreview, CaptureRestored, DesktopSource, SourcePreviewSelection } from '../../../shared/desktop-sources';
 import CapturePreviewPanel from './CapturePreviewPanel';
 
+// Server and archive serializers can order the same policy fields differently.
+const policyText = (value: CapturePolicy | undefined) => JSON.stringify(value &&
+  Object.fromEntries(Object.entries(value).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)));
+
 export function CaptureRestoredNotice({ value }: { value: CaptureRestored }) {
   return <div className="ws-notice" data-capture-restored="ready" data-source-id={value.id}>
     <strong>{value.policy_change ? `Capture policy applied; source ${value.source_enabled ? 'running' : 'paused'}` : value.source_enabled ? 'Capture recovery confirmed' : 'Capture recovered and paused'}</strong>
@@ -22,7 +26,9 @@ export default function CaptureRestore({ client, connection, endpoint, existing,
   const [archive, setArchive] = useState<CaptureArchiveInfo>();
   const [currentPolicy, setCurrentPolicy] = useState<CapturePolicy>();
   const [preview, setPreview] = useState<{ selection: string; value: CapturePreview }>();
-  const [memory, setMemory] = useState(existing?.memory_limit_mib ?? 256), [pending, setPending] = useState(existing?.custody?.pending_limit_mib ?? 256);
+  const [memoryChoice, setMemory] = useState<number>(), [pendingChoice, setPending] = useState<number>();
+  const memory = memoryChoice ?? existing?.memory_limit_mib ?? 256;
+  const pending = pendingChoice ?? existing?.custody?.pending_limit_mib ?? 256;
   const [confirmed, setConfirmed] = useState(false), [error, setError] = useState<string>();
   const [receipt, setReceipt] = useState<CaptureRestored>();
   if (!native?.sourceRestore || !native.sourceBackupInspect || !native.sourcePreview || (existing && !existing.custody)) return null;
@@ -30,7 +36,9 @@ export default function CaptureRestore({ client, connection, endpoint, existing,
   const selectedMode = selectedPolicy?.capture_mode ?? archive?.binding.capture_mode;
   const maxFiles = existing?.max_files ?? 10000;
   const selection: SourcePreviewSelection | undefined = archive && selectedMode ? { path, capture_mode: selectedMode,
-    capture_policy: selectedPolicy, keep_accepted: true, pending_limit_mib: pending, memory_limit_mib: memory, max_files: maxFiles } : undefined;
+    capture_policy: selectedPolicy, keep_accepted: true, pending_limit_mib: pending, memory_limit_mib: memory, max_files: maxFiles,
+    history_limit_events: existing?.custody?.history_limit_events ?? 100000,
+    database_limit_mib: existing?.custody?.database_limit_mib ?? 512 } : undefined;
   const selectionKey = JSON.stringify(selection);
   const ready = preview && preview.selection === selectionKey ? preview.value : undefined;
   async function run(work: () => Promise<void>) {
@@ -104,7 +112,7 @@ export default function CaptureRestore({ client, connection, endpoint, existing,
           if (value.binding.source_id !== existing.custody?.source_id || value.binding.grant_id !== existing.custody.grant_id) throw new Error('Choose a fresh backup of this computer’s paused inbox.');
           if (value.status.pending_events || value.status.unknown_pages) throw new Error('Deliver and confirm every saved page, then create a fresh backup before changing policy.');
           const remote = await client.request<{ capture_policy: CapturePolicy | null; revoked_at: string | null }>('GET', `/v1/connectors/${connection.id}/capture-sources/${value.binding.source_id}`);
-          if (remote.revoked_at || !remote.capture_policy || JSON.stringify(remote.capture_policy) === JSON.stringify(value.binding.capture_policy)) throw new Error('A workspace administrator must first approve a different current capture policy in Capture administration.');
+          if (remote.revoked_at || !remote.capture_policy || policyText(remote.capture_policy) === policyText(value.binding.capture_policy)) throw new Error('A workspace administrator must first approve a different current capture policy in Capture administration.');
           setCurrentPolicy(remote.capture_policy); setPath(existing.path ?? '');
         }
         setArchive(value); setPreview(undefined); setConfirmed(false);
@@ -123,7 +131,7 @@ export default function CaptureRestore({ client, connection, endpoint, existing,
         <label className="ws-checkbox"><input type="checkbox" data-update-safe checked={confirmed} disabled={busy || !ready} onChange={event => setConfirmed(event.target.checked)} />I approve this folder and capture policy, and revoke the previous device’s capture grant.</label>
         <button type="button" className="ws-button" disabled={busy || !ready || !confirmed || !revision || !!existing?.enabled} onClick={() => void run(restore)}>{busy ? 'Working…' : existing ? 'Apply policy and keep source paused' : 'Recover as a paused source'}</button>
       </>}
-      {(file || key || (!existing && path)) && <button type="button" className="ws-button" disabled={busy} onClick={() => { setFile(''); setKey(''); setPath(existing?.path ?? ''); setArchive(undefined); setCurrentPolicy(undefined); setPreview(undefined); setConfirmed(false); setError(undefined); }}>Clear recovery choices</button>}
+      {(file || key || (!existing && path)) && <button type="button" className="ws-button" disabled={busy} onClick={() => { setFile(''); setKey(''); setPath(existing?.path ?? ''); setArchive(undefined); setCurrentPolicy(undefined); setPreview(undefined); setMemory(undefined); setPending(undefined); setConfirmed(false); setError(undefined); }}>Clear recovery choices</button>}
     </div>}
     {error && <p className="ws-notice ws-error" role="alert">{error}</p>}
   </details>;

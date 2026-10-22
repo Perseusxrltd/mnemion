@@ -7,6 +7,7 @@ import { verifyPersonalAccess } from './personal-access-probe.js'
 import { verifyNativeBackups } from './native-backup-probe.js'
 import { verifyNativeCapture } from './native-capture-probe.js'
 import { verifyNativeCaptureBoundaries } from './native-capture-boundaries-probe.js'
+import { verifyNativeCapturePolicy } from './native-capture-policy-probe.js'
 import { verifyNativeHeadlessCapture, verifyNativeHeadlessPreview } from './native-headless-capture-probe.js'
 
 export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Record<string, unknown> | null> {
@@ -17,7 +18,7 @@ export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Re
   if (!profile || !smoke || dirname(resolve(path)) !== dirname(resolve(profile)) || dirname(resolve(smoke)) !== dirname(resolve(path)) ||
       (await stat(path)).size > 4096) throw new Error('Hosting validation requires an isolated profile and evidence directory')
   const config = JSON.parse(await readFile(path, 'utf8'))
-  if (!['create', 'resume', 'recover-port', 'sign-in', 'sign-in-resume', 'backup-capture', 'backup-recover', 'backup-resume', 'capture-enroll', 'capture-resume', 'capture-restored-resume', 'capture-boundaries-enroll', 'capture-boundaries-resume', 'capture-headless', 'capture-preview'].includes(config.phase) || !Number.isInteger(config.port) || config.port < 1024 || config.port > 65535 ||
+  if (!['create', 'resume', 'recover-port', 'sign-in', 'sign-in-resume', 'backup-capture', 'backup-recover', 'backup-resume', 'capture-enroll', 'capture-resume', 'capture-restored-resume', 'capture-policy', 'capture-boundaries-enroll', 'capture-boundaries-resume', 'capture-headless', 'capture-preview'].includes(config.phase) || !Number.isInteger(config.port) || config.port < 1024 || config.port > 65535 ||
       (!['create', 'capture-preview'].includes(config.phase) && !['memoryId', 'spaceId'].every(key => /^[a-f0-9-]{36}$/.test(config[key])))) throw new Error('Invalid hosting validation configuration')
   if (config.phase === 'sign-in-resume' && !['tenantId', 'principalId', 'sessionId'].every(key => /^[a-f0-9-]{36}$/.test(config[key]))) throw new Error('Invalid personal-access validation identity')
   if (config.phase === 'capture-preview') return verifyNativeHeadlessPreview(path)
@@ -26,6 +27,7 @@ export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Re
     // workspace navigation already used by the backup and ordinary host probes.
     await window.webContents.executeJavaScript("window.location.hash = '/workspace'")
     const result = config.phase === 'capture-headless' ? await verifyNativeHeadlessCapture(window, path) :
+      config.phase === 'capture-policy' ? await verifyNativeCapturePolicy(window, path) :
       await (config.phase.startsWith('capture-boundaries-') ? verifyNativeCaptureBoundaries : verifyNativeCapture)(window, config, path)
     await writeFile(join(dirname(path), config.phase + '-workspace.png'), (await window.webContents.capturePage()).toPNG(), { mode: 0o600 })
     return result

@@ -93,21 +93,21 @@ portable installation of the AppImage payload on Linux. Windows refuses to run
 outside a disposable CI runner or when an existing Mnemion installation is
 registered. Linux CI runs this probe under `xvfb-run`.
 
-The instrumented, sandboxed renderer clicks the real setup controls, sets names,
-model, port and RAM budget, creates and opens a local workspace, and performs a
-real authenticated semantic save/search. The controller requests the app's
-ordinary quit path and checks that PostgreSQL stopped. A second process launch
-must automatically restore the same workspace, retrieve the saved memory and
-retain the credential file and RAM settings. Anonymous API access must fail.
-A third launch occupies the old API port with an unrelated listener, uses the
-real recovery controls to select a new port, explicitly resumes, and retrieves
-the original memory with the same workspace identity and credentials.
-The probe never supplies fake API responses or alternate engine/database paths.
+The [installed-hosting driver](../../studio/electron/scripts/smoke-installed-hosting.mjs)
+defines the ordered launches and required receipt fields. Its sandboxed renderer
+uses real app controls, installed engine/database resources and authenticated
+workspace operations. The ordinary quit path must stop PostgreSQL. Follow the
+[capture implementation checkpoint](../research/2026-10-21-durable-capture-implementation.md)
+for development gate scope, exact-source evidence and remaining acceptance;
+new source or headless policy-migration checks do not qualify a packaged target.
+Maintain the phase inventory in the driver.
 
-CI retains only `build-tmp/installed-hosting-evidence.json`, a bounded report
-containing no credentials. Failed fixture diagnostics and the generated private
-workspace remain only in the disposable runner temporary directory. Successful
-fixtures clean up their own installation and profile.
+CI retains `build-tmp/installed-hosting-evidence.json`, a bounded report containing
+no credentials, and successful phase screenshots under
+`build-tmp/installed-hosting-*.png`. The driver defines the screenshot inventory.
+Raw failure diagnostics and the generated private workspace remain in the
+disposable runner temporary directory. Successful fixtures clean up their own
+installation and profile.
 
 These checks apply to the locally built installer. Successful source tests or a
 local Linux run do not establish acceptance of public downloads, other native

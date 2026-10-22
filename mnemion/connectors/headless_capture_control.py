@@ -21,8 +21,8 @@ from ..sdk import Client
 from ..service.models import Command
 from . import headless_capture as device
 from .capture_archive import _audit, export_archive, inspect_archive
-from .capture_delivery import retire_grant
-from .capture_transfer import restore_device_copy
+from .capture_delivery import deliver, retire_grant
+from .capture_transfer import restore_device_copy, restore_policy_copy
 from .config import Token
 from .conversation_inbox import InboxError, open_inbox
 from .live_conversations import ConversationProvider
@@ -36,6 +36,7 @@ class Control(Command):
         "enroll",
         "pause",
         "resume",
+        "drain",
         "backup",
         "inspect",
         "restore",
@@ -51,6 +52,7 @@ class Control(Command):
     recovery_key: Token | None = None
     retirement_token: Token | None = None
     key_purpose: Literal["inbox", "recovery"] = "inbox"
+    policy_change: bool = Field(default=False, strict=True)
 
     @field_validator("archive")
     @classmethod
@@ -65,6 +67,7 @@ class Control(Command):
             "enroll": {"expected_revision", "preview_hash"},
             "pause": {"expected_revision"},
             "resume": {"expected_revision"},
+            "drain": {"expected_revision"},
             "backup": {"expected_revision", "archive", "recovery_key"},
             "inspect": {"archive", "recovery_key"},
             "restore": {
@@ -85,6 +88,8 @@ class Control(Command):
             raise ValueError("Explicitly confirm this action")
         if self.action == "key" and self.key_purpose == "recovery" and self.recovery_key is None:
             raise ValueError("Choose a private output reference for the recovery key")
+        if self.policy_change and self.action != "restore":
+            raise ValueError("Review a policy change only when starting a new device recovery")
         for token in (self.recovery_key, self.retirement_token):
             if token and token.file and not token.file.is_absolute():
                 raise ValueError("Use absolute private credential paths in control requests")
@@ -131,6 +136,30 @@ def generate_key(config, request):
             stream.write((value + "\n").encode("ascii"))
         local_state._sync_directory(path.parent)
     return {"created": True, "purpose": request.key_purpose, "key_printed": False}
+
+
+def drain(config, request):
+    """Settle the original policy's saved queue without enabling or scanning it."""
+    with device.locked(config):
+        record = device.read_record(config)
+        device.revision(record, request.expected_revision)
+        if record["enabled"] or record["state"] != "ready":
+            raise InboxError("capture_pause_required")
+        with device.opened(config, record) as (inbox, _, _):
+            with device.connect(config) as client:
+                result = deliver(inbox, client)
+            # A delivery receipt is separate from the latest scan observation.
+            # Do not claim that the producer or index has just been examined.
+            return {
+                "format": "mnemion-capture-drained-v1",
+                "id": str(config.capture.id),
+                "source_enabled": False,
+                "remote_committed_events": result["remote_committed_events"],
+                "delivery_complete": not result["pending_events"]
+                and not result["unknown_pages"]
+                and not result["fence_sweep_pending"],
+                "status": inbox.status(),
+            }
 
 
 def backup(config, request):
@@ -229,7 +258,7 @@ def finish_copy(config, record, request, key):
         raise InboxError("capture_key_unavailable")
     with local_state.lock(device.root(config) / "inbox-budget"):
         if not destination.exists():
-            restore_device_copy(
+            (restore_policy_copy if proof.get("policy_change") else restore_device_copy)(
                 external(config, request.archive),
                 key,
                 destination,
@@ -289,7 +318,7 @@ def restore(config, request, *, finishing=False):
             with local_state.temporary_directory(
                 prefix="headless-recover-", dir=device.root(config)
             ) as temporary:
-                recovered = restore_device_copy(
+                recovered = (restore_policy_copy if request.policy_change else restore_device_copy)(
                     archive,
                     key,
                     temporary / "inbox",
@@ -314,7 +343,9 @@ def restore(config, request, *, finishing=False):
                         ):
                             raise InboxError("capture_capacity_blocked")
                 with device.connect(config) as client:
-                    device.verify(config, client, existing=True)
+                    device.verify(
+                        config, client, existing=True, current_policy=request.policy_change
+                    )
                 with Client(
                     config.service_url,
                     device.reference(request.retirement_token),
@@ -337,6 +368,7 @@ def restore(config, request, *, finishing=False):
                             "archive_sha256": request.archive_sha256,
                             "original_binding": original,
                             "previous_grant_revoked": True,
+                            "policy_change": request.policy_change,
                         },
                     },
                 )
@@ -363,6 +395,8 @@ def perform(config, value):
         return device.set_enabled(
             config, request.model_dump(mode="json"), request.action == "resume"
         )
+    if request.action == "drain":
+        return drain(config, request)
     if request.action == "backup":
         return backup(config, request)
     if request.action == "inspect":

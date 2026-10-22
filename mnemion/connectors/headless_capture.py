@@ -56,6 +56,7 @@ class Recovery(Command):
     archive_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     original_binding: dict
     previous_grant_revoked: Literal[True]
+    policy_change: bool = Field(default=False, strict=True)
 
     _binding = field_validator("original_binding")(binding_value)
 
@@ -251,7 +252,7 @@ def connect(config):
     return Client(config.service_url, reference(config.service_token), timeout=10, retries=0)
 
 
-def verify(config, client, *, existing=False):
+def verify(config, client, *, existing=False, current_policy=False):
     me = client.request("GET", "/v1/me")
     if (
         me.get("tenant_id") != str(config.capture.tenant_id)
@@ -296,6 +297,11 @@ def verify(config, client, *, existing=False):
         raise InboxError("capture_binding_mismatch")
     if policy.has_capture_history and not existing:
         raise InboxError("capture_policy_change_requires_migration")
+    if current_policy and (
+        policy.capture_policy != config.provider.capture_policy
+        or policy.capture_mode != config.provider.capture_mode
+    ):
+        raise InboxError("capture_settings_changed")
     return grant
 
 

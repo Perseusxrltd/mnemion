@@ -7,6 +7,7 @@ import SourceScanHistory from './SourceScanHistory';
 import CaptureStatus from './CaptureStatus';
 import CapturePreviewPanel from './CapturePreviewPanel';
 import CaptureRestore from './CaptureRestore';
+import CaptureBackup from './CaptureBackup';
 
 const message = (error: unknown) => error instanceof Error ? error.message : 'The source operation could not finish.';
 const when = (value?: string) => value ? new Date(value).toLocaleString() : 'Waiting for its first scan';
@@ -307,6 +308,8 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
         }}>Discard edits</button>}
       </form>
     </details>
+    {current?.custody && <CaptureBackup key={current.id} source={current}
+      revision={query.data?.revision} busy={busy} setBusy={setBusy} />}
     {connection.provider === 'conversations' && administrator && <CaptureRestore key={connection.id}
       client={client} connection={connection} endpoint={endpoint} existing={current}
       revision={query.data?.revision} busy={busy} setBusy={setBusy} />}

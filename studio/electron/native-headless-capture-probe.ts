@@ -257,23 +257,71 @@ export async function verifyNativeHeadlessCapture(window: BrowserWindow, probePa
       const results=await request('POST','/v1/recall',{query:${JSON.stringify(futureText)},all_accessible:true,mode:'lexical'});
       if(results.hits.length!==1)throw new Error('Independent recovery duplicated or omitted its new memory');
     `)
+    const policyPaused = await control({ action: 'pause', expected_revision: (await status(freshFile, freshEnvironment)).revision }, 0, freshFile, freshEnvironment)
+    const policyLaterText = 'Wait for independent policy approval ' + randomUUID()
+    await writeFile(join(folder, 'later-policy.jsonl'), row(policyLaterText), { mode: 0o600, flag: 'wx' })
+    const drained = await control({ action: 'drain', expected_revision: policyPaused.revision, confirm: true }, 0, freshFile, freshEnvironment)
+    if (!drained.delivery_complete || drained.source_enabled || drained.remote_committed_events !== 0 || drained.status.stored_events !== 1 || drained.status.forgotten_events !== 1) throw new Error('The independent paused drain collected a new file or lost a deletion.')
+    const policyArchiveFile = join(base, 'independent-policy-' + id + '.mnemion-capture')
+    const policyArchive = await control({ action: 'backup', expected_revision: policyPaused.revision, archive: policyArchiveFile,
+      recovery_key: { file: recoveryFile }, confirm: true }, 0, freshFile, freshEnvironment)
+    const nextPolicy = { ...policy, preset: 'detailed', capture_mode: 'complete' }
+    const policyGrant = randomUUID(), policyId = randomUUID(), policyFile = join(base, 'policy-source-' + id + '.json')
+    const policyDevice = await inRenderer(window, `
+      const route='/v1/connectors/'+${JSON.stringify(fixture.connectorId)}+'/capture-sources/'+${JSON.stringify(id)};
+      const review=await request('GET',route+'/policy-review');
+      await request('PUT',route+'/policy-transitions/'+crypto.randomUUID(),{expected_version:review.source.version,
+        review_token:review.review_token,capture_policy:${JSON.stringify(nextPolicy)},previous_grants:'retain',confirm:true});
+      const key=await request('POST','/v1/principals/'+${JSON.stringify(fixture.principalId)}+'/keys',{name:'Disposable reviewed headless policy'},201);
+      await request('PUT','/v1/capture-sources/'+${JSON.stringify(id)}+'/grants/'+${JSON.stringify(policyGrant)},{device_key_id:key.id});return key;
+    `)
+    const policyEnvironment = { ...environment, MNEMION_CAPTURE_GATE_DEVICE: policyDevice.api_key }
+    await writeFile(policyFile, JSON.stringify({ ...configuration,
+      provider: { ...configuration.provider, capture_mode: 'complete', capture_policy: nextPolicy },
+      capture: { ...configuration.capture, id: policyId, grant_id: policyGrant, inbox_key: { file: stateName + '/policy-inbox.key' } } }), { mode: 0o600, flag: 'wx' })
+    await control({ action: 'key', confirm: true }, 0, policyFile, policyEnvironment)
+    const policyPreview = await control({ action: 'preview' }, 0, policyFile, policyEnvironment)
+    const policyRecovered = await control({ action: 'restore', policy_change: true, expected_revision: 'not-enrolled',
+      preview_hash: policyPreview.configuration_hash, archive: policyArchiveFile, archive_sha256: policyArchive.archive_sha256,
+      recovery_key: { file: recoveryFile }, retirement_token: { env: 'MNEMION_CAPTURE_GATE_ADMIN' }, confirm: true }, 0, policyFile, policyEnvironment)
+    if (policyRecovered.enabled || policyRecovered.state !== 'ready' || !policyRecovered.inbox_present ||
+        (await readFile(join(base, stateName, 'policy-inbox.key'))).equals(await readFile(join(base, stateName, 'recovered-inbox.key')))) throw new Error('Independent policy migration reused its inbox key or started without review.')
+    const preservedPolicyArchive = await control({ action: 'inspect', archive: policyArchiveFile, recovery_key: { file: recoveryFile } }, 0, policyFile, policyEnvironment)
+    if (preservedPolicyArchive.archive_sha256 !== policyArchive.archive_sha256 || preservedPolicyArchive.status.forgotten_events !== 1) throw new Error('Independent policy migration changed its original backup.')
+    const policyStatus = await control({ action: 'drain', expected_revision: policyRecovered.revision, confirm: true }, 0, policyFile, policyEnvironment)
+    if (!policyStatus.delivery_complete || policyStatus.status.coverage.catalog !== 'unobserved' || policyStatus.status.forgotten_events !== 1) throw new Error('Independent policy migration claimed unobserved coverage or lost deletion history.')
+    relay.capture(policyGrant, 'pass')
+    await control({ action: 'resume', expected_revision: policyRecovered.revision, confirm: true }, 0, policyFile, policyEnvironment)
+    const policyDelivered = await command(policyFile, policyEnvironment, [])
+    if (!policyDelivered.capture?.delivery_complete || policyDelivered.capture.pending_events || policyDelivered.capture.forgotten_events < 1) throw new Error('The independently migrated policy did not deliver its selected records.')
+    await inRenderer(window, `
+      await request('GET','/v1/memories/'+${JSON.stringify(memory)},null,404);
+      const results=await request('POST','/v1/recall',{query:${JSON.stringify(policyLaterText)},all_accessible:true,mode:'lexical'});
+      let found=false;for(const hit of results.hits){const value=await request('GET','/v1/memories/'+hit.memory_id);if(value.content.includes(${JSON.stringify(policyLaterText)}))found=true;}
+      if(!found)throw new Error('The new headless policy did not capture its deferred file');
+    `)
+    const policyRetired = await control({ action: 'retire', expected_revision: (await status(policyFile, policyEnvironment)).revision,
+      retirement_token: { env: 'MNEMION_CAPTURE_GATE_ADMIN' }, confirm: true }, 0, policyFile, policyEnvironment)
+    if (policyRetired.state !== 'retired' || policyRetired.enabled) throw new Error('The independent policy device did not retire.')
     const retired = await control({ action: 'retire', expected_revision: (await status(freshFile, freshEnvironment)).revision, retirement_token: { env: 'MNEMION_CAPTURE_GATE_ADMIN' }, confirm: true }, 0, freshFile, freshEnvironment)
     if (retired.state !== 'retired' || retired.enabled) throw new Error('The native independent device did not confirm retirement.')
     await inRenderer(window, `
-      for(const id of ${JSON.stringify([grantId, freshGrant])}){const grant=await request('GET','/v1/capture-grants/'+id);if(grant.active||!grant.revoked_at)throw new Error('Headless recovery left a retired grant active');}
-      await request('DELETE','/v1/keys/'+${JSON.stringify(fixture.keyId)});await request('DELETE','/v1/keys/'+${JSON.stringify(fresh.id)});
+      for(const id of ${JSON.stringify([grantId, freshGrant, policyGrant])}){const grant=await request('GET','/v1/capture-grants/'+id);if(grant.active||!grant.revoked_at)throw new Error('Headless recovery left a retired grant active');}
+      await request('DELETE','/v1/keys/'+${JSON.stringify(fixture.keyId)});await request('DELETE','/v1/keys/'+${JSON.stringify(fresh.id)});await request('DELETE','/v1/keys/'+${JSON.stringify(policyDevice.id)});
       await request('DELETE','/v1/connectors/'+${JSON.stringify(fixture.connectorId)});
       await request('POST','/v1/principals/'+${JSON.stringify(fixture.principalId)}+'/disable');
     `)
     if (JSON.stringify((await call('source.status')).sources.map((item: any) => item.id).sort()) !== JSON.stringify(desktopIds)) throw new Error('The headless runner enrolled itself as a desktop-managed source.')
     relay.check()
     await rm(folder, { recursive: true }); await rm(join(base, stateName), { recursive: true })
-    await rm(configFile); await rm(freshFile); await rm(archiveFile)
+    await rm(configFile); await rm(freshFile); await rm(archiveFile); await rm(policyFile); await rm(policyArchiveFile)
     return { phase: 'capture-headless', nativeHeadlessEngineEntry: true, nativeHeadlessConsentAndKeyGeneration: true,
       nativeHeadlessOfflineWatchRestart: true, nativeHeadlessPauseWithoutConnection: true,
       nativeHeadlessEncryptedBackupAndInspection: true, nativeHeadlessChangedKeyPreservesInbox: true,
       nativeHeadlessMissingInboxRefusesReset: true, nativeHeadlessDeliveryAfterProducerRemoval: true,
       nativeHeadlessNewDeviceRecovery: true, nativeHeadlessRecoveryHonorsLaterForgetting: true,
+      nativeHeadlessPausedDrainWithoutIntake: true, nativeHeadlessReviewedPolicyMigration: true,
+      nativeHeadlessPolicyDeletionHistory: true, nativeHeadlessPolicyResume: true,
       nativeHeadlessFutureCaptureAndRetirement: true, nativeHeadlessIndependentOfDesktopSources: true,
       nativeHeadlessFixtureCleanup: true }
   } finally {

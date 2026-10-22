@@ -1524,17 +1524,88 @@ Discard never reactivates the original grant.
 `final-affected-service-tests.log` records **49 passed** and the disjoint
 `discard-retry.log` records **1 passed**, for **50 affected service cases**.
 `native-guard-corrected-tests.log` records **103 passed** controller/private-agent
-cases. These are source checks. Actual native UI policy migration and the full
-journey on all six installed targets remain unverified. Cross-organization/source
-migration, conversion of existing mirrors and independent headless configuration
-policy transitions remain unfinished; fixed-policy headless recovery proof does
-not close headless policy migration.
+cases. These were source checks. At that checkpoint, actual native UI policy
+migration and the full journey on all six installed targets remained unverified.
+Cross-organization/source migration, mirror conversion and independent headless
+policy transitions were unfinished; the following slice adds the headless
+implementation with its own evidence and remaining gates.
 
 At this 22 October checkpoint, public **4.44.1** had separate actual
 Windows/Hostinger acceptance. Public-patch **4.44.2**, source `3bdb3371`, had been
 dispatched without native or public acceptance yet. Neither release establishes
 L1 acceptance. The broader migration, coverage, retention and resource contracts
 below remain open.
+
+## Headless policy migration and app controls source delta
+
+This **unreleased 22 October 2026 source slice** extends reviewed migration to
+the independent runner. Its `--capture-control` `drain` action requires a paused
+`ready` device, current revision and explicit confirmation. It delivers at most
+four saved pages without producer reads or new intake. The separate receipt
+does not claim a new producer scan or index readiness; normal bounded delivery
+index observations remain available.
+
+Headless `restore` accepts `policy_change: true` only when starting a recovery
+into a new device ID, inbox key and configuration. It uses the settled-archive
+policy copy, keeps the original tenant/connector/source/namespace and verifies
+the approved **current** remote policy and new grant before confirming old-grant
+retirement. Default restore keeps the original policy. A durable recovery record
+retains the policy choice for `finish`; `discard` removes only the unfinished
+replacement after revocation, preserving the original inbox and archive. This
+does not rewrite an enrolled configuration's identity. See the [headless procedure](../service/headless-capture.md#apply-a-reviewed-policy-with-a-new-device-configuration-unreleased).
+
+The [nine new cases](../../service_tests/test_headless_capture_policy.py) passed
+in **27.26 seconds**: actual CLI drain and paused guard, forgotten-lineage
+preservation, refusal of implicit migration, pending archives and stale policies,
+two interrupted-copy points, and discard followed by a fresh retry. The combined
+policy and existing headless group then passed **25 cases in 87.92 seconds**;
+that count includes the nine new cases. The earlier 50 service and 103 controller
+results above retain their original scope.
+
+Studio now offers **Back up this capture inbox** and **Deliver saved queue**
+directly beside policy migration in **Connections → Run on this computer**;
+the existing Setup/offline overview controls remain. The policy preview carries
+forward custom history-entry and database limits. Two earlier local preview
+attempts stopped on fixture selectors aimed at the wrong page and remain recorded
+as fixture failures. A later real app attempt completed policy replacement but
+found its saved **32 MiB** pending allowance had become the **256 MiB** default:
+the form mounted before asynchronous source settings arrived. The source fix
+derives defaults from the saved settings unless the user supplies an explicit
+override. The corrected case preserves **384 MiB RAM, 32 MiB pending, 3,000 history
+entries and 192 MiB database**. The corrected frontend and native builds passed.
+`capture-policy-paired-corrected-inputs.json` binds **568 runtime files**, digest
+`eb4279b5a3550b9282094c7118af6e1870554ec4474ec536c7e47c789910c204`.
+The corrected paired preview passed at **09:51:33 UTC on 22 October**. Its real
+Linux Electron app, helper, PostgreSQL and libsecret completed all **13** policy
+assertions, followed by a separate launch and independent CLI completing all
+**17** headless assertions. Both retained deletion history and the original
+backup, used new protected keys, kept new-selection coverage unobserved until
+resumption, delivered new selected content and cleaned up their fixtures.
+The 720-pixel policy screenshot was visually inspected. The input digest above
+still matched after the run. The proof is retained under
+`2026-10-22-capture-policy-ui/preview.q3raaOgZ/`: `process.receipt.json`,
+`capture-policy.log`, `capture-headless.log` and `native-capture-policy.png`.
+The app log also retains closing-time `local:status` and `local:open` guard
+errors after the passing result. No production memories or paid models were used.
+
+The installed hosting gate now includes `capture-policy` and four additional
+headless assertions for paused drain, reviewed migration, deletion history and
+resumed capture. The desktop phase covers real controls, preserved limits and
+old evidence, new protected keys, unobserved new coverage, forgotten-family
+protection, resumed selection, app/agent agreement and narrow layout. All six
+installed-platform journeys still need their own passing receipts at the final
+source. These source checks do not complete installed headless policy acceptance,
+cross-organization/source migration, mirror conversion or any remaining L1 gate.
+
+Public 4.44.1 acceptance is separate. At this checkpoint, the 4.44.2
+[release run 39753067641](https://github.com/Perseusxrltd/mnemion/actions/runs/39753067641)
+was delayed by GitHub macOS ARM capacity: its cancelled runner was never assigned,
+so that result did not establish a product-code failure. The existing capacity
+automation started attempt 2 as `github-actions[bot]`; the guard prevented a
+duplicate retry. This public hotfix remains separate from the unreleased capture
+source. Current availability follows
+[live release status](https://github.com/Perseusxrltd/mnemion/blob/main/docs/RELEASE_STATUS.md).
+All 65 requirements and L1–L7 remain in scope.
 
 ## Required before L1 can be released
 
@@ -1565,8 +1636,9 @@ below remain open.
   and local controls passed the bounded source checks above; packaged acceptance
   remains open. Configurations without `capture` keep the existing mirror
   protocol. Desktop helper or source-journey proof does not establish headless
-  acceptance; an independent headless configuration policy transition is still
-  unfinished.
+  acceptance. The new independent headless policy-copy path still requires its
+  installed acceptance, including interrupted finish/discard and
+  preservation of original evidence and forgetting decisions.
 - Complete bounded retained-history behavior and L1 acceptance for backpressure,
   retention and aggregate limits, including interrupted enrollment and current
   permission changes. Existing admission caps and the Linux source journey do

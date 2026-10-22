@@ -1,8 +1,9 @@
 # Keep selected conversations after chat logs disappear
 
 **Unreleased implementation.** This guide describes the current development
-source; it is not included in public 4.44.0. Check
-[release status](../RELEASE_STATUS.md) for published availability.
+source. Check
+[live release status](https://github.com/Perseusxrltd/mnemion/blob/main/docs/RELEASE_STATUS.md)
+for published availability.
 For desktop use, both Studio and the workspace server must support retained
 capture; the server advertises `durable_capture: "v1"` in `GET /health/live`.
 This work advances L1 of the [layered librarian](../research/2026-10-20-layered-librarian.md); full L1
@@ -16,8 +17,8 @@ Delivery checks the workspace's current authorization and forgetting decisions.
 For the independent development runner, use the [headless capture guide](headless-capture.md).
 It describes explicit paused enrollment, protected key references, scheduling
 and recovery through `mnemion-connect --capture-control`. Its source checkpoint
-checks passed; packaged acceptance remains open. The Studio controls below and
-stable 4.44 availability remain separate.
+checks passed; packaged acceptance remains open. Studio controls and public
+release acceptance remain separate.
 
 ## Choose retention before enrollment
 
@@ -684,8 +685,12 @@ and Linux Electron export/restart-inspection checks passed at archive checkpoint
 `7aca19e9`; packaged acceptance remains pending. Its
 [archive proof](../research/2026-10-21-durable-capture-implementation.md#portable-inbox-archive-source-delta)
 is separate from the earlier policy, index and stable-release evidence.
-**Sources on this computer** now exposes **Back up this capture inbox** for
-retained sources and a separate **Inspect a capture backup** control.
+**Back up this capture inbox** is available for retained sources in
+**Connections → Run on this computer** and **Sources on this computer**. The
+latter also provides a separate **Inspect a capture backup** control. For a
+policy change, follow the [paused delivery and fresh-backup procedure](desktop-sources.md#apply-a-reviewed-capture-policy-unreleased)
+before migration; ordinary backups can still preserve an undelivered queue.
+The later inline controls have separate acceptance from the archive checkpoint above.
 
 1. Pause the retained source and wait for active scans to finish. Export needs
    the current source settings and access to its OS-protected inbox key.
@@ -734,12 +739,15 @@ controller, operator and migration checks also passed. The
 retains all three earlier failed journeys. Six-platform packaged acceptance and
 full L1 acceptance remain open.
 
-Inspect the original archive with its separate recovery key and retain the
-returned hash. An administrator must approve a new dedicated device key and
+For default device recovery, inspect the original archive with its separate
+recovery key and retain the returned hash. An administrator must approve a new
+dedicated device key and
 grant for the **same** organization, connector and capture source. The namespace,
 capture mode and policy also stay unchanged, including a mode-only policy in an
 older archive. This recovery changes the device authorization and local inbox
 key; it cannot change what evidence was selected or which source owns it.
+For an explicitly reviewed different policy, use the [policy-change procedures](#review-a-capture-policy-change-unreleased)
+below.
 
 In Studio, use the original conversation connection with a current workspace
 administrator session and open **Recover an existing capture inbox**. Choose and
@@ -786,6 +794,23 @@ it preserves the archive and does not reactivate the original grant. An already
 installed source must use ordinary source removal instead. The
 [agent guide](desktop-operator.md#recover-a-capture-device-unreleased) describes
 the inputs and interrupted-operation controls.
+
+### Review a capture policy change (unreleased)
+
+A reviewed policy replacement requires a settled archive, the current approved
+source policy and a new device grant/key. It keeps the original organization,
+source and namespace, receipts and deletion fences. The new copy starts paused
+with its selection coverage unobserved; the original archive preserves earlier
+evidence and coverage. It does not retroactively erase accepted memories or
+convert an existing mirror.
+
+Follow the [Studio procedure](desktop-sources.md#apply-a-reviewed-capture-policy-unreleased)
+and its [private-agent inputs](desktop-operator.md#apply-a-reviewed-capture-policy-unreleased),
+or the independent runner's [new-device policy restore](headless-capture.md#apply-a-reviewed-policy-with-a-new-device-configuration-unreleased).
+These guides define the drain, preview, key, resource and interrupted-recovery
+requirements for each runner. Keep the [current implementation evidence and remaining gates](../research/2026-10-21-durable-capture-implementation.md#headless-policy-migration-and-app-controls-source-delta)
+separate from earlier fixed-policy recovery proof. Actual UI migration, all six
+installed targets and broader organization/source migration remain unaccepted.
 
 ## Manage source defaults and device authorizations (unreleased)
 

@@ -551,9 +551,11 @@ do not complete portable or six-target L1 acceptance.
 
 ## Apply a reviewed capture policy (unreleased)
 
-This additional development batch passed 50 affected service cases and 103
-native controller/private-agent cases. Actual UI migration and all six installed
-targets remain unverified. L1 remains unreleased; consult
+The earlier development checkpoint passed 50 affected service cases and 103
+native controller/private-agent cases. The latest app controls and independent
+headless additions have a [separate validation scope](../research/2026-10-21-durable-capture-implementation.md#headless-policy-migration-and-app-controls-source-delta).
+Actual UI migration and all six installed targets remain unverified. L1 remains
+unreleased; consult
 [live release status](https://github.com/Perseusxrltd/mnemion/blob/main/docs/RELEASE_STATUS.md)
 for current availability. The
 [implementation checkpoint](../research/2026-10-21-durable-capture-implementation.md#reviewed-capture-policy-migration-source-delta)
@@ -586,7 +588,11 @@ does not establish new capture coverage or indexing readiness.
 
 Create and inspect a fresh `source.backup`. An administrator must approve the
 different current policy and a new dedicated device key/grant. Preview that
-policy with the same folder and chosen limits, then call `source.restore` with
+policy with the same folder and chosen limits. Carry `history_limit_events` and
+`database_limit_mib` from the existing custody into both the preview selection
+and the replacement `source.custody`; the app now preserves these custom
+allowances too. Its RAM and pending-content defaults follow the saved source
+unless the operator explicitly overrides them. Then call `source.restore` with
 the inputs above, `policy_change: true` and the original local ID in `replace_id`.
 Keep source/organization/namespace identity; use a new local ID and the new grant
 in `source`. Supply credentials and the recovery key only through private stdin.
@@ -611,5 +617,7 @@ and revoked, with its inbox readable for backup and a fresh reviewed retry using
 a new replacement grant and keys. The archive stays unchanged. A separate source
 case verifies that this retry completes; it does not establish a native UI
 journey. Migration across organizations or source identities, mirror conversion
-and independent headless configuration policy transitions remain unfinished.
-All remaining L1 and six-target gates still apply.
+and the remaining L1 acceptance stay open. Independent headless controls now
+provide a separate [new-device policy restore](headless-capture.md#apply-a-reviewed-policy-with-a-new-device-configuration-unreleased);
+they do not use this desktop pipe or `replace_id`. Their paired Linux app/headless
+source preview passed; six-target installed acceptance remains pending.

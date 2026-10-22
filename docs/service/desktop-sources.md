@@ -237,14 +237,16 @@ instead of leaving an orphaned watcher.
 ## Apply a reviewed capture policy (unreleased)
 
 Development source adds a reviewed policy change for an existing retained source
-on this computer. Source checks passed 50 affected service cases and 103 native
-controller/private-agent cases. The actual app migration journey and all six
-installed targets remain unverified for this batch. L1 remains unreleased; see
+on this computer. The earlier checkpoint passed 50 affected service cases and
+103 native controller/private-agent cases. The current app migration journey and
+all six installed targets remain unverified; the [next source slice](../research/2026-10-21-durable-capture-implementation.md#headless-policy-migration-and-app-controls-source-delta)
+records its separate validation scope. L1 remains unreleased; see
 [live release status](https://github.com/Perseusxrltd/mnemion/blob/main/docs/RELEASE_STATUS.md)
 for current availability.
 
-1. Pause the retained source and wait for its active scan to stop. In **Sources
-   on this computer → Back up this capture inbox**, select **Deliver saved queue**.
+1. Pause the retained source and wait for its active scan to stop. In
+   **Connections → Run on this computer**, open **Back up this capture inbox**
+   and select **Deliver saved queue**.
    Each call handles at most four saved pages under the original policy, without
    reading the producer folder or accepting new content. The device needs its
    protected keys and current workspace authorization. Keep that authorization
@@ -260,8 +262,14 @@ for current availability.
    recovery key and select **Verify recovery archive**. The workspace server must
    support versioned capture policies.
 4. Review the policy, unchanged folder, resource limits and **Preview recovered
-   source** result. Confirm the folder and policy and retirement of the previous
+   source** result. Saved RAM and pending-content allowances supply the defaults
+   unless you explicitly edit them; history-entry and database allowances carry
+   forward too. Confirm the folder and policy and retirement of the previous
    device grant, then select **Apply policy and keep source paused**.
+
+Backup and saved-queue delivery also remain available under **Setup & this
+device → Sources on this computer**, including the local setup screen. A paused
+inbox can be backed up offline; delivery still needs current server access.
 
 The app creates a new dedicated device credential and random OS-sealed inbox key.
 Before replacing the saved source, the helper verifies the new grant, current
@@ -282,10 +290,10 @@ copy. The predecessor stays paused and revoked, with its inbox readable for
 backup and a fresh reviewed retry; its old grant is not reactivated.
 
 See the [private-agent procedure](desktop-operator.md#apply-a-reviewed-capture-policy-unreleased).
-Migration across organizations or source identities, conversion of existing
-mirrors and policy transitions in independent headless configuration remain
-unfinished. This source addition does not establish six-target or full L1
-acceptance.
+The independent runner has a separate [new-device policy procedure](headless-capture.md#apply-a-reviewed-policy-with-a-new-device-configuration-unreleased),
+with a passing Linux source preview and six-target installed acceptance still pending. Migration across organizations or source
+identities and conversion of existing mirrors remain unfinished. These source
+additions do not establish six-target or full L1 acceptance.
 
 ## Local-agent controls
 

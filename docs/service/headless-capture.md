@@ -1,10 +1,12 @@
 # Headless retained conversation capture
 
-**Unreleased development source.** The public 4.44.0 release does not include this
-mode. Use a matching development runner and workspace with
-`durable_capture: "v1"` in `GET /health/live`. The [source checkpoint checks](../research/2026-10-21-durable-capture-implementation.md#headless-retained-capture-source-delta)
+**Unreleased development source.** Use a matching development runner and
+workspace with `durable_capture: "v1"` in `GET /health/live`.
+The [source checkpoint checks](../research/2026-10-21-durable-capture-implementation.md#headless-retained-capture-source-delta)
 passed; all six packaged target journeys remain pending. This guide does not
-close L1 or R07.
+close L1 or R07. Consult
+[live release status](https://github.com/Perseusxrltd/mnemion/blob/main/docs/RELEASE_STATUS.md)
+for current public availability.
 
 An explicit `capture` object makes `mnemion-connect` retain selected conversations
 in an encrypted local inbox before attempting delivery. A configuration without
@@ -45,8 +47,8 @@ Invoke the executable directly and pass arguments separately. `connect` starts
 the independent connector; it does not start Studio or the memory service.
 Send capture controls through private stdin using the same JSON body below,
 with secrets held in protected file or environment references. The new
-entrypoints are not available in the public 4.44.0 engine, and their installed
-journeys have not yet established acceptance on any of the six targets.
+policy-migration journey still requires acceptance on all six installed targets;
+earlier artifacts do not qualify this current source.
 
 ## Prepare the approved source and private files
 
@@ -161,7 +163,7 @@ limits and polling settings do not change the approved capture policy.
 This additional development feature uses the same policy as native source setup
 and hosted administrator review. Focused source, service, controller and migration
 checks and the Linux desktop source preview passed; all six packaged journeys
-remain pending. It is not included in public 4.44.0. For a new enrollment, set
+remain pending. For a new enrollment, set
 `provider.capture_policy` to the exact approved v2 policy, for example:
 
 ```json
@@ -193,6 +195,8 @@ policy again before enrollment and use its matching hash. Changing an existing
 retained inbox's selection requires reviewed migration; copying this example
 over an enrolled configuration does not migrate it. New exclusions do not remove
 previously accepted memories, queued evidence or backups.
+Use the [reviewed policy replacement](#apply-a-reviewed-policy-with-a-new-device-configuration-unreleased)
+for an existing retained source.
 
 ## Administrator policy changes (unreleased)
 
@@ -212,8 +216,10 @@ default into an existing inbox is not a migration. Revocation stops server
 delivery and, when observed locally, future intake; it preserves offline inbox
 evidence. The [policy checkpoint](../research/2026-10-21-durable-capture-implementation.md#capture-policy-versions-source-delta)
 records the separate source, server recovery and browser administration checks.
-They do not complete existing-device selection/organization migration or the
-six packaged journeys. Known inactive authorizations remain
+To adopt the current policy locally, use the separate
+[new-device policy restore](#apply-a-reviewed-policy-with-a-new-device-configuration-unreleased).
+Organization/source migration and the six packaged journeys remain open.
+Known inactive authorizations remain
 observable even after their retired source/connector metadata is hidden, so
 that denial stops later intake without exposing the hidden metadata.
 
@@ -246,10 +252,11 @@ again. Pause does not cancel a scan already holding that lock.
 | `enroll` | `expected_revision`, `preview_hash` | `confirm: true`; verifies current server authority and creates a paused inbox. |
 | `pause` | `expected_revision` | No confirmation field required; works without keys or network. |
 | `resume` | `expected_revision` | `confirm: true`; verifies the existing inbox and current server authority. |
+| `drain` | `expected_revision` | `confirm: true`; a paused `ready` device delivers at most four saved pages, with no producer read or new intake. |
 | `backup` | `expected_revision`, `archive`, `recovery_key` | `confirm: true`; exports a paused initialized inbox locally. |
 | `inspect` | `archive`, `recovery_key` | Authenticates an archive locally without enrolling a source. |
-| `restore` | `expected_revision`, `preview_hash`, `archive`, `archive_sha256`, `recovery_key`, `retirement_token` | `confirm: true`; replaces the old grant and creates a new paused device copy. |
-| `finish` | `expected_revision`, `archive`, `archive_sha256`, `recovery_key` | `confirm: true`; explicitly completes a recorded recovery. |
+| `restore` | `expected_revision`, `preview_hash`, `archive`, `archive_sha256`, `recovery_key`, `retirement_token`; optional `policy_change: true` | `confirm: true`; creates a new paused device copy. Original-policy recovery is the default; an explicit policy change requires a settled archive and the current approved policy. |
+| `finish` | `expected_revision`, `archive`, `archive_sha256`, `recovery_key` | `confirm: true`; completes the recorded recovery with its saved policy choice. Do not supply `policy_change: true` again. |
 | `discard` | `expected_revision`, `retirement_token` | `confirm: true`; revokes and discards an unfinished recovery copy only. |
 | `retire` | `expected_revision`, `retirement_token` | `confirm: true`; retires the grant and disables this source, retaining its inbox. |
 
@@ -381,7 +388,8 @@ and requires `capture_protocol: 1` from the verified runtime preflight. An older
 runtime explicitly refuses retained capture. Mirror configurations keep their
 service-readiness gate. This option selects an existing managed service; it
 does not install a process manager, enroll a source or provide Windows managed
-hosting. Public 4.44.0 is not a capture-aware runtime.
+hosting. Use a runtime that supports this unreleased capture protocol; current
+public availability is tracked by the live release status linked above.
 
 An additional **unreleased Supervisor correction** passes an explicitly configured
 `capture.inbox_key.env` to registered Linux/macOS connector processes. It reads
@@ -519,6 +527,34 @@ configured history allowance (default 100,000 per counter) or 10,000-scope cap. 
 migration checks passed separately from the earlier headless proof; all
 installed-platform, release and full L1 acceptance remain open.
 
+## Drain a paused inbox
+
+Pause using the original configuration, wait for any scan holding its lock to
+finish, then read the current revision. A `ready`, disabled device can settle
+its existing queue without scanning the producer folder:
+
+```json
+{
+  "action": "drain",
+  "expected_revision": "REVISION_FROM_STATUS",
+  "confirm": true
+}
+```
+
+Use the same `--config` and private stdin control command as for `status`.
+Delivery needs the original protected keys and current grant authority. Each
+call handles at most four saved pages, reconciles unknown replies by their exact
+page IDs and applies current deletion fences. Repeat until the returned
+`mnemion-capture-drained-v1` receipt reports `delivery_complete: true`: no pending
+events, unknown pages or unfinished deletion sweep. Zero pending events alone is
+insufficient. The source stays paused and accepts no new records.
+
+The receipt is separate from the latest scan activity. Shared delivery may
+refresh bounded index observations; drain does not claim a new producer scan or
+indexing readiness. Before policy migration, settle the queue under its original
+authorization and then create a fresh backup. A revoked grant cannot be bypassed
+by assigning its pending pages to a different policy.
+
 ## Back up and inspect locally
 
 Generate a separate recovery key into a new protected file:
@@ -553,8 +589,10 @@ bodies; this archive is not a complete workspace or historical transcript.
 ## Recover with a new device grant
 
 Recovery changes the device grant and inbox key while keeping the original
-organization, connector, source, namespace and capture policy. It does not
-migrate selection or create a new origin to bypass forgetting.
+organization, connector, source, namespace and capture policy by default. The
+explicit [policy-change procedure](#apply-a-reviewed-policy-with-a-new-device-configuration-unreleased)
+below can select a different approved policy; neither path creates a new origin
+to bypass forgetting.
 
 1. Inspect the archive and retain its authenticated `archive_sha256`. Keep the
    archive and recovery key available through any interrupted recovery.
@@ -606,7 +644,59 @@ and **keeps** its local inbox and keys. It is not a general erase command. Grant
 retirement does not forget server memories or revoke the API key's ordinary
 principal rights. Use the separate approved operations for those actions.
 
-Source checks do not establish packaged acceptance. Broader identity/policy
-migration, historical coverage, remaining policy capabilities, retained-history and
-backpressure acceptance, and the complete six-platform packaged journey remain
-open under the [L1 requirements](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released).
+## Apply a reviewed policy with a new device configuration (unreleased)
+
+This source addition passed **25 affected headless cases**, including the nine
+new policy cases, and the paired Linux app/headless source preview. All six
+installed targets remain pending. See the [scoped evidence](../research/2026-10-21-durable-capture-implementation.md#headless-policy-migration-and-app-controls-source-delta).
+
+1. Pause and drain the original device until `delivery_complete: true`, then
+   create and inspect a fresh encrypted archive. Preserve the original inbox,
+   configuration, archive and separate recovery key.
+2. Have an administrator approve the different **current** source policy and a
+   new dedicated device key/grant. Keep the original tenant, connector, capture
+   source and namespace. Configure the current approved audience and policy;
+   an old-policy grant or stale source default cannot authorize this transition.
+3. Prepare a separate configuration with a new `capture.id`, new grant and
+   service-credential reference, unused inbox destination and fresh inbox key.
+   Set `provider.capture_policy` and `provider.capture_mode` to the approved policy.
+   Do not overwrite the old configuration's identity or key references.
+4. Run `preview` using the new configuration and retain its hash. Submit the
+   following through that configuration's private stdin control interface:
+
+```json
+{
+  "action": "restore",
+  "policy_change": true,
+  "expected_revision": "not-enrolled",
+  "preview_hash": "HASH_FROM_NEW_CONFIGURATION_PREVIEW",
+  "archive": "/private/backups/settled-capture",
+  "archive_sha256": "HASH_FROM_ARCHIVE_INSPECTION",
+  "recovery_key": {"file": "/private/keys/recovery.key"},
+  "retirement_token": {"file": "/private/keys/retirement.key"},
+  "confirm": true
+}
+```
+
+`policy_change: true` is accepted only when initiating `restore` into an
+unenrolled device. Without it, restore requires the original policy. The new
+policy path refuses pending events or unknown pages, verifies current remote
+policy/grant authority, copied producer prefixes and capacity, then confirms
+retirement of the original grant. Success installs a new `ready`, paused copy.
+Original receipts, checkpoints and deletion fences remain; new-selection
+coverage starts unobserved. Previously accepted content and the original archive
+are not retroactively rewritten or erased.
+
+After an uncertain reply, read the new configuration's status. Its durable
+recovery record retains `policy_change`; use `finish` with that record's fresh
+revision, original archive/hash and recovery-key reference. Do not add the flag
+to `finish` or change the reviewed configuration. To abandon an unfinished copy,
+use `discard` as above. It retires the replacement grant and leaves the original
+inbox and archive intact. The old grant is not reactivated; a fresh reviewed
+retry requires another unused device ID, configuration and inbox key.
+
+The operation creates a new-device copy and keeps the original configuration
+identity. The Linux source preview does not establish packaged acceptance.
+Cross-organization/source migration, conversion of existing mirrors, historical coverage, remaining policy
+capabilities, retained-history and backpressure acceptance, and the complete
+six-platform journey remain open under the [L1 requirements](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released).
