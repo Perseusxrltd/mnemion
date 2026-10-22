@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-22T14:29:17+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-22T14:48:18+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.44.2](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.44.2). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -17,8 +17,8 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | queued | [Run 39795183358](https://github.com/Perseusxrltd/mnemion/actions/runs/39795183358) |
-| desktop\.yml | main | pending | [Run 39795261005](https://github.com/Perseusxrltd/mnemion/actions/runs/39795261005) |
+| ci\.yml | main | success | [Run 39795183358](https://github.com/Perseusxrltd/mnemion/actions/runs/39795183358) |
+| desktop\.yml | main | queued | [Run 39795261005](https://github.com/Perseusxrltd/mnemion/actions/runs/39795261005) |
 | public-updates\.yml | v4\.44\.2 | success | [Run 39762122867](https://github.com/Perseusxrltd/mnemion/actions/runs/39762122867) |
 | release\.yml | release/4\.44\.2 | success | [Run 39753067641](https://github.com/Perseusxrltd/mnemion/actions/runs/39753067641) |
 | verify-artifacts\.yml | main | success | [Run 39761844389](https://github.com/Perseusxrltd/mnemion/actions/runs/39761844389) |
@@ -27,16 +27,12 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 ## Active jobs
 
-[Run 39795183358](https://github.com/Perseusxrltd/mnemion/actions/runs/39795183358): 2/12 jobs completed; 2 succeeded.
+[Run 39795261005](https://github.com/Perseusxrltd/mnemion/actions/runs/39795261005): 5/11 jobs completed; 5 succeeded.
 
-- studio: in\_progress.
-- lint: queued.
-- supervision \(macos-15-intel\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
-- service \(3\.13\): queued.
-- dependency-audit: queued.
-- service \(3\.14\): queued.
-- supervision \(macos-15\): queued.
-- container \(ubuntu-22\.04\): queued.
-- service \(3\.12\): queued.
-- container \(ubuntu-22\.04-arm\): queued.
+- Encrypted files / Windows / arm64: in\_progress.
+- native\_database / Private state / Windows / x64: in\_progress.
+- native\_database / Database / linux / arm64: in\_progress.
+- native\_database / Database / macos / arm64: queued.
+- native\_database / Database / windows / x64: in\_progress.
+- native\_database / Database / macos / x64: in\_progress.
 
