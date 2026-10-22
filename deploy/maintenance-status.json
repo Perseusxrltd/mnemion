@@ -68,12 +68,6 @@
       "updated_at": "2026-10-22T22:21:53Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39855689596",
       "job_details_schema": 2,
-      "job_progress": {
-        "total": 34,
-        "completed": 34,
-        "succeeded": 29,
-        "active": []
-      },
       "failed_jobs": [
         {
           "name": "native / macos-15-intel / x64",
@@ -95,7 +89,13 @@
             "Installed app creates, searches and reopens a real local workspace"
           ]
         }
-      ]
+      ],
+      "job_progress": {
+        "total": 34,
+        "completed": 34,
+        "succeeded": 29,
+        "active": []
+      }
     },
     {
       "id": 39860098559,
@@ -105,13 +105,13 @@
       "source_commit": "70ec58d8dbf4018ee35a9a57bd0a4677ee45cdf1",
       "status": "queued",
       "conclusion": null,
-      "updated_at": "2026-10-22T22:22:21Z",
+      "updated_at": "2026-10-22T22:23:04Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39860098559",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 8,
-        "completed": 4,
-        "succeeded": 3,
+        "total": 13,
+        "completed": 6,
+        "succeeded": 5,
         "active": [
           {
             "id": 120123028319,
@@ -119,7 +119,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
+              "Run python -m pip install pytest cryptography==50.0.2"
             ]
           },
           {
@@ -128,24 +128,43 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Set up job"
+              "Run actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1"
             ]
           },
           {
-            "id": 120123028956,
-            "name": "native / native_database / Private state / Windows / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
+            "id": 120123335463,
+            "name": "native / native_database / Database / linux / arm64",
+            "status": "queued",
+            "runner_assigned": false,
             "steps": []
           },
           {
-            "id": 120123029200,
-            "name": "native / native_database / Private state / Windows / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
-            ]
+            "id": 120123335472,
+            "name": "native / native_database / Database / macos / x64",
+            "status": "queued",
+            "runner_assigned": false,
+            "steps": []
+          },
+          {
+            "id": 120123335474,
+            "name": "native / native_database / Database / windows / x64",
+            "status": "queued",
+            "runner_assigned": false,
+            "steps": []
+          },
+          {
+            "id": 120123335512,
+            "name": "native / native_database / Database / macos / arm64",
+            "status": "queued",
+            "runner_assigned": false,
+            "steps": []
+          },
+          {
+            "id": 120123335585,
+            "name": "native / native_database / Database / linux / x64",
+            "status": "queued",
+            "runner_assigned": false,
+            "steps": []
           }
         ]
       },
@@ -185,5 +204,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39843176416"
     }
   ],
-  "observed_at": "2026-10-22T22:22:27+00:00"
+  "observed_at": "2026-10-22T22:23:07+00:00"
 }
