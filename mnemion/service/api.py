@@ -349,20 +349,20 @@ def create_app(
     @app.exception_handler(RequestValidationError)
     async def invalid_request(request: Request, exc: RequestValidationError):
         from .connector_models import CONNECTOR_PROVIDER_MESSAGE
+        from .validation import route_names
+        from ..validation_fields import safe_fields
 
-        # Validation diagnostics must never echo submitted credentials or source text.
-        fields = [
-            {"field": ".".join(str(part) for part in error["loc"]), "type": error["type"]}
-            for error in exc.errors()
-        ]
+        # Object keys can contain credentials or source text, just like values.
+        errors = exc.errors()
+        fields = safe_fields(errors, route_names(request.scope.get("route")))
         return JSONResponse(
             {
                 "error": {
                     "code": "invalid_request",
                     "message": SCOPE_SELECTION_MESSAGE
-                    if any(error["type"] == "memory_scope" for error in exc.errors())
+                    if any(error["type"] == "memory_scope" for error in errors)
                     else CONNECTOR_PROVIDER_MESSAGE
-                    if any(error["type"] == "connector_provider" for error in exc.errors())
+                    if any(error["type"] == "connector_provider" for error in errors)
                     else "Check the request fields against the API schema.",
                     "fields": fields,
                 },
@@ -823,6 +823,9 @@ def create_app(
 
     studio, _ = resolve_studio() if studio_enabled else (None, "disabled")
     if studio is not None:
+        from .studio_policy import content_security_policy
+
+        studio_policy = content_security_policy()
         app.mount("/assets", StaticFiles(directory=studio / "assets"), name="studio-assets")
 
         @app.get("/", include_in_schema=False)
@@ -834,9 +837,7 @@ def create_app(
             return FileResponse(
                 studio / "index.html",
                 headers={
-                    "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
-                    "img-src 'self' data:; connect-src 'self' https: http://127.0.0.1:* http://localhost:*; "
-                    "object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
+                    "Content-Security-Policy": studio_policy,
                     "Referrer-Policy": "no-referrer",
                 },
             )

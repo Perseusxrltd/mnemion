@@ -239,6 +239,29 @@ from a document title. Provision OAuth/workload credentials with read permission
 for the selected sources. Google access tokens must be refreshed by the operator's
 credential provider. The runner does not implement an interactive OAuth consent UI.
 
+## Provider HTTP and validation diagnostics
+
+**Requires 4.45.1 or later; see [release status](../RELEASE_STATUS.md) for
+available packages.** Each request made through the built-in provider HTTP helper
+has one **60-second default budget** across retries, backoff, connection
+setup and streamed socket reads, including environment-configured proxies.
+A retry does not reset that budget. Existing proxy and certificate-trust settings
+remain supported. OS DNS resolution and filesystem calls cannot be forcibly
+interrupted; their elapsed time is checked when control returns. A scan can make
+several requests, each with its own budget. Expiry reports `provider_unavailable`.
+
+The client requests `Accept-Encoding: identity` and rejects other content
+encodings. Each response keeps its configured byte limit; a chunk that would
+exceed the remaining allowance is rejected before being copied into the response
+buffer. Oversized responses report `provider_response_too_large`.
+
+HTTP, MCP and connector-configuration validation retain documented schema field
+names and fixed error types. Arbitrary submitted property names are replaced
+with `unknown`; diagnostic count, path depth and text length are bounded.
+Use the documented field and error code to inspect the original configuration
+privately; ordinary diagnostics do not echo arbitrary property names or submitted
+values.
+
 ## Git snapshot freshness
 
 From 4.3.2, **Connections → Source status** and

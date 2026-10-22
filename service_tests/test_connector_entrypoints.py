@@ -75,6 +75,28 @@ def test_entrypoint_redacts_invalid_inline_keys(entry, tmp_path, configuration):
     assert marker not in result.stdout + result.stderr
 
 
+def test_entrypoint_bounds_errors_and_redacts_private_property_names(
+    entry, tmp_path, configuration
+):
+    marker = "private-property-" + "confidential-" * 40
+    configuration["service_token"] = "private-inline-token-value"
+    configuration["poll_seconds"] = 0
+    configuration.update({f"{marker}-{number}": "private-value" for number in range(100)})
+    path = tmp_path / "source.json"
+    path.write_text(json.dumps(configuration), encoding="utf-8")
+    result = invoke(entry, path, "--inspect")
+    assert result.returncode == 2
+    assert len(result.stderr.encode()) < 8192
+    assert marker not in result.stdout + result.stderr
+    assert "private-inline-token-value" not in result.stdout + result.stderr
+    assert "private-value" not in result.stdout + result.stderr
+    report = json.loads(result.stderr)
+    assert report["error"] == "invalid_config"
+    assert "poll_seconds" in report["fields"]
+    assert len(report["fields"]) <= 20
+    assert any(hint["field"] == "service_token" for hint in report["hints"])
+
+
 @pytest.mark.parametrize(
     "options,reason",
     [

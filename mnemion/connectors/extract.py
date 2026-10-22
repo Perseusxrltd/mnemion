@@ -5,6 +5,9 @@ import posixpath
 import zipfile
 from xml.etree import ElementTree as ET
 
+from defusedxml.ElementTree import fromstring
+from defusedxml.common import DefusedXmlException
+
 from .providers import ProviderError
 
 
@@ -24,9 +27,12 @@ def spreadsheet(data: bytes) -> str:
 
             def xml(path):
                 raw = archive.read(path)
-                if b"<!DOCTYPE" in raw.upper() or b"<!ENTITY" in raw.upper():
-                    raise ProviderError("spreadsheet_entities_not_allowed")
-                return ET.fromstring(raw)
+                try:
+                    return fromstring(
+                        raw, forbid_dtd=True, forbid_entities=True, forbid_external=True
+                    )
+                except DefusedXmlException:
+                    raise ProviderError("spreadsheet_entities_not_allowed") from None
 
             strings = []
             if "xl/sharedStrings.xml" in archive.namelist():

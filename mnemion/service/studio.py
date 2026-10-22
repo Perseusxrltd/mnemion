@@ -120,6 +120,8 @@ def resolve_studio() -> tuple[Path | None, str]:
 
 
 def studio_status() -> dict:
+    from .studio_policy import configuration
+
     path, source = resolve_studio()
     return {
         "available": path is not None,
@@ -127,6 +129,7 @@ def studio_status() -> dict:
         "version": __version__,
         "path": str(path) if path else None,
         "build_command": "mnemion-service studio build" if source_root() else None,
+        "browser_connections": configuration(),
     }
 
 

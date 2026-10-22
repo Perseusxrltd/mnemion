@@ -20,6 +20,7 @@ from pydantic import ValidationError
 from starlette.responses import JSONResponse
 
 from ..sdk import Client, MnemionError
+from ..validation_fields import safe_fields, schema_names
 from .models import SCOPE_SELECTION_MESSAGE
 from .oauth import OAUTH_SCOPE
 
@@ -508,14 +509,18 @@ class MnemionMCPServer(MCPServer):
                         else None,
                     )
                 if isinstance(cause, ValidationError):
-                    errors = cause.errors()
-                    fields = [
-                        {
-                            "field": ".".join(str(part) for part in row["loc"])[:200],
-                            "type": row["type"],
-                        }
-                        for row in errors[:20]
-                    ]
+                    errors = cause.errors(
+                        include_input=False, include_context=False, include_url=False
+                    )
+                    schema = next(
+                        (
+                            tool.input_schema
+                            for tool in await self.list_tools()
+                            if tool.name == name
+                        ),
+                        {},
+                    )
+                    fields = safe_fields(errors, schema_names(schema))
                     message = (
                         SCOPE_SELECTION_MESSAGE
                         if any(row["type"] == "memory_scope" for row in errors)

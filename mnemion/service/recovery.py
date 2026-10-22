@@ -39,6 +39,56 @@ from .models import json_value
 BACKUP_FORMAT = "mnemion-postgres-backup"
 LEDGER_FORMAT = "mnemion-recovery-ledger"
 
+# Database tools are separate executables. They need platform/library paths,
+# locale and their own libpq/Kerberos configuration, not the service's vault,
+# backup, model-provider or unrelated application credentials.
+PG_PROCESS_ENVIRONMENT = frozenset(
+    {
+        "PATH",
+        "PATHEXT",
+        "SYSTEMROOT",
+        "WINDIR",
+        "COMSPEC",
+        "SYSTEMDRIVE",
+        "HOME",
+        "USERPROFILE",
+        "HOMEDRIVE",
+        "HOMEPATH",
+        "APPDATA",
+        "LOCALAPPDATA",
+        "TEMP",
+        "TMP",
+        "TMPDIR",
+        "LANG",
+        "LANGUAGE",
+        "LC_ALL",
+        "LC_COLLATE",
+        "LC_CTYPE",
+        "LC_MESSAGES",
+        "LC_MONETARY",
+        "LC_NUMERIC",
+        "LC_TIME",
+        "TZ",
+        "LD_LIBRARY_PATH",
+        "DYLD_LIBRARY_PATH",
+        "DYLD_FALLBACK_LIBRARY_PATH",
+        "SSL_CERT_FILE",
+        "SSL_CERT_DIR",
+        "OPENSSL_CONF",
+        "OPENSSL_MODULES",
+        "KRB5_CONFIG",
+        "KRB5CCNAME",
+        "KRB5_KTNAME",
+        "KRB5_CLIENT_KTNAME",
+        "PGSERVICEFILE",
+        "PGSYSCONFDIR",
+        "PGLOCALEDIR",
+        "PGDATESTYLE",
+        "PGTZ",
+        "PGGEQO",
+    }
+)
+
 
 class RecoveryCancelled(RuntimeError):
     pass
@@ -109,10 +159,25 @@ def _pg_environment(dsn: str) -> dict[str, str]:
         "channel_binding": "PGCHANNELBINDING",
         "load_balance_hosts": "PGLOADBALANCEHOSTS",
     }
-    environment = os.environ.copy()
-    for name, value in conninfo_to_dict(dsn).items():
+    # Read the trusted linked libpq's documented environment names as well:
+    # authentication, TLS and protocol controls vary by PostgreSQL version.
+    # An arbitrary PG-prefixed environment variable is not sufficient.
+    connection_environment = {
+        option.envvar.decode("ascii")
+        for option in psycopg.pq.Conninfo.get_defaults()
+        if option.envvar
+    }
+    allowed = PG_PROCESS_ENVIRONMENT | set(options.values()) | connection_environment
+    environment = {name: value for name, value in os.environ.items() if name.upper() in allowed}
+    try:
+        parsed = conninfo_to_dict(dsn)
+    except psycopg.Error:
+        raise ValueError(
+            "Use a valid PostgreSQL connection string for backup or recovery."
+        ) from None
+    for name, value in parsed.items():
         if name not in options:
-            raise ValueError(f"Unsupported backup connection option: {name}")
+            raise ValueError("The backup connection contains an unsupported libpq option.")
         environment[options[name]] = value
     environment.setdefault("PGCONNECT_TIMEOUT", "10")
     return environment

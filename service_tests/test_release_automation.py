@@ -396,6 +396,33 @@ def test_main_integration_checks_actual_source_before_contacting_remote(
     assert not any(args[0] in {"fetch", "rebase", "push", "merge"} for args in calls)
 
 
+def test_main_integration_never_pushes_when_secret_scan_fails(tmp_path, monkeypatch):
+    calls, scans = [], []
+
+    def git(root, *args, check=True):
+        calls.append(args)
+        responses = {
+            ("status", "--porcelain"): "",
+            ("symbolic-ref", "--short", "HEAD"): "codex/reviewed-batch",
+            ("remote", "get-url", "origin"): "https://github.com/Perseusxrltd/mnemion.git",
+        }
+        assert args in responses, "Rejected secret scan must stop before remote Git operations"
+        return SimpleNamespace(stdout=responses[args], returncode=0)
+
+    def run(command, **kwargs):
+        if "deploy.secret_scan" in command:
+            scans.append(command)
+            raise subprocess.CalledProcessError(1, command)
+        return SimpleNamespace(returncode=0)
+
+    monkeypatch.setattr(subject, "_integration_git", git)
+    monkeypatch.setattr(subject.subprocess, "run", run)
+    with pytest.raises(subprocess.CalledProcessError):
+        subject.integrate(tmp_path, "Perseusxrltd/mnemion")
+    assert len(scans) == 1
+    assert not any(args[0] in {"fetch", "rebase", "push", "merge"} for args in calls)
+
+
 def test_main_integration_refuses_missing_reviewed_release_docs_before_remote(
     tmp_path, monkeypatch
 ):

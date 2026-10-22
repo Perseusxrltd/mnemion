@@ -118,6 +118,43 @@ remain necessary. Inspect the resource and ingestion views before increasing
 parallel indexing or evaluation work. Client hardware does not need these server
 resources when connecting to a separately hosted service.
 
+## Optional browser connection policy
+
+**Requires 4.45.1 or later; see [release status](../RELEASE_STATUS.md) for
+available packages.** `MNEMION_STUDIO_CONNECT_ORIGINS` controls the connections
+permitted by hosted Studio's browser Content Security Policy.
+Leave it unset to preserve the existing multi-workspace policy. Set it to a JSON
+array of at most **16 exact HTTPS or loopback HTTP origins** for a restricted
+policy. `[]` permits only the origin serving Studio. Same-origin scripts, assets,
+consent and API requests remain available.
+
+Configure the actual API/Studio service environment alongside settings such as
+`MNEMION_PUBLIC_URL` and `MNEMION_CORS_ORIGINS`, then use the service's normal
+restart procedure. A container or service definition must pass the variable to
+that process. For example, its JSON value can be:
+
+```json
+["https://other-workspace.example.com", "http://127.0.0.1:7893"]
+```
+
+For [Supervisor deployments](supervision.md#prepare-a-private-instance), the
+existing private `--environment /private/runtime.json` configuration accepts this
+setting as a string containing the JSON-array text. For example,
+`{"MNEMION_STUDIO_CONNECT_ORIGINS":"[]"}` selects same-origin only. Apply it through
+the documented service preparation and restart flow.
+
+List each additional workspace or localhost bridge origin needed by the browser,
+including its exact port. Wildcards, embedded credentials, paths beyond `/`,
+query strings, fragments and non-loopback HTTP origins are rejected with a fixed
+diagnostic. Invalid configuration does not fall back to the broader policy.
+
+Run `mnemion-service studio status` in the same configured service environment.
+`browser_connections.profile` reports `multi_workspace` or `restricted`, and
+`browser_connections.origins` lists the configured additional origins; same-origin
+access is implicit. Authentication and source permissions still govern service
+access. This browser policy does not act as a firewall for native desktop
+connections to a workspace.
+
 ## Routine backup and recovery rehearsal
 
 Run one operator at a time. Commands after `operator --` are passed verbatim to

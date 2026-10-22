@@ -20,6 +20,21 @@ out of the API and worker processes. Install PostgreSQL's `pg_dump` and `pg_rest
 from the same major version as the server or a compatible newer client; use
 `--pg-bin /path/to/postgresql/bin` when they are not on PATH.
 
+**Subprocess environment controls require 4.45.1 or later; see
+[release status](../RELEASE_STATUS.md) for available packages.** PostgreSQL
+backup/restore tools receive only selected platform paths, locale, TLS/Kerberos
+settings and supported libpq environment options, including the linked library's
+documented authentication and TLS settings. Database connection, SSL/certificate, service and passfile
+settings remain supported, including `PGSSLMODE`, `PGSSLROOTCERT`, `PGSSLCERT`,
+`PGSSLKEY`, `PGPASSFILE` and `PGSERVICEFILE`. Connection-string options override
+the corresponding inherited settings; unsupported connection-string options are
+rejected.
+Unrelated application, provider, vault and backup credential variables are not
+forwarded to `pg_dump` or `pg_restore`; an arbitrary `PG` prefix does not permit an
+environment variable. Database credentials remain in the child
+environment, outside command arguments and ordinary diagnostics. Keep using the
+existing protected connection/passfile configuration and `--pg-bin` selection.
+
 New snapshots retain the source database timezone so calendar-day constraints
 remain valid when restoring across hosts and daylight-saving boundaries. For
 older service archives without this metadata, use the original timezone in the

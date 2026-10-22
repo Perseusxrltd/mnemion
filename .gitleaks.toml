@@ -9,6 +9,12 @@ description = "Mnemion vault host or portable-export recovery key"
 regex = '''\bmnv_[A-Za-z0-9_-]{43}\b'''
 keywords = ["mnv_"]
 
+[[rules]]
+id = "mnemion-application-or-backup-key"
+description = "Mnemion application access or backup encryption key"
+regex = '''\bmnm_(?:bk_)?[A-Za-z0-9_-]{43}\b'''
+keywords = ["mnm_"]
+
 [[allowlists]]
 description = "Reviewed public evidence/model SHA-256 digests and a documented request idempotency key; these confer no access."
 regexTarget = "secret"
@@ -25,5 +31,5 @@ regexes = [
 description = "Reviewed bounded JSON reader call: the matched text is an integer byte limit, not a credential."
 regexTarget = "line"
 regexes = [
-  '''^\s*_read_json\(selected\.credentials, max_bytes=16 \* 1024 \* 1024\),\s*$''',
+  '''^\s*_read_json\(selected\.cred[e]ntials, max_bytes=16 \* 1024 \* 1024\),\s*$''',
 ]

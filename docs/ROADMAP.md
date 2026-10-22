@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.45.0**.
+Reviewed source distribution: **4.45.1**.
 Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-22**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
@@ -24,6 +24,14 @@ issue review, publication and version-linked closure together.
 These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
+
+- **4.45.1 hardening source — 22 October 2026.** The combined
+  [hotfix](releases/4.45.1.md) improves provider deadlines and byte handling,
+  recovery subprocess isolation, private validation diagnostics and spreadsheet
+  policy consistency. It adds required source/distribution secret scans and an
+  optional company browser connection policy. [Focused acceptance](validation/2026-10-22-provider-recovery-hardening.md)
+  passed within its stated scope; native, public and actual-update gates remain
+  separate. All 65 requirement states and open #44/#45 remain unchanged.
 
 - **4.45.0 public updates and actual acceptance — 22 October 2026.** All six
   [public installed-update targets](https://github.com/Perseusxrltd/mnemion/actions/runs/39843181077)

@@ -150,6 +150,18 @@ def check_source(root: Path) -> None:
     for check in (["format", "--check", "."], ["check", "."]):
         subprocess.run([sys.executable, "-m", "ruff", *check], cwd=root, check=True)
     subprocess.run([sys.executable, "deploy/release.py"], cwd=root, check=True)
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "deploy.secret_scan",
+            "--source",
+            "--output",
+            "output/pre-push-secret-scan.json",
+        ],
+        cwd=root,
+        check=True,
+    )
 
 
 def integrate(root: Path, repo: str) -> dict:

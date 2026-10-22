@@ -40,6 +40,30 @@ def test_packaged_studio_serves_routes_and_assets_but_never_private_api(env, tmp
         assert client.get("/health/ready").status_code == 200
 
 
+def test_company_studio_connection_policy_applies_to_all_entry_routes(env, tmp_path, monkeypatch):
+    package = installed(monkeypatch, tmp_path)
+    make_bundle(package / "_studio")
+    monkeypatch.setenv("MNEMION_STUDIO_CONNECT_ORIGINS", '["https://memory.example"]')
+    status = studio.studio_status()["browser_connections"]
+    assert status == {"profile": "restricted", "origins": ["https://memory.example"]}
+    with TestClient(create_app(env.db, env.embedder)) as client:
+        for route in ("/", "/workspace", "/workspace/help", "/help", "/oauth/consent"):
+            page = client.get(route)
+            assert page.status_code == 200
+            assert (
+                "connect-src 'self' https://memory.example;"
+                in page.headers["Content-Security-Policy"]
+            )
+            assert "https:" not in page.headers["Content-Security-Policy"].replace(
+                "https://memory.example", ""
+            )
+        assert client.get("/assets/app.js").status_code == 200
+        assert client.get("/v1/me").status_code == 401
+    monkeypatch.setenv("MNEMION_STUDIO_CONNECT_ORIGINS", '["https://*.example"]')
+    with pytest.raises(ValueError, match="JSON list"):
+        create_app(env.db, env.embedder)
+
+
 def test_unbuilt_source_cli_explains_how_to_enable_studio_without_database(
     monkeypatch, tmp_path, capsys
 ):

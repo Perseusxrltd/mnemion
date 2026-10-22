@@ -1,6 +1,7 @@
 import { existsSync, statSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { spawnSync } from 'node:child_process'
 import { verifyBranding } from '../../branding/verify.mjs'
 import { verifyNativeResources } from './native-resources.mjs'
 
@@ -44,4 +45,9 @@ if (missing.length > 0) {
 
 verifyBranding(join(root, 'studio', 'frontend', 'dist-desktop'))
 verifyNativeResources(join(root, 'build-tmp/native-resources'))
+const python = process.env.MNEMION_BUILD_PYTHON || resolve(root, 'studio/client/.venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python')
+const scan = spawnSync(python, ['-m', 'deploy.secret_scan', '--paths',
+  resolve(root, 'studio/electron/dist'), resolve(root, 'studio/frontend/dist-desktop'),
+  '--output', resolve(root, 'output/desktop-secret-scan.json')], { cwd: root, stdio: 'inherit' })
+if (scan.status !== 0) process.exit(scan.status || 1)
 console.log('Packaged resources and Mnemion brand assets verified.')

@@ -39,6 +39,15 @@ jobs:
       - run: ruff check .
       - run: ruff format --check .
       - run: python deploy/release.py
+      - name: Enforce source secret scanning for both fresh and reused Product checks
+        run: python -m deploy.secret_scan --source --output output/release-source-secret-scan.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: preflight-secret-scan
+          path: output/release-source-secret-scan.json
+          if-no-files-found: error
+          retention-days: 7
       - name: Check binary dependency availability before native builds
         run: python -m deploy.binary_preflight
       - run: git ls-files -z '*.sh' | xargs -0 -r -n 1 bash -n

@@ -19,7 +19,7 @@ from ..sdk import Client, MnemionError
 from ..version import __version__
 from .capture_errors import InboxError
 from .capture_scheduling import BACKFILL_POLL_SECONDS, backfill_pending
-from .config import read_config
+from .config import ConnectorConfig, read_config
 from .protocol import ConnectorClient, SkippedDocument
 from .live_conversations import ConversationProvider
 from .journal_projection import project_documents
@@ -526,12 +526,16 @@ def execute(args, parser) -> int:
             backfill = config.capture is not None and backfill_pending(report)
             code = 0 if report["completed"] and report.get("control_reported") is not False else 2
         except ValidationError as exc:
-            # Pydantic repr may include submitted token-shaped values. Report
-            # locations only, never raw configuration or provider diagnostics.
+            from ..validation_fields import safe_fields, schema_names
+
+            # Property names can contain credentials too. Only documented
+            # configuration locations belong in ordinary diagnostics.
+            errors = exc.errors(include_input=False, include_context=False, include_url=False)
+            fields = safe_fields(errors, schema_names(ConnectorConfig.model_json_schema()))
             credential_fields = sorted(
                 {
                     "service_token" if error["loc"][0] == "service_token" else "provider.token"
-                    for error in exc.errors()
+                    for error in errors
                     if error["loc"]
                     and (
                         error["loc"][0] == "service_token"
@@ -545,7 +549,7 @@ def execute(args, parser) -> int:
                     {
                         "error": "invalid_config",
                         "timestamp": datetime.now(timezone.utc).isoformat(),
-                        "fields": [".".join(map(str, error["loc"])) for error in exc.errors()],
+                        "fields": [field["field"] for field in fields],
                         "hints": [
                             {
                                 "field": field,

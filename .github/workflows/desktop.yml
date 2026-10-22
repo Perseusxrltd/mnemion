@@ -198,6 +198,14 @@ jobs:
       - run: npm --prefix studio/electron test
       - name: Package the native desktop with one bounded upstream-download retry
         run: python -m deploy.build_desktop
+      - name: Retain generated desktop-content secret scan receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: desktop-secret-scan-${{ matrix.platform }}-${{ matrix.arch }}
+          path: output/desktop-secret-scan.json
+          if-no-files-found: error
+          retention-days: 7
       - name: Installed app creates, searches and reopens a real local workspace
         if: runner.os != 'Linux'
         run: npm --prefix studio/electron run smoke:installed-hosting

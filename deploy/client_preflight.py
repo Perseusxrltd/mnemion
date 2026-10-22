@@ -36,6 +36,9 @@ def check(root: Path, uv: str | None = None) -> dict:
     inputs = {
         *root.joinpath("client_tests").rglob("*.py"),
         *root.joinpath("mnemion").rglob("*.py"),
+        *root.joinpath("deploy").rglob("*.py"),
+        *root.joinpath(".github/workflows").glob("*.yml"),
+        root / ".gitleaks.toml",
         root / "pyproject.toml",
         root / "studio/client/pyproject.toml",
         root / "studio/client/uv.lock",
