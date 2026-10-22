@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-22T17:31:49+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-22T17:37:32+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.44.2](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.44.2). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -23,7 +23,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | public-updates\.yml | v4\.44\.2 | success | [Run 39762122867](https://github.com/Perseusxrltd/mnemion/actions/runs/39762122867) |
 | release\.yml | release/4\.44\.2 | success | [Run 39753067641](https://github.com/Perseusxrltd/mnemion/actions/runs/39753067641) |
 | verify-artifacts\.yml | main | success | [Run 39761844389](https://github.com/Perseusxrltd/mnemion/actions/runs/39761844389) |
-| website-release\.yml | main | success | [Run 39822578689](https://github.com/Perseusxrltd/mnemion/actions/runs/39822578689) |
+| website-release\.yml | main | success | [Run 39824196428](https://github.com/Perseusxrltd/mnemion/actions/runs/39824196428) |
 | website-release\.yml | v4\.44\.2 | success | [Run 39762118327](https://github.com/Perseusxrltd/mnemion/actions/runs/39762118327) |
 
 ## Active jobs
@@ -38,5 +38,5 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 [Run 39814732365](https://github.com/Perseusxrltd/mnemion/actions/runs/39814732365): 17/18 jobs completed; 17 succeeded.
 
-- windows-11-arm / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
+- windows-11-arm / arm64: in\_progress — Native Windows installation, authenticated upgrade and relaunch.
 

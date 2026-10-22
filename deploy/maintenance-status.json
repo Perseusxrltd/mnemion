@@ -120,7 +120,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Installed app creates, searches and reopens a real local workspace"
+              "Native Windows installation, authenticated upgrade and relaunch"
             ]
           }
         ]
@@ -161,15 +161,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39761844389"
     },
     {
-      "id": 39822578689,
+      "id": 39824196428,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "3881796bf97605fb3ec73eed61939ce35d89845b",
+      "source_commit": "7598868442f4bbc437170e409d264c0478ac1214",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-22T17:25:56Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39822578689"
+      "updated_at": "2026-10-22T17:36:54Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39824196428"
     },
     {
       "id": 39762118327,
@@ -183,5 +183,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39762118327"
     }
   ],
-  "observed_at": "2026-10-22T17:31:49+00:00"
+  "observed_at": "2026-10-22T17:37:32+00:00"
 }
