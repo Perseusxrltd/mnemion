@@ -30,37 +30,10 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "e23ce161de9ec799ca98968ce98892dae094b678",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-22T09:21:05Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39754044036",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 12,
-        "completed": 10,
-        "succeeded": 10,
-        "active": [
-          {
-            "id": 119741504862,
-            "name": "service (3.12)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 119741504884,
-            "name": "service (3.13)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-22T09:47:27Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39754044036"
     },
     {
       "id": 39755197344,
@@ -103,21 +76,66 @@
       "source_commit": "3bdb3371ccd31bcf095d2e25a4b7d8263260b735",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-22T09:36:04Z",
+      "updated_at": "2026-10-22T09:41:03Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39753067641",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 26,
-        "completed": 25,
-        "succeeded": 24,
+        "total": 32,
+        "completed": 26,
+        "succeeded": 25,
         "active": [
           {
-            "id": 119750282172,
-            "name": "native / native_database / Database / Windows ARM host / x64 engine",
+            "id": 119750717931,
+            "name": "native / ubuntu-22.04 / x64",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Verify the actual x64 engine under Windows ARM emulation"
+              "Installed Linux app creates, searches and reopens a real local workspace"
+            ]
+          },
+          {
+            "id": 119750717947,
+            "name": "native / macos-15 / arm64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Installed app creates, searches and reopens a real local workspace"
+            ]
+          },
+          {
+            "id": 119750717996,
+            "name": "native / macos-15-intel / x64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Package the native desktop with one bounded upstream-download retry"
+            ]
+          },
+          {
+            "id": 119750718107,
+            "name": "native / windows-11-arm / arm64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Installed app creates, searches and reopens a real local workspace"
+            ]
+          },
+          {
+            "id": 119750718184,
+            "name": "native / windows-2022 / x64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Installed app creates, searches and reopens a real local workspace"
+            ]
+          },
+          {
+            "id": 119750718188,
+            "name": "native / ubuntu-22.04-arm / arm64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Installed Linux app creates, searches and reopens a real local workspace"
             ]
           }
         ]
@@ -158,5 +176,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39648042222"
     }
   ],
-  "observed_at": "2026-10-22T09:36:38+00:00"
+  "observed_at": "2026-10-22T09:48:13+00:00"
 }

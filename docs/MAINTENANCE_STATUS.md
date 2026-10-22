@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-22T09:36:38+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-22T09:48:13+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.44.1](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.44.1). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -17,7 +17,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | in\_progress | [Run 39754044036](https://github.com/Perseusxrltd/mnemion/actions/runs/39754044036) |
+| ci\.yml | main | success | [Run 39754044036](https://github.com/Perseusxrltd/mnemion/actions/runs/39754044036) |
 | database-cache\.yml | main | success | [Run 39755197344](https://github.com/Perseusxrltd/mnemion/actions/runs/39755197344) |
 | public-updates\.yml | v4\.44\.1 | success | [Run 39648047355](https://github.com/Perseusxrltd/mnemion/actions/runs/39648047355) |
 | release\.yml | release/4\.44\.1-r2 | success | [Run 39637945958](https://github.com/Perseusxrltd/mnemion/actions/runs/39637945958) |
@@ -28,12 +28,12 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 ## Active jobs
 
-[Run 39754044036](https://github.com/Perseusxrltd/mnemion/actions/runs/39754044036): 10/12 jobs completed; 10 succeeded.
+[Run 39753067641](https://github.com/Perseusxrltd/mnemion/actions/runs/39753067641): 26/32 jobs completed; 25 succeeded.
 
-- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-
-[Run 39753067641](https://github.com/Perseusxrltd/mnemion/actions/runs/39753067641): 25/26 jobs completed; 24 succeeded.
-
-- native / native\_database / Database / Windows ARM host / x64 engine: in\_progress — Verify the actual x64 engine under Windows ARM emulation.
+- native / ubuntu-22\.04 / x64: in\_progress — Installed Linux app creates, searches and reopens a real local workspace.
+- native / macos-15 / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
+- native / macos-15-intel / x64: in\_progress — Package the native desktop with one bounded upstream-download retry.
+- native / windows-11-arm / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
+- native / windows-2022 / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
+- native / ubuntu-22\.04-arm / arm64: in\_progress — Installed Linux app creates, searches and reopens a real local workspace.
 
