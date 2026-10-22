@@ -63,11 +63,47 @@ installed-hosting script syntax check and `git diff --check` also passed. An
 initial build caught a missing imported type; it was corrected before the passing
 build and tests, and the original initial log remains preserved privately.
 
-The other five native jobs were **still running** at the recorded failure
-checkpoint. These bounded source results do not establish the cause of the
-original failure, corrected Mac qualification, publication or actual updates.
-The source acceptances above retain their stated scope. Current outcomes come
-from [release status](../RELEASE_STATUS.md).
+The other five native jobs were **still running** at the initial Mac ARM failure
+checkpoint. The original release run subsequently ended in **failure at
+22:21:53 UTC on 22 October 2026**; Windows ARM had also completed.
+
+[Mac Intel job 120095732809](https://github.com/Perseusxrltd/mnemion/actions/runs/39855689596/job/120095732809)
+ended with GitHub's `cancelled` conclusion because it exceeded the **60-minute
+job limit**. Its own failure annotation states: “The job has exceeded the maximum
+execution time of 1h0m0s.” The log progressed beyond `backup-resume` to
+`capture-headless` before that timeout.
+
+| Mac Intel timing, 22 October 2026 | Recorded UTC evidence |
+| --- | --- |
+| Job start | Runner log begins at **21:19:48**; the job API separately records `started_at` as **21:20:27**. |
+| Installed-hosting step start | **21:39:33**. |
+| Last completed phase, inferred from progression | `capture-boundaries-resume` began at **22:09:36** and advanced to the next marker by **22:18:23**. There is no explicit per-phase completion receipt or exact completion timestamp. |
+| Phase outstanding at timeout | `capture-headless`, entered at **22:18:23**. |
+| Timeout cancellation | **22:20:06**; the job API records terminal completion at **22:20:55**. |
+
+The hosting-evidence upload then reported that no receipt file existed, so it
+uploaded no installed-hosting artifact. The terminal job metadata, log and
+annotations are preserved privately. This identifies the cancellation trigger;
+it does not explain the duration or the original Mac ARM engine stop. Progress
+markers do not constitute completed native acceptance.
+
+[Main Product CI 39859826761](https://github.com/Perseusxrltd/mnemion/actions/runs/39859826761)
+passed. Revised immutable branch `release/4.45.1-r2`, source
+[`70ec58d8dbf4018ee35a9a57bd0a4677ee45cdf1`](https://github.com/Perseusxrltd/mnemion/commit/70ec58d8dbf4018ee35a9a57bd0a4677ee45cdf1),
+started [release run 39860098559](https://github.com/Perseusxrltd/mnemion/actions/runs/39860098559)
+after queueing and remained in progress at this checkpoint. The diagnostic
+revision improves exit evidence; corrected Mac qualification, publication and
+actual updates still require their own receipts. The source acceptances above
+retain their stated scope. Current outcomes come from
+[release status](../RELEASE_STATUS.md).
+
+A separate source correction prepares a **90-minute** total job budget for
+Intel Mac in future runs, replacing its 60-minute allowance. Windows ARM remains
+at **75 minutes**, and the other native targets remain at **60 minutes**. Every
+individual probe deadline and required observation is unchanged. This correction
+is **outside the active immutable r2**, which still gives Intel Mac 60 minutes.
+It addresses the observed job-limit cancellation; it neither explains nor
+qualifies a fix for the original Mac ARM engine stop.
 
 Frozen native builds, signed uploaded artifacts, public installed-update checks,
 website synchronization and the next real Windows/shared-host acceptance remain

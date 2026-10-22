@@ -117,9 +117,10 @@ jobs:
     if: ${{ !cancelled() && needs.targets.result == 'success' && needs.native_database.result == 'success' && (needs.windows_engine.result == 'success' || needs.windows_engine.result == 'skipped') && (needs.windows_backup_metadata.result == 'success' || needs.windows_backup_metadata.result == 'skipped') }}
     name: ${{ matrix.os }} / ${{ matrix.arch }}
     runs-on: ${{ matrix.os }}
-    # ARM Windows runs the service engine under x64 emulation. Allow the full
-    # installed journey and runner variation; individual probe deadlines stay bounded.
-    timeout-minutes: ${{ matrix.os == 'windows-11-arm' && 75 || 60 }}
+    # Intel Mac's complete installed journey can outlast 60 minutes including
+    # packaging. ARM Windows also runs the engine under x64 emulation. Retain
+    # every required observation and each probe's own bounded deadline.
+    timeout-minutes: ${{ matrix.os == 'macos-15-intel' && 90 || matrix.os == 'windows-11-arm' && 75 || 60 }}
     strategy:
       fail-fast: false
       matrix:
