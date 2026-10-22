@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-22T23:06:14+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-22T23:34:18+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.45.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.45.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -21,17 +21,16 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | public-updates\.yml | v4\.45\.0 | success | [Run 39843181077](https://github.com/Perseusxrltd/mnemion/actions/runs/39843181077) |
 | release\.yml | release/4\.45\.0 | success | [Run 39829833717](https://github.com/Perseusxrltd/mnemion/actions/runs/39829833717) |
 | release\.yml | release/4\.45\.1 | failure | [Run 39855689596](https://github.com/Perseusxrltd/mnemion/actions/runs/39855689596) |
-| release\.yml | release/4\.45\.1-r2 | in\_progress | [Run 39860098559](https://github.com/Perseusxrltd/mnemion/actions/runs/39860098559) |
-| verify-artifacts\.yml | main | skipped | [Run 39864403901](https://github.com/Perseusxrltd/mnemion/actions/runs/39864403901) |
+| release\.yml | release/4\.45\.1-r2 | success | [Run 39860098559](https://github.com/Perseusxrltd/mnemion/actions/runs/39860098559) |
+| verify-artifacts\.yml | main | in\_progress | [Run 39872601355](https://github.com/Perseusxrltd/mnemion/actions/runs/39872601355) |
 | website-release\.yml | main | success | [Run 39865654359](https://github.com/Perseusxrltd/mnemion/actions/runs/39865654359) |
 | website-release\.yml | v4\.45\.0 | success | [Run 39843176416](https://github.com/Perseusxrltd/mnemion/actions/runs/39843176416) |
 
 ## Active jobs
 
-[Run 39860098559](https://github.com/Perseusxrltd/mnemion/actions/runs/39860098559): 19/21 jobs completed; 18 succeeded.
+[Run 39872601355](https://github.com/Perseusxrltd/mnemion/actions/runs/39872601355): 0/1 jobs completed; 0 succeeded.
 
-- native / macos-15-intel / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
-- native / windows-11-arm / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
+- verify: in\_progress — Verify every uploaded byte, production signature and complete feed.
 
 
 ## Unsuccessful jobs
