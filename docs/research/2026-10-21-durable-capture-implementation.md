@@ -3,7 +3,9 @@
 **4.45.0 release candidate.** The first local-source journey for
 [L1 of the layered librarian](2026-10-20-layered-librarian.md) has completed its
 [implementation acceptance](../validation/2026-10-22-l1-candidate-acceptance.md).
-Final release and actual-deployment acceptance remain separate. Existing sources
+The final versioned installers subsequently passed their
+[six-target native qualification](../validation/2026-10-22-l1-release-native-acceptance.md)
+at **19:27 UTC on 22 October**. Publication and actual-deployment acceptance remain separate. Existing sources
 keep their mirror behavior. All [65 product requirements](../PRODUCT_REQUIREMENTS.md),
 broader provider capture and L1–L7 remain in scope; this does not complete R07. The current
 [app and agent guide](../service/durable-capture.md) describes the implemented
@@ -13,12 +15,14 @@ enrollment, prefix/queue observations, limits, removal and recovery boundaries.
 
 Current public availability is recorded in
 [live release status](https://github.com/Perseusxrltd/mnemion/blob/main/docs/RELEASE_STATUS.md).
-The first L1 local-source journey is qualified for release preparation. Public
-patch releases and the final 4.45.0 release gates remain separate work.
+The first L1 local-source journey and final **4.45.0** installed artifacts are
+qualified within their recorded scope. Public artifact/feed verification and
+actual-deployment acceptance remain separate gates.
 
 | Artifacts | Frozen source and native run | Current evidence |
 | --- | --- | --- |
-| Current Windows, macOS and Linux, x64 and arm64 | `d3587263` · [39814732365](https://github.com/Perseusxrltd/mnemion/actions/runs/39814732365) | All 18 jobs passed. All six installed artifacts passed their 59 required receipt fields, after seven capture phases with 96 assertions per target. Exact-source and archive-digest qualification completed at 17:42:57 UTC on 22 October; see the [acceptance record](../validation/2026-10-22-l1-candidate-acceptance.md). |
+| Final 4.45.0 Windows, macOS and Linux, x64 and arm64 | `d8083b06` · [39829833717](https://github.com/Perseusxrltd/mnemion/actions/runs/39829833717) | All six installed artifacts qualified their 59 required receipt fields at 19:27:34 UTC on 22 October; see the [frozen native acceptance](../validation/2026-10-22-l1-release-native-acceptance.md). Separate Windows/macOS packaged update steps passed. Publication, public feeds and the actual paired migration are not established by this receipt. |
+| Candidate snapshot: Windows, macOS and Linux, x64 and arm64 | `d3587263` · [39814732365](https://github.com/Perseusxrltd/mnemion/actions/runs/39814732365) | All 18 jobs passed. All six installed artifacts passed their 59 required receipt fields, after seven capture phases with 96 assertions per target. Exact-source and archive-digest qualification completed at 17:42:57 UTC on 22 October; see the [acceptance record](../validation/2026-10-22-l1-candidate-acceptance.md). |
 | Previous Windows, macOS and Linux, x64 and arm64 | `38eb3021` · [39795261005, attempt 2](https://github.com/Perseusxrltd/mnemion/actions/runs/39795261005/attempts/2) | Both Linux targets and Intel macOS passed. Both Windows targets failed the policy path comparison; Apple Silicon again never acquired a runner. The [corrected comparison](../validation/2026-10-22-native-policy-path.md) requires its own installed qualification. Attempt 1's hosted-runner capacity failure and the single retry of unfinished jobs remain preserved. |
 | Linux x64/arm64 and Windows x64/arm64 | `9095372a` · [39613577682](https://github.com/Perseusxrltd/mnemion/actions/runs/39613577682) | All 58 required true fields qualify for each of these four artifacts. |
 | macOS x64 | `64326de1` · [39628117517](https://github.com/Perseusxrltd/mnemion/actions/runs/39628117517) | Installed hosting passed. All 59 required true fields qualify for this artifact. |
@@ -26,9 +30,10 @@ patch releases and the final 4.45.0 release gates remain separate work.
 
 The [receipt update](#native-matrix-checkpoint) and
 [startup-drain checkpoint](#source-startup-drain-correction) bind these artifacts
-to three different frozen sources. The current six-target qualification is bound
-to `d3587263`; it does not relabel earlier results or qualify the final versioned
-release. The source checkpoints below preserve earlier failures and their
+to three different frozen sources. The candidate six-target qualification at
+**17:42:57 UTC on 22 October** remains bound to `d3587263`. The final versioned
+native qualification is separately bound to `d8083b06`; it does not relabel the
+earlier results. The source checkpoints below preserve earlier failures and their
 contemporaneous validation state. Current acceptance and continuing scope are
 recorded at the end of this document.
 
@@ -1757,8 +1762,9 @@ another CI matrix on the same inexpensive documentation failure.
 The original first-source milestone has completed its
 [candidate implementation acceptance](../validation/2026-10-22-l1-candidate-acceptance.md).
 The checklist below records the outcome of each previously open gate rather than
-removing its contract. Final 4.45.0 release, public-update and actual-deployment
-acceptance remain separate.
+removing its contract. The final versioned **4.45.0** installers also passed
+their [native qualification](../validation/2026-10-22-l1-release-native-acceptance.md).
+Public artifact/feed verification and actual-deployment acceptance remain separate.
 
 - **Coverage, gaps and indexing qualified:** encrypted prefix and queue accounting,
   selected/omitted/unsupported records, unknown history and separate index
@@ -1787,9 +1793,10 @@ acceptance remain separate.
   limits remain explicit; larger histories, cross-device coordination and
   representative fleet performance require their own acceptance.
 - **Six-target installed journey qualified:** Windows, macOS and Linux, each x64
-  and arm64, passed on frozen source `d3587263`. The original failed attempts are
-  preserved. These development artifacts do not replace the final 4.45.0 release's
-  exact-source, signature, public-feed and installation gates.
+  and arm64, passed on candidate source `d3587263` and separately on final versioned
+  source `d8083b06`. The original failed attempts and candidate artifacts are
+  preserved. Their qualified native receipts do not replace uploaded-artifact,
+  signature, public-feed and actual-deployment gates.
 
 The coverage and policy items above retain sections 2–3 of the original private
 `l1-next-milestone-audit.md` and the public [completion audit](../implementation/completion-audit.md).

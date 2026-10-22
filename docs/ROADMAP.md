@@ -21,7 +21,18 @@ issue review, publication and version-linked closure together.
 
 ## Current delivery checkpoint
 
-- **4.45.0 durable-capture release candidate.** The first approved local Codex
+These entries preserve dated source and acceptance evidence as historical
+snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
+availability and release gates; each deployment requires its own acceptance.
+
+- **4.45.0 frozen native qualification — 22 October 2026, 19:27 UTC.** All six
+  versioned installers passed their [installed hosting and capture contract](validation/2026-10-22-l1-release-native-acceptance.md)
+  on source `d8083b06`. The retained receipt records 59 required observations
+  per target and separate Windows/macOS update steps. Public artifact, feed,
+  website and actual-deployment acceptance remain separate evidence.
+
+- **4.45.0 candidate qualification — 22 October 2026.** The first approved local
+  Codex
   JSONL journey has completed its [implementation acceptance](validation/2026-10-22-l1-candidate-acceptance.md).
   All six installed targets passed on source `d3587263`, alongside exact-source
   Product checks and an independent actual-Codex shared-host journey. The
@@ -51,7 +62,8 @@ issue review, publication and version-linked closure together.
   measurements and L2–L7 remain explicit work. No full requirement is promoted
   by this candidate, and the separately paused PC publisher remains paused.
 
-- **4.44.2 is publicly available.** The Codex-format and Windows startup hotfix
+- **4.44.2 publication and paired acceptance — 22 October 2026.** The Codex-format
+  and Windows startup hotfix
   passed its six-platform native gates, artifact verification and all six public
   update checks. Website synchronization passed automatically. Download links,
   release notes and current availability continue to follow Git; this public
@@ -61,7 +73,7 @@ issue review, publication and version-linked closure together.
   and broader deployment acceptance remain tracked by
   [the maintenance board](MAINTENANCE_STATUS.md).
 
-- **4.44 is published and accepted on the actual Windows app and shared host.** Certifi 2026.10.19 and
+- **4.44 publication and paired acceptance — 21 October 2026.** Certifi 2026.10.19 and
   Pillow 13.0.0 address the reported dependency advisories while preserving the
   pinned text models. [Dependency and offline E5/BGE validation](validation/2026-10-21-security-dependencies.md)
   passed within its recorded scope. All six native targets, artifact verification
@@ -72,7 +84,7 @@ issue review, publication and version-linked closure together.
   This is a standalone security hotfix; capture/L1 delivery and all requirement
   statuses remain unchanged.
 
-- **4.43 is published and accepted on the actual Windows app and shared host.**
+- **4.43 publication and paired acceptance — 21 October 2026.**
   The [paired acceptance](validation/2026-10-21-443-acceptance.md) retained
   identities, protected login and preferences, then passed 47 of 47 synthetic
   requests with complete cleanup. The host used compatible automatic updating;

@@ -38,20 +38,26 @@ be repaired by inventing a permission lease.
 Complete an unblocked part or the next independent milestone while retaining
 that dependency and resuming it after an observed change.
 
-The current public distribution is **4.44.2**, source
-`3bdb3371ccd31bcf095d2e25a4b7d8263260b735`, published on 22 October at
-10:18:29 UTC; see its [publication receipt](../validation/releases/4.44.2-publication.json)
-and [release status](../RELEASE_STATUS.md). Native release gates, independent
-artifacts, all six public-update targets and website synchronization passed.
+The generated [release status](../RELEASE_STATUS.md) records current public
+availability and release-check outcomes. The dated snapshots below preserve
+historical publication, candidate qualification and actual-deployment evidence.
+
+**Publication snapshot — 22 October 2026:** **4.44.2**, source
+`3bdb3371ccd31bcf095d2e25a4b7d8263260b735`, was published at
+10:18:29 UTC; see its [publication receipt](../validation/releases/4.44.2-publication.json).
+Native release gates, independent artifacts, all six public-update targets and
+website synchronization passed.
 The [release-status reporting correction](../validation/2026-10-22-release-check-accounting.md)
 confirms that all 12 Product checks already passed inside the exact-source
 release workflow by **09:35:17 UTC**, before publication. The status reporter
 had omitted that evidence because no separate CI run existed. The additional
 [39815622908](https://github.com/Perseusxrltd/mnemion/actions/runs/39815622908)
 retains its PyPI timeout, stalled runner and single retry of the two unfinished
-checks; it was not the original product acceptance. The automatic
-[release status](../RELEASE_STATUS.md) supplies its current outcome.
-The **4.45.0 capture candidate** has completed the first local-source
+checks; it was not the original product acceptance. The linked workflow retains
+that run's history; generated release status records the current release's gates.
+
+**Candidate qualification snapshot — 22 October 2026:** the **4.45.0 capture
+candidate** completed the first local-source
 [implementation acceptance](../validation/2026-10-22-l1-candidate-acceptance.md).
 Source `d358726366bfef0e4cbddcb69741512de1d2fd78` passed all 12 Product checks and
 all 18 jobs in [native run 39814732365](https://github.com/Perseusxrltd/mnemion/actions/runs/39814732365).
@@ -60,12 +66,22 @@ GitHub archive digest. The independent actual-Codex shared-host journey retains
 its original source and failed harness observations; reviewed runtime equivalence
 permits reuse without repeating it. Earlier Windows policy-path failures and
 unassigned Apple Silicon jobs remain recorded in the implementation history.
-Final **4.45.0 release and actual-deployment gates remain open**. Retain the
+At the **22 October 2026, 18:30 UTC checkpoint**, final **4.45.0 release and
+actual-deployment gates remained open**. Retain the
 [continuing capture scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released),
-broader provider histories and all L1–L7 work. No complete requirement is promoted
-by preparing this release.
+broader provider histories, the remaining L1 acceptance and L2–L7 work. No complete
+requirement is promoted by preparing this release.
 
-Actual installation acceptance remains separate. The VPS was observed on
+**Frozen native qualification — 22 October 2026, 19:27 UTC:** final **4.45.0**
+source `d8083b068ea0d6866747b8128b1edd8b5f256f69` passed all six
+[installed hosting and capture targets](../validation/2026-10-22-l1-release-native-acceptance.md).
+The archived qualification retains source and artifact digests and all 59 required
+observations per target. It records no public-feed or actual-deployment acceptance;
+the current publication gates still come from generated release status.
+
+**Actual-deployment snapshot — 22 October 2026:** installation acceptance
+remains separate from publication and candidate qualification. The VPS was
+observed on
 **4.44.2 at 12:06 UTC** on 22 October. At **15:32:08 UTC**, the actual Windows app
 still ran **4.44.1**, with 4.44.2 downloaded and ready, waiting for its configured
 600 seconds of computer inactivity; only 35 seconds had elapsed. The normal

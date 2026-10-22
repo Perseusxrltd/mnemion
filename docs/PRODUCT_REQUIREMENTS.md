@@ -7,11 +7,16 @@ explains delivery order; this file preserves the complete requested scope.
 The [complete-milestone audit](implementation/completion-audit.md) decomposes all
 42 partial requirements into missing acceptance work, dependencies and evidence.
 It retains every requirement and keeps effort estimates unknown until inspected.
-The current published distribution, **4.44.2**, and its separate release and
-actual-deployment evidence are linked there. The first durable-capture L1 journey
-has [qualified for 4.45.0 release preparation](validation/2026-10-22-l1-candidate-acceptance.md);
-final release and actual-deployment gates remain separate. Broader provider
-capture and the complete layered librarian remain open.
+The generated [release status](RELEASE_STATUS.md) records the current published
+distribution and release gates. The audit preserves dated publication and
+actual-deployment evidence as historical snapshots. At the **22 October 2026
+review**, the first durable-capture L1 journey had
+[qualified for 4.45.0 release preparation](validation/2026-10-22-l1-candidate-acceptance.md);
+publication and actual-deployment acceptance remain separate gates. Broader
+provider capture and the complete layered librarian remain open.
+The [frozen 4.45.0 native qualification](validation/2026-10-22-l1-release-native-acceptance.md)
+subsequently passed all six installed targets at **19:27 UTC**; it does not
+establish publication, public-update or actual-deployment acceptance.
 
 **Shipped** means an available, documented capability. **Partial** means useful
 behavior is available but the complete request remains open. **Building** means
@@ -29,9 +34,10 @@ partial feature do not automatically mark its whole requirement complete.
 
 The expanded **R07 librarian workstream** is [documented separately](research/2026-10-20-layered-librarian.md), including available reasoning traces, background consolidation, all layers, vault boundaries, statistics, scientific evidence and TypeSafe AI Jev. It adds one planned requirement; the lower percentage reflects added scope.
 
-The **4.45.0 release candidate** qualifies the first approved local Codex JSONL
-journey in the app and native agent controls, plus independent headless capture
-on all six installed targets. It advances C03/C08/F08 and the R07 foundation with
+**22 October 2026 candidate snapshot:** the **4.45.0 release candidate**
+qualifies the first approved local Codex JSONL journey in the app and native
+agent controls, plus independent headless capture on all six installed targets.
+It advances C03/C08/F08 and the R07 foundation with
 offline custody, recovery, reviewed policies and bounded resources. Preparing
 this candidate does not change the strict shipped count or close provider,
 fleet, broader migration or L2–L7 requirements. Availability follows
