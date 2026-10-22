@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-22T09:35:58+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-22T09:36:38+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.44.1](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.44.1). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -33,7 +33,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 - service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 - service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 
-[Run 39753067641](https://github.com/Perseusxrltd/mnemion/actions/runs/39753067641): 24/25 jobs completed; 23 succeeded.
+[Run 39753067641](https://github.com/Perseusxrltd/mnemion/actions/runs/39753067641): 25/26 jobs completed; 24 succeeded.
 
-- native / native\_database / Database / macos / arm64: in\_progress — Relocate, initialize, verify TLS and RLS, restore backup and recover a crash.
+- native / native\_database / Database / Windows ARM host / x64 engine: in\_progress — Verify the actual x64 engine under Windows ARM emulation.
 

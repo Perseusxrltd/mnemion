@@ -103,21 +103,21 @@
       "source_commit": "3bdb3371ccd31bcf095d2e25a4b7d8263260b735",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-22T09:35:44Z",
+      "updated_at": "2026-10-22T09:36:04Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39753067641",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 25,
-        "completed": 24,
-        "succeeded": 23,
+        "total": 26,
+        "completed": 25,
+        "succeeded": 24,
         "active": [
           {
-            "id": 119750124227,
-            "name": "native / native_database / Database / macos / arm64",
+            "id": 119750282172,
+            "name": "native / native_database / Database / Windows ARM host / x64 engine",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Relocate, initialize, verify TLS and RLS, restore backup and recover a crash"
+              "Verify the actual x64 engine under Windows ARM emulation"
             ]
           }
         ]
@@ -158,5 +158,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39648042222"
     }
   ],
-  "observed_at": "2026-10-22T09:35:58+00:00"
+  "observed_at": "2026-10-22T09:36:38+00:00"
 }
