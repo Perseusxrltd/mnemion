@@ -25,172 +25,115 @@
   ],
   "runs": [
     {
-      "id": 39792490489,
+      "id": 39795183358,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "c0b0fde135512316249930d9113bfff8db03dfac",
+      "source_commit": "38eb3021d517a193b47501f902b4595a49d44178",
       "status": "queued",
       "conclusion": null,
-      "updated_at": "2026-10-22T14:07:06Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39792490489",
+      "updated_at": "2026-10-22T14:23:01Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39795183358",
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 3,
+        "completed": 2,
         "succeeded": 2,
         "active": [
           {
-            "id": 119872188510,
+            "id": 119880608762,
             "name": "studio",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": []
           },
           {
-            "id": 119872188599,
-            "name": "Select checks",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": []
-          },
-          {
-            "id": 119872271888,
-            "name": "container (ubuntu-22.04)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": []
-          },
-          {
-            "id": 119872271895,
-            "name": "service (3.12)",
+            "id": 119880608792,
+            "name": "lint",
             "status": "queued",
-            "runner_assigned": false,
+            "runner_assigned": null,
             "steps": []
           },
           {
-            "id": 119872271993,
-            "name": "service (3.14)",
-            "status": "queued",
-            "runner_assigned": false,
-            "steps": []
-          },
-          {
-            "id": 119872272010,
-            "name": "supervision (macos-15)",
-            "status": "queued",
-            "runner_assigned": false,
-            "steps": []
-          },
-          {
-            "id": 119872272019,
+            "id": 119880669897,
             "name": "supervision (macos-15-intel)",
             "status": "in_progress",
             "runner_assigned": true,
-            "steps": []
+            "steps": [
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
+            ]
           },
           {
-            "id": 119872272114,
+            "id": 119880669925,
             "name": "service (3.13)",
             "status": "queued",
-            "runner_assigned": false,
+            "runner_assigned": null,
             "steps": []
           },
           {
-            "id": 119872272325,
-            "name": "legacy",
+            "id": 119880669947,
+            "name": "dependency-audit",
             "status": "queued",
-            "runner_assigned": false,
+            "runner_assigned": null,
+            "steps": []
+          },
+          {
+            "id": 119880669967,
+            "name": "service (3.14)",
+            "status": "queued",
+            "runner_assigned": null,
+            "steps": []
+          },
+          {
+            "id": 119880669982,
+            "name": "supervision (macos-15)",
+            "status": "queued",
+            "runner_assigned": null,
+            "steps": []
+          },
+          {
+            "id": 119880670087,
+            "name": "container (ubuntu-22.04)",
+            "status": "queued",
+            "runner_assigned": null,
+            "steps": []
+          },
+          {
+            "id": 119880670168,
+            "name": "service (3.12)",
+            "status": "queued",
+            "runner_assigned": null,
+            "steps": []
+          },
+          {
+            "id": 119880670184,
+            "name": "container (ubuntu-22.04-arm)",
+            "status": "queued",
+            "runner_assigned": null,
             "steps": []
           }
         ]
       },
-      "failed_jobs": [
-        {
-          "name": "lint",
-          "id": 119872188130,
-          "conclusion": "failure",
-          "runner_assigned": true,
-          "steps_reported": 12,
-          "steps": [
-            "Run python deploy/release.py"
-          ]
-        }
-      ]
+      "failed_jobs": []
     },
     {
-      "id": 39788603173,
+      "id": 39795261005,
       "attempt": 1,
       "workflow": "desktop.yml",
       "branch": "main",
-      "source_commit": "5a9ccea1a0f6ca1a7cd3c3cea07fff3efa1df061",
-      "status": "in_progress",
+      "source_commit": "38eb3021d517a193b47501f902b4595a49d44178",
+      "status": "pending",
       "conclusion": null,
-      "updated_at": "2026-10-22T13:46:14Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39788603173",
+      "updated_at": "2026-10-22T14:26:28Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39795261005",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 18,
-        "completed": 13,
-        "succeeded": 12,
-        "active": [
-          {
-            "id": 119862101872,
-            "name": "ubuntu-22.04 / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Installed Linux app creates, searches and reopens a real local workspace"
-            ]
-          },
-          {
-            "id": 119862101919,
-            "name": "macos-15 / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Installed app creates, searches and reopens a real local workspace"
-            ]
-          },
-          {
-            "id": 119862102071,
-            "name": "macos-15-intel / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Installed app creates, searches and reopens a real local workspace"
-            ]
-          },
-          {
-            "id": 119862102095,
-            "name": "windows-11-arm / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Installed app creates, searches and reopens a real local workspace"
-            ]
-          },
-          {
-            "id": 119862102121,
-            "name": "ubuntu-22.04-arm / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": []
-          }
-        ]
+        "total": 0,
+        "completed": 0,
+        "succeeded": 0,
+        "active": []
       },
-      "failed_jobs": [
-        {
-          "name": "windows-2022 / x64",
-          "id": 119862101940,
-          "conclusion": "failure",
-          "runner_assigned": true,
-          "steps_reported": 38,
-          "steps": [
-            "Installed app creates, searches and reopens a real local workspace"
-          ]
-        }
-      ]
+      "failed_jobs": []
     },
     {
       "id": 39762122867,
@@ -226,15 +169,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39761844389"
     },
     {
-      "id": 39792490365,
+      "id": 39795183441,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "c0b0fde135512316249930d9113bfff8db03dfac",
+      "source_commit": "38eb3021d517a193b47501f902b4595a49d44178",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-22T14:07:34Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39792490365"
+      "updated_at": "2026-10-22T14:28:36Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39795183441"
     },
     {
       "id": 39762118327,
@@ -248,5 +191,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39762118327"
     }
   ],
-  "observed_at": "2026-10-22T14:08:49+00:00"
+  "observed_at": "2026-10-22T14:29:17+00:00"
 }
