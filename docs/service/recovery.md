@@ -100,8 +100,8 @@ erase the source archive, portable device backups, offline pending content or
 producer files. Protect and retire those copies separately. Original custody
 v1/v2 ledgers remain compatible only where they do not discard expiry decisions.
 These expiry controls are not included in **4.44.2**. Check
-[published availability](../RELEASE_STATUS.md), [current installed qualification](../research/2026-10-21-durable-capture-implementation.md#current-installed-qualification)
-and [candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released) for the current recovery gates.
+[published availability](../RELEASE_STATUS.md), [frozen 4.45.0 native acceptance](../validation/2026-10-22-l1-release-native-acceptance.md)
+and [candidate history and continuing scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released) for the current recovery gates.
 
 ### Restore command
 

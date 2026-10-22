@@ -59,8 +59,8 @@ unchanged.
 
 The [Supervisor source checkpoint](../research/2026-10-21-durable-capture-implementation.md#supervised-headless-inbox-key-forwarding)
 preserves the key-forwarding and process-restart evidence. See
-[current installed qualification](../research/2026-10-21-durable-capture-implementation.md#current-installed-qualification) and
-[candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released) for release readiness.
+[frozen 4.45.0 native acceptance](../validation/2026-10-22-l1-release-native-acceptance.md) and
+[candidate history and continuing scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released) for release readiness.
 
 Register each connector explicitly through the existing `--connector-config`
 setup and retain the host's startup arrangement. This does not add independent

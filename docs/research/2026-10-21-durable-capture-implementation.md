@@ -1,11 +1,16 @@
 # Durable conversation capture: implementation checkpoint
 
-**4.45.0 release candidate.** The first local-source journey for
+**4.45.0 published on 22 October 2026 at 19:47:33 UTC.** The
+[publication record](../validation/releases/4.45.0-publication.json) binds all
+38 unchanged verified assets to source `d8083b06`. The first local-source journey for
 [L1 of the layered librarian](2026-10-20-layered-librarian.md) has completed its
 [implementation acceptance](../validation/2026-10-22-l1-candidate-acceptance.md).
 The final versioned installers subsequently passed their
 [six-target native qualification](../validation/2026-10-22-l1-release-native-acceptance.md)
-at **19:27 UTC on 22 October**. Publication and actual-deployment acceptance remain separate. Existing sources
+at **19:27 UTC on 22 October**. All six public installed updates subsequently
+passed, and the actual Windows/shared-host [paired acceptance](../validation/2026-10-22-4450-live-acceptance.md)
+completed at **20:24:17 UTC**, including the guarded migration, independent
+pre/post backups and 42 isolated lab requests with complete cleanup. Existing sources
 keep their mirror behavior. All [65 product requirements](../PRODUCT_REQUIREMENTS.md),
 broader provider capture and L1–L7 remain in scope; this does not complete R07. The current
 [app and agent guide](../service/durable-capture.md) describes the implemented
@@ -16,8 +21,12 @@ enrollment, prefix/queue observations, limits, removal and recovery boundaries.
 Current public availability is recorded in
 [live release status](https://github.com/Perseusxrltd/mnemion/blob/main/docs/RELEASE_STATUS.md).
 The first L1 local-source journey and final **4.45.0** installed artifacts are
-qualified within their recorded scope. Public artifact/feed verification and
-actual-deployment acceptance remain separate gates.
+qualified within their recorded scope, and publication has its separate receipt.
+All six public installed-update targets and automatic website synchronization
+passed. The separate [actual-deployment acceptance](../validation/2026-10-22-4450-live-acceptance.md)
+records the Windows app and shared host on 4.45.0 at 20:24:17 UTC. It used a
+guarded agent restart, not unattended idle restart. Generated release status
+continues to record current public outcomes.
 
 | Artifacts | Frozen source and native run | Current evidence |
 | --- | --- | --- |
@@ -1764,7 +1773,14 @@ The original first-source milestone has completed its
 The checklist below records the outcome of each previously open gate rather than
 removing its contract. The final versioned **4.45.0** installers also passed
 their [native qualification](../validation/2026-10-22-l1-release-native-acceptance.md).
-Public artifact/feed verification and actual-deployment acceptance remain separate.
+The [38-asset publication](../validation/releases/4.45.0-publication.json), all
+six public installed-update targets and automatic website synchronization passed.
+The actual Windows/shared-host [paired acceptance](../validation/2026-10-22-4450-live-acceptance.md)
+completed at **20:24:17 UTC on 22 October**, retaining access and exact memories
+through the guarded schema migration and agent restart. Independent pre/post
+backups and all 42 isolated lab requests passed with complete cleanup. These
+dated receipts complete this release's gates; broader L1 coverage and L2–L7
+remain in scope.
 
 - **Coverage, gaps and indexing qualified:** encrypted prefix and queue accounting,
   selected/omitted/unsupported records, unknown history and separate index
@@ -1814,4 +1830,5 @@ Component checks are maintained in the repository: [persistent observations](../
 [review checks](../../service_tests/test_capture_custody_review.py). Completed
 receipts establish their stated scope; the candidate record adds the qualified
 first-source and installed evidence. Final release and actual-deployment
-acceptance remain separate.
+acceptance have their own linked receipts above. Neither completes the broader
+provider, history, fleet or recovery acceptance retained here.

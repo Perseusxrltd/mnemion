@@ -29,18 +29,41 @@ Build identities passed list, fetch and lexical recall in all four combinations
 with the two filesystem spaces, each returning its sampled memory. This restores
 observed reader access while preserving the earlier expiry episode. A subsequent
 20-minute observer completed at 16:11:54 UTC: all 21 samples had current leases,
-with renewals beyond their initial expiry. C01/C09 still require longer-term
-availability, source-host custody and complete-inventory acceptance. The separate
-administrator setup restored the existing cloud source runners; this verifier
-made no source, grant or scan changes. The intentionally paused local
-publisher has a separate guard/QC prerequisite. An unavailable source host cannot
-be repaired by inventing a permission lease.
-Complete an unblocked part or the next independent milestone while retaining
-that dependency and resuming it after an observed change.
+with renewals beyond their initial expiry. The separate administrator setup
+then completed the source-storage/capture cutover to the VPS by **16:40 UTC**,
+preserving the defined copied-root inventories, source identities and existing
+team-principal access. The former unavailable cloud source host is therefore
+historical. Grok execution, native session databases and app connections remain
+on the original computer. C01/C09 still require sustained availability, broader
+client/platform journeys and complete original inventory; the cutover does not
+establish those outcomes. The [issue plan](github-issues.md) preserves the
+independent evidence and limits. This source verifier made no source, grant or
+scan changes. The intentionally paused PC publisher retains its separate
+guard/QC prerequisite.
 
 The generated [release status](../RELEASE_STATUS.md) records current public
 availability and release-check outcomes. The dated snapshots below preserve
 historical publication, candidate qualification and actual-deployment evidence.
+
+**Actual 4.45.0 acceptance — 22 October 2026, 20:24:17 UTC:** the actual Windows
+app and shared Linux host passed their [paired acceptance](../validation/2026-10-22-4450-live-acceptance.md).
+The guarded schema migration, independently verified pre/post backups, saved
+identities/access, exact witness memories and protected human login/settings
+passed. All **42** isolated lab requests completed with no cleanup remaining,
+production memory writes or cloud model calls. The original stopped role check
+was reconciled against exact independent pre-migration administrator promotions;
+no upgrade was replayed or permission loss accepted. All six public installed
+updates and automatic website synchronization also passed. The Windows update
+used a guarded agent restart, so unattended idle restart remains unproven.
+Broader independent recovery, representative load, provider journeys and the
+separately paused publisher's review remain open under #44/#45 and the full audit.
+
+**Publication snapshot — 22 October 2026, 19:47:33 UTC:** **4.45.0**, source
+`d8083b068ea0d6866747b8128b1edd8b5f256f69`, was published with **38** unchanged
+verified assets; see its [publication receipt](../validation/releases/4.45.0-publication.json).
+The first local-Codex capture controls are available. Public installed-update and
+actual-deployment acceptance remain separately recorded; publication does not
+close broader capture/provider histories, the remaining L1 acceptance or L2–L7.
 
 **Publication snapshot — 22 October 2026:** **4.44.2**, source
 `3bdb3371ccd31bcf095d2e25a4b7d8263260b735`, was published at

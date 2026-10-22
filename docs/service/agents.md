@@ -144,8 +144,8 @@ mirrors.
 **4.45.0+:** [retained conversation capture](durable-capture.md)
 keeps locally accepted selection after original logs rotate or disappear.
 Use [published availability](../RELEASE_STATUS.md),
-[current installed qualification](../research/2026-10-21-durable-capture-implementation.md#current-installed-qualification) and
-[candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released) to assess availability.
+[frozen 4.45.0 native acceptance](../validation/2026-10-22-l1-release-native-acceptance.md) and
+[candidate history and continuing scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released) to assess availability.
 The [actual-Codex shared-source journey](../validation/2026-10-22-shared-codex-capture.md)
 is accepted for its documented source workflow. The full R07 librarian and broader provider capture remain open, and
 L2–L7 remain separate roadmap work.

@@ -25,6 +25,23 @@ These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
 
+- **4.45.0 public updates and actual acceptance — 22 October 2026.** All six
+  [public installed-update targets](https://github.com/Perseusxrltd/mnemion/actions/runs/39843181077)
+  and automatic website synchronization passed. The actual Windows app and
+  shared Linux host completed their [paired acceptance](validation/2026-10-22-4450-live-acceptance.md)
+  at **20:24:17 UTC**: the guarded schema upgrade, independently verified
+  pre/post backups, retained identities and saved access, and 42 isolated lab
+  requests with complete cleanup passed. This used the app's guarded agent
+  restart; unattended idle restart remains unproven. Broader provider, fleet,
+  recovery and paused-publisher acceptance remain in the full audit.
+
+- **4.45.0 publication — 22 October 2026, 19:47 UTC.** The first retained local
+  Codex conversation journey is available in the [published release](releases/4.45.0.md).
+  Its [publication receipt](validation/releases/4.45.0-publication.json) binds
+  38 verified assets to source `d8083b06`. Public installed-update checks and the
+  actual Windows/shared-host migration have separate acceptance; current release
+  outcomes are supplied by the generated status above.
+
 - **4.45.0 frozen native qualification — 22 October 2026, 19:27 UTC.** All six
   versioned installers passed their [installed hosting and capture contract](validation/2026-10-22-l1-release-native-acceptance.md)
   on source `d8083b06`. The retained receipt records 59 required observations

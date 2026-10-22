@@ -6,14 +6,15 @@ GitHub state and new comments; this file records engineering scope and evidence.
 The [full requirements](../PRODUCT_REQUIREMENTS.md) remain broader than these
 individual reports. Closing a bounded issue does not finish its entire product
 requirement or prove a customer's installation upgraded.
-The [current delivery checkpoint](completion-audit.md) distinguishes public
-4.44.2, earlier accepted deployments and the completed bounded Windows/shared-host update acceptance.
+The generated [release status](../RELEASE_STATUS.md) records current published
+availability and release gates. The [delivery checkpoint](completion-audit.md)
+keeps dated public-release and actual-deployment acceptance separate.
 
 | Issue | Implemented evidence | Remaining acceptance or work |
 | --- | --- | --- |
-| [#46 · Existing office corpus access](https://github.com/Perseusxrltd/mnemion/issues/46) | [20 October access acceptance](../validation/2026-10-20-office-access.md) passed on 4.41 after genuine complete source scans. All six Codex/Grok client-space combinations passed list, fetch and lexical recall with unchanged credentials; source identities, intended bindings and the original failed receipt were retained. On 22 October at 15:48:54 UTC, unchanged Codex/Grok Build identities again passed list, fetch and lexical recall for both filesystem spaces: four combinations, all HTTP 200, each with the sampled memory in recall, after independent genuine provider revalidation. | **Closed** at 15:42:24 UTC on 20 October. The 22 October 12:06 UTC expiry and unavailable reads remain historical evidence; current reader access recovered at 15:48:54 UTC. Continuing availability across lease windows, source-host custody and complete inventory remain C01/C09 work; full cloud history remains #44. No source fix or restart is attributed to this read-only verification. |
-| [#45 · Guarded live upgrade and paused note publishing](https://github.com/Perseusxrltd/mnemion/issues/45) | [4.41 eventual paired acceptance and backup delivery](../validation/2026-10-20-441-acceptance.md), [4.43 paired/contention acceptance and independent backup delivery](../validation/2026-10-21-443-acceptance.md), and [4.44 paired acceptance](../validation/2026-10-21-444-acceptance.md) passed within their recorded scope. Earlier stopped drivers, the unexplained 4.41 semantic HTTP 503 and the repaired backup-mirror limit remain preserved. Public 4.44.2 is available. Windows moved from the recorded 4.44.1/ready state to actual 4.44.2 through a normal guarded agent restart. [Paired acceptance completed at 16:35:34 UTC](../validation/2026-10-22-4442-live-acceptance.md): three unchanged identities, exact witness memories, protected login/bookmarks/preferences and 41 isolated requests with complete cleanup. The VPS was also on 4.44.2. | **Open.** The bounded 4.44.2 paired update and lab are accepted. Fresh independently verified pre/post backup evidence, representative-load and recovery acceptance remain. The stopped observer and its reviewed intervening agent-space additions are preserved; unattended idle restart is not claimed. The PC note publisher remains deliberately paused pending its separate guard/security review. Healthy API/journal state does not prove new local-note freshness. |
-| [#44 · Actual Grok Bot cloud integration](https://github.com/Perseusxrltd/mnemion/issues/44) | Public HTTPS/OAuth and Grok Build have separate evidence. The native packages and accurately labeled Bot guide introduced in 4.39 are available. | **Open.** Finish scoped authentication, actual cloud-client native tool/read/save and restart acceptance. Separate administrator work on 22 October restored the existing source runners and curated-file capture on the cloud computer; fresh filesystem access and lease renewals were observed. That supersedes the earlier unavailable-host state without proving every cloud-client journey. Grok Build TOML or an ordinary Grok web connector does not establish cloud Bot acceptance or a complete cloud history inventory. |
+| [#46 · Existing office corpus access](https://github.com/Perseusxrltd/mnemion/issues/46) | [20 October access acceptance](../validation/2026-10-20-office-access.md) passed on 4.41 after genuine complete source scans. All six Codex/Grok client-space combinations passed list, fetch and lexical recall with unchanged credentials; source identities, intended bindings and the original failed receipt were retained. On 22 October at 15:48:54 UTC, unchanged Codex/Grok Build identities again passed list, fetch and lexical recall for both filesystem spaces: four combinations, all HTTP 200, each with the sampled memory in recall, after independent genuine provider revalidation. | **Closed** at 15:42:24 UTC on 20 October. The 22 October 12:06 UTC expiry and unavailable reads remain historical evidence; reader access recovered at 15:48:54 UTC. The independently verified 16:40 UTC VPS source-storage/capture cutover resolved the former unavailable cloud-source-host dependency. Continuing availability across lease windows, broader source-host/client platform journeys and complete original inventory remain C01/C09 work; full cloud history remains #44. No source fix or restart is attributed to this read-only verification. |
+| [#45 · Guarded live upgrade and paused note publishing](https://github.com/Perseusxrltd/mnemion/issues/45) | [4.41 eventual paired acceptance and backup delivery](../validation/2026-10-20-441-acceptance.md), [4.43 paired/contention acceptance and independent backup delivery](../validation/2026-10-21-443-acceptance.md), and [4.44 paired acceptance](../validation/2026-10-21-444-acceptance.md) passed within their recorded scope. Earlier stopped drivers, the unexplained 4.41 semantic HTTP 503 and the repaired backup-mirror limit remain preserved. The 22 October 4.44.2 publication is a historical checkpoint. Windows moved from the recorded 4.44.1/ready state to actual 4.44.2 through a normal guarded agent restart. [Paired acceptance completed at 16:35:34 UTC](../validation/2026-10-22-4442-live-acceptance.md): three unchanged identities, exact witness memories, protected login/bookmarks/preferences and 41 isolated requests with complete cleanup. The VPS was also on 4.44.2. The later 4.45.0 publication and six public-update targets passed. [Paired acceptance completed at 20:24:17 UTC](../validation/2026-10-22-4450-live-acceptance.md), retaining identity/access, exact witnesses and protected human login/settings, verifying fresh pre/post-schema backups and completing 42 isolated requests with no cleanup remaining. | **Open.** The bounded 4.44.2 and 4.45.0 paired updates and labs are accepted within their dated scope. Fresh independently verified pre/post backups for the 4.45.0 schema migration are complete. The stopped 4.45 role comparison was reconciled against exact independent administrator promotions, so it is historical rather than an unresolved upgrade failure. Broader independent restore/recovery, representative-load and provider acceptance remain. The earlier stopped observer and reviewed agent-space additions are preserved; unattended idle restart is not claimed. The PC note publisher remains deliberately paused pending its separate guard/security review. Healthy API/journal state does not prove new local-note freshness. |
+| [#44 · Actual Grok Bot cloud integration](https://github.com/Perseusxrltd/mnemion/issues/44) | Public HTTPS/OAuth and Grok Build have separate evidence. The native packages and accurately labeled Bot guide introduced in 4.39 are available. The independent 22 October 16:40 UTC source-storage/capture cutover to the VPS passed copied-root checksums, defined source inventories and existing team-principal data operations, preserving source and principal identities. | **Open.** Finish actual cloud-client scoped authentication, native tool/read/save and restart acceptance; existing team-principal data-operation proof does not complete those client journeys. Source storage and capture now run on the VPS, while Grok execution, native session databases and app connections remain on the original computer. Continuous availability, additional client/platform enrollment and complete cloud/native-history inventory remain open. Grok Build TOML or an ordinary Grok web connector does not establish cloud Bot acceptance. The former unavailable source host is historical, not the current storage dependency. |
 | [#43 · Bad text file stops an entire source](https://github.com/Perseusxrltd/mnemion/issues/43) | 4.21 isolates invalid UTF-8/binary/oversized ordinary text and reports scoped source health through the app, recall, health, SDK and agents. [94 focused Python cases and UI evidence](../validation/2026-10-19-source-health.md). | **Closed** against published 4.22 after all six public installed-update checks passed. The frozen 4.21 candidate was withheld after outdated migration expectations failed CI. Structured journals intentionally retain complete-inventory checks. |
 | [#42 · Native SSH journal and local receipt wording](https://github.com/Perseusxrltd/mnemion/issues/42) | Published 4.20 adds scoped deploy keys, pinned hosts, private snapshots and explicit destination kinds. [Real OpenSSH/Git/API read-back, revocation, conflict and retry evidence](../validation/2026-10-19-journal-ssh.md). | **Closed** after public release and all six installed-update checks passed. Native SSH credential/provider enrollment remains broader platform acceptance. |
 | [#41 · Growing JSONL capture](https://github.com/Perseusxrltd/mnemion/issues/41) | Published 4.17 supplies a separate bounded adapter, complete-record checkpoints, per-file scopes, provenance, truncation/rotation handling and permission/deletion checks. [Real HTTP/PostgreSQL cases](../validation/2026-10-19-live-conversations.md). | **Closed** against verified 4.17. Full fleet throughput and zero-read append proofs remain roadmap work. |
@@ -38,8 +39,9 @@ real-deployment reports **#44 and #45 remain open** with the acceptance above;
 they are not included in a fixing-release association yet. **#46 is closed**
 after its independently observed 20 October access acceptance. The 22 October
 lease expiry and subsequent reader recovery preserve the need for sustained
-availability, source-host custody and complete-inventory acceptance under C01/C09,
-without changing that historical issue state. Current GitHub state remains on
+availability, broader source-host/client platform journeys and complete-inventory
+acceptance under C01/C09. The independent 16:40 UTC VPS cutover resolved the former
+source-storage dependency without changing that historical issue state. Current GitHub state remains on
 the automatic board.
 #3 is closed against reviewed evidence for its original remote-access and
 diagnostic scope; live ngrok-account/lifecycle acceptance stays
@@ -76,10 +78,27 @@ verification requested no grants, source scans or runtime changes and made no
 source fix or source restart; the observed recovery occurred independently.
 The 20-minute observer finished at **16:11:54 UTC** with **21 samples**, all
 scopes current and renewed beyond their initial expiry, recorded in
-`freshness-watch.receipt.json`. The separately authorized administrator setup
-restored the cloud source runners; this reader observer made no changes.
-Longer-term availability, source-host custody and the complete original inventory
-remain unproven. The PC note publisher remains deliberately paused.
+`freshness-watch.receipt.json`. At that observation checkpoint, the separately
+authorized administrator setup had restored the cloud source runners; this
+reader observer made no changes. Those observations predate the source-storage
+cutover below. Longer-term availability, broader client/platform coverage and the
+complete original inventory remain unproven. The PC note publisher remains
+deliberately paused.
+
+The independent source-storage/capture cutover completed by **16:40 UTC** on
+22 October. Private `grok-vps-migration-20261022/REPORT.md` and shared note
+`2026-10-22-1640-grok-memory-vps-cutover.md` retain zero checksum differences across
+four moved roots, 1,409 operations and 16 office-file records, and the unchanged
+four curated records. Existing team-principal search/create/read/revise/forget
+and cross-reader checks passed. Source capture now runs on the VPS; old cloud
+capture is disabled, and original paths remain through an authenticated,
+supervised mount. Existing source and principal identities were preserved.
+Grok execution, native sessions and app connections remain on the original
+computer. Its running-app native-state copy is not a transactional database
+snapshot; new memory folders outside the mounted paths still need enrollment.
+The 249 archive-only operations records were already absent before cutover and
+remain in encrypted history. Defined copied-root inventories do not establish
+complete provider/native history or continuous future availability.
 
 The actual Windows 4.44.2 transition is retained in
 `2026-10-22-shared-host-4442/guarded-resume-20261022-1604.log` and
@@ -92,3 +111,49 @@ at 16:35:34 UTC without repeating the update. The original baseline and stopped
 observer remain; additional visible spaces are not described as unchanged
 authority. The release automation now generates its public report from the
 validated receipt for subsequent updates.
+
+The **4.45.0 publication on 22 October at 19:47:33 UTC** is recorded in its
+[38-asset publication receipt](../validation/releases/4.45.0-publication.json),
+for frozen source `d8083b068ea0d6866747b8128b1edd8b5f256f69`.
+[Public update run 39843181077](https://github.com/Perseusxrltd/mnemion/actions/runs/39843181077)
+passed all six targets and reconciliation; the
+[automatic website run 39843176416](https://github.com/Perseusxrltd/mnemion/actions/runs/39843176416)
+also passed. Current availability continues to follow generated release status.
+
+The private `2026-10-22-shared-host-4450/host-upgrade.receipt.json` records the
+reviewed 4.44.2→4.45.0 host upgrade from **19:53:07 to 19:58:10 UTC**, applying
+migrations **030–034** without database restoration. Fresh encrypted pre-schema
+backup delivery passed independent verification at **19:53:04 UTC**.
+`live-after.json` passed the identity, witness, access and protected human-login
+checks at **20:14:15 UTC**. `guarded-windows-restart.verified.json` records the
+actual Windows app and service on **4.45.0 at 20:15:18 UTC**, retaining the
+protected human login, bookmarks and preferences through the app's normal
+restart guards. This is not unattended idle-restart evidence.
+
+The observer stopped at **20:01:01 UTC** on roles that differed from its
+**18:28 UTC** baseline. Independent authorized administration had made those
+ten exact promotions at **18:38–18:45 UTC**, before the **19:53 UTC** upgrade.
+`authorized-config-observations.json` reconciled the original grants, mutation
+records and effective-role readback at **20:13:55 UTC**; the matching
+`authorized-access-expansion.json` binds that evidence by digest. This review
+made no remote mutations. The resumed access check preserved identities,
+stronger existing roles, exact witnesses and the human login, permitting only
+the recorded promotions. The original baseline and
+`inspected-failure-200101/` observations remain historical evidence, separate
+from the earlier 4.44.2 observer's reviewed additions. No uncertain host upgrade
+was replayed to resolve the comparison.
+
+The [final 4.45.0 paired acceptance](../validation/2026-10-22-4450-live-acceptance.md)
+completed on **22 October 2026 at 20:24:17 UTC**. The earlier controller checkpoint,
+`observing-after-schema-backup` at **20:16:05 UTC**, remains historical evidence.
+The final `2026-10-22-shared-host-4450/acceptance.receipt.json` records **42**
+isolated lab requests, **zero pending cleanup**, **zero production memory writes**
+and **zero cloud model calls**, with all three identities, exact witnesses and
+the protected human login/bookmarks/preferences retained.
+`post-upgrade-delivery.json` verifies fresh **4.45.0** snapshot and ledger delivery
+at **20:24:17 UTC**, including the remote commit and independent GitHub manifest
+read. Fresh pre/post backup verification for this migration is complete.
+The historical 4.44.2 41-request pass remains separate from this update's lab.
+Broader independent restore/recovery, representative load, provider acceptance
+and the paused publisher's own review remain open. #44/#45 remain open, and
+the PC note publisher remains paused.

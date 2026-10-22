@@ -8,9 +8,9 @@ updates also passed](../validation/2026-10-20-431-live-updates.md);
 
 **4.45.0+:** [retained conversation capture](durable-capture.md)
 adds an explicit choice to keep selected, locally accepted evidence after chat
-logs rotate or disappear. Existing sources keep their mirror policy. follow [published availability](../RELEASE_STATUS.md),
-[current installed qualification](../research/2026-10-21-durable-capture-implementation.md#current-installed-qualification) and
-[candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released).
+logs rotate or disappear. Existing sources keep their mirror policy. Follow [published availability](../RELEASE_STATUS.md),
+[frozen 4.45.0 native acceptance](../validation/2026-10-22-l1-release-native-acceptance.md) and
+[candidate history and continuing scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released).
 
 The device can contribute to a local or remote shared workspace. Contributing
 files does not require a local database, model, GPU, Python installation or
@@ -254,8 +254,8 @@ instead of leaving an orphaned watcher.
 Mnemion **4.45.0 or later** provides a reviewed policy change for an existing
 retained source on this computer. The [policy-migration checkpoint](../research/2026-10-21-durable-capture-implementation.md#headless-policy-migration-and-app-controls-source-delta)
 preserves the paired app/headless source evidence. Use
-[current installed qualification](../research/2026-10-21-durable-capture-implementation.md#current-installed-qualification) and
-[candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released) for the current acceptance state.
+[frozen 4.45.0 native acceptance](../validation/2026-10-22-l1-release-native-acceptance.md) and
+[candidate history and continuing scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released) for the current acceptance state.
 
 1. Pause the retained source and wait for its active scan to stop. In
    **Connections → Run on this computer**, open **Back up this capture inbox**

@@ -2,8 +2,8 @@
 
 **Requires Mnemion 4.45.0 or later.** Use a matching runner and workspace with
 `durable_capture: "v1"` in `GET /health/live`. Check [published availability](../RELEASE_STATUS.md),
-[current installed qualification](../research/2026-10-21-durable-capture-implementation.md#current-installed-qualification) and
-[candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released). The full R07 librarian and broader provider capture remain open.
+[frozen 4.45.0 native acceptance](../validation/2026-10-22-l1-release-native-acceptance.md) and
+[candidate history and continuing scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released). The full R07 librarian and broader provider capture remain open.
 
 An explicit `capture` object makes `mnemion-connect` retain selected conversations
 in an encrypted local inbox before attempting delivery. A configuration without
@@ -482,8 +482,8 @@ missing proof or genuine errors cannot be presented as normal backfill.
 The [per-file backfill checkpoint](../research/2026-10-21-durable-capture-implementation.md#bounded-retained-backfill-source-delta)
 and [connection scheduling checkpoint](../research/2026-10-21-durable-capture-implementation.md#connection-intake-budget-and-rotation-source-delta)
 preserve development evidence and earlier failures. Use
-[current installed qualification](../research/2026-10-21-durable-capture-implementation.md#current-installed-qualification) and
-[candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released) for the current acceptance state.
+[frozen 4.45.0 native acceptance](../validation/2026-10-22-l1-release-native-acceptance.md) and
+[candidate history and continuing scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released) for the current acceptance state.
 
 Saved [prefix coverage](durable-capture.md#read-prefix-coverage), queue age and
 authenticated contact/acknowledgement observations keep their separate meanings.
@@ -529,7 +529,7 @@ limit and scan until the authenticated fence sweep finishes; a further scan
 can then resume intake. Explicit pause still stops both intake and delivery.
 No history is pruned to make room, and delivery still needs usable disk and
 current authorization. Lifetime, history, delivery-page and archive bounds
-remain part of [candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released); current installed
+remain part of [candidate history and continuing scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released); current installed
 coverage is tracked in the qualification record above.
 
 The [free-page cleanup](durable-capture.md#reclaim-unused-database-pages-unreleased)
@@ -679,8 +679,8 @@ principal rights. Use the separate approved operations for those actions.
 Retained capture supports a reviewed policy change through a separate device
 configuration. The [policy-migration checkpoint](../research/2026-10-21-durable-capture-implementation.md#headless-policy-migration-and-app-controls-source-delta)
 preserves the paired app/headless source evidence. Use
-[current installed qualification](../research/2026-10-21-durable-capture-implementation.md#current-installed-qualification) and
-[candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released) for current installed coverage and
+[frozen 4.45.0 native acceptance](../validation/2026-10-22-l1-release-native-acceptance.md) and
+[candidate history and continuing scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released) for current installed coverage and
 release readiness.
 
 1. Pause and drain the original device until `delivery_complete: true`, then
@@ -731,5 +731,5 @@ retry requires another unused device ID, configuration and inbox key.
 The operation creates a new-device copy and keeps the original configuration
 identity. Migration across organizations or source identities and conversion of
 existing mirrors remain unfinished. Historical coverage, remaining policy
-capabilities, retained-history and backpressure acceptance, and complete
-installed-platform qualification remain under [candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released).
+capabilities, retained-history and backpressure acceptance, and broader
+installed-platform acceptance remain under [candidate history and continuing scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released).

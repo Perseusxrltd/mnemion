@@ -16,9 +16,9 @@ separate from this selected-source workflow.
 
 **4.45.0+:** [retained conversation capture](durable-capture.md)
 adds explicit source and device approval, an encrypted local inbox and delivery
-after producer logs disappear. Existing adapters remain mirrors. consult [published availability](../RELEASE_STATUS.md),
-[current installed qualification](../research/2026-10-21-durable-capture-implementation.md#current-installed-qualification) and
-[candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released).
+after producer logs disappear. Existing adapters remain mirrors. Consult [published availability](../RELEASE_STATUS.md),
+[frozen 4.45.0 native acceptance](../validation/2026-10-22-l1-release-native-acceptance.md) and
+[candidate history and continuing scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released).
 
 ## Included adapters
 

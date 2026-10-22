@@ -8,8 +8,8 @@ native acceptance. This interface complements the shared workspace's
 
 The retained-capture controls below require **Mnemion 4.45.0 or later**.
 Follow
-[current installed qualification](../research/2026-10-21-durable-capture-implementation.md#current-installed-qualification) and
-[candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released); the release-status link above
+[frozen 4.45.0 native acceptance](../validation/2026-10-22-l1-release-native-acceptance.md) and
+[candidate history and continuing scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released); the release-status link above
 identifies published availability.
 
 Open **Setup & this device → Agents on this computer** and choose **Copy local
@@ -498,8 +498,8 @@ Retained capture supports reviewed replacement-device recovery with new protecte
 keys and a grant, followed by paused enrollment. The [recovery source checkpoint](../research/2026-10-21-durable-capture-implementation.md#device-recovery-source-delta)
 preserves development evidence and earlier failed journeys. Current installed
 coverage and release readiness remain in
-[current installed qualification](../research/2026-10-21-durable-capture-implementation.md#current-installed-qualification) and
-[candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released).
+[frozen 4.45.0 native acceptance](../validation/2026-10-22-l1-release-native-acceptance.md) and
+[candidate history and continuing scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released).
 
 Read the current catalog and `source.status`, inspect the archive, then preview
 the intended conversation folder with `source.preview`. An administrator must
@@ -587,8 +587,8 @@ source through the same private controls as the
 [app procedure](desktop-sources.md#apply-a-reviewed-capture-policy-unreleased).
 The [policy-migration checkpoint](../research/2026-10-21-durable-capture-implementation.md#headless-policy-migration-and-app-controls-source-delta)
 preserves the paired app/headless source evidence. Use
-[current installed qualification](../research/2026-10-21-durable-capture-implementation.md#current-installed-qualification) and
-[candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released) for the current acceptance state.
+[frozen 4.45.0 native acceptance](../validation/2026-10-22-l1-release-native-acceptance.md) and
+[candidate history and continuing scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released) for the current acceptance state.
 
 Pause the original retained source, wait for its active scan to finish and read
 fresh `source.status`. While its original authorization remains valid, deliver

@@ -1,8 +1,8 @@
 # Keep selected conversations after chat logs disappear
 
 **Requires Mnemion 4.45.0 or later.** This guide describes retained-capture controls. Check
-[published availability](../RELEASE_STATUS.md), [current installed qualification](../research/2026-10-21-durable-capture-implementation.md#current-installed-qualification)
-and [candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released) for the current release decision.
+[published availability](../RELEASE_STATUS.md), [frozen 4.45.0 native acceptance](../validation/2026-10-22-l1-release-native-acceptance.md)
+and [candidate history and continuing scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released) for the current release decision.
 
 For desktop use, both Studio and the workspace server must support retained
 capture; the server advertises `durable_capture: "v1"` in `GET /health/live`.
@@ -130,8 +130,8 @@ acceptance**. Administrator policy review uses the same choices. Review the
 family-wide effect before approving the policy and device grant. The
 [retention source checkpoint](../research/2026-10-21-durable-capture-implementation.md#scheduled-capture-retention-source-delta)
 preserves development evidence. Current installed coverage and release readiness
-remain in [current installed qualification](../research/2026-10-21-durable-capture-implementation.md#current-installed-qualification) and
-[candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released).
+remain in [frozen 4.45.0 native acceptance](../validation/2026-10-22-l1-release-native-acceptance.md) and
+[candidate history and continuing scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released).
 
 The full policy can be supplied as `source.capture_policy` to desktop controls,
 `provider.capture_policy` to the headless runner, or `capture_policy` to the
@@ -369,8 +369,8 @@ establish index readiness; source index observations are reported separately bel
 
 The [coverage source checkpoint](../research/2026-10-21-durable-capture-implementation.md#coverageaccounting-source-delta)
 preserves the development evidence and earlier failures. Use
-[current installed qualification](../research/2026-10-21-durable-capture-implementation.md#current-installed-qualification) and
-[candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released) for the current acceptance state.
+[frozen 4.45.0 native acceptance](../validation/2026-10-22-l1-release-native-acceptance.md) and
+[candidate history and continuing scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released) for the current acceptance state.
 
 ### Read source index observations
 
@@ -502,7 +502,7 @@ remains separate and stops both intake and delivery.
 The [history source checkpoint](../research/2026-10-21-durable-capture-implementation.md#deletion-fences-and-history-limits-source-delta)
 preserves development evidence and earlier failures. Finite history, scope,
 delivery-page and archive bounds, plus coordination across independent devices,
-remain part of [candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released).
+remain part of [candidate history and continuing scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released).
 
 <a id="continue-a-bounded-backfill-unreleased"></a>
 
@@ -580,8 +580,8 @@ configurable profile; pause, resource and admission controls still apply.
 The [connection scheduling checkpoint](../research/2026-10-21-durable-capture-implementation.md#connection-intake-budget-and-rotation-source-delta)
 preserves development evidence and earlier failures. Current installed coverage,
 history/storage requirements and release readiness remain in
-[current installed qualification](../research/2026-10-21-durable-capture-implementation.md#current-installed-qualification) and
-[candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released).
+[frozen 4.45.0 native acceptance](../validation/2026-10-22-l1-release-native-acceptance.md) and
+[candidate history and continuing scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released).
 
 <a id="reclaim-unused-database-pages-unreleased"></a>
 
@@ -654,8 +654,8 @@ Retirement uses the separate identity and server checks below.
 
 The [saved-key source checkpoint](../research/2026-10-21-durable-capture-implementation.md#saved-key-controls-and-platform-validation)
 preserves development evidence for damaged credentials and recovery. Use
-[current installed qualification](../research/2026-10-21-durable-capture-implementation.md#current-installed-qualification) and
-[candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released) for the current acceptance state.
+[frozen 4.45.0 native acceptance](../validation/2026-10-22-l1-release-native-acceptance.md) and
+[candidate history and continuing scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released) for the current acceptance state.
 
 To remove retained capture, pause it first, then select **Remove from this
 computer → Revoke device grant and discard local inbox**. This permanently
@@ -817,8 +817,8 @@ remain in the central qualification and remaining-acceptance records above.
 
 The [device-recovery source checkpoint](../research/2026-10-21-durable-capture-implementation.md#device-recovery-source-delta)
 preserves development evidence and earlier failed journeys. Use
-[current installed qualification](../research/2026-10-21-durable-capture-implementation.md#current-installed-qualification) and
-[candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released) for current installed recovery coverage
+[frozen 4.45.0 native acceptance](../validation/2026-10-22-l1-release-native-acceptance.md) and
+[candidate history and continuing scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released) for current installed recovery coverage
 and release readiness.
 
 For default device recovery, inspect the original archive with its separate
@@ -903,8 +903,8 @@ or the independent runner's [new-device policy restore](headless-capture.md#appl
 These guides define the drain, preview, key, resource and interrupted-recovery
 requirements for each runner. The [policy-migration checkpoint](../research/2026-10-21-durable-capture-implementation.md#headless-policy-migration-and-app-controls-source-delta)
 preserves the paired app/headless source evidence. Use
-[current installed qualification](../research/2026-10-21-durable-capture-implementation.md#current-installed-qualification) and
-[candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released) for interruption, expiry and recovery
+[frozen 4.45.0 native acceptance](../validation/2026-10-22-l1-release-native-acceptance.md) and
+[candidate history and continuing scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released) for interruption, expiry and recovery
 acceptance. Migration across organizations or source identities remains unfinished.
 
 <a id="manage-source-defaults-and-device-authorizations-unreleased"></a>
@@ -1060,8 +1060,8 @@ Authorizing a grant does not restore an archive, resume a device or migrate an
 existing inbox's selection. Fresh local enrollment still refuses a source with
 capture history. Migration across organizations or source identities and
 complete historical coverage remain unfinished. Use
-[current installed qualification](../research/2026-10-21-durable-capture-implementation.md#current-installed-qualification) and
-[candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released) for the current recovery gates.
+[frozen 4.45.0 native acceptance](../validation/2026-10-22-l1-release-native-acceptance.md) and
+[candidate history and continuing scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released) for the current recovery gates.
 
 ## Agent and administrator setup
 
@@ -1165,7 +1165,7 @@ is then needed. Native history repair requires its current
 `repair_token` and `confirm: true`, with no active source scan; its source ID
 identifies the displayed context, not a source-only reset.
 
-Use [current installed qualification](../research/2026-10-21-durable-capture-implementation.md#current-installed-qualification) and
-[candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released) to assess each archive, recovery and
+Use [frozen 4.45.0 native acceptance](../validation/2026-10-22-l1-release-native-acceptance.md) and
+[candidate history and continuing scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released) to assess each archive, recovery and
 installed-platform contract. The full R07 librarian and broader provider capture remain open. This workflow does not
 narrow the [65 product requirements](../PRODUCT_REQUIREMENTS.md) or L1–L7 scope.
