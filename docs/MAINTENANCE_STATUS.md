@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-22T17:14:40+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-22T17:26:40+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.44.2](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.44.2). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -17,24 +17,34 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 39819616723](https://github.com/Perseusxrltd/mnemion/actions/runs/39819616723) |
+| ci\.yml | main | queued | [Run 39822578673](https://github.com/Perseusxrltd/mnemion/actions/runs/39822578673) |
 | ci\.yml | v4\.44\.2 | in\_progress | [Run 39815622908](https://github.com/Perseusxrltd/mnemion/actions/runs/39815622908) |
 | desktop\.yml | main | in\_progress | [Run 39814732365](https://github.com/Perseusxrltd/mnemion/actions/runs/39814732365) |
 | public-updates\.yml | v4\.44\.2 | success | [Run 39762122867](https://github.com/Perseusxrltd/mnemion/actions/runs/39762122867) |
 | release\.yml | release/4\.44\.2 | success | [Run 39753067641](https://github.com/Perseusxrltd/mnemion/actions/runs/39753067641) |
 | verify-artifacts\.yml | main | success | [Run 39761844389](https://github.com/Perseusxrltd/mnemion/actions/runs/39761844389) |
-| website-release\.yml | main | success | [Run 39819616766](https://github.com/Perseusxrltd/mnemion/actions/runs/39819616766) |
+| website-release\.yml | main | success | [Run 39822578689](https://github.com/Perseusxrltd/mnemion/actions/runs/39822578689) |
 | website-release\.yml | v4\.44\.2 | success | [Run 39762118327](https://github.com/Perseusxrltd/mnemion/actions/runs/39762118327) |
 
 ## Active jobs
 
+[Run 39822578673](https://github.com/Perseusxrltd/mnemion/actions/runs/39822578673): 4/12 jobs completed; 4 succeeded.
+
+- studio: in\_progress — Run npm --prefix studio/electron ci && npm --prefix studio/electron test.
+- supervision \(macos-15\): queued.
+- legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
+- supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
+- service \(3\.14\): in\_progress — Matching PostgreSQL recovery tools.
+- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- container \(ubuntu-22\.04-arm\): in\_progress — Build the actual deployment image with its documentation.
+
 [Run 39815622908](https://github.com/Perseusxrltd/mnemion/actions/runs/39815622908): 10/12 jobs completed; 10 succeeded.
 
-- service \(3\.14\): in\_progress — Initialize containers.
-- supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
+- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- supervision \(macos-15-intel\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
 
-[Run 39814732365](https://github.com/Perseusxrltd/mnemion/actions/runs/39814732365): 16/18 jobs completed; 16 succeeded.
+[Run 39814732365](https://github.com/Perseusxrltd/mnemion/actions/runs/39814732365): 17/18 jobs completed; 17 succeeded.
 
-- macos-15-intel / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
 - windows-11-arm / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
 
