@@ -75,9 +75,11 @@ release a backed-up quarantine. See [native journal recovery](journal-recovery.m
 
 ## Restore into a new database
 
-### Capture expiry during service recovery (unreleased)
+<a id="capture-expiry-during-service-recovery-unreleased"></a>
 
-The additional [capture-retention policy](durable-capture.md#schedule-capture-expiry-unreleased)
+### Capture expiry during service recovery
+
+The [capture-retention policy](durable-capture.md#schedule-capture-expiry-unreleased)
 uses custody ledger **version 3**, nested inside the existing recovery ledger.
 It preserves immutable policy approvals and every recorded fragment-family
 deadline, with no memory content or device key. Export a current ledger through
@@ -97,7 +99,9 @@ This prevents normal recovery from reviving those captured copies. It does not
 erase the source archive, portable device backups, offline pending content or
 producer files. Protect and retire those copies separately. Original custody
 v1/v2 ledgers remain compatible only where they do not discard expiry decisions.
-This addition is unreleased; final installed recovery acceptance remains open.
+These expiry controls are not included in **4.44.2**. Check
+[published availability](../RELEASE_STATUS.md), [current installed qualification](../research/2026-10-21-durable-capture-implementation.md#current-installed-qualification)
+and [candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released) for the current recovery gates.
 
 ### Restore command
 

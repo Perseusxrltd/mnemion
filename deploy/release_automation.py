@@ -70,8 +70,14 @@ def prepare(root: Path, version: str) -> list[str]:
     updates[path] = json.dumps(data, indent=2) + "\n"
     path = Path("docs/ROADMAP.md")
     updates[path], count = re.subn(
-        r"(?m)^Reviewed source distribution: \*\*[^*]+\*\*\. Roadmap updated: \*\*[^*]+\*\*\.$",
-        f"Reviewed source distribution: **{version}**. Roadmap updated: **{datetime.now(timezone.utc).date().isoformat()}**.",
+        r"(?m)^Reviewed source distribution: \*\*[^*]+\*\*\."
+        r"(?P<separator> |\nPublic distribution: \[current release status\]\(RELEASE_STATUS\.md\)\. )"
+        r"Roadmap updated: \*\*[^*]+\*\*\.$",
+        lambda match: (
+            f"Reviewed source distribution: **{version}**."
+            + match["separator"]
+            + f"Roadmap updated: **{datetime.now(timezone.utc).date().isoformat()}**."
+        ),
         (root / path).read_text(),
     )
     if count != 1:

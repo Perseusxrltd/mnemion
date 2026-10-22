@@ -6,11 +6,11 @@ native targets and public installed-update checks. [Actual Windows/shared-host
 updates also passed](../validation/2026-10-20-431-live-updates.md);
 [release status](../RELEASE_STATUS.md) identifies current installers.
 
-**Unreleased:** [retained conversation capture](durable-capture.md) adds an
-explicit choice to keep selected, locally accepted evidence after chat logs
-rotate or disappear. Existing sources keep their mirror policy. The new workflow
-is not included in public 4.44.0 and still requires complete native and L1
-acceptance.
+**4.45.0+:** [retained conversation capture](durable-capture.md)
+adds an explicit choice to keep selected, locally accepted evidence after chat
+logs rotate or disappear. Existing sources keep their mirror policy. follow [published availability](../RELEASE_STATUS.md),
+[current installed qualification](../research/2026-10-21-durable-capture-implementation.md#current-installed-qualification) and
+[candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released).
 
 The device can contribute to a local or remote shared workspace. Contributing
 files does not require a local database, model, GPU, Python installation or
@@ -23,15 +23,14 @@ complete exposed session records or copy supported messages only. The same
 `capture_mode: "complete" | "messages"` selection is available to agents.
 See [capture choices and retention boundaries](live-conversations.md#choose-how-much-to-capture).
 
-**Unreleased:** open **Session filters, JSON fields and sizes** and use
+**4.45.0+:** open **Session filters, JSON fields and sizes** and use
 **Exclude JSON fields** for up to 32 literal ASCII field names, one per line,
 before **Preview capture**. Approved exclusions remove
 matching keys recursively before capture in both content modes. Producer files
 remain untouched; the rule does not scrub strings or detect secrets in text.
 See [field rules, refusal limits and policy v2](durable-capture.md#exclude-json-fields-unreleased).
-Focused source, service, controller and migration checks and the Linux source
-preview passed; all six packaged journeys remain pending. Existing retained
-source selection requires [reviewed migration](#apply-a-reviewed-capture-policy-unreleased);
+Changing an existing retained source's selection requires
+[reviewed migration](#apply-a-reviewed-capture-policy-unreleased);
 changing rules does not remove already accepted memories or backups.
 
 1. Connect to the intended workspace. An administrator creates a dedicated
@@ -61,7 +60,7 @@ again after changing the mapped audience. An existing entry cannot silently
 switch folders, applications, providers or workspaces; use a separate connection
 for a different source.
 
-In the unreleased source, missing protected credentials or malformed credential
+In Mnemion 4.45.0 and later, missing protected credentials or malformed credential
 strings within their saved size bounds leave otherwise-valid source records
 readable. Missing or malformed capture enrollment also does not prevent pause.
 Use **Pause on this computer** without other settings edits: it changes the
@@ -71,10 +70,9 @@ Enrollment, resume and edits retain strict credential and enrollment validation.
 Invalid whole-file JSON, public source settings, credential field types or
 oversized values still fail validation. Pause preserves accepted evidence;
 follow the [pause and recovery boundaries](durable-capture.md#pause-remove-and-forget).
-Current source checks passed 80 service cases, 88 controller cases and 30 fresh
-migration checks. The Linux source preview also passed all 29 boundary and
-key-recovery checks across two real app launches. All six packaged journeys
-remain pending for this batch.
+The [saved-key source checkpoint](../research/2026-10-21-durable-capture-implementation.md#saved-key-controls-and-platform-validation)
+preserves development evidence; current installed coverage is tracked in the
+qualification record above.
 
 **Sources on this computer** appears under **Setup & this device** and on the
 local setup screen before connecting. It lists saved sources across workspaces.
@@ -178,12 +176,13 @@ and database budgets remain separate.
 | Ordinary text file size | At most 20 MB | Also bounded by RAM allowance |
 | Process deadline | 10 minutes | Stops and retains committed progress |
 
-The unreleased retained inbox adds [content and database limits](durable-capture.md#storage-and-resource-limits):
+The retained inbox adds [content and database limits](durable-capture.md#storage-and-resource-limits):
 256 MiB pending per source by default (1–1,024 MiB selectable), 1 GiB pending
 across the device, 512 MiB database admission per source and 2 GiB across the
 device, plus at least 512 MiB free disk for new intake. Bounded delivery reserve
-does not increase the allowance for new intake. Accepted evidence has no automatic
-expiry; a limit below current usage blocks new intake without trimming the queue.
+does not increase the allowance for new intake. Locally pending evidence has no
+automatic expiry; a limit below current usage blocks new intake without trimming
+the queue. Approved server expiry has its separate scope below.
 
 Remote agents' durable sync requests are picked up at the next scheduled scan.
 Capture does not call a model on this device; the workspace may enqueue embedding
@@ -193,7 +192,7 @@ and access; a saved inbox never authorizes delivery after revocation.
 
 ## Private storage, restart and recovery
 
-The additional unreleased [scheduled capture expiry](durable-capture.md#schedule-capture-expiry-unreleased)
+The [scheduled capture expiry](durable-capture.md#schedule-capture-expiry-unreleased)
 option is available under **Server retention** for new retained sources and in
 administrator policy review. Choose 1–3,650 days and review its family-wide effect.
 An existing inbox adopts it through reviewed policy replacement. Changing RAM,
@@ -204,8 +203,8 @@ overdue cleanup, removal from active memory and pending physical purges. The
 server performs cleanup independently of this computer or its agent. Until that
 cleanup completes, due memories can remain readable. Offline pending content,
 original logs and backups are outside server cleanup. See the canonical guide
-for the exact scope, approval and recovery behavior; six-platform acceptance
-remains open for this source addition.
+for the exact scope, approval and recovery behavior, and the central qualification
+record above for current installed coverage.
 
 The source key uses the OS credential facilities used for saved workspace
 connections, with no plaintext fallback. It crosses the helper's private stdin,
@@ -248,15 +247,15 @@ no new scan starts during shutdown. A cancelled update resumes scheduling; a
 normal relaunch reads saved settings. A helper whose owning app disappears stops
 instead of leaving an orphaned watcher.
 
-## Apply a reviewed capture policy (unreleased)
+<a id="apply-a-reviewed-capture-policy-unreleased"></a>
 
-Development source adds a reviewed policy change for an existing retained source
-on this computer. The earlier checkpoint passed 50 affected service cases and
-103 native controller/private-agent cases. The current app migration journey and
-all six installed targets remain unverified; the [next source slice](../research/2026-10-21-durable-capture-implementation.md#headless-policy-migration-and-app-controls-source-delta)
-records its separate validation scope. L1 remains unreleased; see
-[live release status](https://github.com/Perseusxrltd/mnemion/blob/main/docs/RELEASE_STATUS.md)
-for current availability.
+## Apply a reviewed capture policy
+
+Mnemion **4.45.0 or later** provides a reviewed policy change for an existing
+retained source on this computer. The [policy-migration checkpoint](../research/2026-10-21-durable-capture-implementation.md#headless-policy-migration-and-app-controls-source-delta)
+preserves the paired app/headless source evidence. Use
+[current installed qualification](../research/2026-10-21-durable-capture-implementation.md#current-installed-qualification) and
+[candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released) for the current acceptance state.
 
 1. Pause the retained source and wait for its active scan to stop. In
    **Connections → Run on this computer**, open **Back up this capture inbox**
@@ -305,9 +304,9 @@ backup and a fresh reviewed retry; its old grant is not reactivated.
 
 See the [private-agent procedure](desktop-operator.md#apply-a-reviewed-capture-policy-unreleased).
 The independent runner has a separate [new-device policy procedure](headless-capture.md#apply-a-reviewed-policy-with-a-new-device-configuration-unreleased),
-with a passing Linux source preview and six-target installed acceptance still pending. Migration across organizations or source
-identities and conversion of existing mirrors remain unfinished. These source
-additions do not establish six-target or full L1 acceptance.
+with its own installed qualification. Migration across organizations or source
+identities and conversion of existing mirrors remain unfinished; current
+installed coverage and remaining acceptance are tracked centrally above.
 
 ## Local-agent controls
 
@@ -315,14 +314,14 @@ The same OS-account [private desktop interface](desktop-operator.md) exposes:
 
 | Action | Input |
 | --- | --- |
-| `source.status` | None; returns the settings revision, sources, counts and RSS without keys. The unreleased capture report also separates local acceptance, pending content, server acknowledgements, unknown pages and incomplete scans. |
+| `source.status` | None; returns the settings revision, sources, counts and RSS without keys. The capture report also separates local acceptance, pending content, server acknowledgements, unknown pages and incomplete scans. |
 | `source.configure` | `expected_revision`, `source`, and `credential` for a new entry; an existing entry can keep its key. Cloud sources also use a separate `provider_credential`. |
 | `source.pause` | `expected_revision`, `id`, `enabled` (`false` to pause, `true` to resume). Pause uses the current disk record and tolerates missing/malformed bounded credential strings or damaged capture enrollment with valid public settings; resume retains strict validation. |
 | `source.sync` | `expected_revision`, `id`; queues a scan of an enabled source. |
-| `source.drain` (unreleased) | `expected_revision`, `id`, `confirm: true`; delivers at most four saved pages from a paused retained source without reading its producer folder. Repeat until its separate receipt reports `delivery_complete: true`. |
-| `source.restore` (unreleased) | Inspected archive, fresh preview and new approved grant/credential; defaults to the original capture policy. Explicit `policy_change: true` and `replace_id` select a reviewed replacement of this computer's paused source from its exact current archive. See the [restore inputs](desktop-operator.md#recover-a-capture-device-unreleased). |
+| `source.drain` (4.45.0+) | `expected_revision`, `id`, `confirm: true`; delivers at most four saved pages from a paused retained source without reading its producer folder. Repeat until its separate receipt reports `delivery_complete: true`. |
+| `source.restore` (4.45.0+) | Inspected archive, fresh preview and new approved grant/credential; defaults to the original capture policy. Explicit `policy_change: true` and `replace_id` select a reviewed replacement of this computer's paused source from its exact current archive. See the [restore inputs](desktop-operator.md#recover-a-capture-device-unreleased). |
 | `source.remove` | `expected_revision`, `id`, `confirm: true`. Retained capture also requires a paused source and `discard_local_inbox: true`; server revocation must be confirmed before local discard. Optional `retirement_credential` supplies current administrator authority through the private pipe and is never saved. Already recorded retirement permits cleanup offline without credentials. |
-| `source.repair` (unreleased) | `expected_revision`, `id`, current `repair_token`, `confirm: true`; repairs scan observations for every source on this computer, preserving the damaged diagnostic file and retaining settings, keys, inboxes and checkpoints. |
+| `source.repair` (4.45.0+) | `expected_revision`, `id`, current `repair_token`, `confirm: true`; repairs scan observations for every source on this computer, preserving the damaged diagnostic file and retaining settings, keys, inboxes and checkpoints. |
 
 These actions do not need a selected local workspace or `expected_workspace_id`.
 They require the owning OS account's private pipe. Network MCP/memory credentials
@@ -333,7 +332,7 @@ The `source` object accepts `id` for an existing entry, `endpoint`, `tenant_id`,
 `connector_id`, `principal_id`, `name`, `provider` (`filesystem` or
 `conversations`), absolute `path`, `members`, `publish_to_mapped_members: true`,
 `poll_seconds`, `memory_limit_mib`, `max_files` and `enabled`. Conversations also
-accept `capture_mode: "complete" | "messages"`. The unreleased retained workflow
+accept `capture_mode: "complete" | "messages"`. The 4.45.0 retained workflow
 adds `custody: {source_id, grant_id, keep_accepted: true, pending_limit_mib}` only
 for a new conversation connection after independent server approval of its
 source and exact device-key grant. Follow the [administrator and native setup](durable-capture.md#agent-and-administrator-setup)

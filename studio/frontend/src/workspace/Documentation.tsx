@@ -107,7 +107,15 @@ export default function Documentation() {
   }, [selected]);
   useEffect(() => {
     article.current?.scrollTo(0, 0);
-    if (section && body) article.current?.querySelector(`#${CSS.escape(`doc-${section}`)}`)?.scrollIntoView({ block: "start" });
+    if (section && body) {
+      // Published guides drop the development suffix; old links stay useful.
+      // Keep Markdown HTML disabled, including the aliases used on GitHub.
+      const target = article.current?.querySelector(`#${CSS.escape(`doc-${section}`)}`)
+        ?? (section.endsWith("-unreleased")
+          ? article.current?.querySelector(`#${CSS.escape(`doc-${section.slice(0, -"-unreleased".length)}`)}`)
+          : null);
+      target?.scrollIntoView({ block: "start" });
+    }
   }, [body, section]);
   function documentLink(href: string) {
     const base = new URL(selected?.path ?? "README.md", "https://docs.mnemion.invalid/");

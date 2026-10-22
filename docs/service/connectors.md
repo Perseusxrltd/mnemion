@@ -14,11 +14,11 @@ Source 4.34.0 adds [guided Slack and Drive setup](desktop-cloud-sources.md) with
 existing approved credentials. Interactive provider-account enrollment remains
 separate from this selected-source workflow.
 
-**Unreleased:** [retained conversation capture](durable-capture.md) adds explicit
-source and device approval, an encrypted local inbox and delivery after producer
-logs disappear. Existing adapters remain mirrors. Its native journey and full L1
-acceptance are still pending; consult [release status](../RELEASE_STATUS.md) for
-published availability.
+**4.45.0+:** [retained conversation capture](durable-capture.md)
+adds explicit source and device approval, an encrypted local inbox and delivery
+after producer logs disappear. Existing adapters remain mirrors. consult [published availability](../RELEASE_STATUS.md),
+[current installed qualification](../research/2026-10-21-durable-capture-implementation.md#current-installed-qualification) and
+[candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released).
 
 ## Included adapters
 
@@ -26,7 +26,7 @@ published availability.
 | --- | --- | --- | --- |
 | Git | Committed text from a selected local repository or HTTPS/SSH remote and ref | Explicit publication to mapped identities | No checkout, hooks, submodule execution, or writes upstream. Uncommitted files are excluded. |
 | Filesystem / Obsidian vault | UTF-8 Markdown, text, JSON, JSONL, CSV from a chosen folder | Explicit publication to mapped identities | Preserves text and wikilinks. Ignores Obsidian settings, common credential files, and generated Mnemion mirrors by default. Internal symlinks produce an error. |
-| [Live conversations](live-conversations.md) (4.17.0+) | Selected complete records or supported messages from growing JSONL logs | Explicit mapped audience; one managed scope per file for mirrors | Bounded fragments, deferred tails, metadata checkpoints and body-free reuse. Capture mode controls whether raw records are copied. Requires a running source host; [retained custody](durable-capture.md) is a separate unreleased choice. |
+| [Live conversations](live-conversations.md) (4.17.0+) | Selected complete records or supported messages from growing JSONL logs | Explicit mapped audience; one managed scope per file for mirrors | Bounded fragments, deferred tails, metadata checkpoints and body-free reuse. Capture mode controls whether raw records are copied. Requires a running source host; [retained custody](durable-capture.md) is a separate 4.45.0+ choice. |
 | Google Drive | Selected files or recursive folders; text files; Docs, Slides and all sheets in Sheets exports | A managed permission scope for each file; mapped effective user permissions | Shared-drive API flags are enabled. Unmapped users, groups, domains and `anyone` grants confer no Mnemion access. Group expansion requires an identity-aware custom adapter. |
 | Slack | Explicitly selected channels, messages, edits, and threads | Channel membership mapped to Mnemion identities | Read-only. No messages are sent. Attachment references are retained; attachment binaries are not downloaded. The credential must be allowed to read history, membership, and requested threads. |
 | rclone | Text objects from an operator-configured remote | Explicit publication to mapped identities | Supports the storage providers available in the installed rclone, including S3-compatible stores, OneDrive, Dropbox, WebDAV, and private endpoints. No automatic provider ACL translation. |
@@ -104,7 +104,9 @@ root, including its catalog and archive.
 Do not copy its contents into a writable space merely to make search unified;
 that would detach the copy from the source's access and deletion lifecycle.
 
-## Retained conversation capture (unreleased)
+<a id="retained-conversation-capture-unreleased"></a>
+
+## Retained conversation capture
 
 The [retained capture guide](durable-capture.md) covers the app choice, current
 limits, status, recovery and equivalent native-agent controls. An administrator
@@ -122,19 +124,20 @@ accepted or forgotten history from current files. Existing mirrors need a
 reviewed migration before changing retention.
 
 The ordinary `mnemion-connect` configurations and commands below keep their
-existing mirror behavior. The unreleased [headless capture guide](headless-capture.md)
+existing mirror behavior. The [headless capture guide](headless-capture.md)
 describes the separate top-level `capture` configuration and local stdin
 controls for retained enrollment, scheduling and recovery. `custody` belongs
 to private desktop source settings; neither field belongs inside `provider`.
 Server custody approval alone does not enroll a local runner. Successful
 delivery also does not establish indexing readiness or completed librarian work.
 
-Unreleased development source adds `mnemion-service connect` and bundled
+Mnemion **4.45.0 or later** adds `mnemion-service connect` and bundled
 `mnemion-engine connect` (`mnemion-engine.exe connect` on Windows). They use the
 same `mnemion-connect` options, configuration and private stdin control body;
 see [runner entrypoints and installed locations](headless-capture.md#choose-a-runner-entrypoint-unreleased).
-The `capture` object still controls retention. All six packaged journeys remain
-pending; these new entrypoints are not included in public 4.44.0.
+The `capture` object controls retention; configurations without it keep their
+existing mirror behavior. Use the current qualification and release-status
+records above before selecting an installed runtime.
 
 Desktop retained-source removal requires a pause, explicit local discard and confirmed
 grant revocation. A current workspace administrator can confirm retirement if

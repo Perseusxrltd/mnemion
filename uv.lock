@@ -1593,7 +1593,7 @@ wheels = [
 
 [[package]]
 name = "mnemion"
-version = "4.44.2"
+version = "4.45.0"
 source = { editable = "." }
 dependencies = [
     { name = "argon2-cffi" },

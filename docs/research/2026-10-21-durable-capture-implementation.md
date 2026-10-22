@@ -1,10 +1,11 @@
 # Durable conversation capture: implementation checkpoint
 
-**Unreleased implementation.** This is development work for
-[L1 of the layered librarian](2026-10-20-layered-librarian.md), not a claim that
-published Studio provides the complete journey. Existing sources keep their
-mirror behavior. All [65 product requirements](../PRODUCT_REQUIREMENTS.md) and
-L1–L7 remain in scope; this checkpoint does not close L1 or R07. The current
+**4.45.0 release candidate.** The first local-source journey for
+[L1 of the layered librarian](2026-10-20-layered-librarian.md) has completed its
+[implementation acceptance](../validation/2026-10-22-l1-candidate-acceptance.md).
+Final release and actual-deployment acceptance remain separate. Existing sources
+keep their mirror behavior. All [65 product requirements](../PRODUCT_REQUIREMENTS.md),
+broader provider capture and L1–L7 remain in scope; this does not complete R07. The current
 [app and agent guide](../service/durable-capture.md) describes the implemented
 enrollment, prefix/queue observations, limits, removal and recovery boundaries.
 
@@ -12,11 +13,12 @@ enrollment, prefix/queue observations, limits, removal and recovery boundaries.
 
 Current public availability is recorded in
 [live release status](https://github.com/Perseusxrltd/mnemion/blob/main/docs/RELEASE_STATUS.md).
-L1 is not accepted or released; the public patch releases are separate work.
+The first L1 local-source journey is qualified for release preparation. Public
+patch releases and the final 4.45.0 release gates remain separate work.
 
 | Artifacts | Frozen source and native run | Current evidence |
 | --- | --- | --- |
-| Current Windows, macOS and Linux, x64 and arm64 | `d3587263` · [39814732365](https://github.com/Perseusxrltd/mnemion/actions/runs/39814732365) | The corrected run was started for all six required targets; qualification is pending. The linked run supplies current execution state. The Windows probe now compares the enrolled canonical path after verifying its original folder identity. |
+| Current Windows, macOS and Linux, x64 and arm64 | `d3587263` · [39814732365](https://github.com/Perseusxrltd/mnemion/actions/runs/39814732365) | All 18 jobs passed. All six installed artifacts passed their 59 required receipt fields, after seven capture phases with 96 assertions per target. Exact-source and archive-digest qualification completed at 17:42:57 UTC on 22 October; see the [acceptance record](../validation/2026-10-22-l1-candidate-acceptance.md). |
 | Previous Windows, macOS and Linux, x64 and arm64 | `38eb3021` · [39795261005, attempt 2](https://github.com/Perseusxrltd/mnemion/actions/runs/39795261005/attempts/2) | Both Linux targets and Intel macOS passed. Both Windows targets failed the policy path comparison; Apple Silicon again never acquired a runner. The [corrected comparison](../validation/2026-10-22-native-policy-path.md) requires its own installed qualification. Attempt 1's hosted-runner capacity failure and the single retry of unfinished jobs remain preserved. |
 | Linux x64/arm64 and Windows x64/arm64 | `9095372a` · [39613577682](https://github.com/Perseusxrltd/mnemion/actions/runs/39613577682) | All 58 required true fields qualify for each of these four artifacts. |
 | macOS x64 | `64326de1` · [39628117517](https://github.com/Perseusxrltd/mnemion/actions/runs/39628117517) | Installed hosting passed. All 59 required true fields qualify for this artifact. |
@@ -24,10 +26,11 @@ L1 is not accepted or released; the public patch releases are separate work.
 
 The [receipt update](#native-matrix-checkpoint) and
 [startup-drain checkpoint](#source-startup-drain-correction) bind these artifacts
-to three different frozen sources. Six-target acceptance of the current
-development source remains open. The source checkpoints below preserve earlier
-failures and their contemporaneous validation state; the remaining L1 contracts
-stay open.
+to three different frozen sources. The current six-target qualification is bound
+to `d3587263`; it does not relabel earlier results or qualify the final versioned
+release. The source checkpoints below preserve earlier failures and their
+contemporaneous validation state. Current acceptance and continuing scope are
+recorded at the end of this document.
 
 The [shared-host actual-Codex journey](../validation/2026-10-22-shared-codex-capture.md)
 completed on 22 October using the same `38eb3021` source app and an independent
@@ -36,8 +39,10 @@ restarts, original-file removal, lost-reply reconciliation, reader revocation,
 exact raw ranges, separate indexing, persistent forgetting and app/agent source
 retirement. Its original UI-harness and application-name failures remain
 preserved; the documented continuation completed without replaying uncertain
-mutations. This closes that bounded source journey, not the installed matrix or
-the other L1 gates below.
+mutations. Its runtime inputs differ from the qualified native source only in
+the Windows test's canonical-path comparison. The accepted source journey is
+therefore retained without rerunning it; the candidate acceptance record binds
+it to the separately qualified installed matrix.
 
 ## Current Codex producer, 21 October 2026
 
@@ -1749,46 +1754,42 @@ another CI matrix on the same inexpensive documentation failure.
 
 ## Required before L1 can be released
 
-- Finish acceptance of the encrypted coverage/gap accounting, including selected,
-  omitted and unsupported complete-line counts and persistent queue/contact
-  observations. Finish acceptance of separately observed index progress and the
-  remaining historical coverage work. Join observed, locally accepted and
-  server-acknowledged progress without turning unknown history into zero gaps or
-  queue age into measured offline duration. Consolidated progress remains unavailable until the
-  corresponding L2/L3 work exists.
-- Finish acceptance of the bounded preview, filename/session selection, explicit
-  retention and per-fragment policy revisions. Complete the broader policy and
-  preset contract: the new opt-in scheduled server expiry and JSON-field
-  exclusions need their final packaged acceptance. Local pending evidence has
-  no automatic expiry, and attachment fetching remains unavailable. JSON-field
-  exclusion does
-  not provide general redaction of secrets embedded in text.
-  Keep unavailable capabilities explicit and retain reviewed migration requirements.
-- Complete packaged archive export/inspection and device-recovery acceptance,
-  including protected-key enrollment and interrupted publication/finish/discard.
-  Fixed-policy device recovery and the new desktop policy-copy path do not close
-  those journeys or provide migration across organizations or source identities.
-  Finish acceptance of the reviewed capture-selection transition, including
-  interrupted drain/copy/retirement. Retain the broader migration requirement,
-  existing mirror behavior and past forgetting decisions; current files alone
-  are insufficient.
-- Complete acceptance of the independent headless retained-source enrollment,
-  scheduling and lifecycle journey. Its explicit JSON `capture` configuration
-  and local controls passed the bounded source checks above; packaged acceptance
-  remains open. Configurations without `capture` keep the existing mirror
-  protocol. Desktop helper or source-journey proof does not establish headless
-  acceptance. The new independent headless policy-copy path still requires its
-  installed acceptance, including interrupted finish/discard and
-  preservation of original evidence and forgetting decisions.
-- Complete bounded retained-history behavior and L1 acceptance for backpressure,
-  retention and aggregate limits, including interrupted enrollment and current
-  permission changes. Existing admission caps and the Linux source journey do
-  not close those acceptance tasks.
-- Run the complete packaged journey on all six required targets: Windows,
-  macOS and Linux, each x64 and arm64. Accept offline pause, refusal of unconfirmed
-  discard, administrator retirement, restart during cleanup, lost/corrupt keys or
-  inboxes, and verified recovery against the final source and required contracts.
-  Keep the normal permission, integrity, recovery and release gates intact.
+The original first-source milestone has completed its
+[candidate implementation acceptance](../validation/2026-10-22-l1-candidate-acceptance.md).
+The checklist below records the outcome of each previously open gate rather than
+removing its contract. Final 4.45.0 release, public-update and actual-deployment
+acceptance remain separate.
+
+- **Coverage, gaps and indexing qualified:** encrypted prefix and queue accounting,
+  selected/omitted/unsupported records, unknown history and separate index
+  observations passed source, installed and actual-producer acceptance. Queue
+  age is not relabeled as measured offline time. Inaccessible history remains
+  unknown, and consolidated progress awaits L2/L3.
+- **Selection and policy qualified:** bounded preview, filename/session selection,
+  immutable per-fragment revisions, JSON-field exclusions and explicitly approved
+  server expiry passed the installed app/agent journey. Local pending evidence
+  has no automatic expiry. Attachment fetching and general redaction of secrets
+  inside text remain unavailable; wider policy capabilities stay on the roadmap.
+- **Archive and recovery qualified:** export/inspection, new protected device
+  keys, paused recovery, reviewed policy replacement and retirement reconciliation
+  passed. Real process-exit checks retain interrupted intent and finish/discard;
+  uncertain committed operations are reconciled before retrying. Migration across
+  organizations or source identities and automatic mirror conversion remain open.
+- **Independent headless lifecycle qualified:** all six packaged engines passed
+  separate enrollment, offline watch/restart, delivery, recovery, paused drain,
+  policy replacement and forgetting checks. Configurations without `capture`
+  retain mirror behavior. Installing a runtime does not register a background
+  service or activate a separately paused publisher.
+- **Bounded storage and scheduling qualified:** source checks preserve accepted
+  evidence under reduced admission caps, actual database-page limits, disk
+  reserve, interrupted reclamation, history fences and current permission changes.
+  Installed quota controls agree with the agent. Finite scope/history/page/archive
+  limits remain explicit; larger histories, cross-device coordination and
+  representative fleet performance require their own acceptance.
+- **Six-target installed journey qualified:** Windows, macOS and Linux, each x64
+  and arm64, passed on frozen source `d3587263`. The original failed attempts are
+  preserved. These development artifacts do not replace the final 4.45.0 release's
+  exact-source, signature, public-feed and installation gates.
 
 The coverage and policy items above retain sections 2–3 of the original private
 `l1-next-milestone-audit.md` and the public [completion audit](../implementation/completion-audit.md).
@@ -1804,5 +1805,6 @@ Component checks are maintained in the repository: [persistent observations](../
 [native controller](../../studio/electron/scripts/test-desktop-sources.mjs),
 [server custody](../../service_tests/test_capture_custody.py) and its
 [review checks](../../service_tests/test_capture_custody_review.py). Completed
-receipts establish their stated scope; this checkpoint makes no new claim of
-installed platform or release acceptance.
+receipts establish their stated scope; the candidate record adds the qualified
+first-source and installed evidence. Final release and actual-deployment
+acceptance remain separate.

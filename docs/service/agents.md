@@ -132,15 +132,23 @@ validation has no service request ID. Diagnostic errors omit rejected values and
 Python tracebacks. Preserve the same idempotency key when retrying a write; do not
 repeat an uncertain administrative change without checking its result.
 
-## Conversation capture (unreleased)
+<a id="conversation-capture-unreleased"></a>
+
+## Conversation capture
 
 Connecting an assistant to Mnemion does not automatically copy its conversation
 history. Capture requires a selected source, an approved audience and a running
 source host. The [desktop source guide](desktop-sources.md) covers existing
-mirrors; [retained conversation capture](durable-capture.md) describes the
-unreleased inbox workflow that keeps locally accepted selection after original
-logs rotate or disappear. It advances L1 without closing L1, R07 or the remaining
-layered-librarian work.
+mirrors.
+
+**4.45.0+:** [retained conversation capture](durable-capture.md)
+keeps locally accepted selection after original logs rotate or disappear.
+Use [published availability](../RELEASE_STATUS.md),
+[current installed qualification](../research/2026-10-21-durable-capture-implementation.md#current-installed-qualification) and
+[candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released) to assess availability.
+The [actual-Codex shared-source journey](../validation/2026-10-22-shared-codex-capture.md)
+is accepted for its documented source workflow. The full R07 librarian and broader provider capture remain open, and
+L2–L7 remain separate roadmap work.
 
 For a new retained connection, the administrator first configures its source
 policy and exact device-key grant through the `capture.source.configure` and
@@ -150,8 +158,8 @@ desktop `source.configure` action with that approved
 The selected `capture_mode` is `messages` or `complete` and is immutable for that
 inbox. A source key cannot authorize itself, and a network MCP credential cannot
 control another computer. Follow the [same ordered enrollment as Studio](durable-capture.md#agent-and-administrator-setup)
-and discover current schemas before writing; these controls are not a released
-automatic migration for existing sources.
+and discover current schemas before writing. Existing mirrors keep their
+previous behavior; this workflow does not provide a mirror-to-retained migration.
 
 Read `source.status` and use a fresh settings revision for local mutations.
 Report locally accepted events, pending content, server acknowledgements, unknown

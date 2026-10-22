@@ -38,10 +38,12 @@ reference is supported; unrelated API/owner credentials and all database-role
 variables are removed from scan and launcher-handoff environments. Git/SSH,
 proxy and explicitly configured provider authentication remain available.
 
-## Retained inbox environment references (unreleased)
+<a id="retained-inbox-environment-references-unreleased"></a>
 
-An unreleased correction lets a registered Linux/macOS Supervisor connector pass
-an explicit `capture.inbox_key.env` reference alongside its service/provider
+## Retained inbox environment references
+
+Mnemion **4.45.0 or later** lets a registered Linux/macOS Supervisor connector
+pass an explicit `capture.inbox_key.env` reference alongside its service/provider
 credential references. For example, use `{"env":"MNEMION_CAPTURE_INBOX_KEY"}`
 for `capture.inbox_key` in the [headless configuration](headless-capture.md#prepare-the-approved-source-and-private-files).
 The value comes first from the Supervisor's private environment settings,
@@ -55,17 +57,15 @@ remain in force. The correction does not inherit arbitrary credentials or
 database-role variables. File references and their normal reload behavior are
 unchanged.
 
-Six focused source checks passed for forwarding, private-settings precedence and
-missing/reserved references. One real Supervisor/API/worker/PostgreSQL journey
-also passed: content accepted offline survived producer removal and a connector
-process restart, then delivered once using the same inbox key. Supervisor stopped
-cleanly.
+The [Supervisor source checkpoint](../research/2026-10-21-durable-capture-implementation.md#supervised-headless-inbox-key-forwarding)
+preserves the key-forwarding and process-restart evidence. See
+[current installed qualification](../research/2026-10-21-durable-capture-implementation.md#current-installed-qualification) and
+[candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released) for release readiness.
 
 Register each connector explicitly through the existing `--connector-config`
 setup and retain the host's startup arrangement. This does not add independent
-Windows supervision, boot registration or update management. Packaged acceptance
-for this correction remains pending; retained capture and this correction are
-not in public 4.44.0.
+Windows supervision, boot registration or update management. These controls are not included in **4.44.2**; check [published availability](../RELEASE_STATUS.md)
+before selecting a runtime.
 
 ## Update and recovery behavior
 
@@ -77,7 +77,7 @@ for access pauses new scans and retries in about 30 seconds. Existing scans
 finish normally. This prevents continuous ingestion from starving an update.
 An abandoned pause expires and also requires a matching live process identity.
 
-Mirror scans wait while the service is unavailable. The unreleased
+Mirror scans wait while the service is unavailable. The
 [headless retained-capture mode](headless-capture.md) can accept selected evidence
 locally during a service outage when its verified runtime advertises capture
 protocol 1. All modes still wait through update journals and runtime transitions;

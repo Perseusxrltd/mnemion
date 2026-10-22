@@ -51,21 +51,19 @@ had omitted that evidence because no separate CI run existed. The additional
 retains its PyPI timeout, stalled runner and single retry of the two unfinished
 checks; it was not the original product acceptance. The automatic
 [release status](../RELEASE_STATUS.md) supplies its current outcome.
-Separate main source `38eb3021d517a193b47501f902b4595a49d44178`
-passed [CI](https://github.com/Perseusxrltd/mnemion/actions/runs/39795183358) and
-[Git website synchronization](https://github.com/Perseusxrltd/mnemion/actions/runs/39795183441);
-its earlier [native attempt 2](https://github.com/Perseusxrltd/mnemion/actions/runs/39795261005/attempts/2)
-finished with three installed targets passing, both Windows targets failing the
-policy comparison and Apple Silicon never acquiring a runner. The
-[Windows path comparison correction](../validation/2026-10-22-native-policy-path.md)
-has local evidence. The corrected installed qualification is
-[39814732365](https://github.com/Perseusxrltd/mnemion/actions/runs/39814732365),
-on `d358726366bfef0e4cbddcb69741512de1d2fd78`; full six-target qualification
-remains pending.
-Those checks belong to different sources. Full durable capture
-**L1 remains unreleased and unaccepted**; retain its
-[remaining acceptance work](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released)
-and all L1–L7 scope.
+The **4.45.0 capture candidate** has completed the first local-source
+[implementation acceptance](../validation/2026-10-22-l1-candidate-acceptance.md).
+Source `d358726366bfef0e4cbddcb69741512de1d2fd78` passed all 12 Product checks and
+all 18 jobs in [native run 39814732365](https://github.com/Perseusxrltd/mnemion/actions/runs/39814732365).
+Each of its six installed artifacts qualified against the frozen contract and
+GitHub archive digest. The independent actual-Codex shared-host journey retains
+its original source and failed harness observations; reviewed runtime equivalence
+permits reuse without repeating it. Earlier Windows policy-path failures and
+unassigned Apple Silicon jobs remain recorded in the implementation history.
+Final **4.45.0 release and actual-deployment gates remain open**. Retain the
+[continuing capture scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released),
+broader provider histories and all L1–L7 work. No complete requirement is promoted
+by preparing this release.
 
 Actual installation acceptance remains separate. The VPS was observed on
 **4.44.2 at 12:06 UTC** on 22 October. At **15:32:08 UTC**, the actual Windows app

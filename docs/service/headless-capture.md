@@ -1,12 +1,9 @@
 # Headless retained conversation capture
 
-**Unreleased development source.** Use a matching development runner and
-workspace with `durable_capture: "v1"` in `GET /health/live`.
-The [source checkpoint checks](../research/2026-10-21-durable-capture-implementation.md#headless-retained-capture-source-delta)
-passed; all six packaged target journeys remain pending. This guide does not
-close L1 or R07. Consult
-[live release status](https://github.com/Perseusxrltd/mnemion/blob/main/docs/RELEASE_STATUS.md)
-for current public availability.
+**Requires Mnemion 4.45.0 or later.** Use a matching runner and workspace with
+`durable_capture: "v1"` in `GET /health/live`. Check [published availability](../RELEASE_STATUS.md),
+[current installed qualification](../research/2026-10-21-durable-capture-implementation.md#current-installed-qualification) and
+[candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released). The full R07 librarian and broader provider capture remain open.
 
 An explicit `capture` object makes `mnemion-connect` retain selected conversations
 in an encrypted local inbox before attempting delivery. A configuration without
@@ -14,10 +11,11 @@ that object keeps its existing mirror behavior. Configuration alone never
 enrolls, resumes or recreates a missing inbox. This runner operates independently
 of Studio and its [private desktop controls](desktop-operator.md).
 
-## Choose a runner entrypoint (unreleased)
+<a id="choose-a-runner-entrypoint-unreleased"></a>
 
-The new `connect` subcommand is implemented in unreleased development source;
-all six packaged journeys remain pending. These entrypoints share the same
+## Choose a runner entrypoint
+
+Mnemion 4.45 adds the `connect` subcommand. These entrypoints share the same
 connector options, configuration and control body:
 
 | Runner | Command prefix |
@@ -46,9 +44,9 @@ are not part of this interface.
 Invoke the executable directly and pass arguments separately. `connect` starts
 the independent connector; it does not start Studio or the memory service.
 Send capture controls through private stdin using the same JSON body below,
-with secrets held in protected file or environment references. The new
-policy-migration journey still requires acceptance on all six installed targets;
-earlier artifacts do not qualify this current source.
+with secrets held in protected file or environment references. Use the current
+qualification record above for installed coverage of these entrypoints and
+their recovery/policy workflows.
 
 ## Prepare the approved source and private files
 
@@ -150,7 +148,9 @@ Retained capture requires `until_deleted` or explicitly approved `expire_after`,
 normalization enabled and generated files excluded. Automatic secret detection,
 attachment fetching and hidden reasoning remain unavailable.
 
-### Scheduled server expiry (unreleased)
+<a id="scheduled-server-expiry-unreleased"></a>
+
+### Scheduled server expiry
 
 For expiry, use the complete [v3 policy](durable-capture.md#schedule-capture-expiry-unreleased)
 as `provider.capture_policy`, matching the approved device grant. It requires
@@ -169,8 +169,8 @@ by a stopped worker or migration pause. It is not a hard read TTL.
 
 Existing enrolled policies remain immutable. Use the reviewed policy-replacement
 procedure below to adopt expiry; editing an existing configuration does not
-reset or relabel accepted content. This source addition remains unreleased and
-requires the final installed platform journeys.
+reset or relabel accepted content. Installed coverage and remaining acceptance
+for expiry are tracked in the central records above.
 
 Older mode-only `complete` or `messages` configurations can explicitly enroll
 with `capture` only against a matching mode-only approved grant. They must keep
@@ -180,12 +180,12 @@ Changing enrolled identity, source path, selection, audience or credential
 references also requires explicit recovery or re-enrollment. Runtime resource
 limits and polling settings do not change the approved capture policy.
 
-### Exclude JSON fields (unreleased)
+<a id="exclude-json-fields-unreleased"></a>
 
-This additional development feature uses the same policy as native source setup
-and hosted administrator review. Focused source, service, controller and migration
-checks and the Linux desktop source preview passed; all six packaged journeys
-remain pending. For a new enrollment, set
+### Exclude JSON fields
+
+Retained capture uses the same field-exclusion policy as native source setup and
+hosted administrator review. For a new enrollment, set
 `provider.capture_policy` to the exact approved v2 policy, for example:
 
 ```json
@@ -220,7 +220,9 @@ previously accepted memories, queued evidence or backups.
 Use the [reviewed policy replacement](#apply-a-reviewed-policy-with-a-new-device-configuration-unreleased)
 for an existing retained source.
 
-## Administrator policy changes (unreleased)
+<a id="administrator-policy-changes-unreleased"></a>
+
+## Administrator policy changes
 
 With `capture_policy_versions: "v1"`, administrators can manage source defaults,
 policy history and device authorizations from Studio or the hosted workspace's
@@ -240,7 +242,7 @@ evidence. The [policy checkpoint](../research/2026-10-21-durable-capture-impleme
 records the separate source, server recovery and browser administration checks.
 To adopt the current policy locally, use the separate
 [new-device policy restore](#apply-a-reviewed-policy-with-a-new-device-configuration-unreleased).
-Organization/source migration and the six packaged journeys remain open.
+Migration across organizations or source identities remains unfinished.
 Known inactive authorizations remain
 observable even after their retired source/connector metadata is hidden, so
 that denial stops later intake without exposing the hidden metadata.
@@ -349,7 +351,7 @@ credential therefore does not undo accepted local content. Missing producer
 files can block new intake while the existing queue still delivers. Unfinished JSONL tails wait
 for another scan. Anything deleted before local acceptance remains unavailable.
 
-The unreleased [bounded backfill](durable-capture.md#continue-a-bounded-backfill-unreleased)
+The [bounded backfill](durable-capture.md#continue-a-bounded-backfill-unreleased)
 saves verified progress at the existing fragment boundaries. Each producer file
 gets an allowance of 64 newly rendered fragments or 32 MiB of newly parsed input
 per pass, reduced when pending-byte headroom is small. The soft stop reserves
@@ -360,7 +362,7 @@ whole connection's work or guarantee RAM usage or multi-file fairness. The next
 scan resumes the saved prefix even when file metadata is unchanged. Existing
 mirror configurations retain full inventories.
 
-An additional **unreleased** source batch adds [connection-wide intake allowances](durable-capture.md#share-an-intake-pass-across-files-unreleased):
+Connection-wide [intake allowances](durable-capture.md#share-an-intake-pass-across-files-unreleased) bound each pass:
 256 file attempts, 256 rendered fragments, 64 MiB of actual producer reads
 including prefix verification, and 30 seconds or the smaller per-file scan
 budget. A saved encrypted cursor rotates file attempts across restarts; catalog
@@ -369,7 +371,7 @@ catalog and the current fragment/verification may overrun the cooperative
 budget. Delivery and cleanup remain separate, and the existing per-file limits
 still apply. Unvisited and previously failed files stay visible in coverage.
 Archive inspection validates the schedule, and device-key recovery preserves
-it. Scoped source validation passed; packaged acceptance remains open.
+it. Current installed coverage is tracked in the qualification record above.
 
 `--watch` reloads configuration and referenced key files for each scan. Normal
 polling defaults to 300 seconds, configurable from 30 to 86,400. With
@@ -403,26 +405,26 @@ Studio updates.
 On an adopted Linux/macOS host, `--watch --managed-state /private/managed-service`
 uses the [managed runtime](managed-connectors.md). Every entrypoint accepts this
 option, but it requires `--watch` and the existing adopted host's verified state;
-it cannot be combined with `--capture-control`. In this development delta,
-retained capture may scan while local service readiness is false. It still
+it cannot be combined with `--capture-control`. Retained capture may scan while
+local service readiness is false. It still
 holds the runtime/update leases, waits through update journals and cutovers,
 and requires `capture_protocol: 1` from the verified runtime preflight. An older
 runtime explicitly refuses retained capture. Mirror configurations keep their
 service-readiness gate. This option selects an existing managed service; it
 does not install a process manager, enroll a source or provide Windows managed
-hosting. Use a runtime that supports this unreleased capture protocol; current
-public availability is tracked by the live release status linked above.
+hosting. Use a runtime that supports the capture protocol; current
+public availability is tracked by the release-status link above.
 
-An additional **unreleased Supervisor correction** passes an explicitly configured
+The Supervisor passes an explicitly configured
 `capture.inbox_key.env` to registered Linux/macOS connector processes. It reads
 the value from private Supervisor settings, falling back to the Supervisor's
 process environment at launch. Missing references and reserved names such as
 `MNEMION_ADMIN_DATABASE_URL`, `MNEMION_VAULT_KEY` or `PYTHONPATH` refuse launch;
 arbitrary credentials and database-role variables are not inherited. File key
 references retain their normal reload behavior. See [Supervisor inbox-key references](managed-connectors.md#retained-inbox-environment-references-unreleased).
-Six focused source checks and one real Supervisor restart journey passed.
-Startup registration stays explicit; packaged acceptance for this correction
-remains pending.
+The [Supervisor source checkpoint](../research/2026-10-21-durable-capture-implementation.md#supervised-headless-inbox-key-forwarding)
+preserves development evidence. Startup registration stays explicit; use the
+central qualification record for current installed coverage.
 
 For the five-second follow-up, the managed launcher removes the old optional
 receipt before each scan and reads a new private `capture_backfill` boolean.
@@ -477,15 +479,11 @@ its actual next scan time and prior success/failure observations preserved.
 That native state requires its valid report and successful delivery contact;
 missing proof or genuine errors cannot be presented as normal backfill.
 
-The [earlier per-file backfill checkpoint](../research/2026-10-21-durable-capture-implementation.md#bounded-retained-backfill-source-delta)
-records passing source, controller and migration checks, the app/documentation
-build, all 12 CI jobs on `763a8341` and an isolated Linux intake measurement.
-The separate [connection scheduling and continuation proof](../research/2026-10-21-durable-capture-implementation.md#connection-intake-budget-and-rotation-source-delta)
-now covers 150 distinct service cases, 68 native controller checks and 30
-migration checks. Its real watcher moved through intake-pending and
-delivery-pending to 576 stored events, zero pending and zero uncertain intervals.
-Original failed runs remain recorded. Current full CI and all six packaged
-targets remain separate; this source work is unreleased and full L1 remains open.
+The [per-file backfill checkpoint](../research/2026-10-21-durable-capture-implementation.md#bounded-retained-backfill-source-delta)
+and [connection scheduling checkpoint](../research/2026-10-21-durable-capture-implementation.md#connection-intake-budget-and-rotation-source-delta)
+preserve development evidence and earlier failures. Use
+[current installed qualification](../research/2026-10-21-durable-capture-implementation.md#current-installed-qualification) and
+[candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released) for the current acceptance state.
 
 Saved [prefix coverage](durable-capture.md#read-prefix-coverage), queue age and
 authenticated contact/acknowledgement observations keep their separate meanings.
@@ -514,7 +512,7 @@ blocks new admission without trimming evidence. After a killed process, inspect 
 and reuse the existing inbox and exact pending pages; SQLite recovery and later
 delivery reconcile committed work. Do not generate a new key for that inbox.
 
-The new **unreleased** [history observation](durable-capture.md#read-history-usage-and-change-local-quotas-unreleased)
+The [history observation](durable-capture.md#read-history-usage-and-change-local-quotas-unreleased)
 is saved in `activity.report.capture.history`; it reports each retained counter,
 effective limits, database bytes and `fence_history_blocked`. `status` exposes
 the currently configured `history_limit_events` and `database_limit_mib`
@@ -530,12 +528,12 @@ encrypted intake pause while accepted deliveries remain eligible. The reason
 limit and scan until the authenticated fence sweep finishes; a further scan
 can then resume intake. Explicit pause still stops both intake and delivery.
 No history is pruned to make room, and delivery still needs usable disk and
-current authorization. Focused source, controller and migration checks passed,
-including real HTTP overflow and key recovery. Current CI,
-lifetime/history/page/archive limits and packaged L1 acceptance remain open.
+current authorization. Lifetime, history, delivery-page and archive bounds
+remain part of [candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released); current installed
+coverage is tracked in the qualification record above.
 
-The additional unreleased [free-page cleanup](durable-capture.md#reclaim-unused-database-pages-unreleased)
-delta attempts reclamation before intake and after delivery. New inboxes use
+The [free-page cleanup](durable-capture.md#reclaim-unused-database-pages-unreleased)
+attempts reclamation before intake and after delivery. New inboxes use
 incremental vacuum with a 64 MiB allowance and 0.5-second cooperative time budget
 per pass. Older inboxes need whole-database conversion after all pending events
 and delivery pages settle through confirmed storage or forgetting, with disk
@@ -545,9 +543,8 @@ not cap that conversion.
 bytes reclaimed across the scan's two passes and the final pass's bounded
 state/reason. Older absent/null observations remain unknown. Cleanup preserves
 every logical record and denial, introduces no expiry and does not relieve the
-configured history allowance (default 100,000 per counter) or 10,000-scope cap. Its focused source, controller and
-migration checks passed separately from the earlier headless proof; all
-installed-platform, release and full L1 acceptance remain open.
+configured history allowance (default 100,000 per counter) or 10,000-scope cap.
+Current installed coverage and remaining acceptance are tracked centrally above.
 
 ## Drain a paused inbox
 
@@ -675,11 +672,16 @@ and **keeps** its local inbox and keys. It is not a general erase command. Grant
 retirement does not forget server memories or revoke the API key's ordinary
 principal rights. Use the separate approved operations for those actions.
 
-## Apply a reviewed policy with a new device configuration (unreleased)
+<a id="apply-a-reviewed-policy-with-a-new-device-configuration-unreleased"></a>
 
-This source addition passed **25 affected headless cases**, including the nine
-new policy cases, and the paired Linux app/headless source preview. All six
-installed targets remain pending. See the [scoped evidence](../research/2026-10-21-durable-capture-implementation.md#headless-policy-migration-and-app-controls-source-delta).
+## Apply a reviewed policy with a new device configuration
+
+Retained capture supports a reviewed policy change through a separate device
+configuration. The [policy-migration checkpoint](../research/2026-10-21-durable-capture-implementation.md#headless-policy-migration-and-app-controls-source-delta)
+preserves the paired app/headless source evidence. Use
+[current installed qualification](../research/2026-10-21-durable-capture-implementation.md#current-installed-qualification) and
+[candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released) for current installed coverage and
+release readiness.
 
 1. Pause and drain the original device until `delivery_complete: true`, then
    create and inspect a fresh encrypted archive. Preserve the original inbox,
@@ -727,7 +729,7 @@ inbox and archive intact. The old grant is not reactivated; a fresh reviewed
 retry requires another unused device ID, configuration and inbox key.
 
 The operation creates a new-device copy and keeps the original configuration
-identity. The Linux source preview does not establish packaged acceptance.
-Cross-organization/source migration, conversion of existing mirrors, historical coverage, remaining policy
-capabilities, retained-history and backpressure acceptance, and the complete
-six-platform journey remain open under the [L1 requirements](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released).
+identity. Migration across organizations or source identities and conversion of
+existing mirrors remain unfinished. Historical coverage, remaining policy
+capabilities, retained-history and backpressure acceptance, and complete
+installed-platform qualification remain under [candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released).

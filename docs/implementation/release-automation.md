@@ -10,6 +10,8 @@ gates; no paid service, model call or new signing credential is required.
    environment. It updates the Python/npm packages, project lock entries, release
    targets and reviewed-source marker, generates OpenAPI and agent contracts, and
    validates the version boundaries. Unrelated dependency pins are preserved.
+   It accepts both the original combined roadmap header and the current separate
+   source/public-status lines, retaining the live public-availability link.
 3. Run checks appropriate to the change, then commit reviewed source.
    `python -m deploy.release_automation integrate` pushes it normally to main.
    Incoming commits containing only allowlisted generated metadata are merged

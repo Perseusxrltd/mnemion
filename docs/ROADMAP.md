@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.44.2**.
+Reviewed source distribution: **4.45.0**.
 Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-22**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
@@ -21,70 +21,44 @@ issue review, publication and version-linked closure together.
 
 ## Current delivery checkpoint
 
-- **Durable conversation capture remains in development.** Reviewed source now
-  provides encrypted local intake before network delivery, restart-safe queues,
-  current permission checks and permanent forgetting decisions. App and agent
-  controls share Selected/Conversation/Detailed presets, file selection, size
-  limits, optional JSON-field exclusions and an explicit preview. Coverage keeps
-  selected, omitted and unsupported records, unknown history, unaccepted bytes,
-  delivery receipts and indexing observations separate. Bounded backfill,
-  connection scheduling and configurable RAM, pending-byte, history and database
-  limits apply without requiring a librarian or a model for local capture.
-  See the [complete implementation checkpoint](research/2026-10-21-durable-capture-implementation.md)
-  and [app and agent guide](service/durable-capture.md).
+- **4.45.0 durable-capture release candidate.** The first approved local Codex
+  JSONL journey has completed its [implementation acceptance](validation/2026-10-22-l1-candidate-acceptance.md).
+  All six installed targets passed on source `d3587263`, alongside exact-source
+  Product checks and an independent actual-Codex shared-host journey. The
+  original failed native and harness attempts remain preserved. Final versioned
+  release, public-update and actual-deployment gates remain separate.
 
-  Encrypted archive inspection, new-device recovery and reviewed policy replacement
-  now preserve original evidence and forgetting decisions, rotate protected keys,
-  retire old grants and install paused replacements. Independent headless
-  enrollment, background operation, paused delivery, recovery and policy
-  replacement use the same custody rules. Interrupted publication has explicit
-  finish/discard controls; wider organization/source migration remains open.
-  A further [retirement-interruption correction](research/2026-10-21-durable-capture-implementation.md#durable-intent-before-device-retirement)
-  saves recovery intent before revoking the old grant. App and headless recovery
-  expose unconfirmed retirement, require current administrator authority to
-  resolve it and read the server before retrying. The 47 affected recovery cases
-  include four real process-exit checks; all 96 native controller cases passed.
-  The app recovered a lost retirement reply without repeating the revocation.
-  Installed acceptance of this correction remains separate.
-  The following [Windows policy-recovery correction](research/2026-10-21-durable-capture-implementation.md#windows-policy-recovery-and-release-preflight)
-  reuses the locked original database during capacity accounting. Native Windows
-  quota checks and the 19-check Linux app journey passed; final packaged
-  qualification remains required.
+  Studio and native agents share capture preview, Selected/Conversation/Detailed
+  presets, file/field selection, audience review, encrypted offline intake and
+  restart-safe queues. Coverage distinguishes unknown history, accepted records,
+  pending delivery and indexing. Bounded backfill, fair intake and configurable
+  RAM, history, pending-byte and database limits need no model for local capture.
+  [App instructions](service/durable-capture.md) and the
+  [independent headless workflow](service/headless-capture.md) describe enrollment,
+  paused operation, encrypted archives, new-device recovery, reviewed policy
+  replacement and permanent forgetting decisions.
 
-  The new [scheduled-retention batch](research/2026-10-21-durable-capture-implementation.md#scheduled-capture-retention-source-delta)
-  adds an explicit approved expiry period and cleanup observations. Earliest
-  approved fragment-family deadlines cannot be extended by retries, revisions or
-  replacement keys. Bounded server cleanup preserves migration fences, audit and
-  deletion history. Recovery reconciles due families before publishing a restored
-  service. Existing copies may remain readable until cleanup; producer files,
-  offline pending evidence and archives have separate retention boundaries.
+  Approved server expiry has visible cleanup progress and deadlines that retries
+  or replacement keys cannot extend. Offline pending content, producer files and
+  archives have separate retention. Interrupted recovery records its intent
+  before retiring a grant and reconciles lost replies before retrying. Five
+  capture migrations use the existing reviewed host-upgrade and backup path.
 
-  Source checks include real Codex 0.163.0 producer bytes, PostgreSQL recovery and
-  current-access scenarios. The latest matching-input Linux app journey passed
-  19 policy/expiry/recovery checks; the independent headless journey passed 17 checks.
-  The [shared-host actual-Codex journey](validation/2026-10-22-shared-codex-capture.md)
-  now passed with the same app/agent source across offline intake, restarts,
-  removed originals, a lost committed reply, reader revocation, indexing,
-  forgetting and administrator removal. Its isolated database and forward were
-  stopped; both private test-harness failures remain preserved.
-  Final installed qualification for source `38eb3021` is
-  [39795261005, attempt 2](https://github.com/Perseusxrltd/mnemion/actions/runs/39795261005/attempts/2).
-  GitHub did not acquire an Apple Silicon dependency runner in attempt 1; only
-  unfinished jobs were retried. The earlier scheduled-retention run passed its
-  four Linux/macOS targets and failed both Windows policy-recovery checks before
-  the correction above. Current Windows, macOS and Linux targets, each x64 and
-  arm64, still must pass before installed acceptance is claimed. Earlier receipts cover different
-  frozen sources and remain [documented separately](research/2026-10-21-durable-capture-implementation.md#current-installed-qualification).
-  Finish the [remaining L1 acceptance work](research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released),
-  alongside the now-accepted shared-host/real-producer journey. Broader provider coverage,
-  migration, text redaction and later librarian layers remain in scope.
+  The [complete implementation history](research/2026-10-21-durable-capture-implementation.md)
+  and [acceptance checklist](research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released)
+  retain all evidence and limits. Broader provider/plugin capture, inaccessible
+  history, attachment retrieval, text-secret redaction, wider migrations, fleet
+  measurements and L2–L7 remain explicit work. No full requirement is promoted
+  by this candidate, and the separately paused PC publisher remains paused.
 
 - **4.44.2 is publicly available.** The Codex-format and Windows startup hotfix
   passed its six-platform native gates, artifact verification and all six public
   update checks. Website synchronization passed automatically. Download links,
   release notes and current availability continue to follow Git; this public
-  hotfix does not include the unfinished durable-capture milestone. Actual
-  deployment and separate Grok Bot cloud acceptance remain tracked by
+  hotfix does not include the durable-capture milestone. Its actual Windows/shared
+  host [paired acceptance](validation/2026-10-22-4442-live-acceptance.md) passed
+  with 41 isolated lab requests and complete cleanup. Separate Grok Bot cloud
+  and broader deployment acceptance remain tracked by
   [the maintenance board](MAINTENANCE_STATUS.md).
 
 - **4.44 is published and accepted on the actual Windows app and shared host.** Certifi 2026.10.19 and

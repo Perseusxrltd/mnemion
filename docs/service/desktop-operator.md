@@ -6,6 +6,12 @@ Check [release status](../RELEASE_STATUS.md) for the available installers and
 native acceptance. This interface complements the shared workspace's
 [agent API, CLI and MCP](agent-control.md).
 
+The retained-capture controls below require **Mnemion 4.45.0 or later**.
+Follow
+[current installed qualification](../research/2026-10-21-durable-capture-implementation.md#current-installed-qualification) and
+[candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released); the release-status link above
+identifies published availability.
+
 Open **Setup & this device → Agents on this computer** and choose **Copy local
 agent setup**. The same panel appears during local setup. Give the copied JSON
 to a trusted agent running under your OS account on this computer. It contains
@@ -73,13 +79,13 @@ engine** so it uses the Windows account and named-pipe implementation.
 | `workspace.connect`, `workspace.sign-in`, `workspace.restore` | From 4.28.0, open an explicitly identified key connection, use a personal password login, or revalidate a saved account. |
 | `workspace.disconnect`, `workspace.forget` | From 4.28.0, disconnect the selected account or remove one saved connection from this device. |
 | `source.status`, `source.configure` | From 4.31.0, inspect or configure [desktop folder/conversation runners](desktop-sources.md#local-agent-controls) with protected dedicated keys and current settings revisions. From 4.34.0, [Slack/Drive selections](desktop-cloud-sources.md#private-agent-setup) accept a separate private provider credential. No local database is required. |
-| `source.preview` | **Unreleased development:** inspect a bounded local JSONL selection without credentials, saved content or model calls. Explicit `capture_policy` configuration uses its matching preview hash; see below. |
-| `source.backup` | **Unreleased development:** export a paused retained inbox to a new encrypted archive using a separate recovery key and the current source revision. |
-| `source.backup.inspect` | **Unreleased development:** verify an archive offline and return bounded identity/policy/status information. Does not restore native enrollment or authorize delivery. |
-| `source.drain` | **Unreleased development:** deliver at most four saved pages from a paused retained source under its original policy, without reading its producer folder. Returns a separate delivery receipt. |
-| `source.restore` | **Unreleased development:** recover an inspected archive into a new paused source with a new grant and inbox key. Defaults to the original identity/policy; explicit `policy_change: true` permits a reviewed policy replacement, with `replace_id` for this device's paused source and exact current archive. Requires current authority and confirmed old-grant retirement. |
-| `source.restore.list` | **Unreleased development:** list pending recovery identities without source credentials or OS key access. |
-| `source.restore.finish`, `source.restore.discard` | **Unreleased development:** explicitly finish a protected recovery intent or revoke the replacement grant and discard the unfinished local copy. No automatic replay. |
+| `source.preview` | **4.45.0+:** inspect a bounded local JSONL selection without credentials, saved content or model calls. Explicit `capture_policy` configuration uses its matching preview hash; see below. |
+| `source.backup` | **4.45.0+:** export a paused retained inbox to a new encrypted archive using a separate recovery key and the current source revision. |
+| `source.backup.inspect` | **4.45.0+:** verify an archive offline and return bounded identity/policy/status information. Does not restore native enrollment or authorize delivery. |
+| `source.drain` | **4.45.0+:** deliver at most four saved pages from a paused retained source under its original policy, without reading its producer folder. Returns a separate delivery receipt. |
+| `source.restore` | **4.45.0+:** recover an inspected archive into a new paused source with a new grant and inbox key. Defaults to the original identity/policy; explicit `policy_change: true` permits a reviewed policy replacement, with `replace_id` for this device's paused source and exact current archive. Requires current authority and confirmed old-grant retirement. |
+| `source.restore.list` | **4.45.0+:** list pending recovery identities without source credentials or OS key access. |
+| `source.restore.finish`, `source.restore.discard` | **4.45.0+:** explicitly finish a protected recovery intent or revoke the replacement grant and discard the unfinished local copy. No automatic replay. |
 | `source.pause`, `source.sync`, `source.remove` | Persistently pause/resume a source, queue a bounded scan, or stop and forget its local configuration. Independent of the selected workspace. |
 | `agent.status`, `agent.preview` | From 4.32.0, inspect [native agent installations](desktop-agents.md), refresh their packaged runtime and preview a named MCP entry without changing client settings. No local database is required. |
 | `agent.install`, `agent.remove` | Install a reviewed dedicated application connection or remove its matching local entry/key file, using the observed configuration hash and explicit confirmation. Other devices and server keys remain separately managed. |
@@ -341,12 +347,14 @@ access, establish company recovery custodians, verify cloud backup delivery or
 fence another host. Those remain part of
 [workspace continuity](../implementation/workspace-continuity.md).
 
-## Preview conversation capture (unreleased)
+<a id="preview-conversation-capture-unreleased"></a>
 
-This addition remains unreleased. [Source validation](../research/2026-10-21-durable-capture-implementation.md#capture-policy-and-preview-source-delta)
-records component checks, a Linux source journey and separate recovery/migration
-proof; installed acceptance and full L1 remain open. The app's **Preview capture**
-and native `source.preview` use the same selection object.
+## Preview conversation capture
+
+The **Preview capture** and native `source.preview` use the same
+selection object. The [preview source checkpoint](../research/2026-10-21-durable-capture-implementation.md#capture-policy-and-preview-source-delta)
+preserves development evidence; installed coverage and remaining acceptance
+are tracked in the central records linked above.
 Read the installed `catalog` before using this action; no selected local
 workspace or workspace credential is needed for preview. Use a folder path
 absolute in the app's operating system:
@@ -393,7 +401,7 @@ deadline. `catalog: complete` describes finished traversal of that sample, not
 complete transcript coverage. Inspect the [preview limits and unsupported
 capabilities](durable-capture.md#preview-the-selection) before reporting coverage.
 
-For scheduled expiry, the unreleased [v3 capture policy](durable-capture.md#schedule-capture-expiry-unreleased)
+For scheduled expiry, the [v3 capture policy](durable-capture.md#schedule-capture-expiry-unreleased)
 belongs in `source.capture_policy` and the identical preview selection. It requires
 `retention: "expire_after"`, integer `retention_days` (1–3,650) and
 `expiry_scope: "captured_fragment_family"`. The approved server grant must match.
@@ -419,17 +427,17 @@ service. A retained policy cannot be edited in place; changing it requires
 reviewed migration. Older sources without `capture_policy` retain their
 `complete`/`messages` mode-only behavior and do not require the new preview hash.
 Literal [JSON-field exclusions](durable-capture.md#exclude-json-fields-unreleased)
-use policy v2. Automatic expiry, general secret redaction, attachment fetching
-and hidden reasoning are unavailable. See the [capture guide](durable-capture.md)
-for retention, size and recovery limits. This addition does not complete L1 or
-installed acceptance.
+use policy v2. Local pending-content expiry, general secret redaction, attachment
+fetching and hidden reasoning are unavailable. See the [capture guide](durable-capture.md)
+for scheduled server cleanup, retention, size and recovery limits.
 
-## Capture inbox archives (unreleased)
+<a id="capture-inbox-archives-unreleased"></a>
 
-The app's **Sources on this computer** export/verify controls and these actions
-share the same archive implementation. Core, helper/controller, migration and
-Linux Electron export/restart-inspection checks passed at archive checkpoint
-`7aca19e9`; packaged acceptance remains pending. See the [archive proof](../research/2026-10-21-durable-capture-implementation.md#portable-inbox-archive-source-delta).
+## Capture inbox archives
+
+The app's **Sources on this computer** export/verify controls and these actions share the same archive implementation. The [archive source checkpoint](../research/2026-10-21-durable-capture-implementation.md#portable-inbox-archive-source-delta)
+preserves development evidence; use the central qualification record above for
+current installed coverage.
 Read the installed catalog before use. Neither action needs a selected workspace
 or a workspace API credential, and neither invokes a model.
 
@@ -479,19 +487,19 @@ inspection only. The same-grant library restore creates a new private inbox
 under the original binding; it does not enroll or activate a device. The separate
 device-recovery actions below add current-grant verification, key resealing and
 paused enrollment. The separate [reviewed policy procedure](#apply-a-reviewed-capture-policy-unreleased)
-requires a settled archive. Their acceptance and broader organization/source
-migration remain open. See [recovery boundaries](durable-capture.md#recovery-boundaries).
+requires a settled archive. Migration across organizations or source identities
+remains unfinished. See [recovery boundaries](durable-capture.md#recovery-boundaries).
 
-## Recover a capture device (unreleased)
+<a id="recover-a-capture-device-unreleased"></a>
 
-This unreleased source checkpoint passed its three-phase Linux recovery journey,
-52 controller checks, 26 operator/workspace checks, 25 service regressions and
-29 Python migration checks. The frontend and native builds passed. The journey
-verified actual app recovery, agreement with agent status, new OS-protected keys
-reopened after restart, paused startup, delivery without duplicate old memory,
-new capture and cleanup. All three earlier failed attempts remain recorded;
-six-platform packaged and full L1 acceptance remain open. See the separate
-[recovery proof](../research/2026-10-21-durable-capture-implementation.md#device-recovery-source-delta).
+## Recover a capture device
+
+Retained capture supports reviewed replacement-device recovery with new protected
+keys and a grant, followed by paused enrollment. The [recovery source checkpoint](../research/2026-10-21-durable-capture-implementation.md#device-recovery-source-delta)
+preserves development evidence and earlier failed journeys. Current installed
+coverage and release readiness remain in
+[current installed qualification](../research/2026-10-21-durable-capture-implementation.md#current-installed-qualification) and
+[candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released).
 
 Read the current catalog and `source.status`, inspect the archive, then preview
 the intended conversation folder with `source.preview`. An administrator must
@@ -568,21 +576,19 @@ old grant or labels an unconfirmed retirement as completed. If source settings
 were already published, use ordinary paused source
 removal instead. These actions cannot change the original organization, source,
 or namespace. Capture policy stays fixed unless the separate reviewed procedure
-below was selected; finish/discard cannot choose a different policy. These actions
-do not complete portable or six-target L1 acceptance.
+below was selected; finish/discard cannot choose a different policy.
 
-## Apply a reviewed capture policy (unreleased)
+<a id="apply-a-reviewed-capture-policy-unreleased"></a>
 
-The earlier development checkpoint passed 50 affected service cases and 103
-native controller/private-agent cases. The latest app controls and independent
-headless additions have a [separate validation scope](../research/2026-10-21-durable-capture-implementation.md#headless-policy-migration-and-app-controls-source-delta).
-Actual UI migration and all six installed targets remain unverified. L1 remains
-unreleased; consult
-[live release status](https://github.com/Perseusxrltd/mnemion/blob/main/docs/RELEASE_STATUS.md)
-for current availability. The
-[implementation checkpoint](../research/2026-10-21-durable-capture-implementation.md#reviewed-capture-policy-migration-source-delta)
-separates it from earlier fixed-policy recovery proof. The [app procedure](desktop-sources.md#apply-a-reviewed-capture-policy-unreleased)
-uses the same private controls.
+## Apply a reviewed capture policy
+
+Mnemion **4.45.0 or later** provides a reviewed policy change for a retained
+source through the same private controls as the
+[app procedure](desktop-sources.md#apply-a-reviewed-capture-policy-unreleased).
+The [policy-migration checkpoint](../research/2026-10-21-durable-capture-implementation.md#headless-policy-migration-and-app-controls-source-delta)
+preserves the paired app/headless source evidence. Use
+[current installed qualification](../research/2026-10-21-durable-capture-implementation.md#current-installed-qualification) and
+[candidate acceptance and remaining scope](../research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released) for the current acceptance state.
 
 Pause the original retained source, wait for its active scan to finish and read
 fresh `source.status`. While its original authorization remains valid, deliver
@@ -636,10 +642,9 @@ finish or discard the recorded intent as described above. A pending same-device
 handover blocks edits and resume of the predecessor. Discard retires only the
 replacement grant and removes its unfinished copy. The predecessor stays paused
 and revoked, with its inbox readable for backup and a fresh reviewed retry using
-a new replacement grant and keys. The archive stays unchanged. A separate source
-case verifies that this retry completes; it does not establish a native UI
-journey. Migration across organizations or source identities, mirror conversion
-and the remaining L1 acceptance stay open. Independent headless controls now
-provide a separate [new-device policy restore](headless-capture.md#apply-a-reviewed-policy-with-a-new-device-configuration-unreleased);
-they do not use this desktop pipe or `replace_id`. Their paired Linux app/headless
-source preview passed; six-target installed acceptance remains pending.
+a new replacement grant and keys. The archive stays unchanged. Migration across
+organizations or source identities and mirror conversion remain unfinished.
+Independent headless controls provide a separate
+[new-device policy restore](headless-capture.md#apply-a-reviewed-policy-with-a-new-device-configuration-unreleased);
+they do not use this desktop pipe or `replace_id`. Their current installed
+coverage and remaining acceptance are tracked in the central records above.

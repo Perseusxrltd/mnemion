@@ -175,7 +175,16 @@ def test_dry_run_checks_evidence_without_mutating_or_dispatching(fixture):
     assert all(call[0] == "api" for call in fixture.calls)
 
 
-def test_version_preparation_preserves_unrelated_pins_and_is_repeatable(tmp_path):
+@pytest.mark.parametrize(
+    "distribution_separator",
+    [
+        " ",
+        "\nPublic distribution: [current release status](RELEASE_STATUS.md). ",
+    ],
+)
+def test_version_preparation_preserves_unrelated_pins_and_is_repeatable(
+    tmp_path, distribution_separator
+):
     def write(name, text):
         path = tmp_path / name
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -194,7 +203,9 @@ def test_version_preparation_preserves_unrelated_pins_and_is_repeatable(tmp_path
     write("docs/releases/4.2.3.md", "# Mnemion 4.2.3\n\nConcrete changes.\n")
     write(
         "docs/ROADMAP.md",
-        "Reviewed source distribution: **4.2.2**. Roadmap updated: **2026-10-13**.\n\nUnfinished scope remains.\n",
+        "Reviewed source distribution: **4.2.2**."
+        + distribution_separator
+        + "Roadmap updated: **2026-10-13**.\n\nUnfinished scope remains.\n",
     )
     write(
         "deploy/release-targets.json", '{"version":"4.2.2","platforms":["windows","macos","linux"]}'
@@ -220,7 +231,12 @@ def test_version_preparation_preserves_unrelated_pins_and_is_repeatable(tmp_path
     data = json.loads((tmp_path / "studio/frontend/package-lock.json").read_text())
     assert data["packages"]["../../packages/client"]["version"] == "4.2.3"
     assert data["packages"]["node_modules/unrelated"]["version"] == "4.2.2"
-    assert "Unfinished scope remains." in (tmp_path / "docs/ROADMAP.md").read_text()
+    assert (tmp_path / "docs/ROADMAP.md").read_text() == (
+        "Reviewed source distribution: **4.2.3**."
+        + distribution_separator
+        + f"Roadmap updated: **{subject.datetime.now(subject.timezone.utc).date().isoformat()}**."
+        + "\n\nUnfinished scope remains.\n"
+    )
 
 
 @pytest.mark.parametrize(

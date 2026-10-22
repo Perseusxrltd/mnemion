@@ -8,8 +8,10 @@ The [complete-milestone audit](implementation/completion-audit.md) decomposes al
 42 partial requirements into missing acceptance work, dependencies and evidence.
 It retains every requirement and keeps effort estimates unknown until inspected.
 The current published distribution, **4.44.2**, and its separate release and
-actual-deployment evidence are linked there. Full durable capture L1 remains
-unreleased; the historical source milestones below do not change that boundary.
+actual-deployment evidence are linked there. The first durable-capture L1 journey
+has [qualified for 4.45.0 release preparation](validation/2026-10-22-l1-candidate-acceptance.md);
+final release and actual-deployment gates remain separate. Broader provider
+capture and the complete layered librarian remain open.
 
 **Shipped** means an available, documented capability. **Partial** means useful
 behavior is available but the complete request remains open. **Building** means
@@ -26,6 +28,14 @@ of engineering effort or the usability of the published app. Hotfixes to a
 partial feature do not automatically mark its whole requirement complete.
 
 The expanded **R07 librarian workstream** is [documented separately](research/2026-10-20-layered-librarian.md), including available reasoning traces, background consolidation, all layers, vault boundaries, statistics, scientific evidence and TypeSafe AI Jev. It adds one planned requirement; the lower percentage reflects added scope.
+
+The **4.45.0 release candidate** qualifies the first approved local Codex JSONL
+journey in the app and native agent controls, plus independent headless capture
+on all six installed targets. It advances C03/C08/F08 and the R07 foundation with
+offline custody, recovery, reviewed policies and bounded resources. Preparing
+this candidate does not change the strict shipped count or close provider,
+fleet, broader migration or L2–L7 requirements. Availability follows
+[live release status](https://github.com/Perseusxrltd/mnemion/blob/main/docs/RELEASE_STATUS.md).
 
 Source **4.41** advances **C03/C08/F08** with [capture selection in the app and
 native agent controls](service/live-conversations.md#choose-how-much-to-capture):
