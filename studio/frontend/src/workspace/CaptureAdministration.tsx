@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Connector, MnemionClient } from '@mnemion/client';
 import type { CapturePolicy } from '../../../shared/desktop-sources';
+import CaptureRetentionFields, { CaptureRetentionExplanation } from './CaptureRetentionFields';
+import CaptureRetentionStatus from './CaptureRetentionStatus';
 
 type Source = {
   source_id: string; name: string; namespace: string; version: number; policy_version: number;
@@ -23,7 +25,7 @@ export default function CaptureAdministration({ client, connection, endpoint }: 
 }) {
   const [after, setAfter] = useState<string>(), [selected, setSelected] = useState('');
   const capability = useQuery({ queryKey: ['capture-policy-capability', endpoint],
-    queryFn: () => client.request<{ capture_policy_versions?: string }>('GET', '/health/live'), retry: false });
+    queryFn: () => client.request<{ capture_policy_versions?: string; capture_retention?: string }>('GET', '/health/live'), retry: false });
   const supported = capability.data?.capture_policy_versions === 'v1';
   const sources = useQuery({ queryKey: ['capture-admin-sources', endpoint, connection.id, after], enabled: supported,
     queryFn: () => client.request<{ items: Source[]; next_cursor: string | null }>('GET',
@@ -39,7 +41,7 @@ export default function CaptureAdministration({ client, connection, endpoint }: 
       <label className="ws-field"><span>Retained source</span><select data-update-safe value={source.source_id} onChange={event => setSelected(event.target.value)}>
         {sources.data?.items.map(item => <option key={item.source_id} value={item.source_id}>{item.name} · {item.namespace}{item.revoked_at ? ' · retired' : ''}</option>)}
       </select></label>
-      <SourcePolicy key={source.source_id} source={source} client={client} connection={connection} endpoint={endpoint} />
+      <SourcePolicy key={source.source_id} source={source} client={client} connection={connection} endpoint={endpoint} retentionSupported={capability.data?.capture_retention === 'v1'} />
     </>}
     <div className="ws-actions">
       {sources.data?.next_cursor && <button className="ws-button" onClick={() => { setAfter(sources.data!.next_cursor!); setSelected(''); }}>Next sources</button>}
@@ -48,8 +50,8 @@ export default function CaptureAdministration({ client, connection, endpoint }: 
   </section>;
 }
 
-function SourcePolicy({ source, client, connection, endpoint }: {
-  source: Source; client: MnemionClient; connection: Connector; endpoint: string;
+function SourcePolicy({ source, client, connection, endpoint, retentionSupported }: {
+  source: Source; client: MnemionClient; connection: Connector; endpoint: string; retentionSupported: boolean;
 }) {
   const cache = useQueryClient(), route = `/v1/connectors/${connection.id}/capture-sources/${source.source_id}`;
   const [deviceAfter, setDeviceAfter] = useState<string>(), [policyAfter, setPolicyAfter] = useState(0);
@@ -84,6 +86,7 @@ function SourcePolicy({ source, client, connection, endpoint }: {
       cache.invalidateQueries({ queryKey: ['capture-admin-sources', endpoint, connection.id] })]);
   }
   return <div data-capture-policy-source={source.source_id} data-update-pending={busy || dirty || retiring ? '' : undefined}>
+    {retentionSupported && <CaptureRetentionStatus client={client} route={route} endpoint={endpoint} />}
     <p><strong>{current.revoked_at ? 'Source retired' : `Policy ${current.policy_version} for new device authorizations`}</strong> · {current.capture_policy?.preset ?? current.capture_mode}</p>
     <p className="ws-helper">The source identity and its accepted memories stay the same when its default changes. Sharing is controlled by the mapped audience above. Revoking a capture authorization does not delete memories.</p>
     {[error, review.error && failure(review.error), history.error && failure(history.error)].filter(Boolean).map((value, index) => <p className="ws-notice ws-error" role="alert" key={index}>{value}</p>)}
@@ -119,7 +122,7 @@ function SourcePolicy({ source, client, connection, endpoint }: {
         const excludedFields = fields.split('\n').map(value => value.trim().toLowerCase()).filter(Boolean).sort();
         const selected: CapturePolicy = { ...policy, include: include.split('\n').map(value => value.trim()).filter(Boolean),
           exclude: exclude.split('\n').map(value => value.trim()).filter(Boolean),
-          format: excludedFields.length ? 'mnemion-capture-policy-v2' : policy.format,
+          format: policy.retention === 'expire_after' || policy.format === 'mnemion-capture-policy-v3' ? 'mnemion-capture-policy-v3' : excludedFields.length ? 'mnemion-capture-policy-v2' : policy.format,
           exclude_fields: excludedFields.length ? excludedFields : undefined };
         setCandidate({ id: crypto.randomUUID(), review: fresh, command: { expected_version: fresh.source.version,
           review_token: fresh.review_token, capture_policy: selected, previous_grants: treatment, confirm: true } });
@@ -134,12 +137,16 @@ function SourcePolicy({ source, client, connection, endpoint }: {
         <label className="ws-field"><span>Included session paths, one pattern per line</span><textarea data-update-safe disabled={busy} required maxLength={32768} value={include} onChange={event => { editing(); setInclude(event.target.value); }} /></label>
         <label className="ws-field"><span>Excluded session paths, one pattern per line</span><textarea data-update-safe disabled={busy} maxLength={32768} value={exclude} onChange={event => { editing(); setExclude(event.target.value); }} /></label>
         <label className="ws-field"><span>Exclude JSON fields</span><textarea data-update-safe disabled={busy} maxLength={4128} placeholder={'api_key\npassword'} value={fields} onChange={event => { editing(); setFields(event.target.value); }} /></label>
+        <CaptureRetentionFields expiring={policy.retention === 'expire_after'} days={policy.retention_days ?? 30} disabled={busy} supported={retentionSupported} onChange={(enabled, days) => {
+          editing(); setPolicy({ ...policy, retention: enabled ? 'expire_after' : 'until_deleted',
+            retention_days: enabled ? days : undefined, expiry_scope: enabled ? 'captured_fragment_family' : undefined });
+        }} />
         <p className="ws-helper">Up to 32 literal ASCII names, one per line. Matching fields are excluded recursively, ignoring case, before content is stored. Identity and structural fields are preserved; string contents are unchanged. Existing approved policies and memories are not rewritten.</p>
         <details className="ws-details"><summary>Read limits</summary>
           <label className="ws-field"><span>Maximum file size (MB)</span><input type="number" data-update-safe disabled={busy} min={0.001} max={1000000} step={0.001} value={policy.max_file_bytes / 1_000_000} onChange={event => { editing(); setPolicy({ ...policy, max_file_bytes: Math.round(Number(event.target.value) * 1_000_000) }); }} /></label>
           <label className="ws-field"><span>Maximum event record (KB)</span><input type="number" data-update-safe disabled={busy} min={0.001} max={16000} step={0.001} value={policy.max_record_bytes / 1000} onChange={event => { editing(); setPolicy({ ...policy, max_record_bytes: Math.round(Number(event.target.value) * 1000) }); }} /></label>
         </details>
-        <p className="ws-helper">Accepted memories remain until explicitly deleted. Default private-file exclusions remain in force. This page does not read producer files; each new device still previews and approves its selected folder. Hidden model reasoning and attachment binaries are not available through this capture policy.</p>
+        <p className="ws-helper">Default private-file exclusions remain in force. This page does not read producer files; each new device still previews and approves its selected folder. Hidden model reasoning and attachment binaries are not available through this capture policy.</p>
         <label className="ws-field"><span>Existing device authorizations</span><select data-update-safe disabled={busy} value={treatment} onChange={event => { editing(); setTreatment(event.target.value as typeof treatment); }}>
           <option value="retain">Keep their previously approved policies</option><option value="revoke">Revoke every existing authorization</option>
         </select></label>
@@ -148,10 +155,11 @@ function SourcePolicy({ source, client, connection, endpoint }: {
       {candidate && <div className="ws-notice" data-capture-policy-review="ready">
         <p>Change the default from policy {candidate.review.source.policy_version} ({candidate.review.source.capture_mode}) to <strong>{candidate.command.capture_policy.capture_mode === 'messages' ? 'user and assistant messages' : 'all available exported event fields'}</strong>.</p>
         <p>Excluded JSON fields: {candidate.command.capture_policy.exclude_fields?.join(', ') || 'None'}.</p>
+        <CaptureRetentionExplanation days={candidate.command.capture_policy.retention_days} />
         <p>{candidate.command.previous_grants === 'retain'
           ? `Keep all ${candidate.review.unrevoked_grants} existing authorizations on their approved policies, including their permission to collect new content.`
           : `Revoke all ${candidate.review.unrevoked_grants} existing authorizations. Pending deliveries from those grants will be refused until an administrator approves recovery.`}</p>
-        <p>Captured memories, deletion records, the source identity and its mapped audience are retained.</p>
+        <p>This approval does not immediately erase captured memories. Its expiry rule applies when a fragment is accepted under this policy. Deletion records, the source identity and its mapped audience are preserved.</p>
         <label className="ws-checkbox"><input type="checkbox" data-update-safe disabled={busy} checked={confirmed} onChange={event => setConfirmed(event.target.checked)} />I approve these rules and this treatment of existing authorizations.</label>
         <div className="ws-actions"><button className="ws-button ws-primary" disabled={busy || !confirmed} onClick={() => void act(async () => {
           const result = await client.request<{ source: Source; transition: PolicyVersion }>('PUT', route + `/policy-transitions/${candidate.id}`, { body: candidate.command });
@@ -164,6 +172,7 @@ function SourcePolicy({ source, client, connection, endpoint }: {
       {history.data?.items.map(item => <details className="ws-details" key={item.policy_version}>
         <summary>Policy {item.policy_version} · {item.capture_policy?.preset ?? item.capture_mode}{item.policy_version === current.policy_version ? ' · current default' : ''}</summary>
         <p>Approved {new Date(item.created_at).toLocaleString()}{item.previous_grants ? ` · ${item.affected_grants} earlier authorizations ${item.previous_grants === 'retain' ? 'retained' : 'revoked'}` : ' · original approval'}.</p>
+        <CaptureRetentionExplanation days={item.capture_policy?.retention_days} />
         {item.capture_policy ? <><p>Include: {item.capture_policy.include.join(', ')}</p><p>Exclude: {item.capture_policy.exclude.join(', ') || 'Default exclusions only'}</p><p>Excluded JSON fields: {item.capture_policy.exclude_fields?.join(', ') || 'None'}</p><p>File limit {item.capture_policy.max_file_bytes.toLocaleString()} bytes · record limit {item.capture_policy.max_record_bytes.toLocaleString()} bytes</p></> : <p>The original mode-only approval is preserved. No later selection rules are assumed.</p>}
       </details>)}
       <div className="ws-actions">{history.data?.next_cursor && <button className="ws-button" disabled={busy} onClick={() => setPolicyAfter(history.data!.next_cursor!)}>Next policies</button>}{policyAfter > 0 && <button className="ws-button" disabled={busy} onClick={() => setPolicyAfter(0)}>First policies</button>}</div>

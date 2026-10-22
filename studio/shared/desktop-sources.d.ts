@@ -97,9 +97,10 @@ export type SourceConfigure = {
   preview_hash?: string;
 }
 export type CapturePolicy = {
-  format: 'mnemion-capture-policy-v1' | 'mnemion-capture-policy-v2'; preset: 'selected' | 'conversation' | 'detailed';
+  format: 'mnemion-capture-policy-v1' | 'mnemion-capture-policy-v2' | 'mnemion-capture-policy-v3'; preset: 'selected' | 'conversation' | 'detailed';
   capture_mode: 'messages' | 'complete'; include: string[]; exclude: string[];
-  retention: 'source_mirror' | 'until_deleted'; max_file_bytes: number; max_record_bytes: number;
+  retention: 'source_mirror' | 'until_deleted' | 'expire_after'; max_file_bytes: number; max_record_bytes: number;
+  retention_days?: number; expiry_scope?: 'captured_fragment_family';
   exclude_fields?: string[];
 }
 export type SourcePreviewSelection = {
@@ -118,7 +119,7 @@ export type CapturePreview = {
   visited_entries: number; read_bytes: number; files: CapturePreviewFile[];
   records: CapturePreviewFile['records']; file_limit: 8; byte_limit: 1048576;
   attachment_binaries: 'not_read'; external_links: 'not_followed'; hidden_reasoning: 'unavailable';
-  field_redaction: 'not_supported' | 'disabled' | 'json_field_names'; automatic_expiry: 'not_enabled'; content_saved: false;
+  field_redaction: 'not_supported' | 'disabled' | 'json_field_names'; automatic_expiry: 'not_enabled' | 'server_scheduled'; retention_days?: number; content_saved: false;
 }
 export type SourceControl = { expected_revision: string; id: string; enabled?: boolean; confirm?: boolean; repair_token?: string; discard_local_inbox?: boolean; retirement_credential?: string }
 export type CaptureArchiveInfo = {

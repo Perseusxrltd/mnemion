@@ -13,6 +13,14 @@ def install_routes(app, authenticated, service):
     Auth = Annotated[Identity, Depends(authenticated)]
 
     @app.get(
+        "/v1/connectors/{connector_id}/capture-sources/{source_id}/retention",
+        tags=["Connectors"],
+        response_model=c.CaptureRetentionStatus,
+    )
+    def retention_status(connector_id: UUID, source_id: UUID, identity: Auth):
+        return service.retention_status(identity, connector_id, source_id)
+
+    @app.get(
         "/v1/connectors/{connector_id}/capture-sources",
         tags=["Connectors"],
         response_model=c.CaptureSourcePage,

@@ -111,9 +111,17 @@ export async function verifyNativeCapturePolicy(window: BrowserWindow, probePath
       const form=await until(()=>admin.querySelector('form'),'The source has no policy review form');form.closest('details').open=true;
       const preset=[...form.querySelectorAll('label')].find(e=>e.textContent.startsWith('Capture preset'))?.querySelector('select');
       if(!preset||preset.disabled)throw new Error('The policy preset is unavailable');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(preset,'detailed');preset.dispatchEvent(new Event('change',{bubbles:true}));await pause(100);
+      const retention=[...form.querySelectorAll('label')].find(e=>e.textContent.startsWith('Server retention'))?.querySelector('select');
+      if(!retention||retention.disabled)throw new Error('Scheduled capture expiry is unavailable');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(retention,'expire_after');retention.dispatchEvent(new Event('change',{bubbles:true}));await pause(100);
+      const days=[...form.querySelectorAll('label')].find(e=>e.textContent.startsWith('Days after first server acceptance'))?.querySelector('input');
+      if(!days)throw new Error('The expiry period cannot be reviewed');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(days,'7');days.dispatchEvent(new Event('input',{bubbles:true}));await pause(100);
+      const fields=[...form.querySelectorAll('label')].find(e=>e.textContent.startsWith('Exclude JSON fields'))?.querySelector('textarea');
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(fields,'test_secret');fields.dispatchEvent(new Event('input',{bubbles:true}));await pause(100);
       const press=async text=>{const b=await until(()=>[...admin.querySelectorAll('button')].find(e=>e.textContent===text&&!e.disabled),'Missing policy review control: '+text);b.click();await pause(100);};
       await press('Review policy change');
-      const review=await until(()=>admin.querySelector('[data-capture-policy-review="ready"]'),'The app did not show the current policy and affected grants');review.querySelector('input[type="checkbox"]').click();await pause(100);
+      const review=await until(()=>admin.querySelector('[data-capture-policy-review="ready"]'),'The app did not show the current policy and affected grants');
+      if(!review.textContent.includes('7 days')||!review.textContent.includes('earlier copies'))throw new Error('The expiry review omitted its period or earlier fragment copies');
+      review.querySelector('input[type="checkbox"]').click();await pause(100);
       await press('Approve policy change');
       await until(()=>{const error=admin.querySelector('[role="alert"]');if(error)throw new Error('Policy review UI: '+error.textContent.slice(0,500));return admin.querySelector('[role="status"]')?.textContent.includes('Policy 2 approved');},'The workspace did not approve its reviewed policy');
       const old=await request('GET','/v1/capture-grants/'+${JSON.stringify(grantId)});if(!old.active||old.policy_version!==1)throw new Error('Approving a new default silently changed or retired the original device policy');
@@ -164,7 +172,10 @@ export async function verifyNativeCapturePolicy(window: BrowserWindow, probePath
       `)
     } finally { dialog.showOpenDialog = originalOpen }
     if (opens !== 1 || !replacement || replacement.id === id || replacement.enabled || replacement.capture_mode !== 'complete' ||
-        replacement.capture_policy?.preset !== 'detailed' || replacement.path !== folder || replacement.scope_id !== source.scope_id ||
+        replacement.capture_policy?.preset !== 'detailed' || replacement.capture_policy.format !== 'mnemion-capture-policy-v3' ||
+        replacement.capture_policy.retention !== 'expire_after' || replacement.capture_policy.retention_days !== 7 ||
+        replacement.capture_policy.expiry_scope !== 'captured_fragment_family' || replacement.capture_policy.exclude_fields?.join(',') !== 'test_secret' ||
+        replacement.path !== folder || replacement.scope_id !== source.scope_id ||
         replacement.custody?.source_id !== id || replacement.custody.grant_id === grantId || replacement.max_files !== limits.max_files ||
         replacement.memory_limit_mib !== limits.memory_limit_mib || replacement.custody.pending_limit_mib !== limits.pending_limit_mib ||
         replacement.custody.history_limit_events !== limits.history_limit_events || replacement.custody.database_limit_mib !== limits.database_limit_mib) throw new Error('The policy form changed the reviewed source identity, resource limits or paused state.')
@@ -199,6 +210,13 @@ export async function verifyNativeCapturePolicy(window: BrowserWindow, probePath
         if(present!==expected)throw new Error('Resumed policy capture lost selected content or revived forgotten evidence');
       }
       await selectConnection(${JSON.stringify(fixture.connectorId)});
+      const retention=await request('GET','/v1/connectors/'+${JSON.stringify(fixture.connectorId)}+'/capture-sources/'+${JSON.stringify(id)}+'/retention');
+      if(retention.families<1||retention.pending_families<1||retention.due_families||retention.semantics!=='scheduled_cleanup'||retention.backup_erasure!=='not_included')throw new Error('The server did not schedule the reviewed expiry policy');
+      const admin=await until(()=>document.querySelector('[data-capture-policy-source="'+${JSON.stringify(id)}+'"]'),'The retained source administration disappeared');
+      const refresh=await until(()=>[...admin.querySelectorAll('button')].find(e=>e.textContent==='Refresh cleanup'&&!e.disabled),'Cleanup status cannot be refreshed');refresh.click();
+      await until(()=>admin.querySelector('[data-capture-retention-status="ready"]')?.textContent.includes('scheduled families'),'The app did not expose retention cleanup status');
+      const select=[...card().querySelectorAll('label')].find(e=>e.textContent.startsWith('Server retention'))?.querySelector('select');
+      if(select?.value!=='expire_after')throw new Error('The source settings dropped the approved expiry choice');
       await click('Remove from this computer');await click('Revoke device grant and discard local inbox');
       await until(async()=>!(await window.mnemion.sourceStatus()).sources.some(s=>s.id===${JSON.stringify(replacement.id)}),'The reviewed policy fixture could not be removed',60000);
       await request('DELETE','/v1/connectors/'+${JSON.stringify(fixture.connectorId)});
@@ -214,7 +232,9 @@ export async function verifyNativeCapturePolicy(window: BrowserWindow, probePath
       nativeCapturePolicyRetainsResourceLimits: true, nativeCapturePolicyNewOsKeysAndOldGrantRetired: true,
       nativeCapturePolicyOldArchiveAndInboxUnmodified: true, nativeCapturePolicyNewCoverageUnobserved: true,
       nativeCapturePolicyForgetSurvivesReselection: true, nativeCapturePolicyResumedSelectionDelivered: true,
-      nativeCapturePolicyAppAndAgentAgree: true, nativeCapturePolicyNarrowLayout: true, nativeCapturePolicyFixtureCleanup: true }
+      nativeCapturePolicyAppAndAgentAgree: true, nativeCapturePolicyNarrowLayout: true, nativeCapturePolicyFixtureCleanup: true,
+      nativeCapturePolicyExpiryReviewedAndPreserved: true, nativeCapturePolicyExpiryScheduledAndVisible: true,
+      nativeCapturePolicyV3FieldExclusionsPreserved: true }
   } finally {
     // Always restore the original local workspace. Retain failed fixture files
     // for diagnosis; only a completed journey removes its own records/files.

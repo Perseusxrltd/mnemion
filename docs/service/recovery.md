@@ -75,6 +75,32 @@ release a backed-up quarantine. See [native journal recovery](journal-recovery.m
 
 ## Restore into a new database
 
+### Capture expiry during service recovery (unreleased)
+
+The additional [capture-retention policy](durable-capture.md#schedule-capture-expiry-unreleased)
+uses custody ledger **version 3**, nested inside the existing recovery ledger.
+It preserves immutable policy approvals and every recorded fragment-family
+deadline, with no memory content or device key. Export a current ledger through
+the normal command above. A capture snapshot with expiry state refuses a missing,
+older or incomplete expiry ledger; a ledger cannot extend an earlier deadline
+already present in the snapshot. An old approval is historical attribution and
+does not recreate an administrator account or authorization.
+
+Restore reconciles due/denied families in its unpublished database, using the
+ordinary deletion receipts and source/revision/vector erasure. It checks for
+newly due work between batches and records a completed family only after its
+retained records are removed. Abandoned cleanup leases become pending without
+changing their deadlines. This also handles an expiry policy approved after the
+backup for a family whose earlier copies are in that backup.
+
+This prevents normal recovery from reviving those captured copies. It does not
+erase the source archive, portable device backups, offline pending content or
+producer files. Protect and retire those copies separately. Original custody
+v1/v2 ledgers remain compatible only where they do not discard expiry decisions.
+This addition is unreleased; final installed recovery acceptance remains open.
+
+### Restore command
+
 ```sh
 mnemion-service restore /backups/mnemion-2026-10-09.mnemion \
   --database mnemion_recovered \

@@ -44,7 +44,7 @@ class PreviewSelection(Command):
             raise ValueError("Choose an absolute conversation folder")
         if self.capture_policy is not None and (
             self.capture_policy.capture_mode != self.capture_mode
-            or (self.capture_policy.retention == "until_deleted") != self.keep_accepted
+            or self.capture_policy.keeps_accepted != self.keep_accepted
         ):
             raise ValueError("Match the preview's capture and retention choices")
         return self
@@ -89,7 +89,10 @@ class CapturePreview(Command):
     external_links: Literal["not_followed"] = "not_followed"
     hidden_reasoning: Literal["unavailable"] = "unavailable"
     field_redaction: Literal["disabled", "json_field_names"] = "disabled"
-    automatic_expiry: Literal["not_enabled"] = "not_enabled"
+    automatic_expiry: Literal["not_enabled", "server_scheduled"] = "not_enabled"
+    retention_days: int | None = Field(
+        default=None, ge=1, le=3650, strict=True, exclude_if=lambda value: value is None
+    )
     content_saved: Literal[False] = False
 
 
@@ -200,6 +203,12 @@ def preview(root, value, private_roots=()):
     result = CapturePreview(
         configuration_hash=selection.fingerprint,
         policy_revision=selection.capture_policy.revision if selection.capture_policy else None,
+        automatic_expiry="server_scheduled"
+        if selection.capture_policy and selection.capture_policy.retention == "expire_after"
+        else "not_enabled",
+        retention_days=selection.capture_policy.retention_days
+        if selection.capture_policy
+        else None,
         observed_at=utc_now(),
         capture_mode=selection.capture_mode,
         catalog="complete",

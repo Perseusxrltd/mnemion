@@ -10,7 +10,11 @@ from .conversation_inbox import InboxError
 
 
 def verify_grant(inbox, client):
-    if client.request("GET", "/health/live").get("durable_capture") != "v1":
+    capabilities = client.request("GET", "/health/live")
+    if capabilities.get("durable_capture") != "v1" or (
+        (inbox.binding.get("capture_policy") or {}).get("retention") == "expire_after"
+        and capabilities.get("capture_retention") != "v1"
+    ):
         raise InboxError("capture_server_upgrade_required")
     grant = CaptureGrant.model_validate(
         client.request("GET", f"/v1/capture-grants/{inbox.binding['grant_id']}")

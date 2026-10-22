@@ -146,9 +146,31 @@ file/record limits supply the provider settings. Conversation selects supported
 messages; Detailed uses `complete`; Selected permits either mode with relative
 JSONL file patterns. Session filters select filenames, not records within a
 file. See the [selection and capability limits](durable-capture.md#content-file-selection-and-retention).
-Retained capture requires `until_deleted`, normalization enabled and generated
-files excluded. Automatic expiry, automatic secret detection, attachment fetching
-and hidden reasoning remain unavailable.
+Retained capture requires `until_deleted` or explicitly approved `expire_after`,
+normalization enabled and generated files excluded. Automatic secret detection,
+attachment fetching and hidden reasoning remain unavailable.
+
+### Scheduled server expiry (unreleased)
+
+For expiry, use the complete [v3 policy](durable-capture.md#schedule-capture-expiry-unreleased)
+as `provider.capture_policy`, matching the approved device grant. It requires
+integer `retention_days` (1–3,650), `expiry_scope: "captured_fragment_family"`,
+and a server advertising `capture_retention: "v1"`. An older server is refused
+before delivery. Unchanged v1/v2 policies retain their existing fingerprints.
+
+The clock starts on server acceptance, not local collection or producer time.
+Offline pending evidence remains until delivered or explicitly discarded.
+An earlier family deadline survives retries, replacement devices, policy changes
+and recovery. Cleanup includes earlier retained projections and revisions of
+that fragment; original files and backups need their own retention rules.
+The [administrator cleanup status](durable-capture.md#observe-scheduled-cleanup-unreleased)
+is available through `capture.retention.status`; scheduled cleanup can be delayed
+by a stopped worker or migration pause. It is not a hard read TTL.
+
+Existing enrolled policies remain immutable. Use the reviewed policy-replacement
+procedure below to adopt expiry; editing an existing configuration does not
+reset or relabel accepted content. This source addition remains unreleased and
+requires the final installed platform journeys.
 
 Older mode-only `complete` or `messages` configurations can explicitly enroll
 with `capture` only against a matching mode-only approved grant. They must keep

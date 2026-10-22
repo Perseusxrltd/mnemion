@@ -193,6 +193,20 @@ and access; a saved inbox never authorizes delivery after revocation.
 
 ## Private storage, restart and recovery
 
+The additional unreleased [scheduled capture expiry](durable-capture.md#schedule-capture-expiry-unreleased)
+option is available under **Server retention** for new retained sources and in
+administrator policy review. Choose 1–3,650 days and review its family-wide effect.
+An existing inbox adopts it through reviewed policy replacement. Changing RAM,
+queue or history limits preserves the approved policy and existing deadlines.
+
+**Retention cleanup** in source administration separates scheduled families,
+overdue cleanup, removal from active memory and pending physical purges. The
+server performs cleanup independently of this computer or its agent. Until that
+cleanup completes, due memories can remain readable. Offline pending content,
+original logs and backups are outside server cleanup. See the canonical guide
+for the exact scope, approval and recovery behavior; six-platform acceptance
+remains open for this source addition.
+
 The source key uses the OS credential facilities used for saved workspace
 connections, with no plaintext fallback. It crosses the helper's private stdin,
 never argv, environment, source files, reports or ordinary agent output. Settings

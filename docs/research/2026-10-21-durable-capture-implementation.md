@@ -1607,6 +1607,62 @@ source. Current availability follows
 [live release status](https://github.com/Perseusxrltd/mnemion/blob/main/docs/RELEASE_STATUS.md).
 All 65 requirements and L1–L7 remain in scope.
 
+## Scheduled capture retention source delta
+
+22 October development source adds opt-in policy v3 with `expire_after`, integer
+`retention_days` from 1 to 3,650 and explicit `captured_fragment_family` scope.
+Defaults and unchanged v1/v2 fingerprints are preserved. The first server
+acceptance under each approved expiring policy proposes a family deadline; the
+earliest wins. Retries, revised projections, new grants or later indefinite
+policies cannot extend it. The family includes earlier retained views and can
+contain adjacent messages. No semantic cross-session identity is invented.
+
+A separate worker claims due families and uses the canonical deletion path in
+32-record batches, without device keys or models. It preserves migration fences,
+negative lineage, audit attribution, deletion receipts and physical purge jobs.
+Due intake is fenced immediately; existing copies may remain readable until
+cleanup. This is scheduled cleanup, not a hard read TTL or a promise to erase
+producer files, offline pending evidence or backup archives.
+
+Custody ledger v3 carries approval attribution and deadlines. Restoration refuses
+missing expiry state, keeps earlier snapshot deadlines and reconciles due families
+before publishing. A deadline crossed during reconciliation cannot be labelled
+complete while its memories remain. The source app and administrator forms expose
+the period and family scope, preserve it during resource changes and reviewed
+replacement, and show cleanup separately from physical purges. Agents use the
+same policy inputs and `capture.retention.status` operation; older services cannot
+silently accept expiring delivery.
+
+Focused source validation: 57 service cases passed across retention, policy
+history, recovery, canonical family deletion, portable archives and agent schema
+contracts. Additional focused checks passed for deadlines crossed during restore,
+agent cleanup observations, local expiry preview and older-server refusal. One
+preview test initially selected its own private state directory and was correctly
+refused; the corrected separate-directory fixture passed. All 94 native controller
+cases passed, including strict v3 archive and preview validation.
+
+The final matching-input Linux app and independent headless journey passed
+16 policy/UI checks and 17 headless checks. It exercised explicit seven-day
+expiry review, preservation through policy replacement, simultaneous JSON-field
+exclusions, server scheduling and visible cleanup status. Existing paused queues,
+keys, original archives, deletion history and custom resource limits survived.
+The narrow 720-pixel policy receipt was visually inspected. This used real
+Electron, the helper, PostgreSQL and libsecret in a disposable workspace, with
+zero production-memory writes or paid model calls. Closing-time IPC refusals
+remain preserved in the raw logs; no claim of an error-free log is made.
+
+Frontend and native builds passed. These source checks do not establish any of
+the six installed-platform journeys or release readiness. Initial previews and
+failed fixture/launcher attempts remain preserved separately from the final
+input-qualified journey.
+
+The [user guide](../service/durable-capture.md#schedule-capture-expiry-unreleased),
+[headless guide](../service/headless-capture.md#scheduled-server-expiry-unreleased)
+and [recovery guide](../service/recovery.md#capture-expiry-during-service-recovery-unreleased)
+describe the exact boundaries. Public 4.44.2 remains separate. All 65 requirements
+and L1–L7 remain; full capture retention/preset, migration, history and final
+six-platform acceptance are still required.
+
 ## Required before L1 can be released
 
 - Finish acceptance of the encrypted coverage/gap accounting, including selected,
@@ -1618,9 +1674,10 @@ All 65 requirements and L1–L7 remain in scope.
   corresponding L2/L3 work exists.
 - Finish acceptance of the bounded preview, filename/session selection, explicit
   retention and per-fragment policy revisions. Complete the broader policy and
-  preset contract: current Selected/Conversation/Detailed choices and existing
-  Pause do not provide automatic expiry or attachment fetching. The new optional
-  JSON-field exclusion rule requires its remaining packaged acceptance and does
+  preset contract: the new opt-in scheduled server expiry and JSON-field
+  exclusions need their final packaged acceptance. Local pending evidence has
+  no automatic expiry, and attachment fetching remains unavailable. JSON-field
+  exclusion does
   not provide general redaction of secrets embedded in text.
   Keep unavailable capabilities explicit and retain reviewed migration requirements.
 - Complete packaged archive export/inspection and device-recovery acceptance,

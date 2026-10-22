@@ -29,7 +29,7 @@ class CaptureSourceInput(Command):
     def distinct_members(self):
         if self.capture_policy is not None and (
             self.capture_policy.capture_mode != self.capture_mode
-            or self.capture_policy.retention != "until_deleted"
+            or not self.capture_policy.keeps_accepted
         ):
             raise ValueError("Capture custody requires its approved content and retention policy")
         if len(set(self.members)) != len(self.members):
@@ -58,7 +58,7 @@ class CapturePolicyChange(Command):
 
     @model_validator(mode="after")
     def consent(self):
-        if not self.confirm or self.capture_policy.retention != "until_deleted":
+        if not self.confirm or not self.capture_policy.keeps_accepted:
             raise ValueError("Approve retained capture and the treatment of existing device grants")
         return self
 
@@ -152,6 +152,23 @@ class CapturePolicyVersion(ResponseModel):
     transition_id: str | None = None
     previous_grants: Literal["retain", "revoke"] | None = None
     affected_grants: int | None = None
+    approved_by: str | None = None
+
+
+class CaptureRetentionStatus(ResponseModel):
+    source_id: str
+    observed_at: str
+    families: int
+    pending_families: int
+    due_families: int
+    expired_families: int
+    failed_families: int
+    purges_pending: int
+    next_deadline: str | None
+    last_cleanup_at: str | None
+    error_code: str | None
+    semantics: Literal["scheduled_cleanup"]
+    backup_erasure: Literal["not_included"]
 
 
 class CapturePolicyVersionPage(ResponseModel):

@@ -842,6 +842,9 @@ def restore_backup(
                         manifest["backup_id"],
                         preserve_application_keys=preserve_application_keys,
                     )
+                    from .capture_retention_recovery import reconcile as reconcile_capture
+
+                    denied += reconcile_capture(conn, _reconcile_deletions)
                     private_json(credentials_output, credentials)
                 administration.execute(
                     sql.SQL("ALTER DATABASE {} RENAME TO {}").format(

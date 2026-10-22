@@ -106,7 +106,7 @@ def binding_value(value: dict) -> dict:
             policy = CapturePolicy.model_validate(value["capture_policy"])
             if (
                 policy.capture_mode != value["capture_mode"]
-                or policy.retention != "until_deleted"
+                or not policy.keeps_accepted
                 or policy.model_dump(mode="json") != value["capture_policy"]
             ):
                 raise ValueError()

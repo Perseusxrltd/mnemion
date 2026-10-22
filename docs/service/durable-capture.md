@@ -37,7 +37,10 @@ people or agents, only the dedicated source application can read its copies.
    messages, **Detailed** for messages and exposed session events, or **Selected**
    to choose filename patterns and either content mode. Review the controls below.
 3. As a workspace administrator, select **Keep captured memories when original
-   chat logs rotate or are removed**. Review the audience, pending content,
+   chat logs rotate or are removed**. **Server retention** defaults to **Keep until
+   deleted**; the additional development option **Schedule expiry** requires an
+   explicit period and review of its [fragment-family scope](#schedule-capture-expiry-unreleased).
+   Review the audience, pending content,
    local history and encrypted storage limits. The approved policy is fixed for this inbox: changing its selection,
    file/record size rules, identity or dedicated key requires a reviewed migration.
 4. Review **Session filters, JSON fields and sizes**, optional **Exclude JSON fields**,
@@ -92,7 +95,9 @@ remain in force.
 `source_mirror` uses the existing source reconciliation/removal behavior.
 `until_deleted` requires retained custody and keeps accepted selection after
 producer rotation/removal, subject to explicit forgetting and current access
-decisions. Automatic expiry, automatic secret detection, attachment-binary
+decisions or an earlier approved family deadline. Optional `expire_after` adds
+the server cleanup policy below; existing sources acquire no expiry by default.
+Automatic secret detection, attachment-binary
 fetching and hidden provider reasoning are unavailable. Exposed attachment
 descriptions or links may still be ordinary selected text; links are not followed.
 
@@ -110,6 +115,78 @@ can change the default for new grants while preserving each existing grant's
 approved policy or explicitly revoking it. Older `complete`/`messages`
 configurations without `capture_policy` keep their mode-only behavior and existing
 fragments; an old retained inbox is not silently given a new policy or revision.
+
+### Schedule capture expiry (unreleased)
+
+This additional development policy requires a matching server advertising
+`capture_retention: "v1"` in `GET /health/live`. In new retained source setup,
+choose **Server retention → Schedule expiry** and **Days after first server
+acceptance**. Administrator policy review uses the same choices. Review the
+family-wide effect before approving the policy and device grant. Focused service
+checks, native controller checks and the enhanced Linux app/headless source
+journey passed. All six installed-platform journeys remain required before
+release. See the [retention checkpoint](../research/2026-10-21-durable-capture-implementation.md#scheduled-capture-retention-source-delta).
+
+The full policy can be supplied as `source.capture_policy` to desktop controls,
+`provider.capture_policy` to the headless runner, or `capture_policy` to the
+administrator source/policy APIs. For example:
+
+```json
+{
+  "format": "mnemion-capture-policy-v3",
+  "preset": "conversation",
+  "capture_mode": "messages",
+  "include": ["*.jsonl"],
+  "exclude": [],
+  "retention": "expire_after",
+  "retention_days": 30,
+  "expiry_scope": "captured_fragment_family",
+  "max_file_bytes": 1000000000,
+  "max_record_bytes": 2000000
+}
+```
+
+`retention_days` must be an integer from **1 to 3,650**, with each day equal to
+24 hours. Both that value and `expiry_scope: "captured_fragment_family"` are
+required for `expire_after`, which requires policy v3. Other retention modes
+cannot carry expiry parameters. V3 also permits the existing optional JSON-field
+exclusions. Unchanged v1/v2 policies omit the new fields and keep their existing
+serialization, fingerprints and behavior; older mode-only approvals are not
+silently migrated or assigned deadlines.
+
+The clock starts when the **server first accepts retained content for the family
+under an approved expiry policy version**. Producer timestamps, local intake,
+preview and time spent offline do not start it. Each approved version can propose
+a deadline; the earliest stored deadline wins. Retries, revisions, replacement
+device grants, a longer period or a later **Keep until deleted** policy cannot
+extend or remove it. Changing an enrolled policy requires the existing
+[reviewed replacement](#review-a-capture-policy-change-unreleased); changing only
+the server default does not rewrite old grants or start clocks for untouched
+families.
+
+Expiry withdraws the captured fragment's retained raw evidence, projections,
+parts and revisions, **including copies accepted under earlier policies**. This
+can include adjacent messages in that fragment. It does not mean deleting every
+conversation with matching text or an entire provider session. Independent
+fragment families retain their own deadlines and permissions.
+
+**This is scheduled cleanup, not a hard read TTL.** Once a deadline is due, the
+server fences new intake for that family as forgotten and exposes the denial to
+device reconciliation. Existing memories can remain readable until the server
+worker processes them. Cleanup handles at most 32 memory records per family pass,
+retries interrupted work, and uses ordinary deletion receipts and content purge.
+The worker needs no model, device connection or surviving device credential;
+revoking the source or device does not cancel an already approved deadline.
+A stopped worker, a service outage or a workspace write pause can delay removal.
+Use [cleanup observations](#observe-scheduled-cleanup-unreleased) to distinguish
+due work, logical removal and pending content purges.
+
+Original producer files, portable archives, service backups and offline pending
+content are **not automatically erased** by this policy. Pending content has no
+local expiry timer; delivery applies the current server fences when it reconnects.
+Backups need their own retention and access controls. Restoring a workspace must
+preserve approved deadlines and apply due families before publication, as
+described in [service recovery](recovery.md#capture-expiry-during-service-recovery-unreleased).
 
 ### Exclude JSON fields (unreleased)
 
@@ -151,7 +228,8 @@ It does not fall back to retaining the unfiltered record. The preview's
 
 Use `format: "mnemion-capture-policy-v2"` with a nonempty `exclude_fields` list in
 the approved `capture_policy`; see the [agent/headless policy example](headless-capture.md#exclude-json-fields-unreleased).
-With no exclusions, keep the existing v1 policy: an omitted or empty list is
+Use v3 when also approving scheduled expiry. Without either addition, keep the
+existing v1 policy: an omitted or empty exclusion list is
 omitted from its serialization and preserves its previous fingerprints.
 Changing an existing retained source's exclusions is a selection change and
 requires reviewed migration. A new rule does not retroactively remove accepted
@@ -576,7 +654,8 @@ Current source checks for these credential controls passed **80 service cases,
 also passed **all 29 boundary and key-recovery checks** across two real app
 launches using the UI, native engine, PostgreSQL and libsecret, with clean shutdown.
 All six packaged journeys remain pending for this batch. This additional work
-is unreleased and is not included in public 4.44.0.
+is unreleased; consult [live release status](https://github.com/Perseusxrltd/mnemion/blob/main/docs/RELEASE_STATUS.md)
+for public availability.
 
 To remove retained capture, pause it first, then select **Remove from this
 computer → Revoke device grant and discard local inbox**. This permanently
@@ -626,8 +705,10 @@ The [portable archive checkpoint](#back-up-and-inspect-an-inbox-unreleased)
 provides export/inspection and a library for restoring a new local inbox. A
 separate [device recovery delta](#recover-onto-another-device-unreleased) now
 adds native enrollment under a replacement grant, with the original source and
-policy retained. This development work and its installed acceptance remain open;
-changing the original source identity or policy is still unsupported.
+policy retained by default. The separate [reviewed policy replacement](#review-a-capture-policy-change-unreleased)
+can adopt a different approved policy. Changing the original source identity and
+full installed acceptance remain open. Neither device recovery nor policy
+replacement resets a server family deadline or cancels a forgetting decision.
 
 Each inbox uses a separately generated, random 256-bit key sealed by the OS
 credential store. Selected payloads, checkpoints and coverage records are
@@ -801,16 +882,19 @@ A reviewed policy replacement requires a settled archive, the current approved
 source policy and a new device grant/key. It keeps the original organization,
 source and namespace, receipts and deletion fences. The new copy starts paused
 with its selection coverage unobserved; the original archive preserves earlier
-evidence and coverage. It does not retroactively erase accepted memories or
-convert an existing mirror.
+evidence and coverage. Copying a policy does not itself erase accepted memories
+or convert an existing mirror. A newly approved [expiry policy](#schedule-capture-expiry-unreleased)
+can later withdraw earlier retained copies of a family; its scope must be reviewed.
 
 Follow the [Studio procedure](desktop-sources.md#apply-a-reviewed-capture-policy-unreleased)
 and its [private-agent inputs](desktop-operator.md#apply-a-reviewed-capture-policy-unreleased),
 or the independent runner's [new-device policy restore](headless-capture.md#apply-a-reviewed-policy-with-a-new-device-configuration-unreleased).
 These guides define the drain, preview, key, resource and interrupted-recovery
 requirements for each runner. Keep the [current implementation evidence and remaining gates](../research/2026-10-21-durable-capture-implementation.md#headless-policy-migration-and-app-controls-source-delta)
-separate from earlier fixed-policy recovery proof. Actual UI migration, all six
-installed targets and broader organization/source migration remain unaccepted.
+separate from earlier fixed-policy recovery proof. The Linux source preview
+passed 13 app and 17 independent headless assertions. All six installed targets,
+expanded interruption coverage and broader organization/source migration remain
+open; that earlier preview does not qualify the new expiry policy.
 
 ## Manage source defaults and device authorizations (unreleased)
 
@@ -831,7 +915,9 @@ Source, device and policy-history lists are paginated, at most 100 per page.
    **Approved policy history**, including earlier mode-only approvals.
 2. Open **Change the policy for new device authorizations**. Choose the preset,
    relative JSONL path patterns and read limits. The additional development
-   control **Exclude JSON fields** uses the rules above. Each new local
+   controls **Exclude JSON fields** and **Server retention** use the rules above.
+   Scheduled expiry requires its additional server capability and explicit
+   fragment-family scope. Each new local
    enrollment still needs its own folder preview and confirmation.
 3. Explicitly choose how to treat existing authorizations: **Keep their previously
    approved policies**, which also permits future capture under those rules, or
@@ -848,6 +934,33 @@ stops server delivery; a runner stops further intake when it observes that
 revocation. Offline inbox evidence remains available for explicitly approved
 recovery. To revoke one authorization independently, use its **Revoke** action
 and confirmation; this does not delete server memories or erase the local inbox.
+
+Existing family deadlines also survive a default change or grant revocation.
+Acceptance under a newly approved expiry version can schedule deletion of that
+family's earlier retained copies. **Keep their previously approved policies**
+does not exempt those copies from an already applicable family deadline.
+
+### Observe scheduled cleanup (unreleased)
+
+On a supporting server, the source's **Retention cleanup** panel shows the last
+server observation and offers **Refresh cleanup**. The equivalent agent read is
+`capture.retention.status`, with connector/source IDs in `request.parameters`,
+or `GET /v1/connectors/{connector_id}/capture-sources/{source_id}/retention`.
+Access is limited to the organization administrator or the source operator;
+these counts do not grant access to memory content.
+
+| Observation | Meaning |
+| --- | --- |
+| `pending_families`, `due_families` | All unfinished scheduled families, and the subset already past its deadline. |
+| `expired_families` | Families whose scheduled logical removal completed; content purges can still be pending. |
+| `failed_families`, `error_code` | Unfinished families with a recorded cleanup error. `space_paused` waits for the workspace write pause to end. |
+| `purges_pending` | Source memory records awaiting ordinary content purging, including explicit forgetting. |
+| `next_deadline`, `last_cleanup_at`, `observed_at` | Earliest outstanding deadline, most recent completed family and observation time. Null means no corresponding recorded time. |
+
+`semantics: "scheduled_cleanup"` and `backup_erasure: "not_included"` state the
+limits of this result. A failed or busy refresh preserves the last observation;
+do not replace unknown status with zero or infer cleanup from local queue counts.
+This status is separate from delivery receipts, index readiness and librarian work.
 
 ### Equivalent MCP and HTTP steps
 
@@ -952,6 +1065,7 @@ These operations are part of the unreleased implementation:
 | `capture.policy.review` | `GET /v1/connectors/{connector_id}/capture-sources/{source_id}/policy-review` |
 | `capture.policy.versions` | `GET /v1/connectors/{connector_id}/capture-sources/{source_id}/policies` |
 | `capture.policy.change` | `PUT /v1/connectors/{connector_id}/capture-sources/{source_id}/policy-transitions/{transition_id}` |
+| `capture.retention.status` | `GET /v1/connectors/{connector_id}/capture-sources/{source_id}/retention` |
 | `capture.grant.configure` | `PUT /v1/capture-sources/{source_id}/grants/{grant_id}` |
 | `capture.grant.status` / `capture.grant.revoke` | `GET` / `DELETE /v1/capture-grants/{grant_id}` |
 | `capture.pages.accept` | `POST /v1/capture-grants/{grant_id}/pages` |
@@ -1013,6 +1127,8 @@ For JSON field exclusions, also supply the full approved v2 policy as
 `source.capture_policy`, including `exclude_fields`, and obtain the matching
 preview hash. The policy must match the device grant; adding exclusions to an
 existing inbox through an ordinary settings update is refused.
+For scheduled expiry, use the full [v3 policy](#schedule-capture-expiry-unreleased)
+in both server approval and local configuration and verify `capture_retention: "v1"`.
 
 The runner owns page construction and retries. Pages contain 1–50 selected
 evidence events, with at most 1,500,000 bytes of canonical JSON. Reusing an ID

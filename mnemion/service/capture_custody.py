@@ -129,6 +129,11 @@ class CaptureCustody(CaptureProgress, CapturePolicies):
                 raise not_found()
             return self._source_value(conn, row)
 
+    def retention_status(self, identity, connector_id, source_id):
+        from .capture_retention_status import observe
+
+        return observe(self.db, identity, connector_id, source_id)
+
     def source(self, identity, connector_id, source_id, command):
         with self.db.transaction(identity) as conn:
             require_administrator(conn)
@@ -210,8 +215,8 @@ class CaptureCustody(CaptureProgress, CapturePolicies):
                 ).fetchone()
                 conn.execute(
                     """INSERT INTO mnemion.capture_policy_versions
-                       (tenant_id,source_id,policy_version,capture_mode,capture_policy)
-                       VALUES(%s,%s,1,%s,%s)""",
+                       (tenant_id,source_id,policy_version,capture_mode,capture_policy,approved_by)
+                       VALUES(%s,%s,1,%s,%s,%s)""",
                     (
                         identity.tenant_id,
                         source_id,
@@ -219,6 +224,7 @@ class CaptureCustody(CaptureProgress, CapturePolicies):
                         Jsonb(command.capture_policy.model_dump(mode="json"))
                         if command.capture_policy
                         else None,
+                        identity.principal_id,
                     ),
                 )
             audit(
@@ -471,8 +477,10 @@ class CaptureCustody(CaptureProgress, CapturePolicies):
                     ids.append(event.event_id)
                     continue
                 denied = conn.execute(
-                    "SELECT 1 FROM mnemion.capture_denials WHERE source_id=%s AND lineage_id=%s",
-                    (source_id, lineage),
+                    """SELECT 1 FROM mnemion.capture_denials WHERE source_id=%s AND lineage_id=%s
+                       UNION ALL SELECT 1 FROM mnemion.capture_expiries
+                       WHERE source_id=%s AND lineage_id=%s AND expires_at<=clock_timestamp() LIMIT 1""",
+                    (source_id, lineage, source_id, lineage),
                 ).fetchone()
                 receipt = (
                     {}
@@ -482,8 +490,8 @@ class CaptureCustody(CaptureProgress, CapturePolicies):
                     )
                 )
                 conn.execute(
-                    """INSERT INTO mnemion.capture_events(tenant_id,source_id,event_id,producer_scope,origin_external_id,origin_revision,lineage_id,payload_hash,space_id,memory_id,operation_id)
-                       VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                    """INSERT INTO mnemion.capture_events(tenant_id,source_id,event_id,producer_scope,origin_external_id,origin_revision,lineage_id,payload_hash,space_id,memory_id,operation_id,policy_version)
+                       VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
                     (
                         identity.tenant_id,
                         source_id,
@@ -496,7 +504,12 @@ class CaptureCustody(CaptureProgress, CapturePolicies):
                         space_id,
                         receipt.get("memory_id"),
                         receipt.get("operation_id"),
+                        grant["policy_version"],
                     ),
+                )
+                conn.execute(
+                    "SELECT mnemion.schedule_capture_expiry(%s,%s,%s)",
+                    (source_id, lineage, grant["policy_version"]),
                 )
                 ids.append(event.event_id)
             conn.execute(
@@ -523,8 +536,13 @@ class CaptureCustody(CaptureProgress, CapturePolicies):
             self.db._check_identity(conn, identity)
             grant = self._grant(conn, identity, grant_id)
             rows = conn.execute(
-                "SELECT lineage_id,forgotten_at FROM mnemion.capture_denials WHERE source_id=%s AND (%s::text IS NULL OR lineage_id>%s) ORDER BY lineage_id LIMIT %s",
-                (UUID(grant["source_id"]), after, after, limit + 1),
+                """SELECT lineage_id,min(forgotten_at) AS forgotten_at FROM (
+                     SELECT lineage_id,forgotten_at FROM mnemion.capture_denials WHERE source_id=%s
+                     UNION ALL SELECT lineage_id,expires_at AS forgotten_at FROM mnemion.capture_expiries
+                       WHERE source_id=%s AND expires_at<=clock_timestamp()
+                   ) denied WHERE (%s::text IS NULL OR lineage_id>%s)
+                   GROUP BY lineage_id ORDER BY lineage_id LIMIT %s""",
+                (UUID(grant["source_id"]), UUID(grant["source_id"]), after, after, limit + 1),
             ).fetchall()
             return json_value(
                 {

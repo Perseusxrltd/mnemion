@@ -10,7 +10,7 @@ from ..capture_policy import CapturePolicy
 
 
 def versions(state):
-    if state["version"] == 2:
+    if state["version"] >= 2:
         return state["policies"]
     return [
         {
@@ -58,10 +58,16 @@ def validate(state):
             policy = CapturePolicy.model_validate(row["capture_policy"])
             if (
                 policy.capture_mode != row["capture_mode"]
-                or policy.retention != "until_deleted"
+                or not policy.keeps_accepted
                 or policy.model_dump(mode="json") != row["capture_policy"]
             ):
                 raise ValueError("Invalid capture policy recovery selection")
+            if policy.retention == "expire_after" and (
+                state["version"] < 3 or not row.get("approved_by")
+            ):
+                raise ValueError("An expiry-aware custody ledger with its approval is required")
+        if row.get("approved_by") is not None:
+            UUID(row["approved_by"])
         created = row.get("created_at")
         if not isinstance(created, str) or datetime.fromisoformat(created).tzinfo is None:
             raise ValueError("Invalid capture policy recovery timestamp")
@@ -89,7 +95,7 @@ def validate(state):
             type(current) is not int
             or current < 1
             or current > source["version"]
-            or (state["version"] == 2 and "policy_version" not in source)
+            or (state["version"] >= 2 and "policy_version" not in source)
             or (state["version"] == 1 and current != 1)
         ):
             raise ValueError("Invalid current capture policy version")
@@ -109,7 +115,7 @@ def validate(state):
         version = grant.get("policy_version", 1)
         if (
             type(version) is not int
-            or (state["version"] == 2 and "policy_version" not in grant)
+            or (state["version"] >= 2 and "policy_version" not in grant)
             or (grant["tenant_id"], grant["source_id"], version) not in known
         ):
             raise ValueError("Unknown device capture policy recovery version")
@@ -133,13 +139,14 @@ def restore(conn, state):
                 )
             )
             or str(previous["transition_id"]) != str(row.get("transition_id"))
+            or ("approved_by" in row and str(previous["approved_by"]) != str(row["approved_by"]))
         ):
             raise ValueError("The custody ledger changed an immutable capture policy version")
         conn.execute(
             """INSERT INTO mnemion.capture_policy_versions
                  (tenant_id,source_id,policy_version,capture_mode,capture_policy,created_at,
-                  transition_id,request_hash,previous_grants,affected_grants)
-               SELECT %s,%s,%s,%s,%s,%s,%s,%s,%s,%s
+                  transition_id,request_hash,previous_grants,affected_grants,approved_by)
+               SELECT %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s
                WHERE EXISTS(SELECT FROM mnemion.capture_sources WHERE tenant_id=%s AND source_id=%s)
                ON CONFLICT(tenant_id,source_id,policy_version) DO NOTHING""",
             (
@@ -153,6 +160,7 @@ def restore(conn, state):
                 row.get("request_hash"),
                 row.get("previous_grants"),
                 row.get("affected_grants"),
+                row.get("approved_by"),
                 row["tenant_id"],
                 row["source_id"],
             ),

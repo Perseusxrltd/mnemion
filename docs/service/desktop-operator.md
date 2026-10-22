@@ -393,6 +393,17 @@ deadline. `catalog: complete` describes finished traversal of that sample, not
 complete transcript coverage. Inspect the [preview limits and unsupported
 capabilities](durable-capture.md#preview-the-selection) before reporting coverage.
 
+For scheduled expiry, the unreleased [v3 capture policy](durable-capture.md#schedule-capture-expiry-unreleased)
+belongs in `source.capture_policy` and the identical preview selection. It requires
+`retention: "expire_after"`, integer `retention_days` (1–3,650) and
+`expiry_scope: "captured_fragment_family"`. The approved server grant must match.
+Changing local resource limits preserves these fields; changing the policy itself
+requires reviewed replacement. A preview reports `automatic_expiry: "server_scheduled"`
+and the selected `retention_days`, without enabling collection or deleting content.
+Observe server cleanup through `workspace.execute` with `capture.retention.status`
+and the source/connector IDs, using the usual current workspace authority. Local
+queue status does not establish that server purging has completed.
+
 For a source with an explicit `capture_policy`, pass
 `result.configuration_hash` as `input.preview_hash` in `source.configure`, with
 the same selection/resource settings in `input.source` and a fresh

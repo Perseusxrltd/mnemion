@@ -3,11 +3,13 @@
 from .model_registry import ModelRegistry
 from .reindex import ReindexBackfill
 from .worker import Worker
+from .capture_retention import CaptureRetentionWorker
 
 
 class ModelWorker:
     def __init__(self, database, registry: ModelRegistry, *, telemetry=None):
         self.registry = registry
+        self.retention = CaptureRetentionWorker(database)
         self.backfill = ReindexBackfill(database, registry)
         self.workers = [
             Worker(
@@ -21,6 +23,7 @@ class ModelWorker:
         self.next_worker = 0
 
     def run_once(self) -> bool:
+        expired = self.retention.run_once()
         budget = self.registry.memory_budget
         backfilled = (
             self.backfill.run_once() if not budget or budget.can_start_background() else False
@@ -30,4 +33,4 @@ class ModelWorker:
             self.next_worker = (self.next_worker + 1) % len(self.workers)
             if worker.run_once():
                 return True
-        return backfilled
+        return backfilled or expired

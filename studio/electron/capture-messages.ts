@@ -63,18 +63,21 @@ const validIndexProgress = (value: unknown): value is CaptureIndexProgress => ke
   (value.completed === null || validIndexSweep(value.completed) && value.completed.next_cursor === null)
 
 export function readCapturePreview(value: unknown): CapturePreview {
+  const expiring = object(value) && value.automatic_expiry === 'server_scheduled'
   const records = (item: unknown) => keys(item, ['lines', 'selected', 'omitted', 'unsupported']) &&
     Object.values(item).every(count) && item.lines === (item.selected as number) + (item.omitted as number) + (item.unsupported as number)
   if (!keys(value, ['format', 'configuration_hash', 'policy_revision', 'observed_at', 'capture_mode', 'catalog',
     'visited_entries', 'read_bytes', 'files', 'records', 'file_limit', 'byte_limit', 'attachment_binaries',
-    'external_links', 'hidden_reasoning', 'field_redaction', 'automatic_expiry', 'content_saved']) ||
+    'external_links', 'hidden_reasoning', 'field_redaction', 'automatic_expiry', 'content_saved', ...(expiring ? ['retention_days'] : [])]) ||
     value.format !== 'mnemion-capture-preview-v1' || typeof value.configuration_hash !== 'string' || !cursor(value.configuration_hash) ||
     !cursor(value.policy_revision) || typeof value.observed_at !== 'string' || !timestamp(value.observed_at) ||
     !['messages', 'complete'].includes(String(value.capture_mode)) || !['complete', 'limited', 'unavailable'].includes(String(value.catalog)) ||
     !count(value.visited_entries) || value.visited_entries > 10000 || !count(value.read_bytes) || value.read_bytes > 1048576 ||
     !Array.isArray(value.files) || value.files.length > 8 || !records(value.records) || value.file_limit !== 8 || value.byte_limit !== 1048576 ||
     value.attachment_binaries !== 'not_read' || value.external_links !== 'not_followed' || value.hidden_reasoning !== 'unavailable' ||
-    !['not_supported', 'disabled', 'json_field_names'].includes(String(value.field_redaction)) || value.automatic_expiry !== 'not_enabled' || value.content_saved !== false) throw new Error('The capture preview could not be verified.')
+    !['not_supported', 'disabled', 'json_field_names'].includes(String(value.field_redaction)) ||
+    (expiring ? !count(value.retention_days) || value.retention_days < 1 || value.retention_days > 3650 : value.automatic_expiry !== 'not_enabled') ||
+    value.content_saved !== false) throw new Error('The capture preview could not be verified.')
   for (const file of value.files) {
     if (!keys(file, ['path', 'status', 'file_bytes', 'read_bytes', 'prefix_bytes', 'records']) || typeof file.path !== 'string' ||
       !file.path || file.path.length > 4096 || file.path.startsWith('/') || file.path.split('/').includes('..') || /[\\\x00-\x1f\x7f]/.test(file.path) ||
@@ -121,12 +124,15 @@ export function readCaptureArchive(value: unknown): CaptureArchiveInfo {
     const policy = binding.capture_policy
     const patterns = (v: unknown, required: boolean) => Array.isArray(v) && v.length <= 64 && (!required || v.length > 0) && v.every(p => typeof p === 'string' && p.length > 0 && p.length <= 512)
     const fieldNames = object(policy) && Object.hasOwn(policy, 'exclude_fields')
-    if (!keys(policy, ['format', 'preset', 'capture_mode', 'include', 'exclude', 'retention', 'max_file_bytes', 'max_record_bytes', ...(fieldNames ? ['exclude_fields'] : [])]) ||
-      !['mnemion-capture-policy-v1', 'mnemion-capture-policy-v2'].includes(String(policy.format)) || !['selected', 'conversation', 'detailed'].includes(String(policy.preset)) ||
-      fieldNames && (policy.format !== 'mnemion-capture-policy-v2' || !Array.isArray(policy.exclude_fields) ||
+    const expiring = object(policy) && policy.retention === 'expire_after'
+    if (!keys(policy, ['format', 'preset', 'capture_mode', 'include', 'exclude', 'retention', 'max_file_bytes', 'max_record_bytes', ...(fieldNames ? ['exclude_fields'] : []), ...(expiring ? ['retention_days', 'expiry_scope'] : [])]) ||
+      !['mnemion-capture-policy-v1', 'mnemion-capture-policy-v2', 'mnemion-capture-policy-v3'].includes(String(policy.format)) || !['selected', 'conversation', 'detailed'].includes(String(policy.preset)) ||
+      fieldNames && (policy.format === 'mnemion-capture-policy-v1' || !Array.isArray(policy.exclude_fields) ||
         !policy.exclude_fields.length || policy.exclude_fields.length > 32 ||
         policy.exclude_fields.some((name, index, names) => typeof name !== 'string' || !/^[a-z_][a-z0-9_.-]{0,127}$/.test(name) || index > 0 && names[index - 1] >= name)) ||
-      policy.capture_mode !== binding.capture_mode || policy.retention !== 'until_deleted' || !patterns(policy.include, true) || !patterns(policy.exclude, false) ||
+      policy.capture_mode !== binding.capture_mode ||
+      (expiring ? policy.format !== 'mnemion-capture-policy-v3' || !count(policy.retention_days) || policy.retention_days < 1 || policy.retention_days > 3650 || policy.expiry_scope !== 'captured_fragment_family' : policy.retention !== 'until_deleted') ||
+      !patterns(policy.include, true) || !patterns(policy.exclude, false) ||
       !count(policy.max_file_bytes) || policy.max_file_bytes < 1 || policy.max_file_bytes > 1e12 ||
       !count(policy.max_record_bytes) || policy.max_record_bytes < 1 || policy.max_record_bytes > 16e6 || policy.max_record_bytes > policy.max_file_bytes) throw new Error('The archived capture policy could not be verified.')
   }

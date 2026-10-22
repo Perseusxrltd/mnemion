@@ -31,6 +31,7 @@ def version_value(row):
                 "transition_id",
                 "previous_grants",
                 "affected_grants",
+                "approved_by",
             )
         }
     )
@@ -197,8 +198,8 @@ class CapturePolicies:
             row = conn.execute(
                 """INSERT INTO mnemion.capture_policy_versions
                      (tenant_id,source_id,policy_version,capture_mode,capture_policy,transition_id,
-                      request_hash,previous_grants,affected_grants)
-                   VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING *""",
+                      request_hash,previous_grants,affected_grants,approved_by)
+                   VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING *""",
                 (
                     identity.tenant_id,
                     source_id,
@@ -209,6 +210,7 @@ class CapturePolicies:
                     request_hash,
                     command.previous_grants,
                     review["unrevoked_grants"],
+                    identity.principal_id,
                 ),
             ).fetchone()
             if command.previous_grants == "revoke":

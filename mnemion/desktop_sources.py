@@ -105,7 +105,7 @@ class Source(Command):
             if (
                 self.provider != "conversations"
                 or self.capture_mode != self.capture_policy.capture_mode
-                or bool(self.custody) != (self.capture_policy.retention == "until_deleted")
+                or bool(self.custody) != self.capture_policy.keeps_accepted
             ):
                 raise ValueError("Match the source's approved capture policy and retention")
         if self.provider != "conversations" and self.capture_mode is not None:

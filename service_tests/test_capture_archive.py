@@ -27,12 +27,24 @@ from service_tests.test_live_conversations import encoded
 
 
 @pytest.fixture
-def captured(tmp_path):
+def captured(tmp_path, request):
     binding = {
         name: str(uuid4()) for name in ("tenant_id", "connector_id", "source_id", "grant_id")
     }
+    expiry = getattr(request, "param", "until_deleted") == "expire_after"
     policy = CapturePolicy(
-        preset="conversation", capture_mode="messages", retention="until_deleted"
+        preset="conversation",
+        capture_mode="messages",
+        retention="expire_after" if expiry else "until_deleted",
+        **(
+            {
+                "format": "mnemion-capture-policy-v3",
+                "retention_days": 30,
+                "expiry_scope": "captured_fragment_family",
+            }
+            if expiry
+            else {}
+        ),
     )
     binding.update(
         namespace="portable-fixture",
@@ -95,6 +107,7 @@ def exported(tmp_path, captured):
     return archive, secret, staging, result
 
 
+@pytest.mark.parametrize("captured", ["until_deleted", "expire_after"], indirect=True)
 def test_policy_pending_delivery_fences_and_coverage_survive_fresh_process_recovery(
     tmp_path, captured
 ):

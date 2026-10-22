@@ -80,7 +80,9 @@ class WritebackService:
             require_administrator(conn)
             require_space(conn, space, 40, writing=True)
             if conn.execute(
-                "SELECT 1 FROM mnemion.connector_scopes WHERE space_id=%s", (space,)
+                """SELECT 1 FROM mnemion.connector_scopes WHERE space_id=%s
+                   UNION ALL SELECT 1 FROM mnemion.capture_sources WHERE space_id=%s LIMIT 1""",
+                (space, space),
             ).fetchone():
                 raise ServiceError(
                     409,
@@ -190,9 +192,10 @@ class WritebackService:
             destination = self.destinations.get((identity.tenant_id, space))
             permissions = conn.execute(
                 """SELECT mnemion.administrator() AND mnemion.authorized(%s,40)
-                AND NOT EXISTS (SELECT FROM mnemion.connector_scopes WHERE space_id=%s) AS configure,
+                AND NOT EXISTS (SELECT FROM mnemion.connector_scopes WHERE space_id=%s)
+                AND NOT EXISTS (SELECT FROM mnemion.capture_sources WHERE space_id=%s) AS configure,
                 mnemion.authorized(%s,30) AS organize""",
-                (space, space, space),
+                (space, space, space, space),
             ).fetchone()
             result = {
                 "configured": settings is not None,

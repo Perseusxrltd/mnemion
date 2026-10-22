@@ -509,6 +509,7 @@ def create_app(
             "connector_partial_inventory": True,
             "durable_capture": "v1",
             "capture_policy_versions": "v1",
+            "capture_retention": "v1",
         }
 
     @app.get("/health/ready", tags=["Operations"], response_model=c.ReadyStatus)

@@ -31,14 +31,20 @@ SOURCE_EXCLUSIONS = (
 
 
 class CapturePolicy(Command):
-    format: Literal["mnemion-capture-policy-v1", "mnemion-capture-policy-v2"] = (
-        "mnemion-capture-policy-v1"
-    )
+    format: Literal[
+        "mnemion-capture-policy-v1", "mnemion-capture-policy-v2", "mnemion-capture-policy-v3"
+    ] = "mnemion-capture-policy-v1"
     preset: Literal["selected", "conversation", "detailed"]
     capture_mode: Literal["messages", "complete"]
     include: list[str] = Field(default_factory=lambda: ["*.jsonl"], min_length=1, max_length=64)
     exclude: list[str] = Field(default_factory=list, max_length=64)
-    retention: Literal["source_mirror", "until_deleted"]
+    retention: Literal["source_mirror", "until_deleted", "expire_after"]
+    retention_days: int | None = Field(
+        default=None, ge=1, le=3650, strict=True, exclude_if=lambda value: value is None
+    )
+    expiry_scope: Literal["captured_fragment_family"] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     max_file_bytes: int = Field(default=1_000_000_000, ge=1, le=1_000_000_000_000, strict=True)
     max_record_bytes: int = Field(default=2_000_000, ge=1, le=16_000_000, strict=True)
     # Empty exclusions must not change existing v1 policy hashes or archives.
@@ -103,8 +109,19 @@ class CapturePolicy(Command):
 
     @model_validator(mode="after")
     def preset_mode(self):
-        if self.exclude_fields and self.format != "mnemion-capture-policy-v2":
-            raise ValueError("Use capture policy v2 for JSON field exclusions")
+        if self.exclude_fields and self.format == "mnemion-capture-policy-v1":
+            raise ValueError("Use capture policy v2 or later for JSON field exclusions")
+        if self.retention == "expire_after":
+            if (
+                self.format != "mnemion-capture-policy-v3"
+                or self.retention_days is None
+                or self.expiry_scope is None
+            ):
+                raise ValueError(
+                    "Approve a v3 expiry period and the captured fragment family scope"
+                )
+        elif self.retention_days is not None or self.expiry_scope is not None:
+            raise ValueError("An expiry period and scope require automatic expiry")
         if (
             self.preset == "conversation"
             and self.capture_mode != "messages"
@@ -118,6 +135,10 @@ class CapturePolicy(Command):
     @property
     def revision(self):
         return hashlib.sha256(canonical_capture_json(self.model_dump(mode="json"))).hexdigest()
+
+    @property
+    def keeps_accepted(self):
+        return self.retention != "source_mirror"
 
     def provider_fields(self):
         return {

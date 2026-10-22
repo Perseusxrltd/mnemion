@@ -8,6 +8,7 @@ import CaptureStatus from './CaptureStatus';
 import CapturePreviewPanel from './CapturePreviewPanel';
 import CaptureRestore from './CaptureRestore';
 import CaptureBackup from './CaptureBackup';
+import CaptureRetentionFields from './CaptureRetentionFields';
 
 const message = (error: unknown) => error instanceof Error ? error.message : 'The source operation could not finish.';
 const when = (value?: string) => value ? new Date(value).toLocaleString() : 'Waiting for its first scan';
@@ -30,6 +31,8 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
   const native = window.mnemion;
   const cache = useQueryClient();
   const query = useQuery({ queryKey: ['desktop-sources'], queryFn: () => native!.sourceStatus!(), refetchInterval: 15000 });
+  const capability = useQuery({ queryKey: ['capture-policy-capability', endpoint], enabled: connection.provider === 'conversations',
+    queryFn: () => client.request<{ capture_policy_versions?: string; capture_retention?: string }>('GET', '/health/live'), retry: false });
   const current = query.data?.sources.find(item => item.connector_id === connection.id && item.endpoint === endpoint.replace(/\/$/, ''));
   const [path, setPath] = useState('');
   const [interval, setIntervalMinutes] = useState(5);
@@ -37,6 +40,7 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
   const [files, setFiles] = useState(10000);
   const [captureMode, setCaptureMode] = useState<'complete' | 'messages'>('complete');
   const [keepAccepted, setKeepAccepted] = useState(false);
+  const [expiring, setExpiring] = useState(false), [retentionDays, setRetentionDays] = useState(30);
   const [pendingLimit, setPendingLimit] = useState(256);
   const [historyLimit, setHistoryLimit] = useState(100000);
   const [databaseLimit, setDatabaseLimit] = useState(512);
@@ -75,6 +79,7 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
     setMaxFileBytes(current?.capture_policy?.max_file_bytes ?? 1_000_000_000); setMaxRecordBytes(current?.capture_policy?.max_record_bytes ?? 2_000_000);
     setPreviewState(undefined);
     setKeepAccepted(!!current?.custody); setPendingLimit(current?.custody?.pending_limit_mib ?? 256); setDeviceKeyId('');
+    setExpiring(current?.capture_policy?.retention === 'expire_after'); setRetentionDays(current?.capture_policy?.retention_days ?? 30);
     setHistoryLimit(current?.custody?.history_limit_events ?? 100000); setDatabaseLimit(current?.custody?.database_limit_mib ?? 512);
     setConversationIdentity(current?.scope_id ?? '');
     setKey(''); setProviderKey(''); setPublication(false); setRevision(query.data?.revision);
@@ -85,8 +90,9 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
   const rules = (text: string) => text.split('\n').map(value => value.trim()).filter(Boolean);
   const excludedFields = rules(fieldExclusions).map(value => value.toLowerCase()).sort();
   const capturePolicy: CapturePolicy | undefined = connection.provider === 'conversations' && (!current?.custody || current.capture_policy) ? {
-    format: excludedFields.length ? 'mnemion-capture-policy-v2' : current?.capture_policy?.format ?? 'mnemion-capture-policy-v1', preset, capture_mode: captureMode,
-    include: rules(sessionIncludes), exclude: rules(sessionExcludes), retention: keepAccepted ? 'until_deleted' : 'source_mirror',
+    format: keepAccepted && expiring ? 'mnemion-capture-policy-v3' : current?.capture_policy?.format === 'mnemion-capture-policy-v3' ? 'mnemion-capture-policy-v3' : excludedFields.length ? 'mnemion-capture-policy-v2' : current?.capture_policy?.format ?? 'mnemion-capture-policy-v1', preset, capture_mode: captureMode,
+    include: rules(sessionIncludes), exclude: rules(sessionExcludes), retention: keepAccepted ? expiring ? 'expire_after' : 'until_deleted' : 'source_mirror',
+    ...(keepAccepted && expiring ? { retention_days: retentionDays, expiry_scope: 'captured_fragment_family' as const } : {}),
     max_file_bytes: maxFileBytes, max_record_bytes: maxRecordBytes,
     ...(excludedFields.length ? { exclude_fields: excludedFields } : {}),
   } : undefined;
@@ -132,6 +138,7 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
     let createdKey: string | undefined;
     try {
       if (capturePolicy && !capturePreview) throw new Error('Preview these capture settings before saving.');
+      if (capturePolicy?.retention === 'expire_after' && capability.data?.capture_retention !== 'v1') throw new Error('Update this workspace server before approving scheduled capture expiry.');
       const selection = connection.provider === 'slack' ? { slack: { team_id: team.trim(),
         channels: [...new Set(channels.split(/[\s,]+/).filter(Boolean))], include_threads: threads } }
         : connection.provider === 'gdrive' ? { gdrive: { folder_ids: driveIds(folders), file_ids: driveIds(driveFiles), recursive } }
@@ -258,11 +265,14 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
           }} />Keep captured memories when original chat logs rotate or are removed</label>
           <p className="ws-helper">Retained capture stores only the selected mode in a separately encrypted local inbox before delivery. The workspace administrator approves its audience and device grant. Existing source mirrors keep their current policy; changing an established source needs a reviewed migration.</p>
           {keepAccepted && <>
+            {capturePolicy && <CaptureRetentionFields expiring={expiring} days={retentionDays} disabled={busy || !!current?.custody} supported={capability.data?.capture_retention === 'v1'} onChange={(enabled, days) => {
+              setExpiring(enabled); setRetentionDays(days); setDirty(true); setPublication(false);
+            }} />}
             <label>Maximum pending content for this source (MiB)<input disabled={busy} data-update-safe type="number" min="1" max="1024" step="1" value={pendingLimit} onChange={event => { setPendingLimit(Number(event.target.value)); setDirty(true); }} required /></label>
             <label>Maximum entries per history counter<input disabled={busy} data-update-safe type="number" min="1000" max="500000" step="1" value={historyLimit} onChange={event => { setHistoryLimit(Number(event.target.value)); setDirty(true); setPublication(false); }} required /></label>
             <label>Maximum encrypted storage for this source (MiB)<input disabled={busy} data-update-safe type="number" min="64" max="2048" step="1" value={databaseLimit} onChange={event => { setDatabaseLimit(Number(event.target.value)); setDirty(true); setPublication(false); }} required /></label>
             <p className="ws-helper">History protects against duplicate capture and restores deletion decisions. Its entry limit applies separately to accepted fragments, source event identities, saved source fragments and deletion records. Changing these limits preserves the inbox, its key and delivery history.</p>
-            <p className="ws-helper">Across this computer, pending selected content is capped at 1 GiB; encrypted databases have separate size limits. New intake needs at least 512 MiB free disk. Accepted evidence waits without automatic expiry. Reducing a limit stops new intake while existing evidence can still be delivered.</p>
+            <p className="ws-helper">Across this computer, pending selected content is capped at 1 GiB; encrypted databases have separate size limits. New intake needs at least 512 MiB free disk. Local pending evidence waits until delivered or explicitly discarded; server expiry starts after acceptance. Reducing a limit stops new intake while existing evidence can still be delivered.</p>
           </>}
           <button className="ws-button" type="button" disabled={busy || !path} onClick={() => void previewCapture()}>Preview capture</button>
           {capturePreview && <CapturePreviewPanel preview={capturePreview} />}

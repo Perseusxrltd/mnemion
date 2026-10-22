@@ -216,7 +216,7 @@ class ConnectorConfig(Command):
             or self.provider.max_files > 100000
             or (
                 self.provider.capture_policy is not None
-                and self.provider.capture_policy.retention != "until_deleted"
+                and not self.provider.capture_policy.keeps_accepted
             )
         ):
             raise ValueError("Retained headless capture requires a matching conversation policy")

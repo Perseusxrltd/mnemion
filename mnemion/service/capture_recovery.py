@@ -7,12 +7,12 @@ from uuid import UUID
 from psycopg.types.json import Jsonb
 
 from ..capture_policy import CapturePolicy
-from . import capture_policy_recovery
+from . import capture_policy_recovery, capture_retention_recovery
 
 
 def capture(conn):
     return {
-        "version": 2,
+        "version": 3,
         "sources": conn.execute(
             "SELECT * FROM mnemion.capture_sources ORDER BY tenant_id,source_id"
         ).fetchall(),
@@ -25,16 +25,18 @@ def capture(conn):
         "policies": conn.execute(
             "SELECT * FROM mnemion.capture_policy_versions ORDER BY tenant_id,source_id,policy_version"
         ).fetchall(),
+        "expiries": capture_retention_recovery.capture(conn),
     }
 
 
 def validate(state, tenants):
     if (
         not isinstance(state, dict)
-        or state.get("version") not in {1, 2}
+        or state.get("version") not in {1, 2, 3}
         or set(state)
         != {"version", "sources", "grants", "denials"}
-        | ({"policies"} if state.get("version") == 2 else set())
+        | ({"policies"} if state.get("version") in {2, 3} else set())
+        | ({"expiries"} if state.get("version") == 3 else set())
     ):
         raise ValueError("Invalid capture custody recovery ledger")
     known_sources, known_grants, known_spaces, known_denials = set(), set(), set(), set()
@@ -84,7 +86,7 @@ def validate(state, tenants):
                     approved = CapturePolicy.model_validate(policy)
                     if (
                         approved.capture_mode != row["capture_mode"]
-                        or approved.retention != "until_deleted"
+                        or not approved.keeps_accepted
                         or approved.model_dump(mode="json") != policy
                     ):
                         raise ValueError("Invalid capture custody policy")
@@ -113,6 +115,7 @@ def validate(state, tenants):
                     raise ValueError("Duplicate capture custody denial")
                 known_denials.add(denial)
     capture_policy_recovery.validate(state)
+    capture_retention_recovery.validate(state)
 
 
 def restore(conn, state):
@@ -123,6 +126,7 @@ def restore(conn, state):
             )
         return
     capture_policy_recovery.validate(state)
+    capture_retention_recovery.validate(state)
     # A device absent from the current ledger cannot regain an older grant.
     conn.execute("UPDATE mnemion.capture_grants SET revoked_at=coalesce(revoked_at,now())")
     conn.execute("UPDATE mnemion.capture_sources SET revoked_at=coalesce(revoked_at,now())")
@@ -182,6 +186,7 @@ def restore(conn, state):
             ),
         )
     capture_policy_recovery.restore(conn, state)
+    capture_retention_recovery.restore(conn, state)
     for row in state["grants"]:
         previous = conn.execute(
             "SELECT * FROM mnemion.capture_grants WHERE tenant_id=%s AND grant_id=%s",

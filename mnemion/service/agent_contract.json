@@ -642,11 +642,24 @@
                 "title": "Exclude Fields",
                 "type": "array"
               },
+              "expiry_scope": {
+                "anyOf": [
+                  {
+                    "const": "captured_fragment_family",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Expiry Scope"
+              },
               "format": {
                 "default": "mnemion-capture-policy-v1",
                 "enum": [
                   "mnemion-capture-policy-v1",
-                  "mnemion-capture-policy-v2"
+                  "mnemion-capture-policy-v2",
+                  "mnemion-capture-policy-v3"
                 ],
                 "title": "Format",
                 "type": "string"
@@ -686,10 +699,24 @@
               "retention": {
                 "enum": [
                   "source_mirror",
-                  "until_deleted"
+                  "until_deleted",
+                  "expire_after"
                 ],
                 "title": "Retention",
                 "type": "string"
+              },
+              "retention_days": {
+                "anyOf": [
+                  {
+                    "maximum": 3650.0,
+                    "minimum": 1.0,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Retention Days"
               }
             },
             "required": [
@@ -870,11 +897,24 @@
                 "title": "Exclude Fields",
                 "type": "array"
               },
+              "expiry_scope": {
+                "anyOf": [
+                  {
+                    "const": "captured_fragment_family",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Expiry Scope"
+              },
               "format": {
                 "default": "mnemion-capture-policy-v1",
                 "enum": [
                   "mnemion-capture-policy-v1",
-                  "mnemion-capture-policy-v2"
+                  "mnemion-capture-policy-v2",
+                  "mnemion-capture-policy-v3"
                 ],
                 "title": "Format",
                 "type": "string"
@@ -914,10 +954,24 @@
               "retention": {
                 "enum": [
                   "source_mirror",
-                  "until_deleted"
+                  "until_deleted",
+                  "expire_after"
                 ],
                 "title": "Retention",
                 "type": "string"
+              },
+              "retention_days": {
+                "anyOf": [
+                  {
+                    "maximum": 3650.0,
+                    "minimum": 1.0,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Retention Days"
               }
             },
             "required": [
@@ -1097,11 +1151,24 @@
                 "title": "Exclude Fields",
                 "type": "array"
               },
+              "expiry_scope": {
+                "anyOf": [
+                  {
+                    "const": "captured_fragment_family",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Expiry Scope"
+              },
               "format": {
                 "default": "mnemion-capture-policy-v1",
                 "enum": [
                   "mnemion-capture-policy-v1",
-                  "mnemion-capture-policy-v2"
+                  "mnemion-capture-policy-v2",
+                  "mnemion-capture-policy-v3"
                 ],
                 "title": "Format",
                 "type": "string"
@@ -1141,10 +1208,24 @@
               "retention": {
                 "enum": [
                   "source_mirror",
-                  "until_deleted"
+                  "until_deleted",
+                  "expire_after"
                 ],
                 "title": "Retention",
                 "type": "string"
+              },
+              "retention_days": {
+                "anyOf": [
+                  {
+                    "maximum": 3650.0,
+                    "minimum": 1.0,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Retention Days"
               }
             },
             "required": [
@@ -1935,11 +2016,24 @@
                 "title": "Exclude Fields",
                 "type": "array"
               },
+              "expiry_scope": {
+                "anyOf": [
+                  {
+                    "const": "captured_fragment_family",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Expiry Scope"
+              },
               "format": {
                 "default": "mnemion-capture-policy-v1",
                 "enum": [
                   "mnemion-capture-policy-v1",
-                  "mnemion-capture-policy-v2"
+                  "mnemion-capture-policy-v2",
+                  "mnemion-capture-policy-v3"
                 ],
                 "title": "Format",
                 "type": "string"
@@ -1979,10 +2073,24 @@
               "retention": {
                 "enum": [
                   "source_mirror",
-                  "until_deleted"
+                  "until_deleted",
+                  "expire_after"
                 ],
                 "title": "Retention",
                 "type": "string"
+              },
+              "retention_days": {
+                "anyOf": [
+                  {
+                    "maximum": 3650.0,
+                    "minimum": 1.0,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Retention Days"
               }
             },
             "required": [
@@ -2103,11 +2211,24 @@
                 "title": "Exclude Fields",
                 "type": "array"
               },
+              "expiry_scope": {
+                "anyOf": [
+                  {
+                    "const": "captured_fragment_family",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Expiry Scope"
+              },
               "format": {
                 "default": "mnemion-capture-policy-v1",
                 "enum": [
                   "mnemion-capture-policy-v1",
-                  "mnemion-capture-policy-v2"
+                  "mnemion-capture-policy-v2",
+                  "mnemion-capture-policy-v3"
                 ],
                 "title": "Format",
                 "type": "string"
@@ -2147,10 +2268,24 @@
               "retention": {
                 "enum": [
                   "source_mirror",
-                  "until_deleted"
+                  "until_deleted",
+                  "expire_after"
                 ],
                 "title": "Retention",
                 "type": "string"
+              },
+              "retention_days": {
+                "anyOf": [
+                  {
+                    "maximum": 3650.0,
+                    "minimum": 1.0,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Retention Days"
               }
             },
             "required": [
@@ -2191,6 +2326,17 @@
                   }
                 ],
                 "title": "Affected Grants"
+              },
+              "approved_by": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Approved By"
               },
               "capture_mode": {
                 "enum": [
@@ -2491,11 +2637,24 @@
                 "title": "Exclude Fields",
                 "type": "array"
               },
+              "expiry_scope": {
+                "anyOf": [
+                  {
+                    "const": "captured_fragment_family",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Expiry Scope"
+              },
               "format": {
                 "default": "mnemion-capture-policy-v1",
                 "enum": [
                   "mnemion-capture-policy-v1",
-                  "mnemion-capture-policy-v2"
+                  "mnemion-capture-policy-v2",
+                  "mnemion-capture-policy-v3"
                 ],
                 "title": "Format",
                 "type": "string"
@@ -2535,10 +2694,24 @@
               "retention": {
                 "enum": [
                   "source_mirror",
-                  "until_deleted"
+                  "until_deleted",
+                  "expire_after"
                 ],
                 "title": "Retention",
                 "type": "string"
+              },
+              "retention_days": {
+                "anyOf": [
+                  {
+                    "maximum": 3650.0,
+                    "minimum": 1.0,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Retention Days"
               }
             },
             "required": [
@@ -2785,11 +2958,24 @@
                 "title": "Exclude Fields",
                 "type": "array"
               },
+              "expiry_scope": {
+                "anyOf": [
+                  {
+                    "const": "captured_fragment_family",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Expiry Scope"
+              },
               "format": {
                 "default": "mnemion-capture-policy-v1",
                 "enum": [
                   "mnemion-capture-policy-v1",
-                  "mnemion-capture-policy-v2"
+                  "mnemion-capture-policy-v2",
+                  "mnemion-capture-policy-v3"
                 ],
                 "title": "Format",
                 "type": "string"
@@ -2829,10 +3015,24 @@
               "retention": {
                 "enum": [
                   "source_mirror",
-                  "until_deleted"
+                  "until_deleted",
+                  "expire_after"
                 ],
                 "title": "Retention",
                 "type": "string"
+              },
+              "retention_days": {
+                "anyOf": [
+                  {
+                    "maximum": 3650.0,
+                    "minimum": 1.0,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Retention Days"
               }
             },
             "required": [
@@ -2856,6 +3056,17 @@
                   }
                 ],
                 "title": "Affected Grants"
+              },
+              "approved_by": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Approved By"
               },
               "capture_mode": {
                 "enum": [
@@ -2971,6 +3182,154 @@
     {
       "authentication": "bearer",
       "download": false,
+      "effect": "read",
+      "group": "connectors",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "connector_id": {
+                "format": "uuid",
+                "title": "Connector Id",
+                "type": "string"
+              },
+              "source_id": {
+                "format": "uuid",
+                "title": "Source Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "connector_id",
+              "source_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "parameters"
+        ],
+        "type": "object"
+      },
+      "method": "GET",
+      "name": "capture.retention.status",
+      "output_schema": {
+        "$defs": {
+          "CaptureRetentionStatus": {
+            "additionalProperties": true,
+            "properties": {
+              "backup_erasure": {
+                "const": "not_included",
+                "title": "Backup Erasure",
+                "type": "string"
+              },
+              "due_families": {
+                "title": "Due Families",
+                "type": "integer"
+              },
+              "error_code": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Error Code"
+              },
+              "expired_families": {
+                "title": "Expired Families",
+                "type": "integer"
+              },
+              "failed_families": {
+                "title": "Failed Families",
+                "type": "integer"
+              },
+              "families": {
+                "title": "Families",
+                "type": "integer"
+              },
+              "last_cleanup_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Last Cleanup At"
+              },
+              "next_deadline": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Next Deadline"
+              },
+              "observed_at": {
+                "title": "Observed At",
+                "type": "string"
+              },
+              "pending_families": {
+                "title": "Pending Families",
+                "type": "integer"
+              },
+              "purges_pending": {
+                "title": "Purges Pending",
+                "type": "integer"
+              },
+              "semantics": {
+                "const": "scheduled_cleanup",
+                "title": "Semantics",
+                "type": "string"
+              },
+              "source_id": {
+                "title": "Source Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "source_id",
+              "observed_at",
+              "families",
+              "pending_families",
+              "due_families",
+              "expired_families",
+              "failed_families",
+              "purges_pending",
+              "next_deadline",
+              "last_cleanup_at",
+              "error_code",
+              "semantics",
+              "backup_erasure"
+            ],
+            "title": "CaptureRetentionStatus",
+            "type": "object"
+          }
+        },
+        "$ref": "#/$defs/CaptureRetentionStatus"
+      },
+      "parameter_locations": {
+        "connector_id": "path",
+        "source_id": "path"
+      },
+      "path": "/v1/connectors/{connector_id}/capture-sources/{source_id}/retention",
+      "retry": "read",
+      "sensitive_input": false,
+      "sensitive_result": false,
+      "summary": "Retention Status"
+    },
+    {
+      "authentication": "bearer",
+      "download": false,
       "effect": "write",
       "group": "connectors",
       "input_schema": {
@@ -3003,11 +3362,24 @@
                 "title": "Exclude Fields",
                 "type": "array"
               },
+              "expiry_scope": {
+                "anyOf": [
+                  {
+                    "const": "captured_fragment_family",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Expiry Scope"
+              },
               "format": {
                 "default": "mnemion-capture-policy-v1",
                 "enum": [
                   "mnemion-capture-policy-v1",
-                  "mnemion-capture-policy-v2"
+                  "mnemion-capture-policy-v2",
+                  "mnemion-capture-policy-v3"
                 ],
                 "title": "Format",
                 "type": "string"
@@ -3047,10 +3419,24 @@
               "retention": {
                 "enum": [
                   "source_mirror",
-                  "until_deleted"
+                  "until_deleted",
+                  "expire_after"
                 ],
                 "title": "Retention",
                 "type": "string"
+              },
+              "retention_days": {
+                "anyOf": [
+                  {
+                    "maximum": 3650.0,
+                    "minimum": 1.0,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Retention Days"
               }
             },
             "required": [
@@ -3192,11 +3578,24 @@
                 "title": "Exclude Fields",
                 "type": "array"
               },
+              "expiry_scope": {
+                "anyOf": [
+                  {
+                    "const": "captured_fragment_family",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Expiry Scope"
+              },
               "format": {
                 "default": "mnemion-capture-policy-v1",
                 "enum": [
                   "mnemion-capture-policy-v1",
-                  "mnemion-capture-policy-v2"
+                  "mnemion-capture-policy-v2",
+                  "mnemion-capture-policy-v3"
                 ],
                 "title": "Format",
                 "type": "string"
@@ -3236,10 +3635,24 @@
               "retention": {
                 "enum": [
                   "source_mirror",
-                  "until_deleted"
+                  "until_deleted",
+                  "expire_after"
                 ],
                 "title": "Retention",
                 "type": "string"
+              },
+              "retention_days": {
+                "anyOf": [
+                  {
+                    "maximum": 3650.0,
+                    "minimum": 1.0,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Retention Days"
               }
             },
             "required": [
@@ -3436,11 +3849,24 @@
                 "title": "Exclude Fields",
                 "type": "array"
               },
+              "expiry_scope": {
+                "anyOf": [
+                  {
+                    "const": "captured_fragment_family",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Expiry Scope"
+              },
               "format": {
                 "default": "mnemion-capture-policy-v1",
                 "enum": [
                   "mnemion-capture-policy-v1",
-                  "mnemion-capture-policy-v2"
+                  "mnemion-capture-policy-v2",
+                  "mnemion-capture-policy-v3"
                 ],
                 "title": "Format",
                 "type": "string"
@@ -3480,10 +3906,24 @@
               "retention": {
                 "enum": [
                   "source_mirror",
-                  "until_deleted"
+                  "until_deleted",
+                  "expire_after"
                 ],
                 "title": "Retention",
                 "type": "string"
+              },
+              "retention_days": {
+                "anyOf": [
+                  {
+                    "maximum": 3650.0,
+                    "minimum": 1.0,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Retention Days"
               }
             },
             "required": [
@@ -3697,11 +4137,24 @@
                 "title": "Exclude Fields",
                 "type": "array"
               },
+              "expiry_scope": {
+                "anyOf": [
+                  {
+                    "const": "captured_fragment_family",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Expiry Scope"
+              },
               "format": {
                 "default": "mnemion-capture-policy-v1",
                 "enum": [
                   "mnemion-capture-policy-v1",
-                  "mnemion-capture-policy-v2"
+                  "mnemion-capture-policy-v2",
+                  "mnemion-capture-policy-v3"
                 ],
                 "title": "Format",
                 "type": "string"
@@ -3741,10 +4194,24 @@
               "retention": {
                 "enum": [
                   "source_mirror",
-                  "until_deleted"
+                  "until_deleted",
+                  "expire_after"
                 ],
                 "title": "Retention",
                 "type": "string"
+              },
+              "retention_days": {
+                "anyOf": [
+                  {
+                    "maximum": 3650.0,
+                    "minimum": 1.0,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Retention Days"
               }
             },
             "required": [
@@ -3928,11 +4395,24 @@
                 "title": "Exclude Fields",
                 "type": "array"
               },
+              "expiry_scope": {
+                "anyOf": [
+                  {
+                    "const": "captured_fragment_family",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Expiry Scope"
+              },
               "format": {
                 "default": "mnemion-capture-policy-v1",
                 "enum": [
                   "mnemion-capture-policy-v1",
-                  "mnemion-capture-policy-v2"
+                  "mnemion-capture-policy-v2",
+                  "mnemion-capture-policy-v3"
                 ],
                 "title": "Format",
                 "type": "string"
@@ -3972,10 +4452,24 @@
               "retention": {
                 "enum": [
                   "source_mirror",
-                  "until_deleted"
+                  "until_deleted",
+                  "expire_after"
                 ],
                 "title": "Retention",
                 "type": "string"
+              },
+              "retention_days": {
+                "anyOf": [
+                  {
+                    "maximum": 3650.0,
+                    "minimum": 1.0,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Retention Days"
               }
             },
             "required": [
@@ -11863,6 +12357,18 @@
                   }
                 ],
                 "title": "Capture Policy Versions"
+              },
+              "capture_retention": {
+                "anyOf": [
+                  {
+                    "const": "v1",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Capture Retention"
               },
               "connector_partial_inventory": {
                 "default": false,

@@ -19,6 +19,7 @@ health.sources GET /v1/health/sources
 capture.source.list GET /v1/connectors/{connector_id}/capture-sources
 capture.source.configure PUT /v1/connectors/{connector_id}/capture-sources/{source_id}
 capture.source.status GET /v1/connectors/{connector_id}/capture-sources/{source_id}
+capture.retention.status GET /v1/connectors/{connector_id}/capture-sources/{source_id}/retention
 capture.source.revoke DELETE /v1/connectors/{connector_id}/capture-sources/{source_id}
 capture.policy.review GET /v1/connectors/{connector_id}/capture-sources/{source_id}/policy-review
 capture.policy.versions GET /v1/connectors/{connector_id}/capture-sources/{source_id}/policies

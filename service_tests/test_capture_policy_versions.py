@@ -253,7 +253,7 @@ def test_recovery_ledger_keeps_all_policy_versions_and_cannot_mutate_them(
     with env.db.transaction(env.owner) as conn:
         ledger = json_value(capture_recovery.capture(conn))
     capture_recovery.validate(ledger, {str(env.owner.tenant_id)})
-    assert ledger["version"] == 2 and len(ledger["policies"]) == 2
+    assert ledger["version"] == 3 and len(ledger["policies"]) == 2 and ledger["expiries"] == []
     with env.db.transaction(env.owner) as conn:
         capture_recovery.restore(conn, ledger)
     assert service.status(env.owner, old_grant)["policy_version"] == 1
@@ -361,6 +361,7 @@ def test_legacy_single_policy_recovery_stays_compatible(env, conversation_source
         ledger = json_value(capture_recovery.capture(conn))
     ledger["version"] = 1
     del ledger["policies"]
+    del ledger["expiries"]
     for row in ledger["sources"] + ledger["grants"]:
         row.pop("policy_version")
     capture_recovery.validate(ledger, {str(env.owner.tenant_id)})

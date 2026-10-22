@@ -444,6 +444,22 @@ test('field-selection previews preserve explicit capability and bounded-failure 
   assert.throws(() => readCapturePreview(value), /preview could not be verified/)
 })
 
+test('expiry preview and archives require an explicit bounded family policy', () => {
+  const preview = { ...previewReport(), automatic_expiry: 'server_scheduled', retention_days: 30 }
+  assert.deepEqual(readCapturePreview(preview), preview)
+  for (const retention_days of [0, 3651, '30', true, undefined]) assert.throws(() => readCapturePreview({ ...preview, retention_days }))
+  assert.throws(() => readCapturePreview({ ...preview, automatic_expiry: 'not_enabled' }))
+  const archive = archiveReport(retainedDefinition())
+  archive.binding.capture_policy = { format: 'mnemion-capture-policy-v3', preset: 'conversation',
+    capture_mode: archive.binding.capture_mode, include: ['*.jsonl'], exclude: [], retention: 'expire_after',
+    retention_days: 30, expiry_scope: 'captured_fragment_family', exclude_fields: ['password'],
+    max_file_bytes: 1000000000, max_record_bytes: 2000000 }
+  assert.deepEqual(readCaptureArchive(archive), archive)
+  for (const change of [{ expiry_scope: undefined }, { retention_days: 0 }, { format: 'mnemion-capture-policy-v2' }, { retention: 'until_deleted' }]) {
+    assert.throws(() => readCaptureArchive({ ...archive, binding: { ...archive.binding, capture_policy: { ...archive.binding.capture_policy, ...change } } }))
+  }
+})
+
 for (const [name, mutate] of [
   ['private content', value => { value.files[0].content = 'never cross the preview boundary' }],
   ['outside path', value => { value.files[0].path = '../outside.jsonl' }],

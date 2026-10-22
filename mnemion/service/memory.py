@@ -146,8 +146,8 @@ class MemoryService:
     def _operation(
         self, conn, identity: Identity, space: UUID, memory: UUID, revision: UUID | None, kind: str
     ) -> dict:
-        model_settings = settings(conn, space, self.generation.id)
-        generation = model_settings["active_generation_id"] if kind != "delete" else None
+        model_settings = settings(conn, space, self.generation.id) if kind != "delete" else None
+        generation = model_settings["active_generation_id"] if model_settings else None
         operation = uuid4()
         conn.execute(
             """INSERT INTO mnemion.operations
@@ -169,7 +169,7 @@ class MemoryService:
                 "purge" if kind == "delete" else "embed",
             ),
         )
-        if kind != "delete" and model_settings["candidate_run_id"]:
+        if model_settings and model_settings["candidate_run_id"]:
             enqueue_candidate(
                 conn,
                 tenant=identity.tenant_id,
@@ -502,6 +502,27 @@ class MemoryService:
         from .capture_withdrawal import forget_siblings
 
         capture_forget = forget_siblings(self, conn, identity, memory) if _capture_family else None
+        receipt = self._forget_record(conn, identity, row)
+        return remember_receipt(
+            conn,
+            identity,
+            space,
+            key,
+            digest,
+            {
+                **receipt,
+                **({"capture_forget": capture_forget} if capture_forget else {}),
+            },
+        )
+
+    def _forget_record(self, conn, identity, row, *, details=None):
+        """Delete one already authorized, locked record through the canonical path.
+
+        Public callers validate identity, scope and revision before entering.
+        The retention worker separately verifies its due, approved capture lease;
+        this helper must never become an unguarded API operation.
+        """
+        memory, space = row["id"], row["space_id"]
         from .librarian import purge_librarian_dependencies
 
         purge_librarian_dependencies(conn, identity.tenant_id, space, memory)
@@ -533,20 +554,8 @@ class MemoryService:
                VALUES (%s, %s, %s, %s, %s)""",
             (identity.tenant_id, space, memory, receipt["operation_id"], identity.principal_id),
         )
-        audit(conn, identity, "memory.deleted", memory, space_id=space)
-        return remember_receipt(
-            conn,
-            identity,
-            space,
-            key,
-            digest,
-            {
-                **receipt,
-                "deleted": True,
-                "version": row["version"] + 1,
-                **({"capture_forget": capture_forget} if capture_forget else {}),
-            },
-        )
+        audit(conn, identity, "memory.deleted", memory, space_id=space, details=details)
+        return {**receipt, "deleted": True, "version": row["version"] + 1}
 
     def operation(self, identity: Identity, operation: UUID) -> dict:
         with self.db.transaction(identity) as conn:

@@ -1575,11 +1575,24 @@
             "title": "Exclude Fields",
             "type": "array"
           },
+          "expiry_scope": {
+            "anyOf": [
+              {
+                "const": "captured_fragment_family",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expiry Scope"
+          },
           "format": {
             "default": "mnemion-capture-policy-v1",
             "enum": [
               "mnemion-capture-policy-v1",
-              "mnemion-capture-policy-v2"
+              "mnemion-capture-policy-v2",
+              "mnemion-capture-policy-v3"
             ],
             "title": "Format",
             "type": "string"
@@ -1619,10 +1632,24 @@
           "retention": {
             "enum": [
               "source_mirror",
-              "until_deleted"
+              "until_deleted",
+              "expire_after"
             ],
             "title": "Retention",
             "type": "string"
+          },
+          "retention_days": {
+            "anyOf": [
+              {
+                "maximum": 3650.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retention Days"
           }
         },
         "required": [
@@ -1751,6 +1778,17 @@
             ],
             "title": "Affected Grants"
           },
+          "approved_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved By"
+          },
           "capture_mode": {
             "enum": [
               "messages",
@@ -1845,6 +1883,103 @@
           "next_cursor"
         ],
         "title": "CapturePolicyVersionPage",
+        "type": "object"
+      },
+      "CaptureRetentionStatus": {
+        "additionalProperties": true,
+        "properties": {
+          "backup_erasure": {
+            "const": "not_included",
+            "title": "Backup Erasure",
+            "type": "string"
+          },
+          "due_families": {
+            "title": "Due Families",
+            "type": "integer"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "expired_families": {
+            "title": "Expired Families",
+            "type": "integer"
+          },
+          "failed_families": {
+            "title": "Failed Families",
+            "type": "integer"
+          },
+          "families": {
+            "title": "Families",
+            "type": "integer"
+          },
+          "last_cleanup_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Cleanup At"
+          },
+          "next_deadline": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Deadline"
+          },
+          "observed_at": {
+            "title": "Observed At",
+            "type": "string"
+          },
+          "pending_families": {
+            "title": "Pending Families",
+            "type": "integer"
+          },
+          "purges_pending": {
+            "title": "Purges Pending",
+            "type": "integer"
+          },
+          "semantics": {
+            "const": "scheduled_cleanup",
+            "title": "Semantics",
+            "type": "string"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_id",
+          "observed_at",
+          "families",
+          "pending_families",
+          "due_families",
+          "expired_families",
+          "failed_families",
+          "purges_pending",
+          "next_deadline",
+          "last_cleanup_at",
+          "error_code",
+          "semantics",
+          "backup_erasure"
+        ],
+        "title": "CaptureRetentionStatus",
         "type": "object"
       },
       "CaptureSource": {
@@ -7203,6 +7338,18 @@
               }
             ],
             "title": "Capture Policy Versions"
+          },
+          "capture_retention": {
+            "anyOf": [
+              {
+                "const": "v1",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capture Retention"
           },
           "connector_partial_inventory": {
             "default": false,
@@ -17509,6 +17656,154 @@
           }
         ],
         "summary": "Change Policy",
+        "tags": [
+          "Connectors"
+        ]
+      }
+    },
+    "/v1/connectors/{connector_id}/capture-sources/{source_id}/retention": {
+      "get": {
+        "operationId": "retention_status_v1_connectors__connector_id__capture_sources__source_id__retention_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "connector_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Connector Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "source_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Source Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaptureRetentionStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "408": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request Timeout"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Retention Status",
         "tags": [
           "Connectors"
         ]
