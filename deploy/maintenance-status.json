@@ -25,64 +25,109 @@
   ],
   "runs": [
     {
-      "id": 39763423936,
+      "id": 39764386052,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "3e71de1d66665bcdfefb9414caa418aaa25d8668",
+      "source_commit": "8a74bdcca415d014f87ad8c5c124b2ebe3caffe5",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-22T10:29:15Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39763423936",
+      "updated_at": "2026-10-22T10:37:20Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39764386052",
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 7,
-        "succeeded": 7,
+        "completed": 2,
+        "succeeded": 2,
         "active": [
           {
-            "id": 119772985683,
+            "id": 119776274986,
+            "name": "studio",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run python deploy/bundle_studio.py"
+            ]
+          },
+          {
+            "id": 119776337648,
+            "name": "dependency-audit",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uvx pip-audit --path .venv/lib/python3.12/site-packages"
+            ]
+          },
+          {
+            "id": 119776337653,
+            "name": "legacy",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv sync --locked --extra legacy --group dev"
+            ]
+          },
+          {
+            "id": 119776337721,
             "name": "supervision (macos-15)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Verify managed installation, host recovery, signed updates and rollback with real processes"
+              "Install the native service without building on a managed host"
             ]
           },
           {
-            "id": 119772985796,
-            "name": "service (3.14)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 119772985864,
+            "id": 119776337725,
             "name": "supervision (macos-15-intel)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Build the current Intel cryptography runtime with static OpenSSL"
+              "Set up job"
             ]
           },
           {
-            "id": 119772985876,
-            "name": "service (3.13)",
+            "id": 119776337793,
+            "name": "service (3.14)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+              "Initialize containers"
             ]
           },
           {
-            "id": 119772986165,
+            "id": 119776337810,
+            "name": "container (ubuntu-22.04-arm)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the actual deployment image with its documentation"
+            ]
+          },
+          {
+            "id": 119776337845,
+            "name": "container (ubuntu-22.04)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the actual deployment image with its documentation"
+            ]
+          },
+          {
+            "id": 119776337851,
             "name": "service (3.12)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+              "Initialize containers"
+            ]
+          },
+          {
+            "id": 119776337978,
+            "name": "service (3.13)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Initialize containers"
             ]
           }
         ]
@@ -123,15 +168,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39761844389"
     },
     {
-      "id": 39763423746,
+      "id": 39764387692,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "3e71de1d66665bcdfefb9414caa418aaa25d8668",
+      "source_commit": "8a74bdcca415d014f87ad8c5c124b2ebe3caffe5",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-22T10:29:15Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39763423746"
+      "updated_at": "2026-10-22T10:36:52Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39764387692"
     },
     {
       "id": 39762118327,
@@ -145,5 +190,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39762118327"
     }
   ],
-  "observed_at": "2026-10-22T10:30:50+00:00"
+  "observed_at": "2026-10-22T10:37:25+00:00"
 }
