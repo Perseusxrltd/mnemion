@@ -204,7 +204,7 @@ def test_discard_of_unfinished_recovery_revokes_only_replacement_and_preserves_a
         patch.setattr(
             recovery,
             "_publish",
-            lambda *a: (_ for _ in ()).throw(OSError("Synthetic publication interruption")),
+            lambda *a, **kw: (_ for _ in ()).throw(OSError("Synthetic publication interruption")),
         )
         with pytest.raises(OSError):
             desktop.perform(root, request)

@@ -178,6 +178,25 @@ def test_same_device_policy_adoption_preserves_forgotten_lineage(env, custody, p
     assert Path(request["file"]).exists()
 
 
+def test_policy_adoption_counts_the_locked_original_in_aggregate_storage(
+    env, custody, policy_request, monkeypatch
+):
+    root, original, request, _ = policy_request
+    database = capture.inbox_path(root, original.id) / "inbox.sqlite3"
+    original_hash = hashlib.sha256(database.read_bytes()).hexdigest()
+    with capture.opened(root, original, request["previous_inbox_key"]) as (inbox, _):
+        original_bytes = inbox.status()["database_bytes"]
+    # The replacement alone fits. Its still-retained original must also count,
+    # including while its verified connection stays locked during policy copy.
+    monkeypatch.setattr(capture, "DEVICE_DATABASE_BYTES", original_bytes)
+    with pytest.raises(InboxError, match="capture_capacity_blocked"):
+        desktop.perform(root, request)
+    assert not custody[0].status(env.owner, original.custody.grant_id)["revoked_at"]
+    assert not desktop.perform(root, {"operation": "capture_restore_list"})["items"]
+    assert hashlib.sha256(database.read_bytes()).hexdigest() == original_hash
+    assert desktop.load(root).sources[0].id == original.id
+
+
 @pytest.mark.parametrize("point", ["before_copy_publish", "before_settings", "after_settings"])
 def test_policy_handover_finishes_after_interruption(policy_request, monkeypatch, point):
     root, original, request, _ = policy_request

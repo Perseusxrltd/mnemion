@@ -280,8 +280,8 @@ def _verify_producer_copy(source, inbox):
                 raise InboxError(error.code) from None
 
 
-def _admit(root, inbox):
-    usage = capture.device_usage(root, inbox)
+def _admit(root, inbox, *, original=None):
+    usage = capture.device_usage(root, inbox, held_inboxes=(original,) if original else ())
     if (
         usage["pending_bytes"] > capture.DEVICE_PENDING_BYTES
         or usage["database_bytes"] > capture.DEVICE_DATABASE_BYTES
@@ -306,7 +306,7 @@ def _producer_marker(root, source):
     }
 
 
-def _publish(root, current, intent, inbox_key):
+def _publish(root, current, intent, inbox_key, *, original=None):
     if not intent.previous_grant_revoked:
         raise InboxError("capture_retire_required")
     source = intent.source
@@ -332,7 +332,7 @@ def _publish(root, current, intent, inbox_key):
     ) as inbox:
         status = _audit(inbox)
         _verify_producer_copy(source, inbox)
-        _admit(root, inbox)
+        _admit(root, inbox, original=original)
     marker = {**capture.identity(source), "state": "ready"}
     marker_path = capture.record_path(root, source.id)
     if marker_path.exists():
@@ -448,7 +448,7 @@ def restore(root, request, private_roots):
                 raise InboxError("capture_binding_mismatch")
             with open_inbox(recovered.directory, recovered.binding, inbox_key) as inbox:
                 _verify_producer_copy(source, inbox)
-                _admit(root, inbox)
+                _admit(root, inbox, original=original)
             _verify_target(
                 root,
                 source,
@@ -475,7 +475,7 @@ def restore(root, request, private_roots):
             with local_state.lock(local_state.directory(root / "inbox-budget")):
                 _rename_exclusive(recovered.directory, capture.inbox_path(root, source.id))
                 local_state._sync_directory(root)
-                return _publish(root, current, intent, inbox_key)
+                return _publish(root, current, intent, inbox_key, original=original)
 
 
 def _discard(root, current, intent, credential):

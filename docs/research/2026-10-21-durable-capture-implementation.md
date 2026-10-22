@@ -1703,6 +1703,38 @@ case omitted `capture_retention`. Their explicit inventories were corrected;
 all 16 focused migration and health regression cases passed. The full failing
 log and its 2,067 passing cases remain retained.
 
+## Windows policy recovery and release preflight
+
+The preceding retention-source installed run, 39788603173, passed the initial
+Windows x64 capture, archive and device-recovery phases, then failed while
+applying a reviewed policy. A local Windows process reproduced the cause:
+aggregate storage accounting tried to reopen the still-locked original SQLite
+database through the private credential-file reader. Windows correctly refused
+that reader's sharing mode while the existing database connection was open.
+
+Policy recovery now supplies the original verified, locked connection to the
+capacity calculation before retirement and again when publishing the replacement.
+Its pending payload and database pages remain part of the device total. Other
+inboxes retain their ordinary private-file checks, and recovery retains the
+original lock throughout the comparison and publication. No credential-reader
+sharing or access rules were relaxed.
+
+The native Windows regression passed with real encrypted pending records in
+three inboxes: the locked original, the replacement and an ordinary retained
+inbox. It verified exact totals, refusal above the combined limit and unchanged
+original evidence, then removed its disposable fixture. The focused regression
+group has 84 passing cases across its original run and one corrected interruption
+fixture. The matching-input Linux app journey passed all 19 policy, expiry and
+lost-retirement checks. Earlier failed receipts remain preserved. These are
+source and local Windows results; final installed qualification remains open.
+
+The release-documentation gate also caught the roadmap's removed source-version
+marker. The marker is restored, and normal main integration now runs the existing
+package-version, release-note and roadmap validator before any remote Git
+operation. Its regression verifies that missing reviewed documentation prevents
+a push. The validator and focused release checks passed; this avoids spending
+another CI matrix on the same inexpensive documentation failure.
+
 ## Required before L1 can be released
 
 - Finish acceptance of the encrypted coverage/gap accounting, including selected,

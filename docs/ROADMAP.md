@@ -1,5 +1,6 @@
 # Mnemion product roadmap
 
+Reviewed source distribution: **4.44.2**.
 Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-22**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
@@ -45,6 +46,10 @@ issue review, publication and version-linked closure together.
   include four real process-exit checks; all 96 native controller cases passed.
   The app recovered a lost retirement reply without repeating the revocation.
   Installed acceptance of this correction remains separate.
+  The following [Windows policy-recovery correction](research/2026-10-21-durable-capture-implementation.md#windows-policy-recovery-and-release-preflight)
+  reuses the locked original database during capacity accounting. Native Windows
+  quota checks and the 19-check Linux app journey passed; final packaged
+  qualification remains required.
 
   The new [scheduled-retention batch](research/2026-10-21-durable-capture-implementation.md#scheduled-capture-retention-source-delta)
   adds an explicit approved expiry period and cleanup observations. Earliest

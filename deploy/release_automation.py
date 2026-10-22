@@ -143,6 +143,7 @@ def check_source(root: Path) -> None:
     # Report the problem without changing reviewed or committed source.
     for check in (["format", "--check", "."], ["check", "."]):
         subprocess.run([sys.executable, "-m", "ruff", *check], cwd=root, check=True)
+    subprocess.run([sys.executable, "deploy/release.py"], cwd=root, check=True)
 
 
 def integrate(root: Path, repo: str) -> dict:

@@ -48,9 +48,10 @@ version number.
 
 After committing reviewed source, `python -m deploy.release_automation integrate`
 handles normal pushes and generated-metadata races without force. Incoming
-source changes stop for review. It first runs the pinned local format/lint checks,
-without rewriting committed files, so a cheap source failure never reaches main
-or starts another CI matrix. Use the locked development environment for both
+source changes stop for review. It first runs the pinned local format/lint checks
+and the package-version, release-note and roadmap validator, without rewriting
+committed files. These inexpensive failures are caught before pushing main or
+starting another CI matrix. Use the locked development environment for both
 `integrate` and `start`. `python -m deploy.maintenance_snapshot` gives one
 bounded issue/build update; the [maintenance board](MAINTENANCE_STATUS.md) updates
 automatically on GitHub issue and workflow events. Use these scripts instead of

@@ -347,6 +347,8 @@ def test_integration_never_pushes_unreviewed_source_or_rebases_a_frozen_release(
             result = "mnemion/service/changed.py\n"
         return SimpleNamespace(stdout=result, returncode=0)
 
+    # This fixture exercises Git admission; actual source preflight is below.
+    monkeypatch.setattr(subject, "check_source", lambda root: None)
     monkeypatch.setattr(subject, "_integration_git", git)
     with pytest.raises(ValueError):
         subject.integrate(tmp_path, "Perseusxrltd/mnemion")
@@ -376,6 +378,46 @@ def test_main_integration_checks_actual_source_before_contacting_remote(
         subject.integrate(tmp_path, "Perseusxrltd/mnemion")
     assert source.read_text() == contents
     assert not any(args[0] in {"fetch", "rebase", "push", "merge"} for args in calls)
+
+
+def test_main_integration_refuses_missing_reviewed_release_docs_before_remote(
+    tmp_path, monkeypatch
+):
+    repository = Path(__file__).parents[1]
+    for name in (
+        "pyproject.toml",
+        "deploy/release.py",
+        "deploy/release_targets.py",
+        "deploy/release-targets.json",
+        "mnemion/version.py",
+    ):
+        target = tmp_path / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes((repository / name).read_bytes())
+    (tmp_path / "mnemion/__init__.py").write_text("")
+    version = subject.tomllib.loads((tmp_path / "pyproject.toml").read_text())["project"]["version"]
+    notes = tmp_path / "docs/releases" / f"{version}.md"
+    notes.parent.mkdir(parents=True)
+    notes.write_text(f"# Mnemion {version}\n")
+    roadmap = tmp_path / "docs/ROADMAP.md"
+    roadmap.write_text("# Roadmap\n\nPublic release status is tracked separately.\n")
+    calls = []
+
+    def git(root, *args, check=True):
+        calls.append(args)
+        responses = {
+            ("status", "--porcelain"): "",
+            ("symbolic-ref", "--short", "HEAD"): "codex/reviewed-batch",
+            ("remote", "get-url", "origin"): "https://github.com/Perseusxrltd/mnemion.git",
+        }
+        assert args in responses, "Release documentation must pass before contacting GitHub"
+        return SimpleNamespace(stdout=responses[args], returncode=0)
+
+    monkeypatch.setattr(subject, "_integration_git", git)
+    with pytest.raises(subprocess.CalledProcessError):
+        subject.integrate(tmp_path, "Perseusxrltd/mnemion")
+    assert "Reviewed source distribution:" not in roadmap.read_text()
+    assert not any(args[0] in {"fetch", "push", "merge"} for args in calls)
 
 
 @pytest.mark.parametrize("resolved_conflict", [False, True])
@@ -443,6 +485,9 @@ def test_generated_status_race_preserves_the_reviewed_hotfix_parent(
         return actual(root, *args, check=check)
 
     monkeypatch.setattr(subject, "_integration_git", local_remote)
+    # A miniature Git repository has no distribution metadata. The independent
+    # preflight regression above exercises the actual release validator.
+    monkeypatch.setattr(subject, "check_source", lambda root: None)
     result = subject.integrate(reviewed, "Perseusxrltd/mnemion")
     assert result["pushed_to"] == "main"
     assert git(reviewed, "merge-base", "--is-ancestor", hotfix, "HEAD") == ""

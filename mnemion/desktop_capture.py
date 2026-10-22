@@ -293,14 +293,18 @@ def opened(root, source, encoded_key, *, initialize=False):
         yield inbox, state
 
 
-def device_usage(root, current):
+def device_usage(root, current, *, held_inboxes=()):
     """Count selected payload separately from bounded encrypted DB overhead.
 
     Call under the device admission lock. Other deliveries can only reduce
     pending payload; every desktop producer uses this same admission lock.
-    No producer content or inbox key is read from other sources.
+    No producer content or inbox key is read from other sources. A policy
+    handover holds its original inbox open and locked; use that verified
+    connection instead of reopening its database through a credential-file
+    reader, which cannot share a Windows SQLite writer handle.
     """
     pending, database, retained_databases = 0, 0, 0
+    held = {inbox.root: inbox for inbox in held_inboxes}
     for folder in root.glob("inbox-*"):
         if not folder.is_dir() or folder == current.root:
             continue
@@ -312,6 +316,11 @@ def device_usage(root, current):
         if retained_databases > 64:
             raise InboxError("capture_capacity_blocked")
         local_state._regular(path)
+        if folder in held:
+            usage = held[folder].status()
+            pending += usage["pending_bytes"]
+            database += usage["database_bytes"]
+            continue
         if os.name == "nt":
             from .private_input import _windows_open
 
