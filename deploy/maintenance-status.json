@@ -30,44 +30,16 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "3881796bf97605fb3ec73eed61939ce35d89845b",
-      "status": "queued",
-      "conclusion": null,
-      "updated_at": "2026-10-22T17:25:54Z",
+      "status": "completed",
+      "conclusion": "failure",
+      "updated_at": "2026-10-22T18:01:20Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39822578673",
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 9,
-        "succeeded": 8,
-        "active": [
-          {
-            "id": 119977527496,
-            "name": "service (3.14)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 119977527507,
-            "name": "service (3.13)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 119977527514,
-            "name": "service (3.12)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          }
-        ]
+        "completed": 12,
+        "succeeded": 11,
+        "active": []
       },
       "failed_jobs": [
         {
@@ -158,5 +130,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39762118327"
     }
   ],
-  "observed_at": "2026-10-22T17:40:59+00:00"
+  "observed_at": "2026-10-22T18:02:01+00:00"
 }
