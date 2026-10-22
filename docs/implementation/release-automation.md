@@ -71,6 +71,15 @@ gates; no paid service, model call or new signing credential is required.
    [current release status](../RELEASE_STATUS.md). The website continues to read
    the published release and current roadmap automatically.
 
+The status reporter also recognizes a complete Product checks suite executed
+inside the release workflow when no standalone CI run exists. It reads the CI
+matrix from that exact release commit and verifies every matching job and step;
+a successful parent workflow or a passing subset is insufficient. It does not
+start a duplicate run to populate the status page. Failed, pending or manually
+cancelled standalone checks retain their own outcome. The
+[4.44.2 reporting correction](../validation/2026-10-22-release-check-accounting.md)
+records the actual release evidence and the original additional attempts.
+
 `python -m deploy.maintenance_snapshot` reports the current published release,
 new/updated/closed issues, changed builds and failed job steps as bounded JSON.
 Active builds also report completed/successful job counts and the current steps

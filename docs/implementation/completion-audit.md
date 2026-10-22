@@ -43,11 +43,15 @@ The current public distribution is **4.44.2**, source
 10:18:29 UTC; see its [publication receipt](../validation/releases/4.44.2-publication.json)
 and [release status](../RELEASE_STATUS.md). Native release gates, independent
 artifacts, all six public-update targets and website synchronization passed.
-The previously missing Product checks for the exact public source were dispatched
-as [39815622908](https://github.com/Perseusxrltd/mnemion/actions/runs/39815622908).
-Its first Intel macOS dependency build encountered a PyPI connection timeout;
-that failed attempt is retained. The automatic [release status](../RELEASE_STATUS.md)
-supplies the current outcome. Separate main source `38eb3021d517a193b47501f902b4595a49d44178`
+The [release-status reporting correction](../validation/2026-10-22-release-check-accounting.md)
+confirms that all 12 Product checks already passed inside the exact-source
+release workflow by **09:35:17 UTC**, before publication. The status reporter
+had omitted that evidence because no separate CI run existed. The additional
+[39815622908](https://github.com/Perseusxrltd/mnemion/actions/runs/39815622908)
+retains its PyPI timeout, stalled runner and single retry of the two unfinished
+checks; it was not the original product acceptance. The automatic
+[release status](../RELEASE_STATUS.md) supplies its current outcome.
+Separate main source `38eb3021d517a193b47501f902b4595a49d44178`
 passed [CI](https://github.com/Perseusxrltd/mnemion/actions/runs/39795183358) and
 [Git website synchronization](https://github.com/Perseusxrltd/mnemion/actions/runs/39795183441);
 its earlier [native attempt 2](https://github.com/Perseusxrltd/mnemion/actions/runs/39795261005/attempts/2)

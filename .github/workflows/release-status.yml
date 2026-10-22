@@ -94,7 +94,9 @@ jobs:
         if: github.event_name != 'issues' && github.event_name != 'issue_comment'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: python -m deploy.release_status
+        run: |
+          python -m pip install --disable-pip-version-check PyYAML==6.0.3
+          python -m deploy.release_status
       - name: Record issue changes and failed build steps
         env:
           GH_TOKEN: ${{ github.token }}

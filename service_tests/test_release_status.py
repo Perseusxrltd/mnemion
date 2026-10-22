@@ -1,5 +1,6 @@
 """A status record must not turn availability or unrelated green CI into readiness."""
 
+import base64
 from copy import deepcopy
 
 import pytest
@@ -274,6 +275,92 @@ def test_reuse_does_not_override_actual_failure_or_manual_cancellation(monkeypat
         candidate = {**ci, **change}
         assert status.reuse_release_checks(candidate, release, SOURCE) == candidate
     assert status.reuse_release_checks(ci, {**release, "status": "not passed"}, SOURCE) == ci
+
+
+def missing_ci_fixture(monkeypatch, problem=None):
+    workflow = b"""jobs:
+  lint: {}
+  service:
+    strategy:
+      matrix:
+        python: ['3.12', '3.14']
+"""
+    names = ["checks / lint", "checks / service (3.12)", "checks / service (3.14)"]
+    steps = [{"name": "Check", "status": "completed", "conclusion": "success"}]
+    jobs = [job(name, 43, n + 1, steps=deepcopy(steps)) for n, name in enumerate(names)]
+    jobs.append(job("Reuse verified Product checks", 43, 4, conclusion="skipped"))
+    if problem == "missing_target":
+        jobs.pop(2)
+    elif problem == "extra_target":
+        jobs.append(job("checks / service (9.99)", 43, 5, steps=deepcopy(steps)))
+    elif problem == "skipped_target":
+        jobs[2]["conclusion"] = "skipped"
+    elif problem == "empty_steps":
+        jobs[2]["steps"] = []
+    elif problem == "failed_step":
+        jobs[2]["steps"][0]["conclusion"] = "failure"
+    elif problem == "pending_step":
+        jobs[2]["steps"][0]["status"] = "in_progress"
+    elif problem == "missing_lane":
+        jobs.pop()
+    elif problem == "unsupported_matrix":
+        workflow += b"        include: [{python: '3.15'}]\n"
+    elif problem == "foreign_source":
+        jobs[2]["head_sha"] = "b" * 40
+    requests = []
+
+    def get(path):
+        requests.append(path)
+        if path == f"contents/.github/workflows/ci.yml?ref={SOURCE}":
+            return {
+                "type": "file",
+                "path": ".github/workflows/ci.yml",
+                "encoding": "base64",
+                "size": len(workflow),
+                "content": base64.b64encode(workflow).decode(),
+            }
+        assert path == "actions/runs/43/jobs?filter=latest&per_page=100&page=1"
+        return {"total_count": len(jobs), "jobs": jobs}
+
+    monkeypatch.setattr(status, "api", get)
+    release = gate(
+        [run("release.yml", id=43, html_url=f"{status.ORIGIN}/actions/runs/43")], "release.yml"
+    )
+    return gate([]), release, requests
+
+
+def test_absent_ci_uses_the_complete_matrix_from_the_immutable_release_workflow(monkeypatch):
+    ci, release, requests = missing_ci_fixture(monkeypatch)
+    result = status.reuse_release_checks(ci, release, SOURCE)
+    assert result["status"] == "passed" and result["run_id"] == 43
+    assert result["jobs_passed"] == 3 and result["standalone_status"] == "not recorded"
+    assert ci["status"] == "not recorded" and "superseded_run_id" not in result
+    assert len(requests) == 2
+    assert requests[-1] == f"contents/.github/workflows/ci.yml?ref={SOURCE}"
+
+
+@pytest.mark.parametrize(
+    "problem",
+    [
+        "missing_target",
+        "extra_target",
+        "skipped_target",
+        "empty_steps",
+        "failed_step",
+        "pending_step",
+        "missing_lane",
+        "unsupported_matrix",
+    ],
+)
+def test_absent_ci_never_qualifies_partial_or_unverified_release_checks(monkeypatch, problem):
+    ci, release, _ = missing_ci_fixture(monkeypatch, problem)
+    assert status.reuse_release_checks(ci, release, SOURCE) == ci
+
+
+def test_absent_ci_requires_every_job_to_belong_to_the_release_source(monkeypatch):
+    ci, release, _ = missing_ci_fixture(monkeypatch, "foreign_source")
+    with pytest.raises(ValueError, match="exact source"):
+        status.reuse_release_checks(ci, release, SOURCE)
 
 
 def test_job_inventory_requires_complete_pagination_and_stable_identity(monkeypatch):

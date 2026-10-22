@@ -206,8 +206,50 @@ def complete_jobs(run_id: int, source: str) -> dict[str, dict]:
     return names
 
 
+def embedded_release_checks(ci: dict, release: dict, source: str) -> dict:
+    """Qualify the complete release suite when no standalone CI was recorded."""
+    from .ci_reuse import REUSE_JOB, verify_release_check_lanes
+
+    jobs = complete_jobs(release["run_id"], source)
+    embedded = {name: job for name, job in jobs.items() if name.startswith("checks / ")}
+    if not embedded or any(
+        job.get("status") != "completed"
+        or job.get("conclusion") != "success"
+        or not job["steps"]
+        or any(
+            step.get("status") != "completed"
+            or step.get("conclusion") not in {"success", "skipped"}
+            for step in job["steps"]
+        )
+        for job in embedded.values()
+    ):
+        return ci
+    # The immutable workflow supplies every required matrix target. A green
+    # subset or a successful parent run alone cannot establish full coverage.
+    try:
+        unused = verify_release_check_lanes(REPOSITORY, source, list(jobs.values()), api)
+    except ValueError:
+        return ci
+    if unused != {REUSE_JOB}:
+        return ci
+    return {
+        **ci,
+        "status": "passed",
+        "conclusion": "success",
+        "run_id": release["run_id"],
+        "event": release.get("event"),
+        "url": release["url"],
+        "updated_at": release["updated_at"],
+        "evidence": "complete reusable Product checks",
+        "jobs_passed": len(embedded),
+        "standalone_status": "not recorded",
+    }
+
+
 def reuse_release_checks(ci: dict, release: dict, source: str) -> dict:
-    """A superseded branch run can use the same complete reusable CI suite."""
+    """Use complete embedded checks for absent or safely superseded branch CI."""
+    if ci.get("status") == "not recorded" and release.get("status") == "passed":
+        return embedded_release_checks(ci, release, source)
     if (
         ci.get("status") != "not passed"
         or ci.get("conclusion") != "cancelled"
@@ -377,9 +419,18 @@ def markdown(data: dict) -> str:
             lines += [
                 "",
                 f"Product checks passed as all {item['jobs_passed']} matching jobs inside the "
-                f"exact-source release workflow. The [separate branch run]({item['superseded_url']}) "
-                "was superseded and cancelled; its cancellation is not counted as a pass.",
+                "exact-source release workflow.",
             ]
+            if item.get("standalone_status") == "not recorded":
+                lines.append(
+                    "No separate CI run was recorded; the complete frozen workflow matrix "
+                    "was verified directly, without starting another run."
+                )
+            else:
+                lines.append(
+                    f"The [separate branch run]({item['superseded_url']}) was superseded and "
+                    "cancelled; its cancellation is not counted as a pass."
+                )
     lines += [
         "",
         "Passing evidence belongs to the exact release source. Public upgrade evidence",
