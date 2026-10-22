@@ -1,0 +1,24 @@
+.ws-host-page { height: 100%; overflow: auto; padding: clamp(20px, 4vw, 56px); background: var(--ws-bg, #090b10); color: var(--ws-text, #e5e7eb); }
+.ws-host-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; margin: 0 auto 28px; max-width: 1320px; }
+.ws-host-header h1 { display: flex; align-items: center; gap: 12px; margin: 12px 0; font-size: clamp(26px, 3vw, 40px); letter-spacing: -.04em; }
+.ws-host-header p { max-width: 640px; color: var(--ws-muted, #9aa5b5); }
+.ws-host-columns { display: grid; grid-template-columns: minmax(240px, 300px) minmax(0, 1fr); gap: 24px; max-width: 1320px; margin: auto; }
+.ws-host-list, .ws-host-content { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.ws-host-page .ws-card { min-width: 0; padding: 24px; }
+.ws-host-page .ws-code, .ws-host-page code { overflow-wrap: anywhere; white-space: pre-wrap; max-width: 100%; }
+.ws-host-page .ws-code { max-height: 320px; overflow-y: auto; }
+.ws-host-page form, .ws-host-page details[open] { display: flex; flex-direction: column; gap: 14px; }
+.ws-host-page summary { cursor: pointer; }
+.ws-host-page .ws-field { margin: 12px 0; }
+.ws-host-page textarea { width: 100%; min-height: 110px; resize: vertical; }
+.ws-host-page .ws-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.ws-host-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; margin: 22px 0; }
+.ws-host-facts dt { color: var(--ws-muted, #9aa5b5); font-size: 12px; margin-bottom: 7px; }
+.ws-host-facts dd { margin: 0; font-size: 15px; overflow-wrap: anywhere; }
+.ws-host-address { font-size: 18px; overflow-wrap: anywhere; }
+.ws-host-plan, .ws-host-receipt { margin-top: 20px; border-top: 1px solid var(--ws-border, #29303c); padding-top: 18px; }
+.ws-host-person { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--ws-border, #29303c); }
+.ws-host-person small { display: block; margin-top: 5px; color: var(--ws-muted, #9aa5b5); }
+.ws-host-progress, .ws-host-page > .ws-notice { max-width: 1320px; margin: 14px auto; }
+.ws-host-progress { display: flex; gap: 8px; align-items: center; color: var(--ws-muted, #9aa5b5); }
+@media (max-width: 800px) { .ws-host-columns { grid-template-columns: 1fr; } .ws-host-header { flex-direction: column; } .ws-host-facts { grid-template-columns: 1fr; } }

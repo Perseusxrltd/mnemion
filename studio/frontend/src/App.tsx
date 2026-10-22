@@ -14,6 +14,7 @@ const CoreMemoryView = lazy(() => import('./views/CoreMemoryView'))
 const Workspace = lazy(() => import('./workspace/Workspace'))
 const Documentation = lazy(() => import('./workspace/Documentation'))
 const HostedConsent = lazy(() => import('./workspace/HostedConsent'))
+const HostControl = lazy(() => import('./workspace/HostControl'))
 
 // Electron loads the app from file://, so HashRouter is required.
 // In the browser dev server, BrowserRouter is fine.
@@ -40,6 +41,7 @@ export default function App() {
       <Routes>
         <Route path="/oauth/consent" element={lazyRoute(<HostedConsent />)} />
         <Route path="/help" element={lazyRoute(<Documentation />)} />
+        <Route path="/hosts" element={lazyRoute(<HostControl />)} />
         <Route path="/workspace/*" element={lazyRoute(<Workspace />)} />
         <Route index element={<Navigate to="/workspace" replace />} />
         <Route element={<Layout />}>

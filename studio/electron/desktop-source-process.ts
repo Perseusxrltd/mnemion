@@ -44,7 +44,8 @@ export const sourceMessages: Record<string, string> = {
 }
 
 export function sourceProcess(options: { executable: string; root: string; privateRoots: string[];
-  environment: NodeJS.ProcessEnv; prefix?: string[]; command?: string; arguments?: string[]; deadlineMs?: number }): SourceCall {
+  environment: NodeJS.ProcessEnv; prefix?: string[]; command?: string; arguments?: string[]; deadlineMs?: number;
+  messages?: Record<string, string> }): SourceCall {
   return (request, signal, resources) => new Promise((resolve, reject) => {
     let input: string
     try { input = JSON.stringify(request) } catch { reject(new Error('Invalid source settings.')); return }
@@ -81,8 +82,9 @@ export function sourceProcess(options: { executable: string; root: string; priva
       clearTimeout(timer); signal?.removeEventListener('abort', abort); resources?.(0)
       if (failure) { reject(failure); return }
       if (buffer.trim() || !result || code !== 0 || result.ok !== true || !result.result || typeof result.result !== 'object' || Array.isArray(result.result)) {
-        const reason = typeof result?.error === 'string' && Object.hasOwn(sourceMessages, result.error) ? result.error : 'source_unavailable'
-        reject(Object.assign(new Error(sourceMessages[reason]), { code: reason })); return
+        const messages = options.messages ?? sourceMessages
+        const reason = typeof result?.error === 'string' && Object.hasOwn(messages, result.error) ? result.error : 'source_unavailable'
+        reject(Object.assign(new Error(messages[reason] ?? 'The helper could not confirm this operation. Inspect its saved status.'), { code: reason })); return
       }
       resolve(result.result as Record<string, unknown>)
     })

@@ -32,6 +32,18 @@ not equally sized. This is coverage of the full requested scope, not a measure
 of engineering effort or the usability of the published app. Hotfixes to a
 partial feature do not automatically mark its whole requirement complete.
 
+**22 October 2026 independent-host source progress:** the
+[development host-control guide](guides/company-host-control.md) now covers
+`/hosts`, protected per-device logins and equivalent native-agent controls,
+pinned restricted SSH roles, durable operations, reviewed signed upgrades with
+independent encrypted Git backups, and local OS-owner custodian recovery. Its
+[focused source/fixture checks](guides/company-host-control.md#qualification-and-remaining-work)
+passed within their stated scope; new native gates are written but unrun.
+Installed-client and production acceptance, provider wake, boot registration,
+independent authority custody and safe takeover remain open in the
+[continuity contract](implementation/workspace-continuity.md). This progress
+changes none of the 65 requirement texts or states and does not close #44/#45.
+
 The expanded **R07 librarian workstream** is [documented separately](research/2026-10-20-layered-librarian.md), including available reasoning traces, background consolidation, all layers, vault boundaries, statistics, scientific evidence and TypeSafe AI Jev. It adds one planned requirement; the lower percentage reflects added scope.
 
 **22 October 2026 candidate snapshot:** the **4.45.0 release candidate**

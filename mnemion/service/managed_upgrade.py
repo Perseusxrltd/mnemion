@@ -82,6 +82,11 @@ def _schema(state: Path, root: Path) -> dict[str, str]:
 def plan(state: Path, *, wait_seconds: int = 60) -> dict:
     state, root, _ = updates._root(state)
     with state_io.operator_lock(root, wait_seconds=wait_seconds):
+        return _plan(state, root)
+
+
+def _plan(state: Path, root: Path) -> dict:
+    with state_io.borrowed_lock(root):
         if (root / JOURNAL).exists():
             return {"status": "recovery_required", **upgrade_status(root)}
         result = updates._check(root)
@@ -195,12 +200,17 @@ def upgrade(
     allow_migration: bool = False,
     resume: bool = False,
     wait_seconds: int = 60,
+    guard=None,
+    before_cutover=None,
+    before_effect=None,
 ) -> dict:
     if not allow_migration or version is None:
         raise ManifestError("Review updates plan, then supply --version and --allow-migration")
     version_tuple(version)
     state, root, settings = updates._root(state)
     with state_io.operator_lock(root, wait_seconds=wait_seconds):
+        if guard is not None:
+            guard()
         path = root / JOURNAL
         if path.exists():
             if not resume:
@@ -246,6 +256,7 @@ def upgrade(
                     "Live model configuration changed; resolve it before this upgrade"
                 )
             backup = updates._backup(root, settings, previous, release, allow_migration=True)
+            extra = before_cutover(previous, candidate, None) if before_cutover is not None else {}
             journal = {
                 "format": 1,
                 "phase": "prepared",
@@ -253,6 +264,7 @@ def upgrade(
                 "candidate": candidate,
                 "backup": backup,
                 "at": state_io.timestamp(),
+                **({"host_control": extra} if extra else {}),
             }
             state_io.write(path, journal, replace=False)
         # Recheck settings and immutable installed bytes before any process change.
@@ -260,6 +272,15 @@ def upgrade(
             previous, settings, root
         ):
             raise ManifestError("Live model configuration changed; resolve it before this upgrade")
+        if resume and before_cutover is not None:
+            extra = before_cutover(previous, candidate, journal)
+            if extra:
+                journal["host_control"] = extra
+                state_io.write(path, journal)
+        if guard is not None:
+            guard()
+        if before_effect is not None:
+            before_effect()
         try:
             updates._processes(state, start=False, updater_only=True)
             updates._processes(state, start=False)

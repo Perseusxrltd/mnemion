@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.45.1**.
+Reviewed source distribution: **4.46.0**.
 Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-22**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
@@ -24,6 +24,30 @@ issue review, publication and version-linked closure together.
 These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
+
+- **Independent company-host control source — 22 October 2026.** The
+  [development guide](guides/company-host-control.md) covers `/hosts` before
+  sign-in and equivalent native-agent actions, protected per-device Ed25519
+  logins, pinned restricted SSH with observer/operator/custodian roles, and
+  durable approved operations. Managed Unix hosts gain reviewed signed upgrades
+  with independent encrypted Git backup readback and local OS-owner custodian
+  recovery that preserves the host pin.
+
+  [Source validation](guides/company-host-control.md#qualification-and-remaining-work)
+  passed 20 profile/agent/process cases including archives and refused replay,
+  two repeated real Node/Python/SSH journey cases, three owner-recovery cases
+  and three backup-retention cases. Electron/frontend builds and lint/format
+  passed. A visual fixture checked plan-digest approval and 960px layout; this
+  is not live acceptance. New native gates for actual OS-protected keys,
+  transport refusal, recovery archives and offline `/hosts` are written but
+  have not run. Production adoption, boot registration, replacement-host
+  recovery, provider wake and safe takeover remain open in the
+  [continuity contract](implementation/workspace-continuity.md).
+
+  At this source checkpoint, **4.45.0** remained public while **4.45.1-r2** was
+  still running; this independent-host batch is unreleased. Current availability
+  follows release status above. All 65 requirement states and open #44/#45 remain
+  unchanged.
 
 - **4.45.1 hardening source — 22 October 2026.** The combined
   [hotfix](releases/4.45.1.md) improves provider deadlines and byte handling,

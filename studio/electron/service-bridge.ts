@@ -21,6 +21,9 @@ import { DesktopWorkspaceActions } from './desktop-workspace-actions.js'
 import { DesktopSources } from './desktop-sources.js'
 import { sourceProcess } from './desktop-source-process.js'
 import { DesktopAgents } from './desktop-agents.js'
+import { HostProfiles } from './host-profiles.js'
+import { hostMessages } from './host-control-messages.js'
+import type { HostConnection, HostRequest } from '../shared/host-control.js'
 import type { AgentInstall, AgentRemove, AgentSetup } from '../shared/desktop-agents.js'
 import type { CaptureBackupInput, CaptureDrainInput, CaptureInspectInput, CaptureRestoreControl, CaptureRestoreInput, SourceConfigure, SourceControl, SourcePreviewSelection } from '../shared/desktop-sources.js'
 import type { BackupSettings, DesktopOperatorStatus, LocalStatus, RecoveryReceipt } from '../shared/local-workspace.js'
@@ -72,7 +75,12 @@ export async function verifyWorkspaceStorage(): Promise<Record<string, unknown>>
       let refused = false
       try { await store.save('https://memory.example.invalid', credential, identity) } catch { refused = true }
       if (!refused || (await store.list()).length) throw new Error('Unavailable secure storage must not save a workspace key')
-      return { backend, available: false, plaintextFallbackRefused: true }
+      const hostProfiles = new HostProfiles(join(directory, 'hosts'), cipher, async () => { throw new Error('A locked key store must not generate an operator key') })
+      let hostRefused = false
+      try { await hostProfiles.create('Locked host probe') } catch { hostRefused = true }
+      if (!hostRefused || (await hostProfiles.status()).profiles.length) throw new Error('Unavailable secure storage must not save a host key')
+      await hostProfiles.close()
+      return { backend, available: false, plaintextFallbackRefused: true, hostLoginPlaintextRefused: true }
     }
     const bookmark = await store.save('https://memory.example.invalid', credential, identity)
     if ((await readFile(join(directory, 'connections.json'), 'utf8')).includes(credential)) throw new Error('Workspace key was stored without encryption')
@@ -87,7 +95,38 @@ export async function verifyWorkspaceStorage(): Promise<Record<string, unknown>>
       throw new Error('Offline workspace inspection did not preserve the protected identity and paused connection')
     }
     await reopened.remove(bookmark.id)
-    return { backend, available: true, encryptedRoundTrip: true, disconnectPersisted: true, offlineInspection: true, forgotten: (await reopened.list()).length === 0 }
+    const result = { backend, available: true, encryptedRoundTrip: true, disconnectPersisted: true, offlineInspection: true,
+      forgotten: (await reopened.list()).length === 0 }
+    // The packaged-client gate owns host-key qualification. Repeating native
+    // engine launches in every installed capture/backup phase adds no coverage.
+    if (process.env.MNEMION_STUDIO_HOSTING_PROBE) return result
+    const root = join(directory, 'hosts')
+    const executable = !app.isPackaged && process.env.MNEMION_LOCAL_ENGINE ? process.env.MNEMION_LOCAL_ENGINE :
+      join(process.resourcesPath, 'engine', process.platform === 'win32' ? 'mnemion-engine.exe' : 'mnemion-engine')
+    const call = sourceProcess({ executable, root, privateRoots: [], command: 'desktop-host',
+      environment: localEnvironment(process.env, root), deadlineMs: 30000, messages: hostMessages })
+    const hosts = new HostProfiles(root, cipher, call)
+    const host = await hosts.create('Disposable native host login')
+    const connection: HostConnection = { host_id: randomUUID(), operator_id: randomUUID(), hostname: '127.0.0.1', port: 1,
+      username: 'mnemion', host_key_algorithm: 'ssh-ed25519', host_key_fingerprint: 'SHA256:' + 'Z'.repeat(43), operator_key_fingerprint: host.fingerprint }
+    await hosts.enroll(host.id, connection, true)
+    await hosts.close()
+    const hostReopened = new HostProfiles(root, workspaceCipher(), call)
+    try {
+      const now = Date.now()
+      const request: HostRequest = { protocol: 1, host_id: connection.host_id, request_id: randomUUID(), action: 'service.stop',
+        issued_at: new Date(now).toISOString(), valid_until: new Date(now + 60000).toISOString(), approve_service_interruption: true }
+      let refused = false
+      try { await hostReopened.request(host.id, request) }
+      catch (error) { refused = ['host_control_unavailable', 'host_identity_changed', 'host_connection_timeout'].includes((error as { code?: string }).code ?? '') }
+      const saved = (await hostReopened.status()).profiles[0]
+      if (!refused || saved.connection?.operator_id !== connection.operator_id || saved.last_operation?.request.request_id !== request.request_id ||
+          saved.last_operation.phase !== 'submitted' || JSON.stringify(saved).includes('PRIVATE KEY') ||
+          (await readFile(join(root, 'hosts.json'), 'utf8')).includes('PRIVATE KEY')) throw new Error('The installed host client did not retain its protected identity and unavailable-host request')
+      await hostReopened.remove(host.id, true, true)
+      if ((await hostReopened.recoveries()).records.length !== 1 || (await hostReopened.status()).profiles.length) throw new Error('The installed host client did not preserve its public recovery record')
+    } finally { await hostReopened.close() }
+    return { ...result, hostLoginReopened: true, hostTransportRefusal: true, hostRecoveryRequestRetained: true }
   } finally { await rm(directory, { recursive: true, force: true }) }
 }
 
@@ -184,6 +223,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
   let backups: LocalBackups | undefined
   let sources: DesktopSources | undefined
   let agentSetup: DesktopAgents | undefined
+  let hosts: HostProfiles | undefined
   const backupSelections = new Map<string, { kind: 'folder' | 'file'; path: string }>()
   let localOpenGeneration = 0
   let localSwitching = false
@@ -271,7 +311,8 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     }, call: sourceProcess({ executable: engineExecutable(), root,
       environment: localEnvironment(process.env, root), privateRoots: [app.getPath('userData'),
         join(localBase(), 'mnemion-local-workspace'), join(localBase(), 'mnemion-recovered-workspaces'),
-        join(localBase(), 'mnemion-desktop-control'), join(localBase(), 'mnemion-desktop-agents')] }), changed: () => {
+        join(localBase(), 'mnemion-desktop-control'), join(localBase(), 'mnemion-desktop-agents'),
+        join(localBase(), 'mnemion-host-logins')] }), changed: () => {
       const window = getWindow()
       if (window && !window.webContents.isDestroyed()) window.webContents.send('sources:changed')
     } })
@@ -286,6 +327,30 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
       command: 'desktop-agent', arguments: ['--engine-executable', executable], deadlineMs: 180000,
       environment }))
     return agentSetup
+  }
+  function hostProfiles(): HostProfiles {
+    if (hosts) return hosts
+    const root = join(localBase(), 'mnemion-host-logins')
+    hosts = new HostProfiles(root, workspaceCipher(), sourceProcess({ executable: engineExecutable(), root,
+      privateRoots: [], command: 'desktop-host', environment: localEnvironment(process.env, root),
+      deadlineMs: 30000, messages: hostMessages }))
+    return hosts
+  }
+  function hostAction(action: string, input: Record<string, unknown>, signal?: AbortSignal) {
+    desktopAction(action, input)
+    switch (action) {
+      case 'host.profiles': return hostProfiles().status()
+      case 'host.schema': return hostProfiles().schema(signal)
+      case 'host.inspect': return hostProfiles().inspect(input.id as string, signal)
+      case 'host.create': return hostProfiles().create(input.name as string, signal)
+      case 'host.enroll': return hostProfiles().enroll(input.id as string, input.connection as HostConnection, input.confirm === true, signal)
+      case 'host.forget': return hostProfiles().remove(input.id as string, input.confirm === true, input.acknowledge_outstanding === true)
+      case 'host.recoveries': return hostProfiles().recoveries()
+      case 'host.recovery': return hostProfiles().recovery(input.id as string)
+      case 'host.request.archive': return hostProfiles().archiveRequest(input.id as string, input.confirm === true)
+      case 'host.request': return hostProfiles().request(input.id as string, input.request as HostRequest, signal)
+      default: throw new Error('Choose a documented host-control action.')
+    }
   }
   function workspaceConnections(): WorkspaceConnections {
     const signInRequest: SignInRequest = async (endpoint, operation, input) => {
@@ -430,6 +495,11 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
   }
   ipcMain.handle('local:status', event => { trusted(event); return localStatus() })
   ipcMain.handle('agents:status', event => { trusted(event); return desktopAgents().status() })
+  ipcMain.handle('hosts:action', (event, action: string, input: Record<string, unknown>) => {
+    trusted(event)
+    if (!input || typeof input !== 'object' || Array.isArray(input) || Buffer.byteLength(JSON.stringify(input)) > 24576) throw new Error('Use a bounded host-control request.')
+    return hostAction(action, input)
+  })
   ipcMain.handle('agents:choose', async (event, client: unknown) => {
     trusted(event)
     const profile = (await desktopAgents().status()).profiles.find(item => item.client === client)
@@ -753,6 +823,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
           beforeChange: beforeSelectionChange, changed: () => { operatorSelectionChanged = true },
         }).execute(request.action, input, signal)
       }
+      if (request.action.startsWith('host.')) return hostAction(request.action, input, signal)
       switch (request.action) {
         case 'catalog': return { protocol: 1, scope: 'owning_os_account', version: app.getVersion(), operations: desktopActions,
           request_limit_bytes: 16384, response_limit_bytes: 262144, same_request_replay_seconds: 600,
@@ -919,28 +990,30 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     selections.clear()
     backupSelections.clear()
   })
-  app.on('will-quit', () => { backups?.close(); void sources?.close(); void agentSetup?.close(); void operator?.close() })
+  app.on('will-quit', () => { backups?.close(); void sources?.close(); void agentSetup?.close(); void hosts?.close(); void operator?.close() })
 
   return {
     localDiagnostic: () => localDiagnostic(local?.status.diagnostic),
-    localBusy: () => localSwitching || !!operatorMutation || !!backups?.busy || !!sources?.busy || !!agentSetup?.busy || (local?.busy ?? false),
-    localActive: () => localSwitching || !!operatorMutation || !!backups?.busy || !!sources?.busy || !!agentSetup?.busy || (local?.active ?? false),
+    localBusy: () => localSwitching || !!operatorMutation || !!backups?.busy || !!sources?.busy || !!agentSetup?.busy || !!hosts?.busy || (local?.busy ?? false),
+    localActive: () => localSwitching || !!operatorMutation || !!backups?.busy || !!sources?.busy || !!agentSetup?.busy || !!hosts?.busy || (local?.active ?? false),
     stopLocal: () => local?.stop() ?? Promise.resolve(true),
     stopLocalForUpdate: async () => {
       if (localSwitching || (sources && !sources.pauseForUpdate())) return false
       if (agentSetup && !agentSetup.pauseForUpdate()) { sources?.resumeAfterUpdate(); return false }
+      if (hosts && !hosts.pauseForUpdate()) { sources?.resumeAfterUpdate(); agentSetup?.resumeAfterUpdate(); return false }
       try {
         const stopped = await (local?.stopForUpdate() ?? Promise.resolve(true))
-        if (!stopped) { sources?.resumeAfterUpdate(); agentSetup?.resumeAfterUpdate() }
+        if (!stopped) { sources?.resumeAfterUpdate(); agentSetup?.resumeAfterUpdate(); hosts?.resumeAfterUpdate() }
         return stopped
-      } catch (error) { sources?.resumeAfterUpdate(); agentSetup?.resumeAfterUpdate(); throw error }
+      } catch (error) { sources?.resumeAfterUpdate(); agentSetup?.resumeAfterUpdate(); hosts?.resumeAfterUpdate(); throw error }
     },
-    resumeLocalAfterCancelledUpdate: async () => { try { await local?.cancelUpdateStop() } finally { sources?.resumeAfterUpdate(); agentSetup?.resumeAfterUpdate() } },
+    resumeLocalAfterCancelledUpdate: async () => { try { await local?.cancelUpdateStop() } finally { sources?.resumeAfterUpdate(); agentSetup?.resumeAfterUpdate(); hosts?.resumeAfterUpdate() } },
     closeLocal: async () => {
       if (localSwitching) return false
       operator?.cancel()
       await sources?.close()
       await agentSetup?.close()
+      await hosts?.close()
       const stopped = await (local?.close() ?? Promise.resolve(true))
       if (operatorWork) await Promise.race([operatorWork.catch(() => {}), new Promise(resolve => setTimeout(resolve, 5000))])
       return stopped && !operatorMutation && !backups?.busy

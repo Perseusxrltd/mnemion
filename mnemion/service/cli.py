@@ -89,6 +89,14 @@ def main(argv: list[str] | None = None) -> int:
             "desktop-agent", help="Private Studio agent setup; JSON through process pipes"
         )
     )
+    from ..host_control.desktop import arguments as host_desktop_arguments
+
+    host_desktop_arguments(
+        commands.add_parser(
+            "desktop-host",
+            help="Private Studio independent-host helper; JSON through process pipes",
+        )
+    )
     from ..agent_packages import arguments as agent_package_arguments
 
     agent_package_arguments(
@@ -142,6 +150,14 @@ def main(argv: list[str] | None = None) -> int:
 
     update_arguments(
         commands.add_parser("updates", help="Manage signed server hotfixes with verified backups")
+    )
+    from ..host_control.cli import arguments as host_control_arguments
+
+    host_control_arguments(
+        commands.add_parser(
+            "host-control",
+            help="Operate an explicitly adopted host independently of its memory API",
+        )
     )
     from .host_cli import arguments as host_arguments
 
@@ -317,6 +333,10 @@ def main(argv: list[str] | None = None) -> int:
         from .service_updates import execute as update_service
 
         return update_service(args)
+    elif args.command == "host-control":
+        from ..host_control.cli import execute as host_control_service
+
+        return host_control_service(args)
     elif args.command == "host":
         from .host_cli import execute as host_service
 
@@ -395,6 +415,10 @@ def main(argv: list[str] | None = None) -> int:
         return dispatch(args)
     elif args.command == "desktop-source":
         from ..desktop_sources import dispatch
+
+        return dispatch(args)
+    elif args.command == "desktop-host":
+        from ..host_control.desktop import dispatch
 
         return dispatch(args)
     elif args.command == "connect":

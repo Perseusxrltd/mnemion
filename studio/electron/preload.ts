@@ -45,6 +45,7 @@ contextBridge.exposeInMainWorld('mnemion', {
     return () => ipcRenderer.removeListener('workspaces:closed', listener)
   },
   localStatus: () => transfer('local:status'),
+  hostControl: (action: string, input: Record<string, unknown> = {}) => transfer('hosts:action', action, input),
   agentSetupStatus: () => transfer('agents:status'),
   agentSetupChoose: (client: string) => transfer('agents:choose', client),
   agentSetupPreview: (setup: unknown) => transfer('agents:preview', setup),

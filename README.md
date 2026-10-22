@@ -71,6 +71,15 @@ Set up [independent human administrators](docs/service/organizations.md#establis
 to manage people, applications and space grants without the original agent.
 The [continuity contract](docs/implementation/workspace-continuity.md) tracks the
 remaining host delegation, independent recovery and company hosting workflows.
+
+**Independent host control is development work.** The
+[source guide](docs/guides/company-host-control.md) covers `/hosts` before sign-in,
+protected per-device logins, restricted SSH roles, durable operations, reviewed
+signed upgrades with independent encrypted Git backups, and local OS-owner
+custodian recovery. Focused source checks passed; the new native gates
+have not run. Clean installed-client and production acceptance remain open, and
+published availability continues to follow release status above.
+
 Published 4.2.0 includes [individual sign-in, invitations and device sessions](docs/service/sign-in.md),
 with [six-platform installed migration and recovery acceptance](docs/validation/2026-10-13-personal-access-release.md).
 Company accounts can use [Studio sign-in](docs/service/company-sign-in.md) from

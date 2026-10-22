@@ -80,6 +80,9 @@ def retain_backup(root: Path, name: str) -> None:
 def retain_runtimes(root: Path, public_key: bytes, *, pending: str) -> int:
     """Keep active, previous, pending and any interrupted cutover's runtimes."""
     keep = {pending}
+    from .runtime_pins import protected
+
+    keep.update(protected(root))
     for name in ("active.json", "previous.json"):
         path = root / name
         if path.exists():

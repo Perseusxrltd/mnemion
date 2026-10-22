@@ -3,6 +3,7 @@
 import base64
 import copy
 import os
+from uuid import uuid4
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 import pytest
@@ -10,6 +11,7 @@ import pytest
 from deploy.service_update_manifest import payload
 from mnemion.service import update_cleanup as cleanup
 from mnemion.service import update_state as state_io
+from mnemion.service import runtime_pins
 from mnemion.service.update_manifest import ManifestError, sign_manifest
 from service_tests.update_fixture import package_inputs
 
@@ -53,7 +55,10 @@ def test_replaced_backup_is_never_deleted_or_followed(tmp_path):
 
 
 @pytest.mark.parametrize("journal", ["journal.json", "upgrade-journal.json"])
-def test_signed_runtime_cleanup_keeps_active_previous_pending_and_journal(tmp_path, journal):
+@pytest.mark.parametrize("independent_control", [False, True])
+def test_signed_runtime_cleanup_keeps_active_previous_pending_and_journal(
+    tmp_path, journal, independent_control
+):
     root = state_io.directory(tmp_path / "updates")
     releases = state_io.directory(root / "releases")
     publisher = tmp_path / "publisher"
@@ -82,12 +87,32 @@ def test_signed_runtime_cleanup_keeps_active_previous_pending_and_journal(tmp_pa
     outside = state_io.directory(tmp_path / "operator-runtime")
     linked = releases / f"4.0.15-{'b' * 12}"
     linked.symlink_to(outside, target_is_directory=True)
-    assert (
-        cleanup.retain_runtimes(root, key.public_key().public_bytes_raw(), pending=slots[4].name)
-        == 1
-    )
+    if independent_control:
+        state_io.write(
+            root / runtime_pins.FILE,
+            {
+                "format": 1,
+                "host_id": str(uuid4()),
+                "state": str(tmp_path / "control"),
+                "current": {
+                    "slot": slots[5].name,
+                    "python": "fixture",
+                    "directory": "fixture",
+                    "version": "4.0.13",
+                },
+                "previous": None,
+                "pending": False,
+                "attempts": 0,
+                "revision": str(uuid4()),
+                "fallback": False,
+                "rejected_slot": None,
+            },
+        )
+    assert cleanup.retain_runtimes(
+        root, key.public_key().public_bytes_raw(), pending=slots[4].name
+    ) == (0 if independent_control else 1)
     assert all(path.exists() for path in slots[:5])
-    assert not slots[5].exists()
+    assert slots[5].exists() == independent_control
     assert untrusted.exists() and foreign.exists() and linked.is_symlink() and outside.exists()
 
 

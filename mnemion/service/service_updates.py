@@ -89,7 +89,15 @@ def _environment(settings: dict | None = None) -> dict[str, str]:
     return result
 
 
-def _command(command: list[str], *, cwd: Path, environment: dict, log: Path, timeout: int) -> bytes:
+def _command(
+    command: list[str],
+    *,
+    cwd: Path,
+    environment: dict,
+    log: Path,
+    timeout: int,
+    retain_operation_locks: bool = True,
+) -> bytes:
     """Drain output continuously while retaining only a bounded private tail."""
     import selectors
 
@@ -102,6 +110,7 @@ def _command(command: list[str], *, cwd: Path, environment: dict, log: Path, tim
         stderr=subprocess.STDOUT,
         stdin=subprocess.DEVNULL,
         start_new_session=True,
+        pass_fds=state_io.inherited_locks() if retain_operation_locks else (),
     )
 
     selector = selectors.DefaultSelector()

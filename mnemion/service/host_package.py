@@ -132,12 +132,19 @@ def owner_connection(state: Path, admin: Path | None) -> str:
 
 
 def export_ledger(
-    state: Path, output: Path, secret_file: Path, *, admin: Path | None = None
+    state: Path,
+    output: Path,
+    secret_file: Path,
+    *,
+    admin: Path | None = None,
+    lock_held: bool = False,
 ) -> dict:
     state, settings = supervision.settings(state)
     owner, secret = owner_connection(state, admin), key_file(secret_file)
     with (
-        update_state.lock(state / "updates") if settings.get("managed_updates") else nullcontext(),
+        (update_state.borrowed_lock if lock_held else update_state.lock)(state / "updates")
+        if settings.get("managed_updates")
+        else nullcontext(),
         temporary_directory(prefix="mnemion-host-ledger-") as root,
     ):
         ledger = root / "ledger.json"
@@ -225,6 +232,7 @@ def snapshot(
     include_files: list[Path] = (),
     pg_bin: Path | None = None,
     plan_output: Path | None = None,
+    lock_held: bool = False,
 ) -> dict:
     state, settings = supervision.settings(state)
     secret = key_file(secret_file)
@@ -243,7 +251,9 @@ def snapshot(
         )
     )
     with (
-        update_state.lock(state / "updates") if managed else nullcontext(),
+        (update_state.borrowed_lock if lock_held else update_state.lock)(state / "updates")
+        if managed
+        else nullcontext(),
         temporary_directory(prefix="mnemion-host-export-") as root,
     ):
         assets = Assets(root)

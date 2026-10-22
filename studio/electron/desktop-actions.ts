@@ -1,5 +1,15 @@
 /** Discoverable native operations; each also uses the app's typed controller. */
 export const desktopActions = {
+  'host.profiles': { workspace: false, mutation: false, fields: [] },
+  'host.schema': { workspace: false, mutation: false, fields: [] },
+  'host.inspect': { workspace: false, mutation: false, fields: ['id'] },
+  'host.create': { workspace: false, mutation: true, fields: ['name'] },
+  'host.enroll': { workspace: false, mutation: true, fields: ['id', 'connection', 'confirm'] },
+  'host.forget': { workspace: false, mutation: true, fields: ['id', 'confirm', 'acknowledge_outstanding'] },
+  'host.recoveries': { workspace: false, mutation: false, fields: [] },
+  'host.recovery': { workspace: false, mutation: false, fields: ['id'] },
+  'host.request.archive': { workspace: false, mutation: true, fields: ['id', 'confirm'] },
+  'host.request': { workspace: false, mutation: true, fields: ['id', 'request'] },
   status: { workspace: false, mutation: false, fields: [] },
   catalog: { workspace: false, mutation: false, fields: [] },
   'app.status': { workspace: false, mutation: false, fields: [] },

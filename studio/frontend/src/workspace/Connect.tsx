@@ -279,6 +279,7 @@ export default function Connect({ onConnect, initialError, initialJoin }: { onCo
           {busy === "Reconnecting to your workspace…" && <button className="ws-button ws-quiet" onClick={() => void run("Pausing reconnection…", async () => { await desktop!.workspaceDisconnect!(); requestAnimationFrame(() => addressInput.current?.focus()); })}>Use another workspace</button>}
           </>}
           <Link className="ws-link" to="/help">Setup guides, documentation & roadmap</Link>
+          {desktop?.hostControl && <Link className="ws-link" to="/hosts">Host controls · manage a company server</Link>}
           <Link className="ws-link" to="/help?doc=docs%2Fservice%2Fconnection-diagnostics.md">Workspace offline? Connection & recovery guide</Link>
           <Link className="ws-link" to="/help?doc=docs%2Fservice%2Fprivacy.md">Privacy & data handling</Link>
           {window.mnemion?.platform && <small>Background mode, login startup and supported automatic updates are enabled by default. Change them in <strong>Background and updates</strong> in the app menu.</small>}

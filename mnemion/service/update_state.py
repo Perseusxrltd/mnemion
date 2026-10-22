@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from contextlib import ExitStack, contextmanager
+from contextvars import ContextVar
 from datetime import datetime, timezone
 import hashlib
 from importlib.resources import files
@@ -17,6 +18,35 @@ import time
 from .update_manifest import ManifestError
 
 MAX_STATE_BYTES = 262144
+_COMMAND_LOCKS = ContextVar("mnemion_managed_command_locks", default=())
+
+
+@contextmanager
+def command_custody(descriptor: int):
+    """A verified owned child retains this lease if its launcher disappears."""
+    token = _COMMAND_LOCKS.set((*_COMMAND_LOCKS.get(), descriptor))
+    try:
+        yield
+    finally:
+        _COMMAND_LOCKS.reset(token)
+
+
+def inherited_locks() -> tuple[int, ...]:
+    return tuple(dict.fromkeys(_COMMAND_LOCKS.get()))
+
+
+@contextmanager
+def borrowed_lock(root: Path):
+    """Reuse an already held lease without acquiring a conflicting second FD."""
+    expected = (root / "operation.lock").lstat()
+    if not stat.S_ISREG(expected.st_mode):
+        raise ManifestError("The managed operation lease needs inspection")
+    for descriptor in inherited_locks():
+        actual = os.fstat(descriptor)
+        if (actual.st_dev, actual.st_ino) == (expected.st_dev, expected.st_ino):
+            yield descriptor
+            return
+    raise ManifestError("This operation must hold the adopted host's update lease")
 
 
 class OperationBusy(ManifestError):
@@ -134,7 +164,8 @@ def lock(root: Path, *, shared: bool = False):
             raise OperationBusy("Another managed update operation is already running") from None
         # Managed scans pass this descriptor to their child. An interrupted
         # launcher cannot release runtime protection while that scan still runs.
-        yield descriptor
+        with command_custody(descriptor):
+            yield descriptor
     finally:
         os.close(descriptor)
 

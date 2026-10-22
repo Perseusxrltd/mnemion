@@ -55,7 +55,17 @@ def program_environment():
     return {key: value for key, value in os.environ.items() if key.casefold() in allowed}
 
 
-def run(args, *, input=None, env=None, cwd=None, timeout=30, maximum=1024 * 1024, cancel=None):
+def run(
+    args,
+    *,
+    input=None,
+    env=None,
+    cwd=None,
+    timeout=30,
+    maximum=1024 * 1024,
+    cancel=None,
+    pass_fds=(),
+):
     if cancel is not None and cancel.is_set():
         raise JournalError("journal_program_interrupted")
     try:
@@ -68,6 +78,7 @@ def run(args, *, input=None, env=None, cwd=None, timeout=30, maximum=1024 * 1024
             cwd=cwd,
             creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
             start_new_session=os.name != "nt",
+            pass_fds=pass_fds,
         )
     except OSError:
         raise JournalError("journal_program_unavailable") from None

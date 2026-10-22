@@ -346,6 +346,7 @@ function Shell({
           mnemion<span>studio</span>
         </Link>
         <div className="ws-workspace-name">{me.tenant_name}</div>
+        {window.mnemion?.hostControl && <Link className="ws-link" to="/hosts">Host controls</Link>}
         <label className="ws-space-picker">
           <span>Memory space</span>
           <select

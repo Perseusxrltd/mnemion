@@ -460,6 +460,7 @@ async function createWindow() {
           workspace: document.body.innerText.includes('Welcome to Mnemion') || document.querySelector('.ws-workspace-name')?.textContent === 'Native validation',
           serviceBridge: typeof window.mnemion?.serviceRequest === 'function',
           workspaceBridge: ['workspaceStatus', 'workspaceInspect', 'workspaceConnect', 'workspaceResume', 'workspaceRestore', 'workspaceDisconnect', 'workspaceForget', 'workspaceReset'].every(name => typeof window.mnemion?.[name] === 'function'),
+          hostControlBridge: typeof window.mnemion?.hostControl === 'function',
           vaultBridge: typeof window.mnemion?.refreshVault === 'function',
           updateGuard: (() => {
             const clean = window.mnemion?.updateSafety?.();
@@ -494,7 +495,25 @@ async function createWindow() {
         if (documentation) break
         await new Promise(resolve => setTimeout(resolve, 100))
       } while (Date.now() < helpDeadline)
-      renderer = { ...renderer, documentation, secureStorage: await verifyWorkspaceStorage(), workspaceProtocol }
+      const secureStorage = await verifyWorkspaceStorage()
+      let hostControls: boolean | null = null
+      if (!process.env.MNEMION_STUDIO_HOSTING_PROBE) {
+        // The packaged-client gate checks this once per launch; independent
+        // hosting/capture phases do not repeat the same client qualification.
+        await mainWindow.webContents.executeJavaScript("location.hash = '/hosts'")
+        const hostDeadline = Date.now() + 10_000
+        do {
+          hostControls = await mainWindow.webContents.executeJavaScript(`
+            document.querySelector('.ws-host-page h1')?.textContent.includes('Host controls')
+            && [...document.querySelectorAll('.ws-host-page label')].some(label => label.textContent.includes('New device or agent name'))
+            && !document.querySelector('.ws-host-page [role="alert"]')
+            && !document.querySelector('.ws-host-page .ws-host-progress')
+          `)
+          if (hostControls) break
+          await new Promise(resolve => setTimeout(resolve, 100))
+        } while (Date.now() < hostDeadline)
+      }
+      renderer = { ...renderer, documentation, secureStorage, workspaceProtocol, hostControls }
     }
     const hosting = await verifyLocalHostingProbe(mainWindow)
     writeSmokeStatus(hosting ? 'hosting-ready' : 'client-ready', { legacyEnabled, localClient, renderer, hosting })

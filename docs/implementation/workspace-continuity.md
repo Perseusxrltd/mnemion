@@ -1,6 +1,6 @@
 # Organization administration and workspace continuity
 
-Updated **2026-10-20**. This contract extends requirements A01–A09 with the
+Updated **2026-10-22**. This contract extends requirements A01–A09 with the
 explicit request that another authorized administrator must be able to manage
 and recover a workspace when its original agent is unavailable. It is not a
 claim that the controls below are already released.
@@ -21,6 +21,42 @@ handling. [Public HTTPS sign-in](../validation/2026-10-20-live-hosted-signin.md)
 also passed scoped OAuth/MCP checks on the existing host, with new configuration
 backed up off-host. The original office's unavailable full state, named-provider
 acceptance, OS/provider provisioning and automatic failover remain separate.
+
+## Independent host control source checkpoint
+
+The **22 October 2026 development source** adds a narrower independent-controller
+milestone, described in the [user, administrator and agent guide](../guides/company-host-control.md).
+The desktop `/hosts` route is available before memory sign-in, with protected
+per-device Ed25519 logins and equivalent native-agent controls. An OS owner
+adopts an existing managed Linux/macOS Supervisor host. Pinned restricted SSH
+then enforces separate observer, operator and custodian roles without requiring
+the memory API or the original agent. Memory membership never grants host
+authority, and an ordinary browser cannot open this native connection.
+
+Approved service operations retain durable intent and receipts across lost
+replies. Reviewed signed upgrade plans require independent encrypted Git backup
+readback before a new cutover; uncertain requests retain public recovery records.
+The [local OS-owner recovery procedure](../guides/company-host-control.md#recover-custodian-authority-as-the-os-owner)
+adds a fresh permanent custodian, optionally retires explicitly selected grants,
+and preserves the host identity and server pin. It requires intact local
+authority state. The memory-host backup does not escrow that independent
+authority or operator keys.
+
+[Focused source and fixture evidence](../guides/company-host-control.md#qualification-and-remaining-work)
+covers profiles, archived requests/refused replay, actual local Node/Python/SSH
+journeys with the memory API absent, owner recovery and backup retention. Builds,
+lint/format and a bounded visual fixture also passed. New installed-native gates
+for actual OS-protected keys, transport refusal, public recovery archives and
+offline `/hosts` exist but have not run. This source work is unreleased; current
+published packages and gates remain owned by [release status](../RELEASE_STATUS.md).
+
+This advances delegation while the independent controller and computer are
+reachable. It does not supply whole-machine provider wake, registered boot/login
+startup, universal host adoption, an independently hosted browser controller,
+replacement-host provisioning or safe failover. Actual OS secure-store and
+clean-client qualification, production adoption/recovery, independent authority
+custody, full Git-backup retrieval/restore and fencing an old writer remain open.
+The broader acceptance contract below is retained.
 
 ## Ownership must survive the original agent
 

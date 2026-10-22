@@ -165,11 +165,13 @@ function validate(status) {
     fail(`Packaged renderer or preload failed: ${JSON.stringify(status.renderer)}`)
   }
   if (!status.renderer.workspaceBridge) fail('The packaged workspace setup bridge is unavailable')
+  if (!status.renderer.hostControlBridge || !status.renderer.hostControls) fail('Independent host controls must open through the packaged preload without a memory service')
   const secureStorage = status.renderer.secureStorage
   if ((process.platform !== 'linux' || process.env.MNEMION_NATIVE_KEYRING_REQUIRED === '1') && !secureStorage?.available) fail('The native OS credential store is unavailable')
   if (secureStorage?.available) {
     if (!secureStorage.encryptedRoundTrip || !secureStorage.disconnectPersisted || !secureStorage.forgotten) fail('OS-protected workspace storage did not pass its native checks')
-  } else if (!secureStorage?.plaintextFallbackRefused) fail('An unavailable keychain must not fall back to plaintext credentials')
+    if (!secureStorage.hostLoginReopened || !secureStorage.hostTransportRefusal || !secureStorage.hostRecoveryRequestRetained) fail('The installed independent host client must retain its OS-protected key and public recovery request')
+  } else if (!secureStorage?.plaintextFallbackRefused || !secureStorage?.hostLoginPlaintextRefused) fail('An unavailable keychain must not fall back to plaintext credentials')
   if (status.renderer.nodeAvailable) fail('Node must not be available to the renderer')
   if (!status.renderer.documentation) fail('Packaged versioned documentation must load without a service')
   const guard = status.renderer.updateGuard

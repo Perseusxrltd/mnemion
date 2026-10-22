@@ -8,6 +8,7 @@ import type { ModelsChange } from '../../../shared/local-models'
 import type { CompanyChange, CompanyDiscoveryRequest, CompanyDiscoveryResult } from '../../../shared/local-workspace'
 import type { CaptureArchiveInfo, CaptureBackupInput, CaptureDrained, CaptureDrainInput, CaptureInspectInput, CapturePreview, CaptureRecoveries, CaptureRestoreControl, CaptureRestoreInput, CaptureRestoreResult, DesktopSourceView, SourceConfigure, SourceControl, SourcePreviewSelection } from '../../../shared/desktop-sources'
 import type { AgentSetup, AgentSetupStatus, AgentPreview, AgentInstall, AgentRemove, AgentSetupResult } from '../../../shared/desktop-agents'
+import type { HostInspection, HostProfile, HostProfilesStatus, HostReceipt } from '../../../shared/host-control'
 
 declare global {
   interface Window {
@@ -34,6 +35,15 @@ declare global {
       workspaceReset?: () => Promise<void>
       onWorkspaceClosed?: (callback: (sessionToken: string) => void) => () => void
       localStatus?: () => Promise<LocalStatus>
+      hostControl?: {
+        (action: 'host.profiles', input?: Record<string, never>): Promise<HostProfilesStatus>
+        (action: 'host.inspect', input: { id: string }): Promise<HostInspection>
+        (action: 'host.create' | 'host.enroll', input: Record<string, unknown>): Promise<HostProfile>
+        (action: 'host.request', input: Record<string, unknown>): Promise<HostReceipt>
+        (action: 'host.forget' | 'host.schema' | 'host.request.archive', input: Record<string, unknown>): Promise<unknown>
+        (action: 'host.recoveries', input?: Record<string, never>): Promise<{ records: Record<string, any>[] }>
+        (action: 'host.recovery', input: { id: string }): Promise<Record<string, unknown>>
+      }
       sourceStatus?: () => Promise<DesktopSourceView>
       agentSetupStatus?: () => Promise<AgentSetupStatus>
       agentSetupChoose?: (client: string) => Promise<string | null>
