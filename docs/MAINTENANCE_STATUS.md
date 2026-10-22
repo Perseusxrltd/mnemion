@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-22T09:48:13+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-22T10:16:59+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.44.1](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.44.1). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -21,19 +21,14 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | database-cache\.yml | main | success | [Run 39755197344](https://github.com/Perseusxrltd/mnemion/actions/runs/39755197344) |
 | public-updates\.yml | v4\.44\.1 | success | [Run 39648047355](https://github.com/Perseusxrltd/mnemion/actions/runs/39648047355) |
 | release\.yml | release/4\.44\.1-r2 | success | [Run 39637945958](https://github.com/Perseusxrltd/mnemion/actions/runs/39637945958) |
-| release\.yml | release/4\.44\.2 | in\_progress | [Run 39753067641](https://github.com/Perseusxrltd/mnemion/actions/runs/39753067641) |
-| verify-artifacts\.yml | main | skipped | [Run 39756590686](https://github.com/Perseusxrltd/mnemion/actions/runs/39756590686) |
+| release\.yml | release/4\.44\.2 | success | [Run 39753067641](https://github.com/Perseusxrltd/mnemion/actions/runs/39753067641) |
+| verify-artifacts\.yml | main | in\_progress | [Run 39761844389](https://github.com/Perseusxrltd/mnemion/actions/runs/39761844389) |
 | website-release\.yml | main | success | [Run 39754043731](https://github.com/Perseusxrltd/mnemion/actions/runs/39754043731) |
 | website-release\.yml | v4\.44\.1 | success | [Run 39648042222](https://github.com/Perseusxrltd/mnemion/actions/runs/39648042222) |
 
 ## Active jobs
 
-[Run 39753067641](https://github.com/Perseusxrltd/mnemion/actions/runs/39753067641): 26/32 jobs completed; 25 succeeded.
+[Run 39761844389](https://github.com/Perseusxrltd/mnemion/actions/runs/39761844389): 0/1 jobs completed; 0 succeeded.
 
-- native / ubuntu-22\.04 / x64: in\_progress — Installed Linux app creates, searches and reopens a real local workspace.
-- native / macos-15 / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
-- native / macos-15-intel / x64: in\_progress — Package the native desktop with one bounded upstream-download retry.
-- native / windows-11-arm / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
-- native / windows-2022 / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
-- native / ubuntu-22\.04-arm / arm64: in\_progress — Installed Linux app creates, searches and reopens a real local workspace.
+- verify: in\_progress — Verify every uploaded byte, production signature and complete feed.
 
