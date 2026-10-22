@@ -449,6 +449,10 @@ def verify_cloud(adapter, provider: str):
 
 def perform(root: Path, request: dict, private_roots=()) -> dict:
     operation = request.get("operation")
+    if operation == "capture_drain":
+        from .desktop_capture_drain import perform as capture_drain
+
+        return capture_drain(root, request)
     if operation in {
         "capture_restore",
         "capture_restore_list",

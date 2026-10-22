@@ -31,8 +31,8 @@ remain untouched; the rule does not scrub strings or detect secrets in text.
 See [field rules, refusal limits and policy v2](durable-capture.md#exclude-json-fields-unreleased).
 Focused source, service, controller and migration checks and the Linux source
 preview passed; all six packaged journeys remain pending. Existing retained
-source selection still requires reviewed migration; changing rules does not
-remove already accepted memories or backups.
+source selection requires [reviewed migration](#apply-a-reviewed-capture-policy-unreleased);
+changing rules does not remove already accepted memories or backups.
 
 1. Connect to the intended workspace. An administrator creates a dedicated
    application in **People & apps**, then registers its folder or conversation
@@ -219,6 +219,12 @@ after its active scan stops. It starts no new scan and leaves other source
 statuses unchanged. Missing or mismatched observations stay unknown; the refresh
 does not reconstruct keys or lost evidence.
 
+Reviewed archive recovery verifies a copied conversation folder against saved
+prefix hashes before trusting its file cache. With an unchanged capture policy,
+a replacement device grant preserves the original generation and evidence
+revisions. An archive can also recover accepted backlog when the original files
+are lost; it cannot reconstruct content that was never captured.
+
 Follow [retained capture recovery](durable-capture.md#recovery-boundaries).
 Recover authoritative server memory, permissions and deletion state from a
 verified workspace backup; that cannot recover undelivered local content.
@@ -227,6 +233,59 @@ Updates wait for scans and settings writes. Once the updater pauses scheduling,
 no new scan starts during shutdown. A cancelled update resumes scheduling; a
 normal relaunch reads saved settings. A helper whose owning app disappears stops
 instead of leaving an orphaned watcher.
+
+## Apply a reviewed capture policy (unreleased)
+
+Development source adds a reviewed policy change for an existing retained source
+on this computer. Source checks passed 50 affected service cases and 103 native
+controller/private-agent cases. The actual app migration journey and all six
+installed targets remain unverified for this batch. L1 remains unreleased; see
+[live release status](https://github.com/Perseusxrltd/mnemion/blob/main/docs/RELEASE_STATUS.md)
+for current availability.
+
+1. Pause the retained source and wait for its active scan to stop. In **Sources
+   on this computer → Back up this capture inbox**, select **Deliver saved queue**.
+   Each call handles at most four saved pages under the original policy, without
+   reading the producer folder or accepting new content. The device needs its
+   protected keys and current workspace authorization. Keep that authorization
+   until its queue settles; changing policy cannot bypass a revoked grant.
+2. Repeat bounded delivery until its receipt confirms `delivery_complete: true`.
+   Zero queued fragments alone does not settle unknown replies or outstanding
+   deletion checks. This receipt describes queue delivery; ordinary scan history
+   remains its original observation. Then create a fresh encrypted backup and
+   keep its separate recovery key.
+3. In the original workspace's **Capture administration**, an administrator
+   approves a different current policy. Under this connection's **Apply the
+   workspace’s current capture policy**, choose the fresh archive, enter its
+   recovery key and select **Verify recovery archive**. The workspace server must
+   support versioned capture policies.
+4. Review the policy, unchanged folder, resource limits and **Preview recovered
+   source** result. Confirm the folder and policy and retirement of the previous
+   device grant, then select **Apply policy and keep source paused**.
+
+The app creates a new dedicated device credential and random OS-sealed inbox key.
+Before replacing the saved source, the helper verifies the new grant, current
+policy and audience, and compares the archive with every row of the locked
+original inbox. A stale archive is refused even if its counts match. Present
+producer files must still prove their captured prefixes, and existing storage
+admission limits apply. The helper then confirms retirement of the old grant.
+
+The new copy retains original event/page identities, delivery receipts,
+checkpoints and deletion fences. It starts paused with coverage for the new
+selection unobserved; the original inbox and encrypted backup preserve the old
+evidence and coverage. Migration does not erase or relabel earlier accepted
+memories or backups. After an uncertain result, inspect source status and pending
+recoveries, then explicitly finish or discard the recorded recovery. A pending
+same-device handover blocks edits and resume of the original source. Discarding
+the unfinished replacement retires only its grant and removes its unfinished
+copy. The predecessor stays paused and revoked, with its inbox readable for
+backup and a fresh reviewed retry; its old grant is not reactivated.
+
+See the [private-agent procedure](desktop-operator.md#apply-a-reviewed-capture-policy-unreleased).
+Migration across organizations or source identities, conversion of existing
+mirrors and policy transitions in independent headless configuration remain
+unfinished. This source addition does not establish six-target or full L1
+acceptance.
 
 ## Local-agent controls
 
@@ -238,6 +297,8 @@ The same OS-account [private desktop interface](desktop-operator.md) exposes:
 | `source.configure` | `expected_revision`, `source`, and `credential` for a new entry; an existing entry can keep its key. Cloud sources also use a separate `provider_credential`. |
 | `source.pause` | `expected_revision`, `id`, `enabled` (`false` to pause, `true` to resume). Pause uses the current disk record and tolerates missing/malformed bounded credential strings or damaged capture enrollment with valid public settings; resume retains strict validation. |
 | `source.sync` | `expected_revision`, `id`; queues a scan of an enabled source. |
+| `source.drain` (unreleased) | `expected_revision`, `id`, `confirm: true`; delivers at most four saved pages from a paused retained source without reading its producer folder. Repeat until its separate receipt reports `delivery_complete: true`. |
+| `source.restore` (unreleased) | Inspected archive, fresh preview and new approved grant/credential; defaults to the original capture policy. Explicit `policy_change: true` and `replace_id` select a reviewed replacement of this computer's paused source from its exact current archive. See the [restore inputs](desktop-operator.md#recover-a-capture-device-unreleased). |
 | `source.remove` | `expected_revision`, `id`, `confirm: true`. Retained capture also requires a paused source and `discard_local_inbox: true`; server revocation must be confirmed before local discard. Optional `retirement_credential` supplies current administrator authority through the private pipe and is never saved. Already recorded retirement permits cleanup offline without credentials. |
 | `source.repair` (unreleased) | `expected_revision`, `id`, current `repair_token`, `confirm: true`; repairs scan observations for every source on this computer, preserving the damaged diagnostic file and retaining settings, keys, inboxes and checkpoints. |
 

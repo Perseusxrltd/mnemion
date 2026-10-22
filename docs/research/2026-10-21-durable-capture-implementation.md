@@ -10,7 +10,9 @@ enrollment, prefix/queue observations, limits, removal and recovery boundaries.
 
 ## Current installed qualification
 
-Public **4.44.0** remains the released version. L1 is not accepted or released.
+Current public availability is recorded in
+[live release status](https://github.com/Perseusxrltd/mnemion/blob/main/docs/RELEASE_STATUS.md).
+L1 is not accepted or released; the public patch releases are separate work.
 
 | Artifacts | Frozen source and native run | Current evidence |
 | --- | --- | --- |
@@ -1462,6 +1464,78 @@ it does not decrypt a damaged inbox, recover an encryption key or migrate captur
 History repair resets only observations for the whole device and does not start
 a scan. It cannot stand in for evidence or key recovery.
 
+## Reviewed capture policy migration source delta
+
+This **unreleased development batch** began on 21 October 2026; the source checks
+below completed on **22 October 2026 UTC**. Earlier installed artifacts do not
+establish acceptance of this change. All 65 requirements and L1–L7 remain in
+scope. Current availability follows
+[live release status](https://github.com/Perseusxrltd/mnemion/blob/main/docs/RELEASE_STATUS.md).
+
+[Evidence revisions](../../mnemion/connectors/live_conversations.py) for explicit
+capture policies now bind the policy fingerprint, original segment digest and
+selected content. A changed policy or changed original bytes cannot reuse an
+immutable evidence revision merely because the selected text is unchanged.
+Producer generation, byte identity and deletion-family identity stay intact.
+
+The separate [`restore_policy_copy`](../../mnemion/connectors/capture_transfer.py)
+entry point accepts an explicitly reviewed different policy/new grant only when
+the archive has no pending events or unknown pages. It preserves original
+event/page IDs, issuing-grant receipts, checkpoints and deletion fences. It
+clears selection observations in the new copy so old coverage is not reported
+as coverage of the new policy; the original archive retains the old observations.
+Default device recovery continues to require the original policy.
+
+The app's **Deliver saved queue** and private `source.drain` handle at most four
+old-policy pages while paused, without producer reads or new intake. Unknown
+replies reconcile through their original page IDs, with current authorization
+and deletion checks. The separate delivery receipt requires pending events,
+unknown pages and outstanding fence work to be settled before
+`delivery_complete: true`; it does not manufacture a new scan or index-readiness
+observation.
+
+**Apply the workspace’s current capture policy** extends the existing restore
+form. Native `source.restore` accepts explicit `policy_change: true` and
+`replace_id` for a same-device replacement from a fresh inspected archive. The
+helper compares every row against the locked current inbox, verifies present
+producer prefixes, current remote policy, audience and a new approved grant,
+then confirms old-grant retirement. The controller generates a fresh OS-sealed
+inbox key. Durable intents preserve the selected replacement through explicit
+finish/discard; the original inbox and archive are retained and the new source
+stays paused. Existing identity, private-credential and capacity checks remain.
+See the [app procedure](../service/desktop-sources.md#apply-a-reviewed-capture-policy-unreleased)
+and [agent inputs](../service/desktop-operator.md#apply-a-reviewed-capture-policy-unreleased).
+
+Validation found two recovery defects. Both app/helper and headless verifiers
+passed a checkpoint dictionary where the portable checkpoint string was required.
+After correcting that call, a recovered folder could duplicate evidence because
+the old inode/stat cache remained trusted. `LocalCaptureState.capture_grant` now
+keys renderer cache trust so a replacement grant rechecks the copied prefix
+hashes. It does not change evidence identity or archive checkpoints; unchanged
+policy recovery retains the original generation and revisions. Copied-folder and
+original-files-lost variants now pass for both app/helper and headless controls.
+
+A pending same-device handover blocks edits and resume of the predecessor.
+Discard retires only the replacement grant and removes its unfinished copy,
+leaving the original source paused and revoked. Its inbox remains readable for
+backup and a fresh reviewed retry; the added retry case verifies completion.
+Discard never reactivates the original grant.
+
+`final-affected-service-tests.log` records **49 passed** and the disjoint
+`discard-retry.log` records **1 passed**, for **50 affected service cases**.
+`native-guard-corrected-tests.log` records **103 passed** controller/private-agent
+cases. These are source checks. Actual native UI policy migration and the full
+journey on all six installed targets remain unverified. Cross-organization/source
+migration, conversion of existing mirrors and independent headless configuration
+policy transitions remain unfinished; fixed-policy headless recovery proof does
+not close headless policy migration.
+
+At this 22 October checkpoint, public **4.44.1** had separate actual
+Windows/Hostinger acceptance. Public-patch **4.44.2**, source `3bdb3371`, had been
+dispatched without native or public acceptance yet. Neither release establishes
+L1 acceptance. The broader migration, coverage, retention and resource contracts
+below remain open.
+
 ## Required before L1 can be released
 
 - Finish acceptance of the encrypted coverage/gap accounting, including selected,
@@ -1480,16 +1554,19 @@ a scan. It cannot stand in for evidence or key recovery.
   Keep unavailable capabilities explicit and retain reviewed migration requirements.
 - Complete packaged archive export/inspection and device-recovery acceptance,
   including protected-key enrollment and interrupted publication/finish/discard.
-  The new fixed-policy device/grant replacement does not close those journeys
-  or provide migration of the original organization, source identity or capture
-  selection. Retain the broader reviewed migration requirement, existing mirror
-  behavior and past forgetting decisions; current files alone are insufficient.
+  Fixed-policy device recovery and the new desktop policy-copy path do not close
+  those journeys or provide migration across organizations or source identities.
+  Finish acceptance of the reviewed capture-selection transition, including
+  interrupted drain/copy/retirement. Retain the broader migration requirement,
+  existing mirror behavior and past forgetting decisions; current files alone
+  are insufficient.
 - Complete acceptance of the independent headless retained-source enrollment,
   scheduling and lifecycle journey. Its explicit JSON `capture` configuration
   and local controls passed the bounded source checks above; packaged acceptance
   remains open. Configurations without `capture` keep the existing mirror
   protocol. Desktop helper or source-journey proof does not establish headless
-  acceptance.
+  acceptance; an independent headless configuration policy transition is still
+  unfinished.
 - Complete bounded retained-history behavior and L1 acceptance for backpressure,
   retention and aggregate limits, including interrupted enrollment and current
   permission changes. Existing admission caps and the Linux source journey do

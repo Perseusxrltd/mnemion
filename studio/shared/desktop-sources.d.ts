@@ -18,7 +18,7 @@ export type SourceReport = {
 export type CaptureReason = 'capture_authorization_revoked' | 'capture_binding_mismatch' | 'capture_binding_invalid' |
   'capture_delivery_unavailable' | 'capture_delivery_pending' | 'capture_capacity_blocked' | 'capture_fence_capacity' | 'capture_scan_pending' | 'capture_disk_full' |
   'capture_enrollment_missing' | 'capture_integrity_failed' | 'capture_inbox_missing' |
-  'capture_key_unavailable' | 'capture_not_initialized' | 'capture_policy_change_requires_migration' |
+  'capture_key_unavailable' | 'capture_not_initialized' | 'capture_policy_change_requires_migration' | 'capture_recovery_pending' |
   'capture_server_upgrade_required' | 'capture_settings_changed' | 'capture_source_changed' |
   'capture_source_unavailable' | 'capture_storage_not_private' | 'capture_storage_unavailable' |
   'capture_event_invalid' | 'capture_event_conflict' | 'capture_checkpoint_invalid' | 'capture_retire_required' | 'capture_retirement_credentials' |
@@ -136,13 +136,18 @@ export type CaptureInspectInput = { file: string; recovery_key: string }
 export type CaptureRestoreInput = CaptureInspectInput & {
   expected_revision: string; archive_sha256: string; source: SourceConfigure['source'];
   credential: string; retirement_credential: string; preview_hash: string; confirm: true;
+  policy_change?: true; replace_id?: string;
 }
-export type CaptureRecovery = { id: string; name: string; endpoint: string; archive_sha256: string; created_at: string; copy_available: boolean }
+export type CaptureRecovery = { id: string; name: string; endpoint: string; archive_sha256: string; created_at: string; copy_available: boolean; policy_change?: true }
 export type CaptureRecoveries = { format: 'mnemion-capture-recoveries-v1'; items: CaptureRecovery[] }
 export type CaptureRestoreControl = { id: string; expected_revision: string; confirm: true; file?: string; recovery_key?: string }
 export type CaptureRestored = {
   format: 'mnemion-capture-restored-v1'; id: string; archive_sha256: string;
   previous_grant_id: string; grant_id: string; previous_grant_revoked: true;
   source_enrolled: true; source_enabled: boolean; status: CaptureArchiveInfo['status'];
+  policy_change?: true; replaced_source_id?: string;
 }
 export type CaptureRestoreResult = { view: DesktopSourceView; recovery: CaptureRestored }
+export type CaptureDrainInput = { id: string; expected_revision: string; confirm: true }
+export type CaptureDrained = { format: 'mnemion-capture-drained-v1'; id: string; source_enabled: false;
+  remote_committed_events: number; delivery_complete: boolean; status: CaptureArchiveInfo['status'] }

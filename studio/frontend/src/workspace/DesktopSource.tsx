@@ -308,7 +308,7 @@ export function DesktopSourceCard({ client, connection, endpoint, members, admin
       </form>
     </details>
     {connection.provider === 'conversations' && administrator && <CaptureRestore key={connection.id}
-      client={client} connection={connection} endpoint={endpoint} existing={!!current}
+      client={client} connection={connection} endpoint={endpoint} existing={current}
       revision={query.data?.revision} busy={busy} setBusy={setBusy} />}
     <p className="ws-helper">Only one source scans at a time. Sources resume with Studio after a restart and wait during app updates. Keep “Run in background” and “Start at login” enabled for unattended capture. Requests from other agents are picked up by the next scheduled scan.</p>
   </section>;

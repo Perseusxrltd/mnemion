@@ -57,6 +57,7 @@ contextBridge.exposeInMainWorld('mnemion', {
   sourceBackupInspect: (input: unknown) => transfer('sources:backup-inspect', input),
   sourceBackupChoose: (kind: unknown) => transfer('sources:backup-choose', kind),
   sourceRestore: (input: unknown) => transfer('sources:restore', input),
+  sourceDrain: (input: unknown) => transfer('sources:drain', input),
   sourceRecoveries: () => transfer('sources:recoveries'),
   sourceRestoreFinish: (input: unknown) => transfer('sources:restore-finish', input),
   sourceRestoreDiscard: (input: unknown) => transfer('sources:restore-discard', input),

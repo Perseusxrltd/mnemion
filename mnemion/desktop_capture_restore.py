@@ -7,6 +7,7 @@ an interruption never initializes or overwrites an existing source.
 
 from __future__ import annotations
 
+from contextlib import ExitStack
 from pathlib import Path
 import os
 import time
@@ -14,14 +15,20 @@ from types import SimpleNamespace
 from typing import Literal
 from uuid import UUID, uuid4
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 
 from . import desktop_capture as capture, local_state
 from .archives import _rename_exclusive
 from .capture_coverage import utc_now, utc_timestamp
+from .capture_policy import CapturePolicy
 from .connectors.capture_archive import _audit
 from .connectors.capture_delivery import verify_grant
-from .connectors.capture_transfer import device_binding, restore_device_copy
+from .connectors.capture_transfer import (
+    device_binding,
+    policy_binding,
+    restore_device_copy,
+    restore_policy_copy,
+)
 from .connectors.conversation_inbox import InboxError, binding_value, open_inbox
 from .connectors.live_conversations import ConversationProvider
 from .desktop_capture_backup import Inspection
@@ -42,6 +49,8 @@ class Intent(Command):
     original_binding: dict
     previous_grant_revoked: Literal[True]
     source: SavedSource
+    policy_change: bool = Field(default=False, strict=True)
+    replaces: SavedSource | None = Field(default=None, repr=False)
 
     _time = field_validator("created_at")(utc_timestamp)
 
@@ -62,7 +71,18 @@ class Restore(Inspection):
         min_length=16, max_length=1024, pattern=r"^[\x21-\x7e]+$", repr=False
     )
     inbox_key: str = Field(min_length=44, max_length=44, repr=False)
+    policy_change: bool = Field(default=False, strict=True)
+    replace_id: UUID | None = None
+    previous_inbox_key: str | None = Field(default=None, min_length=44, max_length=44, repr=False)
     confirm: Literal[True]
+
+    @model_validator(mode="after")
+    def reviewed_replacement(self):
+        if (self.replace_id is not None or self.previous_inbox_key is not None) and (
+            not self.policy_change or self.replace_id is None or self.previous_inbox_key is None
+        ):
+            raise ValueError("Review the original device and unlock its inbox for a policy change")
+        return self
 
     @field_validator("confirm", mode="before")
     @classmethod
@@ -98,7 +118,13 @@ def read_intent(root, identifier):
         or source.custody.grant_id == UUID(value.original_binding["grant_id"])
     ):
         raise InboxError("capture_binding_mismatch")
-    device_binding(value.original_binding, capture.binding(source))
+    (policy_binding if value.policy_change else device_binding)(
+        value.original_binding, capture.binding(source)
+    )
+    if value.replaces is not None:
+        if not value.policy_change or capture.binding(value.replaces) != value.original_binding:
+            raise InboxError("capture_binding_mismatch")
+        _replacement(value.replaces, source)
     return value
 
 
@@ -117,12 +143,22 @@ def list_intents(root):
                 "archive_sha256": intent.archive_sha256,
                 "created_at": intent.created_at,
                 "copy_available": capture.inbox_path(root, identifier).exists(),
+                **({"policy_change": True} if intent.policy_change else {}),
             }
         )
     return {
         "format": "mnemion-capture-recoveries-v1",
         "items": sorted(rows, key=lambda item: item["id"]),
     }
+
+
+def pending_replacement(root, source_id):
+    """A paused predecessor cannot collect again during an unfinished handover."""
+    for row in list_intents(root)["items"]:
+        intent = read_intent(root, UUID(row["id"]))
+        if intent.replaces and intent.replaces.id == source_id:
+            return True
+    return False
 
 
 def _current(root, expected):
@@ -132,7 +168,7 @@ def _current(root, expected):
     return current
 
 
-def _verify_target(root, source, credential, private_roots):
+def _verify_target(root, source, credential, private_roots, *, current_policy=False):
     source.path = str(source_folder(source, root, private_roots))
     with Client(source.endpoint, credential, timeout=15, retries=0) as client:
         me = client.request("GET", "/v1/me")
@@ -166,6 +202,11 @@ def _verify_target(root, source, credential, private_roots):
         )
         if remote.revoked_at or set(remote.members) != set(source.members):
             raise InboxError("capture_settings_changed")
+        if current_policy and (
+            remote.capture_policy != source.capture_policy
+            or remote.capture_mode != source.capture_mode
+        ):
+            raise InboxError("capture_settings_changed")
 
 
 def _receipt(intent, status):
@@ -179,7 +220,30 @@ def _receipt(intent, status):
         "source_enrolled": True,
         "source_enabled": False,
         "status": status,
+        **({"policy_change": True} if intent.policy_change else {}),
+        **({"replaced_source_id": str(intent.replaces.id)} if intent.replaces else {}),
     }
+
+
+def _replacement(previous, source):
+    if (
+        previous.enabled
+        or not previous.custody
+        or previous.id == source.id
+        or any(
+            getattr(previous, field) != getattr(source, field)
+            for field in (
+                "endpoint",
+                "tenant_id",
+                "connector_id",
+                "principal_id",
+                "provider",
+                "path",
+            )
+        )
+    ):
+        raise InboxError("capture_settings_changed")
+    policy_binding(capture.binding(previous), capture.binding(source))
 
 
 def _verify_producer_copy(source, inbox):
@@ -195,7 +259,7 @@ def _verify_producer_copy(source, inbox):
 
             checkpoint = json.loads(inbox._open(value, "checkpoint:" + scope))
             try:
-                _verify_copy(adapter.root, relative, checkpoint, deadline)
+                _verify_copy(adapter.root, relative, checkpoint.get("checkpoint") or "", deadline)
             except local_state.LocalSetupError as error:
                 # Preserve the copied-prefix diagnostic instead of letting the
                 # inbox context translate it into an unrelated storage error.
@@ -236,6 +300,14 @@ def _publish(root, current, intent, inbox_key):
         or existing.sealed_key != source.sealed_key
     ):
         raise InboxError("capture_settings_changed")
+    previous = None
+    if intent.replaces:
+        previous = next((item for item in current.sources if item.id == intent.replaces.id), None)
+        if (previous is not None and previous.model_dump() != intent.replaces.model_dump()) or (
+            previous is None and existing is None
+        ):
+            raise InboxError("capture_settings_changed")
+        _replacement(intent.replaces, source)
     with open_inbox(
         capture.inbox_path(root, source.id),
         capture.binding(source),
@@ -255,8 +327,13 @@ def _publish(root, current, intent, inbox_key):
     local_state.write(
         root / f"conversation-identity-{source.id}.json", _producer_marker(root, source)
     )
+    if intent.replaces:
+        old = intent.replaces
+        state = capture.enrollment(root, old)
+        local_state.write(capture.record_path(root, old.id), {**state, "state": "retired"})
     if existing is None:
-        current = SourceState(revision=str(uuid4()), sources=[*current.sources, source])
+        retained = [item for item in current.sources if not previous or item.id != previous.id]
+        current = SourceState(revision=str(uuid4()), sources=[*retained, source])
         local_state.write(root / "sources.json", current.model_dump(mode="json", exclude_none=True))
     receipt = _receipt(intent, status)
     receipt["source_enabled"] = existing.enabled if existing else False
@@ -279,9 +356,21 @@ def restore(root, request, private_roots):
     inbox_key = capture.key_bytes(request.inbox_key)
     with local_state.lock(root):
         current = _current(root, request.expected_revision)
+        previous = None
+        if request.replace_id:
+            previous = next(
+                (item for item in current.sources if item.id == request.replace_id), None
+            )
+            if previous is None:
+                raise InboxError("capture_settings_changed")
+            previous = SavedSource.model_validate(previous.model_dump())
+            _replacement(previous, source)
         if any(
             item.id == source.id
-            or (item.endpoint, item.connector_id) == (source.endpoint, source.connector_id)
+            or (
+                (item.endpoint, item.connector_id) == (source.endpoint, source.connector_id)
+                and item.id != request.replace_id
+            )
             for item in current.sources
         ):
             raise InboxError("capture_settings_changed")
@@ -296,9 +385,20 @@ def restore(root, request, private_roots):
         ):
             raise InboxError("capture_enrollment_missing")
         source.status_epoch = uuid4()
-        SourceState(revision=str(uuid4()), sources=[*current.sources, source])
-        with local_state.temporary_directory(prefix="capture-recover-", dir=root) as temporary:
-            recovered = restore_device_copy(
+        SourceState(
+            revision=str(uuid4()),
+            sources=[*(item for item in current.sources if item.id != request.replace_id), source],
+        )
+        with ExitStack() as stack:
+            temporary = stack.enter_context(
+                local_state.temporary_directory(prefix="capture-recover-", dir=root)
+            )
+            original = (
+                stack.enter_context(capture.opened(root, previous, request.previous_inbox_key))[0]
+                if previous
+                else None
+            )
+            recovered = (restore_policy_copy if request.policy_change else restore_device_copy)(
                 request.file,
                 request.recovery_key,
                 temporary / "inbox",
@@ -306,15 +406,29 @@ def restore(root, request, private_roots):
                 expected_sha256=request.archive_sha256,
                 selected_binding=capture.binding(source),
                 inbox_key=inbox_key,
+                **({"original_inbox": original} if request.policy_change else {}),
             )
             if recovered.original_binding["grant_id"] == str(source.custody.grant_id):
                 raise InboxError("capture_binding_mismatch")
             with open_inbox(recovered.directory, recovered.binding, inbox_key) as inbox:
                 _verify_producer_copy(source, inbox)
                 _admit(root, inbox)
-            _verify_target(root, source, request.credential, private_roots)
-            old = source.model_copy(deep=True)
-            old.custody.grant_id = UUID(recovered.original_binding["grant_id"])
+            _verify_target(
+                root,
+                source,
+                request.credential,
+                private_roots,
+                current_policy=request.policy_change,
+            )
+            old = previous or source.model_copy(deep=True)
+            if previous is None:
+                old.custody.grant_id = UUID(recovered.original_binding["grant_id"])
+                old.capture_mode = recovered.original_binding["capture_mode"]
+                old.capture_policy = (
+                    CapturePolicy.model_validate(recovered.original_binding["capture_policy"])
+                    if recovered.original_binding.get("capture_policy")
+                    else None
+                )
             capture.revoke_for_removal(old, request.retirement_credential)
             intent = Intent(
                 format="mnemion-capture-recovery-v1",
@@ -323,6 +437,8 @@ def restore(root, request, private_roots):
                 original_binding=recovered.original_binding,
                 previous_grant_revoked=True,
                 source=source,
+                policy_change=request.policy_change,
+                replaces=previous,
             )
             local_state.write(
                 intent_path(root, source.id),
@@ -339,6 +455,10 @@ def _discard(root, current, intent, credential):
     source = intent.source
     if any(item.id == source.id for item in current.sources):
         raise InboxError("capture_settings_changed")
+    if intent.replaces:
+        previous = next((item for item in current.sources if item.id == intent.replaces.id), None)
+        if previous is None or previous.model_dump() != intent.replaces.model_dump():
+            raise InboxError("capture_settings_changed")
     capture.revoke_for_removal(source, credential)
     folder = capture.inbox_path(root, source.id)
     if folder.exists():
@@ -364,6 +484,12 @@ def _discard(root, current, intent, credential):
         if local_state.read(marker) != expected:
             raise InboxError("capture_binding_mismatch")
         local_state.write(marker, {**expected, "state": "discarded"})
+    if intent.replaces:
+        old = intent.replaces
+        state = capture.enrollment(root, old)
+        # A discarded replacement cannot revive the old grant. Keep the
+        # original paused inbox readable for backup or a fresh reviewed retry.
+        local_state.write(capture.record_path(root, old.id), {**state, "state": "revoked"})
     intent_path(root, source.id).unlink()
     local_state._sync_directory(root)
     return {"discarded": True, "replacement_grant_revoked": True, "archive_modified": False}
@@ -418,7 +544,7 @@ def perform(root, value, private_roots=()):
                     file=request.file,
                     recovery_key=request.recovery_key,
                 )
-                restored = restore_device_copy(
+                restored = (restore_policy_copy if intent.policy_change else restore_device_copy)(
                     file.file,
                     file.recovery_key,
                     target,

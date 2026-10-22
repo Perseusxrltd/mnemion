@@ -2,8 +2,8 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import type { CredentialCipher } from './workspace-store.js'
 import { sourceMessages } from './desktop-source-process.js'
-import { matchingCaptureHistory, readCaptureArchive, readCapturePreview, readCaptureRecoveries, readCaptureRestored, validCaptureCoverage, validCaptureStorage } from './capture-messages.js'
-import type { CaptureArchiveInfo, CaptureBackupInput, CaptureInspectInput, CapturePreview, CaptureRecoveries, CaptureRestored, CaptureRestoreControl, CaptureRestoreInput, CaptureRestoreResult, DesktopSource, DesktopSourceView, SourceActivity, SourceConfigure, SourceControl, SourcePreviewSelection, SourceReason, SourceReport } from '../shared/desktop-sources.js'
+import { matchingCaptureHistory, readCaptureArchive, readCaptureDrained, readCapturePreview, readCaptureRecoveries, readCaptureRestored, validCaptureCoverage, validCaptureStorage } from './capture-messages.js'
+import type { CaptureArchiveInfo, CaptureBackupInput, CaptureDrained, CaptureDrainInput, CaptureInspectInput, CapturePreview, CaptureRecoveries, CaptureRestored, CaptureRestoreControl, CaptureRestoreInput, CaptureRestoreResult, DesktopSource, DesktopSourceView, SourceActivity, SourceConfigure, SourceControl, SourcePreviewSelection, SourceReason, SourceReport } from '../shared/desktop-sources.js'
 
 type SavedSource = DesktopSource & { sealed_key?: string | null; sealed_provider?: string | null; sealed_inbox_key?: string | null; status_epoch?: string }
 type Document = { format: 1; revision: string; sources: SavedSource[] }
@@ -279,15 +279,36 @@ export class DesktopSources {
     return result
   }
 
+  async drain(input: CaptureDrainInput, signal?: AbortSignal): Promise<CaptureDrained> {
+    if (!object(input) || input.confirm !== true || !UUID.test(input.id) ||
+      Object.keys(input).some(key => !['id', 'expected_revision', 'confirm'].includes(key))) throw new Error('Confirm delivery of this paused source’s saved memories.')
+    return this.mutate(input.expected_revision, async () => {
+      const source = this.document!.sources.find(item => item.id === input.id)
+      if (this.active || !source?.custody || source.enabled) throw new Error('Pause this retained source and wait for its scan before delivering its queue.')
+      if (!await this.options.cipher.available()) throw new Error('Unlock this device’s protected keys before delivering its queue.')
+      const credential = await this.options.cipher.decrypt(sealedBytes(source.sealed_key))
+      const inbox_key = await this.options.cipher.decrypt(sealedBytes(source.sealed_inbox_key))
+      signal?.throwIfAborted()
+      const value = readCaptureDrained(await this.options.call({ ...input, operation: 'capture_drain', credential, inbox_key }, signal))
+      if (value.id !== source.id) throw new Error('The source’s queue delivery could not be verified.')
+      return value
+    }, false)
+  }
+
   async restore(input: CaptureRestoreInput, signal?: AbortSignal): Promise<CaptureRestoreResult> {
-    if (!object(input) || Object.keys(input).some(key => !['expected_revision', 'file', 'recovery_key', 'archive_sha256', 'source', 'credential', 'retirement_credential', 'preview_hash', 'confirm'].includes(key)) ||
+    if (!object(input) || Object.keys(input).some(key => !['expected_revision', 'file', 'recovery_key', 'archive_sha256', 'source', 'credential', 'retirement_credential', 'preview_hash', 'confirm', 'policy_change', 'replace_id'].includes(key)) ||
       input.confirm !== true || !object(input.source) || input.source.provider !== 'conversations' || input.source.enabled !== false || !input.source.custody ||
+      (input.policy_change !== undefined && input.policy_change !== true) ||
+      (input.replace_id !== undefined && (input.policy_change !== true || !UUID.test(input.replace_id))) ||
       typeof input.credential !== 'string' || typeof input.retirement_credential !== 'string') throw new Error('Review the archive, paused source, new device grant and previous-device retirement.')
     const recovery = await this.mutate(input.expected_revision, async () => {
       if (this.active) throw new Error('Wait for the active scan before recovering a capture source.')
       if (!await this.options.cipher.available()) throw new Error('Unlock OS credential storage before recovering this device.')
       const id = input.source.id ?? randomUUID(), source = { ...input.source, id }
-      if (!UUID.test(id) || this.document!.sources.some(item => item.id === id || item.endpoint === source.endpoint && item.connector_id === source.connector_id)) throw new Error('This source already exists on this computer. Inspect its saved state before recovery.')
+      const previous = input.replace_id ? this.document!.sources.find(item => item.id === input.replace_id) : undefined
+      if (input.replace_id && (!previous?.custody || previous.enabled || previous.endpoint !== source.endpoint || previous.connector_id !== source.connector_id || previous.path !== source.path)) throw new Error('Review this paused source and its current capture backup before changing policy.')
+      if (!UUID.test(id) || this.document!.sources.some(item => item.id === id || item.id !== input.replace_id && item.endpoint === source.endpoint && item.connector_id === source.connector_id)) throw new Error('This source already exists on this computer. Inspect its saved state before recovery.')
+      const previous_inbox_key = previous ? await this.options.cipher.decrypt(sealedBytes(previous.sealed_inbox_key)) : undefined
       const retirement_credential = this.options.retirementCredential
         ? await this.options.retirementCredential(source, input.retirement_credential) : input.retirement_credential
       const inboxKey = randomBytes(32).toString('base64')
@@ -296,8 +317,11 @@ export class DesktopSources {
       signal?.throwIfAborted()
       try {
         const result = await this.options.call({ ...input, operation: 'capture_restore', retirement_credential,
-          source: { ...source, sealed_key, sealed_inbox_key }, inbox_key: inboxKey }, signal)
-        return this.recovered(result, id, input.archive_sha256, source.custody!.grant_id)
+          source: { ...source, sealed_key, sealed_inbox_key }, inbox_key: inboxKey,
+          ...(previous_inbox_key ? { previous_inbox_key } : {}) }, signal)
+        const recovered = this.recovered(result, id, input.archive_sha256, source.custody!.grant_id)
+        if (recovered.policy_change !== input.policy_change || recovered.replaced_source_id !== input.replace_id) throw new Error('The selected policy handover could not be confirmed. Inspect source status and pending recoveries.')
+        return recovered
       } catch (error) { this.document = undefined; throw error }
     }, false)
     return { view: await this.status(), recovery }

@@ -15,9 +15,10 @@ from mnemion.connectors.capture_archive import (
     inspect_archive,
     restore_new_inbox,
 )
-from mnemion.connectors.capture_transfer import restore_device_copy
+from mnemion.connectors.capture_transfer import restore_device_copy, restore_policy_copy
 from mnemion.connectors.conversation_inbox import Inbox, InboxError, Limits, open_inbox
 from service_tests.test_capture_archive import captured as captured, exported
+from service_tests.test_conversation_inbox import receipt
 
 
 @pytest.mark.parametrize("rotate_key", [False, True])
@@ -99,6 +100,84 @@ def test_new_device_key_preserves_unknown_pages_fences_and_original_receipts(tmp
             pytest.fail("An old key or grant opened the new device inbox")
     assert hashlib.sha256((root / "inbox.sqlite3").read_bytes()).hexdigest() == before
     assert not list(staging.iterdir())
+
+
+@pytest.mark.parametrize("pending", [True, False])
+def test_policy_transfer_requires_settled_pages_and_keeps_history(tmp_path, captured, pending):
+    root, binding, key, unknown, _ = captured
+    if not pending:
+        from mnemion.capture_identity import capture_lineage_id
+
+        with open_inbox(root, binding, key) as inbox:
+            accepted = receipt(binding, unknown)
+            for item, event in zip(accepted["items"], unknown["events"], strict=True):
+                item["lineage_id"] = capture_lineage_id(event["producer_scope"], event["item"])
+            inbox.acknowledge(accepted)
+            history = inbox.status()["history"]
+            checkpoints = {
+                scope: inbox.checkpoint(scope)
+                for (scope,) in inbox.connection.execute("SELECT scope FROM checkpoints")
+            }
+    archive, secret, staging, inspected = exported(tmp_path, captured)
+    before = archive.read_bytes()
+    selected = {
+        **binding,
+        "grant_id": str(uuid4()),
+        "capture_mode": "complete",
+        "capture_policy": {
+            **binding["capture_policy"],
+            "capture_mode": "complete",
+            "preset": "detailed",
+        },
+    }
+    target, new_key = tmp_path / "new-policy", os.urandom(32)
+    args = dict(
+        staging_root=staging,
+        expected_sha256=inspected["archive_sha256"],
+        selected_binding=selected,
+        inbox_key=new_key,
+    )
+    if pending:
+        with pytest.raises(CaptureArchiveError, match="old-policy page"):
+            restore_policy_copy(archive, secret, target, **args)
+        assert not target.exists()
+    else:
+        restored = restore_policy_copy(archive, secret, target, **args)
+        assert restored.original_binding == binding and restored.binding == selected
+        with open_inbox(target, selected, new_key) as inbox:
+            status = inbox.status()
+            assert status["pending_events"] == status["unknown_pages"] == 0
+            assert status["coverage"]["capture_mode"] == "complete"
+            assert status["coverage"]["catalog"] == "unobserved"
+            for field in ("events", "producer_events", "fragments", "delivery_pages", "denials"):
+                assert status["history"][field] == history[field]
+            assert all(inbox.checkpoint(scope) == value for scope, value in checkpoints.items())
+            assert inbox.page() is None
+            for page_id, value in inbox.connection.execute("SELECT page_id,receipt FROM pages"):
+                assert (
+                    json.loads(inbox._open(value, "receipt:" + page_id))["grant_id"]
+                    == binding["grant_id"]
+                )
+    assert archive.read_bytes() == before and not list(staging.iterdir())
+
+
+@pytest.mark.parametrize("change", ["tenant_id", "connector_id", "source_id", "namespace"])
+def test_policy_transfer_cannot_move_evidence_to_another_source(tmp_path, captured, change):
+    archive, secret, staging, inspected = exported(tmp_path, captured)
+    selected = {**captured[1], "grant_id": str(uuid4()), change: str(uuid4())}
+    selected["capture_policy"] = {**selected["capture_policy"], "exclude": ["private/*.jsonl"]}
+    target = tmp_path / "wrong-policy-target"
+    with pytest.raises(CaptureArchiveError, match="original source"):
+        restore_policy_copy(
+            archive,
+            secret,
+            target,
+            staging_root=staging,
+            expected_sha256=inspected["archive_sha256"],
+            selected_binding=selected,
+            inbox_key=os.urandom(32),
+        )
+    assert not target.exists()
 
 
 @pytest.mark.parametrize("change", ["tenant_id", "source_id", "namespace", "capture_mode"])

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { CaptureArchiveInfo, DesktopSource } from '../../../shared/desktop-sources';
+import type { CaptureArchiveInfo, CaptureDrained, DesktopSource } from '../../../shared/desktop-sources';
 
 /** Device evidence remains accessible while the selected workspace is offline. */
 export default function CaptureBackup({ source, revision, busy, setBusy }: {
@@ -10,6 +10,7 @@ export default function CaptureBackup({ source, revision, busy, setBusy }: {
   const [keySaved, setKeySaved] = useState(false), [visibleKey, setVisibleKey] = useState(false);
   const [error, setError] = useState<string>();
   const [receipt, setReceipt] = useState<{ file: string; value: CaptureArchiveInfo }>();
+  const [drained, setDrained] = useState<CaptureDrained>();
   if (!native?.sourceBackup || !native.sourceBackupInspect || !native.sourceBackupChoose) return null;
   const exporting = !!source;
   const failure = (value: unknown) => setError(value instanceof Error ? value.message : 'The capture archive operation could not finish.');
@@ -32,6 +33,14 @@ export default function CaptureBackup({ source, revision, busy, setBusy }: {
     <summary>{exporting ? 'Back up this capture inbox' : 'Inspect a capture backup'}</summary>
     <p className="ws-helper">This archive protects pending memories, capture checkpoints and deletion history on a computer. Already delivered memories need a separate workspace backup. The archive includes no workspace access key.</p>
     {source?.enabled && <p className="ws-notice">Pause this source before creating its backup.</p>}
+    {source && native.sourceDrain && <>
+      <p className="ws-helper">Before changing capture policy, deliver every saved page while this source is paused, then make a fresh backup. Delivery uses the existing policy and does not read new conversations.</p>
+      <button type="button" className="ws-button" disabled={busy || source.enabled || !revision} onClick={() => {
+        setBusy(true); setError(undefined); setReceipt(undefined);
+        void native.sourceDrain!({ id: source.id, expected_revision: revision!, confirm: true }).then(setDrained).catch(failure).finally(() => setBusy(false));
+      }}>Deliver saved queue</button>
+      {drained && <p className="ws-notice" data-capture-drained={drained.delivery_complete ? 'complete' : 'pending'}>{drained.delivery_complete ? 'Every saved page is confirmed. Create a fresh backup to change policy.' : drained.status.pending_events ? `${drained.status.pending_events.toLocaleString()} fragments remain queued. Run another delivery batch to continue.` : 'Page reconciliation or deletion checks are still pending. Run another delivery batch to continue.'} Source remains paused.</p>}
+    </>}
     <button type="button" className="ws-button" disabled={busy || !!source?.enabled} onClick={() => void choose()}>{exporting ? 'Choose where to save' : 'Choose backup file'}</button>
     {file && <p className="ws-helper" style={{ overflowWrap: 'anywhere' }}>{file}</p>}
     <label className="ws-field"><span>Separate recovery key</span><input type={visibleKey ? 'text' : 'password'} autoComplete="off" spellCheck={false} data-update-safe value={key} maxLength={50} disabled={busy} onChange={event => { setKey(event.target.value); setKeySaved(false); }} /></label>

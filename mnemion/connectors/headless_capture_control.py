@@ -212,7 +212,7 @@ def verify_producer_copy(config, inbox):
         if relative is not None:
             checkpoint = json.loads(inbox._open(value, "checkpoint:" + scope))
             try:
-                _verify_copy(adapter.root, relative, checkpoint, deadline)
+                _verify_copy(adapter.root, relative, checkpoint.get("checkpoint") or "", deadline)
             except local_state.LocalSetupError as error:
                 raise InboxError(error.code) from None
 

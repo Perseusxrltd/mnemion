@@ -6,7 +6,7 @@ import type { CompanyConfiguration, CompanyCredentials } from '../../../shared/c
 import type { VaultChange, VaultKey, VaultRequest, JournalChange } from '../../../shared/local-workspace'
 import type { ModelsChange } from '../../../shared/local-models'
 import type { CompanyChange, CompanyDiscoveryRequest, CompanyDiscoveryResult } from '../../../shared/local-workspace'
-import type { CaptureArchiveInfo, CaptureBackupInput, CaptureInspectInput, CapturePreview, CaptureRecoveries, CaptureRestoreControl, CaptureRestoreInput, CaptureRestoreResult, DesktopSourceView, SourceConfigure, SourceControl, SourcePreviewSelection } from '../../../shared/desktop-sources'
+import type { CaptureArchiveInfo, CaptureBackupInput, CaptureDrained, CaptureDrainInput, CaptureInspectInput, CapturePreview, CaptureRecoveries, CaptureRestoreControl, CaptureRestoreInput, CaptureRestoreResult, DesktopSourceView, SourceConfigure, SourceControl, SourcePreviewSelection } from '../../../shared/desktop-sources'
 import type { AgentSetup, AgentSetupStatus, AgentPreview, AgentInstall, AgentRemove, AgentSetupResult } from '../../../shared/desktop-agents'
 
 declare global {
@@ -46,6 +46,7 @@ declare global {
       sourceBackupInspect?: (input: CaptureInspectInput) => Promise<CaptureArchiveInfo>
       sourceBackupChoose?: (kind: 'save' | 'open') => Promise<string | null>
       sourceRestore?: (input: CaptureRestoreInput) => Promise<CaptureRestoreResult>
+      sourceDrain?: (input: CaptureDrainInput) => Promise<CaptureDrained>
       sourceRecoveries?: () => Promise<CaptureRecoveries>
       sourceRestoreFinish?: (input: CaptureRestoreControl) => Promise<CaptureRestoreResult>
       sourceRestoreDiscard?: (input: CaptureRestoreControl) => Promise<{ discarded: true; replacement_grant_revoked: true; archive_modified: false }>

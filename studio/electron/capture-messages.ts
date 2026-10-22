@@ -1,4 +1,4 @@
-import type { CaptureArchiveInfo, CaptureCoverage, CaptureHistory, CaptureIndexCounts, CaptureIndexProgress, CaptureIndexSweep, CapturePreview, CaptureReason, CaptureRecoveries, CaptureRestored, CaptureStorage } from '../shared/desktop-sources.js'
+import type { CaptureArchiveInfo, CaptureCoverage, CaptureDrained, CaptureHistory, CaptureIndexCounts, CaptureIndexProgress, CaptureIndexSweep, CapturePreview, CaptureReason, CaptureRecoveries, CaptureRestored, CaptureStorage } from '../shared/desktop-sources.js'
 
 const coverageCounts = ['tracked_scopes', 'checking_scopes', 'failed_scopes', 'missing_scopes',
   'uncertain_scopes', 'unknown_prefix_scopes', 'uncertain_intervals', 'observed_bytes',
@@ -149,7 +149,8 @@ export function readCaptureRecoveries(value: unknown): CaptureRecoveries {
     !Array.isArray(value.items) || value.items.length > 16) throw new Error('Pending capture recoveries could not be read.')
   const ids = new Set<string>()
   for (const item of value.items) {
-    if (!keys(item, ['id', 'name', 'endpoint', 'archive_sha256', 'created_at', 'copy_available']) || !uuid(item.id) ||
+    if (!object(item) || !keys(item, ['id', 'name', 'endpoint', 'archive_sha256', 'created_at', 'copy_available', ...(Object.hasOwn(item, 'policy_change') ? ['policy_change'] : [])]) || !uuid(item.id) ||
+      (Object.hasOwn(item, 'policy_change') && item.policy_change !== true) ||
       typeof item.name !== 'string' || !item.name.length || item.name.length > 200 ||
       typeof item.endpoint !== 'string' || item.endpoint.length > 2048 ||
       typeof item.archive_sha256 !== 'string' || !cursor(item.archive_sha256) ||
@@ -160,12 +161,24 @@ export function readCaptureRecoveries(value: unknown): CaptureRecoveries {
 }
 
 export function readCaptureRestored(value: unknown): CaptureRestored {
-  if (!keys(value, ['format', 'id', 'archive_sha256', 'previous_grant_id', 'grant_id', 'previous_grant_revoked', 'source_enrolled', 'source_enabled', 'status']) ||
+  if (!object(value) || !keys(value, ['format', 'id', 'archive_sha256', 'previous_grant_id', 'grant_id', 'previous_grant_revoked', 'source_enrolled', 'source_enabled', 'status',
+    ...(Object.hasOwn(value, 'policy_change') ? ['policy_change'] : []), ...(Object.hasOwn(value, 'replaced_source_id') ? ['replaced_source_id'] : [])]) ||
+    (Object.hasOwn(value, 'policy_change') && value.policy_change !== true) ||
+    (Object.hasOwn(value, 'replaced_source_id') && (value.policy_change !== true || !uuid(value.replaced_source_id) || value.replaced_source_id === value.id)) ||
     value.format !== 'mnemion-capture-restored-v1' || !uuid(value.id) || !uuid(value.previous_grant_id) || !uuid(value.grant_id) ||
     value.previous_grant_id === value.grant_id || typeof value.archive_sha256 !== 'string' || !cursor(value.archive_sha256) ||
     value.previous_grant_revoked !== true || value.source_enrolled !== true || typeof value.source_enabled !== 'boolean' ||
     !validInboxStatus(value.status)) throw new Error('Capture restoration could not be confirmed. Inspect pending recoveries before retrying.')
   return value as CaptureRestored
+}
+
+export function readCaptureDrained(value: unknown): CaptureDrained {
+  if (!keys(value, ['format', 'id', 'source_enabled', 'remote_committed_events', 'delivery_complete', 'status']) ||
+    value.format !== 'mnemion-capture-drained-v1' || !uuid(value.id) || value.source_enabled !== false ||
+    !count(value.remote_committed_events) || (value.remote_committed_events as number) > 200 ||
+    typeof value.delivery_complete !== 'boolean' || !validInboxStatus(value.status) ||
+    (value.delivery_complete && (value.status.pending_events !== 0 || value.status.unknown_pages !== 0))) throw new Error('Queue delivery could not be confirmed. Inspect the paused source before retrying.')
+  return value as CaptureDrained
 }
 
 export const captureMessages: Record<CaptureReason, string> = {
@@ -184,6 +197,7 @@ export const captureMessages: Record<CaptureReason, string> = {
   capture_key_unavailable: 'Unlock or restore this inbox’s separate protected key. Capture has stopped.',
   capture_not_initialized: 'The source has not completed its first local inbox initialization.',
   capture_policy_change_requires_migration: 'This change needs a reviewed capture migration. Existing source mirrors, capture selection and inbox identities are retained.',
+  capture_recovery_pending: 'Finish or discard the pending capture recovery before changing or resuming its previous source.',
   capture_server_upgrade_required: 'Update the workspace server to a version supporting retained conversation capture.',
   capture_settings_changed: 'Capture settings changed. Refresh source status before retrying.',
   capture_source_changed: 'The selected folder identity changed. Queued memories remain deliverable; verify the replacement before accepting new data.',

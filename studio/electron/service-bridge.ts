@@ -21,7 +21,7 @@ import { DesktopSources } from './desktop-sources.js'
 import { sourceProcess } from './desktop-source-process.js'
 import { DesktopAgents } from './desktop-agents.js'
 import type { AgentInstall, AgentRemove, AgentSetup } from '../shared/desktop-agents.js'
-import type { CaptureBackupInput, CaptureInspectInput, CaptureRestoreControl, CaptureRestoreInput, SourceConfigure, SourceControl, SourcePreviewSelection } from '../shared/desktop-sources.js'
+import type { CaptureBackupInput, CaptureDrainInput, CaptureInspectInput, CaptureRestoreControl, CaptureRestoreInput, SourceConfigure, SourceControl, SourcePreviewSelection } from '../shared/desktop-sources.js'
 import type { BackupSettings, DesktopOperatorStatus, LocalStatus, RecoveryReceipt } from '../shared/local-workspace.js'
 
 const MAX_BYTES = 120 * 1024 * 1024
@@ -446,6 +446,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
   ipcMain.handle('sources:backup', (event, input: CaptureBackupInput) => { trusted(event); requireLocalSteady(); return desktopSources().backup(input) })
   ipcMain.handle('sources:backup-inspect', (event, input: CaptureInspectInput) => { trusted(event); requireLocalSteady(); return desktopSources().inspectBackup(input) })
   ipcMain.handle('sources:restore', (event, input: CaptureRestoreInput) => { trusted(event); requireLocalSteady(); return desktopSources().restore(input) })
+  ipcMain.handle('sources:drain', (event, input: CaptureDrainInput) => { trusted(event); requireLocalSteady(); return desktopSources().drain(input) })
   ipcMain.handle('sources:recoveries', event => { trusted(event); requireLocalSteady(); return desktopSources().recoveries() })
   ipcMain.handle('sources:restore-finish', (event, input: CaptureRestoreControl) => { trusted(event); requireLocalSteady(); return desktopSources().finishRecovery(input) })
   ipcMain.handle('sources:restore-discard', (event, input: CaptureRestoreControl) => { trusted(event); requireLocalSteady(); return desktopSources().finishRecovery(input, true) })
@@ -761,6 +762,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
         case 'source.backup': return desktopSources().backup(input as CaptureBackupInput, signal)
         case 'source.backup.inspect': return desktopSources().inspectBackup(input as CaptureInspectInput, signal)
         case 'source.restore': return desktopSources().restore(input as CaptureRestoreInput, signal)
+        case 'source.drain': return desktopSources().drain(input as CaptureDrainInput, signal)
         case 'source.restore.list': return desktopSources().recoveries(signal)
         case 'source.restore.finish': return desktopSources().finishRecovery(input as CaptureRestoreControl, false, signal)
         case 'source.restore.discard': return desktopSources().finishRecovery(input as CaptureRestoreControl, true, signal)

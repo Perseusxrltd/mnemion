@@ -87,10 +87,15 @@ def recovery_request(env, custody, enrolled, monkeypatch, tmp_path):
     return root, request, original_root, original
 
 
+@pytest.mark.parametrize("copied_logs", [False, True])
 def test_helper_restores_paused_device_and_delivers_without_original_key_or_logs(
-    env, custody, recovery_request
+    env, custody, recovery_request, copied_logs
 ):
     root, request, old_root, old_source = recovery_request
+    if copied_logs:
+        (Path(request["source"]["path"]) / "chat.jsonl").write_bytes(
+            encoded("Pending evidence for the replacement desktop")
+        )
     original_database = capture.inbox_path(old_root, old_source.id) / "inbox.sqlite3"
     digest = hashlib.sha256(original_database.read_bytes()).hexdigest()
     result = desktop.perform(root, request)

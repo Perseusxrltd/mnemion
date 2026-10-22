@@ -20,6 +20,7 @@ from .providers import ProviderError, filesystem_paths, private_vault_content
 from .source_files import SourceReadError, open_selected
 
 CAPTURE = "mnemion-live-jsonl-v1"
+POLICY_EVIDENCE_REVISION = "mnemion-policy-evidence-v1"
 BUFFER_BYTES = 65536
 
 
@@ -139,8 +140,17 @@ class ConversationSnapshot:
                     self.config.capture_mode,
                     self.config.segment_bytes,
                     self.config.segment_records,
-                    *([self.config.capture_policy.revision] if self.config.capture_policy else []),
+                    *(
+                        [self.config.capture_policy.revision, POLICY_EVIDENCE_REVISION]
+                        if self.config.capture_policy
+                        else []
+                    ),
                     *(["retained-window-v1"] if self.resumable_capture else []),
+                    *(
+                        ["capture-grant", self.state.capture_grant]
+                        if getattr(self.state, "capture_grant", None)
+                        else []
+                    ),
                 ],
                 separators=(",", ":"),
             ).encode()
@@ -307,10 +317,24 @@ class ConversationSnapshot:
                 rows = [select_fields(row, excluded) for row in rows]
                 if not messages_only:
                     text = selected_jsonl(text, excluded)
-                    revision = hashlib.sha256(text.encode()).hexdigest()
             except FieldSelectionLimit:
                 raise ProviderError("conversation_field_selection_limit") from None
             metadata["field_redaction"] = "json_field_names"
+        if self.config.capture_policy:
+            # A revision identifies the selected evidence and its original
+            # provenance/consent, even when redaction leaves the text unchanged.
+            # Keep the source generation and byte identity for deletion fences.
+            revision = hashlib.sha256(
+                json.dumps(
+                    [
+                        POLICY_EVIDENCE_REVISION,
+                        self.config.capture_policy.revision,
+                        digest,
+                        hashlib.sha256(text.encode()).hexdigest(),
+                    ],
+                    separators=(",", ":"),
+                ).encode()
+            ).hexdigest()
         document = Document(external, revision, self.relative, text, uri, metadata=metadata)
         items = [] if messages_only else list(document.items())
         outcomes = [] if self.observe_selection and messages_only else None
@@ -345,6 +369,7 @@ class ConversationSnapshot:
                             + transcript.text
                             + json.dumps(context, sort_keys=True)
                             + ("messages-only-v1" if messages_only else "")
+                            + ("\0" + revision if self.config.capture_policy else "")
                         ).encode()
                     ).hexdigest(),
                     transcript.title + " · conversation fragment",

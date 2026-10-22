@@ -14,7 +14,6 @@ export const sourceMessages: Record<string, string> = {
   source_settings_changed: 'Source settings changed. Refresh before retrying.',
   source_preview_required: 'Preview the current capture settings before saving.',
   capture_backup_unavailable: 'The capture archive could not be created or verified. Pause the source and check its protected inbox key, archive path, recovery key and free disk space. Original evidence was retained.',
-  capture_recovery_pending: 'Finish or explicitly discard the pending capture recovery before starting another.',
   capture_recovery_archive_required: 'Choose the original capture backup and recovery key to finish this interrupted copy.',
   source_memory_limit: 'The scan reached its RAM allowance. Increase the source allowance or narrow the source folder, then retry.',
   source_provider_credentials: 'Check the Slack token or Google service-account JSON key for the selected source. Existing credentials are retained after a failed save.',

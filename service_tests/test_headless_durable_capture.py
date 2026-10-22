@@ -354,7 +354,10 @@ def test_process_lock_prevents_duplicate_local_writers_and_status_survives(headl
     assert cli(headless, {"action": "status"})["activity"]["state"] == "interrupted"
 
 
-def test_archived_pending_events_restore_with_new_grant_then_deliver_once(env, headless):
+@pytest.mark.parametrize("copied_logs", [False, True])
+def test_archived_pending_events_restore_with_new_grant_then_deliver_once(
+    env, headless, copied_logs
+):
     config = headless["config"]
     prepared(headless)
     (config.provider.path / "before.jsonl").write_bytes(
@@ -365,6 +368,10 @@ def test_archived_pending_events_restore_with_new_grant_then_deliver_once(env, h
     headless["offline"].clear()
     bundle = archive(headless)
     target = replacement(env, headless)
+    if copied_logs:
+        (target.provider.path / "before.jsonl").write_bytes(
+            (config.provider.path / "before.jsonl").read_bytes()
+        )
     request = recovery_request(headless, target, bundle)
     restored = perform(target, request)
     assert restored["state"] == "ready" and not restored["enabled"]

@@ -63,6 +63,7 @@ CAPTURE_REASONS = frozenset(
         "capture_key_unavailable",
         "capture_not_initialized",
         "capture_policy_change_requires_migration",
+        "capture_recovery_pending",
         "capture_server_upgrade_required",
         "capture_settings_changed",
         "capture_source_changed",
@@ -209,6 +210,10 @@ def register(root, source, previous):
     source. It cannot accept data. Reusing that ID with a different key fails.
     """
     if previous:
+        from .desktop_capture_restore import pending_replacement
+
+        if pending_replacement(root, source.id):
+            raise InboxError("capture_recovery_pending")
         if not previous.custody or identity(previous) != identity(source):
             raise InboxError("capture_policy_change_requires_migration")
         enrollment(root, source)

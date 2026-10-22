@@ -6,7 +6,7 @@ import { isDeepStrictEqual } from 'node:util'
 import { DesktopSources } from '../dist/desktop-sources.js'
 import { sourceProcess } from '../dist/desktop-source-process.js'
 import { desktopAction } from '../dist/desktop-actions.js'
-import { readCaptureArchive, readCapturePreview, readCaptureRecoveries, readCaptureRestored } from '../dist/capture-messages.js'
+import { readCaptureArchive, readCaptureDrained, readCapturePreview, readCaptureRecoveries, readCaptureRestored } from '../dist/capture-messages.js'
 import { workspaceFixture, fixtureCredential as credential } from './workspace-fixture.mjs'
 
 const report = () => ({ completed: true, timestamp: new Date().toISOString(), duration_seconds: 0.1,
@@ -1150,4 +1150,67 @@ for (const provider of ['slack', 'gdrive']) test('cloud credentials remain separ
   assert.deepEqual(removed.sources, [])
   assert.deepEqual(f.document().sources, [])
   assert.equal(f.state.running, 0)
+})
+
+test('paused queue delivery unlocks only saved keys and never starts a producer scan', async t => {
+  const f = await fixture(t), source = retainedDefinition(), calls = []
+  await f.add(source)
+  const settled = { ...archiveReport(source).status, pending_events: 0, pending_bytes: 0, unknown_pages: 0, stored_events: 1 }
+  const receipt = { format: 'mnemion-capture-drained-v1', id: source.id, source_enabled: false,
+    remote_committed_events: 1, delivery_complete: true, status: settled }
+  const manager = new DesktopSources({ ...f.options, call: async (request, ...rest) => {
+    if (request.operation !== 'capture_drain') return f.options.call(request, ...rest)
+    calls.push(request)
+    const saved = f.document().sources[0]
+    assert.equal(saved.enabled, false)
+    assert.equal(request.credential, credential)
+    assert.equal(request.inbox_key, await f.cipher.decrypt(Buffer.from(saved.sealed_inbox_key, 'base64')))
+    return receipt
+  } })
+  t.after(() => manager.close())
+  let input = { id: source.id, expected_revision: (await manager.status()).revision, confirm: true }
+  await assert.rejects(manager.drain(input), /Pause this retained source/)
+  const view = await manager.control('pause', { ...input, enabled: false })
+  input = { ...input, expected_revision: view.revision }
+  assert.deepEqual(await manager.drain(input), receipt)
+  assert.equal(calls.length, 1); assert.equal(f.state.scans.length, 0)
+  assert.equal(desktopAction('source.drain', input).mutation, true)
+  assert.throws(() => readCaptureDrained({ ...receipt, credential }))
+  assert.throws(() => readCaptureDrained({ ...receipt, source_enabled: true }))
+  assert.throws(() => readCaptureDrained({ ...receipt, status: { ...settled, unknown_pages: 1 } }))
+})
+
+test('policy handover protects the previous key and recovers an installed replacement after a lost response', async t => {
+  const f = await fixture(t), previous = { ...retainedDefinition(), enabled: false }, calls = []
+  await f.add(previous)
+  const old = structuredClone(f.document().sources[0])
+  const policy = { format: 'mnemion-capture-policy-v1', preset: 'detailed', capture_mode: 'complete',
+    include: ['**/*.jsonl'], exclude: [], retention: 'until_deleted', max_file_bytes: 1e9, max_record_bytes: 2e6 }
+  const source = { ...previous, id: randomUUID(), capture_mode: 'complete', capture_policy: policy,
+    custody: { ...previous.custody, grant_id: randomUUID() } }
+  const manager = new DesktopSources({ ...f.options, call: async (request, ...rest) => {
+    if (request.operation !== 'capture_restore') return f.options.call(request, ...rest)
+    calls.push(request)
+    assert.equal(request.policy_change, true); assert.equal(request.replace_id, previous.id)
+    assert.equal(request.previous_inbox_key, await f.cipher.decrypt(Buffer.from(old.sealed_inbox_key, 'base64')))
+    assert.notEqual(request.inbox_key, request.previous_inbox_key)
+    const document = f.document(); document.sources = [structuredClone(request.source)]; document.revision = randomUUID()
+    throw new Error('Policy handover reply lost after settings publication')
+  } })
+  t.after(() => manager.close())
+  const input = { source, expected_revision: (await manager.status()).revision, credential,
+    retirement_credential: credential, file: '/synthetic/policy.capture', recovery_key: 'mnm_bk_' + 'x'.repeat(43),
+    archive_sha256: 'c'.repeat(64), preview_hash: 'a'.repeat(64), policy_change: true, replace_id: previous.id, confirm: true }
+  await assert.rejects(manager.restore({ ...input, policy_change: undefined }), /Review the archive/)
+  await assert.rejects(manager.restore(input), /reply lost/)
+  const view = await manager.status()
+  assert.equal(view.sources.length, 1); assert.equal(view.sources[0].id, source.id); assert.equal(view.sources[0].enabled, false)
+  for (const secret of [credential, old.sealed_inbox_key, calls[0].previous_inbox_key, calls[0].inbox_key]) assert.equal(JSON.stringify(view).includes(secret), false)
+  await assert.rejects(manager.restore(input), /settings changed/)
+  assert.equal(calls.length, 1)
+  assert.equal(desktopAction('source.restore', input).mutation, true)
+  const receipt = { ...recoveryReport(source), policy_change: true, replaced_source_id: previous.id }
+  assert.deepEqual(readCaptureRestored(receipt), receipt)
+  assert.throws(() => readCaptureRestored({ ...receipt, policy_change: false }))
+  assert.throws(() => readCaptureRestored({ ...receipt, replaced_source_id: source.id }))
 })

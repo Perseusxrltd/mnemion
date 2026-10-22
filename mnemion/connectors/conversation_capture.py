@@ -50,6 +50,9 @@ class LocalCaptureState:
 
     def __init__(self, inbox, scope, budget=None):
         self.inbox, self.connection, self.scope = inbox, inbox.connection, scope
+        # A recovered device must verify its copied prefix before trusting the
+        # old file's inode/stat cache. This is cache identity, never provenance.
+        self.capture_grant = inbox.binding["grant_id"]
         self.budget = budget
         self.event_count = self.connection.execute(
             "SELECT COUNT(*) FROM producer_events"
