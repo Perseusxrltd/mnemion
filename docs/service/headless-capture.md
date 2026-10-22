@@ -641,8 +641,9 @@ to bypass forgetting.
 
 Restore authenticates and stages the copy, checks the destination, available
 capacity and present producer prefixes before retiring the old grant. It also
-verifies current replacement authority. Once retirement is confirmed it records
-an explicit `recovering` intent before publishing the local copy. Success leaves
+verifies current replacement authority. It saves an explicit `recovering` intent
+before requesting retirement, and persists its confirmation before publishing
+the local copy. Success leaves
 `state: "ready", enabled: false`; review status and resume explicitly. Current
 server authorization, receipts and forgetting fences govern subsequent delivery.
 
@@ -651,9 +652,17 @@ After an uncertain response, read status before issuing another write. A
 hash, archive and recovery-key reference, and `confirm: true`. All archive fields
 remain required by this control even if its local copy was already published.
 The replacement inbox key and current service authority must still be usable.
-There is no automatic replay, overwrite or empty-inbox fallback. If no local
-intent was saved, reconcile the original and replacement grants with the
-administrator before another attempt.
+When `recovery.previous_grant_revoked` is false, also supply a current temporary
+`retirement_token` reference in `finish`. This is an unconfirmed result, not proof
+that retirement did or did not commit. The server is read before any retry;
+an already committed revocation is not sent again. The private v2 enrollment
+cannot become enabled or ready while that result remains unconfirmed. Older
+confirmed v1 enrollments remain readable. Retirement credentials are never
+copied into the recovery record.
+
+There is no automatic replay, overwrite or empty-inbox fallback. If an older
+version stopped without saving an intent, reconcile its original and replacement
+grants with the administrator before another attempt.
 
 `discard` applies only to an unfinished recovery. With a fresh revision,
 retirement reference and explicit confirmation, it revokes the replacement grant

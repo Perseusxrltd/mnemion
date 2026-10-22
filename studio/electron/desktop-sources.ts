@@ -329,7 +329,8 @@ export class DesktopSources {
 
   async finishRecovery(input: CaptureRestoreControl, discard = false, signal?: AbortSignal): Promise<CaptureRestoreResult | { discarded: true; replacement_grant_revoked: true; archive_modified: false }> {
     if (!object(input) || !UUID.test(input.id) || input.confirm !== true || Object.keys(input).some(key =>
-      !(discard ? ['id', 'expected_revision', 'confirm'] : ['id', 'expected_revision', 'confirm', 'file', 'recovery_key']).includes(key))) throw new Error('Confirm the selected unfinished capture recovery.')
+      !(discard ? ['id', 'expected_revision', 'confirm'] : ['id', 'expected_revision', 'confirm', 'file', 'recovery_key', 'retirement_credential']).includes(key)) ||
+      (input.retirement_credential !== undefined && (typeof input.retirement_credential !== 'string' || input.retirement_credential.length < 16 || input.retirement_credential.length > 1024))) throw new Error('Confirm the selected unfinished capture recovery.')
     const result = await this.mutate(input.expected_revision, async () => {
       if (this.active) throw new Error('Wait for the active scan before finishing recovery.')
       if (!await this.options.cipher.available()) throw new Error('Unlock this device’s protected keys before finishing recovery.')
@@ -337,12 +338,17 @@ export class DesktopSources {
       const source = pending.source
       if (!object(source) || source.id !== input.id || typeof source.sealed_key !== 'string' || typeof source.sealed_inbox_key !== 'string' ||
         !object(source.custody) || typeof source.custody.grant_id !== 'string' || !UUID.test(source.custody.grant_id) ||
+        (pending.previous_grant_revoked !== undefined && typeof pending.previous_grant_revoked !== 'boolean') ||
         typeof pending.archive_sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(pending.archive_sha256)) throw new Error('The protected recovery record could not be verified.')
+      if (!discard && pending.previous_grant_revoked === false && !input.retirement_credential) throw new Error('Connect as an administrator of this recovery’s workspace, then finish retirement of the previous device. Its state will be checked before any retry.')
+      const retirement_credential = !discard && input.retirement_credential && this.options.retirementCredential
+        ? await this.options.retirementCredential(publicSource(source as SavedSource), input.retirement_credential) : input.retirement_credential
       const credential = await this.options.cipher.decrypt(sealedBytes(source.sealed_key))
       const inbox_key = discard ? undefined : await this.options.cipher.decrypt(sealedBytes(source.sealed_inbox_key))
       signal?.throwIfAborted()
       try {
-        const value = await this.options.call({ ...input, operation: discard ? 'capture_restore_discard' : 'capture_restore_finish', credential, ...(inbox_key ? { inbox_key } : {}) }, signal)
+        const value = await this.options.call({ ...input, operation: discard ? 'capture_restore_discard' : 'capture_restore_finish', credential,
+          ...(retirement_credential ? { retirement_credential } : {}), ...(inbox_key ? { inbox_key } : {}) }, signal)
         if (discard) {
           if (Object.keys(value).length !== 3 || value.discarded !== true || value.replacement_grant_revoked !== true || value.archive_modified !== false) throw new Error('Discard could not be confirmed. Inspect the pending recovery before retrying.')
           return value as { discarded: true; replacement_grant_revoked: true; archive_modified: false }

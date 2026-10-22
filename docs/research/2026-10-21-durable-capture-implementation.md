@@ -1663,6 +1663,46 @@ describe the exact boundaries. Public 4.44.2 remains separate. All 65 requiremen
 and L1–L7 remain; full capture retention/preset, migration, history and final
 six-platform acceptance are still required.
 
+## Durable intent before device retirement
+
+22 October development review found a shared interruption gap: desktop and
+headless recovery retired the original grant before saving the local recovery
+intent. A process exit after the real HTTP/SQL commit could leave the old grant
+revoked, with no pending recovery for the replacement. Both failures were
+reproduced by terminating a separate helper process at that exact boundary;
+the original failed receipts remain preserved.
+
+The correction writes a protected intent first, with retirement explicitly
+unconfirmed. It persists confirmation before installing or enabling the
+replacement. A later finish verifies its archive, current target authority and
+producer evidence; with a fresh administrator credential it reads the original
+grant before any retry. A committed revocation is not repeated. No administrator
+credential is retained in the intent. Old confirmed desktop/headless records
+remain readable, and new unconfirmed records cannot claim a completed recovery.
+
+App and native agent controls expose the same pending state and temporary
+retirement authority. The app shows **Pending capture recoveries** beside the
+source's recovery form as well as in **Sources on this computer**. Discard revokes
+only the replacement and preserves original evidence and the old grant's actual
+state. The native policy gate now loses one real retirement reply and requires
+visible pending status and successful app recovery without another DELETE.
+
+All 47 affected recovery cases passed, including four forced-exit cases across
+desktop and headless helpers before and after the retirement commit, an intent
+storage failure and two interrupted-discard cases. All 96 native controller
+cases passed. The matching-input Linux source journey passed 19 real app checks
+and 17 independent headless checks using Electron, the helper, PostgreSQL and
+libsecret. The app recovered a committed retirement with its reply deliberately
+lost, issuing exactly one DELETE in total and preserving the archive, original
+inbox, deletion history and custom limits. Its compact screenshot was visually
+checked. These checks made no production memory writes or paid model calls;
+six-platform installed and release acceptance of this source remain pending.
+The preceding retention-source CI exposed outdated expected table and health
+inventories: 14 legacy-schema cases omitted `capture_expiries`, and the health
+case omitted `capture_retention`. Their explicit inventories were corrected;
+all 16 focused migration and health regression cases passed. The full failing
+log and its 2,067 passing cases remain retained.
+
 ## Required before L1 can be released
 
 - Finish acceptance of the encrypted coverage/gap accounting, including selected,

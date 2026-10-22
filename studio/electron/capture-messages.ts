@@ -155,8 +155,9 @@ export function readCaptureRecoveries(value: unknown): CaptureRecoveries {
     !Array.isArray(value.items) || value.items.length > 16) throw new Error('Pending capture recoveries could not be read.')
   const ids = new Set<string>()
   for (const item of value.items) {
-    if (!object(item) || !keys(item, ['id', 'name', 'endpoint', 'archive_sha256', 'created_at', 'copy_available', ...(Object.hasOwn(item, 'policy_change') ? ['policy_change'] : [])]) || !uuid(item.id) ||
+    if (!object(item) || !keys(item, ['id', 'name', 'endpoint', 'archive_sha256', 'created_at', 'copy_available', ...(Object.hasOwn(item, 'policy_change') ? ['policy_change'] : []), ...(Object.hasOwn(item, 'previous_grant_revoked') ? ['previous_grant_revoked'] : [])]) || !uuid(item.id) ||
       (Object.hasOwn(item, 'policy_change') && item.policy_change !== true) ||
+      (Object.hasOwn(item, 'previous_grant_revoked') && typeof item.previous_grant_revoked !== 'boolean') ||
       typeof item.name !== 'string' || !item.name.length || item.name.length > 200 ||
       typeof item.endpoint !== 'string' || item.endpoint.length > 2048 ||
       typeof item.archive_sha256 !== 'string' || !cursor(item.archive_sha256) ||

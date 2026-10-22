@@ -527,7 +527,10 @@ makes authorization/retirement requests but does not invoke a model.
 An uncertain result requires reading both `source.status` and
 `source.restore.list` before another mutation. Listing takes no inputs and returns
 bounded recovery IDs, names, endpoints, archive hashes, creation times and
-`copy_available`, plus `policy_change: true` for a policy intent; it does not
+`copy_available`, plus `policy_change: true` for a policy intent; new records also
+report `previous_grant_revoked` as a boolean. False means retirement has not been
+confirmed locally, including when its reply was lost after the server commit.
+The list does not
 unseal keys. Concurrent metadata reads are shared without occupying the mutation
 slot. A listing can become stale; mutations still validate the current intent and
 source revision. A protected pending intent
@@ -545,7 +548,14 @@ retains the same recovery ID. To finish it, use a fresh revision and consent:
 ```
 
 If `copy_available` is false, also supply the original `file` and `recovery_key`;
-the saved archive hash must still match. Finishing uses the OS-protected
+the saved archive hash must still match. If `previous_grant_revoked` is false,
+supply `retirement_credential` with current
+administrator authority for the original workspace. A native administrator
+session handle can be used instead of exposing its underlying credential. It is
+used only for this invocation and never saved. Finishing reads the old grant
+before retrying retirement, then records confirmation before installing the
+paused replacement. Older confirmed recovery records need no new credential.
+Finishing uses the OS-protected
 replacement keys and verifies current server authority. A newly installed source
 starts paused; finishing an already published source preserves a later explicit
 enable choice. There is no automatic replay of restore or finish.
@@ -553,8 +563,9 @@ enable choice. There is no automatic replay of restore or finish.
 To abandon an unfinished recovery, use `source.restore.discard` with only `id`,
 fresh `expected_revision` and `confirm: true`. It unseals the replacement device
 credential, confirms revocation of that grant, then discards the unfinished local
-copy and intent. The original archive stays unchanged and the old grant stays
-retired. If source settings were already published, use ordinary paused source
+copy and intent. The original archive stays unchanged; no action reactivates the
+old grant or labels an unconfirmed retirement as completed. If source settings
+were already published, use ordinary paused source
 removal instead. These actions cannot change the original organization, source,
 or namespace. Capture policy stays fixed unless the separate reviewed procedure
 below was selected; finish/discard cannot choose a different policy. These actions

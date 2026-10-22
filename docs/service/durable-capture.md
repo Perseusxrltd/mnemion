@@ -853,8 +853,9 @@ the operation does not reconstruct them.
 The native operation needs unlocked OS credential storage, fresh source settings
 and explicit confirmation of previous-device retirement. It authenticates the
 archive, re-encrypts its inbox under a new random 256-bit key, checks current
-replacement authority and confirms revocation of the original grant. It then
-publishes a protected recovery intent and installs a **new, paused** source.
+replacement authority and saves a protected recovery intent **before requesting
+revocation** of the original grant. It records confirmed retirement before
+installing a **new, paused** source.
 Existing inboxes are never overwritten. The replacement device credential and
 inbox key are OS-sealed; the one-use retirement credential is not saved. Grant
 retirement does not revoke the old API key's unrelated rights.
@@ -869,7 +870,15 @@ After an uncertain reply, inspect `source.status` and `source.restore.list`;
 there is no automatic replay. A saved intent supports explicit
 `source.restore.finish` using the protected replacement keys and current server
 authority. If its inbox copy was not yet published, finishing also needs the
-original archive and recovery key. Explicit `source.restore.discard` first
+original archive and recovery key. If `previous_grant_revoked` is false, the
+server result is not yet confirmed: finish while connected as an administrator
+of the original workspace, or supply the agent operation's temporary
+`retirement_credential`. The server is read first; an already committed retirement
+is not repeated. Older intents with confirmed retirement remain supported.
+**Pending capture recoveries** is available beside the source's recovery form
+and in **Sources on this computer**, including after a restart.
+
+Explicit `source.restore.discard` first
 revokes the replacement grant and then removes the unfinished local evidence;
 it preserves the archive and does not reactivate the original grant. An already
 installed source must use ordinary source removal instead. The

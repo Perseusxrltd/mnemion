@@ -139,9 +139,9 @@ export type CaptureRestoreInput = CaptureInspectInput & {
   credential: string; retirement_credential: string; preview_hash: string; confirm: true;
   policy_change?: true; replace_id?: string;
 }
-export type CaptureRecovery = { id: string; name: string; endpoint: string; archive_sha256: string; created_at: string; copy_available: boolean; policy_change?: true }
+export type CaptureRecovery = { id: string; name: string; endpoint: string; archive_sha256: string; created_at: string; copy_available: boolean; policy_change?: true; previous_grant_revoked?: boolean }
 export type CaptureRecoveries = { format: 'mnemion-capture-recoveries-v1'; items: CaptureRecovery[] }
-export type CaptureRestoreControl = { id: string; expected_revision: string; confirm: true; file?: string; recovery_key?: string }
+export type CaptureRestoreControl = { id: string; expected_revision: string; confirm: true; file?: string; recovery_key?: string; retirement_credential?: string }
 export type CaptureRestored = {
   format: 'mnemion-capture-restored-v1'; id: string; archive_sha256: string;
   previous_grant_id: string; grant_id: string; previous_grant_revoked: true;

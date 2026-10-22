@@ -152,10 +152,11 @@ export async function verifyNativeCapturePolicy(window: BrowserWindow, probePath
     const originalOpen = dialog.showOpenDialog
     let opens = 0
     dialog.showOpenDialog = (async () => {
-      if (++opens !== 1) throw new Error('Policy migration must keep the original producer folder.')
+      if (++opens > 2) throw new Error('Policy migration must keep the original producer folder and recovery archive.')
       return { canceled: false, filePaths: [archivePath] }
     }) as typeof dialog.showOpenDialog
     let replacement: DesktopSource
+    relay.interruptRetirement(grantId)
     try {
       replacement = await inRenderer(window, `
         const form=await until(()=>card().querySelector('[data-capture-restore="form"]'),'The app did not offer reviewed policy adoption');form.open=true;
@@ -166,12 +167,22 @@ export async function verifyNativeCapturePolicy(window: BrowserWindow, probePath
         await press('Verify recovery archive');await press('Preview recovered source');
         await until(()=>{const error=form.querySelector('[role="alert"]');if(error)throw new Error('Policy preview UI: '+error.textContent.slice(0,500));return form.querySelector('[data-capture-preview="ready"]');},'The reviewed new policy was not previewed');
         form.querySelector('input[type="checkbox"]').click();await pause(100);await press('Apply policy and keep source paused');
-        const receipt=await until(()=>{const error=form.querySelector('[role="alert"]');if(error)throw new Error('Policy migration UI: '+error.textContent.slice(0,500));return form.querySelector('[data-capture-restored="ready"]');},'The app did not publish a paused policy replacement',90000);
-        if(form.querySelector('input[type="password"]')?.value||form.hasAttribute('data-update-pending'))throw new Error('The completed policy form retained a key or unfinished state');
+        await until(()=>form.querySelector('[role="alert"]'),'The interrupted retirement did not show its unresolved result',90000);
+        const pending=await until(()=>card().querySelector('[aria-label="Pending capture recoveries"]'),'The app did not offer recovery beside the interrupted operation');
+        if(!pending.textContent.includes('retirement is not yet confirmed'))throw new Error('Pending recovery hid the uncertain previous-device retirement');
+        const observed=await window.mnemion.sourceRecoveries();
+        if(observed.items.length!==1||observed.items[0].previous_grant_revoked!==false||observed.items[0].copy_available)throw new Error('App and agent pending retirement states disagree');
+        await press('Clear recovery choices');
+        const button=async text=>{const b=await until(()=>[...pending.querySelectorAll('button')].find(e=>e.textContent===text&&!e.disabled),'Missing pending recovery control: '+text);b.click();await pause(100);};
+        await button('Choose original backup');
+        const recovery=pending.querySelector('input[type="password"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(recovery,${JSON.stringify(recoveryKey)});recovery.dispatchEvent(new Event('input',{bubbles:true}));await pause(100);
+        await button('Finish recovery');
+        const receipt=await until(()=>{const error=pending.querySelector('[role="alert"]');if(error)throw new Error('Pending retirement UI: '+error.textContent.slice(0,500));return pending.querySelector('[data-capture-restored="ready"]');},'The app did not reconcile and finish its paused policy replacement',90000);
+        if(pending.querySelector('input[type="password"]')?.value||form.hasAttribute('data-update-pending'))throw new Error('Completed recovery retained a key or unfinished state');
         const view=await window.mnemion.sourceStatus();return view.sources.find(s=>s.id===receipt.dataset.sourceId);
       `)
     } finally { dialog.showOpenDialog = originalOpen }
-    if (opens !== 1 || !replacement || replacement.id === id || replacement.enabled || replacement.capture_mode !== 'complete' ||
+    if (opens !== 2 || relay.retirementRequests !== 1 || relay.retirementRepliesDropped !== 1 || !replacement || replacement.id === id || replacement.enabled || replacement.capture_mode !== 'complete' ||
         replacement.capture_policy?.preset !== 'detailed' || replacement.capture_policy.format !== 'mnemion-capture-policy-v3' ||
         replacement.capture_policy.retention !== 'expire_after' || replacement.capture_policy.retention_days !== 7 ||
         replacement.capture_policy.expiry_scope !== 'captured_fragment_family' || replacement.capture_policy.exclude_fields?.join(',') !== 'test_secret' ||
@@ -234,7 +245,8 @@ export async function verifyNativeCapturePolicy(window: BrowserWindow, probePath
       nativeCapturePolicyForgetSurvivesReselection: true, nativeCapturePolicyResumedSelectionDelivered: true,
       nativeCapturePolicyAppAndAgentAgree: true, nativeCapturePolicyNarrowLayout: true, nativeCapturePolicyFixtureCleanup: true,
       nativeCapturePolicyExpiryReviewedAndPreserved: true, nativeCapturePolicyExpiryScheduledAndVisible: true,
-      nativeCapturePolicyV3FieldExclusionsPreserved: true }
+      nativeCapturePolicyV3FieldExclusionsPreserved: true, nativeCapturePolicyLostRetirementReply: true,
+      nativeCapturePolicyPendingRetirementVisible: true, nativeCapturePolicyRetirementReconciledWithoutReplay: true }
   } finally {
     // Always restore the original local workspace. Retain failed fixture files
     // for diagnosis; only a completed journey removes its own records/files.

@@ -16,7 +16,7 @@ from typing import Literal
 from uuid import uuid4
 
 import psutil
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 
 from .. import local_state, process_identity
 from ..capture_coverage import utc_now, utc_timestamp
@@ -55,14 +55,14 @@ class DeviceFolder(Command):
 class Recovery(Command):
     archive_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     original_binding: dict
-    previous_grant_revoked: Literal[True]
+    previous_grant_revoked: bool = Field(strict=True)
     policy_change: bool = Field(default=False, strict=True)
 
     _binding = field_validator("original_binding")(binding_value)
 
 
 class Enrollment(Command):
-    format: Literal["mnemion-headless-capture-v1"]
+    format: Literal["mnemion-headless-capture-v1", "mnemion-headless-capture-v2"]
     id: str = Field(pattern=r"^[a-f0-9-]{36}$")
     identity: str = Field(pattern=r"^[a-f0-9]{64}$")
     binding: dict
@@ -78,6 +78,20 @@ class Enrollment(Command):
 
     _binding = field_validator("binding")(binding_value)
     _time = field_validator("updated_at")(utc_timestamp)
+
+    @model_validator(mode="after")
+    def retirement_state(self):
+        if (
+            self.recovery
+            and not self.recovery.previous_grant_revoked
+            and (
+                self.format != "mnemion-headless-capture-v2"
+                or self.state not in {"recovering", "retired", "discarding", "discarded"}
+                or self.enabled
+            )
+        ):
+            raise ValueError("Unconfirmed grant retirement cannot activate a recovered device")
+        return self
 
 
 class Activity(Command):

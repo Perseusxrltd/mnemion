@@ -14,9 +14,13 @@ export class NativeCaptureRelay {
   private grant = ''
   private mode: 'pass' | 'offline' | 'drop' = 'pass'
   private failure?: Error
+  private retirementGrant = ''
+  private dropRetirement = false
   readonly pages: Array<{ page: Page; receipt: Receipt }> = []
   readonly reconciled: string[] = []
   dropped = 0
+  retirementRequests = 0
+  retirementRepliesDropped = 0
   endpoint = ''
 
   constructor(target: string) {
@@ -46,6 +50,8 @@ export class NativeCaptureRelay {
           chunks.push(bytes)
         }
         const body = Buffer.concat(chunks)
+        const retirement = !!this.retirementGrant && incoming.method === 'DELETE' && path === '/v1/capture-grants/' + this.retirementGrant
+        if (retirement) this.retirementRequests++
         const response = await new Promise<{ status: number; headers: Record<string, any>; body: Buffer }>((resolve, reject) => {
           const upstream = request({ hostname: address.hostname, port: address.port, path,
             method: incoming.method, headers: { ...incoming.headers, host: address.host, connection: 'close' },
@@ -64,6 +70,13 @@ export class NativeCaptureRelay {
           upstream.on('error', reject)
           upstream.end(body)
         })
+        if (retirement && this.dropRetirement) {
+          const grant = JSON.parse(response.body.toString('utf8'))
+          if (response.status !== 200 || grant.grant_id !== this.retirementGrant || !grant.revoked_at || grant.active) throw new Error('The capture gate did not receive a confirmed retirement.')
+          this.dropRetirement = false; this.retirementRepliesDropped++
+          outgoing.destroy()
+          return
+        }
         if (capture && incoming.method === 'POST' && path === route + '/pages') {
           if (this.pages.length >= 16 || response.status !== 200) throw new Error('The capture gate did not receive a bounded successful page commit.')
           const page: Page = JSON.parse(body.toString('utf8')), receipt: Receipt = JSON.parse(response.body.toString('utf8'))
@@ -107,6 +120,11 @@ export class NativeCaptureRelay {
     if (!/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(grant)) throw new Error('Choose the disposable capture grant.')
     this.grant = grant; this.mode = mode
     this.check()
+  }
+
+  interruptRetirement(grant: string) {
+    if (this.retirementGrant || !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(grant)) throw new Error('Choose one disposable grant retirement to interrupt.')
+    this.retirementGrant = grant; this.dropRetirement = true
   }
 
   check() { if (this.failure) throw this.failure }

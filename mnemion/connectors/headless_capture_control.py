@@ -246,12 +246,36 @@ def verify_producer_copy(config, inbox):
                 raise InboxError(error.code) from None
 
 
+def confirm_retirement(config, record, request):
+    proof = record["recovery"]
+    if proof["previous_grant_revoked"]:
+        return record
+    if request.retirement_token is None:
+        raise InboxError("capture_retirement_credentials")
+    if request.retirement_token.file:
+        external(config, request.retirement_token.file)
+    with Client(
+        config.service_url,
+        device.reference(request.retirement_token),
+        timeout=10,
+        retries=0,
+    ) as client:
+        retire_grant(proof["original_binding"], client)
+    return device.write_record(config, record, recovery={**proof, "previous_grant_revoked": True})
+
+
 def finish_copy(config, record, request, key):
     proof = record["recovery"]
     if request.archive_sha256 != proof["archive_sha256"]:
         raise InboxError("capture_settings_changed")
     with device.connect(config) as client:
-        device.verify(config, client, existing=True)
+        device.verify(
+            config,
+            client,
+            existing=True,
+            current_policy=proof.get("policy_change", False)
+            and not proof["previous_grant_revoked"],
+        )
     destination = device.paths(config)[2]
     inbox_key = device.key_bytes(device.reference(config.capture.inbox_key))
     if hashlib.sha256(inbox_key).hexdigest() != record["key_sha256"]:
@@ -278,6 +302,7 @@ def finish_copy(config, record, request, key):
             if record["folder"] != producer_identity(config):
                 raise InboxError("capture_source_changed")
             verify_producer_copy(config, inbox)
+            record = confirm_retirement(config, record, request)
             device.write_record(config, record, state="ready", enabled=False)
     return device.status(config)
 
@@ -346,17 +371,10 @@ def restore(config, request, *, finishing=False):
                     device.verify(
                         config, client, existing=True, current_policy=request.policy_change
                     )
-                with Client(
-                    config.service_url,
-                    device.reference(request.retirement_token),
-                    timeout=10,
-                    retries=0,
-                ) as client:
-                    retire_grant(original, client)
                 record = device.write_record(
                     config,
                     {
-                        "format": device.FORMAT,
+                        "format": "mnemion-headless-capture-v2",
                         "id": str(config.capture.id),
                         "identity": device.identity(config),
                         "binding": device.binding(config),
@@ -367,11 +385,12 @@ def restore(config, request, *, finishing=False):
                         "recovery": {
                             "archive_sha256": request.archive_sha256,
                             "original_binding": original,
-                            "previous_grant_revoked": True,
+                            "previous_grant_revoked": False,
                             "policy_change": request.policy_change,
                         },
                     },
                 )
+                record = confirm_retirement(config, record, request)
                 with local_state.lock(device.root(config) / "inbox-budget"):
                     _rename_exclusive(recovered.directory, device.paths(config)[2])
                     local_state._sync_directory(device.root(config))

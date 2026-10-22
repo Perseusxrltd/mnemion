@@ -308,6 +308,55 @@ test('device recovery seals independent keys and reloads a committed source afte
   assert.equal(desktopAction('source.restore', input).mutation, true)
 })
 
+test('pending retirement uses a fresh administrator handle once and never persists it', async t => {
+  const f = await fixture(t), source = { ...retainedDefinition(), enabled: false }, requests = [], supplied = []
+  const inboxKey = Buffer.alloc(32, 4).toString('base64'), handle = 'native_session_recovery_owner'
+  const saved = { ...source, sealed_key: f.cipher.encrypt(credential).toString('base64'),
+    sealed_inbox_key: f.cipher.encrypt(inboxKey).toString('base64') }
+  const receipt = recoveryReport(source)
+  const manager = new DesktopSources({ ...f.options,
+    retirementCredential: async (selected, value) => {
+      supplied.push(value); assert.equal(value, handle); assert.equal(selected.endpoint, source.endpoint)
+      assert.equal(selected.sealed_key, undefined); assert.equal(selected.sealed_inbox_key, undefined)
+      return 'fresh-administrator-retirement-token'
+    }, call: async (request, ...rest) => {
+      if (request.operation === 'capture_restore_load') return { source: saved, archive_sha256: receipt.archive_sha256,
+        previous_grant_id: receipt.previous_grant_id, previous_grant_revoked: false }
+      if (request.operation !== 'capture_restore_finish') return f.options.call(request, ...rest)
+      requests.push(request)
+      assert.equal(request.retirement_credential, 'fresh-administrator-retirement-token')
+      assert.equal(request.credential, credential); assert.equal(request.inbox_key, inboxKey)
+      const document = f.document(); document.sources = [saved]; document.revision = randomUUID()
+      return { document: structuredClone(document), recovery: receipt }
+    } })
+  t.after(() => manager.close())
+  const input = { id: source.id, expected_revision: (await manager.status()).revision, confirm: true }
+  await assert.rejects(manager.finishRecovery(input), /Connect as an administrator/)
+  assert.equal(requests.length, 0)
+  const result = await manager.finishRecovery({ ...input, retirement_credential: handle })
+  assert.deepEqual(supplied, [handle]); assert.equal(requests.length, 1)
+  for (const secret of [handle, 'fresh-administrator-retirement-token', credential, inboxKey]) {
+    assert.equal(JSON.stringify(result).includes(secret), false)
+    assert.equal(JSON.stringify(f.document()).includes(secret), false)
+  }
+  assert.equal(desktopAction('source.restore.finish', { ...input, retirement_credential: handle }).mutation, true)
+  await assert.rejects(manager.finishRecovery({ ...input, retirement_credential: handle }, true), /Confirm the selected/)
+})
+
+test('pending recovery distinguishes unconfirmed retirement while retaining legacy records', () => {
+  const item = { id: randomUUID(), name: 'Recoverable device', endpoint: 'https://memory.example.invalid',
+    archive_sha256: 'c'.repeat(64), created_at: new Date().toISOString(), copy_available: false }
+  const report = { format: 'mnemion-capture-recoveries-v1', items: [item] }
+  assert.deepEqual(readCaptureRecoveries(report), report)
+  for (const previous_grant_revoked of [false, true]) {
+    const current = { ...report, items: [{ ...item, previous_grant_revoked }] }
+    assert.deepEqual(readCaptureRecoveries(current), current)
+  }
+  for (const previous_grant_revoked of ['false', 0, null]) {
+    assert.throws(() => readCaptureRecoveries({ ...report, items: [{ ...item, previous_grant_revoked }] }), /could not be verified/)
+  }
+})
+
 test('finishing recovery unwraps protected intent keys; discard never unwraps the inbox or exposes private records', async t => {
   const f = await fixture(t), source = { ...retainedDefinition(), enabled: false }, unsealed = [], requests = []
   const inboxKey = Buffer.alloc(32, 7).toString('base64')

@@ -43,11 +43,11 @@ MAX_RECOVERIES = 16
 
 
 class Intent(Command):
-    format: Literal["mnemion-capture-recovery-v1"]
+    format: Literal["mnemion-capture-recovery-v1", "mnemion-capture-recovery-v2"]
     created_at: str = Field(max_length=32)
     archive_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     original_binding: dict
-    previous_grant_revoked: Literal[True]
+    previous_grant_revoked: bool = Field(strict=True)
     source: SavedSource
     policy_change: bool = Field(default=False, strict=True)
     replaces: SavedSource | None = Field(default=None, repr=False)
@@ -58,6 +58,12 @@ class Intent(Command):
     @classmethod
     def original(cls, value):
         return binding_value(value)
+
+    @model_validator(mode="after")
+    def retirement_version(self):
+        if self.format == "mnemion-capture-recovery-v1" and not self.previous_grant_revoked:
+            raise ValueError("Legacy recovery records require confirmed grant retirement")
+        return self
 
 
 class Restore(Inspection):
@@ -97,6 +103,9 @@ class RecoveryControl(Command):
     id: UUID
     expected_revision: str = Field(min_length=1, max_length=128)
     credential: str | None = Field(default=None, min_length=16, max_length=8192, repr=False)
+    retirement_credential: str | None = Field(
+        default=None, min_length=16, max_length=1024, pattern=r"^[\x21-\x7e]+$", repr=False
+    )
     inbox_key: str | None = Field(default=None, min_length=44, max_length=44, repr=False)
     confirm: bool = Field(default=False, strict=True)
     file: str | None = Field(default=None, max_length=4096)
@@ -143,6 +152,11 @@ def list_intents(root):
                 "archive_sha256": intent.archive_sha256,
                 "created_at": intent.created_at,
                 "copy_available": capture.inbox_path(root, identifier).exists(),
+                **(
+                    {"previous_grant_revoked": intent.previous_grant_revoked}
+                    if intent.format == "mnemion-capture-recovery-v2"
+                    else {}
+                ),
                 **({"policy_change": True} if intent.policy_change else {}),
             }
         )
@@ -293,6 +307,8 @@ def _producer_marker(root, source):
 
 
 def _publish(root, current, intent, inbox_key):
+    if not intent.previous_grant_revoked:
+        raise InboxError("capture_retire_required")
     source = intent.source
     existing = next((item for item in current.sources if item.id == source.id), None)
     if existing is not None and (
@@ -343,6 +359,26 @@ def _publish(root, current, intent, inbox_key):
     intent_path(root, source.id).unlink()
     local_state._sync_directory(root)
     return {"document": current.model_dump(mode="json", exclude_none=True), "recovery": receipt}
+
+
+def _confirm_retirement(root, intent, credential):
+    if intent.previous_grant_revoked:
+        return intent
+    old = intent.replaces or intent.source.model_copy(deep=True)
+    if intent.replaces is None:
+        old.custody.grant_id = UUID(intent.original_binding["grant_id"])
+        old.capture_mode = intent.original_binding["capture_mode"]
+        old.capture_policy = (
+            CapturePolicy.model_validate(intent.original_binding["capture_policy"])
+            if intent.original_binding.get("capture_policy")
+            else None
+        )
+    # The intent and protected replacement keys are already durable. A lost
+    # DELETE reply is reconciled by GET before any later retirement request.
+    capture.revoke_for_removal(old, credential)
+    confirmed = intent.model_copy(update={"previous_grant_revoked": True})
+    local_state.write(intent_path(root, intent.source.id), confirmed.model_dump(mode="json"))
+    return confirmed
 
 
 def restore(root, request, private_roots):
@@ -420,22 +456,12 @@ def restore(root, request, private_roots):
                 private_roots,
                 current_policy=request.policy_change,
             )
-            old = previous or source.model_copy(deep=True)
-            if previous is None:
-                old.custody.grant_id = UUID(recovered.original_binding["grant_id"])
-                old.capture_mode = recovered.original_binding["capture_mode"]
-                old.capture_policy = (
-                    CapturePolicy.model_validate(recovered.original_binding["capture_policy"])
-                    if recovered.original_binding.get("capture_policy")
-                    else None
-                )
-            capture.revoke_for_removal(old, request.retirement_credential)
             intent = Intent(
-                format="mnemion-capture-recovery-v1",
+                format="mnemion-capture-recovery-v2",
                 created_at=utc_now(),
                 archive_sha256=request.archive_sha256,
                 original_binding=recovered.original_binding,
-                previous_grant_revoked=True,
+                previous_grant_revoked=False,
                 source=source,
                 policy_change=request.policy_change,
                 replaces=previous,
@@ -445,6 +471,7 @@ def restore(root, request, private_roots):
                 intent.model_dump(mode="json", exclude_none=True),
                 replace=False,
             )
+            intent = _confirm_retirement(root, intent, request.retirement_credential)
             with local_state.lock(local_state.directory(root / "inbox-budget")):
                 _rename_exclusive(recovered.directory, capture.inbox_path(root, source.id))
                 local_state._sync_directory(root)
@@ -484,7 +511,7 @@ def _discard(root, current, intent, credential):
         if local_state.read(marker) != expected:
             raise InboxError("capture_binding_mismatch")
         local_state.write(marker, {**expected, "state": "discarded"})
-    if intent.replaces:
+    if intent.replaces and intent.previous_grant_revoked:
         old = intent.replaces
         state = capture.enrollment(root, old)
         # A discarded replacement cannot revive the old grant. Keep the
@@ -510,6 +537,7 @@ def perform(root, value, private_roots=()):
         if request.operation == "capture_restore_load":
             if (
                 request.credential
+                or request.retirement_credential
                 or request.inbox_key
                 or request.confirm
                 or request.file
@@ -520,16 +548,28 @@ def perform(root, value, private_roots=()):
                 "source": intent.source.model_dump(mode="json", exclude_none=True),
                 "archive_sha256": intent.archive_sha256,
                 "previous_grant_id": intent.original_binding["grant_id"],
+                "previous_grant_revoked": intent.previous_grant_revoked,
             }
         if not request.confirm or not request.credential:
             raise ValueError("Confirm recovery with this device's protected keys")
         if request.operation == "capture_restore_discard":
-            if request.file or request.recovery_key or request.inbox_key:
+            if (
+                request.file
+                or request.recovery_key
+                or request.inbox_key
+                or request.retirement_credential
+            ):
                 raise ValueError("Discard only the selected unfinished recovery")
             return _discard(root, current, intent, request.credential)
         if not request.inbox_key:
             raise ValueError("Unlock the device inbox key before finishing recovery")
-        _verify_target(root, intent.source, request.credential, private_roots)
+        _verify_target(
+            root,
+            intent.source,
+            request.credential,
+            private_roots,
+            current_policy=intent.policy_change and not intent.previous_grant_revoked,
+        )
         inbox_key = capture.key_bytes(request.inbox_key)
         target = capture.inbox_path(root, request.id)
         with local_state.lock(local_state.directory(root / "inbox-budget")):
@@ -555,4 +595,10 @@ def perform(root, value, private_roots=()):
                 )
                 if restored.original_binding != intent.original_binding:
                     raise InboxError("capture_binding_mismatch")
+            if not intent.previous_grant_revoked:
+                with open_inbox(target, capture.binding(intent.source), inbox_key) as inbox:
+                    _audit(inbox)
+                    _verify_producer_copy(intent.source, inbox)
+                    _admit(root, inbox)
+                intent = _confirm_retirement(root, intent, request.retirement_credential)
             return _publish(root, current, intent, inbox_key)

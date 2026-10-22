@@ -23,6 +23,7 @@ def test_health_reports_running_version_without_exposing_workspace_or_update_det
         "connector_partial_inventory": True,
         "durable_capture": "v1",
         "capture_policy_versions": "v1",
+        "capture_retention": "v1",
     }
     assert ready.json() == {
         "status": "ready",

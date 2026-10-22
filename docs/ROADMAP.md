@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.44.2**. Roadmap updated: **2026-10-21**.
+Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-22**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
 [Release status](RELEASE_STATUS.md) and the [maintenance board](MAINTENANCE_STATUS.md)
@@ -20,102 +20,59 @@ issue review, publication and version-linked closure together.
 
 ## Current delivery checkpoint
 
-- **Durable conversation capture is in development, not yet released.**
-  The [implementation checkpoint](research/2026-10-21-durable-capture-implementation.md)
-  records encrypted local intake before network delivery, current permission and
-  forgetting checks, persistent app/agent observations, and explicit retirement
-  when a device key is lost. Encrypted prefix accounting now distinguishes
-  selected, omitted and unsupported lines, retained history gaps, queue age and
-  confirmed workspace contact in development source. Bounded, resumable source
-  index sweeps now report text/vector indexing, waiting, failed, withheld,
-  forgotten and unknown events under the observed model generation. App and
-  agents now share explicit capture presets, filename filters, size/retention
-  choices and a bounded local preview. Saved status preserves unknown values;
-  recovery ledgers preserve the approved policy. Source and migration checks
-  passed. The Linux app source journey passed preview, enrollment, offline
-  intake, restart, delivery and administrator-assisted removal; its evidence is
-  separate from the later policy-recovery checks. Portable encrypted inbox
-  export and inspection now have a Linux app/agent journey covering offline
-  export, restart and inspection after source removal; bounded archive and
-  migration checks passed. New-device recovery now retains the original source
-  and capture policy, rotates the protected inbox key and grant, confirms old
-  grant retirement, and installs a paused source. App and agent controls expose
-  pending recoveries with explicit finish/discard; component/controller checks
-  passed. The final Linux source journey now covers app recovery, reopening the
-  new protected key after restart, reconciling old queued memories without
-  duplicates and capturing new memories. Three earlier UI/controller failures
-  and their corrections remain in the validation record. The independent
-  [headless source journey](service/headless-capture.md) now covers explicit
-  enrollment, offline intake, interrupted-process recovery, pause/resume,
-  encrypted backup and new-grant recovery. Its CLI, protected-file, resource,
-  managed-runner and shared desktop regressions passed, along with migration
-  and updater checks. Bounded disk cleanup now returns unused database pages
-  while preserving every capture record, receipt and deletion fence. App and
-  agent status report actual reclaimed space and any deferred cleanup; retained
-  history limits remain explicit. A new [bounded backfill delta](research/2026-10-21-durable-capture-implementation.md#bounded-retained-backfill-source-delta)
-  saves verified prefixes at existing fragment boundaries and resumes unchanged
-  files on later scans. The app now labels verified partial progress **Backfilling**
-  and preserves prior success/failure observations and the next scan time.
-  Focused source/controller and migration checks, the app/documentation build
-  and an isolated Linux intake measurement passed; all 12 CI jobs passed on `763a8341`.
-  A further [unreleased source batch](research/2026-10-21-durable-capture-implementation.md#connection-intake-budget-and-rotation-source-delta)
-  adds cooperative connection-wide intake budgets, encrypted rotation across
-  file attempts and a five-second follow-up for healthy unfinished intake or delivery.
-  Scoped service/controller and migration checks plus the real headless watcher
-  passed. Current full CI, coordination across separate connections/devices and
-  full-history acceptance remain open; that scheduling delta leaves event and scope caps unchanged.
-  A separate [deletion-at-capacity correction](research/2026-10-21-durable-capture-implementation.md#deletion-fences-and-history-limits-source-delta)
-  now preserves held-data forgetting above lowered quotas and pauses intake when
-  additional deletion history cannot fit. App/headless history usage and local
-  quota controls are implemented; 167 distinct focused service cases, 77 native
-  controller cases and 30 migration checks are qualified after four reproduced
-  failures. This batch also corrects the preceding CI's memory/speed-dependent
-  test assumptions without changing product limits. All 12 CI jobs passed for
-  that correction on `c18a439c`; later source and packaged acceptance remain
-  separately observed. The native boundary gate now covers incomplete Unicode,
-  rotation gaps, a lost commit reply, current reader/policy revocation and
-  fragment-family forgetting through two real app launches. Its Linux source
-  preview passed 19 checks. The [independent engine lifecycle](research/2026-10-21-durable-capture-implementation.md#independent-native-engine-capture-lifecycle)
-  adds `connect` to the service and bundled-engine CLI, with a 13-check Linux
-  source journey for offline process restarts, protected inbox failures,
-  encrypted recovery and later deletion fences. The 20 CLI/control cases and
-  30 migration checks passed. The [damage-control correction](research/2026-10-21-durable-capture-implementation.md#damaged-inbox-controls-and-lightweight-client-correction)
-  preserves pause and accepted evidence with missing or damaged enrollment or
-  inbox files; the expanded Linux source journey passed 24 checks. The first
-  six-target run failed before packaging on a shared client import; the corrected
-  locked client suite passed 235 cases with 13 platform skips and now runs in
-  ordinary CI. All 12 CI jobs passed on `d9b40cca`; the next six-target run
-  reached installed hosting but failed before capture enrollment completed.
-  The [new source batch](research/2026-10-21-durable-capture-implementation.md#json-field-exclusions-and-installed-capture-navigation)
-  corrects capture navigation after the packaged Help check and adds optional
-  literal JSON field exclusions, preserving old policy fingerprints and
-  encrypted archive/recovery bindings. Focused field, service, native controller
-  and migration checks passed. The Linux source journey passed 31 checks across
-  three real app launches, including field exclusions through archive recovery
-  and the corrected Help-to-workspace transition.
-  All 12 ordinary CI jobs passed on `8aacc859`. The subsequent six-target run
-  completed the installed journeys on both Linux architectures and Apple
-  Silicon, but failed on both Windows targets and Intel macOS. The
-  [saved-key control batch](research/2026-10-21-durable-capture-implementation.md#saved-key-controls-and-platform-validation)
-  preserves inspect/pause and administrator retirement when saved credentials
-  are lost, without replacing accepted evidence or restoring cached keys to
-  disk. Exact-key recovery also refreshes that source's matching saved queue
-  observations while it stays paused. Its 80 service, 88 controller and 30
-  migration checks passed. The native probe's Windows credential-backend
-  mismatch is corrected; Intel Mac connector
-  diagnostics are improved while its failure remains unresolved. The expanded
-  Linux source boundary preview passed all 29 checks across two app launches;
-  all six packaged targets remain pending in run 39613577682 on `9095372a`.
-  A later [Supervisor correction](research/2026-10-21-durable-capture-implementation.md#supervised-headless-inbox-key-forwarding)
-  retains explicitly configured inbox-key environment references across a
-  registered connector launch. Six focused checks and an actual Linux
-  Supervisor crash/restart/offline-delivery journey passed; both macOS
-  supervision CI jobs now include them. Independent Windows supervision and
-  broader lifecycle acceptance remain open. The prior policy
-  checkpoint's failed health-response CI and its later test correction
-  remain recorded. This remains unreleased source. Reviewed identity/policy
-  migration, complete capture policy and coverage, headless installed acceptance,
-  bounded history and all six packaged targets remain required before L1 ships.
+- **Durable conversation capture remains in development.** Reviewed source now
+  provides encrypted local intake before network delivery, restart-safe queues,
+  current permission checks and permanent forgetting decisions. App and agent
+  controls share Selected/Conversation/Detailed presets, file selection, size
+  limits, optional JSON-field exclusions and an explicit preview. Coverage keeps
+  selected, omitted and unsupported records, unknown history, unaccepted bytes,
+  delivery receipts and indexing observations separate. Bounded backfill,
+  connection scheduling and configurable RAM, pending-byte, history and database
+  limits apply without requiring a librarian or a model for local capture.
+  See the [complete implementation checkpoint](research/2026-10-21-durable-capture-implementation.md)
+  and [app and agent guide](service/durable-capture.md).
+
+  Encrypted archive inspection, new-device recovery and reviewed policy replacement
+  now preserve original evidence and forgetting decisions, rotate protected keys,
+  retire old grants and install paused replacements. Independent headless
+  enrollment, background operation, paused delivery, recovery and policy
+  replacement use the same custody rules. Interrupted publication has explicit
+  finish/discard controls; wider organization/source migration remains open.
+  A further [retirement-interruption correction](research/2026-10-21-durable-capture-implementation.md#durable-intent-before-device-retirement)
+  saves recovery intent before revoking the old grant. App and headless recovery
+  expose unconfirmed retirement, require current administrator authority to
+  resolve it and read the server before retrying. The 47 affected recovery cases
+  include four real process-exit checks; all 96 native controller cases passed.
+  The app recovered a lost retirement reply without repeating the revocation.
+  Installed acceptance of this correction remains separate.
+
+  The new [scheduled-retention batch](research/2026-10-21-durable-capture-implementation.md#scheduled-capture-retention-source-delta)
+  adds an explicit approved expiry period and cleanup observations. Earliest
+  approved fragment-family deadlines cannot be extended by retries, revisions or
+  replacement keys. Bounded server cleanup preserves migration fences, audit and
+  deletion history. Recovery reconciles due families before publishing a restored
+  service. Existing copies may remain readable until cleanup; producer files,
+  offline pending evidence and archives have separate retention boundaries.
+
+  Source checks include real Codex 0.163.0 producer bytes, PostgreSQL recovery and
+  current-access scenarios. The latest matching-input Linux app journey passed
+  19 policy/expiry/recovery checks; the independent headless journey passed 17 checks.
+  The full installed run for the preceding scheduled-retention source is
+  [39788603173](https://github.com/Perseusxrltd/mnemion/actions/runs/39788603173).
+  Its Windows, macOS and Linux targets, each x64 and arm64, must pass before
+  installed acceptance is claimed. Earlier native receipts cover different
+  frozen sources and remain [documented separately](research/2026-10-21-durable-capture-implementation.md#current-installed-qualification).
+  Finish the [remaining L1 acceptance work](research/2026-10-21-durable-capture-implementation.md#required-before-l1-can-be-released),
+  including the shared-host/real-producer journey. Broader provider coverage,
+  migration, text redaction and later librarian layers remain in scope.
+
+- **4.44.2 is publicly available.** The Codex-format and Windows startup hotfix
+  passed its six-platform native gates, artifact verification and all six public
+  update checks. Website synchronization passed automatically. Download links,
+  release notes and current availability continue to follow Git; this public
+  hotfix does not include the unfinished durable-capture milestone. Actual
+  deployment and separate Grok Bot cloud acceptance remain tracked by
+  [the maintenance board](MAINTENANCE_STATUS.md).
 
 - **4.44 is published and accepted on the actual Windows app and shared host.** Certifi 2026.10.19 and
   Pillow 13.0.0 address the reported dependency advisories while preserving the
