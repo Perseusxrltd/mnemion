@@ -76,7 +76,16 @@ new/updated/closed issues, changed builds and failed job steps as bounded JSON.
 Active builds also report completed/successful job counts and the current steps
 of pending jobs. This uses the same bounded job response as failure detection;
 a step change is reported even when GitHub's enclosing run timestamp is unchanged.
-Unchanged polls remain silent, with no extra API request per job or step.
+Unchanged successful polls remain silent, with no extra API request per job or step.
+During a timed watch, failed or invalid reads emit `observation: unavailable`,
+the last successful observation time and a bounded retry delay. The previous
+complete inventory stays intact: a failed read cannot imply issue closure or a
+passing build. Retries back off to at most five minutes and remain within the
+requested watch period. Recovery emits a fresh `available` observation even if
+the inventory is unchanged. Ending during an outage exits nonzero. One-shot
+reads, including the generated-board CI job, still fail without replacing the
+saved inventory. Raw command errors and response bodies are not printed by the
+watch loop.
 The existing status workflow refreshes the
 [maintenance board](../MAINTENANCE_STATUS.md) on issue/comment changes, completed
 release workflows and its schedule. It reads trusted code from main; issue text

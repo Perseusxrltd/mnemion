@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 import json
 from pathlib import Path
 import re
+import subprocess
 import time
 
 from .published_release import REPOSITORY
@@ -290,6 +291,70 @@ def markdown(data: dict) -> str:
     return "\n".join(lines) + "\n"
 
 
+def observe(root: Path, *, write=False, watch_seconds=0, interval=60):
+    path = root / "deploy/maintenance-status.json"
+    previous = json.loads(path.read_text()) if path.exists() else {}
+    deadline = time.monotonic() + watch_seconds
+    first = True
+    failures = 0
+    last_success = None
+    while first or time.monotonic() < deadline:
+        try:
+            # Every operation in collect is a read. A failed or partial read
+            # must never replace the last complete inventory or imply closure.
+            current = collect(previous)
+        except (RuntimeError, OSError, subprocess.SubprocessError, ValueError, KeyError, TypeError):
+            if not watch_seconds:
+                raise
+            failures += 1
+            remaining = max(0, deadline - time.monotonic())
+            retry = min(interval * 2 ** min(failures - 1, 4), 300, remaining)
+            print(
+                json.dumps(
+                    {
+                        "observation": "unavailable",
+                        "observed_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                        "last_success_at": last_success,
+                        "error": "github_snapshot_unavailable",
+                        "consecutive_failures": failures,
+                        "retry_in_seconds": retry,
+                        "retained_snapshot": bool(previous),
+                    }
+                ),
+                flush=True,
+            )
+            first = False
+            if retry <= 0:
+                break
+            time.sleep(retry)
+            continue
+        summary = changes(previous, current)
+        last_success = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        current["observed_at"] = last_success
+        if write and summary["changed"]:
+            path.write_text(json.dumps(current, indent=2) + "\n")
+            (root / "docs/MAINTENANCE_STATUS.md").write_text(markdown(current))
+        if first or summary["changed"] or failures:
+            print(
+                json.dumps(
+                    {
+                        **summary,
+                        "observation": "available",
+                        "observed_at": last_success,
+                        "recovered": bool(failures),
+                    }
+                ),
+                flush=True,
+            )
+        failures = 0
+        previous, first = current, False
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        time.sleep(min(interval, remaining))
+    return 1 if failures else 0
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -305,26 +370,13 @@ def main():
     args = parser.parse_args()
     if not 0 <= args.watch_seconds <= 43200 or not 30 <= args.interval <= 60:
         parser.error("Use 0–43200 watch seconds and a 30–60 second interval")
-    root = Path(__file__).resolve().parents[1]
-    path = root / "deploy/maintenance-status.json"
-    previous = json.loads(path.read_text()) if path.exists() else {}
-    deadline = time.monotonic() + args.watch_seconds
-    first = True
-    while first or time.monotonic() < deadline:
-        current = collect(previous)
-        summary = changes(previous, current)
-        if args.write and summary["changed"]:
-            current["observed_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
-            path.write_text(json.dumps(current, indent=2) + "\n")
-            (root / "docs/MAINTENANCE_STATUS.md").write_text(markdown(current))
-        if first or summary["changed"]:
-            print(json.dumps(summary), flush=True)
-        previous, first = current, False
-        remaining = deadline - time.monotonic()
-        if remaining <= 0:
-            break
-        time.sleep(min(args.interval, remaining))
+    return observe(
+        Path(__file__).resolve().parents[1],
+        write=args.write,
+        watch_seconds=args.watch_seconds,
+        interval=args.interval,
+    )
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

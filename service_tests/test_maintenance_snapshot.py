@@ -1,6 +1,8 @@
 """Maintenance polling cannot infer closure from partial data or execute issue text."""
 
 import copy
+import json
+import subprocess
 
 import pytest
 
@@ -188,3 +190,107 @@ def test_generated_titles_are_text_instead_of_remote_images_or_html():
         "![remote](https://example.invalid/image) <script>run()</script> | next\nrow"
     )
     assert "![" not in value and "<script>" not in value and "\\|" in value and "\n" not in value
+
+
+@pytest.fixture
+def watch_inventory(tmp_path, monkeypatch):
+    (tmp_path / "deploy").mkdir()
+    (tmp_path / "docs").mkdir()
+    data = {
+        "schema": 1,
+        "repository": subject.REPOSITORY,
+        "run_window": 100,
+        "release": {"version": "v4.44.2", "url": "https://example.invalid/release"},
+        "issues": subject.issue_rows(
+            [{"number": 44, "title": "Existing report", "updatedAt": "2026-10-20", "labels": []}]
+        ),
+        "runs": [],
+    }
+    path = tmp_path / "deploy/maintenance-status.json"
+    path.write_text(json.dumps(data))
+    (tmp_path / "docs/MAINTENANCE_STATUS.md").write_text("Original inventory\n")
+    clock, delays = [0], []
+
+    def sleep(seconds):
+        assert seconds > 0
+        delays.append(seconds)
+        clock[0] += seconds
+
+    monkeypatch.setattr(subject.time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(subject.time, "sleep", sleep)
+    return tmp_path, data, path, delays
+
+
+@pytest.mark.parametrize(
+    "failure",
+    [
+        RuntimeError("private diagnostic output"),
+        subprocess.TimeoutExpired(["gh", "private diagnostic output"], 120),
+        ValueError("private diagnostic output"),
+    ],
+)
+def test_watcher_preserves_inventory_during_failed_read_and_reports_recovery(
+    watch_inventory, monkeypatch, capsys, failure
+):
+    root, original, path, delays = watch_inventory
+    retained = path.read_bytes()
+    changed = copy.deepcopy(original)
+    changed["issues"][0]["updated_at"] = "2026-10-22"
+    responses = iter([original, failure, changed])
+
+    def collect(previous):
+        value = next(responses)
+        assert path.read_bytes() == retained
+        assert (root / "docs/MAINTENANCE_STATUS.md").read_text() == "Original inventory\n"
+        assert previous["issues"] == original["issues"]
+        if isinstance(value, Exception):
+            raise value
+        return copy.deepcopy(value)
+
+    monkeypatch.setattr(subject, "collect", collect)
+    assert subject.observe(root, write=True, watch_seconds=90, interval=30) == 0
+    output = capsys.readouterr().out
+    assert "private diagnostic output" not in output
+    reports = [json.loads(line) for line in output.splitlines()]
+    assert [row["observation"] for row in reports] == ["available", "unavailable", "available"]
+    assert reports[1]["retained_snapshot"] and reports[1]["last_success_at"]
+    assert "closed_issues" not in reports[1] and "changed_runs" not in reports[1]
+    assert reports[2]["recovered"] and reports[2]["new_or_updated_issues"] == [44]
+    assert reports[2]["closed_issues"] == []
+    assert json.loads(path.read_text())["issues"] == changed["issues"]
+    assert delays == [30, 30, 30]
+
+
+def test_watch_outage_is_bounded_and_cannot_finish_with_success(
+    watch_inventory, monkeypatch, capsys
+):
+    root, _, path, delays = watch_inventory
+    retained = path.read_bytes()
+
+    def unavailable(previous):
+        raise RuntimeError("Read unavailable")
+
+    monkeypatch.setattr(subject, "collect", unavailable)
+    assert subject.observe(root, write=True, watch_seconds=1000, interval=60) == 1
+    assert delays == [60, 120, 240, 300, 280]
+    assert path.read_bytes() == retained
+    assert (root / "docs/MAINTENANCE_STATUS.md").read_text() == "Original inventory\n"
+    reports = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
+    assert len(reports) == 5 and all(row["last_success_at"] is None for row in reports)
+    assert reports[-1]["consecutive_failures"] == 5
+
+
+def test_one_shot_read_failure_still_fails_ci_without_replacing_inventory(
+    watch_inventory, monkeypatch, capsys
+):
+    root, _, path, delays = watch_inventory
+    retained = path.read_bytes()
+
+    def unavailable(previous):
+        raise RuntimeError("Read unavailable")
+
+    monkeypatch.setattr(subject, "collect", unavailable)
+    with pytest.raises(RuntimeError, match="Read unavailable"):
+        subject.observe(root, write=True)
+    assert path.read_bytes() == retained and not delays
+    assert capsys.readouterr().out == ""

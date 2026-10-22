@@ -60,9 +60,12 @@ workflow labels and closes them only after their release has passed and is
 public. Reopened labeled reports remain open. Use
 `python -m deploy.issue_releases` for a read-only preview.
 For a release session, run `python -m deploy.maintenance_snapshot --watch-seconds 3600`
-in the background. It emits only changes after its first observation, reuses
-completed failure evidence, checks active jobs once a minute and stops after the
-requested duration. It does not retry jobs, edit issues or publish anything.
+in the background. It emits changes, read failures and recoveries, reuses completed
+failure evidence, checks active jobs once a minute and stops after the requested
+duration. Failed or invalid reads retain the last complete inventory, report
+`observation: unavailable` and retry with backoff capped at five minutes. An outage
+at the end of the watch exits nonzero; one-shot CI reads still fail immediately.
+It does not retry jobs, edit issues or publish anything.
 
 **Warm native database caches** runs on main each day and when the pinned database
 sources or build instructions change. GitHub release branches can read main's
