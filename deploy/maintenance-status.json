@@ -37,25 +37,9 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 7,
-        "succeeded": 7,
+        "completed": 9,
+        "succeeded": 8,
         "active": [
-          {
-            "id": 119977527336,
-            "name": "supervision (macos-15)",
-            "status": "queued",
-            "runner_assigned": null,
-            "steps": []
-          },
-          {
-            "id": 119977527432,
-            "name": "supervision (macos-15-intel)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify managed installation, host recovery, signed updates and rollback with real processes"
-            ]
-          },
           {
             "id": 119977527496,
             "name": "service (3.14)",
@@ -85,7 +69,16 @@
           }
         ]
       },
-      "failed_jobs": []
+      "failed_jobs": [
+        {
+          "name": "supervision (macos-15)",
+          "id": 119977527336,
+          "conclusion": "cancelled",
+          "runner_assigned": false,
+          "steps_reported": 0,
+          "steps": []
+        }
+      ]
     },
     {
       "id": 39815622908,
@@ -104,28 +97,10 @@
       "workflow": "desktop.yml",
       "branch": "main",
       "source_commit": "d358726366bfef0e4cbddcb69741512de1d2fd78",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-22T16:45:10Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39814732365",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 18,
-        "completed": 17,
-        "succeeded": 17,
-        "active": [
-          {
-            "id": 119952343708,
-            "name": "windows-11-arm / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Native Windows installation, authenticated upgrade and relaunch"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-22T17:40:44Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39814732365"
     },
     {
       "id": 39762122867,
@@ -183,5 +158,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39762118327"
     }
   ],
-  "observed_at": "2026-10-22T17:37:32+00:00"
+  "observed_at": "2026-10-22T17:40:59+00:00"
 }
