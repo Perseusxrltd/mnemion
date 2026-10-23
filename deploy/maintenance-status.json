@@ -93,48 +93,39 @@
       "workflow": "release.yml",
       "branch": "release/4.46.5-r2",
       "source_commit": "8f022bd73ee364d681214a1b60421770c061e7e9",
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-23T20:44:16Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40013991029"
+    },
+    {
+      "id": 40021524126,
+      "attempt": 1,
+      "workflow": "verify-artifacts.yml",
+      "branch": "main",
+      "source_commit": "7aa8da8dce601ddb04b5a4bb1c89ff977996e566",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-23T19:49:13Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40013991029",
+      "updated_at": "2026-10-23T20:44:23Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40021524126",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 14,
-        "completed": 12,
-        "succeeded": 11,
+        "total": 1,
+        "completed": 0,
+        "succeeded": 0,
         "active": [
           {
-            "id": 120621818199,
-            "name": "native / native_database / Database / linux / arm64",
+            "id": 120646993889,
+            "name": "verify",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Compile pinned PostgreSQL, vector extension and static libraries"
-            ]
-          },
-          {
-            "id": 120622618538,
-            "name": "native / Service engine / Windows x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m deploy.build_native_engine --work build-tmp/windows-engine-build --output build-tmp/windows-engine"
+              "Verify every uploaded byte, production signature and complete feed"
             ]
           }
         ]
       },
       "failed_jobs": []
-    },
-    {
-      "id": 40011337514,
-      "attempt": 1,
-      "workflow": "verify-artifacts.yml",
-      "branch": "main",
-      "source_commit": "f6a8f703dd5118e315118f3cc8e6e081c7b7f1a8",
-      "status": "completed",
-      "conclusion": "skipped",
-      "updated_at": "2026-10-23T19:25:48Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40011337514"
     },
     {
       "id": 40014218141,
@@ -159,5 +150,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40005399880"
     }
   ],
-  "observed_at": "2026-10-23T19:49:50+00:00"
+  "observed_at": "2026-10-23T20:45:00+00:00"
 }

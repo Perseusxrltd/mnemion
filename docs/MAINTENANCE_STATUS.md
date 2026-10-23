@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-23T19:49:50+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-23T20:45:00+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.4](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.4). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -21,17 +21,16 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | public-updates\.yml | v4\.46\.4 | success | [Run 40005404536](https://github.com/Perseusxrltd/mnemion/actions/runs/40005404536) |
 | release\.yml | release/4\.46\.4 | success | [Run 39997298864](https://github.com/Perseusxrltd/mnemion/actions/runs/39997298864) |
 | release\.yml | release/4\.46\.5 | failure | [Run 40002385734](https://github.com/Perseusxrltd/mnemion/actions/runs/40002385734) |
-| release\.yml | release/4\.46\.5-r2 | in\_progress | [Run 40013991029](https://github.com/Perseusxrltd/mnemion/actions/runs/40013991029) |
-| verify-artifacts\.yml | main | skipped | [Run 40011337514](https://github.com/Perseusxrltd/mnemion/actions/runs/40011337514) |
+| release\.yml | release/4\.46\.5-r2 | success | [Run 40013991029](https://github.com/Perseusxrltd/mnemion/actions/runs/40013991029) |
+| verify-artifacts\.yml | main | in\_progress | [Run 40021524126](https://github.com/Perseusxrltd/mnemion/actions/runs/40021524126) |
 | website-release\.yml | main | success | [Run 40014218141](https://github.com/Perseusxrltd/mnemion/actions/runs/40014218141) |
 | website-release\.yml | v4\.46\.4 | success | [Run 40005399880](https://github.com/Perseusxrltd/mnemion/actions/runs/40005399880) |
 
 ## Active jobs
 
-[Run 40013991029](https://github.com/Perseusxrltd/mnemion/actions/runs/40013991029): 12/14 jobs completed; 11 succeeded.
+[Run 40021524126](https://github.com/Perseusxrltd/mnemion/actions/runs/40021524126): 0/1 jobs completed; 0 succeeded.
 
-- native / native\_database / Database / linux / arm64: in\_progress — Compile pinned PostgreSQL, vector extension and static libraries.
-- native / Service engine / Windows x64: in\_progress — Run uv run --no-sync python -m deploy\.build\_native\_engine --work build-tmp/windows-engine-build --output build-tmp/windows-engine.
+- verify: in\_progress — Verify every uploaded byte, production signature and complete feed.
 
 
 ## Unsuccessful jobs
