@@ -46,7 +46,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run python deploy/bundle_studio.py"
+              "Independent host control through the real desktop profile and native engine"
             ]
           }
         ]
@@ -222,5 +222,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39907323013"
     }
   ],
-  "observed_at": "2026-10-23T07:06:48+00:00"
+  "observed_at": "2026-10-23T07:07:22+00:00"
 }
