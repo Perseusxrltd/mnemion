@@ -26,6 +26,9 @@ updates and host controls. Instrument fixed workflow boundaries without reading
 their content for telemetry. Each supported workflow must have an explicit
 measurement or a documented exclusion, also visible in the local payload preview.
 
+The [proposed metric catalog and ownership map](anonymous-product-telemetry-catalog.md)
+maps this scope to current source boundaries and records unresolved coverage.
+
 | Include as bounded aggregates | Exclude from collection, queue, transport and collector logs |
 | --- | --- |
 | Feature use, completion/failure counts and sampled latency histograms | Memory/chat/prompt contents, responses, snippets, embeddings, transcripts and screenshots |
