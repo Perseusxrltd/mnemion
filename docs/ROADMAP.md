@@ -34,6 +34,16 @@ availability and release gates; each deployment requires its own acceptance.
   current live-update/independent-host milestone; it is not shipping or included
   in frozen 4.46.1. The previous 65 requirement texts and states are preserved.
 
+- **4.46.1 publication — 23 October 2026, 08:46:59 UTC.** All six
+  [native targets](validation/2026-10-23-4461-native-acceptance.md), independent
+  artifact verification, all six public installed updates and automatic website
+  synchronization passed. The generated
+  [release status receipt](validation/releases/4.46.1-status.json) records all
+  five gates. The actual Windows app reached 4.46.1; the shared host was still
+  creating its pre-update backup. Paired acceptance, fresh off-host backup,
+  production controller adoption and two-custodian operations remain unproven
+  at this checkpoint. All 66 requirement states remain unchanged.
+
 - **4.46.1 managed-startup hotfix — 23 October 2026.** The
   [source change](releases/4.46.1.md) defers unrelated command initialization
   and preserves bounded readiness diagnostics through runtime rollback. The

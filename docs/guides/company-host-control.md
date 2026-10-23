@@ -1,10 +1,12 @@
 # Control an adopted company host
 
-**Available in the published 4.46.0 desktop.** Host controls and native agent
-actions passed [installed qualification on all six targets](../validation/2026-10-23-4460-native-acceptance.md).
+**Available in the published 4.46.1 desktop.** Host controls and native agent
+actions passed [installed qualification on all six targets](../validation/2026-10-23-4461-native-acceptance.md).
 All six public installed-update targets also passed. The separate
 [23 October live rollout](../validation/2026-10-23-4460-live-rollout.md) records
-the shared host's rollback and unfinished production adoption. Use
+the previous release's host rollback and unfinished production adoption. The
+4.46.1 public qualification does not establish actual paired acceptance or
+production controller adoption. Use
 [release status](../RELEASE_STATUS.md) for current package availability and
 the [qualification section](#qualification-and-remaining-work) for evidence limits.
 
@@ -862,6 +864,16 @@ diagnostic interface. The OS owner can inspect protected local logs when a
 bounded error requires investigation.
 
 ## Qualification and remaining work
+
+The **4.46.1 qualification at 08:30 UTC on 23 October 2026** passed all six
+installed targets and their packaged host-control journeys. The
+[current native report](../validation/2026-10-23-4461-native-acceptance.md)
+retains the source/run bindings, unchanged qualification receipt, corrected
+Windows journal-form failure and subsequent six-platform public update results.
+All five [release gates](../validation/releases/4.46.1-status.json) passed by
+08:46:59 UTC, including automatic website synchronization. At that checkpoint
+Windows had updated, while the shared host's pre-update backup was still
+running. Actual paired acceptance and production host adoption remain separate.
 
 The **23 October 2026 native qualification** passed all six installed Windows,
 macOS and Linux x64/ARM64 targets for the published 4.46.0 source. The

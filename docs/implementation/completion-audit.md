@@ -8,7 +8,9 @@ separate planned addition: **66 total, 17 shipped (25.8%), 42 partial, 0 buildin
 3 planned, 3 ongoing and 1 external**.
 This audit changes work order; it neither narrows scope nor marks a parent done.
 
-Continue frozen 4.46.1 and the current live-update/independent-host milestone.
+Complete the actual 4.46.1 live update and current independent-host milestone.
+Its [native and public release gates](../validation/2026-10-23-4461-native-acceptance.md)
+have passed; production acceptance remains separate.
 Queue [V08 anonymous product telemetry](anonymous-product-telemetry.md) after
 that milestone; it is not part of the frozen hotfix. Keep one feature milestone
 alongside urgent operational bugs. Next prioritize independent shared administration, source freshness,
