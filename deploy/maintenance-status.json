@@ -30,28 +30,10 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "4fc814c7226c7aea9b7c86f77c73a82c98fdf2c9",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-23T18:45:42Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40005940612",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 8,
-        "completed": 7,
-        "succeeded": 2,
-        "active": [
-          {
-            "id": 120593720620,
-            "name": "studio",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Independent host control through the real desktop profile and native engine"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-23T18:46:35Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40005940612"
     },
     {
       "id": 40005404536,
@@ -196,7 +178,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Package the native desktop with one bounded upstream-download retry"
+              "Installed app creates, searches and reopens a real local workspace"
             ]
           },
           {
@@ -205,7 +187,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Locked native service build dependencies"
+              "Run uv run --project studio/client --no-sync python -m pytest client_tests -q"
             ]
           },
           {
@@ -282,5 +264,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40005399880"
     }
   ],
-  "observed_at": "2026-10-23T18:46:29+00:00"
+  "observed_at": "2026-10-23T18:47:10+00:00"
 }
