@@ -68,12 +68,6 @@
       "updated_at": "2026-10-23T07:37:41Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39913638457",
       "job_details_schema": 2,
-      "job_progress": {
-        "total": 34,
-        "completed": 34,
-        "succeeded": 30,
-        "active": []
-      },
       "failed_jobs": [
         {
           "name": "native / windows-2022 / x64",
@@ -85,7 +79,13 @@
             "Installed app creates, searches and reopens a real local workspace"
           ]
         }
-      ]
+      ],
+      "job_progress": {
+        "total": 34,
+        "completed": 34,
+        "succeeded": 30,
+        "active": []
+      }
     },
     {
       "id": 39916372505,
@@ -95,57 +95,21 @@
       "source_commit": "94684f002b707d6750edde2a00d7254f155f3eae",
       "status": "queued",
       "conclusion": null,
-      "updated_at": "2026-10-23T07:38:12Z",
+      "updated_at": "2026-10-23T07:38:57Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39916372505",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 19,
-        "completed": 4,
-        "succeeded": 3,
+        "total": 24,
+        "completed": 11,
+        "succeeded": 10,
         "active": [
-          {
-            "id": 120299614038,
-            "name": "checks / lint",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Retain source scan receipt without matched content"
-            ]
-          },
-          {
-            "id": 120299614092,
-            "name": "checks / studio",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Check the lightweight native client before six-platform packaging"
-            ]
-          },
-          {
-            "id": 120299664196,
-            "name": "native / Encrypted files / Windows / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
-            ]
-          },
           {
             "id": 120299664252,
             "name": "native / Encrypted files / Windows / arm64",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Set up job"
-            ]
-          },
-          {
-            "id": 120299664401,
-            "name": "checks / dependency-audit",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
+              "Run actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1"
             ]
           },
           {
@@ -153,9 +117,7 @@
             "name": "checks / container (ubuntu-22.04)",
             "status": "in_progress",
             "runner_assigned": true,
-            "steps": [
-              "Set up job"
-            ]
+            "steps": []
           },
           {
             "id": 120299664469,
@@ -163,7 +125,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
+              "Post Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
             ]
           },
           {
@@ -171,7 +133,9 @@
             "name": "checks / supervision (macos-15)",
             "status": "in_progress",
             "runner_assigned": true,
-            "steps": []
+            "steps": [
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
+            ]
           },
           {
             "id": 120299664521,
@@ -179,15 +143,8 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Initialize containers"
+              "Run npm --prefix packages/client ci && npm --prefix packages/client test"
             ]
-          },
-          {
-            "id": 120299664557,
-            "name": "checks / container (ubuntu-22.04-arm)",
-            "status": "queued",
-            "runner_assigned": false,
-            "steps": []
           },
           {
             "id": 120299664560,
@@ -195,15 +152,17 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Set up job"
+              "Run npm --prefix packages/client ci && npm --prefix packages/client test"
             ]
           },
           {
             "id": 120299664576,
             "name": "checks / supervision (macos-15-intel)",
-            "status": "queued",
-            "runner_assigned": false,
-            "steps": []
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the current Intel cryptography runtime with static OpenSSL"
+            ]
           },
           {
             "id": 120299664602,
@@ -211,26 +170,43 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Initialize containers"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
-            "id": 120299664832,
-            "name": "native / native_database / Private state / Windows / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Set up job"
-            ]
+            "id": 120299945501,
+            "name": "native / native_database / Database / linux / x64",
+            "status": "queued",
+            "runner_assigned": false,
+            "steps": []
           },
           {
-            "id": 120299664939,
-            "name": "native / native_database / Private state / Windows / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
-            ]
+            "id": 120299945507,
+            "name": "native / native_database / Database / macos / x64",
+            "status": "queued",
+            "runner_assigned": false,
+            "steps": []
+          },
+          {
+            "id": 120299945600,
+            "name": "native / native_database / Database / windows / x64",
+            "status": "queued",
+            "runner_assigned": false,
+            "steps": []
+          },
+          {
+            "id": 120299945611,
+            "name": "native / native_database / Database / macos / arm64",
+            "status": "queued",
+            "runner_assigned": false,
+            "steps": []
+          },
+          {
+            "id": 120299945646,
+            "name": "native / native_database / Database / linux / arm64",
+            "status": "queued",
+            "runner_assigned": false,
+            "steps": []
           }
         ]
       },
@@ -270,5 +246,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39907323013"
     }
   ],
-  "observed_at": "2026-10-23T07:38:18+00:00"
+  "observed_at": "2026-10-23T07:39:01+00:00"
 }
