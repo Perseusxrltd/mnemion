@@ -74,39 +74,39 @@
       "workflow": "release.yml",
       "branch": "release/4.46.2",
       "source_commit": "1fc96a82df8c4d7ae9420962187c4546b51ec60a",
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-23T12:14:51Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39945380878"
+    },
+    {
+      "id": 39951889805,
+      "attempt": 1,
+      "workflow": "verify-artifacts.yml",
+      "branch": "main",
+      "source_commit": "aaac2d4e720d54b2a7b226dc0b9584bcf5caf93c",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-23T12:12:11Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39945380878",
+      "updated_at": "2026-10-23T12:14:58Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39951889805",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 33,
-        "completed": 32,
-        "succeeded": 31,
+        "total": 1,
+        "completed": 0,
+        "succeeded": 0,
         "active": [
           {
-            "id": 120406933380,
-            "name": "assemble",
+            "id": 120408091026,
+            "name": "verify",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093"
+              "Verify every uploaded byte, production signature and complete feed"
             ]
           }
         ]
       },
       "failed_jobs": []
-    },
-    {
-      "id": 39925023152,
-      "attempt": 1,
-      "workflow": "verify-artifacts.yml",
-      "branch": "main",
-      "source_commit": "da5b7a99689c5223cdde919f6be5564c1cdadd1b",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-23T08:35:02Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39925023152"
     },
     {
       "id": 39950527337,
@@ -131,5 +131,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39925659880"
     }
   ],
-  "observed_at": "2026-10-23T12:12:51+00:00"
+  "observed_at": "2026-10-23T12:15:23+00:00"
 }
