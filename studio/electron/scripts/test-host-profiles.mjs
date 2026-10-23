@@ -144,6 +144,43 @@ test('a refused replay preserves the original outcome and an explicit archive ke
   } finally { await rm(directory, { recursive: true, force: true }) }
 })
 
+test('backup verification preserves an uncertain service request while new backup creation stays blocked', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'mnemion-host-profile-')), secure = cipher(), sent = []
+  try {
+    const manager = new HostProfiles(directory, secure, helper(async value => {
+      sent.push(value.request)
+      if (value.request.action === 'service.stop') throw new Error('Reply lost')
+      assert.equal(value.request.action, 'backup.verify')
+      return reply(value.connection, value.request, { phase: 'queued' })
+    }))
+    const created = await manager.create('Backup operator'), host = connection(), original = request(host)
+    await manager.enroll(created.id, host, true)
+    await assert.rejects(manager.request(created.id, original), /Reply lost/)
+    const backup = {
+      protocol: 1, host_id: host.host_id, request_id: randomUUID(), action: 'backup.create',
+      issued_at: new Date().toISOString(), valid_until: new Date(Date.now() + 600000).toISOString(),
+      configuration_sha256: 'c'.repeat(64), approve_backup_transfer: true,
+    }
+    await assert.rejects(manager.request(created.id, backup), /outstanding host operation/)
+    assert.equal(sent.length, 1)
+    assert.deepEqual((await manager.status()).profiles[0].last_operation.request, original)
+    const verify = { ...backup, request_id: randomUUID(), action: 'backup.verify', backup_id: randomUUID() }
+    await manager.request(created.id, verify)
+    assert.deepEqual(sent, [original, verify])
+    const reopened = new HostProfiles(directory, secure, helper())
+    const retained = (await reopened.status()).profiles[0]
+    assert.deepEqual(retained.last_operation.request, verify)
+    assert.equal(retained.last_operation.phase, 'queued')
+    const records = (await reopened.recoveries()).records
+    assert.equal(records.length, 1)
+    const archived = await reopened.recovery(records[0].id)
+    assert.deepEqual(archived.profile.last_operation.request, original)
+    assert.equal(archived.original_outcome, 'unconfirmed')
+    assert.equal(JSON.stringify(archived).includes(keys.private_key), false)
+    assert.equal(JSON.stringify(archived).includes('sealed'), false)
+  } finally { await rm(directory, { recursive: true, force: true }) }
+})
+
 test('host controls are available without selecting a memory workspace and reject unrelated fields', async () => {
   for (const action of ['host.profiles', 'host.schema', 'host.inspect', 'host.create', 'host.enroll', 'host.forget', 'host.request', 'host.recoveries', 'host.recovery', 'host.request.archive']) {
     assert.equal(desktopAction(action, {}).workspace, false)

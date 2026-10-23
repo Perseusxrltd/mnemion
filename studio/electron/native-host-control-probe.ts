@@ -74,6 +74,31 @@ export async function verifyNativeHostControl(window: BrowserWindow): Promise<Re
     const observed = await callNativeOperator('host.inspect', { id: profile.id })
     if (!observed.status.ok || observed.status.result.operator.role !== 'operator' ||
         observed.status.result.service.running !== false || !observed.status.result.service.native_transport_fixture) throw new Error('The native host client did not authenticate independently of a memory API')
+    const schema = await callNativeOperator('host.schema')
+    if (!schema.roles.operator.includes('backup.create') || !schema.roles.operator.includes('backup.verify')) throw new Error('The packaged native agent is missing backup operations')
+    let unapprovedBackupRefused = false
+    try {
+      await callNativeOperator('host.request', { id: profile.id, request: {
+        protocol: 1, host_id: connection.host_id, request_id: crypto.randomUUID(), action: 'backup.create',
+        issued_at: new Date().toISOString(), valid_until: new Date(Date.now() + 600000).toISOString(),
+        configuration_sha256: observed.status.result.service.backups.configuration_sha256,
+        approve_backup_transfer: false,
+      } })
+    } catch { unapprovedBackupRefused = true }
+    if (!unapprovedBackupRefused || (await callNativeOperator('host.profiles')).profiles[0].last_operation) throw new Error('An unapproved native backup request was recorded')
+    await view(window, `(() => {
+      const section = document.querySelector('[aria-labelledby="host-backups-heading"]');
+      const box = section?.querySelector('input[type=checkbox]');
+      const create = [...(section?.querySelectorAll('button') ?? [])].find(item => item.textContent === 'Create encrypted backup');
+      const verify = [...(section?.querySelectorAll('button') ?? [])].find(item => item.textContent === 'Verify stored copy');
+      return !!(box && !box.checked && create?.disabled && verify?.disabled && section.querySelector('tbody tr'));
+    })()`)
+    await window.webContents.executeJavaScript(`document.querySelector('[aria-labelledby="host-backups-heading"] input[type=checkbox]').click()`)
+    await view(window, `(() => {
+      const buttons = [...document.querySelectorAll('[aria-labelledby="host-backups-heading"] button')];
+      return buttons.length === 2 && buttons.every(button => !button.disabled);
+    })()`)
+    await window.webContents.executeJavaScript(`document.querySelector('[aria-labelledby="host-backups-heading"] input[type=checkbox]').click()`)
     await window.webContents.executeJavaScript(`(() => {
       const box = [...document.querySelectorAll('.ws-host-page label')].find(item => item.textContent.includes('I approve service changes and possible interruption'))?.querySelector('input');
       if (!box) throw new Error('Native host service approval is missing'); box.click();
@@ -92,6 +117,7 @@ export async function verifyNativeHostControl(window: BrowserWindow): Promise<Re
     if (raw.includes('PRIVATE KEY') || !JSON.parse(raw).profiles[0].sealed || JSON.stringify(saved).includes('sealed')) throw new Error('Native host key storage or public projection failed')
     return { phase: 'save', available: true, nativeAgentPipe: true, actualSetupControls: true,
       pinnedSSHAuthenticated: true, memoryAPIAbsent: true, protectedKeySaved: true, savedRequest: saved.last_operation.request,
+      backupApprovalControls: true, backupSchemaAvailable: true, unapprovedBackupRequestRefused: true,
       profileId: saved.id, hostId: connection.host_id, actualQueuedRequestVisible: true, queuedServiceEffectsExecuted: false }
   }
   const original = config.host

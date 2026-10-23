@@ -1,8 +1,10 @@
 """Fresh encrypted host backups before an independently authorized cutover."""
 
 from contextlib import contextmanager
+from datetime import datetime
 import hashlib
 from pathlib import Path
+import re
 import shutil
 
 from pydantic import Field, field_validator
@@ -94,8 +96,8 @@ def configuration(root):
         ) from None
 
 
-def fingerprint(root):
-    spec = configuration(root)
+def fingerprint(root, *, spec=None):
+    spec = configuration(root) if spec is None else spec
     credentials = {}
     if spec.destination.ssh is not None:
         for name in ("identity_file", "known_hosts_file"):
@@ -141,22 +143,120 @@ def file_budget(maximum):
         resource.setrlimit(resource.RLIMIT_FSIZE, previous)
 
 
+def recorded(root):
+    index = root / "backup-index.json"
+    try:
+        receipts = state_io.read(index)["backups"] if index.exists() or index.is_symlink() else []
+        # A successful capture can briefly add one record before retention runs.
+        if (
+            not isinstance(receipts, list)
+            or len(receipts) > 21
+            or any(not isinstance(item, dict) for item in receipts)
+        ):
+            raise ValueError
+        for receipt in receipts:
+            identifier(receipt["operation_id"])
+        return receipts
+    except (OSError, ValueError, KeyError, TypeError):
+        raise HostControlError("backup_required", "Inspect the retained backup index.") from None
+
+
+def public_receipt(root, receipt):
+    """Bounded inventory; private destinations, paths and credentials stay local."""
+    backup_id = identifier(receipt["operation_id"])
+
+    def date(value):
+        if (
+            not isinstance(value, str)
+            or len(value) > 64
+            or datetime.fromisoformat(value).tzinfo is None
+        ):
+            raise ValueError("Invalid backup observation time")
+        return value
+
+    key_id = receipt["key_id"]
+    if not isinstance(key_id, str) or not re.fullmatch(r"[a-f0-9]{24}", key_id):
+        raise ValueError("Invalid backup key identity")
+    if any(
+        receipt.get(key) is not True
+        for key in (
+            "remote_readback_verified",
+            "remote_storage",
+            "independent_storage_confirmed",
+            "independent_key_custody_confirmed",
+        )
+    ):
+        raise ValueError("Unverified backup receipt")
+    files = receipt["files"]
+    if not isinstance(files, dict) or set(files) != {"bundle", "ledger"}:
+        raise ValueError("Incomplete backup files")
+    public_files = {}
+    for name, item in files.items():
+        size, digest = item["bytes"], item["sha256"]
+        if (
+            type(size) is not int
+            or not 0 < size <= 2 * 1024**3
+            or not isinstance(digest, str)
+            or not re.fullmatch(r"[a-f0-9]{64}", digest)
+        ):
+            raise ValueError("Invalid backup file identity")
+        public_files[name] = {"bytes": size, "sha256": digest}
+    total = sum(item["bytes"] for item in public_files.values())
+    if total > 2 * 1024**3:
+        raise ValueError("Backup exceeds the supported bound")
+    verified = date(receipt["verified_at"])
+    last_verified = verified
+    readback = root / "backups" / backup_id / "readback.json"
+    if readback.exists() or readback.is_symlink():
+        observed = state_io.read(readback)
+        if observed["receipt_sha256"] != hashlib.sha256(canonical(receipt)).hexdigest():
+            raise ValueError("Backup readback identifies another receipt")
+        last_verified = date(observed["verified_at"])
+    version = receipt.get("service_version")
+    if version is not None and (
+        not isinstance(version, str)
+        or not re.fullmatch(r"[0-9]{1,6}\.[0-9]{1,6}\.[0-9]{1,6}", version)
+    ):
+        raise ValueError("Invalid backup version")
+    return {
+        "backup_id": backup_id,
+        "key_id": key_id,
+        "service_version": version,
+        "snapshot_at": date(receipt["snapshot_at"]),
+        "ledger_at": date(receipt["ledger_at"]),
+        "verified_at": verified,
+        "last_verified_at": last_verified,
+        "bytes": total,
+        "files": public_files,
+        "remote_readback_verified": True,
+        "controller_authority_included": False,
+    }
+
+
 def status(root):
     try:
         spec = configuration(root)
         configured, key_id = True, spec.key_id
-    except HostControlError:
+        configuration_sha256 = fingerprint(root, spec=spec)
+    except (HostControlError, ValueError, OSError):
         configured, key_id = False, None
-    index = root / "backup-index.json"
+        configuration_sha256 = None
     try:
-        receipts = state_io.read(index).get("backups", []) if index.exists() else []
-    except ValueError:
+        receipts = [public_receipt(root, item) for item in recorded(root)]
+    except (OSError, ValueError, TypeError, KeyError, HostControlError):
         return {"configured": configured, "inspection_required": True}
     return {
         "configured": configured,
         "key_id": key_id,
-        "last_verified_at": receipts[-1]["verified_at"] if receipts else None,
+        "configuration_sha256": configuration_sha256,
+        "maximum_bytes": spec.maximum_bytes if configured else None,
+        "last_verified_at": max(
+            (item["last_verified_at"] for item in receipts), key=datetime.fromisoformat
+        )
+        if receipts
+        else None,
         "retained_verified_backups": len(receipts),
+        "items": list(reversed(receipts)),
         "independence": "confirmed_by_host_owner" if configured else "unconfirmed",
     }
 
@@ -232,6 +332,7 @@ def fresh(root, value, operation_id):
         "verified_at": timestamp(),
         "snapshot_at": bundle["plan"]["snapshot_at"],
         "ledger_at": ledger["snapshot_at"],
+        "service_version": runtime["version"],
         **delivery,
         "independent_storage_confirmed": True,
         "independent_key_custody_confirmed": True,

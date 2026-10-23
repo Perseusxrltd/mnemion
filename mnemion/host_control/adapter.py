@@ -48,6 +48,10 @@ def status(root, value, store):
 
 def execute(root, value, store, job, request, *, before_effect):
     service = Path(value["service_state"])
+    if request.action in {"backup.create", "backup.verify"}:
+        from .backup_jobs import execute as backup_job
+
+        return backup_job(root, value, store, job, request, before_effect=before_effect)
     if request.action in {"service.start", "service.stop", "operations.resolve"}:
         with operator_lock(service / "updates"):
             store.guard(job["operation_id"])

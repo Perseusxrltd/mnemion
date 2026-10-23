@@ -123,6 +123,8 @@ def work(root: Path, descriptor: int):
                         "authority_changed",
                         "plan_changed",
                         "backup_required",
+                        "backup_configuration_changed",
+                        "backup_not_found",
                         "request_expired",
                     }:
                         code = "operation_failed"

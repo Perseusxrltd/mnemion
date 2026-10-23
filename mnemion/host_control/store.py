@@ -464,6 +464,8 @@ class Store:
         if request.action not in {
             "service.start",
             "service.stop",
+            "backup.create",
+            "backup.verify",
             "upgrade.plan",
             "upgrade.apply",
             "operations.resolve",
@@ -569,6 +571,7 @@ class Store:
                 if blocked and row["action"] not in {
                     "upgrade.plan",
                     "upgrade.apply",
+                    "backup.verify",
                     "operations.resolve",
                 }:
                     continue
@@ -619,7 +622,7 @@ class Store:
                 conn.execute(
                     """SELECT 1 FROM operations WHERE phase='running' OR
                     (phase='queued' AND (?=0 OR valid_until<=? OR
-                     action IN ('upgrade.plan','upgrade.apply','operations.resolve'))) LIMIT 1""",
+                     action IN ('upgrade.plan','upgrade.apply','backup.verify','operations.resolve'))) LIMIT 1""",
                     (int(blocked), timestamp()),
                 ).fetchone()
                 is not None
@@ -829,6 +832,8 @@ class Store:
             "authority_changed",
             "plan_changed",
             "backup_required",
+            "backup_configuration_changed",
+            "backup_not_found",
             "operation_failed",
             "request_expired",
         }:

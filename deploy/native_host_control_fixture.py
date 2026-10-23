@@ -23,6 +23,7 @@ from mnemion.host_control.protocol import Operator, canonical, parse, timestamp
 from mnemion.host_control.server import listen
 from mnemion.host_control.store import SCHEMA, Store
 from mnemion.host_control.transport import Connection
+from mnemion.version import __version__
 
 
 def fixture_store(root):
@@ -88,17 +89,47 @@ async def serve(root):
                 ),
             )
             key = asyncssh.generate_private_key("ssh-ed25519")
+            captured = timestamp()
+            # Synthetic inventory exercises native controls only. No memory host,
+            # capture, Git delivery or restored data is created by this peer.
+            host_state = {
+                "running": False,
+                "ready": False,
+                "native_transport_fixture": True,
+                "service_effects_executed": False,
+                "backups": {
+                    "configured": True,
+                    "configuration_sha256": "a" * 64,
+                    "key_id": "b" * 24,
+                    "maximum_bytes": 32 * 1024**2,
+                    "last_verified_at": captured,
+                    "retained_verified_backups": 1,
+                    "items": [
+                        {
+                            "backup_id": str(uuid4()),
+                            "key_id": "b" * 24,
+                            "service_version": __version__,
+                            "snapshot_at": captured,
+                            "ledger_at": captured,
+                            "verified_at": captured,
+                            "last_verified_at": captured,
+                            "bytes": 32,
+                            "files": {
+                                kind: {"bytes": 16, "sha256": "c" * 64}
+                                for kind in ("bundle", "ledger")
+                            },
+                            "remote_readback_verified": True,
+                            "controller_authority_included": False,
+                        }
+                    ],
+                },
+            }
             listener = await cleanup.enter_async_context(
                 listen(
                     store,
                     key.export_private_key(),
                     port=0,
-                    host_status=lambda: {
-                        "running": False,
-                        "ready": False,
-                        "native_transport_fixture": True,
-                        "service_effects_executed": False,
-                    },
+                    host_status=lambda current=host_state: current,
                 )
             )
             connection = Connection(

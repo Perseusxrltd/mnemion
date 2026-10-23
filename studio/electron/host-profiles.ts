@@ -276,7 +276,7 @@ export class HostProfiles {
         request = validated.request as HostRequest
         const last = item.last_operation
         if (last && !finished.has(last.phase) && last.request.request_id !== request.request_id &&
-            !['upgrade.plan', 'upgrade.apply', 'operations.resolve'].includes(request.action)) throw new Error('Inspect or resolve the outstanding host operation before starting different work.')
+            !['upgrade.plan', 'upgrade.apply', 'backup.verify', 'operations.resolve'].includes(request.action)) throw new Error('Inspect or resolve the outstanding host operation before starting different work.')
         if (last?.request.request_id === request.request_id && JSON.stringify(last.request) !== JSON.stringify(request)) throw new Error('Use the exact saved request when retrying this operation.')
         signal?.throwIfAborted()
         if (last && !finished.has(last.phase) && last.request.request_id !== request.request_id) await this.archive(item)

@@ -15,6 +15,8 @@ export const hostMessages: Record<string, string> = {
   operation_not_found: 'The host has no visible receipt for that operation. Keep the original request when checking or retrying.',
   host_unavailable: 'The memory service needs inspection. Read its status and operation history.',
   host_busy: 'The host is finishing another operation or source scan. Refresh its status and inspect the saved operation before requesting new work.',
+  backup_configuration_changed: 'The backup destination, key or limits changed. Refresh this host and approve its current backup settings.',
+  backup_not_found: 'This backup is no longer retained. Refresh the backup list.',
   last_custodian: 'Keep at least one permanent custodian on this host.',
   source_unavailable: 'The native host helper could not confirm this operation. Inspect its saved status.',
 }

@@ -192,6 +192,7 @@ function validate(status) {
     if (!hostProtocol?.available || !hostProtocol.nativeAgentPipe || !hostProtocol.actualSetupControls ||
         !hostProtocol.pinnedSSHAuthenticated || !hostProtocol.memoryAPIAbsent) fail('The installed independent host client must authenticate through its real UI, native agent and SSH connection')
     if (hostProtocol.phase === 'save' && (!hostProtocol.protectedKeySaved || !hostProtocol.actualQueuedRequestVisible)) fail('The native host key and visible request were not saved for the next app process')
+    if (hostProtocol.phase === 'save' && (!hostProtocol.backupApprovalControls || !hostProtocol.backupSchemaAvailable || !hostProtocol.unapprovedBackupRequestRefused)) fail('The native backup controls must require approval and expose the same operations to agents')
     if (hostProtocol.phase === 'resume' && (!hostProtocol.protectedKeyReopenedAfterAppRestart || !hostProtocol.originalRequestInspectedWithoutReplay ||
         !hostProtocol.custodianBoundaryEnforced || !hostProtocol.removalRequiresOutstandingApproval || !hostProtocol.publicRecoveryRequestRetained || !hostProtocol.actualRecoveryRequestVisible)) fail('Native host authority and recovery did not survive the real app restart')
   } else if (!secureStorage?.plaintextFallbackRefused || !hostProtocol?.plaintextFallbackRefused) fail('An unavailable keychain must not fall back to plaintext credentials')

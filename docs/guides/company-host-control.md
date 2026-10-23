@@ -55,6 +55,10 @@ Each enrollment uses a separately held **Ed25519 private key**:
 | `operator` | Observer actions, service start/stop, signed upgrade planning and approved application. |
 | `custodian` | Operator actions, enrollment/revocation, inspection of other operators' receipts and explicit resolution of uncertain work. |
 
+The **unreleased 4.46.3 source** adds [backup creation and verification](#create-and-verify-retained-backups)
+for operators and custodians. Observers cannot request these transfers; older
+hosts advertise neither backup action.
+
 Non-custodians can retrieve only their own operation receipts. Host status still
 reports aggregate operation counts. The first custodian must have no expiry.
 Enroll another independently held permanent custodian before retiring the last
@@ -320,6 +324,8 @@ After successful inspection, the host's current role determines the controls:
 | --- | --- |
 | Start or stop memory | Approve the host's service change and possible interruption, then use **Start memory service** or **Stop memory service**. A pending migration requires its recovery path. |
 | Update or resume an interrupted update | Choose **Review available update**. Review the target, source, expiry and backup requirement; explicitly approve interruption before **Apply this update** or **Resume this update**. Observe its operation receipt. |
+| Create an independent backup — 4.46.3 source, unreleased | In **Independent backups**, review the owner-configured storage and limits, approve the encrypted transfer and choose **Create encrypted backup**. |
+| Inspect or verify a retained copy — 4.46.3 source, unreleased | Read the inventory and **Recovery details**. Approve the transfer and choose **Verify stored copy** for a fresh readback. |
 | Inspect work | Use **Operation history**, **Latest**, **Inspect** and **Older operations**. **Inspect saved request** checks this device's original request. |
 | Reconcile a lost reply | **Awaiting acknowledgement** retains the exact request. Inspect it first; **Retry the same request** resends that body only while its original approval is valid. It does not create a replacement UUID. |
 | Resolve uncertain effects | A custodian inspects **Needs inspection**, chooses **Recovery action**, confirms the observed state and uses **Accept inspected state**. Stopping first also requires interruption approval. A pending migration uses the update recovery path instead. |
@@ -454,6 +460,10 @@ Check both envelopes: outer desktop `ok` means the local action completed;
 operation still needs its final receipt. For `host.inspect`, inspect each
 returned receipt's `ok`; absent history or operation data is not proof that work
 completed. Neither the agent nor renderer receives the saved private key.
+
+The [unreleased backup examples below](#create-and-verify-retained-backups)
+use this same `host.request` envelope for typed `backup.create` and
+`backup.verify` requests. They are not separate desktop action names.
 
 For example, explicitly forget a revoked login whose last operation remains
 unconfirmed while preserving its request:
@@ -725,8 +735,10 @@ verifies the exact commit and bytes through a fresh Git reader. The small Git
 manifest contains identifiers, sizes and hashes; it is not encrypted memory
 content. The upload uses no shared-branch rewrite or checked-out executable code.
 
-The configured byte budget covers the package and ledger together: default
-512 MiB, maximum 2 GiB. Delivery uses bounded subprocess/network and disk budgets.
+The maximum backup size covers the package and ledger together: default
+512 MiB, maximum 2 GiB. Delivery uploads the copy and reads it back; each fresh
+verification downloads it again. Network traffic therefore exceeds the stored
+copy's size. Delivery uses bounded subprocess/network and disk budgets.
 Retention keeps three verified backups by default, configurable from 2 to 20.
 Retirement compares the expected remote reference before deleting it; an active
 upgrade's backup and uncertain copies remain protected. Deleting a Git reference
@@ -734,8 +746,9 @@ does not establish erasure from provider caches, clones or retained Git objects.
 
 Preserve the backup receipt, key ID and independently accessible recovery
 material. Readback proves those remote bytes, not a successful replacement-host
-restore. There is no separate remote `backup.run` or Git-backup download/restore
-action in this protocol. Existing [host-package recovery](../service/host-recovery.md)
+restore. The protocol has no Git-backup download/restore action. The unreleased
+creation and verification controls below are separate from restoration.
+Existing [host-package recovery](../service/host-recovery.md)
 requires authenticated package/ledger files; a complete independently retrieved
 Git-backup recovery journey remains to be qualified.
 
@@ -744,6 +757,102 @@ escrow the independent controller's host identity, authority store, operator
 private keys or recovery of those grants. Their independent custody/export and
 replacement-adoption procedure remain distinct work. Do not assume a restored
 memory database authorizes a new controller.
+
+### Create and verify retained backups
+
+**UNRELEASED 4.46.3 source work.** Backup source checks passed: 43 passed with
+2 local SSH-environment skips, 3 native-boundary checks and 7 desktop host-profile
+tests. The final 13 host-job checks also passed, including inspection for a
+dangling inventory symlink. Frontend/Electron builds and Ruff checks passed.
+The packaged probe includes actual approval-control and native-schema checks
+with synthetic inventory; all six native 4.46.3 targets, public acceptance and
+actual backup delivery remain pending. See the
+[combined release notes](../releases/4.46.3.md) for the separate evidence.
+
+Refresh the enrolled host before using **Independent backups**. The card shows
+whether storage is owner configured, the **Maximum backup size**, recovery
+key ID and last verified readback. Operators and custodians can confirm
+**I approve encrypted backup transfers using this host's configured storage and limits.**
+Then choose **Create encrypted backup**, or **Verify stored copy** on a retained
+row. The confirmation clears after a request or a configuration change.
+Controls depend on the actions advertised by the host; older hosts advertise
+neither `backup.create` nor `backup.verify`.
+
+The bounded inventory shows memory snapshot time, version when recorded, size
+and last readback. **Recovery details** includes the backup ID, key ID,
+access/deletion ledger time and each file's size and digest. The corresponding
+host reply is `result.service.backups`: `configuration_sha256`, `maximum_bytes`
+and `items`, whose entries include `backup_id`, `key_id`, `service_version`,
+`snapshot_at`, `ledger_at`, `verified_at`, `last_verified_at`, `bytes` and `files`.
+Missing version information is **Not recorded**. Destinations, private paths and
+credentials are excluded from this status view.
+
+| Typed host action | Required transfer fields and result |
+| --- | --- |
+| `backup.create` | Common timed request fields, `approve_backup_transfer: true` and the current `configuration_sha256`. Creates an encrypted memory package and access/deletion ledger using the existing owner-configured Git storage. |
+| `backup.verify` | The same fields plus a retained `backup_id` from `items`. Reads back the original stored copy and records a fresh verification observation, preserving its original delivery receipt. |
+
+Both actions require current operator or custodian authority. After bounded
+source drain, the worker rechecks that authority, approval expiry and the exact
+configuration. A changed destination/key/budget returns
+`backup_configuration_changed`; refresh and review the current settings before
+authorizing new work. A missing retained copy returns `backup_not_found`.
+Requests cannot supply another destination, a key or an arbitrary command.
+These transfers preserve the service's current intent: they do not start,
+stop or upgrade it. Source imports wait while the copy is prepared.
+
+Creation waits for existing recovery to be resolved. A retained copy can still
+be freshly verified during that recovery once active work ends; verification
+does not settle the older operation or replay it. Preserve its original UUID
+and evidence. Configuration alone, an accepted queue entry and a verified
+readback are distinct results; none proves a successful restore.
+
+For a native agent using its saved protected profile, take the digest from the
+fresh host reply's `result.service.backups.configuration_sha256` and use the
+usual timed approval fields. This example creates one copy:
+
+```json
+{
+  "action": "host.request",
+  "input": {
+    "id": "LOCAL_PROFILE_UUID_FROM_HOST_CREATE",
+    "request": {
+      "protocol": 1,
+      "host_id": "HOST_UUID_FROM_CONNECTION",
+      "request_id": "NEW_BACKUP_OPERATION_UUID",
+      "action": "backup.create",
+      "issued_at": "CURRENT_UTC_TIMESTAMP",
+      "valid_until": "APPROVAL_EXPIRY_WITHIN_ONE_HOUR",
+      "configuration_sha256": "64_LOWERCASE_HEX_CHARACTERS_FROM_CURRENT_HOST_STATUS",
+      "approve_backup_transfer": true
+    }
+  }
+}
+```
+
+To verify a retained copy, use the same outer desktop envelope with this
+`input.request`. The copy's `backup_id` is separate from the new verification
+operation UUID:
+
+```json
+{
+  "protocol": 1,
+  "host_id": "HOST_UUID_FROM_CONNECTION",
+  "request_id": "NEW_VERIFICATION_OPERATION_UUID",
+  "action": "backup.verify",
+  "issued_at": "CURRENT_UTC_TIMESTAMP",
+  "valid_until": "APPROVAL_EXPIRY_WITHIN_ONE_HOUR",
+  "configuration_sha256": "64_LOWERCASE_HEX_CHARACTERS_FROM_CURRENT_HOST_STATUS",
+  "approve_backup_transfer": true,
+  "backup_id": "RETAINED_BACKUP_UUID_FROM_CURRENT_HOST_STATUS"
+}
+```
+
+Observe `operations.get` using the original operation UUID. A lost reply keeps
+that UUID and exact request; inspect it before any retry rather than issuing a
+new copy request. The app and native agent retain the same durable request.
+These controls add no controller-authority escrow, device-key recovery,
+replacement-host takeover or new restore acceptance.
 
 ## Review and apply a guarded upgrade
 
@@ -895,6 +1004,11 @@ five-minute source-drain window and reports fixed `host_busy` when an active
 scan still blocks a host operation; the UI explains that result. Source checks
 and builds passed, but installed/native, public and actual-host acceptance
 remain unproven at that source checkpoint.
+
+The later [4.46.2 native build 39945380878](https://github.com/Perseusxrltd/mnemion/actions/runs/39945380878)
+passed; publication was still pending at **12:19 UTC on 23 October 2026**.
+That qualification is separate from the unreleased 4.46.3 backup controls and
+the unfinished actual custodian journey.
 
 The **23 October 2026 native qualification** passed all six installed Windows,
 macOS and Linux x64/ARM64 targets for the published 4.46.0 source. The

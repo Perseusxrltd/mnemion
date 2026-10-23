@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, Copy, KeyRound, LoaderCircle, RefreshCw, Server, ShieldCheck } from 'lucide-react'
 import type { HostConnection, HostInspection, HostProfilesStatus, HostRequest } from '../../../shared/host-control'
+import HostBackups from './HostBackups'
 import './workspace.css'
 import './host-control.css'
 
@@ -10,6 +11,7 @@ const when = (value: string | null | undefined) => value ? new Date(value).toLoc
 const labels: Record<string, string> = {
   'service.start': 'Start memory service', 'service.stop': 'Stop memory service',
   'upgrade.plan': 'Review update', 'upgrade.apply': 'Apply reviewed update',
+  'backup.create': 'Create encrypted backup', 'backup.verify': 'Verify stored backup',
   'operators.grant': 'Grant host access', 'operators.revoke': 'Revoke host access',
   'operations.resolve': 'Accept inspected recovery state',
 }
@@ -168,6 +170,13 @@ export default function HostControl() {
             </>}
           </section>
           {profile.connection && <>
+            <HostBackups key={profile.id} state={service?.backups} actions={actions} busy={!!busy}
+              pending={(service?.operations?.running ?? 0) > 0 || (service?.operations?.queued ?? 0) > 0 || ['submitted', 'queued', 'running'].includes(profile.last_operation?.phase ?? '')}
+              recoveryRequired={!!service?.recovery_required || (service?.operations?.inspection_required ?? 0) > 0}
+              onRequest={(action, fields) => run(labels[action] + '…', async () => {
+                await send(action, fields); await refresh(profile.id)
+                setNotice('Backup work was requested. You can leave this view; inspect the saved operation to follow its result.')
+              })} />
             {actions.includes('service.start') && <section className="ws-card"><h2>Memory service</h2><p>These controls manage the memory service while the independent host connection remains available.</p><label className="ws-checkbox"><input type="checkbox" checked={interruption} onChange={event => setInterruption(event.target.checked)} />I approve service changes and possible interruption for this host.</label><div className="ws-actions">{(['service.start', 'service.stop'] as const).map(action => <button key={action} className="ws-button" disabled={!!busy || !interruption || service?.recovery_required} onClick={() => void run(labels[action] + '…', async () => { await send(action, { approve_service_interruption: interruption }); setInterruption(false); await refresh(profile.id) })}>{labels[action]}</button>)}</div></section>}
             {actions.includes('upgrade.plan') && <section className="ws-card"><div className="ws-section-title"><h2>Updates & recovery</h2><button className="ws-button" disabled={!!busy} onClick={() => void run('Requesting a current update plan…', async () => { setPlan(null); setApproval(false); await send('upgrade.plan'); await refresh(profile.id) })}>Review available update</button></div><p>Before changing this host, Mnemion verifies the signed release and a fresh encrypted backup downloaded from its configured independent Git destination.</p><dl className="ws-host-facts"><div><dt>Independent backup</dt><dd>{service?.backups?.configured ? 'Configured' : 'Owner setup required'}</dd></div><div><dt>Controller</dt><dd>{service?.controller?.version ?? 'Unknown'}</dd></div></dl>
               {plan && <div className="ws-host-plan"><h3>{plan.resume ? 'Resume recorded update' : plan.target_version ? `Update to ${plan.target_version}` : 'Update check'}</h3>{plan.target_version ? <><p>From {plan.current_version ?? service?.version} to {plan.target_version}. Service interruption is required.</p><p className="ws-helper">Source: <code>{plan.source_commit}</code><br />Plan valid until {when(plan.valid_until)}.</p><p className="ws-helper">Database changes use forward recovery. A failure does not automatically restore an older database.</p>{!plan.independent_backup_configured && <p className="ws-notice">Ask the host owner to configure independent encrypted backups and recovery-key custody before applying this plan.</p>}<label className="ws-checkbox"><input type="checkbox" checked={approval} onChange={event => setApproval(event.target.checked)} />I reviewed this version and approve its service interruption.</label><button className="ws-button ws-primary" disabled={!!busy || !approval || !plan.independent_backup_configured || Date.parse(plan.valid_until) <= Date.now()} onClick={() => void run('Submitting the reviewed update…', async () => {

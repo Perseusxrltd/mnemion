@@ -24,6 +24,8 @@ ROLES = {
             "operations.list",
             "service.start",
             "service.stop",
+            "backup.create",
+            "backup.verify",
             "upgrade.plan",
             "upgrade.apply",
         }
@@ -156,6 +158,27 @@ class Service(Approved):
     action: Literal["service.start", "service.stop"]
 
 
+class BackupApproval(Timed):
+    configuration_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    approve_backup_transfer: Literal[True]
+
+    @field_validator("approve_backup_transfer", mode="before")
+    @classmethod
+    def backup_approval(cls, value):
+        if value is not True:
+            raise ValueError("Approve the transfer to the configured backup destination.")
+        return value
+
+
+class CreateBackup(BackupApproval):
+    action: Literal["backup.create"]
+
+
+class VerifyBackup(BackupApproval):
+    action: Literal["backup.verify"]
+    backup_id: UUID
+
+
 class Plan(Timed):
     action: Literal["upgrade.plan"]
 
@@ -223,6 +246,8 @@ REQUEST = TypeAdapter(
         Union[
             Status,
             Service,
+            CreateBackup,
+            VerifyBackup,
             Plan,
             Apply,
             Operation,

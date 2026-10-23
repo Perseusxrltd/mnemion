@@ -34,6 +34,14 @@ availability and release gates; each deployment requires its own acceptance.
   current live-update/independent-host milestone; it is not shipping or included
   in frozen 4.46.1. The previous 65 requirement texts and states are preserved.
 
+- **4.46.3 source checkpoint — 23 October 2026; UNRELEASED.** The
+  [combined change](releases/4.46.3.md) adds explicit backup creation and
+  verification through Host controls and native-agent actions, and corrects
+  controller shutdown observation. Source checks, desktop profiles and builds
+  passed, including the final inventory-corruption regression. All six native
+  4.46.3 targets, public release and actual backup/custodian acceptance remain
+  pending; no parent requirement is completed by these source results.
+
 - **4.46.2 source hotfix — 23 October 2026; unreleased at this checkpoint.**
   [Native host operations](releases/4.46.2.md) now use the existing five-minute
   source-drain window and preserve active scans. A fixed `host_busy` outcome
