@@ -30,28 +30,10 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "6fdca8b06e117b84a827c39e464f074ec6911b03",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-23T11:36:42Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39947061896",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 12,
-        "completed": 11,
-        "succeeded": 11,
-        "active": [
-          {
-            "id": 120392832953,
-            "name": "service (3.12)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-23T12:08:57Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39947061896"
     },
     {
       "id": 39931143679,
@@ -99,8 +81,8 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 32,
-        "completed": 30,
-        "succeeded": 29,
+        "completed": 31,
+        "succeeded": 30,
         "active": [
           {
             "id": 120388427661,
@@ -109,15 +91,6 @@
             "runner_assigned": true,
             "steps": [
               "Native Windows installation, authenticated upgrade and relaunch"
-            ]
-          },
-          {
-            "id": 120388427721,
-            "name": "native / macos-15-intel / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
             ]
           }
         ]
@@ -158,5 +131,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39925659880"
     }
   ],
-  "observed_at": "2026-10-23T12:04:36+00:00"
+  "observed_at": "2026-10-23T12:09:31+00:00"
 }
