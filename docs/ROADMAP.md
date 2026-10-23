@@ -34,6 +34,17 @@ availability and release gates; each deployment requires its own acceptance.
   current live-update/independent-host milestone; it is not shipping or included
   in frozen 4.46.1. The previous 65 requirement texts and states are preserved.
 
+- **Backup transfer diagnostics — 23 October 2026; UNRELEASED.** The
+  [source change and local measurement](validation/2026-10-23-backup-transfer-diagnostics.md)
+  preserve delivery intent, bounded progress and fixed failure guidance, and
+  disable compression/delta search with one Git packing thread. Four synthetic
+  local trials measured about 2.1× faster processing with exact file hashes;
+  this is not a WAN or live result. Nineteen focused checks passed, with two
+  local SSH-fixture skips, and the frontend build passed. Frozen 4.46.4 excludes
+  this work. The original backup remains uncertain; no retry/resume action,
+  fresh delivery or independent restore is accepted. Requirement states and
+  V08's Planned, inactive status remain unchanged.
+
 - **4.46.3 two-custodian lifecycle — 23 October 2026, 16:25:34 UTC.** The
   [actual host-control journey](validation/2026-10-23-4463-custody-acceptance.md)
   passed using both original permanent custodians: Windows stopped memory,

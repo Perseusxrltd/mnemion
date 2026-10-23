@@ -26,6 +26,37 @@ from .protocol import Document, canonical
 
 CHUNK = 8 * 1024 * 1024
 OID = re.compile(r"^[a-f0-9]{40}(?:[a-f0-9]{24})?$")
+STAGES = frozenset(
+    {
+        "init",
+        "hash-object",
+        "mktree",
+        "commit-tree",
+        "push",
+        "ls-remote",
+        "fetch",
+        "rev-parse",
+        "cat-file",
+    }
+)
+FAILURES = frozenset({"deadline", "storage_guard", "git_exit", "process_io", "transport_setup"})
+
+
+class BackupTransferError(HostControlError):
+    """A small fixed diagnostic; never include Git output or exception text."""
+
+    def __init__(self, stage, reason, exit_code=None):
+        if stage not in STAGES or reason not in FAILURES:
+            raise ValueError("Use a documented backup transfer diagnostic")
+        if exit_code is not None and (type(exit_code) is not int or not -255 <= exit_code <= 255):
+            raise ValueError("Use a bounded process exit code")
+        super().__init__(
+            "backup_delivery_unconfirmed", "Inspect the original backup transfer before recovery."
+        )
+        self.stage, self.reason, self.exit_code = stage, reason, exit_code
+
+    def diagnostic(self):
+        return {"stage": self.stage, "reason": self.reason, "exit_code": self.exit_code}
 
 
 class GitDestination(Document):
@@ -96,12 +127,13 @@ def _disk_usage(root, maximum):
 
 
 class Repository:
-    def __init__(self, root, destination, *, budget):
+    def __init__(self, root, destination, *, budget, progress=None):
         self.root = local_state.directory(root, exist_ok=False)
         self.repository = self.root / "repository.git"
         self.destination = destination
         self.remote = destination.remote or str(destination.local_repository)
         self.budget = budget
+        self.progress = progress
         self.env = environment()
         self.env.update(
             {
@@ -130,6 +162,9 @@ class Repository:
         self.git("init", "--bare", str(self.repository), in_repository=False)
 
     def git(self, *arguments, input=None, maximum=1024 * 1024, accepted=(0,), in_repository=True):
+        stage = arguments[0]
+        if stage not in STAGES:
+            raise ValueError("Use a documented backup Git operation")
         network = arguments[0] in {"fetch", "push", "ls-remote"}
         command = [
             "git",
@@ -148,6 +183,16 @@ class Repository:
             "gc.auto=0",
             "-c",
             "maintenance.auto=false",
+            # Ciphertext cannot usefully compress or delta against other parts.
+            # Avoid expensive packing and keep per-thread delta buffers bounded.
+            "-c",
+            "core.compression=0",
+            "-c",
+            "pack.compression=0",
+            "-c",
+            "pack.window=0",
+            "-c",
+            "pack.threads=1",
         ]
         if self.destination.local_repository is not None:
             command += ["-c", "protocol.file.allow=always"]
@@ -169,7 +214,9 @@ class Repository:
 
         guard = threading.Thread(target=monitor, daemon=True)
         guard.start()
+        code = None
         try:
+            self.record(stage, "running")
             with (
                 transport(self.destination, self.root, self.env)
                 if network and self.destination.ssh is not None
@@ -186,13 +233,41 @@ class Repository:
                 )
             _disk_usage(self.root, self.budget)
             if exceeded or code not in accepted:
-                raise HostControlError(
-                    "backup_delivery_unconfirmed", "Inspect backup delivery before retrying."
-                )
+                raise BackupTransferError(stage, "storage_guard" if exceeded else "git_exit", code)
+            self.record(stage, "succeeded")
             return output
+        except (ValueError, OSError, TimeoutError) as error:
+            if isinstance(error, BackupTransferError):
+                failure = error
+            else:
+                from ..journal.format import JournalError
+
+                reason = "transport_setup"
+                if exceeded or (
+                    isinstance(error, HostControlError) and error.code == "backup_capacity"
+                ):
+                    reason = "storage_guard"
+                elif isinstance(error, TimeoutError):
+                    reason = "deadline"
+                elif isinstance(error, JournalError):
+                    reason = (
+                        "deadline" if str(error) == "journal_program_interrupted" else "process_io"
+                    )
+                failure = BackupTransferError(stage, reason, code)
+            self.record(stage, "failed", failure.diagnostic())
+            raise failure from None
         finally:
             finished.set()
             guard.join(2)
+
+    def record(self, stage, state, diagnostic=None):
+        if self.progress is not None:
+            from .protocol import timestamp
+
+            state_io.write(
+                self.progress,
+                {"stage": stage, "state": state, "at": timestamp(), "diagnostic": diagnostic},
+            )
 
     @staticmethod
     def oid(data):
@@ -240,8 +315,11 @@ def deliver(root, destination, *, host_id, operation_id, files, maximum):
         "files": {},
     }
     ref = f"refs/heads/{destination.branch_prefix}/{host}/{operation}"
+    progress = root / "transfer-progress.json"
     with local_state.temporary_directory(prefix="backup-git-", dir=root) as temporary:
-        upload = Repository(temporary / "upload", destination, budget=total * 2 + 16 * 1024**2)
+        upload = Repository(
+            temporary / "upload", destination, budget=total * 2 + 16 * 1024**2, progress=progress
+        )
         entries = []
         for kind, path in files.items():
             digest = hashlib.sha256()
@@ -269,23 +347,44 @@ def deliver(root, destination, *, host_id, operation_id, files, maximum):
         entries.append(f"100644 blob {oid}\tmanifest.json\0".encode())
         tree = upload.oid(upload.git("mktree", "-z", input=b"".join(sorted(entries))))
         commit = upload.oid(upload.git("commit-tree", tree, "-m", "Encrypted Mnemion host backup"))
+        manifest_hash = hashlib.sha256(document).hexdigest()
+        state_io.write(
+            root / "delivery-intent.json",
+            {
+                "format": 1,
+                "host_id": host,
+                "operation_id": operation,
+                "commit": commit,
+                "ref": ref,
+                "manifest_sha256": manifest_hash,
+                "manifest": manifest,
+            },
+            replace=False,
+        )
         # No force push and no shared branch rewrite. If the acknowledgement
         # is lost, inspect this same unique branch through a clean reader.
+        push_error = None
         try:
             upload.git("push", "--porcelain", "--", upload.remote, commit + ":" + ref)
+        except Exception as error:
+            push_error = error
+        try:
+            verify(
+                temporary,
+                destination,
+                host_id=host,
+                operation_id=operation,
+                commit=commit,
+                manifest_sha256=manifest_hash,
+                files=manifest["files"],
+                maximum=maximum,
+                progress=progress,
+            )
         except Exception:
-            pass
-        manifest_hash = hashlib.sha256(document).hexdigest()
-        verify(
-            temporary,
-            destination,
-            host_id=host,
-            operation_id=operation,
-            commit=commit,
-            manifest_sha256=manifest_hash,
-            files=manifest["files"],
-            maximum=maximum,
-        )
+            if isinstance(push_error, BackupTransferError):
+                upload.record(push_error.stage, "failed", push_error.diagnostic())
+                raise push_error from None
+            raise
         return {
             "commit": commit,
             "ref": ref,
@@ -296,14 +395,27 @@ def deliver(root, destination, *, host_id, operation_id, files, maximum):
         }
 
 
-def verify(root, destination, *, host_id, operation_id, commit, manifest_sha256, files, maximum):
+def verify(
+    root,
+    destination,
+    *,
+    host_id,
+    operation_id,
+    commit,
+    manifest_sha256,
+    files,
+    maximum,
+    progress=None,
+):
     """A fresh reader proves the original remote bytes without repeating a push."""
     host, operation = str(UUID(str(host_id))), str(UUID(str(operation_id)))
     ref = f"refs/heads/{destination.branch_prefix}/{host}/{operation}"
     if not OID.fullmatch(commit) or not re.fullmatch(r"[a-f0-9]{64}", manifest_sha256):
         raise HostControlError("invalid_backup", "Inspect the recorded backup identity.")
     with local_state.temporary_directory(prefix="backup-readback-", dir=root) as temporary:
-        reader = Repository(temporary / "reader", destination, budget=maximum * 2 + 16 * 1024**2)
+        reader = Repository(
+            temporary / "reader", destination, budget=maximum * 2 + 16 * 1024**2, progress=progress
+        )
         if reader.head(ref) != commit:
             raise HostControlError(
                 "backup_delivery_unconfirmed", "Inspect the original backup operation."

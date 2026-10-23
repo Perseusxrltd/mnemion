@@ -998,6 +998,16 @@ Raw subprocess output, private paths and credentials are not the remote
 diagnostic interface. The OS owner can inspect protected local logs when a
 bounded error requires investigation.
 
+**Unreleased source diagnostics:** the
+[backup transfer follow-up](../validation/2026-10-23-backup-transfer-diagnostics.md)
+preserves a host-private delivery intent before push and bounded transfer
+progress. An uncertain receipt can retain `result.backup_transfer` with a fixed
+stage, reason and exit code; Host controls explains that result without raw Git
+stderr, credentials or exception text. This work is excluded from frozen
+4.46.4. It keeps `inspection_required` and adds no retry or resume action.
+Retain the original request and encrypted files for inspection; the new
+diagnostics do not establish delivery or resolve the original uncertain backup.
+
 ## Qualification and remaining work
 
 The [4.46.3 native/public-update qualification](../validation/2026-10-23-4463-native-acceptance.md)

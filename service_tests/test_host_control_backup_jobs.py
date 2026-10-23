@@ -230,3 +230,34 @@ def test_missing_target_of_a_linked_inventory_is_not_reported_as_no_backups(back
     (backup_host.root / "backup-index.json").symlink_to(backup_host.root / "missing.json")
     value = backup.status(backup_host.root)
     assert value["inspection_required"] is True and "items" not in value
+
+
+def test_worker_persists_bounded_backup_failure_without_repeating_work(backup_host, monkeypatch):
+    from mnemion.host_control import worker
+    from mnemion.host_control.backup_git import BackupTransferError
+
+    host = backup_host
+    spec = request(
+        host.identity, "backup.create", configuration_sha256="a" * 64, approve_backup_transfer=True
+    )
+    host.store.enqueue(host.identity["operator_id"], spec)
+    calls = []
+
+    def fail(_root, _value, _store, job, _request, *, before_effect):
+        calls.append(job["operation_id"])
+        before_effect()
+        raise BackupTransferError("push", "deadline") from RuntimeError("private-token-path-canary")
+
+    monkeypatch.setattr(adapter, "execute", fail)
+    with update_state.lock(host.root / "worker") as descriptor:
+        assert worker.work(host.root, os.dup(descriptor)) == 0
+    reopened = Store(host.store.root)
+    value = reopened.operation(
+        host.identity["operator_id"], host.identity["host_id"], spec.request_id
+    )
+    assert value["phase"] == "inspection_required" and value["error"] == "operation_uncertain"
+    assert value["result"] == {
+        "backup_transfer": {"stage": "push", "reason": "deadline", "exit_code": None}
+    }
+    assert value["effect_started_at"] and "private-token-path-canary" not in json.dumps(value)
+    assert calls == [str(spec.request_id)] and reopened.claim() is None

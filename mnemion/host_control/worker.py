@@ -114,7 +114,14 @@ def work(root: Path, descriptor: int):
                     store.finish(job["operation_id"], result=result, context=context)
                 except Exception as error:
                     if changed:
-                        store.inspection(job["operation_id"])
+                        from .backup_git import BackupTransferError
+
+                        result = (
+                            {"backup_transfer": error.diagnostic()}
+                            if isinstance(error, BackupTransferError)
+                            else None
+                        )
+                        store.inspection(job["operation_id"], result=result)
                         break
                     code = error.code if isinstance(error, HostControlError) else "operation_failed"
                     if code not in {

@@ -18,6 +18,28 @@ const labels: Record<string, string> = {
 const phases: Record<string, string> = { submitted: 'Awaiting acknowledgement', queued: 'Queued', running: 'Running',
   inspection_required: 'Needs inspection', succeeded: 'Completed', failed: 'Failed', cancelled: 'Cancelled', refused: 'Refused' }
 const reads = new Set(['host.status', 'operations.get', 'operations.list', 'operators.list'])
+const transferStages: Record<string, string> = {
+  init: 'preparing temporary storage', 'hash-object': 'preparing encrypted parts',
+  mktree: 'building the delivery manifest', 'commit-tree': 'recording the delivery manifest',
+  push: 'uploading encrypted files', 'ls-remote': 'checking the stored copy',
+  fetch: 'downloading the stored copy', 'rev-parse': 'checking the received version',
+  'cat-file': 'verifying received file contents',
+}
+const transferReasons: Record<string, string> = {
+  deadline: 'The configured transfer time limit was reached.',
+  storage_guard: 'The temporary-storage safety check stopped the transfer.',
+  git_exit: 'Git reported a failure. Check storage access and connectivity.',
+  process_io: 'The transfer process could not complete its input or output.',
+  transport_setup: 'The configured transfer connection could not be prepared.',
+}
+
+function backupTransferMessage(value: unknown): string | null {
+  if (!value || typeof value !== 'object') return null
+  const { stage, reason } = value as Record<string, unknown>
+  if (typeof stage !== 'string' || typeof reason !== 'string'
+    || !Object.hasOwn(transferStages, stage) || !Object.hasOwn(transferReasons, reason)) return null
+  return `Backup transfer stopped while ${transferStages[stage]}. ${transferReasons[reason]} Inspect this original request before requesting another transfer.`
+}
 
 export default function HostControl() {
   const api = window.mnemion?.hostControl
@@ -26,6 +48,7 @@ export default function HostControl() {
   const [name, setName] = useState('')
   const [inspection, setInspection] = useState<HostInspection | null>(null)
   const [receipt, setReceipt] = useState<Record<string, any> | null>(null)
+  const transferFailure = backupTransferMessage(receipt?.result?.backup_transfer)
   const [people, setPeople] = useState<Record<string, any> | null>(null)
   const [history, setHistory] = useState<Record<string, any> | null>(null)
   const [error, setError] = useState('')
@@ -190,7 +213,7 @@ export default function HostControl() {
               {!history?.operations?.length && <p className="ws-helper">No operation history is available yet. Refresh after connecting.</p>}
               {!!history?.operations?.length && <div className="ws-table-wrap"><table className="ws-table"><thead><tr><th>Operation</th><th>State</th><th>Updated</th><th>Details</th></tr></thead><tbody>{history.operations.map((item: Record<string, any>) => <tr key={item.operation_id}><td>{labels[item.action] ?? item.action}</td><td>{phases[item.phase] ?? item.phase}</td><td>{when(item.updated_at)}</td><td><button className="ws-link" disabled={!!busy} onClick={() => void run('Reading host operation…', () => inspectOperation(item.operation_id))}>Inspect</button></td></tr>)}</tbody></table></div>}
               {history?.next_offset != null && <button className="ws-button" disabled={!!busy} onClick={() => void run('Loading older host operations…', async () => { const offset = history.next_offset; const older = await send('operations.list', { limit: 25, offset }); historyPage.current = offset; setHistory(older) })}>Older operations</button>}
-              {receipt && <div className="ws-host-receipt"><h3>{labels[receipt.action] ?? receipt.action}</h3><p>{phases[receipt.phase] ?? receipt.phase} · {when(receipt.updated_at)}</p><code>{receipt.operation_id}</code>{receipt.error && <p className="ws-notice">Recorded failure: {receipt.error === 'host_busy' ? 'The host is finishing another operation or source scan. Refresh its status and inspect this request before requesting new work.' : receipt.error}</p>}{receipt.result && <details><summary>Recorded result</summary><pre className="ws-code">{JSON.stringify(receipt.result, null, 2)}</pre></details>}
+              {receipt && <div className="ws-host-receipt"><h3>{labels[receipt.action] ?? receipt.action}</h3><p>{phases[receipt.phase] ?? receipt.phase} · {when(receipt.updated_at)}</p><code>{receipt.operation_id}</code>{receipt.error && <p className="ws-notice">Recorded failure: {receipt.error === 'host_busy' ? 'The host is finishing another operation or source scan. Refresh its status and inspect this request before requesting new work.' : receipt.error}</p>}{transferFailure && <p className="ws-notice">{transferFailure}</p>}{receipt.result && <details><summary>Recorded result</summary><pre className="ws-code">{JSON.stringify(receipt.result, null, 2)}</pre></details>}
                 {receipt.phase === 'inspection_required' && actions.includes('operations.resolve') && <><p>Accept a stable current state after inspecting this host. The original operation remains recorded as unconfirmed; accepting recovery does not mark it successful.</p><label className="ws-field">Recovery action<select value={settle} onChange={event => { setSettle(event.target.value as typeof settle); setConfirmRecovery(false) }}><option value="observe">Accept the stable current state</option><option value="stop">Stop memory service, then accept its stopped state</option></select></label><label className="ws-checkbox"><input type="checkbox" checked={confirmRecovery} onChange={event => setConfirmRecovery(event.target.checked)} />I inspected this host and approve this recovery{settle === 'stop' ? ' and service interruption' : ''}.</label><button className="ws-button" disabled={!!busy || !confirmRecovery || service?.recovery_required} onClick={() => void run('Recording the inspected recovery…', async () => { await send('operations.resolve', { operation_id: receipt.operation_id, approve_current_state: confirmRecovery, settle, approve_service_interruption: settle === 'stop' && confirmRecovery }); setConfirmRecovery(false); await refresh(profile.id) })}>Accept inspected state</button></>}
               </div>}
             </section>
