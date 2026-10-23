@@ -17,10 +17,10 @@ from ..service import runtime_pins, service_updates as updates, supervision
 from ..service import update_state as state_io
 from . import HostControlError
 from .protocol import Operator, canonical, fingerprint
-from .store import Store
+from .store import STORE_FORMAT, Store
 from .transport import Connection
 
-CAPABILITIES = {"host_control_protocol": 1, "store_format": 1}
+CAPABILITIES = {"host_control_protocol": 1, "store_format": STORE_FORMAT}
 
 
 def compatible_runtime(service, runtime):
@@ -109,7 +109,7 @@ def settings(root: Path):
         or service.is_relative_to(root)
     ):
         raise HostControlError("host_identity_changed", "Inspect the adopted host configuration.")
-    for name in ("launcher.py", "supervisord.conf", "launchd.plist"):
+    for name in ("launcher.py", "supervisord.conf", "launchd.plist", "memory-launchd.plist"):
         supervision._private(root / name)
         content = supervision._bytes(root / name, 65536)
         if hashlib.sha256(content).hexdigest() != value.get("hashes", {}).get(name):
@@ -222,8 +222,15 @@ def adopt(
                 _pins(root, value, compatible_runtime(service, updates.resolved_runtime(service)))
             return {"prepared": True, "already_prepared": True, "connection": value["connection"]}
         runtime = compatible_runtime(service, updates.resolved_runtime(service))
+        observed = supervision.status(service)
         with state_io.adoption(root):
-            _, identity = Store.adopt(root / "authority", service, existing["identifier"], operator)
+            _, identity = Store.adopt(
+                root / "authority",
+                service,
+                existing["identifier"],
+                operator,
+                service_running=observed["running"],
+            )
             host_key = asyncssh.generate_private_key("ssh-ed25519")
             connection = Connection(
                 host_id=identity["host_id"],
@@ -268,6 +275,24 @@ def adopt(
                         "KeepAlive": {"SuccessfulExit": False},
                         "ThrottleInterval": 30,
                         "ExitTimeOut": 15,
+                        "StandardOutPath": "/dev/null",
+                        "StandardErrorPath": "/dev/null",
+                    }
+                ),
+                "memory-launchd.plist": plistlib.dumps(
+                    {
+                        "Label": "com.mnemion.host-memory." + identifier,
+                        "ProgramArguments": [
+                            value["python"],
+                            str(root / "launcher.py"),
+                            str(root),
+                            "memory",
+                        ],
+                        "WorkingDirectory": value["directory"],
+                        "RunAtLoad": True,
+                        "KeepAlive": {"SuccessfulExit": False},
+                        "ThrottleInterval": 30,
+                        "ExitTimeOut": 90,
                         "StandardOutPath": "/dev/null",
                         "StandardErrorPath": "/dev/null",
                     }

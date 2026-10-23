@@ -1,7 +1,7 @@
 # Mnemion product roadmap
 
 Reviewed source distribution: **4.46.0**.
-Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-22**.
+Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-23**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
 [Release status](RELEASE_STATUS.md) and the [maintenance board](MAINTENANCE_STATUS.md)
@@ -25,6 +25,21 @@ These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
 
+- **4.45.1 public updates and actual acceptance — 23 October 2026.** Publication
+  at **00:14:17 UTC** followed six passing native targets and verification of all
+  38 unchanged assets from source `70ec58d8`. All six
+  [public installed-update targets](https://github.com/Perseusxrltd/mnemion/actions/runs/39876903393)
+  passed at **00:26:21 UTC**, and public website HTML verification passed.
+  The actual Windows x64 app and Hostinger Linux service completed their
+  [paired acceptance](validation/2026-10-23-4451-live-acceptance.md) at
+  **00:33:04/05 UTC**: compatible automatic host update, guarded Windows agent
+  restart, the same three identities and exact memory evidence, retained login,
+  bookmarks and preferences, and 51 isolated lab requests with no cleanup
+  remaining, production writes or cloud model calls. This does not establish
+  unattended idle restart or a fresh post-update backup. The 4.46.0 source/native
+  gates and production independent-host adoption remain separate. All 65
+  requirement states and open #44/#45 remain unchanged.
+
 - **Independent company-host control source — 22 October 2026.** The
   [development guide](guides/company-host-control.md) covers `/hosts` before
   sign-in and equivalent native-agent actions, protected per-device Ed25519
@@ -44,8 +59,19 @@ availability and release gates; each deployment requires its own acceptance.
   recovery, provider wake and safe takeover remain open in the
   [continuity contract](implementation/workspace-continuity.md).
 
-  At this source checkpoint, **4.45.0** remained public while **4.45.1-r2** was
-  still running; this independent-host batch is unreleased. Current availability
+  A **23 October source follow-up** adds [durable stop policy](guides/company-host-control.md#preserve-approved-stops-in-os-supervision)
+  and requires OS-owner replacement of unconditional memory jobs/watchdog
+  restarts with the foreground manager and guarded repair path. Adoption does
+  not start a stopped service. Store format 2 retains approved intent beyond
+  receipt pruning or revocation; experimental format 1 is refused without reset.
+  [New policy checks](validation/2026-10-22-independent-host-control.md#durable-service-policy--23-october-2026)
+  and the frontend build passed; the original two fixture setup errors and their
+  targeted passing rerun remain recorded. Actual OS integration and all six
+  installed gates remain pending. No 4.46 release was dispatched by the stopped
+  pre-freeze waiter.
+
+  At the initial 22 October checkpoint, **4.45.0** remained public while **4.45.1-r2**
+  was still running; this independent-host batch is unreleased. Current availability
   follows release status above. All 65 requirement states and open #44/#45 remain
   unchanged.
 

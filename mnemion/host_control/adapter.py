@@ -10,7 +10,7 @@ from .runtime import current
 
 
 def status(root, value, store):
-    from . import backup
+    from . import backup, memory_lifecycle
 
     service, update_root, _ = updates._root(Path(value["service_state"]))
     try:
@@ -34,6 +34,7 @@ def status(root, value, store):
             (update_root / name).exists() for name in ("journal.json", "upgrade-journal.json")
         ),
         "operations": store.work_status(),
+        "service_policy": memory_lifecycle._policy(root, value, store),
         "backups": backup.status(root),
         "controller": {
             "version": pins["current"]["version"],

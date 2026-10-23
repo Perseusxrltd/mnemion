@@ -23,12 +23,16 @@ MAX_OPERATOR_RECORDS = 512
 MAX_OPERATIONS = 512
 RESERVED_AUTHORITY_OPERATIONS = 128
 MAX_AUDIT = 1024
+STORE_FORMAT = 2
 SCHEMA = """
 CREATE TABLE host (
     singleton INTEGER PRIMARY KEY CHECK(singleton=1),
     id TEXT NOT NULL UNIQUE,
     service_identity TEXT NOT NULL,
     service_state TEXT NOT NULL,
+    service_desired TEXT NOT NULL DEFAULT 'running' CHECK(service_desired IN ('running','stopped')),
+    service_operation TEXT,
+    service_changed_at TEXT,
     revision INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL
 );
@@ -68,7 +72,7 @@ CREATE TABLE audit (
     event TEXT NOT NULL,
     subject TEXT
 );
-PRAGMA user_version=1;
+PRAGMA user_version=2;
 """
 
 
@@ -120,7 +124,7 @@ class Store:
             conn.execute("PRAGMA foreign_keys=ON")
             conn.execute("PRAGMA synchronous=FULL")
             conn.execute("PRAGMA max_page_count=8192")
-            if conn.execute("PRAGMA user_version").fetchone()[0] != 1:
+            if conn.execute("PRAGMA user_version").fetchone()[0] != STORE_FORMAT:
                 raise HostControlError(
                     "unsupported_store", "The host control store needs inspection."
                 )
@@ -140,7 +144,15 @@ class Store:
             conn.close()
 
     @classmethod
-    def adopt(cls, root: Path, service_state: Path, service_identity: str, operator: Operator):
+    def adopt(
+        cls,
+        root: Path,
+        service_state: Path,
+        service_identity: str,
+        operator: Operator,
+        *,
+        service_running: bool = True,
+    ):
         if os.name != "posix" or os.geteuid() == 0:
             raise HostControlError(
                 "unsupported_host",
@@ -151,6 +163,8 @@ class Store:
                 "custodian_required",
                 "The first independently held operator key must be a permanent custodian.",
             )
+        if type(service_running) is not bool:
+            raise HostControlError("invalid_state", "Observe the existing memory service first.")
         root = local_state.directory(root, exist_ok=False)
         service_state = Path(service_state).absolute()
         local_state._regular(service_state, directory=True)
@@ -164,8 +178,15 @@ class Store:
             conn.executescript(SCHEMA)
             conn.execute("BEGIN IMMEDIATE")
             conn.execute(
-                "INSERT INTO host(singleton,id,service_identity,service_state,created_at) VALUES(1,?,?,?,?)",
-                (host_id, service_identity, str(service_state), timestamp()),
+                "INSERT INTO host(singleton,id,service_identity,service_state,service_desired,service_changed_at,created_at) VALUES(1,?,?,?,?,?,?)",
+                (
+                    host_id,
+                    service_identity,
+                    str(service_state),
+                    "running" if service_running else "stopped",
+                    timestamp(),
+                    timestamp(),
+                ),
             )
             cls._insert_operator(conn, operator_id, operator)
             _audit(conn, operator_id, "host_adopted", host_id)
@@ -616,7 +637,7 @@ class Store:
     def resolve(self, actor, request, observation):
         """Accept an observed stable state without rewriting an unknown history."""
         encoded = canonical(observation)
-        if len(encoded) > 64 * 1024:
+        if len(encoded) > 64 * 1024 or type(observation.get("running")) is not bool:
             raise HostControlError("invalid_result", "Use a bounded host-state observation.")
         with self.transaction() as conn:
             self.authorize(conn, actor, request.host_id, "operations.resolve")
@@ -636,6 +657,9 @@ class Store:
             conn.execute(
                 "UPDATE operations SET phase='failed',updated_at=?,result=? WHERE id=?",
                 (timestamp(), canonical(result).decode(), row["id"]),
+            )
+            self._service_intent(
+                conn, str(request.request_id), "running" if observation["running"] else "stopped"
             )
             _audit(conn, str(actor), "uncertain_operation_resolved", row["id"])
             return {"operation_id": row["id"], **result}
@@ -682,6 +706,37 @@ class Store:
                 ).fetchall()
             }
 
+    def service_policy(self):
+        """Durable service intent survives receipt pruning and operator retirement.
+
+        Queued/running/uncertain work excludes an external automatic repair.
+        Only the guarded effect boundary changes intent, never an unexecuted
+        request, expired approval, or observation of an unavailable API.
+        """
+        with self.transaction() as conn:
+            host = conn.execute("SELECT * FROM host WHERE singleton=1").fetchone()
+            pending = (
+                conn.execute(
+                    "SELECT 1 FROM operations WHERE phase IN ('queued','running','inspection_required') LIMIT 1"
+                ).fetchone()
+                is not None
+            )
+            return {
+                "host_id": host["id"],
+                "desired": host["service_desired"],
+                "operation_id": host["service_operation"],
+                "changed_at": host["service_changed_at"] or host["created_at"],
+                "pending_work": pending,
+                "automatic_start_allowed": host["service_desired"] == "running" and not pending,
+            }
+
+    @staticmethod
+    def _service_intent(conn, operation_id, desired):
+        conn.execute(
+            "UPDATE host SET service_desired=?,service_operation=?,service_changed_at=? WHERE singleton=1",
+            (desired, operation_id, timestamp()),
+        )
+
     def plan(self, actor, host_id, operation_id):
         with self.transaction() as conn:
             _, operator = self.authorize(conn, actor, host_id, "upgrade.apply")
@@ -724,6 +779,14 @@ class Store:
                     (timestamp(), row["id"]),
                 )
                 _audit(conn, row["actor"], "effect_authorized", row["id"])
+                if request.action in {"service.start", "service.stop", "upgrade.apply"}:
+                    self._service_intent(
+                        conn,
+                        row["id"],
+                        "stopped" if request.action == "service.stop" else "running",
+                    )
+                elif request.action == "operations.resolve" and request.settle == "stop":
+                    self._service_intent(conn, row["id"], "stopped")
             return request
 
     def inspection(self, operation_id, *, result=None):

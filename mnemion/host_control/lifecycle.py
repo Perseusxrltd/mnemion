@@ -133,4 +133,26 @@ def startup(root: Path):
         "launchd_file": str(root / "launchd.plist"),
         "launchd_label": "com.mnemion.host-control." + value["identifier"],
         "boot_command": command,
+        "memory_supervisor_arguments": [
+            value["python"],
+            str(root / "launcher.py"),
+            str(root),
+            "memory",
+        ],
+        "memory_launchd_file": str(root / "memory-launchd.plist"),
+        "memory_launchd_label": "com.mnemion.host-memory." + value["identifier"],
+        "service_policy_arguments": [
+            value["python"],
+            str(root / "launcher.py"),
+            str(root),
+            "policy",
+        ],
+        "memory_repair_arguments": [
+            value["python"],
+            str(root / "launcher.py"),
+            str(root),
+            "repair",
+        ],
+        "memory_manager_integration_required": True,
+        "watchdog_policy": "Use memory-repair, which rechecks service intent under the host operation and update locks. Errors never authorize systemctl restart.",
     }

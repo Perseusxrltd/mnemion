@@ -90,7 +90,7 @@ def test_runtime_probe_does_not_accept_boolean_protocol_versions(prepared_host, 
     monkeypatch.setattr(
         installation.updates,
         "_command",
-        lambda *args, **kwargs: '{"host_control_protocol":true,"store_format":1}',
+        lambda *args, **kwargs: '{"host_control_protocol":true,"store_format":2}',
     )
     with pytest.raises(HostControlError, match="cannot maintain"):
         installation.compatible_runtime(service, runtime)

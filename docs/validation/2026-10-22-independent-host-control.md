@@ -83,6 +83,56 @@ They were setup/harness failures, not product qualification failures. The first
 passing preview remains separate from the final passing run with visible
 receipts; neither rewrites the original failed setup attempts.
 
+## Durable service policy — 23 October 2026
+
+A pre-freeze review found that the actual host's unconditional memory-service
+job and external watchdog could restart memory after an approved stop. The
+pre-freeze waiter was stopped **before any 4.46 dispatch**; no release was
+cancelled, and earlier CI was left running. Production changes to that job and
+watchdog remain unapplied.
+
+The subsequent source revision uses authority-store **format 2** to retain
+desired `running`/`stopped` state independently of receipt pruning and later
+revocation. Adoption observes the existing service and never starts it merely
+by adopting it. Intent changes at the authorized guarded effect, or through an
+explicit resolution accepting observed state. Experimental format-1 state is
+refused without a silent migration or authority reset; no production controller
+has been adopted.
+
+The local `service-policy` read and foreground `memory-run` manager separate a
+deliberate pause from a crash. `memory-repair` rechecks that policy under both
+worker and update locks; an external check followed by `systemctl restart` is
+not equivalent. Pending work, migrations and unconfirmed automatic starts block
+automatic starting. Start/repair intent is recorded before effects, with no
+automatic replay of an uncertain start. The source UI shows saved stops and
+flags observed drift or an unconfirmed automatic start.
+
+The copied launcher resolves verified current runtime pins for the memory,
+policy and repair modes; policy/repair modes do not consume controller fallback
+attempts. Startup output includes memory-manager, policy and repair arguments
+and a hashed, generated memory launchd file. Nothing is registered automatically.
+The [OS-owner integration steps](../guides/company-host-control.md#preserve-approved-stops-in-os-supervision)
+require replacement of the unconditional memory job, separate controller
+registration, policy-aware watchdog repair, the official supervision stop action
+and avoidance of duplicate jobs.
+
+The initial focused policy run passed **44 cases in 41.08 seconds**, including
+restart of a real `memory-run` process while the saved approved stop remained
+in effect. The broader host-suite attempt recorded **87 passed and two fixture
+errors in 78.21 seconds**. All source policy cases passed in that attempt. Both
+errors were real Git-over-SSH cases whose shell omitted the already installed
+OpenSSH fixture configuration; no product assertion failed.
+
+Reusing the existing executable and libraries, with no source correction or
+test skip, the **two missing cases passed in 5.16 seconds**. These attempts
+cover **89 cases combined**, not one 89-case green invocation. The original
+44-case receipt and the full attempt with fixture errors remain preserved.
+The frontend build also passed. The earlier 75 integration cases, 20 desktop
+cases and Linux source preview above remain separate historical evidence.
+
+This is source/fixture acceptance. Actual job/watchdog integration and boot/login
+acceptance remain pending, as do all six installed-platform gates below.
+
 ## Pending acceptance
 
 The expanded packaged-client gate requires the actual UI, OS-protected key,

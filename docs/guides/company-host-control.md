@@ -73,6 +73,11 @@ remote requests, connection fields, role/action mapping and separate
 `local_owner_recovery` schema. Neither output proves a production adoption or
 installed-client qualification.
 
+This unreleased batch uses **authority-store format 2**; the remote protocol
+remains version 1. Experimental format-1 authority state is refused, not silently
+migrated or reset. Preserve it for owner inspection rather than deleting it to
+repeat adoption. No production controller has been adopted.
+
 The examples use Unix shell redirection and placeholder paths. Create private,
 owner-only parent directories first. Replace uppercase JSON placeholders with
 the actual observed values; they are not ready-to-send identifiers or timestamps.
@@ -136,6 +141,8 @@ adoption, not a procedure for changing an existing listener.
 Adoption **prepares** the controller. A matching repeat returns
 `already_prepared`; it preserves the existing host identity and grants. A
 different adoption is refused rather than resetting authority.
+Initial adoption records whether the existing memory service is running or
+stopped. It does not start a stopped service.
 
 Save only the returned **`connection` object** as the operator's protected
 connection file, for example `/private/company-host-connection.json`. It binds
@@ -173,6 +180,68 @@ listener. It is different from the remote `service.stop` action below. Stopping
 the listener or closing a client connection does not cancel already committed,
 detached work; inspect operation receipts before controller maintenance.
 
+## Preserve approved stops in OS supervision
+
+The controller saves a desired memory-service state, `running` or `stopped`,
+separately from observed process readiness. A start, stop or reviewed upgrade
+changes this intent only when it reaches its guarded effect after checking
+current authority. Queuing a request does not change it. An explicit custodian
+resolution records the accepted observed state. The decision survives receipt
+pruning and later operator revocation; it is not an expiring operation receipt.
+
+The OS owner must integrate this policy before relying on remote stop controls.
+An existing unconditional startup job or external watchdog can otherwise restart
+the service after an approved stop. Inspect the local policy with:
+
+```sh
+mnemion-service host-control service-policy --state-dir /private/company-control
+```
+
+The result reports `desired`, its `operation_id` and `changed_at`, plus
+`pending_work`, `recovery_required`, `start_needs_inspection` and
+`automatic_start_allowed`. This read is a snapshot, not permission for a later
+independent restart command. Errors never authorize a restart.
+
+`startup` supplies arguments for the copied stable launcher. It resolves the
+verified current controller runtime, avoiding a hardcoded package path:
+
+| Startup field | OS-owner use |
+| --- | --- |
+| `memory_supervisor_arguments` | Run foreground `memory-run` as the memory service's outer OS job. It stays alive while memory is deliberately stopped. |
+| `service_policy_arguments` | Run the read-only `service-policy` observation. |
+| `memory_repair_arguments` | Run `memory-repair` for automatic watchdog repair. It rechecks policy while holding both the host-worker and memory-update locks. |
+| `memory_launchd_file`, `memory_launchd_label` | Review the generated, hashed memory launchd job. It has not been installed or registered. |
+
+The policy and repair launcher modes do not consume controller fallback attempts.
+Pending work, an interrupted migration or an unconfirmed automatic start defer
+automatic starting. The manager records start/repair intent before effects;
+subsequent observations can confirm the original start without replaying it.
+Otherwise inspect the host and explicitly approve a new start if needed.
+
+Before adoption is accepted operationally, the OS owner must:
+
+1. Replace the existing unconditional memory job with the returned memory
+   launcher arguments under the reviewed service account and bootstrap working
+   directory. Keep one outer memory job; do not add a duplicate alongside it.
+2. Register the independent controller separately using its reviewed startup
+   instructions. A running memory job does not prove controller boot registration.
+3. Configure every external watchdog to invoke `memory_repair_arguments`.
+   Checking policy and then calling `systemctl restart` leaves a race with an
+   approved stop and is not a supported repair path.
+4. Give the memory job the official supervision stop action for `ExecStop` or
+   its OS equivalent: `mnemion-service supervise stop --state-dir /private/mnemion-service`,
+   using the installed executable and actual memory state. Stopping only the
+   foreground wrapper does not stop the managed memory Supervisor.
+
+Inspect pending operation receipts before OS maintenance. Preserve detached
+guarded work and update custody; stopping the outer manager must not kill that
+work or substitute process-tree termination for the official stop action.
+
+Review [supervision](../service/supervision.md), then qualify the actual
+registration and restart behavior. `registered` and `registration_checked`
+remain false; these source commands install no OS jobs. Production replacement
+of the existing job and watchdog, and boot/login acceptance, remain pending.
+
 ## Use the development desktop app
 
 Open **Host controls · manage a company server** before signing in, or
@@ -207,6 +276,12 @@ published app includes it.
    **Memory service**, **Installed version** and **Last observation**. A saved
    profile or requested role is not current host authority. Inspect **Verified
    connection details** when checking the host, operator and key fingerprints.
+
+The app also shows the saved stop decision. It flags a service running despite
+that decision, or an automatic start that could not be confirmed. The former
+requires owner inspection of startup/watchdog settings; the latter requires
+inspection before approving another start. These observations do not replace
+the [OS supervision setup](#preserve-approved-stops-in-os-supervision).
 
 The app keeps up to 32 saved host logins. Each new device or agent gets a new
 enrollment. Private-key export/import is intentionally absent; copying a public
@@ -806,6 +881,13 @@ harness failures and the initial passing preview remain preserved separately.
 The final run waited for settled UI observations and confirmed the queued UUID
 and retained recovery request were visible before closing; both complete
 process phases exited successfully, and the Electron rebuild passed.
+
+The **23 October durable service-policy revision** was added after those source
+proofs. Its policy source checks and frontend build passed, including restart of
+a real `memory-run` process while the saved approved stop remained in effect.
+The [separate policy checkpoint](../validation/2026-10-22-independent-host-control.md#durable-service-policy--23-october-2026)
+retains the 87-pass/two-fixture-error full attempt followed by two targeted SSH
+passes. This source evidence does not qualify actual OS job/watchdog integration.
 
 **All six installed-platform gates remain unrun for 4.46.0.** They now require
 the expanded real UI/agent/key/SSH/restart/archive journey through the offline

@@ -40,7 +40,16 @@ def arguments(parser):
     adopt.add_argument("--port", default=7893, type=int)
     adopt.add_argument("--advertised-host")
     adopt.add_argument("--approve-network", action="store_true")
-    for name in ("start", "stop", "status", "startup", "serve"):
+    for name in (
+        "start",
+        "stop",
+        "status",
+        "startup",
+        "serve",
+        "service-policy",
+        "memory-run",
+        "memory-repair",
+    ):
         item = commands.add_parser(name)
         item.add_argument("--state-dir", required=True, type=Path)
     worker = commands.add_parser("work", help=argparse.SUPPRESS)
@@ -115,6 +124,16 @@ def execute(args):
             from .daemon import serve
 
             return asyncio.run(serve(args.state_dir))
+        elif action in {"service-policy", "memory-run", "memory-repair"}:
+            from . import memory_lifecycle
+
+            if action == "memory-run":
+                return memory_lifecycle.run(args.state_dir)
+            result = (
+                memory_lifecycle.repair(args.state_dir)
+                if action == "memory-repair"
+                else memory_lifecycle.policy(args.state_dir)
+            )
         elif action == "work":
             from .worker import work
 

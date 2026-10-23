@@ -11,7 +11,9 @@ import sys
 from uuid import uuid4
 
 
-def launch(root: Path):
+def launch(root: Path, *, mode="serve"):
+    if mode not in {"serve", "memory", "policy", "repair"}:
+        raise ValueError("Choose a documented adopted-host entry point")
     # Match the existing python -m Supervisor entry point: its protected
     # configuration chooses the bootstrap working directory. A copied script
     # otherwise searches the control state instead of that reviewed package.
@@ -37,7 +39,7 @@ def launch(root: Path):
             or not 0 <= pins["attempts"] <= 3
         ):
             raise ValueError("Independent runtime belongs to another host")
-        if pins["pending"]:
+        if pins["pending"] and mode == "serve":
             if pins["attempts"] >= 2:
                 if pins["previous"] is None:
                     raise ValueError("Independent runtime needs recovery")
@@ -60,7 +62,12 @@ def launch(root: Path):
         *(["-I"] if runtime["isolated"] else []),
         "-m",
         "mnemion.host_control.cli",
-        "serve",
+        {
+            "serve": "serve",
+            "memory": "memory-run",
+            "policy": "service-policy",
+            "repair": "memory-repair",
+        }[mode],
         "--state-dir",
         str(root),
     ]
@@ -69,9 +76,11 @@ def launch(root: Path):
 
 if __name__ == "__main__":
     try:
-        if len(sys.argv) != 2:
+        if len(sys.argv) not in {2, 3} or (
+            len(sys.argv) == 3 and sys.argv[2] not in {"memory", "policy", "repair"}
+        ):
             raise ValueError("Use one adopted host")
-        launch(Path(sys.argv[1]))
+        launch(Path(sys.argv[1]), mode=sys.argv[2] if len(sys.argv) == 3 else "serve")
     except Exception:
         print(
             "The independent host controller could not start; inspect its protected configuration.",

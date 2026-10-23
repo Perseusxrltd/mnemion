@@ -50,6 +50,18 @@ for actual OS-protected keys, transport refusal, public recovery archives and
 offline `/hosts` exist but have not run. This source work is unreleased; current
 published packages and gates remain owned by [release status](../RELEASE_STATUS.md).
 
+The **23 October source follow-up** adds [durable service policy](../guides/company-host-control.md#preserve-approved-stops-in-os-supervision):
+adoption preserves the observed stopped/running state, and approved effects save
+intent independently of receipt retention or later revocation. The OS owner
+must replace unconditional memory startup and watchdog repair with the foreground
+manager and locked `memory-repair` path, separately register the controller and
+retain the official supervision stop action. Generated startup files are not
+installed. Format-2 authority state refuses experimental format 1 without reset.
+The [new policy checks](../validation/2026-10-22-independent-host-control.md#durable-service-policy--23-october-2026)
+and frontend build passed; the validation preserves two fixture setup errors
+and their targeted passing rerun. These source results do not qualify production
+job/watchdog integration, which remains pending.
+
 This advances delegation while the independent controller and computer are
 reachable. It does not supply whole-machine provider wake, registered boot/login
 startup, universal host adoption, an independently hosted browser controller,
