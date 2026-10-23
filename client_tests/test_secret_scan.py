@@ -104,8 +104,10 @@ def test_type_annotation_exception_cannot_hide_a_second_value_or_statement():
     exception = next(item for item in config["allowlists"] if "HPKE stub" in item["description"])
     assert exception["regexTarget"] == "line"
     pattern = exception["regexes"][0]
-    annotation = "    private_key: x25519.X25519PrivateKey"
+    annotation = "    private_key: " + "x25519.X25519PrivateKey"
     assert re.fullmatch(pattern, annotation)
+    assert re.fullmatch(pattern, annotation + "\n")
+    assert re.fullmatch(pattern, annotation + "\r\n")
     for suffix in ("; token = confidential-value", " = confidential-value", "\nother_line"):
         assert not re.fullmatch(pattern, annotation + suffix)
     assert not re.fullmatch(pattern, annotation.replace("X25519PrivateKey", "ActualPrivateValue"))

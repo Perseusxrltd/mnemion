@@ -43,7 +43,7 @@ is absent. Private match data is not reproduced here.
 ## Policy correction and focused verification
 
 The [scan policy](../../.gitleaks.toml) permits only the complete type-only line
-below, with optional surrounding horizontal whitespace, and the three exact
+below, with surrounding whitespace including the scanner's line separator, and the three exact
 digests above. It does not exempt the whole wheel, manifest, filename or every
 64-character value.
 
@@ -85,9 +85,16 @@ alone did not satisfy the failed coverage gate.
 
 ## Remaining acceptance
 
-At this checkpoint the corrected full scan of the same **38 assets and
-4,021,713,596 bytes** was still running. Its result, corrected GitHub artifact
-verification and publication had not completed. CI must also pass with the
+The initial policy correction removed the three checksum findings but still
+rejected both annotations: Gitleaks retains a line separator in the value it
+checks against line exceptions. A direct pinned-scanner reproduction confirmed
+that accepting surrounding whitespace fixes this case while retaining the
+whole-line anchor. That rejected full scan is preserved separately. Test
+fixtures construct the annotation at runtime, so quoted source statements do
+not need broader exemptions.
+
+At this checkpoint corrected GitHub artifact verification and publication had
+not completed. CI must also pass with the
 corrected coverage ownership. Public installed-update checks, website
 reconciliation and actual deployment acceptance retain their separate gates;
 this report claims none of those outcomes.

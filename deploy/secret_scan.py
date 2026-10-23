@@ -402,7 +402,7 @@ def canary(executable, rules, directory):
         archive.writestr("vault.txt", "recovery = mnv_" + "X7y" * 14 + "z\n")
         archive.writestr(
             "annotation.txt",
-            "private_key: x25519.X25519PrivateKey; token = mnm_" + "C6d" * 14 + "p\n",
+            "private_key: " + "x25519.X25519PrivateKey; token = mnm_" + "C6d" * 14 + "p\n",
         )
         metadata = {
             "013_oauth_bindings.sql": "9539cddc5ffa9587f192aed9fbe94dd1e92a26ac70233511dbaf86210cee2116",

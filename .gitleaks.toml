@@ -38,7 +38,7 @@ regexes = [
 description = "Reviewed cryptography 50.0.2 HPKE stub annotation; only this complete type-only line is allowed."
 regexTarget = "line"
 regexes = [
-  '''^[ \t]*private_key: x25519\.X25519PrivateKey[ \t]*$''',
+  '''^\s*private_key: x25519\.X25519PrivateKey\s*$''',
 ]
 
 [[allowlists]]
