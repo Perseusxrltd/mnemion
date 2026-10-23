@@ -48,8 +48,8 @@ function setupFailure(error) {
   if (!match) return undefined
   try {
     const value = JSON.parse(match[1])
-    const selectors = ['input[autocomplete="organization"]', 'input[autocomplete="name"]', '.ws-memory-limit input', '.ws-setup-advanced input[max="65535"]', 'unknown']
-    if (!selectors.includes(value.selector) || ![null, 1, 2, 3].includes(value.step) || !['workspace', 'help', 'other'].includes(value.route)) return undefined
+    const selectors = ['input[autocomplete="organization"]', 'input[autocomplete="name"]', '.ws-memory-limit input', '.ws-setup-advanced input[max="65535"]', '.ws-journal-host input[type="url"]', 'unknown']
+    if (!selectors.includes(value.selector) || ![null, 1, 2, 3].includes(value.step) || !['workspace', 'journal', 'help', 'other'].includes(value.route)) return undefined
     return { selector: value.selector, step: value.step, route: value.route }
   } catch { return undefined }
 }

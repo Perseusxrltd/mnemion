@@ -57,10 +57,10 @@ export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Re
       const field = await until(() => document.querySelector(selector), () => {
         // Only fixed selectors and classifications leave the private renderer.
         // Never include input values, page text or an arbitrary route/query.
-        const known = ['input[autocomplete="organization"]', 'input[autocomplete="name"]', '.ws-memory-limit input', '.ws-setup-advanced input[max="65535"]'];
+        const known = ['input[autocomplete="organization"]', 'input[autocomplete="name"]', '.ws-memory-limit input', '.ws-setup-advanced input[max="65535"]', '.ws-journal-host input[type="url"]'];
         const label = document.querySelector('.ws-setup-steps')?.getAttribute('aria-label');
         const step = [1, 2, 3].find(number => label === 'Setup step ' + number + ' of 3') ?? null;
-        const route = location.hash === '#/workspace' ? 'workspace' : location.hash.startsWith('#/help?') || location.hash === '#/help' ? 'help' : 'other';
+        const route = location.hash === '#/workspace' ? 'workspace' : location.hash === '#/workspace/journal' ? 'journal' : location.hash.startsWith('#/help?') || location.hash === '#/help' ? 'help' : 'other';
         return 'Missing setup field: ' + JSON.stringify({ selector: known.includes(selector) ? selector : 'unknown', step, route });
       });
       Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(field, value);

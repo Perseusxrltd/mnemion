@@ -1,0 +1,40 @@
+{
+  "format": 1,
+  "at": "2026-10-23T07:11:20.166027+00:00",
+  "browser": "Chromium",
+  "synthetic_data_only": true,
+  "remote_operations": 0,
+  "first_click_before": {
+    "clicked": true,
+    "formAfterClick": false,
+    "registrationAfterClick": true
+  },
+  "first_click_after": {
+    "clicked": true,
+    "formAfterClick": true,
+    "registrationAfterClick": false
+  },
+  "same_host_refresh": {
+    "formPresent": true,
+    "draftRetained": true,
+    "reviewed": true
+  },
+  "source_sha256": {
+    "studio/frontend/src/workspace/JournalHostSetup.tsx": "536ea1dd3473ccc9baf611035057bcdd53b64149e771ddad80c90dd3e7e133bf",
+    "studio/electron/local-hosting-probe.ts": "3c2acad669ebd66871d02b869062e1f76e6060f6c163bea7e6053f648017da47",
+    "studio/electron/scripts/smoke-installed-hosting.mjs": "522e4f40ec353b273dffcc4a6d35307874c84d4d26dac374502413ef893a738e",
+    "studio/frontend/output/playwright/journal-form-race/probe.tsx": "ce541c21ffbc106a67d3ca48ae27e2f0e31b932f5b88e6529ae57b2f64172b7e"
+  },
+  "builds": {
+    "frontend_typescript_and_production_build": true,
+    "electron_typescript_build": true
+  },
+  "original_failed_release_run": 39913638457,
+  "native_release_acceptance": false,
+  "prior_receipt_sha256": "298e614e668e49b7dfdf707c45c119255aeadef0ba33b8413223ed1876f2606d",
+  "different_host_identity": {
+    "previousDraftCleared": true,
+    "freshRegistrationAvailable": true,
+    "previousReviewNotTransferred": true
+  }
+}

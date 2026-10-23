@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { GitBranch, RefreshCw } from 'lucide-react';
 import type { JournalChange, JournalDestination, LocalStatus } from '../../../shared/local-workspace';
@@ -24,7 +24,9 @@ export default function JournalHostSetup({ endpoint, space, label }: { endpoint:
     const unsubscribe = desktop?.localJournal ? desktop.onLocalStatus?.(value => { if (live.current) setStatus(value); }) : undefined;
     return () => { live.current = false; unsubscribe?.(); };
   }, [desktop]);
-  useEffect(() => { setDraft(null); setReviewed(false); setNotice(''); }, [settings?.workspace_id, space, endpoint]);
+  // Reset identity-bound drafts before exposing this host's controls. A passive
+  // effect can otherwise discard a form opened just as the first status arrives.
+  useLayoutEffect(() => { setDraft(null); setReviewed(false); setNotice(''); }, [settings?.workspace_id, space, endpoint]);
   useEffect(() => {
     if (status?.state === 'running' && refreshAfterRestart.current) {
       refreshAfterRestart.current = false;

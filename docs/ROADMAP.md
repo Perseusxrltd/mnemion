@@ -39,8 +39,13 @@ availability and release gates; each deployment requires its own acceptance.
   and preserves bounded readiness diagnostics through runtime rollback. The
   [isolated one-CPU-host measurement](validation/2026-10-23-managed-startup.md)
   reduced worker setup CPU time before database access by about 81%; 59 focused
-  CLI/update checks passed. Full native/public and renewed actual-update
-  acceptance remain pending at this source checkpoint. The startup deadline,
+  CLI/update checks passed. The first frozen attempt subsequently failed Windows
+  x64 journal setup. The [journal-form timing correction](validation/2026-10-23-windows-journal-form.md)
+  reproduces the form closing after its first click and verifies the corrected
+  behavior in an actual Chromium browser with synthetic data. Same-host draft
+  preservation, changed-host draft clearing and frontend/Electron builds passed.
+  A new frozen native attempt is pending at that checkpoint. Full native/public and renewed actual-update
+  acceptance remain separate. The startup deadline,
   identity, backup and integrity checks are unchanged.
 
 - **4.46.0 publication and actual host rollback — 23 October 2026.** All six
