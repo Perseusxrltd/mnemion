@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-23T16:44:54+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-23T17:13:14+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.3](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.3). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -17,22 +17,9 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | in\_progress | [Run 39989203715](https://github.com/Perseusxrltd/mnemion/actions/runs/39989203715) |
+| ci\.yml | main | success | [Run 39989203715](https://github.com/Perseusxrltd/mnemion/actions/runs/39989203715) |
 | public-updates\.yml | v4\.46\.3 | success | [Run 39973022163](https://github.com/Perseusxrltd/mnemion/actions/runs/39973022163) |
 | release\.yml | release/4\.46\.3 | success | [Run 39961881757](https://github.com/Perseusxrltd/mnemion/actions/runs/39961881757) |
 | verify-artifacts\.yml | main | success | [Run 39972316494](https://github.com/Perseusxrltd/mnemion/actions/runs/39972316494) |
 | website-release\.yml | main | success | [Run 39989203575](https://github.com/Perseusxrltd/mnemion/actions/runs/39989203575) |
 | website-release\.yml | v4\.46\.3 | success | [Run 39973017198](https://github.com/Perseusxrltd/mnemion/actions/runs/39973017198) |
-
-## Active jobs
-
-[Run 39989203715](https://github.com/Perseusxrltd/mnemion/actions/runs/39989203715): 5/12 jobs completed; 5 succeeded.
-
-- studio: in\_progress — Post Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38.
-- legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
-- supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
-- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- service \(3\.12\): in\_progress — Matching PostgreSQL recovery tools.
-- supervision \(macos-15\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
-
