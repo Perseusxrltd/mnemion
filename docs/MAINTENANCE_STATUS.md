@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-23T00:50:44+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-23T02:45:20+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.45.1](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.45.1). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -17,13 +17,15 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 39877138975](https://github.com/Perseusxrltd/mnemion/actions/runs/39877138975) |
+| ci\.yml | main | success | [Run 39881750370](https://github.com/Perseusxrltd/mnemion/actions/runs/39881750370) |
 | public-updates\.yml | v4\.45\.1 | success | [Run 39876903393](https://github.com/Perseusxrltd/mnemion/actions/runs/39876903393) |
 | release\.yml | release/4\.45\.1-r2 | success | [Run 39860098559](https://github.com/Perseusxrltd/mnemion/actions/runs/39860098559) |
-| verify-artifacts\.yml | main | failure | [Run 39872601355](https://github.com/Perseusxrltd/mnemion/actions/runs/39872601355) |
-| website-release\.yml | main | success | [Run 39877139000](https://github.com/Perseusxrltd/mnemion/actions/runs/39877139000) |
+| release\.yml | release/4\.46\.0 | failure | [Run 39884444351](https://github.com/Perseusxrltd/mnemion/actions/runs/39884444351) |
+| verify-artifacts\.yml | main | skipped | [Run 39891242926](https://github.com/Perseusxrltd/mnemion/actions/runs/39891242926) |
+| website-release\.yml | main | success | [Run 39881750392](https://github.com/Perseusxrltd/mnemion/actions/runs/39881750392) |
 | website-release\.yml | v4\.45\.1 | success | [Run 39876908629](https://github.com/Perseusxrltd/mnemion/actions/runs/39876908629) |
 
 ## Unsuccessful jobs
 
-- [Run 39872601355](https://github.com/Perseusxrltd/mnemion/actions/runs/39872601355): verify (failure). Steps: Scan the exact downloaded distributions before publication.
+- [Run 39884444351](https://github.com/Perseusxrltd/mnemion/actions/runs/39884444351): native / windows-2022 / x64 (failure). Steps: Packaged window, sandboxed bridge, and local client.
+- [Run 39884444351](https://github.com/Perseusxrltd/mnemion/actions/runs/39884444351): native / windows-11-arm / arm64 (failure). Steps: Packaged window, sandboxed bridge, and local client.
