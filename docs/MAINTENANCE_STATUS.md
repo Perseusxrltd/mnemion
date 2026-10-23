@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-23T15:02:35+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-23T15:16:57+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.3](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.3). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -17,18 +17,9 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | in\_progress | [Run 39972086704](https://github.com/Perseusxrltd/mnemion/actions/runs/39972086704) |
+| ci\.yml | main | success | [Run 39972086704](https://github.com/Perseusxrltd/mnemion/actions/runs/39972086704) |
 | public-updates\.yml | v4\.46\.3 | success | [Run 39973022163](https://github.com/Perseusxrltd/mnemion/actions/runs/39973022163) |
 | release\.yml | release/4\.46\.3 | success | [Run 39961881757](https://github.com/Perseusxrltd/mnemion/actions/runs/39961881757) |
 | verify-artifacts\.yml | main | success | [Run 39972316494](https://github.com/Perseusxrltd/mnemion/actions/runs/39972316494) |
 | website-release\.yml | main | success | [Run 39957182981](https://github.com/Perseusxrltd/mnemion/actions/runs/39957182981) |
 | website-release\.yml | v4\.46\.3 | success | [Run 39973017198](https://github.com/Perseusxrltd/mnemion/actions/runs/39973017198) |
-
-## Active jobs
-
-[Run 39972086704](https://github.com/Perseusxrltd/mnemion/actions/runs/39972086704): 9/12 jobs completed; 9 succeeded.
-
-- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-
