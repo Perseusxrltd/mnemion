@@ -1,8 +1,8 @@
 # Release scan: OpenSSL public integrity constant
 
-**23 October 2026 source-policy checkpoint.** The corrected full remote
-verification remains pending. Current publication and release gates belong to
-[release status](../RELEASE_STATUS.md).
+**23 October 2026 publication checkpoint.** Corrected full remote verification
+passed and 4.46.0 was published at **05:43:10 UTC**. Current public-update and
+installed acceptance gates belong to [release status](../RELEASE_STATUS.md).
 
 ## Retained rejections and corrected classification
 
@@ -86,8 +86,18 @@ safe diagnostics. These narrower results did not cover the later boundary failur
 The revised correction passed **16 focused source tests and Ruff**, including
 checks that other prefix lengths do not match the exceptions. At **05:31:44 UTC**, the product scan CLI
 passed the public-only boundary fixture with zero findings and all **six**
-mandatory placements detected by its canary. Corrected full remote verification
-of the unchanged 38-asset inventory remains pending.
+mandatory placements detected by its canary.
+
+[Final verification 39906617453](https://github.com/Perseusxrltd/mnemion/actions/runs/39906617453)
+completed successfully at **05:40:49 UTC**, using trusted policy source
+`e13b30a9fd850e7b9b22a6467fc63303e5d49231`. Its
+[retained scan receipt](releases/4.46.0-secret-scan.json) covers all **38 unchanged
+assets, 4,037,509,429 bytes**, with zero findings and all six application-key
+placements plus the vault-key control detected. Exact-byte, production-signature
+and complete-feed verification also passed. The ordinary publisher rechecked
+the release gates, source and inventory before
+[publishing 4.46.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.0)
+at **05:43:10 UTC**. No native package was rebuilt for either policy correction.
 
 Source, generated desktop and downloaded-distribution gates retain their
 coverage. ZIP/wheel/tar.gz/tgz expansion, flattened-byte inspection and decoding
@@ -96,10 +106,10 @@ Exhausted inspection limits prevent a passing receipt. Native executable
 internals are not decompiled and encrypted content is not decrypted. A passing
 scan applies to its recorded inputs and active rules.
 
-The release remained draft at this checkpoint, with the actual Windows/shared
-host pair accepted at [4.45.1](2026-10-23-4451-live-acceptance.md). Corrected full
-remote verification, publication, public update checks and actual 4.46.0 paired
-acceptance remain separate pending gates. No production host adoption or fresh
-live-backup acceptance is claimed. All **65 requirement states** remain
+The release remained draft until final verification succeeded. At publication,
+the actual Windows/shared host pair was last accepted at
+[4.45.1](2026-10-23-4451-live-acceptance.md); public update checks and actual
+4.46.0 paired acceptance were still pending. No production host adoption or fresh
+live-backup acceptance is claimed by this report. All **65 requirement states** remain
 unchanged; issues **#44/#45** remain open. The PC publisher pause and the
 administrator conversation's stopped Grokbot/Adonis tests remain in force.
