@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-23T05:20:16+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-23T05:25:15+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.45.1](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.45.1). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -22,27 +22,22 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 | release\.yml | release/4\.45\.1-r2 | success | [Run 39860098559](https://github.com/Perseusxrltd/mnemion/actions/runs/39860098559) |
 | release\.yml | release/4\.46\.0 | failure | [Run 39884444351](https://github.com/Perseusxrltd/mnemion/actions/runs/39884444351) |
 | release\.yml | release/4\.46\.0-r2 | success | [Run 39895069093](https://github.com/Perseusxrltd/mnemion/actions/runs/39895069093) |
-| verify-artifacts\.yml | main | in\_progress | [Run 39905111700](https://github.com/Perseusxrltd/mnemion/actions/runs/39905111700) |
+| verify-artifacts\.yml | main | failure | [Run 39905111700](https://github.com/Perseusxrltd/mnemion/actions/runs/39905111700) |
 | website-release\.yml | main | success | [Run 39905082711](https://github.com/Perseusxrltd/mnemion/actions/runs/39905082711) |
 | website-release\.yml | v4\.45\.1 | success | [Run 39876908629](https://github.com/Perseusxrltd/mnemion/actions/runs/39876908629) |
 
 ## Active jobs
 
-[Run 39905068103](https://github.com/Perseusxrltd/mnemion/actions/runs/39905068103): 6/12 jobs completed; 6 succeeded.
+[Run 39905068103](https://github.com/Perseusxrltd/mnemion/actions/runs/39905068103): 8/12 jobs completed; 8 succeeded.
 
-- studio: in\_progress — Complete job.
 - service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 - supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
-- supervision \(macos-15\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
 - service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 - service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-
-[Run 39905111700](https://github.com/Perseusxrltd/mnemion/actions/runs/39905111700): 0/1 jobs completed; 0 succeeded.
-
-- verify: in\_progress — Verify every uploaded byte, production signature and complete feed.
 
 
 ## Unsuccessful jobs
 
 - [Run 39884444351](https://github.com/Perseusxrltd/mnemion/actions/runs/39884444351): native / windows-2022 / x64 (failure). Steps: Packaged window, sandboxed bridge, and local client.
 - [Run 39884444351](https://github.com/Perseusxrltd/mnemion/actions/runs/39884444351): native / windows-11-arm / arm64 (failure). Steps: Packaged window, sandboxed bridge, and local client.
+- [Run 39905111700](https://github.com/Perseusxrltd/mnemion/actions/runs/39905111700): verify (failure). Steps: Scan the exact downloaded distributions before publication.
