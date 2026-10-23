@@ -76,21 +76,21 @@
       "source_commit": "1fc96a82df8c4d7ae9420962187c4546b51ec60a",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-23T11:25:09Z",
+      "updated_at": "2026-10-23T12:12:11Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39945380878",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 32,
-        "completed": 31,
-        "succeeded": 30,
+        "total": 33,
+        "completed": 32,
+        "succeeded": 31,
         "active": [
           {
-            "id": 120388427661,
-            "name": "native / windows-11-arm / arm64",
+            "id": 120406933380,
+            "name": "assemble",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Native Windows installation, authenticated upgrade and relaunch"
+              "Run actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093"
             ]
           }
         ]
@@ -131,5 +131,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39925659880"
     }
   ],
-  "observed_at": "2026-10-23T12:09:31+00:00"
+  "observed_at": "2026-10-23T12:12:51+00:00"
 }

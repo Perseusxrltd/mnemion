@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-23T12:09:31+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-23T12:12:51+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.1](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.1). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -28,7 +28,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 ## Active jobs
 
-[Run 39945380878](https://github.com/Perseusxrltd/mnemion/actions/runs/39945380878): 31/32 jobs completed; 30 succeeded.
+[Run 39945380878](https://github.com/Perseusxrltd/mnemion/actions/runs/39945380878): 32/33 jobs completed; 31 succeeded.
 
-- native / windows-11-arm / arm64: in\_progress — Native Windows installation, authenticated upgrade and relaunch.
+- assemble: in\_progress — Run actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093.
 
