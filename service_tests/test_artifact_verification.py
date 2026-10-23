@@ -9,11 +9,38 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+import yaml
 
 from deploy import verify_artifacts as subject
 
 REPO = "example/mnemion"
 COMMIT = "a" * 40
+
+
+def test_distribution_scan_uses_trusted_verifier_policy_without_replacing_product_source():
+    root = Path(__file__).resolve().parents[1]
+    workflow = yaml.safe_load((root / ".github/workflows/verify-artifacts.yml").read_text())
+    steps = workflow["jobs"]["verify"]["steps"]
+    checkouts = [step["with"] for step in steps if "actions/checkout@" in step.get("uses", "")]
+    assert checkouts == [
+        {"ref": "${{ github.workflow_sha }}", "path": "verifier", "persist-credentials": False},
+        {
+            "ref": "${{ steps.source.outputs.commit }}",
+            "path": "release-source",
+            "persist-credentials": False,
+        },
+    ]
+    scan = next(step for step in steps if "deploy.secret_scan" in step.get("run", ""))
+    assert scan["working-directory"] == "verifier"
+    assert '--paths "$RUNNER_TEMP/verified-release/artifacts"' in scan["run"]
+    rejected = next(
+        step
+        for step in steps
+        if step.get("with", {}).get("name") == "rejected-release-verification"
+    )
+    assert rejected["if"] == "failure()"
+    assert "*.private" not in rejected["with"]["path"]
+    assert workflow["jobs"]["publish"]["needs"] == "verify"
 
 
 @pytest.fixture

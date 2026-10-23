@@ -33,3 +33,19 @@ regexTarget = "line"
 regexes = [
   '''^\s*_read_json\(selected\.cred[e]ntials, max_bytes=16 \* 1024 \* 1024\),\s*$''',
 ]
+
+[[allowlists]]
+description = "Reviewed cryptography 50.0.2 HPKE stub annotation; only this complete type-only line is allowed."
+regexTarget = "line"
+regexes = [
+  '''^[ \t]*private_key: x25519\.X25519PrivateKey[ \t]*$''',
+]
+
+[[allowlists]]
+description = "Reviewed signed service-update migration SHA-256 digests for 013, 016 and 020; verified against the immutable migration files."
+regexTarget = "secret"
+regexes = [
+  '''^9539cddc5ffa9587f192aed9fbe94dd1e92a26ac70233511dbaf86210cee2116$''',
+  '''^6ee51bb6929743f5cdc5541a935085f82ec6d95a818db36bbb295a3dd016ae43$''',
+  '''^71455047ab91b44618a2e0f9a36281fd674df1c8c462f200a058cf267b362963$''',
+]

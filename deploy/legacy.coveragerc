@@ -4,6 +4,7 @@
 source = mnemion
 omit =
     */mnemion/service/*
+    */mnemion/host_control/*
     */mnemion/local_*.py
     */mnemion/backup_encryption.py
     */mnemion/journal/*

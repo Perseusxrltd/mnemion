@@ -8,6 +8,7 @@ depth five. Executable internals and encrypted content are not decompiled.
 from __future__ import annotations
 
 import argparse
+import base64
 from contextlib import contextmanager
 from datetime import datetime, timezone
 import hashlib
@@ -389,7 +390,7 @@ def run_scanner(executable, rules, paths, evidence):
 
 
 def canary(executable, rules, directory):
-    """Reject both archived key families even when a native binary comes first."""
+    """Reject archived, binary and encoded keys beside reviewed public metadata."""
     package = directory / "canary.zip"
     native = directory / "canary.bin"
     native.write_bytes(
@@ -399,6 +400,18 @@ def canary(executable, rules, directory):
     with zipfile.ZipFile(nested, "w") as archive:
         archive.writestr("application.txt", "token = mnm_" + "A9b" * 14 + "x # gitleaks:allow\n")
         archive.writestr("vault.txt", "recovery = mnv_" + "X7y" * 14 + "z\n")
+        archive.writestr(
+            "annotation.txt",
+            "private_key: x25519.X25519PrivateKey; token = mnm_" + "C6d" * 14 + "p\n",
+        )
+        metadata = {
+            "013_oauth_bindings.sql": "9539cddc5ffa9587f192aed9fbe94dd1e92a26ac70233511dbaf86210cee2116",
+            "token": "mnm_" + "E5f" * 14 + "n",
+        }
+        archive.writestr(
+            "encoded-metadata.json",
+            json.dumps({"payload": base64.b64encode(json.dumps(metadata).encode()).decode()}),
+        )
     with zipfile.ZipFile(package, "w") as archive:
         archive.writestr("synthetic-1.0-py3-none-any.whl", nested.getvalue())
     evidence = directory / "canary-evidence"
@@ -413,11 +426,11 @@ def canary(executable, rules, directory):
                     finding.get("RuleID") for finding in findings if isinstance(finding, dict)
                 ]
                 if (
-                    rules_found.count("mnemion-application-or-backup-key") >= 2
+                    rules_found.count("mnemion-application-or-backup-key") >= 4
                     and "mnemion-vault-key" in rules_found
                 ):
                     return
-    raise ScanError("Secret scanner canary did not reject the synthetic binary and archived keys")
+    raise ScanError("Secret scanner canary did not reject every synthetic key placement")
 
 
 def scan(root, paths, output, cache, *, source=False):
@@ -467,6 +480,8 @@ def scan(root, paths, output, cache, *, source=False):
                     canary(executable, rules, Path(control))
                 record["archived_key_canary_passed"] = True
                 record["binary_first_key_canary_passed"] = True
+                record["annotation_adjacent_key_canary_passed"] = True
+                record["decoded_metadata_key_canary_passed"] = True
                 record.update(run_scanner(executable, rules, inputs, evidence))
             if inventory(originals) != before or digest(rules) != record["rules_sha256"]:
                 raise ScanError("Secret scan inputs changed during inspection")

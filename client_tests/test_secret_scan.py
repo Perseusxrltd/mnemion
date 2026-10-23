@@ -1,7 +1,11 @@
 """Release scan boundaries use actual archives without executing their contents."""
 
 import io
+import hashlib
+import json
+import re
 import tarfile
+import tomllib
 import zipfile
 
 import pytest
@@ -86,9 +90,6 @@ def test_scanner_archive_rejects_linked_executable():
 
 
 def test_existing_exact_bounded_reader_exception_keeps_its_narrow_scope():
-    import re
-    import tomllib
-
     config = tomllib.loads((scan.ROOT / ".gitleaks.toml").read_text())
     pattern = next(item for item in config["allowlists"] if item["regexTarget"] == "line")[
         "regexes"
@@ -96,3 +97,51 @@ def test_existing_exact_bounded_reader_exception_keeps_its_narrow_scope():
     template = "    _read_json(selected.{name}, max_bytes={limit} * 1024 * 1024),"
     assert re.fullmatch(pattern, template.format(name="credentials", limit=16))
     assert not re.fullmatch(pattern, template.format(name="credentials", limit=32))
+
+
+def test_type_annotation_exception_cannot_hide_a_second_value_or_statement():
+    config = tomllib.loads((scan.ROOT / ".gitleaks.toml").read_text())
+    exception = next(item for item in config["allowlists"] if "HPKE stub" in item["description"])
+    assert exception["regexTarget"] == "line"
+    pattern = exception["regexes"][0]
+    annotation = "    private_key: x25519.X25519PrivateKey"
+    assert re.fullmatch(pattern, annotation)
+    for suffix in ("; token = confidential-value", " = confidential-value", "\nother_line"):
+        assert not re.fullmatch(pattern, annotation + suffix)
+    assert not re.fullmatch(pattern, annotation.replace("X25519PrivateKey", "ActualPrivateValue"))
+
+
+def test_migration_exceptions_are_only_exact_digests_of_public_source_files():
+    config = tomllib.loads((scan.ROOT / ".gitleaks.toml").read_text())
+    exception = next(
+        item for item in config["allowlists"] if "migration SHA-256" in item["description"]
+    )
+    assert exception["regexTarget"] == "secret"
+    names = ("013_oauth_bindings.sql", "016_hosted_oauth.sql", "020_secrets_vault.sql")
+    expected = {
+        "^"
+        + hashlib.sha256((scan.ROOT / "mnemion/service/migrations" / name).read_bytes()).hexdigest()
+        + "$"
+        for name in names
+    }
+    assert set(exception["regexes"]) == expected
+    assert not any(re.fullmatch(pattern, "a" * 64) for pattern in expected)
+
+
+@pytest.mark.parametrize("application_findings", [2, 3, 4])
+def test_canary_requires_binary_archive_annotation_and_encoded_key_detection(
+    tmp_path, monkeypatch, application_findings
+):
+    def scanned(_executable, _rules, _paths, evidence):
+        evidence.mkdir()
+        findings = [{"RuleID": "mnemion-application-or-backup-key"}] * application_findings
+        findings.append({"RuleID": "mnemion-vault-key"})
+        (evidence / "0.private.json").write_text(json.dumps(findings))
+        raise scan.ScanError("Fixture credential detection")
+
+    monkeypatch.setattr(scan, "run_scanner", scanned)
+    if application_findings < 4:
+        with pytest.raises(scan.ScanError, match="every synthetic key placement"):
+            scan.canary(None, None, tmp_path)
+    else:
+        scan.canary(None, None, tmp_path)

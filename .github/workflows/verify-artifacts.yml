@@ -33,6 +33,7 @@ jobs:
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
+          ref: ${{ github.workflow_sha }}
           path: verifier
           persist-credentials: false
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
@@ -67,7 +68,9 @@ jobs:
           --repo "$GITHUB_REPOSITORY" --run "$MNEMION_RELEASE_RUN"
           --source "$GITHUB_WORKSPACE/release-source" --output "$RUNNER_TEMP/verified-release"
       - name: Scan the exact downloaded distributions before publication
-        working-directory: release-source
+        # The trusted verifier owns scan policy. Reviewed policy corrections do
+        # not rebuild or alter the frozen source, signatures or uploaded bytes.
+        working-directory: verifier
         run: >-
           python -m deploy.secret_scan
           --paths "$RUNNER_TEMP/verified-release/artifacts"
@@ -80,6 +83,16 @@ jobs:
             ${{ runner.temp }}/verified-release/release-verification.json
             ${{ runner.temp }}/verified-release/secret-scan.json
           if-no-files-found: error
+          retention-days: 7
+      - name: Retain bounded rejection evidence without credential matches
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: rejected-release-verification
+          path: |
+            ${{ runner.temp }}/verified-release/release-verification.json
+            ${{ runner.temp }}/verified-release/secret-scan.json
+          if-no-files-found: ignore
           retention-days: 7
 
   publish:
