@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "checked_at": "2026-10-23T12:25:14+00:00",
+  "checked_at": "2026-10-23T12:32:27+00:00",
   "tag_name": "v4.46.2",
   "source_commit": "1fc96a82df8c4d7ae9420962187c4546b51ec60a",
   "published_at": "2026-10-23T12:20:12Z",
@@ -71,12 +71,13 @@
     },
     {
       "name": "Automatic upgrades from public installers",
-      "status": "pending",
+      "status": "passed",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39952552845",
       "run_id": 39952552845,
-      "updated_at": "2026-10-23T12:20:42Z",
+      "updated_at": "2026-10-23T12:32:16Z",
       "event": "workflow_dispatch",
-      "conclusion": null
+      "conclusion": "success",
+      "targets_passed": 6
     },
     {
       "name": "Live website downloads, version, notes and guides",
