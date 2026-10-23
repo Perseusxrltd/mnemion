@@ -8,9 +8,11 @@ separate planned addition: **66 total, 17 shipped (25.8%), 42 partial, 0 buildin
 3 planned, 3 ongoing and 1 external**.
 This audit changes work order; it neither narrows scope nor marks a parent done.
 
-Complete the actual 4.46.1 live update and current independent-host milestone.
-Its [native and public release gates](../validation/2026-10-23-4461-native-acceptance.md)
-have passed; production acceptance remains separate.
+The actual [4.46.1 paired update](../validation/2026-10-23-4461-live-acceptance.md)
+passed on **23 October at 09:55:28 UTC**, alongside its separately recorded
+[native and public release gates](../validation/2026-10-23-4461-native-acceptance.md).
+Complete the current independent-host milestone: fresh independent backup
+verification, OS/controller adoption and both custodians' operations remain pending.
 Queue [V08 anonymous product telemetry](anonymous-product-telemetry.md) after
 that milestone; it is not part of the frozen hotfix. Keep one feature milestone
 alongside urgent operational bugs. Next prioritize independent shared administration, source freshness,
@@ -50,6 +52,21 @@ guard/QC prerequisite.
 The generated [release status](../RELEASE_STATUS.md) records current public
 availability and release-check outcomes. The dated snapshots below preserve
 historical publication, candidate qualification and actual-deployment evidence.
+
+**Actual 4.46.1 acceptance — 23 October 2026, 09:55:28 UTC:** the actual Windows
+x64 app and shared Linux host passed [paired acceptance](../validation/2026-10-23-4461-live-acceptance.md).
+The host completed its compatible normal update; Windows retained its earlier
+guarded update without another installation or restart. The three identities,
+exact sampled memories, saved login/preferences, MCP/OAuth discovery and recorded
+deletion were preserved. The existing **54-request** isolated lab passed with
+no cleanup remaining, production memory writes or cloud model calls. The
+[interruption history](../validation/2026-10-23-4461-live-interruption.md) preserves
+the watchdog-interrupted backup and stopped access comparison; four restored
+source-role entries were independently matched to prior accepted authority and
+current provider bindings, with missing original spaces still rejected. Fresh
+independent backup verification, OS/controller adoption, both custodians'
+operations and unattended desktop idle restart remain unproven. No requirement
+state is promoted; V08 telemetry remains Planned and inactive.
 
 **Actual 4.45.0 acceptance — 22 October 2026, 20:24:17 UTC:** the actual Windows
 app and shared Linux host passed their [paired acceptance](../validation/2026-10-22-4450-live-acceptance.md).

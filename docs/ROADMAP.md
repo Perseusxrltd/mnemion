@@ -34,6 +34,18 @@ availability and release gates; each deployment requires its own acceptance.
   current live-update/independent-host milestone; it is not shipping or included
   in frozen 4.46.1. The previous 65 requirement texts and states are preserved.
 
+- **4.46.1 actual paired acceptance — 23 October 2026, 09:55:28 UTC.** The
+  actual Windows x64 app and shared Linux service passed their
+  [paired check](validation/2026-10-23-4461-live-acceptance.md). The host completed
+  its compatible normal update; Windows retained the earlier guarded update.
+  Three identities, exact sampled memories, login/preferences, MCP and deletion
+  checks passed. The [interruption history](validation/2026-10-23-4461-live-interruption.md)
+  preserves both stopped attempts and the independently reviewed restoration of
+  four source-role entries. The existing 54-request lab passed with no cleanup
+  remaining, production memory writes or cloud model calls. Fresh independent
+  backup, OS/controller adoption and both custodians' operations remain pending.
+  All 66 requirement states remain unchanged; V08 remains Planned and inactive.
+
 - **4.46.1 publication — 23 October 2026, 08:46:59 UTC.** All six
   [native targets](validation/2026-10-23-4461-native-acceptance.md), independent
   artifact verification, all six public installed updates and automatic website
@@ -64,9 +76,9 @@ availability and release gates; each deployment requires its own acceptance.
   host missed the managed-readiness deadline and restored 4.45.1 without
   database rollback. The [retained rollout record](validation/2026-10-23-4460-live-rollout.md)
   distinguishes these results. Dependent backup/adoption jobs stopped before
-  making changes. Last complete paired acceptance remains 4.45.1; production
-  host-controller adoption and two-custodian acceptance remain open. All 65
-  requirement states and open #44/#45 remain unchanged.
+  making changes. At that checkpoint the last complete pair was 4.45.1;
+  production host-controller adoption and two-custodian acceptance remained
+  open. All 65 requirement states and open #44/#45 remain unchanged.
 
 - **4.45.1 public updates and actual acceptance — 23 October 2026.** Publication
   at **00:14:17 UTC** followed six passing native targets and verification of all

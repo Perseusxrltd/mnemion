@@ -2,11 +2,12 @@
 
 **Available in the published 4.46.1 desktop.** Host controls and native agent
 actions passed [installed qualification on all six targets](../validation/2026-10-23-4461-native-acceptance.md).
-All six public installed-update targets also passed. The separate
-[23 October live rollout](../validation/2026-10-23-4460-live-rollout.md) records
-the previous release's host rollback and unfinished production adoption. The
-4.46.1 public qualification does not establish actual paired acceptance or
-production controller adoption. Use
+All six public installed-update targets also passed. The actual Windows/shared
+Linux pair passed [4.46.1 live acceptance at 09:55:28 UTC on 23 October](../validation/2026-10-23-4461-live-acceptance.md).
+Fresh independently verified backup, production OS/controller adoption and
+two-custodian operations remain pending. The
+[interruption history](../validation/2026-10-23-4461-live-interruption.md)
+preserves the stopped attempts preceding this accepted update. Use
 [release status](../RELEASE_STATUS.md) for current package availability and
 the [qualification section](#qualification-and-remaining-work) for evidence limits.
 
@@ -81,8 +82,8 @@ installed-client qualification.
 Version 4.46.0 uses **authority-store format 2**; the remote protocol
 remains version 1. Experimental format-1 authority state is refused, not silently
 migrated or reset. Preserve it for owner inspection rather than deleting it to
-repeat adoption. Production adoption was still pending at the
-[23 October rollout checkpoint](../validation/2026-10-23-4460-live-rollout.md).
+repeat adoption. Production adoption remains pending after the
+[23 October paired-update acceptance](../validation/2026-10-23-4461-live-acceptance.md).
 
 The examples use Unix shell redirection and placeholder paths. Create private,
 owner-only parent directories first. Replace uppercase JSON placeholders with
@@ -871,9 +872,13 @@ installed targets and their packaged host-control journeys. The
 retains the source/run bindings, unchanged qualification receipt, corrected
 Windows journal-form failure and subsequent six-platform public update results.
 All five [release gates](../validation/releases/4.46.1-status.json) passed by
-08:46:59 UTC, including automatic website synchronization. At that checkpoint
-Windows had updated, while the shared host's pre-update backup was still
-running. Actual paired acceptance and production host adoption remain separate.
+08:46:59 UTC, including automatic website synchronization. At that historical
+checkpoint Windows had updated while the host's pre-update backup was running.
+The later [actual paired acceptance](../validation/2026-10-23-4461-live-acceptance.md)
+passed at **09:55:28 UTC**, preserving the existing Windows installation,
+three identities, exact sampled memories, login and preferences. This accepted
+update still leaves fresh independent backup verification, production host
+adoption, OS integration and both custodians' operations pending.
 
 The **23 October 2026 native qualification** passed all six installed Windows,
 macOS and Linux x64/ARM64 targets for the published 4.46.0 source. The
@@ -965,10 +970,12 @@ records successful verification of all 38 release assets, publication at
 The actual Windows app reached 4.46.0, but its shared host rolled back to 4.45.1
 at the updater's managed-readiness boundary. The paired observer and dependent
 backup/adoption jobs stopped for inspection without controller adoption or OS
-changes. Last complete paired acceptance remains
-[4.45.1](../validation/2026-10-23-4451-live-acceptance.md); hotfix qualification,
-renewed paired acceptance, fresh independently verified backup, actual deployment
-and both custodians' operational acceptance remain pending at that checkpoint.
+changes. At that checkpoint the last complete pair was
+[4.45.1](../validation/2026-10-23-4451-live-acceptance.md). The later
+[4.46.1 paired acceptance](../validation/2026-10-23-4461-live-acceptance.md)
+passed after the [preserved interruptions](../validation/2026-10-23-4461-live-interruption.md).
+Fresh independently verified backup, actual OS/controller deployment and both
+custodians' operational acceptance remain pending.
 Current package availability follows [release status](../RELEASE_STATUS.md).
 
 Provider power-on, browser-based independent management, company identity
