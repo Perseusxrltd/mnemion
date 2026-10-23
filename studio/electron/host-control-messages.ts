@@ -14,6 +14,7 @@ export const hostMessages: Record<string, string> = {
   recovery_required: 'This host has an interrupted update. Review and resume its existing recovery plan.',
   operation_not_found: 'The host has no visible receipt for that operation. Keep the original request when checking or retrying.',
   host_unavailable: 'The memory service needs inspection. Read its status and operation history.',
+  host_busy: 'The host is finishing another operation or source scan. Refresh its status and inspect the saved operation before requesting new work.',
   last_custodian: 'Keep at least one permanent custodian on this host.',
   source_unavailable: 'The native host helper could not confirm this operation. Inspect its saved status.',
 }

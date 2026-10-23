@@ -51,7 +51,7 @@ passed all six installed targets, including OS-protected keys, transport refusal
 public recovery archives and offline `/hosts`. All six public installed-update
 targets also passed. The [actual rollout](../validation/2026-10-23-4460-live-rollout.md)
 updated Windows but rolled its shared host back to 4.45.1; production adoption
-and both custodians' operational acceptance remain pending. Current published
+and both custodians' operational acceptance were pending at that checkpoint. Current published
 packages and gates remain owned by [release status](../RELEASE_STATUS.md).
 
 The **23 October source follow-up** adds [durable service policy](../guides/company-host-control.md#preserve-approved-stops-in-os-supervision):
@@ -59,18 +59,32 @@ adoption preserves the observed stopped/running state, and approved effects save
 intent independently of receipt retention or later revocation. The OS owner
 must replace unconditional memory startup and watchdog repair with the foreground
 manager and locked `memory-repair` path, separately register the controller and
-retain the official supervision stop action. Generated startup files are not
-installed. Format-2 authority state refuses experimental format 1 without reset.
+retain the official supervision stop action. The startup command itself does
+not install the generated files. Format-2 authority state refuses experimental
+format 1 without reset.
 The [new policy checks](../validation/2026-10-22-independent-host-control.md#durable-service-policy--23-october-2026)
 and frontend build passed; the validation preserves two fixture setup errors
-and their targeted passing rerun. These source results do not qualify production
-job/watchdog integration, which remains pending.
+and their targeted passing rerun. Those source checks alone did not qualify
+production job/watchdog integration.
+
+**Actual host checkpoint — 23 October 2026, 11:01:48 UTC.** The
+[canonical-host setup](../validation/2026-10-23-independent-host-adoption.md)
+passed native adoption, backup configuration, OS integration and two protected
+custodian enrollments. **The full operational journey failed at its first
+Windows stop, before any effect**, behind an active source scan. Manager
+restart, two watchdog ticks, start and retained-data comparison were not
+reached. Fresh status confirmed memory ready/running with no pending work or
+recovery; no second stop or restart was requested. The
+[4.46.1 paired update](../validation/2026-10-23-4461-live-acceptance.md) remains
+accepted. The [4.46.2 source hotfix](../releases/4.46.2.md) addresses the busy-source
+wait and outcome; source checks do not establish installed or live acceptance.
 
 This advances delegation while the independent controller and computer are
-reachable. It does not supply whole-machine provider wake, registered boot/login
-startup, universal host adoption, an independently hosted browser controller,
-replacement-host provisioning or safe failover. Production adoption/recovery, independent authority
-custody, full Git-backup retrieval/restore and fencing an old writer remain open.
+reachable. Whole-machine boot/login behavior, provider wake, universal host
+adoption, an independently hosted browser controller, replacement-host
+provisioning and safe failover remain unproven. Full operational recovery,
+separate physical-device and authority custody, fresh native Git-backup
+delivery/restore and fencing an old writer remain open.
 The broader acceptance contract below is retained.
 
 ## Ownership must survive the original agent

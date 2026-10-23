@@ -16,6 +16,7 @@ from ..private_output import private_output
 from ..service import runtime_pins, service_updates as updates, supervision
 from ..service import update_state as state_io
 from . import HostControlError
+from .locking import operator_lock
 from .protocol import Operator, canonical, fingerprint
 from .store import STORE_FORMAT, Store
 from .transport import Connection
@@ -195,7 +196,7 @@ def adopt(
     if hostname is None and address.is_unspecified:
         raise HostControlError("invalid_address", "Supply the address other operators can reach.")
     hostname = hostname or address.compressed
-    with state_io.operator_lock(service / "updates"):
+    with operator_lock(service / "updates"):
         prior = runtime_pins.read(service / "updates")
         if prior is not None and prior["state"] != str(root):
             raise HostControlError(

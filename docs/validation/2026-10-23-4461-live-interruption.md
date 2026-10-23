@@ -58,8 +58,12 @@ The final paired acceptance passed with the existing 54-request lab receipt,
 complete cleanup, zero production memory writes and zero cloud model calls.
 Both original stopped receipts remain preserved.
 
-The paired update is accepted. Fresh independent backup verification,
-OS/controller adoption and both custodians' operations remain pending; all
+The paired update is accepted. At its **09:55 UTC checkpoint**, independent
+backup verification, OS/controller adoption and both custodians' operations
+remained pending. The [later independent-host record](2026-10-23-independent-host-adoption.md)
+confirms passed adoption, backup configuration, OS integration and two protected
+enrollments, then a **failed first stop before any effect**. Full operational
+recovery and fresh native backup delivery/restore remain unproven. All
 [66 requirement texts and states](../PRODUCT_REQUIREMENTS.md) are unchanged.
 [V08 telemetry](../implementation/anonymous-product-telemetry.md) remains
 Planned and inactive.

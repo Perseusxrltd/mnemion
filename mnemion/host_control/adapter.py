@@ -5,6 +5,7 @@ from pathlib import Path
 from ..service import service_updates as updates, supervision, update_state as state_io
 from ..service.update_manifest import version_tuple
 from . import HostControlError
+from .locking import operator_lock
 from .protocol import timestamp
 from .runtime import current
 
@@ -48,7 +49,7 @@ def status(root, value, store):
 def execute(root, value, store, job, request, *, before_effect):
     service = Path(value["service_state"])
     if request.action in {"service.start", "service.stop", "operations.resolve"}:
-        with state_io.operator_lock(service / "updates"):
+        with operator_lock(service / "updates"):
             store.guard(job["operation_id"])
             if any(
                 (service / "updates" / name).exists()

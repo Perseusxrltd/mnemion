@@ -12,6 +12,7 @@ from ..private_input import read_private
 from ..service import host_package, service_updates as updates, update_state as state_io
 from ..version import __version__
 from . import HostControlError
+from .locking import operator_lock
 from .backup_git import GitDestination, Repository, deliver, verify
 from .installation import settings
 from .protocol import Document, canonical, timestamp
@@ -57,7 +58,7 @@ def configure(root, spec):
             "independent_backup_required",
             "A local Git repository does not prove independent backup custody.",
         )
-    with state_io.operator_lock(Path(value["service_state"]) / "updates"):
+    with operator_lock(Path(value["service_state"]) / "updates"):
         index = root / "backup-index.json"
         saved = state_io.read(index) if index.exists() else {"backups": []}
         if saved.get("retiring") is not None:

@@ -11,8 +11,12 @@ This audit changes work order; it neither narrows scope nor marks a parent done.
 The actual [4.46.1 paired update](../validation/2026-10-23-4461-live-acceptance.md)
 passed on **23 October at 09:55:28 UTC**, alongside its separately recorded
 [native and public release gates](../validation/2026-10-23-4461-native-acceptance.md).
-Complete the current independent-host milestone: fresh independent backup
-verification, OS/controller adoption and both custodians' operations remain pending.
+The later [independent-host setup](../validation/2026-10-23-independent-host-adoption.md)
+passed native adoption, backup configuration, OS integration and two protected
+custodian enrollments. **The operational journey failed at its first stop,
+before any effect.** Complete the [busy-source hotfix](../releases/4.46.2.md),
+its release gates and the actual stop/manager-restart/watchdog/start/retained-data
+journey. Fresh native host-control backup delivery and restore remain unproven.
 Queue [V08 anonymous product telemetry](anonymous-product-telemetry.md) after
 that milestone; it is not part of the frozen hotfix. Keep one feature milestone
 alongside urgent operational bugs. Next prioritize independent shared administration, source freshness,
@@ -53,6 +57,20 @@ The generated [release status](../RELEASE_STATUS.md) records current public
 availability and release-check outcomes. The dated snapshots below preserve
 historical publication, candidate qualification and actual-deployment evidence.
 
+**Actual independent-host setup — 23 October 2026, 11:01:48 UTC:** native
+adoption and backup configuration passed, followed by OS integration at
+10:58:01 UTC and two protected custodian enrollments at 10:58:40 UTC. The
+[full operational journey failed](../validation/2026-10-23-independent-host-adoption.md)
+at its first Windows stop at 11:00:26 UTC, before any effect, after the adapter's
+60-second operator-lock wait behind a source scan. Desired state remained
+running; a fresh native read found memory ready/running and no pending work
+or recovery. No second stop or restart was requested. The 4.46.2 source hotfix
+has focused verification, but its native/public and actual operational
+acceptance remain unproven. Fresh native backup delivery/restore, whole-machine
+boot, separate physical-device custody and provider wake are not established.
+The earlier paired update remains accepted; no parent requirement is complete
+from this partial operational result.
+
 **Actual 4.46.1 acceptance — 23 October 2026, 09:55:28 UTC:** the actual Windows
 x64 app and shared Linux host passed [paired acceptance](../validation/2026-10-23-4461-live-acceptance.md).
 The host completed its compatible normal update; Windows retained its earlier
@@ -63,10 +81,11 @@ no cleanup remaining, production memory writes or cloud model calls. The
 [interruption history](../validation/2026-10-23-4461-live-interruption.md) preserves
 the watchdog-interrupted backup and stopped access comparison; four restored
 source-role entries were independently matched to prior accepted authority and
-current provider bindings, with missing original spaces still rejected. Fresh
-independent backup verification, OS/controller adoption, both custodians'
-operations and unattended desktop idle restart remain unproven. No requirement
-state is promoted; V08 telemetry remains Planned and inactive.
+current provider bindings, with missing original spaces still rejected. At that
+checkpoint, independent backup verification, OS/controller adoption and both
+custodians' operations remained unproven; their later setup and failed first
+stop are recorded above. Unattended desktop idle restart is still not established.
+No requirement state is promoted; V08 telemetry remains Planned and inactive.
 
 **Actual 4.45.0 acceptance — 22 October 2026, 20:24:17 UTC:** the actual Windows
 app and shared Linux host passed their [paired acceptance](../validation/2026-10-22-4450-live-acceptance.md).

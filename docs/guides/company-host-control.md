@@ -4,10 +4,13 @@
 actions passed [installed qualification on all six targets](../validation/2026-10-23-4461-native-acceptance.md).
 All six public installed-update targets also passed. The actual Windows/shared
 Linux pair passed [4.46.1 live acceptance at 09:55:28 UTC on 23 October](../validation/2026-10-23-4461-live-acceptance.md).
-Fresh independently verified backup, production OS/controller adoption and
-two-custodian operations remain pending. The
+The later [canonical-host setup](../validation/2026-10-23-independent-host-adoption.md)
+passed native adoption, backup configuration, OS integration and two protected
+custodian enrollments. **Its operational journey failed at the first stop,
+before any effect.** Full recovery acceptance and fresh native backup
+delivery/restore remain unproven. The
 [interruption history](../validation/2026-10-23-4461-live-interruption.md)
-preserves the stopped attempts preceding this accepted update. Use
+preserves the stopped update attempts. Use
 [release status](../RELEASE_STATUS.md) for current package availability and
 the [qualification section](#qualification-and-remaining-work) for evidence limits.
 
@@ -82,8 +85,8 @@ installed-client qualification.
 Version 4.46.0 uses **authority-store format 2**; the remote protocol
 remains version 1. Experimental format-1 authority state is refused, not silently
 migrated or reset. Preserve it for owner inspection rather than deleting it to
-repeat adoption. Production adoption remains pending after the
-[23 October paired-update acceptance](../validation/2026-10-23-4461-live-acceptance.md).
+repeat adoption. The [23 October canonical-host record](../validation/2026-10-23-independent-host-adoption.md)
+confirms native adoption and preserves the later failed first service stop.
 
 The examples use Unix shell redirection and placeholder paths. Create private,
 owner-only parent directories first. Replace uppercase JSON placeholders with
@@ -258,8 +261,11 @@ work or substitute process-tree termination for the official stop action.
 
 Review [supervision](../service/supervision.md), then qualify the actual
 registration and restart behavior. `registered` and `registration_checked`
-remain false; these commands install no OS jobs. Production replacement
-of the existing job and watchdog, and boot/login acceptance, remain pending.
+remain false; these commands install no OS jobs. A separately performed
+[OS integration completed on 23 October](../validation/2026-10-23-independent-host-adoption.md).
+The actual operational journey failed before its first stop took effect, so
+approved-stop preservation through manager restart and watchdog ticks, and
+whole-machine boot/login behavior, remain unproven.
 
 ## Use the desktop app
 
@@ -876,9 +882,19 @@ All five [release gates](../validation/releases/4.46.1-status.json) passed by
 checkpoint Windows had updated while the host's pre-update backup was running.
 The later [actual paired acceptance](../validation/2026-10-23-4461-live-acceptance.md)
 passed at **09:55:28 UTC**, preserving the existing Windows installation,
-three identities, exact sampled memories, login and preferences. This accepted
-update still leaves fresh independent backup verification, production host
-adoption, OS integration and both custodians' operations pending.
+three identities, exact sampled memories, login and preferences. The later
+[host-control journey](../validation/2026-10-23-independent-host-adoption.md)
+passed adoption, backup configuration, OS integration and two custodian
+enrollments, but **failed at the first Windows stop before any effect**.
+Manager restart, two watchdog ticks, service start and retained-data acceptance
+were not reached. A fresh status read found memory ready/running with no
+pending work or recovery.
+
+The [4.46.2 source follow-up](../releases/4.46.2.md) uses the existing supported
+five-minute source-drain window and reports fixed `host_busy` when an active
+scan still blocks a host operation; the UI explains that result. Source checks
+and builds passed, but installed/native, public and actual-host acceptance
+remain unproven at that source checkpoint.
 
 The **23 October 2026 native qualification** passed all six installed Windows,
 macOS and Linux x64/ARM64 targets for the published 4.46.0 source. The
@@ -958,11 +974,10 @@ the corrected release completed all six native jobs as recorded above.
 The installed gates require the expanded real UI/agent/key/SSH/restart/archive
 journey through the offline `/hosts` route. Their native client smoke stage has
 a finite 180-second readiness deadline, with individual helper bounds retained.
-Production adoption, listener reconfiguration,
-independently recoverable controller-authority custody, boot/login registration
-and restart acceptance, full Git-backup retrieval/restore and production backup
-retention also remain open. This is not universal onboarding or a successful
-production continuity deployment.
+Listener reconfiguration, independently recoverable controller-authority custody,
+whole-machine boot/login and restart acceptance, fresh native Git-backup
+delivery/restore and production backup retention remain open. The completed
+setup does not establish universal onboarding or full production continuity.
 
 The [23 October publication and live rollout record](../validation/2026-10-23-4460-live-rollout.md)
 records successful verification of all 38 release assets, publication at
@@ -974,8 +989,10 @@ changes. At that checkpoint the last complete pair was
 [4.45.1](../validation/2026-10-23-4451-live-acceptance.md). The later
 [4.46.1 paired acceptance](../validation/2026-10-23-4461-live-acceptance.md)
 passed after the [preserved interruptions](../validation/2026-10-23-4461-live-interruption.md).
-Fresh independently verified backup, actual OS/controller deployment and both
-custodians' operational acceptance remain pending.
+The later [OS integration and custodian enrollments](../validation/2026-10-23-independent-host-adoption.md)
+passed; the full operational journey failed at its first stop. Both custodians'
+operations, retained-data acceptance and fresh native backup delivery/restore
+still require their own passing evidence.
 Current package availability follows [release status](../RELEASE_STATUS.md).
 
 Provider power-on, browser-based independent management, company identity

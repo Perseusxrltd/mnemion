@@ -9,6 +9,7 @@ from pathlib import Path
 from ..service import managed_upgrade, service_updates as updates, update_state as state_io
 from ..service.update_manifest import verify_manifest
 from . import HostControlError, backup
+from .locking import operator_lock
 from .protocol import canonical, timestamp
 
 
@@ -35,7 +36,7 @@ def envelope(root, runtime=None):
 
 def plan(root, value, store, job, request):
     service = Path(value["service_state"])
-    with state_io.operator_lock(service / "updates"):
+    with operator_lock(service / "updates"):
         store.guard(job["operation_id"])
         result = managed_upgrade._plan(service, service / "updates")
         public = {

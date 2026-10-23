@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.46.1**.
+Reviewed source distribution: **4.46.2**.
 Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-23**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
@@ -34,6 +34,29 @@ availability and release gates; each deployment requires its own acceptance.
   current live-update/independent-host milestone; it is not shipping or included
   in frozen 4.46.1. The previous 65 requirement texts and states are preserved.
 
+- **4.46.2 source hotfix — 23 October 2026; unreleased at this checkpoint.**
+  [Native host operations](releases/4.46.2.md) now use the existing five-minute
+  source-drain window and preserve active scans. A fixed `host_busy` outcome
+  explains a still-blocked operation. Real-lock source regressions passed:
+  completion after 75 simulated seconds allowed exactly one authorized stop;
+  a held lease returned `host_busy` at 300 simulated seconds with no effect,
+  intent change or scan interruption. The 99 focused Python checks and six
+  desktop host-profile checks passed, with two environment-dependent Python
+  cases skipped. Native/public qualification and actual operational acceptance
+  remain unproven. This is source evidence; V08 remains Planned and inactive.
+
+- **4.46.1 independent-host setup — 23 October 2026, 11:01:48 UTC.** Native
+  adoption and backup configuration passed, followed by OS integration at
+  **10:58:01 UTC** and two protected custodian enrollments at **10:58:40 UTC**.
+  The [operational journey failed](validation/2026-10-23-independent-host-adoption.md)
+  at its first Windows stop at **11:00:26 UTC**, before any effect, behind a
+  source scan. Manager restart, watchdog checks, start and retained-data
+  acceptance were not reached. A fresh status read found memory ready/running
+  with no pending work or recovery; no second stop or restart was requested.
+  The earlier paired update remains accepted. Fresh native host-control backup
+  delivery/restore, whole-machine boot, separate physical-device custody and
+  provider wake remain unproven. All 66 requirement states are unchanged.
+
 - **4.46.1 actual paired acceptance — 23 October 2026, 09:55:28 UTC.** The
   actual Windows x64 app and shared Linux service passed their
   [paired check](validation/2026-10-23-4461-live-acceptance.md). The host completed
@@ -42,8 +65,9 @@ availability and release gates; each deployment requires its own acceptance.
   checks passed. The [interruption history](validation/2026-10-23-4461-live-interruption.md)
   preserves both stopped attempts and the independently reviewed restoration of
   four source-role entries. The existing 54-request lab passed with no cleanup
-  remaining, production memory writes or cloud model calls. Fresh independent
-  backup, OS/controller adoption and both custodians' operations remain pending.
+  remaining, production memory writes or cloud model calls. At that checkpoint,
+  fresh independent backup, OS/controller adoption and both custodians'
+  operations remained pending; the later setup and failed first stop are recorded above.
   All 66 requirement states remain unchanged; V08 remains Planned and inactive.
 
 - **4.46.1 publication — 23 October 2026, 08:46:59 UTC.** All six

@@ -52,8 +52,13 @@ This acceptance covers one real Windows x64 installation and its shared Linux
 service. The six-platform [native qualification](2026-10-23-4461-native-acceptance.md)
 and [public release gates](releases/4.46.1-status.json) remain separate evidence.
 A fresh independently verified production backup, OS/controller adoption and
-both custodians' operations remain pending. Whole-machine boot, independently
-held physical-device custody, provider wake, broader load and recovery still
+both custodians' operations remained pending at the **09:55 UTC checkpoint**.
+The later [independent-host record](2026-10-23-independent-host-adoption.md)
+confirms passed adoption, backup configuration, OS integration and two protected
+custodian enrollments, followed by a **failed first stop before any effect**.
+It does not complete operational recovery or fresh native backup delivery/restore.
+Whole-machine boot, independently held physical-device custody, provider wake,
+broader load and recovery still
 require their own acceptance in the
 [complete audit](../implementation/completion-audit.md). Publisher settings
 retain their separate review in the [issue plan](../implementation/github-issues.md).

@@ -118,6 +118,7 @@ def work(root: Path, descriptor: int):
                         break
                     code = error.code if isinstance(error, HostControlError) else "operation_failed"
                     if code not in {
+                        "host_busy",
                         "host_unavailable",
                         "authority_changed",
                         "plan_changed",

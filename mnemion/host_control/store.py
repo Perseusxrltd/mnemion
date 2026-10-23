@@ -824,6 +824,7 @@ class Store:
         # raw subprocess output, exception strings or connection credentials.
         if error not in {
             None,
+            "host_busy",
             "host_unavailable",
             "authority_changed",
             "plan_changed",
