@@ -25,15 +25,80 @@
   ],
   "runs": [
     {
-      "id": 39865654240,
+      "id": 39873108609,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "11bd5601e6b79f8d0136f10a20deefe054d70810",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-22T23:05:31Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39865654240"
+      "source_commit": "c302834b015b8134c2d84307018f98b70975bf1b",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-22T23:38:40Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39873108609",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 12,
+        "completed": 7,
+        "succeeded": 6,
+        "active": [
+          {
+            "id": 120152122150,
+            "name": "service (3.13)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Matching PostgreSQL recovery tools"
+            ]
+          },
+          {
+            "id": 120152122201,
+            "name": "supervision (macos-15)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
+            ]
+          },
+          {
+            "id": 120152122249,
+            "name": "service (3.12)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv sync --locked --python 3.12 --group dev"
+            ]
+          },
+          {
+            "id": 120152122297,
+            "name": "supervision (macos-15-intel)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the current Intel cryptography runtime with static OpenSSL"
+            ]
+          },
+          {
+            "id": 120152122531,
+            "name": "service (3.14)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": [
+        {
+          "name": "legacy",
+          "id": 120152122218,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 9,
+          "steps": [
+            "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
+          ]
+        }
+      ]
     },
     {
       "id": 39843181077,
@@ -114,39 +179,40 @@
       "workflow": "verify-artifacts.yml",
       "branch": "main",
       "source_commit": "11cde5535bebd1685c515c6aa9984a97a10e525a",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-22T23:33:48Z",
+      "status": "completed",
+      "conclusion": "failure",
+      "updated_at": "2026-10-22T23:38:43Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39872601355",
       "job_details_schema": 2,
+      "failed_jobs": [
+        {
+          "name": "verify",
+          "id": 120150391834,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 15,
+          "steps": [
+            "Scan the exact downloaded distributions before publication"
+          ]
+        }
+      ],
       "job_progress": {
-        "total": 1,
-        "completed": 0,
+        "total": 2,
+        "completed": 2,
         "succeeded": 0,
-        "active": [
-          {
-            "id": 120150391834,
-            "name": "verify",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify every uploaded byte, production signature and complete feed"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+        "active": []
+      }
     },
     {
-      "id": 39865654359,
+      "id": 39873108664,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "11bd5601e6b79f8d0136f10a20deefe054d70810",
+      "source_commit": "c302834b015b8134c2d84307018f98b70975bf1b",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-22T22:32:18Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39865654359"
+      "updated_at": "2026-10-22T23:38:40Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39873108664"
     },
     {
       "id": 39843176416,
@@ -160,5 +226,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39843176416"
     }
   ],
-  "observed_at": "2026-10-22T23:34:18+00:00"
+  "observed_at": "2026-10-22T23:40:00+00:00"
 }
