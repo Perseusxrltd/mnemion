@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.46.3**.
+Reviewed source distribution: **4.46.4**.
 Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-23**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
@@ -34,6 +34,27 @@ availability and release gates; each deployment requires its own acceptance.
   current live-update/independent-host milestone; it is not shipping or included
   in frozen 4.46.1. The previous 65 requirement texts and states are preserved.
 
+- **4.46.3 two-custodian lifecycle — 23 October 2026, 16:25:34 UTC.** The
+  [actual host-control journey](validation/2026-10-23-4463-custody-acceptance.md)
+  passed using both original permanent custodians: Windows stopped memory,
+  both clients inspected with its API down, deliberate stop survived a manager
+  restart and two scheduled watchdog ticks, and the native-agent custodian
+  started the original service. Final readiness, saved human connection and
+  the unchanged 15-request content/access/MCP comparison passed. Original
+  observation/import failures remain preserved; no service action or enrollment
+  was replayed. Fresh backup and independent restore remain pending. No
+  whole-machine boot, separate physical-device custody, provider wake or
+  controller-authority escrow is claimed, and no requirement state is promoted.
+
+- **Backup inventory throughput — 23 October 2026; UNRELEASED.** The
+  [chosen source comparison](validation/2026-10-23-backup-inventory-throughput.md)
+  selects collated JSON once and retains a constant second column for tuple-sort
+  memory accounting. All six synthetic original/4× cases preserve exact row
+  counts, bytes and SHA-256 at 1 MB `work_mem` and 32 MB shared buffers; chosen
+  backend RSS growth stayed about 2.25–3.32 MiB. No live backup acceleration or
+  fresh backup/restore acceptance is claimed. Requirement states and
+  V08's Planned, inactive status are unchanged.
+
 - **Legacy vendor-telemetry correction — 23 October 2026; UNRELEASED.** A
   [separate source fix](validation/2026-10-23-legacy-vendor-telemetry.md) explicitly
   disables Chroma's vendor telemetry for legacy clients. The no-send baseline
@@ -41,6 +62,20 @@ availability and release gates; each deployment requires its own acceptance.
   subprocess recorded zero vendor calls, network attempts or new identifiers;
   52 focused checks and lint/format checks passed. Frozen 4.46.3 is unchanged,
   and V08 product telemetry remains Planned and inactive.
+
+- **4.46.3 actual paired acceptance — 23 October 2026, 15:54:32 UTC.** The
+  [actual Windows/shared-host pair](validation/2026-10-23-4463-live-acceptance.md)
+  passed after the compatible host operator completed at **15:27:40 UTC**.
+  Three identities, exact sampled memories and protected login/preferences
+  were retained; the 15-request external comparison and fresh 42-request lab
+  passed with complete cleanup and zero production memory writes or cloud
+  calls. The original access interruption and failed deletion cycle remain
+  preserved. The final continuation requested no additional update, restart
+  or lab cycle. Full custody operations, fresh backup and independent restore
+  remain pending; #44/#45 stay open and the local-note publisher stays paused.
+  The [release-description synchronization](validation/2026-10-23-release-description-sync.md)
+  also passed its real workflow and public readback. All 66 requirement states
+  are unchanged; V08 remains Planned and inactive.
 
 - **4.46.3 native/public-update qualification — 23 October 2026, 15:03 UTC.**
   [All six installed targets](validation/2026-10-23-4463-native-acceptance.md)

@@ -306,13 +306,19 @@ def inventory(conn, *, version: int = 1) -> dict:
         projection = sql.SQL("to_jsonb(t)")
         if version == 2 and table == "memory_revisions":
             projection = sql.SQL("to_jsonb(t) - 'search_text'")
-        # Ordering the complete JSON representation handles every table without
-        # assuming a particular primary key, including future schema additions.
+        # Collate the selected value before sorting by its alias. Otherwise
+        # PostgreSQL builds and sorts two full JSON copies of each row. Keep
+        # the complete representation and exact legacy C byte ordering for
+        # every table, including future additions without a primary key. The
+        # constant second column keeps PostgreSQL on its tuple-sort path: the
+        # single-Datum sort on PostgreSQL 18 can retain full text outside the
+        # work_mem accounting, making large inventories consume unbounded RAM.
         with conn.cursor(name="inventory_" + uuid4().hex) as cursor:
             cursor.execute(
                 sql.SQL(
-                    'SELECT ({})::text AS row FROM mnemion.{} t ORDER BY ({})::text COLLATE "C"'
-                ).format(projection, sql.Identifier(table), projection)
+                    'SELECT ({})::text COLLATE "C" AS row, TRUE AS _inventory_row '
+                    "FROM mnemion.{} t ORDER BY row"
+                ).format(projection, sql.Identifier(table))
             )
             for item in cursor:
                 digest.update(item["row"].encode() + b"\n")

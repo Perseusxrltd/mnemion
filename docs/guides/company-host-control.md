@@ -4,13 +4,21 @@
 actions and backup approval controls passed
 [installed qualification on all six targets](../validation/2026-10-23-4463-native-acceptance.md).
 All six public automatic-update targets subsequently passed, verified at
-**15:03 UTC on 23 October**. Actual-host acceptance remains separate.
+**15:03 UTC on 23 October**. The actual Windows/shared memory-service pair
+[passed at 15:54:32 UTC](../validation/2026-10-23-4463-live-acceptance.md), preserving
+identities, exact sampled data and protected login/preferences, with 42 lab
+requests and complete cleanup. The separate
+[two-custodian host-control journey passed at 16:25:34 UTC](../validation/2026-10-23-4463-custody-acceptance.md):
+both original custodians inspected while memory was down, deliberate stop
+survived a manager restart and two scheduled watchdog ticks, and the original
+service restarted with retained access and data. Fresh backup delivery and
+independent restore remain unaccepted.
 
 The earlier 4.46.1 release passed all six public installed-update targets. Its
 actual Windows/shared Linux pair passed
 [live acceptance at 09:55:28 UTC on 23 October](../validation/2026-10-23-4461-live-acceptance.md)
-and remains the last accepted actual pair.
-The later [canonical-host setup](../validation/2026-10-23-independent-host-adoption.md)
+and remains a preserved earlier checkpoint.
+The earlier [canonical-host setup](../validation/2026-10-23-independent-host-adoption.md)
 passed native adoption, backup configuration, OS integration and two protected
 custodian enrollments. **Its operational journey failed at the first stop,
 before any effect.** Full recovery acceptance and fresh native backup
@@ -273,9 +281,10 @@ Review [supervision](../service/supervision.md), then qualify the actual
 registration and restart behavior. `registered` and `registration_checked`
 remain false; these commands install no OS jobs. A separately performed
 [OS integration completed on 23 October](../validation/2026-10-23-independent-host-adoption.md).
-The actual operational journey failed before its first stop took effect, so
-approved-stop preservation through manager restart and watchdog ticks, and
-whole-machine boot/login behavior, remain unproven.
+Its original 4.46.1 journey failed before the first stop took effect. The later
+[4.46.3 custody acceptance](../validation/2026-10-23-4463-custody-acceptance.md)
+verified approved-stop preservation through a manager restart and two actual
+scheduled watchdog ticks. Whole-machine boot/login behavior remains unproven.
 
 ## Use the desktop app
 
@@ -991,9 +1000,19 @@ bounded error requires investigation.
 
 ## Qualification and remaining work
 
+The [4.46.3 native/public-update qualification](../validation/2026-10-23-4463-native-acceptance.md)
+passed all six targets. Its separate [actual paired acceptance](../validation/2026-10-23-4463-live-acceptance.md)
+completed at **15:54:32 UTC on 23 October**, after an inspected continuation
+that preserved the original access and deletion interruptions. No additional
+update, restart or lab cycle was requested by that final continuation. The
+separate [two-custodian lifecycle](../validation/2026-10-23-4463-custody-acceptance.md)
+passed at **16:25:34 UTC**, retaining the original authority and stop/start
+requests, with both clients and the unchanged content/access comparison passed.
+Fresh native backup delivery and independent production restore remain unaccepted.
+
 The **4.46.1 qualification at 08:30 UTC on 23 October 2026** passed all six
 installed targets and their packaged host-control journeys. The
-[current native report](../validation/2026-10-23-4461-native-acceptance.md)
+[4.46.1 native report](../validation/2026-10-23-4461-native-acceptance.md)
 retains the source/run bindings, unchanged qualification receipt, corrected
 Windows journal-form failure and subsequent six-platform public update results.
 All five [release gates](../validation/releases/4.46.1-status.json) passed by
@@ -1019,7 +1038,8 @@ The later [4.46.2 native build 39945380878](https://github.com/Perseusxrltd/mnem
 passed; publication was still pending at **12:19 UTC on 23 October 2026**.
 That historical qualification predates the later
 [4.46.3 native qualification and publication](../validation/2026-10-23-4463-native-acceptance.md).
-The actual custodian journey, fresh native backup delivery and independent
+The later [actual custodian journey](../validation/2026-10-23-4463-custody-acceptance.md)
+passed within its recorded scope. Fresh native backup delivery and independent
 production restore remain unaccepted.
 
 The **23 October 2026 native qualification** passed all six installed Windows,
@@ -1101,7 +1121,7 @@ The installed gates require the expanded real UI/agent/key/SSH/restart/archive
 journey through the offline `/hosts` route. Their native client smoke stage has
 a finite 180-second readiness deadline, with individual helper bounds retained.
 Listener reconfiguration, independently recoverable controller-authority custody,
-whole-machine boot/login and restart acceptance, fresh native Git-backup
+whole-machine boot/login acceptance, fresh native Git-backup
 delivery/restore and production backup retention remain open. The completed
 setup does not establish universal onboarding or full production continuity.
 
@@ -1116,9 +1136,11 @@ changes. At that checkpoint the last complete pair was
 [4.46.1 paired acceptance](../validation/2026-10-23-4461-live-acceptance.md)
 passed after the [preserved interruptions](../validation/2026-10-23-4461-live-interruption.md).
 The later [OS integration and custodian enrollments](../validation/2026-10-23-independent-host-adoption.md)
-passed; the full operational journey failed at its first stop. Both custodians'
-operations, retained-data acceptance and fresh native backup delivery/restore
-still require their own passing evidence.
+passed; that 4.46.1 operational journey failed at its first stop. The separate
+[4.46.3 two-custodian journey](../validation/2026-10-23-4463-custody-acceptance.md)
+subsequently passed deliberate stop, independent inspection, manager restart,
+scheduled watchdogs, start and retained-data checks. Fresh native backup
+delivery and independent restore still require their own passing evidence.
 Current package availability follows [release status](../RELEASE_STATUS.md).
 
 Provider power-on, browser-based independent management, company identity
