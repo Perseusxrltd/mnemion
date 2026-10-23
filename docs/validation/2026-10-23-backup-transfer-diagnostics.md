@@ -68,6 +68,19 @@ and the deploy key is writable; no OOM or disk-pressure evidence was observed.
 The exact failure cause remains unknown because no original transfer
 diagnostic survived. The new records cannot reconstruct that missing evidence.
 
+At **18:10:36 UTC**, the existing 4.46.3 native custodian's supported
+`operations.resolve` action accepted the healthy current service with
+`settle: "observe"`. Final readback at **18:14:03 UTC** confirmed unchanged
+authority, readiness and restored automatic-start eligibility. The original
+backup is now `failed` with `operation_uncertain` and `original_outcome:
+"unconfirmed"`; its failure and encrypted files remain retained. No backup,
+service stop or service start was replayed. The first unavailable status read
+and the first observer's elapsed window remain in the evidence.
+
+The private `2026-10-23-backup-transfer-recovery/recovery.receipt.json` has
+SHA-256 `061e8aae109ad316401dbd3dc5a9d6c00a4ca53f2d2c1b1d51348df13b0184ab`.
+This establishes recovery of host administration, not backup delivery or restore.
+
 That preserved checkpoint is
 `2026-10-23-174534-release-and-backup-inspection.json`, SHA-256
 `58330860cae4cda239cf175fdedf0bf709de8a3eb10a0f5a681ef8cba59042e3`.

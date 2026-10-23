@@ -998,7 +998,7 @@ Raw subprocess output, private paths and credentials are not the remote
 diagnostic interface. The OS owner can inspect protected local logs when a
 bounded error requires investigation.
 
-**Unreleased source diagnostics:** the
+**4.46.5 source diagnostics:** the
 [backup transfer follow-up](../validation/2026-10-23-backup-transfer-diagnostics.md)
 preserves a host-private delivery intent before push and bounded transfer
 progress. An uncertain receipt can retain `result.backup_transfer` with a fixed
