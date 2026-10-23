@@ -3,9 +3,9 @@
   "repository": "Perseusxrltd/mnemion",
   "run_window": 100,
   "release": {
-    "version": "v4.46.0",
-    "published_at": "2026-10-23T05:43:10Z",
-    "url": "https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.0"
+    "version": "v4.46.1",
+    "published_at": "2026-10-23T08:34:54Z",
+    "url": "https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.1"
   },
   "issues": [
     {
@@ -36,56 +36,78 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39916297399"
     },
     {
-      "id": 39907316827,
+      "id": 39925663475,
       "attempt": 1,
       "workflow": "public-updates.yml",
-      "branch": "v4.46.0",
-      "source_commit": "a53ca6ff123c70686c8d89e2c9545143a2fadc37",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-23T05:54:51Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39907316827"
-    },
-    {
-      "id": 39895069093,
-      "attempt": 1,
-      "workflow": "release.yml",
-      "branch": "release/4.46.0-r2",
-      "source_commit": "a53ca6ff123c70686c8d89e2c9545143a2fadc37",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-23T04:44:03Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39895069093"
-    },
-    {
-      "id": 39913638457,
-      "attempt": 1,
-      "workflow": "release.yml",
-      "branch": "release/4.46.1",
-      "source_commit": "42aa7e0c0bbcad6f4d9bd8901c5695a9b264f95e",
-      "status": "completed",
-      "conclusion": "failure",
-      "updated_at": "2026-10-23T07:37:41Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39913638457",
+      "branch": "v4.46.1",
+      "source_commit": "94684f002b707d6750edde2a00d7254f155f3eae",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-23T08:35:16Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39925663475",
       "job_details_schema": 2,
-      "failed_jobs": [
-        {
-          "name": "native / windows-2022 / x64",
-          "id": 120283946139,
-          "conclusion": "failure",
-          "runner_assigned": true,
-          "steps_reported": 39,
-          "steps": [
-            "Installed app creates, searches and reopens a real local workspace"
-          ]
-        }
-      ],
       "job_progress": {
-        "total": 34,
-        "completed": 34,
-        "succeeded": 30,
-        "active": []
-      }
+        "total": 7,
+        "completed": 1,
+        "succeeded": 1,
+        "active": [
+          {
+            "id": 120321355173,
+            "name": "linux / arm64 public upgrade",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Linux desktop libraries"
+            ]
+          },
+          {
+            "id": 120321355188,
+            "name": "macos / x64 public upgrade",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Install public release and observe its automatic update"
+            ]
+          },
+          {
+            "id": 120321355240,
+            "name": "windows / arm64 public upgrade",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run python -m pip install psutil==7.2.2"
+            ]
+          },
+          {
+            "id": 120321355268,
+            "name": "windows / x64 public upgrade",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Install public release and observe its automatic update"
+            ]
+          },
+          {
+            "id": 120321355316,
+            "name": "linux / x64 public upgrade",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Linux desktop libraries"
+            ]
+          },
+          {
+            "id": 120321355343,
+            "name": "macos / arm64 public upgrade",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Install public release and observe its automatic update"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": []
     },
     {
       "id": 39916372505,
@@ -104,28 +126,10 @@
       "workflow": "verify-artifacts.yml",
       "branch": "main",
       "source_commit": "da5b7a99689c5223cdde919f6be5564c1cdadd1b",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-23T08:29:43Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39925023152",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 1,
-        "completed": 0,
-        "succeeded": 0,
-        "active": [
-          {
-            "id": 120319176907,
-            "name": "verify",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify every uploaded byte, production signature and complete feed"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-23T08:35:02Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39925023152"
     },
     {
       "id": 39916297432,
@@ -139,16 +143,16 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39916297432"
     },
     {
-      "id": 39907323013,
+      "id": 39925659880,
       "attempt": 1,
       "workflow": "website-release.yml",
-      "branch": "v4.46.0",
-      "source_commit": "a53ca6ff123c70686c8d89e2c9545143a2fadc37",
+      "branch": "v4.46.1",
+      "source_commit": "94684f002b707d6750edde2a00d7254f155f3eae",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-23T05:43:39Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39907323013"
+      "updated_at": "2026-10-23T08:35:20Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39925659880"
     }
   ],
-  "observed_at": "2026-10-23T08:30:09+00:00"
+  "observed_at": "2026-10-23T08:35:36+00:00"
 }
