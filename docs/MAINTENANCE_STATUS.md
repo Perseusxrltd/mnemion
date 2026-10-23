@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-23T19:48:40+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-23T19:49:50+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.4](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.4). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -17,7 +17,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | in\_progress | [Run 40014217829](https://github.com/Perseusxrltd/mnemion/actions/runs/40014217829) |
+| ci\.yml | main | success | [Run 40014217829](https://github.com/Perseusxrltd/mnemion/actions/runs/40014217829) |
 | public-updates\.yml | v4\.46\.4 | success | [Run 40005404536](https://github.com/Perseusxrltd/mnemion/actions/runs/40005404536) |
 | release\.yml | release/4\.46\.4 | success | [Run 39997298864](https://github.com/Perseusxrltd/mnemion/actions/runs/39997298864) |
 | release\.yml | release/4\.46\.5 | failure | [Run 40002385734](https://github.com/Perseusxrltd/mnemion/actions/runs/40002385734) |
@@ -28,14 +28,10 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 ## Active jobs
 
-[Run 40014217829](https://github.com/Perseusxrltd/mnemion/actions/runs/40014217829): 7/8 jobs completed; 2 succeeded.
+[Run 40013991029](https://github.com/Perseusxrltd/mnemion/actions/runs/40013991029): 12/14 jobs completed; 11 succeeded.
 
-- studio: in\_progress — Run npm --prefix studio/electron ci && npm --prefix studio/electron test.
-
-[Run 40013991029](https://github.com/Perseusxrltd/mnemion/actions/runs/40013991029): 11/13 jobs completed; 10 succeeded.
-
-- native / Encrypted files / Windows / arm64: in\_progress — Run actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1.
 - native / native\_database / Database / linux / arm64: in\_progress — Compile pinned PostgreSQL, vector extension and static libraries.
+- native / Service engine / Windows x64: in\_progress — Run uv run --no-sync python -m deploy\.build\_native\_engine --work build-tmp/windows-engine-build --output build-tmp/windows-engine.
 
 
 ## Unsuccessful jobs
