@@ -126,6 +126,10 @@ async def call(connection: Connection, private_key: bytes, request, *, timeout=1
                 password_auth=False,
                 kbdint_auth=False,
                 host_based_auth=False,
+                # AsyncSSH initializes its platform GSS context before checking
+                # the auth flags. This channel uses only the enrolled key and
+                # must not load Windows SSPI or ambient Kerberos credentials.
+                gss_host=None,
                 gss_auth=False,
                 gss_kex=False,
                 preferred_auth=["publickey"],

@@ -7,7 +7,7 @@ not claim Windows managed-host support. Only public enrollment crosses stdin.
 
 import argparse
 import asyncio
-from contextlib import AsyncExitStack
+from contextlib import AsyncExitStack, closing
 from datetime import datetime, timedelta, timezone
 import json
 from pathlib import Path
@@ -40,7 +40,7 @@ def fixture_store(root):
     path = authority / "authority.sqlite3"
     with private_output(path):
         pass
-    with sqlite3.connect(path) as database:
+    with closing(sqlite3.connect(path)) as database, database:
         database.executescript(SCHEMA)
         database.execute(
             "INSERT INTO host(singleton,id,service_identity,service_state,created_at) VALUES(1,?,?,?,?)",

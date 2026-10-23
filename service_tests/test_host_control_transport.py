@@ -139,6 +139,11 @@ def test_pinned_ssh_uses_only_the_registered_command_and_key(tmp_path, monkeypat
     monkeypatch.setenv("SSH_AUTH_SOCK", "/unrelated/agent")
     monkeypatch.setenv("PATH", "/no-local-ssh-program")
 
+    def unavailable_workstation_login(*args, **kwargs):
+        raise ModuleNotFoundError("Workstation GSS/SSPI is unavailable in this frozen client")
+
+    monkeypatch.setattr("asyncssh.connection.GSSClient", unavailable_workstation_login)
+
     async def exercise():
         async with server(tmp_path) as (_, connection, key, observed):
             result = await call(connection, key, request(connection))

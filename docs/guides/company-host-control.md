@@ -138,6 +138,18 @@ listener, choose `--bind 127.0.0.1 --advertised-host 127.0.0.1` instead and omit
 supported saved port range is 1024–65535. These are alternatives for initial
 adoption, not a procedure for changing an existing listener.
 
+Review firewall access for the host-control TCP port, **7893 by default**,
+separately from ordinary OS SSH. This listener uses enrolled keys and exact
+server pins; it offers no password login, shell or forwarding. Allow only the
+network access approved by the host owner.
+
+Standard UFW `limit` rejects the sixth connection from one source IP within
+30 seconds. A successful desktop inspection opens **two or three short pinned
+SSH sessions**, and the visible host view polls every **15 seconds**. Several
+people behind one public IP can therefore hit an ordinary SSH-login limit
+during normal use. Use reviewed allow rules for approved sources or a rate
+policy sized for that connection pattern; keep OS SSH access rules separate.
+
 Adoption **prepares** the controller. A matching repeat returns
 `already_prepared`; it preserves the existing host identity and grants. A
 different adoption is refused rather than resetting authority.
@@ -889,15 +901,39 @@ The [separate policy checkpoint](../validation/2026-10-22-independent-host-contr
 retains the 87-pass/two-fixture-error full attempt followed by two targeted SSH
 passes. This source evidence does not qualify actual OS job/watchdog integration.
 
-**All six installed-platform gates remain unrun for 4.46.0.** They now require
-the expanded real UI/agent/key/SSH/restart/archive journey through the offline
-`/hosts` route. Their native client smoke stage has a finite 180-second readiness
-deadline, with individual helper bounds retained. Clean installed-client/UI
+At those source checkpoints, all six 4.46.0 installed-platform gates were unrun.
+The first frozen candidate subsequently passed Windows x64 installed local
+hosting, but both Windows x64 and ARM64 failed their packaged host-control UI
+checks. Both use the same frozen x64 service engine. The
+[23 October Windows failure record](../validation/2026-10-23-windows-host-client.md)
+preserves the reproduced `win32timezone` import failure: AsyncSSH initialized
+Windows GSS/SSPI despite the disabled GSS authentication flags. The source
+correction explicitly sets `gss_host=None` for the key-only transport. An early
+frozen-engine gate now requires pinned SSH inspection and refusal of a changed
+server pin before the longer desktop tests.
+
+Focused verification recorded 18 source passes and one Studio-built journey
+skipped because this checkout lacked compiled desktop output. A separate native
+Windows diagnostic copy, replacing only the host transport/server module
+bytecode, passed the early gate while the original frozen binary failed it.
+The original failures remain retained. The four original Linux/macOS native
+jobs passed; corrected release-native and live results remain pending. This is
+still an unpublished candidate.
+
+The installed gates require the expanded real UI/agent/key/SSH/restart/archive
+journey through the offline `/hosts` route. Their native client smoke stage has
+a finite 180-second readiness deadline, with individual helper bounds retained.
+Clean installed-client/UI
 qualification, production adoption, listener reconfiguration,
 independently recoverable controller-authority custody, boot/login registration
 and restart acceptance, full Git-backup retrieval/restore and production backup
 retention also remain open. This is not universal onboarding or a successful
 production continuity deployment.
+
+At this **23 October correction checkpoint**, published and actual
+Windows/Hostinger acceptance remain at [4.45.1](../validation/2026-10-23-4451-live-acceptance.md).
+Independent production host adoption is prepared but has not been applied.
+Current package availability continues to follow [release status](../RELEASE_STATUS.md).
 
 Provider power-on, browser-based independent management, company identity
 linking, Windows/Compose host adoption, replacement-host provisioning, replication

@@ -231,6 +231,7 @@ async def listen(store, private_key, *, host="127.0.0.1", port=7893, host_status
         password_auth=False,
         kbdint_auth=False,
         host_based_auth=False,
+        gss_host=None,
         gss_auth=False,
         gss_kex=False,
         allow_pty=False,

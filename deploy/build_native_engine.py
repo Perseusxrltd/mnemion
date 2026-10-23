@@ -123,6 +123,11 @@ def build(work: Path, output: Path) -> Path:
     binary = runtime / ("mnemion-engine.exe" if os.name == "nt" else "mnemion-engine")
     if executable_architecture(binary) != architecture:
         raise ValueError("The frozen engine does not match the build architecture")
+    # Exercise the actual frozen interpreter and SSH dependencies before the
+    # archive can enter any of the longer installed desktop journeys.
+    from deploy.probe_native_host_control import run as probe_host_client
+
+    print(json.dumps({"native_host_client": probe_host_client(binary)}), flush=True)
     if operating_system == "windows":
         from PyInstaller.utils.win32.winmanifest import read_manifest_from_executable
 
