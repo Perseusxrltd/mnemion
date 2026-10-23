@@ -5,11 +5,11 @@ Public distribution: [current release status](RELEASE_STATUS.md). Roadmap update
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
 [Release status](RELEASE_STATUS.md) and the [maintenance board](MAINTENANCE_STATUS.md)
-update automatically. This page sets delivery order; the [65 requirements](PRODUCT_REQUIREMENTS.md)
+update automatically. This page sets delivery order; the [66 requirements](PRODUCT_REQUIREMENTS.md)
 preserve every requested outcome and its evidence.
 
-Strict full-scope completion remains **17/65 shipped (26.2%)**: 42 partial,
-2 planned, 3 ongoing and 1 external. Requirements differ greatly in size.
+Strict full-scope completion is **17/66 shipped (25.8%)**: 42 partial,
+3 planned, 3 ongoing and 1 external. Requirements differ greatly in size.
 This measures complete requested capabilities, not time spent or the usability
 of the released app. A hotfix does not finish a broader requirement.
 
@@ -24,6 +24,15 @@ issue review, publication and version-linked closure together.
 These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
+
+- **New planned scope — 23 October 2026.** V08 retains the user's
+  [anonymous product telemetry request](implementation/anonymous-product-telemetry.md):
+  aggregate usage and performance/resource/bandwidth measurements, disclosed
+  default enablement, persistent opt-out/re-enable, company policy and native-agent
+  controls. The anonymity and native/web acceptance contract excludes contents,
+  stable identifiers and identifying collector logs. This is queued after the
+  current live-update/independent-host milestone; it is not shipping or included
+  in frozen 4.46.1. The previous 65 requirement texts and states are preserved.
 
 - **4.46.1 managed-startup hotfix — 23 October 2026.** The
   [source change](releases/4.46.1.md) defers unrelated command initialization
@@ -461,6 +470,11 @@ Ship coherent access, installation, update, data-safety and RAM fixes before
 optional expansion. New [issues](https://github.com/Perseusxrltd/mnemion/issues)
 join this queue without erasing unfinished requirements. Independent work
 continues while an external account or publisher prerequisite is unavailable.
+
+V08 [anonymous product telemetry](implementation/anonymous-product-telemetry.md)
+is queued after the current live-update and independent-host milestone. Its
+privacy architecture review precedes implementation and launch; the active
+hotfix and the existing delivery outcomes below continue unchanged.
 
 | Priority | Next outcome | Acceptance and requirements |
 | --- | --- | --- |

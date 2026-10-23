@@ -1,13 +1,17 @@
 # Complete-milestone acceptance audit
 
-Reviewed 22 October 2026 against all **42 partial requirements** in the
-[complete inventory](../PRODUCT_REQUIREMENTS.md). All 65 requirement IDs, the
-expanded librarian, scientific/Jev work and every open issue remain retained.
+Scope updated **23 October 2026**; the existing **42 partial requirements** were
+reviewed on 22 October against the [complete inventory](../PRODUCT_REQUIREMENTS.md).
+All previous 65 requirement IDs, texts and states remain retained, alongside the
+expanded librarian, scientific/Jev work and every open issue. New **V08** is a
+separate planned addition: **66 total, 17 shipped (25.8%), 42 partial, 0 building,
+3 planned, 3 ongoing and 1 external**.
 This audit changes work order; it neither narrows scope nor marks a parent done.
 
-Continue frozen releases and finish the selected capture-controls journey already
-under implementation. Keep one feature milestone alongside urgent operational
-bugs. Next prioritize independent shared administration, source freshness,
+Continue frozen 4.46.1 and the current live-update/independent-host milestone.
+Queue [V08 anonymous product telemetry](anonymous-product-telemetry.md) after
+that milestone; it is not part of the frozen hotfix. Keep one feature milestone
+alongside urgent operational bugs. Next prioritize independent shared administration, source freshness,
 ordinary memory operations, backup/recovery and updates; then complete company
 onboarding/provider journeys before expanding advanced librarian/visual work.
 Each milestone must include its app and agent journey, supported platforms,
@@ -16,7 +20,7 @@ error/recovery behavior, documentation and observed completion proof.
 Remaining effort and estimate confidence are **unknown for every row below**.
 The missing acceptance work is identified from current documented gaps; its
 individual implementation, provider waiting time and representative workload
-have not yet been measured. The 26.2% full-requirement count is not a linear
+have not yet been measured. The 25.8% full-requirement count is not a linear
 schedule estimate. The earlier provisional 4–8 week estimate is not a commitment.
 
 The [issue plan](github-issues.md) and live GitHub review retain **#44 and #45
@@ -171,3 +175,15 @@ and the source-access/recovery receipts are recorded in the [issue plan](github-
 | V05 | Add event replay, cross-space aggregation and capture coverage so map activity explains actual agent work with its attribution and evidence. | V01, V03, V04, C08 | Time/replay and current-permission proof across several agents/spaces. |
 
 The [layered-librarian stages](../research/2026-10-20-layered-librarian.md#delivery-sequence-and-research-watch) remain additional planned scope. Capture controls, coverage statistics and the research watch do not establish autonomous cross-layer consolidation.
+
+**Planned addition — V08, 23 October 2026.** The
+[anonymous product telemetry contract](anonymous-product-telemetry.md) preserves
+the exact new request. It requires a reviewed anonymity architecture and payload,
+default-enabled disclosure, persistent user opt-out/re-enable, company policy and
+matching native-agent controls, bounded collection/transport, collector logging
+and small-cohort protections, and meaningful outbound/privacy tests on all six
+native targets plus the web. It remains separate from private workspace/security
+audits. Dependencies include F08, A10, R02/R04 and V01; their existing requirement
+texts and states do not change. Implementation, privacy proof, measured budgets
+and release acceptance are all pending; effort remains unknown. The 42-row
+partial-requirement audit above is unchanged.

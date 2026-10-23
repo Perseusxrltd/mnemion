@@ -1,6 +1,6 @@
 # Complete product requirements
 
-Updated **2026-10-22**. This is the persistent checklist for the Mnemion rebuild,
+Updated **2026-10-23**. This is the persistent checklist for the Mnemion rebuild,
 including additions made during implementation. The [roadmap](ROADMAP.md)
 explains delivery order; this file preserves the complete requested scope.
 
@@ -26,11 +26,21 @@ a provider or publisher prerequisite is unresolved. **Ongoing** identifies a
 standing product or maintenance commitment. A passing prototype, mock
 test or source commit is not a shipped feature.
 
-Current strict completion: **17 of 65 requirements shipped (26.2%)**; 42 partial,
-0 building, 2 planned, 3 ongoing and 1 external. These broad requirements are
+Current strict completion: **17 of 66 requirements shipped (25.8%)**; 42 partial,
+0 building, 3 planned, 3 ongoing and 1 external. These broad requirements are
 not equally sized. This is coverage of the full requested scope, not a measure
 of engineering effort or the usability of the published app. Hotfixes to a
 partial feature do not automatically mark its whole requirement complete.
+
+**23 October 2026 scope addition — V08:** retain the new
+[anonymous product telemetry request](implementation/anonymous-product-telemetry.md)
+as a separate planned requirement. It covers aggregate app/agent usage,
+performance, resources, bandwidth and fixed error codes, with disclosed default
+enablement and persistent user opt-out/re-enable. The contract preserves the
+exact request and defines anonymity, collector, policy and native/web acceptance.
+It is queued after the current live-update/independent-host milestone and is
+not included in frozen 4.46.1. All previous 65 requirement texts and states are
+unchanged; the added scope changes the denominator, not completed work.
 
 **22 October 2026 independent-host source progress:** the
 [development host-control guide](guides/company-host-control.md) now covers
@@ -357,6 +367,7 @@ this addition does not promote those broad requirements to shipped.
 | V05 | Make agentic work understandable while watching the map. | Partial | Published 4.0.10 includes creator/time filters, administrator-visible person/app names and real reviewer-scoped creation/revision/review events. Keep event attribution separate from geometry. Extend the recent event window with replay, cross-space aggregation and capture coverage. |
 | V06 | Match the Perseus XR website theme throughout the app. | Shipped | [Studio design system](STUDIO_DESIGN.md). Preserve readability, responsive layouts and accessibility for new screens. |
 | V07 | Use the existing connected M logo everywhere and keep it readable. | Shipped | [Canonical logo and generated assets](BRANDING.md) ship in 4.0.10 across the browser, all six native packages, installers and system tray. The product page, homepage and Lab Notes use the same mark; native asset and live website checks passed. |
+| V08 | Provide anonymous product telemetry for app and agent usage, performance, resources and bandwidth, enabled by default with clear disclosure and persistent user opt-out/re-enable. | Planned | [Exact 23 October request and future acceptance contract](implementation/anonymous-product-telemetry.md): fixed aggregate measurements, no contents or stable identity/device tracking, reviewed collector anonymity, company policy, bounded resources, and app/native-agent/web controls. Queued after the current live-update/independent-host milestone; not shipping or included in frozen 4.46.1. |
 
 ## Website, distribution and funding
 
@@ -378,6 +389,11 @@ this addition does not promote those broad requirements to shipped.
 access, installation, automatic updates, data safety and RAM stability. Ship
 related verified fixes together, then advance the feature queue below. A passing
 release does not close unfinished provider or recovery requirements.
+
+**Queued addition:** V08 [anonymous product telemetry](implementation/anonymous-product-telemetry.md)
+follows the current live-update and independent-host milestone. Privacy
+architecture review, implementation and all six native plus web acceptance
+remain future work. The active hotfix and every existing queue item remain in scope.
 
 **19 October reports retained:** [issue 38](https://github.com/Perseusxrltd/mnemion/issues/38)
 covers reproducible host installation/recovery after home or system-layer loss,
