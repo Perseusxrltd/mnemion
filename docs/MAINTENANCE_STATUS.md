@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-23T12:52:24+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-23T13:48:17+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.2](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.2). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -17,9 +17,17 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 39953101845](https://github.com/Perseusxrltd/mnemion/actions/runs/39953101845) |
+| ci\.yml | main | success | [Run 39957183147](https://github.com/Perseusxrltd/mnemion/actions/runs/39957183147) |
 | public-updates\.yml | v4\.46\.2 | success | [Run 39952552845](https://github.com/Perseusxrltd/mnemion/actions/runs/39952552845) |
 | release\.yml | release/4\.46\.2 | success | [Run 39945380878](https://github.com/Perseusxrltd/mnemion/actions/runs/39945380878) |
-| verify-artifacts\.yml | main | success | [Run 39951889805](https://github.com/Perseusxrltd/mnemion/actions/runs/39951889805) |
-| website-release\.yml | main | success | [Run 39953101926](https://github.com/Perseusxrltd/mnemion/actions/runs/39953101926) |
+| release\.yml | release/4\.46\.3 | queued | [Run 39961881757](https://github.com/Perseusxrltd/mnemion/actions/runs/39961881757) |
+| verify-artifacts\.yml | main | skipped | [Run 39964156899](https://github.com/Perseusxrltd/mnemion/actions/runs/39964156899) |
+| website-release\.yml | main | success | [Run 39957182981](https://github.com/Perseusxrltd/mnemion/actions/runs/39957182981) |
 | website-release\.yml | v4\.46\.2 | success | [Run 39952548379](https://github.com/Perseusxrltd/mnemion/actions/runs/39952548379) |
+
+## Active jobs
+
+[Run 39961881757](https://github.com/Perseusxrltd/mnemion/actions/runs/39961881757): 13/14 jobs completed; 12 succeeded.
+
+- native / native\_database / Database / macos / arm64: queued.
+
