@@ -44,6 +44,14 @@ option sets, native host schema dispatch, signed update and compatibility
 guards, backup before cutover, runtime rollback without reverting accepted
 data, interrupted-update recovery, and holding failed versions.
 
+The first release preflight correctly rejected nine server-only checks that
+had been placed in the lightweight client suite: that environment intentionally
+omits service dependencies. The 14 full-service command cases were moved to
+the service suite; the five dependency-free startup cases remain in the client
+suite. No checks were removed and no service dependency was added to the client.
+The rejected preflight and its corrected continuation are retained separately;
+it stopped before freezing or dispatching a release.
+
 Running children still cannot bypass failed HTTP, process-identity or
 initialization checks. Their simulated transitions retain the existing
 60-second deadline. Timeout evidence records only known reason/state values
