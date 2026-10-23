@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-23T00:14:57+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-23T00:15:32+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.45.1](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.45.1). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -35,9 +35,9 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 [Run 39876903393](https://github.com/Perseusxrltd/mnemion/actions/runs/39876903393): 1/7 jobs completed; 1 succeeded.
 
-- macos / x64 public upgrade: in\_progress — Run python -m pip install psutil==7\.2\.2.
-- windows / arm64 public upgrade: in\_progress — Run python -m pip install psutil==7\.2\.2.
-- linux / arm64 public upgrade: in\_progress — Linux desktop libraries.
+- macos / x64 public upgrade: in\_progress — Install public release and observe its automatic update.
+- windows / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
+- linux / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
 - linux / x64 public upgrade: in\_progress — Linux desktop libraries.
 - macos / arm64 public upgrade: in\_progress — Install public release and observe its automatic update.
 - windows / x64 public upgrade: in\_progress — Install public release and observe its automatic update.

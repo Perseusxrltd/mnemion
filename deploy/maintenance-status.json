@@ -102,7 +102,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run python -m pip install psutil==7.2.2"
+              "Install public release and observe its automatic update"
             ]
           },
           {
@@ -111,7 +111,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run python -m pip install psutil==7.2.2"
+              "Install public release and observe its automatic update"
             ]
           },
           {
@@ -120,7 +120,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Linux desktop libraries"
+              "Install public release and observe its automatic update"
             ]
           },
           {
@@ -176,12 +176,6 @@
       "updated_at": "2026-10-22T23:38:43Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39872601355",
       "job_details_schema": 2,
-      "job_progress": {
-        "total": 2,
-        "completed": 2,
-        "succeeded": 0,
-        "active": []
-      },
       "failed_jobs": [
         {
           "name": "verify",
@@ -193,7 +187,13 @@
             "Scan the exact downloaded distributions before publication"
           ]
         }
-      ]
+      ],
+      "job_progress": {
+        "total": 2,
+        "completed": 2,
+        "succeeded": 0,
+        "active": []
+      }
     },
     {
       "id": 39859826720,
@@ -218,5 +218,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39876908629"
     }
   ],
-  "observed_at": "2026-10-23T00:14:57+00:00"
+  "observed_at": "2026-10-23T00:15:32+00:00"
 }
