@@ -1008,6 +1008,12 @@ stderr, credentials or exception text. This work is excluded from frozen
 Retain the original request and encrypted files for inspection; the new
 diagnostics do not establish delivery or resolve the original uncertain backup.
 
+Interpret `deadline` together with its recorded stage and configured limit.
+The [full-size isolated transfer check](../validation/2026-10-23-backup-transfer-diagnostics.md#full-size-isolated-transfer-diagnostics)
+recorded a push deadline at a 300-second network cap. That finding does not
+establish the original backup's failure cause or successful delivery.
+Longer limits used in a separate diagnostic do not change production settings.
+
 ## Qualification and remaining work
 
 The [4.46.4 native qualification](../validation/2026-10-23-4464-native-acceptance.md)

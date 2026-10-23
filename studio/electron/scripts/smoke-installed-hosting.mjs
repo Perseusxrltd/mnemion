@@ -9,6 +9,7 @@ import { tmpdir } from 'node:os'
 import { platformArtifacts, root } from './platform-artifacts.mjs'
 import { verifyNativeResources } from './native-resources.mjs'
 import { localDiagnostic } from '../dist/local-diagnostics.js'
+import { workspaceOpenFailure } from '../dist/local-hosting-diagnostics.js'
 
 const artifacts = platformArtifacts()
 // Production NSIS owns registry entries. Run only on a fresh hosted CI machine,
@@ -287,12 +288,14 @@ try {
   const shutdown = Object.fromEntries(['localActive', 'localBusy'].filter(key => typeof state?.[key] === 'boolean').map(key => [key, state[key]]))
   const lastStage = typeof state?.stage === 'string' && /^[a-z-]{1,64}$/.test(state.stage) ? state.stage : null
   const setup = setupFailure(state?.error)
+  const workspaceOpen = workspaceOpenFailure(state?.error)
   let engineDiagnostic
   let invalidEngineDiagnostic = false
   try { engineDiagnostic = localDiagnostic(state?.localDiagnostic) } catch { invalidEngineDiagnostic = true }
   writeFileSync(evidenceFile, JSON.stringify({ passed: false, platform: process.platform, architecture: process.arch,
     phase, childExitCode: child?.exitCode ?? null, childSignal: child?.signalCode ?? null, lastStage, ...shutdown,
     ...(setup ? { setup } : {}),
+    ...(workspaceOpen ? { workspaceOpen } : {}),
     ...(engineDiagnostic ? { engineDiagnostic } : {}), ...(invalidEngineDiagnostic ? { invalidEngineDiagnostic: true } : {}),
     stage: installationComplete ? 'installed-local-hosting' : 'installation', privateDiagnostics: 'retained only in the disposable runner temporary directory' }, null, 2) + '\n')
   throw error

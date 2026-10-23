@@ -91,3 +91,46 @@ separate accepted evidence. Issues #44/#45 remain open, all
 [66 requirement texts and states](../PRODUCT_REQUIREMENTS.md) are unchanged,
 and [V08 telemetry](../implementation/anonymous-product-telemetry.md) remains
 Planned and inactive.
+
+## Full-size isolated transfer diagnostics
+
+**23 October 2026 follow-up.** The first isolated diagnostic used frozen
+4.46.5 source
+`704650c91af3e6a300758d71d7ee72f29874a04b`, the original retained encrypted
+bundle and ledger, and a separate destination branch. Its **18:44:18 UTC**
+receipt recorded failure at **`stage: push`, `reason: deadline`**, with
+`exit_code: null`. The configured network-command limit was **300 seconds**;
+the measured push lasted **300.807 seconds**. The service-manager observation
+at **18:45:08 UTC** recorded `Result: exit-code` and `ExecMainStatus: 1`.
+The diagnostic ended before its 1,200-second total runtime cap, and sampled
+OOM counters were zero.
+
+A separate matching-ref read at **18:49:30 UTC** found the diagnostic branch
+absent. The original production backup receipt remained unchanged, and no new
+snapshot was created. This identifies the failing stage and limit in the
+isolated diagnostic. It **does not establish the cause of the original native
+4.46.3 backup failure** or qualify fresh backup delivery or independent restore.
+
+The second isolated diagnostic uses the **same frozen source archive, transfer
+module and encrypted input hashes**. Its copied destination settings allow
+**900 seconds per network command**, with a **2,700-second total runtime cap**.
+Production settings and the active runtime remain unchanged. This is a
+separately launched diagnostic; no product retry or resume action was added.
+
+At the **18:58:01 UTC** documentation checkpoint, the latest saved observation
+at **18:57:04 UTC** showed the second diagnostic **active/running**, preparing
+encrypted parts at `hash-object`, with **no terminal receipt**. Its outcome
+remains **pending** at this checkpoint; no successful delivery is established.
+The first failure remains preserved independently.
+
+The first private `observed-completion.private.json`, under the dated
+`2026-10-23-backup-transfer-live-4465` evidence directory, has SHA-256
+`e13f1c8ccfc1f99b3f5a30088921525a20d31eb5a4d22104abd34ce424c0cc82`.
+The second directory, `2026-10-23-backup-transfer-live-4465-r2`, retains
+`plan.private.json`, SHA-256
+`69f365ba6092d2d0d7e52a8541cdbd0a43a0789dffb9587aca0dd5620b9124f4`,
+and `observations/003.private.json`, SHA-256
+`37bc9ebdb390492641d99d62434bfc919e8246a37219c9f394d7a413d2da0d5c`.
+The plans and saved stage observations bind the source, input identities,
+separate branch inspection and diagnostic-only limits without publishing raw
+logs, private destinations or operation identities.

@@ -9,6 +9,7 @@ import { verifyNativeCapture } from './native-capture-probe.js'
 import { verifyNativeCaptureBoundaries } from './native-capture-boundaries-probe.js'
 import { verifyNativeCapturePolicy } from './native-capture-policy-probe.js'
 import { verifyNativeHeadlessCapture, verifyNativeHeadlessPreview } from './native-headless-capture-probe.js'
+import { workspaceOpenError } from './local-hosting-diagnostics.js'
 
 export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Record<string, unknown> | null> {
   const path = process.env.MNEMION_STUDIO_HOSTING_PROBE
@@ -108,8 +109,35 @@ export async function verifyLocalHostingProbe(window: BrowserWindow): Promise<Re
       // Saved local workspaces reopen automatically once an explicit Resume
       // succeeds. Do not wait for a button that disappears as the UI opens.
     }
-    await until(() => document.querySelector('.ws-workspace-name')?.textContent === 'Équipe installed validation',
-      'The installed UI did not open or automatically restore its local workspace', 180000);
+    try {
+      await until(() => document.querySelector('.ws-workspace-name')?.textContent === 'Équipe installed validation',
+        'The installed UI did not open or automatically restore its local workspace', 180000);
+    } catch {
+      // Preserve the failed gate and its original deadline. Capture only fixed
+      // classifications so authentication, a pending first read and a lost UI
+      // selection are distinguishable without uploading the private profile.
+      const observe = async promise => {
+        let timer;
+        try { return await Promise.race([promise.catch(() => null), new Promise(resolve => { timer = setTimeout(() => resolve(null), 2000); })]); }
+        finally { clearTimeout(timer); }
+      };
+      const [local, workspace] = await Promise.all([observe(bridge.localStatus()), observe(bridge.workspaceStatus())]);
+      const visible = selector => [...document.querySelectorAll(selector)].filter(node => node.getClientRects().length);
+      const open = visible('button').find(node => node.textContent.trim() === 'Open workspace');
+      const classifyError = ${workspaceOpenError.toString()};
+      const error = classifyError(visible('.ws-error').map(node => node.textContent).join(' '));
+      const authenticated = workspace ? (workspace.active ? 'yes' : 'no') : 'unknown';
+      throw new Error('Installed workspace open failed: ' + JSON.stringify({
+        route: location.hash === '#/workspace' || location.hash.startsWith('#/workspace/') ? 'workspace' : location.hash === '#/help' || location.hash.startsWith('#/help?') ? 'help' : 'other',
+        view: visible('.ws-local-setup').length ? 'local_setup' : visible('.ws-shell').length ? 'workspace' : visible('.ws-loading').length ? 'loading' : visible('.ws-connect').length ? 'connection' : error !== 'none' ? 'error' : 'other',
+        localState: ['new', 'starting', 'running', 'stopping', 'stopped', 'error'].includes(local?.state) ? local.state : 'unknown',
+        localSelected: typeof local?.preferences?.selected === 'boolean' ? (local.preferences.selected ? 'yes' : 'no') : 'unknown',
+        authenticated,
+        identityMatches: workspace?.active ? (workspace.active.me?.tenant_name === 'Équipe installed validation' ? 'yes' : 'no') : 'unknown',
+        openControl: open ? (open.disabled ? 'disabled' : 'enabled') : 'absent',
+        error,
+      }));
+    }
     const session = (await bridge.workspaceStatus()).active;
     if (!session || session.me.tenant_name !== 'Équipe installed validation') throw new Error('The UI has no authenticated local session');
     if (session.me.service_version !== await bridge.version()) throw new Error('The local session did not retain the bundled server version');
