@@ -25,15 +25,15 @@
   ],
   "runs": [
     {
-      "id": 40001971973,
+      "id": 40005940612,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "704650c91af3e6a300758d71d7ee72f29874a04b",
+      "source_commit": "4fc814c7226c7aea9b7c86f77c73a82c98fdf2c9",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-23T18:42:04Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40001971973"
+      "updated_at": "2026-10-23T18:46:35Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40005940612"
     },
     {
       "id": 40005404536,
@@ -41,73 +41,10 @@
       "workflow": "public-updates.yml",
       "branch": "v4.46.4",
       "source_commit": "4e64aad45c288d2bc71146b976857225c628fb7a",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-23T18:42:05Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40005404536",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 7,
-        "completed": 1,
-        "succeeded": 1,
-        "active": [
-          {
-            "id": 120592035598,
-            "name": "windows / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 120592035670,
-            "name": "linux / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 120592035690,
-            "name": "macos / x64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 120592035694,
-            "name": "linux / x64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Linux desktop libraries"
-            ]
-          },
-          {
-            "id": 120592035709,
-            "name": "windows / x64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 120592035812,
-            "name": "macos / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-23T18:55:08Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40005404536"
     },
     {
       "id": 39997298864,
@@ -128,13 +65,13 @@
       "source_commit": "704650c91af3e6a300758d71d7ee72f29874a04b",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-23T18:42:51Z",
+      "updated_at": "2026-10-23T18:44:08Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40002385734",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 26,
-        "completed": 21,
-        "succeeded": 20,
+        "total": 32,
+        "completed": 23,
+        "succeeded": 22,
         "active": [
           {
             "id": 120589559170,
@@ -143,15 +80,6 @@
             "runner_assigned": true,
             "steps": [
               "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 120589559257,
-            "name": "checks / supervision (macos-15-intel)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the current Intel cryptography runtime with static OpenSSL"
             ]
           },
           {
@@ -173,12 +101,57 @@
             ]
           },
           {
-            "id": 120592405573,
-            "name": "native / native_database / Database / Windows ARM host / x64 engine",
+            "id": 120592908548,
+            "name": "native / windows-2022 / x64",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
+              "Installed app creates, searches and reopens a real local workspace"
+            ]
+          },
+          {
+            "id": 120592908585,
+            "name": "native / windows-11-arm / arm64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Installed app creates, searches and reopens a real local workspace"
+            ]
+          },
+          {
+            "id": 120592908604,
+            "name": "native / ubuntu-22.04-arm / arm64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Installed Linux app creates, searches and reopens a real local workspace"
+            ]
+          },
+          {
+            "id": 120592908605,
+            "name": "native / macos-15 / arm64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Installed app creates, searches and reopens a real local workspace"
+            ]
+          },
+          {
+            "id": 120592908686,
+            "name": "native / macos-15-intel / x64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Package the native desktop with one bounded upstream-download retry"
+            ]
+          },
+          {
+            "id": 120592908721,
+            "name": "native / ubuntu-22.04 / x64",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Installed Linux app creates, searches and reopens a real local workspace"
             ]
           }
         ]
@@ -197,15 +170,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40004648689"
     },
     {
-      "id": 39989203575,
+      "id": 40005940563,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "4e64aad45c288d2bc71146b976857225c628fb7a",
+      "source_commit": "4fc814c7226c7aea9b7c86f77c73a82c98fdf2c9",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-23T16:44:12Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39989203575"
+      "updated_at": "2026-10-23T18:45:56Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40005940563"
     },
     {
       "id": 40005399880,
@@ -219,5 +192,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40005399880"
     }
   ],
-  "observed_at": "2026-10-23T18:43:06+00:00"
+  "observed_at": "2026-10-23T18:55:50+00:00"
 }
