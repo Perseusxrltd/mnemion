@@ -93,11 +93,21 @@ whole-line anchor. That rejected full scan is preserved separately. Test
 fixtures construct the annotation at runtime, so quoted source statements do
 not need broader exemptions.
 
-At this checkpoint corrected GitHub artifact verification and publication had
-not completed. CI must also pass with the
-corrected coverage ownership. Public installed-update checks, website
-reconciliation and actual deployment acceptance retain their separate gates;
-this report claims none of those outcomes.
+[Corrected artifact verifier 39876232059](https://github.com/Perseusxrltd/mnemion/actions/runs/39876232059)
+passed at **00:13:02 UTC** using policy source
+`1f2e582bf49c1771b31ce10d915df7d10d46019d`. Its full scan of all **38 assets,
+4,021,713,596 bytes** recorded **zero findings** and passed the strengthened
+canaries. The exact frozen product source, signatures and uploaded bytes
+remained unchanged.
+
+[4.45.1 was published](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.45.1)
+at **00:14:17 UTC**. The retained [artifact receipt](releases/4.45.1-artifacts.json)
+and [publication receipt](releases/4.45.1-publication.json) bind that release to
+the completed build and corrected verification. Automatic website and public
+update follow-ups were dispatched or already present. CI must still pass with
+the corrected coverage ownership for subsequent source. Public installed-update
+checks, website reconciliation and actual deployment acceptance retain their
+separate gates; this report does not establish those outcomes.
 
 The scanner retains bounded ZIP/wheel/tar.gz/tgz expansion, flattened-byte
 inspection and decoding limits. It does not decompile native executable
