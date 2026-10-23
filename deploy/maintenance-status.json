@@ -25,15 +25,15 @@
   ],
   "runs": [
     {
-      "id": 39945128157,
+      "id": 39953101845,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "1fc96a82df8c4d7ae9420962187c4546b51ec60a",
+      "source_commit": "d5fc4127376687c0fec60fca23e4e0e7db86349a",
       "status": "completed",
-      "conclusion": "cancelled",
-      "updated_at": "2026-10-23T11:36:17Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39945128157"
+      "conclusion": "success",
+      "updated_at": "2026-10-23T12:51:37Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39953101845"
     },
     {
       "id": 39952552845,
@@ -41,73 +41,10 @@
       "workflow": "public-updates.yml",
       "branch": "v4.46.2",
       "source_commit": "1fc96a82df8c4d7ae9420962187c4546b51ec60a",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-23T12:20:42Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39952552845",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 7,
-        "completed": 1,
-        "succeeded": 1,
-        "active": [
-          {
-            "id": 120410432886,
-            "name": "linux / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Linux desktop libraries"
-            ]
-          },
-          {
-            "id": 120410432963,
-            "name": "windows / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run python -m pip install psutil==7.2.2"
-            ]
-          },
-          {
-            "id": 120410432974,
-            "name": "linux / x64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Linux desktop libraries"
-            ]
-          },
-          {
-            "id": 120410433031,
-            "name": "macos / x64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 120410433037,
-            "name": "macos / arm64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Install public release and observe its automatic update"
-            ]
-          },
-          {
-            "id": 120410433225,
-            "name": "windows / x64 public upgrade",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run python -m pip install psutil==7.2.2"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-23T12:32:16Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39952552845"
     },
     {
       "id": 39945380878,
@@ -132,15 +69,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39951889805"
     },
     {
-      "id": 39945127841,
+      "id": 39953101926,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "1fc96a82df8c4d7ae9420962187c4546b51ec60a",
+      "source_commit": "d5fc4127376687c0fec60fca23e4e0e7db86349a",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-23T11:18:31Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39945127841"
+      "updated_at": "2026-10-23T12:24:57Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39953101926"
     },
     {
       "id": 39952548379,
@@ -154,5 +91,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39952548379"
     }
   ],
-  "observed_at": "2026-10-23T12:20:58+00:00"
+  "observed_at": "2026-10-23T12:52:24+00:00"
 }
