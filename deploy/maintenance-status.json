@@ -25,15 +25,33 @@
   ],
   "runs": [
     {
-      "id": 39928243919,
+      "id": 39936457214,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "dd110b18b9529e6ca6e431c704e0867a8f3edbb5",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-23T08:57:49Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39928243919"
+      "source_commit": "d7b32ac26914bcfee1d28039c2bc116ef7f9e5f6",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-23T10:04:25Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39936457214",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 8,
+        "completed": 7,
+        "succeeded": 2,
+        "active": [
+          {
+            "id": 120357088733,
+            "name": "studio",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Verify wheel and source package include the matching web Studio"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": []
     },
     {
       "id": 39931143679,
@@ -80,15 +98,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39925023152"
     },
     {
-      "id": 39928243828,
+      "id": 39936457194,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "dd110b18b9529e6ca6e431c704e0867a8f3edbb5",
+      "source_commit": "d7b32ac26914bcfee1d28039c2bc116ef7f9e5f6",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-23T08:56:50Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39928243828"
+      "updated_at": "2026-10-23T10:04:35Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39936457194"
     },
     {
       "id": 39925659880,
@@ -102,5 +120,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39925659880"
     }
   ],
-  "observed_at": "2026-10-23T09:36:46+00:00"
+  "observed_at": "2026-10-23T10:05:12+00:00"
 }
