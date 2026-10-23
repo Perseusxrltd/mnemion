@@ -34,6 +34,15 @@ availability and release gates; each deployment requires its own acceptance.
   current live-update/independent-host milestone; it is not shipping or included
   in frozen 4.46.1. The previous 65 requirement texts and states are preserved.
 
+- **4.46.4 native qualification — 23 October 2026, 18:37:18 UTC.**
+  [All six installed targets](validation/2026-10-23-4464-native-acceptance.md)
+  passed 59 required observations each on workflow attempt 1, bound to frozen
+  source `4e64aad4` and the saved job/artifact evidence. Artifact verification
+  was still running at 18:38 UTC; public-upgrade and actual Windows/shared-host
+  4.46.4 acceptance require separate evidence. No fresh backup delivery or
+  independent restore is accepted. The later 4.46.5 transfer diagnostics are
+  excluded from this source; all 66 requirement states and V08 remain unchanged.
+
 - **Backup transfer diagnostics — 23 October 2026; UNRELEASED.** The
   [source change and local measurement](validation/2026-10-23-backup-transfer-diagnostics.md)
   preserve delivery intent, bounded progress and fixed failure guidance, and

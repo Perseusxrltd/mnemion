@@ -1010,6 +1010,15 @@ diagnostics do not establish delivery or resolve the original uncertain backup.
 
 ## Qualification and remaining work
 
+The [4.46.4 native qualification](../validation/2026-10-23-4464-native-acceptance.md)
+passed all six installed targets at **18:37:18 UTC on 23 October**, with 59
+required observations each and matching frozen-source, job and artifact
+evidence. Publication, public-upgrade and actual Windows/shared-host 4.46.4
+acceptance require separate receipts; the [release status](../RELEASE_STATUS.md)
+tracks public gates. The later 4.46.5 transfer diagnostics are excluded from
+this frozen source. Native qualification adds no accepted fresh backup delivery
+or independent production restore.
+
 The [4.46.3 native/public-update qualification](../validation/2026-10-23-4463-native-acceptance.md)
 passed all six targets. Its separate [actual paired acceptance](../validation/2026-10-23-4463-live-acceptance.md)
 completed at **15:54:32 UTC on 23 October**, after an inspected continuation
