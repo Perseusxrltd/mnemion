@@ -1025,14 +1025,24 @@ was added; fresh native backup and independent restore still require acceptance.
 
 ## Qualification and remaining work
 
-The [4.46.4 native qualification](../validation/2026-10-23-4464-native-acceptance.md)
-passed all six installed targets at **18:37:18 UTC on 23 October**, with 59
-required observations each and matching frozen-source, job and artifact
-evidence. Publication, public-upgrade and actual Windows/shared-host 4.46.4
-acceptance require separate receipts; the [release status](../RELEASE_STATUS.md)
-tracks public gates. The later 4.46.5 transfer diagnostics are excluded from
-this frozen source. Native qualification adds no accepted fresh backup delivery
-or independent production restore.
+The [4.46.5 second-candidate native qualification](../validation/2026-10-23-4465-native-acceptance.md)
+passed all six installed targets at **20:45:26 UTC on 23 October**, with 59
+required observations each. The original Windows ARM64 candidate failure is
+preserved; the added diagnostics do not establish its cause or a functional
+fix. Artifact verification subsequently passed, 4.46.5 was published at
+**20:49:55 UTC**, and automatic website verification passed at **20:50:15 UTC**.
+All six downloads, current guides and Git-owned product content were present.
+Public upgrade checks were still running at the 20:56 UTC observation; follow
+the [release status](../RELEASE_STATUS.md) for their separate acceptance.
+The last accepted actual Windows/shared-host pair remains 4.46.3. Actual
+4.46.5 paired acceptance, fresh native backup delivery and independent restore
+remain unaccepted.
+
+The earlier [4.46.4 native qualification](../validation/2026-10-23-4464-native-acceptance.md)
+retains its six installed-target results and matching source, job and artifact
+evidence. Its frozen source excludes the later 4.46.5 transfer diagnostics.
+That historical qualification does not establish an actual Windows/shared-host
+4.46.4 installation, fresh native backup delivery or independent restore.
 
 The [4.46.3 native/public-update qualification](../validation/2026-10-23-4463-native-acceptance.md)
 passed all six targets. Its separate [actual paired acceptance](../validation/2026-10-23-4463-live-acceptance.md)
