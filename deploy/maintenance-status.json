@@ -30,28 +30,10 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "84a33d1fbe3b433c7107a8951576ea0b906e81b8",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-23T07:06:25Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39915601829",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 8,
-        "completed": 7,
-        "succeeded": 2,
-        "active": [
-          {
-            "id": 120288477799,
-            "name": "studio",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Independent host control through the real desktop profile and native engine"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "success",
+      "updated_at": "2026-10-23T07:07:33Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39915601829"
     },
     {
       "id": 39907316827,
@@ -142,7 +124,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Installed Linux app creates, searches and reopens a real local workspace"
+              "Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
             ]
           },
           {
@@ -222,5 +204,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39907323013"
     }
   ],
-  "observed_at": "2026-10-23T07:07:22+00:00"
+  "observed_at": "2026-10-23T07:08:10+00:00"
 }

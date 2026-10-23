@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-23T07:07:22+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-23T07:08:10+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -17,7 +17,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | in\_progress | [Run 39915601829](https://github.com/Perseusxrltd/mnemion/actions/runs/39915601829) |
+| ci\.yml | main | success | [Run 39915601829](https://github.com/Perseusxrltd/mnemion/actions/runs/39915601829) |
 | public-updates\.yml | v4\.46\.0 | success | [Run 39907316827](https://github.com/Perseusxrltd/mnemion/actions/runs/39907316827) |
 | release\.yml | release/4\.46\.0-r2 | success | [Run 39895069093](https://github.com/Perseusxrltd/mnemion/actions/runs/39895069093) |
 | release\.yml | release/4\.46\.1 | in\_progress | [Run 39913638457](https://github.com/Perseusxrltd/mnemion/actions/runs/39913638457) |
@@ -27,10 +27,6 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 ## Active jobs
 
-[Run 39915601829](https://github.com/Perseusxrltd/mnemion/actions/runs/39915601829): 7/8 jobs completed; 2 succeeded.
-
-- studio: in\_progress — Independent host control through the real desktop profile and native engine.
-
 [Run 39913638457](https://github.com/Perseusxrltd/mnemion/actions/runs/39913638457): 25/32 jobs completed; 23 succeeded.
 
 - checks / service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
@@ -38,7 +34,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 - native / macos-15 / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
 - native / macos-15-intel / x64: in\_progress — Package the native desktop with one bounded upstream-download retry.
 - native / ubuntu-22\.04-arm / arm64: in\_progress — Installed Linux app creates, searches and reopens a real local workspace.
-- native / ubuntu-22\.04 / x64: in\_progress — Installed Linux app creates, searches and reopens a real local workspace.
+- native / ubuntu-22\.04 / x64: in\_progress — Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02.
 - native / windows-11-arm / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
 
 
