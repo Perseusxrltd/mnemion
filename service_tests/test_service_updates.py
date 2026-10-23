@@ -330,7 +330,10 @@ def test_cached_minor_release_cannot_bypass_current_compatibility_guards(
     assert not (managed.root / "journal.json").exists()
 
 
-def test_failed_new_start_restores_runtime_without_reverting_accepted_data(managed, monkeypatch):
+@pytest.mark.parametrize("with_diagnostics", [False, True])
+def test_failed_new_start_restores_runtime_without_reverting_accepted_data(
+    managed, monkeypatch, with_diagnostics
+):
     candidate = staged(managed, monkeypatch)
     accepted = ["before-update"]
     monkeypatch.setattr(updates, "_backup", lambda *args: "verified.zip")
@@ -338,6 +341,22 @@ def test_failed_new_start_restores_runtime_without_reverting_accepted_data(manag
     def process(state, *, start):
         if start and state_io.read(managed.root / "active.json") == candidate:
             accepted.append("accepted-before-health-failure")
+            if with_diagnostics:
+                raise updates.ProcessTransitionError(
+                    "Fixture readiness failure: private-sentinel",
+                    reason="readiness_timeout",
+                    start=True,
+                    observation={
+                        "ready": False,
+                        "http_ready": True,
+                        "children_initialized": False,
+                        "private_setting": "private-sentinel",
+                        "processes": [
+                            {"name": "mnemion-api", "statename": "RUNNING"},
+                            {"name": "mnemion-worker", "statename": "RUNNING"},
+                        ],
+                    },
+                )
             raise ManifestError("Fixture readiness failure")
 
     monkeypatch.setattr(updates, "_processes", process)
@@ -347,6 +366,15 @@ def test_failed_new_start_restores_runtime_without_reverting_accepted_data(manag
     assert state_io.read(managed.root / "active.json") == managed.old
     assert not (managed.root / "journal.json").exists()
     assert updates.apply(managed.state)["status"] == "held_after_failure"
+    failed = updates.status(managed.state)["last_failure"]
+    assert failed["version"] == candidate["version"]
+    if with_diagnostics:
+        assert failed["transition"]["reason"] == "readiness_timeout"
+        assert failed["transition"]["checks"]["children_initialized"] is False
+        assert failed["transition"]["process_states"]["mnemion-worker"] == "RUNNING"
+    else:
+        assert failed["transition"] is None
+    assert "private-sentinel" not in (managed.root / "failed.json").read_text()
 
 
 def test_interrupted_cutover_leaves_journal_and_recovers_before_retry(managed, monkeypatch):
@@ -366,6 +394,38 @@ def test_interrupted_cutover_leaves_journal_and_recovers_before_retry(managed, m
     assert updates.apply(managed.state)["status"] == "held_after_failure"
     assert state_io.read(managed.root / "active.json") == managed.old
     assert not (managed.root / "journal.json").exists()
+
+
+def test_failed_diagnostics_write_still_attempts_original_runtime_recovery(managed, monkeypatch):
+    candidate = staged(managed, monkeypatch)
+    monkeypatch.setattr(updates, "_backup", lambda *args: "verified.zip")
+    recovered = []
+
+    def process(state, *, start):
+        if start and state_io.read(managed.root / "active.json") == candidate:
+            raise updates.ProcessTransitionError(
+                "Fixture readiness timeout", reason="readiness_timeout", start=True
+            )
+        if start:
+            recovered.append(True)
+
+    write = state_io.write
+
+    def write_without_diagnostics(path, value, **kwargs):
+        if path == managed.root / "journal.json" and "transition" in value:
+            raise OSError("Fixture diagnostics write unavailable")
+        return write(path, value, **kwargs)
+
+    monkeypatch.setattr(updates, "_processes", process)
+    monkeypatch.setattr(state_io, "write", write_without_diagnostics)
+    with pytest.raises(OSError, match="diagnostics write"):
+        updates.apply(managed.state)
+    assert recovered == [True]
+    assert state_io.read(managed.root / "active.json") == managed.old
+    assert not (managed.root / "journal.json").exists()
+    assert (
+        state_io.read(managed.root / "failed.json")["transition"]["reason"] == "readiness_timeout"
+    )
 
 
 def test_failed_backup_cannot_stop_or_replace_the_running_service(managed, monkeypatch):
@@ -486,6 +546,71 @@ def test_process_transition_keeps_its_deadline_and_does_not_retry_identity_failu
     with pytest.raises(error, match="Different supervisor|requested process transition"):
         updates._processes(tmp_path, start=True)
     assert len(calls) == (1 if identity_error else 5)
+
+
+@pytest.mark.parametrize("missing", ["http_ready", "instance_matches", "children_initialized"])
+def test_running_processes_do_not_bypass_readiness_and_timeout_preserves_the_failed_check(
+    tmp_path, monkeypatch, missing
+):
+    clock = [0]
+    starts = []
+    processes = [
+        {"name": "mnemion-api", "statename": "RUNNING"},
+        {"name": "mnemion-worker", "statename": "RUNNING"},
+    ]
+    observed = {
+        "ready": False,
+        "service_ready": False,
+        "http_ready": True,
+        "instance_matches": True,
+        "children_initialized": True,
+        "processes": processes,
+        missing: False,
+    }
+    client = SimpleNamespace(
+        supervisor=SimpleNamespace(
+            startProcess=lambda name, wait: starts.append(name),
+            getAllProcessInfo=lambda: processes,
+        )
+    )
+    monkeypatch.setattr(updates.supervision, "settings", lambda state: (state, {}))
+    monkeypatch.setattr(updates.supervision, "_rpc", lambda settings: nullcontext(client))
+    monkeypatch.setattr(updates.supervision, "status", lambda state: observed)
+    monkeypatch.setattr(updates.time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(
+        updates.time, "sleep", lambda seconds: clock.__setitem__(0, clock[0] + seconds)
+    )
+    with pytest.raises(updates.ProcessTransitionError) as caught:
+        updates._processes(tmp_path, start=True)
+    assert starts == ["mnemion-api", "mnemion-worker"]
+    assert clock[0] == 60
+    evidence = caught.value.diagnostics
+    assert evidence["reason"] == "readiness_timeout"
+    assert evidence["checks"][missing] is False
+    assert set(evidence["process_states"].values()) == {"RUNNING"}
+
+
+@pytest.mark.parametrize("invalid", [None, [], {"reason": []}, {"reason": "private-sentinel"}])
+def test_unrecognized_saved_transition_diagnostics_are_not_disclosed(invalid):
+    assert updates.transition_diagnostics(invalid) is None
+
+
+def test_saved_transition_diagnostics_discard_unknown_fields_and_values():
+    observed = updates.transition_diagnostics(
+        {
+            "reason": "readiness_timeout",
+            "direction": {},
+            "budget_seconds": "private-sentinel",
+            "checks": {"ready": False, "http_ready": "private-sentinel", "token": "hidden"},
+            "process_states": {"mnemion-api": "RUNNING", "private-sentinel": "RUNNING"},
+            "private_setting": "private-sentinel",
+        }
+    )
+    assert observed == {
+        "reason": "readiness_timeout",
+        "checks": {"ready": False},
+        "process_states": {"mnemion-api": "RUNNING"},
+    }
 
 
 def test_subprocess_timeout_terminates_work_and_retains_a_bounded_log(tmp_path):

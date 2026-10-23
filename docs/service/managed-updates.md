@@ -29,6 +29,16 @@ marked `schedule_estimated`; it uses the latest deadline allowed by normal
 connector lease or completing a check. Disabling automatic updates reports no
 scheduled check and prevents automatic network requests.
 
+From **4.46.1**, command startup defers unrelated desktop, recovery and client
+setup to reduce CPU work on small hosts. A failed process transition retains
+bounded evidence through rollback. `updates status` includes `last_failure`
+with the failed version/time and, when recorded by this updater, a `transition`
+reason, readiness `checks` and known `process_states`. A running child alone
+does not prove readiness. Older records return `transition: null`; the updater
+does not infer a missing cause. Inspect the failure and current recovery state
+before authorizing another attempt. Startup deadlines and failed-version holds
+remain unchanged. See the [startup validation](../validation/2026-10-23-managed-startup.md).
+
 The managed updater covers compatible Python service releases. Existing
 servers require one explicit adoption. Containers, Windows servers, PostgreSQL,
 Python itself, source runners and reverse proxies retain their deployment

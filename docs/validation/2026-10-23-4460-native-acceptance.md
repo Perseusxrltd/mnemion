@@ -80,6 +80,11 @@ was still scanning the downloaded distributions. This report records no
 publication pass. Current public availability and gates belong to
 [generated release status](../RELEASE_STATUS.md).
 
+The later [publication and live rollout record](2026-10-23-4460-live-rollout.md)
+records successful publication and all six public installed-update targets,
+followed by the actual host's rollback to 4.45.1. It does not establish live
+paired 4.46.0 acceptance or change this historical native receipt.
+
 The receipt retains `public_release_acceptance: false` and `l1_complete: false`.
 Actual Windows/Hostinger paired acceptance remained at
 [4.45.1](2026-10-23-4451-live-acceptance.md) at this checkpoint. This qualification

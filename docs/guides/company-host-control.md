@@ -1,10 +1,12 @@
 # Control an adopted company host
 
-**Development / unreleased.** This guide describes the current source desktop
-UI, native agent actions and host CLI. It does not announce a released desktop
-feature or a successful production deployment. Check
-[release status](../RELEASE_STATUS.md) for available packages. OS secure-store,
-clean installed app/agent and production qualification remain pending.
+**Available in the published 4.46.0 desktop.** Host controls and native agent
+actions passed [installed qualification on all six targets](../validation/2026-10-23-4460-native-acceptance.md).
+All six public installed-update targets also passed. The separate
+[23 October live rollout](../validation/2026-10-23-4460-live-rollout.md) records
+the shared host's rollback and unfinished production adoption. Use
+[release status](../RELEASE_STATUS.md) for current package availability and
+the [qualification section](#qualification-and-remaining-work) for evidence limits.
 
 An adopted host has a separate controller, operator authority and durable
 operation store. An authorized person or agent can inspect or resume its memory
@@ -27,10 +29,11 @@ unmanaged services. Windows/Compose server adoption is not implemented by this
 path. See [supervision](../service/supervision.md) and
 [managed updates](../service/managed-updates.md) for the prerequisite installation.
 
-The intended client experience covers Windows, macOS and Linux. The source
-transport uses the packaged AsyncSSH library rather than invoking a local `ssh`
-executable. A source client still needs a compatible Python installation and the
-project's dependencies. This does not qualify a clean packaged desktop client.
+Published desktop clients cover Windows, macOS and Linux on x64 and ARM64.
+Windows ARM64 uses the tested x64 engine/database emulation with an ARM64
+desktop. The client transport uses the bundled AsyncSSH library rather than
+invoking a local `ssh` executable. A source checkout still needs a compatible
+Python installation and the project's dependencies.
 The host's backup delivery separately requires Git and its configured transport.
 
 Host grants are separate from memory access. A workspace API key, personal login,
@@ -52,15 +55,15 @@ Enroll another independently held permanent custodian before retiring the last
 one; concurrent changes cannot remove the final permanent custodian.
 
 The OS owner retains authority over the machine. These grants do not isolate the
-controller from that OS account. The source includes a strictly local
+controller from that OS account. The CLI includes a strictly local
 [custodian recovery command](#recover-custodian-authority-as-the-os-owner) with
 focused source checks; production recovery remains unqualified. There is no
 implemented bind/address-change procedure. Do not delete the authority store,
 change saved pins or rerun adoption with a new key as a recovery shortcut.
 
-## Discover the source interface
+## Discover the host-control interface
 
-Use the development installation's `mnemion-service` command:
+On a compatible service installation, use its `mnemion-service` command:
 
 ```sh
 mnemion-service host-control capabilities
@@ -73,10 +76,11 @@ remote requests, connection fields, role/action mapping and separate
 `local_owner_recovery` schema. Neither output proves a production adoption or
 installed-client qualification.
 
-This unreleased batch uses **authority-store format 2**; the remote protocol
+Version 4.46.0 uses **authority-store format 2**; the remote protocol
 remains version 1. Experimental format-1 authority state is refused, not silently
 migrated or reset. Preserve it for owner inspection rather than deleting it to
-repeat adoption. No production controller has been adopted.
+repeat adoption. Production adoption was still pending at the
+[23 October rollout checkpoint](../validation/2026-10-23-4460-live-rollout.md).
 
 The examples use Unix shell redirection and placeholder paths. Create private,
 owner-only parent directories first. Replace uppercase JSON placeholders with
@@ -86,7 +90,7 @@ one UTF-8 JSON request to stdin, rather than constructing a remote shell command
 
 ## Create a custodian and adopt the actual host
 
-The development desktop's [Create host login](#use-the-development-desktop-app)
+The desktop's [Create host login](#use-the-desktop-app)
 flow can generate the first custodian's key and public enrollment. Select
 **Custodian** as the requested role. Alternatively, on a CLI custodian's own
 computer, generate a new private key:
@@ -114,7 +118,7 @@ SSH options or a comment. Do not send the private key to the host to adopt it.
 
 On the host, choose a new controller directory **outside** the actual managed
 service state. Neither directory may contain the other. The active managed
-runtime must already implement this development protocol; adoption probes its
+runtime must already implement this protocol; adoption probes its
 compatibility and does not install a new runtime.
 
 Choose the listener and advertised address **before the first adoption**. This
@@ -251,24 +255,25 @@ work or substitute process-tree termination for the official stop action.
 
 Review [supervision](../service/supervision.md), then qualify the actual
 registration and restart behavior. `registered` and `registration_checked`
-remain false; these source commands install no OS jobs. Production replacement
+remain false; these commands install no OS jobs. Production replacement
 of the existing job and watchdog, and boot/login acceptance, remain pending.
 
-## Use the development desktop app
+## Use the desktop app
 
 Open **Host controls · manage a company server** before signing in, or
 **Host controls** in the workspace sidebar. Both open `/hosts`; a memory account,
 selected workspace or working memory API is not required. An ordinary browser
 shows **Use the desktop app for host administration** instead of opening the
-independent SSH connection. This source workflow is not a claim that the current
-published app includes it.
+independent SSH connection. This page is included in the published 4.46.0
+desktop; a compatible adopted host is required for remote operations.
 
 1. Under **Host logins on this device**, enter **New device or agent name** and
    choose **Create host login**. The app generates a fresh Ed25519 key and seals
    its private identity using the OS secure-store integration. Creation and use
    require that store to be available. Public profile results never contain the
-   private key; actual secure-store qualification on installed platforms remains
-   pending.
+   private key. The [six-platform native journey](../validation/2026-10-23-4460-native-acceptance.md#packaged-independent-host-controls)
+   verified protected key reuse after a full app restart; both Linux targets
+   also passed the journey with a required real OS keyring.
 2. Choose **Requested role**, then **Copy public enrollment**. Give that public
    document to the OS owner for first adoption, or to an existing custodian for
    an additional login. A requested role grants no authority by itself. The
@@ -302,7 +307,7 @@ cannot silently be rebound to another host or key.
 
 After successful inspection, the host's current role determines the controls:
 
-| Task | Source UI workflow |
+| Task | Desktop workflow |
 | --- | --- |
 | Start or stop memory | Approve the host's service change and possible interruption, then use **Start memory service** or **Stop memory service**. A pending migration requires its recovery path. |
 | Update or resume an interrupted update | Choose **Review available update**. Review the target, source, expiry and backup requirement; explicitly approve interruption before **Apply this update** or **Resume this update**. Observe its operation receipt. |
@@ -322,11 +327,11 @@ To remove a saved key, open **Remove this login from this device**, confirm the
 local removal and choose **Remove saved login**. Have a custodian revoke the host
 grant separately if it should lose access. If the login has unfinished work,
 explicitly acknowledge retaining its public recovery request before removal.
-The source archives the exact request and public host/profile identity before
+The app archives the exact request and public host/profile identity before
 deleting the saved key, even when that login can no longer reach or authenticate
 to the host. Removing it neither revokes authority nor cancels remote work.
 
-For **Awaiting acknowledgement** or **Needs inspection**, the source also offers
+For **Awaiting acknowledgement** or **Needs inspection**, the app also offers
 **Keep this recovery record and clear the local pending request**. Read its
 acknowledgement before **Keep recovery record**. This keeps the key but archives
 the uncertain request before clearing the device's pending slot. It does not
@@ -343,11 +348,12 @@ The local inventory is bounded to 128 records with a 24 KiB read limit per recor
 Full storage refuses additional archives while preserving existing evidence;
 there is currently no archive-pruning action, and exporting alone does not free
 capacity. Focused source checks cover these archive and refused-replay paths;
-the new installed-native archive gates have not run.
+the six installed journeys also passed acknowledgement, public-request
+archiving and local-key removal with the retained record visible in the UI.
 
 ## Use a saved host login from a local agent
 
-The same source desktop controller is available through the existing
+The same desktop controller is available through the existing
 [native desktop operator interface](../service/desktop-operator.md). Keep the
 desktop app running under the same OS account. Use the app's copied executable
 and argument array; for a source installation, send one JSON object on stdin to:
@@ -574,7 +580,7 @@ or revoked grant cannot be restored from an offline memory-role snapshot.
 
 ## Recover custodian authority as the OS owner
 
-This **local source command** has passed three focused owner-recovery checks;
+This **local command** has passed three focused source owner-recovery checks;
 it has not qualified production recovery. Use it only as the owning OS account
 on an existing adopted host with intact protected controller state. It needs no
 old operator key, memory API or remote controller connection. It cannot restore a lost disk or
@@ -857,7 +863,19 @@ bounded error requires investigation.
 
 ## Qualification and remaining work
 
-Current evidence includes source/fixture checks, an actual independent local
+The **23 October 2026 native qualification** passed all six installed Windows,
+macOS and Linux x64/ARM64 targets for the published 4.46.0 source. The
+[native report](../validation/2026-10-23-4460-native-acceptance.md) binds each job
+and receipt. The packaged host-control journey exercised the real UI, protected
+key, native agent pipe and pinned SSH with the peer's memory API absent. It
+reopened the key after a full app restart, inspected the original queued UUID
+without replay, enforced the custodian boundary and archived the public request
+before local-key removal. Both Linux targets also passed with a required real
+OS keyring. These are installed runner checks; the peer had no worker, so its
+approved stop remained queued. They do not establish production stop execution,
+OS integration or custody across independently held physical devices.
+
+Earlier evidence includes source/fixture checks, an actual independent local
 Supervisor plus restricted SSH lifecycle while the memory API was absent, and
 isolated SSH/Git backup delivery. A source Node profile also reached the native
 Python engine and a real independent SSH controller with the memory API absent;
@@ -912,28 +930,34 @@ correction explicitly sets `gss_host=None` for the key-only transport. An early
 frozen-engine gate now requires pinned SSH inspection and refusal of a changed
 server pin before the longer desktop tests.
 
-Focused verification recorded 18 source passes and one Studio-built journey
-skipped because this checkout lacked compiled desktop output. A separate native
+The correction's initial verification recorded 18 source passes and one Studio-built
+journey skipped because that checkout lacked compiled desktop output. A separate native
 Windows diagnostic copy, replacing only the host transport/server module
 bytecode, passed the early gate while the original frozen binary failed it.
 The original failures remain retained. The four original Linux/macOS native
-jobs passed; corrected release-native and live results remain pending. This is
-still an unpublished candidate.
+jobs passed. The subsequent rebuilt Windows engine passed the frozen gate, and
+the corrected release completed all six native jobs as recorded above.
 
 The installed gates require the expanded real UI/agent/key/SSH/restart/archive
 journey through the offline `/hosts` route. Their native client smoke stage has
 a finite 180-second readiness deadline, with individual helper bounds retained.
-Clean installed-client/UI
-qualification, production adoption, listener reconfiguration,
+Production adoption, listener reconfiguration,
 independently recoverable controller-authority custody, boot/login registration
 and restart acceptance, full Git-backup retrieval/restore and production backup
 retention also remain open. This is not universal onboarding or a successful
 production continuity deployment.
 
-At this **23 October correction checkpoint**, published and actual
-Windows/Hostinger acceptance remain at [4.45.1](../validation/2026-10-23-4451-live-acceptance.md).
-Independent production host adoption is prepared but has not been applied.
-Current package availability continues to follow [release status](../RELEASE_STATUS.md).
+The [23 October publication and live rollout record](../validation/2026-10-23-4460-live-rollout.md)
+records successful verification of all 38 release assets, publication at
+05:43:10 UTC and all six public installed-update targets passing by 05:54:51 UTC.
+The actual Windows app reached 4.46.0, but its shared host rolled back to 4.45.1
+at the updater's managed-readiness boundary. The paired observer and dependent
+backup/adoption jobs stopped for inspection without controller adoption or OS
+changes. Last complete paired acceptance remains
+[4.45.1](../validation/2026-10-23-4451-live-acceptance.md); hotfix qualification,
+renewed paired acceptance, fresh independently verified backup, actual deployment
+and both custodians' operational acceptance remain pending at that checkpoint.
+Current package availability follows [release status](../RELEASE_STATUS.md).
 
 Provider power-on, browser-based independent management, company identity
 linking, Windows/Compose host adoption, replacement-host provisioning, replication

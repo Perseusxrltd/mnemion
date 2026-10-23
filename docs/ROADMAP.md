@@ -1,6 +1,6 @@
 # Mnemion product roadmap
 
-Reviewed source distribution: **4.46.0**.
+Reviewed source distribution: **4.46.1**.
 Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-23**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
@@ -24,6 +24,25 @@ issue review, publication and version-linked closure together.
 These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
+
+- **4.46.1 managed-startup hotfix — 23 October 2026.** The
+  [source change](releases/4.46.1.md) defers unrelated command initialization
+  and preserves bounded readiness diagnostics through runtime rollback. The
+  [isolated one-CPU-host measurement](validation/2026-10-23-managed-startup.md)
+  reduced worker setup CPU time before database access by about 81%; 59 focused
+  CLI/update checks passed. Full native/public and renewed actual-update
+  acceptance remain pending at this source checkpoint. The startup deadline,
+  identity, backup and integrity checks are unchanged.
+
+- **4.46.0 publication and actual host rollback — 23 October 2026.** All six
+  native targets, all 38 artifact checks and all six public installed-update
+  targets passed. The actual Windows app updated to 4.46.0, but the canonical
+  host missed the managed-readiness deadline and restored 4.45.1 without
+  database rollback. The [retained rollout record](validation/2026-10-23-4460-live-rollout.md)
+  distinguishes these results. Dependent backup/adoption jobs stopped before
+  making changes. Last complete paired acceptance remains 4.45.1; production
+  host-controller adoption and two-custodian acceptance remain open. All 65
+  requirement states and open #44/#45 remain unchanged.
 
 - **4.45.1 public updates and actual acceptance — 23 October 2026.** Publication
   at **00:14:17 UTC** followed six passing native targets and verification of all

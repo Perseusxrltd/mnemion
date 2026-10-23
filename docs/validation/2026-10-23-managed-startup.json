@@ -1,0 +1,65 @@
+{
+  "intent": {
+    "at": "2026-10-23T06:32:55.590065+00:00",
+    "version": "4.46.0",
+    "files": {
+      "cli.py": "962a352b42c5b30b249f69445f3dcecb6453e2acc2edc4c78a6ee018f4f626cb",
+      "command_options.py": "8c80055521dc05001ce1f1c530af5ab182a3b13592328b6fa16c4ca813300a3d"
+    },
+    "program_sha256": "8af3316ff718afd7e232e99704c2723dd16e65a16929030fc25abd45186b367e",
+    "scope": "Isolated help/worker initialization before database access; no service effects."
+  },
+  "observations": [
+    {
+      "variant": "published",
+      "mode": "help",
+      "version": "4.46.0",
+      "wall_seconds": 9.514485983003397,
+      "cpu_seconds": 4.635388259,
+      "modules_loaded": 1024,
+      "mcp_loaded": true,
+      "asyncssh_loaded": true,
+      "network_connections": 0,
+      "database_connections": 0
+    },
+    {
+      "variant": "proposed",
+      "mode": "help",
+      "version": "4.46.0",
+      "wall_seconds": 0.2646842959802598,
+      "cpu_seconds": 0.10285271300000001,
+      "modules_loaded": 128,
+      "mcp_loaded": false,
+      "asyncssh_loaded": false,
+      "network_connections": 0,
+      "database_connections": 0
+    },
+    {
+      "variant": "published",
+      "mode": "worker",
+      "version": "4.46.0",
+      "wall_seconds": 9.907349747954868,
+      "cpu_seconds": 4.9012175440000005,
+      "modules_loaded": 1033,
+      "mcp_loaded": true,
+      "asyncssh_loaded": true,
+      "network_connections": 0,
+      "database_connections": 0
+    },
+    {
+      "variant": "proposed",
+      "mode": "worker",
+      "version": "4.46.0",
+      "wall_seconds": 1.9185810219496489,
+      "cpu_seconds": 0.9463109929999999,
+      "modules_loaded": 461,
+      "mcp_loaded": false,
+      "asyncssh_loaded": false,
+      "network_connections": 0,
+      "database_connections": 0
+    }
+  ],
+  "installed_files_modified": false,
+  "service_actions": 0,
+  "temporary_files_removed": true
+}

@@ -11,7 +11,7 @@ import threading
 from contextlib import ExitStack
 from pathlib import Path
 
-from .model_registry import ModelRegistry
+from .command_options import CommandParser
 
 
 def _private_json(path: Path, data: dict) -> None:
@@ -38,71 +38,51 @@ def main(argv: list[str] | None = None) -> int:
         default=[],
         help="Load a private JSON credentials file; can be repeated",
     )
-    commands = parser.add_subparsers(dest="command", required=True)
-    from ..journal.cli import arguments as journal_arguments
-
-    journal_arguments(
-        commands.add_parser(
-            "journal", help="Enroll and inspect host-approved Git memory destinations"
-        )
+    commands = parser.add_subparsers(dest="command", required=True, parser_class=CommandParser)
+    commands.add_parser(
+        "journal",
+        help="Enroll and inspect host-approved Git memory destinations",
+        options_command="journal",
     )
-    from .recovery_kit import arguments as kit_arguments
-
-    kit_arguments(
-        commands.add_parser(
-            "recovery-kit", help="Create a portable encrypted recovery viewer locally"
-        )
+    commands.add_parser(
+        "recovery-kit",
+        help="Create a portable encrypted recovery viewer locally",
+        options_command="recovery-kit",
     )
-    from ..local_workspace import arguments as local_arguments
-
-    local_arguments(
-        commands.add_parser(
-            "local",
-            help="Create or run an app-managed private local workspace using a bundled database",
-        )
+    commands.add_parser(
+        "local",
+        help="Create or run an app-managed private local workspace using a bundled database",
+        options_command="local",
     )
-    from ..desktop_operator import arguments as desktop_arguments
-
-    desktop_arguments(
-        commands.add_parser(
-            "desktop-control",
-            help="Control this OS account's running Studio through its private local pipe; JSON on stdin",
-        )
+    commands.add_parser(
+        "desktop-control",
+        help="Control this OS account's running Studio through its private local pipe; JSON on stdin",
+        options_command="desktop-control",
     )
-    from ..desktop_sources import arguments as source_arguments
-
-    source_arguments(
-        commands.add_parser(
-            "desktop-source", help="Private Studio source helper; JSON through process pipes"
-        )
+    commands.add_parser(
+        "desktop-source",
+        help="Private Studio source helper; JSON through process pipes",
+        options_command="desktop-source",
     )
-    from ..connectors.runner_options import arguments as connector_arguments
-
     connector = commands.add_parser(
-        "connect", help="Run an independent source connector with private capture controls"
+        "connect",
+        help="Run an independent source connector with private capture controls",
+        options_command="connect",
     )
-    connector_arguments(connector)
-    from ..desktop_agents import arguments as agent_setup_arguments
-
-    agent_setup_arguments(
-        commands.add_parser(
-            "desktop-agent", help="Private Studio agent setup; JSON through process pipes"
-        )
+    commands.add_parser(
+        "desktop-agent",
+        help="Private Studio agent setup; JSON through process pipes",
+        options_command="desktop-agent",
     )
-    from ..host_control.desktop import arguments as host_desktop_arguments
-
-    host_desktop_arguments(
-        commands.add_parser(
-            "desktop-host",
-            help="Private Studio independent-host helper; JSON through process pipes",
-        )
+    commands.add_parser(
+        "desktop-host",
+        help="Private Studio independent-host helper; JSON through process pipes",
+        options_command="desktop-host",
     )
-    from ..agent_packages import arguments as agent_package_arguments
-
-    agent_package_arguments(
-        commands.add_parser(
-            "agent-package", help="Export Perseus XR connection packages without credentials"
-        )
+    commands.add_parser(
+        "agent-package",
+        help="Export Perseus XR connection packages without credentials",
+        options_command="agent-package",
     )
     commands.add_parser(
         "migrate", help="Apply checked database migrations with administration credentials"
@@ -139,32 +119,25 @@ def main(argv: list[str] | None = None) -> int:
         "studio", help="Inspect or build the web Studio without database credentials"
     )
     studio.add_argument("action", choices=["status", "build"], nargs="?", default="status")
-    from .supervision import arguments as supervision_arguments
-
-    supervision_arguments(
-        commands.add_parser(
-            "supervise", help="Manage a private Supervisor instance on Linux/macOS without systemd"
-        )
+    commands.add_parser(
+        "supervise",
+        help="Manage a private Supervisor instance on Linux/macOS without systemd",
+        options_command="supervise",
     )
-    from .service_updates import arguments as update_arguments
-
-    update_arguments(
-        commands.add_parser("updates", help="Manage signed server hotfixes with verified backups")
+    commands.add_parser(
+        "updates",
+        help="Manage signed server hotfixes with verified backups",
+        options_command="updates",
     )
-    from ..host_control.cli import arguments as host_control_arguments
-
-    host_control_arguments(
-        commands.add_parser(
-            "host-control",
-            help="Operate an explicitly adopted host independently of its memory API",
-        )
+    commands.add_parser(
+        "host-control",
+        help="Operate an explicitly adopted host independently of its memory API",
+        options_command="host-control",
     )
-    from .host_cli import arguments as host_arguments
-
-    host_arguments(
-        commands.add_parser(
-            "host", help="Export and restore an encrypted host with stable workspace identities"
-        )
+    commands.add_parser(
+        "host",
+        help="Export and restore an encrypted host with stable workspace identities",
+        options_command="host",
     )
     worker = commands.add_parser("worker", help="Run durable indexing and deletion work")
     worker.add_argument("--once", action="store_true")
@@ -527,6 +500,8 @@ def main(argv: list[str] | None = None) -> int:
             timeout_graceful_shutdown=30,
         )
     elif args.command == "prepare-model":
+        from .model_registry import ModelRegistry
+
         registry = ModelRegistry.from_environment()
         try:
             model = registry.profile(args.profile)
@@ -542,6 +517,8 @@ def main(argv: list[str] | None = None) -> int:
         finally:
             registry.close()
     elif args.command == "models":
+        from .model_registry import ModelRegistry
+
         registry = ModelRegistry.from_environment()
         if args.register:
             import psycopg
@@ -678,6 +655,7 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({"profile": str(args.profile), "paused": False}))
     elif args.command == "worker":
         from .db import Database
+        from .model_registry import ModelRegistry
         from .model_worker import ModelWorker
         from .telemetry import Telemetry
 

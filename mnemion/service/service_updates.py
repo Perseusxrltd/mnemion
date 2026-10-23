@@ -26,6 +26,7 @@ from .update_packages import copy_inspected_source, verify_installed_package
 from .update_transport import UpdateNotPublished, download_artifact, fetch_manifest
 from .update_trust import SERVICE_UPDATE_PUBLIC_KEY
 from .update_schedule import UpdateSchedule, schedule_status
+from .process_transition import ProcessTransitionError, diagnostics as transition_diagnostics
 
 UV_VERSION = "0.12.24"
 DEFAULT_INTERVAL = 6 * 60 * 60
@@ -633,6 +634,7 @@ def status(state: Path) -> dict:
     from .managed_upgrade import pending_update, upgrade_status
 
     pending = pending_update(active, _release(root)) if (root / "candidate.json").exists() else None
+    failed = state_io.read(root / "failed.json") if (root / "failed.json").exists() else None
     return {
         "enabled": config["enabled"],
         "current_version": active["version"],
@@ -645,6 +647,15 @@ def status(state: Path) -> dict:
         "pending_update": pending,
         "upgrade": upgrade_status(root),
         "last_check": last_check,
+        "last_failure": (
+            {
+                "version": failed.get("version"),
+                "at": failed.get("at"),
+                "transition": transition_diagnostics(failed.get("transition")),
+            }
+            if failed is not None
+            else None
+        ),
         **schedule_status(
             root,
             enabled=config["enabled"],
@@ -677,6 +688,7 @@ def _processes(
     names = ("mnemion-updater",) if updater_only else ("mnemion-api", "mnemion-worker")
     deadline = time.monotonic() + (60 if start else 90)
     transition_error = "The managed service did not complete its requested process transition"
+    observation = {}
     # A busy supervisor can miss the short socket deadline during a restart.
     # Reconnect with fresh identity checks inside the original transition budget.
     # These named start/stop requests are idempotent, including a lost reply.
@@ -696,17 +708,29 @@ def _processes(
         except TimeoutError:
             time.sleep(0.25)
     else:
-        raise ManifestError(transition_error)
+        raise ProcessTransitionError(transition_error, reason="request_timeout", start=start)
     while time.monotonic() < deadline:
         try:
             with supervision._rpc(settings) as client:
                 processes = {item["name"]: item for item in client.supervisor.getAllProcessInfo()}
+            observation = {"processes": list(processes.values())}
             if not set(names).issubset(processes):
-                raise ManifestError("The managed supervisor is missing a service child")
+                raise ProcessTransitionError(
+                    "The managed supervisor is missing a service child",
+                    reason="missing_child",
+                    start=start,
+                    observation=observation,
+                )
             if start:
                 if any(processes[name]["statename"] == "FATAL" for name in names):
-                    raise ManifestError("A service child could not start after the update")
-                if supervision.status(state)["service_ready" if service_only else "ready"]:
+                    raise ProcessTransitionError(
+                        "A service child could not start after the update",
+                        reason="child_failed",
+                        start=start,
+                        observation=observation,
+                    )
+                observation = supervision.status(state)
+                if observation["service_ready" if service_only else "ready"]:
                     return
             elif all(
                 processes[name]["statename"] in {"STOPPED", "EXITED", "FATAL"} for name in names
@@ -715,7 +739,12 @@ def _processes(
         except TimeoutError:
             pass
         time.sleep(0.25)
-    raise ManifestError(transition_error)
+    raise ProcessTransitionError(
+        transition_error,
+        reason="readiness_timeout" if start else "stop_timeout",
+        start=start,
+        observation=observation,
+    )
 
 
 def _backup(
@@ -789,7 +818,11 @@ def _rollback(state: Path, root: Path, journal: dict) -> None:
     _processes(state, start=True)
     state_io.write(
         root / "failed.json",
-        {"version": journal["candidate"]["version"], "at": state_io.timestamp()},
+        {
+            "version": journal["candidate"]["version"],
+            "at": state_io.timestamp(),
+            "transition": transition_diagnostics(journal.get("transition")),
+        },
     )
     state_io.record(
         root,
@@ -884,10 +917,16 @@ def _apply(state: Path, root: Path, settings: dict, *, retry: bool = False) -> d
         journal["phase"] = "starting"
         state_io.write(root / "journal.json", journal)
         _processes(state, start=True)
-    except Exception:
+    except Exception as error:
         # A supervisor shutdown or a failed rollback leaves the journal intact
         # for restart recovery. No database archive is restored here.
-        _rollback(state, root, journal)
+        if isinstance(error, ProcessTransitionError):
+            journal["transition"] = error.diagnostics
+        try:
+            state_io.write(root / "journal.json", journal)
+        finally:
+            # An evidence write failure must not prevent runtime recovery.
+            _rollback(state, root, journal)
         raise ManifestError(
             "The update failed; the previous service runtime was restored"
         ) from None

@@ -1,6 +1,6 @@
 # Organization administration and workspace continuity
 
-Updated **2026-10-22**. This contract extends requirements A01–A09 with the
+Updated **2026-10-23**. This contract extends requirements A01–A09 with the
 explicit request that another authorized administrator must be able to manage
 and recover a workspace when its original agent is unavailable. It is not a
 claim that the controls below are already released.
@@ -22,7 +22,7 @@ also passed scoped OAuth/MCP checks on the existing host, with new configuration
 backed up off-host. The original office's unavailable full state, named-provider
 acceptance, OS/provider provisioning and automatic failover remain separate.
 
-## Independent host control source checkpoint
+## Independent host control checkpoint
 
 The **22 October 2026 development source** adds a narrower independent-controller
 milestone, described in the [user, administrator and agent guide](../guides/company-host-control.md).
@@ -45,10 +45,14 @@ authority or operator keys.
 [Focused source and fixture evidence](../guides/company-host-control.md#qualification-and-remaining-work)
 covers profiles, archived requests/refused replay, actual local Node/Python/SSH
 journeys with the memory API absent, owner recovery and backup retention. Builds,
-lint/format and a bounded visual fixture also passed. New installed-native gates
-for actual OS-protected keys, transport refusal, public recovery archives and
-offline `/hosts` exist but have not run. This source work is unreleased; current
-published packages and gates remain owned by [release status](../RELEASE_STATUS.md).
+lint/format and a bounded visual fixture also passed. The subsequent
+[4.46.0 native qualification](../validation/2026-10-23-4460-native-acceptance.md)
+passed all six installed targets, including OS-protected keys, transport refusal,
+public recovery archives and offline `/hosts`. All six public installed-update
+targets also passed. The [actual rollout](../validation/2026-10-23-4460-live-rollout.md)
+updated Windows but rolled its shared host back to 4.45.1; production adoption
+and both custodians' operational acceptance remain pending. Current published
+packages and gates remain owned by [release status](../RELEASE_STATUS.md).
 
 The **23 October source follow-up** adds [durable service policy](../guides/company-host-control.md#preserve-approved-stops-in-os-supervision):
 adoption preserves the observed stopped/running state, and approved effects save
@@ -65,8 +69,7 @@ job/watchdog integration, which remains pending.
 This advances delegation while the independent controller and computer are
 reachable. It does not supply whole-machine provider wake, registered boot/login
 startup, universal host adoption, an independently hosted browser controller,
-replacement-host provisioning or safe failover. Actual OS secure-store and
-clean-client qualification, production adoption/recovery, independent authority
+replacement-host provisioning or safe failover. Production adoption/recovery, independent authority
 custody, full Git-backup retrieval/restore and fencing an old writer remain open.
 The broader acceptance contract below is retained.
 
