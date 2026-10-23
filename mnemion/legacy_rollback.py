@@ -119,8 +119,7 @@ def restore_rollback(legacy_archive: Path, tail_archive: Path, destination: Path
 
 
 def _apply(profile: Path, state: Path, result_path: Path):
-    import chromadb
-
+    from .chroma_client import persistent_client
     from .embedding import get_embedding_function
     from .ingestion import LegacyMemoryWriter
     from .knowledge_graph import KnowledgeGraph
@@ -135,7 +134,7 @@ def _apply(profile: Path, state: Path, result_path: Path):
     embedding = get_embedding_function(config.get("embedding_device", "cpu"))
     if embedding is None:
         raise RuntimeError("The legacy embedding function is unavailable")
-    client = chromadb.PersistentClient(path=str(locations["anaktoron"]))
+    client = persistent_client(locations["anaktoron"])
     mapping = {r["memory_id"]: r for r in json.loads((state / "mapping.json").read_text())}
     trust = DrawerTrust(str(locations["sidecar"]))
     writers, verified = {}, 0

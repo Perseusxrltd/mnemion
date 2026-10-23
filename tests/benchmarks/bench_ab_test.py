@@ -25,7 +25,7 @@ import time
 # Ensure project root is importable
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
-import chromadb
+from mnemion.chroma_client import persistent_client
 from tests.benchmarks.data_generator import AnaktoronDataGenerator
 
 
@@ -73,7 +73,7 @@ def run_pipeline_b(anaktoron_path, queries):
         return None
 
     # Groom all embeddings in the collection
-    client = chromadb.PersistentClient(path=anaktoron_path)
+    client = persistent_client(path=anaktoron_path)
     col = client.get_collection("mnemion_drawers")
 
     # Fetch all embeddings

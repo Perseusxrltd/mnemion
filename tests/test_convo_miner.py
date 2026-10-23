@@ -1,7 +1,7 @@
 import os
 import tempfile
 import shutil
-import chromadb
+from mnemion.chroma_client import persistent_client
 from mnemion.convo_miner import chunk_exchanges, mine_convos
 from mnemion.embedding import get_embedding_function
 
@@ -16,7 +16,7 @@ def test_convo_mining():
     anaktoron_path = os.path.join(tmpdir, "anaktoron")
     mine_convos(tmpdir, anaktoron_path, wing="test_convos")
 
-    client = chromadb.PersistentClient(path=anaktoron_path)
+    client = persistent_client(path=anaktoron_path)
     col = client.get_collection(
         "mnemion_drawers",
         embedding_function=get_embedding_function("hash"),

@@ -11,7 +11,7 @@ Calls MCP tool handler functions directly with monkeypatched _config.
 
 import time
 
-import chromadb
+from mnemion.chroma_client import persistent_client
 import pytest
 
 from tests.benchmarks.data_generator import AnaktoronDataGenerator
@@ -167,7 +167,7 @@ class TestClientReinstantiation:
         uncached_ms = (time.perf_counter() - start) * 1000
 
         # Measure cached client (what it should be)
-        client = chromadb.PersistentClient(path=anaktoron_path)
+        client = persistent_client(path=anaktoron_path)
         cached_col = client.get_collection("mnemion_drawers")
         start = time.perf_counter()
         for _ in range(n_calls):

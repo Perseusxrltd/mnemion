@@ -1,6 +1,7 @@
 # Mnemion privacy policy
 
-Updated: **2026-10-11**. This describes the rebuilt shared-memory platform.
+Updated: **2026-10-23**. This describes the rebuilt shared-memory platform and
+the legacy-library finding below.
 
 ## Your organization's data
 
@@ -42,6 +43,29 @@ messaging, hosting and model providers. [Embedding profiles](embeddings.md) supp
 approved local and cloud endpoints, as does the optional [librarian](librarian.md).
 Provider retention, training policies and charges are governed by
 the selected provider/operator, not by Mnemion's local model behavior.
+
+## Product analytics and legacy vendor telemetry
+
+Mnemion's [V08 product analytics](../implementation/anonymous-product-telemetry.md)
+remain **Planned and inactive**. No V08 instrumentation or collector is deployed.
+Private workspace operational counters and security audit records are separate
+from that future feature.
+
+On 23 October, an isolated synthetic check of the legacy Chroma backend reached
+**five vendor SDK capture calls** and created a persistent vendor identifier.
+The capture boundary was replaced by a **no-send spy**, so those calls could not
+submit vendor telemetry. This establishes a configuration gap, not five network
+transmissions or proof of any historical successful transmission. An incompatible
+signature in the pinned vendor SDK is not a privacy control.
+
+An **unreleased source correction** explicitly disables the vendor telemetry
+component for Mnemion's legacy clients. Its isolated regression recorded no
+vendor calls, network attempts or new identifier while exercising real local
+storage. **Frozen 4.46.3 does not include this correction.** The change neither
+deletes an existing third-party Chroma identifier nor changes settings for other
+Chroma applications. The [dated validation](../validation/2026-10-23-legacy-vendor-telemetry.md)
+records the evidence and release limits. The selected-service, source, model
+and update connections listed above retain their stated controls.
 
 ## Local storage and lifecycle
 

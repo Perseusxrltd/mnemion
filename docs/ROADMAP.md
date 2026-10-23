@@ -34,6 +34,14 @@ availability and release gates; each deployment requires its own acceptance.
   current live-update/independent-host milestone; it is not shipping or included
   in frozen 4.46.1. The previous 65 requirement texts and states are preserved.
 
+- **Legacy vendor-telemetry correction — 23 October 2026; UNRELEASED.** A
+  [separate source fix](validation/2026-10-23-legacy-vendor-telemetry.md) explicitly
+  disables Chroma's vendor telemetry for legacy clients. The no-send baseline
+  recorded five SDK capture calls, not network transmissions. The corrected
+  subprocess recorded zero vendor calls, network attempts or new identifiers;
+  52 focused checks and lint/format checks passed. Frozen 4.46.3 is unchanged,
+  and V08 product telemetry remains Planned and inactive.
+
 - **4.46.3 source checkpoint — 23 October 2026; UNRELEASED.** The
   [combined change](releases/4.46.3.md) adds explicit backup creation and
   verification through Host controls and native-agent actions, and corrects

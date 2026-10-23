@@ -284,9 +284,10 @@ def cmd_status(args):
 
 def cmd_repair(args):
     """Repair Anaktoron storage issues."""
-    import chromadb
     import shutil
     import json
+
+    from .chroma_client import persistent_client
 
     cfg = MnemionConfig()
     anaktoron_path = os.path.expanduser(args.palace) if args.palace else cfg.anaktoron_path
@@ -336,7 +337,7 @@ def cmd_repair(args):
 
     # Try to read existing drawers
     try:
-        client = chromadb.PersistentClient(path=anaktoron_path)
+        client = persistent_client(anaktoron_path)
         col = client.get_collection(col_name)
         total = col.count()
         print(f"  Drawers found: {total}")

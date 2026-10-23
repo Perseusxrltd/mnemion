@@ -13,7 +13,7 @@ import random
 from datetime import datetime, timedelta
 from pathlib import Path
 
-import chromadb
+from mnemion.chroma_client import persistent_client
 import yaml
 
 
@@ -412,7 +412,7 @@ class AnaktoronDataGenerator:
         """
         n_drawers = n_drawers or self.cfg["drawers"]
         os.makedirs(anaktoron_path, exist_ok=True)
-        client = chromadb.PersistentClient(path=anaktoron_path)
+        client = persistent_client(path=anaktoron_path)
         col = client.get_or_create_collection("mnemion_drawers")
 
         batch_size = 500

@@ -46,7 +46,7 @@ _config_dir.mkdir(parents=True, exist_ok=True)
 )
 
 # Now it is safe to import mnemion modules that trigger initialisation.
-import chromadb  # noqa: E402
+from mnemion.chroma_client import persistent_client  # noqa: E402
 import pytest  # noqa: E402
 
 from mnemion.config import DRAWER_HNSW_METADATA, MnemionConfig  # noqa: E402
@@ -119,7 +119,7 @@ def config(tmp_dir, anaktoron_path):
 @pytest.fixture
 def collection(anaktoron_path):
     """A ChromaDB collection pre-seeded in the temp Anaktoron."""
-    client = chromadb.PersistentClient(path=anaktoron_path)
+    client = persistent_client(path=anaktoron_path)
     col = client.get_or_create_collection(
         "mnemion_drawers",
         metadata=DRAWER_HNSW_METADATA,

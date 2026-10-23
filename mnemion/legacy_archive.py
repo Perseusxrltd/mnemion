@@ -520,7 +520,7 @@ def restore_legacy_backup(archive: Path, destination: Path, *, deletion_ledger: 
 
 
 def _reconcile_command(path: Path) -> None:
-    import chromadb
+    from .chroma_client import persistent_client
     from .ingestion import SCHEMA, LegacyMemoryWriter
 
     args = json.loads(path.read_text(encoding="utf-8"))
@@ -536,7 +536,7 @@ def _reconcile_command(path: Path) -> None:
             )
     if not (Path(args["palace"]) / "chroma.sqlite3").exists():
         return
-    client = chromadb.PersistentClient(path=args["palace"])
+    client = persistent_client(args["palace"])
     by_collection = {}
     for deletion in args["deletions"]:
         by_collection.setdefault(deletion["collection_id"], []).append(deletion["drawer_id"])

@@ -10,7 +10,7 @@ import hashlib
 import os
 from datetime import datetime
 
-import chromadb
+from mnemion.chroma_client import persistent_client
 import pytest
 
 from tests.benchmarks.data_generator import AnaktoronDataGenerator
@@ -48,7 +48,7 @@ def _populate_single_room(anaktoron_path, n_drawers, n_needles=10):
     """Pack all drawers into one wing+room, plant needles, return queries."""
     gen = AnaktoronDataGenerator(seed=42, scale="small")
     os.makedirs(anaktoron_path, exist_ok=True)
-    client = chromadb.PersistentClient(path=anaktoron_path)
+    client = persistent_client(path=anaktoron_path)
     col = client.get_or_create_collection("mnemion_drawers")
 
     batch_size = 500

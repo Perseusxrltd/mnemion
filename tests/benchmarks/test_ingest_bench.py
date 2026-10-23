@@ -10,7 +10,7 @@ Measures mining performance at scale:
 
 import time
 
-import chromadb
+from mnemion.chroma_client import persistent_client
 import pytest
 
 from tests.benchmarks.data_generator import AnaktoronDataGenerator
@@ -51,7 +51,7 @@ class TestMineThroughput:
         mine(project_path, anaktoron_path)
         elapsed = time.perf_counter() - start
 
-        client = chromadb.PersistentClient(path=anaktoron_path)
+        client = persistent_client(path=anaktoron_path)
         col = client.get_collection("mnemion_drawers")
         drawer_count = col.count()
 
@@ -147,7 +147,7 @@ class TestReingestSkipOverhead:
 
         # First mine
         mine(project_path, anaktoron_path)
-        client = chromadb.PersistentClient(path=anaktoron_path)
+        client = persistent_client(path=anaktoron_path)
         col = client.get_collection("mnemion_drawers")
         initial_count = col.count()
 

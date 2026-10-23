@@ -12,6 +12,7 @@ from typing import Any
 
 import chromadb
 
+from ..chroma_client import persistent_client
 from ..chroma_compat import (
     fix_blob_seq_ids,
     fix_legacy_collection_config_json,
@@ -400,7 +401,7 @@ def cached_client(path: str):
     for old_key in [old for old in _CLIENT_CACHE if old[0] == resolved and old != key]:
         _CLIENT_CACHE.pop(old_key, None)
 
-    client = chromadb.PersistentClient(path=resolved)
+    client = persistent_client(resolved)
     _CLIENT_CACHE[key] = client
     return client
 

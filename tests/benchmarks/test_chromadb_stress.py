@@ -10,7 +10,7 @@ Tests the raw ChromaDB patterns used by mnemion to determine:
 import os
 import time
 
-import chromadb
+from mnemion.chroma_client import persistent_client
 import pytest
 
 from tests.benchmarks.data_generator import AnaktoronDataGenerator
@@ -50,7 +50,7 @@ class TestGetAllMetadatasOOM:
         anaktoron_path = str(tmp_path / "anaktoron")
         gen.populate_anaktoron_directly(anaktoron_path, n_drawers=n_drawers, include_needles=False)
 
-        client = chromadb.PersistentClient(path=anaktoron_path)
+        client = persistent_client(path=anaktoron_path)
         col = client.get_collection("mnemion_drawers")
 
         rss_before = _get_rss_mb()
@@ -78,7 +78,7 @@ class TestQueryDegradation:
         anaktoron_path = str(tmp_path / "anaktoron")
         gen.populate_anaktoron_directly(anaktoron_path, n_drawers=n_drawers, include_needles=False)
 
-        client = chromadb.PersistentClient(path=anaktoron_path)
+        client = persistent_client(path=anaktoron_path)
         col = client.get_collection("mnemion_drawers")
 
         queries = [
@@ -119,7 +119,7 @@ class TestBulkInsertPerformance:
         # Sequential insertion (mimics add_drawer pattern)
         store_seq = str(tmp_path / "seq")
         os.makedirs(store_seq)
-        client_seq = chromadb.PersistentClient(path=store_seq)
+        client_seq = persistent_client(path=store_seq)
         col_seq = client_seq.get_or_create_collection("mnemion_drawers")
 
         start = time.perf_counter()
@@ -134,7 +134,7 @@ class TestBulkInsertPerformance:
         # Batched insertion
         store_batch = str(tmp_path / "batch")
         os.makedirs(store_batch)
-        client_batch = chromadb.PersistentClient(path=store_batch)
+        client_batch = persistent_client(path=store_batch)
         col_batch = client_batch.get_or_create_collection("mnemion_drawers")
 
         batch_size = 100
@@ -175,7 +175,7 @@ class TestMaxCollectionSize:
 
         anaktoron_path = str(tmp_path / "anaktoron")
         os.makedirs(anaktoron_path)
-        client = chromadb.PersistentClient(path=anaktoron_path)
+        client = persistent_client(path=anaktoron_path)
         col = client.get_or_create_collection("mnemion_drawers")
 
         batch_size = 500

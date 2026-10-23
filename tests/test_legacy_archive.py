@@ -20,14 +20,14 @@ SEED = r"""
 import json, sqlite3, sys
 from datetime import datetime, timezone
 from pathlib import Path
-import chromadb
+from mnemion.chroma_client import persistent_client
 from mnemion.ingestion import LegacyMemoryWriter
 from mnemion.knowledge_graph import KnowledgeGraph
 from mnemion.sources.store import SourceStore
 from mnemion.trust_lifecycle import DrawerTrust
 p=Path(sys.argv[1]);p.mkdir(parents=True)
 (p/'config.json').write_text(json.dumps({'collection_name':'mnemion_drawers'}))
-client=chromadb.PersistentClient(path=str(p/'anaktoron'))
+client=persistent_client(path=str(p/'anaktoron'))
 col=client.create_collection('mnemion_drawers',embedding_function=None)
 writer=LegacyMemoryWriter(col,p/'knowledge_graph.sqlite3')
 writer.save('keep','The team chose Postgres.',{'wing':'work','room':'decisions'},[1,0,0,0])
@@ -83,9 +83,9 @@ def test_complete_legacy_roundtrip_keeps_sources_history_core_vault_and_later_de
             """
 import sys
 from pathlib import Path
-import chromadb
+from mnemion.chroma_client import persistent_client
 from mnemion.ingestion import LegacyMemoryWriter
-p=Path(sys.argv[1]);client=chromadb.PersistentClient(path=str(p/'anaktoron'))
+p=Path(sys.argv[1]);client=persistent_client(path=str(p/'anaktoron'))
 c=client.get_collection('mnemion_drawers',embedding_function=None)
 LegacyMemoryWriter(c,p/'knowledge_graph.sqlite3').delete('withdraw')
 """,
@@ -141,8 +141,9 @@ LegacyMemoryWriter(c,p/'knowledge_graph.sqlite3').delete('withdraw')
             sys.executable,
             "-c",
             """
-import json,sys,chromadb
-c=chromadb.PersistentClient(path=sys.argv[1]).get_collection('mnemion_drawers',embedding_function=None)
+import json,sys
+from mnemion.chroma_client import persistent_client
+c=persistent_client(path=sys.argv[1]).get_collection('mnemion_drawers',embedding_function=None)
 r=c.get(include=['documents']);print(json.dumps(dict(zip(r['ids'],r['documents']))))
 """,
             str(restored / "anaktoron"),
