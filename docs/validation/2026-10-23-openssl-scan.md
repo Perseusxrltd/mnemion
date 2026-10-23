@@ -4,7 +4,7 @@
 verification remains pending. Current publication and release gates belong to
 [release status](../RELEASE_STATUS.md).
 
-## Retained rejection and exact classification
+## Retained rejections and corrected classification
 
 [Publication verifier 39901894314](https://github.com/Perseusxrltd/mnemion/actions/runs/39901894314)
 failed its possible-credential scan at **04:49:42 UTC**. The
@@ -17,10 +17,10 @@ Those successes did not override the failed publication gate.
 The local reproduction used the same **38 assets, 4,037,509,429 bytes** as the
 rejected remote scan, with inventory SHA-256
 `f101b56127a73ff8880d55f26655710c0afb17a1602a73ed6d28ad10ea05089d`.
-It reproduced one `generic-api-key` finding in the Apple Silicon DMG. The
-matched value is OpenSSL's published default FIPS module-integrity key, used
-by `fipsinstall` as its default `hexkey` value. It is not an application
-credential.
+It reproduced one `generic-api-key` finding in the Apple Silicon DMG. The binary
+contains OpenSSL's complete published default FIPS module-integrity key, used
+by `fipsinstall` as its default `hexkey` value. The scanner captured only its
+first **38 hexadecimal characters**, not the full 64-character constant.
 
 Primary OpenSSL source was accessed on **23 October at 05:06 UTC**, pinned to
 commit `50b6c3085ac69129d6676f6c467bf2705fecec50`:
@@ -33,19 +33,32 @@ commit `50b6c3085ac69129d6676f6c467bf2705fecec50`:
 - [fipsinstall](https://github.com/openssl/openssl/blob/50b6c3085ac69129d6676f6c467bf2705fecec50/apps/fipsinstall.c#L845)
   uses it when no replacement key is supplied.
 
-The complete matched value equals that public default. The original failed
-receipts and inspection evidence remain preserved; this classification does
-not rewrite the rejected scan as a pass.
+The full-value-only [policy revalidation 39905111700](https://github.com/Perseusxrltd/mnemion/actions/runs/39905111700)
+failed at **05:24:38 UTC**, on the same DMG, line **46947**, and inventory.
+Its expected policy and implementation hashes were confirmed. This report's
+earlier claim that the complete scanner match equalled the full default was
+inaccurate: it conflated the binary's full value with the truncated capture.
+Both failed remote runs and the original inspection receipts remain preserved.
+
+A public-only fixture reproduced that exact 38-character capture and entropy
+**3.5986898** at a **125,000-byte scanner boundary**. Gitleaks source, accessed
+23 October at 05:28–05:29 UTC and pinned to
+`83d9cd684c87d95d656c1458ef04895a7f1cbd8e`, uses a
+[100,000-byte buffer](https://github.com/gitleaks/gitleaks/blob/83d9cd684c87d95d656c1458ef04895a7f1cbd8e/sources/file.go#L21)
+with up to [25,000 additional bytes](https://github.com/gitleaks/gitleaks/blob/83d9cd684c87d95d656c1458ef04895a7f1cbd8e/sources/common.go#L16)
+while seeking a boundary. The earlier isolated **157-byte** line test did not
+exercise this stream position and therefore missed the truncated capture.
 
 ## Narrow correction and rejection diagnostics
 
-The [policy](../../.gitleaks.toml) adds one anchored exception against the
-scanner's complete `secret` value. It accepts only this exact public constant;
-other values, filenames, OpenSSL components and `hexkey` lines remain in scope.
-The [mandatory canary](../../deploy/secret_scan.py) adds a fifth application-key
-placement beside that constant. All existing binary, nested-archive,
-annotation-adjacent and encoded-metadata controls remain required, including
-the nested vault-key control.
+The revised [policy](../../.gitleaks.toml) anchors exceptions against the
+scanner's `secret` value: only the exact full 64-character public constant and
+its exact observed 38-character prefix are accepted. The exceptions cover no
+other prefix length or value; filenames, OpenSSL components and `hexkey` lines
+remain in scope. The [mandatory canary](../../deploy/secret_scan.py) retains the
+fifth application-key placement beside the full constant and adds a sixth beside
+the exact prefix. Existing binary, nested-archive, annotation-adjacent and
+encoded-metadata controls remain required, including the nested vault-key control.
 
 Rejected scans now retain a bounded `finding_summary`: validated rule IDs and
 counts, input-asset SHA-256, archive-member-path SHA-256 and relative line
@@ -63,13 +76,18 @@ requires a new successful scan of the complete unchanged inventory.
 
 ## Bounded verification and remaining gates
 
-**15 focused source tests and Ruff passed.** The **05:09:03 UTC** source-snapshot
-scan covered **1,736 files** with zero findings and all five mandatory controls
-passing. The exact **157-byte** binary line from the rejected asset also scanned
-successfully. At **05:10:48 UTC**, a separate real-scanner negative control
-correctly rejected an application key beside the public constant and retained
-only the safe diagnostic fields above. These results do not qualify the full
-38-asset remote scan.
+The initial full-value-only correction passed **15 focused source tests and
+Ruff**. Its **05:09:03 UTC** source scan covered **1,736 files** with zero findings
+and all five then-required controls passing. The isolated 157-byte line also
+passed. At **05:10:48 UTC**, a separate real-scanner negative control correctly
+rejected an application key beside the full public constant, retaining only
+safe diagnostics. These narrower results did not cover the later boundary failure.
+
+The revised correction passed **16 focused source tests and Ruff**, including
+checks that other prefix lengths do not match the exceptions. At **05:31:44 UTC**, the product scan CLI
+passed the public-only boundary fixture with zero findings and all **six**
+mandatory placements detected by its canary. Corrected full remote verification
+of the unchanged 38-asset inventory remains pending.
 
 Source, generated desktop and downloaded-distribution gates retain their
 coverage. ZIP/wheel/tar.gz/tgz expansion, flattened-byte inspection and decoding

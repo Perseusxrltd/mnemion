@@ -51,8 +51,9 @@ regexes = [
 ]
 
 [[allowlists]]
-description = "OpenSSL's published default FIPS module-integrity key, derived from its documented public phrase; this is not an application credential."
+description = "OpenSSL's published default FIPS module-integrity key and its exact observed 38-hex scanner fragment, derived from its documented public phrase; these are not application credentials."
 regexTarget = "secret"
 regexes = [
   '''^f4556650ac31d35461610bac4ed81b1a181b2d8a43ea2854cbae22ca74560813$''',
+  '''^f4556650ac31d35461610bac4ed81b1a181b2d$''',
 ]

@@ -173,20 +173,22 @@ def test_migration_exceptions_are_only_exact_digests_of_public_source_files():
     assert not any(re.fullmatch(pattern, "a" * 64) for pattern in expected)
 
 
-def test_fips_exception_is_only_the_documented_public_default():
+def test_fips_exception_is_only_the_public_default_and_exact_observed_fragment():
     config = tomllib.loads((scan.ROOT / ".gitleaks.toml").read_text())
     exception = next(
         item for item in config["allowlists"] if "FIPS module-integrity" in item["description"]
     )
     expected = hashlib.sha256(b"holy hand grenade of antioch").hexdigest()
     assert exception["regexTarget"] == "secret"
-    assert exception["regexes"] == ["^" + expected + "$"]
-    pattern = exception["regexes"][0]
-    for value in ("a" * 64, expected[:-1], expected + "0", expected + ";token=another-value"):
-        assert not re.fullmatch(pattern, value)
+    assert exception["regexes"] == ["^" + expected + "$", "^" + expected[:38] + "$"]
+    refused = [expected[:length] for length in range(1, 64) if length != 38]
+    refused += ["a" * 64, expected + "0", expected + ";token=another-value"]
+    refused += [expected[:38] + "0", expected[:38] + ";token=another-value"]
+    for value in refused:
+        assert not any(re.fullmatch(pattern, value) for pattern in exception["regexes"])
 
 
-@pytest.mark.parametrize("application_findings", [2, 3, 4, 5])
+@pytest.mark.parametrize("application_findings", [2, 3, 4, 5, 6])
 def test_canary_requires_binary_archive_annotation_and_encoded_key_detection(
     tmp_path, monkeypatch, application_findings
 ):
@@ -198,7 +200,7 @@ def test_canary_requires_binary_archive_annotation_and_encoded_key_detection(
         raise scan.ScanError("Fixture credential detection")
 
     monkeypatch.setattr(scan, "run_scanner", scanned)
-    if application_findings < 5:
+    if application_findings < 6:
         with pytest.raises(scan.ScanError, match="every synthetic key placement"):
             scan.canary(None, None, tmp_path)
     else:

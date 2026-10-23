@@ -495,6 +495,14 @@ def canary(executable, rules, directory):
             + "F4c" * 14
             + "m\n",
         )
+        archive.writestr(
+            "fips-fragment.txt",
+            "hexkey:"
+            + hashlib.sha256(b"holy hand grenade of antioch").hexdigest()[:38]
+            + "; token = mnm_"
+            + "G7b" * 14
+            + "r\n",
+        )
     with zipfile.ZipFile(package, "w") as archive:
         archive.writestr("synthetic-1.0-py3-none-any.whl", nested.getvalue())
     evidence = directory / "canary-evidence"
@@ -509,7 +517,7 @@ def canary(executable, rules, directory):
                     finding.get("RuleID") for finding in findings if isinstance(finding, dict)
                 ]
                 if (
-                    rules_found.count("mnemion-application-or-backup-key") >= 5
+                    rules_found.count("mnemion-application-or-backup-key") >= 6
                     and "mnemion-vault-key" in rules_found
                 ):
                     return
@@ -566,6 +574,7 @@ def scan(root, paths, output, cache, *, source=False):
                 record["annotation_adjacent_key_canary_passed"] = True
                 record["decoded_metadata_key_canary_passed"] = True
                 record["public_fips_adjacent_key_canary_passed"] = True
+                record["public_fips_fragment_adjacent_key_canary_passed"] = True
                 record.update(run_scanner(executable, rules, inputs, evidence))
             if inventory(originals) != before or digest(rules) != record["rules_sha256"]:
                 raise ScanError("Secret scan inputs changed during inspection")
