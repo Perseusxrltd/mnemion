@@ -13306,7 +13306,7 @@
   "info": {
     "description": "Shared, scoped memory and evidence for apps, teams, and assistants. Saves acknowledge canonical durability; operations report semantic indexing readiness.",
     "title": "Mnemion Memory Service",
-    "version": "4.46.2"
+    "version": "4.46.3"
   },
   "openapi": "3.1.0",
   "paths": {

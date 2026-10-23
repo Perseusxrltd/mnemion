@@ -107,8 +107,14 @@ def stop(root: Path):
                 raise
         deadline = time.monotonic() + 20
         while time.monotonic() < deadline:
-            if not status(root)["running"]:
-                return {"stopped": True}
+            try:
+                if not status(root)["running"]:
+                    return {"stopped": True}
+            except (ConnectionResetError, BrokenPipeError, http.client.RemoteDisconnected):
+                # Supervisor may close an observation's socket as it exits.
+                # Keep observing the original shutdown; a reset is not proof
+                # of completion and must never cause another shutdown request.
+                pass
             time.sleep(0.25)
         return {"stopped": False, "inspection_required": True}
 

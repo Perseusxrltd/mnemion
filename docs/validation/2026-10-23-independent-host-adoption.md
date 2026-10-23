@@ -64,3 +64,18 @@ remain retained; identities, keys, pins, addresses and raw logs are excluded.
 All [66 requirement texts and states](../PRODUCT_REQUIREMENTS.md) and all 42
 partial-audit rows are unchanged. [V08 telemetry](../implementation/anonymous-product-telemetry.md)
 remains Planned and inactive.
+
+## Controller shutdown observation — 23 October 2026
+
+CI on frozen **4.46.2 source `1fc96a82`** exposed a separate shutdown-observation
+race: `lifecycle.stop` successfully requested independent controller shutdown,
+then its status read raised `ConnectionResetError` as Supervisor closed the
+socket. The [4.46.3 source correction](../releases/4.46.3.md) tolerates
+`ConnectionResetError`, `BrokenPipeError` and `RemoteDisconnected` only during
+that post-request observation. It retains the **20-second bound**, **one
+shutdown request** and **observed absence** requirement; identity and permission
+errors still propagate. Regression and real desktop checks passed **10/10 in
+20.32 seconds**. This is **UNRELEASED source work**, with no native/public or
+actual 4.46.3 pass. Frozen 4.46.2 continues its existing build/publication.
+The earlier actual first-stop failure remains preserved, and the complete
+custodian operational journey is still not accepted.
