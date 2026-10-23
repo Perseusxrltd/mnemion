@@ -3,9 +3,9 @@
   "repository": "Perseusxrltd/mnemion",
   "run_window": 100,
   "release": {
-    "version": "v4.46.4",
-    "published_at": "2026-10-23T18:41:40Z",
-    "url": "https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.4"
+    "version": "v4.46.5",
+    "published_at": "2026-10-23T20:49:55Z",
+    "url": "https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.5"
   },
   "issues": [
     {
@@ -36,67 +36,37 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40009317328"
     },
     {
-      "id": 40005404536,
+      "id": 40022243634,
       "attempt": 1,
       "workflow": "public-updates.yml",
-      "branch": "v4.46.4",
-      "source_commit": "4e64aad45c288d2bc71146b976857225c628fb7a",
+      "branch": "v4.46.5",
+      "source_commit": "8f022bd73ee364d681214a1b60421770c061e7e9",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-23T18:55:08Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40005404536"
+      "updated_at": "2026-10-23T21:02:16Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40022243634"
     },
     {
-      "id": 39997298864,
+      "id": 40013991029,
       "attempt": 1,
       "workflow": "release.yml",
-      "branch": "release/4.46.4",
-      "source_commit": "4e64aad45c288d2bc71146b976857225c628fb7a",
+      "branch": "release/4.46.5-r2",
+      "source_commit": "8f022bd73ee364d681214a1b60421770c061e7e9",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-23T18:36:14Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39997298864"
+      "updated_at": "2026-10-23T20:44:16Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40013991029"
     },
     {
-      "id": 40002385734,
-      "attempt": 1,
-      "workflow": "release.yml",
-      "branch": "release/4.46.5",
-      "source_commit": "704650c91af3e6a300758d71d7ee72f29874a04b",
-      "status": "completed",
-      "conclusion": "failure",
-      "updated_at": "2026-10-23T19:25:44Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40002385734",
-      "job_details_schema": 2,
-      "failed_jobs": [
-        {
-          "name": "native / windows-11-arm / arm64",
-          "id": 120592908585,
-          "conclusion": "failure",
-          "runner_assigned": true,
-          "steps_reported": 39,
-          "steps": [
-            "Installed app creates, searches and reopens a real local workspace"
-          ]
-        }
-      ],
-      "job_progress": {
-        "total": 34,
-        "completed": 34,
-        "succeeded": 30,
-        "active": []
-      }
-    },
-    {
-      "id": 40011337514,
+      "id": 40021524126,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "f6a8f703dd5118e315118f3cc8e6e081c7b7f1a8",
+      "source_commit": "7aa8da8dce601ddb04b5a4bb1c89ff977996e566",
       "status": "completed",
-      "conclusion": "skipped",
-      "updated_at": "2026-10-23T19:25:48Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40011337514"
+      "conclusion": "success",
+      "updated_at": "2026-10-23T20:50:04Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40021524126"
     },
     {
       "id": 40009317318,
@@ -110,16 +80,16 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40009317318"
     },
     {
-      "id": 40005399880,
+      "id": 40022240433,
       "attempt": 1,
       "workflow": "website-release.yml",
-      "branch": "v4.46.4",
-      "source_commit": "4e64aad45c288d2bc71146b976857225c628fb7a",
+      "branch": "v4.46.5",
+      "source_commit": "8f022bd73ee364d681214a1b60421770c061e7e9",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-23T18:42:13Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40005399880"
+      "updated_at": "2026-10-23T20:50:20Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40022240433"
     }
   ],
-  "observed_at": "2026-10-23T19:44:09+00:00"
+  "observed_at": "2026-10-23T21:02:47+00:00"
 }
