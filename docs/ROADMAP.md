@@ -42,7 +42,22 @@ availability and release gates; each deployment requires its own acceptance.
   52 focused checks and lint/format checks passed. Frozen 4.46.3 is unchanged,
   and V08 product telemetry remains Planned and inactive.
 
-- **4.46.3 source checkpoint — 23 October 2026; UNRELEASED.** The
+- **4.46.3 native/public-update qualification — 23 October 2026, 15:03 UTC.**
+  [All six installed targets](validation/2026-10-23-4463-native-acceptance.md)
+  passed 59 required fields each on fresh workflow-attempt-two jobs. The first
+  attempt's unassigned macOS ARM database job and original recorder refusal
+  remain preserved. Publication completed at **14:50:04 UTC**, and independent
+  artifact verification passed. Public-update run `39973022163` completed
+  successfully across all six platform/architecture jobs; the result was
+  verified at **15:03 UTC**. [Release status](RELEASE_STATUS.md) tracks evolving
+  gates. The host still reported 4.46.1 at 14:56:53 UTC. Its existing guarded
+  update job was dispatched at **15:02:27 UTC** and was active/running, with no
+  accepted host-update receipt yet. Actual 4.46.3 paired acceptance, the full
+  custodian lifecycle, fresh backup and independent
+  production restore remain pending. The later legacy privacy correction is
+  excluded from this frozen release; V08 remains Planned and inactive.
+
+- **4.46.3 source checkpoint — 23 October 2026; unreleased at this checkpoint.** The
   [combined change](releases/4.46.3.md) adds explicit backup creation and
   verification through Host controls and native-agent actions, and corrects
   controller shutdown observation. Updated transition code also allows 180
@@ -50,9 +65,9 @@ availability and release gates; each deployment requires its own acceptance.
   every readiness/identity check. An older running updater keeps its own
   60-second deadline until new code owns the transition. Backup/shutdown source
   checks passed, alongside 22 focused startup checks and 46 full updater/desktop
-  regression checks. All six native
-  4.46.3 targets, public release and actual backup/custodian acceptance remain
-  pending; no parent requirement is completed by these source results.
+  regression checks. At this source checkpoint, all six native
+  4.46.3 targets, public release and actual backup/custodian acceptance remained
+  pending; no parent requirement was completed by these source results.
 
 - **4.46.2 publication and actual host rollback — 23 October 2026, 12:41:16 UTC.**
   Native, artifact-verification and public installed-update gates passed;

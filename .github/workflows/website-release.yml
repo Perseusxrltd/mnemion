@@ -12,6 +12,8 @@ on:
       - 'studio/README.md'
       - 'deploy/website_content.py'
       - 'deploy/verify_website.py'
+      - 'deploy/published_release_notes.py'
+      - 'deploy/draft_release.py'
       - '.github/workflows/website-release.yml'
   release:
     types: [published, edited]
@@ -67,6 +69,10 @@ jobs:
             git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' rebase origin/main
           done
           exit 1
+      - name: Synchronize the public release description from its Git documentation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python -m deploy.published_release_notes --write
       - name: Verify live downloads, version, guides and roadmap
         run: python -m deploy.verify_website --content-manifest deploy/website-content.json --attempts 61
       - name: Retain the public website verification receipt

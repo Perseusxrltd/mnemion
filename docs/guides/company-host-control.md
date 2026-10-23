@@ -1,9 +1,15 @@
 # Control an adopted company host
 
-**Available in the published 4.46.1 desktop.** Host controls and native agent
-actions passed [installed qualification on all six targets](../validation/2026-10-23-4461-native-acceptance.md).
-All six public installed-update targets also passed. The actual Windows/shared
-Linux pair passed [4.46.1 live acceptance at 09:55:28 UTC on 23 October](../validation/2026-10-23-4461-live-acceptance.md).
+**Available in the published 4.46.3 desktop.** Host controls, native agent
+actions and backup approval controls passed
+[installed qualification on all six targets](../validation/2026-10-23-4463-native-acceptance.md).
+All six public automatic-update targets subsequently passed, verified at
+**15:03 UTC on 23 October**. Actual-host acceptance remains separate.
+
+The earlier 4.46.1 release passed all six public installed-update targets. Its
+actual Windows/shared Linux pair passed
+[live acceptance at 09:55:28 UTC on 23 October](../validation/2026-10-23-4461-live-acceptance.md)
+and remains the last accepted actual pair.
 The later [canonical-host setup](../validation/2026-10-23-independent-host-adoption.md)
 passed native adoption, backup configuration, OS integration and two protected
 custodian enrollments. **Its operational journey failed at the first stop,
@@ -52,10 +58,10 @@ Each enrollment uses a separately held **Ed25519 private key**:
 | Host role | Current authority |
 | --- | --- |
 | `observer` | Read host status and permitted operation lookups/lists. |
-| `operator` | Observer actions, service start/stop, signed upgrade planning and approved application. |
+| `operator` | Observer actions, service start/stop, backup creation/verification on compatible hosts, signed upgrade planning and approved application. |
 | `custodian` | Operator actions, enrollment/revocation, inspection of other operators' receipts and explicit resolution of uncertain work. |
 
-The **unreleased 4.46.3 source** adds [backup creation and verification](#create-and-verify-retained-backups)
+Published **4.46.3** adds [backup creation and verification](#create-and-verify-retained-backups)
 for operators and custodians. Observers cannot request these transfers; older
 hosts advertise neither backup action.
 
@@ -324,8 +330,8 @@ After successful inspection, the host's current role determines the controls:
 | --- | --- |
 | Start or stop memory | Approve the host's service change and possible interruption, then use **Start memory service** or **Stop memory service**. A pending migration requires its recovery path. |
 | Update or resume an interrupted update | Choose **Review available update**. Review the target, source, expiry and backup requirement; explicitly approve interruption before **Apply this update** or **Resume this update**. Observe its operation receipt. |
-| Create an independent backup — 4.46.3 source, unreleased | In **Independent backups**, review the owner-configured storage and limits, approve the encrypted transfer and choose **Create encrypted backup**. |
-| Inspect or verify a retained copy — 4.46.3 source, unreleased | Read the inventory and **Recovery details**. Approve the transfer and choose **Verify stored copy** for a fresh readback. |
+| Create an independent backup — 4.46.3 | In **Independent backups**, review the owner-configured storage and limits, approve the encrypted transfer and choose **Create encrypted backup**. |
+| Inspect or verify a retained copy — 4.46.3 | Read the inventory and **Recovery details**. Approve the transfer and choose **Verify stored copy** for a fresh readback. |
 | Inspect work | Use **Operation history**, **Latest**, **Inspect** and **Older operations**. **Inspect saved request** checks this device's original request. |
 | Reconcile a lost reply | **Awaiting acknowledgement** retains the exact request. Inspect it first; **Retry the same request** resends that body only while its original approval is valid. It does not create a replacement UUID. |
 | Resolve uncertain effects | A custodian inspects **Needs inspection**, chooses **Recovery action**, confirms the observed state and uses **Accept inspected state**. Stopping first also requires interruption approval. A pending migration uses the update recovery path instead. |
@@ -461,7 +467,7 @@ operation still needs its final receipt. For `host.inspect`, inspect each
 returned receipt's `ok`; absent history or operation data is not proof that work
 completed. Neither the agent nor renderer receives the saved private key.
 
-The [unreleased backup examples below](#create-and-verify-retained-backups)
+The [backup examples below](#create-and-verify-retained-backups)
 use this same `host.request` envelope for typed `backup.create` and
 `backup.verify` requests. They are not separate desktop action names.
 
@@ -746,7 +752,7 @@ does not establish erasure from provider caches, clones or retained Git objects.
 
 Preserve the backup receipt, key ID and independently accessible recovery
 material. Readback proves those remote bytes, not a successful replacement-host
-restore. The protocol has no Git-backup download/restore action. The unreleased
+restore. The protocol has no Git-backup download/restore action. The
 creation and verification controls below are separate from restoration.
 Existing [host-package recovery](../service/host-recovery.md)
 requires authenticated package/ledger files; a complete independently retrieved
@@ -760,14 +766,18 @@ memory database authorizes a new controller.
 
 ### Create and verify retained backups
 
-**UNRELEASED 4.46.3 source work.** Backup source checks passed: 43 passed with
+**Available in published 4.46.3.** The
+[all-six native qualification](../validation/2026-10-23-4463-native-acceptance.md)
+includes actual approval-control and native-schema checks with **synthetic
+inventory**. Fresh production backup delivery and independent restore remain
+unaccepted; use [release status](../RELEASE_STATUS.md) for the public-update gate.
+
+Backup source checks passed: 43 passed with
 2 local SSH-environment skips, 3 native-boundary checks and 7 desktop host-profile
 tests. The final 13 host-job checks also passed, including inspection for a
 dangling inventory symlink. Frontend/Electron builds and Ruff checks passed.
-The packaged probe includes actual approval-control and native-schema checks
-with synthetic inventory; all six native 4.46.3 targets, public acceptance and
-actual backup delivery remain pending. See the
-[combined release notes](../releases/4.46.3.md) for the separate evidence.
+See the [combined release notes](../releases/4.46.3.md) for the separate source,
+native and deployment evidence.
 
 Refresh the enrolled host before using **Independent backups**. The card shows
 whether storage is owner configured, the **Maximum backup size**, recovery
@@ -1007,8 +1017,10 @@ remain unproven at that source checkpoint.
 
 The later [4.46.2 native build 39945380878](https://github.com/Perseusxrltd/mnemion/actions/runs/39945380878)
 passed; publication was still pending at **12:19 UTC on 23 October 2026**.
-That qualification is separate from the unreleased 4.46.3 backup controls and
-the unfinished actual custodian journey.
+That historical qualification predates the later
+[4.46.3 native qualification and publication](../validation/2026-10-23-4463-native-acceptance.md).
+The actual custodian journey, fresh native backup delivery and independent
+production restore remain unaccepted.
 
 The **23 October 2026 native qualification** passed all six installed Windows,
 macOS and Linux x64/ARM64 targets for the published 4.46.0 source. The

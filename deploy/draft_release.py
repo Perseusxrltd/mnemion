@@ -14,8 +14,12 @@ from pathlib import Path
 from urllib.parse import quote, urlsplit
 
 
-def publication_notes(notes: Path, root: Path, repo: str, version: str) -> str:
+def publication_notes(
+    notes: Path, root: Path, repo: str, version: str, *, documentation_ref: str | None = None
+) -> str:
     """Keep repository-relative documentation links usable on GitHub Releases."""
+    if documentation_ref is not None and not re.fullmatch(r"[a-f0-9]{40}", documentation_ref):
+        raise ValueError("Updated release documentation requires its full Git commit")
 
     def replace(match: re.Match[str]) -> str:
         target = urlsplit(match.group(1))
@@ -29,7 +33,7 @@ def publication_notes(notes: Path, root: Path, repo: str, version: str) -> str:
             "main"
             if relative.as_posix()
             in {"docs/RELEASE_STATUS.md", "docs/ROADMAP.md", "docs/PRODUCT_REQUIREMENTS.md"}
-            else f"v{version}"
+            else documentation_ref or f"v{version}"
         )
         url = f"https://github.com/{repo}/blob/{ref}/{quote(relative.as_posix())}"
         if target.fragment:

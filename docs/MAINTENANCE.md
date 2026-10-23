@@ -255,6 +255,16 @@ requires each offered installer's update assets. Only changed metadata is commit
 to `main`; the Actions token prevents a build loop. Concurrent changes are rebased
 without force pushes. The manifest never moves backwards in version.
 
+After pushing the documentation snapshot, the same workflow synchronizes the
+latest public release description from `docs/releases/<published-version>.md`.
+This keeps corrections and later acceptance evidence in Git. It changes only
+the Markdown body; release files, tags and publication state are preserved.
+Updated evidence links use the documentation commit, while current status and
+roadmap links use `main`. `python -m deploy.published_release_notes` previews the
+change; `--write` requires a clean committed checkout. The
+[source validation](validation/2026-10-23-release-description-sync.md) records
+the checks and delivery boundary.
+
 The website caches both the GitHub API and this independent raw-content manifest
 for five minutes. It chooses the newest valid release, keeping a bundled published
 snapshot only as a final fallback. An authenticated repository release webhook
@@ -409,7 +419,8 @@ catalog; app help receives its matching copy through the ordinary app update.
 - [Librarian](service/librarian.md): model configuration, budgets, proposals and recovery.
 - [Research watch](research/RESEARCH_WATCH.md): dated public paper/tool candidates and feed health.
 - [Free forever and support](SUPPORT.md): free access and optional contributions.
-- `docs/releases/`: immutable per-version release notes.
+- `docs/releases/`: per-version release notes, with dated corrections and later
+  acceptance evidence maintained on `main`; published files and tags remain immutable.
 - `docs/validation/`: dated evidence and its limitations.
 - `docs/implementation/`: feature preservation and technical decisions.
 - `docs/research/`: original product/competitor study and supporting evidence.

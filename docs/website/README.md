@@ -8,7 +8,8 @@ or release updates require no duplicate website edit or deployment.
 | --- | --- | --- |
 | App and hosted Studio documentation | `docs/**/*.md`, root `README.md`, `SECURITY.md`, `CONTRIBUTING.md`, and `studio/README.md` | Bundled from the exact source of each app/service release; remains readable offline |
 | Website product explanations, setup text, platform captions, homepage and Lab Notes Mnemion text | [content.json](content.json), validated by [content.schema.json](content.schema.json) | Reviewed `main` content, after its minimum required release is published |
-| Downloads, visible version, checksums and release notes | Verified published GitHub release and `deploy/published-release.json` | Published stable release only; each offered architecture keeps its complete update assets |
+| Downloads, visible version and checksums | Verified published GitHub release and `deploy/published-release.json` | Published stable release only; each offered architecture keeps its complete update assets |
+| GitHub release description | `docs/releases/<published-version>.md` on reviewed `main` | The synchronization workflow updates Markdown only; the release tag, files and publication state are preserved |
 | Website operating-guide links | Markdown in the downloaded release's Git tag | The published version users actually download |
 | Website roadmap link | [Product roadmap](../ROADMAP.md) on `main` | Includes planning between releases |
 
@@ -34,6 +35,16 @@ existing [website synchronization workflow](../../.github/workflows/website-rele
 does this automatically on documentation pushes to `main`, release publication or
 edits, and its six-hour reconciliation schedule. It commits only the generated
 release/content manifests; unchanged results produce no new commit.
+
+The workflow also synchronizes the latest published release description from
+its version's Markdown after pushing the documentation snapshot. Correct release
+wording and add later acceptance evidence in Git, preserving dated failures and
+limits. Links to that updated evidence use its documentation commit, so a report
+added after packaging is reachable. Roadmap, requirements and generated release
+status links continue to follow `main`. Installer files and tags stay immutable.
+Use `python -m deploy.published_release_notes` for a preview; `--write` requires
+a clean committed checkout and updates only the identified public release's
+body. Drafts, unexpected release changes and missing linked files are refused.
 
 The website reads the generated content from the fixed public Git URL. It checks
 the deployed schema, content digest and release floor before caching a result.
