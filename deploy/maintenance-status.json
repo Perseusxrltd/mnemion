@@ -25,32 +25,32 @@
   ],
   "runs": [
     {
-      "id": 39913025012,
+      "id": 39913409273,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "af97e1a50bc17286e04b99b9b09b77bce5e5b0e8",
+      "source_commit": "42aa7e0c0bbcad6f4d9bd8901c5695a9b264f95e",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-23T06:41:35Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39913025012",
+      "updated_at": "2026-10-23T06:46:00Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39913409273",
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
         "completed": 4,
-        "succeeded": 3,
+        "succeeded": 4,
         "active": [
           {
-            "id": 120280192989,
-            "name": "container (ubuntu-22.04)",
+            "id": 120281573586,
+            "name": "studio",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Complete job"
+              "Run npm --prefix studio/electron ci && npm --prefix studio/electron test"
             ]
           },
           {
-            "id": 120280193005,
+            "id": 120281620432,
             "name": "supervision (macos-15-intel)",
             "status": "in_progress",
             "runner_assigned": true,
@@ -59,25 +59,7 @@
             ]
           },
           {
-            "id": 120280193038,
-            "name": "service (3.12)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 120280193046,
-            "name": "container (ubuntu-22.04-arm)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the actual deployment image with its documentation"
-            ]
-          },
-          {
-            "id": 120280193056,
+            "id": 120281620515,
             "name": "legacy",
             "status": "in_progress",
             "runner_assigned": true,
@@ -86,7 +68,34 @@
             ]
           },
           {
-            "id": 120280193084,
+            "id": 120281620533,
+            "name": "service (3.12)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Matching PostgreSQL recovery tools"
+            ]
+          },
+          {
+            "id": 120281620538,
+            "name": "container (ubuntu-22.04-arm)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the actual deployment image with its documentation"
+            ]
+          },
+          {
+            "id": 120281620574,
+            "name": "supervision (macos-15)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
+            ]
+          },
+          {
+            "id": 120281620584,
             "name": "service (3.13)",
             "status": "in_progress",
             "runner_assigned": true,
@@ -95,37 +104,17 @@
             ]
           },
           {
-            "id": 120280193144,
+            "id": 120281620668,
             "name": "service (3.14)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
               "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
-          },
-          {
-            "id": 120280193152,
-            "name": "supervision (macos-15)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify managed installation, host recovery, signed updates and rollback with real processes"
-            ]
           }
         ]
       },
-      "failed_jobs": [
-        {
-          "name": "studio",
-          "id": 120280142505,
-          "conclusion": "failure",
-          "runner_assigned": true,
-          "steps_reported": 18,
-          "steps": [
-            "Check the lightweight native client before six-platform packaging"
-          ]
-        }
-      ]
+      "failed_jobs": []
     },
     {
       "id": 39907316827,
@@ -180,15 +169,15 @@
       }
     },
     {
-      "id": 39913025044,
+      "id": 39913409255,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "af97e1a50bc17286e04b99b9b09b77bce5e5b0e8",
+      "source_commit": "42aa7e0c0bbcad6f4d9bd8901c5695a9b264f95e",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-23T06:41:39Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39913025044"
+      "updated_at": "2026-10-23T06:45:20Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39913409255"
     },
     {
       "id": 39907323013,
@@ -202,5 +191,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39907323013"
     }
   ],
-  "observed_at": "2026-10-23T06:42:13+00:00"
+  "observed_at": "2026-10-23T06:46:34+00:00"
 }
