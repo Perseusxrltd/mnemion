@@ -10,6 +10,7 @@ import { installServiceBridge, localClientBusy, verifyLocalClient, verifyWorkspa
 import { DesktopUpdates } from './updates.js'
 import { desktopAppAction } from './desktop-app-actions.js'
 import { verifyNativeWorkspaceProbe } from './workspace-probe.js'
+import { verifyNativeHostControl } from './native-host-control-probe.js'
 import { verifyLocalHostingProbe, watchHostingProbeQuit } from './local-hosting-probe.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -513,7 +514,8 @@ async function createWindow() {
           await new Promise(resolve => setTimeout(resolve, 100))
         } while (Date.now() < hostDeadline)
       }
-      renderer = { ...renderer, documentation, secureStorage, workspaceProtocol, hostControls }
+      const hostProtocol = await verifyNativeHostControl(mainWindow)
+      renderer = { ...renderer, documentation, secureStorage, workspaceProtocol, hostControls, hostProtocol }
     }
     const hosting = await verifyLocalHostingProbe(mainWindow)
     writeSmokeStatus(hosting ? 'hosting-ready' : 'client-ready', { legacyEnabled, localClient, renderer, hosting })

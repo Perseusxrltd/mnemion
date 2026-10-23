@@ -787,10 +787,31 @@ builds, lint and formatting passed. A visual fixture verified approval of the
 exact plan digest and a 960px layout without overflow; it is not a live host or
 installed-app acceptance result.
 
-The source `/hosts` UI and native profile actions now exist. Still pending are
-execution of the new native gates for actual OS-protected host keys, transport
-refusal, public recovery archives and the offline `/hosts` route. Clean installed
-client/UI qualification, production adoption, listener reconfiguration,
+The [subsequent source validation](../validation/2026-10-22-independent-host-control.md)
+retains 75 Python integration and 20 desktop component checks; the new native
+loopback-peer fixture passed one focused case in 4.30 seconds. On **23 October
+2026, 00:12:21 UTC**, the final Linux **source Electron preview** passed with the
+real app UI, native agent pipe and libsecret. It created a protected host login,
+authenticated pinned SSH with the memory API absent, submitted an approved stop,
+then fully exited and reopened the same key. The agent inspected the original
+queued UUID without replay, was refused custodian-only listing and forgetting
+without acknowledgement, and read back the public request archived by the UI
+before local key removal.
+
+That peer had no worker: the stop stayed queued and no product memory service
+started. Production writes and paid calls were zero. This is source client/key
+evidence against a transport fixture; it does not qualify actual stop execution
+or an installed package. Earlier missing-Electron and app-ready-await preview
+harness failures and the initial passing preview remain preserved separately.
+The final run waited for settled UI observations and confirmed the queued UUID
+and retained recovery request were visible before closing; both complete
+process phases exited successfully, and the Electron rebuild passed.
+
+**All six installed-platform gates remain unrun for 4.46.0.** They now require
+the expanded real UI/agent/key/SSH/restart/archive journey through the offline
+`/hosts` route. Their native client smoke stage has a finite 180-second readiness
+deadline, with individual helper bounds retained. Clean installed-client/UI
+qualification, production adoption, listener reconfiguration,
 independently recoverable controller-authority custody, boot/login registration
 and restart acceptance, full Git-backup retrieval/restore and production backup
 retention also remain open. This is not universal onboarding or a successful

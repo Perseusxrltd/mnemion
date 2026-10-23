@@ -75,12 +75,7 @@ export async function verifyWorkspaceStorage(): Promise<Record<string, unknown>>
       let refused = false
       try { await store.save('https://memory.example.invalid', credential, identity) } catch { refused = true }
       if (!refused || (await store.list()).length) throw new Error('Unavailable secure storage must not save a workspace key')
-      const hostProfiles = new HostProfiles(join(directory, 'hosts'), cipher, async () => { throw new Error('A locked key store must not generate an operator key') })
-      let hostRefused = false
-      try { await hostProfiles.create('Locked host probe') } catch { hostRefused = true }
-      if (!hostRefused || (await hostProfiles.status()).profiles.length) throw new Error('Unavailable secure storage must not save a host key')
-      await hostProfiles.close()
-      return { backend, available: false, plaintextFallbackRefused: true, hostLoginPlaintextRefused: true }
+      return { backend, available: false, plaintextFallbackRefused: true }
     }
     const bookmark = await store.save('https://memory.example.invalid', credential, identity)
     if ((await readFile(join(directory, 'connections.json'), 'utf8')).includes(credential)) throw new Error('Workspace key was stored without encryption')
@@ -95,38 +90,8 @@ export async function verifyWorkspaceStorage(): Promise<Record<string, unknown>>
       throw new Error('Offline workspace inspection did not preserve the protected identity and paused connection')
     }
     await reopened.remove(bookmark.id)
-    const result = { backend, available: true, encryptedRoundTrip: true, disconnectPersisted: true, offlineInspection: true,
+    return { backend, available: true, encryptedRoundTrip: true, disconnectPersisted: true, offlineInspection: true,
       forgotten: (await reopened.list()).length === 0 }
-    // The packaged-client gate owns host-key qualification. Repeating native
-    // engine launches in every installed capture/backup phase adds no coverage.
-    if (process.env.MNEMION_STUDIO_HOSTING_PROBE) return result
-    const root = join(directory, 'hosts')
-    const executable = !app.isPackaged && process.env.MNEMION_LOCAL_ENGINE ? process.env.MNEMION_LOCAL_ENGINE :
-      join(process.resourcesPath, 'engine', process.platform === 'win32' ? 'mnemion-engine.exe' : 'mnemion-engine')
-    const call = sourceProcess({ executable, root, privateRoots: [], command: 'desktop-host',
-      environment: localEnvironment(process.env, root), deadlineMs: 30000, messages: hostMessages })
-    const hosts = new HostProfiles(root, cipher, call)
-    const host = await hosts.create('Disposable native host login')
-    const connection: HostConnection = { host_id: randomUUID(), operator_id: randomUUID(), hostname: '127.0.0.1', port: 1,
-      username: 'mnemion', host_key_algorithm: 'ssh-ed25519', host_key_fingerprint: 'SHA256:' + 'Z'.repeat(43), operator_key_fingerprint: host.fingerprint }
-    await hosts.enroll(host.id, connection, true)
-    await hosts.close()
-    const hostReopened = new HostProfiles(root, workspaceCipher(), call)
-    try {
-      const now = Date.now()
-      const request: HostRequest = { protocol: 1, host_id: connection.host_id, request_id: randomUUID(), action: 'service.stop',
-        issued_at: new Date(now).toISOString(), valid_until: new Date(now + 60000).toISOString(), approve_service_interruption: true }
-      let refused = false
-      try { await hostReopened.request(host.id, request) }
-      catch (error) { refused = ['host_control_unavailable', 'host_identity_changed', 'host_connection_timeout'].includes((error as { code?: string }).code ?? '') }
-      const saved = (await hostReopened.status()).profiles[0]
-      if (!refused || saved.connection?.operator_id !== connection.operator_id || saved.last_operation?.request.request_id !== request.request_id ||
-          saved.last_operation.phase !== 'submitted' || JSON.stringify(saved).includes('PRIVATE KEY') ||
-          (await readFile(join(root, 'hosts.json'), 'utf8')).includes('PRIVATE KEY')) throw new Error('The installed host client did not retain its protected identity and unavailable-host request')
-      await hostReopened.remove(host.id, true, true)
-      if ((await hostReopened.recoveries()).records.length !== 1 || (await hostReopened.status()).profiles.length) throw new Error('The installed host client did not preserve its public recovery record')
-    } finally { await hostReopened.close() }
-    return { ...result, hostLoginReopened: true, hostTransportRefusal: true, hostRecoveryRequestRetained: true }
   } finally { await rm(directory, { recursive: true, force: true }) }
 }
 

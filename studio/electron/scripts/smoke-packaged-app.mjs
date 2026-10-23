@@ -4,6 +4,7 @@ import { randomBytes, randomUUID } from 'node:crypto'
 import { createServer } from 'node:http'
 import { join } from 'node:path'
 import { root as repoRoot, platformArtifacts } from './platform-artifacts.mjs'
+import { hostControlFixture } from './host-control-fixture.mjs'
 
 const appExe = process.env.MNEMION_PACKAGED_APP || platformArtifacts().app
 const smokeRoot = join(repoRoot, '.tmp', 'packaged-app-smoke')
@@ -24,7 +25,9 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-async function waitForSmokeStatus(timeoutMs = 60_000) {
+// This phase includes protected host enrollment and several real cold-start
+// agent/SSH calls on every architecture. Individual helpers remain bounded.
+async function waitForSmokeStatus(timeoutMs = 180_000) {
   const deadline = Date.now() + timeoutMs
   let last = null
 
@@ -93,6 +96,9 @@ if (!existsSync(appExe)) {
 
 rmSync(smokeRoot, { recursive: true, force: true })
 mkdirSync(smokeRoot, { recursive: true, mode: 0o700 })
+const hostPeer = hostControlFixture({ python: process.env.MNEMION_ENGINE_PYTHON,
+  root: join(smokeRoot, 'host-control-peer'), cwd: repoRoot })
+let hostRecord = null
 
 const credential = randomBytes(32).toString('base64url')
 const identity = { principal_id: randomUUID(), tenant_id: randomUUID(), name: 'Native test user', tenant_name: 'Native validation', administrator: true }
@@ -103,7 +109,7 @@ const recoveryDirectory = {
 let directoryAvailable = true
 let authenticatedRequests = 0
 let unexpectedRequests = 0
-const service = createServer((request, response) => {
+const service = createServer(async (request, response) => {
   response.setHeader('Content-Type', 'application/json')
   if (request.headers.authorization !== 'Bearer ' + credential) {
     unexpectedRequests++
@@ -111,6 +117,18 @@ const service = createServer((request, response) => {
     return
   }
   authenticatedRequests++
+  if (request.url === '/organization/_fixture/host' && request.method === 'POST') {
+    try {
+      const chunks = []; let bytes = 0
+      for await (const chunk of request) {
+        bytes += chunk.length
+        if (bytes > 4096) throw new Error('Oversized fixture enrollment')
+        chunks.push(chunk)
+      }
+      response.end(JSON.stringify(await hostPeer.enroll(JSON.parse(Buffer.concat(chunks).toString('utf8')))))
+    } catch { unexpectedRequests++; response.writeHead(500).end('{}') }
+    return
+  }
   if (request.url === '/organization/v1/me') response.end(JSON.stringify(identity))
   else if (request.url === '/organization/v1/spaces') response.end(JSON.stringify({ items: [], next_cursor: null }))
   else if (request.url === '/organization/v1/recovery-directory') {
@@ -125,7 +143,7 @@ const endpoint = `http://127.0.0.1:${service.address().port}/organization`
 function launch(phase) {
   directoryAvailable = phase === 'save'
   rmSync(smokeFile, { force: true })
-  writeFileSync(workspaceConfig, JSON.stringify({ endpoint, credential, phase }), { mode: 0o600 })
+  writeFileSync(workspaceConfig, JSON.stringify({ endpoint, credential, phase, host: hostRecord }), { mode: 0o600 })
   const args = process.platform === 'linux' && process.env.MNEMION_NATIVE_KEYRING_REQUIRED === '1' ? ['--password-store=gnome-libsecret'] : []
   child = spawn(appExe, args, {
     env: {
@@ -167,11 +185,16 @@ function validate(status) {
   if (!status.renderer.workspaceBridge) fail('The packaged workspace setup bridge is unavailable')
   if (!status.renderer.hostControlBridge || !status.renderer.hostControls) fail('Independent host controls must open through the packaged preload without a memory service')
   const secureStorage = status.renderer.secureStorage
+  const hostProtocol = status.renderer.hostProtocol
   if ((process.platform !== 'linux' || process.env.MNEMION_NATIVE_KEYRING_REQUIRED === '1') && !secureStorage?.available) fail('The native OS credential store is unavailable')
   if (secureStorage?.available) {
     if (!secureStorage.encryptedRoundTrip || !secureStorage.disconnectPersisted || !secureStorage.forgotten) fail('OS-protected workspace storage did not pass its native checks')
-    if (!secureStorage.hostLoginReopened || !secureStorage.hostTransportRefusal || !secureStorage.hostRecoveryRequestRetained) fail('The installed independent host client must retain its OS-protected key and public recovery request')
-  } else if (!secureStorage?.plaintextFallbackRefused || !secureStorage?.hostLoginPlaintextRefused) fail('An unavailable keychain must not fall back to plaintext credentials')
+    if (!hostProtocol?.available || !hostProtocol.nativeAgentPipe || !hostProtocol.actualSetupControls ||
+        !hostProtocol.pinnedSSHAuthenticated || !hostProtocol.memoryAPIAbsent) fail('The installed independent host client must authenticate through its real UI, native agent and SSH connection')
+    if (hostProtocol.phase === 'save' && (!hostProtocol.protectedKeySaved || !hostProtocol.actualQueuedRequestVisible)) fail('The native host key and visible request were not saved for the next app process')
+    if (hostProtocol.phase === 'resume' && (!hostProtocol.protectedKeyReopenedAfterAppRestart || !hostProtocol.originalRequestInspectedWithoutReplay ||
+        !hostProtocol.custodianBoundaryEnforced || !hostProtocol.removalRequiresOutstandingApproval || !hostProtocol.publicRecoveryRequestRetained || !hostProtocol.actualRecoveryRequestVisible)) fail('Native host authority and recovery did not survive the real app restart')
+  } else if (!secureStorage?.plaintextFallbackRefused || !hostProtocol?.plaintextFallbackRefused) fail('An unavailable keychain must not fall back to plaintext credentials')
   if (status.renderer.nodeAvailable) fail('Node must not be available to the renderer')
   if (!status.renderer.documentation) fail('Packaged versioned documentation must load without a service')
   const guard = status.renderer.updateGuard
@@ -194,6 +217,7 @@ try {
   launch('save')
   const first = await waitForSmokeStatus()
   validate(first)
+  hostRecord = first.renderer.hostProtocol
   const savedFile = join(userData, 'workspaces', 'connections.json')
   if (first.renderer.secureStorage.available) {
     if (!existsSync(savedFile) || readFileSync(savedFile, 'utf8').includes(credential)) fail('The native bookmark must persist with an encrypted key')
@@ -233,6 +257,7 @@ try {
   if (child) stopProcessTree(child)
   service.closeAllConnections()
   await new Promise(resolve => service.close(resolve))
+  await hostPeer.close()
   if (process.env.MNEMION_KEEP_SMOKE !== '1') {
     await removeSmokeRoot()
   }
