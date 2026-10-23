@@ -132,6 +132,20 @@ official abstracts and metadata. Paper results are their authors' results, not
 Mnemion measurements. The bibliography is selective, not an exhaustive claim
 about the newest or best systems.
 
+### 23 October 2026 research follow-up
+
+| Source | What it supports investigating | What it does not establish |
+| --- | --- | --- |
+| [MemCut, arXiv:2610.21405v1](https://arxiv.org/abs/2610.21405v1), 15 October 2026 | Measure ordinary retrieval and reconstruction from surviving, annotated evidence separately after authorized deletion. Examine candidate coverage, complete evidence cuts and collateral loss. | That a failed retrieval proves forgetting; universal erasure from natural conversations, model weights or multimodal records; authority to remove another person's records. |
+| [SAFE-Mem, arXiv:2610.22959v2](https://arxiv.org/abs/2610.22959v2), revised 20 October 2026 | Distinguish a claim's content, permitted use and principal scope; preserve provenance through derivation and enforce checks before retrieval and effects. Report drafted and executed actions separately. | Confidentiality from use labels alone, truthful claims, perfect classification, safe endorsement or permission to bypass current tenant/space/vault and operator grants. |
+
+Accessed 23 October 2026. MemCut methods/results/limitations and selected
+appendices were reviewed in primary HTML. SAFE-Mem v2 HTML was unavailable
+(404); its primary PDF and complete TeX archive were retrieved, and the relevant
+text, tables and selected appendices were reviewed from TeX. Its PDF was not
+rendered. All reported research results belong to the authors; no Mnemion
+benchmark was run.
+
 ## TypeSafe AI Jev: a candidate decision stage
 
 **Jev is relevant to routing and bounded judgments. It cannot replace the
@@ -195,6 +209,15 @@ cost separately. Publish results with corpus provenance and known gaps.
   routing and accuracy/latency/cost tradeoffs, broken out by language and domain.
 - **Isolation:** revocation during a run, cross-tenant/space leakage, poisoning,
   untrusted transcript instructions, secret handling and deletion propagation.
+
+Deletion evaluation must include both native retrieval and recovery from
+surviving annotated evidence, with the same pinned reader, no-memory controls,
+authorized deletion scope, dependent-object inventory and collateral utility.
+Check deletion/access ledgers after restore. Evaluate claim authority separately
+from read permission and truth: record answer influence, drafted actions and
+executed effects, plus false blocking and per-category utility. Current grants
+remain mandatory even when reporting an external statement. Use matched context
+budgets and record extra model calls and resource costs.
 
 The app and online graph should show each layer, backlog, review coverage,
 provenance, why a memory resurfaced, unresolved findings and model expenditure.

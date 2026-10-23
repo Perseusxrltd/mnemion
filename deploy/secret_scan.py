@@ -17,6 +17,7 @@ import json
 import os
 from pathlib import Path, PurePosixPath
 import platform
+import re
 import shutil
 import stat
 import subprocess
@@ -61,6 +62,10 @@ PROCESS_ENVIRONMENT = {
 
 class ScanError(RuntimeError):
     """Fixed diagnostics only; never print scanner input or matched content."""
+
+    def __init__(self, message, *, finding_summary=None):
+        super().__init__(message)
+        self.finding_summary = finding_summary
 
 
 def digest(path):
@@ -213,6 +218,7 @@ def scan_input(paths, output):
     """
     total, entries, line = 0, 0, 1
     locations = []
+    input_path = None
     expires = time.monotonic() + 300
 
     def write(data):
@@ -307,7 +313,17 @@ def scan_input(paths, output):
             while data := stream.read(1024**2):
                 write(data)
             write(b"\n")
-            locations.append({"member": label, "first_line": first, "last_line": line - 1})
+            locations.append(
+                {
+                    "member": label,
+                    "input": str(input_path),
+                    "member_path_sha256": hashlib.sha256(
+                        label.removeprefix(str(input_path)).encode("utf-8")
+                    ).hexdigest(),
+                    "first_line": first,
+                    "last_line": line - 1,
+                }
+            )
 
     # Gitleaks also skips a complete stdin stream when its initial bytes look
     # like an executable. A fixed text prelude with a newline prevents this
@@ -316,10 +332,67 @@ def scan_input(paths, output):
     for path in paths:
         for file in sorted(path.rglob("*")) if path.is_dir() else [path]:
             if file.is_file():
+                input_path = file
                 with file.open("rb") as stream:
                     member(stream, file.name, label=str(file))
     output.seek(0)
     return {"inspected_stream_bytes": total, "inspected_members": entries, "locations": locations}
+
+
+def summarize_findings(findings, locations):
+    """Public rejection evidence contains only rule IDs, hashes and line numbers.
+
+    Match text, secrets, archive filenames and scanner descriptions remain in
+    private evidence. Asset hashes correlate with the already verified inventory;
+    a hashed archive member can be located after downloading that one asset.
+    """
+    counts, details, inputs = {}, [], {}
+    truncated = False
+    for index, finding in enumerate(findings):
+        if not isinstance(finding, dict):
+            finding = {}
+        rule = finding.get("RuleID")
+        if not isinstance(rule, str) or not re.fullmatch(r"[a-z0-9-]{1,80}", rule):
+            rule = "unrecognized-rule"
+        if rule not in counts and len(counts) >= 128:
+            rule = "additional-rules"
+        counts[rule] = counts.get(rule, 0) + 1
+        if len(details) >= 64:
+            truncated = True
+            continue
+        first, last = finding.get("StartLine"), finding.get("EndLine")
+        if type(first) is not int or type(last) is not int or not 1 <= first <= last:
+            continue
+        for location in locations:
+            if last < location["first_line"] or first > location["last_line"]:
+                continue
+            if len(details) >= 64:
+                truncated = True
+                break
+            source = location["input"]
+            if source not in inputs:
+                path = Path(source)
+                if path.is_symlink() or not path.is_file():
+                    raise ScanError("Rejected scan input changed before evidence was recorded")
+                inputs[source] = digest(path)
+            details.append(
+                {
+                    "finding": index,
+                    "rule": rule,
+                    "input_sha256": inputs[source],
+                    "member_path_sha256": location["member_path_sha256"],
+                    "first_line": max(first, location["first_line"]) - location["first_line"] + 1,
+                    "last_line": min(last, location["last_line"]) - location["first_line"] + 1,
+                }
+            )
+    return {
+        "total": len(findings),
+        "by_rule": dict(sorted(counts.items())),
+        "locations": details,
+        "locations_truncated": truncated,
+        "matched_values_included": False,
+        "filenames_included": False,
+    }
 
 
 def run_scanner(executable, rules, paths, evidence):
@@ -338,8 +411,9 @@ def run_scanner(executable, rules, paths, evidence):
         observed["scanner_timeout_seconds"] = min(
             1200, max(300, 60 + observed["inspected_stream_bytes"] // (4 * 1024**2))
         )
+        locations = observed.pop("locations")
         (evidence / "stream-locations.private.json").write_text(
-            json.dumps(observed.pop("locations"), indent=2) + "\n", encoding="utf-8"
+            json.dumps(locations, indent=2) + "\n", encoding="utf-8"
         )
         command = [
             str(executable),
@@ -384,7 +458,8 @@ def run_scanner(executable, rules, paths, evidence):
             raise ScanError("Secret scan failed; publication remains blocked")
         if result.returncode or findings:
             raise ScanError(
-                "Secret scan found possible credentials; inspect the private redacted report"
+                "Secret scan found possible credentials; inspect the private redacted report",
+                finding_summary=summarize_findings(findings, locations),
             )
     return {"findings": 0, **observed}
 
@@ -412,6 +487,14 @@ def canary(executable, rules, directory):
             "encoded-metadata.json",
             json.dumps({"payload": base64.b64encode(json.dumps(metadata).encode()).decode()}),
         )
+        archive.writestr(
+            "fips-reference.txt",
+            "hexkey:"
+            + hashlib.sha256(b"holy hand grenade of antioch").hexdigest()
+            + "; token = mnm_"
+            + "F4c" * 14
+            + "m\n",
+        )
     with zipfile.ZipFile(package, "w") as archive:
         archive.writestr("synthetic-1.0-py3-none-any.whl", nested.getvalue())
     evidence = directory / "canary-evidence"
@@ -426,7 +509,7 @@ def canary(executable, rules, directory):
                     finding.get("RuleID") for finding in findings if isinstance(finding, dict)
                 ]
                 if (
-                    rules_found.count("mnemion-application-or-backup-key") >= 4
+                    rules_found.count("mnemion-application-or-backup-key") >= 5
                     and "mnemion-vault-key" in rules_found
                 ):
                     return
@@ -482,10 +565,15 @@ def scan(root, paths, output, cache, *, source=False):
                 record["binary_first_key_canary_passed"] = True
                 record["annotation_adjacent_key_canary_passed"] = True
                 record["decoded_metadata_key_canary_passed"] = True
+                record["public_fips_adjacent_key_canary_passed"] = True
                 record.update(run_scanner(executable, rules, inputs, evidence))
             if inventory(originals) != before or digest(rules) != record["rules_sha256"]:
                 raise ScanError("Secret scan inputs changed during inspection")
             record["passed"] = True
+    except ScanError as error:
+        if error.finding_summary is not None:
+            record["finding_summary"] = error.finding_summary
+        raise
     finally:
         if output.exists():
             output.replace(output.with_name(output.name + ".previous-" + stamp))

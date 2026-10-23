@@ -1,0 +1,242 @@
+{
+  "format": "mnemion-installed-hosting-qualification-v1",
+  "at": "2026-10-23T04:44:53.746993+00:00",
+  "run": 39895069093,
+  "source": "a53ca6ff123c70686c8d89e2c9545143a2fadc37",
+  "workflow": ".github/workflows/release.yml",
+  "native_job_prefix": "native / ",
+  "release_attempt": 2,
+  "source_branch": "release/4.46.0-r2",
+  "workflow_conclusion": "success",
+  "build_version": "4.46.0",
+  "scope": "Locally built installer, new private profile and real model download. Public download acceptance and update migration are separate gates.",
+  "required_true_fields": [
+    "actualSetupControls",
+    "addressRecoveryPreservesWorkspaceAndCredentials",
+    "anonymousAccessRefused",
+    "authenticatedApi",
+    "automaticWorkspaceReopen",
+    "backupKeyProtectedAndReopenedByOsStore",
+    "captureAdministratorRemovalAfterDeviceKeyRevocation",
+    "captureAppCountsAndAgentControls",
+    "captureDeliveryAfterProducerRemoval",
+    "captureExactEventProvenance",
+    "captureHistoryQuotasThroughAppAndAgent",
+    "captureIncompleteUnicodeAndRotation",
+    "captureKeyProtectedAndReopenedByOs",
+    "captureLostCommitReplyReconciledAfterRestart",
+    "captureReaderRevocationAndDeletionFences",
+    "captureReviewedPolicyStopsOldDeviceDelivery",
+    "cleanDatabaseShutdownOnAppExit",
+    "closedEditorRestoresUpdateReadiness",
+    "configuredRamBudgetPersists",
+    "contributorCannotAdministerOrganization",
+    "currentSessionRevokedThroughApp",
+    "desktopCaptureFieldExclusionConsentAndRecovery",
+    "desktopDamagedEnrollmentPauseThroughAppAndAgent",
+    "desktopMissingAndDamagedInboxPreserved",
+    "headlessKeyAndInboxFailuresPreserveEvidence",
+    "headlessRecoveryPreservesLaterForgetting",
+    "headlessWatchRestartAndRecovery",
+    "hostedBrowserAndConsentAssets",
+    "independentOwnerKeyPreserved",
+    "independentPackagedHeadlessCapture",
+    "installationPathWithSpacesAndUnicode",
+    "nativeEmptyCapturePreview",
+    "nativeEncryptedSnapshotAndLedger",
+    "nativeJournalRegistrationAndSeparateApproval",
+    "nativeNgrokSdkLoaded",
+    "nativeVaultSetupAndIndependentKeyRecovery",
+    "navigationPreservesUpdateReadiness",
+    "occupiedApiPortRecoveredThroughApp",
+    "offlineRemovalRefusesUnconfirmedDiscard",
+    "originalAndRecoveredVaultsSurviveRestart",
+    "originalWorkspacePreservedAndReopened",
+    "ownHostReadyBeforeSavedLoginRefresh",
+    "passed",
+    "passwordSessionProtectedByNativeCredentialStore",
+    "pendingQueueSurvivesAppRestart",
+    "postSnapshotDeletionPreservedByRecovery",
+    "realSemanticSaveAndRecall",
+    "recoveredCopyReopenedAfterRestart",
+    "recoveredVaultRequiresFreshGrants",
+    "recoveryThroughActualAppControls",
+    "restartPreservesWorkspaceAndCredentials",
+    "retainedCaptureConsentThroughApp",
+    "revokedHandleRejected",
+    "sameIndividualSessionRestoredAfterRestart",
+    "savedMemorySurvivesRestart",
+    "scopedInvitationAcceptedThroughApp",
+    "selectedCaptureWhileWorkspaceOffline",
+    "unsavedDraftBlocksUpdate",
+    "vaultDeletionPreservedAndValuesExcludedFromMemory"
+  ],
+  "source_contract_sha256": {
+    "studio/electron/scripts/smoke-installed-hosting.mjs": "47316394df4fe3f4ca2c09532e81f40e9abae5c79636c879f18b7192505b458b",
+    "studio/electron/scripts/native-resources.mjs": "cc334ff348de0fe8d4b3f7689fe9fcb347fcaf3436af7de7cd3c23eca2678900",
+    "deploy/native_resources.py": "bf8793f05d7712b6bade1c649a3b8c9acb745bd929d2007ea71e05b6da69e53a",
+    ".github/workflows/desktop.yml": "427d4a38d274101b8a72f8f3fc8aed34fe881fc73ba2629d445b347ed43165fc",
+    "studio/electron/package.json": "a5d6e084aff0c792fafd794c494469077b73dff4c39e0855ff05b33fea393d2f",
+    ".github/workflows/release.yml": "3b368c348f64977dd08e628875740cbfb4ea5b223edad94ca3c7ae259efa2be1"
+  },
+  "native_source_binding": "The frozen installer probe verifies its engine source and dependency hashes; the small receipt does not include those manifests.",
+  "targets": [
+    {
+      "target": "linux-x64",
+      "job": 120225126077,
+      "artifact": 12477259296,
+      "archive_sha256": "42c0b5d8f5cb94356d6ad5ef9c383a0627e27275e800fb10f20a0108a43c7611",
+      "evidence_sha256": "a07bbb7e486cd9828b7a8f2a045bc51d9b3e225ef9cdeb7489414ea7cad0c497",
+      "checks": 59,
+      "passed": true,
+      "native_runtime": {
+        "format": 1,
+        "version": "4.46.0",
+        "platform": "linux",
+        "desktop_architecture": "x64",
+        "engine_architecture": "x64",
+        "database_architecture": "x64",
+        "database_emulation": false,
+        "engine_files": 1090,
+        "database_files": 784,
+        "model_weights_bundled": false
+      },
+      "separate_update_steps": []
+    },
+    {
+      "target": "linux-arm64",
+      "job": 120225126118,
+      "artifact": 12477770557,
+      "archive_sha256": "75572fcf16af6e5b6673a276c81b7165a70c7af5b662c70a66a36f743d659016",
+      "evidence_sha256": "2eb68d8e9385b4d02b4e8767df2ba985a439c406c018d9af8a35efe7b37b08ed",
+      "checks": 59,
+      "passed": true,
+      "native_runtime": {
+        "format": 1,
+        "version": "4.46.0",
+        "platform": "linux",
+        "desktop_architecture": "arm64",
+        "engine_architecture": "arm64",
+        "database_architecture": "arm64",
+        "database_emulation": false,
+        "engine_files": 1088,
+        "database_files": 784,
+        "model_weights_bundled": false
+      },
+      "separate_update_steps": []
+    },
+    {
+      "target": "windows-x64",
+      "job": 120225126107,
+      "artifact": 12478465703,
+      "archive_sha256": "602d4ff1f5342e6bfef9405d9e0fae91c495ebd33b616214200a2d1921cd0ecf",
+      "evidence_sha256": "6deaa42a6c3ba628e8766ecb48a0edd858b3527615843d43c6f080f8daf8c497",
+      "checks": 59,
+      "passed": true,
+      "native_runtime": {
+        "format": 1,
+        "version": "4.46.0",
+        "platform": "windows",
+        "desktop_architecture": "x64",
+        "engine_architecture": "x64",
+        "database_architecture": "x64",
+        "database_emulation": false,
+        "engine_files": 1667,
+        "database_files": 1051,
+        "model_weights_bundled": false
+      },
+      "separate_update_steps": [
+        {
+          "name": "Native Windows installation, authenticated upgrade and relaunch",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "target": "windows-arm64",
+      "job": 120225126065,
+      "artifact": 12479156750,
+      "archive_sha256": "35a4adc2ded925d63df07edc067f768ed915b6ea468593b955cf9733584ca458",
+      "evidence_sha256": "745f8fc6d5bf77706404aadc4143cfc2daa4315c84d827b222e8a3e4582e3ebd",
+      "checks": 59,
+      "passed": true,
+      "native_runtime": {
+        "format": 1,
+        "version": "4.46.0",
+        "platform": "windows",
+        "desktop_architecture": "arm64",
+        "engine_architecture": "x64",
+        "database_architecture": "x64",
+        "database_emulation": true,
+        "engine_files": 1667,
+        "database_files": 1051,
+        "model_weights_bundled": false,
+        "engine_emulation": true
+      },
+      "separate_update_steps": [
+        {
+          "name": "Native Windows installation, authenticated upgrade and relaunch",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "target": "macos-x64",
+      "job": 120225126125,
+      "artifact": 12478067573,
+      "archive_sha256": "c1d4f536ba69634ee9cc42b686b95eb9ec6b91fc9bd2a1ace61343c7b543c73c",
+      "evidence_sha256": "d963502237b101eb7e54998277d75f518e1cbfc887b6a2c1af88b9f7b087c9d7",
+      "checks": 59,
+      "passed": true,
+      "native_runtime": {
+        "format": 1,
+        "version": "4.46.0",
+        "platform": "macos",
+        "desktop_architecture": "x64",
+        "engine_architecture": "x64",
+        "database_architecture": "x64",
+        "database_emulation": false,
+        "engine_files": 1069,
+        "database_files": 780,
+        "model_weights_bundled": false
+      },
+      "separate_update_steps": [
+        {
+          "name": "Packaged Mac update, restart guards and relaunch",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "target": "macos-arm64",
+      "job": 120225126073,
+      "artifact": 12477725666,
+      "archive_sha256": "4ed3f939881c3a6d1793ecffb9970ec147916489effc2a16ce449875a143adb2",
+      "evidence_sha256": "44fe87bf171067f4fdc1eff386807d0ec5d440c95d6e2dfac8232d527be7cdb1",
+      "checks": 59,
+      "passed": true,
+      "native_runtime": {
+        "format": 1,
+        "version": "4.46.0",
+        "platform": "macos",
+        "desktop_architecture": "arm64",
+        "engine_architecture": "arm64",
+        "database_architecture": "arm64",
+        "database_emulation": false,
+        "engine_files": 1066,
+        "database_files": 780,
+        "model_weights_bundled": false
+      },
+      "separate_update_steps": [
+        {
+          "name": "Packaged Mac update, restart guards and relaunch",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ],
+  "selected_targets_passed": true,
+  "all_six_targets_in_this_receipt": true,
+  "public_release_acceptance": false,
+  "l1_complete": false
+}

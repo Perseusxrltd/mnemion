@@ -195,6 +195,27 @@ does not count as a passing product or release gate.
    supported desktop packages receive stable updates under the
    [update policy](service/updates.md).
 
+   A secret-scan rejection keeps the draft blocked. Its bounded `finding_summary`
+   records rule counts, asset/member-path hashes and relative line numbers,
+   excluding matched values and filenames. Use the asset hash to locate the
+   verified download for private inspection and preserve the original failure.
+   A public-constant exception needs pinned primary evidence and an adjacent-key
+   control, as in the [OpenSSL scan correction](validation/2026-10-23-openssl-scan.md).
+   Scan policy comes from the trusted `github.workflow_sha` checkout; product
+   validation still uses the frozen release source. A reviewed policy-only
+   correction can reverify unchanged artifacts without rebuilding them. Require
+   a fresh full-inventory pass before publication; a clean manifest or isolated
+   finding fragment is insufficient.
+
+   For policy-only revalidation, dispatch from updated main with
+   `gh workflow run verify-artifacts.yml --repo OWNER/REPO --ref main -f release_run=BUILD_RUN`,
+   where `BUILD_RUN` is the original completed release build. Rerunning the old
+   workflow retains its pinned workflow source. After the new `verify` job
+   succeeds, download its `verified-release-artifacts` artifact and run
+   `python -m deploy.release_automation publish --repo OWNER/REPO --receipt PATH/release-verification.json --verification-run NEW_VERIFICATION_RUN`.
+   Use the new verification run and its downloaded receipt; manual dispatch
+   does not execute the workflow's `workflow_run`-only publication job.
+
 Update the release-target version with every patch. Add a new architecture only
 after its native installation/update checks pass. Keep update feeds for every previously
 published OS/architecture pair in each new stable release, because installed clients follow

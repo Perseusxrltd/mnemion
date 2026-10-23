@@ -49,3 +49,10 @@ regexes = [
   '''^6ee51bb6929743f5cdc5541a935085f82ec6d95a818db36bbb295a3dd016ae43$''',
   '''^71455047ab91b44618a2e0f9a36281fd674df1c8c462f200a058cf267b362963$''',
 ]
+
+[[allowlists]]
+description = "OpenSSL's published default FIPS module-integrity key, derived from its documented public phrase; this is not an application credential."
+regexTarget = "secret"
+regexes = [
+  '''^f4556650ac31d35461610bac4ed81b1a181b2d8a43ea2854cbae22ca74560813$''',
+]

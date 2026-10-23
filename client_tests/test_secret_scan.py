@@ -37,6 +37,49 @@ def test_nested_wheels_and_normally_excluded_names_are_inspected(tmp_path):
     )
 
 
+def test_rejection_summary_identifies_asset_without_values_or_filenames(tmp_path):
+    package = tmp_path / "private-file-name.whl"
+    member = "private-archive-name.txt"
+    value = b"confidential-value-must-not-enter-rejection-evidence"
+    package.write_bytes(zipped(member, value))
+    observed = scan.scan_input([package], io.BytesIO())
+    location = next(item for item in observed["locations"] if item["member"].endswith(member))
+    findings = [
+        {
+            "RuleID": "generic-api-key",
+            "StartLine": location["first_line"],
+            "EndLine": location["last_line"],
+            "Secret": value.decode(),
+            "Match": value.decode(),
+            "File": str(package),
+            "Description": member,
+        }
+    ]
+    result = scan.summarize_findings(findings, observed["locations"])
+    encoded = json.dumps(result)
+    assert result["total"] == 1 and result["by_rule"] == {"generic-api-key": 1}
+    assert len(result["locations"]) == 1
+    recorded = result["locations"][0]
+    assert recorded["input_sha256"] == hashlib.sha256(package.read_bytes()).hexdigest()
+    assert recorded["member_path_sha256"] == hashlib.sha256(("!" + member).encode()).hexdigest()
+    assert recorded["first_line"] == recorded["last_line"] == 1
+    for private in (value.decode(), member, package.name, str(tmp_path)):
+        assert private not in encoded
+    assert result["matched_values_included"] is result["filenames_included"] is False
+
+
+def test_rejection_summary_is_bounded_and_drops_unrecognized_rule_text(tmp_path):
+    package = tmp_path / "input.txt"
+    package.write_text("sample\n")
+    observed = scan.scan_input([package], io.BytesIO())
+    findings = [{"RuleID": "untrusted private/rule text", "StartLine": 2, "EndLine": 2}] * 200
+    result = scan.summarize_findings(findings, observed["locations"])
+    assert result["total"] == 200
+    assert result["by_rule"] == {"unrecognized-rule": 200}
+    assert len(result["locations"]) == 64 and result["locations_truncated"] is True
+    assert "untrusted private/rule text" not in json.dumps(result)
+
+
 def test_archive_expansion_and_depth_limits_fail_instead_of_skipping(tmp_path, monkeypatch):
     package = tmp_path / "large.whl"
     package.write_bytes(zipped("text.txt", b"x" * 1000))
@@ -130,7 +173,20 @@ def test_migration_exceptions_are_only_exact_digests_of_public_source_files():
     assert not any(re.fullmatch(pattern, "a" * 64) for pattern in expected)
 
 
-@pytest.mark.parametrize("application_findings", [2, 3, 4])
+def test_fips_exception_is_only_the_documented_public_default():
+    config = tomllib.loads((scan.ROOT / ".gitleaks.toml").read_text())
+    exception = next(
+        item for item in config["allowlists"] if "FIPS module-integrity" in item["description"]
+    )
+    expected = hashlib.sha256(b"holy hand grenade of antioch").hexdigest()
+    assert exception["regexTarget"] == "secret"
+    assert exception["regexes"] == ["^" + expected + "$"]
+    pattern = exception["regexes"][0]
+    for value in ("a" * 64, expected[:-1], expected + "0", expected + ";token=another-value"):
+        assert not re.fullmatch(pattern, value)
+
+
+@pytest.mark.parametrize("application_findings", [2, 3, 4, 5])
 def test_canary_requires_binary_archive_annotation_and_encoded_key_detection(
     tmp_path, monkeypatch, application_findings
 ):
@@ -142,7 +198,7 @@ def test_canary_requires_binary_archive_annotation_and_encoded_key_detection(
         raise scan.ScanError("Fixture credential detection")
 
     monkeypatch.setattr(scan, "run_scanner", scanned)
-    if application_findings < 4:
+    if application_findings < 5:
         with pytest.raises(scan.ScanError, match="every synthetic key placement"):
             scan.canary(None, None, tmp_path)
     else:
