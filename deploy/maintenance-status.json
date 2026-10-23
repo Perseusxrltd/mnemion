@@ -32,26 +32,71 @@
       "source_commit": "e13b30a9fd850e7b9b22a6467fc63303e5d49231",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-23T05:35:46Z",
+      "updated_at": "2026-10-23T05:35:58Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39906564158",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 3,
-        "completed": 0,
-        "succeeded": 0,
+        "total": 12,
+        "completed": 3,
+        "succeeded": 3,
         "active": [
-          {
-            "id": 120259956964,
-            "name": "Select checks",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Post Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
-            ]
-          },
           {
             "id": 120259957201,
             "name": "studio",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Verify wheel and source package include the matching web Studio"
+            ]
+          },
+          {
+            "id": 120260004559,
+            "name": "supervision (macos-15)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
+            ]
+          },
+          {
+            "id": 120260004604,
+            "name": "service (3.14)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Matching PostgreSQL recovery tools"
+            ]
+          },
+          {
+            "id": 120260004606,
+            "name": "legacy",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
+            ]
+          },
+          {
+            "id": 120260004671,
+            "name": "service (3.13)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Matching PostgreSQL recovery tools"
+            ]
+          },
+          {
+            "id": 120260004702,
+            "name": "container (ubuntu-22.04-arm)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the actual deployment image with its documentation"
+            ]
+          },
+          {
+            "id": 120260004708,
+            "name": "service (3.12)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
@@ -59,12 +104,21 @@
             ]
           },
           {
-            "id": 120259957307,
-            "name": "lint",
+            "id": 120260004710,
+            "name": "supervision (macos-15-intel)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Scan exact source with pinned rules and an archived-key rejection control"
+              "Build the current Intel cryptography runtime with static OpenSSL"
+            ]
+          },
+          {
+            "id": 120260004715,
+            "name": "container (ubuntu-22.04)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the actual deployment image with its documentation"
             ]
           }
         ]
@@ -166,7 +220,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38"
+              "Verify every uploaded byte, production signature and complete feed"
             ]
           }
         ]
@@ -196,5 +250,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39876908629"
     }
   ],
-  "observed_at": "2026-10-23T05:35:51+00:00"
+  "observed_at": "2026-10-23T05:36:23+00:00"
 }
