@@ -66,7 +66,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Linux desktop libraries"
+              "Install public release and observe its automatic update"
             ]
           },
           {
@@ -126,15 +126,15 @@
       "workflow": "release.yml",
       "branch": "release/4.46.5",
       "source_commit": "704650c91af3e6a300758d71d7ee72f29874a04b",
-      "status": "queued",
+      "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-23T18:36:43Z",
+      "updated_at": "2026-10-23T18:42:51Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40002385734",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 25,
-        "completed": 20,
-        "succeeded": 19,
+        "total": 26,
+        "completed": 21,
+        "succeeded": 20,
         "active": [
           {
             "id": 120589559170,
@@ -173,11 +173,13 @@
             ]
           },
           {
-            "id": 120589914655,
-            "name": "native / native_database / Database / macos / arm64",
-            "status": "queued",
-            "runner_assigned": false,
-            "steps": []
+            "id": 120592405573,
+            "name": "native / native_database / Database / Windows ARM host / x64 engine",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
+            ]
           }
         ]
       },
@@ -217,5 +219,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40005399880"
     }
   ],
-  "observed_at": "2026-10-23T18:42:25+00:00"
+  "observed_at": "2026-10-23T18:43:06+00:00"
 }

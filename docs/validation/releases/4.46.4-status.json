@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "checked_at": "2026-10-23T18:42:05+00:00",
+  "checked_at": "2026-10-23T18:42:42+00:00",
   "tag_name": "v4.46.4",
   "source_commit": "4e64aad45c288d2bc71146b976857225c628fb7a",
   "published_at": "2026-10-23T18:41:40Z",
@@ -74,18 +74,18 @@
       "status": "pending",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40005404536",
       "run_id": 40005404536,
-      "updated_at": "2026-10-23T18:41:59Z",
+      "updated_at": "2026-10-23T18:42:05Z",
       "event": "workflow_dispatch",
       "conclusion": null
     },
     {
       "name": "Live website downloads, version, notes and guides",
-      "status": "pending",
+      "status": "passed",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40005399880",
       "run_id": 40005399880,
-      "updated_at": "2026-10-23T18:41:48Z",
+      "updated_at": "2026-10-23T18:42:13Z",
       "event": "workflow_dispatch",
-      "conclusion": null
+      "conclusion": "success"
     }
   ],
   "requirements": {
