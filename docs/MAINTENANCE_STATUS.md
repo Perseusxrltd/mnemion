@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-23T07:08:10+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-23T07:17:26+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.0](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.0). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -17,24 +17,31 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | success | [Run 39915601829](https://github.com/Perseusxrltd/mnemion/actions/runs/39915601829) |
+| ci\.yml | main | in\_progress | [Run 39916297399](https://github.com/Perseusxrltd/mnemion/actions/runs/39916297399) |
 | public-updates\.yml | v4\.46\.0 | success | [Run 39907316827](https://github.com/Perseusxrltd/mnemion/actions/runs/39907316827) |
 | release\.yml | release/4\.46\.0-r2 | success | [Run 39895069093](https://github.com/Perseusxrltd/mnemion/actions/runs/39895069093) |
 | release\.yml | release/4\.46\.1 | in\_progress | [Run 39913638457](https://github.com/Perseusxrltd/mnemion/actions/runs/39913638457) |
+| release\.yml | release/4\.46\.1-r2 | pending | [Run 39916372505](https://github.com/Perseusxrltd/mnemion/actions/runs/39916372505) |
 | verify-artifacts\.yml | main | failure | [Run 39901894314](https://github.com/Perseusxrltd/mnemion/actions/runs/39901894314) |
-| website-release\.yml | main | success | [Run 39915601730](https://github.com/Perseusxrltd/mnemion/actions/runs/39915601730) |
+| website-release\.yml | main | success | [Run 39916297432](https://github.com/Perseusxrltd/mnemion/actions/runs/39916297432) |
 | website-release\.yml | v4\.46\.0 | success | [Run 39907323013](https://github.com/Perseusxrltd/mnemion/actions/runs/39907323013) |
 
 ## Active jobs
 
-[Run 39913638457](https://github.com/Perseusxrltd/mnemion/actions/runs/39913638457): 25/32 jobs completed; 23 succeeded.
+[Run 39916297399](https://github.com/Perseusxrltd/mnemion/actions/runs/39916297399): 5/12 jobs completed; 5 succeeded.
 
-- checks / service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- checks / service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- native / macos-15 / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
-- native / macos-15-intel / x64: in\_progress — Package the native desktop with one bounded upstream-download retry.
-- native / ubuntu-22\.04-arm / arm64: in\_progress — Installed Linux app creates, searches and reopens a real local workspace.
-- native / ubuntu-22\.04 / x64: in\_progress — Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02.
+- studio: in\_progress.
+- legacy: in\_progress.
+- supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
+- supervision \(macos-15\): in\_progress — Verify both pinned local models on the actual Mac runtime.
+- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+
+[Run 39913638457](https://github.com/Perseusxrltd/mnemion/actions/runs/39913638457): 29/32 jobs completed; 27 succeeded.
+
+- checks / service \(3\.12\): in\_progress.
+- native / macos-15-intel / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
 - native / windows-11-arm / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
 
 
