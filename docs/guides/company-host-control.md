@@ -1008,11 +1008,20 @@ stderr, credentials or exception text. This work is excluded from frozen
 Retain the original request and encrypted files for inspection; the new
 diagnostics do not establish delivery or resolve the original uncertain backup.
 
-Interpret `deadline` together with its recorded stage and configured limit.
-The [full-size isolated transfer check](../validation/2026-10-23-backup-transfer-diagnostics.md#full-size-isolated-transfer-diagnostics)
-recorded a push deadline at a 300-second network cap. That finding does not
-establish the original backup's failure cause or successful delivery.
-Longer limits used in a separate diagnostic do not change production settings.
+Interpret `deadline` using its recorded stage and configured limit. The
+[full-size transfer follow-up](../validation/2026-10-23-backup-transfer-window-900.md)
+passed an isolated upload and fresh readback of the retained encrypted files
+under a 900-second network-command window; its readback fetch took 403.678
+seconds. The first 300-second push failure remains preserved, and the original
+native backup remains failed/unconfirmed. This diagnostic created no new
+snapshot and does not qualify fresh native backup delivery or restore.
+
+At **19:22:24 UTC on 23 October 2026**, the reviewed company-host configuration
+changed only its network-command timeout from 300 to 900 seconds. Runtime
+4.46.3 and authority remained unchanged, and no backup was requested or
+delivery verified by that update. The diagnostic's 2,700-second total cap was
+separate from this configuration change. No product retry or resume action
+was added; fresh native backup and independent restore still require acceptance.
 
 ## Qualification and remaining work
 

@@ -134,3 +134,11 @@ and `observations/003.private.json`, SHA-256
 The plans and saved stage observations bind the source, input identities,
 separate branch inspection and diagnostic-only limits without publishing raw
 logs, private destinations or operation identities.
+
+## Later transfer and configuration observations
+
+The [19:09 UTC full-size readback and 19:22 UTC owner configuration update](2026-10-23-backup-transfer-window-900.md)
+record the later successful isolated diagnostic and the separately applied
+900-second network-command window. They preserve the failures and pending
+state at the earlier checkpoints above. Fresh native backup creation and
+independent restore still require their own acceptance.
