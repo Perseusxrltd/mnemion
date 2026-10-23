@@ -545,7 +545,7 @@ def test_process_transition_keeps_its_deadline_and_does_not_retry_identity_failu
     error = updates.supervision.SupervisionError if identity_error else ManifestError
     with pytest.raises(error, match="Different supervisor|requested process transition"):
         updates._processes(tmp_path, start=True)
-    assert len(calls) == (1 if identity_error else 5)
+    assert len(calls) == (1 if identity_error else 17)
 
 
 @pytest.mark.parametrize("missing", ["http_ready", "instance_matches", "children_initialized"])
@@ -583,11 +583,44 @@ def test_running_processes_do_not_bypass_readiness_and_timeout_preserves_the_fai
     with pytest.raises(updates.ProcessTransitionError) as caught:
         updates._processes(tmp_path, start=True)
     assert starts == ["mnemion-api", "mnemion-worker"]
-    assert clock[0] == 60
+    assert clock[0] == 180
     evidence = caught.value.diagnostics
     assert evidence["reason"] == "readiness_timeout"
+    assert evidence["budget_seconds"] == 180
     assert evidence["checks"][missing] is False
     assert set(evidence["process_states"].values()) == {"RUNNING"}
+
+
+def test_slow_start_waits_for_real_readiness_without_restarting_running_children(
+    tmp_path, monkeypatch
+):
+    clock, starts = [0], []
+    processes = [
+        {"name": "mnemion-api", "statename": "RUNNING"},
+        {"name": "mnemion-worker", "statename": "RUNNING"},
+    ]
+    client = SimpleNamespace(
+        supervisor=SimpleNamespace(
+            startProcess=lambda name, wait: starts.append(name),
+            getAllProcessInfo=lambda: processes,
+        )
+    )
+    monkeypatch.setattr(updates.supervision, "settings", lambda state: (state, {}))
+    monkeypatch.setattr(updates.supervision, "_rpc", lambda settings: nullcontext(client))
+    monkeypatch.setattr(updates.supervision, "status", lambda state: {"ready": clock[0] >= 105})
+    monkeypatch.setattr(updates.time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(
+        updates.time, "sleep", lambda seconds: clock.__setitem__(0, clock[0] + seconds)
+    )
+    updates._processes(tmp_path, start=True)
+    assert clock[0] == 105
+    assert starts == ["mnemion-api", "mnemion-worker"]
+
+
+@pytest.mark.parametrize("budget", [60, 90, 180])
+def test_saved_transition_diagnostics_preserve_historical_and_current_bounds(budget):
+    value = {"reason": "readiness_timeout", "budget_seconds": budget}
+    assert updates.transition_diagnostics(value) == value
 
 
 @pytest.mark.parametrize("invalid", [None, [], {"reason": []}, {"reason": "private-sentinel"}])

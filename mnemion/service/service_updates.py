@@ -26,7 +26,12 @@ from .update_packages import copy_inspected_source, verify_installed_package
 from .update_transport import UpdateNotPublished, download_artifact, fetch_manifest
 from .update_trust import SERVICE_UPDATE_PUBLIC_KEY
 from .update_schedule import UpdateSchedule, schedule_status
-from .process_transition import ProcessTransitionError, diagnostics as transition_diagnostics
+from .process_transition import (
+    START_BUDGET_SECONDS,
+    STOP_BUDGET_SECONDS,
+    ProcessTransitionError,
+    diagnostics as transition_diagnostics,
+)
 
 UV_VERSION = "0.12.24"
 DEFAULT_INTERVAL = 6 * 60 * 60
@@ -686,7 +691,10 @@ def _processes(
 
     _, settings = supervision.settings(state)
     names = ("mnemion-updater",) if updater_only else ("mnemion-api", "mnemion-worker")
-    deadline = time.monotonic() + (60 if start else 90)
+    # Cold imports and initialization on a busy host need more time than the
+    # supervisor's RUNNING state. Keep every readiness/identity check and a
+    # finite bound; a process surviving startup alone never permits cutover.
+    deadline = time.monotonic() + (START_BUDGET_SECONDS if start else STOP_BUDGET_SECONDS)
     transition_error = "The managed service did not complete its requested process transition"
     observation = {}
     # A busy supervisor can miss the short socket deadline during a restart.

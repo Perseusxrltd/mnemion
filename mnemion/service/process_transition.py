@@ -3,6 +3,10 @@
 from .update_manifest import ManifestError
 
 
+START_BUDGET_SECONDS = 180
+STOP_BUDGET_SECONDS = 90
+
+
 CHECKS = (
     "running",
     "ready",
@@ -31,7 +35,12 @@ def diagnostics(value):
     result = {"reason": value["reason"]}
     if isinstance(value.get("direction"), str) and value["direction"] in {"start", "stop"}:
         result["direction"] = value["direction"]
-    if type(value.get("budget_seconds")) is int and value["budget_seconds"] in {60, 90}:
+    # Historical 60-second startup failures retain their original measured bound.
+    if type(value.get("budget_seconds")) is int and value["budget_seconds"] in {
+        60,
+        START_BUDGET_SECONDS,
+        STOP_BUDGET_SECONDS,
+    }:
         result["budget_seconds"] = value["budget_seconds"]
     checks = value.get("checks")
     if isinstance(checks, dict):
@@ -57,7 +66,7 @@ class ProcessTransitionError(ManifestError):
             {
                 "reason": reason,
                 "direction": "start" if start else "stop",
-                "budget_seconds": 60 if start else 90,
+                "budget_seconds": START_BUDGET_SECONDS if start else STOP_BUDGET_SECONDS,
                 "checks": observation,
                 "process_states": {
                     item["name"]: item.get("statename") for item in processes if "name" in item

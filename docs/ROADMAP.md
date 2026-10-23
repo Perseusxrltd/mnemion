@@ -37,10 +37,24 @@ availability and release gates; each deployment requires its own acceptance.
 - **4.46.3 source checkpoint — 23 October 2026; UNRELEASED.** The
   [combined change](releases/4.46.3.md) adds explicit backup creation and
   verification through Host controls and native-agent actions, and corrects
-  controller shutdown observation. Source checks, desktop profiles and builds
-  passed, including the final inventory-corruption regression. All six native
+  controller shutdown observation. Updated transition code also allows 180
+  seconds for full startup readiness, retaining the 90-second stop bound and
+  every readiness/identity check. An older running updater keeps its own
+  60-second deadline until new code owns the transition. Backup/shutdown source
+  checks passed, alongside 22 focused startup checks and 46 full updater/desktop
+  regression checks. All six native
   4.46.3 targets, public release and actual backup/custodian acceptance remain
   pending; no parent requirement is completed by these source results.
+
+- **4.46.2 publication and actual host rollback — 23 October 2026, 12:41:16 UTC.**
+  Native, artifact-verification and public installed-update gates passed;
+  4.46.2 remains published. The actual host exhausted its 60-second startup
+  readiness window despite API/worker `RUNNING` states and restored 4.46.1.
+  HTTP, instance and child readiness were not confirmed. Windows remains
+  4.46.2, and paired acceptance stopped for inspection. The
+  [retained failure](validation/2026-10-23-independent-host-adoption.md#4462-actual-host-rollback--23-october-2026)
+  preserves the original diagnostics. The last accepted pair remains 4.46.1;
+  the new 4.46.3 source grace has no installed or actual-host acceptance yet.
 
 - **4.46.2 source hotfix — 23 October 2026; unreleased at this checkpoint.**
   [Native host operations](releases/4.46.2.md) now use the existing five-minute
