@@ -25,15 +25,60 @@
   ],
   "runs": [
     {
-      "id": 39891502379,
+      "id": 39905068103,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "a53ca6ff123c70686c8d89e2c9545143a2fadc37",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-23T03:25:09Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39891502379"
+      "source_commit": "d38f6c5a2a51fbbf2c683298fcb1a81c930e1ce2",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-23T05:19:17Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39905068103",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 12,
+        "completed": 8,
+        "succeeded": 8,
+        "active": [
+          {
+            "id": 120255074692,
+            "name": "service (3.13)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+            ]
+          },
+          {
+            "id": 120255074723,
+            "name": "supervision (macos-15-intel)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
+            ]
+          },
+          {
+            "id": 120255074756,
+            "name": "service (3.12)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+            ]
+          },
+          {
+            "id": 120255074812,
+            "name": "service (3.14)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": []
     },
     {
       "id": 39876903393,
@@ -109,26 +154,20 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39895069093"
     },
     {
-      "id": 39901894314,
+      "id": 39905111700,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "4c4e0c9c1227b2e067a7d849969258302c81b3b9",
+      "source_commit": "d38f6c5a2a51fbbf2c683298fcb1a81c930e1ce2",
       "status": "completed",
       "conclusion": "failure",
-      "updated_at": "2026-10-23T04:49:42Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39901894314",
+      "updated_at": "2026-10-23T05:24:39Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39905111700",
       "job_details_schema": 2,
-      "job_progress": {
-        "total": 2,
-        "completed": 2,
-        "succeeded": 0,
-        "active": []
-      },
       "failed_jobs": [
         {
           "name": "verify",
-          "id": 120245114547,
+          "id": 120255180229,
           "conclusion": "failure",
           "runner_assigned": true,
           "steps_reported": 16,
@@ -136,18 +175,24 @@
             "Scan the exact downloaded distributions before publication"
           ]
         }
-      ]
+      ],
+      "job_progress": {
+        "total": 2,
+        "completed": 2,
+        "succeeded": 0,
+        "active": []
+      }
     },
     {
-      "id": 39891502377,
+      "id": 39905082711,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "a53ca6ff123c70686c8d89e2c9545143a2fadc37",
+      "source_commit": "d38f6c5a2a51fbbf2c683298fcb1a81c930e1ce2",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-23T02:47:51Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39891502377"
+      "updated_at": "2026-10-23T05:19:26Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39905082711"
     },
     {
       "id": 39876908629,
@@ -161,5 +206,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/39876908629"
     }
   ],
-  "observed_at": "2026-10-23T04:50:19+00:00"
+  "observed_at": "2026-10-23T05:28:29+00:00"
 }
