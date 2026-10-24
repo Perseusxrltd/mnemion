@@ -1,7 +1,8 @@
 /** Shared declaration-only contract; local controls contain no analytics IDs. */
 export type TelemetryGroup = 'usage' | 'reliability' | 'performance' | 'resources'
 export type TelemetryAction = 'status' | 'configure' | 'schema' | 'preview'
-export type TelemetryChoice = { enabled: boolean; expected_revision: number; expected_generation?: string | null; disclosure_version?: number }
+export type TelemetryConnectionMode = 'auto' | 'unmetered' | 'metered'
+export type TelemetryChoice = { enabled: boolean; expected_revision: number; expected_generation?: string | null; disclosure_version?: number; connection_mode?: TelemetryConnectionMode }
 export type TelemetryStamp = { revision: number; store_generation: string | null }
 export type TelemetryCompanyPolicy = {
   state: 'unmanaged' | 'restricted' | 'unreadable'
@@ -27,6 +28,7 @@ export type TelemetryStatus = {
   store_generation: string | null
   default_enabled: boolean
   user_enabled: boolean
+  connection_mode: TelemetryConnectionMode
   effective_enabled: boolean
   reason: 'storage_unavailable' | 'coordination_unavailable' | 'user_disabled' | 'company_policy' | 'browser_privacy' | 'disclosure_required' | 'collection_unavailable' | 'enabled'
   storage: 'new' | 'ready' | 'unreadable'

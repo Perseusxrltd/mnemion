@@ -243,6 +243,15 @@ def create_app(
             registry.start_idle_cleanup()
             async with AsyncExitStack() as stack:
                 from .sign_in_maintenance import maintain_history
+                from mnemion.product_telemetry.activity import application_delivery
+
+                product_delivery = await stack.enter_async_context(
+                    application_delivery(
+                        can_start=registry.memory_budget.can_start_background
+                        if registry.memory_budget
+                        else None,
+                    )
+                )
 
                 maintenance = await stack.enter_async_context(anyio.create_task_group())
                 stack.callback(maintenance.cancel_scope.cancel)
@@ -252,7 +261,12 @@ def create_app(
                 from .supervision import process_ready
 
                 stack.enter_context(process_ready("api", registry.generation_ids))
-                yield
+                try:
+                    yield
+                finally:
+                    # Fence new optional work before other service owners stop.
+                    if product_delivery is not None:
+                        product_delivery.stop()
         finally:
             writeback.stop()
             librarian_runner.stop()

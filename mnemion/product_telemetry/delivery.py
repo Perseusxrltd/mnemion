@@ -183,14 +183,33 @@ class DeliveryBudget:
     """One existing private policy store, with no new persistent worker.
 
     The future transport must supply fresh network/pressure observations; an
-    unknown or metered connection never receives a reservation. ``guarded_write``
+    metered connection never receives a reservation. An explicit local unmetered
+    choice can resolve unknown metering, without overriding pressure. ``guarded_write``
     is only for a reviewed synchronous, nonblocking socket handoff, never DNS,
     TLS negotiation, HTTP response waiting, user callbacks or an async function.
     """
 
-    def __init__(self, root: Path | None = None, *, policy_path: Path | None = None):
+    def __init__(
+        self, root: Path | None = None, *, policy_path: Path | None = None, environment=None
+    ):
         self.root = root if root is not None else policy.default_directory()
         self.policy_path = policy_path
+        self.environment = environment
+
+    def _observed(self, fallback=None):
+        try:
+            return self.environment() if self.environment else fallback
+        except Exception:
+            return None
+
+    def _admitted(self, preference, observed) -> bool:
+        return (
+            isinstance(observed, dict)
+            and observed.get("constrained") is False
+            and observed.get("network") in ("unknown", "unmetered")
+            and preference["connection_mode"] != "metered"
+            and (observed["network"] == "unmetered" or preference["connection_mode"] == "unmetered")
+        )
 
     def _open(self, *, readonly=False):
         policy._root_safe(self.root)
@@ -211,14 +230,13 @@ class DeliveryBudget:
         if (
             not policy.COLLECTION_AVAILABLE
             or policy.COLLECTOR_URL is None
-            or network != "unmetered"
-            or constrained is not False
             or not _integer(expected_revision, 2147483646)
             or not policy.valid_generation(expected_generation)
         ):
             return None
         started = _monotonic()
         try:
+            observed = self._observed({"network": network, "constrained": constrained})
             now = _now_ms()
             if not _integer(now, MAX_CLOCK_MS - DAY_MS - JITTER_MS):
                 return None
@@ -226,6 +244,8 @@ class DeliveryBudget:
                 connection.execute("BEGIN IMMEDIATE")
                 preference = policy._preferences(connection)
                 company = policy.company_policy(self.policy_path)
+                if not self._admitted(preference, observed):
+                    return None
                 if not aggregate._permitted(
                     preference, company, expected_revision, expected_generation
                 ):
@@ -299,6 +319,8 @@ class DeliveryBudget:
             and state[3] == report.deadline_ms
             and state[2] == report._token
             and report._group in company["metric_groups"]
+            and preference["connection_mode"] != "metered"
+            and (self.environment is None or self._admitted(preference, self._observed()))
             and aggregate._permitted(preference, company, report.revision, report.generation)
         )
 

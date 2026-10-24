@@ -3,12 +3,12 @@ import { lstatSync, readFileSync } from 'node:fs'
 import { isAbsolute, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { DatabaseSync } from 'node:sqlite'
-import type { TelemetryDisclosure, TelemetryStamp } from '../shared/product-telemetry.js'
+import type { TelemetryConnectionMode, TelemetryDisclosure, TelemetryStamp } from '../shared/product-telemetry.js'
 import { TelemetryCatalog, type MeasurementCatalog } from './telemetry-catalog.js'
 import { windowsTelemetryPrivateStore } from './telemetry-private-store.js'
 
 export type NativeTelemetryDisclosure = TelemetryDisclosure & { metric_groups: string[] }
-type Preference = { revision: number; enabled: number; disclosure_version: number; store_generation: string }
+type Preference = { revision: number; enabled: number; disclosure_version: number; store_generation: string; connection_mode: TelemetryConnectionMode }
 type Company = { enabled: boolean; groups: string[] }
 const failure = () => new Error('telemetry_storage_unavailable')
 const integer = (value: unknown, maximum: number, minimum = 0): value is number =>
@@ -90,13 +90,16 @@ export class NativeTelemetryStore {
   }
 
   protected preferences(database: DatabaseSync): Preference {
+    const version = Number(database.prepare('PRAGMA user_version').get()?.user_version)
     if (database.prepare('PRAGMA application_id').get()?.application_id !== 0x4D4E5450 ||
-        ![3, 4].includes(Number(database.prepare('PRAGMA user_version').get()?.user_version)) ||
+        ![3, 4, 5].includes(version) ||
         database.prepare('PRAGMA journal_mode').get()?.journal_mode !== 'delete') throw failure()
     const row = database.prepare('SELECT revision, enabled, disclosure_version, store_generation FROM preferences WHERE singleton=1').get()
     if (!row || !integer(row.revision, 2147483647) || ![0, 1].includes(row.enabled as number) ||
         !integer(row.disclosure_version, this.disclosure.version) || !generation(row.store_generation) || row.revision === 2147483647) throw failure()
-    return row as Preference
+    const mode = version >= 5 ? database.prepare('SELECT connection_mode FROM preferences WHERE singleton=1').get()?.connection_mode : 'auto'
+    if (!['auto', 'unmetered', 'metered'].includes(mode as string)) throw failure()
+    return { ...row, connection_mode: mode } as Preference
   }
 
   async snapshot(): Promise<TelemetryStamp | null> {

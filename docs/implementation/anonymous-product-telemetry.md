@@ -3,7 +3,8 @@
 **V08 is Building/source implementation; checkpoint 24 October 2026.** The full scope
 recorded on 23 October remains the acceptance contract in the
 [66-requirement inventory](../PRODUCT_REQUIREMENTS.md). Local privacy controls,
-the fixed catalog, bounded aggregate queues and selected owned workflow hooks are
+the fixed catalog, bounded aggregate queues, selected owned workflow hooks,
+bounded transport components and opportunistic application-owner wiring are
 implemented in source;
 product collection is unavailable. V08 is the
 active feature milestone after [fresh backup and independent restore](../validation/2026-10-24-4465-backup-acceptance.md)
@@ -28,13 +29,44 @@ This token belongs only to local control state; it is never an analytics identit
 or outbound measurement. Supported legacy opt-outs remain off, and a missing
 generation requires fresh disclosure before collection can become effective.
 
+The current [app-owner source batch](../validation/2026-10-24-telemetry-app-owners.md)
+adds a persistent `connection_mode` through app, native/private-stdin and browser
+controls. `auto` refuses unknown metering; `unmetered` declares an unlimited
+connection only where metering is unknown; `metered` pauses delivery. Detected
+limits, resource pressure, disclosure and company/user restrictions still win.
+The setting stores no network name or address and persists until changed.
+SQLite storage version **5** and browser choice version **4** preserve spent
+delivery accounting when migrating. A stale opt-out still disables collection
+without replacing a newer connection choice; omitting the field preserves it.
+Changing this setting does not acknowledge an unseen disclosure.
+Explicit native `configure` now permits up to **250 ms per busy SQLite lock**
+to accommodate a brief reader; this is not a single 250 ms action deadline.
+Producers and delivery retain zero lock waiting. The maintained local stdio
+`mnemion_telemetry` choice also accepts `connection_mode` and disclosure version
+`0`, without treating that value as acknowledgement of an unseen disclosure.
+
 The [shared disclosure](../../mnemion/product_telemetry/disclosure.json) has
 `collection_available: false` and `destination: null`. Saving an enabled
 preference does not complete disclosure or activate collection. The preview
 returns the measurement catalog, an empty local aggregate list, no outbound body
 and zero outgoing bytes. Owned CLI, desktop/native-operator, Studio/browser and
-explicit local stdio and selected fresh-maintenance hooks exist in source; there is no
-product sender, deployed collector, production analytics or qualified anonymous ingress.
+explicit local stdio and selected fresh-maintenance hooks exist in source.
+Python, native and browser senders and application-owner wiring remain inactive;
+the release-owned [transport route](../../mnemion/product_telemetry/transport-route.json)
+also has a null address. No collector, production analytics or qualified anonymous
+ingress is deployed.
+
+The new owners offer delivery after an owned observation is committed, within an
+already awake desktop, browser page or registered Python service/local stdio loop. They do
+not add an idle scheduler, one-shot CLI keepalive or shutdown flush. Active
+owner/lifecycle source checks and a **19-assertion actual Chromium journey**
+passed in the [current report](../validation/2026-10-24-telemetry-app-owners.md).
+That journey used synthetic CPU admission, real heap readings and normal browser
+networking; it does not qualify actual pressure sensors. Unknown native metering requires
+an explicit unmetered declaration, and unsupported browser pressure/heap sensors
+refuse delivery. Fresh browser organization-policy refresh, full workflow/owner
+coverage, whole-wire/resource measurements and native/web release acceptance
+remain open.
 
 The later [delivery components](anonymous-product-telemetry-delivery.md) implement
 a four-byte randomized body, fixed weekly aggregation, an ASGI adapter and a
@@ -196,7 +228,9 @@ probe then recorded **1.19 MiB** added RSS across 32 paired workflows after
 all-platform or CPU overhead, or replace the cold measurements. The background
 batch's final builds/input inventory, main integration and source CI passed;
 full resource/platform acceptance remains pending.
-There is still no sender or deployed collector; V08 remains Building.
+Those earlier checks did not qualify the later senders or application-owner
+wiring. Collection is still unavailable, no collector is deployed, and V08
+remains Building.
 
 Saved source checks passed **10 policy tests** after the opt-out revision change,
 **12 native bridge/operator tests, 26 web/CSP tests and seven browser policy
@@ -308,8 +342,9 @@ The following **23 October design example** is retained as a wire-format
 proposal. Its labels and buckets are not the current local encoding in the
 [versioned catalog](anonymous-product-telemetry-catalog.md) or the later
 [delivery component format](anonymous-product-telemetry-delivery.md). That source
-format defines bounded cohort views and an ingress adapter, but has no sender,
-installed delivery or qualified endpoint. The fixed-enum requirement still
+format defines bounded cohort views and an ingress adapter. Later source adds
+senders and owner wiring, but installed delivery and a qualified endpoint remain
+unaccepted. The fixed-enum requirement still
 excludes arbitrary combinations, exact timestamps and identity fields. Today's
 app/native preview remains empty of outbound data.
 

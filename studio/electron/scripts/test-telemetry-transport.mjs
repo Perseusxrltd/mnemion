@@ -10,6 +10,7 @@ import { createServer, getCACertificates, setDefaultCACertificates } from 'node:
 import { constants } from 'node:crypto'
 import dns from 'node:dns'
 import { NativeTelemetryDelivery } from '../dist/telemetry-delivery.js'
+import { DesktopTelemetryActivity } from '../dist/telemetry-activity.js'
 import { nativeTelemetryDefinitions } from '../dist/telemetry-store.js'
 import { sendNativeTelemetry, TelemetryEndpoint } from '../dist/telemetry-transport.js'
 
@@ -84,7 +85,7 @@ async function peer(t, mode = 'success') {
     release: () => release(), connections: () => connections }
 }
 
-async function installation(t, endpoint) {
+async function installation(t, endpoint, options = {}) {
   const temporary = await mkdtemp(join(tmpdir(), 'mnemion-native-telemetry-'))
   t.after(() => rm(temporary, { recursive: true, force: true }))
   const root = join(temporary, 'private'), company = join(temporary, 'company.json')
@@ -109,8 +110,12 @@ print(json.dumps(result))
 `, { root, company, destination, action })
   const { disclosure, catalog } = nativeTelemetryDefinitions()
   assert.equal(disclosure.collection_available, false)
-  const store = new NativeTelemetryDelivery(root, { ...disclosure, collection_available: true, destination }, catalog, company)
+  const active = { ...disclosure, collection_available: true, destination }
+  const store = options.activity
+    ? new DesktopTelemetryActivity(root, active, catalog, options.conditions ?? (() => ({ network: 'unmetered', constrained: false })), company, endpoint.address)
+    : new NativeTelemetryDelivery(root, active, catalog, company)
   const stamp = invoke('init')
+  if (options.activity) { t.after(() => store.closeDelivery()); return { store, stamp, invoke } }
   assert.equal(await store.record({ kind: 'submission', workflow: 'memory.recall', surface: 'desktop' }, stamp), true)
   const report = await store.reserve(stamp, { network: 'unmetered', constrained: false })
   assert.ok(report)
@@ -134,6 +139,35 @@ test('native TLS sends one fixed four-byte request without DNS or ambient creden
   assert.deepEqual(server.requests[0].headers.split('\r\n'), ['POST /v1/report HTTP/1.1',
     `Host: ${server.endpoint.authority()}`, 'Content-Type: application/octet-stream', 'Content-Length: 4', 'Connection: close'])
   f.cleaned()
+})
+
+test('ordinary desktop recording owns a real TLS send without a manual reserve or sender call', async t => {
+  const server = await peer(t), f = await installation(t, server.endpoint, { activity: true })
+  assert.equal(await f.store.record({ kind: 'submission', workflow: 'memory.recall', surface: 'desktop' }, f.stamp), true)
+  await f.store.deliverySettled()
+  assert.equal(server.requests.length, 1)
+  assert.equal(server.requests[0].body.length, 4)
+  assert.deepEqual(f.invoke('inspect'), { leases: 0, attempts: 1 })
+  assert.equal(await f.store.record({ kind: 'submission', workflow: 'memory.save', surface: 'desktop' }, f.stamp), true)
+  await f.store.deliverySettled()
+  assert.equal(server.requests.length, 1)
+})
+
+test('the desktop owner pauses before dispatch and cancels when actual admission changes', async t => {
+  let constrained = false
+  const server = await peer(t, 'hold'), f = await installation(t, server.endpoint,
+    { activity: true, conditions: () => ({ network: 'unmetered', constrained }) })
+  f.store.pauseDelivery('suspend'); f.store.pauseDelivery('update'); f.store.resumeDelivery('suspend')
+  assert.equal(await f.store.record({ kind: 'submission', workflow: 'memory.recall', surface: 'desktop' }, f.stamp), true)
+  await f.store.deliverySettled()
+  assert.deepEqual(f.invoke('inspect'), { leases: 0, attempts: 0 })
+  f.store.resumeDelivery('update')
+  assert.equal(await f.store.record({ kind: 'submission', workflow: 'memory.save', surface: 'desktop' }, f.stamp), true)
+  await server.entered
+  constrained = true
+  await f.store.deliverySettled()
+  assert.deepEqual(f.invoke('inspect'), { leases: 0, attempts: 1 })
+  assert.equal(server.connections(), 1)
 })
 
 test('simultaneous and response-pending native sends cannot steal the winner or open another socket', async t => {

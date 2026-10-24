@@ -14,7 +14,11 @@ now has source/runtime and isolated loopback component evidence. The later
 also exist in source: the final Electron selection passed **32 checks with two
 Windows-only skips**, and **65 browser source checks** passed. Actual loopback
 TLS/collector journeys passed **22 browser checks and 18 native checks**.
-There is **no active product sender,
+The subsequent [application-owner batch](../validation/2026-10-24-telemetry-app-owners.md)
+adds connection controls, live environment checks and opportunistic delivery
+wiring in source. Its source checks and actual Chromium owner fixture passed;
+CPU admission in that fixture was synthetic, and full sensor/resource/platform
+acceptance remains open. There is **no active product sender,
 installed owner integration or production activation**; `collection_available: false`, `destination: null`
 and the empty outbound preview remain unchanged.
 
@@ -24,9 +28,9 @@ wire usage or installed sender cancellation.
 
 ## One private native/Python allowance
 
-[Policy storage version 4](../../mnemion/product_telemetry/policy.py) adds a
-seven-slot attempt ledger and one delivery-state row to the existing private
-SQLite policy database. Native and Python processes using the same OS account
+[Policy storage version 5](../../mnemion/product_telemetry/policy.py) retains the
+seven-slot attempt ledger and delivery-state row introduced in version 4, and
+adds the private `connection_mode` preference. Native and Python processes using the same OS account
 and configured store serialize reservations with the same database transactions
 used for choice changes. This is not a person-wide allowance across independent
 installations, browser profiles or copied stores. The public control schema
@@ -42,10 +46,28 @@ version is unchanged.
 
 Reservations require current disclosure and enabled policy, matching revision
 and private `store_generation`, a permitted metric group, usable queued cells,
-and an explicitly unmetered, unconstrained connection observation. Unknown or
-metered connectivity and pressure conservatively refuse the attempt. The future
-sender must provide fresh observations; these components do not detect a network
-or start a connection themselves.
+and admissible connection/resource conditions. The later owner components supply
+current local gauges at admission and during the active attempt. Their source
+wiring does not establish all-platform sensing or resource acceptance.
+
+| Persistent connection choice | Delivery admission |
+| --- | --- |
+| `auto` (default) | Unknown metering refuses the attempt; Wi-Fi/Ethernet alone does not prove an unlimited plan. |
+| `unmetered` | An explicit declaration resolves unknown metering only. Detected data limits, offline state, pressure and privacy restrictions still refuse delivery. |
+| `metered` | Delivery is paused regardless of the observation. |
+
+App/native processes share this choice in their private OS-account store;
+browser choice remains local to its origin/profile. It is not tied to a network
+name or address and persists until changed. Explicit configuration clears queued
+measurements and the lease while preserving spent attempts/cooldown. A stale
+opt-out preserves a newer connection choice; an omitted field also preserves it.
+Editing the connection choice does not acknowledge an unseen disclosure.
+
+Explicit native/Python `configure` permits up to **250 ms per busy SQLite lock**
+after a brief-reader regression exposed a failed opt-out. This is not a total
+250 ms bound for the entire action or a guarantee that a persistent lock can be
+overcome. Producers and delivery retain zero lock waiting; no retry queue or
+spending refund is added.
 
 Backward wall-clock movement refuses reservations rather than pruning spending
 or restoring allowance. The ledger reader also checks that its latest attempt
@@ -55,7 +77,9 @@ Busy, damaged, unsafe or unsupported storage fails closed. Reading status does
 not initialize or migrate a store; older supported controls stores report
 `upgrade_required` for delivery accounting. Supported
 Python policy writes migrate them within the existing transaction, preserving
-the choice and existing generation rules. This is not automatic repair of
+the choice, generation rules and any existing spent ledger. Adding the version-5
+connection preference defaults older stores to `auto`; it does not grant a new
+allowance. This is not automatic repair of
 damaged settings.
 
 ## Reservation consumes the queue
@@ -136,7 +160,7 @@ allowance. No account, device or cross-origin identifier joins those stores.
 
 | Boundary | Native/Python | Browser |
 | --- | --- | --- |
-| Durable state | Existing private SQLite policy database, storage version 4 | Origin-local localStorage choice version 3, separate budget version 1 and the existing aggregate queue |
+| Durable state | Existing private SQLite policy database, storage version 5 | Origin-local localStorage choice version 4, separate budget version 1 and the existing aggregate queue |
 | Serialization | SQLite transaction shared with explicit choice changes | The same privacy Web Lock for choice, producer writes, reservation and final handoff; delivery refuses an unavailable or busy lock |
 | Queue consumption | Attempt accounting and queue deletion commit together | Spending and a clear intent are written first; queue cleanup must finish before new work is admitted |
 
@@ -176,7 +200,7 @@ claim prevents competing calls from sending twice or cancelling the winner;
 the later transport report records its separate component evidence. No browser
 product sender is wired. Bytes already handed to a transport cannot be recalled.
 
-Only an owned active attempt installs storage-change and page-hide listeners,
+Only an owned active attempt installs the transport watcher's storage-change and page-hide listeners,
 same-tab invalidation and nominal 25 ms checks. Cancellation removes these
 listeners and timers, clears the report and attempts matching-lease cleanup.
 An abort callback fault is suppressed without a retry. There is no idle watcher,
@@ -250,8 +274,8 @@ include cleanup, ledger-invariant, monotonic-deadline and abort-fault handling.
 
 The conditional per-report `ln(3)` bound still protects only the sampled category
 in a chosen permitted view. A seven-report composition bound depends on every
-actual attempt using this shared allowance; no sender integration establishes
-that yet. These local controls do not establish participation, policy-choice,
+actual attempt using this shared allowance; the source owner checks do not yet
+qualify every installed path. These local controls do not establish participation, policy-choice,
 person-wide or lifetime privacy. They do not recover spending after a store is
 lost or recreated, or detect an unobservable whole-machine snapshot rollback.
 Rejection of an older prepared report after recreation has a
@@ -259,7 +283,7 @@ Rejection of an older prepared report after recreation has a
 is distinct from recovering lost allowance: the generation/disclosure rules
 cannot reconstruct a missing attempt ledger.
 
-Wiring the canonical owners to their allowance, browser release/resource qualification,
+Qualification of the new canonical-owner wiring, browser release/resource acceptance,
 actual sender integration and cancellation, conservative accounting of all
 connection/retry overhead, qualified ingress and retention, and all six native
 targets plus web remain open. Earlier component resource diagnostics do not

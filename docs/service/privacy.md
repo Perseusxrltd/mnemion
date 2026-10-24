@@ -1,7 +1,7 @@
 # Mnemion privacy policy
 
 Updated: **2026-10-24**. This describes the shared-memory platform, the legacy
-library correction and the source-only privacy controls below.
+library correction and the inactive source telemetry components below.
 
 ## Your organization's data
 
@@ -47,15 +47,16 @@ the selected provider/operator, not by Mnemion's local model behavior.
 ## Product analytics and legacy vendor telemetry
 
 Mnemion's [V08 product analytics](../implementation/anonymous-product-telemetry.md)
-are **Building, with source-only privacy controls; collection remains inactive**.
+are **Building, with source-only controls, components and owner wiring; collection remains inactive**.
 No V08 measurement instrumentation or collector is deployed.
 Source now includes a pre-login/offline `/privacy` page and native
 `mnemion-service telemetry` controls. They save a default-enabled preference;
 they do not enable collection. The disclosure currently states
 `collection_available: false` and `destination: null`, and the payload preview
-shows no outbound body and zero outgoing bytes. No product sender, production
-analytics or anonymous ingress is active or qualified. These controls have not
-yet received native release acceptance.
+shows no outbound body and zero outgoing bytes. No product statistics are sent,
+and no production analytics or anonymous ingress is deployed. The bounded
+sender/collector components and owner wiring remain unreleased; their checks do
+not establish installed-app or public-ingress acceptance.
 They and this documentation update are excluded from the isolated 4.46.6
 dependency-security release.
 
@@ -68,6 +69,28 @@ enabled preference does not acknowledge an unknown destination. Damaged or
 unreadable settings keep collection off; there is no automatic repair in this
 source checkpoint. See the [privacy control guide](../guides/product-telemetry-controls.md)
 for offline usage, status and storage limits.
+
+The current [source batch](../validation/2026-10-24-telemetry-app-owners.md) adds
+**Telemetry connection settings** and the native/private-stdin `connection_mode`
+field: `auto`, `unmetered` or `metered`. Automatic mode pauses delivery when
+metering is unknown; an unmetered declaration resolves only that uncertainty;
+metered mode pauses delivery. Detected data limits, resource pressure and
+privacy restrictions still take priority. The setting persists until changed
+without storing a network name or address. A stale opt-out preserves a newer
+connection choice, and migration/choice changes retain spent delivery accounting.
+
+Opportunistic desktop/browser and Python service/local stdio owners now have
+source checks and an isolated actual-browser journey. CPU admission in that
+journey was synthetic; real sensor and resource qualification remains open.
+They do not activate collection, add an idle scheduler or flush on
+shutdown; the release route address is also null. Unknown native metering and
+unsupported browser pressure/heap capabilities can prevent an attempt. Fresh
+browser organization-policy refresh, public-ingress metadata/log privacy,
+whole-wire/resource limits and all-platform release acceptance remain open.
+
+Explicit native privacy changes may wait up to 250 ms per busy SQLite lock to
+accommodate a brief reader. A persistent busy lock can still produce a visible
+save failure. Measurement producers and delivery do not wait for those locks.
 
 Private workspace operational counters and security audit records remain
 separate. Product telemetry opt-out does not disable those records or the

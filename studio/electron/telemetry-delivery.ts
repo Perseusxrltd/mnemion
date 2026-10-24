@@ -19,7 +19,7 @@ type Spent = { slot: number; at_ms: number; reserved_bytes: number }
 type Network = { network: 'unknown' | 'metered' | 'unmetered'; constrained: boolean }
 
 function state(database: DatabaseSync): { current: State; spent: Spent[] } {
-  if (database.prepare('PRAGMA user_version').get()?.user_version !== 4) throw invalid()
+  if (database.prepare('PRAGMA user_version').get()?.user_version !== 5) throw invalid()
   const row = database.prepare('SELECT clock_ms, next_ms, lease_token, lease_deadline_ms FROM delivery_state WHERE singleton=1').get()
   if (!row || !integer(row.clock_ms) || !integer(row.next_ms) || !integer(row.lease_deadline_ms) ||
       (row.lease_token !== null && !token(row.lease_token)) ||
@@ -75,7 +75,7 @@ export class NativeTelemetryDelivery extends NativeTelemetryStore {
   private encoder?: TelemetryWire
   constructor(root: string, disclosure: NativeTelemetryDisclosure, catalog: MeasurementCatalog,
     companyFile = nativeCompanyPolicyPath(), private readonly now = () => Date.now(),
-    private readonly monotonic = () => performance.now()) {
+    private readonly monotonic = () => performance.now(), private readonly environment?: () => Network) {
     super(root, disclosure, catalog, companyFile)
   }
 
@@ -85,17 +85,20 @@ export class NativeTelemetryDelivery extends NativeTelemetryStore {
   }
 
   async reserve(stamp: TelemetryStamp, network: Network = { network: 'unknown', constrained: true }, cohorts: unknown = {}): Promise<PreparedTelemetryReport | null> {
-    if (!this.available || !stamp || !integer(stamp.revision, 2147483646) || !token(stamp.store_generation) ||
-        network.network !== 'unmetered' || network.constrained !== false) return null
+    if (!this.available || !stamp || !integer(stamp.revision, 2147483646) || !token(stamp.store_generation)) return null
     const expected = { ...stamp }
     const started = this.monotonic()
     let database: DatabaseSync | undefined
     try {
+      const observed = this.environment ? this.environment() : network
+      if (!['unknown', 'unmetered'].includes(observed.network) || observed.constrained !== false) return null
       const now = this.now()
       if (!integer(now, MAX_CLOCK - DAY - JITTER)) return null
       database = await this.open(true)
       database.exec('BEGIN IMMEDIATE')
       const preference = this.preferences(database), company = this.company()
+      if (preference.connection_mode === 'metered' ||
+          (observed.network === 'unknown' && preference.connection_mode !== 'unmetered')) return null
       if (preference.revision !== expected.revision || preference.store_generation !== expected.store_generation ||
           preference.enabled !== 1 || preference.disclosure_version !== this.disclosure.version || !company.enabled || !company.groups.length) return null
       const { current, spent } = state(database)
@@ -133,10 +136,15 @@ export class NativeTelemetryDelivery extends NativeTelemetryStore {
     if (!(report instanceof PreparedTelemetryReport) || report.closed || !this.available) return false
     const now = this.now(), { current } = state(database)
     const preference = this.preferences(database), company = this.company()
+    if (this.environment) {
+      const observed = this.environment()
+      if (observed.constrained !== false || !['unknown', 'unmetered'].includes(observed.network) ||
+          (observed.network === 'unknown' && preference.connection_mode !== 'unmetered')) return false
+    }
     return integer(now) && this.monotonic() < report.monotonicDeadline && current.clock_ms <= now && now < current.lease_deadline_ms &&
       current.lease_deadline_ms === report.deadline && current.lease_token === report.ticket &&
       preference.revision === report.stamp.revision && preference.store_generation === report.stamp.store_generation &&
-      preference.enabled === 1 && preference.disclosure_version === this.disclosure.version && company.enabled &&
+      preference.enabled === 1 && preference.connection_mode !== 'metered' && preference.disclosure_version === this.disclosure.version && company.enabled &&
       company.groups.includes(report.group)
   }
 

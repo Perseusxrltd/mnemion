@@ -65,6 +65,29 @@ test('a permissive company policy cannot override an explicit opt-out', () => {
   assert.equal(client.status().reason, 'user_disabled')
 })
 
+test('connection choices do not acknowledge disclosure and stale opt-out preserves newer settings', () => {
+  const { client } = installation(), first = client(), second = client()
+  const current = first.configure({ enabled: true, expected_revision: 0, connection_mode: 'unmetered' })
+  assert.equal(current.connection_mode, 'unmetered')
+  assert.equal(current.disclosure_version, 0)
+  assert.equal(current.effective_enabled, false)
+  const off = second.configure({ enabled: false, expected_revision: 0, connection_mode: 'metered' })
+  assert.equal(off.reason, 'user_disabled')
+  assert.equal(off.connection_mode, 'unmetered')
+  const retained = first.configure({ enabled: true, expected_revision: off.revision, expected_generation: off.store_generation })
+  assert.equal(retained.connection_mode, 'unmetered')
+  assert.throws(() => first.configure({ enabled: true, expected_revision: off.revision,
+    expected_generation: off.store_generation, connection_mode: 'auto' }), /changed in another tab/)
+})
+
+test('arbitrary connection choices never enter browser storage', () => {
+  for (const connection_mode of [null, true, 1, [], {}, 'wifi', 'PRIVATE_SENTINEL']) {
+    const { client, values } = installation()
+    assert.throws(() => client().configure({ enabled: false, expected_revision: 0, connection_mode }), /Choose whether/)
+    assert.equal(values.size, 0)
+  }
+})
+
 test('corrupt private preference and pending bytes stay out of status and preview', () => {
   for (const key of [choiceKey, queueKey]) {
     const { storage, client } = installation()

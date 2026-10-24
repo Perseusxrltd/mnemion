@@ -68,12 +68,14 @@ def installation(tmp_path, monkeypatch, certificates):
     monkeypatch.setattr(ssl, "create_default_context", trusted_context)
     budget = delivery.DeliveryBudget(root)
 
-    def prepare(endpoint):
+    def prepare(endpoint, *, reserve=True):
         authority = endpoint.host if endpoint.port == 443 else f"{endpoint.host}:{endpoint.port}"
         monkeypatch.setattr(policy, "COLLECTOR_URL", f"https://{authority}/v1/report")
         state = policy.configure(
             root, {"enabled": True, "expected_revision": 0, "disclosure_version": 1}
         )
+        if not reserve:
+            return state
         assert aggregate.record(
             root,
             {"kind": "submission", "workflow": "memory.recall", "surface": "native_agent"},
@@ -100,6 +102,70 @@ def installation(tmp_path, monkeypatch, certificates):
     return SimpleNamespace(
         root=root, budget=budget, prepare=prepare, cleaned=cleaned, context=certificates[1]
     )
+
+
+@pytest.mark.parametrize("ending", ["success", "shutdown", "pressure"])
+def test_existing_loop_accepts_threaded_workflow_and_owns_tls_cleanup(installation, ending):
+    from mnemion.product_telemetry import activity, workflow
+
+    f = installation
+
+    async def scenario():
+        async with peer(f.context, "success" if ending == "success" else "hold") as server:
+            f.prepare(server.endpoint, reserve=False)
+            conditions = {"network": "unmetered", "constrained": False}
+            owner = activity.Activity(f.root, server.endpoint, lambda: conditions)
+            with activity._registry_lock:
+                assert owner.root not in activity._owners
+                activity._owners[owner.root] = owner
+            try:
+
+                def work():
+                    operation = workflow.begin("memory.recall", "native_agent", root=f.root)
+                    assert operation is not None
+                    operation.finish("success", result_items=3)
+
+                await asyncio.to_thread(work)
+                await asyncio.wait_for(server.entered.wait(), 3)
+                if ending == "shutdown":
+                    await owner.close()
+                else:
+                    if ending == "pressure":
+                        conditions["constrained"] = True
+                    task = owner._task
+                    if task is not None:
+                        await asyncio.wait_for(task, 3)
+                assert len(server.requests) == 1
+                assert len(server.requests[0][1]) == 4
+                with closing(sqlite3.connect(f.root / policy.DATABASE_NAME)) as db:
+                    assert db.execute("SELECT lease_token FROM delivery_state").fetchone() == (
+                        None,
+                    )
+                    assert db.execute("SELECT count(*) FROM delivery_attempts").fetchone() == (1,)
+                # New work after completion cannot create an extra immediate
+                # attempt or flush on shutdown, even when called by a thread.
+                await asyncio.to_thread(work)
+                await owner.close()
+                assert len(server.requests) == 1
+            finally:
+                with activity._registry_lock:
+                    del activity._owners[owner.root]
+                await owner.close()
+
+    asyncio.run(scenario())
+
+
+def test_unavailable_application_owner_does_not_change_lifespan_errors(tmp_path):
+    from mnemion.product_telemetry.activity import application_delivery
+
+    async def scenario():
+        with pytest.raises(ValueError, match="application failure"):
+            async with application_delivery(root=tmp_path / "absent") as owner:
+                assert owner is None
+                raise ValueError("application failure")
+
+    asyncio.run(scenario())
+    assert not (tmp_path / "absent").exists()
 
 
 @asynccontextmanager

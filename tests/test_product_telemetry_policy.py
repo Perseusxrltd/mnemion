@@ -52,6 +52,39 @@ def test_pending_collector_cannot_be_preapproved(installation):
     assert not root.exists()
 
 
+def test_connection_choice_preserves_disclosure_and_stale_opt_out_wins(installation):
+    root, _ = installation
+    current = policy.configure(
+        root, {"enabled": True, "expected_revision": 0, "connection_mode": "unmetered"}
+    )
+    assert current["connection_mode"] == "unmetered"
+    assert current["disclosure_version"] == 0 and not current["effective_enabled"]
+    off = policy.configure(
+        root, {"enabled": False, "expected_revision": 0, "connection_mode": "metered"}
+    )
+    assert off["connection_mode"] == "unmetered" and off["reason"] == "user_disabled"
+    retained = choice(root, True, revision=off["revision"])
+    assert retained["connection_mode"] == "unmetered"
+    with pytest.raises(policy.PolicyError, match="telemetry_choice_changed"):
+        policy.configure(
+            root,
+            {
+                "enabled": True,
+                "expected_revision": off["revision"],
+                "expected_generation": off["store_generation"],
+                "connection_mode": "metered",
+            },
+        )
+
+
+@pytest.mark.parametrize("mode", [None, True, 1, [], {}, "wifi", "PRIVATE_SENTINEL"])
+def test_invalid_connection_choices_never_create_storage(installation, mode):
+    root, _ = installation
+    with pytest.raises(policy.PolicyError, match="^telemetry_invalid_choice$"):
+        policy.configure(root, {"enabled": False, "expected_revision": 0, "connection_mode": mode})
+    assert not root.exists()
+
+
 def test_disable_wins_over_stale_enable_and_clears_persisted_pending(installation):
     root, _ = installation
     disabled = choice(root, False)
@@ -74,6 +107,31 @@ def test_disable_wins_over_stale_enable_and_clears_persisted_pending(installatio
     assert enabled_preference["pending_records"] == 0
     assert (root / policy.DATABASE_NAME).stat().st_size <= policy.MAX_DATABASE_BYTES
     assert not (root / (policy.DATABASE_NAME + "-wal")).exists()
+
+
+def test_explicit_opt_out_waits_for_a_brief_existing_reader(installation):
+    from concurrent.futures import ThreadPoolExecutor
+    from contextlib import closing
+    from threading import Event
+    import time
+
+    root, _ = installation
+    choice(root, True)
+    ready = Event()
+
+    def reader():
+        with closing(sqlite3.connect(root / policy.DATABASE_NAME)) as db:
+            db.execute("BEGIN")
+            db.execute("SELECT * FROM preferences").fetchone()
+            ready.set()
+            time.sleep(0.05)
+
+    with ThreadPoolExecutor(max_workers=1) as threads:
+        future = threads.submit(reader)
+        assert ready.wait(1)
+        disabled = choice(root, False)
+        future.result()
+    assert disabled["reason"] == "user_disabled"
 
 
 def test_choice_survives_separate_native_processes_without_desktop(tmp_path):

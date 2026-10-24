@@ -47,6 +47,7 @@ studio/electron/*
 !studio/electron/telemetry-catalog.ts
 !studio/electron/telemetry-workflow.ts
 !studio/electron/telemetry-wire.ts
+!studio/electron/telemetry-owner.ts
 !studio/README.md
 !assets/
 assets/*

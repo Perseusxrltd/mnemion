@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, ShieldCheck } from 'lucide-react'
 import BrandMark from '../components/BrandMark'
-import type { TelemetryPreview, TelemetryStatus } from '../../../shared/product-telemetry'
+import type { TelemetryConnectionMode, TelemetryPreview, TelemetryStatus } from '../../../shared/product-telemetry'
 import { choiceKey, telemetryConfigure, telemetryPreview, telemetryStatus } from './telemetry-policy'
 import './workspace.css'
 
@@ -34,13 +34,17 @@ export default function Privacy() {
     window.addEventListener('focus', refresh)
     return () => { window.removeEventListener('storage', changed); window.removeEventListener('focus', refresh) }
   }, [refresh])
-  async function choose(enabled: boolean) {
+  async function choose(enabled: boolean, connectionMode?: TelemetryConnectionMode) {
     if (!status || busy) return
     setBusy(true); setPendingChoice(enabled); setError(undefined)
     try {
       setStatus(await telemetryConfigure({ enabled, expected_revision: status.revision,
         expected_generation: status.store_generation,
-        disclosure_version: enabled && status.collection_available ? status.required_disclosure_version : 0 }))
+        // Editing a connection setting never acknowledges an unseen disclosure.
+        disclosure_version: connectionMode === undefined
+          ? enabled && status.collection_available ? status.required_disclosure_version : 0
+          : status.disclosure_version,
+        ...(connectionMode === undefined ? {} : { connection_mode: connectionMode }) }))
       setPreview(undefined)
     } catch (error) {
       setError(error instanceof Error ? error.message : 'The privacy choice could not be saved.')
@@ -69,6 +73,17 @@ export default function Privacy() {
           <button className="ws-button ws-quiet" disabled={busy} onClick={() => void refresh()}>Refresh privacy status</button>
         </div>
         {status.company_policy.state !== 'unmanaged' && <p><small>Your organization can restrict collection. It cannot override your opt-out.</small></p>}
+        <details><summary>Telemetry connection settings</summary>
+          <label className="ws-field" htmlFor="telemetry-connection-mode"><span>Connection for sending statistics</span>
+          <select id="telemetry-connection-mode" value={status.connection_mode ?? 'auto'}
+            disabled={busy || status.storage === 'unreadable'}
+            onChange={event => void choose(status.user_enabled, event.target.value as TelemetryConnectionMode)}>
+            <option value="auto">Automatic detection</option>
+            <option value="unmetered">This connection is unmetered</option>
+            <option value="metered">Metered connection — pause sending</option>
+          </select></label>
+          <p><small>Automatic detection pauses sending when metering is unknown. Choose unmetered only if your connection has no data limit. Detected data limits, resource pressure and your privacy choice always take priority. No network name or address is saved.</small></p>
+        </details>
       </section>
       <section className="ws-panel" aria-labelledby="telemetry-measurements-heading">
         <h2 id="telemetry-measurements-heading">{status.collection_available ? 'What is measured' : 'Planned measurements'}</h2>

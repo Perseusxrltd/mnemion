@@ -32,12 +32,14 @@ class Workflow:
                 {"kind": "resource", "metric": name, "value": value}
                 for name, value in values.items()
             ]
-            aggregate.record_many(
+            recorded = aggregate.record_many(
                 self._root,
                 samples,
                 expected_revision=self._revision,
                 expected_generation=self._generation,
             )
+            if recorded:
+                self._offer_delivery()
         except Exception:
             return
 
@@ -65,15 +67,22 @@ class Workflow:
                 "workflow": self._workflow,
                 "surface": self._surface,
             }
-            aggregate.record_many(
+            recorded = aggregate.record_many(
                 self._root,
                 [submission, value],
                 expected_revision=self._revision,
                 expected_generation=self._generation,
             )
+            if recorded:
+                self._offer_delivery()
         except Exception:
             # Optional measurement never changes the user's operation or output.
             return
+
+    def _offer_delivery(self) -> None:
+        from .activity import offer_recorded
+
+        offer_recorded(self._root, self._revision, self._generation)
 
 
 def begin(workflow: str, surface: str, *, root: Path | None = None) -> Workflow | None:

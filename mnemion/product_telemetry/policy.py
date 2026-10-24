@@ -30,7 +30,8 @@ MAX_PENDING_AGE_SECONDS = 48 * 3600
 MAX_DOCUMENT_BYTES = 8192
 METRIC_GROUPS = tuple(CONTRACT["metric_groups"])
 DATABASE_NAME = "product-telemetry.sqlite3"
-STORAGE_VERSION = 4
+STORAGE_VERSION = 5
+CONNECTION_MODES = ("auto", "unmetered", "metered")
 
 # Attempt accounting is not a measurement or a stable analytics identity. It
 # survives opt-out and queue erasure, so changing a choice cannot buy another
@@ -81,7 +82,8 @@ CREATE TABLE preferences (
     revision INTEGER NOT NULL CHECK (revision BETWEEN 0 AND 2147483647),
     enabled INTEGER NOT NULL CHECK (enabled IN (0, 1)),
     disclosure_version INTEGER NOT NULL CHECK (disclosure_version BETWEEN 0 AND 1000000),
-    store_generation TEXT NOT NULL CHECK (length(store_generation)=32 AND store_generation NOT GLOB '*[^0-9a-f]*')
+    store_generation TEXT NOT NULL CHECK (length(store_generation)=32 AND store_generation NOT GLOB '*[^0-9a-f]*'),
+    connection_mode TEXT NOT NULL DEFAULT 'auto' CHECK (connection_mode IN ('auto', 'unmetered', 'metered'))
 );
 CREATE TABLE pending (
     cell INTEGER PRIMARY KEY CHECK (cell BETWEEN 0 AND 65535),
@@ -225,7 +227,7 @@ def _preferences(connection: sqlite3.Connection) -> dict:
     version = connection.execute("PRAGMA user_version").fetchone()[0]
     if (
         connection.execute("PRAGMA application_id").fetchone()[0] != APPLICATION_ID
-        or version not in (1, 2, 3, STORAGE_VERSION)
+        or version not in (1, 2, 3, 4, STORAGE_VERSION)
         or connection.execute("PRAGMA journal_mode").fetchone()[0] != "delete"
     ):
         raise PolicyError("telemetry_storage_unavailable")
@@ -247,11 +249,19 @@ def _preferences(connection: sqlite3.Connection) -> dict:
         ).fetchone()[0]
         if not valid_generation(generation):
             raise PolicyError("telemetry_storage_unavailable")
+    connection_mode = "auto"
+    if version >= 5:
+        connection_mode = connection.execute(
+            "SELECT connection_mode FROM preferences WHERE singleton=1"
+        ).fetchone()[0]
+        if type(connection_mode) is not str or connection_mode not in CONNECTION_MODES:
+            raise PolicyError("telemetry_storage_unavailable")
     return {
         "revision": row[0],
         "enabled": bool(row[1]),
         "disclosure_version": row[2],
         "store_generation": generation,
+        "connection_mode": connection_mode,
     }
 
 
@@ -275,12 +285,18 @@ def _queue_schema(connection: sqlite3.Connection) -> None:
     if version <= 2:
         connection.execute("ALTER TABLE preferences ADD COLUMN store_generation TEXT")
         connection.execute("UPDATE preferences SET store_generation=?", (secrets.token_hex(16),))
-    statement = ""
-    for line in DELIVERY_SCHEMA.splitlines(keepends=True):
-        statement += line
-        if sqlite3.complete_statement(statement):
-            connection.execute(statement)
-            statement = ""
+    if version < 4:
+        statement = ""
+        for line in DELIVERY_SCHEMA.splitlines(keepends=True):
+            statement += line
+            if sqlite3.complete_statement(statement):
+                connection.execute(statement)
+                statement = ""
+    if version < 5:
+        connection.execute(
+            "ALTER TABLE preferences ADD COLUMN connection_mode TEXT NOT NULL DEFAULT 'auto' "
+            "CHECK (connection_mode IN ('auto', 'unmetered', 'metered'))"
+        )
     connection.execute(f"PRAGMA user_version={STORAGE_VERSION}")
 
 
@@ -320,7 +336,9 @@ def _initialize(root: Path) -> bool:
             + SCHEMA
         )
         connection.execute(
-            "INSERT INTO preferences VALUES (1, 0, 1, 0, ?)", (secrets.token_hex(16),)
+            "INSERT INTO preferences (singleton, revision, enabled, disclosure_version, "
+            "store_generation) VALUES (1, 0, 1, 0, ?)",
+            (secrets.token_hex(16),),
         )
         connection.commit()
     return True
@@ -331,7 +349,13 @@ def status(root: Path | None = None, *, policy_path: Path | None = None) -> dict
 
     root = root if root is not None else default_directory()
     company = company_policy(policy_path)
-    preference = {"revision": 0, "enabled": True, "disclosure_version": 0, "store_generation": None}
+    preference = {
+        "revision": 0,
+        "enabled": True,
+        "disclosure_version": 0,
+        "store_generation": None,
+        "connection_mode": "auto",
+    }
     storage, pending = "new", 0
     delivery_budget = budget_status()
     try:
@@ -374,6 +398,7 @@ def status(root: Path | None = None, *, policy_path: Path | None = None) -> dict
         "store_generation": preference["store_generation"],
         "default_enabled": True,
         "user_enabled": preference["enabled"],
+        "connection_mode": preference["connection_mode"],
         "effective_enabled": reason == "enabled",
         "reason": reason,
         "storage": storage,
@@ -388,7 +413,13 @@ def status(root: Path | None = None, *, policy_path: Path | None = None) -> dict
 
 
 def configure(root: Path | None, request: dict, *, policy_path: Path | None = None) -> dict:
-    fields = {"enabled", "expected_revision", "expected_generation", "disclosure_version"}
+    fields = {
+        "enabled",
+        "expected_revision",
+        "expected_generation",
+        "disclosure_version",
+        "connection_mode",
+    }
     if (
         not isinstance(request, dict)
         or set(request) - fields
@@ -397,6 +428,13 @@ def configure(root: Path | None, request: dict, *, policy_path: Path | None = No
         or not 0 <= request["expected_revision"] < 2147483647
         or type(request.get("disclosure_version", 0)) is not int
         or request.get("disclosure_version", 0) not in (0, DISCLOSURE_VERSION)
+        or (
+            "connection_mode" in request
+            and (
+                type(request["connection_mode"]) is not str
+                or request["connection_mode"] not in CONNECTION_MODES
+            )
+        )
         or (
             request.get("expected_generation") is not None
             and not valid_generation(request["expected_generation"])
@@ -410,26 +448,36 @@ def configure(root: Path | None, request: dict, *, policy_path: Path | None = No
     try:
         created = _initialize(root)
         with closing(_connect(root / DATABASE_NAME)) as connection:
+            # An explicit human/agent privacy change may briefly wait for an
+            # existing reader. Producers and delivery retain zero lock waiting.
+            connection.execute("PRAGMA busy_timeout=250")
             connection.execute("BEGIN IMMEDIATE")
             previous = _preferences(connection)
             # Opt-out wins over stale UI state. Re-enabling always requires the
             # current revision and cannot undo another process's newer choice.
-            if request["enabled"] and (
-                request["expected_revision"] != previous["revision"]
-                or request.get("expected_generation")
-                != (None if created else previous["store_generation"])
-            ):
+            stale = request["expected_revision"] != previous["revision"] or request.get(
+                "expected_generation"
+            ) != (None if created else previous["store_generation"])
+            if request["enabled"] and stale:
                 raise PolicyError("telemetry_choice_changed")
             _queue_schema(connection)
+            # A stale opt-out still wins, but cannot overwrite a newer network
+            # choice. Older clients that omit this field preserve it as well.
+            connection_mode = (
+                previous["connection_mode"]
+                if stale
+                else request.get("connection_mode", previous["connection_mode"])
+            )
             effective_acknowledgement = acknowledged if request["enabled"] else 0
             if (
                 not request["enabled"]
                 or request["enabled"] != previous["enabled"]
                 or effective_acknowledgement != previous["disclosure_version"]
+                or connection_mode != previous["connection_mode"]
             ):
                 connection.execute(
-                    "UPDATE preferences SET revision=revision+1, enabled=?, disclosure_version=? WHERE singleton=1",
-                    (int(request["enabled"]), effective_acknowledgement),
+                    "UPDATE preferences SET revision=revision+1, enabled=?, disclosure_version=?, connection_mode=? WHERE singleton=1",
+                    (int(request["enabled"]), effective_acknowledgement, connection_mode),
                 )
             # A new choice never resurrects queued history, including enabling
             # after opt-out. secure_delete also clears freed cells in this DB.

@@ -158,6 +158,71 @@ def test_http_never_uses_stdio_choice_or_allows_local_privacy_mutations(installa
     assert "mnemion_telemetry" not in [tool.name for tool in asyncio.run(public.list_tools())]
 
 
+def test_local_agent_connection_controls_preserve_stale_opt_out_without_measuring_it(installation):
+    server = gateway(lambda _request: pytest.fail("Privacy controls must stay local"))
+    current = policy.status(installation)
+    changed = call(
+        server,
+        "mnemion_telemetry",
+        {
+            "action": "configure",
+            "choice": {
+                "enabled": True,
+                "expected_revision": current["revision"],
+                "expected_generation": current["store_generation"],
+                "disclosure_version": current["disclosure_version"],
+                "connection_mode": "unmetered",
+            },
+        },
+    )
+    assert not changed.is_error
+    assert changed.structured_content["connection_mode"] == "unmetered"
+    off = call(
+        server,
+        "mnemion_telemetry",
+        {
+            "action": "configure",
+            "choice": {
+                "enabled": False,
+                "expected_revision": 0,
+                "disclosure_version": 0,
+                "connection_mode": "metered",
+            },
+        },
+    )
+    assert not off.is_error
+    assert off.structured_content["connection_mode"] == "unmetered"
+    assert off.structured_content["reason"] == "user_disabled"
+    assert cells(installation) == []
+
+
+def test_only_owned_stdio_lifespan_registers_an_optional_delivery_owner(monkeypatch):
+    from contextlib import asynccontextmanager
+    from mnemion.product_telemetry import activity
+
+    transitions = []
+
+    @asynccontextmanager
+    async def observed():
+        transitions.append("start")
+        try:
+            yield
+        finally:
+            transitions.append("stop")
+
+    monkeypatch.setattr(activity, "application_delivery", observed)
+    local = gateway(lambda _request: pytest.fail("No API request expected"))
+    remote = gateway(lambda _request: pytest.fail("No API request expected"), stdio=False)
+    assert remote.settings.lifespan is None
+
+    async def run():
+        async with local.settings.lifespan(local):
+            assert transitions == ["start"]
+
+    asyncio.run(run())
+    assert transitions == ["start", "stop"]
+
+
 def test_new_keyed_save_is_accepted_but_cached_and_unknown_receipts_are_suppressed(installation):
     replies = iter(["new", "replayed", None])
     space = str(uuid4())

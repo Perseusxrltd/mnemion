@@ -1,4 +1,4 @@
-import { app, dialog, ipcMain, net, safeStorage, shell, type BrowserWindow, type IpcMainInvokeEvent } from 'electron'
+import { app, dialog, ipcMain, net, powerMonitor, safeStorage, shell, type BrowserWindow, type IpcMainInvokeEvent } from 'electron'
 import { spawn, type ChildProcess } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { AsyncLocalStorage } from 'node:async_hooks'
@@ -25,6 +25,8 @@ import { HostProfiles } from './host-profiles.js'
 import { hostMessages } from './host-control-messages.js'
 import { ProductTelemetry, telemetryMessages } from './product-telemetry.js'
 import { NativeTelemetryStore, nativeTelemetryDefinitions } from './telemetry-store.js'
+import { DesktopTelemetryActivity } from './telemetry-activity.js'
+import { DesktopTelemetryConditions } from './telemetry-conditions.js'
 import { desktopIpcSelection, desktopTelemetryOrigins, measureDesktop } from './desktop-measurement.js'
 import type { TelemetryStamp } from '../shared/product-telemetry.js'
 import type { HostConnection, HostRequest } from '../shared/host-control.js'
@@ -193,7 +195,12 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
   let sources: DesktopSources | undefined
   let agentSetup: DesktopAgents | undefined
   let hosts: HostProfiles | undefined
-  let measurements: NativeTelemetryStore | undefined
+  let measurements: DesktopTelemetryActivity | undefined
+  const telemetryPauses = new Set<string>()
+  const telemetryConditions = new DesktopTelemetryConditions({ online: () => net.isOnline(),
+    thermal: () => powerMonitor.getCurrentThermalState() })
+  function pauseTelemetry(reason: string) { telemetryPauses.add(reason); measurements?.pauseDelivery(reason) }
+  function resumeTelemetry(reason: string) { telemetryPauses.delete(reason); measurements?.resumeDelivery(reason) }
   const backupSelections = new Map<string, { kind: 'folder' | 'file'; path: string }>()
   let localOpenGeneration = 0
   let localSwitching = false
@@ -315,7 +322,9 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
   function telemetryStore(): NativeTelemetryStore {
     if (!measurements) {
       const { disclosure, catalog } = nativeTelemetryDefinitions()
-      measurements = new NativeTelemetryStore(join(localBase(false), 'mnemion-product-telemetry'), disclosure, catalog)
+      measurements = new DesktopTelemetryActivity(join(localBase(false), 'mnemion-product-telemetry'), disclosure, catalog,
+        () => telemetryConditions.read())
+      for (const reason of telemetryPauses) measurements.pauseDelivery(reason)
     }
     return measurements
   }
@@ -1008,12 +1017,17 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
   })
 
   app.on('before-quit', () => {
+    pauseTelemetry('quit')
     connections?.lock()
     for (const child of children) child.kill()
     selections.clear()
     backupSelections.clear()
   })
-  app.on('will-quit', () => { backups?.close(); void sources?.close(); void agentSetup?.close(); void hosts?.close(); void operator?.close() })
+  app.on('will-quit', () => { measurements?.closeDelivery(); backups?.close(); void sources?.close(); void agentSetup?.close(); void hosts?.close(); void operator?.close() })
+  app.whenReady().then(() => {
+    powerMonitor.on('suspend', () => pauseTelemetry('suspend'))
+    powerMonitor.on('resume', () => resumeTelemetry('suspend'))
+  }).catch(() => {})
 
   return {
     localDiagnostic: () => localDiagnostic(local?.status.diagnostic),
@@ -1025,22 +1039,26 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
       if (localSwitching || (sources && !sources.pauseForUpdate())) return false
       if (agentSetup && !agentSetup.pauseForUpdate()) { sources?.resumeAfterUpdate(); return false }
       if (hosts && !hosts.pauseForUpdate()) { sources?.resumeAfterUpdate(); agentSetup?.resumeAfterUpdate(); return false }
+      pauseTelemetry('update')
       try {
         const stopped = await (local?.stopForUpdate() ?? Promise.resolve(true))
-        if (!stopped) { sources?.resumeAfterUpdate(); agentSetup?.resumeAfterUpdate(); hosts?.resumeAfterUpdate() }
+        if (!stopped) { resumeTelemetry('update'); sources?.resumeAfterUpdate(); agentSetup?.resumeAfterUpdate(); hosts?.resumeAfterUpdate() }
         return stopped
-      } catch (error) { sources?.resumeAfterUpdate(); agentSetup?.resumeAfterUpdate(); hosts?.resumeAfterUpdate(); throw error }
+      } catch (error) { resumeTelemetry('update'); sources?.resumeAfterUpdate(); agentSetup?.resumeAfterUpdate(); hosts?.resumeAfterUpdate(); throw error }
     },
-    resumeLocalAfterCancelledUpdate: async () => { try { await local?.cancelUpdateStop() } finally { sources?.resumeAfterUpdate(); agentSetup?.resumeAfterUpdate(); hosts?.resumeAfterUpdate() } },
+    resumeLocalAfterCancelledUpdate: async () => { try { await local?.cancelUpdateStop() } finally { resumeTelemetry('update'); sources?.resumeAfterUpdate(); agentSetup?.resumeAfterUpdate(); hosts?.resumeAfterUpdate() } },
     closeLocal: async () => {
       if (localSwitching) return false
+      pauseTelemetry('quit')
       operator?.cancel()
       await sources?.close()
       await agentSetup?.close()
       await hosts?.close()
       const stopped = await (local?.close() ?? Promise.resolve(true))
       if (operatorWork) await Promise.race([operatorWork.catch(() => {}), new Promise(resolve => setTimeout(resolve, 5000))])
-      return stopped && !operatorMutation && !backups?.busy
+      const canClose = stopped && !operatorMutation && !backups?.busy
+      if (!canClose) resumeTelemetry('quit')
+      return canClose
     },
     bootOperator,
     bootLocal: async () => {

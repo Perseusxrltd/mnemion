@@ -19,6 +19,14 @@ activation.** The disclosure remains `collection_available: false` with
 `destination: null`. Source and synthetic utility evidence is recorded in the
 [delivery validation](../validation/2026-10-24-telemetry-delivery.md).
 
+The later [application-owner source batch](../validation/2026-10-24-telemetry-app-owners.md)
+wires these senders to already awake desktop/browser work and an existing Python
+service or maintained local stdio loop, with persistent connection controls and
+active environment checks. Source checks and the actual Chromium owner fixture
+passed; the fixture used synthetic CPU admission, so actual sensor qualification
+remains open. The release-owned route address remains
+null; these earlier transport passes do not qualify the new owner paths.
+
 ## One randomized category per report
 
 The [version 1 format](../../mnemion/product_telemetry/wire-v1.json) defines
@@ -101,8 +109,10 @@ Successful handoffs remain cancellable until completion. A private whole-attempt
 claim precedes connection setup and cleanup ownership, so duplicate senders do
 not connect or cancel the winner. Final source checks and a **14-check actual
 TLS/collector journey** cover this path, using loopback and a test CA. Earlier
-codec, budget and browser receipts retain their original scope. No endpoint or application owner is configured, and
-TCP/IP overhead, sensors, resources, ingress and all-platform acceptance remain open.
+codec, budget and browser receipts retain their original scope. At that checkpoint
+no application owner was wired. The later owner source now has its own scoped checks;
+no endpoint is selected, and TCP/IP overhead, sensors, resources, ingress and
+all-platform acceptance remain open.
 
 ## Native and browser transport follow-up
 
@@ -111,7 +121,8 @@ under TLS, rather than Electron session networking. The
 [browser sender](../../studio/frontend/src/workspace/telemetry-transport.ts) uses
 Fetch. Both claim the report's whole attempt before setup or cleanup ownership,
 keep its original five-second lifetime and cancel the lease on completion without
-refund. Neither is wired to an application owner or scheduled automatically.
+refund. Those component checks preceded application-owner wiring. The current
+source offers attempts only from already active work; it adds no idle scheduler.
 
 | Boundary | Native source | Browser source |
 | --- | --- | --- |
@@ -140,6 +151,36 @@ two real CORS preflights, without request interception. The native collector
 journey passed 18 checks with one report and 2,649 charged TLS bytes. Their
 isolated profiles/servers were cleaned up; public certificate trust, full wire
 cost, resources and installed-owner acceptance remain open.
+
+## Application-owner source checkpoint
+
+The [shared activity controller](../../studio/electron/telemetry-owner.ts) admits
+at most one active attempt and throttles eligibility probes for one minute;
+explicit resume restores eligibility without starting work. This is
+an opportunity limit, not a periodic timer or the delivery allowance: the
+seven-attempt rolling week and 24-hour-plus-jitter cooldown still apply. Only a
+committed owned observation offers work; inputs/results and missed opportunities
+are not retained for retry. Pause/close cancels existing work without a flush.
+
+| Source owner | Opportunity and lifetime |
+| --- | --- |
+| [Desktop](../../studio/electron/telemetry-activity.ts) | Offers after the shared local measurement transaction closes; the service bridge cancels delivery on quit/suspend and resumes eligibility after resume. |
+| [Browser page](../../studio/frontend/src/workspace/telemetry-activity.ts) | Offers after the measurement Web Lock is released; only a visible, already active page can attempt delivery. Pagehide, offline, visibility and connection changes cancel active work. No service worker is added. |
+| [Python service/local stdio loop](../../mnemion/product_telemetry/activity.py) | Registers one owner per private installation directory within an existing service or [maintained local stdio](../../mnemion/service/mcp.py) lifespan. Fixed local policy stamps can offer committed work to that loop; closing the lifespan cancels the attempt. A one-shot CLI starts no loop or keepalive. |
+
+The Python owner transports the disclosed local queue; it does not make remote
+API/MCP traffic measurable. Unknown native metering still needs a user declaration.
+The browser requires supported, fresh pressure and heap observations; unavailable
+capabilities refuse delivery. These local gauges are admission controls, not
+exported measurements or proof of the full CPU/RAM/wire limits. Fresh browser
+organization-policy refresh and the complete owner/lifecycle journeys remain
+open across supported platforms. The [source validation](../validation/2026-10-24-telemetry-app-owners.md)
+records **105 Python, 40 Electron and 68 browser passes**, with two Windows-only
+Electron skips, and a passing frontend build. Its **19-assertion Chromium
+journey** exercised the actual Privacy component and normal recording owner,
+with two new reports and two real CORS preflights. CPU admission was synthetic;
+real heap readings and capability presence do not establish pressure-sensor or
+full resource acceptance.
 
 ## Fixed closed-week output
 

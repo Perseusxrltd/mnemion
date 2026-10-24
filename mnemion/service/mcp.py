@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+from contextlib import asynccontextmanager
 from typing import Annotated, Any, Literal
 from uuid import UUID
 
@@ -201,9 +202,10 @@ class LocalTelemetryChoice(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
     enabled: Annotated[bool, Field(strict=True)]
-    expected_revision: Annotated[int, Field(strict=True, ge=0, le=2147483647)]
+    expected_revision: Annotated[int, Field(strict=True, ge=0, le=2147483646)]
     expected_generation: Annotated[str | None, Field(pattern=r"^[0-9a-f]{32}$")] = None
-    disclosure_version: Annotated[int | None, Field(strict=True, ge=1)] = None
+    disclosure_version: Annotated[int | None, Field(strict=True, ge=0)] = None
+    connection_mode: Literal["auto", "unmetered", "metered"] = "auto"
 
 
 def create_mcp(
@@ -214,6 +216,15 @@ def create_mcp(
     api_app=None,
     public_url: str | None = None,
 ) -> MCPServer:
+    @asynccontextmanager
+    async def local_lifespan(_server):
+        from ..product_telemetry.activity import application_delivery
+
+        # Stdio agents already own a live async runtime. Their local, attributed
+        # observations can use it without a new worker or a one-shot CLI wait.
+        async with application_delivery():
+            yield {}
+
     vault_settings = (
         api_app.state.vault.settings if api_app is not None else VaultSettings.from_environment()
     )
@@ -242,6 +253,7 @@ def create_mcp(
             )
         ),
         log_level="WARNING",
+        lifespan=local_lifespan if stdio_token else None,
     )
 
     if legacy_space:

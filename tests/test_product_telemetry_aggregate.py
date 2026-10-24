@@ -365,6 +365,7 @@ def test_source_controls_store_upgrades_without_losing_explicit_opt_out(enabled)
         connection.execute("DROP TABLE delivery_attempts")
         connection.execute("DROP TABLE delivery_state")
         connection.execute("ALTER TABLE preferences DROP COLUMN store_generation")
+        connection.execute("ALTER TABLE preferences DROP COLUMN connection_mode")
         connection.execute("PRAGMA user_version=1")
     assert policy.status(root)["reason"] == "user_disabled"
     assert (

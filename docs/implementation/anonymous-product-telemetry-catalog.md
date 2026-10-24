@@ -22,7 +22,7 @@ It does not qualify delivery integration, shared budgets, TLS/provider logging,
 deployed ingress or useful fine-grained statistics in small populations.
 The later [Python TLS component](../validation/2026-10-24-telemetry-transport.md)
 has passing source and isolated loopback checks for transport and handoff ownership.
-It is not wired to application owners and has no selected endpoint. These later
+That checkpoint preceded application-owner wiring and selected no endpoint. Its
 component results remain separate from the earlier evidence; charged TLS bytes
 do not establish total TCP/IP wire cost or public-ingress qualification.
 The subsequent [native and browser transport checkpoint](../validation/2026-10-24-telemetry-client-transports.md)
@@ -31,10 +31,20 @@ source passes**, a final native build and corrected frontend type checks. Earlie
 results and failures remain preserved. Actual loopback TLS/collector journeys
 passed **22 browser checks and 18 native checks**, with verified cleanup.
 Both new senders claim the
-whole attempt, but no application owner is wired to them. Browser Fetch does not
+whole attempt; those receipts preceded the current application-owner wiring. Browser Fetch does not
 inherit the native static-header, no-DNS/proxy or charged-TLS-byte controls.
 Its listeners are armed before Fetch while lock polling waits for handoff
 release; it requires status 204 and `Content-Length: 0` without reading the body.
+
+The [application-owner source batch](../validation/2026-10-24-telemetry-app-owners.md)
+now connects committed local observations to opportunistic desktop/browser
+delivery and a registered Python service or maintained local stdio loop. Its
+source checks and **19-assertion Chromium owner fixture** passed; CPU admission
+was synthetic, with real heap readings and normal browser networking.
+Connection mode and resource gauges gate an attempt; they add no catalog metric,
+network identity or server recounting. SQLite storage version 5/browser choice
+version 4 retain the spent allowance, and a stale opt-out preserves a newer
+connection choice. Production collection and the release route remain disabled.
 
 The earlier [privacy controls](../guides/product-telemetry-controls.md) retain
 their dated evidence: the 19-check core browser journey and eight further
@@ -160,8 +170,9 @@ or establish whole-app, all-platform or CPU acceptance against the unchanged tar
 Deletion/recreation now has source generation-fencing checks. This does not
 protect against an unobservable whole-machine snapshot rollback that restores
 the old token and choice together. The full product delivery path must still prove
-cancellation of queued/in-flight work at opt-out; no application owner is wired
-to the Python, native or browser transport components.
+cancellation of queued/in-flight work at opt-out; the new Python, native and
+browser application-owner source checks do not establish all-platform or full
+resource/privacy acceptance.
 
 `schema` and `preview` expose `measurement_catalog`, including the exclusions.
 Preview can describe valid local cells without raw inputs or local day numbers;
@@ -213,7 +224,8 @@ does not retry a mutation to obtain a fresh receipt. The
 [request-local server metadata](../../mnemion/service/request_replay.py) follows
 existing receipt lookup, and [agent-control metadata](../../mnemion/agent_control.py)
 accepts only `new`/`replayed`. This change needs no database migration and makes
-the server no telemetry owner. Asynchronous acknowledgements are `accepted`,
+the server no measurement owner for the caller's traffic. Its separate local
+delivery-loop wiring does not change that boundary. Asynchronous acknowledgements are `accepted`,
 with no server completion backfill. Internal retries remain one logical call;
 response-body bytes are application payload, not wire bytes.
 
@@ -512,8 +524,9 @@ The following implementation and acceptance work remains open:
   [native/Python budget](anonymous-product-telemetry-budget.md) implements shared
   private attempt and byte reservations in source. The separate
   [browser coordinator](../validation/2026-10-24-telemetry-browser-delivery.md)
-  now has component evidence. Canonical owner wiring, installed sampling and
-  sender integration remain unfinished;
+  now has component evidence. Canonical owner wiring exists in the new source
+  batch; its qualification, installed sampling and complete sender integration
+  remain unfinished;
   actual transport upper bounds are unqualified. Verify useful
   measurements and the existing queue/RAM/CPU/batch/wire ceilings under load;
   local numeric limits alone are not a privacy mechanism. Evaluation-quality

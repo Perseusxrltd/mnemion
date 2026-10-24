@@ -145,6 +145,33 @@ test('a failed handoff and repeated opt-out or opt-in never refund the reservati
   assert.ok(!JSON.stringify(client.status()).includes('PRIVATE_SENTINEL'))
 }))
 
+test('a browser v3 upgrade retains spent budget and connection settings still obey restrictions', async () => available(async () => {
+  const instance = fixture(), client = instance.first
+  let stamp = instance.choice(client, true)
+  stamp = client.configure({ enabled: true, expected_revision: stamp.revision, expected_generation: stamp.store_generation,
+    disclosure_version: 1, connection_mode: 'unmetered' })
+  instance.enqueue()
+  assert.equal(await client.delivery.reserve(stamp, { network: 'metered', constrained: false }), null)
+  assert.equal(await client.delivery.reserve(stamp, { network: 'unknown', constrained: true }), null)
+  assert.equal(instance.budget().attempts.length, 0)
+  const report = await client.delivery.reserve(stamp, { network: 'unknown', constrained: false })
+  assert.ok(report)
+  const spent = instance.budget().attempts
+  const old = JSON.parse(instance.storage.getItem(choiceKey))
+  old.schema_version = 3; delete old.connection_mode
+  instance.storage.setItem(choiceKey, JSON.stringify(old))
+  const restarted = instance.client(), before = restarted.status()
+  assert.equal(before.connection_mode, 'auto')
+  const after = restarted.configure({ enabled: true, expected_revision: before.revision, expected_generation: before.store_generation,
+    disclosure_version: 1, connection_mode: 'metered' })
+  assert.equal(after.connection_mode, 'metered')
+  assert.equal(after.store_generation, stamp.store_generation)
+  assert.deepEqual(instance.budget().attempts, spent)
+  assert.equal(await client.delivery.current(report), false)
+  instance.advance(DAY + 3600000)
+  assert.equal(await restarted.delivery.reserve(instance.enqueue(restarted), allowed), null)
+}))
+
 test('queued final handoffs send once and do not cancel the winning in-flight request', async () => available(async () => {
   const instance = fixture(true), client = instance.first
   instance.choice(client, true)
@@ -303,7 +330,7 @@ test('schema two preserves opt-out and migrates only during an explicit choice',
   assert.equal(client.status().delivery_budget.state, 'upgrade_required')
   assert.equal(instance.storage.getItem(budgetKey), null)
   instance.choice(client, false)
-  assert.equal(JSON.parse(instance.storage.getItem(choiceKey)).schema_version, 3)
+  assert.equal(JSON.parse(instance.storage.getItem(choiceKey)).schema_version, 4)
   assert.equal(instance.budget().generation, generation)
   assert.equal(instance.budget().attempts.length, 0)
   assert.equal(client.status().reason, 'user_disabled')

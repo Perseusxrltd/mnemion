@@ -10,6 +10,7 @@ type Port = { storage: () => Storage; status: () => TelemetryStatus; reconcile: 
 export type BrowserDeliveryEnvironment = {
   locks: () => LockManager | null; now: () => number; monotonic: () => number
   events: () => Window | null
+  conditions?: () => Network
 }
 type Network = { network: 'unknown' | 'metered' | 'unmetered'; constrained: boolean }
 
@@ -78,7 +79,7 @@ export class BrowserTelemetryDelivery {
   async reserve(stamp: TelemetryStamp, network: Network = { network: 'unknown', constrained: true },
     cohorts: unknown = {}): Promise<PreparedBrowserTelemetryReport | null> {
     if (!stamp || !clockValid(stamp.revision, 2147483646) || !generationValid(stamp.store_generation) ||
-      network.network !== 'unmetered' || network.constrained !== false) return null
+      !['unknown', 'unmetered'].includes(network.network) || network.constrained !== false) return null
     const expected = { revision: stamp.revision, store_generation: stamp.store_generation }
     const started = this.environment.monotonic()
     return this.locked(() => {
@@ -87,6 +88,10 @@ export class BrowserTelemetryDelivery {
         // Reconcile a crash between the write-ahead intent and queue cleanup.
         this.port.reconcile()
         const now = this.environment.now(), status = this.port.status()
+        const observed = this.environment.conditions?.() ?? network
+        if (!['unknown', 'unmetered'].includes(observed.network) || observed.constrained !== false) return null
+        if (status.connection_mode === 'metered' ||
+            (observed.network === 'unknown' && status.connection_mode !== 'unmetered')) return null
         if (!clockValid(now, MAX_CLOCK - DAY - JITTER) || !status.effective_enabled ||
           status.revision !== expected.revision || status.store_generation !== expected.store_generation ||
           this.environment.monotonic() - started >= DEADLINE) return null
@@ -122,13 +127,18 @@ export class BrowserTelemetryDelivery {
   private permitted(report: PreparedBrowserTelemetryReport): boolean {
     if (!this.owned.has(report) || report.closed) return false
     const now = this.environment.now(), status = this.port.status()
+    if (this.environment.conditions) {
+      const observed = this.environment.conditions()
+      if (observed.constrained !== false || !['unknown', 'unmetered'].includes(observed.network) ||
+          (observed.network === 'unknown' && status.connection_mode !== 'unmetered')) return false
+    }
     const raw = this.port.storage().getItem(budgetKey)
     if (raw === null) return false
     const budget = budgetState(raw)
     return clockValid(now) && this.environment.monotonic() < report.monotonicDeadline &&
       budget.clear === 'none' && budget.clock_ms <= now && now < report.deadline &&
       budget.lease?.deadline_ms === report.deadline && budget.lease.token === report.ticket &&
-      budget.generation === report.stamp.store_generation && status.effective_enabled &&
+      budget.generation === report.stamp.store_generation && status.effective_enabled && status.connection_mode !== 'metered' &&
       status.revision === report.stamp.revision && status.store_generation === report.stamp.store_generation &&
       status.company_policy.metric_groups.includes(report.group)
   }

@@ -31,9 +31,12 @@ availability and release gates; each deployment requires its own acceptance.
   [anonymous product telemetry contract](implementation/anonymous-product-telemetry.md).
   Source privacy controls, the **19-check core browser journey** and **eight
   browser policy/fault checks** passed; [source-input qualification](validation/2026-10-24-telemetry-controls.md)
-  passed at **01:12:30 UTC**. Collection
-  is unavailable, with no sender, collector, qualified anonymous ingress or
-  all-six-native acceptance. This work is excluded from the isolated 4.46.6
+  passed at **01:12:30 UTC**. Later source adds bounded transport components and
+  [application-owner/connection controls](validation/2026-10-24-telemetry-app-owners.md);
+  its source checks and **19-assertion Chromium owner fixture** passed, with
+  synthetic CPU admission. Collection is unavailable,
+  with no active collector, qualified public ingress or all-six-native acceptance.
+  This work is excluded from the isolated 4.46.6
   dependency-security release. Only V08 moves from Planned to Building; all 66
   requirement texts and all other states are preserved. Earlier failures and
   dated Planned checkpoints below remain historical evidence.
@@ -637,7 +640,8 @@ continues while an external account or publisher prerequisite is unavailable.
 
 V08 [anonymous product telemetry](implementation/anonymous-product-telemetry.md)
 is the active feature milestone after the accepted 4.46.5 paired update, custody,
-fresh backup and independent restore. Source privacy controls are Building;
+fresh backup and independent restore. Source controls, transport components and
+application-owner wiring remain Building;
 complete workflow measurement, reviewed anonymity, bounded transport and native/
 web release acceptance remain open. Urgent hotfixes continue alongside it,
 including the separate 4.46.6 dependency-security release. The unfinished

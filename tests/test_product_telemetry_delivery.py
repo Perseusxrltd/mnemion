@@ -252,7 +252,7 @@ print(json.dumps({'enabled':result['user_enabled'],'pending':result['pending_rec
             stderr=subprocess.PIPE,
         )
         stdout, stderr = await asyncio.wait_for(child.communicate(), 10)
-        assert child.returncode == 0 and stderr == b""
+        assert child.returncode == 0 and stderr == b"", stderr.decode(errors="replace")
         assert json.loads(stdout) == {"enabled": False, "pending": 0}
         await asyncio.wait_for(cancelled.wait(), 1)
         await task
@@ -309,6 +309,7 @@ def test_v3_migration_keeps_choice_generation_and_does_not_fabricate_a_disclosur
     off = policy.configure(f.root, {"enabled": False, "expected_revision": 0})
     f.sql("DROP TABLE delivery_attempts")
     f.sql("DROP TABLE delivery_state")
+    f.sql("ALTER TABLE preferences DROP COLUMN connection_mode")
     f.sql("PRAGMA user_version=3")
     before = policy.status(f.root)
     assert (
@@ -318,7 +319,73 @@ def test_v3_migration_keeps_choice_generation_and_does_not_fabricate_a_disclosur
     after = policy.configure(f.root, {"enabled": False, "expected_revision": 0})
     assert after["store_generation"] == off["store_generation"]
     assert after["reason"] == "user_disabled" and after["disclosure_version"] == 0
-    assert f.sql("PRAGMA user_version") == [(4,)]
+    assert f.sql("PRAGMA user_version") == [(policy.STORAGE_VERSION,)]
+
+
+def test_v4_upgrade_preserves_spending_and_connection_change_cancels_lease(installation):
+    f = installation
+    f.fill()
+    report = f.reserve()
+    assert report is not None
+    spent = f.sql("SELECT * FROM delivery_attempts")
+    f.sql("ALTER TABLE preferences DROP COLUMN connection_mode")
+    f.sql("PRAGMA user_version=4")
+    before = policy.status(f.root)
+    assert before["connection_mode"] == "auto"
+    assert before["delivery_budget"]["state"] == "upgrade_required"
+    after = policy.configure(
+        f.root,
+        {
+            "enabled": True,
+            "expected_revision": before["revision"],
+            "expected_generation": before["store_generation"],
+            "disclosure_version": 1,
+            "connection_mode": "metered",
+        },
+    )
+    assert after["revision"] == before["revision"] + 1
+    assert after["store_generation"] == before["store_generation"]
+    assert f.sql("SELECT * FROM delivery_attempts") == spent
+    assert not f.budget.current(report)
+    f.fill()
+    f.now[0] += delivery.DAY_MS + delivery.JITTER_MS
+    assert f.reserve() is None
+
+
+def test_unmetered_declaration_only_resolves_unknown_and_cannot_override_restrictions(installation):
+    f = installation
+    current = policy.configure(
+        f.root,
+        {
+            "enabled": True,
+            "expected_revision": f.initial["revision"],
+            "expected_generation": f.initial["store_generation"],
+            "disclosure_version": 1,
+            "connection_mode": "unmetered",
+        },
+    )
+    f.fill()
+
+    def attempt(network, constrained=False):
+        return f.budget.reserve(
+            expected_revision=current["revision"],
+            expected_generation=current["store_generation"],
+            network=network,
+            constrained=constrained,
+        )
+
+    assert attempt("metered") is None
+    assert attempt("unknown", True) is None
+    assert f.sql("SELECT count(*) FROM delivery_attempts") == [(0,)]
+    report = attempt("unknown")
+    assert report is not None
+    off = policy.configure(
+        f.root, {"enabled": False, "expected_revision": 0, "connection_mode": "auto"}
+    )
+    assert off["connection_mode"] == "unmetered"
+    assert not f.budget.current(report)
+    assert attempt("unknown") is None
+    assert f.sql("SELECT count(*) FROM delivery_attempts") == [(1,)]
 
 
 def test_async_function_is_never_invoked_under_the_final_write_lock(installation):

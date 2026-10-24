@@ -9,7 +9,7 @@ RUN npm --prefix studio/frontend ci
 COPY studio/frontend ./studio/frontend
 COPY studio/shared ./studio/shared
 COPY studio/electron/workspace-recovery.ts studio/electron/company-sign-in-protocol.ts studio/electron/capture-messages.ts ./studio/electron/
-COPY studio/electron/telemetry-catalog.ts studio/electron/telemetry-workflow.ts studio/electron/telemetry-wire.ts ./studio/electron/
+COPY studio/electron/telemetry-catalog.ts studio/electron/telemetry-workflow.ts studio/electron/telemetry-wire.ts studio/electron/telemetry-owner.ts ./studio/electron/
 COPY mnemion/service/recovery_kit.html ./mnemion/service/recovery_kit.html
 COPY mnemion/product_telemetry/disclosure.json ./mnemion/product_telemetry/disclosure.json
 COPY mnemion/product_telemetry/catalog.json mnemion/product_telemetry/wire-v1.json ./mnemion/product_telemetry/

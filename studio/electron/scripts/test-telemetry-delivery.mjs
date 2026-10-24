@@ -34,6 +34,9 @@ elif action=='off': result=policy.configure(root,{'enabled':False,'expected_revi
 elif action=='on':
  state=policy.status(root)
  result=policy.configure(root,{'enabled':True,'expected_revision':state['revision'],'expected_generation':state['store_generation'],'disclosure_version':1})
+elif action=='mode':
+ state=policy.status(root)
+ result=policy.configure(root,{'enabled':True,'expected_revision':state['revision'],'expected_generation':state['store_generation'],'disclosure_version':1,'connection_mode':request['value']})
 elif action=='company':
  company.write_text(json.dumps(request['value']))
  result=True
@@ -105,6 +108,20 @@ test('native reservation consumes one shared attempt and survives restart, cance
   assert.equal(await restarted.reserve(stamp, network), null)
   assert.equal(f.invoke('inspect').attempts, 1)
   assert.equal(f.invoke('inspect').has_lease, false)
+})
+
+test('the native sender observes the agent connection setting without overriding detected limits', async t => {
+  const f = await fixture(t)
+  const stamp = f.invoke('mode', { value: 'unmetered' })
+  await f.fill()
+  assert.equal(await f.store.reserve(stamp, { network: 'metered', constrained: false }), null)
+  assert.equal(await f.store.reserve(stamp, { network: 'unknown', constrained: true }), null)
+  assert.equal(f.invoke('inspect').attempts, 0)
+  const report = await f.store.reserve(stamp, { network: 'unknown', constrained: false })
+  assert.ok(report)
+  f.invoke('mode', { value: 'metered' })
+  assert.equal(await f.store.current(report), false)
+  assert.deepEqual([f.invoke('inspect').attempts, f.invoke('inspect').has_lease], [1, false])
 })
 
 test('a crashed Python reserver prevents a second native attempt until its persisted due time', async t => {
