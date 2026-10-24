@@ -492,9 +492,11 @@ The following implementation and acceptance work remains open:
   Preserve the broader connector/host requirements and visible coverage gaps.
 - **Metrics and budgets:** finite buckets and local contribution caps are now
   implemented. The delivery component selects fixed views, closed-week windows
-  and eight-window private output retention; its attempt/wire budgets remain
-  unenforced proposals. Remaining producer placement, installed sampling and
-  shared budget enforcement still need implementation and review. Verify useful
+  and eight-window private output retention. The later
+  [native/Python budget](anonymous-product-telemetry-budget.md) implements shared
+  private attempt and byte reservations in source. Canonical owner wiring,
+  browser budgets, installed sampling and sender integration remain unfinished;
+  actual transport upper bounds are unqualified. Verify useful
   measurements and the existing queue/RAM/CPU/batch/wire ceilings under load;
   local numeric limits alone are not a privacy mechanism. Evaluation-quality
   views, cross-restart completion, end-to-end recovery boundaries and final

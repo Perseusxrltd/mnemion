@@ -36,6 +36,16 @@ export type TelemetryStatus = {
   pending_records: number | null
   collection_available: boolean
   disclosure: TelemetryDisclosure
+  delivery_budget?: {
+    state: 'not_initialized' | 'upgrade_required' | 'clock_rollback' | 'in_flight' | 'cooldown' | 'ready' | 'unavailable'
+    maximum_attempts_per_rolling_week: number
+    minimum_attempt_spacing_seconds: number
+    wire_reservation_per_attempt_bytes: number
+    wire_budget_per_rolling_day_bytes: number
+    attempts_in_rolling_week: number | null
+    reserved_wire_bytes_in_rolling_day: number | null
+    transport_available: boolean
+  }
 }
 export type TelemetryPreview = {
   schema_version: number

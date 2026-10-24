@@ -30,7 +30,27 @@ MAX_PENDING_AGE_SECONDS = 48 * 3600
 MAX_DOCUMENT_BYTES = 8192
 METRIC_GROUPS = tuple(CONTRACT["metric_groups"])
 DATABASE_NAME = "product-telemetry.sqlite3"
-STORAGE_VERSION = 3
+STORAGE_VERSION = 4
+
+# Attempt accounting is not a measurement or a stable analytics identity. It
+# survives opt-out and queue erasure, so changing a choice cannot buy another
+# privacy/traffic allowance. Timestamps and lease tokens stay on this machine.
+DELIVERY_SCHEMA = """
+CREATE TABLE delivery_state (
+    singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
+    clock_ms INTEGER NOT NULL CHECK (clock_ms BETWEEN 0 AND 86400000000000),
+    next_ms INTEGER NOT NULL CHECK (next_ms BETWEEN 0 AND 86400000000000),
+    lease_token TEXT CHECK (lease_token IS NULL OR
+        (length(lease_token)=32 AND lease_token NOT GLOB '*[^0-9a-f]*')),
+    lease_deadline_ms INTEGER NOT NULL CHECK (lease_deadline_ms BETWEEN 0 AND 86400000000000)
+);
+INSERT INTO delivery_state VALUES (1, 0, 0, NULL, 0);
+CREATE TABLE delivery_attempts (
+    slot INTEGER PRIMARY KEY CHECK (slot BETWEEN 0 AND 6),
+    at_ms INTEGER NOT NULL CHECK (at_ms BETWEEN 0 AND 86400000000000),
+    reserved_bytes INTEGER NOT NULL CHECK (reserved_bytes = 65536)
+);
+"""
 
 
 def valid_generation(value: object) -> bool:
@@ -70,6 +90,7 @@ CREATE TABLE pending (
 );
 """
     + QUEUE_SCHEMA
+    + DELIVERY_SCHEMA
 )
 
 
@@ -204,7 +225,7 @@ def _preferences(connection: sqlite3.Connection) -> dict:
     version = connection.execute("PRAGMA user_version").fetchone()[0]
     if (
         connection.execute("PRAGMA application_id").fetchone()[0] != APPLICATION_ID
-        or version not in (1, 2, STORAGE_VERSION)
+        or version not in (1, 2, 3, STORAGE_VERSION)
         or connection.execute("PRAGMA journal_mode").fetchone()[0] != "delete"
     ):
         raise PolicyError("telemetry_storage_unavailable")
@@ -220,7 +241,7 @@ def _preferences(connection: sqlite3.Connection) -> dict:
     ):
         raise PolicyError("telemetry_storage_unavailable")
     generation = None
-    if version == STORAGE_VERSION:
+    if version >= 3:
         generation = connection.execute(
             "SELECT store_generation FROM preferences WHERE singleton=1"
         ).fetchone()[0]
@@ -251,8 +272,15 @@ def _queue_schema(connection: sqlite3.Connection) -> None:
             if sqlite3.complete_statement(statement):
                 connection.execute(statement)
                 statement = ""
-    connection.execute("ALTER TABLE preferences ADD COLUMN store_generation TEXT")
-    connection.execute("UPDATE preferences SET store_generation=?", (secrets.token_hex(16),))
+    if version <= 2:
+        connection.execute("ALTER TABLE preferences ADD COLUMN store_generation TEXT")
+        connection.execute("UPDATE preferences SET store_generation=?", (secrets.token_hex(16),))
+    statement = ""
+    for line in DELIVERY_SCHEMA.splitlines(keepends=True):
+        statement += line
+        if sqlite3.complete_statement(statement):
+            connection.execute(statement)
+            statement = ""
     connection.execute(f"PRAGMA user_version={STORAGE_VERSION}")
 
 
@@ -299,10 +327,13 @@ def _initialize(root: Path) -> bool:
 
 
 def status(root: Path | None = None, *, policy_path: Path | None = None) -> dict:
+    from .delivery import budget_status
+
     root = root if root is not None else default_directory()
     company = company_policy(policy_path)
     preference = {"revision": 0, "enabled": True, "disclosure_version": 0, "store_generation": None}
     storage, pending = "new", 0
+    delivery_budget = budget_status()
     try:
         _root_safe(root)
         if _file_safe(root / DATABASE_NAME):
@@ -312,10 +343,16 @@ def status(root: Path | None = None, *, policy_path: Path | None = None) -> dict
                 pending = connection.execute("SELECT count(*) FROM pending").fetchone()[0]
                 if not 0 <= pending <= MAX_PENDING:
                     raise PolicyError("telemetry_storage_unavailable")
+                delivery_budget = budget_status(connection)
                 connection.rollback()
             storage = "ready"
-    except (OSError, sqlite3.Error, PolicyError):
+    except (OSError, sqlite3.Error, ValueError):
         storage = "unreadable"
+        delivery_budget.update(
+            state="unavailable",
+            attempts_in_rolling_week=None,
+            reserved_wire_bytes_in_rolling_day=None,
+        )
     if storage == "unreadable":
         reason = "storage_unavailable"
     elif not preference["enabled"]:
@@ -346,6 +383,7 @@ def status(root: Path | None = None, *, policy_path: Path | None = None) -> dict
         "pending_records": pending if storage != "unreadable" else None,
         "collection_available": COLLECTION_AVAILABLE,
         "disclosure": disclosure(),
+        "delivery_budget": delivery_budget,
     }
 
 
@@ -397,6 +435,10 @@ def configure(root: Path | None, request: dict, *, policy_path: Path | None = No
             # after opt-out. secure_delete also clears freed cells in this DB.
             connection.execute("DELETE FROM pending")
             connection.execute("DELETE FROM producer_budget")
+            # Cancel a reserved report without resetting spent privacy/traffic.
+            connection.execute(
+                "UPDATE delivery_state SET lease_token=NULL, lease_deadline_ms=0 WHERE singleton=1"
+            )
             connection.commit()
     except sqlite3.OperationalError as error:
         if getattr(error, "sqlite_errorcode", None) in (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED):

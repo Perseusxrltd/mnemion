@@ -5,9 +5,11 @@
 [local catalog/ownership](anonymous-product-telemetry-catalog.md) retain their
 scope. Python/TypeScript packet encoders, a volatile weekly accumulator, an
 ASGI ingress adapter and a private closed-week publisher now exist in source.
-**There is no sender, persistent shared
-privacy/wire budget, installed integration, qualified ingress or production
-activation.** The disclosure remains `collection_available: false` with
+The later [native/Python budget components](anonymous-product-telemetry-budget.md)
+add shared private reservations and cancellation fences; their focused source
+checks passed, without qualifying installed delivery or transport costs.
+**There is no sender, installed delivery integration, qualified ingress or
+production activation.** The disclosure remains `collection_available: false` with
 `destination: null`. Source and synthetic utility evidence is recorded in the
 [delivery validation](../validation/2026-10-24-telemetry-delivery.md).
 
@@ -46,9 +48,10 @@ HTTP headers, framing, TLS and other transport traffic are additional bytes and
 remain unqualified. App/native privacy preview still reports no outbound body.
 
 `prepare` accepts only bounded `(cell, count)` pairs and reviewed cohort enums.
-It does **not** read policy or enforce an attempt budget. Its future caller must
-obtain a current policy-fenced snapshot and reserve the shared privacy/wire
-budget before attempting delivery. Current `schema` exposes `transport_catalog`
+It does **not** itself read policy or enforce an attempt budget. The later
+[budget wrapper](anonymous-product-telemetry-budget.md) supplies the shared
+policy/queue reservation in source; a future sender must use that boundary for
+every attempt. Current `schema` exposes `transport_catalog`
 with `transport_available: false`; discovery does not activate transport.
 
 ## What the privacy bound covers
@@ -66,17 +69,19 @@ of these fields alone does not establish anonymity. Confidence and utility also
 assume independent randomization by conforming senders; the source provides no
 authenticated-contributor or poisoning-resistance guarantee.
 
-The JSON's budget entries are **proposals, not enforced controls**:
+At the codec-only checkpoint, the JSON's budget entries were proposals. The later
+native/Python source wrapper implements reservation accounting as follows. Its
+focused source checks passed; integration with an actual sender remains pending:
 
-| Proposed bound | Current status |
+| Bound | Current source status |
 | --- | --- |
-| At least 86,400 seconds between attempts | No persistent shared attempt state or scheduler |
-| At most seven attempts per rolling week | Not enforced across processes, restarts or choice changes |
-| Conditional weekly bound `7 × ln(3)` | Only follows if the proposed attempt bound is enforced; not a lifetime/person guarantee |
-| Reserve 65,536 wire bytes per attempt | No sender or measured transport reservation yet |
+| At least 86,400 seconds between attempts | Shared cooldown adds zero through one hour of random jitter; no scheduler exists. |
+| At most seven attempts per rolling week | Private SQLite accounting survives opt-out; every reservation remains spent without a refund. |
+| Conditional weekly bound `7 × ln(3)` | Requires every actual report to use the allowance; no installed sender proves this and it is not a lifetime/person guarantee. |
+| Reserve 65,536 wire bytes per attempt | Fixed accounting plus a 256 KiB rolling-day guard; actual transport bytes remain unmeasured. |
 
-Existing local cell/contribution limits, which clear on explicit choice, are not
-this missing privacy budget. The contract's opt-out fencing, final-send
+Existing local cell/contribution limits clear on explicit choice; the separate
+delivery attempt ledger and cooldown do not. The contract's opt-out fencing, final-send
 cancellation and resource/bandwidth ceilings remain unchanged.
 
 ## Fixed closed-week output
@@ -154,8 +159,8 @@ per view**. Small deployments at the proposed cadence will not provide precise
 fine-grained statistics. Missing or imprecise output must remain unavailable,
 not be presented as zero usage or confident small-population estimates.
 
-The remaining work includes persistent shared budgets, installed policy/producer
-integration, sender cancellation and retry behavior, real transport/log privacy,
+The remaining work includes shared-budget qualification, installed policy/producer
+integration, actual sender cancellation and retry behavior, real transport/log privacy,
 publisher/deployment retention qualification, resource/wire measurements, utility and attack
 qualification, and all six native targets plus web. No V08 requirement is closed
 by this component checkpoint.

@@ -24,8 +24,11 @@ records the dated source evidence and full remaining scope.
 The separate [delivery components](../implementation/anonymous-product-telemetry-delivery.md)
 are also source-only: their packet encoder and private weekly publisher do not
 enable sending. An isolated **12-check plain-loopback HTTP journey passed**;
-this did not enable product collection or qualify TLS/provider logging. Shared
-budgets, deployed ingress and installed delivery acceptance remain open.
+this did not enable product collection or qualify TLS/provider logging. The later
+[shared native/Python budget](../implementation/anonymous-product-telemetry-budget.md)
+has source reservation and cancellation controls, with focused checks passed
+and two Windows-only ACL cases skipped. Deployed ingress, resources/platforms
+and installed delivery acceptance remain open.
 
 ## In the app
 
@@ -83,6 +86,10 @@ It exposes the source delivery format as `transport_catalog`, with
 `store_generation`. The generation is a private local control token, never an
 analytics identity or outbound field. Missing or supported legacy stores report
 `null`; reading status does not silently initialize them.
+Native `status` also exposes `delivery_budget`: fixed states, bounded attempt
+counts and reserved-byte totals, without exact attempt times or private lease
+tokens. These are local reservations, not measured traffic or successful uploads.
+The budget state `ready` does not enable collection.
 `preview` returns `outbound_body: null`, `outbound_bytes: 0` and
 `transport_available: false`, plus the catalog and an empty `local_aggregates`
 list while collection is unavailable. A decoded local aggregate preview is
@@ -111,9 +118,11 @@ A recreated store gets a different generation, so old queued work is refused
 even if its revision number repeats. Valid legacy preferences preserve explicit
 opt-out. A legacy enabled preference without a generation requires fresh
 disclosure; an explicit supported choice creates its new local token.
-A successful change clears pending aggregates and contribution accounting, so
-re-enabling cannot revive old data. Local scope/day limits are not a persistent
-privacy budget across those choices. The desktop agent exposes the same typed `telemetry.schema`,
+A successful change clears pending aggregates and local contribution accounting,
+so re-enabling cannot revive old data. The separate delivery allowance retains
+spent attempts and cooldown across opt-out; changing a choice does not refund
+it. The source budget adds no sender or network activity. The desktop agent
+exposes the same typed `telemetry.schema`,
 `telemetry.status`, `telemetry.preview` and `telemetry.configure` actions without
 requiring a workspace.
 

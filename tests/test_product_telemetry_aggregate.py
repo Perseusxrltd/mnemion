@@ -362,6 +362,8 @@ def test_source_controls_store_upgrades_without_losing_explicit_opt_out(enabled)
     with sqlite3.connect(root / policy.DATABASE_NAME) as connection:
         connection.execute("DROP TRIGGER producer_budget_bound")
         connection.execute("DROP TABLE producer_budget")
+        connection.execute("DROP TABLE delivery_attempts")
+        connection.execute("DROP TABLE delivery_state")
         connection.execute("ALTER TABLE preferences DROP COLUMN store_generation")
         connection.execute("PRAGMA user_version=1")
     assert policy.status(root)["reason"] == "user_disabled"
@@ -376,7 +378,7 @@ def test_source_controls_store_upgrades_without_losing_explicit_opt_out(enabled)
     )
     policy.configure(root, {"enabled": False, "expected_revision": disabled["revision"]})
     with sqlite3.connect(root / policy.DATABASE_NAME) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 3
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == policy.STORAGE_VERSION
     assert policy.status(root)["reason"] == "user_disabled"
 
 

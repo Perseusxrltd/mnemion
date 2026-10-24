@@ -39,8 +39,8 @@ product sender, deployed collector, production analytics or qualified anonymous 
 The later [delivery components](anonymous-product-telemetry-delivery.md) implement
 a four-byte randomized body, fixed weekly aggregation, an ASGI adapter and a
 bounded private publisher in source. Their conditional per-report privacy bound
-does not establish participation or network anonymity. Shared delivery budgets,
-sender integration and deployed qualification remain open; the
+does not establish participation or network anonymity. Sender integration and
+deployed qualification remain open; the
 [delivery validation](../validation/2026-10-24-telemetry-delivery.md) records
 47 Python checks, six Node and six actual Electron codec checks, and a
 12-check isolated plain-loopback HTTP journey. The final Python selection and
@@ -48,12 +48,23 @@ frontend build passed; full resource/platform acceptance remains pending. These
 checks do not qualify a product sender or TLS/provider logging. Material limits
 on small-population statistics remain.
 
+The subsequent [shared native/Python budget](anonymous-product-telemetry-budget.md)
+adds persistent private attempt accounting and cancellation fences in source:
+seven attempts per rolling week, at least 24 hours plus jitter between attempts,
+64 KiB reserved per attempt and a 256 KiB rolling-day guard. Reservation consumes
+the queue; opt-out retains spent allowance while clearing measurements and the
+lease. Its final source checks passed **54 Python cases and 18 actual Electron
+cases, with two Windows-only ACL skips**, including the monotonic deadline. It
+adds no sender or network activation and does not prove installed cancellation,
+actual wire usage or full resource/platform acceptance.
+
 The [versioned catalog and local queues](anonymous-product-telemetry-catalog.md)
 now encode **94 workflows in 15 families** with fixed numeric buckets and
 matching Python/TypeScript coordinates. Native SQLite and browser queues enforce
 bounded cells, local scope/day contribution caps, company-group restrictions
-and the originating revision/generation pair. Counters clear on explicit choice;
-expiry prunes on activity. Generation fencing covers store deletion/recreation;
+and the originating revision/generation pair. Measurement/contribution counters
+clear on explicit choice; spent delivery accounting is retained. Queue expiry
+prunes on activity. Generation fencing covers store deletion/recreation;
 it cannot detect an unobservable whole-machine snapshot rollback restoring the
 old token and choice. Final sender cancellation remains a full-feature check.
 Declared exclusions cover unowned remote clients, derived server work, mixed-host

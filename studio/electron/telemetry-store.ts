@@ -50,7 +50,7 @@ export class NativeTelemetryStore {
     return path
   }
 
-  private company(): Company {
+  protected company(): Company {
     try {
       const info = lstatSync(this.companyFile)
       if (!info.isFile() || info.isSymbolicLink() || info.size > 8192) throw failure()
@@ -68,7 +68,7 @@ export class NativeTelemetryStore {
     }
   }
 
-  private async open(write = false): Promise<DatabaseSync> {
+  protected async open(write = false): Promise<DatabaseSync> {
     const path = this.safe()
     if (process.platform === 'win32') {
       // At most one short native ACL helper, including concurrent UI reads.
@@ -89,9 +89,9 @@ export class NativeTelemetryStore {
     } catch (error) { database.close(); throw error }
   }
 
-  private preferences(database: DatabaseSync): Preference {
+  protected preferences(database: DatabaseSync): Preference {
     if (database.prepare('PRAGMA application_id').get()?.application_id !== 0x4D4E5450 ||
-        database.prepare('PRAGMA user_version').get()?.user_version !== 3 ||
+        ![3, 4].includes(Number(database.prepare('PRAGMA user_version').get()?.user_version)) ||
         database.prepare('PRAGMA journal_mode').get()?.journal_mode !== 'delete') throw failure()
     const row = database.prepare('SELECT revision, enabled, disclosure_version, store_generation FROM preferences WHERE singleton=1').get()
     if (!row || !integer(row.revision, 2147483647) || ![0, 1].includes(row.enabled as number) ||
