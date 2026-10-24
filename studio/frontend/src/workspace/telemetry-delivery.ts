@@ -19,6 +19,7 @@ export class PreparedBrowserTelemetryReport {
   #ticket: string
   #used = false
   #closed = false
+  #claimed = false
   constructor(body: Uint8Array, ticket: string, readonly stamp: Readonly<TelemetryStamp>,
     readonly deadline: number, readonly monotonicDeadline: number, readonly group: string) {
     this.#body = new Uint8Array(body)
@@ -29,6 +30,11 @@ export class PreparedBrowserTelemetryReport {
   get closed(): boolean { return this.#closed }
   get ticket(): string { return this.#ticket }
   body(): Uint8Array { return new Uint8Array(this.#body) }
+  claimHandoff(): boolean {
+    if (this.#claimed || this.#used || this.#closed) return false
+    this.#claimed = true
+    return true
+  }
   burn(): void { this.#used = true }
   eraseBody(): void { this.#body.fill(0) }
   clear(): void { this.eraseBody(); this.#ticket = ''; this.#used = true; this.#closed = true }
@@ -142,16 +148,19 @@ export class BrowserTelemetryDelivery {
   /** Only a synchronous nonblocking transport handoff may run inside this lock.
    * A successful handoff stays cancellable; its owner must finish with cancel(). */
   async guardedWrite(report: PreparedBrowserTelemetryReport, write: (body: Uint8Array) => boolean): Promise<boolean> {
-    if (!this.owned.has(report) || report.used || typeof write !== 'function') return false
+    if (!this.owned.has(report) || typeof write !== 'function' || !report.claimHandoff()) return false
     if (write.constructor?.name === 'AsyncFunction') { await this.cancel(report); return false }
+    let owned = false
     const written = await this.locked(() => {
+      if (report.used) return false
+      owned = true
       if (!this.permitted(report)) return false
       report.burn()
       const body = report.body()
       try { return write(body) === true }
       finally { body.fill(0); report.eraseBody() }
     }, false)
-    if (!written) await this.cancel(report)
+    if (!written && (owned || !report.used)) await this.cancel(report)
     return written
   }
 

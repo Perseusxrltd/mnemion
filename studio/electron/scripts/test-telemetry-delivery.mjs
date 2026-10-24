@@ -177,6 +177,9 @@ test('only one final handoff can succeed and its private nonce never enters the 
   assert.equal(writes.length, 1)
   assert.equal(writes[0].length, 4)
   assert.deepEqual([...report.body()], [0, 0, 0, 0])
+  assert.equal(await f.store.current(report), true)
+  assert.equal(f.invoke('inspect').has_lease, true)
+  await f.store.cancel(report)
   assert.equal(f.invoke('inspect').has_lease, false)
   const raw = await readFile(join(f.root, 'product-telemetry.sqlite3'))
   assert.ok(raw.length <= 96 * 1024)
@@ -202,11 +205,15 @@ test('expiry and narrower company policy erase the durable lease without refund'
   assert.equal(f.invoke('inspect').attempts, 2)
 })
 
-for (const abortFails of [false, true]) test(`active-attempt watcher observes Python opt-out with abort failure=${abortFails}`, async t => {
+for (const handedOff of [false, true]) for (const abortFails of [false, true]) test(`active-attempt watcher observes Python opt-out, handedOff=${handedOff}, abort failure=${abortFails}`, async t => {
   const f = await fixture(t)
   await f.fill()
   const report = await f.store.reserve(f.stamp, network)
   assert.ok(report)
+  if (handedOff) {
+    assert.equal(await f.store.guardedWrite(report, () => true), true)
+    assert.equal(await f.store.current(report), true)
+  }
   const stop = new AbortController()
   t.after(() => stop.abort())
   let cancelled

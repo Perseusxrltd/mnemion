@@ -29,7 +29,7 @@ async function available(run) {
   try { await run() } finally { Object.assign(contract, saved) }
 }
 
-function fixture() {
+function fixture(asyncLocks = false) {
   const values = new Map(), events = new EventTarget(), listeners = new Map()
   const add = events.addEventListener.bind(events), remove = events.removeEventListener.bind(events)
   events.addEventListener = (name, callback, ...rest) => { listeners.set(callback, name); add(name, callback, ...rest) }
@@ -40,9 +40,12 @@ function fixture() {
     removeItem: key => { values.delete(key) } }
   const locks = { request(name, _options, callback) {
     assert.equal(name, choiceKey)
-    if (busy) return Promise.resolve(callback(null))
-    busy = true
-    try { return Promise.resolve(callback({ name })) } finally { busy = false }
+    const run = () => {
+      if (busy) return callback(null)
+      busy = true
+      try { return callback({ name }) } finally { busy = false }
+    }
+    return asyncLocks ? Promise.resolve().then(run) : Promise.resolve(run())
   } }
   const client = () => new BrowserTelemetry(() => storage,
     () => ({ state: restricted ? 'restricted' : 'unmanaged', enabled: !restricted, metric_groups: restricted ? [] : ['usage'] }),
@@ -108,6 +111,19 @@ test('a failed handoff and repeated opt-out or opt-in never refund the reservati
   assert.equal(await client.delivery.reserve(stamp, allowed), null)
   assert.equal(instance.budget().attempts.length, 1)
   assert.ok(!JSON.stringify(client.status()).includes('PRIVATE_SENTINEL'))
+}))
+
+test('queued final handoffs send once and do not cancel the winning in-flight request', async () => available(async () => {
+  const instance = fixture(true), client = instance.first
+  instance.choice(client, true)
+  const report = await client.delivery.reserve(instance.enqueue(), allowed)
+  let writes = 0
+  const outcomes = await Promise.all([0, 1].map(() => client.delivery.guardedWrite(report, () => { writes++; return true })))
+  assert.deepEqual(outcomes.sort(), [false, true])
+  assert.equal(writes, 1)
+  assert.equal(await client.delivery.current(report), true)
+  await client.delivery.cancel(report)
+  assert.equal(instance.budget().lease, null)
 }))
 
 test('the final write fence observes another tab opting out and rejects a stale handle', async () => available(async () => {

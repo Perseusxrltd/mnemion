@@ -9,7 +9,7 @@ in source, along with owned `mnemion-control call`, selected desktop/native-oper
 actions, Studio client hooks, browser connection/legacy UI actions and explicitly
 configured local stdio hooks. Fresh local source/capture work and automatic desktop
 updater cycles now have source owners; remaining workflow and resource/platform
-qualification are unfinished. **No sender or deployed collector exists.** Collection remains
+qualification are unfinished. **No active product sender or deployed collector exists.** Collection remains
 unavailable and the destination is null; no product measurements are collected.
 Native release, resource and anonymity acceptance remain open. All 66 requirement
 texts and the other 65 states remain unchanged; V08 stays Building.
@@ -20,6 +20,11 @@ a bounded private publisher. Their [source validation](../validation/2026-10-24-
 now includes publisher checks and a 12-check actual plain-loopback HTTP journey.
 It does not qualify delivery integration, shared budgets, TLS/provider logging,
 deployed ingress or useful fine-grained statistics in small populations.
+The later [Python TLS component](../validation/2026-10-24-telemetry-transport.md)
+has passing source and isolated loopback checks for transport and handoff ownership.
+It is not wired to application owners and has no selected endpoint. These later
+component results remain separate from the earlier evidence; charged TLS bytes
+do not establish total TCP/IP wire cost or public-ingress qualification.
 
 The earlier [privacy controls](../guides/product-telemetry-controls.md) retain
 their dated evidence: the 19-check core browser journey and eight further
@@ -144,8 +149,9 @@ narrow activation diagnostic does not replace the cold 3.61/3.27/3.09 MiB result
 or establish whole-app, all-platform or CPU acceptance against the unchanged target.
 Deletion/recreation now has source generation-fencing checks. This does not
 protect against an unobservable whole-machine snapshot rollback that restores
-the old token and choice together. The eventual sender must still prove
-cancellation of queued/in-flight work at opt-out; no sender exists yet.
+the old token and choice together. The full product delivery path must still prove
+cancellation of queued/in-flight work at opt-out; no application owner is wired
+to the new Python TLS component.
 
 `schema` and `preview` expose `measurement_catalog`, including the exclusions.
 Preview can describe valid local cells without raw inputs or local day numbers;

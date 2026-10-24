@@ -8,8 +8,10 @@ ASGI ingress adapter and a private closed-week publisher now exist in source.
 The later [native/Python budget components](anonymous-product-telemetry-budget.md)
 add shared private reservations and cancellation fences; their focused source
 checks passed, without qualifying installed delivery or transport costs.
-**There is no sender, installed delivery integration, qualified ingress or
-production activation.** The disclosure remains `collection_available: false` with
+The subsequent [Python TLS transport](../validation/2026-10-24-telemetry-transport.md)
+has passing source and isolated loopback component checks. **There is no active
+product sender, installed owner integration, qualified ingress or production
+activation.** The disclosure remains `collection_available: false` with
 `destination: null`. Source and synthetic utility evidence is recorded in the
 [delivery validation](../validation/2026-10-24-telemetry-delivery.md).
 
@@ -50,8 +52,8 @@ remain unqualified. App/native privacy preview still reports no outbound body.
 `prepare` accepts only bounded `(cell, count)` pairs and reviewed cohort enums.
 It does **not** itself read policy or enforce an attempt budget. The later
 [budget wrapper](anonymous-product-telemetry-budget.md) supplies the shared
-policy/queue reservation in source; a future sender must use that boundary for
-every attempt. Current `schema` exposes `transport_catalog`
+policy/queue reservation in source; every transport must use that boundary for
+its attempt. Current `schema` exposes `transport_catalog`
 with `transport_available: false`; discovery does not activate transport.
 
 ## What the privacy bound covers
@@ -71,18 +73,32 @@ authenticated-contributor or poisoning-resistance guarantee.
 
 At the codec-only checkpoint, the JSON's budget entries were proposals. The later
 native/Python source wrapper implements reservation accounting as follows. Its
-focused source checks passed; integration with an actual sender remains pending:
+preceding source checks passed; application-owner integration remains pending:
 
 | Bound | Current source status |
 | --- | --- |
 | At least 86,400 seconds between attempts | Shared cooldown adds zero through one hour of random jitter; no scheduler exists. |
 | At most seven attempts per rolling week | Private SQLite accounting survives opt-out; every reservation remains spent without a refund. |
 | Conditional weekly bound `7 × ln(3)` | Requires every actual report to use the allowance; no installed sender proves this and it is not a lifetime/person guarantee. |
-| Reserve 65,536 wire bytes per attempt | Fixed accounting plus a 256 KiB rolling-day guard; actual transport bytes remain unmeasured. |
+| Reserve 65,536 wire bytes per attempt | Fixed accounting plus a 256 KiB rolling-day guard. The newer Python component caps charged TLS bytes separately; whole-wire cost remains unqualified. |
 
 Existing local cell/contribution limits clear on explicit choice; the separate
 delivery attempt ledger and cooldown do not. The contract's opt-out fencing, final-send
 cancellation and resource/bandwidth ceilings remain unchanged.
+
+## Python TLS transport follow-up
+
+The [new transport checkpoint](../validation/2026-10-24-telemetry-transport.md)
+describes a Python TLS attempt to a literal IP whose verified hostname and port
+match the disclosed collector. It has no DNS, proxy, credentials, redirect or
+retry; it caps combined charged TLS bytes at **32,768**, response headers at
+**2,048 bytes**, and uses the reservation's existing five-second lifetime.
+Successful handoffs remain cancellable until completion. A private whole-attempt
+claim precedes connection setup and cleanup ownership, so duplicate senders do
+not connect or cancel the winner. Final source checks and a **14-check actual
+TLS/collector journey** cover this path, using loopback and a test CA. Earlier
+codec, budget and browser receipts retain their original scope. No endpoint or application owner is configured, and
+TCP/IP overhead, sensors, resources, ingress and all-platform acceptance remain open.
 
 ## Fixed closed-week output
 

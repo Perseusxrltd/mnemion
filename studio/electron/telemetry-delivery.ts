@@ -40,17 +40,29 @@ export class PreparedTelemetryReport {
   #body: Uint8Array
   #token: string
   #used = false
+  #closed = false
+  #group: string
+  #claimed = false
   constructor(body: Uint8Array, ticket: string, readonly stamp: Readonly<TelemetryStamp>, readonly deadline: number,
-    readonly monotonicDeadline: number) {
+    readonly monotonicDeadline: number, group: string) {
     this.#body = new Uint8Array(body)
     this.#token = ticket
+    this.#group = group
     this.stamp = Object.freeze({ ...stamp })
   }
   get used(): boolean { return this.#used }
+  get closed(): boolean { return this.#closed }
+  get group(): string { return this.#group }
   get ticket(): string { return this.#token }
   body(): Uint8Array { return new Uint8Array(this.#body) }
+  claimHandoff(): boolean {
+    if (this.#claimed || this.#used || this.#closed) return false
+    this.#claimed = true
+    return true
+  }
   burn(): void { this.#used = true }
-  clear(): void { this.#body.fill(0); this.#token = ''; this.#used = true }
+  eraseBody(): void { this.#body.fill(0) }
+  clear(): void { this.eraseBody(); this.#token = ''; this.#used = true; this.#closed = true }
 }
 
 export class NativeTelemetryDelivery extends NativeTelemetryStore {
@@ -105,21 +117,21 @@ export class NativeTelemetryDelivery extends NativeTelemetryStore {
       database.prepare('UPDATE delivery_state SET clock_ms=?, next_ms=?, lease_token=?, lease_deadline_ms=? WHERE singleton=1')
         .run(now, now + DAY + jitter, ticket, now + DEADLINE)
       database.exec('DELETE FROM pending; COMMIT;')
-      return new PreparedTelemetryReport(body, ticket, expected, now + DEADLINE, started + DEADLINE)
+      return new PreparedTelemetryReport(body, ticket, expected, now + DEADLINE, started + DEADLINE,
+        this.wire().specification.views[this.wire().decode(body).view].group)
     } catch { return null }
     finally { try { database?.close() } catch { /* Optional delivery cannot fail memory work. */ } }
   }
 
   private permitted(database: DatabaseSync, report: PreparedTelemetryReport): boolean {
-    if (!(report instanceof PreparedTelemetryReport) || report.used || !this.available) return false
+    if (!(report instanceof PreparedTelemetryReport) || report.closed || !this.available) return false
     const now = this.now(), { current } = state(database)
     const preference = this.preferences(database), company = this.company()
-    const { view } = this.wire().decode(report.body())
     return integer(now) && this.monotonic() < report.monotonicDeadline && current.clock_ms <= now && now < current.lease_deadline_ms &&
       current.lease_deadline_ms === report.deadline && current.lease_token === report.ticket &&
       preference.revision === report.stamp.revision && preference.store_generation === report.stamp.store_generation &&
       preference.enabled === 1 && preference.disclosure_version === this.disclosure.version && company.enabled &&
-      company.groups.includes(this.wire().specification.views[view].group)
+      company.groups.includes(report.group)
   }
 
   async current(report: PreparedTelemetryReport): Promise<boolean> {
@@ -152,24 +164,30 @@ export class NativeTelemetryDelivery extends NativeTelemetryStore {
     finally { try { database?.close() } catch { /* No retry or diagnostics. */ } }
   }
 
-  /** Only a reviewed synchronous nonblocking socket handoff belongs here. */
+  /** Only a reviewed synchronous nonblocking socket handoff belongs here.
+   * A successful handoff remains cancellable; its owner must finish with cancel(). */
   async guardedWrite(report: PreparedTelemetryReport, write: (body: Uint8Array) => boolean): Promise<boolean> {
-    if (!(report instanceof PreparedTelemetryReport) || report.used || typeof write !== 'function') return false
+    if (!(report instanceof PreparedTelemetryReport) || typeof write !== 'function' || !report.claimHandoff()) return false
     if (write.constructor?.name === 'AsyncFunction') { await this.cancel(report); return false }
-    let database: DatabaseSync | undefined, result = false, released = false
+    let database: DatabaseSync | undefined, result = false, owned = false
     try {
       database = await this.open(true)
       database.exec('BEGIN IMMEDIATE')
+      if (report.used) return false
+      owned = true
       if (!this.permitted(database, report)) return false
       report.burn()
-      try { result = write(report.body()) === true } catch { result = false }
-      database.prepare('UPDATE delivery_state SET lease_token=NULL, lease_deadline_ms=0 WHERE singleton=1 AND lease_token=?').run(report.ticket)
+      const body = report.body()
+      try { result = write(body) === true } catch { result = false }
+      finally { body.fill(0); report.eraseBody() }
       database.exec('COMMIT')
-      released = true
     } catch { result = false }
     finally {
       try { database?.close() } catch { /* No retry or diagnostics. */ }
-      if (released) report.clear(); else await this.cancel(report)
+      if (owned || !report.used) {
+        report.eraseBody()
+        if (!result) await this.cancel(report)
+      }
     }
     return result
   }

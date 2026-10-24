@@ -8,8 +8,9 @@ share private reservation accounting and cancellation fences. The focused
 [native/Python source checks](#source-validation) passed. A later
 [browser origin budget](#browser-origin-budget) now has focused and actual-browser
 [component evidence](../validation/2026-10-24-telemetry-browser-delivery.md).
-There is **no product sender, installed network integration or
-production activation**; `collection_available: false`, `destination: null`
+The subsequent [Python TLS transport](../validation/2026-10-24-telemetry-transport.md)
+now has source/runtime and isolated loopback component evidence. There is **no active product sender,
+installed owner integration or production activation**; `collection_available: false`, `destination: null`
 and the empty outbound preview remain unchanged.
 
 This follows the [codec/collector/publisher checkpoint](anonymous-product-telemetry-delivery.md).
@@ -93,8 +94,19 @@ rechecks permission and consumes the local handle before invoking one reviewed
 **synchronous, nonblocking socket handoff**. That same lock serializes an explicit
 choice change. DNS, TLS setup, response waiting, arbitrary callbacks and awaited
 work do not belong inside this critical section. The source currently has no
-transport to hand bytes to. Bytes already handed to a transport cannot be
-recalled by a later opt-out; installed cancellation still requires its own proof.
+production transport wiring. A newer Python TLS component performs connection
+setup outside this lock. Bytes already handed to a transport cannot be recalled
+by a later opt-out; installed cancellation still requires its own proof.
+
+The subsequent source change claims each report's application handoff once
+before competing callers can proceed. A losing handoff returns without writing
+again or cancelling the winner. All three implementations now erase the used
+body but retain the lease after successful handoff, so the active attempt can
+still be cancelled. Its owner must call `cancel()` on completion, including a
+successful response. Python's `claim_transport()` separately claims the full
+attempt before setup or cleanup ownership, so a duplicate cannot connect or
+cancel the winner. The [transport component checks](../validation/2026-10-24-telemetry-transport.md)
+cover these changes; the older results below remain scoped to their earlier source.
 
 The optional watcher checks the current report at a nominal 25 ms interval only
 during an already active attempt. It can request abortion when permission or the
@@ -149,10 +161,12 @@ to gate effective collection.
 
 The final browser handoff rechecks policy and both deadlines under the privacy
 Web Lock, accepts only a synchronous nonblocking callback and erases the body
-after one use. Unlike the native/Python handoff, a successful browser handoff
-keeps its private lease cancellable until completion or abort; the future owner
-must finish it with `cancel()`. This is a component boundary with no actual
-sender. It cannot recall bytes already handed to a transport.
+after one use. A successful browser handoff keeps its private lease cancellable
+until completion or abort; the owner must finish it with `cancel()`. The later
+native/Python handoff now follows this same rule. The new application-handoff
+claim prevents competing calls from sending twice or cancelling the winner;
+the later transport report records its separate component evidence. No browser
+product sender is wired. Bytes already handed to a transport cannot be recalled.
 
 Only an owned active attempt installs storage-change and page-hide listeners,
 same-tab invalidation and nominal 25 ms checks. Cancellation removes these
@@ -165,12 +179,16 @@ reservation, final fencing, one active loopback fetch aborted by opt-out, and
 quota/crash recovery. Cleanup of three isolated contexts, the browser session
 and server was verified. These component results do not qualify actual whole-wire
 cost, production transport, resources, all platforms or released telemetry. The
-native/Python evidence below remains separate.
+native/Python evidence below remains separate. The later
+[transport checkpoint](../validation/2026-10-24-telemetry-transport.md) records
+**21 fresh actual Chromium checks**, including competing handoffs that preserve
+the winner's live lease, and verified cleanup; it does not replace the earlier receipt.
 
 ## Source validation
 
 These results cover the preceding **native/Python** batch, before the browser
-budget implementation. No browser-budget acceptance is inferred from them.
+budget and subsequent TLS/handoff-ownership changes. No acceptance of those later
+changes is inferred from them.
 
 | Final source check | Result and scope |
 | --- | --- |

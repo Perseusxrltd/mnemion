@@ -197,6 +197,8 @@ def test_completed_and_throwing_handoffs_are_single_use_and_never_refunded(insta
     assert len(writes) == 1 and len(writes[0]) == 4
     assert not f.budget.guarded_write(report, lambda packet: writes.append(packet) or True)
     assert report._body == b"\0" * 4
+    assert f.budget.current(report)
+    f.budget.cancel(report)
     assert f.sql("SELECT lease_token FROM delivery_state") == [(None,)]
     f.now[0] = f.sql("SELECT next_ms FROM delivery_state")[0][0]
     f.fill()
@@ -211,12 +213,16 @@ def test_completed_and_throwing_handoffs_are_single_use_and_never_refunded(insta
 
 
 @pytest.mark.parametrize("abort_raises", [False, True])
+@pytest.mark.parametrize("handed_off", [False, True])
 def test_in_flight_watcher_aborts_after_other_process_opt_out_and_clears_memory(
-    installation, abort_raises
+    installation, abort_raises, handed_off
 ):
     f = installation
     f.fill()
     report = f.reserve()
+    if handed_off:
+        assert f.budget.guarded_write(report, lambda _packet: True)
+        assert f.budget.current(report)
     program = """
 import json,sys
 from pathlib import Path
@@ -255,6 +261,30 @@ print(json.dumps({'enabled':result['user_enabled'],'pending':result['pending_rec
     asyncio.run(run())
     assert report.preview() is None and report._body == b"\0" * 4
     assert f.sql("SELECT count(*) FROM delivery_attempts") == [(1,)]
+    assert f.sql("SELECT lease_token FROM delivery_state") == [(None,)]
+
+
+def test_concurrent_handoffs_do_not_repeat_or_cancel_the_winning_request(installation):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+
+    f = installation
+    f.fill()
+    report = f.reserve()
+    entered = Barrier(2)
+    writes = []
+
+    def handoff():
+        entered.wait(timeout=5)
+        return f.budget.guarded_write(report, lambda body: writes.append(body) or True)
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        tasks = [executor.submit(handoff) for _ in range(2)]
+        assert sorted(task.result(timeout=10) for task in tasks) == [False, True]
+    assert len(writes) == 1
+    assert f.budget.current(report)
+    assert report._body == b"\0" * 4
+    f.budget.cancel(report)
     assert f.sql("SELECT lease_token FROM delivery_state") == [(None,)]
 
 

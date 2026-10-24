@@ -127,6 +127,11 @@ class PreparedReport:
         "deadline_ms",
         "_monotonic_deadline",
         "_used",
+        "_closed",
+        "_group",
+        "_claim_lock",
+        "_claimed",
+        "_transport_claimed",
     )
 
     def __init__(self, body, token, revision, generation, deadline, monotonic_deadline):
@@ -135,11 +140,36 @@ class PreparedReport:
         self.revision, self.generation, self.deadline_ms = revision, generation, deadline
         self._monotonic_deadline = monotonic_deadline
         self._used = False
+        self._closed = False
+        self._group = view(decode(body)[0])["group"]
+        from threading import Lock
+
+        self._claim_lock = Lock()
+        self._claimed = False
+        self._transport_claimed = False
+
+    def claim_transport(self):
+        with self._claim_lock:
+            if self._transport_claimed or self._used or self._closed:
+                return False
+            self._transport_claimed = True
+            return True
+
+    def claim_handoff(self):
+        with self._claim_lock:
+            if self._claimed or self._used or self._closed:
+                return False
+            self._claimed = True
+            return True
+
+    def erase_body(self):
+        self._body[:] = b"\0" * len(self._body)
 
     def clear(self):
-        self._body[:] = b"\0" * len(self._body)
+        self.erase_body()
         self._token = ""
         self._used = True
+        self._closed = True
 
     def preview(self):
         from .wire import preview
@@ -256,20 +286,19 @@ class DeliveryBudget:
             return None
 
     def _current(self, connection, report):
-        if type(report) is not PreparedReport or report._used:
+        if type(report) is not PreparedReport or report._closed:
             return False
         now = _now_ms()
         state, _ = _state(connection)
         preference = policy._preferences(connection)
         company = policy.company_policy(self.policy_path)
-        identifier, _, _ = decode(bytes(report._body))
         return (
             _integer(now)
             and _monotonic() < report._monotonic_deadline
             and state[0] <= now < state[3]
             and state[3] == report.deadline_ms
             and state[2] == report._token
-            and view(identifier)["group"] in company["metric_groups"]
+            and report._group in company["metric_groups"]
             and aggregate._permitted(preference, company, report.revision, report.generation)
         )
 
@@ -309,20 +338,25 @@ class DeliveryBudget:
         """Serialize one nonblocking packet handoff with an explicit opt-out.
 
         No awaits or connection setup may run under this short database lock.
-        On any outcome the report is consumed, and its attempt stays spent.
+        The body is consumed on any outcome and the attempt stays spent. A
+        successful handoff retains its lease for in-flight cancellation; the
+        transport must finish with ``cancel`` even after a successful response.
         Bytes already handed to a transport cannot be recalled by this fence.
         """
-        if type(report) is not PreparedReport or report._used or not callable(write):
+        if type(report) is not PreparedReport or not callable(write) or not report.claim_handoff():
             return False
         from inspect import iscoroutinefunction
 
         if iscoroutinefunction(write):
             self.cancel(report)
             return False
-        result, released = False, False
+        result, owned = False, False
         try:
             with closing(self._open()) as connection:
                 connection.execute("BEGIN IMMEDIATE")
+                if report._used:
+                    return False
+                owned = True
                 if not self._current(connection, report):
                     return False
                 # Burn the process-local handle before invoking the trusted
@@ -332,19 +366,14 @@ class DeliveryBudget:
                     result = write(bytes(report._body)) is True
                 except Exception:
                     result = False
-                connection.execute(
-                    "UPDATE delivery_state SET lease_token=NULL, lease_deadline_ms=0 WHERE singleton=1 AND lease_token=?",
-                    (report._token,),
-                )
                 connection.commit()
-                released = True
         except _FAILURES:
             result = False
         finally:
-            if released:
-                report.clear()
-            else:
-                self.cancel(report)
+            if owned or not report._used:
+                report.erase_body()
+                if not result:
+                    self.cancel(report)
         return result
 
     async def watch(self, report: PreparedReport, abort) -> None:

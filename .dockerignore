@@ -46,6 +46,7 @@ studio/electron/*
 !studio/electron/capture-messages.ts
 !studio/electron/telemetry-catalog.ts
 !studio/electron/telemetry-workflow.ts
+!studio/electron/telemetry-wire.ts
 !studio/README.md
 !assets/
 assets/*
