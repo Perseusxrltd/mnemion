@@ -3,7 +3,7 @@
 **Source checkpoint, 24 October 2026; V08 is Building.** Local choice, disclosure,
 catalog, aggregate queues and selected owned CLI, desktop/native-operator,
 Studio/browser, local stdio and selected maintenance hooks are implemented in
-source. There is no product sender or collector: `collection_available` is
+source. There is no product sender or deployed collector: `collection_available` is
 `false`, the destination is `null`, and
 `effective_enabled` stays `false`. Saving an enabled preference does not activate
 analytics. The core browser journey passed **19 checks at 00:51:17 UTC**, followed
@@ -21,6 +21,11 @@ without qualifying a packaged telemetry release.
 These controls and this documentation update are excluded from the isolated
 4.46.6 dependency-security release. The [contract](../implementation/anonymous-product-telemetry.md)
 records the dated source evidence and full remaining scope.
+The separate [delivery components](../implementation/anonymous-product-telemetry-delivery.md)
+are also source-only: their packet encoder and private weekly publisher do not
+enable sending. An isolated **12-check plain-loopback HTTP journey passed**;
+this did not enable product collection or qualify TLS/provider logging. Shared
+budgets, deployed ingress and installed delivery acceptance remain open.
 
 ## In the app
 
@@ -71,6 +76,8 @@ printf '%s\n' '{"action":"preview"}' | mnemion-service telemetry
 including fixed numeric buckets, contribution limits and exclusions. It also
 returns `owned_control_coverage`, the full owned-CLI operation map, and
 `owned_origin_coverage` for the desktop, Studio, UI, MCP and maintenance boundaries.
+It exposes the source delivery format as `transport_catalog`, with
+`transport_available: false`; no destination is configured by reading it.
 `status` distinguishes `user_enabled`,
 `effective_enabled`, `reason`, `storage`, company restriction, `revision` and
 `store_generation`. The generation is a private local control token, never an
@@ -182,7 +189,7 @@ generic SDK/API requests, polling, privacy controls and unowned continuation
 transports remain unmeasured. Async acknowledgement is not completion. See the
 [explicit ownership maps](../implementation/anonymous-product-telemetry-catalog.md#owned-desktop-native-operator-and-studio-coverage)
 for the selected actions and exclusions. These hooks remain inactive: no sender,
-collector or production collection is available. The new UI map adds five
+deployed collector or production collection is available. The new UI map adds five
 browser connection actions and 11 selected legacy Studio methods, with 18 legacy
 exclusions. Browser hooks skip desktop connections already owned by IPC, respect
 company sign-in cancellation and inspect only reviewed boolean result flags.
@@ -251,7 +258,7 @@ security records. These controls do not change memory access or disable those
 records. The [full V08 contract](../implementation/anonymous-product-telemetry.md)
 and [versioned catalog](../implementation/anonymous-product-telemetry-catalog.md)
 retain app, agent, headless and remote-workflow coverage. Remaining workflow
-qualification, other autonomous-work ownership, the sender, collector and anonymity
+qualification, other autonomous-work ownership, the sender, deployed collector and anonymity
 proof remain unfinished. Expiry
 prunes on activity. Local generation checks cannot detect a whole-machine
 snapshot rollback that restores both the old token and choice; final sender

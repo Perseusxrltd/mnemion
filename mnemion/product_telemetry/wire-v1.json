@@ -1,0 +1,634 @@
+{
+  "version": 1,
+  "mechanism": "signed_hadamard_coordinate",
+  "truth_probability": {
+    "numerator": 3,
+    "denominator": 4
+  },
+  "protected_unit": "One sampled categorical value in the chosen permitted view; not participation or a person's lifetime history.",
+  "packet": {
+    "bytes": 4,
+    "fields": [
+      "version",
+      "view",
+      "coordinate",
+      "positive_sign"
+    ],
+    "positive_sign_values": [
+      0,
+      1
+    ]
+  },
+  "maximum_rows": 512,
+  "maximum_cell_count": 255,
+  "maximum_report_bytes": 4,
+  "reporting": {
+    "minimum_reports_per_view": 4096,
+    "maximum_reports_per_window": 10000000,
+    "simultaneous_error_probability": 0.05,
+    "minimum_report_bucket": 4096,
+    "window_seconds": 604800,
+    "retained_windows": 8
+  },
+  "budget_proposal": {
+    "minimum_attempt_spacing_seconds": 86400,
+    "maximum_attempts_per_rolling_week": 7,
+    "privacy_loss_per_report": "ln(3)",
+    "privacy_loss_per_rolling_week_upper_bound": "7 * ln(3)",
+    "wire_reservation_per_attempt_bytes": 65536,
+    "status": "requires shared budget, transport and release qualification"
+  },
+  "views": [
+    {
+      "id": 0,
+      "name": "feature_family",
+      "group": "usage",
+      "source": {
+        "metric": "submissions",
+        "field": "family"
+      },
+      "weight": 40,
+      "domain": 16,
+      "values": [
+        "unobserved",
+        "setup",
+        "workspace",
+        "memory",
+        "capture",
+        "sources",
+        "librarian",
+        "models",
+        "backup",
+        "recovery",
+        "update",
+        "host",
+        "evaluation",
+        "journal",
+        "access",
+        "vault"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "feature",
+      "group": "usage",
+      "source": {
+        "metric": "submissions",
+        "field": "workflow"
+      },
+      "weight": 16,
+      "domain": 128,
+      "values": [
+        "unobserved",
+        "setup.create",
+        "setup.configure",
+        "setup.agent_install",
+        "setup.agent_remove",
+        "workspace.connect",
+        "workspace.sign_in",
+        "workspace.open",
+        "workspace.switch",
+        "workspace.disconnect",
+        "workspace.forget",
+        "memory.list",
+        "memory.read",
+        "memory.recall",
+        "memory.context",
+        "memory.knowledge",
+        "memory.core_read",
+        "memory.save",
+        "memory.revise",
+        "memory.review",
+        "memory.forget",
+        "memory.core_write",
+        "memory.import",
+        "memory.export",
+        "capture.configure",
+        "capture.preview",
+        "capture.collect",
+        "capture.deliver",
+        "capture.pause",
+        "capture.drain",
+        "capture.remove",
+        "sources.configure",
+        "sources.scan",
+        "sources.sync",
+        "sources.pause",
+        "sources.resume",
+        "sources.repair",
+        "sources.remove",
+        "librarian.configure",
+        "librarian.run",
+        "librarian.cancel",
+        "librarian.accept",
+        "librarian.reject",
+        "librarian.undo",
+        "models.configure",
+        "models.prepare",
+        "models.reindex",
+        "models.pause",
+        "models.resume",
+        "models.cancel",
+        "backup.configure",
+        "backup.create",
+        "backup.list",
+        "backup.verify",
+        "backup.prune",
+        "recovery.inspect",
+        "recovery.restore",
+        "recovery.finish",
+        "recovery.discard",
+        "update.check",
+        "update.download",
+        "update.verify",
+        "update.apply",
+        "update.restart",
+        "update.rollback",
+        "host.adopt",
+        "host.enroll",
+        "host.inspect",
+        "host.start",
+        "host.stop",
+        "host.plan_upgrade",
+        "host.resolve",
+        "host.revoke",
+        "evaluation.create_dataset",
+        "evaluation.run",
+        "evaluation.cancel",
+        "evaluation.assess",
+        "evaluation.compare",
+        "evaluation.export",
+        "evaluation.remove_dataset",
+        "journal.configure",
+        "journal.push",
+        "journal.organize",
+        "journal.backfill",
+        "journal.recover",
+        "access.configure",
+        "access.invite",
+        "access.grant",
+        "access.revoke",
+        "vault.configure",
+        "vault.read",
+        "vault.write",
+        "vault.delete",
+        "vault.import",
+        "vault.export"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "surface",
+      "group": "usage",
+      "source": {
+        "metric": "submissions",
+        "field": "surface"
+      },
+      "weight": 8,
+      "domain": 8,
+      "values": [
+        "unobserved",
+        "desktop",
+        "browser",
+        "native_agent",
+        "headless"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "outcome",
+      "group": "usage",
+      "source": {
+        "metric": "outcomes",
+        "field": "bucket"
+      },
+      "weight": 40,
+      "domain": 16,
+      "values": [
+        "unobserved",
+        "success",
+        "accepted",
+        "deferred",
+        "cancelled",
+        "denied",
+        "unsupported",
+        "failed",
+        "unconfirmed"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "failure_reason",
+      "group": "reliability",
+      "source": {
+        "metric": "reasons",
+        "field": "bucket"
+      },
+      "weight": 16,
+      "domain": 16,
+      "values": [
+        "unobserved",
+        "invalid_input",
+        "authorization",
+        "conflict",
+        "host_busy",
+        "resource_pressure",
+        "offline",
+        "network_timeout",
+        "readiness_timeout",
+        "integrity_check",
+        "recovery_required",
+        "other_failure"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "latency_ms",
+      "group": "performance",
+      "source": {
+        "metric": "latency_ms",
+        "field": "bucket"
+      },
+      "weight": 32,
+      "domain": 16,
+      "values": [
+        "unobserved",
+        "0-9",
+        "10-49",
+        "50-199",
+        "200-999",
+        "1000-4999",
+        "5000-29999",
+        "30000-119999",
+        "120000+"
+      ],
+      "unit": "monotonic_milliseconds"
+    },
+    {
+      "id": 6,
+      "name": "result_items",
+      "group": "usage",
+      "source": {
+        "metric": "result_items",
+        "field": "bucket"
+      },
+      "weight": 4,
+      "domain": 8,
+      "values": [
+        "unobserved",
+        "0",
+        "1",
+        "2-9",
+        "10-99",
+        "100-999",
+        "1000-9999",
+        "10000+"
+      ],
+      "unit": "observed_items"
+    },
+    {
+      "id": 7,
+      "name": "work_items",
+      "group": "usage",
+      "source": {
+        "metric": "work_items",
+        "field": "bucket"
+      },
+      "weight": 4,
+      "domain": 8,
+      "values": [
+        "unobserved",
+        "0",
+        "1",
+        "2-9",
+        "10-99",
+        "100-999",
+        "1000-9999",
+        "10000+"
+      ],
+      "unit": "observed_items"
+    },
+    {
+      "id": 8,
+      "name": "queue_items",
+      "group": "resources",
+      "source": {
+        "metric": "queue_items",
+        "field": "bucket"
+      },
+      "weight": 4,
+      "domain": 8,
+      "values": [
+        "unobserved",
+        "0",
+        "1",
+        "2-9",
+        "10-99",
+        "100-999",
+        "1000-9999",
+        "10000+"
+      ],
+      "unit": "observed_items"
+    },
+    {
+      "id": 9,
+      "name": "rss_bytes",
+      "group": "resources",
+      "source": {
+        "metric": "rss_bytes",
+        "field": "bucket"
+      },
+      "weight": 16,
+      "domain": 16,
+      "values": [
+        "unobserved",
+        "0",
+        "1-67108864",
+        "67108865-268435456",
+        "268435457-1073741824",
+        "1073741825-4294967296",
+        "4294967297-17179869184",
+        "17179869185-68719476736",
+        "68719476737+"
+      ],
+      "unit": "process_resident_bytes"
+    },
+    {
+      "id": 10,
+      "name": "cpu_millicores",
+      "group": "resources",
+      "source": {
+        "metric": "cpu_millicores",
+        "field": "bucket"
+      },
+      "weight": 16,
+      "domain": 16,
+      "values": [
+        "unobserved",
+        "0",
+        "1",
+        "2-10",
+        "11-100",
+        "101-500",
+        "501-1000",
+        "1001-4000",
+        "4001+"
+      ],
+      "unit": "process_cpu_milliseconds_per_elapsed_second"
+    },
+    {
+      "id": 11,
+      "name": "resource_budget_bytes",
+      "group": "resources",
+      "source": {
+        "metric": "resource_budget_bytes",
+        "field": "bucket"
+      },
+      "weight": 8,
+      "domain": 16,
+      "values": [
+        "unobserved",
+        "0",
+        "1-67108864",
+        "67108865-268435456",
+        "268435457-1073741824",
+        "1073741825-4294967296",
+        "4294967297-17179869184",
+        "17179869185-68719476736",
+        "68719476737+"
+      ],
+      "unit": "configured_memory_bytes"
+    },
+    {
+      "id": 12,
+      "name": "queue_drops",
+      "group": "resources",
+      "source": {
+        "metric": "queue_drops",
+        "field": "bucket"
+      },
+      "weight": 4,
+      "domain": 8,
+      "values": [
+        "unobserved",
+        "0",
+        "1",
+        "2-9",
+        "10-99",
+        "100-999",
+        "1000-9999",
+        "10000+"
+      ],
+      "unit": "local_discarded_observations"
+    },
+    {
+      "id": 13,
+      "name": "payload_bytes_sent",
+      "group": "performance",
+      "source": {
+        "metric": "payload_bytes_sent",
+        "field": "bucket"
+      },
+      "weight": 4,
+      "domain": 16,
+      "values": [
+        "unobserved",
+        "0",
+        "1-1024",
+        "1025-16384",
+        "16385-262144",
+        "262145-4194304",
+        "4194305-67108864",
+        "67108865-1073741824",
+        "1073741825+"
+      ],
+      "unit": "application_bytes"
+    },
+    {
+      "id": 14,
+      "name": "payload_bytes_received",
+      "group": "performance",
+      "source": {
+        "metric": "payload_bytes_received",
+        "field": "bucket"
+      },
+      "weight": 4,
+      "domain": 16,
+      "values": [
+        "unobserved",
+        "0",
+        "1-1024",
+        "1025-16384",
+        "16385-262144",
+        "262145-4194304",
+        "4194305-67108864",
+        "67108865-1073741824",
+        "1073741825+"
+      ],
+      "unit": "application_bytes"
+    },
+    {
+      "id": 15,
+      "name": "wire_bytes_sent",
+      "group": "performance",
+      "source": {
+        "metric": "wire_bytes_sent",
+        "field": "bucket"
+      },
+      "weight": 4,
+      "domain": 16,
+      "values": [
+        "unobserved",
+        "0",
+        "1-1024",
+        "1025-16384",
+        "16385-262144",
+        "262145-4194304",
+        "4194305-67108864",
+        "67108865-1073741824",
+        "1073741825+"
+      ],
+      "unit": "measured_wire_bytes"
+    },
+    {
+      "id": 16,
+      "name": "wire_bytes_received",
+      "group": "performance",
+      "source": {
+        "metric": "wire_bytes_received",
+        "field": "bucket"
+      },
+      "weight": 4,
+      "domain": 16,
+      "values": [
+        "unobserved",
+        "0",
+        "1-1024",
+        "1025-16384",
+        "16385-262144",
+        "262145-4194304",
+        "4194305-67108864",
+        "67108865-1073741824",
+        "1073741825+"
+      ],
+      "unit": "measured_wire_bytes"
+    },
+    {
+      "id": 17,
+      "name": "throughput_bytes_per_second",
+      "group": "performance",
+      "source": {
+        "metric": "throughput_bytes_per_second",
+        "field": "bucket"
+      },
+      "weight": 4,
+      "domain": 16,
+      "values": [
+        "unobserved",
+        "0",
+        "1-1024",
+        "1025-16384",
+        "16385-262144",
+        "262145-4194304",
+        "4194305-67108864",
+        "67108865-1073741824",
+        "1073741825+"
+      ],
+      "unit": "measured_wire_bytes_per_second"
+    },
+    {
+      "id": 18,
+      "name": "stored_bytes",
+      "group": "resources",
+      "source": {
+        "metric": "stored_bytes",
+        "field": "bucket"
+      },
+      "weight": 4,
+      "domain": 16,
+      "values": [
+        "unobserved",
+        "0",
+        "1-1024",
+        "1025-16384",
+        "16385-262144",
+        "262145-4194304",
+        "4194305-67108864",
+        "67108865-1073741824",
+        "1073741825+"
+      ],
+      "unit": "stored_bytes"
+    },
+    {
+      "id": 19,
+      "name": "reported_tokens",
+      "group": "resources",
+      "source": {
+        "metric": "reported_tokens",
+        "field": "bucket"
+      },
+      "weight": 4,
+      "domain": 8,
+      "values": [
+        "unobserved",
+        "0",
+        "1",
+        "2-99",
+        "100-999",
+        "1000-9999",
+        "10000-99999",
+        "100000+"
+      ],
+      "unit": "model_reported_tokens"
+    },
+    {
+      "id": 20,
+      "name": "platform",
+      "group": "resources",
+      "source": {
+        "cohort": "platform"
+      },
+      "weight": 8,
+      "domain": 8,
+      "values": [
+        "unobserved",
+        "windows",
+        "macos",
+        "linux",
+        "other"
+      ]
+    },
+    {
+      "id": 21,
+      "name": "architecture",
+      "group": "resources",
+      "source": {
+        "cohort": "architecture"
+      },
+      "weight": 4,
+      "domain": 4,
+      "values": [
+        "unobserved",
+        "x64",
+        "arm64",
+        "other"
+      ]
+    },
+    {
+      "id": 22,
+      "name": "release_family",
+      "group": "reliability",
+      "source": {
+        "cohort": "release_family"
+      },
+      "weight": 8,
+      "domain": 4,
+      "values": [
+        "unobserved",
+        "before_4",
+        "4",
+        "5_plus"
+      ]
+    }
+  ]
+}

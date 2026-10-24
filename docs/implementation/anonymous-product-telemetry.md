@@ -34,7 +34,19 @@ preference does not complete disclosure or activate collection. The preview
 returns the measurement catalog, an empty local aggregate list, no outbound body
 and zero outgoing bytes. Owned CLI, desktop/native-operator, Studio/browser and
 explicit local stdio and selected fresh-maintenance hooks exist in source; there is no
-product sender, collector, production analytics or qualified anonymous ingress.
+product sender, deployed collector, production analytics or qualified anonymous ingress.
+
+The later [delivery components](anonymous-product-telemetry-delivery.md) implement
+a four-byte randomized body, fixed weekly aggregation, an ASGI adapter and a
+bounded private publisher in source. Their conditional per-report privacy bound
+does not establish participation or network anonymity. Shared delivery budgets,
+sender integration and deployed qualification remain open; the
+[delivery validation](../validation/2026-10-24-telemetry-delivery.md) records
+47 Python checks, six Node and six actual Electron codec checks, and a
+12-check isolated plain-loopback HTTP journey. The final Python selection and
+frontend build passed; full resource/platform acceptance remains pending. These
+checks do not qualify a product sender or TLS/provider logging. Material limits
+on small-population statistics remain.
 
 The [versioned catalog and local queues](anonymous-product-telemetry-catalog.md)
 now encode **94 workflows in 15 families** with fixed numeric buckets and
@@ -170,10 +182,10 @@ after optimization still exceeds the unchanged **2 MiB** target and does not
 replace the prior 3.61/3.27 MiB observations. The corrected isolated app-main
 probe then recorded **1.19 MiB** added RSS across 32 paired workflows after
 `client-ready`. This headless activation diagnostic does not qualify whole-app,
-all-platform or CPU overhead, or replace the cold measurements. Final
-builds/input inventory, integration, CI and full resource/platform acceptance
-remain pending.
-There is still no sender or collector; V08 remains Building.
+all-platform or CPU overhead, or replace the cold measurements. The background
+batch's final builds/input inventory, main integration and source CI passed;
+full resource/platform acceptance remains pending.
+There is still no sender or deployed collector; V08 remains Building.
 
 Saved source checks passed **10 policy tests** after the opt-out revision change,
 **12 native bridge/operator tests, 26 web/CSP tests and seven browser policy
@@ -283,10 +295,12 @@ records; those records must never be forwarded as a telemetry fallback.
 
 The following **23 October design example** is retained as a wire-format
 proposal. Its labels and buckets are not the current local encoding in the
-[versioned catalog](anonymous-product-telemetry-catalog.md), and no outbound
-endpoint or cohort view has been implemented or accepted. A future wire format
-must use fixed reviewed enums, bounded views and no arbitrary combinations,
-exact timestamps or identity fields. Today's preview remains empty of outbound data.
+[versioned catalog](anonymous-product-telemetry-catalog.md) or the later
+[delivery component format](anonymous-product-telemetry-delivery.md). That source
+format defines bounded cohort views and an ingress adapter, but has no sender,
+installed delivery or qualified endpoint. The fixed-enum requirement still
+excludes arbitrary combinations, exact timestamps and identity fields. Today's
+app/native preview remains empty of outbound data.
 
 ```json
 {

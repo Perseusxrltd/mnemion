@@ -9,10 +9,17 @@ in source, along with owned `mnemion-control call`, selected desktop/native-oper
 actions, Studio client hooks, browser connection/legacy UI actions and explicitly
 configured local stdio hooks. Fresh local source/capture work and automatic desktop
 updater cycles now have source owners; remaining workflow and resource/platform
-qualification are unfinished. **No sender or collector is implemented.** Collection remains
+qualification are unfinished. **No sender or deployed collector exists.** Collection remains
 unavailable and the destination is null; no product measurements are collected.
 Native release, resource and anonymity acceptance remain open. All 66 requirement
 texts and the other 65 states remain unchanged; V08 stays Building.
+
+Separate [delivery components](anonymous-product-telemetry-delivery.md) now define
+23 weighted permitted views, a four-byte randomized body, weekly aggregation and
+a bounded private publisher. Their [source validation](../validation/2026-10-24-telemetry-delivery.md)
+now includes publisher checks and a 12-check actual plain-loopback HTTP journey.
+It does not qualify delivery integration, shared budgets, TLS/provider logging,
+deployed ingress or useful fine-grained statistics in small populations.
 
 The earlier [privacy controls](../guides/product-telemetry-controls.md) retain
 their dated evidence: the 19-check core browser journey and eight further
@@ -145,6 +152,8 @@ Preview can describe valid local cells without raw inputs or local day numbers;
 it is not an event history or a serialized outbound report. In the current
 unavailable state, `local_aggregates` is empty, `outbound_body` is null,
 `outbound_bytes` is zero and `transport_available` is false.
+Local `schema` also exposes the source `transport_catalog`; it does not connect
+the delivery encoder to these queues or make transport available.
 
 ## Owned headless control coverage
 
@@ -482,8 +491,10 @@ The following implementation and acceptance work remains open:
   origin; define ownership before measuring autonomous librarian/source work.
   Preserve the broader connector/host requirements and visible coverage gaps.
 - **Metrics and budgets:** finite buckets and local contribution caps are now
-  implemented. Remaining producer placement, sampling rates, outbound reporting windows,
-  allowed cohort views and aggregate retention remain undecided. Verify useful
+  implemented. The delivery component selects fixed views, closed-week windows
+  and eight-window private output retention; its attempt/wire budgets remain
+  unenforced proposals. Remaining producer placement, installed sampling and
+  shared budget enforcement still need implementation and review. Verify useful
   measurements and the existing queue/RAM/CPU/batch/wire ceilings under load;
   local numeric limits alone are not a privacy mechanism. Evaluation-quality
   views, cross-restart completion, end-to-end recovery boundaries and final
@@ -491,11 +502,12 @@ The following implementation and acceptance work remains open:
   checks do not establish whole-machine snapshot rollback protection.
 - **Anonymity and output:** substantiate ingress/provider log behavior, transient
   source-IP handling, metadata stripping and absence of retained raw events.
-  Decide suppression/complementary-cell controls and whether local differential
-  privacy, trusted aggregation or secure aggregation is needed. Protected unit,
-  composition, privacy budget, minimum cohort rule and utility are not chosen
-  here. Report counts cannot prove distinct contributors; a clean payload cannot
-  prove network anonymity. No stable IDs may be introduced to fill these gaps.
+  The source delivery mechanism has a conditional per-report `ln(3)` local
+  privacy bound, a 4,096-report per-view gate and rare-cell suppression.
+  Participation, composition and lifetime privacy, attack resistance, publisher
+  and backup-retention qualification, and useful statistics remain open.
+  Its 4,096-report threshold cannot prove distinct contributors; a clean payload
+  cannot prove network anonymity. No stable IDs may be introduced to fill these gaps.
 
 Before launch, the contract requires actual sentinel/outbound and ingress-log
 evidence, opt-out races and queue clearing across all producers, no nested SDK

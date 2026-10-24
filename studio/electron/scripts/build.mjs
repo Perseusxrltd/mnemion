@@ -14,7 +14,7 @@ if (process.platform === 'win32') {
   if (privacy.status !== 0) process.exit(privacy.status || 1)
 }
 copyFileSync(resolve(root, 'native/windows-updates.json'), resolve(root, 'dist/windows-updates.json'))
-for (const name of ['disclosure', 'catalog', 'desktop-origins']) {
+for (const name of ['disclosure', 'catalog', 'desktop-origins', 'wire-v1']) {
   copyFileSync(resolve(root, `../../mnemion/product_telemetry/${name}.json`), resolve(root, `dist/telemetry-${name}.json`))
 }
 // Sandboxed Electron preloads use CommonJS even though the main process is ESM.
