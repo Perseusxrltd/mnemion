@@ -42,4 +42,10 @@ export type TelemetryPreview = {
   outbound_bytes: number
   transport_available: boolean
   message: string
+  measurement_catalog?: {
+    version: number
+    workflows: Record<string, string[]>
+    ownership: { measured: string; exclusions: Record<string, string> }
+  }
+  local_aggregates?: Record<string, string | number>[]
 }

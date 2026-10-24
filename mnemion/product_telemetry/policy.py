@@ -26,8 +26,26 @@ MAX_PENDING_AGE_SECONDS = 48 * 3600
 MAX_DOCUMENT_BYTES = 8192
 METRIC_GROUPS = tuple(CONTRACT["metric_groups"])
 DATABASE_NAME = "product-telemetry.sqlite3"
+STORAGE_VERSION = 2
 
-SCHEMA = """
+QUEUE_SCHEMA = """
+CREATE TABLE producer_budget (
+    scope INTEGER PRIMARY KEY CHECK (scope BETWEEN 0 AND 1023),
+    count INTEGER NOT NULL CHECK (count BETWEEN 1 AND 64),
+    window_day INTEGER NOT NULL CHECK (window_day BETWEEN 0 AND 1000000)
+);
+CREATE TRIGGER producer_budget_bound BEFORE INSERT ON producer_budget
+WHEN (SELECT count(*) FROM producer_budget) >= 512
+AND NOT EXISTS (SELECT 1 FROM producer_budget WHERE scope=NEW.scope)
+BEGIN SELECT RAISE(ABORT, 'telemetry_queue_full'); END;
+CREATE TRIGGER pending_bound BEFORE INSERT ON pending
+WHEN (SELECT count(*) FROM pending) >= 512
+AND NOT EXISTS (SELECT 1 FROM pending WHERE cell=NEW.cell)
+BEGIN SELECT RAISE(ABORT, 'telemetry_queue_full'); END;
+"""
+
+SCHEMA = (
+    """
 CREATE TABLE preferences (
     singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
     revision INTEGER NOT NULL CHECK (revision BETWEEN 0 AND 2147483647),
@@ -40,10 +58,9 @@ CREATE TABLE pending (
     count INTEGER NOT NULL CHECK (count BETWEEN 1 AND 65535),
     window_day INTEGER NOT NULL CHECK (window_day BETWEEN 0 AND 1000000)
 );
-CREATE TRIGGER pending_bound BEFORE INSERT ON pending
-WHEN (SELECT count(*) FROM pending) >= 512
-BEGIN SELECT RAISE(ABORT, 'telemetry_queue_full'); END;
 """
+    + QUEUE_SCHEMA
+)
 
 
 class PolicyError(ValueError):
@@ -175,7 +192,7 @@ def _connect(path: Path, *, readonly: bool = False) -> sqlite3.Connection:
 def _preferences(connection: sqlite3.Connection) -> dict:
     if (
         connection.execute("PRAGMA application_id").fetchone()[0] != APPLICATION_ID
-        or connection.execute("PRAGMA user_version").fetchone()[0] != SCHEMA_VERSION
+        or connection.execute("PRAGMA user_version").fetchone()[0] not in (1, STORAGE_VERSION)
         or connection.execute("PRAGMA journal_mode").fetchone()[0] != "delete"
     ):
         raise PolicyError("telemetry_storage_unavailable")
@@ -191,6 +208,24 @@ def _preferences(connection: sqlite3.Connection) -> dict:
     ):
         raise PolicyError("telemetry_storage_unavailable")
     return {"revision": row[0], "enabled": bool(row[1]), "disclosure_version": row[2]}
+
+
+def _queue_schema(connection: sqlite3.Connection) -> None:
+    """Upgrade the unpublished controls-only store inside its caller's transaction."""
+    if connection.execute("PRAGMA user_version").fetchone()[0] == STORAGE_VERSION:
+        return
+    _preferences(connection)
+    connection.execute("DROP TRIGGER pending_bound")
+    # executescript would commit an existing transaction before executing.
+    # Use individual complete SQL statements so preference and queue state
+    # change atomically, including when a version-one store was opted out.
+    statement = ""
+    for line in QUEUE_SCHEMA.splitlines(keepends=True):
+        statement += line
+        if sqlite3.complete_statement(statement):
+            connection.execute(statement)
+            statement = ""
+    connection.execute(f"PRAGMA user_version={STORAGE_VERSION}")
 
 
 def _initialize(root: Path) -> None:
@@ -212,7 +247,7 @@ def _initialize(root: Path) -> None:
         connection.execute("PRAGMA max_page_count=24")
         connection.executescript(
             "BEGIN IMMEDIATE;"
-            f"PRAGMA application_id={APPLICATION_ID}; PRAGMA user_version={SCHEMA_VERSION};"
+            f"PRAGMA application_id={APPLICATION_ID}; PRAGMA user_version={STORAGE_VERSION};"
             + SCHEMA
             + "COMMIT;"
         )
@@ -286,6 +321,7 @@ def configure(root: Path | None, request: dict, *, policy_path: Path | None = No
         with closing(_connect(root / DATABASE_NAME)) as connection:
             connection.execute("BEGIN IMMEDIATE")
             previous = _preferences(connection)
+            _queue_schema(connection)
             # Opt-out wins over stale UI state. Re-enabling always requires the
             # current revision and cannot undo another process's newer choice.
             if request["enabled"] and request["expected_revision"] != previous["revision"]:
@@ -303,6 +339,7 @@ def configure(root: Path | None, request: dict, *, policy_path: Path | None = No
             # A new choice never resurrects queued history, including enabling
             # after opt-out. secure_delete also clears freed cells in this DB.
             connection.execute("DELETE FROM pending")
+            connection.execute("DELETE FROM producer_budget")
             connection.commit()
     except sqlite3.OperationalError as error:
         if getattr(error, "sqlite_errorcode", None) in (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED):
@@ -314,6 +351,9 @@ def configure(root: Path | None, request: dict, *, policy_path: Path | None = No
 
 
 def preview(root: Path | None = None, *, policy_path: Path | None = None) -> dict:
+    from .aggregate import preview as aggregate_preview
+    from .catalog import specification
+
     return {
         "schema_version": SCHEMA_VERSION,
         "status": status(root, policy_path=policy_path),
@@ -321,4 +361,6 @@ def preview(root: Path | None = None, *, policy_path: Path | None = None) -> dic
         "outbound_bytes": 0,
         "transport_available": False,
         "message": "No product-telemetry sender is active in this build.",
+        "measurement_catalog": specification(),
+        "local_aggregates": aggregate_preview(root, policy_path=policy_path),
     }

@@ -20,7 +20,11 @@ The subsequent main CI run `40048970321` found a separate container-build
 packaging error on both Linux architectures: the frontend stage copied only
 shared TypeScript declarations and omitted the new telemetry module and JSON
 disclosure. The Dockerfile now includes those source inputs. The initial failed
-run is retained; a later actual container build must verify the correction.
+run is retained. Run `40049779860` then exposed the matching `.dockerignore`
+restriction: shared implementation files were still excluded from the build
+context. The allowlist now admits shared TypeScript sources, and the frontend
+stage also includes the new fixed measurement catalog. A later actual container
+build must verify the complete correction.
 
 | Observation | Result and scope |
 | --- | --- |

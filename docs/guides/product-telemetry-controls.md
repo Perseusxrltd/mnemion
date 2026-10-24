@@ -1,12 +1,14 @@
 # Product telemetry privacy controls
 
-**Source checkpoint, 24 October 2026; V08 is Building.** Local choice and
-disclosure controls are implemented in source. There is no product sender or
+**Source checkpoint, 24 October 2026; V08 is Building.** Local choice, disclosure,
+catalog and aggregate queues are implemented in source. There are no workflow hooks, product sender or
 collector: `collection_available` is `false`, the destination is `null`, and
 `effective_enabled` stays `false`. Saving an enabled preference does not activate
 analytics. The core browser journey passed **19 checks at 00:51:17 UTC**, followed
 by **eight browser policy/fault checks**. [Source-input qualification](../validation/2026-10-24-telemetry-controls.md)
-passed at **01:12:30 UTC**; native release acceptance remains pending.
+passed at **01:12:30 UTC**. The later [catalog/aggregate checks](../validation/2026-10-24-telemetry-aggregates.md)
+include a nine-check browser catalog journey; fresh package and native release
+acceptance for that batch remain pending.
 These controls and this documentation update are excluded from the isolated
 4.46.6 dependency-security release. The [contract](../implementation/anonymous-product-telemetry.md)
 records the dated source evidence and full remaining scope.
@@ -22,10 +24,18 @@ to use the page offline.
 defaults to enabled. **Disable product telemetry** saves an opt-out and clears
 pending local aggregates. **Refresh privacy status** reads the current choice.
 **Show payload preview** currently reports no queued request, a null outbound
-body and zero outgoing payload bytes. The listed measurements are planned.
+body and zero outgoing payload bytes. Expand **Workflow coverage and exclusions**
+to inspect the fixed **15 families, 94 operations and seven privacy exclusions**.
+The schema and numeric encoding exist; workflows do not yet produce observations.
 A later build capable of collection must present its current disclosure before
 anything can be sent; today's enabled preference cannot acknowledge that future
 destination.
+
+The exclusions cover unowned remote clients, client-derived server jobs,
+mixed-user host totals, private operational records, polling/replay, privacy
+controls and unavailable sensors. They restrict product collection; the related
+connectors and memory workflows retain their full requirements. There is no
+collection event for inspecting or changing privacy settings.
 
 The desktop and native agent share the preference under the same OS account and
 application data configuration. A browser stores its own choice for that site;
@@ -46,11 +56,14 @@ printf '%s\n' '{"action":"status"}' | mnemion-service telemetry
 printf '%s\n' '{"action":"preview"}' | mnemion-service telemetry
 ```
 
-`schema` describes the four local actions and disclosure; it is not an
-implemented aggregate-event schema. `status` distinguishes `user_enabled`,
+`schema` describes the four local actions, disclosure and `measurement_catalog`,
+including fixed numeric buckets, contribution limits and exclusions.
+`status` distinguishes `user_enabled`,
 `effective_enabled`, `reason`, `storage`, company restriction and `revision`.
 `preview` returns `outbound_body: null`, `outbound_bytes: 0` and
-`transport_available: false` in this build. Success returns
+`transport_available: false`, plus the catalog and an empty `local_aggregates`
+list while collection is unavailable. A decoded local aggregate preview is
+private inspection, not an outbound payload or event history. Success returns
 `{"event":"result","ok":true,"result":...}`; refusal returns a fixed error code
 with `ok: false` and exit status 2.
 
@@ -68,8 +81,9 @@ destination is available. Enabling with an outdated revision is refused as
 `telemetry_choice_changed`; disabling remains allowed with an outdated revision.
 Every successful opt-out advances the revision, even if already disabled, so an
 older enable request cannot override it.
-A successful change clears pending aggregates, so re-enabling cannot revive old
-data. The desktop agent exposes the same typed `telemetry.schema`,
+A successful change clears pending aggregates and contribution accounting, so
+re-enabling cannot revive old data. Local scope/day limits are not a persistent
+privacy budget across those choices. The desktop agent exposes the same typed `telemetry.schema`,
 `telemetry.status`, `telemetry.preview` and `telemetry.configure` actions without
 requiring a workspace.
 
@@ -99,7 +113,9 @@ or lock problem is resolved, refresh status and confirm the saved choice.
 Optional product telemetry is separate from private workspace operational and
 security records. These controls do not change memory access or disable those
 records. The [full V08 contract](../implementation/anonymous-product-telemetry.md)
-and [proposed catalog](../implementation/anonymous-product-telemetry-catalog.md)
-retain app, agent, headless and remote-workflow coverage; shared-host ownership,
-the sender, collector and transport-anonymity proof remain unfinished. See the
+and [versioned catalog](../implementation/anonymous-product-telemetry-catalog.md)
+retain app, agent, headless and remote-workflow coverage. Hooks for permitted
+owners, the sender, collector and anonymity proof remain unfinished. Expiry
+prunes on activity; removed/restored-store generation and final sender
+cancellation still need full-feature acceptance. See the
 [privacy policy](../service/privacy.md) for existing service and model traffic.

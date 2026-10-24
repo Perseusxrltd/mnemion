@@ -38,12 +38,13 @@ studio/frontend/*
 !studio/frontend/public/**
 !studio/shared/
 studio/shared/*
-!studio/shared/*.d.ts
+!studio/shared/*.ts
 !studio/electron/
 studio/electron/*
 !studio/electron/workspace-recovery.ts
 !studio/electron/company-sign-in-protocol.ts
 !studio/electron/capture-messages.ts
+!studio/electron/telemetry-catalog.ts
 !studio/README.md
 !assets/
 assets/*

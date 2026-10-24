@@ -1,5 +1,7 @@
 import contract from '../../../../mnemion/product_telemetry/disclosure.json'
+import measurementCatalog from '../../../../mnemion/product_telemetry/catalog.json'
 import type { TelemetryChoice, TelemetryCompanyPolicy, TelemetryPreview, TelemetryStatus } from '../../../shared/product-telemetry'
+import { collect, pendingState, telemetryCatalog } from './telemetry-aggregate'
 
 export const choiceKey = 'mnemion.product-telemetry.choice.v1'
 export const queueKey = 'mnemion.product-telemetry.pending.v1'
@@ -50,15 +52,21 @@ export class BrowserTelemetry {
         storage = 'ready'
       }
       if (queue !== null) {
+        if (queue.length > contract.limits.pending_bytes / 2) throw new Error()
         if (new TextEncoder().encode(queue).byteLength > contract.limits.pending_bytes) throw new Error()
         const entries = JSON.parse(queue)
-        if (!Array.isArray(entries) || entries.length > contract.limits.pending_records || entries.some(entry =>
-          !entry || typeof entry !== 'object' || Array.isArray(entry) ||
-          !own(entry, ['cell', 'count', 'window_day']) || Object.keys(entry).length !== 3 ||
-          !Number.isInteger(entry.cell) || entry.cell < 0 || entry.cell > 65535 ||
-          !Number.isInteger(entry.count) || entry.count < 1 || entry.count > 65535 ||
-          !Number.isInteger(entry.window_day) || entry.window_day < 0 || entry.window_day > 1000000)) throw new Error()
-        pending = entries.length
+        if (!Array.isArray(entries)) pending = pendingState(queue).entries.length
+        else {
+          // Older source-only controls used an array. It can be cleared by an
+          // explicit choice, but is never admitted by a producer or sender.
+          if (entries.length > contract.limits.pending_records || entries.some(entry =>
+            !entry || typeof entry !== 'object' || Array.isArray(entry) ||
+            !own(entry, ['cell', 'count', 'window_day']) || Object.keys(entry).length !== 3 ||
+            !Number.isInteger(entry.cell) || entry.cell < 0 || entry.cell > 65535 ||
+            !Number.isInteger(entry.count) || entry.count < 1 || entry.count > 65535 ||
+            !Number.isInteger(entry.window_day) || entry.window_day < 0 || entry.window_day > 1000000)) throw new Error()
+          pending = entries.length
+        }
       }
     } catch { storage = 'unreadable' }
     if (this.storageFailed) storage = 'unreadable'
@@ -111,8 +119,36 @@ export class BrowserTelemetry {
   }
 
   preview(): TelemetryPreview {
-    return { schema_version: 1, status: this.status(), outbound_body: null, outbound_bytes: 0,
-      transport_available: false, message: 'No product-telemetry sender is active in this build.' }
+    const status = this.status()
+    let local: NonNullable<TelemetryPreview['local_aggregates']> = []
+    if (status.effective_enabled) {
+      try {
+        const day = Math.floor(Date.now() / 86400000)
+        local = pendingState(this.storage().getItem(queueKey)).entries.filter(row => row.window_day >= day - 1 && row.window_day <= day)
+          .filter(row => status.company_policy.metric_groups.includes(telemetryCatalog.describe(row.cell).group))
+          .sort((left, right) => left.cell - right.cell).map(row => ({ cell: row.cell, ...telemetryCatalog.describe(row.cell), count: row.count }))
+      } catch { /* Invalid queues never become raw diagnostic output. */ }
+    }
+    return { schema_version: 1, status, outbound_body: null, outbound_bytes: 0,
+      transport_available: false, message: 'No product-telemetry sender is active in this build.',
+      measurement_catalog: measurementCatalog, local_aggregates: local }
+  }
+
+  /** Internal producer boundary; caller holds the origin-wide privacy lock. */
+  record(input: unknown, expectedRevision: number, day = Math.floor(Date.now() / 86400000)): boolean {
+    if (!contract.collection_available || !contract.destination || !Number.isInteger(expectedRevision)) return false
+    const current = this.status()
+    if (!current.effective_enabled || current.revision !== expectedRevision) return false
+    let serialized: string, recorded: boolean
+    try {
+      const result = collect(pendingState(this.storage().getItem(queueKey)), input, day, current.company_policy.metric_groups)
+      serialized = JSON.stringify(result.state)
+      if (serialized.length > contract.limits.pending_bytes / 2 || new TextEncoder().encode(serialized).byteLength > contract.limits.pending_bytes) return false
+      recorded = result.recorded
+    } catch { return false }
+    try { this.storage().setItem(queueKey, serialized) }
+    catch { this.storageFailed = true; return false }
+    return recorded
   }
 }
 
@@ -135,4 +171,12 @@ export async function telemetryPreview(): Promise<TelemetryPreview> {
   if (window.mnemion?.productTelemetry) return window.mnemion.productTelemetry('telemetry.preview')
   if (window.location.protocol === 'file:') throw new Error('This desktop does not provide product telemetry controls.')
   return browser.preview()
+}
+
+/** Best effort and no lock waiting. No networking or queue of raw input objects. */
+export async function recordBrowserTelemetry(input: unknown, expectedRevision: number): Promise<boolean> {
+  if (!contract.collection_available || !contract.destination || window.location.protocol === 'file:' || !navigator.locks) return false
+  try {
+    return await navigator.locks.request(choiceKey, { ifAvailable: true }, lock => lock ? browser.record(input, expectedRevision) : false)
+  } catch { return false }
 }

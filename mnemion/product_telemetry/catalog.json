@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "surfaces": ["desktop", "browser", "native_agent", "headless"],
+  "workflows": {
+    "setup": ["create", "configure", "agent_install", "agent_remove"],
+    "workspace": ["connect", "sign_in", "open", "switch", "disconnect", "forget"],
+    "memory": ["list", "read", "recall", "context", "knowledge", "core_read", "save", "revise", "review", "forget", "core_write", "import", "export"],
+    "capture": ["configure", "preview", "collect", "deliver", "pause", "drain", "remove"],
+    "sources": ["configure", "scan", "sync", "pause", "resume", "repair", "remove"],
+    "librarian": ["configure", "run", "cancel", "accept", "reject", "undo"],
+    "models": ["configure", "prepare", "reindex", "pause", "resume", "cancel"],
+    "backup": ["configure", "create", "list", "verify", "prune"],
+    "recovery": ["inspect", "restore", "finish", "discard"],
+    "update": ["check", "download", "verify", "apply", "restart", "rollback"],
+    "host": ["adopt", "enroll", "inspect", "start", "stop", "plan_upgrade", "resolve", "revoke"],
+    "evaluation": ["create_dataset", "run", "cancel", "assess", "compare", "export", "remove_dataset"],
+    "journal": ["configure", "push", "organize", "backfill", "recover"],
+    "access": ["configure", "invite", "grant", "revoke"],
+    "vault": ["configure", "read", "write", "delete", "import", "export"]
+  },
+  "outcomes": ["success", "accepted", "deferred", "cancelled", "denied", "unsupported", "failed", "unconfirmed"],
+  "reasons": ["none", "invalid_input", "authorization", "conflict", "host_busy", "resource_pressure", "offline", "network_timeout", "readiness_timeout", "integrity_check", "recovery_required", "other_failure"],
+  "metrics": {
+    "latency_ms": {"group": "performance", "unit": "monotonic_milliseconds", "upper_bounds": [9, 49, 199, 999, 4999, 29999, 119999, 900000], "families": "all"},
+    "result_items": {"group": "usage", "unit": "observed_items", "upper_bounds": [0, 1, 9, 99, 999, 9999, 1000000], "families": ["memory", "sources", "librarian", "backup", "evaluation", "journal"]},
+    "work_items": {"group": "usage", "unit": "observed_items", "upper_bounds": [0, 1, 9, 99, 999, 9999, 1000000], "families": ["memory", "capture", "sources", "librarian", "models", "backup", "recovery", "evaluation", "journal"]},
+    "queue_items": {"group": "resources", "unit": "observed_items", "upper_bounds": [0, 1, 9, 99, 999, 9999, 1000000], "families": ["capture", "sources", "librarian", "models", "backup", "journal"]},
+    "payload_bytes_sent": {"group": "performance", "unit": "application_bytes", "upper_bounds": [0, 1024, 16384, 262144, 4194304, 67108864, 1073741824, 17179869184], "families": ["memory", "capture", "sources", "models", "backup", "recovery", "evaluation", "journal"]},
+    "payload_bytes_received": {"group": "performance", "unit": "application_bytes", "upper_bounds": [0, 1024, 16384, 262144, 4194304, 67108864, 1073741824, 17179869184], "families": ["memory", "capture", "sources", "models", "backup", "recovery", "evaluation", "journal"]},
+    "reported_tokens": {"group": "resources", "unit": "model_reported_tokens", "upper_bounds": [0, 1, 99, 999, 9999, 99999, 1000000], "families": ["librarian", "models"]},
+    "stored_bytes": {"group": "resources", "unit": "stored_bytes", "upper_bounds": [0, 1024, 16384, 262144, 4194304, 67108864, 1073741824, 17179869184], "families": ["capture", "sources", "backup", "recovery", "journal"]},
+    "wire_bytes_sent": {"group": "performance", "unit": "measured_wire_bytes", "upper_bounds": [0, 1024, 16384, 262144, 4194304, 67108864, 1073741824, 17179869184], "families": ["capture", "sources", "models", "backup", "recovery", "update", "journal"]},
+    "wire_bytes_received": {"group": "performance", "unit": "measured_wire_bytes", "upper_bounds": [0, 1024, 16384, 262144, 4194304, 67108864, 1073741824, 17179869184], "families": ["capture", "sources", "models", "backup", "recovery", "update", "journal"]},
+    "throughput_bytes_per_second": {"group": "performance", "unit": "measured_wire_bytes_per_second", "upper_bounds": [0, 1024, 16384, 262144, 4194304, 67108864, 1073741824, 17179869184], "families": ["capture", "sources", "models", "backup", "recovery", "update", "journal"]}
+  },
+  "resource_metrics": {
+    "cpu_millicores": {"group": "resources", "unit": "process_cpu_milliseconds_per_elapsed_second", "upper_bounds": [0, 1, 10, 100, 500, 1000, 4000, 16000]},
+    "rss_bytes": {"group": "resources", "unit": "process_resident_bytes", "upper_bounds": [0, 67108864, 268435456, 1073741824, 4294967296, 17179869184, 68719476736, 274877906944]},
+    "resource_budget_bytes": {"group": "resources", "unit": "configured_memory_bytes", "upper_bounds": [0, 67108864, 268435456, 1073741824, 4294967296, 17179869184, 68719476736, 274877906944]},
+    "queue_drops": {"group": "resources", "unit": "local_discarded_observations", "upper_bounds": [0, 1, 9, 99, 999, 9999, 1000000]}
+  },
+  "limits": {"observations_per_workflow_day": 64, "resource_observations_per_day": 24, "count_per_cell_day": 255, "cells_per_observation": 16},
+  "ownership": {
+    "measured": "One disclosed originating app, native agent or owned headless workflow; nested calls and transport retries are not separate uses.",
+    "exclusions": {
+      "unowned_remote_clients": "No product collection for direct API or remote MCP clients without their own disclosed local measurement owner. Authentication is not telemetry consent.",
+      "derived_server_jobs": "No server export or completion backfill for client-derived jobs. An absent origin leaves the terminal result unobserved.",
+      "mixed_host_resources": "No export of process or host totals containing other users' undisclosed activity.",
+      "private_operational_records": "Never export audit rows, diagnostics, evaluation cases, source histories or recovery receipts.",
+      "polling_and_replay": "No usage counts for automatic polling, retries, cached mutation receipts or inspection of earlier outcomes.",
+      "privacy_controls": "No events for telemetry choice, disclosure, preview, opt-out or shutdown.",
+      "unavailable_sensors": "Missing measurements stay unavailable; payload bytes are not substituted for wire bytes."
+    }
+  }
+}

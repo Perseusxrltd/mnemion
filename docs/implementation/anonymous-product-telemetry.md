@@ -2,10 +2,11 @@
 
 **V08 is Building/source implementation; checkpoint 24 October 2026.** The full scope
 recorded on 23 October remains the acceptance contract in the
-[66-requirement inventory](../PRODUCT_REQUIREMENTS.md). Local privacy controls
-are now implemented in source; product collection is unavailable. V08 is the
+[66-requirement inventory](../PRODUCT_REQUIREMENTS.md). Local privacy controls,
+the fixed catalog and bounded aggregate queues are implemented in source;
+product collection is unavailable. V08 is the
 active feature milestone after [fresh backup and independent restore](../validation/2026-10-24-4465-backup-acceptance.md)
-passed at **00:01:45 and 00:15:23 UTC**. Only V08's state changes; all requirement
+passed at **00:01:45 and 00:15:23 UTC**. V08 remains Building; all requirement
 texts and the other 65 states remain unchanged. These controls and this
 documentation update are excluded from the isolated 4.46.6 dependency-security release.
 
@@ -24,10 +25,26 @@ so an earlier enable request cannot override that newer choice.
 The [shared disclosure](../../mnemion/product_telemetry/disclosure.json) has
 `collection_available: false` and `destination: null`. Saving an enabled
 preference does not complete disclosure or activate collection. The preview
-returns no outbound body and zero outgoing bytes. There is no product sender,
-collector, production analytics or qualified anonymous ingress. The measurement
-catalog, full workflow coverage, resource ceilings and outbound/privacy acceptance
-below remain future requirements.
+returns the measurement catalog, an empty local aggregate list, no outbound body
+and zero outgoing bytes. There are no workflow hooks, product sender, collector,
+production analytics or qualified anonymous ingress.
+
+The [versioned catalog and local queues](anonymous-product-telemetry-catalog.md)
+now encode **94 workflows in 15 families** with fixed numeric buckets and
+matching Python/TypeScript coordinates. Native SQLite and browser queues enforce
+bounded cells, local scope/day contribution caps, company-group restrictions
+and the originating revision within the current preference store. Counters
+clear on explicit choice; expiry prunes on activity. Missing/replaced/restored
+store generation and final sender cancellation remain full-feature checks.
+Declared exclusions cover unowned remote clients, derived server work, mixed-host
+totals, private operational rows, polling/replay, privacy controls and unavailable
+sensors. These privacy boundaries do not abandon connector or roadmap requirements.
+
+The later [aggregate source validation](../validation/2026-10-24-telemetry-aggregates.md)
+records **28 Python, 11 browser/codec and 12 bridge checks**, both builds and a
+**nine-check built-browser catalog journey**. No fresh package build qualifies
+this batch. Workflow hooks, full coverage, measured resource ceilings,
+all-platform behavior and outbound/collector/privacy acceptance remain open.
 
 Saved source checks passed **10 policy tests** after the opt-out revision change,
 **12 native bridge/operator tests, 26 web/CSP tests and seven browser policy
@@ -67,7 +84,7 @@ updates and host controls. Instrument fixed workflow boundaries without reading
 their content for telemetry. Each supported workflow must have an explicit
 measurement or a documented exclusion, also visible in the local payload preview.
 
-The [proposed metric catalog and ownership map](anonymous-product-telemetry-catalog.md)
+The [versioned metric catalog and ownership map](anonymous-product-telemetry-catalog.md)
 maps this scope to current source boundaries and records unresolved coverage.
 
 | Include as bounded aggregates | Exclude from collection, queue, transport and collector logs |
@@ -133,12 +150,14 @@ Optional product telemetry is separate from the private, permission-scoped
 audit trail. Disabling it does not disable necessary local access/recovery audit
 records; those records must never be forwarded as a telemetry fallback.
 
-## Proposed schema and payload preview
+## Proposed outbound schema and payload preview
 
-This illustrative payload is a design example, not an implemented endpoint or
-an accepted release receipt. All strings shown are catalog enums. Each batch
-uses one fixed feature/surface and one approved coarse cohort view; arbitrary
-combinations, exact timestamps and identity fields are forbidden.
+The following **23 October design example** is retained as a wire-format
+proposal. Its labels and buckets are not the current local encoding in the
+[versioned catalog](anonymous-product-telemetry-catalog.md), and no outbound
+endpoint or cohort view has been implemented or accepted. A future wire format
+must use fixed reviewed enums, bounded views and no arbitrary combinations,
+exact timestamps or identity fields. Today's preview remains empty of outbound data.
 
 ```json
 {

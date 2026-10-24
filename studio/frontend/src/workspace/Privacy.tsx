@@ -85,7 +85,20 @@ export default function Privacy() {
           try { setPreview(await telemetryPreview()); setError(undefined) }
           catch (error) { setError(error instanceof Error ? error.message : 'The preview is unavailable.') }
         }}>Show payload preview</button>
-        {preview && <><p>{preview.message}</p><pre className="ws-code">{preview.outbound_body ?? 'No request is queued.'}</pre><p>{preview.outbound_bytes} outgoing payload bytes.</p></>}
+        {preview && <><p>{preview.message}</p><pre className="ws-code">{preview.outbound_body ?? 'No request is queued.'}</pre><p>{preview.outbound_bytes} outgoing payload bytes.</p>
+          {preview.measurement_catalog && <details><summary>Workflow coverage and exclusions</summary>
+            <p>{preview.measurement_catalog.ownership.measured}</p>
+            <p>These are the supported measurement categories. Collection remains subject to your choice and the availability shown above.</p>
+            <dl>{Object.entries(preview.measurement_catalog.workflows).map(([family, operations]) => <div key={family}>
+              <dt><strong>{family}</strong></dt><dd>{operations.join(', ')}</dd></div>)}</dl>
+            <h3>Excluded from product collection</h3>
+            <ul>{Object.entries(preview.measurement_catalog.ownership.exclusions).map(([key, description]) => <li key={key}>{description}</li>)}</ul>
+          </details>}
+          {!!preview.local_aggregates?.length && <details><summary>Private local aggregate preview</summary>
+            <p>Coarse counts waiting locally. These are not an outbound report or an event history.</p>
+            <pre className="ws-code">{JSON.stringify(preview.local_aggregates, null, 2)}</pre>
+          </details>}
+        </>}
       </section>
       <Link className="ws-link" to="/help?doc=docs%2Fservice%2Fprivacy.md">Privacy & data handling documentation</Link>
     </>}

@@ -22,6 +22,8 @@ def execute(root: Path | None, request: object) -> dict:
         if set(request) != {"action"}:
             raise policy.PolicyError("telemetry_invalid_request")
         if action == "schema":
+            from .catalog import specification
+
             return {
                 "protocol": 1,
                 "actions": {
@@ -34,6 +36,7 @@ def execute(root: Path | None, request: object) -> dict:
                     },
                 },
                 "disclosure": policy.disclosure(),
+                "measurement_catalog": specification(),
             }
         return policy.preview(root) if action == "preview" else policy.status(root)
     if action == "configure":
