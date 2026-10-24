@@ -16,6 +16,12 @@ These were private source builds. The signed 4.46.6 security release has its own
 frozen source, `a5c3bf29e8feb22d73b4047a13ac93df694dcb0c`, and excludes these
 privacy controls.
 
+The subsequent main CI run `40048970321` found a separate container-build
+packaging error on both Linux architectures: the frontend stage copied only
+shared TypeScript declarations and omitted the new telemetry module and JSON
+disclosure. The Dockerfile now includes those source inputs. The initial failed
+run is retained; a later actual container build must verify the correction.
+
 | Observation | Result and scope |
 | --- | --- |
 | Persistent native policy and served-app boundaries | 36 focused Python checks passed: policy choices, separate processes, stale enables, restrictive company policy, damaged storage, page serving and existing CSP/private-API boundaries. |
