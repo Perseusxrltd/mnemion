@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-24T00:52:44+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-24T00:53:21+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.5](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.5). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -17,7 +17,7 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | queued | [Run 40047066725](https://github.com/Perseusxrltd/mnemion/actions/runs/40047066725) |
+| ci\.yml | main | in\_progress | [Run 40047066725](https://github.com/Perseusxrltd/mnemion/actions/runs/40047066725) |
 | public-updates\.yml | v4\.46\.5 | success | [Run 40022243634](https://github.com/Perseusxrltd/mnemion/actions/runs/40022243634) |
 | release\.yml | release/4\.46\.5-r2 | success | [Run 40013991029](https://github.com/Perseusxrltd/mnemion/actions/runs/40013991029) |
 | verify-artifacts\.yml | main | success | [Run 40021524126](https://github.com/Perseusxrltd/mnemion/actions/runs/40021524126) |
@@ -26,17 +26,15 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 ## Active jobs
 
-[Run 40047066725](https://github.com/Perseusxrltd/mnemion/actions/runs/40047066725): 1/12 jobs completed; 1 succeeded.
+[Run 40047066725](https://github.com/Perseusxrltd/mnemion/actions/runs/40047066725): 3/12 jobs completed; 3 succeeded.
 
-- lint: in\_progress — Run uv sync --locked --group dev.
-- studio: in\_progress — Check the lightweight native client before six-platform packaging.
-- legacy: in\_progress — Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
-- supervision \(macos-15\): in\_progress — Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803.
-- service \(3\.12\): in\_progress — Initialize containers.
-- supervision \(macos-15-intel\): in\_progress — Set up job.
-- service \(3\.13\): in\_progress — Initialize containers.
-- dependency-audit: in\_progress — Run python -m pip install uv==0\.12\.24.
-- service \(3\.14\): in\_progress — Initialize containers.
-- container \(ubuntu-22\.04-arm\): in\_progress — Set up job.
-- container \(ubuntu-22\.04\): in\_progress — Build the actual deployment image with its documentation.
+- studio: in\_progress — Run npm --prefix studio/electron ci && npm --prefix studio/electron test.
+- legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
+- supervision \(macos-15\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
+- service \(3\.12\): in\_progress — Run npm --prefix packages/client ci && npm --prefix packages/client test.
+- supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
+- service \(3\.13\): in\_progress — Run npm --prefix packages/client ci && npm --prefix packages/client test.
+- service \(3\.14\): in\_progress — Run uv sync --locked --python 3\.14 --group dev.
+- container \(ubuntu-22\.04-arm\): in\_progress — Verify the non-root image includes Studio, guides and notices offline.
+- container \(ubuntu-22\.04\): in\_progress — Verify the non-root image includes Studio, guides and notices offline.
 
