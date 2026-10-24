@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "default_enabled": true,
+  "purpose": "Help Perseus XR improve Mnemion through anonymous, bounded product-usage statistics.",
+  "destination": null,
+  "collection_available": false,
+  "metric_groups": ["usage", "reliability", "performance", "resources"],
+  "includes": ["feature-use aggregates", "fixed failure categories", "coarse performance and resource buckets"],
+  "excludes": ["memory or chat contents", "credentials", "names, paths and addresses", "account, workspace and device identifiers"],
+  "choice_scope": "this installation",
+  "disable": "Stops collection and sending and clears pending aggregates. Already sent anonymous totals cannot be recalled.",
+  "operational_records": "Private workspace diagnostics and required security records remain separate.",
+  "limits": {
+    "pending_bytes": 262144,
+    "pending_records": 512,
+    "pending_age_seconds": 172800,
+    "batch_bytes": 16384,
+    "wire_bytes_per_day": 262144
+  }
+}

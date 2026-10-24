@@ -823,19 +823,21 @@ def create_app(
 
     studio, _ = resolve_studio() if studio_enabled else (None, "disabled")
     if studio is not None:
-        from .studio_policy import content_security_policy
+        from .studio_policy import content_security_policy, product_telemetry_page
 
         studio_policy = content_security_policy()
         app.mount("/assets", StaticFiles(directory=studio / "assets"), name="studio-assets")
 
         @app.get("/", include_in_schema=False)
         @app.get("/help", include_in_schema=False)
+        @app.get("/privacy", include_in_schema=False)
         @app.get("/oauth/consent", include_in_schema=False)
         @app.get("/workspace", include_in_schema=False)
         @app.get("/workspace/{route:path}", include_in_schema=False)
         def studio_page(route: str = ""):
-            return FileResponse(
-                studio / "index.html",
+            return Response(
+                product_telemetry_page((studio / "index.html").read_text(encoding="utf-8")),
+                media_type="text/html",
                 headers={
                     "Content-Security-Policy": studio_policy,
                     "Referrer-Policy": "no-referrer",

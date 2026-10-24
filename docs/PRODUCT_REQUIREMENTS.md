@@ -1,6 +1,6 @@
 # Complete product requirements
 
-Updated **2026-10-23**. This is the persistent checklist for the Mnemion rebuild,
+Updated **2026-10-24**. This is the persistent checklist for the Mnemion rebuild,
 including additions made during implementation. The [roadmap](ROADMAP.md)
 explains delivery order; this file preserves the complete requested scope.
 
@@ -27,10 +27,22 @@ standing product or maintenance commitment. A passing prototype, mock
 test or source commit is not a shipped feature.
 
 Current strict completion: **17 of 66 requirements shipped (25.8%)**; 42 partial,
-0 building, 3 planned, 3 ongoing and 1 external. These broad requirements are
+1 building, 2 planned, 3 ongoing and 1 external. These broad requirements are
 not equally sized. This is coverage of the full requested scope, not a measure
 of engineering effort or the usability of the published app. Hotfixes to a
 partial feature do not automatically mark its whole requirement complete.
+
+**24 October 2026 active feature — V08, Building/source implementation:** the
+[fresh backup and independent restore](validation/2026-10-24-4465-backup-acceptance.md)
+passed at **00:01:45** and **00:15:23 UTC**. V08 now has source-only
+[app/native privacy controls](guides/product-telemetry-controls.md) and a
+**19-check core browser journey** accepted at **00:51:17 UTC**, followed by
+**eight browser policy/fault checks**. Final input qualification remains open.
+No sender, collector, production analytics,
+qualified anonymous ingress or all-six-native acceptance exists. This work is
+excluded from the isolated 4.46.6 dependency-security release. Only V08's state
+changes; all 66 requirement texts and the other 65 states are preserved.
+The dated entries below retain earlier states and delivery decisions.
 
 **23 October 2026 scope addition — V08:** retain the new
 [anonymous product telemetry request](implementation/anonymous-product-telemetry.md)
@@ -367,7 +379,7 @@ this addition does not promote those broad requirements to shipped.
 | V05 | Make agentic work understandable while watching the map. | Partial | Published 4.0.10 includes creator/time filters, administrator-visible person/app names and real reviewer-scoped creation/revision/review events. Keep event attribution separate from geometry. Extend the recent event window with replay, cross-space aggregation and capture coverage. |
 | V06 | Match the Perseus XR website theme throughout the app. | Shipped | [Studio design system](STUDIO_DESIGN.md). Preserve readability, responsive layouts and accessibility for new screens. |
 | V07 | Use the existing connected M logo everywhere and keep it readable. | Shipped | [Canonical logo and generated assets](BRANDING.md) ship in 4.0.10 across the browser, all six native packages, installers and system tray. The product page, homepage and Lab Notes use the same mark; native asset and live website checks passed. |
-| V08 | Provide anonymous product telemetry for app and agent usage, performance, resources and bandwidth, enabled by default with clear disclosure and persistent user opt-out/re-enable. | Planned | [Exact 23 October request and future acceptance contract](implementation/anonymous-product-telemetry.md): fixed aggregate measurements, no contents or stable identity/device tracking, reviewed collector anonymity, company policy, bounded resources, and app/native-agent/web controls. Queued after the current live-update/independent-host milestone; not shipping or included in frozen 4.46.1. |
+| V08 | Provide anonymous product telemetry for app and agent usage, performance, resources and bandwidth, enabled by default with clear disclosure and persistent user opt-out/re-enable. | Building | [Exact request, source checkpoint and full acceptance contract](implementation/anonymous-product-telemetry.md): source-only app/native privacy controls and 19 core browser checks passed on 24 October. The active feature milestone retains fixed aggregate measurements, no contents or stable identity/device tracking, reviewed collector anonymity, company policy, bounded resources, and full app/native-agent/web coverage. Collection remains unavailable; sender, collector, anonymity proof and all-six-native/release acceptance remain open. Excluded from the isolated 4.46.6 dependency-security release. |
 
 ## Website, distribution and funding
 
@@ -390,10 +402,12 @@ access, installation, automatic updates, data safety and RAM stability. Ship
 related verified fixes together, then advance the feature queue below. A passing
 release does not close unfinished provider or recovery requirements.
 
-**Queued addition:** V08 [anonymous product telemetry](implementation/anonymous-product-telemetry.md)
-follows the current live-update and independent-host milestone. Privacy
-architecture review, implementation and all six native plus web acceptance
-remain future work. The active hotfix and every existing queue item remain in scope.
+**Active feature milestone:** V08 [anonymous product telemetry](implementation/anonymous-product-telemetry.md)
+follows the accepted 4.46.5 paired update, custody, fresh backup and independent
+restore. Local privacy controls are Building/source implementation; complete
+measurement coverage, reviewed anonymity, bounded collection/transport and all
+six native plus full web acceptance remain open. Urgent hotfixes and every
+existing queue item remain in scope.
 
 **19 October reports retained:** [issue 38](https://github.com/Perseusxrltd/mnemion/issues/38)
 covers reproducible host installation/recovery after home or system-layer loss,

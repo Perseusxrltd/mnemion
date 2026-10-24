@@ -23,6 +23,7 @@ import { sourceProcess } from './desktop-source-process.js'
 import { DesktopAgents } from './desktop-agents.js'
 import { HostProfiles } from './host-profiles.js'
 import { hostMessages } from './host-control-messages.js'
+import { ProductTelemetry, telemetryMessages } from './product-telemetry.js'
 import type { HostConnection, HostRequest } from '../shared/host-control.js'
 import type { AgentInstall, AgentRemove, AgentSetup } from '../shared/desktop-agents.js'
 import type { CaptureBackupInput, CaptureDrainInput, CaptureInspectInput, CaptureRestoreControl, CaptureRestoreInput, SourceConfigure, SourceControl, SourcePreviewSelection } from '../shared/desktop-sources.js'
@@ -301,6 +302,12 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
       deadlineMs: 30000, messages: hostMessages }))
     return hosts
   }
+  function telemetryAction(action: string, input: Record<string, unknown> = {}, signal?: AbortSignal) {
+    const root = join(localBase(), 'mnemion-product-telemetry')
+    return new ProductTelemetry(sourceProcess({ executable: engineExecutable(), root,
+      privateRoots: [], command: 'telemetry', environment: localEnvironment(process.env, root),
+      deadlineMs: 15000, messages: telemetryMessages })).execute(action, input, signal)
+  }
   function hostAction(action: string, input: Record<string, unknown>, signal?: AbortSignal) {
     desktopAction(action, input)
     switch (action) {
@@ -459,6 +466,11 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     return desktopLocalStatus(host.status)
   }
   ipcMain.handle('local:status', event => { trusted(event); return localStatus() })
+  ipcMain.handle('telemetry:action', (event, action: string, input: Record<string, unknown> = {}) => {
+    trusted(event)
+    if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error(telemetryMessages.telemetry_invalid_request)
+    return telemetryAction(action, input)
+  })
   ipcMain.handle('agents:status', event => { trusted(event); return desktopAgents().status() })
   ipcMain.handle('hosts:action', (event, action: string, input: Record<string, unknown>) => {
     trusted(event)
@@ -742,6 +754,9 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
   async function executeOperator(request: DesktopRequest, signal: AbortSignal): Promise<unknown> {
     let selecting = false
     const spec = desktopAction(request.action, request.input)
+    // Privacy choice must remain available while memory or a different agent
+    // operation is busy. Its own store serializes changes without a workspace.
+    if (request.action.startsWith('telemetry.')) return telemetryAction(request.action, request.input, signal)
     if (spec.mutation && operatorMutation) throw new Error('Another local agent operation is finishing. Read status or cancel its backup before continuing.')
     if (spec.workspace) {
       const check = () => {

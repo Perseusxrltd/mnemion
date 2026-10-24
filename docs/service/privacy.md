@@ -1,7 +1,7 @@
 # Mnemion privacy policy
 
-Updated: **2026-10-23**. This describes the rebuilt shared-memory platform and
-the legacy-library finding below.
+Updated: **2026-10-24**. This describes the shared-memory platform, the legacy
+library correction and the source-only privacy controls below.
 
 ## Your organization's data
 
@@ -47,9 +47,31 @@ the selected provider/operator, not by Mnemion's local model behavior.
 ## Product analytics and legacy vendor telemetry
 
 Mnemion's [V08 product analytics](../implementation/anonymous-product-telemetry.md)
-remain **Planned and inactive**. No V08 instrumentation or collector is deployed.
-Private workspace operational counters and security audit records are separate
-from that future feature.
+are **Building, with source-only privacy controls; collection remains inactive**.
+No V08 measurement instrumentation or collector is deployed.
+Source now includes a pre-login/offline `/privacy` page and native
+`mnemion-service telemetry` controls. They save a default-enabled preference;
+they do not enable collection. The disclosure currently states
+`collection_available: false` and `destination: null`, and the payload preview
+shows no outbound body and zero outgoing bytes. No product sender, production
+analytics or anonymous ingress is active or qualified. These controls have not
+yet received native release acceptance.
+They and this documentation update are excluded from the isolated 4.46.6
+dependency-security release.
+
+The app and native process share a persistent preference under the same OS
+account and application data configuration. Browser choice is local to that
+browser and site and honors Global Privacy Control. Company policy can restrict
+collection but cannot force it over a user opt-out. A later collection-capable
+build must present its current disclosure before any emission; saving today's
+enabled preference does not acknowledge an unknown destination. Damaged or
+unreadable settings keep collection off; there is no automatic repair in this
+source checkpoint. See the [privacy control guide](../guides/product-telemetry-controls.md)
+for offline usage, status and storage limits.
+
+Private workspace operational counters and security audit records remain
+separate. Product telemetry opt-out does not disable those records or the
+service, source, model and update connections listed above.
 
 On 23 October, an isolated synthetic check of the legacy Chroma backend reached
 **five vendor SDK capture calls** and created a persistent vendor identifier.
@@ -58,9 +80,9 @@ submit vendor telemetry. This establishes a configuration gap, not five network
 transmissions or proof of any historical successful transmission. An incompatible
 signature in the pinned vendor SDK is not a privacy control.
 
-An **unreleased source correction** explicitly disables the vendor telemetry
-component for Mnemion's legacy clients. Its isolated regression recorded no
-vendor calls, network attempts or new identifier while exercising real local
+The correction included in [4.46.4](../releases/4.46.4.md) explicitly disables
+the vendor telemetry component for Mnemion's legacy clients. Its isolated
+regression recorded no vendor calls, network attempts or new identifier while exercising real local
 storage. **Frozen 4.46.3 does not include this correction.** The change neither
 deletes an existing third-party Chroma identifier nor changes settings for other
 Chroma applications. The [dated validation](../validation/2026-10-23-legacy-vendor-telemetry.md)

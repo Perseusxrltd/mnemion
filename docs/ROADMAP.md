@@ -1,7 +1,7 @@
 # Mnemion product roadmap
 
 Reviewed source distribution: **4.46.5**.
-Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-23**.
+Public distribution: [current release status](RELEASE_STATUS.md). Roadmap updated: **2026-10-24**.
 
 Download from the [Perseus XR product page](https://www.perseusxr.com/mnemion).
 [Release status](RELEASE_STATUS.md) and the [maintenance board](MAINTENANCE_STATUS.md)
@@ -9,7 +9,7 @@ update automatically. This page sets delivery order; the [66 requirements](PRODU
 preserve every requested outcome and its evidence.
 
 Strict full-scope completion is **17/66 shipped (25.8%)**: 42 partial,
-3 planned, 3 ongoing and 1 external. Requirements differ greatly in size.
+1 building, 2 planned, 3 ongoing and 1 external. Requirements differ greatly in size.
 This measures complete requested capabilities, not time spent or the usability
 of the released app. A hotfix does not finish a broader requirement.
 
@@ -24,6 +24,18 @@ issue review, publication and version-linked closure together.
 These entries preserve dated source and acceptance evidence as historical
 snapshots. The generated [release status](RELEASE_STATUS.md) owns current public
 availability and release gates; each deployment requires its own acceptance.
+
+- **Active feature — V08, 24 October 2026; Building/source implementation.**
+  [Fresh backup and independent restore](validation/2026-10-24-4465-backup-acceptance.md)
+  passed at **00:01:45** and **00:15:23 UTC**. Work now advances the complete
+  [anonymous product telemetry contract](implementation/anonymous-product-telemetry.md).
+  Source privacy controls, the **19-check core browser journey** and **eight
+  browser policy/fault checks** passed; final input qualification remains open. Collection
+  is unavailable, with no sender, collector, qualified anonymous ingress or
+  all-six-native acceptance. This work is excluded from the isolated 4.46.6
+  dependency-security release. Only V08 moves from Planned to Building; all 66
+  requirement texts and all other states are preserved. Earlier failures and
+  dated Planned checkpoints below remain historical evidence.
 
 - **New planned scope — 23 October 2026.** V08 retains the user's
   [anonymous product telemetry request](implementation/anonymous-product-telemetry.md):
@@ -623,9 +635,12 @@ join this queue without erasing unfinished requirements. Independent work
 continues while an external account or publisher prerequisite is unavailable.
 
 V08 [anonymous product telemetry](implementation/anonymous-product-telemetry.md)
-is queued after the current live-update and independent-host milestone. Its
-privacy architecture review precedes implementation and launch; the active
-hotfix and the existing delivery outcomes below continue unchanged.
+is the active feature milestone after the accepted 4.46.5 paired update, custody,
+fresh backup and independent restore. Source privacy controls are Building;
+complete workflow measurement, reviewed anonymity, bounded transport and native/
+web release acceptance remain open. Urgent hotfixes continue alongside it,
+including the separate 4.46.6 dependency-security release. The unfinished
+delivery outcomes below retain their relative order and full acceptance scope.
 
 | Priority | Next outcome | Acceptance and requirements |
 | --- | --- | --- |

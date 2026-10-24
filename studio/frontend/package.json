@@ -8,6 +8,7 @@
     "prebuild:electron": "node ../branding/verify.mjs",
     "dev": "vite",
     "test:map": "node --test scripts/test-memory-map.mjs",
+    "test:telemetry": "node --test scripts/test-product-telemetry.mjs",
     "build": "tsc && vite build",
     "build:electron": "tsc && cross-env ELECTRON_BUILD=1 vite build",
     "preview": "vite preview"

@@ -12,6 +12,8 @@ def _configure(parser, command):
         from .recovery_kit import arguments
     elif command == "local":
         from ..local_workspace import arguments
+    elif command == "telemetry":
+        from ..product_telemetry.cli import arguments
     elif command == "desktop-control":
         from ..desktop_operator import arguments
     elif command == "desktop-source":

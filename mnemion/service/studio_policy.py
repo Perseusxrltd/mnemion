@@ -85,3 +85,19 @@ def content_security_policy():
         f"img-src 'self' data:; connect-src {connections}; "
         "object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
     )
+
+
+def product_telemetry_page(index: str) -> str:
+    """Embed only the operator's fixed, restrictive browser policy.
+
+    Reading the page needs no telemetry request, cookie, workspace login or
+    third-party connection. Existing connect-src restrictions remain unchanged.
+    """
+    from html import escape
+    from ..product_telemetry.policy import company_policy
+
+    value = escape(json.dumps(company_policy(), separators=(",", ":")), quote=True)
+    markup = f'<meta name="mnemion-product-telemetry-policy" content="{value}">'
+    if "</head>" in index:
+        return index.replace("</head>", markup + "</head>", 1)
+    return markup + index

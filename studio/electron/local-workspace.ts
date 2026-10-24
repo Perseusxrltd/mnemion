@@ -57,7 +57,7 @@ export function localOptions(input: unknown): LocalOptions {
 }
 
 export function localEnvironment(source: NodeJS.ProcessEnv, root: string): NodeJS.ProcessEnv {
-  const allowed = new Set(['path', 'home', 'userprofile', 'appdata', 'localappdata', 'systemroot', 'windir', 'comspec',
+  const allowed = new Set(['path', 'home', 'userprofile', 'appdata', 'localappdata', 'programdata', 'systemroot', 'windir', 'comspec',
     'temp', 'tmp', 'tmpdir', 'lang', 'lc_all', 'lc_ctype', 'ssl_cert_file', 'ssl_cert_dir', 'requests_ca_bundle',
     'curl_ca_bundle', 'http_proxy', 'https_proxy', 'no_proxy', 'all_proxy', '__cf_user_text_encoding'])
   const environment = Object.fromEntries(Object.entries(source).filter(([key, value]) => value !== undefined && allowed.has(key.toLowerCase())))

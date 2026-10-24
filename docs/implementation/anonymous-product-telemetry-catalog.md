@@ -1,11 +1,20 @@
 # Proposed anonymous product telemetry catalog — V08
 
-**Planned design, 23 October 2026.** This catalog supplements the
-[V08 contract](anonymous-product-telemetry.md); it implements no collection,
-settings or collector. The current live-update/independent-host milestone retains
-priority. All 66 requirement texts and states remain unchanged. Metric names,
-workflow variants and ownership rules below are proposals for review, not
-shipping API actions or accepted anonymity guarantees.
+**Proposed catalog, recorded 23 October; source checkpoint 24 October 2026.**
+This catalog supplements the [V08 contract](anonymous-product-telemetry.md).
+Source now implements the [local privacy controls](../guides/product-telemetry-controls.md)
+for app/native shared preference, browser-local choice, disclosure and company
+restrictions. Collection remains unavailable, the destination is null, and no
+product sender or collector is active. These controls do not implement the
+measurements or settle ownership below. Metric names, workflow variants and
+ownership rules remain proposals, with no accepted anonymity or native release
+claim. **V08 is Building/source implementation and the active feature milestone**
+after the accepted fresh backup and independent restore. All 66 requirement
+texts and the other 65 states remain unchanged. The 19-check core browser journey
+and eight further browser policy/fault checks have dated source evidence; final
+input qualification and native acceptance remain open. These controls and this
+documentation update are excluded from the isolated
+4.46.6 dependency-security release.
 
 The scope remains all app, agent and headless workflows. An unresolved row is
 unfinished V08 coverage, not permission to collect without choice or an assertion

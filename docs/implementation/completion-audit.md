@@ -1,26 +1,33 @@
 # Complete-milestone acceptance audit
 
-Scope updated **23 October 2026**; the existing **42 partial requirements** were
-reviewed on 22 October against the [complete inventory](../PRODUCT_REQUIREMENTS.md).
-All previous 65 requirement IDs, texts and states remain retained, alongside the
-expanded librarian, scientific/Jev work and every open issue. New **V08** is a
-separate planned addition: **66 total, 17 shipped (25.8%), 42 partial, 0 building,
-3 planned, 3 ongoing and 1 external**.
+Scope updated **24 October 2026**; the existing **42-row partial-requirement
+audit** from 22 October is retained, with V08's source progress and remaining
+acceptance audited separately below. Against the
+[complete inventory](../PRODUCT_REQUIREMENTS.md), **V08 alone moves to Building**;
+all 66 requirement texts and the other 65 states remain retained, alongside the
+expanded librarian, scientific/Jev work and every open issue. Current counts:
+**66 total, 17 shipped (25.8%), 42 partial, 1 building, 2 planned, 3 ongoing and
+1 external**.
 This audit changes work order; it neither narrows scope nor marks a parent done.
 
-The actual [4.46.1 paired update](../validation/2026-10-23-4461-live-acceptance.md)
-passed on **23 October at 09:55:28 UTC**, alongside its separately recorded
-[native and public release gates](../validation/2026-10-23-4461-native-acceptance.md).
-The later [independent-host setup](../validation/2026-10-23-independent-host-adoption.md)
-passed native adoption, backup configuration, OS integration and two protected
-custodian enrollments. **The operational journey failed at its first stop,
-before any effect.** Complete the [busy-source hotfix](../releases/4.46.2.md),
-its release gates and the actual stop/manager-restart/watchdog/start/retained-data
-journey. Fresh native host-control backup delivery and restore remain unproven.
-Queue [V08 anonymous product telemetry](anonymous-product-telemetry.md) after
-that milestone; it is not part of the frozen hotfix. Keep one feature milestone
-alongside urgent operational bugs. Next prioritize independent shared administration, source freshness,
-ordinary memory operations, backup/recovery and updates; then complete company
+The actual [4.46.5 paired update](../validation/2026-10-23-4465-live-acceptance.md)
+passed on **23 October at 21:32:43 UTC**, followed by the
+[retained-custodian lifecycle](../validation/2026-10-23-4465-custody-acceptance.md)
+at **23:52:34 UTC**. The [fresh backup and independent restore](../validation/2026-10-24-4465-backup-acceptance.md)
+passed on **24 October at 00:01:45 and 00:15:23 UTC**. Their original failures
+remain preserved, including the first 4.46.1 stop rejected before any effect.
+These bounded acceptances do not complete whole-machine recovery, physical-device
+independence, controller-authority escrow or broader provider/company journeys.
+
+[V08 anonymous product telemetry](anonymous-product-telemetry.md) is now the
+active feature milestone, with source-only privacy controls and a **19-check
+core browser journey** accepted at **00:51:17 UTC**, followed by **eight browser
+policy/fault checks**. Final input qualification, full collection, anonymity
+proof and native/release acceptance remain
+open. This work is excluded from the isolated 4.46.6 dependency-security release.
+Keep one feature milestone alongside urgent operational bugs. The retained
+delivery queue covers independent shared administration, source freshness,
+ordinary memory operations, backup/recovery and updates, followed by company
 onboarding/provider journeys before expanding advanced librarian/visual work.
 Each milestone must include its app and agent journey, supported platforms,
 error/recovery behavior, documentation and observed completion proof.
@@ -214,7 +221,8 @@ and the source-access/recovery receipts are recorded in the [issue plan](github-
 
 The [layered-librarian stages](../research/2026-10-20-layered-librarian.md#delivery-sequence-and-research-watch) remain additional planned scope. Capture controls, coverage statistics and the research watch do not establish autonomous cross-layer consolidation.
 
-**Planned addition — V08, 23 October 2026.** The
+**V08 — Building/source implementation, 24 October 2026.** Recorded as Planned
+on 23 October, the
 [anonymous product telemetry contract](anonymous-product-telemetry.md) preserves
 the exact new request. It requires a reviewed anonymity architecture and payload,
 default-enabled disclosure, persistent user opt-out/re-enable, company policy and
@@ -222,6 +230,9 @@ matching native-agent controls, bounded collection/transport, collector logging
 and small-cohort protections, and meaningful outbound/privacy tests on all six
 native targets plus the web. It remains separate from private workspace/security
 audits. Dependencies include F08, A10, R02/R04 and V01; their existing requirement
-texts and states do not change. Implementation, privacy proof, measured budgets
-and release acceptance are all pending; effort remains unknown. The 42-row
-partial-requirement audit above is unchanged.
+texts and states do not change. Local privacy controls and the core browser
+journey now have source evidence. Complete measurement ownership/coverage,
+sender and collector implementation, privacy proof, measured budgets and
+native/release acceptance remain pending; effort remains unknown. The original
+42-row partial-requirement audit above is unchanged; this paragraph adds V08's
+current missing acceptance without closing any prior row.

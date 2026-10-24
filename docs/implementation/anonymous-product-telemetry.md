@@ -1,10 +1,49 @@
 # Anonymous product telemetry — V08
 
-**Planned scope, recorded 23 October 2026.** This is a future implementation and
-acceptance contract. It adds V08 to the [66-requirement inventory](../PRODUCT_REQUIREMENTS.md)
-and is queued after the current live-update/independent-host milestone. It is
-not shipping and is not included in frozen 4.46.1. No collector, telemetry
-setting, product code or release is changed by recording this request.
+**V08 is Building/source implementation; checkpoint 24 October 2026.** The full scope
+recorded on 23 October remains the acceptance contract in the
+[66-requirement inventory](../PRODUCT_REQUIREMENTS.md). Local privacy controls
+are now implemented in source; product collection is unavailable. V08 is the
+active feature milestone after [fresh backup and independent restore](../validation/2026-10-24-4465-backup-acceptance.md)
+passed at **00:01:45 and 00:15:23 UTC**. Only V08's state changes; all requirement
+texts and the other 65 states remain unchanged. These controls and this
+documentation update are excluded from the isolated 4.46.6 dependency-security release.
+
+The [app and native usage guide](../guides/product-telemetry-controls.md)
+describes the pre-login/offline `/privacy` page and private-stdin
+`mnemion-service telemetry` actions: `schema`, `status`, `preview` and
+`configure`. App and native processes share a persistent default-enabled
+preference under the same OS account and application data configuration.
+Browser choice is local to that browser and site, honors Global Privacy Control
+and uses the served company restriction. Company policy can restrict collection
+but cannot override a user opt-out. Damaged or unreadable settings fail closed;
+there is no automatic repair or repair action in this source checkpoint.
+Each successful opt-out advances the local revision, including when already off,
+so an earlier enable request cannot override that newer choice.
+
+The [shared disclosure](../../mnemion/product_telemetry/disclosure.json) has
+`collection_available: false` and `destination: null`. Saving an enabled
+preference does not complete disclosure or activate collection. The preview
+returns no outbound body and zero outgoing bytes. There is no product sender,
+collector, production analytics or qualified anonymous ingress. The measurement
+catalog, full workflow coverage, resource ceilings and outbound/privacy acceptance
+below remain future requirements.
+
+Saved source checks passed **10 policy tests** after the opt-out revision change,
+**12 native bridge/operator tests, 26 web/CSP tests and seven browser policy
+tests**; frontend and Electron TypeScript builds passed. The built
+browser's **19-check core privacy journey passed at 00:51:17 UTC on 24 October**:
+default/disclosure gating, persistent and cross-tab/offline opt-out, re-enable,
+preview, storage loss/damage, GPC and small-screen access, without external
+requests or a workspace API. The original driver's compact-JSON parsing failure
+remains preserved; acceptance inspected the completed journey without replaying it.
+Its receipt SHA-256 is
+`758778a6590ad1925f050def54c63df0eadefdd5bf7a77235cb07783eba8d93f`.
+Eight further actual-browser checks passed for served company restriction,
+opt-out precedence, unavailable tab coordination, denied storage reads and failed
+writes with fixed errors. Final input qualification remains open. These source
+observations do not establish all-six-native, collector, anonymity or release
+acceptance.
 
 The user's request, verbatim:
 
@@ -216,6 +255,6 @@ a serializer matches its own example:
 Do not infer one target's policy or privacy pass from another. The final evidence
 must include the reviewed catalog/schema, local payload preview, collector/log
 configuration, anonymization analysis, bounded-load measurements, all native/web
-receipts and public documentation. V08 remains **Planned** until implementation
-and the appropriate later release acceptance establish the requested behavior;
-this document alone changes no existing requirement's state.
+receipts and public documentation. V08 is **Building/source implementation**;
+complete collection, privacy proof and the appropriate release acceptance must
+establish the full requested behavior before it can be marked Shipped.

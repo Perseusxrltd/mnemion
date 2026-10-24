@@ -281,7 +281,7 @@ export default function Connect({ onConnect, initialError, initialJoin }: { onCo
           <Link className="ws-link" to="/help">Setup guides, documentation & roadmap</Link>
           {desktop?.hostControl && <Link className="ws-link" to="/hosts">Host controls · manage a company server</Link>}
           <Link className="ws-link" to="/help?doc=docs%2Fservice%2Fconnection-diagnostics.md">Workspace offline? Connection & recovery guide</Link>
-          <Link className="ws-link" to="/help?doc=docs%2Fservice%2Fprivacy.md">Privacy & data handling</Link>
+          <Link className="ws-link" to="/privacy">Privacy & product telemetry</Link>
           {window.mnemion?.platform && <small>Background mode, login startup and supported automatic updates are enabled by default. Change them in <strong>Background and updates</strong> in the app menu.</small>}
         </div>
         {import.meta.env.DEV && <Link className="ws-link ws-legacy-link" to="/dashboard">Open the legacy local vault</Link>}

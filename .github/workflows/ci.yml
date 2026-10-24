@@ -267,6 +267,7 @@ jobs:
       - run: python deploy/bundle_studio.py
       - run: npm --prefix packages/client test
       - run: npm --prefix studio/frontend run test:map
+      - run: npm --prefix studio/frontend run test:telemetry
       - name: Verify wheel and source package include the matching web Studio
         run: |
           uv build --out-dir build-tmp/source-check

@@ -1268,3 +1268,8 @@ fieldset.ws-setup-fields { border: 0; padding: 0; min-width: 0; }
 .ws-agent-sign-in h2 { min-width: 12rem; }
 .ws-agent-steps { list-style: decimal; padding-left: 1.4rem; margin: 1rem 0; }
 .ws-agent-steps li { padding-left: .2rem; margin: .45rem 0; }
+.ws-privacy { box-sizing: border-box; width: min(100%, 850px); height: 100%; margin: 0 auto; padding: 28px; display: grid; align-content: start; gap: 20px; overflow-y: auto; }
+.ws-privacy h1 { display: flex; align-items: center; gap: 12px; }
+.ws-privacy .ws-panel { padding: 20px; display: grid; gap: 12px; }
+.ws-privacy .ws-code { white-space: pre-wrap; overflow-wrap: anywhere; max-width: 100%; }
+@media (max-width: 600px) { .ws-privacy { padding: 16px; gap: 16px; } .ws-privacy .ws-panel { padding: 14px; } }

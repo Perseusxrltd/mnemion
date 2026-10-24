@@ -60,6 +60,11 @@ def main(argv: list[str] | None = None) -> int:
         options_command="desktop-control",
     )
     commands.add_parser(
+        "telemetry",
+        help="Inspect or change this installation's optional product telemetry offline; JSON on stdin",
+        options_command="telemetry",
+    )
+    commands.add_parser(
         "desktop-source",
         help="Private Studio source helper; JSON through process pipes",
         options_command="desktop-source",
@@ -384,6 +389,10 @@ def main(argv: list[str] | None = None) -> int:
         return dispatch(args)
     elif args.command == "desktop-control":
         from ..desktop_operator import dispatch
+
+        return dispatch(args)
+    elif args.command == "telemetry":
+        from ..product_telemetry.cli import dispatch
 
         return dispatch(args)
     elif args.command == "desktop-source":

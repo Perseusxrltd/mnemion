@@ -93,6 +93,8 @@ def build(work: Path, output: Path) -> Path:
         "fastembed",
         "--collect-data",
         "mnemion.service",
+        "--collect-data",
+        "mnemion.product_telemetry",
         "--collect-all",
         "ngrok",
         "--add-data",

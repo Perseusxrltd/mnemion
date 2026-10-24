@@ -1,5 +1,11 @@
 /** Discoverable native operations; each also uses the app's typed controller. */
 export const desktopActions = {
+  'telemetry.status': { workspace: false, mutation: false, fields: [],
+    description: 'Read this installation’s optional product telemetry choice, effective policy and disclosure before sign-in or while offline. Private workspace metrics are separate.' },
+  'telemetry.schema': { workspace: false, mutation: false, fields: [] },
+  'telemetry.preview': { workspace: false, mutation: false, fields: [] },
+  'telemetry.configure': { workspace: false, mutation: true, fields: ['enabled', 'expected_revision', 'disclosure_version'],
+    description: 'Save the local privacy choice shared by desktop and headless agents. Opt-out wins over a stale revision; enabling requires the current revision and a supported disclosure. This never changes workspace permissions.' },
   'host.profiles': { workspace: false, mutation: false, fields: [] },
   'host.schema': { workspace: false, mutation: false, fields: [] },
   'host.inspect': { workspace: false, mutation: false, fields: ['id'] },
