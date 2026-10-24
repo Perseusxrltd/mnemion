@@ -41,7 +41,9 @@ Its receipt SHA-256 is
 `758778a6590ad1925f050def54c63df0eadefdd5bf7a77235cb07783eba8d93f`.
 Eight further actual-browser checks passed for served company restriction,
 opt-out precedence, unavailable tab coordination, denied storage reads and failed
-writes with fixed errors. Final input qualification remains open. These source
+writes with fixed errors. [Source-input qualification](../validation/2026-10-24-telemetry-controls.md)
+subsequently passed at **01:12:30 UTC**, including final browser journeys and
+actual wheel controls with matching disclosure resources. These source
 observations do not establish all-six-native, collector, anonymity or release
 acceptance.
 

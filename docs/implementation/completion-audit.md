@@ -22,8 +22,8 @@ independence, controller-authority escrow or broader provider/company journeys.
 [V08 anonymous product telemetry](anonymous-product-telemetry.md) is now the
 active feature milestone, with source-only privacy controls and a **19-check
 core browser journey** accepted at **00:51:17 UTC**, followed by **eight browser
-policy/fault checks**. Final input qualification, full collection, anonymity
-proof and native/release acceptance remain
+policy/fault checks**. [Source-input qualification](../validation/2026-10-24-telemetry-controls.md)
+passed at **01:12:30 UTC**; full collection, anonymity proof and native/release acceptance remain
 open. This work is excluded from the isolated 4.46.6 dependency-security release.
 Keep one feature milestone alongside urgent operational bugs. The retained
 delivery queue covers independent shared administration, source freshness,

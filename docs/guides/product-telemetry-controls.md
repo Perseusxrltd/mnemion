@@ -5,8 +5,8 @@ disclosure controls are implemented in source. There is no product sender or
 collector: `collection_available` is `false`, the destination is `null`, and
 `effective_enabled` stays `false`. Saving an enabled preference does not activate
 analytics. The core browser journey passed **19 checks at 00:51:17 UTC**, followed
-by **eight browser policy/fault checks**. Final input qualification and native
-release acceptance remain pending.
+by **eight browser policy/fault checks**. [Source-input qualification](../validation/2026-10-24-telemetry-controls.md)
+passed at **01:12:30 UTC**; native release acceptance remains pending.
 These controls and this documentation update are excluded from the isolated
 4.46.6 dependency-security release. The [contract](../implementation/anonymous-product-telemetry.md)
 records the dated source evidence and full remaining scope.

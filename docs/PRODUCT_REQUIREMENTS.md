@@ -37,7 +37,8 @@ partial feature do not automatically mark its whole requirement complete.
 passed at **00:01:45** and **00:15:23 UTC**. V08 now has source-only
 [app/native privacy controls](guides/product-telemetry-controls.md) and a
 **19-check core browser journey** accepted at **00:51:17 UTC**, followed by
-**eight browser policy/fault checks**. Final input qualification remains open.
+**eight browser policy/fault checks**. The later [source-input qualification](validation/2026-10-24-telemetry-controls.md)
+passed at **01:12:30 UTC**.
 No sender, collector, production analytics,
 qualified anonymous ingress or all-six-native acceptance exists. This work is
 excluded from the isolated 4.46.6 dependency-security release. Only V08's state

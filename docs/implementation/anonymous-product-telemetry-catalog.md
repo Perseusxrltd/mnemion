@@ -11,8 +11,9 @@ ownership rules remain proposals, with no accepted anonymity or native release
 claim. **V08 is Building/source implementation and the active feature milestone**
 after the accepted fresh backup and independent restore. All 66 requirement
 texts and the other 65 states remain unchanged. The 19-check core browser journey
-and eight further browser policy/fault checks have dated source evidence; final
-input qualification and native acceptance remain open. These controls and this
+and eight further browser policy/fault checks have dated source evidence;
+[source-input qualification](../validation/2026-10-24-telemetry-controls.md) passed
+at **01:12:30 UTC**. Native acceptance remains open. These controls and this
 documentation update are excluded from the isolated
 4.46.6 dependency-security release.
 

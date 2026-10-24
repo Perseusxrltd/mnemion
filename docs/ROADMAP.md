@@ -30,7 +30,8 @@ availability and release gates; each deployment requires its own acceptance.
   passed at **00:01:45** and **00:15:23 UTC**. Work now advances the complete
   [anonymous product telemetry contract](implementation/anonymous-product-telemetry.md).
   Source privacy controls, the **19-check core browser journey** and **eight
-  browser policy/fault checks** passed; final input qualification remains open. Collection
+  browser policy/fault checks** passed; [source-input qualification](validation/2026-10-24-telemetry-controls.md)
+  passed at **01:12:30 UTC**. Collection
   is unavailable, with no sender, collector, qualified anonymous ingress or
   all-six-native acceptance. This work is excluded from the isolated 4.46.6
   dependency-security release. Only V08 moves from Planned to Building; all 66
