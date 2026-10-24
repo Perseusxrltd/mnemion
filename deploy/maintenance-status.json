@@ -25,15 +25,69 @@
   ],
   "runs": [
     {
-      "id": 40051306831,
+      "id": 40054406498,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "e44f288c04296b44865e12174a8ae319cca56072",
-      "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-24T02:23:43Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40051306831"
+      "source_commit": "8bd4fbcdd75314fae9ca12060df12afd8b096f9d",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-24T02:30:12Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40054406498",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 12,
+        "completed": 7,
+        "succeeded": 7,
+        "active": [
+          {
+            "id": 120754107867,
+            "name": "service (3.13)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+            ]
+          },
+          {
+            "id": 120754107879,
+            "name": "supervision (macos-15)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
+            ]
+          },
+          {
+            "id": 120754107885,
+            "name": "service (3.14)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+            ]
+          },
+          {
+            "id": 120754107895,
+            "name": "service (3.12)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Matching PostgreSQL recovery tools"
+            ]
+          },
+          {
+            "id": 120754107910,
+            "name": "supervision (macos-15-intel)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the current Intel cryptography runtime with static OpenSSL"
+            ]
+          }
+        ]
+      },
+      "failed_jobs": []
     },
     {
       "id": 40052003118,
@@ -69,15 +123,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40051560833"
     },
     {
-      "id": 40047066746,
+      "id": 40054406514,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "a5c3bf29e8feb22d73b4047a13ac93df694dcb0c",
+      "source_commit": "8bd4fbcdd75314fae9ca12060df12afd8b096f9d",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-24T00:52:06Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40047066746"
+      "updated_at": "2026-10-24T02:30:15Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40054406514"
     },
     {
       "id": 40052000728,
@@ -91,5 +145,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40052000728"
     }
   ],
-  "observed_at": "2026-10-24T02:24:17+00:00"
+  "observed_at": "2026-10-24T02:30:59+00:00"
 }
