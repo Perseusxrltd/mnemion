@@ -19,22 +19,49 @@ function load(url) {
 const { BrowserTelemetry, choiceKey, queueKey } = load(entry)
 const { budgetKey, budgetState, DAY, WEEK, COST } = load(new URL('../src/workspace/telemetry-budget.ts', import.meta.url))
 const { pendingState } = load(new URL('../src/workspace/telemetry-aggregate.ts', import.meta.url))
+const { sendBrowserTelemetry } = load(new URL('../src/workspace/telemetry-transport.ts', import.meta.url))
 const contract = createRequire(entry)('../../../../mnemion/product_telemetry/disclosure.json')
 const allowed = { network: 'unmetered', constrained: false }
 const measured = () => ({ kind: 'outcome', workflow: 'memory.recall', surface: 'browser', outcome: 'success' })
 
+async function transportFixture(run, mode = 'success') {
+  const saved = globalThis.fetch, calls = []
+  let entered, release, aborts = 0
+  const started = new Promise(resolve => { entered = resolve })
+  globalThis.fetch = (url, options) => {
+    calls.push({ url, options, body: [...options.body] })
+    entered()
+    return new Promise((resolve, reject) => {
+      const abort = () => { aborts++; reject(new DOMException('Cancelled', 'AbortError')) }
+      const respond = () => {
+        options.signal.removeEventListener('abort', abort)
+        resolve({ status: mode === 'bad_status' ? 200 : 204, redirected: mode === 'redirected',
+          url: mode === 'wrong_url' ? 'https://private.invalid/' : url,
+          headers: new Headers({ 'Content-Length': mode === 'nonempty_length' ? '4' : '0' }),
+          body: ['bad_status', 'empty_stream'].includes(mode) ? { getReader() { throw new Error('Response contents must never be read') } } : null })
+      }
+      options.signal.addEventListener('abort', abort, { once: true })
+      if (options.signal.aborted) abort()
+      else if (mode === 'hold') release = respond
+      else respond()
+    })
+  }
+  try { await run({ calls, started, release: () => release(), aborts: () => aborts }) }
+  finally { globalThis.fetch = saved }
+}
+
 async function available(run) {
   const saved = { collection_available: contract.collection_available, destination: contract.destination }
-  Object.assign(contract, { collection_available: true, destination: 'https://example.invalid/telemetry' })
+  Object.assign(contract, { collection_available: true, destination: 'https://example.invalid/v1/report' })
   try { await run() } finally { Object.assign(contract, saved) }
 }
 
-function fixture(asyncLocks = false) {
+function fixture(asyncLocks = false, releaseLater = false) {
   const values = new Map(), events = new EventTarget(), listeners = new Map()
   const add = events.addEventListener.bind(events), remove = events.removeEventListener.bind(events)
   events.addEventListener = (name, callback, ...rest) => { listeners.set(callback, name); add(name, callback, ...rest) }
   events.removeEventListener = (name, callback, ...rest) => { listeners.delete(callback); remove(name, callback, ...rest) }
-  let now = Date.now(), monotonic = 100, busy = false, restricted = false, privacy = false, fault = () => false
+  let now = Date.now(), monotonic = performance.now(), busy = false, restricted = false, privacy = false, fault = () => false
   const storage = { getItem: key => values.get(key) ?? null,
     setItem: (key, value) => { if (fault(key, value)) throw new Error('PRIVATE_SENTINEL'); values.set(key, value) },
     removeItem: key => { values.delete(key) } }
@@ -43,7 +70,12 @@ function fixture(asyncLocks = false) {
     const run = () => {
       if (busy) return callback(null)
       busy = true
-      try { return callback({ name }) } finally { busy = false }
+      try {
+        const result = callback({ name })
+        if (releaseLater) return Promise.resolve(result).finally(() => { busy = false })
+        busy = false
+        return result
+      } catch (error) { busy = false; throw error }
     }
     return asyncLocks ? Promise.resolve().then(run) : Promise.resolve(run())
   } }
@@ -304,3 +336,113 @@ test('async handoffs are rejected before invocation and leave no replayable repo
   assert.equal(instance.budget().attempts.length, 1)
   assert.equal(instance.budget().lease, null)
 }))
+
+test('browser transport uses the disclosed destination and isolated request options', async () => available(() => transportFixture(async transport => {
+  const instance = fixture(), client = instance.first
+  instance.choice(client, true)
+  const report = await client.delivery.reserve(instance.enqueue(), allowed), original = [...report.body()]
+  assert.deepEqual(await sendBrowserTelemetry(client, report), { outcome: 'delivered' })
+  assert.equal(transport.calls.length, 1)
+  const { url, options, body } = transport.calls[0]
+  assert.equal(url, contract.destination); assert.deepEqual(body, original)
+  assert.deepEqual(Object.keys(options).sort(), ['body', 'cache', 'credentials', 'headers', 'keepalive', 'method', 'mode', 'redirect', 'referrerPolicy', 'signal'].sort())
+  assert.deepEqual(options.headers, { 'Content-Type': 'application/octet-stream' })
+  assert.deepEqual([options.method, options.cache, options.credentials, options.mode, options.redirect, options.referrerPolicy, options.keepalive],
+    ['POST', 'no-store', 'omit', 'cors', 'error', 'no-referrer', false])
+  assert.equal(options.signal.aborted, true)
+  assert.deepEqual([...report.body()], [0, 0, 0, 0]); assert.equal(report.closed, true)
+  assert.equal(instance.budget().lease, null); assert.equal(instance.budget().attempts.length, 1)
+})))
+
+test('duplicate browser sends cannot cancel a successful pending request', async () => available(() => transportFixture(async transport => {
+  const instance = fixture(true), client = instance.first
+  instance.choice(client, true)
+  const report = await client.delivery.reserve(instance.enqueue(), allowed)
+  const first = sendBrowserTelemetry(client, report)
+  assert.deepEqual(await sendBrowserTelemetry(client, report), { outcome: 'suppressed' })
+  await transport.started
+  assert.deepEqual(await sendBrowserTelemetry(client, report), { outcome: 'suppressed' })
+  assert.equal(transport.calls.length, 1); assert.equal(transport.aborts(), 0)
+  transport.release()
+  assert.deepEqual(await first, { outcome: 'delivered' })
+  assert.equal(instance.budget().attempts.length, 1); assert.equal(instance.budget().lease, null)
+}, 'hold')))
+
+test('asynchronously released Web Locks do not let the watcher suppress its own sender', async () => available(() => transportFixture(async transport => {
+  const instance = fixture(true, true), client = instance.first
+  instance.choice(client, true)
+  const report = await client.delivery.reserve(instance.enqueue(), allowed)
+  assert.deepEqual(await sendBrowserTelemetry(client, report), { outcome: 'delivered' })
+  assert.equal(transport.calls.length, 1)
+  assert.equal(report.closed, true); assert.equal(instance.budget().lease, null)
+})))
+
+for (const control of ['same_tab_off', 'other_tab_off', 'privacy', 'company', 'pagehide'])
+  test(`browser ${control} cancels a pending fetch without another request`, async () => available(() => transportFixture(async transport => {
+    const instance = fixture(), client = instance.first
+    instance.choice(client, true)
+    const report = await client.delivery.reserve(instance.enqueue(), allowed)
+    const pending = sendBrowserTelemetry(client, report)
+    await transport.started
+    if (control === 'same_tab_off') instance.choice(client, false)
+    else if (control === 'other_tab_off') instance.choice(instance.client(), false)
+    else if (control === 'privacy') instance.privacy(true)
+    else if (control === 'company') instance.restrict(true)
+    else instance.events.dispatchEvent(new Event('pagehide'))
+    assert.deepEqual(await pending, { outcome: 'suppressed' })
+    assert.equal(transport.calls.length, 1); assert.equal(transport.aborts(), 1)
+    assert.equal(instance.budget().attempts.length, 1); assert.equal(instance.budget().lease, null)
+    assert.equal(report.closed, true); assert.equal(instance.listeners.size, 0)
+  }, 'hold')))
+
+for (const mode of ['redirected', 'wrong_url', 'bad_status', 'nonempty_length'])
+  test(`browser ${mode} response is rejected without reading content or retrying`, async () => available(() => transportFixture(async transport => {
+    const instance = fixture(), client = instance.first
+    instance.choice(client, true)
+    const report = await client.delivery.reserve(instance.enqueue(), allowed)
+    assert.deepEqual(await sendBrowserTelemetry(client, report), { outcome: 'failed' })
+    assert.equal(transport.calls.length, 1); assert.equal(transport.calls[0].options.signal.aborted, true)
+    assert.equal(report.closed, true); assert.equal(instance.budget().lease, null)
+  }, mode)))
+
+test('a Chromium-style empty 204 stream is accepted without reading it', async () => available(() => transportFixture(async transport => {
+  const instance = fixture(), client = instance.first
+  instance.choice(client, true)
+  const report = await client.delivery.reserve(instance.enqueue(), allowed)
+  assert.deepEqual(await sendBrowserTelemetry(client, report), { outcome: 'delivered' })
+  assert.equal(transport.calls.length, 1); assert.equal(report.closed, true)
+  assert.equal(instance.budget().lease, null)
+}, 'empty_stream')))
+
+for (const destination of [null, 'http://example.invalid/v1/report', 'https://secret@example.invalid/v1/report',
+  'https://example.invalid/v1/report?account=private', 'https://example.invalid/other'])
+  test(`invalid browser collector ${destination === null ? 'null' : new URL(destination).protocol + '/' + new URL(destination).pathname} causes no request`,
+    async () => available(() => transportFixture(async transport => {
+      const instance = fixture(), client = instance.first
+      instance.choice(client, true)
+      const report = await client.delivery.reserve(instance.enqueue(), allowed)
+      contract.destination = destination
+      assert.deepEqual(await sendBrowserTelemetry(client, report), { outcome: 'suppressed' })
+      assert.equal(transport.calls.length, 0); assert.equal(report.closed, true)
+      assert.equal(instance.budget().attempts.length, 1); assert.equal(instance.budget().lease, null)
+    })))
+
+test('an already stopped browser owner cannot start the reserved request', async () => available(() => transportFixture(async transport => {
+  const instance = fixture(), client = instance.first, owner = new AbortController()
+  instance.choice(client, true)
+  const report = await client.delivery.reserve(instance.enqueue(), allowed)
+  owner.abort()
+  assert.deepEqual(await sendBrowserTelemetry(client, report, owner.signal), { outcome: 'suppressed' })
+  assert.equal(transport.calls.length, 0); assert.equal(report.closed, true)
+  assert.equal(instance.budget().attempts.length, 1)
+})))
+
+test('the browser sender stops a silent request at its actual five-second deadline', async () => available(() => transportFixture(async transport => {
+  const instance = fixture(), client = instance.first
+  instance.choice(client, true)
+  const report = await client.delivery.reserve(instance.enqueue(), allowed), started = performance.now()
+  assert.deepEqual(await sendBrowserTelemetry(client, report), { outcome: 'deadline' })
+  assert.ok(performance.now() - started >= 4500 && performance.now() - started < 5700)
+  assert.equal(transport.calls.length, 1); assert.equal(transport.aborts(), 1)
+  assert.equal(instance.budget().attempts.length, 1); assert.equal(instance.budget().lease, null)
+}, 'hold')))

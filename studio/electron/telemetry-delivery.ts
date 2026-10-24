@@ -43,6 +43,7 @@ export class PreparedTelemetryReport {
   #closed = false
   #group: string
   #claimed = false
+  #transportClaimed = false
   constructor(body: Uint8Array, ticket: string, readonly stamp: Readonly<TelemetryStamp>, readonly deadline: number,
     readonly monotonicDeadline: number, group: string) {
     this.#body = new Uint8Array(body)
@@ -55,6 +56,11 @@ export class PreparedTelemetryReport {
   get group(): string { return this.#group }
   get ticket(): string { return this.#token }
   body(): Uint8Array { return new Uint8Array(this.#body) }
+  claimTransport(): boolean {
+    if (this.#transportClaimed || this.#claimed || this.#used || this.#closed) return false
+    this.#transportClaimed = true
+    return true
+  }
   claimHandoff(): boolean {
     if (this.#claimed || this.#used || this.#closed) return false
     this.#claimed = true

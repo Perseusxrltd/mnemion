@@ -9,7 +9,11 @@ The later [native/Python budget components](anonymous-product-telemetry-budget.m
 add shared private reservations and cancellation fences; their focused source
 checks passed, without qualifying installed delivery or transport costs.
 The subsequent [Python TLS transport](../validation/2026-10-24-telemetry-transport.md)
-has passing source and isolated loopback component checks. **There is no active
+has passing source and isolated loopback component checks. The later
+[native and browser senders](../validation/2026-10-24-telemetry-client-transports.md)
+are source components; **32 Electron checks passed with two Windows-only skips**,
+and **65 browser source checks passed**. Actual loopback TLS/collector journeys
+passed **22 browser checks and 18 native checks**. **There is no active
 product sender, installed owner integration, qualified ingress or production
 activation.** The disclosure remains `collection_available: false` with
 `destination: null`. Source and synthetic utility evidence is recorded in the
@@ -99,6 +103,43 @@ not connect or cancel the winner. Final source checks and a **14-check actual
 TLS/collector journey** cover this path, using loopback and a test CA. Earlier
 codec, budget and browser receipts retain their original scope. No endpoint or application owner is configured, and
 TCP/IP overhead, sensors, resources, ingress and all-platform acceptance remain open.
+
+## Native and browser transport follow-up
+
+The [native sender](../../studio/electron/telemetry-transport.ts) uses a raw socket
+under TLS, rather than Electron session networking. The
+[browser sender](../../studio/frontend/src/workspace/telemetry-transport.ts) uses
+Fetch. Both claim the report's whole attempt before setup or cleanup ownership,
+keep its original five-second lifetime and cancel the lease on completion without
+refund. Neither is wired to an application owner or scheduled automatically.
+
+| Boundary | Native source | Browser source |
+| --- | --- | --- |
+| Destination and connection | Release-owned literal IP; certificate verification, minimum TLS 1.3 and disclosed hostname/port. No DNS or proxy. | Exact disclosed HTTPS URL at `/v1/report`, without credentials, query or fragment. The browser manages DNS, proxies, TLS and connection reuse. |
+| Request | Four bytes and fixed HTTP/1.1 headers; one nonblocking raw-socket handoff under the SQLite privacy fence. | Four copied bytes passed to Fetch under the Web Lock fence; credentials omitted, no referrer, cache disabled, redirects refused and keepalive disabled. |
+| Transport bounds | 32,768 combined charged TLS stream bytes and a 2,048-byte response-header cap; neither includes TCP/IP overhead. | Fetch exposes neither an enforceable TLS/TCP/IP byte cap nor a response-header cap. The fixed reservation is not a measured whole-wire bound. |
+| Success observation | Exact empty HTTP 204 parsed from the bounded response. | Fetch exposes status 204, the exact destination, no redirect and `Content-Length: 0` before the active deadline. The body is never read; a null stream is not required. This is not a raw-wire parser. |
+| Cancellation | Destroy the active socket and erase owned buffers; no shutdown flush. | Abort the active Fetch request, discard its response and clear the report; no page-exit flush. |
+
+There is no application-level retry. Browser-generated headers and a cross-origin
+preflight remain additional traffic and metadata. The
+[collector adapter](../../mnemion/product_telemetry/collector.py) now provides a
+fixed, credential-free CORS response for `POST`/`OPTIONS`, without reflecting an
+origin. This does not qualify public ingress or prove transport metadata anonymity.
+Browser lifecycle/cancellation listeners are armed before Fetch. Only policy
+lock polling waits for the guarded handoff's Web Lock to release; the sender
+does not take a competing post-response policy lock. This preserves pagehide
+cancellation while avoiding self-contention. Already handed-off bytes cannot
+be recalled by opt-out. The
+[client transport report](../validation/2026-10-24-telemetry-client-transports.md)
+retains the initial native and browser type-check failures and earlier 11-test
+native run. The final native selection passed 32 checks with two Windows-only
+skips; 65 browser source checks and corrected native-build/frontend-type checks
+passed. The actual Chromium journey passed 22 checks with two new reports and
+two real CORS preflights, without request interception. The native collector
+journey passed 18 checks with one report and 2,649 charged TLS bytes. Their
+isolated profiles/servers were cleaned up; public certificate trust, full wire
+cost, resources and installed-owner acceptance remain open.
 
 ## Fixed closed-week output
 

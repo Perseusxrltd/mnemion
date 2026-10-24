@@ -9,7 +9,12 @@ share private reservation accounting and cancellation fences. The focused
 [browser origin budget](#browser-origin-budget) now has focused and actual-browser
 [component evidence](../validation/2026-10-24-telemetry-browser-delivery.md).
 The subsequent [Python TLS transport](../validation/2026-10-24-telemetry-transport.md)
-now has source/runtime and isolated loopback component evidence. There is **no active product sender,
+now has source/runtime and isolated loopback component evidence. The later
+[native and browser transports](../validation/2026-10-24-telemetry-client-transports.md)
+also exist in source: the final Electron selection passed **32 checks with two
+Windows-only skips**, and **65 browser source checks** passed. Actual loopback
+TLS/collector journeys passed **22 browser checks and 18 native checks**.
+There is **no active product sender,
 installed owner integration or production activation**; `collection_available: false`, `destination: null`
 and the empty outbound preview remain unchanged.
 
@@ -94,7 +99,7 @@ rechecks permission and consumes the local handle before invoking one reviewed
 **synchronous, nonblocking socket handoff**. That same lock serializes an explicit
 choice change. DNS, TLS setup, response waiting, arbitrary callbacks and awaited
 work do not belong inside this critical section. The source currently has no
-production transport wiring. A newer Python TLS component performs connection
+production transport wiring. The Python and native TLS components perform connection
 setup outside this lock. Bytes already handed to a transport cannot be recalled
 by a later opt-out; installed cancellation still requires its own proof.
 
@@ -103,16 +108,19 @@ before competing callers can proceed. A losing handoff returns without writing
 again or cancelling the winner. All three implementations now erase the used
 body but retain the lease after successful handoff, so the active attempt can
 still be cancelled. Its owner must call `cancel()` on completion, including a
-successful response. Python's `claim_transport()` separately claims the full
-attempt before setup or cleanup ownership, so a duplicate cannot connect or
-cancel the winner. The [transport component checks](../validation/2026-10-24-telemetry-transport.md)
-cover these changes; the older results below remain scoped to their earlier source.
+successful response. Python's `claim_transport()` and the native/browser
+`claimTransport()` separately claim the full attempt before setup or cleanup
+ownership, so a duplicate cannot connect or cancel the winner. The earlier
+[Python checks](../validation/2026-10-24-telemetry-transport.md) and later
+[client transport checkpoint](../validation/2026-10-24-telemetry-client-transports.md)
+record their separate evidence; the older results below retain their earlier scope.
 
 The optional watcher checks the current report at a nominal 25 ms interval only
 during an already active attempt. It can request abortion when permission or the
 lease is lost. It is not an idle task, a scheduler, a shutdown flush or a substitute
-for the final handoff check. The future transport must own watcher cleanup on
-success, cancellation and shutdown. The interval alone is not a measured
+for the final handoff check. Transport components own watcher cleanup on
+success and cancellation; installed owner/shutdown integration remains unqualified.
+The interval alone is not a measured
 cancellation-latency guarantee. A throwing synchronous abort callback is
 suppressed without a retry or second invocation; report cleanup still runs.
 
@@ -183,6 +191,24 @@ native/Python evidence below remains separate. The later
 [transport checkpoint](../validation/2026-10-24-telemetry-transport.md) records
 **21 fresh actual Chromium checks**, including competing handoffs that preserve
 the winner's live lease, and verified cleanup; it does not replace the earlier receipt.
+
+The subsequent [browser Fetch sender](../../studio/frontend/src/workspace/telemetry-transport.ts)
+claims the full attempt before starting work, uses the remaining report lifetime,
+and creates one four-byte request inside the final Web Lock fence. It omits
+credentials and referrers, refuses redirects and disables keepalive, with no
+application-level retry or page-exit flush. Lifecycle and cancellation listeners
+are installed before Fetch; only policy lock polling waits for the guarded
+handoff to release its Web Lock. This avoids competing with the attempt's own
+lock without leaving a pagehide gap. There is no competing post-response lock
+read. Success requires status 204, the exact destination, no redirect and
+`Content-Length: 0` within the active deadline; the response body is never read.
+Its source selection passed **65 checks**, and the actual-browser TLS journey
+passed **22 checks**, recorded with cleanup and retained failures in the
+[client transport checkpoint](../validation/2026-10-24-telemetry-client-transports.md).
+Fetch does not expose TLS/TCP/IP byte counters or a response-header cap; browser
+headers, cross-origin preflight and connection behavior remain separate wire and
+privacy qualification work. The 65,536-byte reservation is unchanged and is not
+a proven bound on that traffic.
 
 ## Source validation
 

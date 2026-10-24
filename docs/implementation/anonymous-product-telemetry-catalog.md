@@ -25,6 +25,16 @@ has passing source and isolated loopback checks for transport and handoff owners
 It is not wired to application owners and has no selected endpoint. These later
 component results remain separate from the earlier evidence; charged TLS bytes
 do not establish total TCP/IP wire cost or public-ingress qualification.
+The subsequent [native and browser transport checkpoint](../validation/2026-10-24-telemetry-client-transports.md)
+records **32 actual Electron passes with two Windows-only skips**, **65 browser
+source passes**, a final native build and corrected frontend type checks. Earlier
+results and failures remain preserved. Actual loopback TLS/collector journeys
+passed **22 browser checks and 18 native checks**, with verified cleanup.
+Both new senders claim the
+whole attempt, but no application owner is wired to them. Browser Fetch does not
+inherit the native static-header, no-DNS/proxy or charged-TLS-byte controls.
+Its listeners are armed before Fetch while lock polling waits for handoff
+release; it requires status 204 and `Content-Length: 0` without reading the body.
 
 The earlier [privacy controls](../guides/product-telemetry-controls.md) retain
 their dated evidence: the 19-check core browser journey and eight further
@@ -151,7 +161,7 @@ Deletion/recreation now has source generation-fencing checks. This does not
 protect against an unobservable whole-machine snapshot rollback that restores
 the old token and choice together. The full product delivery path must still prove
 cancellation of queued/in-flight work at opt-out; no application owner is wired
-to the new Python TLS component.
+to the Python, native or browser transport components.
 
 `schema` and `preview` expose `measurement_catalog`, including the exclusions.
 Preview can describe valid local cells without raw inputs or local day numbers;

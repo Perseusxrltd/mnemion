@@ -273,11 +273,13 @@ jobs:
           uv build --out-dir build-tmp/source-check
           python deploy/bundle_studio.py --verify-artifacts build-tmp/source-check
       - run: npm --prefix studio/frontend audit --audit-level=high
-      - run: npm --prefix studio/electron ci && npm --prefix studio/electron test
+      - run: uv sync --locked --extra supervision
+      - run: npm --prefix studio/electron ci
+      # TLS fixtures use the same locked cryptography and Python as the service.
+      - run: uv run --no-sync npm --prefix studio/electron test
       - name: Independent host control through the real desktop profile and native engine
         env:
           MNEMION_REQUIRE_HOST_CLIENT_TESTS: '1'
         run: |
-          uv sync --locked --extra supervision
           uv run --no-sync python -m pytest service_tests/test_host_control_desktop.py -q
       - run: npm --prefix studio/electron audit --audit-level=high

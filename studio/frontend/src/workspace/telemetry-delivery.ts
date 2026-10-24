@@ -20,6 +20,7 @@ export class PreparedBrowserTelemetryReport {
   #used = false
   #closed = false
   #claimed = false
+  #transportClaimed = false
   constructor(body: Uint8Array, ticket: string, readonly stamp: Readonly<TelemetryStamp>,
     readonly deadline: number, readonly monotonicDeadline: number, readonly group: string) {
     this.#body = new Uint8Array(body)
@@ -30,6 +31,11 @@ export class PreparedBrowserTelemetryReport {
   get closed(): boolean { return this.#closed }
   get ticket(): string { return this.#ticket }
   body(): Uint8Array { return new Uint8Array(this.#body) }
+  claimTransport(): boolean {
+    if (this.#transportClaimed || this.#claimed || this.#used || this.#closed) return false
+    this.#transportClaimed = true
+    return true
+  }
   claimHandoff(): boolean {
     if (this.#claimed || this.#used || this.#closed) return false
     this.#claimed = true
@@ -165,8 +171,9 @@ export class BrowserTelemetryDelivery {
   }
 
   /** Listeners and bounded polling exist only during an owned active attempt. */
-  async watch(report: PreparedBrowserTelemetryReport, abort: () => void, stop: AbortSignal): Promise<void> {
+  async watch(report: PreparedBrowserTelemetryReport, abort: () => void, stop: AbortSignal, handoff?: Promise<void>): Promise<void> {
     let timer: ReturnType<typeof setTimeout> | undefined, checking = false, done = false
+    let armed = handoff === undefined
     let finish = (_cancel: boolean) => {}
     const events = this.environment.events()
     const ended = new Promise<void>(resolve => {
@@ -180,7 +187,7 @@ export class BrowserTelemetryDelivery {
     })
     const invalidate = () => finish(true), stopped = () => finish(false)
     const check = async () => {
-      if (done || checking) return
+      if (done || checking || !armed) return
       if (timer !== undefined) clearTimeout(timer)
       checking = true
       const valid = await this.current(report)
@@ -188,13 +195,19 @@ export class BrowserTelemetryDelivery {
       if (!done) { if (!valid) finish(true); else timer = setTimeout(check, 25) }
     }
     const changed = (event: StorageEvent) => {
-      if (event.key === null || [choiceKey, budgetKey].includes(event.key)) void check()
+      if (event.key === null || [choiceKey, budgetKey].includes(event.key)) {
+        if (armed) void check(); else invalidate()
+      }
     }
     this.invalidators.add(invalidate)
     events?.addEventListener('storage', changed)
     events?.addEventListener('pagehide', invalidate)
     stop.addEventListener('abort', stopped, { once: true })
-    if (stop.aborted) stopped(); else void check()
+    // Install cancellation listeners before Fetch can start, but let its
+    // privacy lock finish before this same attempt polls that lock again.
+    if (stop.aborted) stopped()
+    else if (handoff) void handoff.then(() => { armed = true; void check() }, invalidate)
+    else void check()
     try { await ended }
     finally {
       if (timer !== undefined) clearTimeout(timer)
