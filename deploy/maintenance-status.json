@@ -30,28 +30,29 @@
       "workflow": "ci.yml",
       "branch": "main",
       "source_commit": "1c28237024381a1a0dae0e7ac0e66d47ff7c94df",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-24T00:20:06Z",
+      "status": "completed",
+      "conclusion": "failure",
+      "updated_at": "2026-10-24T00:21:21Z",
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40044445412",
       "job_details_schema": 2,
       "job_progress": {
         "total": 8,
-        "completed": 7,
+        "completed": 8,
         "succeeded": 2,
-        "active": [
-          {
-            "id": 120722816951,
-            "name": "studio",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify wheel and source package include the matching web Studio"
-            ]
-          }
-        ]
+        "active": []
       },
-      "failed_jobs": []
+      "failed_jobs": [
+        {
+          "name": "studio",
+          "id": 120722816951,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 18,
+          "steps": [
+            "Run npm --prefix studio/electron audit --audit-level=high"
+          ]
+        }
+      ]
     },
     {
       "id": 40022243634,
@@ -109,5 +110,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40022240433"
     }
   ],
-  "observed_at": "2026-10-24T00:20:55+00:00"
+  "observed_at": "2026-10-24T00:21:50+00:00"
 }
