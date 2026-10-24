@@ -228,6 +228,21 @@ delays. An uncertain administrative write without idempotency returns
 `retryable: false`. The CLI never invents a new key to replay it. Use the same
 key only for the same logical write; preserve optimistic version fields.
 
+The response envelope also reports `idempotency: "new"`, `"replayed"`, or
+`null`. Supporting servers expose this as `X-Mnemion-Idempotency` after an
+authorized receipt lookup. `null` means the operation has no observed receipt
+classification, including older servers; it does not prove a new write. A
+replayed receipt keeps the original operation result. Neither classification
+proves that asynchronous indexing, evaluation or librarian work has finished.
+
+The owned `mnemion-control call` entry point uses the installation's
+[product telemetry choice](../guides/product-telemetry-controls.md). Its reviewed
+[operation coverage](../../mnemion/product_telemetry/control-origins.json)
+excludes inspection, nested transport and session refresh. Cached writes and
+keyed writes without a fresh receipt do not contribute a new use. Generic SDK
+and remote MCP/API calls do not infer a local measurement owner. Collection
+remains unavailable while V08 is being completed.
+
 ## Contract maintenance
 
 The authenticated server exposes `GET /v1/agent/operations` and

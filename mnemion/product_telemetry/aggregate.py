@@ -20,9 +20,11 @@ def _day() -> int:
     return int(time.time() // 86400)
 
 
-def _permitted(preference: dict, company: dict, revision: int) -> bool:
+def _permitted(preference: dict, company: dict, revision: int, generation: str | None) -> bool:
     return (
         preference["revision"] == revision
+        and policy.valid_generation(generation)
+        and preference["store_generation"] == generation
         and preference["enabled"]
         and preference["disclosure_version"] == policy.DISCLOSURE_VERSION
         and company["enabled"]
@@ -50,6 +52,7 @@ def record(
     value: object,
     *,
     expected_revision: int,
+    expected_generation: str | None = None,
     policy_path: Path | None = None,
 ) -> bool:
     """Best-effort, no-wait commit of a fixed observation, never its input object.
@@ -60,6 +63,8 @@ def record(
     if not policy.COLLECTION_AVAILABLE or policy.COLLECTOR_URL is None:
         return False
     if type(expected_revision) is not int or not 0 <= expected_revision < 2147483647:
+        return False
+    if not policy.valid_generation(expected_generation):
         return False
     try:
         scope, cells = observation(value)
@@ -74,11 +79,14 @@ def record(
             connection.execute("BEGIN IMMEDIATE")
             preference = policy._preferences(connection)
             # An old process cannot clear or add anything in the newer choice.
-            if preference["revision"] != expected_revision:
+            if (
+                preference["revision"] != expected_revision
+                or preference["store_generation"] != expected_generation
+            ):
                 return False
             company = policy.company_policy(policy_path)
             policy._queue_schema(connection)
-            if not _permitted(preference, company, expected_revision):
+            if not _permitted(preference, company, expected_revision, expected_generation):
                 connection.execute("DELETE FROM pending")
                 connection.execute("DELETE FROM producer_budget")
                 connection.commit()
@@ -130,7 +138,12 @@ def preview(root: Path | None = None, *, policy_path: Path | None = None) -> lis
         with closing(policy._connect(root / policy.DATABASE_NAME, readonly=True)) as connection:
             connection.execute("BEGIN")
             preference = policy._preferences(connection)
-            if not _permitted(preference, policy.company_policy(policy_path), current["revision"]):
+            if not _permitted(
+                preference,
+                policy.company_policy(policy_path),
+                current["revision"],
+                current["store_generation"],
+            ):
                 return []
             day = _day()
             rows = connection.execute(

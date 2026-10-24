@@ -39,6 +39,7 @@ export default function Privacy() {
     setBusy(true); setPendingChoice(enabled); setError(undefined)
     try {
       setStatus(await telemetryConfigure({ enabled, expected_revision: status.revision,
+        expected_generation: status.store_generation,
         disclosure_version: enabled && status.collection_available ? status.required_disclosure_version : 0 }))
       setPreview(undefined)
     } catch (error) {

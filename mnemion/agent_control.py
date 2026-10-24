@@ -347,6 +347,12 @@ def execute(
                     "response_sha256": digest,
                     "attempts": attempt + 1,
                     "elapsed_ms": round((time.monotonic() - started) * 1000),
+                    "idempotency": (
+                        response.headers.get("X-Mnemion-Idempotency")
+                        if prepared["key"] is not None
+                        and response.headers.get("X-Mnemion-Idempotency") in {"new", "replayed"}
+                        else None
+                    ),
                 }
         except ControlError as error:
             error.retry_safe = safe_retry

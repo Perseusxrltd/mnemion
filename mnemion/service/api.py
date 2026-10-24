@@ -299,7 +299,7 @@ def create_app(
             allow_origins=origins,
             allow_methods=["GET", "POST", "PUT", "DELETE"],
             allow_headers=["Authorization", "Content-Type", "Idempotency-Key"],
-            expose_headers=["X-Request-ID"],
+            expose_headers=["X-Request-ID", "X-Mnemion-Idempotency"],
         )
     app.state.database = database
     app.state.oauth_settings = oauth_settings
@@ -314,8 +314,13 @@ def create_app(
 
     @app.middleware("http")
     async def request_context(request: Request, call_next):
+        from .request_replay import HEADER, request_replay
+
         request.state.request_id = str(uuid4())
-        response = await call_next(request)
+        with request_replay() as replay:
+            response = await call_next(request)
+        if replay.value is not None:
+            response.headers[HEADER] = replay.value
         response.headers["X-Request-ID"] = request.state.request_id
         response.headers["Cache-Control"] = "no-store"
         response.headers["X-Content-Type-Options"] = "nosniff"

@@ -144,6 +144,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
     dispatched = False
+    measurement = None
     try:
         if args.command == "doctor":
             from .connection_diagnostics import diagnose
@@ -210,6 +211,14 @@ def main(argv: list[str] | None = None) -> int:
             )
             with private_output(destination) if destination else nullcontext(None) as output:
                 with Client(address, key, retries=args.retries) as client:
+                    try:
+                        from . import control_measurement
+
+                        measurement = control_measurement.begin(args.operation, request)
+                    except Exception:
+                        # A broken optional measurement installation must not
+                        # prevent the requested memory or administrative action.
+                        measurement = None
                     dispatched = True
                     result = execute(
                         client,
@@ -275,8 +284,12 @@ def main(argv: list[str] | None = None) -> int:
                 if destination:
                     result["output_file"] = str(destination.expanduser().absolute())
         print(json.dumps(result, allow_nan=False))
+        if measurement is not None:
+            measurement.succeeded(result)
         return 0
     except ControlError as error:
+        if measurement is not None:
+            measurement.failed(code=error.code, status=error.status, outcome=error.outcome)
         result = {
             "error": {
                 "code": error.code,
@@ -289,6 +302,10 @@ def main(argv: list[str] | None = None) -> int:
             "request_id": error.request_id,
         }
     except (OSError, ValueError):
+        if measurement is not None:
+            measurement.failed(
+                code="local_io_error", status=None, outcome="unknown" if dispatched else "not_sent"
+            )
         result = {
             "error": {
                 "code": "local_io_error",

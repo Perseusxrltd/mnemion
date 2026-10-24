@@ -4,8 +4,10 @@
 [V08 contract](anonymous-product-telemetry.md). Version 1 now defines **94
 workflows in 15 families**, four invocation surfaces, 11 workflow metrics and
 four separate resource metrics. Python and TypeScript encoders, bounded native
-and browser queues, revision checks and local preview are implemented in source.
-**No workflow hooks, sender or collector are implemented.** Collection remains
+and browser queues, revision/generation checks and local preview are implemented
+in source, along with owned `mnemion-control call` hooks. Desktop, browser,
+stdio-MCP and background hooks remain pending. **No sender or collector is
+implemented.** Collection remains
 unavailable and the destination is null; no product measurements are collected.
 Native release, resource and anonymity acceptance remain open. All 66 requirement
 texts and the other 65 states remain unchanged; V08 stays Building.
@@ -20,6 +22,12 @@ The later [catalog/aggregate source checks](../validation/2026-10-24-telemetry-a
 record the 28 Python, 11 browser/codec and 12 bridge checks, builds and nine-check
 built-browser catalog journey. They do not qualify workflow instrumentation or
 active collection.
+The subsequent local-generation correction passed **29 Python and 12
+browser/codec checks** plus both builds; its original test-placement failure is
+retained in the same validation report.
+The actual built-Chromium generation journey subsequently passed **11 checks**,
+including stale UI fencing, legacy opt-out and a 390-pixel layout. Its original
+pre-open runner failure and verified fixture cleanup remain recorded separately.
 
 The scope remains all app, agent and headless workflows. An unresolved row is
 unfinished V08 coverage, not permission to collect without choice or an assertion
@@ -36,7 +44,8 @@ describe catalog positions, not people, devices or records. Unknown fields,
 arbitrary objects, booleans, negative/non-finite numbers and values above
 `2^53 - 1` are rejected. Only metrics allowed for that workflow family pass.
 The encoder validates input shape; it does not establish the caller's consent
-or ownership. Future workflow hooks must enforce the ownership rules below.
+or ownership. The owned CLI boundary and future hooks must enforce the ownership
+rules below.
 
 The [native aggregate store](../../mnemion/product_telemetry/aggregate.py) uses
 the shared private [SQLite policy store](../../mnemion/product_telemetry/policy.py).
@@ -44,10 +53,20 @@ The [browser aggregate store](../../studio/frontend/src/workspace/telemetry-aggr
 uses bounded local storage under the [browser privacy policy](../../studio/frontend/src/workspace/telemetry-policy.ts).
 Both reject recording before storage access while collection is unavailable.
 When permitted, they recheck current choice, disclosure, company groups and the
-revision captured by the originating work. Within the current preference store,
-an old revision cannot add data or clear a newer queue after opt-out/re-enable.
-Busy native writes and unavailable
-browser Web Locks drop the observation without waiting or failing memory work.
+`revision`/`store_generation` pair captured by the originating work. Recreating
+a deleted store assigns a new private generation, so old work cannot add data
+or clear the new queue even if revision numbers repeat. Enabling a preference
+also checks the pair; an explicit opt-out still wins over stale input. Busy
+native writes and unavailable browser Web Locks drop the observation without
+waiting or failing memory work.
+
+`store_generation` is a private random token for local compare-and-set control.
+It appears in private status and is supplied as `expected_generation`; it is
+never an analytics identity, measurement cell or outbound field. Reading a
+missing or supported legacy store does not silently create a token. Explicit
+legacy opt-out stays off; a generation-less enabled preference requires fresh
+disclosure before collection. An explicit supported choice creates/migrates the
+local generation and clears old pending data. Damaged settings still fail closed.
 
 | Local source bound | Behavior |
 | --- | --- |
@@ -63,9 +82,10 @@ local limits are not an irreversible global privacy budget across choice changes
 or installations. The 48-hour age rule is eligibility/pruning behavior; idle
 physical deletion at a deadline is not established. The full contract's CPU,
 RAM, wire, sampling and collector requirements still need acceptance evidence.
-Removed, replaced or restored stores need further generation/revision proof;
-the eventual sender must also cancel queued/in-flight work at opt-out. Neither
-is established by the current local encoder and queue checks.
+Deletion/recreation now has source generation-fencing checks. This does not
+protect against an unobservable whole-machine snapshot rollback that restores
+the old token and choice together. The eventual sender must still prove
+cancellation of queued/in-flight work at opt-out; no sender exists yet.
 
 `schema` and `preview` expose `measurement_catalog`, including the exclusions.
 Preview can describe valid local cells without raw inputs or local day numbers;
@@ -73,17 +93,68 @@ it is not an event history or a serialized outbound report. In the current
 unavailable state, `local_aggregates` is empty, `outbound_body` is null,
 `outbound_bytes` is zero and `transport_available` is false.
 
+## Owned headless control coverage
+
+The [control-origin map](../../mnemion/product_telemetry/control-origins.json)
+covers all **161 operations** in the API control contract: **82 map to optional
+owned measurements and 79 are excluded**. These counts describe API operations;
+they map into the separate 94-workflow catalog above. The owner is specifically
+[`mnemion-control call`](../../mnemion/control_cli.py), with surface `headless`.
+Generic SDK calls, direct `agent_control.execute` calls and remote MCP requests
+do not acquire a measurement owner. Native privacy `schema` now exposes the
+complete map as `owned_control_coverage` through
+[`control_specification()`](../../mnemion/product_telemetry/catalog.py).
+
+| Fixed operation exclusion | Count | Reason |
+| --- | --- | --- |
+| `state_inspection` | 60 | Discovery, configuration reads, polling and inspection of earlier outcomes are not new uses. |
+| `producer_transport` | 6 | Capture/source transport substeps belong to their originating producer. |
+| `configuration_preview` | 5 | Preview and intermediate authorization steps do not establish completed setup, import or sign-in. |
+| `recovery_transport` | 7 | Chunks and continuation/status calls belong to the enclosing recovery workflow. |
+| `session_maintenance` | 1 | Credential refresh is not a new sign-in. |
+
+Two operations select only reviewed enums: `librarian.decide` reads `body.action`
+and maps `accept`, `reject`, `undo` to the corresponding librarian workflow.
+`embedding.control` reads `parameters.action`: `pause` maps to `models.pause`,
+`resume`/`retry` to `models.resume`, `cancel` to `models.cancel`, and `activate`
+to `models.configure`. Unknown selectors produce no measurement. Other request
+fields, event/result objects, names and private values never enter the encoder.
+
+The [CLI adapter](../../mnemion/control_measurement.py) supplies only fixed
+outcomes/reasons and permitted numeric response-body byte counts to the
+[workflow boundary](../../mnemion/product_telemetry/workflow.py). That boundary
+captures the disclosed local generation/revision once, measures monotonic
+duration and rechecks policy when recording. Optional measurement errors cannot
+change the ordinary call's result. Unavailable collection returns before local
+policy/queue access, so these hooks remain inactive in this build.
+
+For the ten mapped keyed-write operations, a successful response contributes
+only with **`X-Mnemion-Idempotency: new`**. Cached `replayed`, legacy/missing or
+unknown receipts discard both submission and outcome contributions; telemetry
+does not retry a mutation to obtain a fresh receipt. The
+[request-local server metadata](../../mnemion/service/request_replay.py) follows
+existing receipt lookup, and [agent-control metadata](../../mnemion/agent_control.py)
+accepts only `new`/`replayed`. This change needs no database migration and makes
+the server no telemetry owner. Asynchronous acknowledgements are `accepted`,
+with no server completion backfill. Internal retries remain one logical call;
+response-body bytes are application payload, not wire bytes.
+
+The [source follow-up](../validation/2026-10-24-telemetry-aggregates.md) preserves
+the initial schema-reference test failure and the corrected focused pass.
+Other surfaces, resource/privacy measurements and release acceptance remain open.
+
 ## Measurement ownership
 
 Count a logical workflow at one disclosed origin. A fixed surface enum describes
 how it was invoked; it is not a user, installation or request identifier.
 
-| Surface | Intended owner and source boundary; hooks remain unwired | Remote and nested work |
+| Surface | Owner and source implementation boundary | Remote and nested work |
 | --- | --- | --- |
 | Desktop workspace UI | The top-level UI workflow using the [TypeScript client](../../packages/client/src/index.ts#L272), under the installation's shared policy. | [Native fetch](../../studio/frontend/src/workspace/native.ts#L2), transport retries and the remote API must not each add another usage count. |
 | Browser workspace UI | The same UI workflow under browser-local disclosure, persistent choice, GPC and company restrictions. [Connect](../../studio/frontend/src/workspace/Connect.tsx#L145) also constructs the client before entering a workspace. | Workspace authentication is not product telemetry consent. Use a separate credential/referrer-free telemetry sender. |
 | Native agent controlling the desktop | The shared desktop controller, with a fixed `native_agent` invocation surface. [Agent dispatch](../../mnemion/desktop_operator.py#L243) reaches the [desktop dispatcher](../../studio/electron/service-bridge.ts#L742); UI and agent host actions meet at [hostAction](../../studio/electron/service-bridge.ts#L304). | The agent pipe, renderer and controller must not all count the same action. They share effective local policy; no operation UUID enters telemetry. |
-| Owned headless/CLI or local stdio-MCP client | A disclosed top-level agent context around [agent_control.execute](../../mnemion/agent_control.py#L224) or [MCP invocation](../../mnemion/service/mcp.py#L254), sharing local policy where applicable. | Generic SDK constructors default to no product measurement. The top-level context may supply a bounded local measurement sink; inner SDK calls are not new producers. |
+| Owned `mnemion-control call` | Source hook at the [CLI boundary](../../mnemion/control_cli.py), under the shared local policy and explicit operation map above; collection remains inactive. | The reusable SDK and `agent_control.execute` carry no owner hook. Nested requests, retry attempts and cached receipts do not add uses. |
+| Local stdio-MCP and other headless entrypoints | Hooks remain pending around a disclosed local owner; [MCP invocation](../../mnemion/service/mcp.py#L254) alone does not establish one. | Reusing an SDK cannot create consent or substitute for explicit ownership. |
 | Third-party remote MCP or direct API client | **Excluded without a disclosed local owner.** The [remote MCP gateway](../../mnemion/service/mcp_transport.py#L441) creates the ordinary [Python SDK Client](../../mnemion/sdk.py#L614); that shared SDK is not a measurement owner. | A token, client name, session or host-owner preference cannot stand in for the originating user's choice. Future owned adapters need their own disclosure and policy. |
 | Server jobs and autonomous host work | No server export or terminal backfill for client-derived work. Only the originating observer can report an outcome it actually sees. Separately disclosed autonomous maintenance needs its own reviewed owner. | [Index/purge jobs](../../mnemion/service/worker.py#L290), scheduled scans and mixed-host resource totals cannot supply a fallback feed. A `background` label does not make user-derived work autonomous. |
 
@@ -179,8 +250,9 @@ without adding an operation identifier to product telemetry.
 ## Workflow catalog
 
 The 15 workflow families below expand to the 94 catalog operations; separate
-resource cells are not extra workflows. This source map identifies future hooks,
-not installed instrumentation. Only version 1's fields are accepted today;
+resource cells are not extra workflows. The owned CLI map above implements one
+source hook boundary; the app, stdio and background integration points below
+remain future work. Only version 1's fields are accepted today;
 additional modes, quality views and sensors mentioned below remain proposals.
 “Origin” means the disclosed app/agent owner above, not an arbitrary caller of
 a shared SDK. Unowned host/background paths remain excluded from measurement.
@@ -232,12 +304,13 @@ The following implementation and acceptance work remains open:
   origin; define ownership before measuring autonomous librarian/source work.
   Preserve the broader connector/host requirements and visible coverage gaps.
 - **Metrics and budgets:** finite buckets and local contribution caps are now
-  implemented. Producer placement, sampling rates, outbound reporting windows,
+  implemented. Remaining producer placement, sampling rates, outbound reporting windows,
   allowed cohort views and aggregate retention remain undecided. Verify useful
   measurements and the existing queue/RAM/CPU/batch/wire ceilings under load;
   local numeric limits alone are not a privacy mechanism. Evaluation-quality
-  views, cross-restart completion, missing/restored-store generation fencing and
-  final sender cancellation still need review and acceptance.
+  views, cross-restart completion, end-to-end recovery boundaries and final
+  sender cancellation still need review and acceptance. Local store-generation
+  checks do not establish whole-machine snapshot rollback protection.
 - **Anonymity and output:** substantiate ingress/provider log behavior, transient
   source-IP handling, metadata stripping and absence of retained raw events.
   Decide suppression/complementary-cell controls and whether local differential

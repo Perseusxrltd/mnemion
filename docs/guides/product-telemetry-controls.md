@@ -1,14 +1,18 @@
 # Product telemetry privacy controls
 
 **Source checkpoint, 24 October 2026; V08 is Building.** Local choice, disclosure,
-catalog and aggregate queues are implemented in source. There are no workflow hooks, product sender or
-collector: `collection_available` is `false`, the destination is `null`, and
+catalog, aggregate queues and owned `mnemion-control call` hooks are implemented
+in source. There is no product sender or collector: `collection_available` is
+`false`, the destination is `null`, and
 `effective_enabled` stays `false`. Saving an enabled preference does not activate
 analytics. The core browser journey passed **19 checks at 00:51:17 UTC**, followed
 by **eight browser policy/fault checks**. [Source-input qualification](../validation/2026-10-24-telemetry-controls.md)
 passed at **01:12:30 UTC**. The later [catalog/aggregate checks](../validation/2026-10-24-telemetry-aggregates.md)
 include a nine-check browser catalog journey; fresh package and native release
 acceptance for that batch remain pending.
+The later actual Chromium generation journey passed **11 checks**, including
+stale UI conflicts, preserved legacy opt-out and a 390-pixel layout. This remains
+source-browser evidence, with no active collection or native release acceptance.
 These controls and this documentation update are excluded from the isolated
 4.46.6 dependency-security release. The [contract](../implementation/anonymous-product-telemetry.md)
 records the dated source evidence and full remaining scope.
@@ -26,7 +30,8 @@ pending local aggregates. **Refresh privacy status** reads the current choice.
 **Show payload preview** currently reports no queued request, a null outbound
 body and zero outgoing payload bytes. Expand **Workflow coverage and exclusions**
 to inspect the fixed **15 families, 94 operations and seven privacy exclusions**.
-The schema and numeric encoding exist; workflows do not yet produce observations.
+The schema and numeric encoding exist; collection remains inactive. Desktop,
+browser, stdio-MCP and background workflow hooks are still pending.
 A later build capable of collection must present its current disclosure before
 anything can be sent; today's enabled preference cannot acknowledge that future
 destination.
@@ -57,9 +62,13 @@ printf '%s\n' '{"action":"preview"}' | mnemion-service telemetry
 ```
 
 `schema` describes the four local actions, disclosure and `measurement_catalog`,
-including fixed numeric buckets, contribution limits and exclusions.
+including fixed numeric buckets, contribution limits and exclusions. It also
+returns `owned_control_coverage`, the full owned-CLI operation map.
 `status` distinguishes `user_enabled`,
-`effective_enabled`, `reason`, `storage`, company restriction and `revision`.
+`effective_enabled`, `reason`, `storage`, company restriction, `revision` and
+`store_generation`. The generation is a private local control token, never an
+analytics identity or outbound field. Missing or supported legacy stores report
+`null`; reading status does not silently initialize them.
 `preview` returns `outbound_body: null`, `outbound_bytes: 0` and
 `transport_available: false`, plus the catalog and an empty `local_aggregates`
 list while collection is unavailable. A decoded local aggregate preview is
@@ -67,25 +76,51 @@ private inspection, not an outbound payload or event history. Success returns
 `{"event":"result","ok":true,"result":...}`; refusal returns a fixed error code
 with `ok: false` and exit status 2.
 
-To save a choice, first read status and substitute its current revision for
-`0` in this opt-out example:
+To save a choice, first read status. Use its `revision` as `expected_revision`
+and its `store_generation` as `expected_generation`. This opt-out example shows
+a fresh store's `0`/`null` pair:
 
 ```sh
-printf '%s\n' '{"action":"configure","enabled":false,"expected_revision":0}' | mnemion-service telemetry
+printf '%s\n' '{"action":"configure","enabled":false,"expected_revision":0,"expected_generation":null}' | mnemion-service telemetry
 ```
 
-To save an enabled preference, use `enabled: true` and the latest revision.
+To save an enabled preference, use `enabled: true` and both values from the
+latest status. Pass the returned generation through private JSON stdin; do not
+invent or reuse a token from another store.
 Omit `disclosure_version` or use `0`: this build rejects a nonzero disclosure
 acknowledgement with `telemetry_disclosure_unavailable` because no collection
-destination is available. Enabling with an outdated revision is refused as
-`telemetry_choice_changed`; disabling remains allowed with an outdated revision.
+destination is available. Enabling with an outdated revision or generation is
+refused as `telemetry_choice_changed`; disabling remains allowed with stale values.
 Every successful opt-out advances the revision, even if already disabled, so an
 older enable request cannot override it.
+A recreated store gets a different generation, so old queued work is refused
+even if its revision number repeats. Valid legacy preferences preserve explicit
+opt-out. A legacy enabled preference without a generation requires fresh
+disclosure; an explicit supported choice creates its new local token.
 A successful change clears pending aggregates and contribution accounting, so
 re-enabling cannot revive old data. Local scope/day limits are not a persistent
 privacy budget across those choices. The desktop agent exposes the same typed `telemetry.schema`,
 `telemetry.status`, `telemetry.preview` and `telemetry.configure` actions without
 requiring a workspace.
+
+## Owned headless API calls
+
+The source [agent-control CLI](../service/agent-control.md) now has optional hooks
+only at `mnemion-control call`. Its map accounts for all **161 API operations**:
+**82 eligible actions and 79 explicit exclusions** for inspection, producer or
+recovery transport, configuration previews and session maintenance. The regular
+call still uses its configured service; its generation/revision snapshot and
+privacy choice govern only the optional measurement. Generic SDK and remote MCP
+calls do not acquire an owner. No product data is collected in this build.
+
+Keyed writes count only when the service confirms a fresh receipt with
+`X-Mnemion-Idempotency: new`. Cached, unknown or older-server receipts are
+discarded from measurement without retrying the action. Async acknowledgements
+remain `accepted`; they do not prove background completion. Only fixed enums,
+duration and permitted numeric response payload bytes reach the encoder. Payload
+bytes are not wire traffic, and optional measurement errors do not change the
+operation's result. See the [catalog](../implementation/anonymous-product-telemetry-catalog.md#owned-headless-control-coverage)
+for the fixed librarian/embedding selectors and per-operation exclusions.
 
 ## Company restriction and damaged settings
 
@@ -114,8 +149,9 @@ Optional product telemetry is separate from private workspace operational and
 security records. These controls do not change memory access or disable those
 records. The [full V08 contract](../implementation/anonymous-product-telemetry.md)
 and [versioned catalog](../implementation/anonymous-product-telemetry-catalog.md)
-retain app, agent, headless and remote-workflow coverage. Hooks for permitted
-owners, the sender, collector and anonymity proof remain unfinished. Expiry
-prunes on activity; removed/restored-store generation and final sender
-cancellation still need full-feature acceptance. See the
+retain app, agent, headless and remote-workflow coverage. Desktop/browser, stdio
+and background hooks, the sender, collector and anonymity proof remain unfinished. Expiry
+prunes on activity. Local generation checks cannot detect a whole-machine
+snapshot rollback that restores both the old token and choice; final sender
+cancellation still needs full-feature acceptance. See the
 [privacy policy](../service/privacy.md) for existing service and model traffic.

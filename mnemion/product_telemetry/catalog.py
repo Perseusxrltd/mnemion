@@ -40,6 +40,11 @@ def specification() -> dict:
     return deepcopy(CATALOG)
 
 
+def control_specification() -> dict:
+    """Reviewed owned CLI coverage, including every explicit exclusion."""
+    return json.loads(files(__package__).joinpath("control-origins.json").read_text())
+
+
 def _metric_slots() -> tuple:
     offset = 1 + len(OUTCOMES) + len(REASONS)
     slots = []

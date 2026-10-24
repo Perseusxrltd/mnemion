@@ -21,21 +21,27 @@ but cannot override a user opt-out. Damaged or unreadable settings fail closed;
 there is no automatic repair or repair action in this source checkpoint.
 Each successful opt-out advances the local revision, including when already off,
 so an earlier enable request cannot override that newer choice.
+Native and browser controls also compare the private `store_generation` token,
+preventing old work from matching a recreated store whose revision repeats.
+This token belongs only to local control state; it is never an analytics identity
+or outbound measurement. Supported legacy opt-outs remain off, and a missing
+generation requires fresh disclosure before collection can become effective.
 
 The [shared disclosure](../../mnemion/product_telemetry/disclosure.json) has
 `collection_available: false` and `destination: null`. Saving an enabled
 preference does not complete disclosure or activate collection. The preview
 returns the measurement catalog, an empty local aggregate list, no outbound body
-and zero outgoing bytes. There are no workflow hooks, product sender, collector,
-production analytics or qualified anonymous ingress.
+and zero outgoing bytes. Owned headless hooks exist in source; there is no
+product sender, collector, production analytics or qualified anonymous ingress.
 
 The [versioned catalog and local queues](anonymous-product-telemetry-catalog.md)
 now encode **94 workflows in 15 families** with fixed numeric buckets and
 matching Python/TypeScript coordinates. Native SQLite and browser queues enforce
 bounded cells, local scope/day contribution caps, company-group restrictions
-and the originating revision within the current preference store. Counters
-clear on explicit choice; expiry prunes on activity. Missing/replaced/restored
-store generation and final sender cancellation remain full-feature checks.
+and the originating revision/generation pair. Counters clear on explicit choice;
+expiry prunes on activity. Generation fencing covers store deletion/recreation;
+it cannot detect an unobservable whole-machine snapshot rollback restoring the
+old token and choice. Final sender cancellation remains a full-feature check.
 Declared exclusions cover unowned remote clients, derived server work, mixed-host
 totals, private operational rows, polling/replay, privacy controls and unavailable
 sensors. These privacy boundaries do not abandon connector or roadmap requirements.
@@ -43,8 +49,30 @@ sensors. These privacy boundaries do not abandon connector or roadmap requiremen
 The later [aggregate source validation](../validation/2026-10-24-telemetry-aggregates.md)
 records **28 Python, 11 browser/codec and 12 bridge checks**, both builds and a
 **nine-check built-browser catalog journey**. No fresh package build qualifies
-this batch. Workflow hooks, full coverage, measured resource ceilings,
+this batch. Remaining workflow hooks, full coverage, measured resource ceilings,
 all-platform behavior and outbound/collector/privacy acceptance remain open.
+The following generation correction passed **29 Python and 12 browser/codec
+checks** and both builds. Its initial test-placement `NameError` remains failed
+and preserved separately from the corrected passing run.
+The actual built-Chromium generation journey then passed **11 checks** for
+stale UI state, legacy opt-out, damaged generation and narrow-screen behavior;
+the retained first runner attempt stopped before any UI action.
+
+The current [owned headless hook](anonymous-product-telemetry-catalog.md#owned-headless-control-coverage)
+is limited to `mnemion-control call`: all **161 API operations** have an explicit
+mapping, with **82 eligible actions and 79 exclusions across five reasons**.
+It snapshots local generation/revision and passes only fixed enums, duration and
+permitted numeric payload-byte counts to the encoder. Keyed writes require the
+server's `X-Mnemion-Idempotency: new`; cached, legacy or unknown receipts contribute
+nothing. Asynchronous work is acknowledged as `accepted`, without claiming
+completion. The request-local metadata change requires no database migration.
+Generic SDK and remote MCP calls never acquire a telemetry owner. The corrected
+focused contract check passed after the retained initial schema-reference test
+failure; the final focused Python selection then passed **51 tests**, and a
+fresh private wheel passed its isolated offline journey. These source checks
+do not qualify the published 4.46.6 artifact or native telemetry release.
+Collection remains off; desktop/browser, stdio and background hooks,
+the sender/collector and full resource/privacy/platform acceptance remain open.
 
 Saved source checks passed **10 policy tests** after the opt-out revision change,
 **12 native bridge/operator tests, 26 web/CSP tests and seven browser policy

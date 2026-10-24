@@ -13,6 +13,8 @@ from copy import deepcopy
 import json
 import os
 from pathlib import Path
+import re
+import secrets
 import sqlite3
 import stat
 import sys
@@ -26,7 +28,13 @@ MAX_PENDING_AGE_SECONDS = 48 * 3600
 MAX_DOCUMENT_BYTES = 8192
 METRIC_GROUPS = tuple(CONTRACT["metric_groups"])
 DATABASE_NAME = "product-telemetry.sqlite3"
-STORAGE_VERSION = 2
+STORAGE_VERSION = 3
+
+
+def valid_generation(value: object) -> bool:
+    """Private compare-and-set nonce; it is never a product measurement."""
+    return type(value) is str and re.fullmatch(r"[0-9a-f]{32}", value) is not None
+
 
 QUEUE_SCHEMA = """
 CREATE TABLE producer_budget (
@@ -50,9 +58,9 @@ CREATE TABLE preferences (
     singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
     revision INTEGER NOT NULL CHECK (revision BETWEEN 0 AND 2147483647),
     enabled INTEGER NOT NULL CHECK (enabled IN (0, 1)),
-    disclosure_version INTEGER NOT NULL CHECK (disclosure_version BETWEEN 0 AND 1000000)
+    disclosure_version INTEGER NOT NULL CHECK (disclosure_version BETWEEN 0 AND 1000000),
+    store_generation TEXT NOT NULL CHECK (length(store_generation)=32 AND store_generation NOT GLOB '*[^0-9a-f]*')
 );
-INSERT INTO preferences VALUES (1, 0, 1, 0);
 CREATE TABLE pending (
     cell INTEGER PRIMARY KEY CHECK (cell BETWEEN 0 AND 65535),
     count INTEGER NOT NULL CHECK (count BETWEEN 1 AND 65535),
@@ -190,9 +198,10 @@ def _connect(path: Path, *, readonly: bool = False) -> sqlite3.Connection:
 
 
 def _preferences(connection: sqlite3.Connection) -> dict:
+    version = connection.execute("PRAGMA user_version").fetchone()[0]
     if (
         connection.execute("PRAGMA application_id").fetchone()[0] != APPLICATION_ID
-        or connection.execute("PRAGMA user_version").fetchone()[0] not in (1, STORAGE_VERSION)
+        or version not in (1, 2, STORAGE_VERSION)
         or connection.execute("PRAGMA journal_mode").fetchone()[0] != "delete"
     ):
         raise PolicyError("telemetry_storage_unavailable")
@@ -207,38 +216,54 @@ def _preferences(connection: sqlite3.Connection) -> dict:
         or not 0 <= row[2] <= DISCLOSURE_VERSION
     ):
         raise PolicyError("telemetry_storage_unavailable")
-    return {"revision": row[0], "enabled": bool(row[1]), "disclosure_version": row[2]}
+    generation = None
+    if version == STORAGE_VERSION:
+        generation = connection.execute(
+            "SELECT store_generation FROM preferences WHERE singleton=1"
+        ).fetchone()[0]
+        if not valid_generation(generation):
+            raise PolicyError("telemetry_storage_unavailable")
+    return {
+        "revision": row[0],
+        "enabled": bool(row[1]),
+        "disclosure_version": row[2],
+        "store_generation": generation,
+    }
 
 
 def _queue_schema(connection: sqlite3.Connection) -> None:
     """Upgrade the unpublished controls-only store inside its caller's transaction."""
-    if connection.execute("PRAGMA user_version").fetchone()[0] == STORAGE_VERSION:
+    version = connection.execute("PRAGMA user_version").fetchone()[0]
+    if version == STORAGE_VERSION:
         return
     _preferences(connection)
-    connection.execute("DROP TRIGGER pending_bound")
     # executescript would commit an existing transaction before executing.
     # Use individual complete SQL statements so preference and queue state
     # change atomically, including when a version-one store was opted out.
-    statement = ""
-    for line in QUEUE_SCHEMA.splitlines(keepends=True):
-        statement += line
-        if sqlite3.complete_statement(statement):
-            connection.execute(statement)
-            statement = ""
+    if version == 1:
+        connection.execute("DROP TRIGGER pending_bound")
+        statement = ""
+        for line in QUEUE_SCHEMA.splitlines(keepends=True):
+            statement += line
+            if sqlite3.complete_statement(statement):
+                connection.execute(statement)
+                statement = ""
+    connection.execute("ALTER TABLE preferences ADD COLUMN store_generation TEXT")
+    connection.execute("UPDATE preferences SET store_generation=?", (secrets.token_hex(16),))
     connection.execute(f"PRAGMA user_version={STORAGE_VERSION}")
 
 
-def _initialize(root: Path) -> None:
+def _initialize(root: Path) -> bool:
     _root_safe(root)
     root.mkdir(mode=0o700, parents=True, exist_ok=True)
     _root_safe(root)
     path = root / DATABASE_NAME
     if _file_safe(path):
-        return
+        return False
     try:
         descriptor = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
     except FileExistsError:
-        return
+        return False
     os.close(descriptor)
     # A crash before the schema commits leaves damaged/unknown state. Never
     # turn that state into a fresh enabled preference on a later read.
@@ -249,14 +274,18 @@ def _initialize(root: Path) -> None:
             "BEGIN IMMEDIATE;"
             f"PRAGMA application_id={APPLICATION_ID}; PRAGMA user_version={STORAGE_VERSION};"
             + SCHEMA
-            + "COMMIT;"
         )
+        connection.execute(
+            "INSERT INTO preferences VALUES (1, 0, 1, 0, ?)", (secrets.token_hex(16),)
+        )
+        connection.commit()
+    return True
 
 
 def status(root: Path | None = None, *, policy_path: Path | None = None) -> dict:
     root = root if root is not None else default_directory()
     company = company_policy(policy_path)
-    preference = {"revision": 0, "enabled": True, "disclosure_version": 0}
+    preference = {"revision": 0, "enabled": True, "disclosure_version": 0, "store_generation": None}
     storage, pending = "new", 0
     try:
         _root_safe(root)
@@ -277,7 +306,10 @@ def status(root: Path | None = None, *, policy_path: Path | None = None) -> dict
         reason = "user_disabled"
     elif not company["enabled"] or not company["metric_groups"]:
         reason = "company_policy"
-    elif preference["disclosure_version"] != DISCLOSURE_VERSION:
+    elif (
+        preference["disclosure_version"] != DISCLOSURE_VERSION
+        or preference["store_generation"] is None
+    ):
         reason = "disclosure_required"
     elif not COLLECTION_AVAILABLE or COLLECTOR_URL is None:
         reason = "collection_unavailable"
@@ -286,6 +318,7 @@ def status(root: Path | None = None, *, policy_path: Path | None = None) -> dict
     return {
         "schema_version": SCHEMA_VERSION,
         "revision": preference["revision"],
+        "store_generation": preference["store_generation"],
         "default_enabled": True,
         "user_enabled": preference["enabled"],
         "effective_enabled": reason == "enabled",
@@ -301,7 +334,7 @@ def status(root: Path | None = None, *, policy_path: Path | None = None) -> dict
 
 
 def configure(root: Path | None, request: dict, *, policy_path: Path | None = None) -> dict:
-    fields = {"enabled", "expected_revision", "disclosure_version"}
+    fields = {"enabled", "expected_revision", "expected_generation", "disclosure_version"}
     if (
         not isinstance(request, dict)
         or set(request) - fields
@@ -310,6 +343,10 @@ def configure(root: Path | None, request: dict, *, policy_path: Path | None = No
         or not 0 <= request["expected_revision"] < 2147483647
         or type(request.get("disclosure_version", 0)) is not int
         or request.get("disclosure_version", 0) not in (0, DISCLOSURE_VERSION)
+        or (
+            request.get("expected_generation") is not None
+            and not valid_generation(request["expected_generation"])
+        )
     ):
         raise PolicyError("telemetry_invalid_choice")
     acknowledged = request.get("disclosure_version", 0)
@@ -317,15 +354,19 @@ def configure(root: Path | None, request: dict, *, policy_path: Path | None = No
         raise PolicyError("telemetry_disclosure_unavailable")
     root = root if root is not None else default_directory()
     try:
-        _initialize(root)
+        created = _initialize(root)
         with closing(_connect(root / DATABASE_NAME)) as connection:
             connection.execute("BEGIN IMMEDIATE")
             previous = _preferences(connection)
-            _queue_schema(connection)
             # Opt-out wins over stale UI state. Re-enabling always requires the
             # current revision and cannot undo another process's newer choice.
-            if request["enabled"] and request["expected_revision"] != previous["revision"]:
+            if request["enabled"] and (
+                request["expected_revision"] != previous["revision"]
+                or request.get("expected_generation")
+                != (None if created else previous["store_generation"])
+            ):
                 raise PolicyError("telemetry_choice_changed")
+            _queue_schema(connection)
             effective_acknowledgement = acknowledged if request["enabled"] else 0
             if (
                 not request["enabled"]

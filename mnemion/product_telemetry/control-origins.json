@@ -1,0 +1,607 @@
+{
+  "version": 1,
+  "surface": "headless",
+  "entrypoint": "mnemion-control call",
+  "exclusions": {
+    "state_inspection": "Discovery, configuration reads, polling and inspection of earlier outcomes are not new workflow uses.",
+    "producer_transport": "Substeps belong to the originating capture or source producer; measuring this transport would double-count and infer ownership.",
+    "configuration_preview": "Preview or intermediate authorization steps do not establish a completed setup, import or sign-in.",
+    "recovery_transport": "Upload chunks and continuation/status calls belong to the enclosing recovery controller, not separate recoveries.",
+    "session_maintenance": "Credential refresh is background session maintenance, not a new sign-in."
+  },
+  "operations": {
+    "agents.package": {
+      "exclusion": "configuration_preview"
+    },
+    "blocks.list": {
+      "workflow": "memory.core_read",
+      "completion": "success"
+    },
+    "blocks.set": {
+      "workflow": "memory.core_write",
+      "completion": "success"
+    },
+    "capture.fences": {
+      "exclusion": "state_inspection"
+    },
+    "capture.grant.configure": {
+      "workflow": "capture.configure",
+      "completion": "success"
+    },
+    "capture.grant.revoke": {
+      "workflow": "capture.remove",
+      "completion": "success"
+    },
+    "capture.grant.status": {
+      "exclusion": "state_inspection"
+    },
+    "capture.index.progress": {
+      "exclusion": "state_inspection"
+    },
+    "capture.pages.accept": {
+      "exclusion": "producer_transport"
+    },
+    "capture.pages.receipt": {
+      "exclusion": "state_inspection"
+    },
+    "capture.policy.change": {
+      "workflow": "capture.configure",
+      "completion": "success"
+    },
+    "capture.policy.review": {
+      "exclusion": "state_inspection"
+    },
+    "capture.policy.versions": {
+      "exclusion": "state_inspection"
+    },
+    "capture.retention.status": {
+      "exclusion": "state_inspection"
+    },
+    "capture.source.configure": {
+      "workflow": "capture.configure",
+      "completion": "success"
+    },
+    "capture.source.list": {
+      "exclusion": "state_inspection"
+    },
+    "capture.source.revoke": {
+      "workflow": "capture.remove",
+      "completion": "success"
+    },
+    "capture.source.status": {
+      "exclusion": "state_inspection"
+    },
+    "company.check_configuration": {
+      "exclusion": "state_inspection"
+    },
+    "company.configuration": {
+      "exclusion": "state_inspection"
+    },
+    "company.finish": {
+      "workflow": "workspace.sign_in",
+      "completion": "success"
+    },
+    "company.link": {
+      "workflow": "access.grant",
+      "completion": "success"
+    },
+    "company.links": {
+      "exclusion": "state_inspection"
+    },
+    "company.revoke": {
+      "workflow": "access.revoke",
+      "completion": "success"
+    },
+    "company.start": {
+      "exclusion": "configuration_preview"
+    },
+    "connectors.begin": {
+      "exclusion": "producer_transport"
+    },
+    "connectors.bind": {
+      "workflow": "sources.configure",
+      "completion": "success"
+    },
+    "connectors.bindings": {
+      "exclusion": "state_inspection"
+    },
+    "connectors.create": {
+      "workflow": "sources.configure",
+      "completion": "success"
+    },
+    "connectors.disable": {
+      "workflow": "sources.pause",
+      "completion": "success"
+    },
+    "connectors.enable": {
+      "workflow": "sources.resume",
+      "completion": "success"
+    },
+    "connectors.finish": {
+      "exclusion": "producer_transport"
+    },
+    "connectors.list": {
+      "exclusion": "state_inspection"
+    },
+    "connectors.page": {
+      "exclusion": "producer_transport"
+    },
+    "connectors.proposals": {
+      "exclusion": "state_inspection"
+    },
+    "connectors.refresh": {
+      "exclusion": "producer_transport"
+    },
+    "connectors.resolve": {
+      "workflow": "sources.repair",
+      "completion": "success"
+    },
+    "connectors.resume": {
+      "workflow": "sources.resume",
+      "completion": "success"
+    },
+    "connectors.scopes": {
+      "exclusion": "state_inspection"
+    },
+    "connectors.suspend": {
+      "workflow": "sources.pause",
+      "completion": "success"
+    },
+    "connectors.sync_report": {
+      "exclusion": "producer_transport"
+    },
+    "connectors.sync_request": {
+      "workflow": "sources.sync",
+      "completion": "accepted"
+    },
+    "connectors.sync_status": {
+      "exclusion": "state_inspection"
+    },
+    "connectors.unbind": {
+      "workflow": "access.revoke",
+      "completion": "success"
+    },
+    "embedding.choices": {
+      "exclusion": "state_inspection"
+    },
+    "embedding.control": {
+      "selector": [
+        "parameters",
+        "action"
+      ],
+      "variants": {
+        "pause": "models.pause",
+        "resume": "models.resume",
+        "retry": "models.resume",
+        "cancel": "models.cancel",
+        "activate": "models.configure"
+      },
+      "completion": "accepted"
+    },
+    "embedding.reindex": {
+      "workflow": "models.reindex",
+      "completion": "accepted",
+      "fresh_receipt": true
+    },
+    "embedding.resume": {
+      "workflow": "models.resume",
+      "completion": "accepted"
+    },
+    "embedding.settings": {
+      "exclusion": "state_inspection"
+    },
+    "evaluations.assess": {
+      "workflow": "evaluation.assess",
+      "completion": "success"
+    },
+    "evaluations.cancel": {
+      "workflow": "evaluation.cancel",
+      "completion": "accepted"
+    },
+    "evaluations.compare": {
+      "workflow": "evaluation.compare",
+      "completion": "success"
+    },
+    "evaluations.create_dataset": {
+      "workflow": "evaluation.create_dataset",
+      "completion": "success"
+    },
+    "evaluations.dataset": {
+      "exclusion": "state_inspection"
+    },
+    "evaluations.datasets": {
+      "exclusion": "state_inspection"
+    },
+    "evaluations.export": {
+      "workflow": "evaluation.export",
+      "completion": "success"
+    },
+    "evaluations.remove_dataset": {
+      "workflow": "evaluation.remove_dataset",
+      "completion": "success"
+    },
+    "evaluations.results": {
+      "exclusion": "state_inspection"
+    },
+    "evaluations.run": {
+      "exclusion": "state_inspection"
+    },
+    "evaluations.runs": {
+      "exclusion": "state_inspection"
+    },
+    "evaluations.start": {
+      "workflow": "evaluation.run",
+      "completion": "accepted",
+      "fresh_receipt": true
+    },
+    "grants.list": {
+      "exclusion": "state_inspection"
+    },
+    "grants.revoke": {
+      "workflow": "access.revoke",
+      "completion": "success"
+    },
+    "grants.set": {
+      "workflow": "access.grant",
+      "completion": "success"
+    },
+    "health.live": {
+      "exclusion": "state_inspection"
+    },
+    "health.ready": {
+      "exclusion": "state_inspection"
+    },
+    "health.sources": {
+      "exclusion": "state_inspection"
+    },
+    "identity.me": {
+      "exclusion": "state_inspection"
+    },
+    "insights.runtime": {
+      "exclusion": "state_inspection"
+    },
+    "insights.space": {
+      "exclusion": "state_inspection"
+    },
+    "journal.backfill.control": {
+      "workflow": "journal.backfill",
+      "completion": "accepted"
+    },
+    "journal.backfill.start": {
+      "workflow": "journal.backfill",
+      "completion": "accepted",
+      "fresh_receipt": true
+    },
+    "journal.backfill.status": {
+      "exclusion": "state_inspection"
+    },
+    "journal.configure": {
+      "workflow": "journal.configure",
+      "completion": "success"
+    },
+    "journal.organize": {
+      "workflow": "journal.organize",
+      "completion": "accepted"
+    },
+    "journal.push": {
+      "workflow": "journal.push",
+      "completion": "accepted"
+    },
+    "journal.status": {
+      "exclusion": "state_inspection"
+    },
+    "keys.create": {
+      "workflow": "access.grant",
+      "completion": "success"
+    },
+    "keys.list": {
+      "exclusion": "state_inspection"
+    },
+    "keys.revoke": {
+      "workflow": "access.revoke",
+      "completion": "success"
+    },
+    "knowledge.map": {
+      "workflow": "memory.knowledge",
+      "completion": "success"
+    },
+    "librarian.cancel": {
+      "workflow": "librarian.cancel",
+      "completion": "accepted"
+    },
+    "librarian.configure": {
+      "workflow": "librarian.configure",
+      "completion": "success"
+    },
+    "librarian.coverage": {
+      "exclusion": "state_inspection"
+    },
+    "librarian.decide": {
+      "selector": [
+        "body",
+        "action"
+      ],
+      "variants": {
+        "accept": "librarian.accept",
+        "reject": "librarian.reject",
+        "undo": "librarian.undo"
+      },
+      "completion": "success",
+      "fresh_receipt": true
+    },
+    "librarian.items": {
+      "exclusion": "state_inspection"
+    },
+    "librarian.models": {
+      "exclusion": "state_inspection"
+    },
+    "librarian.proposals": {
+      "exclusion": "state_inspection"
+    },
+    "librarian.run": {
+      "exclusion": "state_inspection"
+    },
+    "librarian.runs": {
+      "exclusion": "state_inspection"
+    },
+    "librarian.settings": {
+      "exclusion": "state_inspection"
+    },
+    "librarian.start": {
+      "workflow": "librarian.run",
+      "completion": "accepted",
+      "fresh_receipt": true
+    },
+    "memories.forget": {
+      "workflow": "memory.forget",
+      "completion": "accepted",
+      "fresh_receipt": true
+    },
+    "memories.get": {
+      "workflow": "memory.read",
+      "completion": "success"
+    },
+    "memories.history": {
+      "exclusion": "state_inspection"
+    },
+    "memories.list": {
+      "workflow": "memory.list",
+      "completion": "success"
+    },
+    "memories.resolve": {
+      "workflow": "memory.read",
+      "completion": "success"
+    },
+    "memories.review": {
+      "workflow": "memory.review",
+      "completion": "success"
+    },
+    "memories.revise": {
+      "workflow": "memory.revise",
+      "completion": "accepted",
+      "fresh_receipt": true
+    },
+    "memories.save": {
+      "workflow": "memory.save",
+      "completion": "accepted",
+      "fresh_receipt": true
+    },
+    "memory.buffer.import": {
+      "workflow": "memory.import",
+      "completion": "accepted",
+      "fresh_receipt": true
+    },
+    "memory.buffer.preview": {
+      "exclusion": "configuration_preview"
+    },
+    "memory.journal.preview": {
+      "workflow": "recovery.inspect",
+      "completion": "success"
+    },
+    "memory.journal.restore": {
+      "workflow": "journal.recover",
+      "completion": "accepted",
+      "fresh_receipt": true
+    },
+    "memory.journal.upload.advance": {
+      "exclusion": "recovery_transport"
+    },
+    "memory.journal.upload.begin": {
+      "exclusion": "recovery_transport"
+    },
+    "memory.journal.upload.chunk": {
+      "exclusion": "recovery_transport"
+    },
+    "memory.journal.upload.decisions": {
+      "exclusion": "recovery_transport"
+    },
+    "memory.journal.upload.files": {
+      "exclusion": "recovery_transport"
+    },
+    "memory.journal.upload.list": {
+      "exclusion": "recovery_transport"
+    },
+    "memory.journal.upload.status": {
+      "exclusion": "recovery_transport"
+    },
+    "oauth.bind": {
+      "workflow": "access.grant",
+      "completion": "success"
+    },
+    "oauth.bindings": {
+      "exclusion": "state_inspection"
+    },
+    "oauth.configuration": {
+      "exclusion": "state_inspection"
+    },
+    "oauth.connections": {
+      "exclusion": "state_inspection"
+    },
+    "oauth.disconnect": {
+      "workflow": "access.revoke",
+      "completion": "success"
+    },
+    "oauth.revoke": {
+      "workflow": "access.revoke",
+      "completion": "success"
+    },
+    "obsidian.export": {
+      "workflow": "memory.export",
+      "completion": "success"
+    },
+    "operations.activity": {
+      "exclusion": "state_inspection"
+    },
+    "operations.get": {
+      "exclusion": "state_inspection"
+    },
+    "operations.list": {
+      "exclusion": "state_inspection"
+    },
+    "operations.retry": {
+      "workflow": "models.resume",
+      "completion": "accepted"
+    },
+    "operations.status": {
+      "exclusion": "state_inspection"
+    },
+    "principals.create": {
+      "workflow": "access.configure",
+      "completion": "success"
+    },
+    "principals.disable": {
+      "workflow": "access.revoke",
+      "completion": "success"
+    },
+    "principals.list": {
+      "exclusion": "state_inspection"
+    },
+    "recovery.configure": {
+      "workflow": "setup.configure",
+      "completion": "success"
+    },
+    "recovery.directory": {
+      "exclusion": "state_inspection"
+    },
+    "retrieval.context": {
+      "workflow": "memory.context",
+      "completion": "success"
+    },
+    "retrieval.search": {
+      "workflow": "memory.recall",
+      "completion": "success"
+    },
+    "sign_in.accept_invitation": {
+      "workflow": "workspace.sign_in",
+      "completion": "success"
+    },
+    "sign_in.account": {
+      "exclusion": "state_inspection"
+    },
+    "sign_in.configuration": {
+      "exclusion": "state_inspection"
+    },
+    "sign_in.create_invitation": {
+      "workflow": "access.invite",
+      "completion": "success"
+    },
+    "sign_in.invitations": {
+      "exclusion": "state_inspection"
+    },
+    "sign_in.login": {
+      "workflow": "workspace.sign_in",
+      "completion": "success"
+    },
+    "sign_in.logout": {
+      "workflow": "workspace.disconnect",
+      "completion": "success"
+    },
+    "sign_in.preview_invitation": {
+      "exclusion": "configuration_preview"
+    },
+    "sign_in.refresh": {
+      "exclusion": "session_maintenance"
+    },
+    "sign_in.revoke_invitation": {
+      "workflow": "access.revoke",
+      "completion": "success"
+    },
+    "sign_in.revoke_session": {
+      "workflow": "access.revoke",
+      "completion": "success"
+    },
+    "sign_in.sessions": {
+      "exclusion": "state_inspection"
+    },
+    "sign_in.set_password": {
+      "workflow": "access.configure",
+      "completion": "success"
+    },
+    "sources.attachment": {
+      "workflow": "memory.read",
+      "completion": "success"
+    },
+    "sources.get": {
+      "workflow": "memory.read",
+      "completion": "success"
+    },
+    "spaces.create": {
+      "workflow": "setup.create",
+      "completion": "success"
+    },
+    "spaces.get": {
+      "exclusion": "state_inspection"
+    },
+    "spaces.list": {
+      "exclusion": "state_inspection"
+    },
+    "vault.audit": {
+      "exclusion": "state_inspection"
+    },
+    "vault.delete": {
+      "workflow": "vault.delete",
+      "completion": "success"
+    },
+    "vault.export": {
+      "workflow": "vault.export",
+      "completion": "success"
+    },
+    "vault.get": {
+      "workflow": "vault.read",
+      "completion": "success"
+    },
+    "vault.grant": {
+      "workflow": "access.grant",
+      "completion": "success"
+    },
+    "vault.grants": {
+      "exclusion": "state_inspection"
+    },
+    "vault.import": {
+      "workflow": "vault.import",
+      "completion": "success"
+    },
+    "vault.keepass.export": {
+      "workflow": "vault.export",
+      "completion": "success"
+    },
+    "vault.keepass.import": {
+      "workflow": "vault.import",
+      "completion": "success"
+    },
+    "vault.keepass.preview": {
+      "exclusion": "configuration_preview"
+    },
+    "vault.list": {
+      "workflow": "vault.read",
+      "completion": "success"
+    },
+    "vault.put": {
+      "workflow": "vault.write",
+      "completion": "success"
+    },
+    "vault.status": {
+      "exclusion": "state_inspection"
+    }
+  }
+}

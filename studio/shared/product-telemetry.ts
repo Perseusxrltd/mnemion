@@ -1,7 +1,8 @@
 /** Optional product telemetry. These local controls contain no analytics IDs. */
 export type TelemetryGroup = 'usage' | 'reliability' | 'performance' | 'resources'
 export type TelemetryAction = 'status' | 'configure' | 'schema' | 'preview'
-export type TelemetryChoice = { enabled: boolean; expected_revision: number; disclosure_version?: number }
+export type TelemetryChoice = { enabled: boolean; expected_revision: number; expected_generation?: string | null; disclosure_version?: number }
+export type TelemetryStamp = { revision: number; store_generation: string | null }
 export type TelemetryCompanyPolicy = {
   state: 'unmanaged' | 'restricted' | 'unreadable'
   enabled: boolean
@@ -23,6 +24,7 @@ export type TelemetryDisclosure = {
 export type TelemetryStatus = {
   schema_version: number
   revision: number
+  store_generation: string | null
   default_enabled: boolean
   user_enabled: boolean
   effective_enabled: boolean

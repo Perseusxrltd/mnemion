@@ -21,6 +21,7 @@ from .evaluation_metrics import SCORER_VERSION, bootstrap_mean
 from .evaluation_models import AssessmentInput, DatasetInput, EvaluationInput
 from .models import json_value
 from .repository import audit, hydrate
+from .request_replay import observed
 from .retrieval import RETRIEVAL_IMPLEMENTATION
 
 
@@ -377,7 +378,9 @@ class EvaluationService:
                         "idempotency_conflict",
                         "This key was used with a different run configuration.",
                     )
+                observed(True)
                 return self._run_output(conn, previous)
+            observed(False)
             dataset = self._dataset(conn, space, command.dataset_id)
             if dataset["state"] != "active":
                 raise ServiceError(

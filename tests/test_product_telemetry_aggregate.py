@@ -22,7 +22,7 @@ def enabled(tmp_path, monkeypatch):
     current = policy.configure(
         root, {"enabled": True, "expected_revision": 0, "disclosure_version": 1}
     )
-    return root, company, current["revision"]
+    return root, company, current["revision"], current["store_generation"]
 
 
 def observation(**extra):
@@ -86,16 +86,19 @@ def test_every_catalog_workflow_has_nonoverlapping_decodable_cells():
     ],
 )
 def test_non_numeric_unbounded_or_private_sensor_is_rejected(enabled, bad):
-    root, _, revision = enabled
+    root, _, revision, generation = enabled
     value = observation(latency_ms=bad)
     with pytest.raises(catalog.MeasurementError, match="^telemetry_invalid_measurement$"):
         catalog.observation(value)
-    assert aggregate.record(root, value, expected_revision=revision) is False
+    assert (
+        aggregate.record(root, value, expected_revision=revision, expected_generation=generation)
+        is False
+    )
     assert aggregate.preview(root) == []
 
 
 def test_content_and_vault_sizes_never_enter_store(enabled):
-    root, _, revision = enabled
+    root, _, revision, generation = enabled
     for value in [
         observation(query="PRIVATE_SENTINEL"),
         observation(workflow="PRIVATE_SENTINEL"),
@@ -103,15 +106,23 @@ def test_content_and_vault_sizes_never_enter_store(enabled):
         observation(workflow="vault.read", result_items=12345),
         observation(workflow="vault.write", payload_bytes_sent=12345),
     ]:
-        assert aggregate.record(root, value, expected_revision=revision) is False
+        assert (
+            aggregate.record(
+                root, value, expected_revision=revision, expected_generation=generation
+            )
+            is False
+        )
     assert b"PRIVATE_SENTINEL" not in (root / policy.DATABASE_NAME).read_bytes()
     assert aggregate.preview(root) == []
 
 
 def test_clips_numbers_and_retains_only_fixed_buckets(enabled):
-    root, _, revision = enabled
+    root, _, revision, generation = enabled
     assert aggregate.record(
-        root, observation(latency_ms=123.456, result_items=37), expected_revision=revision
+        root,
+        observation(latency_ms=123.456, result_items=37),
+        expected_revision=revision,
+        expected_generation=generation,
     )
     rows = aggregate.preview(root)
     assert len(rows) == 3
@@ -126,32 +137,53 @@ def test_clips_numbers_and_retains_only_fixed_buckets(enabled):
 
 
 def test_daily_contribution_and_resource_limits_do_not_build_event_history(enabled, monkeypatch):
-    root, _, revision = enabled
+    root, _, revision, generation = enabled
     outcomes = [
-        aggregate.record(root, observation(), expected_revision=revision) for _ in range(80)
+        aggregate.record(
+            root, observation(), expected_revision=revision, expected_generation=generation
+        )
+        for _ in range(80)
     ]
     assert sum(outcomes) == 64
     resource = {"kind": "resource", "metric": "rss_bytes", "value": 1024**3}
     assert (
-        sum(aggregate.record(root, resource, expected_revision=revision) for _ in range(30)) == 24
+        sum(
+            aggregate.record(
+                root, resource, expected_revision=revision, expected_generation=generation
+            )
+            for _ in range(30)
+        )
+        == 24
     )
     assert len(aggregate.preview(root)) == 2
     monkeypatch.setattr(aggregate, "_day", lambda: 20001)
-    assert aggregate.record(root, observation(), expected_revision=revision)
+    assert aggregate.record(
+        root, observation(), expected_revision=revision, expected_generation=generation
+    )
     assert next(row for row in aggregate.preview(root) if row["metric"] == "outcomes")["count"] == 1
     monkeypatch.setattr(aggregate, "_day", lambda: 20003)
     assert aggregate.preview(root) == []
-    assert aggregate.record(root, observation(), expected_revision=revision)
+    assert aggregate.record(
+        root, observation(), expected_revision=revision, expected_generation=generation
+    )
     assert len(aggregate.preview(root)) == 1
 
 
 def test_opt_out_then_reenable_fences_an_old_native_process(enabled):
-    root, _, revision = enabled
-    assert aggregate.record(root, observation(), expected_revision=revision)
+    root, _, revision, generation = enabled
+    assert aggregate.record(
+        root, observation(), expected_revision=revision, expected_generation=generation
+    )
     disabled = policy.configure(root, {"enabled": False, "expected_revision": revision})
     assert disabled["pending_records"] == 0
     enabled_again = policy.configure(
-        root, {"enabled": True, "expected_revision": disabled["revision"], "disclosure_version": 1}
+        root,
+        {
+            "enabled": True,
+            "expected_revision": disabled["revision"],
+            "expected_generation": generation,
+            "disclosure_version": 1,
+        },
     )
     assert enabled_again["pending_records"] == 0
     # A genuinely separate old worker, with a stale captured policy revision.
@@ -162,11 +194,18 @@ from mnemion.product_telemetry import policy,aggregate
 policy.COLLECTION_AVAILABLE=True
 policy.COLLECTOR_URL='https://example.invalid/telemetry'
 request=json.load(sys.stdin)
-print(aggregate.record(Path(request['root']),request['value'],expected_revision=request['revision']))
+print(aggregate.record(Path(request['root']),request['value'],expected_revision=request['revision'],expected_generation=request['generation']))
 """
     result = subprocess.run(
         [sys.executable, "-c", program],
-        input=json.dumps({"root": str(root), "revision": revision, "value": observation()}),
+        input=json.dumps(
+            {
+                "root": str(root),
+                "revision": revision,
+                "generation": generation,
+                "value": observation(),
+            }
+        ),
         capture_output=True,
         text=True,
         check=True,
@@ -175,26 +214,40 @@ print(aggregate.record(Path(request['root']),request['value'],expected_revision=
     assert result.stdout.strip() == "False"
     assert result.stderr == ""
     assert aggregate.preview(root) == []
-    assert aggregate.record(root, observation(), expected_revision=enabled_again["revision"])
+    assert aggregate.record(
+        root,
+        observation(),
+        expected_revision=enabled_again["revision"],
+        expected_generation=enabled_again["store_generation"],
+    )
 
 
 def test_company_narrowing_removes_disallowed_groups_and_unknown_policy_suppresses(enabled):
-    root, company, revision = enabled
-    assert aggregate.record(root, observation(latency_ms=12), expected_revision=revision)
+    root, company, revision, generation = enabled
+    assert aggregate.record(
+        root, observation(latency_ms=12), expected_revision=revision, expected_generation=generation
+    )
     company.write_text(
         json.dumps({"schema_version": 1, "enabled": True, "metric_groups": ["usage"]})
     )
-    assert aggregate.record(root, observation(latency_ms=99), expected_revision=revision)
+    assert aggregate.record(
+        root, observation(latency_ms=99), expected_revision=revision, expected_generation=generation
+    )
     assert {row["group"] for row in aggregate.preview(root)} == {"usage"}
     with sqlite3.connect(root / policy.DATABASE_NAME) as connection:
         assert connection.execute("SELECT count(*) FROM pending").fetchone()[0] == 1
     company.write_text('{"secret":"PRIVATE_SENTINEL"}')
-    assert aggregate.record(root, observation(), expected_revision=revision) is False
+    assert (
+        aggregate.record(
+            root, observation(), expected_revision=revision, expected_generation=generation
+        )
+        is False
+    )
     assert policy.status(root)["pending_records"] == 0
 
 
 def test_full_queue_accepts_existing_cells_and_drops_new_cells_without_growth(enabled):
-    root, _, revision = enabled
+    root, _, revision, generation = enabled
     cells = []
     for workflow in catalog.WORKFLOWS:
         for surface in catalog.SURFACES:
@@ -212,9 +265,15 @@ def test_full_queue_accepts_existing_cells_and_drops_new_cells_without_growth(en
         root,
         observation(workflow=catalog.WORKFLOWS[0], surface="desktop"),
         expected_revision=revision,
+        expected_generation=generation,
     )
     assert (
-        aggregate.record(root, observation(workflow="vault.read"), expected_revision=revision)
+        aggregate.record(
+            root,
+            observation(workflow="vault.read"),
+            expected_revision=revision,
+            expected_generation=generation,
+        )
         is False
     )
     assert policy.status(root)["pending_records"] == 512
@@ -227,23 +286,84 @@ def test_full_queue_accepts_existing_cells_and_drops_new_cells_without_growth(en
 
 
 def test_busy_store_never_blocks_canonical_work_or_records(enabled):
-    root, _, revision = enabled
+    root, _, revision, generation = enabled
     with sqlite3.connect(root / policy.DATABASE_NAME) as other:
         other.execute("BEGIN IMMEDIATE")
-        assert aggregate.record(root, observation(), expected_revision=revision) is False
+        assert (
+            aggregate.record(
+                root, observation(), expected_revision=revision, expected_generation=generation
+            )
+            is False
+        )
         other.rollback()
     assert aggregate.preview(root) == []
 
 
 def test_source_controls_store_upgrades_without_losing_explicit_opt_out(enabled):
-    root, _, revision = enabled
+    root, _, revision, generation = enabled
     disabled = policy.configure(root, {"enabled": False, "expected_revision": revision})
     with sqlite3.connect(root / policy.DATABASE_NAME) as connection:
         connection.execute("DROP TRIGGER producer_budget_bound")
         connection.execute("DROP TABLE producer_budget")
+        connection.execute("ALTER TABLE preferences DROP COLUMN store_generation")
         connection.execute("PRAGMA user_version=1")
     assert policy.status(root)["reason"] == "user_disabled"
-    assert aggregate.record(root, observation(), expected_revision=disabled["revision"]) is False
+    assert (
+        aggregate.record(
+            root,
+            observation(),
+            expected_revision=disabled["revision"],
+            expected_generation=generation,
+        )
+        is False
+    )
+    policy.configure(root, {"enabled": False, "expected_revision": disabled["revision"]})
     with sqlite3.connect(root / policy.DATABASE_NAME) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 2
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 3
     assert policy.status(root)["reason"] == "user_disabled"
+
+
+def test_recreated_store_rejects_old_work_even_when_revision_numbers_repeat(enabled):
+    root, _, revision, generation = enabled
+    assert aggregate.record(
+        root, observation(), expected_revision=revision, expected_generation=generation
+    )
+    (root / policy.DATABASE_NAME).unlink()
+    assert policy.status(root)["store_generation"] is None
+    fresh = policy.configure(
+        root,
+        {
+            "enabled": True,
+            "expected_revision": 0,
+            "expected_generation": None,
+            "disclosure_version": 1,
+        },
+    )
+    assert fresh["revision"] == revision
+    assert fresh["store_generation"] != generation
+    assert (
+        aggregate.record(
+            root, observation(), expected_revision=revision, expected_generation=generation
+        )
+        is False
+    )
+    assert aggregate.preview(root) == []
+    with pytest.raises(policy.PolicyError, match="telemetry_choice_changed"):
+        policy.configure(
+            root,
+            {
+                "enabled": True,
+                "expected_revision": revision,
+                "expected_generation": generation,
+                "disclosure_version": 1,
+            },
+        )
+    assert aggregate.record(
+        root,
+        observation(),
+        expected_revision=fresh["revision"],
+        expected_generation=fresh["store_generation"],
+    )
+    # The nonce controls local policy. It never enters measurement cells.
+    assert generation not in json.dumps(aggregate.preview(root))
+    assert fresh["store_generation"] not in json.dumps(aggregate.preview(root))

@@ -4,7 +4,7 @@ export const desktopActions = {
     description: 'Read this installation’s optional product telemetry choice, effective policy and disclosure before sign-in or while offline. Private workspace metrics are separate.' },
   'telemetry.schema': { workspace: false, mutation: false, fields: [] },
   'telemetry.preview': { workspace: false, mutation: false, fields: [] },
-  'telemetry.configure': { workspace: false, mutation: true, fields: ['enabled', 'expected_revision', 'disclosure_version'],
+  'telemetry.configure': { workspace: false, mutation: true, fields: ['enabled', 'expected_revision', 'expected_generation', 'disclosure_version'],
     description: 'Save the local privacy choice shared by desktop and headless agents. Opt-out wins over a stale revision; enabling requires the current revision and a supported disclosure. This never changes workspace permissions.' },
   'host.profiles': { workspace: false, mutation: false, fields: [] },
   'host.schema': { workspace: false, mutation: false, fields: [] },

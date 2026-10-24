@@ -1,4 +1,5 @@
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 import io
 import json
 from pathlib import Path
@@ -130,6 +131,29 @@ def test_an_interrupted_idempotent_write_reuses_the_exact_validated_request(monk
             },
         )
     assert result["attempts"] == 2 and calls[0] == calls[1]
+
+
+def test_concurrent_writes_expose_receipt_replay_without_leaking_request_state(env):
+    request = {
+        "parameters": {"space_id": str(env.space)},
+        "body": {"content": "Synthetic receipt observation"},
+        "idempotency_key": "same-logical-fixture-write",
+    }
+    with running(create_app(env.db, env.embedder)) as url:
+
+        def save(_):
+            with Client(url, env.token) as client:
+                return control.execute(client, "memories.save", request)
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            first, second = pool.map(save, range(2))
+        assert {first["idempotency"], second["idempotency"]} == {"new", "replayed"}
+        assert first["result"] == second["result"]
+        with Client(url, env.token) as client:
+            inspected = client._http.get("/v1/spaces")
+            assert inspected.status_code == 200
+            assert "X-Mnemion-Idempotency" not in inspected.headers
+            assert control.execute(client, "spaces.list")["idempotency"] is None
 
 
 def test_response_bounds_reject_hostile_lengths_and_never_publish_truncated_json():

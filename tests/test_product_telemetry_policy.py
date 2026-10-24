@@ -28,6 +28,7 @@ def choice(root, enabled, revision=0, disclosure=0):
         {
             "enabled": enabled,
             "expected_revision": revision,
+            "expected_generation": policy.status(root)["store_generation"],
             "disclosure_version": disclosure,
         },
     )

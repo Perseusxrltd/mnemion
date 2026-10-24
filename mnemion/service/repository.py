@@ -12,6 +12,7 @@ from psycopg.types.json import Jsonb
 from .db import Identity, require_space
 from .errors import ServiceError, not_found
 from .models import json_value
+from .request_replay import observed
 
 
 def audit(
@@ -71,6 +72,7 @@ def idempotency(
         raise ServiceError(
             409, "idempotency_conflict", "This key was used with a different request."
         )
+    observed(previous is not None)
     return digest, previous["response"] if previous else None
 
 

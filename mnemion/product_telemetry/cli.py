@@ -22,7 +22,7 @@ def execute(root: Path | None, request: object) -> dict:
         if set(request) != {"action"}:
             raise policy.PolicyError("telemetry_invalid_request")
         if action == "schema":
-            from .catalog import specification
+            from .catalog import control_specification, specification
 
             return {
                 "protocol": 1,
@@ -32,11 +32,17 @@ def execute(root: Path | None, request: object) -> dict:
                     "preview": {"mutation": False, "fields": []},
                     "configure": {
                         "mutation": True,
-                        "fields": ["enabled", "expected_revision", "disclosure_version"],
+                        "fields": [
+                            "enabled",
+                            "expected_revision",
+                            "expected_generation",
+                            "disclosure_version",
+                        ],
                     },
                 },
                 "disclosure": policy.disclosure(),
                 "measurement_catalog": specification(),
+                "owned_control_coverage": control_specification(),
             }
         return policy.preview(root) if action == "preview" else policy.status(root)
     if action == "configure":
