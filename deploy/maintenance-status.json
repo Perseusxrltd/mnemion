@@ -25,31 +25,113 @@
   ],
   "runs": [
     {
-      "id": 40044445412,
+      "id": 40046563895,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "1c28237024381a1a0dae0e7ac0e66d47ff7c94df",
-      "status": "completed",
-      "conclusion": "failure",
-      "updated_at": "2026-10-24T00:21:21Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40044445412",
+      "source_commit": "102648fdb0d36fa8fcf04e84b42a6eef321d523d",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-24T00:45:58Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40046563895",
       "job_details_schema": 2,
       "job_progress": {
-        "total": 8,
-        "completed": 8,
+        "total": 12,
+        "completed": 3,
         "succeeded": 2,
-        "active": []
+        "active": [
+          {
+            "id": 120729520114,
+            "name": "studio",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run npm --prefix studio/frontend audit --audit-level=high"
+            ]
+          },
+          {
+            "id": 120729567735,
+            "name": "supervision (macos-15-intel)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the current Intel cryptography runtime with static OpenSSL"
+            ]
+          },
+          {
+            "id": 120729567740,
+            "name": "container (ubuntu-22.04)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the actual deployment image with its documentation"
+            ]
+          },
+          {
+            "id": 120729567806,
+            "name": "legacy",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
+            ]
+          },
+          {
+            "id": 120729567816,
+            "name": "container (ubuntu-22.04-arm)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the actual deployment image with its documentation"
+            ]
+          },
+          {
+            "id": 120729567836,
+            "name": "service (3.14)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Matching PostgreSQL recovery tools"
+            ]
+          },
+          {
+            "id": 120729567845,
+            "name": "supervision (macos-15)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Verify managed installation, host recovery, signed updates and rollback with real processes"
+            ]
+          },
+          {
+            "id": 120729567855,
+            "name": "service (3.12)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
+            ]
+          },
+          {
+            "id": 120729567859,
+            "name": "service (3.13)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run npm --prefix packages/client ci && npm --prefix packages/client test"
+            ]
+          }
+        ]
       },
       "failed_jobs": [
         {
-          "name": "studio",
-          "id": 120722816951,
+          "name": "dependency-audit",
+          "id": 120729567959,
           "conclusion": "failure",
           "runner_assigned": true,
-          "steps_reported": 18,
+          "steps_reported": 9,
           "steps": [
-            "Run npm --prefix studio/electron audit --audit-level=high"
+            "Run uvx pip-audit --path .venv/lib/python3.12/site-packages"
           ]
         }
       ]
@@ -88,15 +170,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40021524126"
     },
     {
-      "id": 40044445372,
+      "id": 40046564096,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "1c28237024381a1a0dae0e7ac0e66d47ff7c94df",
+      "source_commit": "102648fdb0d36fa8fcf04e84b42a6eef321d523d",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-24T00:20:19Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40044445372"
+      "updated_at": "2026-10-24T00:45:59Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40046564096"
     },
     {
       "id": 40022240433,
@@ -110,5 +192,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40022240433"
     }
   ],
-  "observed_at": "2026-10-24T00:21:50+00:00"
+  "observed_at": "2026-10-24T00:46:30+00:00"
 }
