@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "checked_at": "2026-10-24T00:53:01+00:00",
+  "checked_at": "2026-10-24T01:16:16+00:00",
   "tag_name": "v4.46.5",
   "source_commit": "8f022bd73ee364d681214a1b60421770c061e7e9",
   "published_at": "2026-10-23T20:49:55Z",
@@ -93,8 +93,8 @@
     "total": 66,
     "Shipped": 17,
     "Partial": 42,
-    "Building": 0,
-    "Planned": 3,
+    "Building": 1,
+    "Planned": 2,
     "Ongoing": 3,
     "External": 1
   }
