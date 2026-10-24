@@ -8,6 +8,8 @@ import { tmpdir } from 'node:os'
 import { spawn } from 'node:child_process'
 import { DesktopOperator } from '../dist/desktop-operator.js'
 import { desktopAction } from '../dist/desktop-actions.js'
+import { measureDesktop } from '../dist/desktop-measurement.js'
+import { TelemetryCatalog } from '../dist/telemetry-catalog.js'
 
 const python = process.env.MNEMION_OPERATOR_PYTHON || process.env.MNEMION_BUILD_PYTHON || (process.platform === 'win32' ? 'python' : 'python3')
 const root = resolve(import.meta.dirname, '../../..')
@@ -80,12 +82,19 @@ test('wrong credentials, wrong sessions, oversized frames and trailing requests 
 
 test('same request IDs replay a completed mutation but cannot change its input', async t => {
   let calls = 0
-  const f = await fixture(t, async () => ({ calls: ++calls }))
+  const values = []
+  const store = { available: true, catalog: new TelemetryCatalog(JSON.parse(await readFile(new URL('../dist/telemetry-catalog.json', import.meta.url), 'utf8'))),
+    async snapshot() { return { revision: 1, store_generation: 'a'.repeat(32) } },
+    async recordMany(observations) { values.push(...observations); return true },
+  }
+  const f = await fixture(t, request => measureDesktop(store, request.action, request.input, 'native_agent', async () => ({ calls: ++calls })))
   const request = f.request({ action: 'backup.configure', input: { enabled: false } })
   const first = await send(f.endpoint.address, request)
   assert.deepEqual(await send(f.endpoint.address, request), first)
   assert.equal((await send(f.endpoint.address, { ...request, input: { enabled: true } })).error, 'request_changed')
   assert.equal(calls, 1)
+  assert.equal(values.length, 2, 'the cached reply did not emit another submission or outcome')
+  assert.ok(values.every(value => value.workflow === 'backup.configure' && value.surface === 'native_agent'))
 })
 
 test('an in-flight request is not started twice and disconnect aborts its owned work', async t => {

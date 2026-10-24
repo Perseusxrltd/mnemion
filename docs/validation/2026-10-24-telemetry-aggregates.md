@@ -22,7 +22,8 @@ records the fixed buckets and remaining instrumentation decisions.
 | Built-browser catalog journey | **Nine checks passed**: all 15 families, 94 operations and seven exclusions visible; truthful empty outbound preview; offline clearing of the new queue format; opt-out after reload; usable small-screen layout; only local static requests. |
 
 The browser journey made no workspace API, production memory or cloud-model
-calls. It inspected catalog/choice behavior; product workflows remain unwired.
+calls. It inspected catalog/choice behavior; product workflows were unwired at
+that initial checkpoint.
 Raw private logs are retained separately. Their SHA-256 digests bind the results:
 
 | Evidence | SHA-256 |
@@ -152,7 +153,120 @@ package; it does not establish native platform acceptance.
 | Final 51-test selection | `d2e085fac288dbb7db55f88616136fd8f962181583380b6212450e8b224445c7` |
 | Private wheel acceptance receipt | `d3caf249ebf69dfde343acc974be73bb3959a5b466eb86fc4b15733fa8108170` |
 
-Collection remains unavailable. Desktop/browser, stdio and background hooks,
-native/all-platform acceptance, the sender/collector and measured
-resource/privacy qualification remain pending. This source progress does not
-complete V08 or change any other requirement's state.
+At that headless checkpoint, desktop/browser, stdio and background hooks remained
+pending. Collection remains unavailable; native/all-platform acceptance, the
+sender/collector and measured resource/privacy qualification are still open.
+This source progress does not complete V08 or change any other requirement's state.
+
+## Private native store and owned UI follow-up — 24 October 2026
+
+The current source adds [NativeTelemetryStore](../../studio/electron/telemetry-store.ts),
+which uses `node:sqlite` to share the existing private policy/aggregate database
+with Python. Windows explicit initialization and read checks use private
+permissions; the app's [MSVC-compiled helper](../../studio/electron/native/telemetry-private-store.c)
+only inspects owner/DACL state. It does not read memory content, repair permissions
+or create settings. Missing, linked, publicly readable and otherwise unsafe
+stores are refused. Busy writes drop the optional observation without a retry.
+
+The shared [TypeScript workflow](../../studio/electron/telemetry-workflow.ts)
+copies the private generation/revision, finishes once and passes validated
+submission/outcome primitives to a bounded write. The
+[desktop-origin map](../../mnemion/product_telemetry/desktop-origins.json) contains
+**43 eligible actions and 29 exclusions**. Native operator execution and selected
+trusted IPC actions have distinct fixed surfaces; cached replies and generic
+remote host requests do not own a fresh use. The
+[Studio-only wrapper](../../studio/frontend/src/workspace/measured-client.ts)
+selects **64 methods and explicitly excludes 66**. Generic SDK calls retain only
+weak response-bound `new`/`replayed` metadata and start no analytics. Polling,
+uncertain/replayed keyed writes, privacy controls and unowned continuation
+transports remain excluded. These are source coverage maps, not complete
+instrumentation or release acceptance.
+
+The following original results cover the earlier private-store implementation:
+
+| Preliminary saved check | Result and scope |
+| --- | --- |
+| Python policy/aggregate | **32 passed, two Windows skips**, in 4.18 seconds. |
+| Local native store/bridge | **Ten passed, one Windows-only skip**. |
+| First Windows attempt | MSVC compilation completed, then Node could not discover the test on a UNC path; **no tests ran**. This original failure is retained. |
+| Windows continuation | **Nine passed, zero skips** on native Windows **Node 25.2.1 / Python 3.13.11**. The runner copied source fixtures into a local temporary directory and removed them afterward. This was not an Electron/package run. |
+
+The Windows cases exercised a shared bounded database, opt-out against pending
+work and later re-enable, store recreation and caller-stamp mutation, company
+restrictions, shared daily caps and expiry, immediate drop under another writer,
+unsafe/missing stores and refusal of public read access without repair.
+
+| Preliminary evidence | SHA-256 |
+| --- | --- |
+| Python checks | `69aa1bf113a41ce7d1c550a6830aa72ebad54d49af26f9bcb2d09f86ab70ee1b` |
+| Local native store/bridge checks | `da659db36a32057e22b7d438e827efa32f24ddb6311458197ef9f391af9f0979` |
+| Original Windows discovery failure | `474d42886fe9bb541bfdeaeafac9f310e5b2dbe612cce34d6e4e0d350348e196` |
+| Windows continuation | `6a1964bd7048a1b200779c83bac9740992148c8f6463cad86956951c549a8447` |
+
+**The batching and desktop/Studio hook changes postdate those preliminary
+receipts.** The later targeted checks are recorded separately:
+
+| Later source check | Result and limit |
+| --- | --- |
+| Final Python policy/aggregate | **32 passed, two Windows-only skips**, in 4.72 seconds after a formatting-only correction; Ruff check passed. |
+| Studio/browser policy and client | **24 passed**, zero skips. |
+| Desktop classification and helper packaging guards | **Six passed**. Includes the helper's executable path outside ASAR and unpack configuration; this is a source/configuration check, not an installed package run. |
+| Actual Windows store | **11 passed, zero skips**, using the Visual Studio-built x64 helper, Node 25.2.1 and Python 3.13.11. Includes protection against a directory exposing new SQLite journal files; no packaged-app acceptance is inferred. |
+| Earlier actual Electron 44.9.3 store run | **Eight passed, one Windows skip** at an earlier test stage. This does not qualify the later full selection or an installed app. |
+| Final actual Electron 44.9.3 / Node 24.22.0 selection | **27 passed, two Windows-only skips** out of 29, in **6.17 seconds**, across privacy bridge, native operator, helper packaging-path guards and final native store checks. This supersedes the earlier Electron selection for source coverage. |
+| Final Electron build | Passed; this is a source build, not installed all-six qualification. |
+| Copied built-Chromium workflow journey | **19 checks passed**, including three real UI search submissions against intercepted synthetic workspace responses, no polling measurements and opt-out during an outstanding request. |
+
+The browser fixture changed exactly one disclosure literal in one copied built
+asset to enable local counters with an `example.invalid` destination. Its
+recorded hashes match both the copied fixture and unchanged original build.
+Actual source/dist disclosure remains `collection_available: false` and
+`destination: null`; there is no sender. The journey confirmed numeric-only
+aggregates with no private query, key, address or space, a readable private
+preview, and no queue resurrection when a held response arrived after opt-out
+in another tab. Search still worked after opting out. All traffic stayed on the
+isolated fixture; there were **zero outbound collection requests, production
+memory calls/writes or cloud-model calls**.
+
+The original browser runner timed out waiting for the desktop-only **Join a
+workspace** control. That failure is retained; the continuation used the actual
+browser connection controls, without claiming a product fix. Cleanup at
+**03:24:03 UTC** confirmed browser closure and stopped only the verified fixture
+server, with no production state change.
+
+| Later evidence | SHA-256 |
+| --- | --- |
+| Final Python checks | `eec261d6d981c6689f1e5faf06d4f8b1cff01296e94a3c561cf2dd849cc0819b` |
+| Studio/browser checks | `c0f9acef742a434325ee9bda34e0210325d65dc13f93e2846af2909e0bc4375c` |
+| Desktop source guards | `8676faad29adeed76ca2d99286f3de89cc8d9b056ab13c935856fcfc22403bc2` |
+| Final actual Windows store checks | `c48e9bff8a1719be69ddbb1ec286c12bc7e7487fe91f8e5a94685df30d56fd69` |
+| Earlier Electron store checks | `efab902c78de493d088bc823aefba59abdfb6b0254d1f4c61b61b88a8e0c67b2` |
+| Final combined Electron checks | `b8eec04f9c183ced1464765c23c200dfa7d15ffd8106f68c326ed8a4f0122993` |
+| Final Electron build | `873b841c25f2b8da83857d248087de185ea22e1986b5fb6eb43f96e70e00896b` |
+| Original browser control-selection failure | `a5fe382b97c08692e43beb01de28f0e5e93740e8a478074620327e04c20fd8af` |
+| Copied fixture definition | `5e1dc70a0b05cfb95932eaaade381600e40dfff355d94c0f5e53b5b5ce45582f` |
+| Passed 19-check browser journey | `03486497802f26364fc9f8120a25495b62e984585d14c56d49480b2df34eaab8` |
+| Verified fixture cleanup | `c3dc09dfe4012ef6dd4265421a0ae6576b2ea6044e0ea306bd0232c23b3adf85` |
+
+The saved **71-file source input inventory** records input digest
+`fc8d9228b0e3b0e11e760ec5a0832867487fa0bb4f2a5c9dbcb2fc2bf7caa89a`;
+the inventory file itself has SHA-256
+`8ddf2b0b3e9cd8f559cb456dec9fe5ce4a21f9f02d9ad4fbc54e5ff2f4ae8982`.
+It binds the source checkpoint, not a published or installed telemetry artifact.
+
+An exploratory Linux Electron 44.9.3 component measurement completed **32
+workflows** with **3,784,704 bytes (3.61 MiB) added RSS**, **301,556 added heap
+bytes**, **99.536 CPU milliseconds** and a **16 KiB database**. Its SHA-256 is
+`6e2f9cc56a53194674de7434e7155d45277ebf1e1ba5cfc0d0e11968861d6f9f`.
+**The RSS result exceeds the contract's proposed 2 MiB ceiling.** It is not a
+resource pass; the ceiling is unchanged. This component-only observation cannot
+establish whole-app or all-platform overhead, and the heap/database figures do
+not substitute for RSS. Optimization and full resource qualification remain open.
+
+Remaining owners include browser sign-in/connect, the legacy UI, local stdio-MCP
+and background jobs. No packaged telemetry, all-six-native, sender/collector,
+wire-resource or anonymity acceptance is established. Production collection
+remains unavailable, and full V08 completion remains pending.
+The fully accepted security-only 4.46.6 release excludes this unreleased telemetry
+work. V08 remains **Building**; all 66 requirement texts and other states are
+unchanged.

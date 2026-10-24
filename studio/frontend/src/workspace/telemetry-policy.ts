@@ -2,6 +2,7 @@ import contract from '../../../../mnemion/product_telemetry/disclosure.json'
 import measurementCatalog from '../../../../mnemion/product_telemetry/catalog.json'
 import type { TelemetryChoice, TelemetryCompanyPolicy, TelemetryPreview, TelemetryStamp, TelemetryStatus } from '../../../shared/product-telemetry'
 import { collect, pendingState, telemetryCatalog } from './telemetry-aggregate'
+import type { WorkflowStore } from '../../../electron/telemetry-workflow'
 
 export const choiceKey = 'mnemion.product-telemetry.choice.v1'
 export const queueKey = 'mnemion.product-telemetry.pending.v1'
@@ -148,15 +149,25 @@ export class BrowserTelemetry {
 
   /** Internal producer boundary; caller holds the origin-wide privacy lock. */
   record(input: unknown, stamp: TelemetryStamp, day = Math.floor(Date.now() / 86400000)): boolean {
+    return this.recordMany([input], stamp, day)
+  }
+
+  recordMany(inputs: unknown[], stamp: TelemetryStamp, day = Math.floor(Date.now() / 86400000)): boolean {
     if (!contract.collection_available || !contract.destination || !stamp || !Number.isInteger(stamp.revision) || !validGeneration(stamp.store_generation)) return false
     const current = this.status()
     if (!current.effective_enabled || current.revision !== stamp.revision || current.store_generation !== stamp.store_generation) return false
     let serialized: string, recorded: boolean
     try {
-      const result = collect(pendingState(this.storage().getItem(queueKey)), input, day, current.company_policy.metric_groups)
-      serialized = JSON.stringify(result.state)
+      if (!Array.isArray(inputs) || inputs.length < 1 || inputs.length > 2) return false
+      for (const input of inputs) telemetryCatalog.observation(input)
+      let state = pendingState(this.storage().getItem(queueKey))
+      recorded = false
+      for (const input of inputs) {
+        const result = collect(state, input, day, current.company_policy.metric_groups)
+        state = result.state; recorded ||= result.recorded
+      }
+      serialized = JSON.stringify(state)
       if (serialized.length > contract.limits.pending_bytes / 2 || new TextEncoder().encode(serialized).byteLength > contract.limits.pending_bytes) return false
-      recorded = result.recorded
     } catch { return false }
     try { this.storage().setItem(queueKey, serialized) }
     catch { this.storageFailed = true; return false }
@@ -187,8 +198,41 @@ export async function telemetryPreview(): Promise<TelemetryPreview> {
 
 /** Best effort and no lock waiting. No networking or queue of raw input objects. */
 export async function recordBrowserTelemetry(input: unknown, stamp: TelemetryStamp): Promise<boolean> {
+  return recordBrowserTelemetryMany([input], stamp)
+}
+
+export async function recordBrowserTelemetryMany(inputs: unknown[], stamp: TelemetryStamp): Promise<boolean> {
   if (!contract.collection_available || !contract.destination || window.location.protocol === 'file:' || !navigator.locks) return false
   try {
-    return await navigator.locks.request(choiceKey, { ifAvailable: true }, lock => lock ? browser.record(input, stamp) : false)
+    // Freeze validated primitives and the original policy stamp before yielding
+    // to another tab. Neither later argument mutation nor a newer choice can
+    // relabel an observation that began under an older generation.
+    if (!Array.isArray(inputs) || inputs.length < 1 || inputs.length > 2) return false
+    for (const input of inputs) telemetryCatalog.observation(input)
+    const values = inputs.map(input => ({ ...(input as Record<string, unknown>) }))
+    const expected = { revision: stamp.revision, store_generation: stamp.store_generation }
+    return await navigator.locks.request(choiceKey, { ifAvailable: true }, lock => lock ? browser.recordMany(values, expected) : false)
   } catch { return false }
+}
+
+export function telemetrySurface(): 'desktop' | 'browser' {
+  return window.location.protocol === 'file:' || Boolean(window.mnemion?.productTelemetrySnapshot) ? 'desktop' : 'browser'
+}
+
+/** The app uses its OS-account store; a web session uses its own origin store. */
+export const productWorkflowStore: WorkflowStore = {
+  get available() { return contract.collection_available && Boolean(contract.destination) },
+  catalog: telemetryCatalog,
+  async snapshot() {
+    if (!this.available) return null
+    if (window.mnemion?.productTelemetrySnapshot) return window.mnemion.productTelemetrySnapshot()
+    if (window.location.protocol === 'file:') return null
+    const status = browser.status()
+    return status.effective_enabled ? { revision: status.revision, store_generation: status.store_generation } : null
+  },
+  async recordMany(values, stamp) {
+    if (!this.available) return false
+    if (window.mnemion?.productTelemetryRecord) return window.mnemion.productTelemetryRecord(values, stamp)
+    return recordBrowserTelemetryMany(values, stamp)
+  },
 }

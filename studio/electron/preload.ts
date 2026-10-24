@@ -46,6 +46,8 @@ contextBridge.exposeInMainWorld('mnemion', {
   },
   localStatus: () => transfer('local:status'),
   productTelemetry: (action: string, input: Record<string, unknown> = {}) => transfer('telemetry:action', action, input),
+  productTelemetrySnapshot: () => ipcRenderer.invoke('telemetry:snapshot'),
+  productTelemetryRecord: (values: unknown, stamp: unknown) => ipcRenderer.invoke('telemetry:record', values, stamp),
   hostControl: (action: string, input: Record<string, unknown> = {}) => transfer('hosts:action', action, input),
   agentSetupStatus: () => transfer('agents:status'),
   agentSetupChoose: (client: string) => transfer('agents:choose', client),

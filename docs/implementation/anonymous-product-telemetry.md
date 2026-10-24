@@ -3,7 +3,8 @@
 **V08 is Building/source implementation; checkpoint 24 October 2026.** The full scope
 recorded on 23 October remains the acceptance contract in the
 [66-requirement inventory](../PRODUCT_REQUIREMENTS.md). Local privacy controls,
-the fixed catalog and bounded aggregate queues are implemented in source;
+the fixed catalog, bounded aggregate queues and selected owned workflow hooks are
+implemented in source;
 product collection is unavailable. V08 is the
 active feature milestone after [fresh backup and independent restore](../validation/2026-10-24-4465-backup-acceptance.md)
 passed at **00:01:45 and 00:15:23 UTC**. V08 remains Building; all requirement
@@ -31,7 +32,8 @@ The [shared disclosure](../../mnemion/product_telemetry/disclosure.json) has
 `collection_available: false` and `destination: null`. Saving an enabled
 preference does not complete disclosure or activate collection. The preview
 returns the measurement catalog, an empty local aggregate list, no outbound body
-and zero outgoing bytes. Owned headless hooks exist in source; there is no
+and zero outgoing bytes. Owned headless, desktop/native-operator and Studio hooks
+exist in source; there is no
 product sender, collector, production analytics or qualified anonymous ingress.
 
 The [versioned catalog and local queues](anonymous-product-telemetry-catalog.md)
@@ -71,8 +73,44 @@ focused contract check passed after the retained initial schema-reference test
 failure; the final focused Python selection then passed **51 tests**, and a
 fresh private wheel passed its isolated offline journey. These source checks
 do not qualify the published 4.46.6 artifact or native telemetry release.
-Collection remains off; desktop/browser, stdio and background hooks,
-the sender/collector and full resource/privacy/platform acceptance remain open.
+Collection remains off. The later desktop/Studio additions below do not finish
+stdio or background ownership, remaining workflow coverage, the sender/collector
+or full resource/privacy/platform acceptance.
+
+The current [desktop/Studio source batch](anonymous-product-telemetry-catalog.md#owned-desktop-native-operator-and-studio-coverage)
+adds Electron's private SQLite writer, shared with native Python policy, and a
+read-only Windows owner/DACL check compiled with MSVC. Unsafe stores fail closed;
+measurement cannot initialize or repair settings. A shared TypeScript workflow
+captures generation/revision and submits only reviewed numeric primitives.
+Explicit native-operator/IPC actions and a Studio-only client wrapper own their
+mapped uses. The reusable SDK only weakly tags response-bound `new`/`replayed`
+metadata; it starts no analytics. Polling, generic requests, uncertain/replayed
+keyed writes, privacy controls and unowned continuation transports are excluded.
+
+Preliminary checks passed **32 Python tests with two Windows skips**, **ten local
+native-store/bridge tests with one Windows-only skip**, and **nine actual Windows
+store tests with zero skips**. The first Windows run compiled its helper but
+failed Node test discovery on a UNC path before tests; the inspected continuation
+used and cleaned local temporary fixtures. These results predate the latest
+batching and hook changes. Subsequent targeted checks passed **24 Studio/browser,
+six desktop source guards and 11 Windows tests with zero skips**. The final
+combined Electron 44.9.3 selection passed **27 tests with two Windows-only skips**
+and its build passed, superseding the earlier eight-pass/one-skip Electron store
+selection for current source coverage.
+
+A copied built-Chromium fixture passed **19 owned-workflow checks**, including
+search, private-input exclusion and cross-tab opt-out during an outstanding
+request. Only the copied fixture's disclosure enabled local counters with an
+`example.invalid` destination; source/build collection stays unavailable and no
+sender exists. The original browser runner's desktop-only control timeout is
+preserved. No production memory writes or outbound collection occurred. The
+[validation report](../validation/2026-10-24-telemetry-aggregates.md) records both
+the passing checks and an exploratory Electron component result of **3.61 MiB
+added RSS**, above the unchanged **2 MiB** target. Optimization, whole-app and
+all-platform resource qualification remain open. Browser sign-in/connect,
+legacy UI, stdio-MCP and background ownership are unfinished. None of these
+results qualifies packaged telemetry or anonymous ingress. The accepted 4.46.6
+security release excludes this work.
 
 Saved source checks passed **10 policy tests** after the opt-out revision change,
 **12 native bridge/operator tests, 26 web/CSP tests and seven browser policy

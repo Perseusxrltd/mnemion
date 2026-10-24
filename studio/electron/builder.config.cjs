@@ -13,6 +13,7 @@ if (process.platform === 'win32') process.env.ELECTRON_BUILDER_7Z_FILTER = 'BCJ'
 // Unique feeds prevent x64/ARM artifacts from overwriting each other's metadata.
 module.exports = {
   ...build,
+  asarUnpack: ['dist/telemetry-private-store.exe'],
   electronFuses: {
     runAsNode: false,
     enableNodeOptionsEnvironmentVariable: false,

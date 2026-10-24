@@ -2,6 +2,7 @@ import { MnemionClient, MnemionError, type InvitationCredentials, type Invitatio
 import type { Connection } from './connection-types'
 import type { CompanyConfiguration } from '../../../shared/company-sign-in'
 import { companyConfiguration } from '../../../electron/company-sign-in-protocol'
+import { measuredStudioClient } from './measured-client'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const TOKEN = (prefix: string, value: unknown): value is string => typeof value === 'string' && new RegExp('^' + prefix + '[A-Za-z0-9_-]{43}$').test(value)
@@ -206,7 +207,7 @@ export class BrowserSignIn {
         }
       }
     }
-    this.client = new MnemionClient({ baseUrl: endpoint, apiKey: () => this.accessToken() })
+    this.client = measuredStudioClient(new MnemionClient({ baseUrl: endpoint, apiKey: () => this.accessToken() }))
   }
   #checkPin(tokens: Tokens): void {
     const b = this.#bookmark

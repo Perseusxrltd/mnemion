@@ -210,3 +210,55 @@ test('Python and TypeScript agree on all workflow coordinates and numeric bucket
   })
   assert.deepEqual(JSON.parse(result.stdout), expected)
 })
+
+async function browserGlobals(run) {
+  const instance = installation()
+  const original = { collection_available: contract.collection_available, destination: contract.destination }
+  const globals = Object.fromEntries(['window', 'document', 'navigator'].map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]))
+  let release, attempts = 0
+  const locks = { request(_name, _options, callback) {
+    attempts++
+    return new Promise(resolve => { release = lock => resolve(callback(lock)) })
+  } }
+  Object.defineProperty(globalThis, 'window', { configurable: true, value: { location: { protocol: 'https:' }, localStorage: instance.storage } })
+  Object.defineProperty(globalThis, 'document', { configurable: true, value: { querySelector: () => null } })
+  Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { locks } })
+  Object.assign(contract, { collection_available: true, destination: 'https://example.invalid/telemetry' })
+  try { await run({ ...instance, release: value => release(value), attempts: () => attempts }) }
+  finally {
+    Object.assign(contract, original)
+    for (const [key, descriptor] of Object.entries(globals)) {
+      if (descriptor) Object.defineProperty(globalThis, key, descriptor)
+      else delete globalThis[key]
+    }
+  }
+}
+
+test('a browser lock wait retains the original validated primitives and privacy stamp', async () => browserGlobals(async instance => {
+  const client = instance.client(), original = client.configure({ enabled: true, expected_revision: 0, disclosure_version: 1 })
+  const input = measured({ latency_ms: 123.456 })
+  const pending = exported.recordBrowserTelemetry(input, original)
+  input.latency_ms = 'PRIVATE_SENTINEL'
+  instance.release({ name: choiceKey })
+  assert.equal(await pending, true)
+  assert.ok(!instance.storage.getItem(queueKey).includes('PRIVATE_SENTINEL'))
+  const next = exported.recordBrowserTelemetry(measured(), original)
+  const off = client.configure({ enabled: false, expected_revision: original.revision })
+  const on = client.configure({ enabled: true, expected_revision: off.revision, expected_generation: off.store_generation, disclosure_version: 1 })
+  Object.assign(original, on)
+  instance.release({ name: choiceKey })
+  assert.equal(await next, false)
+  assert.equal(instance.storage.getItem(queueKey), null)
+}))
+
+test('an unavailable browser lock drops a paired observation without retry or storage changes', async () => browserGlobals(async instance => {
+  const current = instance.client().configure({ enabled: true, expected_revision: 0, disclosure_version: 1 })
+  const values = [{ kind: 'submission', workflow: 'memory.recall', surface: 'browser' }, measured()]
+  const pending = exported.recordBrowserTelemetryMany(values, current)
+  instance.release(null)
+  assert.equal(await pending, false)
+  assert.equal(instance.attempts(), 1)
+  assert.equal(instance.storage.getItem(queueKey), null)
+  assert.equal(await exported.recordBrowserTelemetry(measured({ secret: 'PRIVATE_SENTINEL' }), current), false)
+  assert.equal(instance.attempts(), 1)
+}))

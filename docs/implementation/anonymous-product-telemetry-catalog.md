@@ -5,9 +5,9 @@
 workflows in 15 families**, four invocation surfaces, 11 workflow metrics and
 four separate resource metrics. Python and TypeScript encoders, bounded native
 and browser queues, revision/generation checks and local preview are implemented
-in source, along with owned `mnemion-control call` hooks. Desktop, browser,
-stdio-MCP and background hooks remain pending. **No sender or collector is
-implemented.** Collection remains
+in source, along with owned `mnemion-control call`, selected desktop/native-operator
+actions and Studio client hooks. Remaining workflow coverage, stdio-MCP and
+background hooks are unfinished. **No sender or collector is implemented.** Collection remains
 unavailable and the destination is null; no product measurements are collected.
 Native release, resource and anonymity acceptance remain open. All 66 requirement
 texts and the other 65 states remain unchanged; V08 stays Building.
@@ -28,6 +28,13 @@ retained in the same validation report.
 The actual built-Chromium generation journey subsequently passed **11 checks**,
 including stale UI fencing, legacy opt-out and a 390-pixel layout. Its original
 pre-open runner failure and verified fixture cleanup remain recorded separately.
+The later native-store follow-up retains the preliminary checks, then records
+**24 Studio/browser checks, six desktop source guards and 11 actual Windows
+checks with zero skips**. A copied built-Chromium fixture passed **19 checks**
+for owned search and opt-out; only that fixture enabled local counters. The final
+combined Electron 44.9.3 selection passed **27 with two Windows-only skips** and
+its build passed; the earlier eight-pass/one-skip store run remains historical.
+These results do not establish packaged-app or all-six-native acceptance.
 
 The scope remains all app, agent and headless workflows. An unresolved row is
 unfinished V08 coverage, not permission to collect without choice or an assertion
@@ -44,11 +51,12 @@ describe catalog positions, not people, devices or records. Unknown fields,
 arbitrary objects, booleans, negative/non-finite numbers and values above
 `2^53 - 1` are rejected. Only metrics allowed for that workflow family pass.
 The encoder validates input shape; it does not establish the caller's consent
-or ownership. The owned CLI boundary and future hooks must enforce the ownership
-rules below.
+or ownership. The owned CLI, desktop and Studio boundaries enforce their explicit
+maps below; further hooks need the same ownership review.
 
-The [native aggregate store](../../mnemion/product_telemetry/aggregate.py) uses
-the shared private [SQLite policy store](../../mnemion/product_telemetry/policy.py).
+The [Python aggregate store](../../mnemion/product_telemetry/aggregate.py) and
+Electron's [NativeTelemetryStore](../../studio/electron/telemetry-store.ts) use
+the same private [SQLite policy store](../../mnemion/product_telemetry/policy.py).
 The [browser aggregate store](../../studio/frontend/src/workspace/telemetry-aggregate.ts)
 uses bounded local storage under the [browser privacy policy](../../studio/frontend/src/workspace/telemetry-policy.ts).
 Both reject recording before storage access while collection is unavailable.
@@ -59,6 +67,18 @@ or clear the new queue even if revision numbers repeat. Enabling a preference
 also checks the pair; an explicit opt-out still wins over stale input. Busy
 native writes and unavailable browser Web Locks drop the observation without
 waiting or failing memory work.
+
+Electron reads and writes the existing database through `node:sqlite`; it does
+not initialize a replacement store or spawn Python for each observation. Explicit
+privacy controls still use the native Python policy. On Windows, Python creates
+private settings only during an explicit supported choice and verifies existing
+permissions before use. Electron uses a small
+[read-only owner/DACL helper](../../studio/electron/native/telemetry-private-store.c),
+[compiled with MSVC](../../studio/electron/scripts/build-telemetry-private-store.ps1).
+The [helper wrapper](../../studio/electron/telemetry-private-store.ts) has a
+one-second deadline and no settings-repair behavior. Both runtimes reject
+publicly readable, linked or otherwise unsafe stores. POSIX uses owner/mode
+checks. These are source implementations, not cross-platform release acceptance.
 
 `store_generation` is a private random token for local compare-and-set control.
 It appears in private status and is supplied as `expected_generation`; it is
@@ -82,6 +102,10 @@ local limits are not an irreversible global privacy budget across choice changes
 or installations. The 48-hour age rule is eligibility/pruning behavior; idle
 physical deletion at a deadline is not established. The full contract's CPU,
 RAM, wire, sampling and collector requirements still need acceptance evidence.
+An exploratory Electron component run grew RSS by **3,784,704 bytes (3.61 MiB)**
+after 32 workflows, exceeding the contract's unchanged **2 MiB** added-RAM target.
+This is an unresolved optimization/qualification result, not a resource pass;
+whole-app and all-platform measurements remain open.
 Deletion/recreation now has source generation-fencing checks. This does not
 protect against an unobservable whole-machine snapshot rollback that restores
 the old token and choice together. The eventual sender must still prove
@@ -141,7 +165,51 @@ response-body bytes are application payload, not wire bytes.
 
 The [source follow-up](../validation/2026-10-24-telemetry-aggregates.md) preserves
 the initial schema-reference test failure and the corrected focused pass.
-Other surfaces, resource/privacy measurements and release acceptance remain open.
+Remaining surfaces, resource/privacy measurements and release acceptance remain open.
+
+## Owned desktop, native-operator and Studio coverage
+
+These hooks are implemented in source and remain inactive under the unavailable
+collection contract. Their maps describe eligible boundaries, not proof that all
+94 catalog workflows have producers or that an installed app collects data.
+
+| Boundary | Current source ownership |
+| --- | --- |
+| Desktop and native operator | The [desktop-origin map](../../mnemion/product_telemetry/desktop-origins.json) contains **72 operations: 43 eligible and 29 excluded**. The [dispatcher](../../studio/electron/service-bridge.ts) measures selected local IPC actions as `desktop` and fresh operator execution as `native_agent`. |
+| Studio UI | The [Studio method map](../../mnemion/product_telemetry/studio-methods.json) selects **64 methods** and explicitly excludes **66**. The [Studio-only wrapper](../../studio/frontend/src/workspace/measured-client.ts), installed at connection/sign-in creation, reuses the reviewed control-origin workflows and fixed selectors. Browser sessions use their origin's policy; desktop sessions use the OS-account store. |
+| Reusable SDK | The [TypeScript client](../../packages/client/src/index.ts) weakly associates exact response/error objects with `new` or `replayed` receipt metadata. It adds no owner hook, persistent identifier or telemetry collection. Generic requests and other SDK consumers remain unmeasured. |
+
+The desktop exclusions are 15 state inspections, six configuration previews,
+four privacy controls, three recovery transports and one secondary receipt owner.
+In particular, generic `host.request` cannot safely claim a fresh remote effect.
+The [operator's cached reply](../../studio/electron/desktop-operator.ts) returns
+before execution and adds no new measurement. Studio excludes 55 automatic
+queries, four transport helpers, three configuration previews, three continuation
+transports and its generic request method. Polling, privacy controls and unowned
+continuations do not become workflow use.
+
+The shared [TypeScript workflow boundary](../../studio/electron/telemetry-workflow.ts)
+captures the private generation/revision, finishes at most once and submits fixed
+submission/outcome primitives together. Native and browser writers copy the
+stamp and validate primitives before yielding, then recheck policy in their
+serialized write. Each observation still consumes its own contribution allowance;
+batching does not guarantee both observations survive a full queue or exhausted cap.
+The trusted renderer bridge accepts only a paired `desktop` workflow; it cannot
+claim `native_agent` ownership or submit resource samples. Optional snapshots
+have a short wait budget, and measurement failures do not change the action's
+result.
+
+Keyed Studio writes require `X-Mnemion-Idempotency: new`; replayed, missing or
+uncertain receipts are discarded without repeating the effect. Async replies
+remain `accepted`. Only reviewed primitive selectors, fixed outcomes/reasons,
+duration and narrowly allowed numeric sensors reach the encoder. Exceptions,
+request/result objects, vault values and private labels never enter it. Observed
+payload lengths are not wire-byte measurements. Native and Studio wrappers do
+not instrument nested SDK/transport calls or backfill server completion.
+Browser sign-in/connection ownership, the legacy UI, local stdio-MCP and
+background jobs still need their own reviewed hooks. The Studio method wrapper
+does not complete those enclosing workflows merely because it is constructed
+during connection or sign-in.
 
 ## Measurement ownership
 
@@ -150,9 +218,9 @@ how it was invoked; it is not a user, installation or request identifier.
 
 | Surface | Owner and source implementation boundary | Remote and nested work |
 | --- | --- | --- |
-| Desktop workspace UI | The top-level UI workflow using the [TypeScript client](../../packages/client/src/index.ts#L272), under the installation's shared policy. | [Native fetch](../../studio/frontend/src/workspace/native.ts#L2), transport retries and the remote API must not each add another usage count. |
-| Browser workspace UI | The same UI workflow under browser-local disclosure, persistent choice, GPC and company restrictions. [Connect](../../studio/frontend/src/workspace/Connect.tsx#L145) also constructs the client before entering a workspace. | Workspace authentication is not product telemetry consent. Use a separate credential/referrer-free telemetry sender. |
-| Native agent controlling the desktop | The shared desktop controller, with a fixed `native_agent` invocation surface. [Agent dispatch](../../mnemion/desktop_operator.py#L243) reaches the [desktop dispatcher](../../studio/electron/service-bridge.ts#L742); UI and agent host actions meet at [hostAction](../../studio/electron/service-bridge.ts#L304). | The agent pipe, renderer and controller must not all count the same action. They share effective local policy; no operation UUID enters telemetry. |
+| Desktop workspace UI | Selected [local IPC actions](../../studio/electron/desktop-measurement.ts) and the [Studio client wrapper](../../studio/frontend/src/workspace/measured-client.ts), under the shared installation policy. Both are source-only inactive hooks. | [Native fetch](../../studio/frontend/src/workspace/native.ts), transport retries and the remote API add no second usage count. |
+| Browser workspace UI | The Studio wrapper under browser-local disclosure, choice, GPC and company restrictions, using the [browser workflow store](../../studio/frontend/src/workspace/telemetry-policy.ts). | Workspace authentication is not product telemetry consent. No sender exists; future transmission still needs a credential/referrer-free boundary. |
+| Native agent controlling the desktop | Fresh mapped execution at the [desktop dispatcher](../../studio/electron/service-bridge.ts), with the fixed `native_agent` surface and the same private OS-account store. | The agent pipe, cached reply and renderer do not add another measurement. No operation UUID enters telemetry; generic remote host requests remain excluded. |
 | Owned `mnemion-control call` | Source hook at the [CLI boundary](../../mnemion/control_cli.py), under the shared local policy and explicit operation map above; collection remains inactive. | The reusable SDK and `agent_control.execute` carry no owner hook. Nested requests, retry attempts and cached receipts do not add uses. |
 | Local stdio-MCP and other headless entrypoints | Hooks remain pending around a disclosed local owner; [MCP invocation](../../mnemion/service/mcp.py#L254) alone does not establish one. | Reusing an SDK cannot create consent or substitute for explicit ownership. |
 | Third-party remote MCP or direct API client | **Excluded without a disclosed local owner.** The [remote MCP gateway](../../mnemion/service/mcp_transport.py#L441) creates the ordinary [Python SDK Client](../../mnemion/sdk.py#L614); that shared SDK is not a measurement owner. | A token, client name, session or host-owner preference cannot stand in for the originating user's choice. Future owned adapters need their own disclosure and policy. |
@@ -277,8 +345,8 @@ a shared SDK. Unowned host/background paths remain excluded from measurement.
 
 A named subworkflow can have its own measurement, but its counts must not be
 summed with its parent's as total independent uses. Background polling is not
-feature adoption. The fixed catalog still needs an explicit action-by-action hook
-coverage reconciliation against the desktop, agent and public API catalogs.
+feature adoption. The explicit CLI, desktop and Studio maps do not finish the
+remaining action-by-action coverage reconciliation or qualify their producers.
 Any unmapped action must appear as unmeasured in the local preview and remain a
 coverage item; it must not fall into an arbitrary “other operation” event.
 

@@ -1,4 +1,4 @@
-/** Optional product telemetry. These local controls contain no analytics IDs. */
+/** Shared declaration-only contract; local controls contain no analytics IDs. */
 export type TelemetryGroup = 'usage' | 'reliability' | 'performance' | 'resources'
 export type TelemetryAction = 'status' | 'configure' | 'schema' | 'preview'
 export type TelemetryChoice = { enabled: boolean; expected_revision: number; expected_generation?: string | null; disclosure_version?: number }

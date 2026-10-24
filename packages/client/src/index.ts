@@ -242,6 +242,7 @@ export class MnemionClient {
   #fetch: typeof globalThis.fetch
   #timeout: number
   #retries: number
+  #idempotency = new WeakMap<object, 'new' | 'replayed'>()
   constructor(options: ClientOptions) {
     this.baseUrl = options.baseUrl.replace(/\/$/, '')
     this.#apiKey = options.apiKey
@@ -249,6 +250,17 @@ export class MnemionClient {
     this.#timeout = options.timeoutMs ?? 30000
     this.#retries = options.retries ?? 2
     if (this.#retries < 0 || this.#retries > 5) throw new Error('Retries must be between 0 and 5')
+  }
+
+  /** Metadata for this exact response object, without retaining it or any IDs.
+   * This is transport information; the SDK does not collect product telemetry. */
+  idempotencyOf(value: unknown): 'new' | 'replayed' | null {
+    return value && typeof value === 'object' ? this.#idempotency.get(value) ?? null : null
+  }
+
+  #rememberIdempotency(value: unknown, response: Response): void {
+    const disposition = response.headers.get('X-Mnemion-Idempotency')
+    if (value && typeof value === 'object' && (disposition === 'new' || disposition === 'replayed')) this.#idempotency.set(value, disposition)
   }
 
   #credential(signal: AbortSignal): Promise<string> {
@@ -297,7 +309,11 @@ export class MnemionClient {
           throw new MnemionError(response.status, 'tunnel_offline',
             'The workspace tunnel is offline. Restart its connection through the host’s operator controls; changing the workspace key will not reconnect the host.')
         }
-        if (response.ok) return (response.status === 204 ? undefined : options.binary ? await response.arrayBuffer() : await response.json()) as T
+        if (response.ok) {
+          const result = (response.status === 204 ? undefined : options.binary ? await response.arrayBuffer() : await response.json()) as T
+          this.#rememberIdempotency(result, response)
+          return result
+        }
         let payload: { error?: { code?: string; message?: string }; request_id?: string } = {}
         try {
           const parsed = await response.json()
@@ -307,6 +323,7 @@ export class MnemionClient {
         if (retryAfterSeconds !== undefined) retryDelay = Math.max(retryDelay, retryAfterSeconds * 1000)
         const error = new MnemionError(response.status, payload.error?.code ?? 'http_error',
           payload.error?.message ?? `Mnemion returned HTTP ${response.status}`, payload.request_id ?? response.headers.get('X-Request-ID') ?? undefined, retryAfterSeconds)
+        this.#rememberIdempotency(error, response)
         if (response.status === 401 && safeRetry && typeof this.#apiKey === 'function' && !checkedRotation && attempt < this.#retries) {
           // A concurrent request/tab may have rotated this access credential.
           // Retry only after observing a different one; revoked credentials and

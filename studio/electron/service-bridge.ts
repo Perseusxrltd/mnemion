@@ -24,6 +24,9 @@ import { DesktopAgents } from './desktop-agents.js'
 import { HostProfiles } from './host-profiles.js'
 import { hostMessages } from './host-control-messages.js'
 import { ProductTelemetry, telemetryMessages } from './product-telemetry.js'
+import { NativeTelemetryStore, nativeTelemetryDefinitions } from './telemetry-store.js'
+import { desktopIpcSelection, desktopTelemetryOrigins, measureDesktop } from './desktop-measurement.js'
+import type { TelemetryStamp } from '../shared/product-telemetry.js'
 import type { HostConnection, HostRequest } from '../shared/host-control.js'
 import type { AgentInstall, AgentRemove, AgentSetup } from '../shared/desktop-agents.js'
 import type { CaptureBackupInput, CaptureDrainInput, CaptureInspectInput, CaptureRestoreControl, CaptureRestoreInput, SourceConfigure, SourceControl, SourcePreviewSelection } from '../shared/desktop-sources.js'
@@ -190,6 +193,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
   let sources: DesktopSources | undefined
   let agentSetup: DesktopAgents | undefined
   let hosts: HostProfiles | undefined
+  let measurements: NativeTelemetryStore | undefined
   const backupSelections = new Map<string, { kind: 'folder' | 'file'; path: string }>()
   let localOpenGeneration = 0
   let localSwitching = false
@@ -236,11 +240,11 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
       ...status.info, resources: { ...status.info.resources, desktop_architecture: process.arch },
     } : undefined }
   }
-  function localBase(): string {
+  function localBase(create = true): string {
     const base = process.env.MNEMION_STUDIO_USER_DATA ? app.getPath('userData') :
       process.platform === 'win32' ? (process.env.LOCALAPPDATA || join(app.getPath('home'), 'AppData', 'Local')) :
       process.platform === 'darwin' ? app.getPath('appData') : (process.env.XDG_DATA_HOME || join(app.getPath('home'), '.local', 'share'))
-    mkdirSync(base, { recursive: true, mode: 0o700 })
+    if (create) mkdirSync(base, { recursive: true, mode: 0o700 })
     return base
   }
   function localWorkspace(): LocalWorkspace {
@@ -307,6 +311,27 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     return new ProductTelemetry(sourceProcess({ executable: engineExecutable(), root,
       privateRoots: [], command: 'telemetry', environment: localEnvironment(process.env, root),
       deadlineMs: 15000, messages: telemetryMessages })).execute(action, input, signal)
+  }
+  function telemetryStore(): NativeTelemetryStore {
+    if (!measurements) {
+      const { disclosure, catalog } = nativeTelemetryDefinitions()
+      measurements = new NativeTelemetryStore(join(localBase(false), 'mnemion-product-telemetry'), disclosure, catalog)
+    }
+    return measurements
+  }
+  function measureAction<T>(action: string, input: Record<string, unknown>, surface: 'desktop' | 'native_agent', run: () => T | Promise<T>): T | Promise<T> {
+    let store: NativeTelemetryStore
+    try { store = telemetryStore() } catch { return run() }
+    return measureDesktop(store, action, input, surface, run)
+  }
+  function handle(channel: string, listener: Parameters<typeof ipcMain.handle>[1]): void {
+    ipcMain.handle(channel, (event, ...args) => {
+      let selection: ReturnType<typeof desktopIpcSelection> = null
+      try { selection = desktopIpcSelection(channel, args) } catch { /* Optional ownership selection. */ }
+      if (!selection) return listener(event, ...args)
+      trusted(event)
+      return measureAction(selection.action, selection.input, 'desktop', () => listener(event, ...args))
+    })
   }
   function hostAction(action: string, input: Record<string, unknown>, signal?: AbortSignal) {
     desktopAction(action, input)
@@ -389,20 +414,20 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     }
   }
 
-  ipcMain.handle('workspaces:status', event => { trusted(event); return workspaceConnections().status() })
-  ipcMain.handle('workspaces:inspect', (event, id: unknown) => {
+  handle('workspaces:status', event => { trusted(event); return workspaceConnections().status() })
+  handle('workspaces:inspect', (event, id: unknown) => {
     trusted(event)
     if (typeof id !== 'string' || id.length > 64) throw new Error('Choose a saved workspace.')
     return workspaceConnections().inspect(id)
   })
-  ipcMain.handle('workspaces:recovery-refresh', (event, sessionToken: unknown) => {
+  handle('workspaces:recovery-refresh', (event, sessionToken: unknown) => {
     trusted(event)
     requireLocalSteady()
     if (typeof sessionToken !== 'string' || sessionToken.length > 128) throw new Error('Use the active workspace connection.')
     return workspaceConnections().refreshRecovery(sessionToken)
   })
-  ipcMain.handle('workspaces:resume', event => { trusted(event); requireLocalSteady(); return workspaceConnections().resume() })
-  ipcMain.handle('workspaces:invitation-preview', (event, input: unknown) => {
+  handle('workspaces:resume', event => { trusted(event); requireLocalSteady(); return workspaceConnections().resume() })
+  handle('workspaces:invitation-preview', (event, input: unknown) => {
     trusted(event)
     if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Paste a complete invitation.')
     const value = input as { endpoint: string; invitation: string }
@@ -411,7 +436,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     return workspaceConnections().previewInvitation(value.endpoint, value.invitation)
   })
   for (const action of ['sign-in', 'invitation-accept', 'company-sign-in'] as const) {
-    ipcMain.handle('workspaces:' + action, (event, input: unknown) => {
+    handle('workspaces:' + action, (event, input: unknown) => {
       trusted(event)
       requireLocalSteady()
       if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Invalid sign-in request.')
@@ -424,7 +449,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
         workspaceConnections().acceptInvitation(value.endpoint, value.credentials, value.remember)
     })
   }
-  ipcMain.handle('workspaces:company-configuration', (event, input: unknown) => {
+  handle('workspaces:company-configuration', (event, input: unknown) => {
     trusted(event)
     if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Use a workspace sign-in link.')
     const value = input as { endpoint: string; workspace_id: string }
@@ -432,8 +457,8 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
         Object.keys(value).some(key => !['endpoint', 'workspace_id'].includes(key))) throw new Error('Use a workspace sign-in link.')
     return workspaceConnections().companyConfiguration(value.endpoint, value.workspace_id)
   })
-  ipcMain.handle('workspaces:company-cancel', event => { trusted(event); requireLocalSteady(); workspaceConnections().cancelCompanySignIn() })
-  ipcMain.handle('workspaces:connect', (event, input: unknown) => {
+  handle('workspaces:company-cancel', event => { trusted(event); requireLocalSteady(); workspaceConnections().cancelCompanySignIn() })
+  handle('workspaces:connect', (event, input: unknown) => {
     trusted(event)
     requireLocalSteady()
     if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Invalid workspace connection.')
@@ -443,21 +468,21 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     deselectLocal()
     return workspaceConnections().connect(value.endpoint, value.credential, value.remember)
   })
-  ipcMain.handle('workspaces:restore', (event, id: unknown) => {
+  handle('workspaces:restore', (event, id: unknown) => {
     trusted(event)
     requireLocalSteady()
     if (typeof id !== 'string' || id.length > 64) throw new Error('Choose a saved workspace.')
     deselectLocal()
     return workspaceConnections().restore(id)
   })
-  ipcMain.handle('workspaces:forget', (event, id: unknown) => {
+  handle('workspaces:forget', (event, id: unknown) => {
     trusted(event)
     requireLocalSteady()
     if (typeof id !== 'string' || id.length > 64) throw new Error('Choose a saved workspace.')
     return workspaceConnections().forget(id)
   })
-  ipcMain.handle('workspaces:disconnect', event => { trusted(event); requireLocalSteady(); deselectLocal(); return workspaceConnections().disconnect() })
-  ipcMain.handle('workspaces:reset', event => { trusted(event); requireLocalSteady(); return workspaceConnections().reset() })
+  handle('workspaces:disconnect', event => { trusted(event); requireLocalSteady(); deselectLocal(); return workspaceConnections().disconnect() })
+  handle('workspaces:reset', event => { trusted(event); requireLocalSteady(); return workspaceConnections().reset() })
 
   async function localStatus(): Promise<LocalStatus> {
     const host = localWorkspace()
@@ -465,19 +490,35 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     if (host.status.available) await host.inspect()
     return desktopLocalStatus(host.status)
   }
-  ipcMain.handle('local:status', event => { trusted(event); return localStatus() })
-  ipcMain.handle('telemetry:action', (event, action: string, input: Record<string, unknown> = {}) => {
+  handle('local:status', event => { trusted(event); return localStatus() })
+  handle('telemetry:action', (event, action: string, input: Record<string, unknown> = {}) => {
     trusted(event)
     if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error(telemetryMessages.telemetry_invalid_request)
     return telemetryAction(action, input)
   })
-  ipcMain.handle('agents:status', event => { trusted(event); return desktopAgents().status() })
-  ipcMain.handle('hosts:action', (event, action: string, input: Record<string, unknown>) => {
+  handle('telemetry:snapshot', async event => {
+    trusted(event)
+    try { return await telemetryStore().snapshot() } catch { return null }
+  })
+  handle('telemetry:record', async (event, input: unknown, stamp: TelemetryStamp) => {
+    trusted(event)
+    try {
+      // Only a paired desktop UI submission/outcome can enter this bridge.
+      // It cannot assign native-agent ownership or submit resource samples.
+      if (!Array.isArray(input) || input.length !== 2) return false
+      const [submission, outcome] = input
+      if (!submission || !outcome || submission.kind !== 'submission' || outcome.kind !== 'outcome' ||
+          submission.surface !== 'desktop' || outcome.surface !== 'desktop' || submission.workflow !== outcome.workflow) return false
+      return await telemetryStore().recordMany(input, stamp)
+    } catch { return false }
+  })
+  handle('agents:status', event => { trusted(event); return desktopAgents().status() })
+  handle('hosts:action', (event, action: string, input: Record<string, unknown>) => {
     trusted(event)
     if (!input || typeof input !== 'object' || Array.isArray(input) || Buffer.byteLength(JSON.stringify(input)) > 24576) throw new Error('Use a bounded host-control request.')
     return hostAction(action, input)
   })
-  ipcMain.handle('agents:choose', async (event, client: unknown) => {
+  handle('agents:choose', async (event, client: unknown) => {
     trusted(event)
     const profile = (await desktopAgents().status()).profiles.find(item => item.client === client)
     if (!profile) throw new Error('Choose an agent profile.')
@@ -486,19 +527,19 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
       filters: [{ name: 'Agent configuration', extensions: ['codex', 'grok-build'].includes(profile.client) ? ['toml'] : profile.client === 'hermes' ? ['yaml', 'yml'] : profile.client === 'openclaw' ? ['json', 'json5'] : ['json'] }] })
     return result.canceled ? null : result.filePath ?? null
   })
-  ipcMain.handle('agents:preview', (event, setup: AgentSetup) => { trusted(event); return desktopAgents().preview(setup) })
-  ipcMain.handle('agents:install', (event, input: AgentInstall) => { trusted(event); requireLocalSteady(); return desktopAgents().install(input) })
-  ipcMain.handle('agents:remove', (event, input: AgentRemove) => { trusted(event); requireLocalSteady(); return desktopAgents().remove(input) })
-  ipcMain.handle('sources:status', event => { trusted(event); return desktopSources().status() })
-  ipcMain.handle('sources:preview', (event, selection: SourcePreviewSelection) => { trusted(event); return desktopSources().preview(selection) })
-  ipcMain.handle('sources:backup', (event, input: CaptureBackupInput) => { trusted(event); requireLocalSteady(); return desktopSources().backup(input) })
-  ipcMain.handle('sources:backup-inspect', (event, input: CaptureInspectInput) => { trusted(event); requireLocalSteady(); return desktopSources().inspectBackup(input) })
-  ipcMain.handle('sources:restore', (event, input: CaptureRestoreInput) => { trusted(event); requireLocalSteady(); return desktopSources().restore(input) })
-  ipcMain.handle('sources:drain', (event, input: CaptureDrainInput) => { trusted(event); requireLocalSteady(); return desktopSources().drain(input) })
-  ipcMain.handle('sources:recoveries', event => { trusted(event); requireLocalSteady(); return desktopSources().recoveries() })
-  ipcMain.handle('sources:restore-finish', (event, input: CaptureRestoreControl) => { trusted(event); requireLocalSteady(); return desktopSources().finishRecovery(input) })
-  ipcMain.handle('sources:restore-discard', (event, input: CaptureRestoreControl) => { trusted(event); requireLocalSteady(); return desktopSources().finishRecovery(input, true) })
-  ipcMain.handle('sources:backup-choose', async (event, kind: unknown) => {
+  handle('agents:preview', (event, setup: AgentSetup) => { trusted(event); return desktopAgents().preview(setup) })
+  handle('agents:install', (event, input: AgentInstall) => { trusted(event); requireLocalSteady(); return desktopAgents().install(input) })
+  handle('agents:remove', (event, input: AgentRemove) => { trusted(event); requireLocalSteady(); return desktopAgents().remove(input) })
+  handle('sources:status', event => { trusted(event); return desktopSources().status() })
+  handle('sources:preview', (event, selection: SourcePreviewSelection) => { trusted(event); return desktopSources().preview(selection) })
+  handle('sources:backup', (event, input: CaptureBackupInput) => { trusted(event); requireLocalSteady(); return desktopSources().backup(input) })
+  handle('sources:backup-inspect', (event, input: CaptureInspectInput) => { trusted(event); requireLocalSteady(); return desktopSources().inspectBackup(input) })
+  handle('sources:restore', (event, input: CaptureRestoreInput) => { trusted(event); requireLocalSteady(); return desktopSources().restore(input) })
+  handle('sources:drain', (event, input: CaptureDrainInput) => { trusted(event); requireLocalSteady(); return desktopSources().drain(input) })
+  handle('sources:recoveries', event => { trusted(event); requireLocalSteady(); return desktopSources().recoveries() })
+  handle('sources:restore-finish', (event, input: CaptureRestoreControl) => { trusted(event); requireLocalSteady(); return desktopSources().finishRecovery(input) })
+  handle('sources:restore-discard', (event, input: CaptureRestoreControl) => { trusted(event); requireLocalSteady(); return desktopSources().finishRecovery(input, true) })
+  handle('sources:backup-choose', async (event, kind: unknown) => {
     trusted(event)
     const filters = [{ name: 'Mnemion capture archive', extensions: ['mnemion-capture'] }]
     if (kind === 'save') {
@@ -510,15 +551,15 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     const result = await dialog.showOpenDialog({ title: 'Inspect an encrypted capture backup', filters, properties: ['openFile'] })
     return result.canceled ? null : result.filePaths[0] ?? null
   })
-  ipcMain.handle('sources:choose', async event => {
+  handle('sources:choose', async event => {
     trusted(event)
     const result = await dialog.showOpenDialog({ title: 'Choose a memory source folder', properties: ['openDirectory'] })
     return result.canceled ? null : result.filePaths[0] ?? null
   })
-  ipcMain.handle('sources:configure', (event, input: SourceConfigure) => {
+  handle('sources:configure', (event, input: SourceConfigure) => {
     trusted(event); requireLocalSteady(); return desktopSources().configure(input)
   })
-  ipcMain.handle('sources:control', (event, action: unknown, input: SourceControl) => {
+  handle('sources:control', (event, action: unknown, input: SourceControl) => {
     trusted(event); requireLocalSteady()
     if (action !== 'pause' && action !== 'sync' && action !== 'remove' && action !== 'repair') throw new Error('Choose a source control.')
     return desktopSources().control(action, input)
@@ -532,60 +573,60 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     if (generation !== localOpenGeneration) throw new Error('Another workspace connection was selected.')
     return desktopLocalStatus(await host.start(options))
   }
-  ipcMain.handle('local:create', (event, input: unknown) => { trusted(event); return createLocal(input) })
+  handle('local:create', (event, input: unknown) => { trusted(event); return createLocal(input) })
   async function startLocal(): Promise<LocalStatus> {
     requireLocalSteady()
     ++localOpenGeneration
     saveLocalPreferences({ ...localPreferences(), startWithApp: true })
     return desktopLocalStatus(await localWorkspace().start())
   }
-  ipcMain.handle('local:start', event => { trusted(event); return startLocal() })
-  ipcMain.handle('local:memory', async (event, input: unknown) => {
+  handle('local:start', event => { trusted(event); return startLocal() })
+  handle('local:memory', async (event, input: unknown) => {
     trusted(event)
     requireLocalSteady()
     return desktopLocalStatus(await localWorkspace().changeMemory(input))
   })
-  ipcMain.handle('local:port', async (event, input: unknown) => {
+  handle('local:port', async (event, input: unknown) => {
     trusted(event)
     requireLocalSteady()
     return desktopLocalStatus(await localWorkspace().changePort(input))
   })
-  ipcMain.handle('local:remote', async (event, input: unknown) => {
+  handle('local:remote', async (event, input: unknown) => {
     trusted(event)
     requireLocalSteady()
     return desktopLocalStatus(await localWorkspace().changeRemote(input))
   })
-  ipcMain.handle('local:remote-check', async (event, input: unknown) => {
+  handle('local:remote-check', async (event, input: unknown) => {
     trusted(event)
     requireLocalSteady()
     return desktopLocalStatus(await localWorkspace().checkRemote(input))
   })
-  ipcMain.handle('local:models', async (event, input: unknown) => {
+  handle('local:models', async (event, input: unknown) => {
     trusted(event)
     requireLocalSteady()
     return desktopLocalStatus(await localWorkspace().changeModels(input))
   })
-  ipcMain.handle('local:company', async (event, input: unknown) => {
+  handle('local:company', async (event, input: unknown) => {
     trusted(event)
     requireLocalSteady()
     return desktopLocalStatus(await localWorkspace().changeCompany(input))
   })
-  ipcMain.handle('local:company-discover', async (event, input: unknown) => {
+  handle('local:company-discover', async (event, input: unknown) => {
     trusted(event)
     requireLocalSteady()
     return localWorkspace().discoverCompany(input)
   })
-  ipcMain.handle('local:vault', async (event, input: unknown) => {
+  handle('local:vault', async (event, input: unknown) => {
     trusted(event)
     requireLocalSteady()
     return desktopLocalStatus(await localWorkspace().changeVault(input))
   })
-  ipcMain.handle('local:vault-key', async (event, input: unknown) => {
+  handle('local:vault-key', async (event, input: unknown) => {
     trusted(event)
     requireLocalSteady()
     return localWorkspace().revealVaultKey(input)
   })
-  ipcMain.handle('local:journal-choose', async (event, kind: unknown) => {
+  handle('local:journal-choose', async (event, kind: unknown) => {
     trusted(event)
     if (kind !== 'identity' && kind !== 'known_hosts') throw new Error('Choose an SSH deploy key or pinned known-hosts file.')
     const selected = await dialog.showOpenDialog(getWindow()!, {
@@ -594,7 +635,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     })
     return selected.canceled ? null : selected.filePaths[0] ?? null
   })
-  ipcMain.handle('local:journal', async (event, input: unknown) => {
+  handle('local:journal', async (event, input: unknown) => {
     trusted(event)
     requireLocalSteady()
     return desktopLocalStatus(await localWorkspace().changeJournal(input))
@@ -608,7 +649,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     saveLocalPreferences({ ...localPreferences(), selected: true })
     return session
   }
-  ipcMain.handle('local:open', event => { trusted(event); return openLocal() })
+  handle('local:open', event => { trusted(event); return openLocal() })
   async function stopLocal(): Promise<boolean> {
     requireLocalSteady()
     if (backups?.busy && !local?.backupActive) throw new Error('Finish or cancel the backup settings operation before stopping the workspace.')
@@ -619,16 +660,16 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     if (selected) await disconnectForLocalSelection()
     return host.stop()
   }
-  ipcMain.handle('local:stop', event => { trusted(event); return stopLocal() })
+  handle('local:stop', event => { trusted(event); return stopLocal() })
 
   async function backupStatus() {
     const host = localWorkspace()
     if (!host.status.info && !host.busy) await host.inspect()
     return localBackups().status()
   }
-  ipcMain.handle('local:backup-status', event => { trusted(event); return backupStatus() })
-  ipcMain.handle('local:backup-key', event => { trusted(event); return createRecoveryKey() })
-  ipcMain.handle('local:backup-choose', async (event, kind: unknown) => {
+  handle('local:backup-status', event => { trusted(event); return backupStatus() })
+  handle('local:backup-key', event => { trusted(event); return createRecoveryKey() })
+  handle('local:backup-choose', async (event, kind: unknown) => {
     trusted(event)
     if (kind !== 'folder' && kind !== 'file') throw new Error('Choose a backup folder or encrypted recovery file.')
     const selected = await dialog.showOpenDialog(getWindow()!, kind === 'folder'
@@ -649,7 +690,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Check the backup settings.')
     return value as Record<string, any>
   }
-  ipcMain.handle('local:backup-configure', async (event, input: unknown) => {
+  handle('local:backup-configure', async (event, input: unknown) => {
     trusted(event)
     requireLocalSteady()
     const value = backupInput(input)
@@ -659,23 +700,23 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     return manager.configure({ expected_revision: value.expected_revision, destination, enabled: value.enabled,
       snapshot_hours: value.snapshot_hours, ledger_minutes: value.ledger_minutes, recovery_key: value.recovery_key, key_saved: value.key_saved, retention: value.retention })
   })
-  ipcMain.handle('local:backup-inventory', event => { trusted(event); requireLocalSteady(); return localBackups().inventory() })
-  ipcMain.handle('local:backup-prune', (event, input: unknown) => {
+  handle('local:backup-inventory', event => { trusted(event); requireLocalSteady(); return localBackups().inventory() })
+  handle('local:backup-prune', (event, input: unknown) => {
     trusted(event); requireLocalSteady()
     const value = backupInput(input)
     return localBackups().prune({ expected_revision: value.expected_revision, plan_token: value.plan_token, confirm: value.confirm })
   })
-  ipcMain.handle('local:backup-run', async (event, input: unknown) => {
+  handle('local:backup-run', async (event, input: unknown) => {
     trusted(event)
     requireLocalSteady()
     const value = backupInput(input)
     if (value.ledger_only !== undefined && typeof value.ledger_only !== 'boolean') throw new Error('Choose a snapshot or ledger backup.')
     return localBackups().run(value.ledger_only === true, value.recovery_key)
   })
-  ipcMain.handle('local:backup-cancel', event => {
+  handle('local:backup-cancel', event => {
     trusted(event); localBackups().cancel(); return desktopLocalStatus(localWorkspace().status)
   })
-  ipcMain.handle('local:backup-inspect', async (event, input: unknown) => {
+  handle('local:backup-inspect', async (event, input: unknown) => {
     trusted(event)
     requireLocalSteady()
     const value = backupInput(input)
@@ -696,7 +737,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
       source_kind: value.source_kind, host_data_only_confirmed: value.host_data_only_confirmed }, signal) as RecoveryReceipt
     return { id, receipt }
   }
-  ipcMain.handle('local:backup-restore', (event, input: unknown) => {
+  handle('local:backup-restore', (event, input: unknown) => {
     trusted(event)
     const value = backupInput(input)
     return restoreBackup(value, backupSelection(value.snapshot_selection, 'file'), value.ledger_selection == null ? null : backupSelection(value.ledger_selection, 'file'))
@@ -723,7 +764,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     }))
     return copies.filter(copy => copy !== null).sort((a, b) => b.receipt.restored_at.localeCompare(a.receipt.restored_at))
   }
-  ipcMain.handle('local:recovery-copies', event => { trusted(event); return recoveryCopies() })
+  handle('local:recovery-copies', event => { trusted(event); return recoveryCopies() })
   async function useRecovery(id: unknown): Promise<LocalStatus> {
     requireLocalSteady()
     const host = localWorkspace()
@@ -745,7 +786,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
       return desktopLocalStatus(await localWorkspace().start())
     } finally { localSwitching = false }
   }
-  ipcMain.handle('local:recovery-use', (event, id: unknown) => { trusted(event); return useRecovery(id) })
+  handle('local:recovery-use', (event, id: unknown) => { trusted(event); return useRecovery(id) })
 
   function operatorPath(value: unknown): string {
     if (typeof value !== 'string' || !isAbsolute(value) || value.length > 4096 || /[\x00-\x1f\x7f]/.test(value)) throw new Error('Use an absolute local file or folder path without control characters.')
@@ -807,7 +848,8 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
       switch (request.action) {
         case 'catalog': return { protocol: 1, scope: 'owning_os_account', version: app.getVersion(), operations: desktopActions,
           request_limit_bytes: 16384, response_limit_bytes: 262144, same_request_replay_seconds: 600,
-          guide: 'https://github.com/Perseusxrltd/mnemion/blob/main/docs/service/desktop-operator.md' }
+          guide: 'https://github.com/Perseusxrltd/mnemion/blob/main/docs/service/desktop-operator.md',
+          product_telemetry_ownership: desktopTelemetryOrigins }
         case 'status': return localStatus()
         case 'source.status': return desktopSources().status()
         case 'source.preview': return desktopSources().preview(input.selection as SourcePreviewSelection, signal)
@@ -863,11 +905,12 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
         default: throw new Error('Choose an operation from the desktop catalog.')
       }
     }
-    if (!spec.mutation) return run()
+    const observedRun = () => measureAction(request.action, request.input, 'native_agent', run)
+    if (!spec.mutation) return observedRun()
     // The renderer and operator share one mutation gate, including across awaits.
     if (operatorMutation) throw new Error('Another local agent operation started. Refresh status before continuing.')
     operatorMutation = request.request_id
-    const work = operatorContext.run(request.request_id, run)
+    const work = Promise.resolve(operatorContext.run(request.request_id, observedRun))
     operatorWork = work
     try { return await work } finally {
       if (operatorWork === work) { operatorWork = undefined; operatorMutation = undefined }
@@ -902,7 +945,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     if (window && !window.webContents.isDestroyed()) window.webContents.send('local:changed', desktopLocalStatus(localWorkspace().status))
   }
 
-  ipcMain.handle('service:request', async (event, input: unknown) => {
+  handle('service:request', async (event, input: unknown) => {
     trusted(event)
     if (!input || typeof input !== 'object') throw new Error('Invalid request')
     const request = input as { url: unknown; method: string; headers: Record<string, string>; body?: string }
@@ -938,7 +981,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     return { status: response.status, headers: Object.fromEntries(response.headers.entries()), body: await boundedBody(response) }
   })
 
-  ipcMain.handle('vault:choose', async event => {
+  handle('vault:choose', async event => {
     trusted(event)
     const window = getWindow()!
     const selection = await dialog.showOpenDialog(window, { title: 'Choose an Obsidian vault folder', properties: ['openDirectory', 'createDirectory'] })
@@ -949,7 +992,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
     return { id, path }
   })
 
-  ipcMain.handle('vault:refresh', async (event, id: unknown, bytes: unknown) => {
+  handle('vault:refresh', async (event, id: unknown, bytes: unknown) => {
     trusted(event)
     const path = typeof id === 'string' ? selections.get(id) : undefined
     if (!path) throw new Error('Choose the vault folder before refreshing')

@@ -1,8 +1,8 @@
 # Product telemetry privacy controls
 
 **Source checkpoint, 24 October 2026; V08 is Building.** Local choice, disclosure,
-catalog, aggregate queues and owned `mnemion-control call` hooks are implemented
-in source. There is no product sender or collector: `collection_available` is
+catalog, aggregate queues and selected owned CLI, desktop/native-operator and
+Studio hooks are implemented in source. There is no product sender or collector: `collection_available` is
 `false`, the destination is `null`, and
 `effective_enabled` stays `false`. Saving an enabled preference does not activate
 analytics. The core browser journey passed **19 checks at 00:51:17 UTC**, followed
@@ -13,6 +13,10 @@ acceptance for that batch remain pending.
 The later actual Chromium generation journey passed **11 checks**, including
 stale UI conflicts, preserved legacy opt-out and a 390-pixel layout. This remains
 source-browser evidence, with no active collection or native release acceptance.
+The later copied built-browser journey passed **19 owned-search/opt-out checks**;
+only its isolated fixture enabled local counters. Source/build collection remains
+unavailable. Native Windows source-store checks now passed **11 with zero skips**,
+without qualifying a packaged telemetry release.
 These controls and this documentation update are excluded from the isolated
 4.46.6 dependency-security release. The [contract](../implementation/anonymous-product-telemetry.md)
 records the dated source evidence and full remaining scope.
@@ -30,8 +34,9 @@ pending local aggregates. **Refresh privacy status** reads the current choice.
 **Show payload preview** currently reports no queued request, a null outbound
 body and zero outgoing payload bytes. Expand **Workflow coverage and exclusions**
 to inspect the fixed **15 families, 94 operations and seven privacy exclusions**.
-The schema and numeric encoding exist; collection remains inactive. Desktop,
-browser, stdio-MCP and background workflow hooks are still pending.
+The schema and numeric encoding exist; collection remains inactive. Selected
+desktop/browser and native-operator actions now have source hooks. Remaining
+workflow coverage, stdio-MCP and background ownership are still unfinished.
 A later build capable of collection must present its current disclosure before
 anything can be sent; today's enabled preference cannot acknowledge that future
 destination.
@@ -122,6 +127,23 @@ bytes are not wire traffic, and optional measurement errors do not change the
 operation's result. See the [catalog](../implementation/anonymous-product-telemetry-catalog.md#owned-headless-control-coverage)
 for the fixed librarian/embedding selectors and per-operation exclusions.
 
+## Desktop and Studio ownership
+
+Selected desktop controls, fresh native-operator actions and Studio UI methods
+now have optional source hooks. The desktop/native agent uses the shared private
+OS-account store; the browser uses its own site policy. They retain the choice
+and generation captured when work began and recheck them before recording. An
+old action cannot regain permission after an opt-out and later re-enable.
+
+The reusable SDK does not collect product telemetry. Its response-bound receipt
+metadata lets the Studio wrapper exclude replayed or uncertain keyed writes;
+generic SDK/API requests, polling, privacy controls and unowned continuation
+transports remain unmeasured. Async acknowledgement is not completion. See the
+[explicit ownership maps](../implementation/anonymous-product-telemetry-catalog.md#owned-desktop-native-operator-and-studio-coverage)
+for the selected actions and exclusions. These hooks remain inactive: no sender,
+collector or production collection is available. Browser sign-in/connect,
+legacy UI, stdio-MCP and background ownership still need separate coverage.
+
 ## Company restriction and damaged settings
 
 The native policy reads an optional administrator file:
@@ -145,13 +167,25 @@ automatic settings repair or repair action yet. Do not erase settings as a
 generic repair: that can erase an explicit opt-out. After a transient storage
 or lock problem is resolved, refresh status and confirm the saved choice.
 
+On Windows, explicit native configuration creates a private settings directory
+and database. Native Python and the app both reject permissions that expose the
+store to other accounts. The app's small owner/DACL helper only inspects existing
+permissions; it does not repair them. On POSIX systems the store uses owner/mode
+checks. A missing, linked or unsafe database is never replaced by the measurement
+path. The [source validation report](../validation/2026-10-24-telemetry-aggregates.md)
+retains preliminary failures and the later passing native-store/Studio checks;
+Electron packaging and all-six-native acceptance remain open.
+
 Optional product telemetry is separate from private workspace operational and
 security records. These controls do not change memory access or disable those
 records. The [full V08 contract](../implementation/anonymous-product-telemetry.md)
 and [versioned catalog](../implementation/anonymous-product-telemetry-catalog.md)
-retain app, agent, headless and remote-workflow coverage. Desktop/browser, stdio
-and background hooks, the sender, collector and anonymity proof remain unfinished. Expiry
+retain app, agent, headless and remote-workflow coverage. Remaining workflow,
+stdio and background ownership, the sender, collector and anonymity proof remain unfinished. Expiry
 prunes on activity. Local generation checks cannot detect a whole-machine
 snapshot rollback that restores both the old token and choice; final sender
 cancellation still needs full-feature acceptance. See the
 [privacy policy](../service/privacy.md) for existing service and model traffic.
+An exploratory Electron component measurement exceeded the existing **2 MiB**
+added-RAM target; optimization and whole-app/all-platform resource qualification
+remain unfinished. No target has been relaxed by these source checks.

@@ -10,6 +10,12 @@ const __dirname = dirname(__filename)
 const root = resolve(__dirname, '..', '..', '..')
 
 const required = [
+  ...['disclosure', 'catalog', 'desktop-origins'].map(name => ({
+    label: `product telemetry ${name}`, path: join(root, 'studio/electron/dist', `telemetry-${name}.json`),
+  })),
+  ...(process.platform === 'win32' ? [{
+    label: 'native Windows telemetry privacy guard', path: join(root, 'studio/electron/dist/telemetry-private-store.exe'),
+  }] : []),
   { label: 'project license', path: join(root, 'build-tmp', 'notices', 'LICENSE') },
   { label: 'third-party license inventory', path: join(root, 'build-tmp', 'notices', 'inventory.json') },
   { label: 'software bill of materials', path: join(root, 'build-tmp', 'notices', 'sbom.cdx.json') },

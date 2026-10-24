@@ -19,6 +19,8 @@ import sqlite3
 import stat
 import sys
 
+from mnemion.private_input import check_private_path
+
 from . import COLLECTION_AVAILABLE, COLLECTOR_URL, CONTRACT, DISCLOSURE_VERSION, SCHEMA_VERSION
 
 APPLICATION_ID = 0x4D4E5450
@@ -154,10 +156,9 @@ def _root_safe(root: Path) -> None:
     if not root.is_absolute() or root.is_symlink():
         raise PolicyError("telemetry_storage_unavailable")
     if root.exists():
-        metadata = root.stat()
-        if not stat.S_ISDIR(metadata.st_mode):
-            raise PolicyError("telemetry_storage_unavailable")
-        if os.name != "nt" and (metadata.st_uid != os.getuid() or metadata.st_mode & 0o077):
+        try:
+            check_private_path(root, directory=True)
+        except OSError:
             raise PolicyError("telemetry_storage_unavailable")
 
 
@@ -168,7 +169,9 @@ def _file_safe(path: Path) -> bool:
         return False
     if not stat.S_ISREG(value.st_mode) or value.st_size > MAX_DATABASE_BYTES:
         raise PolicyError("telemetry_storage_unavailable")
-    if os.name != "nt" and (value.st_uid != os.getuid() or value.st_mode & 0o077):
+    try:
+        check_private_path(path)
+    except OSError:
         raise PolicyError("telemetry_storage_unavailable")
     return True
 
@@ -255,13 +258,26 @@ def _queue_schema(connection: sqlite3.Connection) -> None:
 
 def _initialize(root: Path) -> bool:
     _root_safe(root)
-    root.mkdir(mode=0o700, parents=True, exist_ok=True)
+    if os.name == "nt":
+        from mnemion.private_output import _windows_create_directory
+
+        root.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        _windows_create_directory(root)
+    else:
+        root.mkdir(mode=0o700, parents=True, exist_ok=True)
     _root_safe(root)
     path = root / DATABASE_NAME
     if _file_safe(path):
         return False
     try:
-        descriptor = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+        if os.name == "nt":
+            from mnemion.private_output import _windows_create_file
+
+            descriptor = _windows_create_file(path)
+        else:
+            descriptor = os.open(
+                path, os.O_CREAT | os.O_EXCL | os.O_WRONLY | getattr(os, "O_NOFOLLOW", 0), 0o600
+            )
     except FileExistsError:
         return False
     os.close(descriptor)

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, BookOpen, Database, Globe, LoaderCircle, LockKeyhole, ShieldCheck, Workflow } from "lucide-react";
 import { MnemionClient } from "@mnemion/client";
+import { measuredStudioClient } from './measured-client';
 import BrandMark from "../components/BrandMark";
 import { version } from "../../package.json";
 import { nativeFetch } from "./native";
@@ -52,7 +53,7 @@ function nativeConnection(session: WorkspaceSession): Connection {
     ...(session.remembered && session.me.administrator && window.mnemion?.workspaceRecoveryRefresh ? {
       refreshRecovery: () => window.mnemion!.workspaceRecoveryRefresh!(session.sessionToken),
     } : {}),
-    client: new MnemionClient({ baseUrl: session.endpoint, apiKey: session.sessionToken, fetch: nativeFetch }),
+    client: measuredStudioClient(new MnemionClient({ baseUrl: session.endpoint, apiKey: session.sessionToken, fetch: nativeFetch })),
     subscribeClosed: listener => {
       listen(); listeners.add(listener);
       if (closed) queueMicrotask(() => { if (listeners.has(listener)) listener(); });
@@ -158,7 +159,7 @@ export default function Connect({ onConnect, initialError, initialJoin }: { onCo
         complete(await desktop.workspaceConnect({ endpoint: address, credential: key.trim(), remember: remember && !!status?.secureStorage }));
         return;
       }
-      const client = new MnemionClient({ baseUrl: address, apiKey: key.trim(), fetch: nativeFetch });
+      const client = measuredStudioClient(new MnemionClient({ baseUrl: address, apiKey: key.trim(), fetch: nativeFetch }));
       const me = await client.me();
       setKey("");
       rememberAddress(address);
