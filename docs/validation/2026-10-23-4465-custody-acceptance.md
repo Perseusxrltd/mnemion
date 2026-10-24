@@ -60,7 +60,9 @@ wrong source. These are evidence checks, not additional host journeys.
 **Fresh native backup delivery and independent restore were unaccepted at
 this custody checkpoint.** The subsequent
 [fresh backup and separate custodian verification](2026-10-24-4465-backup-acceptance.md)
-passed at **00:01:45 UTC on 24 October**. Independent restore remains pending.
+passed at **00:01:45 UTC on 24 October**. The separate independent restore then
+passed at **00:15:23 UTC**, verifying 84 tables across two organizations while
+leaving the live workspace unchanged.
 The [original failed/unconfirmed backup](2026-10-23-backup-transfer-diagnostics.md)
 is preserved. This journey establishes retained OS authority; it does not
 establish new adoption, whole-machine boot, custody on separate physical devices,

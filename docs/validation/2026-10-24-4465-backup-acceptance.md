@@ -1,4 +1,4 @@
-# 4.46.5 fresh company-host backup acceptance
+# 4.46.5 fresh company-host backup and independent restore acceptance
 
 **Accepted 24 October 2026 at 00:01:45 UTC.** The installed Windows host-control
 client created a fresh encrypted backup, and a separate native-agent custodian
@@ -38,11 +38,27 @@ The argument parser exited before backup inspection or restoration; no recovery
 workspace was created. The original failure and completed retrieval remain
 preserved. A corrected private runner is continuing only the uncompleted local
 inspection/restore stage, reusing the verified runtime and encrypted files.
-**Independent restore is not yet accepted at this checkpoint.**
+At that first checkpoint, independent restore was not yet accepted.
 
-Backup verification does not establish controller-authority escrow, whole-machine
-recovery, custody on separate physical devices or activation of a replacement
-service. The live workspace remains separate from the unselected recovery copy.
+The inspected continuation subsequently **passed at 00:15:23 UTC**. The installed
+public recovery command restored and verified **84 tables across two
+organizations**, applied the selected **23:58:18 UTC access/deletion ledger**,
+rotated recovery access and retained the requirement to review external
+connections. The recovered database stopped after verification; the copy was
+not selected or published. The input ciphertext and original failed-attempt
+evidence remained unchanged. No host command or cloud model call was made.
+
+The independent restore receipt has SHA-256
+`b4f2f7e457a81c9949ba444645ad8150cd5b069f4a2a38e63ce70bcfcf2c4ec5`.
+It binds the original installation/download evidence, corrected entry point,
+authenticated inspections and native recovery result. The original failed
+runner remains failed; the receipt identifies this inspected continuation.
+
+This backup/restore drill does not establish controller-authority escrow,
+whole-machine recovery, custody on separate physical devices or activation of a
+replacement service. Independent Git retrieval used the existing account and
+private runner; it does not add an integrated app Git-download action. The live
+workspace remains separate from the unselected recovery copy.
 All [66 requirements](../PRODUCT_REQUIREMENTS.md), open deployment issues and the
 deliberately paused note publisher retain their existing states.
 [V08 anonymous product telemetry](../implementation/anonymous-product-telemetry.md)

@@ -76,7 +76,9 @@ readiness, restored connection and the unchanged 15-request comparison passed.
 Fresh native backup delivery and independent restore were still unaccepted at
 that custody checkpoint. The subsequent
 [fresh backup and separate custodian verification](2026-10-24-4465-backup-acceptance.md)
-passed at **00:01:45 UTC on 24 October**. Independent restore remains pending.
+passed at **00:01:45 UTC on 24 October**. The separate independent restore then
+passed at **00:15:23 UTC**, verifying 84 tables across two organizations while
+leaving the live workspace unchanged.
 
 The [original failed/unconfirmed backup](2026-10-23-backup-transfer-diagnostics.md),
 [first native candidate failure](2026-10-23-installed-workspace-open-diagnostics.md)

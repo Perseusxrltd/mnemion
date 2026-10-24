@@ -5,7 +5,9 @@ actions passed [all six installed targets](../validation/2026-10-23-4465-native-
 the [actual Windows/shared-host update](../validation/2026-10-23-4465-live-acceptance.md)
 and the [retained-custodian lifecycle](../validation/2026-10-23-4465-custody-acceptance.md).
 The [fresh encrypted backup and separate verification](../validation/2026-10-24-4465-backup-acceptance.md)
-passed at **00:01:45 UTC on 24 October**. Independent restore remains pending.
+passed at **00:01:45 UTC on 24 October**. The separate independent restore passed
+at **00:15:23 UTC**, verifying 84 tables across two organizations in an unselected
+local copy. The live workspace was unchanged.
 
 Earlier qualification is retained below. In 4.46.3, host controls, native agent
 actions and backup approval controls passed
@@ -771,8 +773,10 @@ material. Readback proves those remote bytes, not a successful replacement-host
 restore. The protocol has no Git-backup download/restore action. The
 creation and verification controls below are separate from restoration.
 Existing [host-package recovery](../service/host-recovery.md)
-requires authenticated package/ledger files; a complete independently retrieved
-Git-backup recovery journey remains to be qualified.
+requires authenticated package/ledger files. The
+[4.46.5 independent recovery drill](../validation/2026-10-24-4465-backup-acceptance.md)
+passed using a separate Git download followed by the installed recovery command.
+An integrated app action for retrieving those Git files remains separate work.
 
 **Controller authority has separate custody.** The memory-host package does not
 escrow the independent controller's host identity, authority store, operator
@@ -787,7 +791,7 @@ memory database authorizes a new controller.
 includes actual approval-control and native-schema checks with **synthetic
 inventory**. The later
 [4.46.5 fresh production backup and separate verification](../validation/2026-10-24-4465-backup-acceptance.md)
-passed; independent restore remains pending. Use
+and independent restore passed. Use
 [release status](../RELEASE_STATUS.md) for the public-update gate.
 
 Backup source checks passed: 43 passed with
@@ -1057,7 +1061,10 @@ two scheduled watchdog ticks and the planned start issued once after inspection.
 Final readiness, both custodians, the saved connection and exact memory/access
 comparison passed; the local verifier interruption is preserved. The subsequent
 [fresh native backup and separate custodian verification](../validation/2026-10-24-4465-backup-acceptance.md)
-passed at **00:01:45 UTC on 24 October**. Independent restore remains pending.
+passed at **00:01:45 UTC on 24 October**. The independent restore passed at
+**00:15:23 UTC**, verifying 84 tables across two organizations with the later
+access/deletion ledger applied. The recovered database is stopped and unselected;
+the live service was unchanged.
 
 The earlier [4.46.4 native qualification](../validation/2026-10-23-4464-native-acceptance.md)
 retains its six installed-target results and matching source, job and artifact
@@ -1187,9 +1194,9 @@ The installed gates require the expanded real UI/agent/key/SSH/restart/archive
 journey through the offline `/hosts` route. Their native client smoke stage has
 a finite 180-second readiness deadline, with individual helper bounds retained.
 Listener reconfiguration, independently recoverable controller-authority custody,
-whole-machine boot/login acceptance, independent restore and production backup
-retention remain open. Fresh native Git-backup verification subsequently
-[passed on 4.46.5](../validation/2026-10-24-4465-backup-acceptance.md). The completed
+whole-machine boot/login acceptance, integrated Git retrieval and production backup
+retention remain open. Fresh native Git-backup verification and independent restore
+subsequently [passed on 4.46.5](../validation/2026-10-24-4465-backup-acceptance.md). The completed
 setup does not establish universal onboarding or full production continuity.
 
 The [23 October publication and live rollout record](../validation/2026-10-23-4460-live-rollout.md)
@@ -1208,7 +1215,7 @@ passed; that 4.46.1 operational journey failed at its first stop. The separate
 subsequently passed deliberate stop, independent inspection, manager restart,
 scheduled watchdogs, start and retained-data checks. The later
 [4.46.5 fresh native backup verification](../validation/2026-10-24-4465-backup-acceptance.md)
-passed; independent restore still requires its own passing evidence.
+and separate independent restore passed, within that report's stated limits.
 Current package availability follows [release status](../RELEASE_STATUS.md).
 
 Provider power-on, browser-based independent management, company identity
