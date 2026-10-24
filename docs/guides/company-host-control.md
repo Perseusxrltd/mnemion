@@ -1032,11 +1032,21 @@ preserved; the added diagnostics do not establish its cause or a functional
 fix. Artifact verification subsequently passed, 4.46.5 was published at
 **20:49:55 UTC**, and automatic website verification passed at **20:50:15 UTC**.
 All six downloads, current guides and Git-owned product content were present.
-Public upgrade checks were still running at the 20:56 UTC observation; follow
-the [release status](../RELEASE_STATUS.md) for their separate acceptance.
-The last accepted actual Windows/shared-host pair remains 4.46.3. Actual
-4.46.5 paired acceptance, fresh native backup delivery and independent restore
-remain unaccepted.
+Public upgrade checks, still running at 20:56 UTC, subsequently
+[passed all six targets](https://github.com/Perseusxrltd/mnemion/actions/runs/40022243634);
+the [release status](../RELEASE_STATUS.md) records the public gates.
+The [actual 4.46.5 paired acceptance](../validation/2026-10-23-4465-live-acceptance.md)
+passed at **21:32:43 UTC on 23 October**, preserving the original failed access
+comparison and using an inspected continuation without repeating either update
+or the completed Windows restart. The unchanged 15-request comparison and
+42/42 isolated lab requests passed, with no pending cleanup. Windows used a
+guarded agent-requested restart, which does not establish unattended idle
+restart. The separate [4.46.5 two-custodian journey](../validation/2026-10-23-4465-custody-acceptance.md)
+passed at **23:52:34 UTC**, retaining existing OS authority, the original stop,
+two scheduled watchdog ticks and the planned start issued once after inspection.
+Final readiness, both custodians, the saved connection and exact memory/access
+comparison passed; the local verifier interruption is preserved. Fresh native
+backup delivery and independent restore remain unaccepted.
 
 The earlier [4.46.4 native qualification](../validation/2026-10-23-4464-native-acceptance.md)
 retains its six installed-target results and matching source, job and artifact
