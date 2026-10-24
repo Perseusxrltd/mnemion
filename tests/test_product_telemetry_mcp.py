@@ -219,7 +219,7 @@ def test_local_privacy_tool_is_offline_and_compact_discovery_keeps_remote_scope(
     schema = call(server, "mnemion_telemetry", {"action": "schema"})
     assert not schema.is_error
     coverage = schema.structured_content["owned_origin_coverage"]
-    assert set(coverage) == {"desktop", "studio", "ui", "mcp"}
+    assert set(coverage) == {"desktop", "studio", "ui", "mcp", "maintenance"}
     assert coverage["mcp"] == mcp_measurement.ORIGINS
     result = call(
         server,

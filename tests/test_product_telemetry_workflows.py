@@ -170,7 +170,7 @@ def test_telemetry_failure_never_changes_cli_success(installation, tmp_path, mon
     def unavailable(*args, **kwargs):
         raise RuntimeError("private telemetry failure")
 
-    monkeypatch.setattr(aggregate, "record", unavailable)
+    monkeypatch.setattr(aggregate, "record_many", unavailable)
     assert (
         cli(
             monkeypatch,

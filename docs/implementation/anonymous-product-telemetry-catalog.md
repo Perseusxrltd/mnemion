@@ -7,7 +7,8 @@ four separate resource metrics. Python and TypeScript encoders, bounded native
 and browser queues, revision/generation checks and local preview are implemented
 in source, along with owned `mnemion-control call`, selected desktop/native-operator
 actions, Studio client hooks, browser connection/legacy UI actions and explicitly
-configured local stdio hooks. Background/updater ownership and remaining workflow
+configured local stdio hooks. Fresh local source/capture work and automatic desktop
+updater cycles now have source owners; remaining workflow and resource/platform
 qualification are unfinished. **No sender or collector is implemented.** Collection remains
 unavailable and the destination is null; no product measurements are collected.
 Native release, resource and anonymity acceptance remain open. All 66 requirement
@@ -41,6 +42,11 @@ The following browser/legacy UI and local stdio batch passed **20 Python MCP and
 fixture journey** and a **22-check real stdio journey**. The initial 19-test run
 and failed build remain recorded. These isolated fixtures do not activate source
 collection or establish release/resource acceptance.
+The following maintenance batch records separate **41- and 49-test Python
+passes**, **104 source-controller and 20 updater Node passes**, and **nine
+Electron store passes with two Windows skips**. Its original runner failures are
+retained. The corrected isolated app-main probe completed; final builds/input
+inventory, integration and CI remain pending.
 
 The scope remains all app, agent and headless workflows. An unresolved row is
 unfinished V08 coverage, not permission to collect without choice or an assertion
@@ -73,6 +79,12 @@ or clear the new queue even if revision numbers repeat. Enabling a preference
 also checks the pair; an explicit opt-out still wins over stale input. Busy
 native writes and unavailable browser Web Locks drop the observation without
 waiting or failing memory work.
+
+Python's `record_many` now commits a workflow's submission/outcome pair in one
+current-policy transaction. The native writer reuses prepared statements and
+the occupied-cell set within that transaction, without retaining a connection,
+statements or policy afterward. Individual contribution and capacity limits
+still apply; one transaction does not promise that both observations are admitted.
 
 Electron reads and writes the existing database through `node:sqlite`; it does
 not initialize a replacement store or spawn Python for each observation. Explicit
@@ -116,6 +128,13 @@ A later phase diagnostic measured **3,424,256 bytes (3.27 MiB)** total added RSS
 including a 1,802,240-byte rise around the first SQLite snapshot/load. It is a
 separate component observation, not a replacement for the earlier result or
 proof that the 2 MiB target has been met.
+After transaction reuse, a further component diagnostic recorded **3,235,840
+bytes (3.09 MiB)** added RSS. It also remains above 2 MiB and does not replace the
+earlier measurements or establish whole-app/all-platform resource acceptance.
+A corrected headless main-process probe after actual app `client-ready` bootstrap
+recorded **1,249,280 bytes (1.19 MiB)** added RSS over 32 paired workflows. This
+narrow activation diagnostic does not replace the cold 3.61/3.27/3.09 MiB results
+or establish whole-app, all-platform or CPU acceptance against the unchanged target.
 Deletion/recreation now has source generation-fencing checks. This does not
 protect against an unobservable whole-machine snapshot rollback that restores
 the old token and choice together. The eventual sender must still prove
@@ -218,7 +237,8 @@ payload lengths are not wire-byte measurements. Native and Studio wrappers do
 not instrument nested SDK/transport calls or backfill server completion.
 The Studio method wrapper does not own enclosing connection/sign-in workflows
 merely because it is constructed there. The following source additions provide
-explicit owners; autonomous background/updater ownership remains unfinished.
+explicit owners. The maintenance section below covers selected fresh local work;
+it does not authorize server jobs or complete all background ownership.
 
 ## Browser connection, legacy UI and local stdio coverage
 
@@ -259,13 +279,45 @@ absent from the ordinary HTTP gateway, and HTTP calls are refused even on a
 server configured with a stdio key. Privacy controls themselves never produce
 measurements. See the [local-tool guide](../guides/product-telemetry-controls.md#from-local-stdio-mcp).
 Local `schema` now also returns `owned_origin_coverage` with the `desktop`,
-`studio`, `ui` and `mcp` maps, while retaining the CLI's `owned_control_coverage`.
+`studio`, `ui`, `mcp` and later `maintenance` maps, while retaining the CLI's
+`owned_control_coverage`.
 An optional observer import failure falls back to exactly one original action;
 the fallback does not retry an action that already ran.
 The collection gate remains false and the destination null. Passing source and
 isolated stdio/browser checks do not establish anonymous ingress,
-background/updater ownership, resource limits or native release. Final source
+remaining ownership, resource limits or native release. Final source
 inventory and integration are not established by these receipts.
+
+## Fresh local maintenance coverage
+
+The [maintenance-origin map](../../mnemion/product_telemetry/maintenance-origins.json)
+adds the fifth schema map: **six origins, five sensor descriptions and nine
+exclusions**. These are selected local owners under the same disclosure,
+generation/revision and company policy; collection is still unavailable.
+
+| Fresh owner | Observed boundary and limits |
+| --- | --- |
+| Desktop scheduled source/capture | [DesktopSources](../../studio/electron/desktop-sources.ts) starts an observer only for automatic work. Explicit Sync continuations already have a request owner. Successful empty scans, paused work and mere status inspection add no use. |
+| Standalone source/capture | The [connector entrypoint](../../mnemion/connectors/runner.py) owns its fresh local execution. Reusable sync calls, remote-requested work and host-managed child processes do not inherit this owner. |
+| Desktop update download | The [updater](../../studio/electron/updates.ts) keeps download, verification and bounded retries in one cycle with one terminal success, failure or cancellation. Current-version and safe-restart polls add no use. Unfinished cycles are discarded on quit. |
+| Installer handoff | `update.apply` records only an **accepted handoff**, if observed. Its optional snapshot has a 25 ms wait budget before the original guarded action. It does not assert an installed version or completed restart, and there is no shutdown flush or wait for telemetry. |
+
+The [native](../../studio/electron/maintenance-measurement.ts) and
+[headless](../../mnemion/maintenance_measurement.py) source adapters extract only
+reviewed numeric changed/accepted/pending counts and local capture-store size,
+plus fixed outcome/reason values from fresh work. They do not export saved scan
+history, source identifiers, paths, content or raw errors. Existing native
+request acknowledgements remain separate workflow categories; they cannot be
+summed with observed maintenance outcomes as independent uses.
+
+Resource cells describe only the owned process. Native source work can use the
+maximum RSS supplied by its actual child callback and that worker's configured
+limit; no callback sample means unavailable. Headless work uses its own ending
+RSS and CPU-time delta over the work interval, with its configured capture limit
+when measured. These are coarse buckets, not host totals, continuous monitoring,
+or proof of the telemetry component's overhead. Service-worker activity and
+mixed-host CPU/RAM stay excluded. Every resource write retains the originating
+policy fence; resource samples and the workflow pair are separate bounded writes.
 
 ## Measurement ownership
 
@@ -281,7 +333,8 @@ how it was invoked; it is not a user, installation or request identifier.
 | Owned `mnemion-control call` | Source hook at the [CLI boundary](../../mnemion/control_cli.py), under the shared local policy and explicit operation map above; collection remains inactive. | The reusable SDK and `agent_control.execute` carry no owner hook. Nested requests, retry attempts and cached receipts do not add uses. |
 | Local stdio-MCP | Explicit source owner at the [maintained gateway](../../mnemion/service/mcp.py) or [legacy stdio loop](../../mnemion/mcp_server.py), under local OS-account policy. | HTTP context, imported handlers and JSON arguments cannot acquire this owner. Aliases and nested SDK calls do not add another count. Other headless entrypoints still need review. |
 | Third-party remote MCP or direct API client | **Excluded without a disclosed local owner.** The [remote MCP gateway](../../mnemion/service/mcp_transport.py#L441) creates the ordinary [Python SDK Client](../../mnemion/sdk.py#L614); that shared SDK is not a measurement owner. | A token, client name, session or host-owner preference cannot stand in for the originating user's choice. Future owned adapters need their own disclosure and policy. |
-| Server jobs and autonomous host work | No server export or terminal backfill for client-derived work. Only the originating observer can report an outcome it actually sees. Separately disclosed autonomous maintenance needs its own reviewed owner. | [Index/purge jobs](../../mnemion/service/worker.py#L290), scheduled scans and mixed-host resource totals cannot supply a fallback feed. A `background` label does not make user-derived work autonomous. |
+| Fresh local maintenance | The selected desktop/standalone source and automatic updater owners described above, under local policy. | Empty scans, explicit Sync continuations, reusable helpers and remote/managed work do not acquire another owner. |
+| Server jobs and other autonomous host work | No server export or terminal backfill for client-derived work. Other autonomous maintenance still needs a reviewed owner. | [Index/purge jobs](../../mnemion/service/worker.py#L290), saved scan history and mixed-host resource totals cannot supply a fallback feed. A `background` label does not make user-derived work autonomous. |
 
 Version 1 declares seven privacy coverage exclusions:
 
@@ -375,9 +428,9 @@ without adding an operation identifier to product telemetry.
 ## Workflow catalog
 
 The 15 workflow families below expand to the 94 catalog operations; separate
-resource cells are not extra workflows. The owned CLI map above implements one
-source hook boundary; the app, stdio and background integration points below
-remain future work. Only version 1's fields are accepted today;
+resource cells are not extra workflows. The ownership maps above record the
+implemented CLI, app, stdio and selected maintenance boundaries. The broader
+integration points below still need full coverage qualification. Only version 1's fields are accepted today;
 additional modes, quality views and sensors mentioned below remain proposals.
 “Origin” means the disclosed app/agent owner above, not an arbitrary caller of
 a shared SDK. Unowned host/background paths remain excluded from measurement.
@@ -398,7 +451,7 @@ a shared SDK. Unowned host/background paths remain excluded from measurement.
 | `evaluation`: `create_dataset`, `run`, `cancel`, `assess`, `compare`, `export`, `remove_dataset` | Workflow use, duration and case-count buckets. Quality-metric aggregation requires a separate reviewed view and remains undecided. No questions, reference labels, dataset names/IDs, per-case results or human notes; no extra evaluations or model calls for telemetry. | Origin at [Evaluations](../../studio/frontend/src/workspace/insights/Evaluations.tsx#L178). [EvaluationRunner._case](../../mnemion/service/evaluation_runner.py#L309) invokes retrieval with evaluation origin; those calls must not inflate interactive recall usage. [Ranking metrics](../../mnemion/service/evaluation_metrics.py#L13) remain private today. |
 | `journal`: `configure`, `push`, `organize`, `backfill`, `recover` | Submissions, observed completion, duration and item-count buckets. No journal entries, repository destinations, source dates or replay identifiers. | Origin at [Journal.act](../../studio/frontend/src/workspace/Journal.tsx#L47), [JournalBackfill.act](../../studio/frontend/src/workspace/JournalBackfill.tsx#L35) and [recovery client methods](../../packages/client/src/index.ts#L192); unattended publication has the same unresolved background boundary. |
 | `access`: `configure`, `invite`, `grant`, `revoke`; `vault`: `configure`, `read`, `write`, `delete`, `import`, `export` | Only fixed workflow/outcome counts and duration. Exclude values and value lengths, roles, identity/provider details, key names and all audit records. | Origin at [Team actions](../../studio/frontend/src/workspace/Workspace.tsx#L1944) and [SecretsVault.run](../../studio/frontend/src/workspace/SecretsVault.tsx#L45). Necessary private security records remain independent. |
-| Separate resource cells: `cpu_millicores`, `rss_bytes`, `resource_budget_bytes`, `queue_drops` | Coarse local CPU/RSS/budget and discarded-observation buckets. Wire metrics attach only to allowed workflows; pressure/expiry views remain proposals. No uptime, process IDs, exact timestamps, hardware profile or opt-out event. | Future owned local sampler under shared policy. [Process resources](../../mnemion/service/resources.py#L75), [memory budget](../../mnemion/service/memory_budget.py#L181), [inference queue](../../mnemion/service/inference_limits.py#L65) and [bounded stream reader](../../mnemion/agent_control.py#L160) provide techniques, not export-ready rows. Mixed-host totals and unmeasured wire traffic are excluded. |
+| Separate resource cells: `cpu_millicores`, `rss_bytes`, `resource_budget_bytes`, `queue_drops` | Coarse local CPU/RSS/budget and discarded-observation buckets. Wire metrics attach only to allowed workflows; pressure/expiry views remain proposals. No uptime, process IDs, exact timestamps, hardware profile or opt-out event. | Selected fresh source/capture owners now supply the limited process samples described above. A general sampler and full resource qualification remain open. [Process resources](../../mnemion/service/resources.py#L75), [memory budget](../../mnemion/service/memory_budget.py#L181) and [inference queue](../../mnemion/service/inference_limits.py#L65) remain private facilities, not export feeds. Mixed-host totals and unmeasured wire traffic are excluded. |
 
 A named subworkflow can have its own measurement, but its counts must not be
 summed with its parent's as total independent uses. Background polling is not

@@ -23,6 +23,24 @@ class Workflow:
         """A replay or unknown origin contributes nothing, including no submission."""
         self._finished = True
 
+    def resources(self, **values: int | float) -> None:
+        """Optional process-only sensors share this workflow's original fence."""
+        if self._finished:
+            return
+        try:
+            samples = [
+                {"kind": "resource", "metric": name, "value": value}
+                for name, value in values.items()
+            ]
+            aggregate.record_many(
+                self._root,
+                samples,
+                expected_revision=self._revision,
+                expected_generation=self._generation,
+            )
+        except Exception:
+            return
+
     def finish(self, outcome: str, reason: str = "none", **measurements: int | float) -> None:
         if self._finished:
             return
@@ -47,13 +65,12 @@ class Workflow:
                 "workflow": self._workflow,
                 "surface": self._surface,
             }
-            for item in (submission, value):
-                aggregate.record(
-                    self._root,
-                    item,
-                    expected_revision=self._revision,
-                    expected_generation=self._generation,
-                )
+            aggregate.record_many(
+                self._root,
+                [submission, value],
+                expected_revision=self._revision,
+                expected_generation=self._generation,
+            )
         except Exception:
             # Optional measurement never changes the user's operation or output.
             return

@@ -7,6 +7,8 @@ import { MacUpdateBridge, type MacUpdateEvent } from './macos-updates.js'
 import { WindowsUpdateBridge, type WindowsUpdateEvent, type WindowsUpdateTrust } from './windows-updates.js'
 import { createWindowsUpdateFetch } from './windows-update-network.js'
 import { refreshLinuxLoginEntry } from './linux-startup.js'
+import { UpdateMeasurement, type MaintenanceStore } from './maintenance-measurement.js'
+import type { TelemetryWorkflow } from './telemetry-workflow.js'
 
 let autoUpdater: typeof updaterPackage.autoUpdater
 type Preferences = { automaticUpdates: boolean; startAtLogin: boolean; background: boolean }
@@ -30,6 +32,7 @@ export class DesktopUpdates {
   private requestedRestartTimer?: NodeJS.Timeout
   private retryAttempts = 0
   private stopped = false
+  private readonly measurements: UpdateMeasurement
   private readonly path = join(app.getPath('userData'), 'desktop-preferences.json')
   private readonly managed = process.env.MNEMION_AUTO_UPDATE === '0'
   private readonly supported = app.isPackaged && !process.env.MNEMION_STUDIO_SMOKE_FILE
@@ -38,7 +41,8 @@ export class DesktopUpdates {
 
   constructor(private window: () => BrowserWindow | null, private busy: () => boolean,
     private beforeRestart: () => boolean | Promise<boolean>, private changed: () => void,
-    private restartCancelled: () => void = () => {}) {
+    private restartCancelled: () => void = () => {}, telemetry?: MaintenanceStore) {
+    this.measurements = new UpdateMeasurement(telemetry)
     const firstLaunch = !existsSync(this.path)
     try {
       const text = readFileSync(this.path, 'utf8')
@@ -80,13 +84,18 @@ export class DesktopUpdates {
       autoUpdater.disableWebInstaller = true
       autoUpdater.logger = null // Provider errors can contain URLs; expose bounded status only.
       this.applyUpdatePolicy()
-      autoUpdater.on('update-available', info => this.setStatus({ state: 'Downloading update', version: info.version }))
+      autoUpdater.on('update-available', info => {
+        if (this.enabled && !this.downloaded) this.measurements.downloading()
+        this.setStatus({ state: 'Downloading update', version: info.version })
+      })
       autoUpdater.on('update-not-available', () => {
+        this.measurements.finish('success')
         this.clearRetry()
         this.setStatus({ state: 'Up to date', checkedAt: new Date().toISOString() })
       })
       autoUpdater.on('download-progress', progress => this.setStatus({ state: 'Downloading update', percent: Math.round(progress.percent) }))
       autoUpdater.on('update-downloaded', info => {
+        this.measurements.finish('success')
         this.clearRetry()
         this.downloaded = true
         this.readyVersion = info.version
@@ -113,6 +122,7 @@ export class DesktopUpdates {
       for (const timer of this.timers) timer.unref()
     }
     app.on('will-quit', () => {
+      this.measurements.discard()
       this.stopped = true
       this.clearRetry()
       if (this.requestedRestartTimer) clearTimeout(this.requestedRestartTimer)
@@ -157,15 +167,18 @@ export class DesktopUpdates {
   private platformEvent(event: MacUpdateEvent | WindowsUpdateEvent) {
     if (event.state === 'ready') {
       if (!this.enabled) { void (this.mac || this.windows)?.cancel(); return }
+      this.measurements.finish('success')
       this.clearRetry()
       this.downloaded = true
       this.readyVersion = event.version
       this.setStatus({ state: 'Update ready · waiting for a safe restart', version: event.version })
     } else if (event.state === 'downloading') {
+      if (this.enabled && !this.downloaded) this.measurements.downloading()
       if (this.enabled) this.setStatus({ state: 'Downloading update', version: event.version, percent: event.percent })
     } else if (event.state === 'verifying') {
       if (this.enabled) this.setStatus({ state: 'Verifying update' })
     } else if (event.state === 'current') {
+      this.measurements.finish('success')
       this.clearRetry()
       this.setStatus({ state: 'Up to date', checkedAt: new Date().toISOString() })
     } else if (event.state === 'error') {
@@ -174,6 +187,7 @@ export class DesktopUpdates {
       this.installing = false
       this.scheduleRetry()
     } else if (event.state === 'cancelled') {
+      this.measurements.finish('cancelled')
       this.downloaded = false
       this.installing = false
       this.setStatus({ state: this.enabled ? 'Automatic updates enabled' : 'Automatic updates paused' })
@@ -209,6 +223,7 @@ export class DesktopUpdates {
       this.save()
       this.applyUpdatePolicy()
       if (!this.enabled) {
+        this.measurements.finish('cancelled')
         this.clearRetry()
         this.cancelDownload?.()
         const updater = this.mac || this.windows
@@ -245,6 +260,7 @@ export class DesktopUpdates {
     if (!this.enabled || this.downloaded || this.stopped || this.retryTimer) return
     const base = retryDelays[this.retryAttempts]
     if (base === undefined) {
+      this.measurements.finish('failed')
       this.setStatus({ state: 'Update unavailable · next scheduled check will retry' })
       return
     }
@@ -313,26 +329,34 @@ export class DesktopUpdates {
     if (this.installing) return
     this.installing = true
     this.changed()
+    let measurement: TelemetryWorkflow | null = null
     try {
+      measurement = await this.measurements.applying()
       // Close the managed service/database before replacing bundled runtimes.
       // Recheck drafts and real inactivity after that asynchronous shutdown.
       if (!await this.beforeRestart()) {
+        measurement?.discard()
         this.waitingToRestart('busy')
         this.installing = false; this.restartCancelled(); return
       }
       if (!await this.restartIsSafe(requested)) {
+        measurement?.discard()
         this.installing = false; this.restartCancelled(); return
       }
       if (this.mac) {
-        if (!this.mac.install()) { this.installing = false; this.restartCancelled() }
+        if (this.mac.install()) void measurement?.finish('accepted')
+        else { measurement?.discard(); this.installing = false; this.restartCancelled() }
       } else if (this.windows) {
         const started = await this.windows.install(() => this.restartIsSafe(requested))
-        if (started) app.quit()
-        else { this.installing = false; this.restartCancelled() }
+        if (started) { void measurement?.finish('accepted'); app.quit() }
+        else { measurement?.discard(); this.installing = false; this.restartCancelled() }
       } else {
         autoUpdater.quitAndInstall(true, true)
+        // Best effort after the actual handoff; never flush or hold up shutdown.
+        void measurement?.finish('accepted')
       }
     } catch {
+      void measurement?.finish('failed', 'other_failure')
       this.installing = false
       this.restartCancelled()
       this.setStatus({ state: 'Update could not restart safely · retry scheduled' })

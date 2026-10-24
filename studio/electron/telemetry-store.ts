@@ -138,21 +138,27 @@ export class NativeTelemetryStore {
       database.prepare('DELETE FROM producer_budget WHERE window_day != ?').run(day)
       const rows = database.prepare('SELECT cell, count, window_day FROM pending LIMIT 513').all()
       if (rows.length > 512) throw failure()
+      const occupied = new Set<number>()
+      const remove = database.prepare('DELETE FROM pending WHERE cell=?')
       for (const row of rows) {
         if (!integer(row.cell, 65535) || !integer(row.count, 255, 1) || !integer(row.window_day, 1000000)) throw failure()
-        if (!company.groups.includes(this.catalog.describe(row.cell).group)) database.prepare('DELETE FROM pending WHERE cell=?').run(row.cell)
+        if (!company.groups.includes(this.catalog.describe(row.cell).group)) remove.run(row.cell)
+        else occupied.add(row.cell)
       }
+      // Reuse this transaction's statements and capacity snapshot for the pair.
+      // No connection, statements or settings survive the policy transaction.
+      const budget = database.prepare('SELECT count FROM producer_budget WHERE scope=?')
+      const contribute = database.prepare('INSERT INTO producer_budget VALUES (?, 1, ?) ON CONFLICT(scope) DO UPDATE SET count=count+1, window_day=excluded.window_day')
+      const update = database.prepare('INSERT INTO pending VALUES (?, 1, ?) ON CONFLICT(cell) DO UPDATE SET count=CASE WHEN pending.window_day=excluded.window_day THEN min(pending.count+1, 255) ELSE 1 END, window_day=excluded.window_day')
       let recorded = false
       for (const { scope, cells } of observations) {
         const permitted = cells.filter(cell => company.groups.includes(this.catalog.describe(cell).group))
-        const prior = database.prepare('SELECT count FROM producer_budget WHERE scope=?').get(scope)
+        const prior = budget.get(scope)
         const limit = scope >= 512 ? this.catalog.specification.limits.resource_observations_per_day : this.catalog.specification.limits.observations_per_workflow_day
-        const occupied = new Set(database.prepare('SELECT cell FROM pending LIMIT 513').all().map(row => row.cell))
         if (prior && !integer(prior.count, 64, 1)) throw failure()
-        if (!permitted.length || (prior && Number(prior.count) >= limit) || new Set([...occupied, ...permitted]).size > 512) continue
-        database.prepare('INSERT INTO producer_budget VALUES (?, 1, ?) ON CONFLICT(scope) DO UPDATE SET count=count+1, window_day=excluded.window_day').run(scope, day)
-        const update = database.prepare('INSERT INTO pending VALUES (?, 1, ?) ON CONFLICT(cell) DO UPDATE SET count=CASE WHEN pending.window_day=excluded.window_day THEN min(pending.count+1, 255) ELSE 1 END, window_day=excluded.window_day')
-        for (const cell of permitted) update.run(cell, day)
+        if (!permitted.length || (prior && Number(prior.count) >= limit) || occupied.size + permitted.filter(cell => !occupied.has(cell)).length > 512) continue
+        contribute.run(scope, day)
+        for (const cell of permitted) { update.run(cell, day); occupied.add(cell) }
         recorded = true
       }
       database.exec('COMMIT')

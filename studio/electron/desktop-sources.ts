@@ -2,6 +2,7 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import type { CredentialCipher } from './workspace-store.js'
 import { sourceMessages } from './desktop-source-process.js'
+import { beginMaintenance, finishSource, type MaintenanceStore } from './maintenance-measurement.js'
 import { matchingCaptureHistory, readCaptureArchive, readCaptureDrained, readCapturePreview, readCaptureRecoveries, readCaptureRestored, validCaptureCoverage, validCaptureStorage } from './capture-messages.js'
 import type { CaptureArchiveInfo, CaptureBackupInput, CaptureDrained, CaptureDrainInput, CaptureInspectInput, CapturePreview, CaptureRecoveries, CaptureRestored, CaptureRestoreControl, CaptureRestoreInput, CaptureRestoreResult, DesktopSource, DesktopSourceView, SourceActivity, SourceConfigure, SourceControl, SourcePreviewSelection, SourceReason, SourceReport } from '../shared/desktop-sources.js'
 
@@ -10,7 +11,7 @@ type Document = { format: 1; revision: string; sources: SavedSource[] }
 export type SourceCall = (request: Record<string, unknown>, signal?: AbortSignal,
   resources?: (bytes: number) => void) => Promise<Record<string, unknown>>
 type Options = { call: SourceCall; cipher: CredentialCipher; changed?: () => void; now?: () => number;
-  retirementCredential?: (source: DesktopSource, supplied: string) => Promise<string> }
+  retirementCredential?: (source: DesktopSource, supplied: string) => Promise<string>; telemetry?: MaintenanceStore }
 const UUID = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/
 const messages: Partial<Record<SourceReason, string>> = { ...sourceMessages,
   history_reset: 'Scan history was reset after preserving its damaged record. Earlier outcomes are unknown; source settings and memories were retained.',
@@ -481,6 +482,8 @@ export class DesktopSources {
     const source = this.document.sources.filter(item => item.enabled && (this.pending.has(item.id) || (this.next.get(item.id) ?? 0) <= this.now()))
       .sort((a, b) => (this.next.get(a.id) ?? 0) - (this.next.get(b.id) ?? 0))[0]
     if (!source) return
+    // Explicit Sync requests already have an originating desktop/native owner.
+    const automatic = !this.pending.has(source.id)
     this.pending.delete(source.id)
     const abort = new AbortController()
     const run = randomUUID()
@@ -490,7 +493,10 @@ export class DesktopSources {
     activity.work = (async () => {
       let began = false
       let observation: SourceActivity | undefined
+      const measurement = automatic ? await beginMaintenance(this.options.telemetry, source.custody ? 'capture.collect' : 'sources.scan') : null
+      let peakRss = 0
       try {
+        abort.signal.throwIfAborted()
         const opened = await this.options.call({ operation: 'status_begin', owner: this.owner, run,
           id: source.id, expected_revision: this.document!.revision })
         if (opened.format !== 1 || opened.id !== source.id) throw new Error('Unconfirmed scan start')
@@ -515,7 +521,8 @@ export class DesktopSources {
         abort.signal.throwIfAborted()
         const report = readReport(await this.options.call({ operation: 'scan', source: publicSource(source), credential,
           ...(provider ? { provider_credential: provider } : {}), ...(inboxKey ? { inbox_key: inboxKey } : {}) }, abort.signal,
-          bytes => { this.rss = bytes }))
+          bytes => { this.rss = bytes; peakRss = Math.max(peakRss, bytes) }))
+        finishSource(measurement, report, { rss: peakRss, limit: source.memory_limit_mib * 1024 * 1024 })
         observation = { ...this.activities.get(source.id), phase: report.completed ? 'complete' : 'attention', report,
           ...(report.completed ? {} : { reason_code: 'partial', message: messages.partial }) }
         const completed = await this.options.call({ operation: 'status_finish', owner: this.owner, id: source.id, run, report })
@@ -525,6 +532,7 @@ export class DesktopSources {
         if (finished.phase === 'scanning') throw new Error('Unconfirmed scan outcome')
         this.remember(source.id, finished)
       } catch (error) {
+        void measurement?.finish(abort.signal.aborted ? 'cancelled' : 'failed', abort.signal.aborted ? 'none' : 'other_failure')
         if (!began || observation) this.unconfirmed(source.id, error, observation)
         else {
           const code = abort.signal.aborted ? 'source_cancelled' : failureReason(error)

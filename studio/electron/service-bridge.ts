@@ -273,7 +273,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
   function desktopSources(): DesktopSources {
     if (sources) return sources
     const root = join(localBase(), 'mnemion-desktop-sources')
-    sources = new DesktopSources({ cipher: workspaceCipher(), retirementCredential: async (source, supplied) => {
+    sources = new DesktopSources({ cipher: workspaceCipher(), telemetry: telemetryStore, retirementCredential: async (source, supplied) => {
       const header = 'Bearer ' + supplied
       // Renderer handles remain bound to their own origin and API prefix. The
       // server independently checks current tenant/grant authority for removal.
@@ -1017,6 +1017,7 @@ export function installServiceBridge(getWindow: () => BrowserWindow | null,
 
   return {
     localDiagnostic: () => localDiagnostic(local?.status.diagnostic),
+    maintenanceTelemetry: telemetryStore,
     localBusy: () => localSwitching || !!operatorMutation || !!backups?.busy || !!sources?.busy || !!agentSetup?.busy || !!hosts?.busy || (local?.busy ?? false),
     localActive: () => localSwitching || !!operatorMutation || !!backups?.busy || !!sources?.busy || !!agentSetup?.busy || !!hosts?.busy || (local?.active ?? false),
     stopLocal: () => local?.stop() ?? Promise.resolve(true),

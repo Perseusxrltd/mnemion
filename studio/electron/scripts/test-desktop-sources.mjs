@@ -3,6 +3,8 @@ import { randomUUID } from 'node:crypto'
 import { setImmediate } from 'node:timers/promises'
 import { test } from 'node:test'
 import { isDeepStrictEqual } from 'node:util'
+import { readFileSync } from 'node:fs'
+import { TelemetryCatalog } from '../dist/telemetry-catalog.js'
 import { DesktopSources } from '../dist/desktop-sources.js'
 import { sourceProcess } from '../dist/desktop-source-process.js'
 import { desktopAction } from '../dist/desktop-actions.js'
@@ -134,6 +136,51 @@ async function fixture(t) {
 
 const retainedDefinition = () => ({ ...definition(), provider: 'conversations', capture_mode: 'messages',
   custody: { source_id: randomUUID(), grant_id: randomUUID(), keep_accepted: true, pending_limit_mib: 256 } })
+
+function measurements() {
+  const rows = [], choice = { enabled: true, revision: 0 }
+  const store = { available: true, catalog: new TelemetryCatalog(JSON.parse(readFileSync(new URL('../dist/telemetry-catalog.json', import.meta.url), 'utf8'))),
+    snapshot: async () => choice.enabled ? { revision: choice.revision, store_generation: 'a'.repeat(32) } : null,
+    recordMany: async (values, stamp) => {
+      if (!choice.enabled || stamp.revision !== choice.revision) return false
+      for (const value of values) store.catalog.observation(value)
+      rows.push(...structuredClone(values)); return true
+    } }
+  return { rows, choice, store }
+}
+
+test('fresh scheduled source work has one owner and explicit Sync has its existing owner', async t => {
+  const f = await fixture(t), measured = measurements(), source = definition()
+  f.options.telemetry = () => measured.store
+  await f.add(source); await f.manager.start(); await f.flush()
+  assert.equal(f.state.scans.length, 1)
+  f.state.scans[0].finish(); await f.flush()
+  const submissions = () => measured.rows.filter(row => row.kind === 'submission')
+  assert.deepEqual(submissions(), [{ kind: 'submission', workflow: 'sources.scan', surface: 'desktop' }])
+  assert.equal(measured.rows.filter(row => row.kind === 'resource').length, 2)
+  assert.equal(JSON.stringify(measured.rows).includes(source.id), false)
+  assert.equal(JSON.stringify(measured.rows).includes(source.path), false)
+  measured.rows.length = 0
+  const status = await f.manager.status()
+  await f.manager.control('sync', { id: source.id, expected_revision: status.revision })
+  await f.flush()
+  assert.equal(f.state.scans.length, 2)
+  f.state.scans[1].finish(); await f.flush()
+  assert.deepEqual(measured.rows, [], 'The queued continuation does not duplicate its explicit action owner')
+})
+
+test('empty scans and a late opted-out source completion produce no product counts', async t => {
+  const f = await fixture(t), measured = measurements()
+  f.options.telemetry = () => measured.store
+  await f.add(); await f.manager.start(); await f.flush()
+  f.state.scans[0].finish({ ...report(), changed: 0 }); await f.flush()
+  assert.deepEqual(measured.rows, [])
+  f.advance(301); const running = f.manager.tick(); await f.flush()
+  assert.equal(f.state.scans.length, 2)
+  measured.choice.enabled = false; measured.choice.revision++
+  f.state.scans[1].finish(); await running; await f.flush()
+  assert.deepEqual(measured.rows, [])
+})
 
 for (const phase of ['load', 'status']) test('closing drains startup ' + phase + ' before declaring sources stopped', async t => {
   const f = await workspaceFixture(t)

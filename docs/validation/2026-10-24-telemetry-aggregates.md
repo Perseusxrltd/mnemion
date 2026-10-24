@@ -351,7 +351,8 @@ This is a component diagnostic, not resource acceptance or a replacement for
 the original **3.61 MiB versus 2 MiB** gap. The ceiling is unchanged.
 
 These receipts do not establish final source inventory, integration or a future
-CI result. Background/updater owners, resource optimization, remaining workflow
+CI result. At that UI/MCP checkpoint, background/updater owners were still open.
+Resource optimization, remaining workflow
 qualification, sender/collector, final-send cancellation, anonymity and
 all-platform release acceptance remain open. V08 stays **Building**, with no
 other requirement text or state changed.
@@ -366,3 +367,95 @@ At **03:41 UTC**, [CI 40058889975](https://github.com/Perseusxrltd/mnemion/actio
 had **eight of 12 jobs passed**, including both container jobs, with no failures.
 That dated observation does not establish completion of the entire CI run or
 qualify this later UI/MCP source batch.
+
+## Paired writes and fresh local maintenance — 24 October 2026
+
+Python's [record_many](../../mnemion/product_telemetry/aggregate.py) now validates
+and commits a workflow submission/outcome pair in one current-policy transaction.
+The [native store](../../studio/electron/telemetry-store.ts) reuses transaction
+statements and its occupied-cell set. Connections and policy do not survive the
+transaction; generation/revision, per-observation contribution caps and queue
+limits remain intact. Capacity can still suppress an individual observation.
+
+The new [maintenance map](../../mnemion/product_telemetry/maintenance-origins.json)
+exposes the fifth `owned_origin_coverage` map: **six origins, five sensor
+descriptions and nine exclusions**. Its SHA-256 is
+`fd3866ff07c15b70c98704fb17c8f866b7a97c77d740c627be526b7af76421f9`.
+Fresh automatic desktop scans and standalone source/capture execution own new
+work. Empty successful scans, paused work, explicit Sync continuations,
+remote-requested/host-managed scans, reusable sync and server-worker activity
+are excluded. Only reviewed numeric work/queue/capture-store-size fields, fixed
+outcomes and coarse own-process sensors enter the encoder; saved histories,
+private identifiers and mixed-host totals do not.
+
+Native resource observations need an actual child RSS callback and use its
+observed maximum plus configured worker limit. Headless observations use ending
+RSS, own CPU-time delta over the work interval and capture budget where available;
+they are not peak or whole-host measurements. Resource writes and the workflow
+pair are separately bounded by the original policy fence.
+
+Automatic updater download, verification and bounded retries share one cycle
+with terminal success, failure or cancellation. Current-version/safety polls
+add no use. Quit discards unfinished cycles. Installer handoff is only
+`accepted`, with no installed-version claim. Its optional snapshot has a **25 ms**
+wait budget before the original guarded action; there is no shutdown flush or
+wait for telemetry.
+Existing native request acknowledgements retain separate workflow categories.
+
+| Recorded source check | Result | SHA-256 |
+| --- | --- | --- |
+| Initial paired Python selection | **41 passed**, 6.29 seconds | `87e00f21237276d80dd2f8a84e33115cd80c811f22f82bf27f51ab6c30c11b48` |
+| Python maintenance selection | **49 passed**, 8.28 seconds | `d7a9a38f64b18b325773dae7e702733f15bda848b33b7caed73ab880ab86fd4d` |
+| Source controller under ordinary Node | **104 passed**, zero skips | `d0c3c8369889783adfdfbe6ecc15d4a968c67881ee70b0853b75144de65e3823` |
+| Corrected updater under ordinary Node | **20 passed**, zero skips | `08e2c0ce2980d60bf4fed0d33b1287966d2ada2e60095e31aa799aea41ef1cad` |
+| Native store under Electron | **Nine passed, two Windows-only skips** | `54c7bc36a1bc0690f5d949615cc261ab1fe69b18edf29e6319d0f02b6cf0a4fc` |
+
+These are separate selections, not additive counts of unique tests. The original
+maintenance run used Electron for ordinary Node child fixtures and recorded
+**111 passed, two failed and two Windows skips**. The two child fixtures lost
+`ELECTRON_RUN_AS_NODE`. The corrected ordinary Node run qualifies their intended
+environment; the original failure remains. The updater's Electron attempt
+aborted before its scenarios because `process.resourcesPath` was read-only.
+The first ordinary Node updater attempt then recorded **15 passed and five
+cancelled**: a new promise-based `setImmediate` import shadowed the existing
+callback global. Aliasing that import produced the corrected 20-test pass.
+These runner corrections do not establish an installed updater result.
+
+| Preserved runner failure | SHA-256 |
+| --- | --- |
+| Incorrect Electron maintenance runner | `e42b835a5b3917577d1d683fb215a893a056d307aab11dbff794993b5f128e94` |
+| Updater Electron pre-scenario failure | `6c8cd5d573fd6043276532f068c892e63ee9032e56eba0083f2baa80653574ac` |
+| Initial Node updater cancellations | `d2c1416e4ba7398000e54746c692198d860f1dd4471f8741402a7bedc1bdf86f` |
+
+The post-optimization component phase diagnostic recorded **3,235,840 bytes
+(3.09 MiB)** added RSS after 32 workflows, with a 16 KiB database. Its SHA-256 is
+`73a41ef450c92dfd8c06fc8fd8695de1eb1eafdab7da65c870f01b4e8f129ffe`.
+It remains diagnostic, above the unchanged **2 MiB** target, and does not replace
+the earlier 3.61/3.27 MiB observations or qualify whole-app/all-platform cost.
+
+The corrected isolated main-process probe completed **32 paired workflows**
+after actual app **`client-ready`** bootstrap on Linux, Electron 44.9.3 /
+Node 24.22.0. It measured **1,249,280 bytes (1.19 MiB)** added RSS and **55.519 ms
+CPU over 627.299 ms** of work. This is headless main activation only, not whole-app,
+all-platform or CPU acceptance; it does not replace the cold 3.61/3.27/3.09 MiB
+results or relax the 2 MiB target. The temporary profile was removed, with no
+production memory/model calls and no sender or released collection.
+
+The first probe's top-level `app.whenReady()` wait timed out before measurement.
+The second checked tray readiness prematurely and lacked its sibling bridge/
+selected Python. Both failures are retained; the third changed only the fixture
+bootstrap, not product code.
+
+| Main-process probe evidence | SHA-256 |
+| --- | --- |
+| First timeout receipt | `36f92722bfb8288fafed313a1c0957749f1a7c30014fbc82af76ac1b5ad7156e` |
+| Second fixture-failure receipt | `3f68dda6d7db2d0488f242d21075beef5efe5449b694f0d83efb6f78dfed8856` |
+| Corrected diagnostic result | `d6ebfc0814799ef27cfde2d9963f642c47a7a0e24bf1f2b5bb61d17527e5563e` |
+| Corrected probe log | `7419c6dc7c04be0b144e0e179e82f29a7a51ec483b8647bb31f95dbc0f384a58` |
+
+Final builds, input inventory, integration and CI remain pending
+at this checkpoint. Remaining owner/coverage review, full resource and
+all-platform release acceptance, final-send cancellation and anonymous
+sender/collector qualification remain open. Collection is still unavailable,
+the destination is null and V08 stays **Building**. All 66 requirement texts and
+other states are unchanged; the released security-only 4.46.6 remains separate.

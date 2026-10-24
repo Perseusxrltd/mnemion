@@ -1,10 +1,12 @@
 /** Exercise the actual controller across asynchronous shutdown/install guards. */
 import assert from 'node:assert/strict'
 import { EventEmitter } from 'node:events'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { after, mock, test } from 'node:test'
+import { setImmediate as immediate } from 'node:timers/promises'
+import { TelemetryCatalog } from '../dist/telemetry-catalog.js'
 
 const temporary = mkdtempSync(join(tmpdir(), 'mnemion-update-controller-'))
 const previousResources = process.resourcesPath
@@ -44,7 +46,7 @@ after(() => {
   rmSync(temporary, { recursive: true, force: true })
 })
 
-function fixture(t, { ready = true } = {}) {
+function fixture(t, { ready = true, telemetry } = {}) {
   directory = mkdtempSync(join(temporary, 'profile-'))
   mkdirSync(join(directory, '.config'))
   writeFileSync(join(directory, 'desktop-preferences.json'), JSON.stringify({ automaticUpdates: true, startAtLogin: false, background: true }))
@@ -58,7 +60,7 @@ function fixture(t, { ready = true } = {}) {
   const window = { isFocused: () => state.focused, isVisible: () => true, isMinimized: () => false,
     webContents: { executeJavaScript: async () => state.safe } }
   const controller = new DesktopUpdates(() => window, () => state.busy,
-    async () => { state.drains++; return await state.drain() }, () => {}, () => { state.cancelled++ })
+    async () => { state.drains++; return await state.drain() }, () => {}, () => { state.cancelled++ }, telemetry)
   // The adapter is a fixture; policy, all controller rechecks and the exact
   // Windows final authorization callback remain the production implementation.
   controller.mac = undefined
@@ -87,6 +89,63 @@ function localAction(controller, action, input = {}, signal = new AbortControlle
   desktopAction(action, input)
   return desktopAppAction(controller, action, input, signal)
 }
+
+function measurements() {
+  const rows = [], choice = { enabled: true, revision: 0 }
+  const store = { available: true, catalog: new TelemetryCatalog(JSON.parse(readFileSync(new URL('../dist/telemetry-catalog.json', import.meta.url), 'utf8'))),
+    snapshot: async () => choice.enabled ? { revision: choice.revision, store_generation: 'a'.repeat(32) } : null,
+    recordMany: async (values, stamp) => {
+      if (!choice.enabled || stamp.revision !== choice.revision) return false
+      for (const value of values) store.catalog.observation(value)
+      rows.push(...structuredClone(values)); return true
+    } }
+  return { rows, choice, store }
+}
+
+test('one download cycle owns progress, signature verification and its retry', async t => {
+  const measured = measurements(), { controller } = fixture(t, { ready: false, telemetry: () => measured.store })
+  await controller.check()
+  controller.platformEvent({ state: 'current' })
+  await immediate()
+  assert.deepEqual(measured.rows, [], 'Ordinary current-version polling is not usage')
+  controller.platformEvent({ state: 'downloading', version: '4.0.12', percent: 1 })
+  controller.platformEvent({ state: 'downloading', version: '4.0.12', percent: 20 })
+  controller.platformEvent({ state: 'verifying' })
+  controller.platformEvent({ state: 'error', message: 'PRIVATE_URL_OR_ERROR' })
+  await controller.check(true)
+  controller.platformEvent({ state: 'downloading', version: '4.0.12', percent: 60 })
+  controller.platformEvent({ state: 'ready', version: '4.0.12' })
+  await immediate()
+  assert.deepEqual(measured.rows.filter(row => row.kind === 'submission'), [{ kind: 'submission', workflow: 'update.download', surface: 'desktop' }])
+  assert.equal(measured.rows.find(row => row.kind === 'outcome').outcome, 'success')
+  assert.equal(/PRIVATE|4\.0\.12|percent/.test(JSON.stringify(measured.rows)), false)
+})
+
+test('opt-out and quit discard pending update measurement without changing updater behavior', async t => {
+  const measured = measurements(), { controller } = fixture(t, { ready: false, telemetry: () => measured.store })
+  controller.platformEvent({ state: 'downloading', version: '4.0.12', percent: 1 })
+  await immediate()
+  measured.choice.enabled = false; measured.choice.revision++
+  controller.platformEvent({ state: 'ready', version: '4.0.12' })
+  await immediate()
+  assert.equal(controller.canRequestRestart, true)
+  assert.deepEqual(measured.rows, [])
+  measured.choice.enabled = true
+  controller.downloaded = false
+  controller.platformEvent({ state: 'downloading', version: '4.0.13', percent: 1 })
+  app.emit('will-quit')
+  await immediate()
+  assert.deepEqual(measured.rows, [])
+})
+
+test('installer handoff reports accepted only after the real final safety check', async t => {
+  const measured = measurements(), { controller, state } = fixture(t, { telemetry: () => measured.store })
+  await controller.restartIfSafe(true)
+  await immediate()
+  assert.equal(state.installs, 1)
+  assert.deepEqual(measured.rows.filter(row => row.kind === 'submission'), [{ kind: 'submission', workflow: 'update.apply', surface: 'desktop' }])
+  assert.equal(measured.rows.find(row => row.kind === 'outcome').outcome, 'accepted')
+})
 
 test('local agents see independent app update policy and cannot mutate the returned snapshot', t => {
   const { controller } = fixture(t)

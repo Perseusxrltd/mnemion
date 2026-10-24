@@ -587,7 +587,7 @@ if (!hasSingleInstanceLock) {
         const stopped = await desktopBridge.stopLocalForUpdate()
         if (stopped) isQuitting = true
         return stopped
-      }, refreshMenus, () => { isQuitting = false; void desktopBridge.resumeLocalAfterCancelledUpdate().catch(() => {}) })
+      }, refreshMenus, () => { isQuitting = false; void desktopBridge.resumeLocalAfterCancelledUpdate().catch(() => {}) }, desktopBridge.maintenanceTelemetry)
       void desktopBridge.bootLocal()
       void desktopBridge.bootOperator()
       const backendReady = legacyEnabled ? waitForBackend(`http://127.0.0.1:${backendPort}/api/status`)

@@ -1,0 +1,61 @@
+/** Owned device work only. No logs, identifiers, versions or remote job history. */
+import { TelemetryWorkflow, type WorkflowStore } from './telemetry-workflow.js'
+
+export type MaintenanceStore = () => WorkflowStore
+const workflows = new Set(['sources.scan', 'capture.collect', 'update.download', 'update.apply'])
+
+export async function beginMaintenance(store: MaintenanceStore | undefined, workflow: string): Promise<TelemetryWorkflow | null> {
+  if (!store || !workflows.has(workflow)) return null
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    return await Promise.race([TelemetryWorkflow.begin(store(), workflow, 'desktop'),
+      new Promise<null>(resolve => { timer = setTimeout(() => resolve(null), 25) })])
+  } catch { return null }
+  finally { if (timer) clearTimeout(timer) }
+}
+
+type SourceResult = {
+  completed: boolean; changed: number; removed: number; conflicts: number; remote_sync_available: boolean
+  capture?: { locally_accepted: number; pending_events: number; remote_committed_events: number;
+    database_bytes: number; capture_complete: boolean; delivery_complete: boolean; reason_code?: string | null }
+}
+
+export function finishSource(measurement: TelemetryWorkflow | null, report: SourceResult, resources?: { rss: number; limit: number }): void {
+  if (!measurement) return
+  try {
+    const capture = report.capture
+    const worked = capture ? capture.locally_accepted + capture.remote_committed_events
+      : report.changed + report.removed + report.conflicts
+    // A timer finding nothing new is not a user action or a completed work item.
+    if (report.completed && worked === 0) { measurement.discard(); return }
+    const metrics: Record<string, number> = capture
+      ? { work_items: capture.locally_accepted, queue_items: capture.pending_events, stored_bytes: capture.database_bytes }
+      : { work_items: report.changed + report.removed, result_items: report.changed }
+    const denied = capture?.reason_code === 'capture_authorization_revoked'
+    const outcome = report.completed ? 'success' : denied ? 'denied' : 'deferred'
+    const reason = report.completed ? 'none' : denied ? 'authorization' : !report.remote_sync_available ? 'offline' : 'other_failure'
+    // These samples describe only this owned worker, never host-wide totals.
+    if (resources && resources.rss > 0) void measurement.resources([
+      { metric: 'rss_bytes', value: resources.rss }, { metric: 'resource_budget_bytes', value: resources.limit },
+    ])
+    void measurement.finish(outcome, reason, metrics)
+  } catch { measurement.discard() }
+}
+
+/** A download including its retry/verification steps has one terminal outcome. */
+export class UpdateMeasurement {
+  private download?: Promise<TelemetryWorkflow | null>
+  constructor(private readonly store?: MaintenanceStore) {}
+  downloading(): void { this.download ??= beginMaintenance(this.store, 'update.download') }
+  finish(outcome: 'success' | 'failed' | 'cancelled'): void {
+    const pending = this.download
+    this.download = undefined
+    void pending?.then(value => value?.finish(outcome, outcome === 'failed' ? 'other_failure' : 'none')).catch(() => {})
+  }
+  discard(): void {
+    const pending = this.download
+    this.download = undefined
+    void pending?.then(value => value?.discard()).catch(() => {})
+  }
+  applying(): Promise<TelemetryWorkflow | null> { return beginMaintenance(this.store, 'update.apply') }
+}

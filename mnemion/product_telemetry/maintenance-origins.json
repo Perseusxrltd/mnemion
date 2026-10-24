@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "ownership": "Fresh work performed by a disclosed local desktop or standalone connector process. No persisted operational history or cross-user server work is exported.",
+  "origins": {
+    "desktop.scheduled_source": { "workflow": "sources.scan", "surface": "desktop", "exclude_empty_success": true },
+    "desktop.scheduled_capture": { "workflow": "capture.collect", "surface": "desktop", "exclude_empty_success": true },
+    "headless.standalone_source": { "workflow": "sources.scan", "surface": "headless", "exclude_empty_success": true },
+    "headless.standalone_capture": { "workflow": "capture.collect", "surface": "headless", "exclude_empty_success": true },
+    "desktop.update_download": { "workflow": "update.download", "surface": "desktop", "retries": "one cycle including verification and bounded retries" },
+    "desktop.update_apply": { "workflow": "update.apply", "surface": "desktop", "success": "accepted installer handoff only; installed version is unobserved" }
+  },
+  "resources": {
+    "desktop_source_rss": "Maximum supplied by this owned worker's live RSS callback; unavailable if the worker supplies no sample.",
+    "desktop_source_budget": "The selected worker's configured memory ceiling, only alongside an actual worker RSS sample.",
+    "headless_source_rss": "This standalone process's RSS at the end of its work; not a peak or whole-host total.",
+    "headless_source_cpu": "This standalone process's CPU-time difference over the observed work interval; not whole-host activity.",
+    "headless_capture_budget": "The standalone retained-capture process's configured memory ceiling."
+  },
+  "exclusions": {
+    "empty_scan": "A successful scheduled scan with no changed/removed/conflicted or locally accepted/delivered items produces no product observation.",
+    "desktop_requested_scan": "An explicit Sync request already has its desktop/native-operator owner; the queued continuation contributes no second workflow.",
+    "reusable_sync": "Calling the reusable connector sync or capture helpers does not infer an owner.",
+    "remote_or_managed_scan": "Remote-requested scans and host-managed child processes do not inherit an administrator's telemetry choice.",
+    "inspection_and_controls": "Discovery, provider inspection, saved scan history and capture-control transport do not start a background observer.",
+    "updater_poll": "Scheduled current-version checks, progress messages and safe-restart readiness checks are not separate uses.",
+    "updater_internal_stage": "Signature verification and download retries belong to the original download cycle, not extra workflow submissions.",
+    "updater_quit": "Unfinished download observations are discarded on quit. No shutdown flush or inferred post-restart success.",
+    "mixed_host": "Shared service workers, their queues and host-wide CPU/RAM totals are not observed."
+  }
+}

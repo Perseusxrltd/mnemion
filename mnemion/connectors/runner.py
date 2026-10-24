@@ -496,6 +496,7 @@ def execute(args, parser) -> int:
     while True:
         started, started_at = time.monotonic(), datetime.now(timezone.utc).isoformat()
         backfill = False
+        measurement = None
         try:
             config = read_config(args.config)
             if args.capture_control:
@@ -511,6 +512,21 @@ def execute(args, parser) -> int:
                     result = perform(config, json.loads(body))
                 print(json.dumps({"ok": True, "result": result}, ensure_ascii=False), flush=True)
                 return 0
+            try:
+                from ..maintenance_measurement import begin_source
+            except Exception:
+                pass  # An optional observer import cannot stop source ingestion.
+            else:
+                measurement = begin_source(
+                    capture=config.capture is not None,
+                    owned=not args.inspect
+                    and trigger != "requested"
+                    and SCAN_REPORT_ENV not in os.environ
+                    and SCAN_TRIGGER_ENV not in os.environ,
+                    memory_limit=config.capture.memory_limit_mib * 1024 * 1024
+                    if config.capture is not None
+                    else None,
+                )
             if config.capture is not None:
                 from .capture_resources import bounded
 
@@ -518,6 +534,8 @@ def execute(args, parser) -> int:
                     report = sync(config, inspect=args.inspect)
             else:
                 report = sync(config, inspect=args.inspect)
+            if measurement is not None:
+                measurement.finish(report)
             report["trigger"] = trigger
             report["poll_seconds"] = config.poll_seconds
             if not args.inspect:
@@ -571,6 +589,8 @@ def execute(args, parser) -> int:
             InboxError,
             LocalSetupError,
         ) as exc:
+            if measurement is not None:
+                measurement.failed()
             print(
                 json.dumps(
                     {

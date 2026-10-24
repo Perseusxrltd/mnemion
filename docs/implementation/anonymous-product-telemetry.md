@@ -33,7 +33,7 @@ The [shared disclosure](../../mnemion/product_telemetry/disclosure.json) has
 preference does not complete disclosure or activate collection. The preview
 returns the measurement catalog, an empty local aggregate list, no outbound body
 and zero outgoing bytes. Owned CLI, desktop/native-operator, Studio/browser and
-explicit local stdio hooks exist in source; there is no
+explicit local stdio and selected fresh-maintenance hooks exist in source; there is no
 product sender, collector, production analytics or qualified anonymous ingress.
 
 The [versioned catalog and local queues](anonymous-product-telemetry-catalog.md)
@@ -73,8 +73,8 @@ focused contract check passed after the retained initial schema-reference test
 failure; the final focused Python selection then passed **51 tests**, and a
 fresh private wheel passed its isolated offline journey. These source checks
 do not qualify the published 4.46.6 artifact or native telemetry release.
-Collection remains off. The mapped hooks do not finish background/updater
-ownership, remaining workflow qualification, the sender/collector or full
+Collection remains off. The mapped hooks do not finish remaining autonomous-work
+ownership, workflow qualification, the sender/collector or full
 resource/privacy/platform acceptance.
 
 The current [desktop/Studio source batch](anonymous-product-telemetry-catalog.md#owned-desktop-native-operator-and-studio-coverage)
@@ -137,10 +137,43 @@ the schema version and unavailable source collection gate are unchanged.
 The [validation report](../validation/2026-10-24-telemetry-aggregates.md) retains
 the initial checks, original build failure and verified browser cleanup. A later
 **3.27 MiB** component phase diagnostic does not replace the original **3.61 MiB
-versus 2 MiB** resource gap or establish resource acceptance. Background/updater
-owners, optimization, sender/collector, final-send cancellation and all-platform
+versus 2 MiB** resource gap or establish resource acceptance. At that checkpoint,
+background/updater owners were still unfinished. Optimization, sender/collector,
+final-send cancellation and all-platform
 release acceptance remain open. Source inventory and integration qualification
 are not established by these journey receipts.
+
+The next [maintenance source batch](anonymous-product-telemetry-catalog.md#fresh-local-maintenance-coverage)
+adds the fifth `owned_origin_coverage` map, `maintenance`. Fresh automatic desktop
+source/capture work and the standalone connector entrypoint own their observed
+work; empty successful scans, paused work, explicit Sync continuations,
+remote-requested/host-managed scans, reusable sync and server-worker activity are
+excluded. Numeric work/queue/store-size fields and coarse own-process resource
+samples do not export source history or mixed-host totals. Native RSS/budget
+requires a real child callback; headless RSS is an ending observation, with its
+own CPU-time delta and configured capture limit where available.
+
+Automatic updater download, verification and retries form one observed cycle.
+Current-version and safety polls add no use; unfinished cycles are discarded on
+quit. Installer handoff is only `accepted`, with no installed-version claim or
+shutdown flush/wait. Its optional snapshot can wait up to **25 ms** before the
+original guarded action. Existing native request acknowledgements retain separate
+workflow categories. Python now commits each workflow pair in one current-policy
+transaction, and the native writer reuses statements within that transaction;
+the generation fence and per-observation limits remain unchanged.
+
+The [validation report](../validation/2026-10-24-telemetry-aggregates.md) records
+separate **41- and 49-test Python passes**, **104 source-controller and 20 updater
+Node passes**, and **nine Electron store passes with two Windows skips**. The
+original runner failures remain preserved. A **3.09 MiB** component diagnostic
+after optimization still exceeds the unchanged **2 MiB** target and does not
+replace the prior 3.61/3.27 MiB observations. The corrected isolated app-main
+probe then recorded **1.19 MiB** added RSS across 32 paired workflows after
+`client-ready`. This headless activation diagnostic does not qualify whole-app,
+all-platform or CPU overhead, or replace the cold measurements. Final
+builds/input inventory, integration, CI and full resource/platform acceptance
+remain pending.
+There is still no sender or collector; V08 remains Building.
 
 Saved source checks passed **10 policy tests** after the opt-out revision change,
 **12 native bridge/operator tests, 26 web/CSP tests and seven browser policy

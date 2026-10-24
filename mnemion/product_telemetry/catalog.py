@@ -54,6 +54,7 @@ def origin_specification() -> dict:
             ("studio", "studio-methods.json"),
             ("ui", "ui-origins.json"),
             ("mcp", "mcp-origins.json"),
+            ("maintenance", "maintenance-origins.json"),
         )
     }
 

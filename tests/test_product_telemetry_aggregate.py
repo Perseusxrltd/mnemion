@@ -42,6 +42,63 @@ def test_inactive_build_does_not_touch_disk_or_read_private_inputs(tmp_path):
     assert not root.exists()
 
 
+def test_workflow_pair_validates_before_storage_and_uses_one_transaction(enabled, monkeypatch):
+    root, _, revision, generation = enabled
+    statements = []
+    opened = 0
+    original = policy._connect
+
+    def connected(*args, **kwargs):
+        nonlocal opened
+        opened += 1
+        connection = original(*args, **kwargs)
+        connection.set_trace_callback(statements.append)
+        return connection
+
+    monkeypatch.setattr(policy, "_connect", connected)
+    submission = {"kind": "submission", "workflow": "memory.recall", "surface": "headless"}
+    choice = {"expected_revision": revision, "expected_generation": generation}
+    assert not aggregate.record_many(root, [submission, {"content": "PRIVATE"}], **choice)
+    assert not aggregate.record_many(root, [submission] * 3, **choice)
+    assert opened == 0
+    assert aggregate.record_many(root, [submission, observation(latency_ms=42)], **choice)
+    assert opened == 1
+    assert sum(value == "BEGIN IMMEDIATE" for value in statements) == 1
+    assert sum(value == "COMMIT" for value in statements) == 1
+    rows = aggregate.preview(root)
+    assert {row["metric"] for row in rows} == {"submissions", "outcomes", "latency_ms"}
+    assert all(row["count"] == 1 for row in rows)
+
+
+def test_pair_is_invisible_to_other_readers_until_its_single_commit(enabled, monkeypatch):
+    root, _, revision, generation = enabled
+    original = policy._connect
+    intermediate_counts = []
+
+    def connected(*args, **kwargs):
+        connection = original(*args, **kwargs)
+
+        def trace(statement):
+            if statement.startswith("INSERT INTO pending"):
+                with sqlite3.connect(root / policy.DATABASE_NAME) as reader:
+                    intermediate_counts.append(
+                        reader.execute("SELECT count(*) FROM pending").fetchone()[0]
+                    )
+
+        connection.set_trace_callback(trace)
+        return connection
+
+    monkeypatch.setattr(policy, "_connect", connected)
+    assert aggregate.record_many(
+        root,
+        [{"kind": "submission", "workflow": "memory.recall", "surface": "headless"}, observation()],
+        expected_revision=revision,
+        expected_generation=generation,
+    )
+    assert intermediate_counts and set(intermediate_counts) == {0}
+    assert len(aggregate.preview(root)) == 2
+
+
 def test_every_catalog_workflow_has_nonoverlapping_decodable_cells():
     seen = set()
     for workflow in catalog.WORKFLOWS:

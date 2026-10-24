@@ -31,6 +31,16 @@ export class TelemetryWorkflow {
 
   discard(): void { this.finished = true }
 
+  async resources(samples: { metric: string; value: number }[]): Promise<void> {
+    if (this.finished) return
+    try {
+      if (!Array.isArray(samples) || !samples.length || samples.length > 2) return
+      const values = samples.map(sample => ({ kind: 'resource', metric: sample.metric, value: sample.value }))
+      for (const value of values) this.store.catalog.observation(value)
+      await this.store.recordMany(values, this.stamp)
+    } catch { /* Unavailable sensors and optional storage never affect work. */ }
+  }
+
   async finish(outcome: string, reason = 'none', metrics: Record<string, number> = {}): Promise<void> {
     if (this.finished) return
     this.finished = true
