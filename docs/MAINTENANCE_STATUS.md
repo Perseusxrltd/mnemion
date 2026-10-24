@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-24T01:47:31+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-24T01:48:13+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.5](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.5). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -27,19 +27,16 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 ## Active jobs
 
-[Run 40051306831](https://github.com/Perseusxrltd/mnemion/actions/runs/40051306831): 3/12 jobs completed; 3 succeeded.
+[Run 40051306831](https://github.com/Perseusxrltd/mnemion/actions/runs/40051306831): 6/12 jobs completed; 6 succeeded.
 
-- studio: in\_progress — Run python deploy/bundle\_studio\.py.
-- container \(ubuntu-22\.04-arm\): in\_progress — Build the actual deployment image with its documentation.
-- container \(ubuntu-22\.04\): in\_progress — Build the actual deployment image with its documentation.
-- service \(3\.14\): in\_progress — Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38.
+- studio: in\_progress.
+- service \(3\.14\): in\_progress — Matching PostgreSQL recovery tools.
 - supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
 - supervision \(macos-15\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
-- service \(3\.12\): in\_progress — Run python -m pip install uv==0\.12\.24.
-- service \(3\.13\): in\_progress — Run python -m pip install uv==0\.12\.24.
-- legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
+- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 
 [Run 40047223740](https://github.com/Perseusxrltd/mnemion/actions/runs/40047223740): 32/33 jobs completed; 31 succeeded.
 
-- assemble: in\_progress — Build and bundle web Studio with its dependency notices.
+- assemble: in\_progress — Verify version and complete update feeds.
 
