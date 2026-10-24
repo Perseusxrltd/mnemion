@@ -25,34 +25,33 @@
   ],
   "runs": [
     {
-      "id": 40044117325,
+      "id": 40044445412,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "8aee5e007713c3fb3f0ee98bda4d702220eeb7af",
-      "status": "completed",
-      "conclusion": "failure",
-      "updated_at": "2026-10-24T00:16:59Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40044117325",
+      "source_commit": "1c28237024381a1a0dae0e7ac0e66d47ff7c94df",
+      "status": "in_progress",
+      "conclusion": null,
+      "updated_at": "2026-10-24T00:20:06Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40044445412",
       "job_details_schema": 2,
       "job_progress": {
         "total": 8,
-        "completed": 8,
+        "completed": 7,
         "succeeded": 2,
-        "active": []
+        "active": [
+          {
+            "id": 120722816951,
+            "name": "studio",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Verify wheel and source package include the matching web Studio"
+            ]
+          }
+        ]
       },
-      "failed_jobs": [
-        {
-          "name": "studio",
-          "id": 120721754687,
-          "conclusion": "failure",
-          "runner_assigned": true,
-          "steps_reported": 18,
-          "steps": [
-            "Run npm --prefix studio/electron audit --audit-level=high"
-          ]
-        }
-      ]
+      "failed_jobs": []
     },
     {
       "id": 40022243634,
@@ -88,15 +87,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40021524126"
     },
     {
-      "id": 40044117376,
+      "id": 40044445372,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "8aee5e007713c3fb3f0ee98bda4d702220eeb7af",
+      "source_commit": "1c28237024381a1a0dae0e7ac0e66d47ff7c94df",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-24T00:16:22Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40044117376"
+      "updated_at": "2026-10-24T00:20:19Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40044445372"
     },
     {
       "id": 40022240433,
@@ -110,5 +109,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40022240433"
     }
   ],
-  "observed_at": "2026-10-24T00:17:06+00:00"
+  "observed_at": "2026-10-24T00:20:55+00:00"
 }
