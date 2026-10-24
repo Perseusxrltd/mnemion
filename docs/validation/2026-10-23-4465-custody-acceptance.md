@@ -57,8 +57,10 @@ accepted **14 required evidence files**, retained the earlier
 invalid-evidence cases: unknown failure, wrong stop, changed original hash and
 wrong source. These are evidence checks, not additional host journeys.
 
-**Fresh native backup delivery and independent restore remain unaccepted at
-this checkpoint.** The subsequent backup/restore sequence is separate work.
+**Fresh native backup delivery and independent restore were unaccepted at
+this custody checkpoint.** The subsequent
+[fresh backup and separate custodian verification](2026-10-24-4465-backup-acceptance.md)
+passed at **00:01:45 UTC on 24 October**. Independent restore remains pending.
 The [original failed/unconfirmed backup](2026-10-23-backup-transfer-diagnostics.md)
 is preserved. This journey establishes retained OS authority; it does not
 establish new adoption, whole-machine boot, custody on separate physical devices,

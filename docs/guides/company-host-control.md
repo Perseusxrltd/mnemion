@@ -1,6 +1,13 @@
 # Control an adopted company host
 
-**Available in the published 4.46.3 desktop.** Host controls, native agent
+**Available in the published 4.46.5 desktop.** Host controls and native-agent
+actions passed [all six installed targets](../validation/2026-10-23-4465-native-acceptance.md),
+the [actual Windows/shared-host update](../validation/2026-10-23-4465-live-acceptance.md)
+and the [retained-custodian lifecycle](../validation/2026-10-23-4465-custody-acceptance.md).
+The [fresh encrypted backup and separate verification](../validation/2026-10-24-4465-backup-acceptance.md)
+passed at **00:01:45 UTC on 24 October**. Independent restore remains pending.
+
+Earlier qualification is retained below. In 4.46.3, host controls, native agent
 actions and backup approval controls passed
 [installed qualification on all six targets](../validation/2026-10-23-4463-native-acceptance.md).
 All six public automatic-update targets subsequently passed, verified at
@@ -12,7 +19,7 @@ requests and complete cleanup. The separate
 both original custodians inspected while memory was down, deliberate stop
 survived a manager restart and two scheduled watchdog ticks, and the original
 service restarted with retained access and data. Fresh backup delivery and
-independent restore remain unaccepted.
+independent restore were unaccepted at that historical checkpoint.
 
 The earlier 4.46.1 release passed all six public installed-update targets. Its
 actual Windows/shared Linux pair passed
@@ -22,7 +29,7 @@ The earlier [canonical-host setup](../validation/2026-10-23-independent-host-ado
 passed native adoption, backup configuration, OS integration and two protected
 custodian enrollments. **Its operational journey failed at the first stop,
 before any effect.** Full recovery acceptance and fresh native backup
-delivery/restore remain unproven. The
+delivery/restore were unproven at that checkpoint. The
 [interruption history](../validation/2026-10-23-4461-live-interruption.md)
 preserves the stopped update attempts. Use
 [release status](../RELEASE_STATUS.md) for current package availability and
@@ -775,11 +782,13 @@ memory database authorizes a new controller.
 
 ### Create and verify retained backups
 
-**Available in published 4.46.3.** The
+**Available since published 4.46.3.** The
 [all-six native qualification](../validation/2026-10-23-4463-native-acceptance.md)
 includes actual approval-control and native-schema checks with **synthetic
-inventory**. Fresh production backup delivery and independent restore remain
-unaccepted; use [release status](../RELEASE_STATUS.md) for the public-update gate.
+inventory**. The later
+[4.46.5 fresh production backup and separate verification](../validation/2026-10-24-4465-backup-acceptance.md)
+passed; independent restore remains pending. Use
+[release status](../RELEASE_STATUS.md) for the public-update gate.
 
 Backup source checks passed: 43 passed with
 2 local SSH-environment skips, 3 native-boundary checks and 7 desktop host-profile
@@ -1021,7 +1030,8 @@ changed only its network-command timeout from 300 to 900 seconds. Runtime
 4.46.3 and authority remained unchanged, and no backup was requested or
 delivery verified by that update. The diagnostic's 2,700-second total cap was
 separate from this configuration change. No product retry or resume action
-was added; fresh native backup and independent restore still require acceptance.
+was added; fresh native backup and independent restore still required acceptance
+at that configuration checkpoint.
 
 ## Qualification and remaining work
 
@@ -1045,8 +1055,9 @@ restart. The separate [4.46.5 two-custodian journey](../validation/2026-10-23-44
 passed at **23:52:34 UTC**, retaining existing OS authority, the original stop,
 two scheduled watchdog ticks and the planned start issued once after inspection.
 Final readiness, both custodians, the saved connection and exact memory/access
-comparison passed; the local verifier interruption is preserved. Fresh native
-backup delivery and independent restore remain unaccepted.
+comparison passed; the local verifier interruption is preserved. The subsequent
+[fresh native backup and separate custodian verification](../validation/2026-10-24-4465-backup-acceptance.md)
+passed at **00:01:45 UTC on 24 October**. Independent restore remains pending.
 
 The earlier [4.46.4 native qualification](../validation/2026-10-23-4464-native-acceptance.md)
 retains its six installed-target results and matching source, job and artifact
@@ -1062,7 +1073,8 @@ update, restart or lab cycle was requested by that final continuation. The
 separate [two-custodian lifecycle](../validation/2026-10-23-4463-custody-acceptance.md)
 passed at **16:25:34 UTC**, retaining the original authority and stop/start
 requests, with both clients and the unchanged content/access comparison passed.
-Fresh native backup delivery and independent production restore remain unaccepted.
+Fresh native backup delivery and independent production restore were unaccepted
+at that historical checkpoint.
 
 The **4.46.1 qualification at 08:30 UTC on 23 October 2026** passed all six
 installed targets and their packaged host-control journeys. The
@@ -1094,7 +1106,7 @@ That historical qualification predates the later
 [4.46.3 native qualification and publication](../validation/2026-10-23-4463-native-acceptance.md).
 The later [actual custodian journey](../validation/2026-10-23-4463-custody-acceptance.md)
 passed within its recorded scope. Fresh native backup delivery and independent
-production restore remain unaccepted.
+production restore were unaccepted at that historical checkpoint.
 
 The **23 October 2026 native qualification** passed all six installed Windows,
 macOS and Linux x64/ARM64 targets for the published 4.46.0 source. The
@@ -1175,8 +1187,9 @@ The installed gates require the expanded real UI/agent/key/SSH/restart/archive
 journey through the offline `/hosts` route. Their native client smoke stage has
 a finite 180-second readiness deadline, with individual helper bounds retained.
 Listener reconfiguration, independently recoverable controller-authority custody,
-whole-machine boot/login acceptance, fresh native Git-backup
-delivery/restore and production backup retention remain open. The completed
+whole-machine boot/login acceptance, independent restore and production backup
+retention remain open. Fresh native Git-backup verification subsequently
+[passed on 4.46.5](../validation/2026-10-24-4465-backup-acceptance.md). The completed
 setup does not establish universal onboarding or full production continuity.
 
 The [23 October publication and live rollout record](../validation/2026-10-23-4460-live-rollout.md)
@@ -1193,8 +1206,9 @@ The later [OS integration and custodian enrollments](../validation/2026-10-23-in
 passed; that 4.46.1 operational journey failed at its first stop. The separate
 [4.46.3 two-custodian journey](../validation/2026-10-23-4463-custody-acceptance.md)
 subsequently passed deliberate stop, independent inspection, manager restart,
-scheduled watchdogs, start and retained-data checks. Fresh native backup
-delivery and independent restore still require their own passing evidence.
+scheduled watchdogs, start and retained-data checks. The later
+[4.46.5 fresh native backup verification](../validation/2026-10-24-4465-backup-acceptance.md)
+passed; independent restore still requires its own passing evidence.
 Current package availability follows [release status](../RELEASE_STATUS.md).
 
 Provider power-on, browser-based independent management, company identity

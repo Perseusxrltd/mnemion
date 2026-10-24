@@ -73,7 +73,10 @@ The later [complete 4.46.5 custody journey](2026-10-23-4465-custody-acceptance.m
 was accepted at **23:52:34 UTC**, retaining the original stop and the planned
 start issued once during the inspected continuation. Both final custodians,
 readiness, restored connection and the unchanged 15-request comparison passed.
-Fresh native backup delivery and independent restore remain unaccepted.
+Fresh native backup delivery and independent restore were still unaccepted at
+that custody checkpoint. The subsequent
+[fresh backup and separate custodian verification](2026-10-24-4465-backup-acceptance.md)
+passed at **00:01:45 UTC on 24 October**. Independent restore remains pending.
 
 The [original failed/unconfirmed backup](2026-10-23-backup-transfer-diagnostics.md),
 [first native candidate failure](2026-10-23-installed-workspace-open-diagnostics.md)
