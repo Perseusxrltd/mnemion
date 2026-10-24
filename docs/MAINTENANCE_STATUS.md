@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-24T04:35:53+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-24T04:36:26+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.6](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.6). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -26,15 +26,13 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 ## Active jobs
 
-[Run 40062905922](https://github.com/Perseusxrltd/mnemion/actions/runs/40062905922): 3/12 jobs completed; 3 succeeded.
+[Run 40062905922](https://github.com/Perseusxrltd/mnemion/actions/runs/40062905922): 5/12 jobs completed; 5 succeeded.
 
-- studio: in\_progress — Run python deploy/bundle\_studio\.py.
-- container \(ubuntu-22\.04\): in\_progress — Build the actual deployment image with its documentation.
+- studio: in\_progress — Independent host control through the real desktop profile and native engine.
 - legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
-- container \(ubuntu-22\.04-arm\): in\_progress — Build the actual deployment image with its documentation.
 - supervision \(macos-15\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
-- service \(3\.12\): in\_progress — Matching PostgreSQL recovery tools.
-- service \(3\.14\): in\_progress — Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38.
+- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- service \(3\.14\): in\_progress — Matching PostgreSQL recovery tools.
 - supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
-- service \(3\.13\): in\_progress — Matching PostgreSQL recovery tools.
+- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 
