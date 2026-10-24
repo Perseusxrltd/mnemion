@@ -494,8 +494,10 @@ The following implementation and acceptance work remains open:
   implemented. The delivery component selects fixed views, closed-week windows
   and eight-window private output retention. The later
   [native/Python budget](anonymous-product-telemetry-budget.md) implements shared
-  private attempt and byte reservations in source. Canonical owner wiring,
-  browser budgets, installed sampling and sender integration remain unfinished;
+  private attempt and byte reservations in source. The separate
+  [browser coordinator](../validation/2026-10-24-telemetry-browser-delivery.md)
+  now has component evidence. Canonical owner wiring, installed sampling and
+  sender integration remain unfinished;
   actual transport upper bounds are unqualified. Verify useful
   measurements and the existing queue/RAM/CPU/batch/wire ceilings under load;
   local numeric limits alone are not a privacy mechanism. Evaluation-quality

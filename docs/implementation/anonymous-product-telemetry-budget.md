@@ -5,7 +5,10 @@
 [Python delivery component](../../mnemion/product_telemetry/delivery.py) and
 [native TypeScript component](../../studio/electron/telemetry-delivery.ts) now
 share private reservation accounting and cancellation fences. The focused
-[source checks](#source-validation) passed. There is **no product sender, network integration or
+[native/Python source checks](#source-validation) passed. A later
+[browser origin budget](#browser-origin-budget) now has focused and actual-browser
+[component evidence](../validation/2026-10-24-telemetry-browser-delivery.md).
+There is **no product sender, installed network integration or
 production activation**; `collection_available: false`, `destination: null`
 and the empty outbound preview remain unchanged.
 
@@ -101,7 +104,73 @@ success, cancellation and shutdown. The interval alone is not a measured
 cancellation-latency guarantee. A throwing synchronous abort callback is
 suppressed without a retry or second invocation; report cleanup still runs.
 
+## Browser origin budget
+
+**Source component checkpoint, 24 October 2026.** The browser
+[budget schema](../../studio/frontend/src/workspace/telemetry-budget.ts),
+[delivery component](../../studio/frontend/src/workspace/telemetry-delivery.ts)
+and [privacy policy](../../studio/frontend/src/workspace/telemetry-policy.ts)
+coordinate tabs of the same browser origin. They do not share native/Python
+SQLite accounting, another origin, another browser profile or a remote host's
+allowance. No account, device or cross-origin identifier joins those stores.
+
+| Boundary | Native/Python | Browser |
+| --- | --- | --- |
+| Durable state | Existing private SQLite policy database, storage version 4 | Origin-local localStorage choice version 3, separate budget version 1 and the existing aggregate queue |
+| Serialization | SQLite transaction shared with explicit choice changes | The same privacy Web Lock for choice, producer writes, reservation and final handoff; delivery refuses an unavailable or busy lock |
+| Queue consumption | Attempt accounting and queue deletion commit together | Spending and a clear intent are written first; queue cleanup must finish before new work is admitted |
+
+The browser uses the same seven-attempt rolling week, minimum 24-hour spacing
+with up to one hour of jitter, 65,536-byte reservation and 256 KiB rolling-day
+guard. It also checks both a wall-clock lease and a local monotonic deadline for
+five-second report validity. The budget parser accepts at most 8,192 characters,
+seven attempt entries and fixed fields; it rejects inconsistent times, leases
+and generations. These are source accounting controls, not measured network
+bounds or browser resource acceptance.
+
+Because localStorage does not provide a multi-key transaction, reservation first
+persists spending and a `clear: entries` marker. Under the same Web Lock, cleanup
+empties pending measurement entries while retaining contribution counters, then
+resets the marker to `none`. An interrupted clear remains recorded. The next
+owned mutation completes it before admitting another observation or reservation;
+status reads never repair it, and pending cleanup keeps collection ineffective.
+A failed or lost attempt does not refund the reservation or restore its queue.
+
+For an explicit choice change, the same tab first invalidates its owned reports.
+Opt-out is saved before cleanup; enabling is saved only after `clear: all` has
+removed the pending queue and contribution counters. Both choices preserve
+spent attempts and cooldown and revoke the lease. Even if only the choice key
+was removed, surviving budget state is retained rather than reset. On a write
+failure the session fails closed and tries to remove the old acknowledgement;
+it never deletes the spending ledger as a repair shortcut. Missing budget state
+for a current choice or a mismatched generation is unreadable, not a fresh
+allowance. GPC, company restrictions, disclosure and missing Web Locks continue
+to gate effective collection.
+
+The final browser handoff rechecks policy and both deadlines under the privacy
+Web Lock, accepts only a synchronous nonblocking callback and erases the body
+after one use. Unlike the native/Python handoff, a successful browser handoff
+keeps its private lease cancellable until completion or abort; the future owner
+must finish it with `cancel()`. This is a component boundary with no actual
+sender. It cannot recall bytes already handed to a transport.
+
+Only an owned active attempt installs storage-change and page-hide listeners,
+same-tab invalidation and nominal 25 ms checks. Cancellation removes these
+listeners and timers, clears the report and attempts matching-lease cleanup.
+An abort callback fault is suppressed without a retry. There is no idle watcher,
+shutdown flush or background sender. The
+[dedicated browser validation](../validation/2026-10-24-telemetry-browser-delivery.md)
+records **44 focused passes and 20 actual Chromium checks**, including cross-tab
+reservation, final fencing, one active loopback fetch aborted by opt-out, and
+quota/crash recovery. Cleanup of three isolated contexts, the browser session
+and server was verified. These component results do not qualify actual whole-wire
+cost, production transport, resources, all platforms or released telemetry. The
+native/Python evidence below remains separate.
+
 ## Source validation
+
+These results cover the preceding **native/Python** batch, before the browser
+budget implementation. No browser-budget acceptance is inferred from them.
 
 | Final source check | Result and scope |
 | --- | --- |
@@ -146,7 +215,7 @@ Rejection of an older prepared report after recreation has a
 is distinct from recovering lost allowance: the generation/disclosure rules
 cannot reconstruct a missing attempt ledger.
 
-Wiring the canonical owners to this allowance, browser delivery coordination,
+Wiring the canonical owners to their allowance, browser release/resource qualification,
 actual sender integration and cancellation, conservative accounting of all
 connection/retry overhead, qualified ingress and retention, and all six native
 targets plus web remain open. Earlier component resource diagnostics do not

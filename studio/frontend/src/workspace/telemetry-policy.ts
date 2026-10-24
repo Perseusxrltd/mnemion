@@ -3,9 +3,10 @@ import measurementCatalog from '../../../../mnemion/product_telemetry/catalog.js
 import type { TelemetryChoice, TelemetryCompanyPolicy, TelemetryPreview, TelemetryStamp, TelemetryStatus } from '../../../shared/product-telemetry'
 import { collect, pendingState, telemetryCatalog } from './telemetry-aggregate'
 import type { WorkflowStore } from '../../../electron/telemetry-workflow'
+import { budgetKey, budgetState, budgetView, freshBudget, serializeBudget, choiceKey, queueKey, type BrowserBudget } from './telemetry-budget'
+import { BrowserTelemetryDelivery, type BrowserDeliveryEnvironment } from './telemetry-delivery'
 
-export const choiceKey = 'mnemion.product-telemetry.choice.v1'
-export const queueKey = 'mnemion.product-telemetry.pending.v1'
+export { choiceKey, queueKey } from './telemetry-budget'
 const groups = contract.metric_groups
 const own = (value: object, keys: string[]) => Object.keys(value).every(key => keys.includes(key))
 const validGeneration = (value: unknown): value is string => typeof value === 'string' && /^[0-9a-f]{32}$/.test(value)
@@ -34,34 +35,45 @@ export function browserCompanyPolicy(): TelemetryCompanyPolicy {
 
 /** The browser owns its origin-local choice; no account or device ID is made. */
 export class BrowserTelemetry {
-  private storageFailed = false
+  protected storageFailed = false
+  readonly delivery: BrowserTelemetryDelivery
   constructor(
-    private readonly storage: () => Storage = () => window.localStorage,
+    protected readonly storage: () => Storage = () => window.localStorage,
     private readonly company: () => TelemetryCompanyPolicy = browserCompanyPolicy,
     private readonly privacy: () => boolean = () => (navigator as Navigator & { globalPrivacyControl?: boolean }).globalPrivacyControl === true,
     private readonly coordinated: () => boolean = () => Boolean(navigator.locks),
-  ) {}
+    deliveryEnvironment: Partial<BrowserDeliveryEnvironment> = {},
+  ) {
+    this.delivery = new BrowserTelemetryDelivery({ storage: () => this.storage(), status: () => this.status(),
+      reconcile: () => this.finishPendingClear(), fail: () => { this.storageFailed = true } }, deliveryEnvironment)
+  }
 
   status(): TelemetryStatus {
     let preference: { schema_version: number; revision: number; enabled: boolean; disclosure_version: number; store_generation: string | null } =
       { schema_version: 1, revision: 0, enabled: true, disclosure_version: 0, store_generation: null }
-    let storage: TelemetryStatus['storage'] = 'new', pending = 0
+    let storage: TelemetryStatus['storage'] = 'new', pending = 0, clearing = false
+    let delivery = budgetView(null)
     try {
       const local = this.storage(), raw = local.getItem(choiceKey), queue = local.getItem(queueKey)
       if (raw !== null) {
         if (raw.length > 2048) throw new Error()
         const parsed = JSON.parse(raw)
         const fields = ['schema_version', 'revision', 'enabled', 'disclosure_version']
-        if (parsed?.schema_version === 2) fields.push('store_generation')
+        if (parsed?.schema_version >= 2) fields.push('store_generation')
         if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed) ||
             !own(parsed, fields) || Object.keys(parsed).length !== fields.length ||
-            ![1, 2].includes(parsed.schema_version) || !Number.isInteger(parsed.revision) || parsed.revision < 0 || parsed.revision >= 2147483647 ||
+            ![1, 2, 3].includes(parsed.schema_version) || !Number.isInteger(parsed.revision) || parsed.revision < 0 || parsed.revision >= 2147483647 ||
             typeof parsed.enabled !== 'boolean' || !Number.isInteger(parsed.disclosure_version) ||
             parsed.disclosure_version < 0 || parsed.disclosure_version > contract.version ||
-            (parsed.schema_version === 2 && !validGeneration(parsed.store_generation))) throw new Error()
-        preference = { ...parsed, store_generation: parsed.schema_version === 2 ? parsed.store_generation : null }
+            (parsed.schema_version >= 2 && !validGeneration(parsed.store_generation))) throw new Error()
+        preference = { ...parsed, store_generation: parsed.schema_version >= 2 ? parsed.store_generation : null }
         storage = 'ready'
       }
+      const savedBudget = local.getItem(budgetKey)
+      const budget = savedBudget === null ? null : budgetState(savedBudget)
+      if (preference.schema_version === 3 && (!budget || budget.generation !== preference.store_generation)) throw new Error()
+      delivery = budgetView(budget, Date.now(), storage === 'ready' && preference.schema_version < 3 ? 'upgrade_required' : 'not_initialized')
+      clearing = Boolean(budget && budget.clear !== 'none')
       if (queue !== null) {
         if (queue.length > contract.limits.pending_bytes / 2) throw new Error()
         if (new TextEncoder().encode(queue).byteLength > contract.limits.pending_bytes) throw new Error()
@@ -81,12 +93,13 @@ export class BrowserTelemetry {
       }
     } catch { storage = 'unreadable' }
     if (this.storageFailed) storage = 'unreadable'
+    if (storage === 'unreadable') delivery = { ...delivery, state: 'unavailable', attempts_in_rolling_week: null, reserved_wire_bytes_in_rolling_day: null }
     const company = this.company()
     const reason: TelemetryStatus['reason'] = storage === 'unreadable' ? 'storage_unavailable'
-      : !preference.enabled ? 'user_disabled' : !this.coordinated() ? 'coordination_unavailable'
+      : !preference.enabled ? 'user_disabled' : !this.coordinated() || clearing ? 'coordination_unavailable'
       : this.privacy() ? 'browser_privacy'
       : !company.enabled || !company.metric_groups.length ? 'company_policy'
-      : preference.disclosure_version !== contract.version || preference.store_generation === null ? 'disclosure_required'
+      : preference.disclosure_version !== contract.version || preference.store_generation === null || preference.schema_version < 3 ? 'disclosure_required'
       : !contract.collection_available || !contract.destination ? 'collection_unavailable' : 'enabled'
     return {
       schema_version: 1, revision: preference.revision, store_generation: preference.store_generation, default_enabled: true,
@@ -95,6 +108,7 @@ export class BrowserTelemetry {
       company_policy: company, pending_records: storage === 'unreadable' ? null : pending,
       collection_available: contract.collection_available,
       disclosure: { ...contract, choice_scope: 'this browser and site' },
+      delivery_budget: delivery,
     }
   }
 
@@ -107,6 +121,7 @@ export class BrowserTelemetry {
         (input.expected_generation != null && !validGeneration(input.expected_generation))) {
       throw new Error('Choose whether to share anonymous product statistics.')
     }
+    this.delivery.invalidate()
     const current = this.status()
     if (current.storage === 'unreadable') throw new Error('Privacy storage is unavailable. Product telemetry stays off.')
     if (input.enabled && (input.expected_revision !== current.revision || (input.expected_generation ?? null) !== current.store_generation)) throw new Error('Your privacy choice changed in another tab. Refresh before enabling telemetry.')
@@ -117,18 +132,48 @@ export class BrowserTelemetry {
     // another opt-out while the saved value was already false.
     const changed = !input.enabled || input.enabled !== current.user_enabled || disclosureVersion !== current.disclosure_version
     try {
-      const next = { schema_version: 2, revision: current.revision + (changed ? 1 : 0),
+      const next = { schema_version: 3, revision: current.revision + (changed ? 1 : 0),
         store_generation: current.store_generation ?? newGeneration(), enabled: input.enabled, disclosure_version: disclosureVersion }
       const storage = this.storage()
-      // Enabling starts empty; disabling first persists the restrictive choice.
-      if (input.enabled) storage.removeItem(queueKey)
-      storage.setItem(choiceKey, JSON.stringify(next))
-      if (!input.enabled) storage.removeItem(queueKey)
+      const rawBudget = storage.getItem(budgetKey)
+      const budget = rawBudget === null ? freshBudget(next.store_generation) : budgetState(rawBudget)
+      // Opt-out persists before cleanup. Enabling cannot become effective until
+      // the durable clear intent and the empty queue both exist. Spending is
+      // retained even when only the old choice key was removed/recreated.
+      if (!input.enabled) storage.setItem(choiceKey, JSON.stringify(next))
+      this.writeBudget({ ...budget, generation: next.store_generation, lease: null, clear: 'all' })
+      this.finishPendingClear()
+      if (input.enabled) storage.setItem(choiceKey, JSON.stringify(next))
     } catch {
       this.storageFailed = true
+      // Quota failures can prevent saving a larger preference. Removing the
+      // old acknowledgement also blocks other tabs and a later reload; never
+      // erase the separate spent budget as an error recovery shortcut.
+      try { this.storage().removeItem(choiceKey) } catch { /* Storage can be entirely inaccessible. */ }
       throw new Error('Privacy storage could not save the choice. Product telemetry stays off. Restore browser storage access and reload before changing this choice.')
     }
     return this.status()
+  }
+
+  protected writeBudget(value: BrowserBudget): void {
+    this.storage().setItem(budgetKey, serializeBudget(value))
+  }
+
+  /** Caller owns the shared privacy Web Lock; read-only status never repairs. */
+  protected finishPendingClear(): void {
+    const raw = this.storage().getItem(budgetKey)
+    if (raw === null) return
+    const budget = budgetState(raw)
+    if (budget.clear === 'none') return
+    if (budget.clear === 'all') this.storage().removeItem(queueKey)
+    else {
+      const pending = pendingState(this.storage().getItem(queueKey))
+      pending.entries = []
+      this.storage().setItem(queueKey, JSON.stringify(pending))
+    }
+    // If this last write fails, the next owned mutation clears again before
+    // admitting another observation. It cannot resurrect the consumed queue.
+    this.writeBudget({ ...budget, clear: 'none' })
   }
 
   preview(): TelemetryPreview {
@@ -154,6 +199,7 @@ export class BrowserTelemetry {
 
   recordMany(inputs: unknown[], stamp: TelemetryStamp, day = Math.floor(Date.now() / 86400000)): boolean {
     if (!contract.collection_available || !contract.destination || !stamp || !Number.isInteger(stamp.revision) || !validGeneration(stamp.store_generation)) return false
+    try { this.finishPendingClear() } catch { this.storageFailed = true; return false }
     const current = this.status()
     if (!current.effective_enabled || current.revision !== stamp.revision || current.store_generation !== stamp.store_generation) return false
     let serialized: string, recorded: boolean
