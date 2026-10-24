@@ -25,15 +25,44 @@
   ],
   "runs": [
     {
-      "id": 40069186976,
+      "id": 40071987134,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "b86ec37f106a3c3ee6dfb5c309386aed22a209ba",
+      "source_commit": "4371d2fec6108bdd9464674e200b00014ea8f76f",
       "status": "completed",
-      "conclusion": "success",
-      "updated_at": "2026-10-24T06:46:37Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40069186976"
+      "conclusion": "failure",
+      "updated_at": "2026-10-24T07:27:07Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40071987134",
+      "job_details_schema": 2,
+      "job_progress": {
+        "total": 12,
+        "completed": 12,
+        "succeeded": 10,
+        "active": []
+      },
+      "failed_jobs": [
+        {
+          "name": "container (ubuntu-22.04)",
+          "id": 120807246055,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 6,
+          "steps": [
+            "Build the actual deployment image with its documentation"
+          ]
+        },
+        {
+          "name": "container (ubuntu-22.04-arm)",
+          "id": 120807246125,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 6,
+          "steps": [
+            "Build the actual deployment image with its documentation"
+          ]
+        }
+      ]
     },
     {
       "id": 40052003118,
@@ -69,15 +98,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40051560833"
     },
     {
-      "id": 40069186913,
+      "id": 40071987120,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "b86ec37f106a3c3ee6dfb5c309386aed22a209ba",
+      "source_commit": "4371d2fec6108bdd9464674e200b00014ea8f76f",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-24T06:11:23Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40069186913"
+      "updated_at": "2026-10-24T06:53:52Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40071987120"
     },
     {
       "id": 40052000728,
@@ -91,5 +120,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40052000728"
     }
   ],
-  "observed_at": "2026-10-24T06:47:14+00:00"
+  "observed_at": "2026-10-24T07:27:40+00:00"
 }
