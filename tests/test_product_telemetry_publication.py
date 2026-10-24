@@ -33,6 +33,7 @@ def test_only_validated_closed_aggregates_are_saved_and_an_existing_week_is_immu
 ):
     def clock():
         return 345600 + 2901 * 604800
+
     store = ReportStore(tmp_path / "publisher", clock=clock)
     store(summary)
     assert store.reports() == [summary]
