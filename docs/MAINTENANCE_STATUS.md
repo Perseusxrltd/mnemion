@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-24T01:17:24+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-24T01:27:07+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.5](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.5). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -17,33 +17,31 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 | Workflow | Branch | State | Evidence |
 | --- | --- | --- | --- |
-| ci\.yml | main | in\_progress | [Run 40048970321](https://github.com/Perseusxrltd/mnemion/actions/runs/40048970321) |
+| ci\.yml | main | in\_progress | [Run 40049779860](https://github.com/Perseusxrltd/mnemion/actions/runs/40049779860) |
 | public-updates\.yml | v4\.46\.5 | success | [Run 40022243634](https://github.com/Perseusxrltd/mnemion/actions/runs/40022243634) |
 | release\.yml | release/4\.46\.5-r2 | success | [Run 40013991029](https://github.com/Perseusxrltd/mnemion/actions/runs/40013991029) |
 | release\.yml | release/4\.46\.6 | in\_progress | [Run 40047223740](https://github.com/Perseusxrltd/mnemion/actions/runs/40047223740) |
 | verify-artifacts\.yml | main | success | [Run 40021524126](https://github.com/Perseusxrltd/mnemion/actions/runs/40021524126) |
-| website-release\.yml | main | success | [Run 40048970333](https://github.com/Perseusxrltd/mnemion/actions/runs/40048970333) |
+| website-release\.yml | main | success | [Run 40049779856](https://github.com/Perseusxrltd/mnemion/actions/runs/40049779856) |
 | website-release\.yml | v4\.46\.5 | success | [Run 40022240433](https://github.com/Perseusxrltd/mnemion/actions/runs/40022240433) |
 
 ## Active jobs
 
-[Run 40048970321](https://github.com/Perseusxrltd/mnemion/actions/runs/40048970321): 3/12 jobs completed; 3 succeeded.
+[Run 40049779860](https://github.com/Perseusxrltd/mnemion/actions/runs/40049779860): 3/12 jobs completed; 3 succeeded.
 
-- studio: in\_progress — Run python deploy/bundle\_studio\.py.
-- service \(3\.14\): in\_progress — Matching PostgreSQL recovery tools.
-- container \(ubuntu-22\.04-arm\): in\_progress — Build the actual deployment image with its documentation.
-- container \(ubuntu-22\.04\): in\_progress.
-- service \(3\.13\): in\_progress — Matching PostgreSQL recovery tools.
-- legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
-- service \(3\.12\): in\_progress — Matching PostgreSQL recovery tools.
+- studio: in\_progress — Check the lightweight native client before six-platform packaging.
 - supervision \(macos-15\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
+- container \(ubuntu-22\.04\): in\_progress — Build the actual deployment image with its documentation.
+- container \(ubuntu-22\.04-arm\): in\_progress — Build the actual deployment image with its documentation.
 - supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
+- service \(3\.14\): in\_progress — Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38.
+- service \(3\.12\): in\_progress — Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38.
+- legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
+- service \(3\.13\): in\_progress — Initialize containers.
 
-[Run 40047223740](https://github.com/Perseusxrltd/mnemion/actions/runs/40047223740): 27/32 jobs completed; 26 succeeded.
+[Run 40047223740](https://github.com/Perseusxrltd/mnemion/actions/runs/40047223740): 29/32 jobs completed; 28 succeeded.
 
-- checks / service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
-- native / macos-15 / arm64: in\_progress — Packaged window, sandboxed bridge, and local client.
-- native / windows-2022 / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
+- native / windows-2022 / x64: in\_progress — Native Windows installation, authenticated upgrade and relaunch.
 - native / macos-15-intel / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
 - native / windows-11-arm / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
 

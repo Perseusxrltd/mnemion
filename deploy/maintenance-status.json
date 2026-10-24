@@ -25,15 +25,15 @@
   ],
   "runs": [
     {
-      "id": 40048970321,
+      "id": 40049779860,
       "attempt": 1,
       "workflow": "ci.yml",
       "branch": "main",
-      "source_commit": "385b9297b6203c6b186f956765ed37422d1f744c",
+      "source_commit": "d13d9a96e81557a20d688ed6b384dcabac2453e9",
       "status": "in_progress",
       "conclusion": null,
-      "updated_at": "2026-10-24T01:16:55Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40048970321",
+      "updated_at": "2026-10-24T01:26:49Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40049779860",
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
@@ -41,68 +41,16 @@
         "succeeded": 3,
         "active": [
           {
-            "id": 120737324373,
+            "id": 120739748330,
             "name": "studio",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run python deploy/bundle_studio.py"
+              "Check the lightweight native client before six-platform packaging"
             ]
           },
           {
-            "id": 120737354625,
-            "name": "service (3.14)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Matching PostgreSQL recovery tools"
-            ]
-          },
-          {
-            "id": 120737354638,
-            "name": "container (ubuntu-22.04-arm)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the actual deployment image with its documentation"
-            ]
-          },
-          {
-            "id": 120737354664,
-            "name": "container (ubuntu-22.04)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": []
-          },
-          {
-            "id": 120737354681,
-            "name": "service (3.13)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Matching PostgreSQL recovery tools"
-            ]
-          },
-          {
-            "id": 120737354683,
-            "name": "legacy",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
-            ]
-          },
-          {
-            "id": 120737354714,
-            "name": "service (3.12)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Matching PostgreSQL recovery tools"
-            ]
-          },
-          {
-            "id": 120737354788,
+            "id": 120739776608,
             "name": "supervision (macos-15)",
             "status": "in_progress",
             "runner_assigned": true,
@@ -111,12 +59,66 @@
             ]
           },
           {
-            "id": 120737355416,
+            "id": 120739776622,
+            "name": "container (ubuntu-22.04)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the actual deployment image with its documentation"
+            ]
+          },
+          {
+            "id": 120739776655,
+            "name": "container (ubuntu-22.04-arm)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Build the actual deployment image with its documentation"
+            ]
+          },
+          {
+            "id": 120739776675,
             "name": "supervision (macos-15-intel)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
               "Build the current Intel cryptography runtime with static OpenSSL"
+            ]
+          },
+          {
+            "id": 120739776686,
+            "name": "service (3.14)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38"
+            ]
+          },
+          {
+            "id": 120739776706,
+            "name": "service (3.12)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38"
+            ]
+          },
+          {
+            "id": 120739776711,
+            "name": "legacy",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
+            ]
+          },
+          {
+            "id": 120739776756,
+            "name": "service (3.13)",
+            "status": "in_progress",
+            "runner_assigned": true,
+            "steps": [
+              "Initialize containers"
             ]
           }
         ]
@@ -158,34 +160,16 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 32,
-        "completed": 27,
-        "succeeded": 26,
+        "completed": 29,
+        "succeeded": 28,
         "active": [
-          {
-            "id": 120731725559,
-            "name": "checks / service (3.13)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
-            ]
-          },
-          {
-            "id": 120733418358,
-            "name": "native / macos-15 / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Packaged window, sandboxed bridge, and local client"
-            ]
-          },
           {
             "id": 120733418391,
             "name": "native / windows-2022 / x64",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Installed app creates, searches and reopens a real local workspace"
+              "Native Windows installation, authenticated upgrade and relaunch"
             ]
           },
           {
@@ -222,15 +206,15 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40021524126"
     },
     {
-      "id": 40048970333,
+      "id": 40049779856,
       "attempt": 1,
       "workflow": "website-release.yml",
       "branch": "main",
-      "source_commit": "385b9297b6203c6b186f956765ed37422d1f744c",
+      "source_commit": "d13d9a96e81557a20d688ed6b384dcabac2453e9",
       "status": "completed",
       "conclusion": "success",
-      "updated_at": "2026-10-24T01:15:59Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40048970333"
+      "updated_at": "2026-10-24T01:26:32Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40049779856"
     },
     {
       "id": 40022240433,
@@ -244,5 +228,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40022240433"
     }
   ],
-  "observed_at": "2026-10-24T01:17:24+00:00"
+  "observed_at": "2026-10-24T01:27:07+00:00"
 }
