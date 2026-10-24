@@ -37,7 +37,7 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 3,
+        "completed": 5,
         "succeeded": 3,
         "active": [
           {
@@ -46,7 +46,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Check the lightweight native client before six-platform packaging"
+              "Independent host control through the real desktop profile and native engine"
             ]
           },
           {
@@ -56,24 +56,6 @@
             "runner_assigned": true,
             "steps": [
               "Verify managed installation, host recovery, signed updates and rollback with real processes"
-            ]
-          },
-          {
-            "id": 120739776622,
-            "name": "container (ubuntu-22.04)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the actual deployment image with its documentation"
-            ]
-          },
-          {
-            "id": 120739776655,
-            "name": "container (ubuntu-22.04-arm)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the actual deployment image with its documentation"
             ]
           },
           {
@@ -91,7 +73,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
@@ -100,7 +82,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
@@ -118,12 +100,33 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Initialize containers"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           }
         ]
       },
-      "failed_jobs": []
+      "failed_jobs": [
+        {
+          "name": "container (ubuntu-22.04)",
+          "id": 120739776622,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 6,
+          "steps": [
+            "Build the actual deployment image with its documentation"
+          ]
+        },
+        {
+          "name": "container (ubuntu-22.04-arm)",
+          "id": 120739776655,
+          "conclusion": "failure",
+          "runner_assigned": true,
+          "steps_reported": 6,
+          "steps": [
+            "Build the actual deployment image with its documentation"
+          ]
+        }
+      ]
     },
     {
       "id": 40022243634,
@@ -228,5 +231,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40022240433"
     }
   ],
-  "observed_at": "2026-10-24T01:27:07+00:00"
+  "observed_at": "2026-10-24T01:27:41+00:00"
 }

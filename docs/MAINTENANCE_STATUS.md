@@ -1,6 +1,6 @@
 # Automated maintenance status
 
-Observed: 2026-10-24T01:27:07+00:00. Updated by repository events and the scheduled status workflow.
+Observed: 2026-10-24T01:27:41+00:00. Updated by repository events and the scheduled status workflow.
 
 Published release: [v4.46.5](https://github.com/Perseusxrltd/mnemion/releases/tag/v4.46.5). [Release evidence](RELEASE_STATUS.md) · [Full requirements](PRODUCT_REQUIREMENTS.md).
 
@@ -27,17 +27,15 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 
 ## Active jobs
 
-[Run 40049779860](https://github.com/Perseusxrltd/mnemion/actions/runs/40049779860): 3/12 jobs completed; 3 succeeded.
+[Run 40049779860](https://github.com/Perseusxrltd/mnemion/actions/runs/40049779860): 5/12 jobs completed; 3 succeeded.
 
-- studio: in\_progress — Check the lightweight native client before six-platform packaging.
+- studio: in\_progress — Independent host control through the real desktop profile and native engine.
 - supervision \(macos-15\): in\_progress — Verify managed installation, host recovery, signed updates and rollback with real processes.
-- container \(ubuntu-22\.04\): in\_progress — Build the actual deployment image with its documentation.
-- container \(ubuntu-22\.04-arm\): in\_progress — Build the actual deployment image with its documentation.
 - supervision \(macos-15-intel\): in\_progress — Build the current Intel cryptography runtime with static OpenSSL.
-- service \(3\.14\): in\_progress — Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38.
-- service \(3\.12\): in\_progress — Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38.
+- service \(3\.14\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
+- service \(3\.12\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 - legacy: in\_progress — Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy\.coveragerc --cov-report=term-missing.
-- service \(3\.13\): in\_progress — Initialize containers.
+- service \(3\.13\): in\_progress — Run uv run --no-sync python -m pytest service\_tests -q --cov=mnemion --cov-config=deploy/service\.coveragerc --cov-report=term-missing --cov-fail-under=75.
 
 [Run 40047223740](https://github.com/Perseusxrltd/mnemion/actions/runs/40047223740): 29/32 jobs completed; 28 succeeded.
 
@@ -45,3 +43,8 @@ This inventory reports GitHub state; issue closure does not prove that an entire
 - native / macos-15-intel / x64: in\_progress — Installed app creates, searches and reopens a real local workspace.
 - native / windows-11-arm / arm64: in\_progress — Installed app creates, searches and reopens a real local workspace.
 
+
+## Unsuccessful jobs
+
+- [Run 40049779860](https://github.com/Perseusxrltd/mnemion/actions/runs/40049779860): container \(ubuntu-22\.04\) (failure). Steps: Build the actual deployment image with its documentation.
+- [Run 40049779860](https://github.com/Perseusxrltd/mnemion/actions/runs/40049779860): container \(ubuntu-22\.04-arm\) (failure). Steps: Build the actual deployment image with its documentation.
