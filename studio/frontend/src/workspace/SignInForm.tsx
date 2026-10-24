@@ -4,6 +4,7 @@ import type { InvitationPreview } from '@mnemion/client'
 import type { Connection, WorkspaceSession } from './connection-types'
 import { BrowserSignIn, browserBookmarks, canRememberBrowser, forgetBrowserBookmark, joinLink, previewBrowserInvitation, type JoinLink } from './sign-in'
 import CompanySignIn from './CompanySignIn'
+import { measureUiAction } from './measurement-action'
 
 export default function SignInForm({ method, incoming, initialEndpoint, initialError, secureStorage, busy, onBusy, onConnect, onNativeConnect }: {
   method: 'password' | 'invitation'; incoming: JoinLink | null; initialEndpoint: string
@@ -71,9 +72,9 @@ export default function SignInForm({ method, incoming, initialEndpoint, initialE
         setPassword(''); setConfirm(''); setInvitation(''); setPreviewSecret('')
         onNativeConnect(session)
       } else {
-        const connection = await BrowserSignIn.signIn(endpoint, method === 'invitation'
+        const connection = await measureUiAction('browser', 'sign_in', () => BrowserSignIn.signIn(endpoint, method === 'invitation'
           ? { ...common, invitation: previewSecret } : { ...common, workspace_id: parsed.workspaceId! },
-          remember && mayRemember, method === 'invitation' ? preview : undefined)
+          remember && mayRemember, method === 'invitation' ? preview : undefined))
         if (!mounted.current) { connection.close?.(); return }
         setPassword(''); setConfirm(''); setInvitation(''); setPreviewSecret('')
         onConnect(connection)
@@ -90,13 +91,13 @@ export default function SignInForm({ method, incoming, initialEndpoint, initialE
         <div className="ws-saved-actions">
           <button type="button" className="ws-button ws-primary" disabled={busy || bookmark.refreshPending || Date.parse(bookmark.expiresAt) <= Date.now()}
             onClick={() => void run('Reopening your login…', async () => {
-              const connection = await BrowserSignIn.resume(bookmark)
+              const connection = await measureUiAction('browser', 'open', () => BrowserSignIn.resume(bookmark))
               if (mounted.current) onConnect(connection); else connection.close?.()
             })}>Continue</button>
-          <button type="button" className="ws-button ws-quiet" disabled={busy} onClick={() => {
+          <button type="button" className="ws-button ws-quiet" disabled={busy} onClick={() => void measureUiAction('browser', 'forget', () => {
             forgetBrowserBookmark(bookmark); setSaved(browserBookmarks())
             setAddress(bookmark.endpoint + '/workspace?workspace=' + bookmark.workspaceId)
-          }}>Use a new login</button>
+          })}>Use a new login</button>
         </div>
         {(bookmark.refreshPending || Date.parse(bookmark.expiresAt) <= Date.now()) && <small>Sign in again to renew this device’s access.</small>}
       </div>)}

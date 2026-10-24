@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, BookOpen, Database, Globe, LoaderCircle, LockKeyhole, ShieldCheck, Workflow } from "lucide-react";
 import { MnemionClient } from "@mnemion/client";
 import { measuredStudioClient } from './measured-client';
+import { measureUiAction } from './measurement-action';
 import BrandMark from "../components/BrandMark";
 import { version } from "../../package.json";
 import { nativeFetch } from "./native";
@@ -160,7 +161,7 @@ export default function Connect({ onConnect, initialError, initialJoin }: { onCo
         return;
       }
       const client = measuredStudioClient(new MnemionClient({ baseUrl: address, apiKey: key.trim(), fetch: nativeFetch }));
-      const me = await client.me();
+      const me = await measureUiAction('browser', 'connect', () => client.me());
       setKey("");
       rememberAddress(address);
       onConnect({ client, me, endpoint: address });

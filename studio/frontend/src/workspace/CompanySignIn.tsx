@@ -5,6 +5,7 @@ import type { Connection, WorkspaceSession } from './connection-types'
 import { BrowserSignIn, browserCompanyConfiguration, browserCompanyStart, canRememberBrowser, joinLink, previewBrowserInvitation, type JoinLink } from './sign-in'
 import type { CompanyConfiguration, CompanyCredentials } from '../../../shared/company-sign-in'
 import { companyBrowserProof } from './company-browser'
+import { measureUiAction } from './measurement-action'
 
 type Target = { endpoint: string; workspaceId: string; configuration: CompanyConfiguration; invitation?: string; preview?: InvitationPreview }
 
@@ -70,7 +71,7 @@ export default function CompanySignIn({ incoming, initialEndpoint, secureStorage
         if (generation.current === attempt) onNativeConnect(session)
         else if ((await desktop.workspaceStatus?.())?.active?.sessionToken === session.sessionToken) await desktop.workspaceDisconnect?.()
       } else {
-        const connection = await browserLogin(target, credentials, controller)
+        const connection = await measureUiAction('browser', 'sign_in', () => browserLogin(target, credentials, controller), controller.signal)
         if (generation.current === attempt) onConnect(connection)
         else await connection.signOut?.().catch(() => {})
       }

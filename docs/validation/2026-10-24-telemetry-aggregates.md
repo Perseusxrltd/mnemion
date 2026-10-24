@@ -263,10 +263,106 @@ resource pass; the ceiling is unchanged. This component-only observation cannot
 establish whole-app or all-platform overhead, and the heap/database figures do
 not substitute for RSS. Optimization and full resource qualification remain open.
 
-Remaining owners include browser sign-in/connect, the legacy UI, local stdio-MCP
-and background jobs. No packaged telemetry, all-six-native, sender/collector,
+At that desktop/Studio checkpoint, remaining owners included browser
+sign-in/connect, the legacy UI, local stdio-MCP and background jobs.
+No packaged telemetry, all-six-native, sender/collector,
 wire-resource or anonymity acceptance is established. Production collection
 remains unavailable, and full V08 completion remains pending.
 The fully accepted security-only 4.46.6 release excludes this unreleased telemetry
 work. V08 remains **Building**; all 66 requirement texts and other states are
 unchanged.
+
+## Browser/legacy UI and local stdio follow-up — 24 October 2026
+
+The [UI-origin map](../../mnemion/product_telemetry/ui-origins.json) adds five
+browser connection actions and classifies all **29 legacy Studio methods:
+11 selected and 18 excluded**. The [UI wrapper](../../studio/frontend/src/workspace/measurement-action.ts)
+skips desktop connection actions already owned by IPC, handles company sign-in
+cancellation from its abort signal and reads only declared boolean result flags.
+Unknown flags discard the measurement; callback inputs/results and exception
+text do not enter the encoder. Automatic queries and external-app handoffs stay
+excluded.
+
+The [MCP-origin map](../../mnemion/product_telemetry/mcp-origins.json) classifies
+**29 maintained gateway paths**, including two compatibility path labels, and
+**48 legacy stdio tools, 33 selected**. Only explicitly configured local stdio
+uses the OS-account policy. HTTP never inherits that choice, even when a server
+holds a stdio key. Aliases delegate to one inner owner, and keyed operations
+retain fresh-receipt gating. Imported handlers and caller JSON cannot assert
+local ownership. These path counts are not counts of exposed public tools or
+proof of full workflow qualification.
+
+The local `mnemion_telemetry` tool provides offline `status`, `schema`, `preview`
+and `configure` through the existing private policy. It is absent from ordinary
+HTTP discovery; HTTP invocation is refused even on a stdio-configured server.
+No privacy-control use generates telemetry. The existing schema version and
+`collection_available: false` / `destination: null` gate remain unchanged.
+
+| Initial source evidence | Result | SHA-256 |
+| --- | --- | --- |
+| MCP checks | **19 passed**, in 5.28 seconds | `56cffaa94062852571d35a32cf2ae25075ce393933e2c308993a97db147f2166` |
+| UI/client checks | **30 passed**, zero skips | `68411618b47df35397ba5ff5c1e593395d8035220d16cc1e0296034cd4ab3913` |
+| UI-origin map | Five browser actions; 29 legacy methods | `14c90fe2558cfa4f39e82360be6c8ddbae401def3cb25e17bb49b4639ece0c9e` |
+| MCP-origin map | 29 gateway paths; 48 legacy tools | `b1ad28ef355bd11c8196cf5760263ddb54ce77b39c48ba819db07fe0e6477783` |
+
+After schema exposure and the observer-import correction, the Python MCP
+selection passed **20 tests in 4.26 seconds**. Local schema now returns
+`owned_origin_coverage` with desktop, Studio, UI and MCP maps, retaining the
+existing CLI map. The added import-failure regression verifies exactly one
+original action and no optional measurement; it does not retry a completed
+action. The **30 UI tests** above remain the recorded UI selection. The initial
+frontend build stopped at `TS2339` in the measurement wrapper; the corrected
+TypeScript/Vite build passed. Both build results are preserved.
+
+The actual copied built-Chromium journey **passed 14 checks**: key connection,
+password sign-in, logout/disconnect, two legacy searches, readable numeric
+preview and cross-tab opt-out fencing a held reply. Private query, password,
+token, principal, address and workspace values stayed out of the local queue.
+There were no page errors or non-fixture requests. Only the copied disclosure
+enabled counters at `example.invalid`; recorded hashes match the unchanged
+source build and copied fixture. The API was a fake loopback service, with no
+production memory or model calls.
+
+The actual MCP `ClientSession` and maintained CLI over stdin/stdout **passed
+22 checks**. Initialization disclosed local controls, schema exposed all four
+ownership maps, and one alias invocation made one fake workspace request and
+one submission without a second SDK count. Private request/response fields
+stayed out of aggregates. After the fake workspace shut down, local opt-out
+still succeeded and cleared all queued cells. Only the isolated test process
+enabled counters; no sender or production collection was activated. Browser
+cleanup separately verified closure and exactly one fixture server stopped,
+with no production state change.
+
+| Later UI/MCP evidence | SHA-256 |
+| --- | --- |
+| Final 20-test MCP selection | `911a6bef9b4ac3609fcdff31d496b15d9ecfad52fbc2127f8738a1f129b80374` |
+| Original TypeScript build failure | `7f1f95b40bdbc86197eaa3c64ad681b5c652437fd6f4ae1c24dd37443482a061` |
+| Corrected TypeScript/Vite build | `59d09a33eeb3e26efe9f9b742119e8518cd04644544a70e890db77ecbbf62d40` |
+| Copied browser fixture definition | `4dc1a23f8b13e978b98ac1fdd7e687e3cb2d22c87d741e42c60cd267d9ef6cef` |
+| Passed 14-check browser journey | `b749cd3b48ed41bc2020759fb43a5b286791068d32e9239c4ee5891b837911fb` |
+| Passed 22-check stdio journey | `9e80f5eaed9ba7fad56e3bd338910a44ad8ce80f42ce99e01db97fbdb39d8896` |
+| Verified browser cleanup | `ad75ad5857bdee2924848cad257bc2d13fa3c0fc0037b0b247c2dd0ca8335e2c` |
+
+A later exploratory Electron phase diagnostic recorded **3,424,256 bytes
+(3.27 MiB)** total added RSS, including a **1,802,240-byte** rise between
+construction and the first SQLite snapshot/load. Its SHA-256 is
+`bfe71fa01ac22892b3eb239d7fda0fbc69f7673440564bb2eb1e815653199049`.
+This is a component diagnostic, not resource acceptance or a replacement for
+the original **3.61 MiB versus 2 MiB** gap. The ceiling is unchanged.
+
+These receipts do not establish final source inventory, integration or a future
+CI result. Background/updater owners, resource optimization, remaining workflow
+qualification, sender/collector, final-send cancellation, anonymity and
+all-platform release acceptance remain open. V08 stays **Building**, with no
+other requirement text or state changed.
+
+The prior batch's container CI failure is also retained: the Docker allowlist
+excluded `telemetry-workflow.ts`, so the container build could not copy it. The
+original log SHA-256 is
+`acfd40e13525b3f2417e8735659701b069be5d2bd5a769c7cff4564476537906`.
+The one-line [allowlist correction](https://github.com/Perseusxrltd/mnemion/commit/e7d5db06)
+was integrated at `1325f457eafa71682fb9e30a0a751b5e6fa9718c`.
+At **03:41 UTC**, [CI 40058889975](https://github.com/Perseusxrltd/mnemion/actions/runs/40058889975)
+had **eight of 12 jobs passed**, including both container jobs, with no failures.
+That dated observation does not establish completion of the entire CI run or
+qualify this later UI/MCP source batch.

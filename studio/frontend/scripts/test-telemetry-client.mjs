@@ -22,6 +22,8 @@ const { telemetryCatalog } = load(new URL('../src/workspace/telemetry-aggregate.
 const { TelemetryWorkflow } = load(new URL('../../electron/telemetry-workflow.ts', import.meta.url))
 const methods = JSON.parse(readFileSync(new URL('../../../mnemion/product_telemetry/studio-methods.json', import.meta.url)))
 const controls = JSON.parse(readFileSync(new URL('../../../mnemion/product_telemetry/control-origins.json', import.meta.url)))
+const { measureUiAction, measuredLegacyClient, uiMeasurementOrigins } = load(new URL('../src/workspace/measurement-action.ts', import.meta.url))
+const { api: legacyApi } = load(new URL('../src/api/client.ts', import.meta.url))
 
 function fixture(fetch) {
   const rows = [], requests = []
@@ -41,6 +43,75 @@ function fixture(fetch) {
   return { rows, requests, store, raw, client: measuredStudioClient(raw, store, 'browser'), reads: () => reads,
     disable: () => { enabled = false; stamp.revision++ } }
 }
+
+test('every legacy Studio method and browser connection action has fixed ownership', () => {
+  assert.deepEqual([...Object.keys(uiMeasurementOrigins.legacy), ...Object.keys(uiMeasurementOrigins.legacy_excluded)].sort(), Object.keys(legacyApi).sort())
+  for (const group of [uiMeasurementOrigins.browser, uiMeasurementOrigins.legacy]) for (const spec of Object.values(group)) {
+    assert.ok(telemetryCatalog.workflows.includes(spec.workflow))
+    assert.ok(telemetryCatalog.specification.outcomes.includes(spec.completion))
+  }
+  for (const reason of Object.values(uiMeasurementOrigins.legacy_excluded)) assert.ok(Object.hasOwn(uiMeasurementOrigins.exclusions, reason))
+})
+
+test('browser sign-in and connection ownership never duplicates the native controller', async () => {
+  const f = fixture(() => Response.json({}))
+  const result = { token: 'PRIVATE_TOKEN', workspace: 'PRIVATE_WORKSPACE' }
+  for (const action of Object.keys(uiMeasurementOrigins.browser)) {
+    assert.equal(await measureUiAction('browser', action, () => result, undefined, f.store, 'desktop'), result)
+  }
+  assert.equal(f.reads(), 0)
+  assert.equal(await measureUiAction('browser', 'sign_in', () => result, undefined, f.store, 'browser'), result)
+  assert.equal(f.rows.filter(row => row.metric === 'submissions').length, 1)
+  assert.ok(f.rows.every(row => row.workflow === 'workspace.sign_in'))
+  assert.ok(!JSON.stringify(f.rows).includes('PRIVATE'))
+})
+
+test('legacy calls keep private arguments and outputs with the action, not the queue', async () => {
+  const f = fixture(() => Response.json({}))
+  const opaque = new Proxy({}, { get() { throw new Error('PRIVATE_PAYLOAD') } })
+  let calls = 0
+  const client = measuredLegacyClient({
+    status: async () => { calls++; return { private: 'PRIVATE_STATUS' } },
+    search: async value => { calls++; assert.equal(value, opaque); return { private: 'PRIVATE_RESULT' } },
+  }, f.store, 'browser')
+  await client.status()
+  assert.equal(f.reads(), 0)
+  assert.equal((await client.search(opaque)).private, 'PRIVATE_RESULT')
+  assert.equal(calls, 2)
+  assert.equal(f.rows.filter(row => row.metric === 'submissions').length, 1)
+  assert.ok(!JSON.stringify(f.rows).includes('PRIVATE'))
+})
+
+test('legacy failure flags and unfamiliar results cannot report a successful action', async () => {
+  const f = fixture(() => Response.json({}))
+  const failed = { success: false, note: 'PRIVATE_DIAGNOSTIC' }
+  assert.equal(await measureUiAction('legacy', 'installConnector', () => failed, undefined, f.store, 'desktop'), failed)
+  assert.ok(f.rows.some(row => row.metric === 'outcomes' && row.bucket === 'failed'))
+  const count = f.rows.length
+  const unfamiliar = { get success() { throw new Error('PRIVATE_DIAGNOSTIC') } }
+  assert.equal(await measureUiAction('legacy', 'installConnector', () => unfamiliar, undefined, f.store, 'desktop'), unfamiliar)
+  assert.equal(f.rows.length, count)
+})
+
+test('late browser actions respect opt-out and company-login cancellation', async () => {
+  const f = fixture(() => Response.json({})), controller = new AbortController()
+  await measureUiAction('browser', 'sign_in', () => { controller.abort(); return 'closed' }, controller.signal, f.store, 'browser')
+  assert.ok(f.rows.some(row => row.metric === 'outcomes' && row.bucket === 'cancelled'))
+  const count = f.rows.length
+  await measureUiAction('browser', 'connect', () => { f.disable(); return 'connected' }, undefined, f.store, 'browser')
+  assert.equal(f.rows.length, count)
+})
+
+test('optional UI storage failure and fixed-name exclusions preserve the original action', async () => {
+  const f = fixture(() => Response.json({}))
+  await measureUiAction('legacy', 'status', () => true, undefined, f.store, 'browser')
+  assert.equal(f.reads(), 0)
+  f.store.snapshot = () => new Promise(() => {})
+  const start = performance.now(), original = new Error('PRIVATE_ACTION_FAILURE')
+  await assert.rejects(measureUiAction('browser', 'connect', () => { throw original }, undefined, f.store, 'browser'), error => error === original)
+  assert.ok(performance.now() - start < 250)
+  assert.equal(f.rows.length, 0)
+})
 
 test('all current SDK methods have a reviewed Studio owner or explicit exclusion', () => {
   const names = Object.getOwnPropertyNames(sdk.MnemionClient.prototype).filter(name => name !== 'constructor')

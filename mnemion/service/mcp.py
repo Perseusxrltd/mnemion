@@ -196,6 +196,16 @@ class MemoryProfile(BaseModel):
     nickname: str
 
 
+class LocalTelemetryChoice(BaseModel):
+    """Local installation policy; never an organization or workspace control."""
+
+    model_config = ConfigDict(extra="forbid")
+    enabled: Annotated[bool, Field(strict=True)]
+    expected_revision: Annotated[int, Field(strict=True, ge=0, le=2147483647)]
+    expected_generation: Annotated[str | None, Field(pattern=r"^[0-9a-f]{32}$")] = None
+    disclosure_version: Annotated[int | None, Field(strict=True, ge=1)] = None
+
+
 def create_mcp(
     base_url: str,
     *,
@@ -225,6 +235,11 @@ def create_mcp(
             "For team administration, connectors, embeddings, librarian, evaluations and monitoring, discover mnemion_operations, "
             "get one schema with mnemion_operation, then use mnemion_read or mnemion_write. "
             "Operations retain the caller's permissions. Inspect state after an unknown-outcome write marked retryable=false."
+            + (
+                " This local stdio installation supports optional anonymous product counts, enabled by default only after visible disclosure. Use mnemion_telemetry schema/status before setup, and configure to disable or re-enable. Memory contents and credentials are excluded. No collection is available until its disclosure says so."
+                if stdio_token
+                else ""
+            )
         ),
         log_level="WARNING",
     )
@@ -251,15 +266,70 @@ def create_mcp(
             )
         return stdio_token
 
-    async def invoke(ctx: Context, action, *args, **kwargs):
+    def owned_stdio(ctx: Context) -> bool:
+        try:
+            request = ctx.request_context.request
+        except ValueError:
+            request = None
+        return bool(stdio_token) and request is None
+
+    async def invoke(ctx: Context, action, *args, _tool=None, **kwargs):
         token = credential(ctx)
+        owned = owned_stdio(ctx)
 
         def run():
             with server.api_client(token) as client:
-                result = action(client, *args, **kwargs)
+                if owned:
+                    try:
+                        from ..mcp_measurement import invoke as observed
+                    except Exception:
+                        # An optional observer import must not break memory use.
+                        # Only import failure falls back: never retry an action.
+                        result = action(client, *args, **kwargs)
+                    else:
+                        control = action is agent_control.execute
+                        result = observed(
+                            client,
+                            _tool,
+                            lambda: action(client, *args, **kwargs),
+                            operation=args[0] if control else None,
+                            request=args[1] if control else None,
+                        )
+                else:
+                    result = action(client, *args, **kwargs)
             return result.model_dump(mode="json") if isinstance(result, BaseModel) else result
 
         return await anyio.to_thread.run_sync(run, limiter=server.worker_capacity)
+
+    if stdio_token:
+
+        @server.tool(
+            annotations=ToolAnnotations(
+                readOnlyHint=False, destructiveHint=False, idempotentHint=True, openWorldHint=False
+            ),
+            structured_output=True,
+        )
+        async def mnemion_telemetry(
+            ctx: Context,
+            action: Literal["status", "schema", "preview", "configure"] = "status",
+            choice: LocalTelemetryChoice | None = None,
+        ) -> dict[str, Any]:
+            """Control optional anonymous product counts for this local OS account, including offline opt-out. Read schema for the disclosure, default and exclusions. Remote HTTP callers cannot change this policy; this tool never produces analytics."""
+            if not owned_stdio(ctx):
+                raise MnemionError(
+                    403,
+                    "local_stdio_required",
+                    "Use this installation’s local stdio connection for its privacy controls.",
+                )
+            from ..product_telemetry.cli import execute
+
+            request = {
+                "action": action,
+                **(choice.model_dump(exclude_unset=True) if choice else {}),
+            }
+            return await anyio.to_thread.run_sync(
+                lambda: execute(None, request), limiter=server.worker_capacity
+            )
 
     OperationName = Annotated[
         str,
@@ -357,6 +427,7 @@ def create_mcp(
             request,
             effect="read",
             max_response_bytes=max_response_bytes,
+            _tool="mnemion_read",
         )
 
     @server.tool(
@@ -380,6 +451,7 @@ def create_mcp(
             request,
             effect="write",
             max_response_bytes=max_response_bytes,
+            _tool="mnemion_write",
         )
 
     if vault_tools:
@@ -396,13 +468,16 @@ def create_mcp(
                 lambda client: client.request(
                     "GET", "/v1/vault/entries", params={"offset": offset, "limit": limit}
                 ),
+                _tool="vault_list",
             )
 
         @server.tool(annotations=Read, structured_output=True)
         async def vault_get(entry_id: UUID, ctx: Context) -> dict[str, Any]:
             """Explicitly retrieve a granted credential. Its sensitive value enters this client's/model's context; never copy it into memory or source files. The read is audited."""
             return await invoke(
-                ctx, lambda client: client.request("GET", f"/v1/vault/entries/{entry_id}")
+                ctx,
+                lambda client: client.request("GET", f"/v1/vault/entries/{entry_id}"),
+                _tool="vault_get",
             )
 
         @server.tool(
@@ -430,6 +505,7 @@ def create_mcp(
                         "expected_version": expected_version,
                     },
                 ),
+                _tool="vault_put",
             )
 
     @server.tool(annotations=Read, meta={"openai/profile": True}, structured_output=True)
@@ -444,13 +520,15 @@ def create_mcp(
                 id=current.principal_id, name=current.name, nickname=current.tenant_name
             )
 
-        return await invoke(ctx, profile)
+        return await invoke(ctx, profile, _tool="memory_profile")
 
     @server.tool(annotations=Read, structured_output=True)
     async def memory_spaces(ctx: Context) -> Page[Space]:
         """List visible memory spaces and the caller's role; saves need contributor or higher."""
         return await invoke(
-            ctx, lambda client: Page[Space].model_validate(client.request("GET", "/v1/spaces"))
+            ctx,
+            lambda client: Page[Space].model_validate(client.request("GET", "/v1/spaces")),
+            _tool="memory_spaces",
         )
 
     @server.tool(annotations=Write, structured_output=True)
@@ -474,6 +552,7 @@ def create_mcp(
                 kind=kind,
                 source=source.model_dump(mode="json") if source else None,
             ),
+            _tool="memory_save",
         )
 
     @server.tool(annotations=Read, structured_output=True)
@@ -498,7 +577,7 @@ def create_mcp(
             result.pop("markdown")
             return result
 
-        return await invoke(ctx, build)
+        return await invoke(ctx, build, _tool="memory_map")
 
     @server.tool(annotations=Read, structured_output=True)
     async def memory_search(
@@ -538,6 +617,7 @@ def create_mcp(
                 **({"keyword_fallback": keyword_fallback} if keyword_fallback is not None else {}),
                 **({"max_per_source": max_per_source} if max_per_source is not None else {}),
             ),
+            _tool="memory_search",
         )
 
     @server.tool(annotations=Read, structured_output=True)
@@ -550,6 +630,7 @@ def create_mcp(
             lambda client: client.fetch(
                 str(memory_id), revision_id=str(revision_id) if revision_id else None
             ),
+            _tool="memory_fetch",
         )
 
     @server.tool(annotations=Read, structured_output=True)
@@ -595,6 +676,7 @@ def create_mcp(
                 **({"keyword_fallback": keyword_fallback} if keyword_fallback is not None else {}),
                 **({"max_per_source": max_per_source} if max_per_source is not None else {}),
             ),
+            _tool="memory_context",
         )
 
     @server.tool(annotations=Write, structured_output=True)
@@ -629,6 +711,7 @@ def create_mcp(
                 idempotency_key=idempotency_key,
                 **fields,
             ),
+            _tool="memory_revise",
         )
 
     @server.tool(annotations=Delete, structured_output=True)
@@ -644,6 +727,7 @@ def create_mcp(
             lambda client: client.forget(
                 str(memory_id), expected_version=expected_version, idempotency_key=idempotency_key
             ),
+            _tool="memory_forget",
         )
 
     if legacy_space:
@@ -671,6 +755,7 @@ def create_mcp(
                     idempotency_key=key,
                     metadata={"wing": wing, "room": room, "source_file": source_file},
                 ),
+                _tool="mnemion_add_drawer",
             )
             return {"success": True, "drawer_id": receipt["memory_id"], **receipt}
 
@@ -689,6 +774,7 @@ def create_mcp(
                 lambda client: client.search(
                     query, [legacy_space], limit=n_results, metadata_filter=filters
                 ),
+                _tool="mnemion_search",
             )
             return {
                 "query": query,
@@ -715,13 +801,16 @@ def create_mcp(
                     idempotency_key=key,
                     metadata={"tags": tags or [], "source": source},
                 ),
+                _tool="capture_thought",
             )
 
         @server.tool(name="search_thoughts", annotations=Read)
         async def search_thoughts(query: Query, ctx: Context, limit: Limit = 10) -> Recall:
             """Open Brain search alias; includes explicit source citations."""
             return await invoke(
-                ctx, lambda client: client.search(query, [legacy_space], limit=limit)
+                ctx,
+                lambda client: client.search(query, [legacy_space], limit=limit),
+                _tool="search_thoughts",
             )
 
         @server.tool(name="list_thoughts", annotations=Read)
@@ -735,19 +824,24 @@ def create_mcp(
                 lambda client: client.request(
                     "GET", f"/v1/spaces/{legacy_space}/memories", params=params
                 ),
+                _tool="list_thoughts",
             )
 
         @server.tool(name="thought_stats", annotations=Read)
         async def thought_stats(ctx: Context) -> dict[str, Any]:
             """Return scoped counts and indexing state for the configured space."""
             return await invoke(
-                ctx, lambda client: client.request("GET", f"/v1/spaces/{legacy_space}/status")
+                ctx,
+                lambda client: client.request("GET", f"/v1/spaces/{legacy_space}/status"),
+                _tool="thought_stats",
             )
 
         @server.tool(name="search", annotations=Read)
         async def search(query: Query, ctx: Context) -> dict[str, Any]:
             """Search/fetch connector compatibility surface."""
-            response = await invoke(ctx, lambda client: client.search(query, [legacy_space]))
+            response = await invoke(
+                ctx, lambda client: client.search(query, [legacy_space]), _tool="legacy_search"
+            )
             return {
                 "results": [
                     {
@@ -763,7 +857,7 @@ def create_mcp(
         @server.tool(name="fetch", annotations=Read)
         async def fetch(id: str, ctx: Context) -> Memory:
             """Fetch a canonical UUID or imported legacy alias in the configured space."""
-            return await invoke(ctx, lambda client: resolve(client, id))
+            return await invoke(ctx, lambda client: resolve(client, id), _tool="legacy_fetch")
 
         @server.tool(name="mnemion_delete_drawer", annotations=Delete)
         async def delete_drawer(
@@ -779,7 +873,7 @@ def create_mcp(
                     idempotency_key=f"legacy-delete:{record.memory_id}:{record.version}",
                 )
 
-            return await invoke(ctx, delete)
+            return await invoke(ctx, delete, _tool="mnemion_delete_drawer")
 
     @server.tool(name="search", annotations=Read, structured_output=True)
     async def search_alias(

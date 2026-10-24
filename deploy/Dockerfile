@@ -14,6 +14,7 @@ COPY mnemion/service/recovery_kit.html ./mnemion/service/recovery_kit.html
 COPY mnemion/product_telemetry/disclosure.json ./mnemion/product_telemetry/disclosure.json
 COPY mnemion/product_telemetry/catalog.json ./mnemion/product_telemetry/catalog.json
 COPY mnemion/product_telemetry/control-origins.json mnemion/product_telemetry/studio-methods.json ./mnemion/product_telemetry/
+COPY mnemion/product_telemetry/ui-origins.json ./mnemion/product_telemetry/
 COPY mnemion/assets ./mnemion/assets
 COPY studio/branding/mnemion.svg studio/branding/assets.json studio/branding/verify.mjs ./studio/branding/
 COPY assets/mnemion_logo.png ./assets/

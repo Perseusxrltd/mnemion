@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "ownership": "Explicit browser connection controls and the local legacy Studio client. Automatic queries, nested transport and native IPC ownership are excluded.",
+  "browser": {
+    "connect": {"workflow": "workspace.connect", "completion": "success"},
+    "sign_in": {"workflow": "workspace.sign_in", "completion": "success"},
+    "open": {"workflow": "workspace.open", "completion": "success"},
+    "disconnect": {"workflow": "workspace.disconnect", "completion": "success"},
+    "forget": {"workflow": "workspace.forget", "completion": "success"}
+  },
+  "legacy": {
+    "deleteDrawer": {"workflow": "memory.forget", "completion": "success"},
+    "createDrawer": {"workflow": "memory.save", "completion": "success", "result_flag": "success"},
+    "search": {"workflow": "memory.recall", "completion": "success"},
+    "verifyDrawer": {"workflow": "memory.review", "completion": "success"},
+    "challengeDrawer": {"workflow": "memory.review", "completion": "success"},
+    "installConnector": {"workflow": "setup.agent_install", "completion": "success", "result_flag": "success"},
+    "uninstallConnector": {"workflow": "setup.agent_remove", "completion": "success", "result_flag": "success"},
+    "updateLLM": {"workflow": "models.configure", "completion": "success"},
+    "syncObsidian": {"workflow": "memory.export", "completion": "success"},
+    "updateCoreMemory": {"workflow": "memory.core_write", "completion": "success", "result_flag": "success"},
+    "downloadVault": {"workflow": "memory.export", "completion": "success"}
+  },
+  "legacy_excluded": {
+    "status": "automatic_query",
+    "taxonomy": "automatic_query",
+    "drawers": "automatic_query",
+    "drawer": "automatic_query",
+    "kgGraph": "automatic_query",
+    "kgEntity": "automatic_query",
+    "kgEntities": "automatic_query",
+    "trustStats": "automatic_query",
+    "contested": "automatic_query",
+    "recentDrawers": "automatic_query",
+    "agents": "automatic_query",
+    "connectors": "automatic_query",
+    "connector": "automatic_query",
+    "config": "automatic_query",
+    "obsidianStatus": "automatic_query",
+    "openObsidian": "external_application",
+    "getCoreMemories": "automatic_query",
+    "getCoreMemory": "automatic_query"
+  },
+  "exclusions": {
+    "automatic_query": "Route loading, React Query refresh and state inspection do not own a new user action.",
+    "external_application": "Handing a link to Obsidian does not observe that application's use.",
+    "native_owner": "A native IPC controller already owns desktop connection actions; the browser wrapper must not count them again.",
+    "authentication_transport": "Credential acquisition, rotation, invitation/provider previews and cleanup are nested transport, not separate sign-ins."
+  }
+}

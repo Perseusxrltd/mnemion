@@ -1,0 +1,302 @@
+{
+  "version": 1,
+  "ownership": "Only an explicitly configured local stdio runtime, under its own disclosed OS-account choice. Remote HTTP and imported legacy handlers do not acquire ownership.",
+  "gateway": {
+    "mnemion_operations": {
+      "exclusion": "lookup_or_preview"
+    },
+    "mnemion_operation": {
+      "exclusion": "lookup_or_preview"
+    },
+    "memory_profile": {
+      "exclusion": "lookup_or_preview"
+    },
+    "memory_spaces": {
+      "exclusion": "lookup_or_preview"
+    },
+    "thought_stats": {
+      "exclusion": "lookup_or_preview"
+    },
+    "mnemion_read": {
+      "control": true
+    },
+    "mnemion_write": {
+      "control": true
+    },
+    "mnemion": {
+      "exclusion": "delegated_alias"
+    },
+    "search": {
+      "exclusion": "delegated_alias"
+    },
+    "fetch": {
+      "exclusion": "delegated_alias"
+    },
+    "mnemion_telemetry": {
+      "exclusion": "privacy_controls"
+    },
+    "memory_save": {
+      "workflow": "memory.save",
+      "completion": "accepted",
+      "fresh_receipt": true
+    },
+    "memory_revise": {
+      "workflow": "memory.revise",
+      "completion": "accepted",
+      "fresh_receipt": true
+    },
+    "memory_forget": {
+      "workflow": "memory.forget",
+      "completion": "accepted",
+      "fresh_receipt": true
+    },
+    "mnemion_add_drawer": {
+      "workflow": "memory.save",
+      "completion": "accepted",
+      "fresh_receipt": true
+    },
+    "capture_thought": {
+      "workflow": "memory.save",
+      "completion": "accepted",
+      "fresh_receipt": true
+    },
+    "mnemion_delete_drawer": {
+      "workflow": "memory.forget",
+      "completion": "accepted",
+      "fresh_receipt": true
+    },
+    "memory_search": {
+      "workflow": "memory.recall",
+      "completion": "success"
+    },
+    "memory_fetch": {
+      "workflow": "memory.read",
+      "completion": "success"
+    },
+    "memory_map": {
+      "workflow": "memory.knowledge",
+      "completion": "success"
+    },
+    "memory_context": {
+      "workflow": "memory.context",
+      "completion": "success"
+    },
+    "vault_list": {
+      "workflow": "vault.read",
+      "completion": "success"
+    },
+    "vault_get": {
+      "workflow": "vault.read",
+      "completion": "success"
+    },
+    "vault_put": {
+      "workflow": "vault.write",
+      "completion": "success"
+    },
+    "mnemion_search": {
+      "workflow": "memory.recall",
+      "completion": "success"
+    },
+    "search_thoughts": {
+      "workflow": "memory.recall",
+      "completion": "success"
+    },
+    "list_thoughts": {
+      "workflow": "memory.list",
+      "completion": "success"
+    },
+    "legacy_search": {
+      "workflow": "memory.recall",
+      "completion": "success"
+    },
+    "legacy_fetch": {
+      "workflow": "memory.read",
+      "completion": "success"
+    }
+  },
+  "legacy": {
+    "mnemion_telemetry": {
+      "exclusion": "privacy_controls"
+    },
+    "mnemion_status": {
+      "exclusion": "lookup_or_preview"
+    },
+    "mnemion_list_wings": {
+      "exclusion": "lookup_or_preview"
+    },
+    "mnemion_list_rooms": {
+      "exclusion": "lookup_or_preview"
+    },
+    "mnemion_get_taxonomy": {
+      "exclusion": "lookup_or_preview"
+    },
+    "mnemion_get_aaak_spec": {
+      "exclusion": "lookup_or_preview"
+    },
+    "mnemion_kg_query": {
+      "workflow": "memory.knowledge",
+      "completion": "success"
+    },
+    "mnemion_kg_add": {
+      "workflow": "memory.revise",
+      "completion": "success"
+    },
+    "mnemion_kg_invalidate": {
+      "workflow": "memory.revise",
+      "completion": "success"
+    },
+    "mnemion_kg_timeline": {
+      "workflow": "memory.knowledge",
+      "completion": "success"
+    },
+    "mnemion_kg_stats": {
+      "exclusion": "lookup_or_preview"
+    },
+    "mnemion_traverse": {
+      "workflow": "memory.knowledge",
+      "completion": "success"
+    },
+    "mnemion_find_tunnels": {
+      "workflow": "memory.knowledge",
+      "completion": "success"
+    },
+    "mnemion_graph_stats": {
+      "exclusion": "lookup_or_preview"
+    },
+    "mnemion_search": {
+      "workflow": "memory.recall",
+      "completion": "success"
+    },
+    "mnemion_reconstruct": {
+      "workflow": "memory.knowledge",
+      "completion": "success"
+    },
+    "mnemion_consolidate": {
+      "workflow": "librarian.run",
+      "completion": "success"
+    },
+    "mnemion_memory_guard_scan": {
+      "workflow": "memory.review",
+      "completion": "success"
+    },
+    "mnemion_get_evidence_trail": {
+      "workflow": "memory.read",
+      "completion": "success"
+    },
+    "mnemion_predict_next": {
+      "exclusion": "lookup_or_preview"
+    },
+    "mnemion_check_duplicate": {
+      "exclusion": "lookup_or_preview"
+    },
+    "mnemion_add_drawer": {
+      "workflow": "memory.save",
+      "completion": "success"
+    },
+    "mnemion_source_add": {
+      "workflow": "memory.save",
+      "completion": "success"
+    },
+    "mnemion_source_list": {
+      "exclusion": "lookup_or_preview"
+    },
+    "mnemion_source_read": {
+      "workflow": "memory.read",
+      "completion": "success"
+    },
+    "mnemion_source_search": {
+      "workflow": "memory.recall",
+      "completion": "success"
+    },
+    "mnemion_wiki_compile": {
+      "workflow": "librarian.run",
+      "completion": "success"
+    },
+    "mnemion_wiki_page_get": {
+      "workflow": "memory.read",
+      "completion": "success"
+    },
+    "mnemion_wiki_lint": {
+      "workflow": "memory.review",
+      "completion": "success"
+    },
+    "mnemion_wiki_context_pack": {
+      "workflow": "memory.context",
+      "completion": "success"
+    },
+    "mnemion_wiki_blast_radius": {
+      "exclusion": "lookup_or_preview"
+    },
+    "mnemion_wiki_export_obsidian": {
+      "workflow": "memory.export",
+      "completion": "success"
+    },
+    "capture_thought": {
+      "workflow": "memory.save",
+      "completion": "success"
+    },
+    "search_thoughts": {
+      "workflow": "memory.recall",
+      "completion": "success"
+    },
+    "list_thoughts": {
+      "workflow": "memory.list",
+      "completion": "success"
+    },
+    "thought_stats": {
+      "exclusion": "lookup_or_preview"
+    },
+    "search": {
+      "workflow": "memory.recall",
+      "completion": "success"
+    },
+    "fetch": {
+      "workflow": "memory.read",
+      "completion": "success"
+    },
+    "mnemion_delete_drawer": {
+      "workflow": "memory.forget",
+      "completion": "success"
+    },
+    "mnemion_trust_stats": {
+      "exclusion": "lookup_or_preview"
+    },
+    "mnemion_verify": {
+      "workflow": "memory.review",
+      "completion": "success"
+    },
+    "mnemion_challenge": {
+      "workflow": "memory.review",
+      "completion": "success"
+    },
+    "mnemion_get_contested": {
+      "exclusion": "lookup_or_preview"
+    },
+    "mnemion_resolve_contest": {
+      "workflow": "memory.review",
+      "completion": "success"
+    },
+    "mnemion_diary_write": {
+      "workflow": "memory.save",
+      "completion": "success"
+    },
+    "mnemion_diary_read": {
+      "workflow": "memory.read",
+      "completion": "success"
+    },
+    "mnemion_get_core_memory": {
+      "workflow": "memory.core_read",
+      "completion": "success"
+    },
+    "mnemion_update_core_memory": {
+      "workflow": "memory.core_write",
+      "completion": "success"
+    }
+  },
+  "exclusions": {
+    "lookup_or_preview": "Catalogs, identity/status inspection and dry-run previews do not count as memory work.",
+    "delegated_alias": "The inner owned tool call contributes once; the alias does not add another observation.",
+    "privacy_controls": "No collection for disclosure, schema, payload preview, opt-out or re-enable.",
+    "unowned_http": "A remote HTTP caller cannot authorize collection using the gateway OS account."
+  }
+}

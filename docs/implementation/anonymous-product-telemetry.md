@@ -32,8 +32,8 @@ The [shared disclosure](../../mnemion/product_telemetry/disclosure.json) has
 `collection_available: false` and `destination: null`. Saving an enabled
 preference does not complete disclosure or activate collection. The preview
 returns the measurement catalog, an empty local aggregate list, no outbound body
-and zero outgoing bytes. Owned headless, desktop/native-operator and Studio hooks
-exist in source; there is no
+and zero outgoing bytes. Owned CLI, desktop/native-operator, Studio/browser and
+explicit local stdio hooks exist in source; there is no
 product sender, collector, production analytics or qualified anonymous ingress.
 
 The [versioned catalog and local queues](anonymous-product-telemetry-catalog.md)
@@ -60,7 +60,7 @@ The actual built-Chromium generation journey then passed **11 checks** for
 stale UI state, legacy opt-out, damaged generation and narrow-screen behavior;
 the retained first runner attempt stopped before any UI action.
 
-The current [owned headless hook](anonymous-product-telemetry-catalog.md#owned-headless-control-coverage)
+The existing [owned control-CLI hook](anonymous-product-telemetry-catalog.md#owned-headless-control-coverage)
 is limited to `mnemion-control call`: all **161 API operations** have an explicit
 mapping, with **82 eligible actions and 79 exclusions across five reasons**.
 It snapshots local generation/revision and passes only fixed enums, duration and
@@ -73,9 +73,9 @@ focused contract check passed after the retained initial schema-reference test
 failure; the final focused Python selection then passed **51 tests**, and a
 fresh private wheel passed its isolated offline journey. These source checks
 do not qualify the published 4.46.6 artifact or native telemetry release.
-Collection remains off. The later desktop/Studio additions below do not finish
-stdio or background ownership, remaining workflow coverage, the sender/collector
-or full resource/privacy/platform acceptance.
+Collection remains off. The mapped hooks do not finish background/updater
+ownership, remaining workflow qualification, the sender/collector or full
+resource/privacy/platform acceptance.
 
 The current [desktop/Studio source batch](anonymous-product-telemetry-catalog.md#owned-desktop-native-operator-and-studio-coverage)
 adds Electron's private SQLite writer, shared with native Python policy, and a
@@ -107,10 +107,40 @@ preserved. No production memory writes or outbound collection occurred. The
 [validation report](../validation/2026-10-24-telemetry-aggregates.md) records both
 the passing checks and an exploratory Electron component result of **3.61 MiB
 added RSS**, above the unchanged **2 MiB** target. Optimization, whole-app and
-all-platform resource qualification remain open. Browser sign-in/connect,
-legacy UI, stdio-MCP and background ownership are unfinished. None of these
-results qualifies packaged telemetry or anonymous ingress. The accepted 4.46.6
-security release excludes this work.
+all-platform resource qualification remain open. At that desktop/Studio
+checkpoint, browser sign-in/connect, legacy UI and stdio ownership were still
+unfinished. None of these results qualifies packaged telemetry or anonymous
+ingress. The accepted 4.46.6 security release excludes this work.
+
+The next [UI/local stdio source batch](anonymous-product-telemetry-catalog.md#browser-connection-legacy-ui-and-local-stdio-coverage)
+adds five browser connection actions and classifies all 29 legacy Studio methods
+(11 selected, 18 excluded). Desktop connection IPC retains its existing owner;
+the browser wrapper skips those calls. Company sign-in cancellation and reviewed
+boolean result flags produce only fixed outcomes, without private inputs/results.
+The MCP map classifies 29 maintained gateway paths, including two compatibility
+labels, and all 48 legacy stdio tools (33 selected). Only explicitly configured
+local stdio observes the disclosed OS-account choice. HTTP never becomes a
+server telemetry owner, even when the process holds a stdio key; aliases and
+nested SDK calls are not counted again.
+
+The local `mnemion_telemetry` tool provides offline `status`, `schema`, `preview`
+and `configure` through the existing policy. It is absent from the ordinary HTTP
+gateway and refuses HTTP calls. Local schema now exposes `owned_origin_coverage`
+for desktop, Studio, UI and MCP, retaining the existing CLI map. The final source
+selection passed **20 Python MCP and 30 UI tests**; the added import-failure check
+preserves exactly one original action. The corrected TypeScript/Vite build passed.
+A copied built-Chromium fixture passed **14 checks**, and a real stdio
+`ClientSession` with the maintained CLI passed **22**, including opt-out after
+the fake workspace was shut down. Only isolated fixtures enabled local counters;
+the schema version and unavailable source collection gate are unchanged.
+
+The [validation report](../validation/2026-10-24-telemetry-aggregates.md) retains
+the initial checks, original build failure and verified browser cleanup. A later
+**3.27 MiB** component phase diagnostic does not replace the original **3.61 MiB
+versus 2 MiB** resource gap or establish resource acceptance. Background/updater
+owners, optimization, sender/collector, final-send cancellation and all-platform
+release acceptance remain open. Source inventory and integration qualification
+are not established by these journey receipts.
 
 Saved source checks passed **10 policy tests** after the opt-out revision change,
 **12 native bridge/operator tests, 26 web/CSP tests and seven browser policy

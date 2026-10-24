@@ -1151,7 +1151,29 @@ def tool_update_core_memory(key: str = "default", content: str = "") -> dict:
 
 # ==================== MCP PROTOCOL ====================
 
+
+def tool_product_telemetry(action="status", **choice):
+    from .product_telemetry.cli import execute
+
+    return execute(None, {"action": action, **choice})
+
+
 TOOLS = {
+    "mnemion_telemetry": {
+        "description": "Local stdio privacy controls, usable offline. Product counts are optional, anonymous, default-enabled only after the visible disclosure, and exclude memories and credentials. Read schema/status; configure disables or re-enables. No analytics event is emitted by these controls.",
+        "input_schema": {
+            "type": "object",
+            "additionalProperties": False,
+            "properties": {
+                "action": {"type": "string", "enum": ["status", "schema", "preview", "configure"]},
+                "enabled": {"type": "boolean"},
+                "expected_revision": {"type": "integer", "minimum": 0, "maximum": 2147483647},
+                "expected_generation": {"type": ["string", "null"], "pattern": "^[0-9a-f]{32}$"},
+                "disclosure_version": {"type": "integer", "minimum": 1},
+            },
+        },
+        "handler": tool_product_telemetry,
+    },
     "mnemion_status": {
         "description": "CALL THIS FIRST at every session start. Returns your behavioral protocol, AAAK memory dialect spec, and Anaktoron overview (wings, rooms, drawer counts). Required for correct operation — the protocol tells you when and how to use all other tools.",
         "input_schema": {"type": "object", "properties": {}},
@@ -1740,7 +1762,7 @@ TOOLS = {
 }
 
 
-def handle_request(request):
+def handle_request(request, *, local_stdio=False):
     method = request.get("method", "")
     params = request.get("params", {})
     req_id = request.get("id")
@@ -1753,6 +1775,13 @@ def handle_request(request):
                 "protocolVersion": "2024-11-05",
                 "capabilities": {"tools": {}, "prompts": {}},
                 "serverInfo": {"name": "mnemion", "version": __version__},
+                **(
+                    {
+                        "instructions": "Use mnemion_telemetry schema/status to inspect this installation's optional default-enabled anonymous product counts before setup. Configure can disable or re-enable them, including offline; memory content and credentials are excluded."
+                    }
+                    if local_stdio
+                    else {}
+                ),
             },
         }
     elif method == "notifications/initialized":
@@ -1808,6 +1837,15 @@ def handle_request(request):
     elif method == "tools/call":
         tool_name = params.get("name")
         tool_args = params.get("arguments", {})
+        if tool_name == "mnemion_telemetry" and not local_stdio:
+            return {
+                "jsonrpc": "2.0",
+                "id": req_id,
+                "error": {
+                    "code": -32601,
+                    "message": "Use the local stdio connection for installation privacy controls.",
+                },
+            }
         if tool_name not in TOOLS:
             return {
                 "jsonrpc": "2.0",
@@ -1831,8 +1869,19 @@ def handle_request(request):
                 tool_args[key] = float(value)
         try:
             tool_args.pop("wait_for_previous", None)
-            result = TOOLS[tool_name]["handler"](**tool_args)
-            _write_heartbeat(tool_name)
+            if local_stdio:
+                try:
+                    from .mcp_measurement import invoke_legacy
+                except Exception:
+                    result = TOOLS[tool_name]["handler"](**tool_args)
+                else:
+                    result = invoke_legacy(
+                        tool_name, lambda: TOOLS[tool_name]["handler"](**tool_args)
+                    )
+            else:
+                result = TOOLS[tool_name]["handler"](**tool_args)
+            if tool_name != "mnemion_telemetry":
+                _write_heartbeat(tool_name)
             return {
                 "jsonrpc": "2.0",
                 "id": req_id,
@@ -1902,7 +1951,7 @@ def main():
             if not line:
                 continue
             request = json.loads(line)
-            response = handle_request(request)
+            response = handle_request(request, local_stdio=True)
             if response is not None:
                 _real_stdout.write(json.dumps(response) + "\n")
                 _real_stdout.flush()

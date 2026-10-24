@@ -6,8 +6,9 @@ workflows in 15 families**, four invocation surfaces, 11 workflow metrics and
 four separate resource metrics. Python and TypeScript encoders, bounded native
 and browser queues, revision/generation checks and local preview are implemented
 in source, along with owned `mnemion-control call`, selected desktop/native-operator
-actions and Studio client hooks. Remaining workflow coverage, stdio-MCP and
-background hooks are unfinished. **No sender or collector is implemented.** Collection remains
+actions, Studio client hooks, browser connection/legacy UI actions and explicitly
+configured local stdio hooks. Background/updater ownership and remaining workflow
+qualification are unfinished. **No sender or collector is implemented.** Collection remains
 unavailable and the destination is null; no product measurements are collected.
 Native release, resource and anonymity acceptance remain open. All 66 requirement
 texts and the other 65 states remain unchanged; V08 stays Building.
@@ -35,6 +36,11 @@ for owned search and opt-out; only that fixture enabled local counters. The fina
 combined Electron 44.9.3 selection passed **27 with two Windows-only skips** and
 its build passed; the earlier eight-pass/one-skip store run remains historical.
 These results do not establish packaged-app or all-six-native acceptance.
+The following browser/legacy UI and local stdio batch passed **20 Python MCP and
+30 UI checks**, a corrected TypeScript/Vite build, a **14-check built-Chromium
+fixture journey** and a **22-check real stdio journey**. The initial 19-test run
+and failed build remain recorded. These isolated fixtures do not activate source
+collection or establish release/resource acceptance.
 
 The scope remains all app, agent and headless workflows. An unresolved row is
 unfinished V08 coverage, not permission to collect without choice or an assertion
@@ -106,6 +112,10 @@ An exploratory Electron component run grew RSS by **3,784,704 bytes (3.61 MiB)**
 after 32 workflows, exceeding the contract's unchanged **2 MiB** added-RAM target.
 This is an unresolved optimization/qualification result, not a resource pass;
 whole-app and all-platform measurements remain open.
+A later phase diagnostic measured **3,424,256 bytes (3.27 MiB)** total added RSS,
+including a 1,802,240-byte rise around the first SQLite snapshot/load. It is a
+separate component observation, not a replacement for the earlier result or
+proof that the 2 MiB target has been met.
 Deletion/recreation now has source generation-fencing checks. This does not
 protect against an unobservable whole-machine snapshot rollback that restores
 the old token and choice together. The eventual sender must still prove
@@ -206,10 +216,56 @@ duration and narrowly allowed numeric sensors reach the encoder. Exceptions,
 request/result objects, vault values and private labels never enter it. Observed
 payload lengths are not wire-byte measurements. Native and Studio wrappers do
 not instrument nested SDK/transport calls or backfill server completion.
-Browser sign-in/connection ownership, the legacy UI, local stdio-MCP and
-background jobs still need their own reviewed hooks. The Studio method wrapper
-does not complete those enclosing workflows merely because it is constructed
-during connection or sign-in.
+The Studio method wrapper does not own enclosing connection/sign-in workflows
+merely because it is constructed there. The following source additions provide
+explicit owners; autonomous background/updater ownership remains unfinished.
+
+## Browser connection, legacy UI and local stdio coverage
+
+The [UI-origin map](../../mnemion/product_telemetry/ui-origins.json) and
+[MCP-origin map](../../mnemion/product_telemetry/mcp-origins.json) supplement the
+unchanged 94-workflow catalog. They classify eligible source paths, not deployed
+collection or completed all-platform coverage.
+
+| Boundary | Source mapping |
+| --- | --- |
+| Browser connection controls | Five explicit actions: connect, sign in, open, disconnect and forget. The [UI action wrapper](../../studio/frontend/src/workspace/measurement-action.ts) skips desktop connections already owned by IPC. |
+| Legacy Studio client | All 29 methods are classified: 11 selected, 17 automatic-query exclusions and one external-application handoff exclusion. The [legacy client](../../studio/frontend/src/api/client.ts) wraps only the selected methods. |
+| Maintained local stdio gateway | 29 classified paths, including two compatibility path labels: 18 direct workflow mappings, two control dispatch paths and nine exclusions. This is not a claim of 29 separately exposed tools. |
+| Legacy local stdio loop | All 48 tools are classified: 33 selected and 15 excluded, including the privacy control itself. Imported handlers have no implicit owner. |
+
+Browser/legacy UI measurement keeps inputs and results inside the original
+callback. Company sign-in cancellation uses the abort signal, not exception
+text. Only a mapped boolean result flag distinguishes success/failure where
+required; an unfamiliar flag discards the measurement. Automatic route queries,
+credential rotation/previews and external-app handoffs add no use. The same
+generation/revision checks and optional no-throw behavior still apply.
+
+The [MCP adapter](../../mnemion/mcp_measurement.py) is called only by an explicitly
+configured local stdio runtime under its disclosed OS-account policy. The
+[maintained gateway](../../mnemion/service/mcp.py) distinguishes stdio from HTTP
+request context; a process-wide stdio key never authorizes HTTP telemetry. The
+[legacy loop](../../mnemion/mcp_server.py) marks its own local dispatch explicitly;
+an imported handler or caller-supplied JSON field cannot acquire ownership.
+Aliases delegate to one inner owner, and `mnemion_read`/`mnemion_write` reuse the
+reviewed control-origin map. Keyed writes require the fixed fresh-receipt marker;
+cached or unknown receipts add nothing. SDK callbacks observe only the bounded
+`new`/`replayed` disposition for that tool's client and are removed afterward.
+They do not turn the reusable SDK or server into another measurement owner.
+
+The local `mnemion_telemetry` tool exposes offline `status`, `schema`, `preview`
+and `configure`, using the existing private policy and schema version. It is
+absent from the ordinary HTTP gateway, and HTTP calls are refused even on a
+server configured with a stdio key. Privacy controls themselves never produce
+measurements. See the [local-tool guide](../guides/product-telemetry-controls.md#from-local-stdio-mcp).
+Local `schema` now also returns `owned_origin_coverage` with the `desktop`,
+`studio`, `ui` and `mcp` maps, while retaining the CLI's `owned_control_coverage`.
+An optional observer import failure falls back to exactly one original action;
+the fallback does not retry an action that already ran.
+The collection gate remains false and the destination null. Passing source and
+isolated stdio/browser checks do not establish anonymous ingress,
+background/updater ownership, resource limits or native release. Final source
+inventory and integration are not established by these receipts.
 
 ## Measurement ownership
 
@@ -219,10 +275,11 @@ how it was invoked; it is not a user, installation or request identifier.
 | Surface | Owner and source implementation boundary | Remote and nested work |
 | --- | --- | --- |
 | Desktop workspace UI | Selected [local IPC actions](../../studio/electron/desktop-measurement.ts) and the [Studio client wrapper](../../studio/frontend/src/workspace/measured-client.ts), under the shared installation policy. Both are source-only inactive hooks. | [Native fetch](../../studio/frontend/src/workspace/native.ts), transport retries and the remote API add no second usage count. |
-| Browser workspace UI | The Studio wrapper under browser-local disclosure, choice, GPC and company restrictions, using the [browser workflow store](../../studio/frontend/src/workspace/telemetry-policy.ts). | Workspace authentication is not product telemetry consent. No sender exists; future transmission still needs a credential/referrer-free boundary. |
+| Browser workspace UI | The Studio wrapper plus explicit [connection actions](../../studio/frontend/src/workspace/measurement-action.ts), under browser-local disclosure, choice, GPC and company restrictions. | Desktop connections skip the browser owner because IPC already owns them. Authentication is not product telemetry consent; a future sender still needs a credential/referrer-free boundary. |
+| Legacy Studio UI | Selected methods of the [legacy client](../../studio/frontend/src/api/client.ts), using the same app/browser policy and explicit UI-origin map. | Automatic queries and external-app handoffs are excluded; callbacks retain private inputs/results. |
 | Native agent controlling the desktop | Fresh mapped execution at the [desktop dispatcher](../../studio/electron/service-bridge.ts), with the fixed `native_agent` surface and the same private OS-account store. | The agent pipe, cached reply and renderer do not add another measurement. No operation UUID enters telemetry; generic remote host requests remain excluded. |
 | Owned `mnemion-control call` | Source hook at the [CLI boundary](../../mnemion/control_cli.py), under the shared local policy and explicit operation map above; collection remains inactive. | The reusable SDK and `agent_control.execute` carry no owner hook. Nested requests, retry attempts and cached receipts do not add uses. |
-| Local stdio-MCP and other headless entrypoints | Hooks remain pending around a disclosed local owner; [MCP invocation](../../mnemion/service/mcp.py#L254) alone does not establish one. | Reusing an SDK cannot create consent or substitute for explicit ownership. |
+| Local stdio-MCP | Explicit source owner at the [maintained gateway](../../mnemion/service/mcp.py) or [legacy stdio loop](../../mnemion/mcp_server.py), under local OS-account policy. | HTTP context, imported handlers and JSON arguments cannot acquire this owner. Aliases and nested SDK calls do not add another count. Other headless entrypoints still need review. |
 | Third-party remote MCP or direct API client | **Excluded without a disclosed local owner.** The [remote MCP gateway](../../mnemion/service/mcp_transport.py#L441) creates the ordinary [Python SDK Client](../../mnemion/sdk.py#L614); that shared SDK is not a measurement owner. | A token, client name, session or host-owner preference cannot stand in for the originating user's choice. Future owned adapters need their own disclosure and policy. |
 | Server jobs and autonomous host work | No server export or terminal backfill for client-derived work. Only the originating observer can report an outcome it actually sees. Separately disclosed autonomous maintenance needs its own reviewed owner. | [Index/purge jobs](../../mnemion/service/worker.py#L290), scheduled scans and mixed-host resource totals cannot supply a fallback feed. A `background` label does not make user-derived work autonomous. |
 

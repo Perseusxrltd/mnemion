@@ -1,8 +1,8 @@
 # Product telemetry privacy controls
 
 **Source checkpoint, 24 October 2026; V08 is Building.** Local choice, disclosure,
-catalog, aggregate queues and selected owned CLI, desktop/native-operator and
-Studio hooks are implemented in source. There is no product sender or collector: `collection_available` is
+catalog, aggregate queues and selected owned CLI, desktop/native-operator,
+Studio/browser and local stdio hooks are implemented in source. There is no product sender or collector: `collection_available` is
 `false`, the destination is `null`, and
 `effective_enabled` stays `false`. Saving an enabled preference does not activate
 analytics. The core browser journey passed **19 checks at 00:51:17 UTC**, followed
@@ -36,7 +36,7 @@ body and zero outgoing payload bytes. Expand **Workflow coverage and exclusions*
 to inspect the fixed **15 families, 94 operations and seven privacy exclusions**.
 The schema and numeric encoding exist; collection remains inactive. Selected
 desktop/browser and native-operator actions now have source hooks. Remaining
-workflow coverage, stdio-MCP and background ownership are still unfinished.
+workflow qualification and background/updater ownership are still unfinished.
 A later build capable of collection must present its current disclosure before
 anything can be sent; today's enabled preference cannot acknowledge that future
 destination.
@@ -68,7 +68,8 @@ printf '%s\n' '{"action":"preview"}' | mnemion-service telemetry
 
 `schema` describes the four local actions, disclosure and `measurement_catalog`,
 including fixed numeric buckets, contribution limits and exclusions. It also
-returns `owned_control_coverage`, the full owned-CLI operation map.
+returns `owned_control_coverage`, the full owned-CLI operation map, and
+`owned_origin_coverage` for the desktop, Studio, UI and MCP boundaries.
 `status` distinguishes `user_enabled`,
 `effective_enabled`, `reason`, `storage`, company restriction, `revision` and
 `store_generation`. The generation is a private local control token, never an
@@ -108,6 +109,45 @@ privacy budget across those choices. The desktop agent exposes the same typed `t
 `telemetry.status`, `telemetry.preview` and `telemetry.configure` actions without
 requiring a workspace.
 
+## From local stdio MCP
+
+A runtime built with the new source exposes `mnemion_telemetry` on its explicitly
+configured **local stdio** connection. Call it with `{"action":"status"}`,
+`{"action":"schema"}` or `{"action":"preview"}`. These controls work without a
+reachable workspace service, use the local OS account's existing preference and
+never generate a measurement. Schema describes the current disclosure; collection
+remains unavailable, so a saved enabled preference does not activate analytics.
+
+For the maintained stdio gateway, `configure` nests the choice. Read current
+status first and use its revision/generation; this example is only for a fresh
+store's `0`/`null` pair:
+
+```json
+{
+  "action": "configure",
+  "choice": {
+    "enabled": false,
+    "expected_revision": 0,
+    "expected_generation": null
+  }
+}
+```
+
+The legacy stdio tool takes those choice fields alongside `action` instead.
+Follow the connected tool's input schema and omit `disclosure_version` while
+collection is unavailable. Enabling still needs current private revision and
+generation; opt-out, company restriction and damaged-store behavior are the same
+as the native controls above.
+
+The tool is absent from the ordinary HTTP gateway. HTTP calls cannot change
+local telemetry policy or acquire a measurement owner, even if the server has a
+configured stdio key. Remote MCP/API credentials are not telemetry consent.
+Imported legacy handlers and a caller-supplied `local_stdio` field do not grant
+ownership. A **22-check actual stdio fixture journey passed**, including opt-out
+after its fake workspace shut down. Its local counters were enabled only in the
+isolated test process; source collection remains unavailable and native release
+acceptance remains open. The local schema includes all four ownership maps.
+
 ## Owned headless API calls
 
 The source [agent-control CLI](../service/agent-control.md) now has optional hooks
@@ -141,8 +181,14 @@ generic SDK/API requests, polling, privacy controls and unowned continuation
 transports remain unmeasured. Async acknowledgement is not completion. See the
 [explicit ownership maps](../implementation/anonymous-product-telemetry-catalog.md#owned-desktop-native-operator-and-studio-coverage)
 for the selected actions and exclusions. These hooks remain inactive: no sender,
-collector or production collection is available. Browser sign-in/connect,
-legacy UI, stdio-MCP and background ownership still need separate coverage.
+collector or production collection is available. The new UI map adds five
+browser connection actions and 11 selected legacy Studio methods, with 18 legacy
+exclusions. Browser hooks skip desktop connections already owned by IPC, respect
+company sign-in cancellation and inspect only reviewed boolean result flags.
+The **14-check copied built-browser journey passed** for connection, password
+sign-in, logout/disconnect and legacy search, including cross-tab opt-out during
+a held reply. Only the copied fixture enabled counters; it used a fake loopback
+API. Background and updater ownership remain unfinished.
 
 ## Company restriction and damaged settings
 
@@ -180,8 +226,9 @@ Optional product telemetry is separate from private workspace operational and
 security records. These controls do not change memory access or disable those
 records. The [full V08 contract](../implementation/anonymous-product-telemetry.md)
 and [versioned catalog](../implementation/anonymous-product-telemetry-catalog.md)
-retain app, agent, headless and remote-workflow coverage. Remaining workflow,
-stdio and background ownership, the sender, collector and anonymity proof remain unfinished. Expiry
+retain app, agent, headless and remote-workflow coverage. Remaining workflow
+qualification, background/updater ownership, the sender, collector and anonymity
+proof remain unfinished. Expiry
 prunes on activity. Local generation checks cannot detect a whole-machine
 snapshot rollback that restores both the old token and choice; final sender
 cancellation still needs full-feature acceptance. See the
@@ -189,3 +236,5 @@ cancellation still needs full-feature acceptance. See the
 An exploratory Electron component measurement exceeded the existing **2 MiB**
 added-RAM target; optimization and whole-app/all-platform resource qualification
 remain unfinished. No target has been relaxed by these source checks.
+A later 3.27 MiB phase diagnostic is not resource acceptance and does not replace
+the retained 3.61 MiB result against the 2 MiB target.

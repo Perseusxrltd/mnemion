@@ -10,6 +10,7 @@ import type { CaptureArchiveInfo, CaptureBackupInput, CaptureDrained, CaptureDra
 import type { AgentSetup, AgentSetupStatus, AgentPreview, AgentInstall, AgentRemove, AgentSetupResult } from '../../../shared/desktop-agents'
 import type { HostInspection, HostProfile, HostProfilesStatus, HostReceipt } from '../../../shared/host-control'
 import type { TelemetryChoice, TelemetryPreview, TelemetryStamp, TelemetryStatus } from '../../../shared/product-telemetry'
+import { measuredLegacyClient } from '../workspace/measurement-action'
 
 declare global {
   interface Window {
@@ -208,7 +209,7 @@ async function put<T>(path: string, body: unknown): Promise<T> {
 
 // API methods
 
-export const api = {
+export const api = measuredLegacyClient({
   status: (): Promise<Status> => get('/status'),
 
   taxonomy: (): Promise<Taxonomy> => get('/taxonomy'),
@@ -292,4 +293,4 @@ export const api = {
     const blob = await getBlob('/export/vault', wing ? { wing } : undefined)
     saveBlob(blob, `mnemion_vault${wing ? `_${wing}` : ''}.zip`)
   },
-}
+})

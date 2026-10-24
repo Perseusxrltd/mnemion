@@ -32,6 +32,10 @@ class ControlMeasurement:
         self._name = name
 
     @_optional
+    def discard(self) -> None:
+        self._measurement.discard()
+
+    @_optional
     def succeeded(self, result: dict) -> None:
         # The server supplies only this fixed metadata. A legacy server, a lost
         # response or an already cached write is not evidence of a new mutation.

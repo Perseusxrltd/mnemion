@@ -45,6 +45,19 @@ def control_specification() -> dict:
     return json.loads(files(__package__).joinpath("control-origins.json").read_text())
 
 
+def origin_specification() -> dict:
+    """Local discovery of each reviewed application boundary and its exclusions."""
+    return {
+        name: json.loads(files(__package__).joinpath(filename).read_text())
+        for name, filename in (
+            ("desktop", "desktop-origins.json"),
+            ("studio", "studio-methods.json"),
+            ("ui", "ui-origins.json"),
+            ("mcp", "mcp-origins.json"),
+        )
+    }
+
+
 def _metric_slots() -> tuple:
     offset = 1 + len(OUTCOMES) + len(REASONS)
     slots = []

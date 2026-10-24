@@ -12,6 +12,7 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
+import { measureUiAction } from './measurement-action';
 import {
   Link,
   NavLink,
@@ -2349,7 +2350,7 @@ export default function Workspace() {
               setLeaving(true);
               void queryClient.cancelQueries();
               setDisconnectError(undefined);
-              try { await connection.signOut?.(); await window.mnemion?.workspaceDisconnect?.(); }
+              try { await measureUiAction('browser', 'disconnect', async () => { await connection.signOut?.(); await window.mnemion?.workspaceDisconnect?.(); }); }
               catch (error) { setDisconnectError(error); }
               queryClient.clear();
               setConnection(current => current === connection ? undefined : current);
