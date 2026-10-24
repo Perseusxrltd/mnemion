@@ -1,6 +1,6 @@
 {
   "name": "mnemion-studio",
-  "version": "4.46.5",
+  "version": "4.46.6",
   "description": "Mnemion Studio - shared app and team memory with Obsidian visualization",
   "author": {
     "name": "PERSEUS LEGACY LIMITED",
@@ -25,7 +25,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.20.5",
-    "electron": "^44.7.0",
+    "electron": "^44.9.3",
     "electron-builder": "^26.15.3",
     "typescript": "^5.6.0"
   },
