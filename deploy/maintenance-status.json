@@ -37,52 +37,16 @@
       "job_details_schema": 2,
       "job_progress": {
         "total": 12,
-        "completed": 3,
-        "succeeded": 3,
+        "completed": 8,
+        "succeeded": 8,
         "active": [
-          {
-            "id": 121313852347,
-            "name": "studio",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run npm --prefix studio/frontend run test:telemetry"
-            ]
-          },
-          {
-            "id": 121313884227,
-            "name": "container (ubuntu-22.04-arm)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify the non-root image includes Studio, guides and notices offline"
-            ]
-          },
-          {
-            "id": 121313884230,
-            "name": "container (ubuntu-22.04)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Build the actual deployment image with its documentation"
-            ]
-          },
           {
             "id": 121313884246,
             "name": "service (3.14)",
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run npm --prefix packages/client ci && npm --prefix packages/client test"
-            ]
-          },
-          {
-            "id": 121313884268,
-            "name": "supervision (macos-15)",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Verify managed installation, host recovery, signed updates and rollback with real processes"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
@@ -91,16 +55,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Matching PostgreSQL recovery tools"
-            ]
-          },
-          {
-            "id": 121313884308,
-            "name": "legacy",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run uv run --no-sync python -m pytest tests -q --cov=mnemion --cov-config=deploy/legacy.coveragerc --cov-report=term-missing"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
@@ -109,7 +64,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Run npm --prefix packages/client ci && npm --prefix packages/client test"
+              "Run uv run --no-sync python -m pytest service_tests -q --cov=mnemion --cov-config=deploy/service.coveragerc --cov-report=term-missing --cov-fail-under=75"
             ]
           },
           {
@@ -118,7 +73,7 @@
             "status": "in_progress",
             "runner_assigned": true,
             "steps": [
-              "Build the current Intel cryptography runtime with static OpenSSL"
+              "Verify both pinned local models on the actual Mac runtime"
             ]
           }
         ]
@@ -153,48 +108,21 @@
       "workflow": "release.yml",
       "branch": "release/4.46.8",
       "source_commit": "020de57de2cebed146fe9f4a842696105f4f7ee8",
-      "status": "in_progress",
-      "conclusion": null,
-      "updated_at": "2026-10-25T21:44:41Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40236329055",
-      "job_details_schema": 2,
-      "job_progress": {
-        "total": 32,
-        "completed": 30,
-        "succeeded": 29,
-        "active": [
-          {
-            "id": 121300301890,
-            "name": "native / windows-11-arm / arm64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run npm --prefix studio/electron test"
-            ]
-          },
-          {
-            "id": 121300301931,
-            "name": "native / windows-2022 / x64",
-            "status": "in_progress",
-            "runner_assigned": true,
-            "steps": [
-              "Run npm --prefix studio/electron test"
-            ]
-          }
-        ]
-      },
-      "failed_jobs": []
+      "status": "completed",
+      "conclusion": "cancelled",
+      "updated_at": "2026-10-25T22:56:05Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40236329055"
     },
     {
-      "id": 40236493226,
+      "id": 40242457100,
       "attempt": 1,
       "workflow": "verify-artifacts.yml",
       "branch": "main",
-      "source_commit": "1918c81faaac0d0cb72901ffbcd58113d64f2e18",
+      "source_commit": "a991235a2daa2f5b93b4c2cb0d4c0f1f95db1b2e",
       "status": "completed",
       "conclusion": "skipped",
-      "updated_at": "2026-10-25T21:39:16Z",
-      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40236493226"
+      "updated_at": "2026-10-25T22:56:08Z",
+      "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40242457100"
     },
     {
       "id": 40241374783,
@@ -208,5 +136,5 @@
       "url": "https://github.com/Perseusxrltd/mnemion/actions/runs/40241374783"
     }
   ],
-  "observed_at": "2026-10-25T22:43:02+00:00"
+  "observed_at": "2026-10-25T22:56:45+00:00"
 }
